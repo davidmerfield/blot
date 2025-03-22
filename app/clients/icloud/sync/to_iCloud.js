@@ -68,7 +68,7 @@ module.exports = async (blogID, publish, update) => {
         const identicalOnRemote =
           existsRemotely && existsRemotely.size === size;
 
-        if (!existsRemotely || (existsRemotely && !identicalOnRemote)) {
+        if (!existsRemotely || !identicalOnRemote) {
           try {
             await checkWeCanContinue();
             if (size > maxFileSize) {
