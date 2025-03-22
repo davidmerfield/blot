@@ -6,7 +6,7 @@ const { watch, unwatch } = require("../watcher");
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
   const path = Buffer.from(req.header("pathBase64"), "base64").toString("utf8");
-  const modifiedTime = req.header("modifiedTime");
+  const modifiedTime = req.header("modifiedTime"); // fs.stat.mtimeMs
 
   if (!blogID || !path || !modifiedTime) {
     return res.status(400).send("Missing blogID, path, or modifiedTime header");
@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
     try {
       await fs.outputFile(filePath, req.body);
       console.log(`Wrote file: ${filePath}`);
-      const modifiedTimeDate = new Date(modifiedTime);
+      const modifiedTimeDate = new Date(parseInt(modifiedTime, 10));
       await fs.utimes(filePath, modifiedTimeDate, modifiedTimeDate);
       console.log(`Set modified time for file: ${filePath}`);
       break;
