@@ -14,68 +14,61 @@ const maxFileSize = config.icloud.maxFileSize; // Maximum file size for iCloud u
 // fix
 
 module.exports = async (blogID, publish, update) => {
-  if (!publish)
-    publish = (...args) => {
-      console.log(clfdate() + " iCloud:", args.join(" "));
-    };
-
-  if (!update) update = () => {};
+  publish = publish || function () {};
+  update = update || function () {};
 
   const checkWeCanContinue = CheckWeCanContinue(blogID);
 
   const walk = async (dir) => {
-    publish("Checking", dir);
-
     const [remoteContents, localContents] = await Promise.all([
       remoteReaddir(blogID, dir),
       localReaddir(localPath(blogID, dir)),
     ]);
 
     for (const { name } of remoteContents) {
-      if (
-        !localContents.find(
-          (item) => item.name.normalize("NFC") === name.normalize("NFC")
-        )
-      ) {
+      const localItem = localContents.find(
+        (item) => item.name.normalize("NFC") === name.normalize("NFC")
+      );
+
+      if (!localItem) {
         const path = join(dir, name);
         await checkWeCanContinue();
-        publish("Removing remote item", join(dir, name));
+        publish("Removing from iCloud", join(dir, name));
         await remoteDelete(blogID, path);
       }
     }
 
     for (const { name, size, isDirectory } of localContents) {
       const path = join(dir, name);
-      const existsRemotely = remoteContents.find(
+      const remoteItem = remoteContents.find(
         (item) => item.name.normalize("NFC") === name.normalize("NFC")
       );
 
       if (isDirectory) {
-        if (existsRemotely && !existsRemotely.isDirectory) {
+        if (remoteItem && !remoteItem.isDirectory) {
           await checkWeCanContinue();
-          publish("Removing", path);
+          publish("Removing from iCloud", path);
           await remoteDelete(blogID, path);
-          publish("Creating directory", path);
+          publish("Creating directory in iCloud", path);
           await remoteMkdir(blogID, path);
-        } else if (!existsRemotely) {
+        } else if (!remoteItem) {
           await checkWeCanContinue();
-          publish("Creating directory", path);
+          publish("Creating directory in iCloud", path);
           await remoteMkdir(blogID, path);
         }
 
         await walk(path);
       } else {
-        const identicalOnRemote =
-          existsRemotely && existsRemotely.size === size;
+        const identicalOnRemote = remoteItem && remoteItem.size === size;
 
-        if (!existsRemotely || !identicalOnRemote) {
+        if (!remoteItem || !identicalOnRemote) {
           try {
             await checkWeCanContinue();
             if (size > maxFileSize) {
-              publish("File too large", path);
+              publish("Skipping file which is too large", path);
               continue;
             }
-            publish("Updating", path);
+            publish("Transferring to iCloud", path);
             await remoteUpload(blogID, path);
           } catch (e) {
             publish("Failed to upload", path, e);

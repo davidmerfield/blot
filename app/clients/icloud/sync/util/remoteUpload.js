@@ -10,14 +10,8 @@ module.exports = async (blogID, path) => {
   const modifiedTime = stat.mtimeMs;
   const pathBase64 = Buffer.from(path).toString("base64");
 
-  const body = fs.createReadStream(pathOnDisk);
+  const body = await fs.readFile(pathOnDisk);
 
-  console.log('sending', {
-    path,
-    pathOnDisk,
-    modifiedTime,
-    pathBase64,
-  });
   const res = await fetch(`${MAC_SERVER_ADDRESS}/upload`, {
     method: "POST",
     headers: {
@@ -28,7 +22,6 @@ module.exports = async (blogID, path) => {
       modifiedTime,
     },
     body,
-    duplex: "half"
   });
 
   if (!res.ok) {
