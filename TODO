@@ -1,3 +1,12 @@
+ reset sync locks on server start?
+
+    why doesn't docker restart reset sync locks?
+    update stale and retries to ensure that on restart we can re-aquire sync lock?
+
+Fix bug with template error causing server to go down (issue with folder rebuild)
+
+    reproduce bug with chinese template?
+
 Trigger an error with build template on iCloud client to work out why server crashed
 - suspect it's to do with async handling in util establish sync lock
 - this should not tank the server...
