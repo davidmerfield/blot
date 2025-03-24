@@ -163,7 +163,7 @@ client_routes.post("/reset/resync", load.client, function (req, res, next) {
     res.message(res.locals.base + "/client/reset", "Begin resync of your site");
 
     try {
-      await res.locals.client.resync(req.blog.id, folder.status);
+      await res.locals.client.resync(req.blog.id, folder.status, folder.update);
     } catch (err) {
       console.log("ERROR:", err);
     }

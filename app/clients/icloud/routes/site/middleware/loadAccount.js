@@ -1,3 +1,5 @@
+const database = require("clients/icloud/database");
+
 module.exports = async function validateBlog(req, res, next) {
   const blogID = req.header("blogID");
 
