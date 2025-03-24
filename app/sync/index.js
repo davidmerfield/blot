@@ -113,22 +113,18 @@ function sync (blogID, callback) {
       log("Checking for renamed files");
       renames(blogID, async function (err) {
         if (err) {
+          folder.status("Error checking file renames");
           log("Error checking file renames");
-          log("Releasing lock");
-          await release();
-          clearTimeout(timeout);
-          return callback(err);
+          console.log(err);
         }
 
         // What is the appropriate order for this?
         log("Building templates from folder");
         buildFromFolder(blogID, async function (err) {
           if (err) {
-            log("Error building templates from folder");
-            log("Releasing lock");
-            await release();
-            clearTimeout(timeout);
-            return callback(err);
+            folder.status("Error building templates from folder");
+            log("Error building templates in folder");
+            console.log(err);
           }
 
           // We could do these next two things in parallel
@@ -138,7 +134,9 @@ function sync (blogID, callback) {
           clearTimeout(timeout);
           log("Finished sync");
 
-          if (!changes) return callback(syncError);
+          if (!changes) {
+            return callback(syncError);
+          }
 
           const cacheID = Date.now();
 
