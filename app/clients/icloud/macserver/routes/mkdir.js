@@ -12,8 +12,8 @@ module.exports = async (req, res) => {
   }
 
   // Validate path
-  const basePath = resolve(iCloudDriveDirectory, blogID);
-  const dirPath = resolve(basePath, path);
+  const basePath = resolve(join(iCloudDriveDirectory, blogID));
+  const dirPath = resolve(join(basePath, path));
 
   // Check if the resolved path is inside the allowed directory
   if (!dirPath.startsWith(basePath)) {
@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
   }
 
   console.log(`Received mkdir request for blogID: ${blogID}, path: ${path}`);
-  
+
   const stat = await fs.stat(dirPath).catch(() => null);
 
   if (stat && stat.isDirectory()) {
