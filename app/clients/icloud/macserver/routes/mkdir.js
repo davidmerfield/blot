@@ -17,11 +17,14 @@ module.exports = async (req, res) => {
 
   // Check if the resolved path is inside the allowed directory
   if (!dirPath.startsWith(basePath)) {
+    console.log(`Invalid path: attempted to access parent directory`, basePath, dirPath);
     return res
       .status(400)
       .send("Invalid path: attempted to access parent directory");
   }
 
+  console.log(`Received mkdir request for blogID: ${blogID}, path: ${path}`);
+  
   const stat = await fs.stat(dirPath).catch(() => null);
 
   if (stat && stat.isDirectory()) {
