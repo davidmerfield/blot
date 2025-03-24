@@ -3,12 +3,21 @@ const { resolve, join } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { watch, unwatch } = require("../watcher");
 
+let attempts = 0;
+
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
   const path = Buffer.from(req.header("pathBase64"), "base64").toString("utf8");
 
   if (!blogID || !path) {
     return res.status(400).send("Missing blogID or path header");
+  }
+
+  if (path.includes('TEST') && attempts === 0) {
+    attempts++;
+    console.log(`Received test mkdir request for blogID: ${blogID}, path: ${path}`);
+    console.log(`Returning 500 error for testing purposes`);
+    return res.status(500).send("Test error");
   }
 
   // Validate path

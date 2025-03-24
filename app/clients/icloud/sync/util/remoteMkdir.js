@@ -11,7 +11,7 @@ module.exports = async (blogID, path) => {
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to create directory ${path}`);
+    throw new Error(`${res.status} ${res.statusText} Failed to mkdir ${path}`);
   }
 
   return res.ok;

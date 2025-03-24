@@ -17,12 +17,11 @@ const prefix = () => `${clfdate()} iCloud Sync to iCloud:`;
 async function retry(fn, ...args) {
   for (let i = 0; i < 3; i++) {
     try {
-      console.log("Attempt", i + 1);
       return await fn(...args);
     } catch (e) {
       if (i === 2) throw e;
       const delay = Math.min(1000 * Math.pow(2, i), 10000);
-      console.log("Failed, retrying in", delay, "ms", e);
+      console.log("Attempt", i ,"failed, retrying in", delay, "ms", e);
       await new Promise((r) => setTimeout(r, delay));
     }
   }
