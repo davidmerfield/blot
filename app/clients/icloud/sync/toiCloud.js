@@ -11,7 +11,22 @@ const remoteReaddir = require("./util/remoteReaddir");
 const config = require("config");
 const maxFileSize = config.icloud.maxFileSize; // Maximum file size for iCloud uploads in bytes
 
-// fix
+const prefix = () => `${clfdate()} iCloud Sync to iCloud:`;
+
+// Retry failed operations with exponential backoff
+async function retry(fn, ...args) {
+  for (let i = 0; i < 3; i++) {
+    try {
+      console.log("Attempt", i + 1);
+      return await fn(...args);
+    } catch (e) {
+      if (i === 2) throw e;
+      const delay = Math.min(1000 * Math.pow(2, i), 10000);
+      console.log("Failed, retrying in", delay, "ms", e);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+}
 
 module.exports = async (blogID, publish, update) => {
   publish = publish || function () {};
@@ -34,7 +49,12 @@ module.exports = async (blogID, publish, update) => {
         const path = join(dir, name);
         await checkWeCanContinue();
         publish("Removing from iCloud", join(dir, name));
-        await remoteDelete(blogID, path);
+        try {
+          await retry(remoteDelete, blogID, path);
+        } catch (e) {
+          publish("Failed to remove", path);
+          console.log(prefix(), "Failed to remove", path, e);
+        }
       }
     }
 
@@ -45,16 +65,16 @@ module.exports = async (blogID, publish, update) => {
       );
 
       if (isDirectory) {
-        if (remoteItem && !remoteItem.isDirectory) {
-          await checkWeCanContinue();
-          publish("Removing from iCloud", path);
-          await remoteDelete(blogID, path);
-          publish("Creating directory in iCloud", path);
-          await remoteMkdir(blogID, path);
-        } else if (!remoteItem) {
+        if (!remoteItem || (remoteItem && !remoteItem.isDirectory)) {
           await checkWeCanContinue();
           publish("Creating directory in iCloud", path);
-          await remoteMkdir(blogID, path);
+          try {
+            await retry(remoteMkdir, blogID, path);
+          } catch (e) {
+            publish("Failed to create directory", path);
+            console.log(prefix(), "Failed to create directory", path, e);
+            continue;
+          }
         }
 
         await walk(path);
@@ -62,14 +82,15 @@ module.exports = async (blogID, publish, update) => {
         const identicalOnRemote = remoteItem && remoteItem.size === size;
 
         if (!remoteItem || !identicalOnRemote) {
+          await checkWeCanContinue();
+          if (size > maxFileSize) {
+            publish("Skipping file which is too large", path);
+            console.log(prefix(), "Skipping file size=" + size, path);
+            continue;
+          }
+          publish("Transferring to iCloud", path);
           try {
-            await checkWeCanContinue();
-            if (size > maxFileSize) {
-              publish("Skipping file which is too large", path);
-              continue;
-            }
-            publish("Transferring to iCloud", path);
-            await remoteUpload(blogID, path);
+            await retry(remoteUpload, blogID, path);
           } catch (e) {
             publish("Failed to upload", path, e);
           }
@@ -80,8 +101,9 @@ module.exports = async (blogID, publish, update) => {
 
   try {
     await walk("/");
-  } catch (err) {
-    publish("Sync failed", err.message);
-    // Possibly rethrow or handle
+    publish("Sync complete");
+  } catch (e) {
+    publish("Sync failed");
+    console.log(prefix(), "Sync failed", e);
   }
 };

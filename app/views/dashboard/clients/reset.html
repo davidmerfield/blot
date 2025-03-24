@@ -27,7 +27,7 @@ button[type="submit"]:hover {background: rgba(0,0,0,0.03);cursor: pointer;}
 <form style="padding-top:0;padding-bottom: 0" method='post' class="dashboard-form"  action="{{{base}}}/client/reset/resync">
 
   <input type="hidden" name="_csrf" value="{{csrftoken}}">
-  <button type="submit">Resync your folder from {{client.display_name}}</button>
+  <button type="submit">Resync folder from {{client.display_name}}</button>
 
 </form>
 {{/client.canResync}}
@@ -48,7 +48,7 @@ button[type="submit"]:hover {background: rgba(0,0,0,0.03);cursor: pointer;}
 <form style="padding-top:0;padding-bottom: 0" method='post' class="dashboard-form"  action="{{{base}}}/client/reset/rebuild?imageCache=true">
 
   <input type="hidden" name="_csrf" value="{{csrftoken}}">
-  <button type="submit">Remove and re-fetch cached images</button>
+  <button type="submit">Re-fetch cached images</button>
 
 </form>
 

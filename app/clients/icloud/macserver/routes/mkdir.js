@@ -1,5 +1,5 @@
 const fs = require("fs-extra");
-const { join } = require("path");
+const { resolve } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { watch, unwatch } = require("../watcher");
 
@@ -11,27 +11,57 @@ module.exports = async (req, res) => {
     return res.status(400).send("Missing blogID or path header");
   }
 
-  console.log(`Received mkdir request for blogID: ${blogID}, path: ${path}`);
+  // Validate path
+  const basePath = resolve(iCloudDriveDirectory, blogID);
+  const dirPath = resolve(basePath, path);
 
-  const dirPath = join(iCloudDriveDirectory, blogID, path);
+  // Check if the resolved path is inside the allowed directory
+  if (!dirPath.startsWith(basePath)) {
+    return res
+      .status(400)
+      .send("Invalid path: attempted to access parent directory");
+  }
+
+  const stat = await fs.stat(dirPath).catch(() => null);
+
+  if (stat && stat.isDirectory()) {
+    console.log(`Directory already exists: ${dirPath}`);
+    return res.sendStatus(200);
+  } else if (stat) {
+    await fs.remove(dirPath);
+  }
+
+  console.log(`Received mkdir request for blogID: ${blogID}, path: ${path}`);
 
   // first unwatch the blogID to prevent further events from being triggered
   await unwatch(blogID);
 
-  for (let i = 0; i < 10; i++) {
+  let success = false;
+  for (let i = 0; i < 5; i++) {
     try {
       await fs.ensureDir(dirPath);
       console.log(`Created directory: ${dirPath}`);
+      success = true;
       break;
     } catch (error) {
       console.error(`Failed to create directory (${dirPath}):`, error);
-      await new Promise((resolve) => setTimeout(resolve, 1000 * i)); // Exponential backoff
+      if (i < 4) {
+        // Only wait if we're going to retry
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * Math.pow(2, i))
+        ); // True exponential backoff
+      }
     }
   }
 
   // re-watch the blogID
   await watch(blogID);
 
-  console.log(`Created directory: ${dirPath}`);
+  if (!success) {
+    return res
+      .status(500)
+      .send("Failed to create directory after multiple attempts");
+  }
+
   res.sendStatus(200);
 };
