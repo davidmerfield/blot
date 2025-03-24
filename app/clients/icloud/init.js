@@ -7,6 +7,7 @@ module.exports = async () => {
 
   await database.iterate(async (blogID, account) => {
     if (account.transferringToiCloud) {
+      console.log("Resuming initial transfer for", blogID);
       await initialTransfer(blogID);
     }
   });
