@@ -63,6 +63,9 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
       const oldPath = join(iCloudDriveDirectory, newDirName);
       const newPath = join(iCloudDriveDirectory, blogID);
 
+      // If there is already a folder with the blogID, delete it
+      await fs.remove(newPath);
+
       // Rename the folder
       await fs.rename(oldPath, newPath);
       console.log(`Renamed folder from ${newDirName} to ${blogID}`);
