@@ -1,5 +1,5 @@
 const fs = require("fs-extra");
-const { resolve } = require("path");
+const { resolve, join } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { watch, unwatch } = require("../watcher");
 
