@@ -22,7 +22,7 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
   );
 
   const checkInterval = 100; // Interval (in ms) to check for new directories
-  const timeout = 1000 * 20; // Timeout (in ms) to wait for a new directory: 5 seconds modified to 20 for development purposes
+  const timeout = 1000 * 5; // Timeout (in ms) to wait for a new directory: 5 seconds 
   const start = Date.now();
 
   // Get the initial state of the top-level directories
