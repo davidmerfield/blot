@@ -1,4 +1,4 @@
-var Blog = require("blog");
+var Blog = require("models/blog");
 var getConfirmation = require("../util/getConfirmation");
 
 // We don't use get() since it throws an error if the user does not

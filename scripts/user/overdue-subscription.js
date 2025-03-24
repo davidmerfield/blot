@@ -1,4 +1,4 @@
-var Blog = require("blog");
+var Blog = require("models/blog");
 var User = require("models/user");
 var config = require("config");
 var async = require("async");

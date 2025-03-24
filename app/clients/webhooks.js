@@ -22,7 +22,7 @@ This section runs on the remote server and listens for incoming webhooks from cl
 // In-memory map to store connected clients
 const subscribers = new Map();
 
-const server = express();
+const server = express.Router();
 
 server.get("/connect", function (req, res) {
   if (req.header("Authorization") !== config.webhooks.secret) {

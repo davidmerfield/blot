@@ -1,6 +1,6 @@
 var getConfirmation = require("../util/getConfirmation");
-var Blog = require("blog");
-var User = require("user");
+var Blog = require("models/blog");
+var User = require("models/user");
 var validate = require("models/blog/validate/handle");
 var access = require("../access");
 

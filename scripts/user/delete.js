@@ -4,7 +4,7 @@ var get = require("../get/user");
 var getConfirmation = require("../util/getConfirmation");
 var colors = require("colors");
 var async = require("async");
-var Blog = require("blog");
+var Blog = require("models/blog");
 var each = require("../each/user");
 var moment = require("moment");
 

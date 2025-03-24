@@ -2,7 +2,7 @@
 
 Log in to server and grep:
 
-docker logs blot-container-{{container}} | grep -B 5 "Starting server on"
+logs {{container}} | grep -B 5 "Starting server on"
 
 To find recently killed services for memory reasons, log in to server and run:
 

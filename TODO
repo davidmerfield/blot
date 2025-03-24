@@ -1,3 +1,27 @@
+Trigger an error with build template on iCloud client to work out why server crashed
+- suspect it's to do with async handling in util establish sync lock
+- this should not tank the server...
+    [23/Mar/2025:00:55:29 +0000] [green] blog_8b57c40 sync_a1eb8a9 client=icloud Error building templates from folder
+    [23/Mar/2025:00:55:29 +0000] [green] blog_8b57c40 sync_a1eb8a9 client=icloud Releasing lock
+    /usr/src/app/app/models/template/getMetadata.js:13
+          err = new Error("No template: " + id);
+                ^
+
+    Error: No template: blog_8b57c40:xxx-xxx-xxx
+        at Command.callback (/usr/src/app/app/models/template/getMetadata.js:13:13)
+        at normal_reply (/usr/src/app/node_modules/redis/index.js:655:21)
+        at RedisClient.return_reply (/usr/src/app/node_modules/redis/index.js:753:9)
+        at JavascriptRedisParser.returnReply (/usr/src/app/node_modules/redis/index.js:138:18)
+        at JavascriptRedisParser.execute (/usr/src/app/node_modules/redis-parser/lib/parser.js:544:14)
+        at Socket.<anonymous> (/usr/src/app/node_modules/redis/index.js:219:27)
+        at Socket.emit (node:events:524:28)
+        at addChunk (node:internal/streams/readable:561:12)
+        at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+        at Readable.push (node:internal/streams/readable:392:5) {
+      code: 'ENOENT'
+    }
+
+
 Check that Google Drive is staying in sync:
 - login -> node scripts/google-drive/reset.js
 - add proper bottlenecks then run this regularly

@@ -51,6 +51,10 @@ module.exports = function save(uid, updates, callback) {
       if (user.subscription && user.subscription.customer)
         multi.set(key.customer(user.subscription.customer), uid);
 
+      // some users might not have paypal subscriptions
+      if (user.paypal && user.paypal.id)
+        multi.set(key.paypal(user.paypal.id), uid);
+
       multi.exec(function (err) {
         if (err) return callback(err);
 

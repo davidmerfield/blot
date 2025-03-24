@@ -181,7 +181,7 @@ async function generateDockerCommand(container, platform, commitHash) {
 
     // Log driver configuration
     "--log-driver json-file",
-    "--log-opt max-size=80m",
+    "--log-opt max-size=120m",
     "--log-opt max-file=5",
 
     // Expose the internal port to the host network

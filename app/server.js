@@ -7,52 +7,6 @@ var site = require("site");
 var trace = require("helper/trace");
 var clfdate = require("helper/clfdate");
 
-// const { PerformanceObserver } = require('perf_hooks');
-
-// // 1. GC Observer
-// const obs = new PerformanceObserver((list) => {
-//   list.getEntries().forEach((entry) => {
-//     // Get memory usage details
-//     const memoryUsage = process.memoryUsage();
-//     const heapUsedMB = (memoryUsage.heapUsed / 1024 / 1024).toFixed(2);
-//     const heapTotalMB = (memoryUsage.heapTotal / 1024 / 1024).toFixed(2);
-
-//     // Log GC event and heap size
-//     console.log(
-//       `${clfdate()} [GC] kind=${entry.kind}, duration=${entry.duration}ms, ` +
-//       `heapUsed=${heapUsedMB}MB, heapTotal=${heapTotalMB}MB`
-//     );
-//   });
-// });
-// obs.observe({ entryTypes: ['gc'], buffered: true });
-
-// // 2. Event-Loop Lag Measurement
-// // We'll measure the delay in setInterval to gauge how behind the event loop is.
-// const CHECK_INTERVAL_MS = 1000; // How frequently to check in ms
-// let lastCheck = process.hrtime.bigint();
-
-// setInterval(() => {
-//   const now = process.hrtime.bigint();
-//   // Convert nanoseconds to milliseconds, then see how far we deviated from 1000 ms
-//   const diffMs = (Number(now - lastCheck) / 1e6) - CHECK_INTERVAL_MS;
-
-//   // Get memory usage details
-//   const memoryUsage = process.memoryUsage();
-//   const heapUsedMB = (memoryUsage.heapUsed / 1024 / 1024).toFixed(2);
-//   const heapTotalMB = (memoryUsage.heapTotal / 1024 / 1024).toFixed(2);
-
-//   // Log event loop lag and heap size
-//   console.log(
-//     `${clfdate()} [LoopLag] ${diffMs.toFixed(2)}ms, ` +
-//     `heapUsed=${heapUsedMB}MB, heapTotal=${heapTotalMB}MB`
-//   );
-
-//   lastCheck = now;
-// }, CHECK_INTERVAL_MS);
-
-
-
-
 // Welcome to Blot. This is the Express application which listens on port 8080.
 // NGINX listens on port 80 in front of Express app and proxies requests to
 // port 8080. NGINX handles SSL termination, cached response delivery and

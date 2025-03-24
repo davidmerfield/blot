@@ -1,4 +1,4 @@
-var Blog = require("blog");
+var Blog = require("models/blog");
 var fs = require("fs-extra");
 var BLOGS_DIRECTORY = require("config").blog_folder_dir;
 var STATIC_DIRECTORY = require("config").blog_static_files_dir;
