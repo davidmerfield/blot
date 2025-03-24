@@ -22,7 +22,7 @@ const extractBlogID = (filePath) => {
   if (!blogID.startsWith("blog_")) {
     return null;
   }
-  
+
   return blogID;
 };
 
@@ -95,11 +95,7 @@ const handleFileEvent = async (event, blogID, filePath) => {
 };
 
 // Initializes the top-level watcher and starts disk monitoring
-const initializeWatcher = async () => {
-  console.log(
-    `Watching iCloud Drive directory for blog folders: ${iCloudDriveDirectory}`
-  );
-
+const initialize = async () => {
   // Start periodic disk space monitoring
   checkDiskSpace(async (blogID, files) => {
     // Get the limiter for this specific blogID
@@ -119,30 +115,22 @@ const initializeWatcher = async () => {
     });
   });
 
-  // Top-level watcher to manage blog folder creation
-  // Deletion is handled by the blog folder watcher
-  const topLevelWatcher = chokidar
-    .watch(iCloudDriveDirectory, {
-      depth: 0, // Only watch the top level
-    })
-    .on("addDir", (folderPath) => {
-      // Ignore the iCloud Drive directory itself
-      if (folderPath === iCloudDriveDirectory) {
-        return;
+  // List all the folders in the iCloudDriveDirectory
+  const folderPaths = await fs.readdir(iCloudDriveDirectory, {
+    withFileTypes: true,
+  });
+
+  // Watch each blog folder
+  for (const folder of folderPaths) {
+    if (folder.isDirectory()) {
+      const blogID = extractBlogID(join(iCloudDriveDirectory, folder.name));
+      if (blogID) {
+        await watch(blogID);
+      } else {
+        console.warn(`Ignoring non-blog folder: ${folder.name}`);
       }
-
-      const blogID = extractBlogID(folderPath);
-
-      if (!blogID) {
-        console.warn(`Ignoring non-blog folder: ${blogID}`);
-        return;
-      }
-      
-      console.log(`Detected new blog folder: ${blogID}`);
-      watch(blogID); // Add a watcher for the new blog folder
-    });
-
-  return topLevelWatcher;
+    }
+  }
 };
 
 // Watches a specific blog folder
@@ -158,7 +146,7 @@ const watch = async (blogID) => {
   console.log(`Starting watcher for blog folder: ${blogID}`);
   const watcher = chokidar
     .watch(blogPath, {
-      usePolling: true, 
+      usePolling: true,
       interval: 2000, // Poll every 2 seconds
       binaryInterval: 5000, // Poll every 5 seconds for binary files
       ignoreInitial: false, // Process initial events
@@ -182,7 +170,7 @@ const watch = async (blogID) => {
       // We only handle file events after the initial scan is complete
       if (initialScanComplete) {
         handleFileEvent(event, blogID, filePath);
-      } 
+      }
     })
     .on("ready", () => {
       console.log(`Initial scan complete for blog folder: ${blogID}`);
@@ -205,4 +193,4 @@ const unwatch = async (blogID) => {
   blogWatchers.delete(blogID);
 };
 
-module.exports = { initializeWatcher, unwatch, watch };
+module.exports = { initialize, unwatch, watch };

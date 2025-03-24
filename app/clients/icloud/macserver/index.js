@@ -1,7 +1,7 @@
 const express = require("express");
 const { raw } = express;
 const { Authorization, maxFileSize } = require("./config");
-const { initializeWatcher } = require("./watcher");
+const { initialize } = require("./watcher");
 const notifyServerStarted = require("./httpClient/notifyServerStarted");
 
 // maxFileSize is in bytes but limit must be in the format '5mb'
@@ -33,6 +33,8 @@ const startServer = async () => {
   app.post("/delete", require("./routes/delete"));
 
   app.post("/mkdir", require("./routes/mkdir"));
+
+  app.post("/watch", require("./routes/watch"));
 
   app.post("/disconnect", require("./routes/disconnect"));
 
@@ -66,8 +68,8 @@ const startServer = async () => {
     await startServer();
 
     // Initialize the file watcher
-    console.log("Initializing file watcher...");
-    await initializeWatcher();
+    console.log("Initializing file watchers for existing folders...");
+    await initialize();
 
     console.log("Macserver started successfully");
   } catch (error) {

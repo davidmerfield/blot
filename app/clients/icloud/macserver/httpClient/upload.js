@@ -21,7 +21,7 @@ module.exports = async (blogID, path) => {
   }
 
   const filePath = join(iCloudDriveDirectory, blogID, path);
-  
+
   // Download and check file
   let stat;
   try {
@@ -54,20 +54,16 @@ module.exports = async (blogID, path) => {
 
   console.log(`Issuing HTTP /upload request to remote server: ${path}`);
 
-  try {
-    await fetch(`${remoteServer}/upload`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/octet-stream",
-        Authorization,
-        blogID,
-        pathBase64,
-        modifiedTime,
-      },
-      body: fileBuffer,
-    });
-    console.log('Upload successful', path);
-  } catch (error) {
-    throw new Error(`HTTP /upload request failed: ${error.message}`);
-  }
+  await fetch(`${remoteServer}/upload`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/octet-stream",
+      Authorization,
+      blogID,
+      pathBase64,
+      modifiedTime,
+    },
+    body: fileBuffer,
+  });
+  console.log("Upload successful", path);
 };
