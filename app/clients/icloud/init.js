@@ -6,9 +6,15 @@ const database = require("./database");
 module.exports = async () => {
 
   await database.iterate(async (blogID, account) => {
-    if (account.transferringToiCloud) {
+    if (!account.transferringToiCloud) {
+      return;
+    }
+
+    try {
       console.log("Resuming initial transfer for", blogID);
       await initialTransfer(blogID);
+    } catch (error) {
+      console.error("Error resuming initial transfer for", blogID, error);
     }
   });
 

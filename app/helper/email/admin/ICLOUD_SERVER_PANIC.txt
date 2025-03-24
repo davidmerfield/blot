@@ -1,0 +1,7 @@
+iCloud Server panic
+
+The iCloud server is trapped in a reboot loop. Further notifications of restarts have been silenced but you urgently need to log in to the mac server and determine the cause of the issue:
+
+ssh macserver
+
+pm2 logs
