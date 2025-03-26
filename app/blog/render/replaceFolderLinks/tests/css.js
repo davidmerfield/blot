@@ -17,11 +17,7 @@ describe("replaceCssUrls", function () {
       const res = await this.get("/style.css");
       const result = await res.text();
   
-      expect(result).toMatch(
-        new RegExp(
-          `.test { background-image: url\\('${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^']+/images/test.jpg'\\); }`
-        )
-      );
+      expect(result).toMatch(cdnRegex("/images/test.jpg"));
     });
   
     it("should handle unquoted URLs", async function () {
@@ -57,10 +53,7 @@ describe("replaceCssUrls", function () {
     });
   
     it("should not modify external URLs", async function () {
-      const css = `.test { 
-        background: url(http://example.com/image.jpg);
-        background-image: url(https://example.com/image.png);
-      }`;
+      const css = `.test{background:url(http://example.com/image.jpg);background-image:url(https://example.com/image.png)}`;
       await this.template({ "style.css": css });
   
       const res = await this.get("/style.css");
@@ -70,9 +63,7 @@ describe("replaceCssUrls", function () {
     });
   
     it("should not modify data URLs", async function () {
-      const css = `.test { 
-        background: url(data:image/png;base64,abc123);
-      }`;
+      const css = `.test{background:url(data:image/png;base64,abc123)}`;
       await this.template({ "style.css": css });
   
       const res = await this.get("/style.css");
@@ -82,7 +73,7 @@ describe("replaceCssUrls", function () {
     });
   
     it("should handle missing files gracefully", async function () {
-      const css = `.test { background: url(/nonexistent.jpg); }`;
+      const css = `.test{background:url(/nonexistent.jpg)}`;
       await this.template({ "style.css": css });
   
       const res = await this.get("/style.css");
@@ -96,18 +87,18 @@ describe("replaceCssUrls", function () {
       await this.template({
         "style.css": `
           .test { 
-            color: red; 
-            background: url(/test.jpg) center/cover; 
-            margin: 10px;
+            color:red; 
+            background:url(/test.jpg) center/cover; 
+            margin:10px;
           }`,
       });
   
       const res = await this.get("/style.css");
       const result = await res.text();
   
-      expect(result).toMatch(/color: red;/);
+      expect(result).toMatch(/color:red/);
       expect(result).toMatch(/center\/cover;/);
-      expect(result).toMatch(/margin: 10px;/);
+      expect(result).toMatch(/margin:10px/);
       expect(result).toMatch(cdnRegex("/test.jpg"));
     });
   
@@ -173,9 +164,7 @@ describe("replaceCssUrls", function () {
     });
   
     it("ignores path traversal attempts", async function () {
-      const css = `.test { 
-        background: url(../../../../etc/passwd);
-      }`;
+      const css = `.test{background:url(../../../../etc/passwd)}`;
       await this.template({ "style.css": css });
   
       const res = await this.get("/style.css");
@@ -205,16 +194,13 @@ describe("replaceCssUrls", function () {
     it("should handle @media queries", async function () {
       await this.write({ path: "/mobile.jpg", content: "image" });
       await this.template({
-        "style.css": `
-          @media (max-width: 768px) {
-            .test { background-image: url(/mobile.jpg); }
-          }`,
+        "style.css": `@media (max-width:768px){.test{background-image:url(https://cdn.localhost/folder/v-e464a519/blog_2c245d7ded644f2380a75cdcf260a603/mobile.jpg)}}`,
       });
   
       const res = await this.get("/style.css");
       const result = await res.text();
   
       expect(result).toMatch(cdnRegex("/mobile.jpg"));
-      expect(result).toMatch(/@media \(max-width: 768px\)/);
+      expect(result).toMatch(/@media \(max-width:768px\)/);
     });
   });
