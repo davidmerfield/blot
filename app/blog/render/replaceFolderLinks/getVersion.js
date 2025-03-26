@@ -6,6 +6,7 @@ const Cache = require("./cache");
 const pathCache = new Cache();
 
 async function getVersion(blogID, cacheID, value) {
+    console.log('getVersion:', blogID, cacheID, value);
   const key = hash(`${blogID}:${cacheID}:${value}`);
   const [pathFromValue, ...rest] = value.split("?");
   const query = rest.length ? `?${rest.join("?")}` : "";
@@ -29,7 +30,11 @@ async function getVersion(blogID, cacheID, value) {
       }
 
       const stat = await fs.stat(filePath);
-      version = hash(`${stat.mtime}${stat.size}`).slice(0, 8);
+      const contents = await fs.readFile(filePath, "utf8");
+      console.log('version is hash of', `${stat.mtime}${stat.ctime}${stat.size}${stat.ino}`);
+      version = hash(`${stat.mtime}${stat.ctime}${stat.size}${stat.ino}`).slice(0, 8);
+      console.log('version:', version);
+      console.log("contents:", contents);
       pathCache.set(key, version);
     } catch (err) {
       console.log(key, `File not found: ${value}`, err);
