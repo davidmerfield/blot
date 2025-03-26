@@ -19,6 +19,7 @@ var CACHE_CONTROL = "Cache-Control";
 const {minifyJS, minifyCSS} = require("./minify");
 const injectScreenshotScript = require("./injectScreenshotScript");
 const replaceFolderLinks = require("./replaceFolderLinks");
+const replaceFolderLinksCSS = require("./replaceFolderLinksCSS");
 
 var cacheDuration = "public, max-age=31536000";
 var JS = "application/javascript";
