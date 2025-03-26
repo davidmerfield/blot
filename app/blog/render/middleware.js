@@ -18,6 +18,7 @@ var CACHE_CONTROL = "Cache-Control";
 
 const {minifyJS, minifyCSS} = require("./minify");
 const injectScreenshotScript = require("./injectScreenshotScript");
+const replaceFolderLinks = require("./replaceFolderLinks");
 
 var cacheDuration = "public, max-age=31536000";
 var JS = "application/javascript";
@@ -150,6 +151,12 @@ module.exports = function (req, res, _next) {
             // on demand
             if (req.preview && viewType === "text/html" && req.query.screenshot) {
               output = injectScreenshotScript({output, protocol: req.protocol, hostname: req.hostname, blogID});
+            }
+
+            if (viewType === "text/html") {
+              req.log("Replacing folder links with CDN links");
+              output = await replaceFolderLinks(blog.cacheID, blogID, output);
+              req.log("Replaced folder links with CDN links");
             }
 
             if (viewType === STYLE && !req.preview) {

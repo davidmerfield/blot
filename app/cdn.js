@@ -1,51 +1,48 @@
+const config = require("config");
 const express = require("express");
 const cdn = new express.Router();
-const config = require("config");
 
-// Use express static and try to match the request to files in the following directories:
-// $blot_directory/data/static/$uri;
-// $blot_directory/app/blog/static/$uri;
-// we also want to add the header 'access-control-allow-origin' to all responses
+const GLOBAL_STATIC_FILES = config.blot_directory + "/app/blog/static";
 
-// the health check
+const static = (path) =>
+  express.static(path, {
+    maxAge: "1y",
+    fallthrough: false,
+  });
+
+// The health check
 cdn.get("/health", (req, res) => {
-  // don't cache response
   res.set("Cache-Control", "no-store");
   res.send("OK: " + new Date().toISOString());
 });
 
-// e.g. thumbnails or cached images specific to a blog
-cdn.use(
-  express.static(config.blog_static_files_dir, {
-    maxAge: "1y",
-    setHeaders: function (res, path) {
-      res.setHeader("Access-Control-Allow-Origin", "*");
-    }
-  })
-);
-
-// e.g. fonts or icons or other static files shared by all blogs
-cdn.use(
-  express.static(config.blot_directory + "/app/blog/static", {
-    maxAge: "1y",
-    setHeaders: function (res, path) {
-      res.setHeader("Access-Control-Allow-Origin", "*");
-    }
-  })
-);
-
-cdn.use(
-  "/documentation/v-:version",
-  express.static(config.views_directory, {
-    maxAge: "1y",
-    setHeaders: function (res, path) {
-      res.setHeader("Access-Control-Allow-Origin", "*");
-    }
-  })
-);
-// return a 404 error otherwise
-cdn.use((req, res) => {
-  res.status(404).send("Not found");
+// Simple CORS middleware
+// This means we can server font files from the CDN
+// and they will still work on customer sites
+cdn.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  next();
 });
+
+// Global static files available to all blogs e.g.
+// /fonts/agbalumo/400.ttf
+// /plugins/katex/files/KaTeX_AMS-Regular.woff2
+cdn.use("/fonts", static(GLOBAL_STATIC_FILES + "/fonts"));
+cdn.use("/icons", static(GLOBAL_STATIC_FILES + "/icons"));
+cdn.use("/katex", static(GLOBAL_STATIC_FILES + "/katex"));
+cdn.use("/plugins", static(GLOBAL_STATIC_FILES + "/plugins"));
+
+// Brochure and dashboard related static files, e.g.
+// /documentation/v-8d7d9d72/favicon-180x180.png
+// /documentation/v-76e1992c/documentation.min.css
+cdn.use("/documentation/v-:version", static(config.views_directory));
+
+// Serves files directly from a blog's folder e.g.
+// /folder/blog_1234/favicon.ico
+cdn.use("/folder/v-:version", static(config.blog_folder_dir));
+
+// Blog-specific static files, e.g.
+// /blog_de64881e0dd94a5f8ba8f7aeaf807b86/_image_cache/739749f7-85eb-4b51-a6b9-c238b61c2c97.jpg
+cdn.use(static(config.blog_static_files_dir));
 
 module.exports = cdn;
