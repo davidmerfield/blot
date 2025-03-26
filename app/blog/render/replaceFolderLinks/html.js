@@ -3,7 +3,7 @@ const parse5 = require("parse5");
 const htmlExtRegex = /\.html$/;
 const fileExtRegex = /[^/]*\.[^/]*$/;
 
-const getVersion = require("./getVersion");
+const lookupFile = require("./lookupFile");
 
 module.exports = async function replaceFolderLinks(cacheID, blogID, html) {
   try {
@@ -51,7 +51,7 @@ module.exports = async function replaceFolderLinks(cacheID, blogID, html) {
         ) {
           promises.push(
             (async () => {
-              const result = await getVersion(blogID, cacheID, attr.value);
+              const result = await lookupFile(blogID, cacheID, attr.value);
 
               if (result === "ENOENT") {
                 console.log(`File not found: ${attr.value}`);

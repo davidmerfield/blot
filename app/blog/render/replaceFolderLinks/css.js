@@ -1,6 +1,6 @@
 const postcss = require("postcss");
 const valueParser = require("postcss-value-parser");
-const getVersion = require("./getVersion");
+const lookupFile = require("./lookupFile");
 
 const htmlExtRegex = /\.html$/;
 const fileExtRegex = /[^/]*\.[^/]*$/;
@@ -44,7 +44,7 @@ module.exports = async function replaceCssUrls(cacheID, blogID, css) {
 
                 promises.push(
                   (async () => {
-                    const cdnUrl = await getVersion(blogID, cacheID, cleanUrl);
+                    const cdnUrl = await lookupFile(blogID, cacheID, cleanUrl);
                     processedUrls.set(cleanUrl, cdnUrl);
                   })()
                 );

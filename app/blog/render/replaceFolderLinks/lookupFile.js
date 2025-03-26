@@ -29,7 +29,7 @@ class Cache {
 
 const pathCache = new Cache();
 
-async function getVersion(blogID, cacheID, value) {
+async function lookupFile(blogID, cacheID, value) {
   const key = hash(`${blogID}:${cacheID}:${value}`);
   const [pathFromValue, ...rest] = value.split("?");
   const query = rest.length ? `?${rest.join("?")}` : "";
@@ -65,4 +65,4 @@ async function getVersion(blogID, cacheID, value) {
   return `${config.cdn.origin}/folder/v-${version}/${path}${query}`;
 }
 
-module.exports = getVersion;
+module.exports = lookupFile;
