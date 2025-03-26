@@ -58,6 +58,7 @@
     "mustache": "4.2.0",
     "node-fetch": "2.6.7",
     "node-schedule": "0.1.16",
+    "parse5": "7.2.1",
     "path-to-regexp": "8.2.0",
     "pretty": "2.0.0",
     "proper-lockfile": "4.1.2",
