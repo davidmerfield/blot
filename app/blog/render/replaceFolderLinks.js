@@ -1,4 +1,4 @@
-const parse5 = require('parse5');
+const parse5 = require("parse5");
 const config = require("config");
 const fs = require("fs-extra");
 const hash = require("helper/hash");
@@ -13,18 +13,17 @@ class Cache {
   set(key, value) {
     const valueSize = Buffer.from(value).length;
     if (valueSize > this.maxBytes) return;
-    
-    // Batch delete old entries for better performance
+
     if (this.currentSize + valueSize > this.maxBytes) {
       const entriesToDelete = [];
       let bytesToFree = this.currentSize + valueSize - this.maxBytes;
-      
+
       for (const [key, val] of this.cache) {
         bytesToFree -= Buffer.from(val).length;
         entriesToDelete.push(key);
         if (bytesToFree <= 0) break;
       }
-      
+
       for (const key of entriesToDelete) {
         const val = this.cache.get(key);
         this.currentSize -= Buffer.from(val).length;
@@ -39,7 +38,6 @@ class Cache {
   get(key) {
     const value = this.cache.get(key);
     if (value) {
-      // Move to end without delete/set
       this.cache.delete(key);
       this.cache.set(key, value);
     }
@@ -49,34 +47,29 @@ class Cache {
 
 const pathCache = new Cache();
 
-// Pre-compile regex
 const htmlExtRegex = /\.html$/;
 const fileExtRegex = /\/[^/]*\.[^/]*$/;
 
 module.exports = async function replaceFolderLinks(cacheID, blogID, html) {
   try {
-    // Parse without source code location info for speed
-    const document = parse5.parse(html, {
-      treeAdapter: parse5.defaultTreeAdapter,
-      sourceCodeLocationInfo: false
-    });
+    const fragment = parse5.parseFragment(html);
 
-    // Preallocate arrays
     const elements = [];
     const promises = [];
 
-    // Faster tree walking with stack instead of recursion
-    const stack = [document];
+    const stack = [fragment];
+
     while (stack.length > 0) {
       const node = stack.pop();
-      
+
       if (node.attrs) {
-        // Check for href/src without .find()
         let hasMatchingAttr = false;
         for (let i = 0; i < node.attrs.length; i++) {
           const attr = node.attrs[i];
-          if ((attr.name === 'href' || attr.name === 'src') && 
-              attr.value[0] === '/') {
+          if (
+            (attr.name === "href" || attr.name === "src") &&
+            attr.value[0] === "/"
+          ) {
             hasMatchingAttr = true;
             break;
           }
@@ -89,14 +82,14 @@ module.exports = async function replaceFolderLinks(cacheID, blogID, html) {
       }
     }
 
-    // Process elements in parallel
     for (const node of elements) {
       for (const attr of node.attrs) {
-        if ((attr.name === 'href' || attr.name === 'src') && 
-            attr.value[0] === '/' && 
-            !htmlExtRegex.test(attr.value) && 
-            fileExtRegex.test(attr.value)) {
-
+        if (
+          (attr.name === "href" || attr.name === "src") &&
+          attr.value[0] === "/" &&
+          !htmlExtRegex.test(attr.value) &&
+          fileExtRegex.test(attr.value)
+        ) {
           const cacheKey = `${cacheID}:${attr.value}`;
           const cachedResult = pathCache.get(cacheKey);
 
@@ -105,30 +98,31 @@ module.exports = async function replaceFolderLinks(cacheID, blogID, html) {
             continue;
           }
 
-          promises.push((async () => {
-            try {
-              const stat = await fs.stat(config.blog_folder_dir + "/" + blogID + attr.value);
-              const identifier = stat.mtime.toString() + stat.size.toString();
-              const version = hash(identifier).slice(0, 8);
-              const result = `${config.cdn.origin}/folder/v-${version}/${blogID}${attr.value}`;
-              
-              pathCache.set(cacheKey, result);
-              attr.value = result;
-            } catch (err) {
-              console.warn(`File not found: ${attr.value}`);
-            }
-          })());
+          promises.push(
+            (async () => {
+              try {
+                const stat = await fs.stat(
+                  config.blog_folder_dir + "/" + blogID + attr.value
+                );
+                const identifier = stat.mtime.toString() + stat.size.toString();
+                const version = hash(identifier).slice(0, 8);
+                const result = `${config.cdn.origin}/folder/v-${version}/${blogID}${attr.value}`;
+
+                pathCache.set(cacheKey, result);
+                attr.value = result;
+              } catch (err) {
+                console.warn(`File not found: ${attr.value}`);
+              }
+            })()
+          );
         }
       }
     }
 
-    // Wait for all file operations to complete
     await Promise.all(promises);
-
-    // Serialize without pretty printing
-    return parse5.serialize(document);
+    return promises.length > 0 ? parse5.serialize(fragment) : html;
   } catch (err) {
-    console.warn('Parse5 parsing failed:', err);
+    console.warn("Parse5 parsing failed:", err);
     return html;
   }
 };
