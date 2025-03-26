@@ -2,6 +2,7 @@ const parse5 = require("parse5");
 const config = require("config");
 const fs = require("fs-extra");
 const hash = require("helper/hash");
+const { at } = require("lodash");
 
 class Cache {
   constructor(maxBytes = 1024 * 1024) {
@@ -53,12 +54,14 @@ const fileExtRegex = /\/[^/]*\.[^/]*$/;
 module.exports = async function replaceFolderLinks(cacheID, blogID, html) {
   try {
     const fragment = parse5.parseFragment(html);
-
+    
     const elements = [];
     const promises = [];
-
+    
     const stack = [fragment];
 
+    let changes = 0;
+    
     while (stack.length > 0) {
       const node = stack.pop();
 
@@ -94,7 +97,12 @@ module.exports = async function replaceFolderLinks(cacheID, blogID, html) {
           const cachedResult = pathCache.get(cacheKey);
 
           if (cachedResult) {
+            // we have cached a missing file
+            if (cachedResult === attr.value) {
+              continue;
+            }
             attr.value = cachedResult;
+            changes++;
             continue;
           }
 
@@ -107,12 +115,13 @@ module.exports = async function replaceFolderLinks(cacheID, blogID, html) {
                 const identifier = stat.mtime.toString() + stat.size.toString();
                 const version = hash(identifier).slice(0, 8);
                 const result = `${config.cdn.origin}/folder/v-${version}/${blogID}${attr.value}`;
-
                 pathCache.set(cacheKey, result);
                 attr.value = result;
+                changes++;
               } catch (err) {
-                console.warn(`File not found: ${attr.value}`);
-              }
+                console.warn(`File not found: ${attr.value}`, err);
+                pathCache.set(cacheKey, attr.value);
+              } 
             })()
           );
         }
