@@ -2,6 +2,7 @@ const parse5 = require("parse5");
 const config = require("config");
 const fs = require("fs-extra");
 const hash = require("helper/hash");
+const { resolve, join } = require("path");
 
 class Cache {
   constructor() {
@@ -32,27 +33,38 @@ class Cache {
 const pathCache = new Cache();
 
 const htmlExtRegex = /\.html$/;
-const fileExtRegex = /\/[^/]*\.[^/]*$/;
+const fileExtRegex = /[^/]*\.[^/]*$/;
 
 async function getVersion(blogID, cacheID, value) {
-  const cacheKey = hash(`${blogID}:${cacheID}:${value}`);
-  const cachedVersion = pathCache.get(cacheKey);
+  const key = hash(`${blogID}:${cacheID}:${value}`);
+  const [pathFromValue, ...rest] = value.split("?");
+  const query = rest.length ? `?${rest.join("?")}` : "";
+  const path = join(blogID, pathFromValue);
 
-  if (cachedVersion) {
-    return cachedVersion;
+  let version = pathCache.get(key);
+
+  if (!version) {
+    try {
+      // remove query string
+      const blogFolder = join(config.blog_folder_dir, blogID);
+      const filePath = resolve(join(config.blog_folder_dir, path));
+
+      // check the file path is within the blog folder
+      if (!filePath.startsWith(blogFolder)) {
+        throw new Error("Path is outside of blog folder" + filePath);
+      }
+
+      const stat = await fs.stat(filePath);
+      version = hash(`${stat.mtime}${stat.size}`).slice(0, 8);
+      pathCache.set(key, version);
+    } catch (err) {
+      console.log(key, `File not found: ${value}`, err);
+      pathCache.set(key, "ENOENT");
+      return "ENOENT";
+    }
   }
 
-  try {
-    const filePath = `${config.blog_folder_dir}/${blogID}${value}`;
-    const stat = await fs.stat(filePath);
-    const version = hash(`${stat.mtime}${stat.size}`).slice(0, 8);
-    pathCache.set(cacheKey, version);
-    return version;
-  } catch (err) {
-    console.log(cacheKey, `File not found: ${value}`, err);
-    pathCache.set(cacheKey, "ENOENT");
-    return "ENOENT";
-  }
+  return `${config.cdn.origin}/folder/v-${version}/${path}${query}`;
 }
 
 module.exports = async function replaceFolderLinks(cacheID, blogID, html) {
@@ -77,7 +89,7 @@ module.exports = async function replaceFolderLinks(cacheID, blogID, html) {
           const attr = node.attrs[i];
           if (
             (attr.name === "href" || attr.name === "src") &&
-            attr.value[0] === "/"
+            attr.value.indexOf("://") === -1
           ) {
             hasMatchingAttr = true;
             break;
@@ -95,20 +107,19 @@ module.exports = async function replaceFolderLinks(cacheID, blogID, html) {
       for (const attr of node.attrs) {
         if (
           (attr.name === "href" || attr.name === "src") &&
-          attr.value[0] === "/" &&
+          attr.value.indexOf("://") === -1 &&
           !htmlExtRegex.test(attr.value) &&
           fileExtRegex.test(attr.value)
         ) {
           promises.push(
             (async () => {
-              const version = await getVersion(blogID, cacheID, attr.value);
+              const result = await getVersion(blogID, cacheID, attr.value);
 
-              if (version === "ENOENT") {
+              if (result === "ENOENT") {
                 console.log(`File not found: ${attr.value}`);
                 return;
               }
 
-              const result = `${config.cdn.origin}/folder/v-${version}/${blogID}${attr.value}`;
               console.log(`Replacing ${attr.value} with ${result}`);
               attr.value = result;
               changes++;

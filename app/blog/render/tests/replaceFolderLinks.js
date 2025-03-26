@@ -3,6 +3,10 @@ describe("replaceFolderLinks", function () {
 
   const config = require("config");
   const fs = require("fs-extra");
+  const cdnRegex = (path) =>
+    new RegExp(
+      `${config.cdn.origin}/folder/v-[a-f0-9]{8}/blog_[a-f0-9]+${path}`
+    );
 
   it("should replace src attributes with versioned CDN URLs", async function () {
     await this.write({ path: "/images/test.jpg", content: "fake image data" });
@@ -34,7 +38,9 @@ describe("replaceFolderLinks", function () {
     const result = await res.text();
 
     expect(result).not.toContain(config.cdn.origin);
-    expect(result).toContain('<span class="hljs-string">"/docs/test.pdf"</span>');
+    expect(result).toContain(
+      '<span class="hljs-string">"/docs/test.pdf"</span>'
+    );
   });
 
   it("should replace href attributes with versioned CDN URLs", async function () {
@@ -116,6 +122,70 @@ describe("replaceFolderLinks", function () {
     const result = await res.text();
 
     expect(result).toEqual('<img src="/nonexistent.jpg">');
+  });
+
+  it("skips external hrefs and srcs", async function () {
+    await this.write({ path: "/a.jpg", content: "image" });
+    await this.write({ path: "/b.jpg", content: "image" });
+    await this.template({
+      "entries.html":
+        '<img src="http://example.com/a.jpg"><a href="https://example.com/b.jpg">',
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toEqual(
+      '<img src="http://example.com/a.jpg"><a href="https://example.com/b.jpg">'
+    );
+  });
+
+  it("ignores path traversal attacks", async function () {
+    await this.template({
+      "entries.html": `<img src="../../../../a.jpg"><a href="../../../../etc/passwd">`,
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toEqual('<img src="../../../../a.jpg"><a href="../../../../etc/passwd">');
+  });
+
+  it("ignores empty hrefs and srcs", async function () {
+    await this.template({
+      "entries.html": '<img src=""><a href="">',
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toEqual('<img src=""><a href="">');
+  });
+
+  it("handles relative paths", async function () {
+    await this.write({ path: "/a.jpg", content: "image" });
+    await this.write({ path: "/b.jpg", content: "image" });
+    await this.template({
+      "entries.html": '<img src="./a.jpg"><img src="b.jpg">',
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toMatch(cdnRegex("/a.jpg"));
+    expect(result).toMatch(cdnRegex("/b.jpg"));
+  });
+
+  it("should handle query strings", async function () {
+    await this.write({ path: "/image.jpg", content: "image" });
+    await this.template({
+      "entries.html": '<img src="/image.jpg?cache=false">',
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toMatch(cdnRegex("/image.jpg\\?cache=false"));
   });
 
   it("should use cached versions for repeated requests", async function () {
