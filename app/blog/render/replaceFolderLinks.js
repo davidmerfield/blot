@@ -43,6 +43,10 @@ async function getVersion(blogID, cacheID, value) {
 
   let version = pathCache.get(key);
 
+  if (version === "ENOENT") {
+    return "ENOENT";
+  }
+  
   if (!version) {
     try {
       // remove query string

@@ -113,7 +113,7 @@ describe("replaceFolderLinks", function () {
     );
   });
 
-  it("should handle missing files gracefully", async function () {
+  it("should handle missing files gracefully, even across multiple requests", async function () {
     await this.template({
       "entries.html": '<img src="/nonexistent.jpg">',
     });
@@ -122,6 +122,11 @@ describe("replaceFolderLinks", function () {
     const result = await res.text();
 
     expect(result).toEqual('<img src="/nonexistent.jpg">');
+
+    const res2 = await this.get("/");
+    const result2 = await res2.text();
+
+    expect(result2).toEqual('<img src="/nonexistent.jpg">');
   });
 
   it("skips external hrefs and srcs", async function () {
