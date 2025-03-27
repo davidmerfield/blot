@@ -1,5 +1,6 @@
 var rebuildDependents = require("./rebuildDependents");
 var Ignore = require("./ignore");
+var Metadata = require("models/metadata");
 var Entry = require("models/entry");
 var Preview = require("./preview");
 var isPreview = require("./drafts").isPreview;
@@ -61,6 +62,12 @@ module.exports = function (blog, path, options, callback) {
 
   isPreview(blog.id, path, function (err, is_preview) {
     if (err) return callback(err);
+
+    // Store the case-preserved name against the
+    // path to this file
+    if (options.name) {
+      queue.metadata = Metadata.add.bind(this, blog.id, path, options.name);
+    }
 
     // The file is public. Its name begins
     // with an underscore, or it's inside a folder
