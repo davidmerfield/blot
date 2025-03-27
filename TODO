@@ -4,6 +4,8 @@ Resolve paths properly like a browser would in replaceFolderLinks
 - Fix bug which is preventing the helped from working on Erin's site
 - Handle lowercase files properly (dropbox client!!!!) and resolve issue with discombobulated
 
+Clean out all but the neccessary information from deleted entries to save redis space
+
 Can we switch the Dropbox client over to using the correct filename case and get rid of a lot of bullshit around the lowercasing?
 
 We should use the helper/transformer to speed up screenshot re-generation
