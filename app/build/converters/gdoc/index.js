@@ -15,10 +15,9 @@ function is (path) {
   return [".gdoc"].indexOf(extname(path).toLowerCase()) > -1;
 }
 
-async function read (blog, path, options, callback) {
+async function read (blog, path, callback) {
   ensure(blog, "object")
     .and(path, "string")
-    .and(options, "object")
     .and(callback, "function");
 
   try {

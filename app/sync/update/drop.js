@@ -5,7 +5,7 @@ var Preview = require("./preview");
 var isDraft = require("./drafts").isDraft;
 var rebuildDependents = require("./rebuildDependents");
 
-module.exports = function (blogID, path, options, callback) {
+module.exports = function (blogID, path, callback) {
   // We don't know if this file used to be a draft based
   // on its metadata. We should probably look this up?
   isDraft(blogID, path, function (err, is_draft) {

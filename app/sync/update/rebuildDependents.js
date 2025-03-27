@@ -39,14 +39,7 @@ module.exports = function (blogID, path, callback) {
               return next();
             }
 
-            let options = {};
-
-            if (entry.pathDisplay) {
-              options.pathDisplay = entry.pathDisplay;
-              options.name = basename(entry.pathDisplay);
-            }
-
-            build(blog, dependent_path, options, function (
+            build(blog, dependent_path, function (
               err,
               updated_dependent
             ) {

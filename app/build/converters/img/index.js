@@ -15,10 +15,9 @@ function is(path) {
   return SUPPORTED_EXTENSIONS.includes(extname(path).toLowerCase());
 }
 
-function read(blog, path, options, callback) {
+function read(blog, path, callback) {
   ensure(blog, "object")
     .and(path, "string")
-    .and(options, "object")
     .and(callback, "function");
 
   const localPath = LocalPath(blog.id, path);
@@ -28,8 +27,8 @@ function read(blog, path, options, callback) {
   fs.stat(localPath, async (err, stat) => {
     if (err) return callback(err);
 
-    const name = options.name || basename(path);
-    const pathForTitle = options.pathDisplay || join(dirname(path), name);
+    const name = basename(path);
+    const pathForTitle = join(dirname(path), name);
     const title = titlify(pathForTitle);
     const isRetina = path.toLowerCase().includes("@2x") ? 'data-2x="true"' : "";
 
