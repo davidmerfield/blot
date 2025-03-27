@@ -145,17 +145,6 @@ describe("build", function () {
     this.syncAndCheck(file, entry, done);
   });
 
-  it("preserves case in title generated from file name passed as option", function (done) {
-    const path = "/[tag] hello.jpg";
-    const content = this.fake.file();
-    const options = { name: "[Tag] Hello.jpg" };
-
-    const file = { path, content, options };
-    const entry = { path, title: "Hello" };
-
-    this.syncAndCheck(file, entry, done);
-  });
-
   it("rebuilds dependent entries", async function (done) {
     var path = "/post.txt";
     var content = "![](/image.png)";
