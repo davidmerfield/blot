@@ -21,9 +21,6 @@ function remove(blogID, path, callback) {
 
     pathOnDropbox = join(account.folder || "/", path);
 
-    // We must lowercase this since localPath no longer
-    // does and files for the Dropbox client are stored
-    // in the folder with a lowercase path.
     pathOnBlot = localPath(blogID, path);
 
     client

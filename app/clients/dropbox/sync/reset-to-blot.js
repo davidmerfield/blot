@@ -1,19 +1,14 @@
 const fs = require("fs-extra");
 const { promisify } = require("util");
-const { join, basename } = require("path");
+const { join } = require("path");
 const clfdate = require("helper/clfdate");
 const localPath = require("helper/localPath");
-const lowerCaseContents = require("sync/lowerCaseContents");
 const hashFile = promisify((path, cb) => {
   require("helper/hashFile")(path, (err, result) => {
     cb(null, result);
   });
 });
 const download = promisify(require("../util/download"));
-
-const getMetadata = promisify(require("models/metadata").get);
-const addMetadata = promisify(require("models/metadata").add);
-const dropMetadata = promisify(require("models/metadata").drop);
 
 const set = promisify(require("../database").set);
 const createClient = promisify((blogID, cb) =>
@@ -46,15 +41,14 @@ async function resetToBlot(blogID, publish) {
     const { result } = await client.filesGetMetadata({
       path: account.folder_id,
     });
-    const { path_lower, path_display } = result;
-    if (path_lower) {
-      dropboxRoot = path_lower;
+    const { path_display } = result;
+    if (path_display) {
+      dropboxRoot = path_display;
       await set(blogID, { folder: path_display });
     }
   }
 
   publish("Checking the case of files within your folder");
-  await lowerCaseContents(blogID);
 
   // It's import that these args match those used in delta.js
   // A way to quickly get a cursor for the folder's state.
@@ -95,44 +89,31 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
     localReaddir(blogID, localRoot, dir),
   ]);
 
-  for (const { name, path_lower } of localContents) {
+  for (const { name, path_display } of localContents) {
     const remoteCounterpart = remoteContents.find(
       (remoteItem) => remoteItem.name === name
     );
 
     if (!remoteCounterpart) {
-      publish("Removing", path_lower);
+      publish("Removing", path_display);
       try {
-        await dropMetadata(blogID, path_lower);
-        await fs.remove(join(localRoot, path_lower));
+        await fs.remove(join(localRoot, path_display));
       } catch (e) {
-        publish("Failed to remove", path_lower, e.message);
+        publish("Failed to remove", path_display, e.message);
       }
     }
   }
 
   for (const remoteItem of remoteContents) {
-    // Name can be casey, path_lower is not
     const localCounterpart = localContents.find(
       (localItem) => localItem.name === remoteItem.name
     );
 
-    const { path_lower, name } = remoteItem;
-    const pathOnDropbox = path_lower;
+    const { path_display, name } = remoteItem;
+    const pathOnDropbox = path_display;
     const pathOnBlot =
-      dropboxRoot === "/" ? path_lower : path_lower.slice(dropboxRoot.length);
+      dropboxRoot === "/" ? path_display : path_display.slice(dropboxRoot.length);
     const pathOnDisk = join(localRoot, pathOnBlot);
-
-    // We preserve the name of the file with case
-    // in the database here or we remove it
-    // to prevent vestigal names of the file in DB
-    if (name !== basename(path_lower)) {
-      publish("Storing metadata", name, "for", pathOnBlot);
-      await addMetadata(blogID, pathOnBlot, name);
-    } else {
-      publish("Removing metadata for", pathOnBlot);
-      await dropMetadata(blogID, pathOnBlot);
-    }
 
     if (remoteItem.is_directory) {
       if (localCounterpart && !localCounterpart.is_directory) {
@@ -171,22 +152,19 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
 };
 
 const localReaddir = async (blogID, localRoot, dir) => {
-  // The Dropbox client stores all items in lowercase
   const contents = await fs.readdir(join(localRoot, dir));
 
   return Promise.all(
     contents.map(async (name) => {
       const pathOnDisk = join(localRoot, dir, name);
-      const pathInDB = join(dir, name);
-      const [content_hash, stat, displayName] = await Promise.all([
+      const [content_hash, stat] = await Promise.all([
         hashFile(pathOnDisk),
         fs.stat(pathOnDisk),
-        getMetadata(blogID, pathInDB),
       ]);
 
       return {
-        name: displayName || name,
-        path_lower: join(dir, name),
+        name,
+        path_display: join(dir, name),
         is_directory: stat.isDirectory(),
         content_hash,
       };
