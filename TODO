@@ -13,6 +13,10 @@ We should use the helper/transformer to speed up screenshot re-generation
 Watch the logs for requests to files in blog folder which aren't passed to CDN
 - add some logging to blog/assets.js
 
+Make iCloud site routes blocking so the mac server waits for the main server to finish building before sending the next sync update
+
+Think about how to purge the old versions of files cached by bunny's permacache
+
 Fix bug which prevents the CDN url replacer working for drafts
 - Refactor so the draft route relies more on the middleware function
 - At the moment, drafts bypass a lot of the code – many template features won't work
@@ -661,15 +665,6 @@ Fix bug with [header position on the blog template](https://blot.im/questions/22
   - rename from photo
 - Make 'close' button on entry permalink page of reference template work like the photo template and tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsmNSSSRKHnlgCBllnqJCcPhxD)
 - Add [scrubbing pagination to images template](https://jsfiddle.net/tdnc28vm/1/)
-
-Re-attempt iCloud support
-- Be clear it's UNOFFICIAL
-- Fetch list of people to tell from old GH issue
-- Tell [Stew](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJSFktWWJrNvRtnSjQRbwzrJK)
-- Tell [VH](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJcdSvvFcRcjNXqvxsZDjkMQh)
-- Tell [Jacob](https://mail.google.com/mail/u/0/#inbox/FMfcgzQVwnfNnpqrWTHhgdRXwhgrTbzn)
-- Tell [Steve](https://mail.google.com/mail/u/1/#inbox/FMfcgzQXJkSHjtztvhNWNPXGdVkDhKDq)
-- Tell [Reg](https://mail.google.com/mail/u/0/#inbox/FMfcgzQXKhPKRfSsfGpXCdcxtFBhdKDt)
 
 Add pause subscription
 - Enable hibernation of blogs 
@@ -1430,38 +1425,6 @@ Switch to streaming JSON parser. There are npm modules that offer asynchronous J
 
 Add notification emails for monit events
 - Include secure one-time link to reboot the AWS instance?
-
-- If Apple releases an API, tell people who are interested in using the iCloud client
-  - [ ] [David](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwWCBwRJKJFcZXtkhBkcCcJGV)
-  - [ ] [Andrew](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJfNnhCDNsffJSjnQHnxdSfh)
-  - [ ] [Cristina](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmtFHHXQKNQKppXpHGpkvLjQSD)
-  - [ ] [John](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlkPcphtxgswTQccZLfQGwfWhN)
-  - [ ] [David](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJfNfSZgQqjNWLWVHZjwXQrS)
-  - [ ] [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJfNTrdmqJwwzCPLrhcQRNWW)
-  - [ ] [Dave](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJfNfLmTVjNGcXZVRWdlrLzp)
-  - [ ] [Shawn](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJfNfRRjzkzpvQjPTCQtqpDx)
-  - [ ] [Andrew](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJgWDpnsGBCXsCwkxRZnXMph)
-  - [ ] [Chris](https://mail.google.com/mail/u/0/#inbox/FMfcgxwC1hJjqgsvKxxVgFdbXvxNTHTsz)
-  - [ ] [Leo](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQSRJwdnCqhZNBPtRxpWlbWXv)
-  - [ ] [Kerim](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChSJkptkQxlqTjsDCtdTgMWXv)
-  - [ ] [Nat](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQSTbjBLgXjSTDVCTblLhvbKr)
-  - [ ] [Wilt](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChcgKzMGXdrHMVhrjsjJnnBzk)
-  - [ ] [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqfMPDQnSTBSsWXdtfkVdJzdD)
-  - [ ] [Arlo](https://mail.google.com/mail/u/0/#inbox/FMfcgxwJWrZRLJddkZSdrMVxrNkTZLKn)
-  - [ ] [Anders](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKkRFxsDShhsHGNcdRqwHFMmJM)
-  - [ ] [Victor](https://mail.google.com/mail/u/0/#inbox/FMfcgzGkbDVrLFlwcgwDddsVPJBVKSvW)
-  - [ ] [Ken](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpGdmpXpTBPzTgnrSHLMjcMGKq)
-  - [ ] [Sebastien](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpGwtWnjjFvGfHLnHfRzgrcjGW)
-  - [ ] [Austin](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsltKdZxhmCMXvhJjpWxkVDpTq)
-  - [ ] [Kirk](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsmDsZvbQwRgRLgJVDXHDJshxK)
-  - [ ] [Ray](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsmNMjKsNbfdTbXCPWGkzpxkTk)
-  - [ ] [Jan](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsmXBHFvkklRwGzBwfVwfvxSGb)
-  - [ ] [Pete](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwzjcGlzctBZfjZCnJpbZrqrQ)
-  - [ ] [Noa](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtxSsdCkFmHPJSZCnvgSpBFqKm)
-  - [ ] [Michael](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwHLjnsCXDFckPMjJMrfDrptdD)
-  - [ ] [Eric](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwHLjmmqsDpLvWDTRJMDzLMVrN)
-  - [ ] [Lex](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwHLjmmpknrnmxgWWBktzlgcxF)
-  - [ ] [Aron](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwHVKqlCcMrbtjnZDKNqBdhVbd)
 
 Investigate [support for xattr](https://github.com/LinusU/fs-xattr) to read image metadata on Blot? Or source for dragged images? 
 
