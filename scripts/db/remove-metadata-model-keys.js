@@ -2,7 +2,6 @@
 // return "blog:" + blogID + ":folder:everything";
 // return "blog:" + blogID + ":folder:" + pathNormalizer(path);
 
-const { rest } = require("lodash");
 const keys = require("../util/redisKeys");
 const client = require("models/client");
 const { promisify } = require("util");
