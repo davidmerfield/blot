@@ -15,7 +15,7 @@ function Create(client, callback) {
   client
     .filesCreateFolder({ path: path })
     .then(function ({ result }) {
-      callback(null, result.path_lower, result.id);
+      callback(null, result.path_display, result.id);
     })
     .catch(function (err) {
       console.log(err);

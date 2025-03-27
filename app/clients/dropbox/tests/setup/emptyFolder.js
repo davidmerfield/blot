@@ -20,7 +20,7 @@ function remove(done) {
   function removeAllFiles(res) {
     return client.filesDeleteBatch({
       entries: res.entries.map(function (entry) {
-        return { path: entry.path_lower };
+        return { path: entry.path_display };
       }),
     });
   }

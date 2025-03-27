@@ -10,9 +10,7 @@ const hashFile = promisify((path, cb) => {
   });
 });
 const upload = promisify(require("../util/upload"));
-const getMetadata = promisify(require("models/metadata").get);
 const set = promisify(require("../database").set);
-const lowerCaseContents = require("sync/lowerCaseContents");
 const createClient = promisify((blogID, cb) =>
   require("../util/createClient")(blogID, (err, ...results) => cb(err, results))
 );
@@ -27,9 +25,6 @@ async function resetFromBlot(blogID, publish) {
   // // this could become verify.fromBlot
   // await uploadAllFiles(account, folder, signal);
 
-  // prepare folder for first sync, making all files lowercase
-  await lowerCaseContents(blogID);
-
   // if (signal.aborted) return;
   // const account = await get(blogID);
   const [client, account] = await createClient(blogID);
@@ -42,9 +37,9 @@ async function resetFromBlot(blogID, publish) {
     const { result } = await client.filesGetMetadata({
       path: account.folder_id,
     });
-    const { path_lower, path_display } = result;
-    if (path_lower) {
-      dropboxRoot = path_lower;
+    const {  path_display } = result;
+    if (path_display) {
+      dropboxRoot = path_display;
       await set(blogID, { folder: path_display });
     }
   }
@@ -120,7 +115,7 @@ async function resetFromBlot(blogID, publish) {
           try {
             await upload(
               client,
-              join(localRoot, localItem.path_lower),
+              join(localRoot, localItem.path_display),
               join(dropboxRoot, path)
             );
           } catch (e) {
@@ -131,7 +126,7 @@ async function resetFromBlot(blogID, publish) {
           try {
             await upload(
               client,
-              join(localRoot, localItem.path_lower),
+              join(localRoot, localItem.path_display),
               join(dropboxRoot, path)
             );
           } catch (e) {
@@ -196,22 +191,19 @@ async function resetFromBlot(blogID, publish) {
 // }
 
 const localReaddir = async (blogID, localRoot, dir) => {
-  const lowerCaseDir = dir.toLowerCase();
-  const contents = await fs.readdir(join(localRoot, lowerCaseDir));
+  const contents = await fs.readdir(join(localRoot, dir));
 
   return Promise.all(
     contents.map(async (name) => {
-      const pathOnDisk = join(localRoot, lowerCaseDir, name);
-      const pathInDB = join(lowerCaseDir, name);
-      const [content_hash, stat, displayName] = await Promise.all([
+      const pathOnDisk = join(localRoot, dir, name);
+      const [content_hash, stat] = await Promise.all([
         hashFile(pathOnDisk),
         fs.stat(pathOnDisk),
-        getMetadata(blogID, pathInDB),
       ]);
 
       return {
-        name: displayName || name,
-        path_lower: join(lowerCaseDir, name),
+        name,
+        path_display: join(dir, name),
         is_directory: stat.isDirectory(),
         content_hash,
       };
