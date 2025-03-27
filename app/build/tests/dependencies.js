@@ -10,7 +10,7 @@ describe("dependencies", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
 
       expect(entry.dependencies).toEqual(["/_foo.jpg"]);
@@ -24,7 +24,7 @@ describe("dependencies", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
 
       expect(entry.dependencies).toEqual(["/_bar.jpg"]);
@@ -38,7 +38,7 @@ describe("dependencies", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
 
       expect(entry.dependencies).toEqual([]);

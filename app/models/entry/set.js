@@ -59,7 +59,6 @@ module.exports = function set (blogID, path, updates, callback) {
 
     // ToDO remove these and ensure all existing entries have been rebuilt
     if (entry.dependencies === undefined) entry.dependencies = [];
-    if (entry.pathDisplay === undefined) entry.pathDisplay = entry.path;
     if (entry.backlinks === undefined) entry.backlinks = [];
     if (entry.internalLinks === undefined) entry.internalLinks = [];
 

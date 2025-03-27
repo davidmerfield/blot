@@ -14,7 +14,7 @@ describe("odt converter", function () {
 
       fs.copySync(__dirname + path, test.blogDirectory + path);
 
-      odt.read(test.blog, path, {}, function (err, result) {
+      odt.read(test.blog, path, function (err, result) {
         if (err) return done.fail(err);
         expect(result).toEqual(expected);
         if (result !== expected) {

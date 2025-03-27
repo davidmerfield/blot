@@ -16,7 +16,7 @@ describe("docx converter", function () {
 
       fs.copySync(__dirname + path, test.blogDirectory + path);
 
-      docx.read(test.blog, path, {}, function (err, result) {
+      docx.read(test.blog, path, function (err, result) {
         if (err) return done.fail(err);
         expect(result).toEqual(expected);
         done();

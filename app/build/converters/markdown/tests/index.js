@@ -14,7 +14,7 @@ describe("markdown converter", function () {
         fs.copySync(dir, this.blogDirectory);
 
         const path = "/" + file;
-        markdown.read(this.blog, path, {}, function (err, html) {
+        markdown.read(this.blog, path, function (err, html) {
           if (err) return done.fail(err);
 
           let expected;

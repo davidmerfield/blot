@@ -4,7 +4,7 @@ var config = require("config");
 var Pandoc = config.pandoc.bin;
 var debug = require("debug")("blot:converters:rtf");
 
-module.exports = function (blog, text, options, callback) {
+module.exports = function (blog, text, callback) {
   var args = [
     // Limit the heap size for the pandoc process
     // to prevent pandoc consuming all the system's

@@ -13,7 +13,7 @@ describe("rtf converter", function () {
         fs.copySync(dir, this.blogDirectory);
 
         const path = "/" + file;
-        rtf.read(this.blog, path, {}, function (err, html) {
+        rtf.read(this.blog, path, function (err, html) {
           if (err) return done.fail(err);
 
           let expected;

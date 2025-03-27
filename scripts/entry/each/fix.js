@@ -5,11 +5,6 @@ module.exports = function (blog, entry, callback) {
 
   ensure(blog, "object").and(entry, "object").and(callback, "function");
 
-  if (!entry.pathDisplay) {
-    entry.pathDisplay = entry.path;
-    changes.push("pathDisplay");
-  }
-
   if (!entry.dependencies) {
     entry.dependencies = [];
     changes.push("dependencies");
