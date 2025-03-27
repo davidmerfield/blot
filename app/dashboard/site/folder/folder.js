@@ -3,8 +3,7 @@ const path = require("path");
 const alphanum = require("helper/alphanum");
 const localPath = require("helper/localPath");
 const Stat = require("./stat");
-const Metadata = require("models/metadata");
-const client = require('models/client');
+const client = require("models/client");
 const pathNormalize = require("helper/pathNormalizer");
 
 async function getContents(blog, dir) {
@@ -15,9 +14,12 @@ async function getContents(blog, dir) {
     return !item.startsWith(".") && !item.endsWith(".preview.html");
   });
 
-  const [entries, stats, casePreservedNames] = await Promise.all([
-    new Promise((resolve) => { // Remove 'reject' parameter since it is not being used
-      const keys = filtered.map((item) => `blog:${blog.id}:entry:${pathNormalize(path.join(dir, item))}`);
+  const [entries, stats] = await Promise.all([
+    new Promise((resolve) => {
+      // Remove 'reject' parameter since it is not being used
+      const keys = filtered.map(
+        (item) => `blog:${blog.id}:entry:${pathNormalize(path.join(dir, item))}`
+      );
       const batch = client.batch();
       keys.forEach((key) => {
         batch.exists(key);
@@ -30,36 +32,23 @@ async function getContents(blog, dir) {
     Promise.all(
       filtered.map(async (item) => {
         const fullPath = path.join(local, item);
-        const stat = await  Stat(fullPath, blog.timeZone);
+        const stat = await Stat(fullPath, blog.timeZone);
 
         stat.path = path.join(dir, item);
         stat.fullPath = fullPath;
-        stat.originalName = item;
+        stat.name = item;
         return stat;
       })
     ),
-    Promise.all(
-      filtered.map((item) => {
-        return new Promise((resolve) => { // Remove 'reject' parameter since it is not being used
-          Metadata.get(blog.id, path.join(dir, item), (err, casePreservedName) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve(casePreservedName);
-            }
-          });
-        });
-      }
-         )   )
   ]);
 
-  const result = alphanum(stats.map((stat, index) => {
-
-    stat.entry = entries.includes(stat.originalName);
-    stat.name = casePreservedNames[index] || stat.originalName;
-
-    return stat;
-  }), { property: "name" });
+  const result = alphanum(
+    stats.map((stat, index) => {
+      stat.entry = entries.includes(stat.name);
+      return stat;
+    }),
+    { property: "name" }
+  );
 
   return result;
 }
