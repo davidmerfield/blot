@@ -1,10 +1,6 @@
 var resaveEntries = require("models/entries").resave;
-var build = require("build");
 var Blog = require("models/blog");
-var Entries = require("models/entries");
-var Entry = require("models/entry");
 var _ = require("lodash");
-var basename = require("path").basename;
 var rebuild = require("sync/rebuild");
 
 var dictionary = {

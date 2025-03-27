@@ -48,7 +48,7 @@ module.exports = function () {
     this.set = async (path, contents) => {
       return new Promise((resolve, reject) => {
         fs.outputFileSync(this.blogDirectory + path, contents);
-        build(this.blog, path, {}, (err, entry) => {
+        build(this.blog, path, (err, entry) => {
           if (err) return reject(err);
           set(this.blog.id, path, entry, err => {
             if (err) return reject(err);

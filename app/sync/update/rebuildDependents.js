@@ -3,7 +3,6 @@ var Entry = require("models/entry");
 var client = require("models/client");
 var Blog = require("models/blog");
 var build = require("build");
-var basename = require("path").basename;
 var dependentsKey = Entry.key.dependents;
 const clfdate = require("helper/clfdate");
 
