@@ -1,7 +1,6 @@
 const debug = require("debug")("blot:dashboard:folder:kind");
 const basename = require("path").basename;
 const extname = require("path").extname;
-const Metadata = require("models/metadata");
 const Entry = require("models/entry");
 const IgnoredFiles = require("models/ignoredFiles");
 const moment = require("moment");
@@ -15,12 +14,6 @@ module.exports = async function (blog, path) {
 
     Promise.all([
       new Promise((resolve, reject) => {
-        Metadata.get(blogID, path, function (err, casePresevedName) {
-          if (err) return reject(err);
-          resolve(casePresevedName);
-        });
-      }),
-      new Promise((resolve, reject) => {
         IgnoredFiles.getStatus(blogID, path, function (err, ignored) {
           if (err) return reject(err);
           resolve(ignored);
@@ -32,7 +25,7 @@ module.exports = async function (blog, path) {
         });
       }),
     ])
-      .then(([casePresevedName, ignoredReason, entry]) => {
+      .then(([ignoredReason, entry]) => {
         
         let ignored = {};
 
@@ -61,7 +54,7 @@ module.exports = async function (blog, path) {
         file.kind = kind(path);
         file.path = path;
         file.url = encodeURIComponent(path.slice(1));
-        file.name = casePresevedName || basename(path);
+        file.name = basename(path);
 
         // a dictionary we use to display conditionally in the UI
         file.extension = {};
