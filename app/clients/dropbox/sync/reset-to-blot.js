@@ -172,13 +172,12 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
 
 const localReaddir = async (blogID, localRoot, dir) => {
   // The Dropbox client stores all items in lowercase
-  const lowerCaseDir = dir.toLowerCase();
-  const contents = await fs.readdir(join(localRoot, lowerCaseDir));
+  const contents = await fs.readdir(join(localRoot, dir));
 
   return Promise.all(
     contents.map(async (name) => {
-      const pathOnDisk = join(localRoot, lowerCaseDir, name);
-      const pathInDB = join(lowerCaseDir, name);
+      const pathOnDisk = join(localRoot, dir, name);
+      const pathInDB = join(dir, name);
       const [content_hash, stat, displayName] = await Promise.all([
         hashFile(pathOnDisk),
         fs.stat(pathOnDisk),

@@ -196,13 +196,12 @@ async function resetFromBlot(blogID, publish) {
 // }
 
 const localReaddir = async (blogID, localRoot, dir) => {
-  const lowerCaseDir = dir.toLowerCase();
-  const contents = await fs.readdir(join(localRoot, lowerCaseDir));
+  const contents = await fs.readdir(join(localRoot, dir));
 
   return Promise.all(
     contents.map(async (name) => {
-      const pathOnDisk = join(localRoot, lowerCaseDir, name);
-      const pathInDB = join(lowerCaseDir, name);
+      const pathOnDisk = join(localRoot, dir, name);
+      const pathInDB = join(dir, name);
       const [content_hash, stat, displayName] = await Promise.all([
         hashFile(pathOnDisk),
         fs.stat(pathOnDisk),
@@ -211,7 +210,7 @@ const localReaddir = async (blogID, localRoot, dir) => {
 
       return {
         name: displayName || name,
-        path_lower: join(lowerCaseDir, name),
+        path_lower: join(dir, name),
         is_directory: stat.isDirectory(),
         content_hash,
       };

@@ -155,7 +155,7 @@ function addFile() {
           if (
             res.entries.some(function (entry) {
               return (
-                entry.relative_path === path.toLowerCase() &&
+                entry.relative_path === path &&
                 entry[".tag"] === "file"
               );
             })
@@ -186,7 +186,7 @@ function removeFile() {
             if (
               res.entries.some(function (entry) {
                 return (
-                  entry.relative_path === path.toLowerCase() &&
+                  entry.relative_path === path &&
                   entry[".tag"] === "deleted"
                 );
               })

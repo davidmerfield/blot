@@ -32,7 +32,7 @@ describe("dropbox client", function () {
                     if (err) return done.fail(err);
 
                     expect(
-                      fs.existsSync(blogDirectory + path.toLowerCase())
+                      fs.existsSync(blogDirectory + path)
                     ).toEqual(false);
                     done();
                   });
@@ -70,7 +70,7 @@ describe("dropbox client", function () {
 
             try {
               otherContents = fs.readFileSync(
-                blogDirectory + path.toLowerCase(),
+                blogDirectory + path,
                 "utf-8"
               );
             } catch (e) {

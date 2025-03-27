@@ -6,8 +6,6 @@ var localPath = require("helper/localPath");
 var retry = require("./util/retry");
 const { promisify } = require("util");
 const upload = promisify(require("clients/dropbox/util/upload"));
-const addMetadata = promisify(require("models/metadata").add);
-const { basename } = require("path");
 
 // Write should only ever be called inside the function returned
 // from Sync for a given blog, since it modifies the blog folder.
@@ -27,12 +25,7 @@ function write(blogID, path, contents, callback) {
     // We must lowercase this since localPath no longer
     // does and files for the Dropbox client are stored
     // in the folder with a lowercase path.
-    pathOnBlot = localPath(blogID, path.toLowerCase());
-
-    // Store the casey name of this path if needed
-    // The Dropbox client will persist this file at lowercase
-    if (basename(path).toLowerCase() !== basename(path))
-      await addMetadata(blogID, path, basename(path));
+    pathOnBlot = localPath(blogID, path);
 
     try {
       await fs.outputFile(pathOnBlot, contents);
