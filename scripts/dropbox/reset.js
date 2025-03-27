@@ -1,5 +1,6 @@
 // docker exec -it blot-node-app-1 node scripts/dropbox/reset.js
-const lowerCaseContents = require("sync/lowerCaseContents");
+
+const reset = require("clients/dropbox/sync/reset-to-blot");
 const get = require("../get/blog");
 const each = require("../each/blog");
 const getConfirmation = require("../util/getConfirmation");
@@ -8,11 +9,9 @@ if (process.argv[2]) {
   get(process.argv[2], async function (err, user, blog) {
     if (err) throw err;
 
-    console.log("Restoring case of folder contents");
-    // Turns lowercase files and folders in the blogs directory
-    // into their real, display case for transition to other clients
-    await lowerCaseContents(blog.id, { restore: true });
-    console.log("Restored case of folder contents");
+    console.log("Resetting folder from Blot to Dropbox");
+    await reset(blog.id);
+    console.log("Reset folder from Blot to Dropbox");
 
     process.exit();
   });
@@ -29,13 +28,10 @@ if (process.argv[2]) {
     async (err) => {
       if (err) throw err;
 
-      console.log(
-        "Blogs to restore the case of items in the folders: ",
-        blogIDsToReset.length
-      );
+      console.log("Blogs to resync: ", blogIDsToReset.length);
 
       const confirmed = await getConfirmation(
-        "Are you sure you want to restore the case of items in the folders of all these blogs?"
+        "Are you sure you want to resync all these blogs from Dropbox?"
       );
 
       if (!confirmed) {
@@ -45,10 +41,10 @@ if (process.argv[2]) {
 
       for (let i = 0; i < blogIDsToReset.length; i++) {
         const blogID = blogIDsToReset[i];
+        console.log("Resetting blog", blogID);
         try {
-          console.log("Restoring case of folder contents");
-          await lowerCaseContents(blogID, { restore: true });
-          console.log("Restored case of folder contents");
+          await reset(blogID);
+          console.log("Reset blog", blogID);
         } catch (e) {
           console.log("Error resetting blog", blogID, e);
         }
