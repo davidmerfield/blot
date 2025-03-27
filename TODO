@@ -6,6 +6,8 @@ Resolve paths properly like a browser would in replaceFolderLinks
 
 Can we switch the Dropbox client over to using the correct filename case and get rid of a lot of bullshit around the lowercasing?
 
+We should use the helper/transformer to speed up screenshot re-generation
+
 Watch the logs for requests to files in blog folder which aren't passed to CDN
 - add some logging to blog/assets.js
 
