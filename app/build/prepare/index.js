@@ -125,7 +125,7 @@ function Prepare (entry, options = {}) {
     }
   }
 
-  tags = Tags(entry.pathDisplay || entry.path, tags);
+  tags = Tags(entry.path, tags);
   tags = _(tags)
     .map(function (tag) {
       return tag.trim();

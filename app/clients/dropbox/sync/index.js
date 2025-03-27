@@ -117,7 +117,6 @@ module.exports = function main(blog, callback) {
                 folder.log(item.relative_path, "Updating path");
                 folder.update(
                   item.relative_path,
-                  { name: item.name, pathDisplay: item.path_display },
                   function (err) {
                     // We don't want an error here to block other
                     // changes from being applied.

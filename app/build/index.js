@@ -54,7 +54,6 @@ module.exports = function build(blog, path, callback) {
             html: html,
             name: basename(path),
             path: path,
-            pathDisplay: path,
             id: path,
             thumbnail: thumbnail,
             draft: is_draft,
