@@ -104,8 +104,6 @@ Move data dir to s3
   - Git S3: https://news.ycombinator.com/item?id=41887004
 
 Fix bad links (e.g. incorrect case) in files at build-time rather than run-time so we can avoid the expensive disk lookups in blog/assets.js
-- how does this work with the dropbox client which stores files on disk lowercase?
-- can we rewrite the dropbox client to not do this?
 
 Add local multi container setup to mirror production
 
@@ -206,9 +204,6 @@ Fix file sorting on folder on dashboard (clicking 'Date modified' e.g. does noth
 Improvements to local folder experience
 - Interpolate fonts based on an ID (a la web template editor)
 - Interpolate syntax highlighting based on an ID
-
-Disconnecting a large folder from Dropbox times out
-- then possible sync lock bug
 
 Fix bugs with template engine:
 - Prevent double submission on template editor at insertion and front-end levels
