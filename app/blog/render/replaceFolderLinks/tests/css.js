@@ -421,4 +421,33 @@ describe("replaceCssUrls", function () {
       globalStaticFileRegex("/plugins/katex/files/KaTeX_AMS-Regular.woff2")
     );
   });
+
+  it("should use cached versions for repeated requests to global static files", async function () {
+    await this.template({
+      "style.css": `@font-face{font-family:KaTeX_AMS;font-style:normal;font-weight:400;src:url(/plugins/katex/files/KaTeX_AMS-Regular.woff2) format("woff2")}`,
+    });
+
+    const origStat = fs.stat;
+
+    fs.stat = jasmine.createSpy("stat").and.callFake(origStat);
+
+    // First request
+    const result1 = await this.text("/style.css");
+
+    expect(fs.stat).toHaveBeenCalledWith(
+      config.blot_directory +
+        "/app/blog/static/plugins/katex/files/KaTeX_AMS-Regular.woff2"
+    );
+    expect(fs.stat.calls.count()).toBe(1);
+
+    fs.stat.calls.reset();
+
+    // Second request
+    const result2 = await this.text("/style.css");
+
+    expect(result1).toEqual(result2);
+    expect(fs.stat).not.toHaveBeenCalled();
+
+    fs.stat = origStat;
+  });
 });
