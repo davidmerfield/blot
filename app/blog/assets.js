@@ -7,8 +7,16 @@ const LARGEST_POSSIBLE_MAXAGE = 86400000;
 const { promisify } = require("util");
 const caseSensitivePath = promisify(require("helper/caseSensitivePath"));
 const BANNED_ROUTES = ["/.git"];
+const fs = require("fs-extra");
 
 module.exports = async function (req, res, next) {
+  console.log("Serving asset", req.path);
+
+  // Catch and return 404 for directory-traversal attacks
+  if (req.path.indexOf("..") > -1) {
+    return res.status(404).send("Not Found");
+  }
+
   // Skip serving files for banned routes
   if (BANNED_ROUTES.find((route) => req.path.toLowerCase().startsWith(route))) {
     return next();
@@ -20,10 +28,13 @@ module.exports = async function (req, res, next) {
       decodeURIComponent(req.path)
     );
 
-    if (pathWithCorrectCase) {
+    // check the path is a file not a directory
+    const stat = await fs.stat(pathWithCorrectCase);
 
+    if (pathWithCorrectCase && stat.isFile()) {
       var options = {
         maxAge: 0,
+        dotfiles: "allow",
         headers: {
           "Content-Type": getContentType(pathWithCorrectCase),
         },
@@ -37,9 +48,11 @@ module.exports = async function (req, res, next) {
         options.maxAge = LARGEST_POSSIBLE_MAXAGE;
       }
 
+      console.log("Serving file", pathWithCorrectCase, options);
       return res.sendFile(pathWithCorrectCase, options, next);
     }
   } catch (e) {
+    console.log("Error serving file", e);
   }
 
   // We check to see if the requests path
@@ -142,5 +155,12 @@ function getContentType(path) {
   var default_mime =
     path.indexOf(".") > -1 ? "application/octet-stream" : "text/html";
 
-  return mime.contentType(mime.lookup(path) || default_mime);
+  var result = mime.contentType(mime.lookup(path) || default_mime);
+
+  // remap application/mp4 -> video/mp4
+  if (result === "application/mp4") {
+    result = "video/mp4";
+  }
+
+  return result;
 }

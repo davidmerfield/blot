@@ -45,7 +45,6 @@ module.exports = function (router) {
   // Add this beforeEach hook to define the fetch function
   beforeEach(function() {
     this.fetch = (input, options = {}) => {
-      console.log("Special Fetching", input, options);
       const url = new URL(input, this.origin);
 
       if (url.hostname !== "localhost") {
@@ -56,19 +55,15 @@ module.exports = function (router) {
 
       // Now this.Cookie will be available from the current context
       if (this.Cookie) {
-        console.log("Cached cookie found, using", this.Cookie);
         options.headers = options.headers || {};
         options.headers.Cookie = this.Cookie;
-      } else {
-        console.log("No cookie found");
-      }
-      
+      } 
+
       url.protocol = "http:";
       url.port = port;
 
       const modifiedURL = url.toString();
 
-      console.log('calling fetch with', modifiedURL, options);
       return fetch(modifiedURL, options);
     };
 
