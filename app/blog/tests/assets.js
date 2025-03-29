@@ -89,12 +89,21 @@ describe("asset middleware", function () {
   });
 
   it("sends a file in the global static folder", async function () {
-    const response = await this.text("/robots_deny.txt");
+    const response = await this.text("/layout.css");
     const expected = await fs.readFile(
-      __dirname + "/../static/robots_deny.txt",
+      __dirname + "/../static/layout.css",
       "utf-8"
     );
     expect(response).toEqual(expected);
+
+    const response1 = await this.text("/html2canvas.min.js");
+    const expected1 = await fs.readFile(
+      __dirname + "/../static/html2canvas.min.js",
+      "utf-8"
+    );
+
+    expect(response1).toEqual(expected1);
+
   });
 
   // This test ensures that the middleware will pass
