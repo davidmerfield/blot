@@ -22,7 +22,7 @@ const replaceFolderLinks = require("./replaceFolderLinks/html");
 const replaceFolderLinksCSS = require("./replaceFolderLinks/css");
 
 var cacheDuration = "public, max-age=31536000";
-var JS = "application/javascript";
+var JS = "text/javascript";
 var STYLE = "text/css";
 
 module.exports = function (req, res, _next) {
@@ -169,13 +169,13 @@ module.exports = function (req, res, _next) {
               output = minifyCSS(output);
               req.log("Minified CSS");
             }
-              
+            
             if (viewType === JS && !req.preview) {
               req.log("Minifying JavaScript");
               output = await minifyJS(output);
               req.log("Minified JavaScript");
             }
-
+            
             try {
               req.log("Sending response");
               res.header(CONTENT_TYPE, viewType);
