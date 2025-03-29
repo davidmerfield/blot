@@ -1,4 +1,3 @@
-const transliterate = require("transliteration");
 const ensure = require("helper/ensure");
 const client = require("models/client");
 const { promisify } = require("util");
@@ -8,74 +7,87 @@ const get = promisify((blogID, entryIDs, callback) =>
   })
 );
 
-module.exports = function (blogID, query, callback) {
-  ensure(blogID, "string").and(query, "string").and(callback, "function");
+const zscan = promisify(client.zscan).bind(client);
+const TIMEOUT = 4000;
+const MAX_RESULTS = 50;
+const CHUNK_SIZE = 100;
 
-  const results = [];
+function buildSearchText(entry) {
+  return [
+    entry.title,
+    entry.permalink,
+    entry.tags.join(" "),
+    entry.path,
+    entry.html,
+    Object.values(entry.metadata).join(" ")
+  ].join(" ").toLowerCase();
+}
 
-  const terms = query.split(/\s+/).map(term => term.trim().toLowerCase());
+function isSearchable(entry) {
+  if (entry.deleted || entry.draft) return false;
+  if (entry.page && (!entry.metadata.search || isFalsy(entry.metadata.search))) return false;
+  if (entry.metadata.search && isFalsy(entry.metadata.search)) return false;
+  return true;
+}
 
-  // this will not search pages or deleted entries
-  const key = "blog:" + blogID + ":all";
-
-  client.zrevrange(key, 0, -1, async function (err, entryIDs) {
-    const chunked = [...chunks(entryIDs, 100)];
-
-    for (const page of chunked) {
-      const entries = await get(blogID, page);
-      for (const entry of entries) {
-        // skip deleted entries
-        if (entry.deleted) {
-          continue;
-        }
-
-        // skip draft entries
-        if (entry.draft) {
-          continue;
-        }
-
-        // skip pages that do not have search enabled
-        if (
-          entry.page &&
-          (!entry.metadata.search || isFalsy(entry.metadata.search))
-        ) {
-          continue;
-        }
-
-        // skip entries that have search disabled
-        if (entry.metadata.search && isFalsy(entry.metadata.search)) {
-          continue;
-        }
-
-        const text = [
-          entry.title,
-          entry.permalink,
-          entry.tags.join(" "),
-          entry.path,
-          entry.html,
-          Object.values(entry.metadata).join(" ")
-        ]
-          .join(" ")
-          .toLowerCase();
-
-        // if all the terms are found in the text, add the entry to the results
-        if (terms.every(term => text.includes(term))) {
-          results.push(entry);
-        }
-      }
-    }
-
-    callback(null, results);
-  });
-};
-
-function isFalsy (value) {
+function isFalsy(value) {
   value = value.toString().toLowerCase().trim();
   return value === "false" || value === "no" || value === "0";
 }
 
-function* chunks (arr, n) {
-  for (let i = 0; i < arr.length; i += n) {
-    yield arr.slice(i, i + n);
+module.exports = async function (blogID, query, callback) {
+  ensure(blogID, "string").and(query, "string").and(callback, "function");
+
+  const terms = query.split(/\s+/)
+    .map(term => term.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (!terms.length) {
+    return callback(null, []);
   }
-}
+
+  const startTime = Date.now();
+  const results = [];
+  let cursor = '0';
+
+  try {
+    do {
+      if (Date.now() - startTime > TIMEOUT) {
+        return callback(null, results);
+      }
+
+      const [nextCursor, reply] = await zscan("blog:" + blogID + ":all", cursor, 'COUNT', CHUNK_SIZE);
+      cursor = nextCursor;
+      
+      const ids = reply.filter((_, i) => i % 2 === 0);
+      if (!ids.length) continue;
+
+      const entries = await get(blogID, ids);
+
+      for (const entry of entries) {
+        if (!isSearchable(entry)) continue;
+
+        const text = buildSearchText(entry);
+        
+        const matches = terms.length === 1 
+          ? text.includes(terms[0])
+          : terms.every(term => text.includes(term));
+
+        if (matches) {
+          results.push(entry);
+          if (results.length >= MAX_RESULTS) {
+            return callback(null, results);
+          }
+        }
+
+        if (Date.now() - startTime > TIMEOUT) {
+          return callback(null, results);
+        }
+      }
+    } while (cursor !== '0');
+
+    return callback(null, results);
+  } catch (error) {
+    return callback(error);
+  }
+};
