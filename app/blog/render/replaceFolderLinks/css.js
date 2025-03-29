@@ -2,7 +2,8 @@ const lookupFile = require('./lookupFile');
 
 const htmlExtRegex = /\.html$/;
 const fileExtRegex = /[^/]*\.[^/]*$/;
-const urlRegex = /url\(['"]?([^'"())]+)['"]?\)/gi;
+// Strict regex that requires matching quotes and parentheses
+const urlRegex = /url\((?:([^'"()]+)|['"]([^'"]+)['"]) *\)/gi;
 
 module.exports = async function replaceCssUrls(cacheID, blogID, css) {
   try {
@@ -17,7 +18,8 @@ module.exports = async function replaceCssUrls(cacheID, blogID, css) {
     // Process all URLs in parallel
     await Promise.all(
       urlMatches.map(async (match) => {
-        const url = match[1];
+        // Use the unquoted or quoted URL, whichever is present
+        const url = match[1] || match[2];
         
         // Skip URLs that we don't want to process
         if (url.includes('://') || 
@@ -39,8 +41,9 @@ module.exports = async function replaceCssUrls(cacheID, blogID, css) {
       return css;
     }
 
-    // Replace all URLs with their CDN versions
-    return css.replace(urlRegex, (match, url) => {
+    // Replace only valid URLs
+    return css.replace(urlRegex, (match, unquotedUrl, quotedUrl) => {
+      const url = unquotedUrl || quotedUrl;
       const cdnUrl = processedUrls.get(url);
       return cdnUrl ? `url(${cdnUrl})` : match;
     });

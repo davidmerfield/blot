@@ -32,6 +32,9 @@ class Cache {
 const pathCache = new Cache();
 
 async function lookupFile(blogID, cacheID, value) {
+  // strip any hash from the value
+  value = value.split("#")[0];
+  
   const [pathFromValue, ...rest] = value.split("?");
   const query = rest.length ? `?${rest.join("?")}` : "";
   const key = hash(`${blogID}:${cacheID}:${pathFromValue}`);
