@@ -1,10 +1,19 @@
+Resolve paths properly like a browser would in replaceFolderLinks
+- e.g. ../Type -> /Type if there is no more 'up' to go
+- respect ./image.jpg if the parent stylesheet is located in a subdirectory, e.g. /styles/sheet.css and ./image.jpg
+- Fix bug which is preventing the helped from working on Erin's site
+- Handle lowercase files properly (dropbox client!!!!) and resolve issue with discombobulated
+
+
+
 Run dropbox reset as ec2-user not root
+- run chown on all data files...
 
 Are there any missing templates because of the switch from lowercase to true case?
 
-Fix issues with menu links based on case
+Fix issues with menu links based on case-sensitivity switch
 
-Fix issues with bad permalinks based on case
+Fix issues with bad permalinks based on case-sensitivity switch
 
 Fix template partial embeddings which no longer work because of switch from lowercase to true case:
 - e.g. {{> /pages/home.txt}} when pages is really Pages
@@ -15,22 +24,14 @@ How to fix menu links with incorrect case IDs?
 
 Why do posts on blog_eddd8e5 take so long to set, let alone rebuild?
 
-Resolve paths properly like a browser would in replaceFolderLinks
-- e.g. ../Type -> /Type if there is no more 'up' to go
-- respect ./image.jpg if the parent stylesheet is located in a subdirectory, e.g. /styles/sheet.css and ./image.jpg
-- Fix bug which is preventing the helped from working on Erin's site
-- Handle lowercase files properly (dropbox client!!!!) and resolve issue with discombobulated
-
 Clean out all but the neccessary information from deleted entries to save redis space
-
-Can we switch the Dropbox client over to using the correct filename case and get rid of a lot of bullshit around the lowercasing?
 
 We should use the helper/transformer to speed up screenshot re-generation
 
 Watch the logs for requests to files in blog folder which aren't passed to CDN
 - add some logging to blog/assets.js
 
-Make iCloud site routes blocking so the mac server waits for the main server to finish building before sending the next sync update
+Make iCloud site routes blocking so the mac server waits for the main server to finish building before sending the next sync update? But consider timeout
 
 Think about how to purge the old versions of files cached by bunny's permacache
 
@@ -38,7 +39,7 @@ Fix bug which prevents the CDN url replacer working for drafts
 - Refactor so the draft route relies more on the middleware function
 - At the moment, drafts bypass a lot of the code – many template features won't work
 
-How can we server template files over CDN?
+How can we serve template files over CDN?
 - do we have to remap references to other files in stylesheets since we're doing a switcheroo
 
 Image cacher should work for webp, tiff, etc. as well as JPG

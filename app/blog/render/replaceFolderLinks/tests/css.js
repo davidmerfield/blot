@@ -176,12 +176,17 @@ describe("replaceCssUrls", function () {
   it("should handle relative paths", async function () {
     await this.write({ path: "/a.jpg", content: "image" });
     await this.write({ path: "/b.jpg", content: "image" });
+    await this.write({ path: "/Type/valkyrie_b_bold_italic.woff2", content: "image" });
     await this.template({
       "style.css": `
           .test { 
             background: url(./a.jpg);
             border-image: url(b.jpg);
-          }`,
+            background-image: url('../c.jpg') format('webp');
+          }
+
+          @font-face{font-family:valkyrie_b;font-style:italic;font-weight:700;font-stretch:normal;font-display:auto;src:url('../Type/valkyrie_b_bold_italic.woff2') format('woff2')}
+            `,
     });
 
     const res = await this.get("/style.css");
@@ -189,6 +194,7 @@ describe("replaceCssUrls", function () {
 
     expect(result).toMatch(cdnRegex("/a.jpg"));
     expect(result).toMatch(cdnRegex("/b.jpg"));
+    expect(result).toMatch(cdnRegex("/Type/valkyrie_b_bold_italic.woff2"));
   });
 
   it("should change the CDN url if the source file changes", async function () {
