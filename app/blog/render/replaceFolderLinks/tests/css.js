@@ -7,6 +7,8 @@ describe("replaceCssUrls", function () {
     new RegExp(
       `${config.cdn.origin}/folder/v-[a-f0-9]{8}/blog_[a-f0-9]+${path}`
     );
+  const globalStaticFileRegex = (path) =>
+    new RegExp(`${config.cdn.origin}/${path}`);
 
   it("should replace url() with versioned CDN URLs", async function () {
     await this.write({ path: "/images/test.jpg", content: "fake image data" });
@@ -20,7 +22,6 @@ describe("replaceCssUrls", function () {
     expect(result).toMatch(cdnRegex("/images/test.jpg"));
   });
 
-
   it("should handle no quotes", async function () {
     await this.write({ path: "/images/test.jpg", content: "fake image data" });
     await this.template({
@@ -28,7 +29,6 @@ describe("replaceCssUrls", function () {
     });
     expect(await this.text("/style.css")).toMatch(cdnRegex("/images/test.jpg"));
   });
-
 
   it("should handle single quotes", async function () {
     await this.write({ path: "/images/test.jpg", content: "fake image data" });
@@ -199,7 +199,6 @@ describe("replaceCssUrls", function () {
     expect(result).toEqual(css);
   });
 
-
   it("can handle whitespace unlike postcss", async function () {
     const css = `@media screen and (max-width: 400px) {
   
@@ -215,11 +214,13 @@ describe("replaceCssUrls", function () {
     expect(result).toMatch(cdnRegex("/test.jpg"));
   });
 
-
   it("should handle relative paths", async function () {
     await this.write({ path: "/a.jpg", content: "image" });
     await this.write({ path: "/b.jpg", content: "image" });
-    await this.write({ path: "/Type/valkyrie_b_bold_italic.woff2", content: "image" });
+    await this.write({
+      path: "/Type/valkyrie_b_bold_italic.woff2",
+      content: "image",
+    });
     await this.template({
       "style.css": `
           .test { 
@@ -355,7 +356,7 @@ describe("replaceCssUrls", function () {
     await this.write({ path: "/2.jpg", content: "image2" });
     await this.write({ path: "/3.jpg", content: "image3" });
 
-    const template = {}
+    const template = {};
 
     for (let i = 1; i <= 3; i++) {
       template[`style${i}.css`] = `.test { background-image: url(/${i}.jpg); }`;
@@ -363,15 +364,13 @@ describe("replaceCssUrls", function () {
 
     await this.template(template);
 
-
     const promises = [1, 2, 3].map(async (n) => {
       const res = await this.get(`/style${n}.css`);
       return res;
     });
 
-
     const results = await Promise.all(promises);
-    const texts = await Promise.all(results.map(r => r.text()));
+    const texts = await Promise.all(results.map((r) => r.text()));
 
     texts.forEach((text, i) => {
       expect(text).toMatch(cdnRegex(`/${i + 1}.jpg`));
@@ -403,5 +402,23 @@ describe("replaceCssUrls", function () {
 
     const matches = result.match(cdnRegex("/test.jpg"));
     expect(matches.length).toBe(1); // Should only replace the actual URL, not the one in comments
+  });
+
+  it("should handle global static files", async function () {
+    await this.write({
+      path: "/plugins/katex/files/test.jpg",
+      content: "fake image data",
+    });
+    await this.template({
+      "style.css": `.test { background-image: url('/plugins/katex/files/test.jpg'); }
+      @font-face{font-family:KaTeX_AMS;font-style:normal;font-weight:400;src:url(/plugins/katex/files/KaTeX_AMS-Regular.woff2) format("woff2")}`,
+    });
+    expect(await this.text("/style.css")).toMatch(
+      cdnRegex("/plugins/katex/files/test.jpg")
+    );
+
+    expect(await this.text("/style.css")).toMatch(
+      globalStaticFileRegex("/plugins/katex/files/KaTeX_AMS-Regular.woff2")
+    );
   });
 });
