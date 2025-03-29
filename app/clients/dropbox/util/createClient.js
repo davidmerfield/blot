@@ -2,7 +2,6 @@
 // and doing Dropbox.Dropbox is too upsetting
 // in every single file. I wrap the constructor.
 
-const fetch = require("isomorphic-fetch");
 const Dropbox = require("dropbox").Dropbox;
 const database = require("../database");
 const config = require("config");
