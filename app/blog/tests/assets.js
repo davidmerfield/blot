@@ -27,10 +27,10 @@ describe("asset middleware", function () {
   });
 
   it("sends a file with .html extension in the blog folder", async function () {
-    const path = global.test.fake.path(".html");
+    const path = "/Foo/File.html";
     const content = global.test.fake.file();
     await this.write({ path, content });
-    expect(await this.text(path.slice(0, -".html".length))).toEqual(content);
+    expect(await this.text("/Foo/File")).toEqual(content);
   });
 
   it("sends a file with an underscore prefix and .html extension", async function () {
@@ -63,16 +63,29 @@ describe("asset middleware", function () {
     expect(body).toEqual(content);
   });
 
-  it("sends a file in the static folder for this blog", async function () {
-    var path = global.test.fake.path(".txt");
-    var contents = global.test.fake.file();
+  it("sends files in the static folder for this blog", async function () {
+    const paths = [
+      "/_assets/img/asset.png",
+      "/_avatars/avatar.png",
+      "/_bookmark_screenshots/screenshot.png",
+      "/_image_cache/image.jpg",
+      "/_thumbnails/thumbnail.jpg",
+    ];
 
-    await fs.outputFile(
-      config.blog_static_files_dir + "/" + this.blog.id + path,
-      contents
-    );
+    const contents = {};
 
-    expect(await this.text(path)).toEqual(contents);
+    for (const path of paths) {
+      const content = global.test.fake.file();
+      contents[path] = content;
+      await this.write({ path, content });
+    }
+
+    for (const path of paths) {
+      const res = await this.get(path);
+      expect(res.status).toEqual(200);
+      const body = await res.text();
+      expect(body).toEqual(contents[path]);
+    }
   });
 
   it("sends a file in the global static folder", async function () {
@@ -249,10 +262,10 @@ describe("asset middleware", function () {
   it("serves files with BOM and maintains readability", async function () {
     const contentWithBOM = "\uFEFFHello World";
     await this.write({ path: "/bom.txt", content: contentWithBOM });
-    
+
     const response = await this.text("/bom.txt");
     // Strip any potential BOM from the response before comparing
-    const normalizedResponse = response.replace(/^\uFEFF/, '');
+    const normalizedResponse = response.replace(/^\uFEFF/, "");
     expect(normalizedResponse).toEqual("Hello World");
   });
 

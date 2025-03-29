@@ -9,18 +9,32 @@ const caseSensitivePath = promisify(require("helper/caseSensitivePath"));
 const BANNED_ROUTES = ["/.git"];
 const fs = require("fs-extra");
 
-module.exports = async function (req, res, next) {
-  console.log("Serving asset", req.path);
+const express = require("express");
+const assets = express.Router();
 
+// find data/static/*/. -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort -u
+// _assets
+// _avatars
+// _bookmark_screenshots
+// _image_cache
+// _thumbnails
+
+assets.use(function (req, res, next) {
   // Catch and return 404 for directory-traversal attacks
   if (req.path.indexOf("..") > -1) {
-    return res.status(404).send("Not Found");
+    return next(new Error("Not Found"));
   }
 
   // Skip serving files for banned routes
   if (BANNED_ROUTES.find((route) => req.path.toLowerCase().startsWith(route))) {
-    return next();
+    return next(new Error("Not Found"));
   }
+
+  next();
+});
+
+assets.use(async function (req, res, next) {
+  console.log("Serving asset", req.path);
 
   try {
     const pathWithCorrectCase = await caseSensitivePath(
@@ -136,7 +150,7 @@ module.exports = async function (req, res, next) {
 
     next();
   });
-};
+});
 
 function addLeadingUnderscore(path) {
   path = withoutTrailingSlash(decodeURIComponent(path));
@@ -164,3 +178,14 @@ function getContentType(path) {
 
   return result;
 }
+
+// Swallow 404 errors and pass all other errors to the next middleware
+assets.use(function (err, req, res, next) {
+  if (err && err.message === "Not Found") {
+    next();
+  } else {
+    next(err);
+  }
+});
+
+module.exports = assets;
