@@ -20,6 +20,32 @@ describe("replaceCssUrls", function () {
     expect(result).toMatch(cdnRegex("/images/test.jpg"));
   });
 
+
+  it("should handle no quotes", async function () {
+    await this.write({ path: "/images/test.jpg", content: "fake image data" });
+    await this.template({
+      "style.css": `.test { background-image: url(/images/test.jpg); }`,
+    });
+    expect(await this.text("/style.css")).toMatch(cdnRegex("/images/test.jpg"));
+  });
+
+
+  it("should handle single quotes", async function () {
+    await this.write({ path: "/images/test.jpg", content: "fake image data" });
+    await this.template({
+      "style.css": `.test { background-image: url('/images/test.jpg'); }`,
+    });
+    expect(await this.text("/style.css")).toMatch(cdnRegex("/images/test.jpg"));
+  });
+
+  it("should handle double quotes", async function () {
+    await this.write({ path: "/images/test.jpg", content: "fake image data" });
+    await this.template({
+      "style.css": `.test { background-image: url("/images/test.jpg"); }`,
+    });
+    expect(await this.text("/style.css")).toMatch(cdnRegex("/images/test.jpg"));
+  });
+
   it("should handle unquoted URLs", async function () {
     await this.write({ path: "/images/test.jpg", content: "fake image data" });
     await this.template({
