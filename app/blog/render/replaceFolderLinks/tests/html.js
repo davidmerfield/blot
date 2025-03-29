@@ -24,6 +24,22 @@ describe("replaceFolderLinks", function () {
     );
   });
 
+  it("should be case-insensitive", async function () {
+    await this.write({ path: "/Images/Test.jpg", content: "fake image data" });
+    await this.template({
+      "entries.html": '<img src="/iMaGeS/TeSt.jpg">',
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toMatch(
+      new RegExp(
+        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/Images/Test.jpg">`
+      )
+    );
+  });
+
   it("should change the CDN url if the source file changes", async function () {
     await this.write({ path: "/test.jpg", content: "image 1" });
     await this.template({ "entries.html": '<img src="/test.jpg">' });
@@ -198,8 +214,9 @@ describe("replaceFolderLinks", function () {
   it("handles relative paths", async function () {
     await this.write({ path: "/a.jpg", content: "image" });
     await this.write({ path: "/b.jpg", content: "image" });
+    await this.write({ path: "/c.jpg", content: "image" });
     await this.template({
-      "entries.html": '<img src="./a.jpg"><img src="b.jpg">',
+      "entries.html": '<img src="./a.jpg"><img src="b.jpg"><img src="../c.jpg">',
     });
 
     const res = await this.get("/");
@@ -207,6 +224,7 @@ describe("replaceFolderLinks", function () {
 
     expect(result).toMatch(cdnRegex("/a.jpg"));
     expect(result).toMatch(cdnRegex("/b.jpg"));
+    expect(result).toMatch(cdnRegex("/c.jpg"));
   });
 
   it("should handle query strings", async function () {
@@ -256,6 +274,42 @@ describe("replaceFolderLinks", function () {
     // Restore original stat
     fs.stat = origStat;
   });
+
+  it("should use cached versions for different query strings", async function () {
+    await this.write({ path: "/cached.jpg", content: "image" });
+    await this.template({
+      "1.html": '<img src="/cached.jpg">',
+      "2.html": '<img src="/cached.jpg?cache=false">',
+    });
+
+    const filePath = this.blogDirectory + "/cached.jpg";
+
+    const origStat = fs.stat;
+    fs.stat = jasmine.createSpy("stat").and.callFake(origStat);
+
+    // First request should trigger a stat
+    const res1 = await this.get("/1.html");
+    const result1 = await res1.text();
+    
+    expect(result1).toMatch(cdnRegex("/cached.jpg"));
+    // Should have called stat once
+    expect(fs.stat).toHaveBeenCalledWith(filePath);
+    expect(fs.stat.calls.count()).toBe(1);
+
+    // Reset the spy count
+    fs.stat.calls.reset();
+
+    // Second request should use cache
+    const res2 = await this.get("/2.html");
+    const result2 = await res2.text();
+
+    // Verify stat was not called again
+    expect(fs.stat).not.toHaveBeenCalled();
+    expect(result2).toMatch(cdnRegex("/cached.jpg\\?cache=false"));
+    
+    // Restore original stat
+    fs.stat = origStat;
+  });  
 
   it("should handle multiple attributes in the same tag", async function () {
     await this.write({ path: "/test.jpg", content: "image" });

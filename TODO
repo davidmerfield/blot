@@ -6,10 +6,6 @@ Fix issues with menu links based on case
 
 Fix issues with bad permalinks based on case
 
-Fix base case used to files in templates
-- e.g. FONTS not loading on https://notesof.com/
-- broken images: https://reillybrennan.com/
-
 Fix template partial embeddings which no longer work because of switch from lowercase to true case:
 - e.g. {{> /pages/home.txt}} when pages is really Pages
 - we should resolve the case-insensitive path to file when saving a template and parsing its partials
