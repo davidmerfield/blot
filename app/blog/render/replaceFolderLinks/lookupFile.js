@@ -8,7 +8,7 @@ const caseSensitivePath = promisify(require("helper/caseSensitivePath"));
 class Cache {
   constructor() {
     this.cache = new Map();
-    this.maxEntries = 1000;
+    this.maxEntries = 5000;
   }
 
   set(key, value) {
