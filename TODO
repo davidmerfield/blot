@@ -1,3 +1,5 @@
+Run dropbox reset as ec2-user not root
+
 Are there any missing templates because of the switch from lowercase to true case?
 
 Fix issues with menu links based on case
@@ -6,6 +8,7 @@ Fix issues with bad permalinks based on case
 
 Fix base case used to files in templates
 - e.g. FONTS not loading on https://notesof.com/
+- broken images: https://reillybrennan.com/
 
 Fix template partial embeddings which no longer work because of switch from lowercase to true case:
 - e.g. {{> /pages/home.txt}} when pages is really Pages

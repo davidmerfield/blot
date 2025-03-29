@@ -4,14 +4,42 @@ const async = require("async");
 const debug = require("debug")("blot:blog:assets");
 const { join, basename, dirname } = require("path");
 const LARGEST_POSSIBLE_MAXAGE = 86400000;
-
+const { promisify } = require("util");
+const caseSensitivePath = promisify(require("helper/caseSensitivePath"));
 const BANNED_ROUTES = ["/.git"];
 
-module.exports = function (req, res, next) {
-
+module.exports = async function (req, res, next) {
   // Skip serving files for banned routes
   if (BANNED_ROUTES.find((route) => req.path.toLowerCase().startsWith(route))) {
     return next();
+  }
+
+  try {
+    const pathWithCorrectCase = await caseSensitivePath(
+      config.blog_folder_dir + "/" + req.blog.id,
+      decodeURIComponent(req.path)
+    );
+
+    if (pathWithCorrectCase) {
+
+      var options = {
+        maxAge: 0,
+        headers: {
+          "Content-Type": getContentType(pathWithCorrectCase),
+        },
+      };
+
+      if (!options.maxAge && !req.query.cache && !req.query.extension) {
+        options.headers["Cache-Control"] = "no-cache";
+      }
+
+      if (req.query.cache && req.query.extension) {
+        options.maxAge = LARGEST_POSSIBLE_MAXAGE;
+      }
+
+      return res.sendFile(pathWithCorrectCase, options, next);
+    }
+  } catch (e) {
   }
 
   // We check to see if the requests path
@@ -92,7 +120,7 @@ module.exports = function (req, res, next) {
   async.tryEach(candidates, function () {
     // Is this still neccessary?
     if (res.headersSent) return;
-    
+
     next();
   });
 };
