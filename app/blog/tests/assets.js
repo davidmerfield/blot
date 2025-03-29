@@ -26,6 +26,20 @@ describe("asset middleware", function () {
     expect(await res.text()).toEqual("Foo");
   });
 
+  it("returns files against URLs with incorrect case", async function () {
+    await this.write({ path: "/Pages/First.xml", content: "123" });
+    const res = await this.get(`/pAgEs/FiRsT.xMl`);
+    expect(await res.text()).toEqual("123");
+  });
+
+  it("returns the correct file if there are multiple with similar case", async function () {
+    await this.write({ path: "/Pages/First.xml", content: "123" });
+    await this.write({ path: "/pages/first.xml", content: "345" });
+    expect(await this.text(`/pages/first.xml`)).toEqual("345");
+    expect(await this.text(`/Pages/First.xml`)).toEqual("123");
+  });
+
+
   it("sends a file with .html extension in the blog folder", async function () {
     const path = "/Foo/File.html";
     const content = global.test.fake.file();
