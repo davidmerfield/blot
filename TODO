@@ -481,7 +481,6 @@ Make it possible to embed the HTML output of markdown files using Obsidians embe
 ---
 
 Remove packages:
-- csurf
 - node-fetch (use global fetch)
 - twemoji (delete the plugin)
 

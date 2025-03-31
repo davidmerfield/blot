@@ -10,7 +10,6 @@ var User = require("models/user");
 var Email = require("helper/email");
 var BAD_CHARGE = "Could not charge your card.";
 var ERR = "Could not change your subscription.";
-const parse = require("dashboard/util/parse");
 var updatePayPalSubscription =
   require("dashboard/webhooks/paypal_webhook").updateSubscription;
 
@@ -65,7 +64,7 @@ CreateBlog.route("/inform-paypal")
     });
   })
 
-  .post(parse, saveBlog, (req, res) => {
+  .post(saveBlog, (req, res) => {
     res.message('/sites/' + req.blog.handle, 'Created site');
   });
 
@@ -88,7 +87,7 @@ CreateBlog.route("/")
   })
 
 
-  .post(parse, validateSubscription)
+  .post(validateSubscription)
 
   .post(function (req, res, next) {
     // For institutional accounts, we need to allow them to create

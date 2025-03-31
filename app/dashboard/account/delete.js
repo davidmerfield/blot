@@ -10,7 +10,6 @@ var Blog = require("models/blog");
 var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
 
-const parse = require("dashboard/util/parse");
 
 Delete.route("/")
 
@@ -22,7 +21,6 @@ Delete.route("/")
   })
 
   .post(
-    parse,
     checkPassword,
     deleteSubscription,
     deleteBlogs,

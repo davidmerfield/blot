@@ -1,4 +1,3 @@
-const parse = require("dashboard/util/parse");
 const Express = require("express");
 const SourceCode = new Express.Router();
 const Template = require("models/template");
@@ -35,7 +34,7 @@ SourceCode.route("/create")
   .get(function (req, res) {
     res.render("dashboard/template/source-code/create");
   })
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     const name = req.body.name;
 
     if (req.params.viewSlug === "package.json") {
@@ -85,7 +84,7 @@ SourceCode.route("/:viewSlug/configure")
 
     res.render("dashboard/template/source-code/edit");
   })
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     Template.setView(req.template.id, view, next);
   });
 
@@ -96,7 +95,7 @@ SourceCode.route("/:viewSlug/edit")
     res.locals.layout = "dashboard/template/layout";
     res.render("dashboard/template/source-code/edit");    
   })
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     var view = formJSON(req.body, Template.viewModel);
 
     view.name = req.view.name;
@@ -152,7 +151,7 @@ SourceCode.route("/:viewSlug/rename")
     res.locals.title = `Rename - ${req.view.name} - ${req.template.name}`;
     res.render("dashboard/template/source-code/rename");
   })
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     if (req.params.viewSlug === "package.json") {
       return next(new Error("You cannot rename package.json"));
     }
@@ -190,7 +189,7 @@ SourceCode.route("/:viewSlug/delete")
     res.locals.title = `Delete - ${req.view.name} - ${req.template.name}`;
     res.render("dashboard/template/source-code/delete");
   })
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     Template.dropView(req.template.id, req.view.name, function (err) {
       if (err) return next(err);
       res.redirect(res.locals.base + "/source-code");

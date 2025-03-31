@@ -1,4 +1,3 @@
-var BodyParser = require("body-parser");
 var Express = require("express");
 
 var blockCrawlers = require("./blockCrawlers");
@@ -8,8 +7,6 @@ var checkEmail = require("./checkEmail");
 var checkPassword = require("./checkPassword");
 var errorHandler = require("./errorHandler");
 var redirect = require("./redirect");
-var parse = BodyParser.urlencoded({ extended: false });
-var csrf = require("csurf")();
 
 var form = new Express.Router();
 
@@ -47,17 +44,15 @@ form
     next();
   })
 
-  .get(csrf, function (req, res) {
-    res.locals.csrf = req.csrfToken();
+  .get(function (req, res) {
     res.locals.title = "Reset password";
     res.locals.email = req.query.email;
     res.render("dashboard/log-in/reset");
   })
 
-  .post(parse, csrf, checkEmail, checkReset, errorHandler)
+  .post(checkEmail, checkReset, errorHandler)
 
   .post(function (err, req, res, next) {
-    res.locals.csrf = req.csrfToken();
     res.render("dashboard/log-in/reset");
   });
 
@@ -70,7 +65,7 @@ form
     res.render("dashboard/log-in");
   })
 
-  .post(require("./rateLimit"), parse, checkEmail, checkReset, checkPassword)
+  .post(require("./rateLimit"), checkEmail, checkReset, checkPassword)
 
   .all(errorHandler)
 

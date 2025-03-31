@@ -1,7 +1,6 @@
 const express = require('express');
 const date = express.Router();
 const { resave: resaveEntries } = require('models/entries');
-const parse = require('dashboard/util/parse');
 const updateBlog = require('dashboard/util/update-blog');
 const moment = require('moment-timezone');
 
@@ -65,7 +64,7 @@ date.get('/', (req, res, next) => {
   });
 });
 
-date.post('/', parse, async (req, res) => {
+date.post('/', async (req, res) => {
   const { timeZone, dateFormat } = req.body;
 
   try {

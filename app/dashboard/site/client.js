@@ -9,7 +9,6 @@ const load = require("./load");
 const Sync = require("sync");
 const Fix = require("sync/fix");
 const Rebuild = require("sync/rebuild");
-const parse = require("dashboard/util/parse");
 
 const { promisify } = require("util");
 const getStatuses = promisify(Blog.getStatuses);
@@ -33,7 +32,7 @@ client_routes
     });
   })
 
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     const redirect = req.baseUrl + "/" + req.body.client;
 
     if (!req.body.client) {
@@ -186,7 +185,7 @@ client_routes
     res.render("dashboard/clients", { title: "Select a client" });
   })
 
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     let redirect;
 
     if (!req.body.client) {

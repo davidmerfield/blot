@@ -2,6 +2,7 @@ const trace = require("helper/trace");
 const config = require("config");
 const express = require("express");
 const message = require("dashboard/util/message");
+const cookieParser = require('cookie-parser');
 
 const dashboard = express.Router();
 const logout = require("dashboard/account/util/logout");
@@ -10,6 +11,8 @@ dashboard.use(trace("loading session information"));
 dashboard.use(require("dashboard/util/session"));
 dashboard.use(trace("loaded session information"));
 
+dashboard.use(require("dashboard/util/parse"));
+dashboard.use(cookieParser());
 dashboard.use(require("dashboard/util/csrf"));
 
 // These need to be accessible to unauthenticated users

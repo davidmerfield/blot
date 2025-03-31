@@ -1,5 +1,4 @@
 const linkFormat = require("express").Router();
-const parse = require("dashboard/util/parse");
 const { resave: resaveEntries } = require('models/entries');
 const updateBlog = require('dashboard/util/update-blog');
 
@@ -72,7 +71,7 @@ linkFormat.get("/", function (req, res, next) {
     res.render("dashboard/settings/link-format");
   });
   
-linkFormat.post("/", parse, async (req, res) => {
+linkFormat.post("/", async (req, res) => {
 
     const format = req.body.format || '';
     const custom = req.body.custom || '';

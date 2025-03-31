@@ -29,7 +29,9 @@ if (contactForm) {
 contactForm.addEventListener('submit', function(e) {
   e.preventDefault();
   var form = e.target;
+  console.log(form);
   var formData = new FormData(form);
+  console.log(formData);
   var xhr = new XMLHttpRequest();
   xhr.open('POST', form.action, true);
   xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');

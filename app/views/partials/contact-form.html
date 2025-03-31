@@ -1,5 +1,6 @@
 
 <form id="contact-form" method="POST" style="padding: 0 24px;">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}">
     <textarea required name="message" style="min-height: 120px;box-sizing: border-box;border:1px solid #dddddc;border-radius: 5px;width:100%;padding:0.5rem;margin:0.5rem 0"></textarea>
     <label style="user-select: none;cursor: pointer;">
       <input type="checkbox" name="emailToggle" value="yes" style="display: inline;width: auto;margin-right: 6px;">

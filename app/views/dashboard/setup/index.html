@@ -2,7 +2,7 @@
 
 
 <form method="POST">
-    <input type="hidden" name="_csrf" value="{{ csrf }}" />
+    <input type="hidden" name="_csrf" value="{{csrftoken}}">
     <label for="title">Title of site</label><br>
     <input id="title" type="text" name="title" placeholder="Name" value="{{blog.title}}" />
     <button class="button" type="submit">Next</button>

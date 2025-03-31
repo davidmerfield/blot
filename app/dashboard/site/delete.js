@@ -4,7 +4,6 @@ const pretty = require("helper/prettyPrice");
 const Email = require("helper/email");
 
 const checkPassword = require("dashboard/account/util/checkPassword");
-const parse = require("dashboard/util/parse");
 
 const User = require("models/user");
 const Blog = require("models/blog");
@@ -34,7 +33,6 @@ Delete.route("/")
   // the contents blog's folder on the server.
   // Delete the credentials used to sync the blog's folder
   .post(
-    parse,
     checkPassword,
     function (req, res, next) {
       console.log("Deleting blog", req.blog.id);

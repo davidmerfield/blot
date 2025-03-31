@@ -3,6 +3,7 @@ const Express = require("express");
 const redirector = require("./redirector");
 const Email = require("helper/email");
 const { join } = require("path");
+const cookieParser = require('cookie-parser');
 
 const documentation = Express.Router();
 
@@ -17,7 +18,7 @@ const files = [
   "/favicon-180x180.png",
   "/favicon-32x32.png",
   "/favicon-16x16.png",
-  "/favicon.ico"
+  "/favicon.ico",
 ];
 
 for (const path of files) {
@@ -26,7 +27,7 @@ for (const path of files) {
       lastModified: false, // do not send Last-Modified header
       maxAge: 86400000, // cache forever
       acceptRanges: false, // do not allow ranged requests
-      immutable: true // the file will not change
+      immutable: true, // the file will not change
     })
   );
 }
@@ -36,7 +37,7 @@ documentation.use(
   Express.static(VIEW_DIRECTORY, {
     index: false, // Without 'index: false' this will server the index.html files inside
     redirect: false, // Without 'redirect: false' this will redirect URLs to existent directories
-    maxAge: 86400000 // cache forever
+    maxAge: 86400000, // cache forever
   })
 );
 
@@ -48,7 +49,7 @@ for (const path of directories) {
     Express.static(VIEW_DIRECTORY + path, {
       index: false, // Without 'index: false' this will server the index.html files inside
       redirect: false, // Without 'redirect: false' this will redirect URLs to existent directories
-      maxAge: 86400000 // cache forever
+      maxAge: 86400000, // cache forever
     })
   );
 }
@@ -78,36 +79,45 @@ documentation.get("/", require("./templates.js"), function (req, res, next) {
   next();
 });
 
-documentation.post(['/support', '/contact', '/feedback'],
-  Express.urlencoded({ extended: true }),
- (req, res) => {
-  const { email, message } = req.body;
-  if (!message) return res.status(400).send('Message is required');
-  Email.SUPPORT(null, { email, message, replyTo: email });
-  res.send('OK');
-});
+documentation.post(
+  ["/support", "/contact", "/feedback"],
+  require("dashboard/util/parse"),
+  cookieParser(),
+  require("dashboard/util/csrf"),
+  (req, res) => {
+    const { email, message } = req.body;
+    if (!message) return res.status(400).send("Message is required");
+    Email.SUPPORT(null, { email, message, replyTo: email });
+    res.send("OK");
+  }
+);
 
 documentation.get("/examples", require("./featured"));
 
-documentation.get("/templates",  require("./templates.js"));
+documentation.get("/templates", require("./templates.js"));
 
-documentation.use("/tools/all-*", (req,res,next)=>{
+documentation.use("/tools/all-*", (req, res, next) => {
   delete res.locals.breadcrumbs;
   next();
 });
 
-documentation.get("/templates/for-:type",  require("./templates.js"), (req, res, next) => {
-  // fix the label of the last breadcrumb from 'For blog' to 'Blog'
-  res.locals.breadcrumbs[res.locals.breadcrumbs.length - 1].label = req.params.type[0].toUpperCase() + req.params.type.slice(1);
-  res.render("templates");
-});
+documentation.get(
+  "/templates/for-:type",
+  require("./templates.js"),
+  (req, res, next) => {
+    // fix the label of the last breadcrumb from 'For blog' to 'Blog'
+    res.locals.breadcrumbs[res.locals.breadcrumbs.length - 1].label =
+      req.params.type[0].toUpperCase() + req.params.type.slice(1);
+    res.render("templates");
+  }
+);
 
 documentation.get(
   "/templates/:template",
   require("./templates.js"),
   (req, res, next) => {
     if (!res.locals.template) return next();
-    res.locals.layout = 'partials/layout-full-screen';
+    res.locals.layout = "partials/layout-full-screen";
     res.render("templates/template");
   }
 );
@@ -122,9 +132,13 @@ documentation.use("/about", require("./about.js"));
 
 documentation.use("/news", require("./news"));
 
+documentation.use("/questions", require("dashboard/util/parse"));
+documentation.use("/questions", cookieParser());
+documentation.use("/questions", require("dashboard/util/csrf"));
+
 documentation.use("/questions", require("./questions"));
 
-function trimLeadingAndTrailingSlash (str) {
+function trimLeadingAndTrailingSlash(str) {
   if (!str) return str;
   if (str[0] === "/") str = str.slice(1);
   if (str[str.length - 1] === "/") str = str.slice(0, -1);

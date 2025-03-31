@@ -5,7 +5,6 @@ var User = require("models/user");
 var prettyPrice = require("helper/prettyPrice");
 var Express = require("express");
 var PaySubscription = new Express.Router();
-const parse = require("dashboard/util/parse");
 
 PaySubscription.route("/")
 
@@ -29,7 +28,7 @@ PaySubscription.route("/")
 
   // The user must submit a valid card to restart their account
   // Then we list all outstanding invoices and pay them.
-  .post(parse, updateCard)
+  .post(updateCard)
   .post(payUnpaidInvoices)
   .post(updateSubscription)
   .post(function (req, res) {

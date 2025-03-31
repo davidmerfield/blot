@@ -1,7 +1,6 @@
 const Express = require("express");
 const Email = new Express.Router();
 const User = require("models/user");
-const parse = require("dashboard/util/parse");
 
 Email.route("/")
 
@@ -12,7 +11,7 @@ Email.route("/")
     });
   })
 
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     if (!req.body.email) {
       return next(new Error("Please specify an email address"));
     }

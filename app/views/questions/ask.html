@@ -2,7 +2,7 @@
 
   
   <form method="POST" action="/questions/ask" style="max-width: 680px;">
-      <input type="hidden" name="csrf_token" value="{{csrf_token}}">
+      <input type="hidden" name="_csrf" value="{{csrftoken}}">
       <label><strong>Title</strong></label><br>
       <input type="text" style="width:100%" required name="title" id="title" placeholder="e.g. What text-editors do you recommend for writing Markdown?"></input>
       <br><br>

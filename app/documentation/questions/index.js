@@ -1,7 +1,4 @@
 const Express = require("express");
-const urlencoded = Express.urlencoded({
-  extended: true
-});
 const Email = require("helper/email");
 
 const lookup = tag =>
@@ -20,8 +17,8 @@ const Paginator = require("./paginator");
 const config = require("config");
 const flush = require("documentation/tools/flush-cache");
 
+
 Questions.use(["/ask", "/:id/edit", "/:id/new"], require("dashboard/util/session"));
-Questions.use(["/ask", "/:id/edit", "/:id/new"], urlencoded);
 
 Questions.get("/search", async (req, res) => {
   try {

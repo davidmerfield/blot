@@ -3,7 +3,7 @@
 Template setup
 
 <form method="POST">
-    <input type="hidden" name="_csrf" value="{{ csrf }}" />
+    <input type="hidden" name="_csrf" value="{{csrftoken}}">
     
     <a href="{{{base}}}/setup/folder" class="button">
         Previous
