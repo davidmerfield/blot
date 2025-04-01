@@ -79,15 +79,25 @@ documentation.get("/", require("./templates.js"), function (req, res, next) {
   next();
 });
 
+// Inject the CSRF token into the form
+documentation.get(['/support', '/contact', '/feedback'], require("dashboard/util/csrf"));
+
 documentation.post(
   ["/support", "/contact", "/feedback"],
   require("dashboard/util/parse"),
   cookieParser(),
   require("dashboard/util/csrf"),
   (req, res) => {
-    const { email, message } = req.body;
-    if (!message) return res.status(400).send("Message is required");
-    Email.SUPPORT(null, { email, message, replyTo: email });
+    const { email, message, contact_e879, contact_7d45 } = req.body;
+
+    // honeypot fields
+    if (email || message) {
+      return res.status(400).send("Invalid request");
+    }
+
+    if (!contact_e879) return res.status(400).send("Message is required");
+
+    Email.SUPPORT(null, { email: contact_7d45, message: contact_e879, replyTo: contact_7d45 });
     res.send("OK");
   }
 );
@@ -131,10 +141,6 @@ documentation.get("/sitemap.xml", require("./sitemap"));
 documentation.use("/about", require("./about.js"));
 
 documentation.use("/news", require("./news"));
-
-documentation.use("/questions", require("dashboard/util/parse"));
-documentation.use("/questions", cookieParser());
-documentation.use("/questions", require("dashboard/util/csrf"));
 
 documentation.use("/questions", require("./questions"));
 

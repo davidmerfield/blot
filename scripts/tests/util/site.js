@@ -123,7 +123,6 @@ module.exports = function (options = {}) {
       params.append("password", password);
       params.append("_csrf", csrfTokenMatch[1]);
 
-      console.log('here!', params);
       const res = await this.fetch("/sites/log-in", {
         method: "POST",
         headers: {
@@ -133,7 +132,6 @@ module.exports = function (options = {}) {
         body: params.toString(),
         redirect: "manual",
       });
-
 
       const headers = Object.fromEntries(res.headers);
 

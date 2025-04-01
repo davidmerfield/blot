@@ -1,11 +1,12 @@
 const Express = require("express");
 const Email = require("helper/email");
+const cookieParser = require('cookie-parser');
 
-const lookup = tag =>
+const lookup = (tag) =>
   map[tag] || (tag[0].toUpperCase() + tag.slice(1)).replace(/-/g, " ");
 
 const map = {
-  "json-feed": "JSON Feed"
+  "json-feed": "JSON Feed",
 };
 
 const Questions = new Express.Router();
@@ -17,8 +18,13 @@ const Paginator = require("./paginator");
 const config = require("config");
 const flush = require("documentation/tools/flush-cache");
 
-
-Questions.use(["/ask", "/:id/edit", "/:id/new"], require("dashboard/util/session"));
+Questions.use(
+  ["/ask", "/:id/edit", "/:id/new"],
+  require("dashboard/util/session"),
+  require("dashboard/util/parse"),
+  cookieParser(),
+  require("dashboard/util/csrf")
+);
 
 Questions.get("/search", async (req, res) => {
   try {
@@ -56,7 +62,7 @@ Questions.use(function (req, res, next) {
 Questions.get("/feed.rss", async function (req, res) {
   res.locals.url = config.protocol + config.host;
   res.locals.title = "Questions";
-  const { questions } = await list({ sort: 'by_created' });
+  const { questions } = await list({ sort: "by_created" });
 
   res.locals.topics = questions;
 
@@ -106,7 +112,7 @@ Questions.get(["/", "/page-:page"], async function (req, res, next) {
     topic.summary = summary;
     topic.singular = topic.number_of_replies === 1;
 
-    topic.tags = topic.tags.map(tag => {
+    topic.tags = topic.tags.map((tag) => {
       return { tag, slug: tag };
     });
   });
@@ -123,41 +129,48 @@ Questions.get(["/", "/page-:page"], async function (req, res, next) {
 });
 
 // Topics are sorted by datetime of last reply, then by topic creation date
-Questions.get(["/replies", "/replies/page-:page"], async function (req, res, next) {
-  const page = req.params.page ? parseInt(req.params.page) : 1;
+Questions.get(
+  ["/replies", "/replies/page-:page"],
+  async function (req, res, next) {
+    const page = req.params.page ? parseInt(req.params.page) : 1;
 
-  if (!Number.isInteger(page)) {
-    return next();
-  }
+    if (!Number.isInteger(page)) {
+      return next();
+    }
 
-  const { questions, stats } = await list({ page, page_size: 20, sort: 'by_number_of_replies' });
-
-  res.locals.breadcrumbs = res.locals.breadcrumbs.slice(0, 1);
-  
-  res.locals.topics = questions;
-
-  // We preview one line of the topic body on the question index page
-  res.locals.topics.forEach(function (topic) {
-    const { body, summary } = render(topic.body);
-    topic.body = body;
-    topic.summary = summary;
-    topic.singular = topic.number_of_replies === 1;
-
-    topic.tags = topic.tags.map(tag => {
-      return { tag, slug: tag };
+    const { questions, stats } = await list({
+      page,
+      page_size: 20,
+      sort: "by_number_of_replies",
     });
-  });
 
-  res.locals.title = page > 1 ? `Page ${page} - Questions` : "Questions";
-  res.locals.paginator = Paginator(
-    page,
-    stats.page_size,
-    stats.total,
-    "/questions/replies"
-  );
+    res.locals.breadcrumbs = res.locals.breadcrumbs.slice(0, 1);
 
-  res.render("questions");
-});
+    res.locals.topics = questions;
+
+    // We preview one line of the topic body on the question index page
+    res.locals.topics.forEach(function (topic) {
+      const { body, summary } = render(topic.body);
+      topic.body = body;
+      topic.summary = summary;
+      topic.singular = topic.number_of_replies === 1;
+
+      topic.tags = topic.tags.map((tag) => {
+        return { tag, slug: tag };
+      });
+    });
+
+    res.locals.title = page > 1 ? `Page ${page} - Questions` : "Questions";
+    res.locals.paginator = Paginator(
+      page,
+      stats.page_size,
+      stats.total,
+      "/questions/replies"
+    );
+
+    res.render("questions");
+  }
+);
 
 Questions.route(["/tags", "/tags/page-:page"]).get(async function (
   req,
@@ -203,13 +216,28 @@ Questions.route("/ask")
       // if the user is not logged in, send an email to the admin
       // to manually post the question
       if (!req.session || !req.session.uid) {
-        const questionURL = config.protocol + config.host + "/sites/log-in?then=" + encodeURIComponent("/questions/ask?title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body));
-        Email.QUESTION(null, { title, body, questionURL, email, replyTo: email });
+        const questionURL =
+          config.protocol +
+          config.host +
+          "/sites/log-in?then=" +
+          encodeURIComponent(
+            "/questions/ask?title=" +
+              encodeURIComponent(title) +
+              "&body=" +
+              encodeURIComponent(body)
+          );
+        Email.QUESTION(null, {
+          title,
+          body,
+          questionURL,
+          email,
+          replyTo: email,
+        });
         res.send("OK");
       } else {
         const { id } = await create({ author, title, body, tags });
         flush();
-        res.redirect("/questions/" + id);  
+        res.redirect("/questions/" + id);
       }
     }
   });
@@ -231,10 +259,10 @@ Questions.route("/:id/new").post(async (req, res) => {
 Questions.route("/:id/edit")
   .get(async (req, res) => {
     const id = parseInt(req.params.id);
-    if (!req.session || !req.session.uid){
+    if (!req.session || !req.session.uid) {
       return res.redirect(`/log-in?then=/questions`);
     }
-      
+
     res.locals.topic = await get(id);
     res.render("questions/edit");
   })
@@ -248,8 +276,8 @@ Questions.route("/:id/edit")
     const body = req.body.body;
     const tags = (req.body.tags || "")
       .split(",")
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
 
     const question = await update(id, { title, body, tags });
     flush();
@@ -269,14 +297,14 @@ Questions.route("/:id").get(async (req, res, next) => {
   topic.reply_count = topic.replies.length;
 
   res.locals.breadcrumbs[res.locals.breadcrumbs.length - 1].label = topic.title;
-  topic.tags = topic.tags.map(tag => {
+  topic.tags = topic.tags.map((tag) => {
     return { tag, slug: tag };
   });
 
   res.locals.title = topic.title;
   res.locals.topics = topic.replies
-    .filter(reply => !!reply.body)
-    .map(reply => {
+    .filter((reply) => !!reply.body)
+    .map((reply) => {
       reply.body = render(reply.body).body;
       reply.answered = moment(reply.created_at).fromNow();
       reply.answeredDateStamp = moment(reply.created_at).valueOf();
@@ -292,8 +320,7 @@ Questions.get(
   async (req, res, next) => {
     // Pagination data
 
-    if (!req.params.tag) 
-      return res.redirect(req.baseUrl + "/tags");
+    if (!req.params.tag) return res.redirect(req.baseUrl + "/tags");
 
     if (req.params.page === "1")
       return res.redirect(req.baseUrl + `/tagged/${req.params.tag}`);
@@ -312,7 +339,7 @@ Questions.get(
     res.locals.prettyTag = lookup(tag);
     res.locals.breadcrumbs = res.locals.breadcrumbs.slice(0, 1).concat({
       label: lookup(tag),
-      url: "/questions/tagged/" + tag
+      url: "/questions/tagged/" + tag,
     });
 
     const { questions, stats } = await list({ tag, page });
@@ -325,7 +352,8 @@ Questions.get(
       topic.body = body;
       topic.summary = summary;
 
-      if (topic.tags) topic.tags = topic.tags.map(tag => ({ tag, slug: tag }));
+      if (topic.tags)
+        topic.tags = topic.tags.map((tag) => ({ tag, slug: tag }));
 
       topic.asked = moment(topic.created_at).fromNow();
       topic.askedDateStamp = moment(topic.created_at).valueOf();

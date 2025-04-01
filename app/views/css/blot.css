@@ -943,3 +943,14 @@ ul.pill-navigation {
   margin-left: 0.1rem;
   color: var(--medium-text-color)
 }
+
+
+#contact-form [name="name"],
+#contact-form [name="email"],
+#contact-form [name="message"] {
+  position: absolute;top:-9999px;left:-9999px;
+}
+
+#contact-form [name="contact_e879"] {
+  min-height: 120px;box-sizing: border-box;border:1px solid #dddddc;border-radius: 5px;width:100%;padding:0.5rem;margin:0.5rem 0
+}
