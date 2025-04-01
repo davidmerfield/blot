@@ -93,7 +93,27 @@ module.exports = function (options = {}) {
   });
 
   if (options.login) {
-    beforeEach(async function () {
+    beforeEach(async function (done) {
+
+      // first fetch the login page to get the csrf token
+      const loginPage = await this.fetch("/sites/log-in", {
+        redirect: "manual",
+      });
+
+      const loginHeaders = Object.fromEntries(loginPage.headers);
+      const loginCookies = loginHeaders["set-cookie"];
+      const csrfCookie = loginCookies.match(/csrf=([^;]+)/);
+
+      // the response status should be 200
+      expect(loginPage.status).toEqual(200);
+
+      const loginPageText = await loginPage.text();
+      const csrfTokenMatch = loginPageText.match(/name="_csrf" value="([^"]+)"/);
+
+      if (!csrfTokenMatch) {
+       return done(new Error("CSRF token not found in login page"));
+      }
+
       const email = this.user.email;
       const password = this.user.fakePassword;
 
@@ -101,15 +121,19 @@ module.exports = function (options = {}) {
 
       params.append("email", email);
       params.append("password", password);
+      params.append("_csrf", csrfTokenMatch[1]);
 
+      console.log('here!', params);
       const res = await this.fetch("/sites/log-in", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
+          Cookie: loginCookies, // Send the CSRF cookie along with the request
         },
         body: params.toString(),
         redirect: "manual",
       });
+
 
       const headers = Object.fromEntries(res.headers);
 
@@ -119,6 +143,11 @@ module.exports = function (options = {}) {
       // the response status should be 302
       // and redirect to the dashboard
       expect(res.status).toEqual(302);
+
+      if (res.status !== 302) {
+        return done(new Error(`Failed to log in: expected status 302, got ${res.status}`));
+      }
+
       expect(Cookie).toMatch(/connect.sid/);
       expect(location).toEqual("/sites");
 
@@ -139,6 +168,8 @@ module.exports = function (options = {}) {
       expect(dashboardText).toMatch(email);
 
       console.log("Checking links for logged-in user");
+
+      done();
     });
   }
 };

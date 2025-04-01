@@ -1297,6 +1297,7 @@ Add password protection for blogs then tell [Ed](https://mail.google.com/mail/u/
 
 Improve the markdown converter:
 - Add plugin option to enable hard line breaks in Markdown parser? Tell [Wil](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsmhNWSxQsvMkWPRdQsxQxSvh)
+- Add plugin to autogenerate anchor heading links and tell [Peter](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTzTSGBNGZrJghtTNGNKvdzlg)
 - Fix bug with nested Markdown and tell [Martin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqnhgBjBSKzvtclvqcFcMptMR):
 - Extend the Markdown converted to add support for Ulysses highlighting and iAWriter highlighting syntax, using the [example files provided by Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsKFQGTxDTnxNddZQxjsLZJGb). Tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsKFQGTxDTnxNddZQxjsLZJGb)
 - Fix bug and tell [Vanessa](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLswJQjKhnLpNZzfPhJZpVtcph) which injects `<p>` tags 
