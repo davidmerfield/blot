@@ -111,7 +111,10 @@ input:focus:-moz-placeholder {
   color: #c5c4c4;
 }
 
-input#email {
+input#contact_gfhkj {
 border-top-right-radius: 0;
 border-bottom-right-radius: 0;
+display: block;
+  width: 100%;
+
 }
