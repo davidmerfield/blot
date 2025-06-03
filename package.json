@@ -33,7 +33,7 @@
     "dropbox": "10.34.0",
     "esbuild": "0.25.0",
     "eventsource": "2.0.2",
-    "express": "4.19.2",
+    "express": "4.20.0",
     "express-rate-limit": "5.1.3",
     "express-session": "1.16.2",
     "fontkit": "1.8.1",
