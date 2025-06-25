@@ -10,6 +10,10 @@ function tokenKey(user_id) {
   return "user:" + user_id + ":git:token";
 }
 
+function statusKey(user_id) {
+  return "user:" + user_id + ":git:status";
+}
+
 function generateToken() {
   return uuid().replace(/-/g, "");
 }
@@ -49,7 +53,13 @@ function checkToken(user_id, token, callback) {
 function flush(user_id, callback) {
   debug("User:", user_id, "Getting token");
 
-  client.del(tokenKey(user_id), callback);
+  client.del(tokenKey(user_id), function (err) {
+    if (err) return callback(err);
+
+    debug("User:", user_id, "Flushed token");
+
+    return callback(null);
+  });
 }
 
 function getToken(user_id, callback) {
@@ -58,10 +68,27 @@ function getToken(user_id, callback) {
   client.get(tokenKey(user_id), callback);
 }
 
+function setStatus(blogID, status, callback) {
+  client.set(statusKey(blogID), status, callback);
+}
+
+function getStatus(blogID, callback) {
+  client.get(statusKey(blogID), callback);
+}
+
+function removeStatus(blogID, callback) {
+  client.del(statusKey(blogID), callback);
+}
+
 database.createToken = createToken;
 database.checkToken = checkToken;
 database.getToken = getToken;
+
 database.flush = flush;
 database.refreshToken = refreshToken;
+
+database.setStatus = setStatus;
+database.getStatus = getStatus;
+database.removeStatus = removeStatus;
 
 module.exports = database;

@@ -16,7 +16,9 @@
   .copier {margin-top: 4px;}
   
 </style>
-<div >
+<div class="live-updates">
+  {{#repo}}
+  {{^createInProgress}}
   <div class="center" style="flex-grow:0;">
     <div style="border:1px solid var(--light-border-color);border-radius: var(--border-radius);overflow: hidden;margin:12px 0">
     <div class="line" >
@@ -50,6 +52,8 @@
 </div>  
   </div>
   </div>
+  {{/createInProgress}}
+  {{/repo}}
 </div>
 
 {{> disconnect-line}}

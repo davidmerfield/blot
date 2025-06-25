@@ -29,17 +29,20 @@ module.exports = function disconnect(blogID, callback) {
     Blog.set(blogID, { client: "" }, function (err) {
       if (err) return callback(err);
 
-      database.flush(blog.owner, function (err) {
+      database.removeStatus(blog.id, function (err) {
         if (err) return callback(err);
-
-        // Remove the bare git repo in /repos
-        fs.remove(dataDir + "/" + blog.handle + ".git", function (err) {
+        database.flush(blog.owner, function (err) {
           if (err) return callback(err);
 
-          // Remove the .git directory in the user's blog folder?
-          // maybe don't do this... they might want it...
-          // what if there was a repo in their folder beforehand?
-          fs.remove(localPath(blogID, "/.git"), callback);
+          // Remove the bare git repo in /repos
+          fs.remove(dataDir + "/" + blog.handle + ".git", function (err) {
+            if (err) return callback(err);
+
+            // Remove the .git directory in the user's blog folder?
+            // maybe don't do this... they might want it...
+            // what if there was a repo in their folder beforehand?
+            fs.remove(localPath(blogID, "/.git"), callback);
+          });
         });
       });
     });
