@@ -41,7 +41,7 @@ describe("vimeo embeds", function () {
     vimeo(href, (err, template) => {
       expect(err).toEqual(null);
       expect(template).toEqual(
-        `<div style="width:0;height:0"> </div><div class="videoContainer vimeo" style="padding-bottom: 56.25%" ><iframe data-thumbnail="https://i.vimeocdn.com/video/466717816-33ad450eea4c71be9149dbe2e0d18673874917cadd5f1af29de3731e4d22a77f-d_640.jpg" src="//player.vimeo.com/video/87952436?badge=0&color=ffffff&byline=0&portrait=0" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`
+        `<div style="width:0;height:0"> </div><div class="videoContainer vimeo" style="padding-bottom: 56.25%" ><iframe data-thumbnail="https://i.vimeocdn.com/video/466717816-33ad450eea4c71be9149dbe2e0d18673874917cadd5f1af29de3731e4d22a77f-d.jpg" src="//player.vimeo.com/video/87952436?badge=0&color=ffffff&byline=0&portrait=0" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`
       );
       done();
     });
@@ -52,7 +52,7 @@ describe("vimeo embeds", function () {
     vimeo(href, (err, template) => {
       expect(err).toEqual(null);
       expect(template).toEqual(
-        `<div style="width:0;height:0"> </div><div class="videoContainer vimeo" style="padding-bottom: 56.25%" ><iframe data-thumbnail="https://i.vimeocdn.com/video/466717816-33ad450eea4c71be9149dbe2e0d18673874917cadd5f1af29de3731e4d22a77f-d_640.jpg" src="//player.vimeo.com/video/87952436?badge=0&color=ffffff&byline=0&portrait=0" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`
+        `<div style="width:0;height:0"> </div><div class="videoContainer vimeo" style="padding-bottom: 56.25%" ><iframe data-thumbnail="https://i.vimeocdn.com/video/466717816-33ad450eea4c71be9149dbe2e0d18673874917cadd5f1af29de3731e4d22a77f-d.jpg" src="//player.vimeo.com/video/87952436?badge=0&color=ffffff&byline=0&portrait=0" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`
       );
       done();
     });
@@ -63,7 +63,7 @@ describe("vimeo embeds", function () {
     vimeo(href, (err, template) => {
       expect(err).toEqual(null);
       expect(template).toEqual(
-        `<div style="width:0;height:0"> </div><div class="videoContainer vimeo" style="padding-bottom: 56.25%" ><iframe data-thumbnail="https://i.vimeocdn.com/video/466717816-33ad450eea4c71be9149dbe2e0d18673874917cadd5f1af29de3731e4d22a77f-d_640.jpg" src="//player.vimeo.com/video/87952436?badge=0&color=ffffff&byline=0&portrait=0" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`
+        `<div style="width:0;height:0"> </div><div class="videoContainer vimeo" style="padding-bottom: 56.25%" ><iframe data-thumbnail="https://i.vimeocdn.com/video/466717816-33ad450eea4c71be9149dbe2e0d18673874917cadd5f1af29de3731e4d22a77f-d.jpg" src="//player.vimeo.com/video/87952436?badge=0&color=ffffff&byline=0&portrait=0" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`
       );
       done();
     });
@@ -74,7 +74,7 @@ describe("vimeo embeds", function () {
     vimeo(href, (err, template) => {
       expect(err).toEqual(null);
       expect(template).toEqual(
-        `<div style="width:0;height:0"> </div><div class="videoContainer vimeo" style="padding-bottom: 56.25%" ><iframe data-thumbnail="https://i.vimeocdn.com/video/466717816-33ad450eea4c71be9149dbe2e0d18673874917cadd5f1af29de3731e4d22a77f-d_640.jpg" src="//player.vimeo.com/video/87952436?badge=0&color=ffffff&byline=0&portrait=0" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`
+        `<div style="width:0;height:0"> </div><div class="videoContainer vimeo" style="padding-bottom: 56.25%" ><iframe data-thumbnail="https://i.vimeocdn.com/video/466717816-33ad450eea4c71be9149dbe2e0d18673874917cadd5f1af29de3731e4d22a77f-d.jpg" src="//player.vimeo.com/video/87952436?badge=0&color=ffffff&byline=0&portrait=0" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`
       );
       done();
     });
