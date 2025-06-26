@@ -33,10 +33,6 @@ Fix all date issues
 
 ---
 
-Add [slava to featured sites](https://mail.google.com/mail/u/0/#inbox/KtbxLvgsxNbfjJmxjXKDMkjqvLFGhJtXlq)
-
-Work out why this image is not loading: https://www.revolution34.com/_image_cache/ab8067e0-1c8d-4968-bb1d-5a544765a124.jpeg
-
 Download Haikun's folder and [fix issue with iCloud](https://mail.google.com/mail/u/0/#inbox/QgrcJHsNjpqZNqVQPXjThqrdMVGWNfdqkjG)
 
 Work out issue with iCloud disconnect / setup with [Florian's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTzSJsxwwRTMNxWTMrGCQXTlh)
@@ -816,8 +812,6 @@ Make {{active}} strip the domain from the link [before checking](https://github.
 
 Can we add a 'folder rules' section to create ignore globs, multi post globs, etc.
 
-Git client is extremely slow to set up large folders – we need a loading screen
-
 When a folder has lots of elements, trim the list of files on the dashboard, at least on the index page
 
 Store path -> md5 hash on sync
@@ -1051,7 +1045,6 @@ Get to the bottom of the slow cloudflare issue and follow up with [Wen](https://
 
 
 Git client improvements:
-- Surface status of git client intialization when you first set up your blog on the git client. 
 - Fix issue which occurs when you change your username with the git client
 - Fix issue with switching from Dropbox client to Git client, in production which affected Nat
 
