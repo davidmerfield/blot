@@ -1,9 +1,3 @@
-Fix issue with Git client setup and merge PR 
-
-Fix failing tests
-
----
-
 Fix subfolder sync issue with iCloud images and tell [James](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfpDNkPmjwQfMMqcnSsFcxPsq)
 
 Fix accessibility issue with menu links reordering and tell [Grace](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfBpBkKCLVRWBGxzDDDkhSXfl)

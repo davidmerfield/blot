@@ -19,7 +19,7 @@
 #4c919c www.ishshah.me Ish Shah, is a software developer
 #5177a4 www.chrbutler.com Christopher Butler, is a designer
 #576c50 benlog.net Ben Greenberg, is a journalist
-#111111 afc.letterspace.org Robert van Vliet, is a writer
+#111111 www.letterspace.org Robert van Vliet, is a writer
 #94c5df inhab.it Wil Turner, is a writer
 #828282 www.skellis.net Simon Ellis, is an artist
 #da6d8d ianamurray.work Iana Murray, is a journalist
@@ -65,3 +65,4 @@
 #000000 jbeau.info Jeremy Beaudry, is an artist
 #000000 www.audunberdal.no Audun Berdal, is a designer
 #000000 www.amirsharif.com Amir Sharif, is an engineer
+#000000 www.spakhm.com Slava Akhmechet, is an engineer

@@ -6,7 +6,6 @@
 #1b6cb5 rebeccakukshtel.com Rebecca Kukshtel, is an engineer
 #d790c0 blog.aurynn.com Aurynn Shaw, is an engineer
 #a5a374 john.pavlusoffice.com John Pavlus, is a writer
-#702225 rachelpietraszek.com Rachel Pietraszek, is a lawyer
 #a0aab9 iiiiiiiii.in Ishtaarth Dalmia, is a writer
 #60b7dc www.failuretolerated.com Sean McCoy, is a game designer
 #ab4548 mrfrisby.com Stuart Frisby, is a designer
@@ -19,7 +18,7 @@
 #4c919c www.ishshah.me Ish Shah, is a software developer
 #5177a4 www.chrbutler.com Christopher Butler, is a designer
 #576c50 benlog.net Ben Greenberg, is a journalist
-#111111 afc.letterspace.org Robert van Vliet, is a writer
+#111111 www.letterspace.org Robert van Vliet, is a writer
 #94c5df inhab.it Wil Turner, is a writer
 #828282 www.skellis.net Simon Ellis, is an artist
 #da6d8d ianamurray.work Iana Murray, is a journalist
@@ -48,7 +47,6 @@
 #000000 bgreen.lol Brandon Lucas Green, is a musician
 #000000 meredithgran.com Meredith Gran, is a cartoonist
 #000000 ellanew.com Ellane W, is a designer
-#000000 raw.taisukemino.com Taisuke Mino, is a programmer
 #000000 alongtheray.com Raymond Hines, is a writer
 #000000 matthiaszeeb.net Matthias Zeeb, is an economist
 #000000 simonuvarov.com Simon Uvarov, is a programmer
@@ -65,3 +63,4 @@
 #000000 jbeau.info Jeremy Beaudry, is an artist
 #000000 www.audunberdal.no Audun Berdal, is a designer
 #000000 www.amirsharif.com Amir Sharif, is an engineer
+#000000 www.spakhm.com Slava Akhmechet, is an engineer
