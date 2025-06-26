@@ -14,15 +14,12 @@ var clfdate = require("helper/clfdate");
 var host = require("config").host;
 
 dashboard.get("/", function (req, res, next) {
-  console.log(clfdate() + " Git: checking if repo exists");
   repos.exists(req.blog.handle + ".git", function (exists) {
     if (exists) {
-      console.log(clfdate() + " Git: repo does exist");
       res.locals.repo = true;
       return next();
     }
 
-    console.log(clfdate() + " Git: repo does not exist, creating");
     res.redirect(req.baseUrl + "/create");
   });
 });
@@ -33,7 +30,6 @@ dashboard.get("/", function (req, res) {
       res.render(__dirname + "/views/index.html", {
         title: "Git",
         token: token,
-        createComplete: status === 'createComplete',
         createFailed: status === 'createFailed',
         createInProgress: status === 'createInProgress',
         host,
@@ -50,15 +46,19 @@ dashboard.get("/create", function (req, res) {
 });
 
 dashboard.post("/create", function (req, res, next) {
-  console.log('here!', req.body);
-  if (req.body.cancel) return   disconnect(req.blog.id, next);
-  console.log(clfdate() + " Git: creating repo");
+  
+  if (req.body.cancel) {
+    console.log(clfdate() + " Git: User cancelled creation of repo");
+    return disconnect(req.blog.id, next);
+  }
+
+  res.redirect(req.baseUrl);
+
   create(req.blog, function (err) {
     if (err) {
-      console.log(clfdate() + " Git: err creating repo", err);
+      console.log(clfdate() + " Git: Error creating repo", err);
     }
   });
-  res.redirect(req.baseUrl);
 });
 
 dashboard.get("/reset-password", function (req, res) {
@@ -67,18 +67,17 @@ dashboard.get("/reset-password", function (req, res) {
   });
 });
 
+dashboard.post("/reset-password", function (req, res, next) {
+  database.refreshToken(req.blog.owner, function (err) {
+    if (err) return next(err);
+    res.redirect(req.baseUrl);
+  });
+});
+
 dashboard.get("/disconnect", function (req, res) {
   res.locals.breadcrumbs.add("Disconnect", "disconnect");
   res.render(__dirname + "/views/disconnect.html", {
     title: "Git",
-  });
-});
-
-dashboard.post("/reset-password", function (req, res, next) {
-  database.refreshToken(req.blog.owner, function (err) {
-    if (err) return next(err);
-
-    res.redirect(req.baseUrl);
   });
 });
 

@@ -18,11 +18,16 @@
 </style>
 <div class="live-updates">
   {{#repo}}
+  {{#createInProgress}}
+     <div class="line" >
+  <span class="label">Repository URL</span>
+  <span class="center">Setting up repository...</span>
+      </div>
+  {{/createInProgress}}
   {{^createInProgress}}
-  <div class="center" style="flex-grow:0;">
-    <div style="border:1px solid var(--light-border-color);border-radius: var(--border-radius);overflow: hidden;margin:12px 0">
+
     <div class="line" >
-  <span class="label">URL</span>
+  <span class="label">Repository URL</span>
   <span class="center">
     <span id="repo_url">https://{{host}}/clients/git/end/{{blog.handle}}.git</span>
     <button class="copy" data-copy="https://{{host}}/clients/git/end/{{blog.handle}}.git"><span class="icon-copy"></span> Copy</button>
@@ -46,12 +51,10 @@
   </span>
 </div>  
 
-<div class="line" style="border-bottom: none;" >
+<div class="line">
   <span class="label">Branch</span>
   <span class="center">master</span>
 </div>  
-  </div>
-  </div>
   {{/createInProgress}}
   {{/repo}}
 </div>

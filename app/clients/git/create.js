@@ -84,12 +84,24 @@ module.exports = function create(blog, callback) {
             console.log(
               clfdate() + " Git: create: adding existing folder to liveRepo"
             );
+
             folder.status("Adding existing folder to live repository");
-            await addFolder(folder, liveRepo);
+            try {
+              await addFolder(folder, liveRepo);
+            } catch (err) {
+              return cleanupAndCallback(
+                new Error(
+                  "Failed to add folder to live repository: " + err.message
+                )
+              );
+            }
             database.setStatus(blog.owner, "createComplete", function (err) {
               if (err) return cleanupAndCallback(new Error(err));
 
               console.log(clfdate() + " Git: create: done");
+              // The delay ensures the page reloads – for empty folders
+              // this function returns immediately and the page which displays
+              // the status message doesn't reload in time.
               setTimeout(() => {
                 folder.status("Repository created successfully");
                 done(null, callback);
@@ -104,9 +116,16 @@ module.exports = function create(blog, callback) {
 
 async function addFolder(folder, liveRepo) {
   async function walk(dir) {
-    const files = await fs.readdir(dir);
+    const files = (await fs.readdir(dir))
+      .filter((file) => file !== ".DS_Store") // filter out .DS_Store files
+      .filter((file) => file !== "Thumbs.db") // filter out Thumbs.db files
+      .filter((file) => !file.startsWith(".git")) // filter out .git files
+      .sort();
 
     if (!files.length && dir === folder.path) {
+      console.log(
+        clfdate() + " Git: addFolder: folder is empty, creating initial commit"
+      );
       // If the folder is empty, create an initial commit
       return handleEmptyFolder(folder, liveRepo);
     }
@@ -137,7 +156,7 @@ async function handleEmptyFolder(folder, liveRepo) {
       { "--allow-empty": true },
       function (err) {
         if (err) return reject(new Error(err));
-        liveRepo.push("origin", "master", function (err) {
+        liveRepo.push("origin",  "master", function (err) {
           if (err) return reject(new Error(err));
           folder.status("Created initial commit in empty repository");
           resolve();
@@ -152,9 +171,9 @@ async function addFile(folder, liveRepo, path) {
     folder.status("Adding " + relativePath + " to repository");
     liveRepo.add(path, function (err) {
       if (err) return reject(new Error(err));
-      liveRepo.commit("Adding " + relativePath, function (err) {
+      liveRepo.commit("Add " + relativePath, function (err) {
         if (err) return reject(new Error(err));
-        liveRepo.push("origin", "master", function (err) {
+        liveRepo.push("origin",  "master", function (err) {
           if (err) return reject(new Error(err));
           folder.status("Added " + relativePath + " to repository");
           resolve();

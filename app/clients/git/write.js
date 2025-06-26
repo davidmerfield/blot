@@ -45,7 +45,7 @@ module.exports = function write(blogID, path, contents, callback) {
           if (err) return callback(new Error(err));
 
           // We push changes made to the bare repository
-          git.push(function (err) {
+          git.push("origin", "master", function (err) {
             if (err) return callback(new Error(err));
 
             debug("Blog:", blogID, "Wrote", path);
