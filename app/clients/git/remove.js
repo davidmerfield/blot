@@ -56,7 +56,7 @@ module.exports = function remove (blogID, path, callback) {
           if (err) return callback(new Error(err));
 
           // We push changes made to the bare repository
-          git.push("origin", "master", function (err) {
+          git.push(function (err) {
             if (err) return callback(new Error(err));
 
             debug("Blog:", blogID, "Successfully removed", path);
