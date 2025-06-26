@@ -107,7 +107,7 @@
           function sortTable() {
             
             var order = state.order || 'sorted';
-            var column = state.column;
+            var column = state.column || 0;
 
             var reverse = order === 'reverse';
             var header = table.querySelector('th:nth-child(' + (parseInt(column) + 1) + ')');
@@ -156,6 +156,8 @@
               table.querySelector('tbody').appendChild(row);
             });
           }
+
+          window.sortTable = sortTable;
       
           // add sorting to the directory list
           document.querySelectorAll('.directory-list th').forEach(function (header) {

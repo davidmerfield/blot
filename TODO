@@ -1,3 +1,15 @@
+Fix issue with Git client setup and merge PR 
+
+Fix failing tests
+
+---
+
+Fix subfolder sync issue with iCloud images and tell [James](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfpDNkPmjwQfMMqcnSsFcxPsq)
+
+Fix accessibility issue with menu links reordering and tell [Grace](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfBpBkKCLVRWBGxzDDDkhSXfl)
+
+Fix issue with links in Google Docs post and tell [Preetam](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbffVZwgpQnLQTKmwfrzzBQBCN)
+
 Fix issue with template settings and tell [Dirt](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrQRPKNbMkwscffXLqSLGqjr)
 
 Fix bug with Bruce's local template, [possibly related to Ryan's issue](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrKgBjjDKTqMbltHHhplfZsr). The template switches from 3 to 2 after each sync.
@@ -1632,3 +1644,5 @@ Consider adding 'default metadata' option to dashboard
 Consider switching to same-site lax and remove all redirects?
 
 Add way to buy domains via Blot and tell [Christine](https://mail.google.com/mail/u/1/#inbox/FMfcgzQXKWlxFbhmCbrwQxbKmJZCrVbX)
+
+Add support for Apple notes as client sync method and tell [Håvard](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfVFlPhLBJNRsqHZJzfDTnzTg)

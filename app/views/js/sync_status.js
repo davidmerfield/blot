@@ -2,6 +2,7 @@
 // when the document is ready
 document.addEventListener("DOMContentLoaded", function () {
 
+
   // get the status container
   var statusContainer = document.querySelector(".sync-status");
 
@@ -92,6 +93,12 @@ var checkAgain;
 
           try {
             sortTable();
+          } catch (e) {
+            console.error(e);
+          }
+
+          try {
+            initCopyButtons()
           } catch (e) {
             console.error(e);
           }
