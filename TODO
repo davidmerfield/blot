@@ -1,5 +1,3 @@
-Fix issue with links in Google Docs post and tell [Preetam](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbffVZwgpQnLQTKmwfrzzBQBCN)
-
 Fix issue with template settings and tell [Dirt](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrQRPKNbMkwscffXLqSLGqjr)
 
 Fix bug with Bruce's local template, [possibly related to Ryan's issue](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrKgBjjDKTqMbltHHhplfZsr). The template switches from 3 to 2 after each sync.
@@ -526,12 +524,6 @@ Clamp the max length of blot usernames and custom domains
 Expose markdown build errors on the dashboard to prevent weird non-update situations where it looks like the sync is stuck
 
 Fix bug with [bulk redirects page](https://blot.im/questions/2385)
-
-Make video embeds work on Google Docs:
-- Tell [questioners](https://blot.im/questions/471) and [Preetam](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbffVZwgpQnLQTKmwfrzzBQBCN)
-
-Make code embeds work on Google Docs:
-- Tell [Jonathan](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxTPFzrWBgxxWfbJzlbZzjKMxB)
 
 Improvements to search engine:
 - Make search use 'AND' instead of 'OR' for multiple terms

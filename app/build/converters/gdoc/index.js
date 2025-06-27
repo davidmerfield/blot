@@ -48,6 +48,20 @@ async function read (blog, path, callback) {
 
     var metadata = {};
 
+    // restore the original URL of all links and strip Google's nasty tracking
+    // redirect e.g. map https://www.google.com/url?q=https://example.com&amp;sa=D&amp;source=editors&amp;ust=1751016887642460&amp;usg=AOvVaw05ZCiUPYVBgPd61MWsgljs -> https://example.com
+    $("a").each(function (i, elem) {
+      var href = $(this).attr("href");
+      // parse the URL to get the original URL and ensure the current url host is 'google.com'
+      var url = new URL(href, "https://example.com");
+      if (url.hostname === "www.google.com" && url.searchParams.has("q")) {
+        var originalUrl = url.searchParams.get("q");
+        if (originalUrl) {
+          $(this).attr("href", originalUrl);
+        }
+      }
+    });
+      
     $("p").each(function (i) {
       var text = $(this).text();
 
