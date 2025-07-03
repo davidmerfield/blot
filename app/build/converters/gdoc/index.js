@@ -10,15 +10,14 @@ const config = require("config");
 const sharp = require("sharp");
 const Metadata = require("build/metadata");
 const extend = require("helper/extend");
+const yaml = require("yaml");
 
-function is (path) {
+function is(path) {
   return [".gdoc"].indexOf(extname(path).toLowerCase()) > -1;
 }
 
-async function read (blog, path, callback) {
-  ensure(blog, "object")
-    .and(path, "string")
-    .and(callback, "function");
+async function read(blog, path, callback) {
+  ensure(blog, "object").and(path, "string").and(callback, "function");
 
   try {
     const localPath = LocalPath(blog.id, path);
@@ -61,10 +60,27 @@ async function read (blog, path, callback) {
         }
       }
     });
-      
+
+    let yamlOpeningTag;
+
+    // parse metadata from paragraphs
     $("p").each(function (i) {
       var text = $(this).text();
 
+      // If the first paragraph is a YAML front matter opening tag
+      // then we should remove it if and only if the next paragraph
+      // contains a valid YAML key-value pair.
+      if ((text.trim() === '---' || text.trim() === '—') && i === 0) {
+        yamlOpeningTag = $(this);
+        return;
+      }
+
+      if (Object.keys(metadata).length > 0 && (text.trim() === '---' || text.trim() === '—')) {
+        // this is a closing tag, so we should stop parsing metadata
+        $(this).remove();
+        return false;
+      }
+      
       if (text.indexOf(":") === -1) return false;
 
       var key = text.slice(0, text.indexOf(":"));
@@ -77,6 +93,13 @@ async function read (blog, path, callback) {
       if (parsed.html === text) return false;
 
       extend(metadata).and(parsed.metadata);
+
+      // Since we have a valid YAML front matter opening tag,
+      // we should also check for a closing tag.
+      if (yamlOpeningTag && i === 1) {
+        yamlOpeningTag.remove();
+        validYAML = true;
+      }
 
       $(this).remove();
     });
@@ -113,7 +136,7 @@ async function read (blog, path, callback) {
         try {
           ext = disposition
             .split(";")
-            .find(i => i.includes("filename"))
+            .find((i) => i.includes("filename"))
             .split("=")
             .pop()
             .replace(/"/g, "")
@@ -136,14 +159,9 @@ async function read (blog, path, callback) {
     }
 
     let html = $("body").html();
-
-    var metadataString = "<!--";
-
-    for (var i in metadata) metadataString += "\n" + i + ": " + metadata[i];
-
-    if (metadataString !== "<!--") {
-      metadataString += "\n-->\n";
-      html = metadataString + html;
+    
+    if (Object.keys(metadata).length > 0) {
+      html = "---\n" + yaml.stringify(metadata) + "---\n" + html;
     }
 
     callback(null, html, stat);
