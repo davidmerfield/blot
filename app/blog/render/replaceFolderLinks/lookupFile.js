@@ -40,6 +40,11 @@ async function lookupFile(blogID, cacheID, value) {
   // strip any hash from the value
   value = value.split("#")[0];
 
+  // if the value contains url-encoded characters, decode it
+  if (value.includes("%")) {
+    value = decodeURIComponent(value);
+  }
+
   const [pathFromValue, ...rest] = value.split("?");
   const query = rest.length ? `?${rest.join("?")}` : "";
 
