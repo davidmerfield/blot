@@ -1,5 +1,5 @@
 .sites-list-container {
-  min-height: calc(100vh - 8.25rem);
+  min-height: calc(100vh - 8rem);
   display: flex;
   flex-direction: column;
 }
@@ -71,12 +71,14 @@ a.blog-link .url {
 button.logout {
   cursor: pointer;
   background: none;
-  font-size: 14px;
+  font-size: var(--font-size);
+  font-weight: 400;
   border: none;
   padding: 8px 12px;
-  margin: 12px 0;
-  font-weight: 600;
-  color: rgb(153, 153, 153);
+  margin: 0 0 24px;
+  position: relative;
+  top:6px;
+  color: var(--medium-text-color);
   border-radius: var(--border-radius);
   transition: background-color 0.2s, color 0.2s;
 }
@@ -88,7 +90,7 @@ button.logout:hover {
 
 form.create-site-button {
   position: absolute;
-  top: 18px;
+  top: 0;
   right: 0;
 }
 
@@ -103,6 +105,7 @@ form.create-site-button button {
   color: var(--background-color);
   padding: 0.5em 0.75em;
   font-weight: 600;
+  margin:0;
 }
 
 

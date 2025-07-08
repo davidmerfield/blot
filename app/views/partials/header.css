@@ -3,6 +3,7 @@
   justify-content: space-between;
   padding: 12px 0;
   min-height: 24px;
+  position: absolute;
 }
 
 .header .spacer {
