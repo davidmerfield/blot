@@ -5,6 +5,7 @@ module.exports = {
     return "blog:" + blogID + ":url:" + url;
   },
 
+  // maybe switch from using a JSON string to a hash
   entry: function (blogID, path) {
     return "blog:" + blogID + ":entry:" + pathNormalize(path);
   },
