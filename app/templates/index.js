@@ -1,3 +1,5 @@
+// WRITE TESTS FIRST
+
 var config = require("config");
 var Template = require("models/template");
 var capitalize = require("helper/capitalize");
