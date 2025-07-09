@@ -46,6 +46,22 @@ describe("replaceCssUrls", function () {
     expect(await this.text("/style.css")).toMatch(cdnRegex("/images/test.jpg"));
   });
 
+  it("should handle spaces and url-encoded chars", async function () {
+    await this.write({ path: "/image with space.jpg", content: "image" });
+    await this.template({
+      "style.css": `.test { background-image: url("/image%20with%20space.jpg"); }`,
+    });
+    expect(await this.text("/style.css")).toMatch(cdnRegex("/image with space.jpg"));
+  });
+
+  it("should handle file names with percent signs", async function () {
+    await this.write({ path: "/100% luck.jpg", content: "image" });
+    await this.template({
+      "style.css": `.test { background-image: url("/100% luck.jpg"); }`,
+    });
+    expect(await this.text("/style.css")).toMatch(cdnRegex("/100% luck.jpg"));
+  });
+
   it("should handle unquoted URLs", async function () {
     await this.write({ path: "/images/test.jpg", content: "fake image data" });
     await this.template({
