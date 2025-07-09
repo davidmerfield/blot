@@ -49,7 +49,7 @@ window.addEventListener("message", receiveMessage, false);
 
 
 
-<div class="collapse-on-small-screens" >
+<div class="collapse-on-small-screens" style="min-height: calc(100vh - 8rem);" >
 
   
 
@@ -116,8 +116,9 @@ window.addEventListener("message", receiveMessage, false);
 </div>
 
 <div style="margin: -1px 0 2rem;position: relative;z-index: 1;border-radius: 0 0 var(--border-radius)  var(--border-radius);overflow: hidden;border: 1px solid var(--border-color);border-top: none;">
-  <a href="{{{base}}}/template/{{template.slug}}" class="panel-link">Edit template 
-    <svg style="float: right;fill:currentColor;position:relative;top:4px;right:-8px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"></path></svg>    
+  <a href="{{{base}}}/template/{{template.slug}}" class="panel-link">
+    <span class="icon-edit" style="margin-right: 8px;"></span> 
+    Edit template 
   </a>
 </div>
 
@@ -157,7 +158,7 @@ window.addEventListener("message", receiveMessage, false);
 
   .site-preview {
     border-radius: var(--border-radius) var(--border-radius) 0 0;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.5),0 -1px 0 rgba(0,0,0,.11),0 1px 0 rgba(0,0,0,.1),-1px 0 0 rgba(0,0,0,.13),1px 0 0 rgba(0,0,0,.13);
+    box-shadow: 0 -1px 0 rgba(0,0,0,.07),0 1px 0 rgba(0,0,0,.07),-1px 0 0 rgba(0,0,0,.07),1px 0 0 rgba(0,0,0,.07);
   }
   .panel-link {
     display: block;

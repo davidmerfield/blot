@@ -12,7 +12,6 @@
     border-radius: var(--border-radius);
 }
 
-
 .site-preview iframe {
     visibility: hidden;
     background: var(--background-color);

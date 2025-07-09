@@ -53,9 +53,15 @@ module.exports = function set (blogID, path, updates, callback) {
     if (entry.guid === undefined) entry.guid = "entry_" + guid();
 
     // This is for new entries
-    if (entry.created === undefined) entry.created = Date.now();
+    if (entry.created === undefined) {
+      console.log('we are HERE');
+      entry.created = Date.now();
+    }
 
-    if (entry.dateStamp === undefined) entry.dateStamp = entry.created;
+    if (entry.dateStamp === undefined) {
+      console.log('we are HERE2');
+      entry.dateStamp = entry.created;
+    }
 
     // ToDO remove these and ensure all existing entries have been rebuilt
     if (entry.dependencies === undefined) entry.dependencies = [];

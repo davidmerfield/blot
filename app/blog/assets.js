@@ -50,22 +50,30 @@ GLOBAL_STATIC_SUBDIRECTORIES.forEach((dir) => {
   assets.use(dir, express.static(GLOBAL_STATIC_FILES + dir, { maxAge: "1y" }));
 });
 
-assets.get("/html2canvas.min.js", (req, res) => {
-  sendFile(GLOBAL_STATIC_FILES + "/html2canvas.min.js", {
-    req,
-    res,
-    maxAge: LARGEST_POSSIBLE_MAXAGE,
-    immutable: true,
-  });
+assets.get("/html2canvas.min.js", async (req, res, next) => {
+  try {
+    await sendFile(GLOBAL_STATIC_FILES + "/html2canvas.min.js", {
+      req,
+      res,
+      maxAge: LARGEST_POSSIBLE_MAXAGE,
+      immutable: true,
+    });
+  } catch (err) {
+    next();
+  }
 });
 
-assets.get("/layout.css", (req, res) => {
-  sendFile(GLOBAL_STATIC_FILES + "/layout.css", {
-    req,
-    res,
-    maxAge: LARGEST_POSSIBLE_MAXAGE,
-    immutable: true,
-  });
+assets.get("/layout.css", async (req, res, next) => {
+  try {
+    await sendFile(GLOBAL_STATIC_FILES + "/layout.css", {
+      req,
+      res,
+      maxAge: LARGEST_POSSIBLE_MAXAGE,
+      immutable: true,
+    });
+  } catch (err) {
+    next();
+  }
 });
 
 // Blog-specific static assets

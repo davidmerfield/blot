@@ -1,7 +1,7 @@
 {{#folder}}
 
 {{#root}}
-  <div class="folder-container">
+  <div class="folder-container" style="position:relative;top:-7px">
     <a class="line" href="{{{base}}}/client{{#blog.client}}/{{client.name}}{{/blog.client}}">
       <span class="label">Folder</span>
       {{^blog.client}}
@@ -228,7 +228,7 @@
   </div>
 {{#blog.client}}
 {{#directory}}
-<a href="{{{base}}}/client" class="status-link">
+<a href="{{{base}}}/client" class="status-link" style="border-radius: 0 0 6px 6px;">
   <span class="sync-status" data-sync-status-url="{{{base}}}/status">{{blog.status.message}} {{blog.status.fromNow}}</span>
 </a>
 {{/directory}}

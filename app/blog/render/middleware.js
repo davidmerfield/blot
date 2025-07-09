@@ -179,6 +179,9 @@ module.exports = function (req, res, _next) {
             try {
               req.log("Sending response");
               res.header(CONTENT_TYPE, viewType);
+              // This lets browsers send 'If-Modified-Since' requests
+              // to check if the page has changed since the last time
+              res.header("Last-Modified", new Date(blog.cacheID).toUTCString());
               res.send(output);
             } catch (e) {
               next(e);

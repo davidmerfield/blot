@@ -1,3 +1,12 @@
+Fix various performance issues with archives page and sitemap on large sites - maybe allEntries only retrieves some properties and paginates through rather than a single request?
+- highlighted by `https://salocin.blot.im` and `https://salocin.blot.im/archives` and  sitemap
+
+Why aren't etags working properly?
+
+Tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfxjtskbRgHNBvJSTTjSpDQzr) that photo posts are dated at the time they appear in Blot. I'll consider adding an option to use the image taken date?
+
+Google Drive blockquotes and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfxlDlqnPKgVbvfQpzhqBGPdF)
+
 Investigate iCloud bugs
 - Repeat issue with files in sub folders...
 - What happens when you rename a folder connected to iCloud client?
@@ -9,8 +18,14 @@ Investigate iCloud bugs
 
 Fix bug with [navigation on blog template on mobile](https://blot.im/questions/3137)
 
-Why isn't the WAV file in this footnote being properly replaced with a CDN URL?
-- `https://diwank.space/field-notes-from-shipping-real-code-with-claude`
+Improve folder to CDN pipeline
+- Could we respond with redirects to Blot's CDN?
+- Why isn't the WAV file in this footnote being properly replaced with a CDN URL?
+  - it's because it contains URL-encoded chars – replace 
+  - `https://diwank.space/field-notes-from-shipping-real-code-with-claude`
+- Why isn't this file?
+  - `https://yangrobotics.com/posts/peng-2.md`
+  - possibly because it's a fully-qualified URL? we need to handle these I think
 
 Get a handle on data egress from AWS – block bots?
 - Check in on [this chart](https://us-east-1.console.aws.amazon.com/costmanagement/home#/cost-explorer?chartStyle=LINE&costAggregate=unBlendedCost&endDate=2025-06-30&excludeForecasting=false&filter=%5B%7B%22dimension%22:%7B%22id%22:%22UsageTypeGroup%22,%22displayValue%22:%22Usage%20type%20group%22%7D,%22operator%22:%22INCLUDES%22,%22values%22:%5B%7B%22value%22:%22EC2:%20Data%20Transfer%20-%20Internet%20(Out)%22,%22displayValue%22:%22EC2:%20Data%20Transfer%20-%20Internet%20(Out)%22%7D%5D%7D%5D&futureRelativeRange=CUSTOM&granularity=Daily&groupBy=%5B%22Service%22%5D&historicalRelativeRange=LAST_6_MONTHS&isDefault=true&reportMode=STANDARD&reportName=New%20cost%20and%20usage%20report&showOnlyUncategorized=false&showOnlyUntagged=false&startDate=2025-01-01&usageAggregate=usageQuantity&useNormalizedUnits=false)
@@ -19,9 +34,7 @@ Fix issue with template settings and tell [Dirt](https://mail.google.com/mail/u/
 
 Add per request resource monitoring, e.g. heap size before/after
 
-Fix various performance issues with archives page and sitemap
-- highlighted by `https://niksethi.blot.im/blog-posts.html`
-- also by `https://salocin.blot.im`
+Tune proxy next upstream status code conditions to preserve zero-downtime-deployments but prevent expensive requests (timeout?)
 
 Implement mac server screenshot endpoint
 - Remove weird fake screenshot code from template editor

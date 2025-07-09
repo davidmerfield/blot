@@ -13,8 +13,6 @@ var clfdate = require("helper/clfdate");
 // compression. See ../config/nginx for more. Blot does the rest.
 var server = Express();
 
-server.set("etag", false); // turn off etags for responses
-
 // Removes a header otherwise added by Express. No wasted bytes
 server.disable("x-powered-by");
 
