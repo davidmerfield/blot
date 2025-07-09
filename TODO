@@ -2,6 +2,11 @@ Fix various performance issues with archives page and sitemap on large sites - m
 - highlighted by `https://salocin.blot.im` and `https://salocin.blot.im/archives` and  sitemap
 
 Why aren't etags working properly?
+- work out where we should return etags
+- should nginx pass etags back to node? probably not – just use them itself...
+
+Fix the way the photos load on this site
+- `https://krislarsphotos.blot.im`
 
 Tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfxjtskbRgHNBvJSTTjSpDQzr) that photo posts are dated at the time they appear in Blot. I'll consider adding an option to use the image taken date?
 
@@ -26,6 +31,7 @@ Improve folder to CDN pipeline
 - Why isn't this file?
   - `https://yangrobotics.com/posts/peng-2.md`
   - possibly because it's a fully-qualified URL? we need to handle these I think
+- Maybe all 'asset requests' should return 302? even 301 if the url is versioned?
 
 Get a handle on data egress from AWS – block bots?
 - Check in on [this chart](https://us-east-1.console.aws.amazon.com/costmanagement/home#/cost-explorer?chartStyle=LINE&costAggregate=unBlendedCost&endDate=2025-06-30&excludeForecasting=false&filter=%5B%7B%22dimension%22:%7B%22id%22:%22UsageTypeGroup%22,%22displayValue%22:%22Usage%20type%20group%22%7D,%22operator%22:%22INCLUDES%22,%22values%22:%5B%7B%22value%22:%22EC2:%20Data%20Transfer%20-%20Internet%20(Out)%22,%22displayValue%22:%22EC2:%20Data%20Transfer%20-%20Internet%20(Out)%22%7D%5D%7D%5D&futureRelativeRange=CUSTOM&granularity=Daily&groupBy=%5B%22Service%22%5D&historicalRelativeRange=LAST_6_MONTHS&isDefault=true&reportMode=STANDARD&reportName=New%20cost%20and%20usage%20report&showOnlyUncategorized=false&showOnlyUntagged=false&startDate=2025-01-01&usageAggregate=usageQuantity&useNormalizedUnits=false)
