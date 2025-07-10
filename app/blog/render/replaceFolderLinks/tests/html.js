@@ -55,12 +55,12 @@ describe("replaceFolderLinks", function () {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     await this.write({ path: "/test.jpg", content: "image 2" });
-    
+
     const res2 = await this.get("/");
     const result2 = await res2.text();
 
     expect(result2).toMatch(cdnRegex("/test.jpg"));
-    
+
     const version2 = result2.match(/v-[a-f0-9]{8}/)[0];
 
     expect(version2).not.toEqual(version);
@@ -84,6 +84,80 @@ describe("replaceFolderLinks", function () {
       '<span class="hljs-string">"/docs/test.pdf"</span>'
     );
   });
+
+  it("should replace src attributes with full qualified URLs to the blog custom domain", async function () {
+    await this.write({ path: "/images/test.jpg", content: "fake image data" });
+    await this.blog.update({
+      domain: "example.com",
+      redirectSubdomain: false,
+    });
+
+    await this.template({
+      "entries.html": '<img src="https://example.com/images/test.jpg">',
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toMatch(
+      new RegExp(
+        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`
+      )
+    );
+
+    // handle www subdomain
+    await this.template({
+      "entries.html": '<img src="https://www.example.com/images/test.jpg">',
+    });
+
+    const res2 = await this.get("/");
+
+    expect(await res2.text()).toMatch(
+      new RegExp(
+        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`
+      )
+    );
+  });
+
+  it("should replace src attributes with full qualified URLs to the blog subdomain", async function () {
+    await this.write({ path: "/images/test.jpg", content: "fake image data" });
+    await this.template({
+      "entries.html":
+        '<img src="https://' +
+        this.blog.handle +
+        "." +
+        config.host +
+        '/images/test.jpg">',
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toMatch(
+      new RegExp(
+        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`
+      )
+    );
+
+    await this.template({
+      "entries.html":
+        '<img src="https://www.' +
+        this.blog.handle +
+        "." +
+        config.host +
+        '/images/test.jpg">',
+    });
+
+    const res2 = await this.get("/");
+    const result2 = await res2.text();
+
+    expect(result2).toMatch(
+      new RegExp(
+        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`
+      )
+    );
+  });
+
 
   it("should replace href attributes with versioned CDN URLs", async function () {
     await this.write({ path: "/docs/test.pdf", content: "fake pdf data" });
@@ -216,7 +290,8 @@ describe("replaceFolderLinks", function () {
     await this.write({ path: "/b.jpg", content: "image" });
     await this.write({ path: "/c.jpg", content: "image" });
     await this.template({
-      "entries.html": '<img src="./a.jpg"><img src="b.jpg"><img src="../c.jpg">',
+      "entries.html":
+        '<img src="./a.jpg"><img src="b.jpg"><img src="../c.jpg">',
     });
 
     const res = await this.get("/");
@@ -226,7 +301,6 @@ describe("replaceFolderLinks", function () {
     expect(result).toMatch(cdnRegex("/b.jpg"));
     expect(result).toMatch(cdnRegex("/c.jpg"));
   });
-
 
   it("should handle spaces and url-encoded chars", async function () {
     await this.write({ path: "/image with space.jpg", content: "image" });
@@ -239,7 +313,6 @@ describe("replaceFolderLinks", function () {
 
     expect(result).toMatch(cdnRegex("/image with space.jpg"));
   });
-
 
   it("should handle file names with percent signs", async function () {
     await this.write({ path: "/100% luck.jpg", content: "image" });
@@ -316,7 +389,7 @@ describe("replaceFolderLinks", function () {
     // First request should trigger a stat
     const res1 = await this.get("/1.html");
     const result1 = await res1.text();
-    
+
     expect(result1).toMatch(cdnRegex("/cached.jpg"));
     // Should have called stat once
     expect(fs.stat).toHaveBeenCalledWith(filePath);
@@ -332,10 +405,10 @@ describe("replaceFolderLinks", function () {
     // Verify stat was not called again
     expect(fs.stat).not.toHaveBeenCalled();
     expect(result2).toMatch(cdnRegex("/cached.jpg\\?cache=false"));
-    
+
     // Restore original stat
     fs.stat = origStat;
-  });  
+  });
 
   it("should handle multiple attributes in the same tag", async function () {
     await this.write({ path: "/test.jpg", content: "image" });

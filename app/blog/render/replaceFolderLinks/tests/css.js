@@ -51,7 +51,9 @@ describe("replaceCssUrls", function () {
     await this.template({
       "style.css": `.test { background-image: url("/image%20with%20space.jpg"); }`,
     });
-    expect(await this.text("/style.css")).toMatch(cdnRegex("/image with space.jpg"));
+    expect(await this.text("/style.css")).toMatch(
+      cdnRegex("/image with space.jpg")
+    );
   });
 
   it("should handle file names with percent signs", async function () {
@@ -72,6 +74,35 @@ describe("replaceCssUrls", function () {
     const result = await res.text();
 
     expect(result).toMatch(cdnRegex("/images/test.jpg"));
+  });
+
+  it("should handle full urls to the blot subdomain", async function () {
+    await this.write({ path: "/images/test.jpg", content: "fake image data" });
+    await this.template({
+      "style.css": `.test { background-image: url("https://${this.blog.handle}.${config.host}/images/test.jpg"); }`,
+    });
+    expect(await this.text("/style.css")).toMatch(cdnRegex("/images/test.jpg"));
+    await this.template({
+      "style.css": `.test { background-image: url("https://www.${this.blog.handle}.${config.host}/images/test.jpg"); }`,
+    });
+    expect(await this.text("/style.css")).toMatch(cdnRegex("/images/test.jpg"));
+  });
+
+  it("should handle full urls to a custom domain", async function () {
+    await this.blog.update({
+      domain: "example.com",
+      redirectSubdomain: false,
+    });
+
+    await this.write({ path: "/images/test.jpg", content: "fake image data" });
+    await this.template({
+      "style.css": `.test { background-image: url("https://example.com/images/test.jpg"); }`,
+    });
+    expect(await this.text("/style.css")).toMatch(cdnRegex("/images/test.jpg"));
+    await this.template({
+      "style.css": `.test { background-image: url("https://www.example.com/images/test.jpg"); }`,
+    });
+    expect(await this.text("/style.css")).toMatch(cdnRegex("/images/test.jpg"));
   });
 
   it("should handle multiple URLs in the same rule across multiple requests", async function () {
