@@ -1,5 +1,5 @@
 .sites-list-container {
-  min-height: calc(100vh - 8rem);
+  min-height: calc(100vh - 7.8rem);
   display: flex;
   flex-direction: column;
 }
@@ -7,6 +7,7 @@
 .sites {
   flex-grow: 1;
   min-width: none;
+  padding-bottom: calc(var(--spacing) * 2);
 }
 
 .site {
@@ -49,7 +50,11 @@ a.blog-link .text-info {
 }
 
 .site:hover {
-  background-color: #f0f4ff70;
+  background-color: #e4eafb75
+}
+
+.site:active {
+  background-color: var(--background-color)
 }
 
 a.blog-link .title {

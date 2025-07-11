@@ -42,27 +42,27 @@
 
 .template-row {
     position: relative;
-    border: 2px solid transparent;
-    border-radius: var(--border-radius);
-    transition: border-color 0.2s;
     margin: 2px 0;
 }
 
-.template-row.selected {
-    border-color: var(--accent-color);
-}
-
-.template-row:hover:not(.selected) {
-    border-color: var(--border-color);
+ 
+.template-row:hover {
+    background: #e4eafb75;
 }
 
 .template-row > a {
     border-radius: var(--border-radius);
     display: block;
-    color: var(--accent-color);
+    color: var(--text-color);
+    font-size: 14px;
     padding: 6px 0 6px 52px;
     box-sizing: border-box;
 }
+.template-row.selected a {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
 .template-row .preview {
     height: 24px;
     width: 36px;

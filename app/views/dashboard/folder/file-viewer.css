@@ -28,7 +28,7 @@
     background-color: none;
   }
   table.file-stat tr:hover {
-    background-color: #f0f4ff70;
+    background-color: #e4eafb75;
   }
 
   table.file-stat td:first-child {
@@ -139,7 +139,7 @@ a.template-button.file-helper {
 }
 
 a.template-button.file-helper:hover {
-  background-color: #f0f4ff70;
+  background-color: #e4eafb75;
 }
 
 a.template-button.file-helper span {margin-left: 0.5em;}

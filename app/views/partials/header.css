@@ -1,17 +1,28 @@
 .header {
-  display: flex;
+  display: none;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: 12px 2rem;
   min-height: 24px;
   position: absolute;
   width: 100%;
 }
 
-.header .spacer {
+
+.call-to-action  {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  min-height: 24px;
+  position: absolute;
+  top: 0;
+  right: 2rem;
+}
+
+.call-to-action .spacer {
   flex-grow: 1;
 }
 
-.header a {
+.call-to-action a {
   background-color: var(--light-background-color);
   border-radius: 4px;
   color: var(--accent-color);
@@ -25,7 +36,7 @@
   transition: background-color 0.2s;
 }
 
-.header a:hover {
+.call-to-action a:hover {
   background-color: #e4eafb;
 }
 
