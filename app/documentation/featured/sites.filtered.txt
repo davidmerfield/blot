@@ -64,3 +64,4 @@
 #000000 www.audunberdal.no Audun Berdal, is a designer
 #000000 www.amirsharif.com Amir Sharif, is an engineer
 #000000 www.spakhm.com Slava Akhmechet, is an engineer
+#000000 www.hayalpozanti.com Hayal Pozanti, is an artist

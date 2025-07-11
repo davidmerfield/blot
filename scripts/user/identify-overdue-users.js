@@ -2,11 +2,18 @@ const each = require("../each/user");
 const child_process = require("child_process");
 const { blog_static_files_dir, blog_folder_dir } = require("config");
 const prettySize = require("helper/prettySize");
+const fs = require("fs");
 
 let rolling_total = 0;
 
 each(
   function (user, next) {
+
+    if (!user) {
+      console.log("No user found, exiting.");
+      return next();
+    }
+
     if (
       user.isDisabled ||  (user.subscription && user.subscription.status === "unpaid")) {
 

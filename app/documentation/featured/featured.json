@@ -530,6 +530,14 @@
       "bio": "is an engineer",
       "x": 384,
       "y": 48
+    },
+    {
+      "link": "https://www.hayalpozanti.com",
+      "host": "www.hayalpozanti.com",
+      "name": "Hayal Pozanti",
+      "bio": "is an artist",
+      "x": 384,
+      "y": 96
     }
   ],
   "thumbnail_width": 48

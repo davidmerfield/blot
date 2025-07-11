@@ -13,6 +13,7 @@ Tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfxjtskbRgHNBvJSTTjS
 Google Drive blockquotes and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfxlDlqnPKgVbvfQpzhqBGPdF)
 
 Investigate iCloud bugs
+- Intermittent 'iCloud Server down' notifications
 - Repeat issue with files in sub folders...
 - What happens when you rename a folder connected to iCloud client?
   - does this explain why there are unrenamed folders in the mac server icloud drive?
@@ -20,6 +21,23 @@ Investigate iCloud bugs
 - Download Haikun's folder and [fix issue with iCloud](https://mail.google.com/mail/u/0/#inbox/QgrcJHsNjpqZNqVQPXjThqrdMVGWNfdqkjG)
 - Work out issue with iCloud disconnect / setup with [Florian's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTzSJsxwwRTMNxWTMrGCQXTlh)
 - remove all keys related to icloud client for blog_e74c2a93cXXXX
+
+Fix various performance issues with archives page and sitemap on large sites - maybe allEntries only retrieves some properties and paginates through rather than a single request?
+- basically, we need to modify the template engine to save the properties of each entry requested, then use this in entry.get, then update entry to use a hash rather than a json blob.
+- highlighted by `https://salocin.blot.im` and `https://salocin.blot.im/archives` and  sitemap
+- why is the feed so huge? are we compressing feeds?
+- we need to modify the template engine to extract which properties of the entry are used, then pass this into entry.get to reduce memory usage significantly for large sites.
+- maybe write tool to check before/after for lots of test sites? real life sites on blot? error if diff, or offer chance to test?
+
+Add [preload=none](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/audio#preload) to all audio and video tags without it defined or maybe preload="metadata"? 
+
+Why aren't etags working properly? They seem to be flaky... can we compute these ourselves?
+
+Tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfxjtskbRgHNBvJSTTjSpDQzr) that photo posts are dated at the time they appear in Blot. I'll consider adding an option to use the image taken date?
+
+Automate the detection and removal of long-overdue sites (> 1 year)
+
+Google Drive blockquotes and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfxlDlqnPKgVbvfQpzhqBGPdF)
 
 Fix bug with [navigation on blog template on mobile](https://blot.im/questions/3137)
 
@@ -34,6 +52,7 @@ Improve folder to CDN pipeline
 - Maybe all 'asset requests' should return 302? even 301 if the url is versioned?
 
 Get a handle on data egress from AWS – block bots?
+- Check in on 'ssh blot' > 'biggest'
 - Check in on [this chart](https://us-east-1.console.aws.amazon.com/costmanagement/home#/cost-explorer?chartStyle=LINE&costAggregate=unBlendedCost&endDate=2025-06-30&excludeForecasting=false&filter=%5B%7B%22dimension%22:%7B%22id%22:%22UsageTypeGroup%22,%22displayValue%22:%22Usage%20type%20group%22%7D,%22operator%22:%22INCLUDES%22,%22values%22:%5B%7B%22value%22:%22EC2:%20Data%20Transfer%20-%20Internet%20(Out)%22,%22displayValue%22:%22EC2:%20Data%20Transfer%20-%20Internet%20(Out)%22%7D%5D%7D%5D&futureRelativeRange=CUSTOM&granularity=Daily&groupBy=%5B%22Service%22%5D&historicalRelativeRange=LAST_6_MONTHS&isDefault=true&reportMode=STANDARD&reportName=New%20cost%20and%20usage%20report&showOnlyUncategorized=false&showOnlyUntagged=false&startDate=2025-01-01&usageAggregate=usageQuantity&useNormalizedUnits=false)
 
 Fix issue with template settings and tell [Dirt](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrQRPKNbMkwscffXLqSLGqjr)

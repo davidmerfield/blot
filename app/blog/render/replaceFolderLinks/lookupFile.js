@@ -40,6 +40,17 @@ async function lookupFile(blogID, cacheID, value) {
   // strip any hash from the value
   value = value.split("#")[0];
 
+  // if the value contains url-encoded characters, decode it
+  if (value.includes("%")) {
+    try {
+    value = decodeURIComponent(value);
+    } catch (err) {
+      // e.g. '100% luck.jpg' will throw an error
+      // 'Uncaught URIError: malformed URI sequence'
+      // in this case the value is left unchanged
+    }
+  }
+
   const [pathFromValue, ...rest] = value.split("?");
   const query = rest.length ? `?${rest.join("?")}` : "";
 

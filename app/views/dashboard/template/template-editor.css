@@ -6,7 +6,7 @@
 }
 
 .template-sidebar {
-    width: 25%;
+    width: 240px;
     border-right: 1px solid #eeeeec;
     flex-grow: 0;
     flex-shrink: 0;

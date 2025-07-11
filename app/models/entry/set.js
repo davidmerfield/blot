@@ -54,12 +54,10 @@ module.exports = function set (blogID, path, updates, callback) {
 
     // This is for new entries
     if (entry.created === undefined) {
-      console.log('we are HERE');
       entry.created = Date.now();
     }
 
     if (entry.dateStamp === undefined) {
-      console.log('we are HERE2');
       entry.dateStamp = entry.created;
     }
 

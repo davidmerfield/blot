@@ -13,7 +13,7 @@
   position: relative;
   background-color: var(--background-color);
   transition: background-color 0.2s;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-color);
 }
 
 .preview-holder{
@@ -58,6 +58,16 @@ a.blog-link .text-info {
 }
 a.blog-link .title {
   display: block;
+  white-space: nowrap; overflow: hidden; word-break: break-word;
+}
+
+a.blog-link .icon-chevron {
+  font-size:24px;color:var(--border-color);align-self:center;
+  transition: color 0.2s;
+}
+
+a.blog-link:hover .icon-chevron {
+  color: var(--accent-color);
 }
 
 a.blog-link .url {
@@ -66,6 +76,7 @@ a.blog-link .url {
   font-weight: 400;
   height: 1.4em;
   font-size: var(--small-font-size);
+  white-space: nowrap; overflow: hidden; word-break: break-word;
 }
 
 button.logout {

@@ -197,7 +197,6 @@ a {
   text-decoration: none;
 }
 
-
 h1 {
   font-size: 20px;
   display: block;
@@ -952,4 +951,8 @@ ul.pill-navigation {
 
 #contact-form [name="contact_e879"] {
   min-height: 120px;box-sizing: border-box;border:1px solid #dddddc;border-radius: 5px;width:100%;padding:0.5rem;margin:0.5rem 0
+}
+
+.intro {
+  max-width: 400px;
 }

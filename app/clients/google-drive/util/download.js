@@ -24,6 +24,35 @@ module.exports = async (
         return resolve(false);
       }
 
+      // create an empty placeholder file for Google App files
+      // which are not Documents, e.g. Google Sheets, Slides, etc.
+      // this is to avoid downloading them, which would fail
+      // because they are not downloadable in the same way as regular files
+      if (
+        mimeType.startsWith("application/vnd.google-apps.") &&
+        mimeType !== "application/vnd.google-apps.document"
+      ) {
+        await fs.ensureFile(pathOnBlot);
+        // We update the date-modified time of the file to match the remote file
+        // to prevent Blot re-downloading by ensuring the file is not considered stale
+        try {
+          debug("Setting mtime for file", pathOnBlot, "to", modifiedTime);
+          debug("mtime before:", (await fs.stat(pathOnBlot)).mtime);
+          const mtime = new Date(modifiedTime);
+          debug("mtime to set:", mtime);
+          await fs.utimes(pathOnBlot, mtime, mtime);
+          debug("mtime after:", (await fs.stat(pathOnBlot)).mtime);
+        } catch (e) {
+          debug("Error setting mtime", e);
+        }
+        debug(
+          "SKIP download of file because it is a Google App file type",
+          mimeType
+        );
+        debug("   created empty file at:", colors.green(pathOnBlot));
+        return resolve(false);
+      }
+
       const existingMd5Checksum = await computeMd5Checksum(pathOnBlot);
 
       if (existingMd5Checksum && md5Checksum === existingMd5Checksum) {
@@ -42,15 +71,18 @@ module.exports = async (
       debug("getting file from Drive");
       let data;
 
-      // if the file is a google doc, then add the gdoc extension to pathOnBlot
+      // e.g. google docs, sheets, slides
       if (mimeType === "application/vnd.google-apps.document") {
         const res = await drive.files.export(
           {
             fileId: id,
             mimeType: "text/html",
           },
-          { responseType: "stream" }
+          {
+            responseType: "stream",
+          }
         );
+
         data = res.data;
       } else {
         const res = await drive.files.get(
