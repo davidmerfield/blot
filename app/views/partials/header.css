@@ -4,6 +4,7 @@
   padding: 12px 0;
   min-height: 24px;
   position: absolute;
+  width: 100%;
 }
 
 .header .spacer {

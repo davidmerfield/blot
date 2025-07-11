@@ -60,6 +60,11 @@ ol.path {
   ol.path ul {
     padding: 0;
     list-style: none;
+    display: none;
+  }
+
+  ol.path > li.selected  ul {
+    display: block;
   }
 
     ol.path ul li {

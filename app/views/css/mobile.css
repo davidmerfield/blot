@@ -3,7 +3,7 @@
 
 @media (max-width: 768px) {
 
-    .header {margin-bottom: 12px;}
+    .header {margin-bottom: 12px;position:relative!important}
     
     .header label {
       display: block!important;

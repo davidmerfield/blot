@@ -24,7 +24,6 @@
 			left: 1.25rem;
 			margin: 4px 0 10px;
       transform: scale(1);
-  transition: transform 0.2s ease-out;
 }
 
 
@@ -53,9 +52,6 @@ a.blog-link .text-info {
   background-color: #f0f4ff70;
 }
 
-.site:hover .preview-holder {
-  transform: scale(1.05);
-}
 a.blog-link .title {
   display: block;
   white-space: nowrap; overflow: hidden; word-break: break-word;
