@@ -40,5 +40,10 @@ module.exports = async (path) => {
     throw new Error(`Unexpected stderr: ${stderr}`);
   }
 
+  console.log(`brctl monitor complete for path: ${path}`);
+  console.log("-----");
+  console.log(stdout);
+  console.log("-----");
+
   return stdout;
 };
