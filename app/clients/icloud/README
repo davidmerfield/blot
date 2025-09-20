@@ -1,2 +1,17 @@
 Guide to running this client locally:
 
+Create new branch
+
+log in to other user:
+
+ssh macserver@127.0.0.1
+
+then run:
+
+git fetch
+
+git checkout fix-icloud
+
+cd app/clients/icloud/macserver
+
+pm2 start index.js --name macserver
