@@ -22,7 +22,7 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
   );
 
   const checkInterval = 100; // Interval (in ms) to check for new directories
-  const timeout = 1000 * 10; // Timeout (in ms) to wait for a new directory: 10 seconds 
+  const timeout = 1000 * 15; // Timeout (in ms) to wait for a new directory: 15 seconds 
   const start = Date.now();
 
   // Get the initial state of the top-level directories
@@ -77,7 +77,7 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
   }
 
   console.error(
-    `Timed out waiting for a new folder to set up blogID: ${blogID}`
+    `Timed out waiting for a new folder to set up blogID: ${blogID} after ${timeout}ms`
   );
   throw new Error("Invalid sharing link");
 });
