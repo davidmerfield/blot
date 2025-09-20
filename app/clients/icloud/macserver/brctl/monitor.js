@@ -5,7 +5,8 @@ const exec = require("../exec");
 // assuming it is a directory. To sync a file, use `brctl download`
 // It won't download the files in the directory, just the list of files
 // It does not work recursively, so if there are subdirectories you need
-// to call it on those too.
+// to call it on those too. This is used to a solve a problem where sub
+// directories where not syncing, and not even showing up using fs.readdir
 module.exports = async (path) => {
 
   console.log(`Issuing brctl monitor for path: ${path}`);
