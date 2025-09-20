@@ -8,7 +8,7 @@ const exec = require("../exec");
 // to call it on those too.
 module.exports = async (path) => {
 
-  console.log(`Issuing brctl monitor for path: ${pathInDrive}`);
+  console.log(`Issuing brctl monitor for path: ${path}`);
 
   if (!path.startsWith(iCloudDriveDirectory)) {
     throw new Error(`Path not in iCloud: ${path}`);
