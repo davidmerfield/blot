@@ -15,12 +15,8 @@ module.exports = async (path) => {
     throw new Error(`Path not in iCloud: ${path}`);
   }
 
-  const pathInDrive = path.replace(iCloudDriveDirectory, "").slice(1);
-
   // -p says exit once the information has been fetched
-  const { stdout, stderr } = await exec("brctl", ["monitor", "-p", pathInDrive], {
-    cwd: iCloudDriveDirectory,
-  });
+  const { stdout, stderr } = await exec("brctl", ["monitor", "-p", path]);
 
   // stdout looks like for directories:
 
