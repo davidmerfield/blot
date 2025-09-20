@@ -13,6 +13,12 @@ module.exports = async (req, res) => {
   console.log(`Received readdir request for blogID: ${blogID}, path: ${path}`);
 
   const dirPath = join(iCloudDriveDirectory, blogID, path);
+
+  // first we issue a request to brctl to ensure the directory is downloaded
+  // otherwise, files or subdirectories may be missing
+  await brctl.monitor(dirPath);
+  
+  // now that we are sure the directory is in sync, we can read it
   const files = await fs.readdir(dirPath, { withFileTypes: true });
 
   // Ignore dotfiles and directories
