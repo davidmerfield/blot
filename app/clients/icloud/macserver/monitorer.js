@@ -8,8 +8,7 @@ const exec = require("./exec");
 const MAX_DEPTH = 1000;
 
 const limiter = new Bottleneck({
-  maxConcurrent: 5,
-  minTime: 10,
+  maxConcurrent: 5
 });
 
 const syncLimited = limiter.wrap(async function sync(dirPath, depth = 0) {
