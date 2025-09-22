@@ -56,13 +56,10 @@ const recursiveListLimited = limiter.wrap(async function recursiveList(
   }
 });
 
-module.exports = () => {
-  let isStopped = false;
-  let monitorProcess = null;
 
+module.exports = () => {
   function startMonitor() {
-    if (isStopped) return;
-    monitorProcess = spawn("brctl", ["monitor", iCloudDriveDirectory]);
+    const monitorProcess = spawn("brctl", ["monitor", iCloudDriveDirectory]);
 
     const rl = readline.createInterface({
       input: monitorProcess.stdout,
@@ -91,7 +88,6 @@ module.exports = () => {
 
     monitorProcess.on("close", (code) => {
       rl.close();
-      if (isStopped) return;
       console.warn(
         `brctl monitor exited with code ${code}, restarting in 1s...`
       );
@@ -100,17 +96,4 @@ module.exports = () => {
   }
 
   startMonitor();
-
-  return {
-    stop: async () => {
-      isStopped = true;
-      if (monitorProcess) {
-        monitorProcess.kill();
-      }
-      await limiter.stop({
-        dropWaitingJobs: true,
-        shouldDrain: true,
-      });
-    },
-  };
 };
