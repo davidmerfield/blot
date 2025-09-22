@@ -1,4 +1,4 @@
-const { iCloudDriveDirectory } = require("../config");
+const { iCloudDriveDirectory } = require("./config");
 const { spawn } = require("child_process");
 const readline = require("readline");
 
