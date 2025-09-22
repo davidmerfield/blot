@@ -44,7 +44,7 @@
     "highlight.js": "10.4.1",
     "html-minifier": "4.0.0",
     "http-auth": "3.2.3",
-    "katex": "0.16.10",
+    "katex": "0.16.21",
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "marked": "12.0.1",
