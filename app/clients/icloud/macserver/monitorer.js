@@ -3,7 +3,7 @@ const { spawn } = require("child_process");
 const readline = require("readline");
 
 function sync(blogId) {
-    console.log(`Syncing blog ID: ${blogId}`);
+    console.log(`MONITORER: Syncing blog ID: ${blogId}`);
   // No-op for now
 }
 
