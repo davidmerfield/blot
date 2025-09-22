@@ -7,34 +7,38 @@ async function sync(dirPath) {
     console.log(`MONITORER: Syncing path: ${dirPath}`);
     
     try {
-        // Use spawn instead of exec - more efficient for larger outputs
-        // Use -1 to force one file per line, making parsing simpler
-        const ls = spawn('ls', ['-la1', dirPath]);
+        const ls = spawn('ls', ['-la', dirPath]);
         
         let dirs = [];
+        let buffer = '';
         
-        // Process output as it comes in, line by line
+        // Process output as it comes in
         for await (const chunk of ls.stdout) {
-            const lines = chunk.toString().split('\n');
+            buffer += chunk.toString();
+            const lines = buffer.split('\n');
+            
+            // Keep the last potentially incomplete line in the buffer
+            buffer = lines.pop() || '';
             
             for (const line of lines) {
-                if (line && 
-                    line.startsWith('d') && 
-                    !line.endsWith(' .') && 
-                    !line.endsWith(' ..')) {
-                    
-                    // Extract directory name more efficiently
-                    const name = line.substring(line.lastIndexOf(' ') + 1);
-                    console.log(`Found subdirectory: ${name}`);
-                    dirs.push(path.join(dirPath, name));
-                } else {
-                    console.log(`Ignoring line: ${line}`);
+                // Match lines starting with 'd' and capture the last segment (name)
+                // This regex matches the standard ls -la format
+                const match = line.match(/^d.{9}\s+\d+\s+\w+\s+\w+\s+\d+\s+[A-Za-z]+\s+\d+\s+[\d:]+\s+(.+)$/);
+                if (match && match[1] !== '.' && match[1] !== '..') {
+                    dirs.push(path.join(dirPath, match[1]));
                 }
             }
         }
 
-        // Process directories sequentially instead of parallel
-        // This prevents too many open files and system overload
+        // Process any remaining line in buffer
+        if (buffer) {
+            const match = buffer.match(/^d.{9}\s+\d+\s+\w+\s+\w+\s+\d+\s+[A-Za-z]+\s+\d+\s+[\d:]+\s+(.+)$/);
+            if (match && match[1] !== '.' && match[1] !== '..') {
+                dirs.push(path.join(dirPath, match[1]));
+            }
+        }
+
+        // Process directories sequentially
         for (const subdir of dirs) {
             await sync(subdir);
         }
@@ -43,6 +47,7 @@ async function sync(dirPath) {
         console.error(`Error processing directory ${dirPath}:`, error);
     }
 }
+
 module.exports = () => {
 
   let isStopped = false;
