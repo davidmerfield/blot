@@ -3,6 +3,7 @@ const { spawn } = require("child_process");
 const readline = require("readline");
 const path = require("path");
 const Bottleneck = require("bottleneck");
+const exec = require("./exec");
 
 const MAX_DEPTH = 1000;
 
@@ -10,34 +11,6 @@ const limiter = new Bottleneck({
     maxConcurrent: 5,
     minTime: 100
 });
-
-const execCommand = async (command, args, dirPath) => {
-    return new Promise((resolve, reject) => {
-        const proc = spawn(command, args);
-        let output = '';
-        let errorOutput = '';
-
-        proc.stdout.on('data', (data) => {
-            output += data.toString();
-        });
-
-        proc.stderr.on('data', (data) => {
-            errorOutput += data.toString();
-        });
-
-        proc.on('error', (error) => {
-            reject(new Error(`Failed to execute ${command}: ${error.message}`));
-        });
-
-        proc.on('close', (code) => {
-            if (code === 0) {
-                resolve(output);
-            } else {
-                reject(new Error(`${command} failed with code ${code}: ${errorOutput}`));
-            }
-        });
-    });
-};
 
 const syncLimited = limiter.wrap(async function sync(dirPath, depth = 0) {
     if (depth > MAX_DEPTH) {
@@ -48,7 +21,7 @@ const syncLimited = limiter.wrap(async function sync(dirPath, depth = 0) {
     console.log(`MONITORER: Syncing path: ${dirPath} (depth: ${depth})`);
     
     try {
-        const lsOutput = await execCommand('ls', ['-la1F', dirPath], dirPath);
+        const lsOutput = await exec('ls', ['-la1F', dirPath], dirPath);
         
         const dirs = lsOutput.split('\n')
             .filter(line => line.endsWith('/'))           // Only dirs end with /

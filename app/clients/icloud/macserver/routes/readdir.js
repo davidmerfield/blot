@@ -1,7 +1,7 @@
 const fs = require("fs-extra");
 const { join } = require("path");
 const { iCloudDriveDirectory } = require("../config");
-const brctl = require("../brctl");
+const exec = require("../exec");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
@@ -15,10 +15,9 @@ module.exports = async (req, res) => {
 
   const dirPath = join(iCloudDriveDirectory, blogID, path);
 
-  // first we issue a request to brctl to ensure the directory is downloaded
-  // otherwise, files or subdirectories may be missing. we might be able to simply
-  // issue a 'ls' command instead of a full monitor... to investigate
-  await brctl.monitor(dirPath);
+  // first we issue a request to ls to ensure the directory is downloaded
+  // otherwise, files or subdirectories may be missing. 
+  await exec('ls', ['-la1F', dirPath], dirPath);
   
   // now that we are sure the directory is in sync, we can read it
   const files = await fs.readdir(dirPath, { withFileTypes: true });
