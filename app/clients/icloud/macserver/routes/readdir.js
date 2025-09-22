@@ -16,11 +16,13 @@ module.exports = async (req, res) => {
   const dirPath = join(iCloudDriveDirectory, blogID, path);
 
   // first we issue a request to ls to ensure the directory is downloaded
-  // otherwise, files or subdirectories may be missing.
+  // otherwise, files or subdirectories may be missing. if this stops working
+  // you can use brctl monitor -p [path] to force iCloud to sync the directory
+  // listing (this will not download the files, just the list of contents)
   try {
-    await exec("ls", ["-la1F", dirPath], dirPath);
+    await exec("ls", ["-la1", dirPath]);
   } catch (error) {
-    console.error(`Error ensuring directory is in sync: ${dirPath}`, error);
+    console.error(`Error listing directory: ${dirPath}`, error);
   }
 
   // now that we are sure the directory is in sync, we can read it

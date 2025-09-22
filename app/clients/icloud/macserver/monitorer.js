@@ -1,9 +1,9 @@
-const { iCloudDriveDirectory } = require("./config");
-const { spawn } = require("child_process");
-const readline = require("readline");
 const path = require("path");
+const readline = require("readline");
 const Bottleneck = require("bottleneck");
 const exec = require("./exec");
+const { iCloudDriveDirectory } = require("./config");
+const { spawn } = require("child_process");
 
 const MAX_DEPTH = 1000;
 
@@ -11,13 +11,13 @@ const limiter = new Bottleneck({
   maxConcurrent: 5
 });
 
-const syncLimited = limiter.wrap(async function sync(dirPath, depth = 0) {
+const recursiveList = limiter.wrap(async function sync(dirPath, depth = 0) {
   if (depth > MAX_DEPTH) {
     console.warn(`Maximum depth ${MAX_DEPTH} reached at ${dirPath}`);
     return;
   }
 
-  console.log(`MONITORER: Syncing path: ${dirPath} (depth: ${depth})`);
+  console.log(`MONITORER: listing path: ${dirPath} (depth: ${depth})`);
 
   try {
     const { stdout, stderr } = await exec("ls", ["-la1F", dirPath]);
@@ -33,7 +33,7 @@ const syncLimited = limiter.wrap(async function sync(dirPath, depth = 0) {
       .filter((name) => name !== "." && name !== "..") // Skip . and ..
       .map((name) => path.join(dirPath, name)); // Full path
 
-    await Promise.all(dirs.map((subdir) => syncLimited(subdir, depth + 1)));
+    await Promise.all(dirs.map((subdir) => recursiveList(subdir, depth + 1)));
   } catch (error) {
     console.error(
       `Error processing directory ${dirPath} at depth ${depth}:`,
@@ -60,8 +60,8 @@ module.exports = () => {
       if (match) {
         const blogId = match[0];
         console.log("Detected blog ID:", blogId);
-        syncLimited(`${iCloudDriveDirectory}/${blogId}`, 0).catch((error) => {
-          console.error(`Failed to sync ${blogId}:`, error);
+        recursiveList(`${iCloudDriveDirectory}/${blogId}`, 0).catch((error) => {
+          console.error(`Failed to recursively list contents of ${blogId}:`, error);
         });
       }
     });
