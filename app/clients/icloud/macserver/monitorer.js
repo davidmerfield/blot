@@ -25,7 +25,10 @@ async function sync(dirPath) {
                     
                     // Extract directory name more efficiently
                     const name = line.substring(line.lastIndexOf(' ') + 1);
+                    console.log(`Found subdirectory: ${name}`);
                     dirs.push(path.join(dirPath, name));
+                } else {
+                    console.log(`Ignoring line: ${line}`);
                 }
             }
         }
