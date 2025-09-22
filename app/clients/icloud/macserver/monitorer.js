@@ -21,7 +21,7 @@ const syncLimited = limiter.wrap(async function sync(dirPath, depth = 0) {
     console.log(`MONITORER: Syncing path: ${dirPath} (depth: ${depth})`);
     
     try {
-        const lsOutput = await exec('ls', ['-la1F', dirPath], dirPath);
+        const lsOutput = await exec('ls', ['-la1F', dirPath]);
         
         const dirs = lsOutput.split('\n')
             .filter(line => line.endsWith('/'))           // Only dirs end with /
