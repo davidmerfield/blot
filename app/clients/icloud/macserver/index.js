@@ -4,6 +4,8 @@ const { Authorization, maxFileSize } = require("./config");
 const { initialize } = require("./watcher");
 const notifyServerStarted = require("./httpClient/notifyServerStarted");
 
+const monitorer = require("./monitorer");
+
 // maxFileSize is in bytes but limit must be in the format '5mb'
 const limit = `${maxFileSize / 1000000}mb`;
 
@@ -71,6 +73,10 @@ const startServer = async () => {
     console.log("Initializing file watchers for existing folders...");
     await initialize();
 
+    // Start the monitorer to keep iCloud in sync
+    console.log("Starting iCloud monitorer...");
+    monitorer();
+    
     console.log("Macserver started successfully");
   } catch (error) {
     console.error("Error starting macserver:", error);

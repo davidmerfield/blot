@@ -3,26 +3,18 @@ const { spawn } = require("child_process");
 const readline = require("readline");
 
 function sync(blogId) {
+    console.log(`Syncing blog ID: ${blogId}`);
   // No-op for now
 }
 
-module.exports = (path) => {
-  console.log(`Issuing brctl monitor for path: ${path}`);
-
-  if (!path.startsWith(iCloudDriveDirectory)) {
-    throw new Error(`Path not in iCloud: ${path}`);
-  }
-
-  const pathInDrive = path.replace(iCloudDriveDirectory, "").slice(1);
+module.exports = () => {
 
   let isStopped = false;
   let monitorProcess = null;
 
   function startMonitor() {
     if (isStopped) return;
-    monitorProcess = spawn("brctl", ["monitor", pathInDrive], {
-      cwd: iCloudDriveDirectory,
-    });
+    monitorProcess = spawn("brctl", ["monitor", iCloudDriveDirectory]);
 
     const rl = readline.createInterface({
       input: monitorProcess.stdout,
