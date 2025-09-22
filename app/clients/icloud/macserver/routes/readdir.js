@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
   try {
     await exec("ls", ["-la1", dirPath]);
   } catch (error) {
-    console.error(`Error listing directory: ${dirPath}`, error);
+    console.error("Error listing directory:", dirPath, error);
   }
 
   // now that we are sure the directory is in sync, we can read it

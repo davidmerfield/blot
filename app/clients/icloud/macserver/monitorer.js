@@ -23,7 +23,7 @@ const recursiveList = limiter.wrap(async function sync(dirPath, depth = 0) {
     const { stdout, stderr } = await exec("ls", ["-la1F", dirPath]);
 
     if (stderr) {
-      throw new Error(`Error listing directory ${dirPath}: ${stderr}`);
+      throw new Error("Error listing directory", dirPath, stderr);
     }
 
     const dirs = stdout
