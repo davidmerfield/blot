@@ -1,12 +1,45 @@
 const { iCloudDriveDirectory } = require("./config");
 const { spawn } = require("child_process");
 const readline = require("readline");
+const path = require("path");
 
-function sync(blogId) {
-    console.log(`MONITORER: Syncing blog ID: ${blogId}`);
-  // No-op for now
+async function sync(dirPath) {
+    console.log(`MONITORER: Syncing path: ${dirPath}`);
+    
+    try {
+        // Use spawn instead of exec - more efficient for larger outputs
+        // Use -1 to force one file per line, making parsing simpler
+        const ls = spawn('ls', ['-la1', dirPath]);
+        
+        let dirs = [];
+        
+        // Process output as it comes in, line by line
+        for await (const chunk of ls.stdout) {
+            const lines = chunk.toString().split('\n');
+            
+            for (const line of lines) {
+                if (line && 
+                    line.startsWith('d') && 
+                    !line.endsWith(' .') && 
+                    !line.endsWith(' ..')) {
+                    
+                    // Extract directory name more efficiently
+                    const name = line.substring(line.lastIndexOf(' ') + 1);
+                    dirs.push(path.join(dirPath, name));
+                }
+            }
+        }
+
+        // Process directories sequentially instead of parallel
+        // This prevents too many open files and system overload
+        for (const subdir of dirs) {
+            await sync(subdir);
+        }
+
+    } catch (error) {
+        console.error(`Error processing directory ${dirPath}:`, error);
+    }
 }
-
 module.exports = () => {
 
   let isStopped = false;
@@ -26,7 +59,7 @@ module.exports = () => {
       if (match) {
         const blogId = match[0];
         console.log("Detected blog ID:", blogId);
-        sync(blogId);
+        sync(`${iCloudDriveDirectory}/${blogId}`);
       }
     });
 
