@@ -114,6 +114,11 @@ async function read(blog, path, callback) {
       $(this).replaceWith("<strong>" + $(this).html() + "</strong>");
     });
 
+    // detect blockquotes
+    $('p[style*="margin-left:36pt"]').each(function (i, elem) {
+      $(this).replaceWith("<blockquote>" + $(this).html() + "</blockquote>");
+    });
+    
     // remove all inline style attributes
     $("[style]").removeAttr("style");
 
