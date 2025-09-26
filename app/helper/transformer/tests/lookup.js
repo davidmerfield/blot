@@ -27,7 +27,7 @@ describe("transformer", function () {
     });
   });
 
-  fit("transforms a file with windows-style slashes and incorrect case in the blog's directory", function (done) {
+  it("transforms a file with windows-style slashes and incorrect case in the blog's directory", function (done) {
     this.path = "/Hello/world.txt";
     fs.moveSync(this.localPath, this.blogDirectory + this.path);
 
