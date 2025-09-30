@@ -6,7 +6,7 @@
 // for the site servers because they need to run chromium
 // and pandoc for building posts. The blog servers don't.
 const siteConfig = {
-  cpus: 1,
+  cpus: 2, // we overcommit cpu slightly
   memory: "1.5g",
   maxOldSpaceSize: 750,
 };

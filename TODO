@@ -1,33 +1,32 @@
-Use the title tag as the alt tag for images in Google Docs and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcpTDNfsqFJLMGRBFRcrqKZLzr)
-
-Tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfxjtskbRgHNBvJSTTjSpDQzr) that photo posts are dated at the time they appear in Blot. I'll consider adding an option to use the image taken date?
-
-Preserve single line breaks in Google Docs 
-
-Preserve single line breaks in Word Docs for poetry and [tell Isabel](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcpKhwFRpStFNWhztKGPqQJfsq) and [tell Paul](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxTNzPZwwxJPTDlBBBcnbpPcJJ)
-
-Automate deployment of fail2ban config
-- ensure everything that's on the server is checked into version control
-- Identify and block repeat 404 offenders over long timeframe
-- Check in on banned IPs (maybe set up alert?)
-  - we don't want to ban legitimate activity
-
-Translate [Francesco's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcNCpRcDFrsBhMlBwlXLNxNq)
-
-Google Drive blockquotes and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfxlDlqnPKgVbvfQpzhqBGPdF)
-
 Keep an eye on issue with syncing blogs: blog_a076707d10f6472c97b1e3b19d8c1349,blog_93718f16de384e2983a9436f500a8e1f,blog_32307ab68b65424a83319863b89b5946
 - this seems to trigger a folder sync lock issue
 - issue when lots of webhooks from dropbox arrive... maybe we can fix by not running all three syncs in parallel?
 - folders are all full-folder permissions via dropbox
 - issue with sync locks apparently, and template building takes a long time for blog_a076707d10f6472c97b1e3b19d8c1349, could not reproduce in local...
+- try and reproduce with all three local, connected to Dropbox full folder, or hammer with webhooks
+
+Debounce and rate-limit the refresh rate of the folder via status when fetching changes to the displayed page on the dashboard
+- I believe this triggered 429s for rapid changes during a sync, e.g. sync 50 files –> page gets reloaded 50+ times
+
+Fix issue with broken links to images on a page triggering 429s – just go slow first for a long time before 429-ing
+
+Automate deployment of fail2ban config
+- ensure everything that's on the server is checked into version control
+- Identify and block repeat 404 offenders over long timeframe
+- Check in on banned IPs (maybe set up alert?)
+- Persist permanent IP bans in iptables somewhere?
+
+Translate [Francesco's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcNCpRcDFrsBhMlBwlXLNxNq)
 
 ---
+
+Fix bug viewing files with hashes '#' in their name on the dashboard
 
 Fix major bug with disks on server restart:
 - sudo chown ec2-user:ec2-user /var/instance-ssd/tmp
 - sudo chown ec2-user:ec2-user /var/instance-ssd/logs/app.log
 - mkfs -t xfs -f /dev/XXXXXXXX
+- Issue is caused by mount-disk scripts swapping /var/instance-ssd and /var/www/blot/data
 
 Fix bug with site export and [contact Ryan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQXJtGgnQWMWxjBnHlvMSPFJjnJ)
 
@@ -121,6 +120,10 @@ Fix bugs with RSS feeds validation. Perhaps extend absoluteURLs helper function?
 
 Fix bug with script to import wordpress posts and follow up with [Simon](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGCtMPcJhlmcdNvWwtWvgzWJvZ)
 
+Fix issues with menu links based on case-sensitivity switch
+
+Fix issues with bad permalinks based on case-sensitivity switch
+
 Fix bug with [bulk redirects page](https://blot.im/questions/2385)
 
 Fix bug with date metadata on [Vincent](https://mail.google.com/mail/u/0/#inbox/FMfcgxwJXVMdhvCJPXwVVSKRTFHQTQzn)'s blog and follow up. I suspect it's to do with the ordering of date tokens.
@@ -172,6 +175,8 @@ Fix bug with indented code in pre tags and tell [Michael](https://mail.google.co
 
 Fix bug with nested Markdown and tell [Martin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqnhgBjBSKzvtclvqcFcMptMR):
 
+Fix bug with with initial transfer and [Michael's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
+
 Fix bug handling large files Dropbox (>150mb) and tell Peter – right now it crashes the server
 
 Fix bugs with RSS feeds validation. Perhaps extend absoluteURLs helper function? Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxvzMBqKpcLTtxTzcfvMCVckLMJJ)
@@ -187,6 +192,9 @@ Fix bug with pages not appearing in backlinks and [tell questioner](https://blot
 Fix bug with magic text in posts which breaks backend and tell [Victor](https://mail.google.com/mail/u/0/#inbox/FMfcgzQVxRMzjBtRWVwLWtlBcFGsSVCQ)
 
 Fix bug [issue with teaser generator](https://github.com/davidmerfield/Blot/issues/15) that locks up a build process, sometimes for 10+ seconds.
+
+Fix bug with Google Drive client and [Stephen's large blog](https://mail.google.com/mail/u/0/#inbox/QgrcJHsBsbkNkMkkkMmLWBxRfnGnWPVwLHl)
+  - It also seems like server crashes when a massive google drive folder is synced, with a directory containing 6772 items
 
 Fix bug with Git client and Obsidian then tell levelsi
   
@@ -218,16 +226,18 @@ Fix bug with Bruce's local template, [possibly related to Ryan's issue](https://
 
 Fix bug accessibility issue with menu links reordering and tell [Grace](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfBpBkKCLVRWBGxzDDDkhSXfl)
 
+Fix bug with accessibility issues with scrolling and code blocks and tell [Eli](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwqJjjrrGHDWjLPzfxGpnkZTh) if I make any changes
+
 Fix bug with thumbnail generator for posts on Chris' site
 - it's to do with 304 responses in transformer - handle these properly
 - fix issue with 304s for [Fabrice](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrKfFnvrTQzDHvtnXPMMlqkB) e.g. on this post: https://www.poirpom.com/bas-les-cloches
-
 
 ---
 
 Improvements to template engine
 - Performance improvements
   - Add pagination to /tagged
+    - should resolve issue with `https://eli.li/tagged/og`
   - Remove entries property from popular_tags and all_tags (just list the tags)
 - Fix various performance issues with archives page and sitemap on large sites - maybe allEntries only retrieves some properties and paginates through rather than a single request?
   - highlighted by `https://jimhardy-datascience.com/search?q=2026` and `https://www.nitinpai.in/archives`
@@ -306,7 +316,7 @@ com/mail/u/0/#inbox/1588e3df7489b554)
 - Add 'Hidden: yes' metadata to replace 'Menu: no' and tell [Sebastien](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvTstgvzhzNkPFXdgStpTJvrN)
 - Add method to merge updates into custom templates and tell [Dave](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpGnDfkQbzQqMVDndbNVzwCWZC)
 - Redirect URLs with trailing slash when possible (i.e. not directory browsing) to [fix possible duplicate content penalties](https://moz.com/community/q/duplicate-content-with-a-trailing-slash) and tell [Marius](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKkHhPFPKFBzQjQQHwlrRWwbKq)
-  - Add rel=canonical to all the default templates, or fix the issue that Blot serves the same thing to URLs with a trailing slash, and without. 
+  - Add rel=canonical to all the default templates, or resolve the problem that Blot serves the same thing to URLs with a trailing slash, and without. 
   - If we do add rel=canonical, make sure to consider the situation where someone mounts a page to the index of their site, e.g. /page/1 and / will now be different.
 - add support for dynamic partials to make collections possible, e.g. {{> /:tag.html}} ?
 - Add neat interface to customize blog level variables?
@@ -363,8 +373,6 @@ Add deploy button to GitHub so I can deploy code while away
 
 Add a related entry list and tell [David](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrPGTsMcvgWpNsNtmrkWRzDz) and [Thomas](https://mail.google.com/mail/u/0/#inbox/156dbe97153fab61) and [questioner](https://blot.im/questions/1484) and [questioner](https://blot.im/questions/3123)
 
-Work out issue with initial transfer and [Michael's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
-
 Move folder lock location to instance ssd for improved reliability and performance (non-networked drive...) – could be inside the cache
 
 ---
@@ -391,10 +399,6 @@ arbritrary paths and keep clean URLS (no underscores). Sitewide .blotignore file
 - Add `Ignore: yes` metadata to trigger the ignored file behaviour
 
 Are there any missing templates because of the switch from lowercase to true case?
-
-Fix issues with menu links based on case-sensitivity switch
-
-Fix issues with bad permalinks based on case-sensitivity switch
 
 Fix template partial embeddings which no longer work because of switch from lowercase to true case:
 - e.g. {{> /pages/home.txt}} when pages is really Pages
@@ -426,9 +430,6 @@ Add script to resync all icloud folders – make sure they are up to date
 Check that Google Drive is staying in sync:
 - login -> node scripts/google-drive/reset.js
 - add proper bottlenecks then run this regularly
-
-Come up with plan to handle google docs on disconnection from Google drive -> convert to markdown?
-- tell henryirvine about issues with his site
 
 Write proper tests for clients:
 - Dropbox
@@ -644,10 +645,9 @@ Improvements to Google Drive client
 - [ ] Test multiple sites sync in parallel
 - [ ] Test multiple Google Drive accounts in parallel
 - [ ] On disconnect, convert Google Docs in folder into Markdown and inform the user
+  - tell henryirvine about this affecting his site
 - [ ] Test drafts
 - [ ] Test local templates
-- Resolve issue with [Stephen's large blog](https://mail.google.com/mail/u/0/#inbox/QgrcJHsBsbkNkMkkkMmLWBxRfnGnWPVwLHl)
-  - It also seems like server crashes when a massive google drive folder is synced, with a directory containing 6772 items
 - How do we handle two files with same name and same parent? How does our fileId:path hash handle this? Make sure we delete the right file. Will file.title as opposed to file.name give us the deduped version?
   - Bug: move file with deduplicated name from sub folder to other folder
   - download should check for an existing file with same name but different fileId and dedupe before storing the path?
@@ -679,8 +679,9 @@ Make templates/folders build less busy and then re-enable it in app/setup
 Surface Blot client sync errors on dashboard, add email notifications for errors
 - surface dropbox out of space error
 
-
 ---
+
+Preserve single line breaks in Word Docs for poetry and [tell Isabel](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcpKhwFRpStFNWhztKGPqQJfsq) and [tell Paul](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxTNzPZwwxJPTDlBBBcnbpPcJJ)
 
 Use custom libvips so we can convert HEIC files
 
@@ -764,21 +765,6 @@ Make it possible to link between org mode files with: `[[file:another-test.org][
 
 ---
 
-Infrastructure plan:
-- switch app deployment to ECS
-- work on reducing the storage class of EBS
-- create three processes:
-  - blogs
-  - dashboard
-  - sync
-- Use restic or similar to make incremental off-site backups of data directory:
-  - restic -r b2:bucket-name:/path/to/repo forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --keep-yearly 3 --prune
-
----
-
-
----
-
 Add [textbundle support](http://textbundle.org/spec/) and tell [questioner](https://blot.im/questions/1385)
 - this will help me understand how best to accomplish multi-file posts
 
@@ -840,7 +826,8 @@ Add aws cost usage and forecast to daily update email
 
 Make it possible to ask a question without logging in
 
-Can we support google docs even from Dropbox? if the doc is public?
+Improve webloc converter:
+- If the bookmark file points to a google doc, can we support google docs even from Dropbox? if the doc is public?
 
 Investigate why [changes made to app/scheduler/daily/revenue.js increased the number of active blogs](https://github.com/davidmerfield/Blot/blob/494900a5dda1d916569c925adfbb6e68606c99bd/app/scheduler/daily/revenue.js#L21-L29) in my email
 
@@ -901,8 +888,6 @@ Investigate if we can rewrite git client so we don't need to store double the da
 Adjust auto titles of 'screenshot at 12:22pm' and make sure the date parser can handle them
 
 Adjust title generator so h2 titles within the file dont become the title of the post – this is helpful for obsidian
-
-Get to bottom of issues with questions/tests/list and re-enable disable test suite
 
 The password check on the delete blog page does not print the error message if the password is incorrect? Or just for admin
 
@@ -1096,8 +1081,6 @@ Explain that the git client uses the master branch and repos from github will us
 Send out cancellation confirmation emails with option to give feedback
 - auto-refund people who immediately close their account after signing up
 
-Get to the bottom of the slow cloudflare issue and follow up with [Wen](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqPzBWZcLJcwtWTXTbQjMbVrZB)
-
 Add tag to iterate over all images in a folder and tell [Laurel](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvBwZtktzGVFtcfDWbGZKhsfh)
 
 ---
@@ -1111,10 +1094,6 @@ Improve backlink's tolerance
 Add support for 2FA (Two factor authentication) then tell [Luke](https://mail.google.com/mail/u/0/#inbox/163993b0f8499ab3), [Max](https://mail.google.com/mail/u/0/#inbox/1641e9bd104c5b77), [Chaz](https://mail.google.com/mail/u/0/#inbox/165b726aa900158a), [Prathamesh](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQmWhhpCVSlbhdvlvWdmdtJWQ) and [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqnpZncgBDbDskMZdPMXkgGCN).
 
 Add support for SSO then tell [Prathamesh](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQmWhhpCVSlbhdvlvWdmdtJWQ)
-
-Prevent full disk from affecting access to people's blogs. 
-- switch into a read-only mode?
-  - the specific issue that takes down the server seems to be the redis error (cannot persist on disk, out of space)
 
 ---
 
@@ -1309,7 +1288,6 @@ Generate proper favicons from uploaded avatars (to prevent streched favicons whe
 Improvements to server infrastructure
 - Work out way to recover from expired cert in the cache. To reproduce, consider a member who signed up, connected example.com, then moved the domain to another service. The attempt to renew the cert for example.com will fail. When the customer re-registers with Blot, for some reason open-resty-auto-ssl will serve an old certificate. I followed these steps to [reset](https://github.com/GUI/lua-resty-auto-ssl/issues/42) but we should automate this
 - Create DMARC record for Blot https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail https://docs.aws.amazon.com/ses/latest/DeveloperGuide/dmarc.html
-- NGINX doesn't appear to be following the symlinks created by node.js to serve the contents of each blog's folder and the contents of each blog's static directory. Is this a permissions issue? Is now finally the time to set up users with appropriate permissions for blot, nginx, build etc...
 
 Add support for posts generated from Excel files, would generate a table. Use [this library](https://github.com/joshboyan/excel-to-html-table)?
 
@@ -1412,8 +1390,6 @@ Improve 404 log page on Dashboard
 
 Add support for nesting multiple layout tags e.g. "{<>} {||} Y" and tell [Marius](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVqNqbsQJjcrTXRcsFxHVPzDq)
 
-Look into accessibility issues with scrolling and code blocks and tell [Eli](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwqJjjrrGHDWjLPzfxGpnkZTh) if I make any changes
-
 Improvements to Git client
 - Make it possible to connect github repo via their API and tell [reg](https://mail.google.com/mail/u/0/#inbox/FMfcgzQXKhPKRfSsfGpXCdcxtFBhdKDt)
 - Add support for LFS and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVMcpnxGHqnxJHNdbMBSrglzg)
@@ -1445,7 +1421,6 @@ Improvements to Dropbox client
 - Extend sync lock during long syncs
 - Write test to simulate process dying and restarting mid-pull. Does the client recover?
 - Write tests for a series of random dropbox client operations (pull, add, push, move, reset, delete) that can be seeded and reliably re-run in the case of failure.
-- Look into getAccessTokenFromCode on DBSDK repo to avoid the mess in get_account.js https://github.com/dropbox/dropbox-sdk-js/issues/64
 - Gracefuly retry wrapper around Dropbox
 - Can we write to a folder_id instead of a path? It would be nice to be able to move the blog's folder even when writing the initial files to it, for example...
 - This should be simple once we copy the exisiting state of the blog folder across. But right now it doesn't really do much. It resets the local server folder. Then resyncs.

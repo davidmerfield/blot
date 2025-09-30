@@ -5,6 +5,7 @@
   "license": "AGPL-3.0",
   "main": "app/index.js",
   "scripts": {
+    "download-folder": "read -p 'Enter blog identifier: ' BLOGID && ssh blot \"docker exec blot-container-blue node /usr/src/app/scripts/info \\\"$BLOGID\\\"\" | grep 'blog_' | head -n1 | cut -d ' ' -f 2 | xargs -I {} bash -c 'rsync -avz blot:/var/www/blot/data/blogs/{} ~/Downloads/ && open ~/Downloads/{}'",
     "test": "./scripts/tests/invoke.sh",
     "start": "docker-compose -f scripts/development/docker-compose.yml up --build",
     "deploy-node": "node scripts/deploy",

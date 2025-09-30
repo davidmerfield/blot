@@ -1,8 +1,5 @@
 <form action="{{{editURL}}}/duplicate" method="post">
         <input type="hidden" name="_csrf" value="{{csrftoken}}" />
-        <div class="preview">
-          <div class="site-preview" data-url="{{{previewURL}}}"  data-cache-id="{{blog.cacheID}}" data-fallback-image="{{#cdn}}/images/examples/{{slug}}/0-thumb.png{{/cdn}}"></div>
-        </div>
         <span style="font-size: 14px;">{{name}}</span>
         <button class="button small" type="submit">Duplicate</button>
   </form>

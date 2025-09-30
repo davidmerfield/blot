@@ -75,3 +75,7 @@ sign
 terms
 updates
 template
+icloud
+drive
+google
+git

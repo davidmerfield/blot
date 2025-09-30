@@ -17,7 +17,6 @@ var CONTENT_TYPE = "Content-Type";
 var CACHE_CONTROL = "Cache-Control";
 
 const {minifyJS, minifyCSS} = require("./minify");
-const injectScreenshotScript = require("./injectScreenshotScript");
 const replaceFolderLinks = require("./replaceFolderLinks/html");
 const replaceFolderLinksCSS = require("./replaceFolderLinks/css");
 
@@ -146,13 +145,6 @@ module.exports = function (req, res, _next) {
               output = output
                 .split(config.cdn.origin)
                 .join(config.cdn.origin.split("https://").join("http://"));
-
-            // if the request is for the index page of a preview site,
-            // inject the script to generate a screenshot of the page
-            // on demand
-            if (req.preview && viewType === "text/html" && req.query.screenshot) {
-              output = injectScreenshotScript({output, protocol: req.protocol, hostname: req.hostname, blogID});
-            }
 
             if (viewType === "text/html") {
               req.log("Replacing folder links with CDN links");
