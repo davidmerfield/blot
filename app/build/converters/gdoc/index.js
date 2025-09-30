@@ -11,6 +11,7 @@ const sharp = require("sharp");
 const Metadata = require("build/metadata");
 const extend = require("helper/extend");
 const yaml = require("yaml");
+const blockquotes = require('./blockquotes');
 
 function is(path) {
   return [".gdoc"].indexOf(extname(path).toLowerCase()) > -1;
@@ -117,11 +118,6 @@ async function read(blog, path, callback) {
       $(this).replaceWith("<strong>" + $(this).html() + "</strong>");
     });
 
-    // detect blockquotes
-    $('p[style*="margin-left:36pt"]').each(function (i, elem) {
-      $(this).replaceWith("<blockquote>" + $(this).html() + "</blockquote>");
-    });
-    
     // remove all inline style attributes
     $("[style]").removeAttr("style");
 
@@ -255,6 +251,9 @@ async function read(blog, path, callback) {
       }
     }
 
+    // handle blockquotes
+    blockquotes($);
+
     let html = $("body").html();
 
     if (Object.keys(metadata).length > 0) {
@@ -267,7 +266,7 @@ async function read(blog, path, callback) {
       .replace(/<\/(h1|h2|h3|h4|h5|h6|p|blockquote|ul|ol|li)>/g, "</$1>\n")
       .replace(/<(hr|br)[^>]*>/g, "<$1>\n")
       .trim();
-      
+
     callback(null, html, stat);
   } catch (err) {
     callback(err);
