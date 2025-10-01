@@ -56,12 +56,14 @@ async function initialize() {
             devtools: false,
             args: BROWSER_ARGS,
             ignoreDefaultArgs: ["--disable-extensions"],
+            protocolTimeout: 30000  // Add just this line
           });
           const page = await browser.newPage();
           await page.goto("about:blank");
         }
       } catch (error) {
         browserInitializationPromise = null;
+        browser = null;  // Ensure browser is nulled on failure
         throw error;
       }
     })();
