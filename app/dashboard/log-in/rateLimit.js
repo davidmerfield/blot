@@ -9,7 +9,7 @@ var limiter = rateLimit({
     client: client,
   }),
   windowMs: 60000, // one minute window
-  max: 60, // 1 attempt per second
+  max: 120, // 2 attempts per second
 });
 
 module.exports = limiter;

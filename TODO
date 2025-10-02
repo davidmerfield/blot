@@ -1,7 +1,7 @@
+Fix redirect bug for 404 page on dashboard / other errors
+
 Folder viewer
 - add pagination for large folders
-- add proper 404 page
-- resolve weird redirect issue for errors e.g. 404
 
 Fix bug with recursive partials which took down server
 - seems possible in local templates
