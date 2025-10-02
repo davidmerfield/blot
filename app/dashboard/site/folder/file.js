@@ -53,7 +53,7 @@ module.exports = async function (blog, path) {
 
         file.kind = kind(path);
         file.path = path;
-        file.url = encodeURIComponent(path.slice(1));
+        file.url = path.split('/').map(encodeURIComponent).join('/');
         file.name = basename(path);
 
         // a dictionary we use to display conditionally in the UI

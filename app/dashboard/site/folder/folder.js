@@ -35,8 +35,11 @@ async function getContents(blog, dir) {
         const stat = await Stat(fullPath, blog.timeZone);
 
         stat.path = path.join(dir, item);
+        // we don't want to turn '/' into '%2F' so we split on '/' and encode each part separately
+        stat.url = stat.path.split('/').map(encodeURIComponent).join('/');
         stat.fullPath = fullPath;
         stat.name = item;
+
         return stat;
       })
     ),

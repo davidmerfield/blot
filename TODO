@@ -1,4 +1,7 @@
-Fix bug viewing files with hashes '#' in their name on the dashboard
+Folder viewer
+- add pagination for large folders
+- add proper 404 page
+- resolve weird redirect issue for errors e.g. 404
 
 Fix major bug with disks on server restart:
 - sudo chown ec2-user:ec2-user /var/instance-ssd/tmp
@@ -487,6 +490,8 @@ Move from EBS to s3
   - Remove the live repo from the blog folder dir
   - Other ideas which I decided against:
     - I thought about using an s3fs but it seems risky and likely too slow
+ - Once this is done, the nginx + node server is 'stateless' and could be replicated easily across aws regions
+ - We could combine this with the containerization of openresty
 
 Resolve bad links (e.g. incorrect case) in files at build-time rather than run-time so we can avoid the expensive disk lookups in blog/assets.js
 

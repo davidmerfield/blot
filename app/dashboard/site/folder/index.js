@@ -11,8 +11,9 @@ async function middleware(req, res, next) {
     // "ブ".length => 1
     // "ブ".length => 2
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/normalize
-    const dir = req.params.path ? "/" + decodeURIComponent(req.params.path).normalize('NFC') : '/';
 
+    const dir = req.params.path ? "/" + req.params.path.normalize('NFC') : '/';
+    
     res.locals.folder = await loadFolder(req.blog, dir);
 
     for (const breadcrumb of res.locals.folder.breadcrumbs) {
@@ -37,6 +38,7 @@ async function middleware(req, res, next) {
       res.locals.folder = {directory: true, contents: []};
       res.render("dashboard/folder");
     } else {
+      console.log("HERE", err);
       next(err);
     }
 
