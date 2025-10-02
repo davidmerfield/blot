@@ -1,3 +1,7 @@
+Work out why this takes down server
+- `https://howdy.blot.im/page/202008295965`
+- seems like any request that's out of range causes this
+
 Folder viewer
 - add pagination for large folders
 - add proper 404 page

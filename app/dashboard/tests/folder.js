@@ -122,6 +122,8 @@ describe("folder", function () {
           // find the file download link
           const downloadLink = $("a:contains('Download file')").attr("href");
 
+          console.log('attempting to download file from link:', downloadLink);
+          
           const text = await this.text(downloadLink);
 
           expect(text).toBe("test content here");
