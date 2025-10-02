@@ -117,6 +117,14 @@ describe("folder", function () {
               `Could not find h1 for file "${component}" in path "${path}"`
             );
           }
+
+
+          // find the file download link
+          const downloadLink = $("a:contains('Download file')").attr("href");
+
+          const text = await this.text(downloadLink);
+
+          expect(text).toBe("test content here");
         }
       }
     });
