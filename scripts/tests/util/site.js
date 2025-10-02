@@ -8,14 +8,18 @@ const Server = require("server");
 const checkBrokenLinks = require("./checkBrokenLinks");
 const build = require("documentation/build");
 const templates = require("util").promisify(require("templates"));
+const cheerio = require("cheerio");
+
+const clfdate = require("helper/clfdate");
 
 module.exports = function (options = {}) {
   // we must build the views for the documentation
   // and the dashboard before we launch the server
   // we also build the templates into the cache
   beforeAll(async () => {
-    console.log("Building views and templates");
+    console.log(clfdate(), "Test site: Building views");
     await build({ watch: false, skipZip: true });
+    console.log(clfdate(), "Test site: Building templates");
     await templates({ watch: false });
   }, 60000);
 
@@ -35,25 +39,28 @@ module.exports = function (options = {}) {
     const app = require("express")();
 
     // Override the host header with the x-forwarded-host header
-    // it's not possible to override the Host header in fetch for 
+    // it's not possible to override the Host header in fetch for
     // lame security reasons
     // https://github.com/nodejs/node/issues/50305
     app.use((req, res, next) => {
-      req.headers["host"] = req.headers["x-forwarded-host"] || req.headers["host"];
-      req.headers["X-Forwarded-Proto"] = req.headers["X-Forwarded-Proto"] || "https";
-      req.headers["x-forwarded-proto"] = req.headers["x-forwarded-proto"] || "https";
+      req.headers["host"] =
+        req.headers["x-forwarded-host"] || req.headers["host"];
+      req.headers["X-Forwarded-Proto"] =
+        req.headers["X-Forwarded-Proto"] || "https";
+      req.headers["x-forwarded-proto"] =
+        req.headers["x-forwarded-proto"] || "https";
       next();
     });
 
     app.use(Server);
 
     server = app.listen(port, () => {
-      console.log(`Test server listening at ${this.origin}`);
+      console.log(clfdate(), "Test site: Server started at", this.origin);
       done();
     });
 
     server.on("error", (err) => {
-      console.error("Error starting test server:", err);
+      console.log(clfdate(), "Test site: Server error", err);
       done.fail(err);
     });
   });
@@ -73,8 +80,19 @@ module.exports = function (options = {}) {
       // Now this.Cookie will be available from the current context
       if (this.Cookie) {
         options.headers = options.headers || {};
-        options.headers.Cookie = this.Cookie;
-      } 
+
+        // if there is a csrf token in the cookie header already
+        // extract it and include it to this.Cookie
+        if (
+          options.headers.Cookie &&
+          /csrf=([^;]+)/.test(options.headers.Cookie)
+        ) {
+          const existingCsrf = options.headers.Cookie.match(/csrf=([^;]+)/)[0];
+          options.headers.Cookie = `${existingCsrf}; ${this.Cookie}`;
+        } else {
+          options.headers.Cookie = this.Cookie;
+        }
+      }
 
       url.protocol = "http:";
       url.port = port;
@@ -86,6 +104,89 @@ module.exports = function (options = {}) {
 
     this.checkBrokenLinks = (url = this.origin, options = {}) =>
       checkBrokenLinks(this.fetch, url, options);
+
+    this.text = (path) => {
+      return new Promise((resolve, reject) => {
+        this.fetch(path)
+          .then((res) => {
+            if (res.status !== 200)
+              return reject(
+                new Error(`Failed to fetch ${path}: ${res.status}`)
+              );
+            res.text().then((text) => resolve(text));
+          })
+          .catch((err) => reject(err));
+      });
+    };
+
+    this.parse = (path) => {
+      return new Promise((resolve, reject) => {
+        this.text(path)
+          .then((text) => {
+            let $;
+            try {
+              $ = cheerio.load(text);
+            } catch (e) {
+              return reject(new Error(`Failed to parse HTML: ${e.message}`));
+            }
+            resolve($);
+          })
+          .catch((err) => reject(err));
+      });
+    };
+    // can be used like so:
+    // await this.submit('/sites/example/title', { title: 'New Title' });
+    // will first GET the form to get the CSRF token then POST the form
+    // with the provided data
+    this.submit = (path, data) => {
+      return new Promise(async (resolve, reject) => {
+        try {
+          // first fetch the page to get the csrf token
+          const page = await this.fetch(path, {
+            redirect: "manual",
+          });
+
+          const headers = Object.fromEntries(page.headers);
+          const cookies = headers["set-cookie"];
+          const csrfCookie = cookies.match(/csrf=([^;]+)/);
+
+          // the response status should be 200
+          expect(page.status).toEqual(200);
+
+          const pageText = await page.text();
+          const csrfTokenMatch = pageText.match(/name="_csrf" value="([^"]+)"/);
+
+          if (!csrfTokenMatch) {
+            return reject(new Error("CSRF token not found in form"));
+          }
+
+          const params = new URLSearchParams();
+
+          for (const key in data) {
+            params.append(key, data[key]);
+          }
+
+          params.append("_csrf", csrfTokenMatch[1]);
+
+          const res = await this.fetch(path, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              Cookie: cookies, // Send the CSRF cookie along with the request
+            },
+            body: params.toString(),
+          });
+
+          if (res.status >= 400) {
+            return reject(new Error(`Failed to submit form: ${res.status}`));
+          }
+
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    };
   });
 
   afterAll(function () {
@@ -94,7 +195,6 @@ module.exports = function (options = {}) {
 
   if (options.login) {
     beforeEach(async function (done) {
-
       // first fetch the login page to get the csrf token
       const loginPage = await this.fetch("/sites/log-in", {
         redirect: "manual",
@@ -108,10 +208,12 @@ module.exports = function (options = {}) {
       expect(loginPage.status).toEqual(200);
 
       const loginPageText = await loginPage.text();
-      const csrfTokenMatch = loginPageText.match(/name="_csrf" value="([^"]+)"/);
+      const csrfTokenMatch = loginPageText.match(
+        /name="_csrf" value="([^"]+)"/
+      );
 
       if (!csrfTokenMatch) {
-       return done(new Error("CSRF token not found in login page"));
+        return done(new Error("CSRF token not found in login page"));
       }
 
       const email = this.user.email;
@@ -143,7 +245,9 @@ module.exports = function (options = {}) {
       expect(res.status).toEqual(302);
 
       if (res.status !== 302) {
-        return done(new Error(`Failed to log in: expected status 302, got ${res.status}`));
+        return done(
+          new Error(`Failed to log in: expected status 302, got ${res.status}`)
+        );
       }
 
       expect(Cookie).toMatch(/connect.sid/);
@@ -164,8 +268,6 @@ module.exports = function (options = {}) {
       const dashboardText = await dashboard.text();
 
       expect(dashboardText).toMatch(email);
-
-      console.log("Checking links for logged-in user");
 
       done();
     });

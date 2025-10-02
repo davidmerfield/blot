@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const clfdate = require('helper/clfdate');
 
 module.exports = (req, res, next) => {
     // Skip CSRF for non-mutation requests
@@ -10,11 +11,9 @@ module.exports = (req, res, next) => {
     // Validate token for mutation requests
     const cookieToken = req.cookies?.csrf;
     const bodyToken = req.body?._csrf;
-
-    console.log('Cookie Token:', cookieToken);
-    console.log('Body Token:', bodyToken);
     
     if (!cookieToken || !bodyToken || cookieToken !== bodyToken) {
+        console.log(clfdate(), `CSRF error: cookie=${cookieToken} body=${bodyToken}`);
         return res.status(403).send('Invalid CSRF token');
     }
 

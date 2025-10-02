@@ -43,6 +43,10 @@ module.exports = function (done) {
     context.blog.check = async (entry) =>
       await promisify(checkEntry(context.blog.id))(entry);
 
+    if (context.write === undefined) context.write = context.blog.write;
+
+    if (context.remove === undefined) context.remove = context.blog.remove;
+
     done(err);
   });
 };
