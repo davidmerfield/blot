@@ -1,11 +1,11 @@
-Work out why this takes down server
-- `https://howdy.blot.im/page/202008295965`
-- seems like any request that's out of range causes this
-
 Folder viewer
 - add pagination for large folders
 - add proper 404 page
 - resolve weird redirect issue for errors e.g. 404
+
+Fix bug with recursive partials which took down server
+- seems possible in local templates
+- possibly on web templates too
 
 Fix major bug with disks on server restart:
 - sudo chown ec2-user:ec2-user /var/instance-ssd/tmp
