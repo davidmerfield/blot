@@ -33,8 +33,6 @@ module.exports = function (blog, text, options, callback) {
     "-tex_math_dollars" +
     // This sometimes throws errors for some reason
     "-yaml_metadata_block" +
-    // Don't generate figures automatically
-    "-implicit_figures" +
     // These require a blank line before shit
     "+lists_without_preceding_blankline" +
     "-blank_before_header" +
