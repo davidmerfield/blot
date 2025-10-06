@@ -7,6 +7,7 @@ var STATUS = { syncID: "string", message: "string", datestamp: "number" };
 
 var FLAGS = {
   google_drive_beta: "boolean",
+  google_docs_preserve_linebreaks: "boolean",
 };
 
 // KEY, TYPE, WRITE?, PUBLIC?
