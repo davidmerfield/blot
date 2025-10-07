@@ -12,17 +12,22 @@ const parseBody = require("body-parser").urlencoded({ extended: false });
 const VIEWS = require("path").resolve(__dirname + "/../views") + "/";
 
 dashboard.use(async function (req, res, next) {
-
   res.locals.account = await database.blog.get(req.blog.id);
-  
+
   if (res.locals.account && res.locals.account.serviceAccountId) {
-    res.locals.serviceAccount = await database.serviceAccount.get(res.locals.account.serviceAccountId)
+    res.locals.serviceAccount = await database.serviceAccount.get(
+      res.locals.account.serviceAccountId
+    );
   }
 
   next();
 });
 
 dashboard.get("/", function (req, res) {
+  if (!res.locals.account) {
+    return res.redirect(req.baseUrl + "/connect");
+  }
+
   res.render(VIEWS + "index");
 });
 
@@ -35,141 +40,161 @@ dashboard
     disconnect(req.blog.id, next);
   });
 
+dashboard.route("/connect").get(function (req, res) {
+  res.render(VIEWS + "connect");
+});
 
-dashboard.route("/set-up-folder")
-    .post(parseBody, async function (req, res, next) {
+dashboard.route("/setup").get(function (req, res) {
+  res.render(VIEWS + "setup");
+});
 
-        if (req.body.cancel){
-          return disconnect(req.blog.id, next);
-        }
+dashboard
+  .route("/set-up-folder")
+  .post(parseBody, async function (req, res, next) {
+    if (req.body.cancel) {
+      return disconnect(req.blog.id, next);
+    }
 
-        if (req.body.email) {
+    if (!req.body.email) {
+      return res.message(req.baseUrl, "Please enter your email address");
+    }
 
-          if (req.body.email.length > 100) {
-            return res.message(req.baseUrl, "Email address is too long");
-          }
-            
-          if (req.body.email.indexOf("@") === -1) {
-            return res.message(req.baseUrl, "Please enter a valid email address");
-          } 
+    if (req.body.email.length > 100) {
+      return res.message(req.baseUrl, "Email address is too long");
+    }
 
-          // Determine the service account ID we'll use to sync this blog.
-          // We query the database to retrieve all the service accounts, then
-          // sort them by the available space (storageQuota.available - storageQuota.used)
-          // to find the one with the most available space.
-          const serviceAccountId = await requestServiceAccount();
+    if (req.body.email.indexOf("@") === -1) {
+      return res.message(req.baseUrl, "Please enter a valid email address");
+    }
 
-          await database.blog.store(req.blog.id, {
-            email: req.body.email,
-            serviceAccountId,
-            error: null,
-            preparing: true
-          });
+    // Determine the service account ID we'll use to sync this blog.
+    // We query the database to retrieve all the service accounts, then
+    // sort them by the available space (storageQuota.available - storageQuota.used)
+    // to find the one with the most available space.
+    const serviceAccountId = await requestServiceAccount();
 
-          setUpBlogFolder(serviceAccountId, req.blog, req.body.email);
-        }
-
-        console.log(clfdate(), "Google Drive Client", "Setting up folder");
-        res.redirect(req.baseUrl);
+    await database.blog.store(req.blog.id, {
+      email: req.body.email,
+      serviceAccountId,
+      error: null,
+      preparing: true,
     });
 
-dashboard.post("/cancel", async function (req, res) {
-
-    console.log(clfdate(), "Google Drive Client", "Cancelling folder setup");
-  
-      await database.blog.delete(req.blog.id);
-  
-      res.message(req.baseUrl, "Cancelled the creation of your new folder");
-  });
-
-
-const setUpBlogFolder = async function (serviceAccountId, blog, email) {
-
-  let done;
-
-  try {
     const checkWeCanContinue = async () => {
-      const { preparing } = await database.blog.get(blog.id);
+      const { preparing, email: latestEmail } = await database.blog.get(blog.id);
+      // the user wants to edit their email address so we delete the existing account
+      if (latestEmail !== req.body.email) throw new Error("Email changed");
       if (!preparing) throw new Error("Permission to set up revoked");
     };
 
-    let sync = await establishSyncLock(blog.id);
+    const blog = req.blog;
+    const email = req.body.email;
+
+    let done;
+    let sync;
+
+    try {
+      sync = await establishSyncLock(blog.id);
+    } catch (e) {
+      return res.message(
+        req.baseUrl,
+        "Another sync is already in progress. Please try again later."
+      );
+    }
 
     // we need to hoist this so we can call it in the catch block
     done = sync.done;
 
     sync.folder.status("Establishing connection to Google Drive");
-    const drive = await createDriveClient(serviceAccountId);
 
-    // var fileMetadata = {
-    //   name: blog.title.split("/").join("").trim(),
-    //   mimeType: "application/vnd.google-apps.folder"
-    // };
+    let drive;
+
+    try {
+      drive = await createDriveClient(serviceAccountId);
+    } catch (e) {
+      if (done) done(null, () => {});
+      return res.message(
+        req.baseUrl,
+        "Failed to connect to Google Drive. Please try again later."
+      );
+    }
 
     let folderId;
     let folderName;
 
-    sync.folder.status("Waiting for folder to be created");
+    sync.folder.status("Waiting for your invite to Google Drive folder");
+
+    // now we redirect, everything else happens in the background
+    console.log(clfdate(), "Google Drive Client", "Setting up folder");
+    res.redirect(req.baseUrl);
 
     // Must be a new folder created after the current time
     const after = new Date(Date.now()).toISOString();
 
-    do {
+    try {
+      do {
+        await checkWeCanContinue();
+        console.log(clfdate(), "Google Drive Client", "Checking for empty shared folder...");
+        const res = await findEmptySharedFolder(drive, email, after);
+
+        // wait 2 seconds before trying again
+        if (!res) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          continue;
+        } else {
+          folderId = res.folderId;
+          folderName = res.folderName;
+        }
+      } while (!folderId);
+
+      await database.blog.store(blog.id, { folderId, folderName });
+
       await checkWeCanContinue();
-      const res = await findEmptySharedFolder(drive, email, after);
+      sync.folder.status("Ensuring new folder is in sync");
+      await resetFromBlot(blog.id, sync.folder.status);
 
-      // wait 3 seconds before trying again
-      if (!res) {
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        continue;
-      } else {
-        folderId = res.folderId;
-        folderName = res.folderName;
+      await database.blog.store(blog.id, { preparing: false });
+      sync.folder.status("All files transferred");
+      done(null, () => {});
+    } catch (e) {
+      console.log(clfdate(), "Google Drive Client", e);
+
+      let error = "Failed to set up account";
+
+      if (e.message === "Email changed") {
+        // don't store this error, the user is changing their email
+        // we just want to stop the current setup process
+        error = null;
       }
-    } while (!folderId);
 
-    await database.blog.store(blog.id, { folderId, folderName });
+      if (e.message === "Permission to set up revoked") {
+        error = null;
+      }
 
-    await checkWeCanContinue();
-    sync.folder.status("Ensuring new folder is in sync");
-    await resetFromBlot(blog.id, sync.folder.status);
+      if (e.message === "Please share an empty folder") {
+        error = "Please share an empty folder";
+      }
 
-    // await checkWeCanContinue();
-    // sync.folder.status("Setting up webhook");
-    // await setupWebhook(blog.id, folderId);
+      // check that the blog still exists in the database
+      const existingBlog = await database.blog.get(blog.id);
 
-    await database.blog.store(blog.id, { preparing: false });
-    sync.folder.status("All files transferred");
-    done(null, () => {});
-  } catch (e) {
-    console.log(clfdate(), "Google Drive Client", e);
+      if (existingBlog) {
+        await database.blog.store(blog.id, {
+          error,
+          preparing: null,
+          folderId: null,
+          folderName: null,
+        });
+      }
 
-    let error = "Failed to set up account";
-
-    if (e.message === "Permission to set up revoked") {
-      error = null;
+      if (done) done(null, () => {});
     }
-
-    if (e.message === "Please share an empty folder") {
-      error = "Please share an empty folder";
-    }
-
-    await database.blog.store(blog.id, {
-      error,
-      preparing: null,
-      folderId: null,
-      folderName: null
-    });
-
-    if (done) done(null, () => {});
-  }
-};
+  });
 
 /**
  * List the contents of root folder.
  */
 async function findEmptySharedFolder(drive, email, after) {
-
   // List all shared folders owned by the given email created after the given date
   const res = await drive.files.list({
     supportsAllDrives: true,
@@ -203,7 +228,6 @@ async function findEmptySharedFolder(drive, email, after) {
 
   // Handle the case where there are multiple folders
   for (const folder of res.data.files) {
-
     // List the contents of the current folder
     const folderContents = await drive.files.list({
       supportsAllDrives: true,

@@ -23,11 +23,17 @@
 
   {{#folderId}}
   <a class="line" style="flex-wrap: nowrap;" href="https://drive.google.com/drive/folders/{{folderId}}" target="_blank">
-    <span class="label">Folder name</span>
+    <span class="label">Folder on Google Drive</span>
     <span class="center">
         {{#folderName}}
            <span style="color:#000"> <span class="icon-folder"></span> {{folderName}} </span> 
-           <span class="right">Open in Google Drive</span>
+           <br>
+                   <span class="link" style="display: block;margin-top: 10px">Open in Google Drive <svg style="fill:currentColor;transform:rotate(-45deg)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"></path></svg></span>
+          <span style="color:var(--medium-text-color);max-width:500px;display: block;margin-top: 10px;font-size:14px">
+          You can rename, share and move this folder.
+        </span>
+
+ 
         {{/folderName}}
         {{#preparing}}
         <br>
@@ -44,34 +50,52 @@
   {{^folderId}}
   {{#serviceAccount.user}}
   <div class="line" style="flex-wrap: nowrap;">
-    <span class="label">Folder name</span>
-    <span class="center">Please <a href="https://drive.google.com/drive/my-drive" target="_blank">create a new folder</a> in your Google Drive and share the folder with:
-        <br><br>
+    <div class="label">Set up folder</div>
+    <div class="center">
+      <ul class="steps">
+        <li class="complete">Add your Google Drive account<br>
+                 <a href="{{{base}}}/setup">
+    <span class="center">{{email}}</span>
+    <span class="right">Edit</span>
+   </a>
+</li>
+<li>
+  Create a folder in your Google Drive<br>
+  <a href="https://drive.google.com/drive/my-drive" target="_blank">Open Google Drive <svg style="fill:currentColor;transform:rotate(-45deg)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M8.22 2.97a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l2.97-2.97H3.75a.75.75 0 0 1 0-1.5h7.44L8.22 4.03a.75.75 0 0 1 0-1.06Z"></path></svg></a>
+</li>
+<li>
+    Share the folder with Blot:<br>
     <b>{{emailAddress}}</b><button class="copy" data-copy="{{emailAddress}}"><span class="icon-copy"></span> Copy</button>
-    </span>
+</li>
+      </ul>
+
+    </div>
   </div>
   {{/serviceAccount.user}}
   {{/folderId}}
 
-   <div class="line">
-    <span class="label">Account on Google Drive</span>
-    <span class="center">{{email}}</span>
-  </div>
 
   {{#folderId}}
-  {{> disconnect-line}}
+   <a class="line" href="{{{base}}}/setup">
+    <span class="label">Account on Google Drive</span>
+    <span class="center">{{email}}</span>
+    <span class="right">Edit</span>
+   </a>
+
+   {{> disconnect-line}}
   {{/folderId}}
 
   {{^folderId}}
-  <a class="line" href="{{{dashboardBase}}}/client/activity">
-    <span class="label">Activity</span>
+ {{#preparing}}
+  <div class="line">
+    <span class="label">Status</span>
     <span class="center">  
-      <span class="sync-status" data-sync-status-url="{{{dashboardBase}}}/status">{{blog.status.message}} {{blog.status.fromNow}}</span>
+      {{> sync-status}}
     </span>
-    <span class="right">View recent activity</span>
-  </a>
+  </div>
+  {{/preparing}} 
   
-  <form action="{{{base}}}/cancel" method="POST">
+  <form action="{{{base}}}/disconnect" method="POST">
     <input type="hidden" name="_csrf" value="{{csrftoken}}">
     {{error}}
     <div class="buttons">
@@ -82,33 +106,4 @@
 
 </div>
 <br><br>
-{{/account}}
-
-{{^account}}
-
-
-<div class="inset">
-  
-  <p>
-  Sync the folder with <strong>Google Drive</strong> 
-</p>
-<ul>
-  <li>Blot will ask you to share a folder in Google Drive for this site.</li>
-  <li>Blot will only have access to this folder.</li>
-  <li>You can switch from Google Drive to another sync method at any time.</li>
-</ul>
-
-<p>Please enter the email address for your Google Drive account:</p>
-
-  <form class="dashboard-form" action="{{{base}}}/set-up-folder" method="post">
-    <input type="hidden" name="_csrf" value="{{csrftoken}}">
-    <label for="email">Google account email address:</label>
-    <input type="text" name="email" value="{{user.email}}">
-    <div class="buttons">
-      <button type="submit">Sync with Google Drive</button> 
-      <button type="submit" name="cancel" value="true">Cancel</button> 
-    </div>
-  </form>
-
-</div>
 {{/account}}

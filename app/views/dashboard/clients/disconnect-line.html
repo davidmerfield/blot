@@ -2,9 +2,9 @@
 <a class="line" href="{{{dashboardBase}}}/client/activity" style="flex-wrap: nowrap;">
   <span class="label"  style="flex-shrink: 0;">Activity</span>
   <span class="center" style="height:1.5em;overflow: hidden;text-wrap: nowrap;">  
-    <span class="sync-status" data-sync-status-url="{{{dashboardBase}}}/status">{{blog.status.message}} {{blog.status.fromNow}}</span>
+    {{> sync-status}}
   </span>
-  <span class="right" style="flex-shrink: 0;">View recent activity</span>
+  <span class="right" style="flex-shrink: 0;">View activity</span>
 </a>
 
 <a class="line" href="{{{dashboardBase}}}/client/reset">
@@ -14,7 +14,7 @@
 
 <a class="line" href="{{{base}}}/disconnect">
   <span class="label">Disconnect</span>
-  <span class="link">Disconnect from {{client.display_name}}</span>
+  <span class="link">Disconnect {{client.display_name}}</span>
 </a>
 
 <div class="buttons">

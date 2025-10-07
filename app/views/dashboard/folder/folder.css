@@ -22,7 +22,7 @@
   }
 
   .status-link {
-    border-top:1px solid #eeeeec;display: block;width: 100%;box-sizing: border-box;padding: 8px 16px;font-size: 14px;overflow: hidden;color:var(--light-text-color);
+    border-top:1px solid #eeeeec;display: block;width: 100%;box-sizing: border-box;padding: 8px 16px;font-size: 14px;overflow: hidden;color:var(--medium-text-color);
     background-color: none;
     transition: background-color 0.2s;
     position: relative;

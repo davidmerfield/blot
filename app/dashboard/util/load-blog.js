@@ -16,7 +16,6 @@ module.exports = function (req, res, next, handle) {
       blog = Blog.extend(blog);
 
       if (blog.status && blog.status.message === "Synced") {
-        blog.status.fromNow = moment(blog.status.datestamp).fromNow();
         blog.status.state = "synced";
       }
 
@@ -39,6 +38,7 @@ module.exports = function (req, res, next, handle) {
       req.blog = blog;
       res.locals.blog = blog;
       res.locals.base = `/sites/${req.params.handle}`;
+      res.locals.dashboardBase = res.locals.base; // alias for use in clients
       res.locals.breadcrumbs.add("Sites", "/sites");
       res.locals.breadcrumbs.add(req.blog.pretty.label, `${req.params.handle}`);
       res.locals.title = req.blog.pretty.label;

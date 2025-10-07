@@ -1,0 +1,17 @@
+
+
+<div class="inset">
+  
+<p>Enter the email address for your account on Google Drive. Blot needs this to associate your folder with your account.</p>
+
+  <form class="dashboard-form" action="{{{base}}}/set-up-folder" method="post">
+    <input type="hidden" name="_csrf" value="{{csrftoken}}">
+    <label for="email">Google Drive account:</label>
+    <input type="text" name="email" value="{{user.email}}">
+    <div class="buttons">
+      <button type="submit">Add email</button> 
+      <button type="submit" name="cancel" value="true">Cancel</button> 
+    </div>
+  </form>
+
+</div>

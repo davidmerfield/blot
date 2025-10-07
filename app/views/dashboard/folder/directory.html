@@ -12,7 +12,7 @@
         <img width="16" height="16" src="{{#cdn}}/images/sync/{{blog.client}}.svg{{/cdn}}" />
         {{client.display_name}}
       </span>
-      <span class="link" style="margin-left: 12px;position:relative;top:2px">Edit</span>
+      <span class="link" style="margin-left: 12px;">Edit</span>
       {{/blog.client}}
     </a>
     <div class="folder-corner"></div>
@@ -229,7 +229,7 @@
 {{#blog.client}}
 {{#directory}}
 <a href="{{{base}}}/client" class="status-link" style="border-radius: 0 0 6px 6px;">
-  <span class="sync-status" data-sync-status-url="{{{base}}}/status">{{blog.status.message}} {{blog.status.fromNow}}</span>
+  {{> sync-status}}
 </a>
 {{/directory}}
 {{/blog.client}}
