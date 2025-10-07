@@ -1001,3 +1001,51 @@ ul.pill-navigation {
     50% {opacity: 0;}
     100% {opacity: 1;}
 }
+
+ul.steps {
+  border-left: 2px solid var(--border-color);
+  padding: 0;
+  margin-left: 6px;
+  list-style: none;
+}
+
+ul.steps li {
+  position: relative;
+  padding-left: 1.5em;
+  margin: 0 0 1.5em 0;
+  box-sizing: border-box;
+}
+
+ul.steps li:after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  display: block;
+  position: absolute;
+  left: -7px;
+  top: 0.35em;
+  background: var(--background-color);
+}
+
+/* cover the border-left above the circle */
+ul.steps li:first-child:before,
+ul.steps li:last-child:before {
+  content: "";
+  width: 2px;
+  height: 0.3em;
+  background: var(--background-color);
+  display: block;
+  position: absolute;
+  left: -2px;
+  top: 0;
+  }
+
+ul.steps li:last-child:before {
+  top: 0.35em;
+  bottom: 0;
+  height: auto;
+}
+
+

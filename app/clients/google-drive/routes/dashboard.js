@@ -7,7 +7,10 @@ const establishSyncLock = require("../util/establishSyncLock");
 const createDriveClient = require("../serviceAccount/createDriveClient");
 const requestServiceAccount = require("clients/google-drive/serviceAccount/request");
 const resetFromBlot = require("../sync/resetToDrive");
+const resetFromDrive = require("../sync/resetFromDrive");
 const parseBody = require("body-parser").urlencoded({ extended: false });
+const fs = require("fs-extra");
+const localPath = require("helper/localPath");
 
 const VIEWS = require("path").resolve(__dirname + "/../views") + "/";
 
@@ -81,7 +84,9 @@ dashboard
     });
 
     const checkWeCanContinue = async () => {
-      const { preparing, email: latestEmail } = await database.blog.get(blog.id);
+      const { preparing, email: latestEmail } = await database.blog.get(
+        blog.id
+      );
       // the user wants to edit their email address so we delete the existing account
       if (latestEmail !== req.body.email) throw new Error("Email changed");
       if (!preparing) throw new Error("Permission to set up revoked");
@@ -121,6 +126,7 @@ dashboard
 
     let folderId;
     let folderName;
+    let pullFromDrive = false;
 
     sync.folder.status("Waiting for your invite to Google Drive folder");
 
@@ -134,8 +140,12 @@ dashboard
     try {
       do {
         await checkWeCanContinue();
-        console.log(clfdate(), "Google Drive Client", "Checking for empty shared folder...");
-        const res = await findEmptySharedFolder(drive, email, after);
+        console.log(
+          clfdate(),
+          "Google Drive Client",
+          "Checking for empty shared folder..."
+        );
+        const res = await findEmptySharedFolder(blog.id, drive, email, after);
 
         // wait 2 seconds before trying again
         if (!res) {
@@ -144,6 +154,7 @@ dashboard
         } else {
           folderId = res.folderId;
           folderName = res.folderName;
+          pullFromDrive = res.pullFromDrive;
         }
       } while (!folderId);
 
@@ -151,7 +162,12 @@ dashboard
 
       await checkWeCanContinue();
       sync.folder.status("Ensuring new folder is in sync");
-      await resetFromBlot(blog.id, sync.folder.status);
+
+      if (pullFromDrive) {
+        await resetFromDrive(blog.id, sync.folder.status);
+      } else {
+        await resetFromBlot(blog.id, sync.folder.status);
+      }
 
       await database.blog.store(blog.id, { preparing: false });
       sync.folder.status("All files transferred");
@@ -181,7 +197,6 @@ dashboard
       if (existingBlog) {
         await database.blog.store(blog.id, {
           error,
-          preparing: null,
           folderId: null,
           folderName: null,
         });
@@ -194,7 +209,12 @@ dashboard
 /**
  * List the contents of root folder.
  */
-async function findEmptySharedFolder(drive, email, after) {
+async function findEmptySharedFolder(blogID, drive, email, after) {
+  // Determine if the blog's folder is empty
+  const itemsInBlogFolder = await fs.readdir(localPath(blogID, "/"));
+  const emptyBlogFolder =
+    itemsInBlogFolder.filter((item) => !item.startsWith(".")).length === 0;
+
   // List all shared folders owned by the given email created after the given date
   const res = await drive.files.list({
     supportsAllDrives: true,
@@ -202,6 +222,7 @@ async function findEmptySharedFolder(drive, email, after) {
     q: `'${email}' in owners and trashed = false and mimeType = 'application/vnd.google-apps.folder' and createdTime > '${after}'`,
   });
 
+  // No folders shared with the service account yet
   if (res.data.files.length === 0) {
     return null;
   }
@@ -217,12 +238,16 @@ async function findEmptySharedFolder(drive, email, after) {
       q: `'${folder.id}' in parents and trashed = false`,
     });
 
-    if (folderContents.data.files.length > 0) {
-      // If the folder is non-empty, throw an error
+    if (folderContents.data.files.length > 0 && !emptyBlogFolder) {
+      // If the folder is non-empty and the blog folder is non-empty, throw an error
       throw new Error("Please share an empty folder");
     } else {
-      // If the folder is empty, return it
-      return { folderId: folder.id, folderName: folder.name };
+      // If the folder is empty, or the blog folder is empty, use it
+      return {
+        folderId: folder.id,
+        folderName: folder.name,
+        pullFromDrive: true,
+      };
     }
   }
 
