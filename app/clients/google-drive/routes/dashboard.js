@@ -47,7 +47,23 @@ dashboard.route("/connect").get(function (req, res) {
   res.render(VIEWS + "connect");
 });
 
-dashboard.route("/setup").get(function (req, res) {
+dashboard.route("/setup").get(async function (req, res) {
+  let suggestedEmail = req.user.email;
+
+  const otherBlogs = req.user.blogs.filter((id) => id !== req.blog.id);
+
+  // if there is another blog owned by the user
+  // using this client suggest the email
+  // used by that blog instead
+  if (otherBlogs.length) {
+    await database.blog.iterate(async (blogID, account) => {
+      if (otherBlogs.find((id) => id === blogID) && account && account.email) {
+        suggestedEmail = account.email;
+      }
+    });
+  }
+
+  res.locals.suggestedEmail = suggestedEmail;
   res.render(VIEWS + "setup");
 });
 
@@ -227,14 +243,28 @@ async function findEmptySharedFolder(blogID, drive, email) {
     }
   });
 
-  console.log(clfdate(), "Google Drive Client", "Found", existingFolderIDsForEmail.length, "existing folders for", email);
-  
+  console.log(
+    clfdate(),
+    "Google Drive Client",
+    "Found",
+    existingFolderIDsForEmail.length,
+    "existing folders for",
+    email
+  );
+
   // Filter out folders that are already in use by other blogs
   res.data.files = res.data.files.filter(
     (file) => !existingFolderIDsForEmail.includes(file.id)
   );
 
-  console.log(clfdate(), "Google Drive Client", "Found", res.data.files.length, "shared folders for", email);
+  console.log(
+    clfdate(),
+    "Google Drive Client",
+    "Found",
+    res.data.files.length,
+    "shared folders for",
+    email
+  );
 
   // No folders shared with the service account yet
   if (res.data.files.length === 0) {
@@ -260,7 +290,8 @@ async function findEmptySharedFolder(blogID, drive, email) {
       return {
         folderId: folder.id,
         folderName: folder.name,
-        pullFromDrive: true,
+        // only pull from drive if the blog folder is empty
+        pullFromDrive: folderContents.data.files.length > 0 && emptyBlogFolder,
       };
     }
   }

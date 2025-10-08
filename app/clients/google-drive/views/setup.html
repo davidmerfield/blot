@@ -7,7 +7,7 @@
   <form class="dashboard-form" action="{{{base}}}/set-up-folder" method="post">
     <input type="hidden" name="_csrf" value="{{csrftoken}}">
     <label for="email">Google Drive account:</label>
-    <input type="text" name="email" value="{{user.email}}">
+    <input type="text" name="email" value="{{suggestedEmail}}">
     <div class="buttons">
       <button type="submit">Add email</button> 
       <button type="submit" name="cancel" value="true">Cancel</button> 
