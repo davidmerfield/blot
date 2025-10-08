@@ -1,8 +1,9 @@
+Fix thrashing of 'sync status' blinking icons during mega-syncs (preserve the same node, just update the status message text) by refactoring the sync-status.html partial and sync-status.js
 
 Modify slowest function to aggregate by upstream response time
 - amend daily update:
-  - send daily report of slowest URLs 
-  - send daily report of biggest URLs and bandwidth
+- send daily report of slowest URLs 
+- send daily report of biggest URLs and bandwidth
 
 Fix bug with recursive partials which took down server
 - seems possible in local templates

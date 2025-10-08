@@ -17,7 +17,7 @@ module.exports = async function sync(blogID, publish, update) {
   update = update || function () {};
 
   const account = await database.blog.get(blogID);
-  const { folderId, serviceAccountId } = account;
+  const { folderId, folderName, serviceAccountId } = account;
 
   if (!blogID) {
     throw new Error("Missing blogID required arguments for sync");
@@ -34,6 +34,39 @@ module.exports = async function sync(blogID, publish, update) {
   const drive = await createDriveClient(serviceAccountId);
   const { getByPath, set, remove } = database.folder(folderId);
   const checkWeCanContinue = CheckWeCanContinue(blogID, account);
+
+  // fetch the latest folderName, in case it has changed
+  // and also whether or not the folder is in the trash
+  try {
+    const folder = await drive.files.get({
+      fileId: folderId,
+      fields: "id, name, trashed",
+    });
+
+    if (folder.data.name !== folderName) {
+      await database.blog.store(blogID, { folderName: folder.data.name });
+    }
+
+    if (folder.data.trashed) {
+      publish("Error syncing with Google Drive");
+      await database.blog.store(blogID, {
+        error:
+          "The Google Drive folder used to sync this site has been moved to the trash. Please select a new folder to continue syncing.",
+        folderId: null,
+        folderName: null,
+      });
+    }
+  } catch (err) {
+    if (err.code === 404) {
+      publish("Error syncing with Google Drive");
+      await database.blog.store(blogID, {
+        error:
+          "The Google Drive folder used to sync this site has been deleted. Please select a new folder to continue syncing.",
+        folderId: null,
+        folderName: null,
+      });
+    }
+  }
 
   const walk = async (dir, dirId) => {
     if (!dir || !dirId) {
