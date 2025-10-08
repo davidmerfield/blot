@@ -7,10 +7,6 @@
     <input type="hidden" name="_csrf" value="{{csrftoken}}">
     <input type="hidden" name="email" value="{{email}}">
     {{error}}
-    <div class="buttons">
-        <button type="submit">Re-connect to Google Drive</button> 
-        <button type="submit" name="cancel" value="true">Cancel</button> 
-    </div>  
 </form>
 
 
@@ -22,7 +18,7 @@
 
 
   {{#folderId}}
-  <a class="line" style="flex-wrap: nowrap;" href="https://drive.google.com/drive/folders/{{folderId}}" target="_blank">
+  <a class="line" href="https://drive.google.com/drive/folders/{{folderId}}" target="_blank">
     <span class="label">Folder on Google Drive</span>
     <span class="center">
         {{#folderName}}
@@ -61,7 +57,7 @@
 
   {{^folderId}}
   {{#serviceAccount.user}}
-  <div class="line" style="flex-wrap: nowrap;">
+  <div class="line">
     <div class="label">Set up folder</div>
     <div class="center">
       <ul class="steps">
@@ -70,9 +66,18 @@
            <span style="font-size:14px;color:var(--medium-text-color)">Add your Google Drive account</span><br>
                  <a href="{{{base}}}/setup" style="margin-top:4px;display: block;">
     <span class="center">{{email}}</span>
-    <span class="right">Edit</span>
+    <span class="link">Edit</span>
    </a>
 </li>
+{{#nonEditorPermissions}}
+    <li class="complete">
+      <span style="color: orange; font-size: 12px; margin-right: 4px; position: absolute;top:6px;left:-7px;z-index: 1;" class="icon-small-alert"></span>
+            
+            <span style="font-size:14px;color:var(--medium-text-color)">The permissions granted to Blot are not sufficient. </span><br>
+      <span class="center">Please give Blot 'Editor' permissions.</span>
+    </a>
+    </li>
+  {{/nonEditorPermissions}}
 {{#nonEmptyFolderShared}}
    <li class="complete">
      <span style="color: orange; font-size: 12px; margin-right: 4px; position: absolute;top:6px;left:-7px;z-index: 1;" class="icon-small-alert"></span>
@@ -126,7 +131,6 @@
   
   <form action="{{{base}}}/disconnect" method="POST">
     <input type="hidden" name="_csrf" value="{{csrftoken}}">
-    {{error}}
     <div class="buttons">
         <button type="submit">Cancel</button> 
     </div>  

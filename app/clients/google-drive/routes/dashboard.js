@@ -97,6 +97,7 @@ dashboard
       error: null,
       preparing: true,
       nonEmptyFolderShared: false,
+      nonEditorPermissions: false,
     });
 
     const checkWeCanContinue = async () => {
@@ -142,7 +143,6 @@ dashboard
 
     let folderId;
     let folderName;
-    let pullFromDrive = false;
 
     sync.folder.status("Waiting for invite to Google Drive folder");
 
@@ -158,7 +158,12 @@ dashboard
           "Google Drive Client",
           "Checking for empty shared folder..."
         );
-        const res = await findEmptySharedFolder(blog.id, drive, email, sync.folder.status);
+        const res = await findEmptySharedFolder(
+          blog.id,
+          drive,
+          email,
+          sync.folder.status
+        );
 
         // wait 2 seconds before trying again
         if (!res) {
@@ -167,20 +172,20 @@ dashboard
         } else {
           folderId = res.folderId;
           folderName = res.folderName;
-          pullFromDrive = res.pullFromDrive;
         }
       } while (!folderId);
 
-      await database.blog.store(blog.id, { folderId, folderName, nonEmptyFolderShared: false });
+      await database.blog.store(blog.id, {
+        folderId,
+        folderName,
+        nonEmptyFolderShared: false,
+        nonEditorPermissions: false,
+      });
 
       await checkWeCanContinue();
       sync.folder.status("Ensuring new folder is in sync");
 
-      if (pullFromDrive) {
-        await resetFromDrive(blog.id, sync.folder.status);
-      } else {
-        await resetFromBlot(blog.id, sync.folder.status);
-      }
+      await resetFromBlot(blog.id, sync.folder.status);
 
       await database.blog.store(blog.id, { preparing: false });
       sync.folder.status("All files transferred");
@@ -216,106 +221,140 @@ dashboard
   });
 
 /**
- * List the contents of root folder.
+ * Find an empty shared folder that can be used for syncing.
  */
 async function findEmptySharedFolder(blogID, drive, email, status) {
-  // Determine if the blog's folder is empty
-  const itemsInBlogFolder = await fs.readdir(localPath(blogID, "/"));
-  const emptyBlogFolder =
-    itemsInBlogFolder.filter((item) => !item.startsWith(".")).length === 0;
-
-  // List all shared folders owned by the given email
-  const res = await drive.files.list({
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-    q: `'${email}' in owners and trashed = false and mimeType = 'application/vnd.google-apps.folder'`,
-  });
-
-  const existingFolderIDsForEmail = [];
-
-  await database.blog.iterate(async function (blogID, account) {
-    if (account && account.folderId && account.email === email) {
-      existingFolderIDsForEmail.push(account.folderId);
-    }
-  });
-
-  console.log(
-    clfdate(),
-    "Google Drive Client",
-    "Found",
-    existingFolderIDsForEmail.length,
-    "existing folders for",
-    email
+  // Get all shared folders owned by email that aren't already in use
+  const existingFolderIDs = await getExistingFolderIDs(email);
+  const availableFolders = await getAvailableFolders(
+    drive,
+    email,
+    existingFolderIDs
   );
 
-  // Filter out folders that are already in use by other blogs
-  res.data.files = res.data.files.filter(
-    (file) => !existingFolderIDsForEmail.includes(file.id)
-  );
-
-  console.log(
-    clfdate(),
-    "Google Drive Client",
-    "Found",
-    res.data.files.length,
-    "shared folders for",
-    email
-  );
-
-  // No folders shared with the service account yet
-  if (res.data.files.length === 0) {
+  if (availableFolders.length === 0) {
+    await database.blog.store(blogID, {
+      nonEmptyFolderShared: false,
+      nonEditorPermissions: false,
+    });
     return null;
   }
 
-  if (res.data.files.length === 1) {
-    // Handle the case where there is only one folder
-    const folder = res.data.files[0];
+  // Process each folder, only storing status for the last unsuccessful one
+  for (let i = 0; i < availableFolders.length; i++) {
+    const folder = availableFolders[i];
+    const isLastFolder = i === availableFolders.length - 1;
 
-    // List the contents of the folder
-    const folderContents = await drive.files.list({
-      supportsAllDrives: true,
-      includeItemsFromAllDrives: true,
-      q: `'${folder.id}' in parents and trashed = false`,
-    });
-
-    if (folderContents.data.files.length > 0 && !emptyBlogFolder) {
-
-    status("Waiting for invite to empty Google Drive folder");
-
-      await database.blog.store(blogID, {
-          nonEmptyFolderShared: true,
-      });
-
-      return null;
-
-    } else {
-      // If the folder is empty, or the blog folder is empty, use it
-      return {
-        folderId: folder.id,
-        folderName: folder.name,
-        // only pull from drive if the blog folder is empty
-        pullFromDrive: folderContents.data.files.length > 0 && emptyBlogFolder,
-      };
-    }
+    const result = await processFolder(
+      folder,
+      drive,
+      blogID,
+      status,
+      isLastFolder
+    );
+    if (result) return result;
   }
 
-  // Handle the case where there are multiple folders
-  for (const folder of res.data.files) {
-    // List the contents of the current folder
-    const folderContents = await drive.files.list({
-      supportsAllDrives: true,
-      includeItemsFromAllDrives: true,
-      q: `'${folder.id}' in parents and trashed = false`,
-    });
-
-    // If the folder is empty, return it
-    if (folderContents.data.files.length === 0) {
-      return { folderId: folder.id, folderName: folder.name };
-    }
-  }
-
-  // If no empty folder is found, wait and retry
   return null;
+}
+
+// When the number of google drive, this will get expensive
+// we might need to add a way to check if a folderId is already in use
+async function getExistingFolderIDs(email) {
+  const existingIDs = [];
+  await database.blog.iterate(async (blogID, account) => {
+    if (account?.folderId && account.email === email) {
+      existingIDs.push(account.folderId);
+    }
+  });
+  return existingIDs;
+}
+
+async function getAvailableFolders(drive, email, existingIDs) {
+  const res = await drive.files.list({
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+    fields: "files(id, name, parents, kind, mimeType, owners)",
+    q: `'${email}' in owners and 
+        trashed = false and 
+        mimeType = 'application/vnd.google-apps.folder'`,
+  });
+
+  // filter out folders already in use
+  // and folders with a defined (non-undefined) parents array
+  // by removing folders with parents we avoid syncing to folders
+   // that are inside other folders the service account may have access to
+  return res.data.files.filter(
+    (file) => !existingIDs.includes(file.id) && !file.parents
+  );
+}
+
+async function processFolder(folder, drive, blogID, status, isLastFolder) {
+  // Check folder contents
+  const folderContents = await drive.files.list({
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+    q: `'${folder.id}' in parents and trashed = false`,
+  });
+
+  const isEmpty = folderContents.data.files.length === 0;
+
+  // If folder is not empty and blog folder is not empty, skip
+  if (!isEmpty) {
+    if (isLastFolder) {
+      status("Waiting for invite to empty Google Drive folder");
+      await database.blog.store(blogID, {
+        nonEmptyFolderShared: true,
+        nonEditorPermissions: false,
+      });
+    }
+    return null;
+  }
+
+  // Check permissions
+  const hasEditorPermission = await checkEditorPermissions(drive, folder.id);
+
+  if (!hasEditorPermission) {
+    if (isLastFolder) {
+      status("Waiting for editor permission on Google Drive folder");
+      await database.blog.store(blogID, {
+        nonEditorPermissions: true,
+        nonEmptyFolderShared: false,
+      });
+    }
+    return null;
+  }
+
+  // Return folder if it's valid
+  return {
+    folderId: folder.id,
+    folderName: folder.name,
+  };
+}
+
+async function checkEditorPermissions(drive, folderId) {
+  try {
+    const permissionsRes = await drive.permissions.list({
+      fileId: folderId,
+      supportsAllDrives: true,
+      fields: "permissions(role,type)",
+    });
+
+    const permissions = permissionsRes.data.permissions || [];
+    return permissions.some(
+      (perm) =>
+        (perm.type === "user" || perm.type === "anyone") &&
+        perm.role === "writer"
+    );
+  } catch (e) {
+    console.error(
+      clfdate(),
+      "Google Drive Client",
+      "Failed to load permissions",
+      e.message
+    );
+    return false;
+  }
 }
 
 module.exports = dashboard;
