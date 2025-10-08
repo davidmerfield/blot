@@ -50,18 +50,17 @@ dashboard.route("/connect").get(function (req, res) {
 dashboard.route("/setup").get(async function (req, res) {
   let suggestedEmail = req.user.email;
 
-  const otherBlogs = req.user.blogs.filter((id) => id !== req.blog.id);
+  const otherBlogIDs = req.user.blogs.filter((id) => id !== req.blog.id);
+  const otherDriveAccounts = await Promise.all(
+    otherBlogIDs.map((id) => database.blog.get(id))
+  );
 
-  // if there is another blog owned by the user
-  // using this client suggest the email
-  // used by that blog instead
-  if (otherBlogs.length) {
-    await database.blog.iterate(async (blogID, account) => {
-      if (otherBlogs.find((id) => id === blogID) && account && account.email) {
-        suggestedEmail = account.email;
-      }
-    });
-  }
+  otherDriveAccounts.forEach((account) => {
+    if (account && account.email) {
+      suggestedEmail = account.email;
+      return;
+    }
+  });
 
   res.locals.suggestedEmail = suggestedEmail;
   res.render(VIEWS + "setup");
@@ -97,6 +96,7 @@ dashboard
       serviceAccountId,
       error: null,
       preparing: true,
+      nonEmptyFolderShared: false,
     });
 
     const checkWeCanContinue = async () => {
@@ -144,7 +144,7 @@ dashboard
     let folderName;
     let pullFromDrive = false;
 
-    sync.folder.status("Waiting for your invite to Google Drive folder");
+    sync.folder.status("Waiting for invite to Google Drive folder");
 
     // now we redirect, everything else happens in the background
     console.log(clfdate(), "Google Drive Client", "Setting up folder");
@@ -158,7 +158,7 @@ dashboard
           "Google Drive Client",
           "Checking for empty shared folder..."
         );
-        const res = await findEmptySharedFolder(blog.id, drive, email);
+        const res = await findEmptySharedFolder(blog.id, drive, email, sync.folder.status);
 
         // wait 2 seconds before trying again
         if (!res) {
@@ -171,7 +171,7 @@ dashboard
         }
       } while (!folderId);
 
-      await database.blog.store(blog.id, { folderId, folderName });
+      await database.blog.store(blog.id, { folderId, folderName, nonEmptyFolderShared: false });
 
       await checkWeCanContinue();
       sync.folder.status("Ensuring new folder is in sync");
@@ -200,10 +200,6 @@ dashboard
         error = null;
       }
 
-      if (e.message === "Please share an empty folder") {
-        error = "Please share an empty folder";
-      }
-
       // check that the blog still exists in the database
       const existingBlog = await database.blog.get(blog.id);
 
@@ -222,7 +218,7 @@ dashboard
 /**
  * List the contents of root folder.
  */
-async function findEmptySharedFolder(blogID, drive, email) {
+async function findEmptySharedFolder(blogID, drive, email, status) {
   // Determine if the blog's folder is empty
   const itemsInBlogFolder = await fs.readdir(localPath(blogID, "/"));
   const emptyBlogFolder =
@@ -283,8 +279,15 @@ async function findEmptySharedFolder(blogID, drive, email) {
     });
 
     if (folderContents.data.files.length > 0 && !emptyBlogFolder) {
-      // If the folder is non-empty and the blog folder is non-empty, throw an error
-      throw new Error("Please share an empty folder");
+
+    status("Waiting for invite to empty Google Drive folder");
+
+      await database.blog.store(blogID, {
+          nonEmptyFolderShared: true,
+      });
+
+      return null;
+
     } else {
       // If the folder is empty, or the blog folder is empty, use it
       return {

@@ -73,6 +73,15 @@
     <span class="right">Edit</span>
    </a>
 </li>
+{{#nonEmptyFolderShared}}
+   <li class="complete">
+     <span style="color: orange; font-size: 12px; margin-right: 4px; position: absolute;top:6px;left:-7px;z-index: 1;" class="icon-small-alert"></span>
+          
+           <span style="font-size:14px;color:var(--medium-text-color)">The folder on Google Drive which you shared has items inside. </span><br>
+    <span class="center">Please share an empty folder.</span>
+   </a>
+  </li>
+{{/nonEmptyFolderShared}}
 <li>
    <span style="font-size:14px;color:var(--medium-text-color)">Create a folder in Google Drive and share the folder with:</span><br style="margin-bottom: 4px;">
     <span>{{emailAddress}}</span> <button class="copy" data-copy="{{emailAddress}}"><span class="icon-copy"></span> Copy</button>
