@@ -2,7 +2,9 @@ const resetFromBlot = require("../sync/resetToDrive");
 const database = require("../database");
 const clfdate = require("helper/clfdate");
 
-const SETUP_TIMEOUT = 1000 * 10; // 10 seconds
+// Maximum time to wait for the user to complete the setup
+// before aborting and requiring them to start again
+const SETUP_TIMEOUT = 1000 * 60 * 60 * 2; // 2 hours
 
 async function finishSetup(blog, drive, email, sync) {
   let folderId;
