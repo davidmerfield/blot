@@ -134,9 +134,6 @@ dashboard
     console.log(clfdate(), "Google Drive Client", "Setting up folder");
     res.redirect(req.baseUrl);
 
-    // Must be a new folder created after the current time
-    const after = new Date(Date.now()).toISOString();
-
     try {
       do {
         await checkWeCanContinue();
@@ -145,7 +142,7 @@ dashboard
           "Google Drive Client",
           "Checking for empty shared folder..."
         );
-        const res = await findEmptySharedFolder(blog.id, drive, email, after);
+        const res = await findEmptySharedFolder(blog.id, drive, email);
 
         // wait 2 seconds before trying again
         if (!res) {
@@ -209,18 +206,35 @@ dashboard
 /**
  * List the contents of root folder.
  */
-async function findEmptySharedFolder(blogID, drive, email, after) {
+async function findEmptySharedFolder(blogID, drive, email) {
   // Determine if the blog's folder is empty
   const itemsInBlogFolder = await fs.readdir(localPath(blogID, "/"));
   const emptyBlogFolder =
     itemsInBlogFolder.filter((item) => !item.startsWith(".")).length === 0;
 
-  // List all shared folders owned by the given email created after the given date
+  // List all shared folders owned by the given email
   const res = await drive.files.list({
     supportsAllDrives: true,
     includeItemsFromAllDrives: true,
-    q: `'${email}' in owners and trashed = false and mimeType = 'application/vnd.google-apps.folder' and createdTime > '${after}'`,
+    q: `'${email}' in owners and trashed = false and mimeType = 'application/vnd.google-apps.folder'`,
   });
+
+  const existingFolderIDsForEmail = [];
+
+  await database.blog.iterate(async function (blogID, account) {
+    if (account && account.folderId && account.email === email) {
+      existingFolderIDsForEmail.push(account.folderId);
+    }
+  });
+
+  console.log(clfdate(), "Google Drive Client", "Found", existingFolderIDsForEmail.length, "existing folders for", email);
+  
+  // Filter out folders that are already in use by other blogs
+  res.data.files = res.data.files.filter(
+    (file) => !existingFolderIDsForEmail.includes(file.id)
+  );
+
+  console.log(clfdate(), "Google Drive Client", "Found", res.data.files.length, "shared folders for", email);
 
   // No folders shared with the service account yet
   if (res.data.files.length === 0) {

@@ -8,6 +8,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function updateContainerClass() {
 
+    statusContainer = document.querySelector(".sync-status");
+
+    if (!statusContainer) return;
+    
     if (statusContainer.innerHTML.startsWith("Synced")) {
       statusContainer.innerHTML =
         '<span style="color:green;font-size: 12px;margin-right: 4px;position: relative;top:-2px" class="icon-small-check"></span> ' +
@@ -17,7 +21,7 @@ document.addEventListener("DOMContentLoaded", function () {
         '<span style="color: orange; font-size: 12px; margin-right: 4px; position: relative; top: -2px" class="icon-small-alert"></span> ' +
         statusContainer.innerHTML;
       
-    } else {
+    } else if (!statusContainer.innerHTML.startsWith("<span")) {
       statusContainer.innerHTML =
         '<span class="loading"></span> ' +
         statusContainer.innerHTML;
@@ -304,8 +308,15 @@ document.addEventListener("DOMContentLoaded", function () {
               } catch (e) {
                 console.error(e);
               }
+              
               try {
                 initCopyButtons();
+              } catch (e) {
+                console.error(e);
+              }
+
+              try {
+                updateContainerClass();
               } catch (e) {
                 console.error(e);
               }

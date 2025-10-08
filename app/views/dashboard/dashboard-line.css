@@ -12,7 +12,6 @@
   border-bottom: 1px solid var(--border-color);
   background-color: var(--background-color);
   transition: background-color 0.2s;
-  align-items: baseline;
 }
 
 
@@ -32,7 +31,11 @@ a.line:hover .right {
 .link,
 .right {
   color: var(--accent-color);
+}
+
+:not(.label) + .link {
   font-size: 14px;
+  margin-left: 12px;
 }
 
 .right {
@@ -49,7 +52,8 @@ a.line:hover .right {
   font-size: 14px;
   box-sizing: border-box;
   flex-shrink: 0;
-  margin-bottom: 2px;
+  position: relative;  
+  top: 2px
 }
 
 .collapse-on-small-screens .label {

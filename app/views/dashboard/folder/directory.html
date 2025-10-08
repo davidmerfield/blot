@@ -11,8 +11,9 @@
       <span class="center">
         <img width="16" height="16" src="{{#cdn}}/images/sync/{{blog.client}}.svg{{/cdn}}" />
         {{client.display_name}}
+        <span class="link" style="margin-left: 12px;">Edit</span>
+
       </span>
-      <span class="link" style="margin-left: 12px;">Edit</span>
       {{/blog.client}}
     </a>
     <div class="folder-corner"></div>
@@ -39,7 +40,7 @@
               text-align: center;{{#directory}}min-height: 300px;{{/directory}}
               color: var(--light-text-color);justify-content: center;">  
                 <span style="align-self: center; text-align: center;display: block;">
-                  {{#root}}The folder is empty.<br>{{^blog.client}}<a style="display: inline;" href="{{{base}}}/client">Sync the folder</a>{{/blog.client}}{{/root}}
+                  {{#root}}Folder is empty.<br>{{^blog.client}}<a style="display: inline;" href="{{{base}}}/client">Sync the folder</a>{{/blog.client}}{{/root}}
                   {{^root}}There is nothing here.{{/root}}
                 </span>
               </small>
@@ -115,7 +116,7 @@
             var index = Array.from(header.parentNode.children).indexOf(header);
             var rows = Array.from(table.querySelectorAll('tbody tr'));
 
-            if (rows.length === 1 && rows[0].querySelector('td').textContent.trim() === 'The folder is empty.') {
+            if (rows.length === 1 && rows[0].querySelector('td').textContent.trim() === 'Folder is empty.') {
               document.querySelector('.directory-list').classList.add('empty');
             } else {
               document.querySelector('.directory-list').classList.remove('empty');

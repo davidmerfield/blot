@@ -62,7 +62,7 @@ window.addEventListener("message", receiveMessage, false);
     <span class="label">Title</span>
     <span class="center" style="display: flex;width: 100%;align-items: baseline;">
       {{#blog.title}}
-      <span class="truncate" style="margin-right: 12px;">{{blog.title}}</span>
+      <span class="truncate">{{blog.title}}</span>
       <span class="link">Edit</span>
       {{/blog.title}}
       {{^blog.title}}
@@ -76,7 +76,7 @@ window.addEventListener("message", receiveMessage, false);
     <span class="center" style="display: flex;max-width: 100%;;">
       <span style="display: flex;width: 100%;align-items: baseline">
         <span class="truncate">{{blog.pretty.url}}</span>
-        <span class="link" style="margin-left: 12px;">Edit</span>
+        <span class="link">Edit</span>
       </span>
     </span>
   </a>
@@ -159,7 +159,6 @@ window.addEventListener("message", receiveMessage, false);
   .panel-link {
     display: block;
     border-bottom: 1px solid var(--border-color);
-    font-weight: 600;
     padding: 0.5rem 1rem;
     color: #656e82;
     font-size: 14px;
