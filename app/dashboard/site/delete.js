@@ -35,7 +35,6 @@ Delete.route("/")
   .post(
     checkPassword,
     function (req, res, next) {
-      console.log("Deleting blog", req.blog.id);
       Blog.remove(req.blog.id, next);
     },
     calculateSubscriptionChange,
