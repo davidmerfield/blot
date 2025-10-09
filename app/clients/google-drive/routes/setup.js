@@ -97,7 +97,9 @@ async function finishSetup(blog, drive, email, sync) {
       });
     }
 
-    if (sync.done) sync.done(null, () => {});
+    if (sync && typeof sync.done === "function") {
+      sync.done(null, () => {});
+    }
   }
 }
 
@@ -248,18 +250,28 @@ async function restartSetupProcesses() {
 
   const blogsToRestart = [];
 
-  await database.blog.iterate(async (blogID, account) => {
-    if (
-      // Only attempt to restart if the account is stuck in 'preparing' state
-      account?.preparing &&
-      // And it has a service account ID
-      account?.serviceAccountId &&
-      // And it doesn't have a folder ID yet
-      !account?.folderId
-    ) {
-      blogsToRestart.push({ blogID, account });
-    }
-  });
+  try {
+    await database.blog.iterate(async (blogID, account) => {
+      if (
+        // Only attempt to restart if the account is stuck in 'preparing' state
+        account?.preparing &&
+        // And it has a service account ID
+        account?.serviceAccountId &&
+        // And it doesn't have a folder ID yet
+        !account?.folderId
+      ) {
+        blogsToRestart.push({ blogID, account });
+      }
+    });
+  } catch (e) {
+    console.log(
+      clfdate(),
+      "Google Drive Client",
+      "restartSetupProcesses: Failed to load blogs",
+      e
+    );
+    return;
+  }
 
   for (const { blogID, account } of blogsToRestart) {
     console.log(
@@ -269,9 +281,37 @@ async function restartSetupProcesses() {
       blogID
     );
 
-    const blog = await getBlog({ id: blogID });
     const serviceAccountId = account.serviceAccountId;
     const email = account.email;
+
+    if (!serviceAccountId || !email) {
+      console.log(
+        clfdate(),
+        "Google Drive Client",
+        "Missing serviceAccountId or email",
+        blogID
+      );
+      continue;
+    }
+
+    let blog;
+
+    try {
+      blog = await getBlog({ id: blogID });
+
+      if (!blog) {
+        throw new Error("Blog no longer exists");
+      }
+    } catch (e) {
+      console.log(
+        clfdate(),
+        "Google Drive Client",
+        "Failed to load blog or account details",
+        e
+      );
+      continue;
+    }
+
     let drive;
 
     try {
