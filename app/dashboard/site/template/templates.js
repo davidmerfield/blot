@@ -23,13 +23,16 @@ module.exports = function (req, res, next) {
 
       var mySubDomain = template.isMine ? "my-" : "";
 
-      template.selected = req.path.split('/')[1] === template.slug ? 'selected' : '';
+      template.selected =
+        req.path.split("/")[1] === template.slug ? "selected" : "";
 
-      template.editURL =
-        "/sites/" +
-        blog.handle +
-        "/template/" +
-        template.slug;
+      console.log("here, template", template);
+
+      template.thumbnailSlug = template.cloneFrom
+        ? template.cloneFrom.split(":").slice(1).join(":")
+        : template.slug;
+
+      template.editURL = "/sites/" + blog.handle + "/template/" + template.slug;
 
       template.previewURL =
         previewHost +
@@ -39,7 +42,8 @@ module.exports = function (req, res, next) {
         "-on-" +
         blog.handle +
         "." +
-        config.host + "?screenshot=true";
+        config.host +
+        "?screenshot=true";
 
       if (template.owner === blogID) yourTemplates.push(template);
 
@@ -50,16 +54,14 @@ module.exports = function (req, res, next) {
     // so only the template owned by the blog is shown
     // use reduce to filter out the duplicate templates
     templates = templates.reduce(function (acc, template) {
-
       // ensure that the template owned by the blog id is in the list
       // rather than the template owned by 'SITE' if there are two templates
-      if (acc.some(t => t.slug === template.slug)) {
-
+      if (acc.some((t) => t.slug === template.slug)) {
         // if the template is owned by the blog id, replace the template owned by 'SITE'
         // with the template owned by the blog id
         if (template.owner === blogID) {
           template.isMine = false;
-          return acc.filter(t => t.slug !== template.slug).concat(template);
+          return acc.filter((t) => t.slug !== template.slug).concat(template);
         } else {
           return acc;
         }
@@ -67,7 +69,6 @@ module.exports = function (req, res, next) {
 
       return acc.concat(template);
     }, []);
-    
 
     // Sort templates alphabetically,
     // with my templates above site tmeplates
@@ -88,13 +89,15 @@ module.exports = function (req, res, next) {
     });
 
     res.locals.yourTemplates = templates.filter(
-      template => template.isMine && !template.checked
+      (template) => template.isMine && !template.checked
     );
 
-    res.locals.blotTemplates = templates.filter(template => !template.isMine && !template.checked);
+    res.locals.blotTemplates = templates.filter(
+      (template) => !template.isMine && !template.checked
+    );
 
     res.locals.currentTemplate = templates.filter(
-      template => template.id === currentTemplate
+      (template) => template.id === currentTemplate
     )[0];
 
     next();

@@ -1,3 +1,10 @@
+h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--light-text-color);
+    margin: var(--spacing) 0 0 0;
+    border-bottom: none;
+}
 
 .smallLink {
     font-size: 11px;

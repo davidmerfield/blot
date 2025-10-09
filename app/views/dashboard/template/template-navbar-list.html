@@ -1,7 +1,11 @@
-<div id="template-list" style="font-size: 15px;">
+<div id="template-list" style="font-size: 15px;padding-top:24px">
+    <h2>Template</h2>
 
+  {{#currentTemplate}}
+  {{> template-row}}
+  {{/currentTemplate}}
 
-  <div class="template-row">
+   <div class="template-row">
 
     <div class="preview" style="border:1px dashed #ccc;box-shadow: none;">
       <a href="{{{dashboardBase}}}/template/new"></a>
@@ -12,14 +16,10 @@
     </a>
   
   </div>
-  
-  {{#currentTemplate}}
-  {{> template-row}}
-  {{/currentTemplate}}
-    
+ 
+
   {{#templatesInYourFolder.length}}
   <h2>In folder</h2>
-  <hr style="border:none;border-bottom: 1px solid #eeeeec;margin:0 0;">
   {{/templatesInYourFolder.length}}
 
   {{#templatesInYourFolder}}
@@ -27,6 +27,7 @@
   {{/templatesInYourFolder}}
 
   {{#yourTemplates.length}}
+    <h2>Your templates</h2>
   {{/yourTemplates.length}}
 
   {{#yourTemplates}}
@@ -34,6 +35,7 @@
   {{/yourTemplates}}
 
   {{#blotTemplates.length}}
+    <h2>Default templates</h2>
   {{/blotTemplates.length}}
   
   {{#blotTemplates}}

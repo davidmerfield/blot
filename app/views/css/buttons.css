@@ -69,7 +69,7 @@ a.close-button:hover > span,
     display:  inline-block;border-radius: var(--border-radius);
     /* background-color: #e4eafb; */
     transition: background-color 0.2s;
-    color:var(--accent-color);padding:0.333em 0.66em;font-weight: 600;margin:0 6px 0;
+    color:#656e82;padding:0.333em 0.66em;margin:0 6px 0;
 }
 
 .template-button.red {
