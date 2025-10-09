@@ -71,9 +71,7 @@ dashboard
 
         await database.store(blogID, { sharingLink, blotiCloudAccount });
       } else {
-        // this allows us to reset the client
-        await database.delete(blogID);
-        return res.redirect(req.baseUrl);
+        return next(new Error("Paste the sharing link into the box"));
       }
 
       // Make the request to the Macserver /setup endpoint
