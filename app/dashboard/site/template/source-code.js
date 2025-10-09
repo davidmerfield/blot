@@ -10,7 +10,6 @@ SourceCode.param("viewSlug", require("./load/template-views"));
 SourceCode.param("viewSlug", require("./load/template-view"));
 
 SourceCode.use((req, res, next) => {
-  res.locals.breadcrumbs.add("Edit", "/source-code");
   next();
 })
 

@@ -240,7 +240,6 @@ TemplateEditor.route("/:templateSlug/local-editing")
 TemplateEditor.route("/:templateSlug/rename")
   .get(function (req, res) {
     res.locals.title = `Rename - ${req.template.name}`;
-    res.locals.breadcrumbs.add("Rename", "rename");
     res.render("dashboard/template/rename");
   })
   .post(function (req, res, next) {
@@ -284,7 +283,6 @@ TemplateEditor.route("/:templateSlug/download")
   .get(function (req, res) {
     res.locals.title = `Download - ${req.template.name}`;
     res.locals.shareURL = `${req.protocol}://${req.hostname}/sites/share-template/${res.locals.template.shareID}`;
-    res.locals.breadcrumbs.add("Download", "download");
 
     res.render("dashboard/template/download");
   })
@@ -312,7 +310,6 @@ TemplateEditor.route("/:templateSlug/delete")
 
   .get(function (req, res, next) {
     res.locals.title = `Delete - ${req.template.name}`;
-    res.locals.breadcrumbs.add("Delete", "delete");
 
     res.render("dashboard/template/delete");
   })
