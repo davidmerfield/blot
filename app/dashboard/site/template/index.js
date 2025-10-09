@@ -53,6 +53,7 @@ TemplateEditor.route('/disable')
 
 TemplateEditor.route('/new')
   .get((req, res) => {
+    res.locals.newSelected = 'selected'
     res.locals.breadcrumbs.add('New template', 'new');
     res.locals.title = 'New template';
     res.render('dashboard/template/new');

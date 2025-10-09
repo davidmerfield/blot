@@ -1,8 +1,9 @@
 <div class="template-row {{#selected}}selected{{/selected}}">
-  <div class="preview">
+  <a href="{{{editURL}}}">
+    <span class="preview">
     <img src="{{#cdn}}/images/examples/{{thumbnailSlug}}/0-thumb.png{{/cdn}}">
-  </div>
-  <a href="{{{editURL}}}">{{name}}    
+    </span>
+    {{name}}    
   </a>
 </div>
   

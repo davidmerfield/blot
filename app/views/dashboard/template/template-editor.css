@@ -1,11 +1,15 @@
 h2 {
     font-size: 13px;
-    font-weight: 600;
-    color: var(--light-text-color);
-    margin: var(--spacing) 0 0 0;
+    font-weight: 400;
+    color: #969caa;
+    margin: 0;
     border-bottom: none;
 }
 
+
+.template-row + h2 {
+    margin-top: calc(var(--spacing) * 1);
+}
 .smallLink {
     font-size: 11px;
     color: #555;
@@ -14,6 +18,7 @@ h2 {
 
 .template-sidebar {
     width: 240px;
+    padding: 0 1.25rem;
     border-right: 1px solid #eeeeec;
     flex-grow: 0;
     flex-shrink: 0;
@@ -24,13 +29,13 @@ h2 {
     top: 0;
     flex-shrink: 0;
     display: flex;
-    justify-content: flex-end;
 }
 
 .scroll-container {
     max-width: 400px;
     height: 100vh;
     overflow: hidden;
+    width: 100%;
 }
 
 #template-list {
@@ -49,43 +54,48 @@ h2 {
 
 .template-row {
     position: relative;
-    margin: 2px 0;
 }
 
  
 .template-row:hover {
     background: #e4eafb75;
+    border-radius: var(--border-radius);
 }
 
 .template-row > a {
-    border-radius: var(--border-radius);
     display: block;
-    color: var(--text-color);
+    color: #656e82;
     font-size: 14px;
-    padding: 6px 0 6px 52px;
+    padding: .35rem 0 .35rem .4rem;
     box-sizing: border-box;
+    display: flex;
+    align-items: center;
 }
+
 .template-row.selected a {
     color: var(--accent-color);
     font-weight: 600;
 }
 
 .template-row .preview {
-    height: 24px;
-    width: 36px;
+    height: 16px;
+    width: 24px;
+    margin-right: 10px;
     flex-shrink: 0;
-    position: absolute;
-    top: 0;
-    left: 0;
     border: none;
-    margin: 5px;
 }
+
+
 
 .preview img {
     width: 100%;
   background: #fff;
   box-shadow: 0 -1px 0 rgba(0,0,0,.11),0 1px 0 rgba(0,0,0,.11),-1px 0 0 rgba(0,0,0,.11),1px 0 0 rgba(0,0,0,.11);
-  border-radius: var(--border-radius);
+  border-radius: 2px;
+}
+
+.template-row.selected .preview img {
+  box-shadow: 0 -1px 0 rgba(0,0,255,.5),0 1px 0 rgba(0,0,255,.5),-1px 0 0 rgba(0,0,255,.5),1px 0 0 rgba(0,0,255,.5);
 }
 
 .template-row .preview a {

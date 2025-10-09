@@ -1,22 +1,10 @@
-<div id="template-list" style="font-size: 15px;padding-top:24px">
-    <h2>Template</h2>
+<div id="template-list">
+    <h2 style="margin-top:2rem">Installed template</h2>
 
   {{#currentTemplate}}
   {{> template-row}}
   {{/currentTemplate}}
 
-   <div class="template-row">
-
-    <div class="preview" style="border:1px dashed #ccc;box-shadow: none;">
-      <a href="{{{dashboardBase}}}/template/new"></a>
-    </div>
-  
-  
-    <a href="{{{dashboardBase}}}/template/new">New template
-    </a>
-  
-  </div>
- 
 
   {{#templatesInYourFolder.length}}
   <h2>In folder</h2>
@@ -33,6 +21,19 @@
   {{#yourTemplates}}
   {{> template-row}}
   {{/yourTemplates}}
+
+     <div class="template-row {{newSelected}}">
+
+  
+  
+    <a href="{{{dashboardBase}}}/template/new">
+          <span class="preview" style="border:1px dashed #ccc;{{#newSelected}}border-color:var(--accent-color);{{/newSelected}}border-radius:3px;box-shadow: none;"> </span>
+New template
+    </a>
+  
+  </div>
+ 
+
 
   {{#blotTemplates.length}}
     <h2>Default templates</h2>
