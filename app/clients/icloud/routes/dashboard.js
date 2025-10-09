@@ -19,9 +19,21 @@ dashboard.use(async function (req, res, next) {
 });
 
 dashboard.get("/", function (req, res) {
-  console.log("Rendering dashboard", config.icloud.email);
+  if (!res.locals.account) {
+    return res.redirect(req.baseUrl + "/connect");
+  }
+
   res.locals.blotiCloudAccount = config.icloud.email;
   res.render(VIEWS + "index");
+});
+
+dashboard.route("/connect").get(function (req, res) {
+  res.render(VIEWS + "connect");
+});
+
+dashboard.route("/setup").get(function (req, res) {
+  res.locals.blotiCloudAccount = config.icloud.email;
+  res.render(VIEWS + "setup");
 });
 
 dashboard
