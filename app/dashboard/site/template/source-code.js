@@ -10,8 +10,10 @@ SourceCode.param("viewSlug", require("./load/template-views"));
 SourceCode.param("viewSlug", require("./load/template-view"));
 
 SourceCode.use((req, res, next) => {
+  res.locals.selected = { ...res.locals.selected, source: "selected" };
+
   next();
-})
+});
 
 SourceCode.route("/")
   .get(require("./load/template-views"))
@@ -92,7 +94,7 @@ SourceCode.route("/:viewSlug/edit")
     res.locals.title = `${req.view.name} - ${req.template.name}`;
 
     res.locals.layout = "dashboard/template/layout";
-    res.render("dashboard/template/source-code/edit");    
+    res.render("dashboard/template/source-code/edit");
   })
   .post(function (req, res, next) {
     var view = formJSON(req.body, Template.viewModel);
@@ -131,13 +133,13 @@ SourceCode.route("/:viewSlug/edit")
         }
       );
     } else {
-        Template.setView(req.template.id, view, function (err) {
+      Template.setView(req.template.id, view, function (err) {
+        if (err) return next(err);
+        writeChangeToFolder(req.blog, req.template, view, function (err) {
           if (err) return next(err);
-          writeChangeToFolder(req.blog, req.template, view, function (err) {
-            if (err) return next(err);
-            res.send("Saved changes!");
-          });
+          res.send("Saved changes!");
         });
+      });
     }
   });
 

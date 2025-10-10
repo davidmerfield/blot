@@ -29,7 +29,6 @@ TemplateEditor.get('/', (req, res) => {
 
 TemplateEditor.route('/deleted')
   .get((req, res) => {
-    res.locals.breadcrumbs.add('Deleted', 'deleted');
     res.locals.title = 'Deleted templates';
     res.render('dashboard/template/deleted');
   })
@@ -41,7 +40,6 @@ TemplateEditor.route('/deleted')
 
 TemplateEditor.route('/disable')
   .get((req, res) => {
-    res.locals.breadcrumbs.add('Disable', 'disable');
     res.locals.title = 'Disable template';
     res.render('dashboard/template/disable');
   })
@@ -66,6 +64,11 @@ TemplateEditor.route('/new')
   });
 
 TemplateEditor.route("/:templateSlug/install")
+  .get(function (req, res) {
+    res.locals.title = `Install - ${req.template.name}`;
+    res.locals.selected = {...res.locals.selected , install: 'selected'};
+    res.render("dashboard/template/install");
+  })
   .post(function (req, res, next) {
     var templateID = req.body.template;
     if (!templateID) return next(new Error("No template ID"));
@@ -136,6 +139,7 @@ TemplateEditor.route("/:templateSlug")
     }
   )
   .get(function (req, res) {
+    res.locals.selected = {...res.locals.selected , settings: 'selected'};
     res.render("dashboard/template/settings");
   });
 
@@ -217,8 +221,7 @@ TemplateEditor.route("/:templateSlug/local-editing")
   TemplateEditor.route("/:templateSlug/duplicate")
   .get(function (req, res) {
     res.locals.title = `Duplicate - ${req.template.name}`;
-    res.locals.breadcrumbs.add("Duplicate", "duplicate");
-
+  
     res.render("dashboard/template/duplicate");
   })
   .post(async (req, res, next) => {
@@ -240,6 +243,7 @@ TemplateEditor.route("/:templateSlug/local-editing")
 TemplateEditor.route("/:templateSlug/rename")
   .get(function (req, res) {
     res.locals.title = `Rename - ${req.template.name}`;
+    res.locals.selected = {...res.locals.selected , rename: 'selected'};
     res.render("dashboard/template/rename");
   })
   .post(function (req, res, next) {
@@ -282,6 +286,7 @@ TemplateEditor.route("/:templateSlug/download")
 
   .get(function (req, res) {
     res.locals.title = `Download - ${req.template.name}`;
+    res.locals.selected = {...res.locals.selected , download: 'selected'};
     res.locals.shareURL = `${req.protocol}://${req.hostname}/sites/share-template/${res.locals.template.shareID}`;
 
     res.render("dashboard/template/download");
@@ -310,7 +315,7 @@ TemplateEditor.route("/:templateSlug/delete")
 
   .get(function (req, res, next) {
     res.locals.title = `Delete - ${req.template.name}`;
-
+    res.locals.selected = {...res.locals.selected , delete: 'selected'};
     res.render("dashboard/template/delete");
   })
   .post(function (req, res, next) {

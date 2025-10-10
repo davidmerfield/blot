@@ -45,7 +45,7 @@ h2 {
 #template-list {
     overflow-y: scroll;
     width: 100%;
-    height: calc(100vh - 4rem);
+    height: calc(100vh);
     padding-right: 17px;
     box-sizing: content-box;
 }
@@ -185,7 +185,7 @@ h2.template-heading {
     padding: 6px 16px;
     font-size: 14px;
     font-weight: 400;
-    color: var(--light-text-color);
+    color: #969caa;
 }
 
 form.color-picker,

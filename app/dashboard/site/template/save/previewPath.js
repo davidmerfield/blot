@@ -8,7 +8,7 @@ module.exports = function (req, res, next) {
     { previewPath: req.body.previewPath },
     function (err) {
       if (err) return next(err);
-      res.message(req.baseUrl + req.url, "Success!");
+      res.sendStatus(200);
     }
   );
 };

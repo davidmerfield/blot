@@ -38,7 +38,7 @@
 
   a.close-button {
     color:var(--accent-color);
-    position: absolute;top:2rem;right:2rem;
+    position: absolute;top:1.85rem;right:4rem;
     transform: scale(1.0);    
     transition: transform 0.2s;
 }
@@ -61,7 +61,7 @@ a.close-button:hover {
 
 a.close-button:hover > span,
 .template-button:hover {
-    background-color: #e4eafb;
+    background-color: #e4eafb75;
 }
 
 .template-button {
@@ -70,6 +70,22 @@ a.close-button:hover > span,
     /* background-color: #e4eafb; */
     transition: background-color 0.2s;
     color:#656e82;padding:0.333em 0.66em;margin:0 6px 0;
+}
+
+.template-button.selected {
+    color: var(--accent-color);
+    font-weight: 600;
+    outline: none;
+    position: relative;
+}
+
+.template-button.selected:after {
+      border-bottom: 2px solid var(--accent-color);
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -9px;
 }
 
 .template-button.red {

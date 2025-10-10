@@ -2,34 +2,7 @@
 <div style="display: flex;">
     <div style="width: 33.33333%;flex-grow: 0;flex-shrink: 0;box-sizing: border-box;padding:0 1rem 0 0">
 
-        <form action="{{{base}}}/install" method="POST" style="display: flex;margin-bottom: 3rem;">
-    <input type="hidden" name="_csrf" value="{{csrftoken}}">
-    <input type="hidden" name="template" value="{{template.id}}">
-    {{^template.checked}}
-        <button style="margin: 0;border:none;cursor: pointer; font-size:14px;display:  inline-block;border-radius: var(--border-radius);background-color: var(--accent-color);color:var(--background-color);padding:0.333em 0.66em;font-weight: 600;margin-right: 6px;">
-            <svg  style="fill:currentColor;vertical-align: middle;position:relative;top:-0.1em"  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M4 8a4 4 0 1 1 8 0 4 4 0 0 1-8 0Zm4-2.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"></path></svg>
-            Install template</span>
-    </button>
-    {{/template.checked}}
-    {{#template.checked}}
-    <button disabled style="cursor: default;
-    margin: 0;
-      margin-right: 0px;
-    border: none;
-    font-size: 14px;
-    display: inline-block;
-    border-radius: var(--border-radius);
-    background-color: #eeeeec;
-    color: #bfbfbf;
-    padding: 0.333em 0.66em;
-    font-weight: 600;
-    margin-right: 6px;
-    box-shadow: inset 0 2px 2px rgba(0,0,0,0.05);">
-        <svg style="fill:currentColor;vertical-align: middle;position:relative;top:-0.1em" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M8 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"></path></svg>
-        Installed template</span>
-    </button>
-    {{/template.checked}}
-    </form>
+        
 
         {{> template-editor-sidebar}}
 

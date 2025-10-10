@@ -52,6 +52,15 @@ const handle =
             basename(path, extname(path)) + "-thumb.png"
           )
         );
+         await generateThumbnail(
+          join(SOURCE_DIRECTORY, path),
+          join(
+            DESTINATION_DIRECTORY,
+            dirname(path),
+            basename(path, extname(path)) + "-icon.png"
+          ),
+          { width: 48 }
+        );
       } else if (path.endsWith(".html") && !path.includes("dashboard/")) {
         await buildHTML(path);
       } else if (path.endsWith(".css") && !initial) {
