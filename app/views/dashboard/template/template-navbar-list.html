@@ -5,9 +5,8 @@
   {{> template-row}}
   {{/currentTemplate}}
 
-
   {{#templatesInYourFolder.length}}
-  <h2>In folder</h2>
+  <h2>Templates in folder</h2>
   {{/templatesInYourFolder.length}}
 
   {{#templatesInYourFolder}}
@@ -15,8 +14,9 @@
   {{/templatesInYourFolder}}
 
   {{#yourTemplates.length}}
-    <h2>Your templates</h2>
+  <h2>Your templates</h2>
   {{/yourTemplates.length}}
+
 
   {{#yourTemplates}}
   {{> template-row}}
@@ -47,10 +47,10 @@ New template
   {{> template-row}}
   {{/pastTemplates}}
 
-
+<!-- 
   <hr style="border:none;border-bottom: 1px solid #eeeeec;margin:0 0;">
   <a href="{{{dashboardBase}}}/template/deleted">Deleted templates</a><br>
-  <a href="{{{dashboardBase}}}/template/disable">Disable template</a>
+  <a href="{{{dashboardBase}}}/template/disable">Disable template</a> -->
 </div>
 
 <script>

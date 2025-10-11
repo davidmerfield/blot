@@ -1,9 +1,22 @@
 <div class="template-row {{#selected}}selected{{/selected}}">
   <a href="{{{editURL}}}">
-    <span class="preview">
-    <img src="{{#cdn}}/images/examples/{{thumbnailSlug}}/0-icon.png{{/cdn}}">
-    </span>
+      <span class="preview" style="position: relative;">
+      {{^localEditing}}
+      <img src="{{#cdn}}/images/examples/{{thumbnailSlug}}/0-icon.png{{/cdn}}">
+      {{/localEditing}}
+      {{#localEditing}}
+      <span style="position: absolute;bottom: 0;right:-0;font-size:16px;width:16px;height:16px;">
+        <span class="icon-folder" style="position: absolute;top:0;left:0"></span>
+      </span>
+      {{/localEditing}}
+      </span>
+      
+    {{^localEditing}}
     {{name}}    
+    {{/localEditing}}
+    {{#localEditing}}
+    {{slug}}
+    {{/localEditing}}
   </a>
 </div>
   

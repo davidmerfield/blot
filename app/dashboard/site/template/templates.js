@@ -26,8 +26,6 @@ module.exports = function (req, res, next) {
       template.selected =
         req.path.split("/")[1] === template.slug ? "selected" : "";
 
-      console.log("here, template", template);
-
       template.thumbnailSlug = template.cloneFrom
         ? template.cloneFrom.split(":").slice(1).join(":")
         : template.slug;
@@ -89,7 +87,11 @@ module.exports = function (req, res, next) {
     });
 
     res.locals.yourTemplates = templates.filter(
-      (template) => template.isMine && !template.checked
+      (template) => template.isMine && !template.localEditing && !template.checked
+    );
+
+    res.locals.templatesInYourFolder = templates.filter(
+      (template) => template.isMine && template.localEditing === true && !template.checked
     );
 
     res.locals.blotTemplates = templates.filter(
