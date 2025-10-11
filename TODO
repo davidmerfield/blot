@@ -1,5 +1,7 @@
 Fix thrashing of 'sync status' blinking icons during mega-syncs (preserve the same node, just update the status message text) by refactoring the sync-status.html partial and sync-status.js
 
+Fix possible bug with changing folder name in Google Drive from uppercase to lowercase (what happens to file inside?). Is this related to entry lookup for deleted files? How was the missing ghost file undeleteable? the case of one variant was deleted but the other was not. The case of the ID mismatched. The folder lock was stuck.
+
 Modify slowest function to aggregate by upstream response time
 - amend daily update:
 - send daily report of slowest URLs 
@@ -127,8 +129,6 @@ Fix bugs with templates:
 - Add layout fix to blog template and [tell Lewis](https://mail.google.com/mail/u/0/#inbox/FMfcgzQVzFWlSFWmjZrDMrMjPtmtWwQc)
 Fix bug with [header position on the blog template](https://blot.im/questions/2211)
 - Make 'close' button on entry permalink page of reference template work like the photo template and tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsmNSSSRKHnlgCBllnqJCcPhxD)
-
-Fix bug with particular emoji and tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNqBKcPSQQHZtCFpKHrPDFkDq)
 
 Fix bug with [many twitter embeds and tell Nash](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllMNfjvRBthVncQtPJQpmrksx)
 
@@ -708,9 +708,6 @@ Make it possible to embed the HTML output of markdown files using Obsidians embe
 
 ---
 
-Remove packages:
-- twemoji (delete the plugin)
-
 Make it possible to embed audio like so `![Audio]({{{path}}})`
 
 Experiement with injecting script into preview sites which can postMessage to embedding page, sending html2canvas result which can be stored locally for faster loading?
@@ -720,8 +717,6 @@ Make it possible to embed video like so `![Video](...)`
 Make it possible to embed PDF like so `![Video](...)`
 
 Merge comment and disqus into single comments plugin
-
-Totally remove twemoji and emoticons plugin
 
 Make the 404 page more useful (see Netlify site)
 

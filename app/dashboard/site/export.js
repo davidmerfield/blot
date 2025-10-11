@@ -208,7 +208,7 @@ const XML = `
     <dc:creator><![CDATA[ {{{blog.title}}}]]></dc:creator>
     <guid isPermaLink="true">{{{absoluteURL}}}</guid>
     <description></description>    
-    <content:encoded><![CDATA[ {{xmlBody}} ]]></content:encoded>
+    <content:encoded><![CDATA[ {{{xmlBody}}} ]]></content:encoded>
     <wp:post_name><![CDATA[{{name}}]]></wp:post_name>
     <wp:post_type><![CDATA[post]]></wp:post_type>
     <wp:status><![CDATA[publish]]></wp:status>
