@@ -71,7 +71,7 @@ h1 {
     padding: 0;
   }
   .CodeMirror-gutters {
-    background: #f8f8f8;
+    background: var(--background-color);
   }
 
 
@@ -121,7 +121,7 @@ h1 {
     border-top: 1px solid #ccc;
   }
 </style>
-<div style="flex-grow: 1;max-width: calc(100vw - 20rem);">
+<div style="flex-grow: 1;">
   {{> source-code-header}}
   <div style="background: rgba(0, 0, 0, 0.1);padding: 0 1rem"></div>
 
