@@ -3,6 +3,19 @@ var crypto = require("crypto");
 var debug = require("debug")("blot:helper:transformer:hash");
 
 module.exports = function (path, callback) {
+  if (typeof callback === "function") {
+    return hashFile(path, callback);
+  }
+
+  return new Promise(function (resolve, reject) {
+    hashFile(path, function (err, hash) {
+      if (err) return reject(err);
+      resolve(hash);
+    });
+  });
+};
+
+function hashFile(path, callback) {
   var hash;
 
   fs.createReadStream(path)
@@ -13,4 +26,4 @@ module.exports = function (path, callback) {
       debug(path, "hashed to", hash);
       callback(null, hash);
     });
-};
+}

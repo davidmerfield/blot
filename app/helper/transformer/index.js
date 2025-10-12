@@ -248,30 +248,68 @@ function Transformer(blogID, name) {
 
     debug(path, "hashing file");
 
-    HashFile(path, function (err, hash) {
-      if (err) return callback(err);
+    run().catch(function (err) {
+      callback(err);
+    });
+
+    async function run() {
+      var hash = await Promise.resolve(HashFile(path));
 
       debug(path, "getting existing result from hash");
-      get(hash, function (err, result) {
-        // Leave early, please pass hash so that
-        // from URL doesn't have to compute it again
-        if (err || result) return callback(err, result, hash);
 
-        debug(path, "transforming new file");
-        transform(path, function (err, result) {
-          if (err) return callback(err);
+      var existing;
 
-          // Pass hash so that
-          // from URL doesn't have to compute it again
-          debug(path, "saving result of new transform");
-          set(hash, result, function (err) {
-            if (err) throw err;
+      try {
+        existing = await getFromHash(hash);
+      } catch (err) {
+        callback(err, null, hash);
+        return;
+      }
 
-            callback(err, result, hash);
-          });
+      // Leave early, please pass hash so that
+      // from URL doesn't have to compute it again
+      if (existing) {
+        callback(null, existing, hash);
+        return;
+      }
+
+      debug(path, "transforming new file");
+
+      var result = await transformPath(path);
+
+      debug(path, "saving result of new transform");
+
+      await setResult(hash, result);
+
+      callback(null, result, hash);
+    }
+
+    function getFromHash(hash) {
+      return new Promise(function (resolve, reject) {
+        get(hash, function (err, result) {
+          if (err) return reject(err);
+          resolve(result);
         });
       });
-    });
+    }
+
+    function transformPath(path) {
+      return new Promise(function (resolve, reject) {
+        transform(path, function (err, result) {
+          if (err) return reject(err);
+          resolve(result);
+        });
+      });
+    }
+
+    function setResult(hash, result) {
+      return new Promise(function (resolve, reject) {
+        set(hash, result, function (err) {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+    }
   }
 
   function getURL(url, callback) {

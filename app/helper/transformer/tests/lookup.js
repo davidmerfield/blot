@@ -107,19 +107,23 @@ describe("transformer", function () {
 
     test.transformer.lookup(test.path, firstTransform, function (
       err,
-      firstResult
+      firstResult,
+      firstHash
     ) {
       if (err) return done.fail(err);
 
       test.transformer.lookup(test.path, secondTransform, function (
         err,
-        secondResult
+        secondResult,
+        secondHash
       ) {
         if (err) return done.fail(err);
 
         expect(firstTransform).toHaveBeenCalled();
         expect(secondTransform).not.toHaveBeenCalled();
         expect(firstResult).toEqual(secondResult);
+        expect(firstHash).toEqual(jasmine.any(String));
+        expect(secondHash).toEqual(firstHash);
 
         done();
       });
