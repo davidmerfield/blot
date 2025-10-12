@@ -1,7 +1,6 @@
 var spawn = require("child_process").spawn;
 var indentation = require("./indentation");
 var footnotes = require("./footnotes");
-var mediaPreload = require("./media-preload");
 var time = require("helper/time");
 var config = require("config");
 var Pandoc = config.pandoc.bin;
@@ -129,7 +128,6 @@ module.exports = function (blog, text, options, callback) {
     debug("Pre-footnotes", result);
     time("footnotes");
     result = safely(footnotes, result);
-    result = safely(mediaPreload, result);
     time.end("footnotes");
 
     debug("Final:", result);
