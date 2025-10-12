@@ -3,10 +3,27 @@ module.exports = function setup(options) {
   var fs = require("fs-extra");
   var Express = require("express");
   var server = Express();
+  var responseBody = "Hello, World!";
+  var etag = '"test-etag"';
+  var lastModified = new Date("2020-01-01T00:00:00Z").toUTCString();
+
   // Only server an image at this route if
   // the request passes the correct query
   server.get("/foo.html", function (req, res) {
-    res.send("Hello, World!");
+    res.set({
+      "Cache-Control": "max-age=0, must-revalidate",
+      ETag: etag,
+      "Last-Modified": lastModified,
+    });
+
+    var ifNoneMatch = req.get("If-None-Match");
+    var ifModifiedSince = req.get("If-Modified-Since");
+
+    if (ifNoneMatch === etag || ifModifiedSince === lastModified) {
+      return res.status(304).end();
+    }
+
+    res.send(responseBody);
   });
 
   // Create temporary blog before each test, clean up after

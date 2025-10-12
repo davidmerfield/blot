@@ -160,4 +160,23 @@ describe("transformer", function () {
       done();
     });
   });
+
+  it("uses cached transform when the url responds with 304", function (done) {
+    var test = this;
+    var firstTransform = jasmine.createSpy().and.callFake(test.transform);
+    var secondTransform = jasmine.createSpy().and.callFake(test.transform);
+
+    test.transformer.lookup(test.url, firstTransform, function (err, firstResult) {
+      if (err) return done.fail(err);
+
+      test.transformer.lookup(test.url, secondTransform, function (err, secondResult) {
+        if (err) return done.fail(err);
+
+        expect(firstTransform).toHaveBeenCalled();
+        expect(secondTransform).not.toHaveBeenCalled();
+        expect(secondResult).toEqual(firstResult);
+        done();
+      });
+    });
+  });
 });
