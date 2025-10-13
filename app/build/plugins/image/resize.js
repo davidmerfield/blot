@@ -5,6 +5,7 @@ var tempDir = require("helper/tempDir")();
 var fs = require("fs-extra");
 var uuid = require("uuid/v4");
 var extname = require("path").extname;
+var pngMetadata = require("helper/pngMetadata");
 
 // We don't do .gif because sharp cannot handle animated
 // gifs at the moment. Perhaps in future...
@@ -24,40 +25,52 @@ sharp.cache(false);
 module.exports = function (path, callback) {
   ensure(path, "string").and(callback, "function");
 
-  var output = tempDir + uuid();
   var extension = extname(path).toLowerCase();
-  var image;
+  var output = tempDir + uuid();
 
-  // Since this image is not one we can resize, we fetch
-  // its dimensions and continue...
-  if (RESIZE_EXTENSION_WHITELIST.indexOf(extension) === -1) {
-    debug("Fetching metadata for", path);
-    return sharp(path).metadata(callback);
-  }
+  (async function () {
+    var gamma = null;
 
-  try {
-    debug("Resizing", path);
-    image = sharp(path)
-      .keepIccProfile()
-      .rotate()
-      .resize(3000, 3000, { withoutEnlargement: true, fit: "inside" });
-  } catch (e) {
-    return callback(e);
-  }
+    if (extension === ".png") {
+      gamma = await pngMetadata.readGamma(path);
+    }
 
-  image.toFile(output, function (err, info) {
-    if (err || !info) return callback(err || "No info");
+    // Since this image is not one we can resize, we fetch
+    // its dimensions and continue...
+    if (RESIZE_EXTENSION_WHITELIST.indexOf(extension) === -1) {
+      debug("Fetching metadata for", path);
+      return sharp(path).metadata(callback);
+    }
 
-    // Remove the unresized file
-    fs.remove(path, function (err) {
-      if (err) return callback(err);
+    var image;
 
-      // Move the resized file
-      fs.move(output, path, function (err) {
-        if (err) return callback(err);
+    try {
+      debug("Resizing", path);
+      image = sharp(path)
+        .keepIccProfile()
+        .rotate()
+        .resize(3000, 3000, { withoutEnlargement: true, fit: "inside" });
+    } catch (e) {
+      throw e;
+    }
 
-        return callback(null, info);
-      });
-    });
-  });
+    var info;
+
+    try {
+      info = await image.toFile(output);
+    } catch (err) {
+      throw err;
+    }
+
+    if (!info) throw new Error("No info");
+
+    await fs.remove(path);
+    await fs.move(output, path);
+
+    if (gamma !== null) {
+      await pngMetadata.ensureGamma(path, gamma);
+    }
+
+    callback(null, info);
+  })().catch(callback);
 };

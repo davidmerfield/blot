@@ -3,6 +3,7 @@ var extname = require("path").extname;
 var async = require("async");
 var fs = require("fs-extra");
 var sharp = require("sharp");
+var pngMetadata = require("helper/pngMetadata");
 
 // https://github.com/lovell/sharp/issues/138
 // sharp.concurrency(2);
@@ -25,50 +26,62 @@ var thumbnails = require("./config").THUMBNAILS;
 
 function main (path, outputDirectory, callback) {
   var read, input, result;
+  var extension = extname(path).toLowerCase();
 
-  callback = callOnce(callback);
-  read = fs.createReadStream(path);
-  input = sharp();
-  result = {};
+  var ready = function (gamma) {
+    callback = callOnce(callback);
+    read = fs.createReadStream(path);
+    input = sharp();
+    result = {};
 
-  read.on("error", callback);
-  read.pipe(input);
+    read.on("error", callback);
+    read.pipe(input);
 
-  async.eachOf(
-    thumbnails,
-    function (options, name, next) {
-      // We want to ensure that this will work on case-sensitive
-      // file systems so we lowercase it. In the past we used the
-      // original filename for the file in the resulting path but
-      // I couldn't work out how to handle filenames like ex?yz.jpg
-      // Should I store the name URL-encoded (e.g. ex%3Fyz.jpg)...
-      // Now I just use the guuid + size + file extension.
-      var extension = extname(path).toLowerCase();
+    async.eachOf(
+      thumbnails,
+      function (options, name, next) {
+        // We want to ensure that this will work on case-sensitive
+        // file systems so we lowercase it. In the past we used the
+        // original filename for the file in the resulting path but
+        // I couldn't work out how to handle filenames like ex?yz.jpg
+        // Should I store the name URL-encoded (e.g. ex%3Fyz.jpg)...
+        // Now I just use the guuid + size + file extension.
+        var extension = extname(path).toLowerCase();
 
-      if (extension === ".svg") extension = ".png";
+        if (extension === ".svg") extension = ".png";
 
-      var fileName = name.toLowerCase() + extension;
-      var to = outputDirectory + "/" + fileName;
+        var fileName = name.toLowerCase() + extension;
+        var to = outputDirectory + "/" + fileName;
 
-      transform(input, to, options, function (err, width, height) {
-        if (err) return next(err);
+        transform(input, to, options, gamma, function (err, width, height) {
+          if (err) return next(err);
 
-        result[name] = {
-          width: width,
-          height: height,
-          name: fileName
-        };
+          result[name] = {
+            width: width,
+            height: height,
+            name: fileName
+          };
 
-        next();
-      });
-    },
-    function (err) {
-      callback(err, result);
-    }
-  );
+          next();
+        });
+      },
+      function (err) {
+        callback(err, result);
+      }
+    );
+  };
+
+  if (extension === ".png") {
+    pngMetadata
+      .readGamma(path)
+      .then(ready)
+      .catch(callback);
+  } else {
+    ready(null);
+  }
 }
 
-function transform (input, to, options, callback) {
+function transform (input, to, options, gamma, callback) {
   var size = options.size;
 
   var transform = input.clone().keepIccProfile().rotate();
@@ -90,7 +103,13 @@ function transform (input, to, options, callback) {
   transform.toFile(to, function done (err, info) {
     if (err) return callback(err);
 
-    callback(err, info.width, info.height);
+    if (gamma !== null && gamma !== undefined && extname(to).toLowerCase() === ".png") {
+      return pngMetadata.ensureGamma(to, gamma).then(function () {
+        callback(null, info.width, info.height);
+      }, callback);
+    }
+
+    callback(null, info.width, info.height);
   });
 }
 

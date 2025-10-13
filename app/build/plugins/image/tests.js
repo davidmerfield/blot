@@ -9,6 +9,39 @@ describe("image", function () {
   var join = require("path").join;
   var crypto = require("crypto");
   var sharp = require("sharp");
+  var pngMetadata = require("helper/pngMetadata");
+  var GAMMA_FIXTURE_PATH = join(__dirname, "tests-gamma.png");
+  var GAMMA_CHUNK_VALUE = 45455;
+
+  beforeAll(function (done) {
+    fs
+      .remove(GAMMA_FIXTURE_PATH)
+      .then(function () {
+        return sharp({
+          create: {
+            width: 32,
+            height: 32,
+            channels: 3,
+            background: { r: 120, g: 180, b: 240 }
+          }
+        })
+          .png()
+          .toFile(GAMMA_FIXTURE_PATH);
+      })
+      .then(function () {
+        return pngMetadata.ensureGamma(GAMMA_FIXTURE_PATH, GAMMA_CHUNK_VALUE);
+      })
+      .then(function () {
+        done();
+      })
+      .catch(done.fail);
+  });
+
+  afterAll(function (done) {
+    fs.remove(GAMMA_FIXTURE_PATH).then(function () {
+      done();
+    }, done.fail);
+  });
 
   afterEach(function () {
     if (!this.result) return;
@@ -61,6 +94,31 @@ describe("image", function () {
 
         done();
       });
+    });
+  });
+
+  it("will preserve the gamma metadata of PNG images", function (done) {
+    var test = this;
+    var image = "/tests-gamma.png";
+    var html = '<img src="' + image + '">';
+
+    fs.copySync(__dirname + image, localPath(test.blog.id, image));
+
+    render(test.blog, html, function (err, result) {
+      if (err) return done.fail(err);
+
+      var path = extractCachedImagePaths(test.blog, result)[0];
+
+      Promise.all([
+        pngMetadata.readGamma(__dirname + image),
+        pngMetadata.readGamma(path)
+      ])
+        .then(function (values) {
+          expect(values[0]).not.toBeNull();
+          expect(values[0]).toEqual(values[1]);
+          done();
+        })
+        .catch(done.fail);
     });
   });
 
