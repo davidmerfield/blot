@@ -41,6 +41,8 @@ function render($, callback, { blogID, path }) {
         if (entry && entry.type === "heading-anchor") {
           $(node).attr("href", entry.href);
 
+          if (!piped && entry.title) $(node).html(entry.title);
+
           return next();
         }
 
