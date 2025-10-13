@@ -123,6 +123,25 @@ Heading Here
     this.syncAndCheck(files, entry, done);
   });
 
+  it("will support wikilinks by internal title", function (done) {
+    const path = "/hello.txt";
+
+    const files = [
+      {
+        path: "/target.md",
+        content: "Link: target\nInternal title: Alias\n# Title"
+      },
+      { path, content: "[[#Alias]]" }
+    ];
+
+    const entry = {
+      path,
+      html: '<p><a href="/target" title="wikilink">Title</a></p>'
+    };
+
+    this.syncAndCheck(files, entry, done);
+  });
+
   xit("will support media embedding", async function (done) {
     await this.blog.write({
       path: "/_Image.png",

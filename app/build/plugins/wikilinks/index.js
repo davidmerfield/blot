@@ -3,6 +3,7 @@ const { resolve, dirname } = require("path");
 const byPath = require("./byPath");
 const byURL = require("./byURL");
 const byTitle = require("./byTitle");
+const byInternalTitle = require("./byInternalTitle");
 const { decode } = require("he");
 const makeSlug = require("helper/makeSlug");
 
@@ -147,21 +148,24 @@ function render($, callback, { blogID, path }) {
       // [[target|Title here]]
       const piped = makeSlug($(node).html()) !== makeSlug(href);
 
+      let lookups = [
+        byPath.bind(null, blogID, path, href),
+        byURL.bind(null, blogID, href),
+        byTitle.bind(null, blogID, href),
+        byInternalTitle.bind(null, blogID, href),
+      ];
+
       if (href.startsWith("#")) {
         const anchor = href.slice(1);
         const normalizedAnchor = makeSlug(anchor);
         const finalAnchor = findHeadingAnchor($, anchor, normalizedAnchor);
 
-        $(node).attr("href", "#" + finalAnchor);
+        if (finalAnchor) $(node).attr("href", "#" + finalAnchor);
 
-        return next();
+        lookups = [
+          byInternalTitle.bind(null, blogID, anchor),
+        ];
       }
-
-      const lookups = [
-        byPath.bind(null, blogID, path, href),
-        byURL.bind(null, blogID, href),
-        byTitle.bind(null, blogID, href),
-      ];
 
       tryEach(lookups, function (err, entry) {
         if (entry) {
@@ -173,6 +177,7 @@ function render($, callback, { blogID, path }) {
 
           dependencies.push(entry.path);
         } else {
+          if (href.startsWith("#")) return next();
           // we failed to find a path, we should register paths to watch
           // if pathOfPost is '/Posts/foo.txt' then dirOfPost is '/Posts'
           const dirOfPost = dirname(path);
