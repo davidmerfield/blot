@@ -31,9 +31,12 @@ module.exports = function (req, res, next) {
     }
 
     // We need to build all the blog's entries if the user
-    // has changed any of the plugins or their permalink
-    // format. This should be improved but we.
-    if (changes && changes.indexOf("plugins") > -1) {
+    // has changed any of the plugins or the image metadata
+    // preference so the stored EXIF matches their setting.
+    if (
+      changes &&
+      (changes.indexOf("plugins") > -1 || changes.indexOf("imageExif") > -1)
+    ) {
       // we need to fetch the latest version of the blog to rebuild
       const options = {
         thumbnails: false, // do not re-generate thumbnails
