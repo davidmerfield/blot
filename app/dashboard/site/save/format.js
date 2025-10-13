@@ -1,6 +1,7 @@
 var Blog = require("models/blog");
 var formJSON = require("helper/formJSON");
 var extend = require("helper/extend");
+var normalizeImageExif = require("models/blog/util/imageExif").normalize;
 
 module.exports = function (req, res, next) {
   try {
@@ -32,6 +33,12 @@ module.exports = function (req, res, next) {
         req.updates.menu[i].url = "https://" + req.updates.menu[i].url;
       }
     }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(req.updates, "imageExif")) {
+    req.updates.imageExif = normalizeImageExif(req.updates.imageExif, {
+      fallback: req.blog && req.blog.imageExif ? req.blog.imageExif : "off",
+    });
   }
 
 

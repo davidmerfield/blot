@@ -29,4 +29,5 @@ module.exports = {
   created: "number", // UTC timestamp for when the entry was added to Blot
   updated: "number", // UTC timestamp for file mtime
   metadata: "object",
+  exif: "object",
 };

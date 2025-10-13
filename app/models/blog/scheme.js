@@ -38,6 +38,7 @@ var DECLARATION = {
   cssURL: ["string", false, true],
   scriptURL: ["string", false, true],
   roundAvatar: ["boolean", true, true],
+  imageExif: ["string", true, true],
 };
 
 var MODEL = { TYPE: {}, PUBLIC: [], WRITEABLE: [] };

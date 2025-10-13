@@ -2,6 +2,7 @@ var client = require("models/client");
 var ensure = require("helper/ensure");
 var key = require("./key");
 var serial = require("./serial");
+var applyImageExif = require("./util/imageExif").apply;
 
 module.exports = function get(by, callback) {
   ensure(by, "object").and(callback, "function");
@@ -31,6 +32,7 @@ module.exports = function get(by, callback) {
       if (!blog) return callback(null);
 
       blog = serial.de(blog);
+      applyImageExif(blog);
 
       callback(null, blog);
     });

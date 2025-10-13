@@ -34,7 +34,14 @@ module.exports = function build(blog, path, callback) {
     if (err) return callback(err);
 
     debug("Blog:", blog.id, path, " attempting to build html");
-    Build(blog, path, function (err, html, metadata, stat, dependencies) {
+    Build(blog, path, function (
+      err,
+      html,
+      metadata,
+      stat,
+      dependencies,
+      extras,
+    ) {
       if (err) return callback(err);
 
       debug("Blog:", blog.id, path, " extracting thumbnail");
@@ -60,6 +67,7 @@ module.exports = function build(blog, path, callback) {
             metadata: metadata,
             size: stat.size,
             dependencies: dependencies,
+            exif: (extras && extras.exif) || {},
             dateStamp: DateStamp(blog, path, metadata),
             updated: moment.utc(stat.mtime).valueOf(),
           };

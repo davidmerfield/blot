@@ -3,6 +3,7 @@ var config = require("config");
 var url = require("./url");
 var protocol = "https";
 var punycode = require("helper/punycode");
+var imageExif = require("./util/imageExif");
 
 module.exports = function extend(blog) {
   var pages = [];
@@ -14,6 +15,8 @@ module.exports = function extend(blog) {
 
   // is it bad to extend the blog object here?
   blog.pretty = {};
+
+  imageExif.apply(blog);
 
   if (blog.dateFormat) blog["is" + blog.dateFormat] = "selected";
 
@@ -59,6 +62,12 @@ module.exports = function extend(blog) {
     cssURL: blog.cssURL,
     scriptURL: blog.scriptURL,
   };
+
+  blog.locals.imageExif = blog.imageExif;
+  blog.locals.imageExifMode = blog.imageExifMode;
+  blog.locals.isImageExifOff = blog.isImageExifOff;
+  blog.locals.isImageExifBasic = blog.isImageExifBasic;
+  blog.locals.isImageExifFull = blog.isImageExifFull;
 
   // Import blog info into
   // rendering context

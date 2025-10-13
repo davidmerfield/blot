@@ -14,7 +14,7 @@ module.exports = function (blog, path, callback) {
     function (converter, next) {
       if (!converter.is(path)) return next();
 
-      converter.read(blog, path, function (err, html, stat) {
+      converter.read(blog, path, function (err, html, stat, extras) {
         if (err) {
           debug("Blog:", blog.id, path, "conversion error", err);
           return callback(err);
@@ -61,7 +61,7 @@ module.exports = function (blog, path, callback) {
           html = fixMustache(html);
           dependencies = dependencies.concat(newDependencies);
 
-          return callback(null, html, metadata, stat, dependencies);
+          return callback(null, html, metadata, stat, dependencies, extras);
         });
       });
     },

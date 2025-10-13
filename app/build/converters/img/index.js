@@ -6,6 +6,7 @@ const LocalPath = require("helper/localPath");
 const hash = require("helper/hash");
 const sharp = require("sharp");
 const config = require("config");
+const { parseExif, sanitizeExif } = require("./exif");
 
 const EXTENSIONS_TO_CONVERT = [".tif", ".tiff", ".webp", ".avif"];
 const SUPPORTED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ...EXTENSIONS_TO_CONVERT];
@@ -32,6 +33,21 @@ function read(blog, path, callback) {
     const title = titlify(pathForTitle);
     const isRetina = path.toLowerCase().includes("@2x") ? 'data-2x="true"' : "";
 
+    let metadata = {};
+
+    try {
+      metadata = await sharp(localPath).metadata();
+    } catch (metadataErr) {
+      metadata = {};
+    }
+
+    const parsedExif = parseExif(metadata.exif);
+    const sanitizedExif = sanitizeExif(parsedExif, blog.imageExif);
+
+    const extras = Object.keys(sanitizedExif).length
+      ? { exif: sanitizedExif }
+      : undefined;
+
     if (EXTENSIONS_TO_CONVERT.includes(extname(path).toLowerCase())) {
       const convertedPath = join("/_assets", hash(path), `${name}.png`);
       // ensure asset directory exists
@@ -49,7 +65,7 @@ function read(blog, path, callback) {
 
     const contents = `<img src="${encodeURI(path)}" title="${title}" alt="${title}" ${isRetina}/>`;
     
-    callback(null, contents, stat);
+    callback(null, contents, stat, extras);
   });
 }
 

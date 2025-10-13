@@ -3,6 +3,7 @@ describe("build", function () {
   var fs = require("fs-extra");
   var express = require("express");
   var app = express();
+  var exif = require("../converters/img/exif");
 
   // Only serve a test image when query contains valid user and password
   app.get("/small.jpg", function (req, res) {
@@ -156,6 +157,44 @@ describe("build", function () {
           name: "small.jpg",
         })
       );
+
+      done();
+    });
+  });
+
+  it("attaches sanitized EXIF data to image entries", function (done) {
+    var path = "/photo.jpg";
+
+    fs.copySync(
+      require("path").join(__dirname, "../converters/img/tests/bunny.png"),
+      this.blogDirectory + path
+    );
+
+    var sampleExif = {
+      image: { Make: "Canon", Model: "5D" },
+      exif: {
+        LensModel: "EF 50mm",
+        SerialNumber: "123456",
+        DateTimeOriginal: new Date("2024-01-01T00:00:00Z"),
+      },
+      gps: { Latitude: 51.5, Longitude: -0.1 },
+    };
+
+    var parseSpy = spyOn(exif, "parseExif").and.returnValue(sampleExif);
+
+    this.blog.imageExif = "basic";
+
+    build(this.blog, path, function (err, entry) {
+      parseSpy.and.callThrough();
+      if (err) return done.fail(err);
+
+      expect(entry.exif).toEqual({
+        image: { Make: "Canon", Model: "5D" },
+        exif: {
+          LensModel: "EF 50mm",
+          DateTimeOriginal: "2024-01-01T00:00:00.000Z",
+        },
+      });
 
       done();
     });

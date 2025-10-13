@@ -79,6 +79,11 @@
       type: boolean
       description: true if you’ve indicated your avatar is round, false if not
 
+    - name: imageExif
+      type: string
+      description: "Controls how much image metadata Blot preserves. One of 'off', 'basic', or 'full'."
+      example: "{{blog.imageExif}}"
+
 - name: entry
   keys:
     - name: id
@@ -206,6 +211,10 @@
     - name: metadata
       type: object
       description: object containing the metadata for the entry, if they exist.
+
+    - name: exif
+      type: object
+      description: "Sanitized EXIF metadata for image-based entries. Empty when EXIF is disabled or unavailable."
 
     - name: name
       type: string

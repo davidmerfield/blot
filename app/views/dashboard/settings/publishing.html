@@ -1,6 +1,53 @@
 {{> form-header}}
 <input type="hidden" name="redirect" value="{{{base}}}/publishing" />
 
+<section class="setting-block" id="image-metadata">
+  <h3>Image metadata</h3>
+  <p class="setting-help">
+    Control whether Blot preserves the EXIF information embedded in your photos.
+    Basic mode keeps camera details while removing sensitive data such as
+    locations; Full mode publishes everything.
+  </p>
+  <div class="option-group">
+    <label class="option">
+      <input
+        type="radio"
+        name="imageExif"
+        value="off"
+        {{#blog.isImageExifOff}}checked{{/blog.isImageExifOff}}
+      />
+      <span class="option-title">Off</span>
+      <span class="option-description">Strip all metadata before publishing.</span>
+    </label>
+    <label class="option">
+      <input
+        type="radio"
+        name="imageExif"
+        value="basic"
+        {{#blog.isImageExifBasic}}checked{{/blog.isImageExifBasic}}
+      />
+      <span class="option-title">Basic</span>
+      <span class="option-description">
+        Keep camera settings and capture details, but remove locations and contact
+        information.
+      </span>
+    </label>
+    <label class="option">
+      <input
+        type="radio"
+        name="imageExif"
+        value="full"
+        {{#blog.isImageExifFull}}checked{{/blog.isImageExifFull}}
+      />
+      <span class="option-title">Full</span>
+      <span class="option-description">
+        Publish the complete EXIF record for each image, including sensitive
+        fields.
+      </span>
+    </label>
+  </div>
+</section>
+
 {{#categories.Images}}
 {{> plugin-row}}
 {{/categories.Images}}
@@ -16,39 +63,99 @@
 </div>
 
 <script>
+function submitForm(form) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', form.action);
+  xhr.onload = function () {};
+  xhr.onerror = function () {};
+  xhr.send(new FormData(form));
+}
 
 //  when any of the input checkboxes are toggled
 var checkboxes = document.querySelectorAll('.plugin input[type=checkbox]');
 checkboxes.forEach(function(checkbox) {
   checkbox.addEventListener('change', function() {
-    // serialized and submit the form in the background as a POST request
     var form = this.closest('form');
     var el = this;
 
-    // if this el is inside .pluginOptions then do not edit the checked state
     if (!el.closest('.pluginOptions')) {
-    // do nothing
-    // if the checkbox was checked, add the checked class to the parent div which has the class 'plugin'
-    // otherwise remove it
-    if (el.checked) {
-      el.closest('.plugin').classList.add('checked');
-    } else {
-      el.closest('.plugin').classList.remove('checked');
-    }
+      if (el.checked) {
+        el.closest('.plugin').classList.add('checked');
+      } else {
+        el.closest('.plugin').classList.remove('checked');
+      }
     }
 
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', form.action);
-    xhr.onload = function() {
-      // success callback
-    };
-    xhr.onerror = function() {
-      // error callback
-    };
-    var formdata = new FormData(form);
-    console.log('formdata', formdata);
-    xhr.send(formdata);
+    submitForm(form);
+  });
+});
+
+var exifRadios = document.querySelectorAll('input[name="imageExif"]');
+exifRadios.forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    var form = this.closest('form');
+    submitForm(form);
   });
 });
 
 </script>
+
+<style>
+  #image-metadata {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    background: var(--background-color);
+  }
+
+  #image-metadata h3 {
+    margin: 0 0 0.5rem 0;
+  }
+
+  #image-metadata .setting-help {
+    margin: 0;
+    color: var(--secondary-text-color, #6c7280);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  #image-metadata .option-group {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  #image-metadata .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--surface-color, #fff);
+    cursor: pointer;
+  }
+
+  #image-metadata .option input[type="radio"] {
+    margin-top: 0.2rem;
+  }
+
+  #image-metadata .option-title {
+    font-weight: 600;
+    display: block;
+    color: var(--text-color);
+  }
+
+  #image-metadata .option-description {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--secondary-text-color, #6c7280);
+  }
+
+  @media (max-width: 600px) {
+    #image-metadata {
+      padding: 1rem;
+    }
+  }
+</style>

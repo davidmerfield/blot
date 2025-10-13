@@ -28,6 +28,22 @@ describe("Blog.create", function () {
     });
   });
 
+  it("defaults image exif preferences", function (done) {
+    var test = this;
+
+    create(test.user.uid, { handle: "exampleblog" }, function (err, blog) {
+      if (err) return done.fail(err);
+
+      test.blog = blog;
+
+      expect(blog.imageExif).toBe("basic");
+      expect(blog.isImageExifBasic).toBeTrue();
+      expect(blog.isImageExifOff).toBeFalse();
+
+      done();
+    });
+  });
+
   it("adds created blog to list of all blogs", function (done) {
     var test = this;
 
