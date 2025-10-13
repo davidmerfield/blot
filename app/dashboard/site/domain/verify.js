@@ -28,9 +28,31 @@
 const dns = require('dns').promises;
 const fetch = require('node-fetch');
 const { parse } = require('tldts');
+const ipaddr = require('ipaddr.js');
+
+function partitionPublicIPv4Addresses(addresses) {
+    return addresses.reduce((result, address) => {
+        try {
+            if (ipaddr.IPv4.isValid(address)) {
+                const parsed = ipaddr.IPv4.parse(address);
+                if (parsed.range() === 'unicast') {
+                    result.public.push(address);
+                } else {
+                    result.rejected.push(address);
+                }
+            } else {
+                result.rejected.push(address);
+            }
+        } catch (err) {
+            result.rejected.push(address);
+        }
+
+        return result;
+    }, { public: [], rejected: [] });
+}
 
 async function validate({ hostname, handle, ourIP, ourHost }) {
-    
+
     const parsed = parse(hostname);
     const apexDomain = parsed.domain;
 
@@ -39,6 +61,8 @@ async function validate({ hostname, handle, ourIP, ourHost }) {
         dns.resolve4(hostname).catch(() => []),
         dns.resolveNs(apexDomain).catch(() => [])
     ]);
+
+    const { public: publicARecordIPs, rejected: rejectedARecordIPs } = partitionPublicIPv4Addresses(aRecordIPs);
 
     if (nameservers.length === 0) {
         const error = new Error('NO_NAMESERVERS');
@@ -75,33 +99,46 @@ async function validate({ hostname, handle, ourIP, ourHost }) {
         throw error;
     }
 
-    let text;
+    if (publicARecordIPs.length === 0) {
+        const error = new Error('INVALID_A_RECORD');
+        error.invalidIPs = rejectedARecordIPs;
+        error.nameservers = nameservers;
+        throw error;
+    }
 
     // Proceed with the verification using the resolved A record IP
-    try {
-        const response = await fetch(`http://${aRecordIPs[0]}/verify/domain-setup`, {
-            headers: { Host: hostname }
-        });
+    let lastError;
 
-        text = await response.text();
+    for (const ip of publicARecordIPs) {
+        try {
+            const response = await fetch(`http://${ip}/verify/domain-setup`, {
+                headers: { Host: hostname }
+            });
 
-    } catch (err) {
-        const error = new Error('HANDLE_VERIFICATION_REQUEST_FAILED');
-        error.message = err.message;
-        error.nameservers = nameservers;
-        throw error;
+            const text = await response.text();
+
+            // Verify the response text matches the handle
+            if (text === handle || text.includes('domain is almost set up')) {
+                return true;
+            } else {
+                const error = new Error('HANDLE_MISMATCH');
+                error.expected = handle;
+                error.received = text;
+                error.nameservers = nameservers;
+                error.ip = ip;
+                lastError = error;
+            }
+
+        } catch (err) {
+            const error = new Error('HANDLE_VERIFICATION_REQUEST_FAILED');
+            error.message = err.message;
+            error.nameservers = nameservers;
+            error.ip = ip;
+            lastError = error;
+        }
     }
 
-    // Verify the response text matches the handle
-    if (text === handle || text.includes('domain is almost set up')) {
-        return true;
-    } else {
-        const error = new Error('HANDLE_MISMATCH');
-        error.expected = handle;
-        error.received = text;
-        error.nameservers = nameservers;
-        throw error;
-    }
+    throw lastError;
 }
 
 module.exports = validate;

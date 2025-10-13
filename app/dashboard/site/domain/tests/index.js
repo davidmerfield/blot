@@ -65,6 +65,30 @@ describe("domain verifier", function () {
         }
     });
 
+    it("should reject private A records without making verification requests", async () => {
+        const hostname = "private-a-record.com";
+        const handle = "example";
+
+        dns.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+        dns.resolve4.and.returnValue(Promise.resolve(['192.168.0.1']));
+        dns.resolveNs.and.returnValue(Promise.resolve(['ns1.private.com', 'ns2.private.com']));
+
+        const scope = nock('http://192.168.0.1')
+            .get('/verify/domain-setup')
+            .reply(200, handle);
+
+        try {
+            await verify({ hostname, handle, ourIP, ourHost });
+            throw new Error("expected an error");
+        } catch (e) {
+            expect(e.message).toBe("INVALID_A_RECORD");
+            expect(e.invalidIPs).toEqual(['192.168.0.1']);
+            expect(e.nameservers).toEqual(['ns1.private.com', 'ns2.private.com']);
+        }
+
+        expect(scope.isDone()).toBe(false);
+    });
+
     it("should throw an error for hostnames with incorrect CNAME record", async () => {
         const hostname = "incorrect-cname-record.com";
         const handle = "example";
@@ -96,6 +120,29 @@ describe("domain verifier", function () {
 
         const result = await verify({ hostname, handle, ourIP, ourHost });
         expect(result).toBe(true);
+    });
+
+    it("should verify using only public IP addresses", async () => {
+        const hostname = "public-ip-only.com";
+        const handle = "example";
+
+        dns.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+        dns.resolve4.and.returnValue(Promise.resolve(['10.0.0.1', '1.2.3.4']));
+        dns.resolveNs.and.returnValue(Promise.resolve(['ns1.public.com', 'ns2.public.com']));
+
+        const privateScope = nock('http://10.0.0.1')
+            .get('/verify/domain-setup')
+            .reply(200, handle);
+
+        const publicScope = nock('http://1.2.3.4')
+            .get('/verify/domain-setup')
+            .reply(200, handle, { 'Content-Type': 'text/plain' });
+
+        const result = await verify({ hostname, handle, ourIP, ourHost });
+
+        expect(result).toBe(true);
+        expect(publicScope.isDone()).toBe(true);
+        expect(privateScope.isDone()).toBe(false);
     });
 
     it("should throw an error for hostnames with incorrect handle verification", async () => {
