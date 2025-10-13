@@ -12,17 +12,26 @@ function findHeadingAnchor($, anchor, normalizedAnchor) {
     findAnchorByIdOrName($, anchor) ||
     findAnchorByIdOrName($, normalizedAnchor);
 
-  if (existingMatch) return existingMatch;
+  if (existingMatch) {
+    return { value: existingMatch, matched: true };
+  }
 
   const anchorSlug = makeSlug(anchor);
 
   const headingMatch = findAnchorByHeadingText($, anchorSlug);
-  if (headingMatch) return headingMatch;
+  if (headingMatch) {
+    return { value: headingMatch, matched: true };
+  }
 
   const fuzzyMatch = findAnchorBySlug($, anchorSlug);
-  if (fuzzyMatch) return fuzzyMatch;
+  if (fuzzyMatch) {
+    return { value: fuzzyMatch, matched: true };
+  }
 
-  return normalizedAnchor || anchor;
+  return {
+    value: normalizedAnchor || anchor,
+    matched: false,
+  };
 }
 
 function findAnchorByIdOrName($, value) {
@@ -158,9 +167,14 @@ function render($, callback, { blogID, path }) {
       if (href.startsWith("#")) {
         const anchor = href.slice(1);
         const normalizedAnchor = makeSlug(anchor);
-        const finalAnchor = findHeadingAnchor($, anchor, normalizedAnchor);
+        const { value: finalAnchor, matched: anchorMatched } =
+          findHeadingAnchor($, anchor, normalizedAnchor);
 
         if (finalAnchor) $(node).attr("href", "#" + finalAnchor);
+
+        if (!anchor) return next();
+
+        if (anchorMatched) return next();
 
         lookups = [
           byInternalTitle.bind(null, blogID, anchor),
