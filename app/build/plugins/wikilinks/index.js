@@ -7,7 +7,7 @@ const { decode } = require("he");
 const makeSlug = require("helper/makeSlug");
 
 function render($, callback, { blogID, path }) {
-  const wikilinks = $("[class='wikilink']");
+  const wikilinks = $("[title='wikilink']");
   let dependencies = [];
 
   eachOf(
