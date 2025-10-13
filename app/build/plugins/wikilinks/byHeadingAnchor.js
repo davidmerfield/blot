@@ -1,20 +1,25 @@
 const makeSlug = require("helper/makeSlug");
 
-module.exports = function byHeadingAnchor($, anchor, normalizedAnchor) {
-  const slug = normalizedAnchor || makeSlug(anchor);
+module.exports = function byHeadingAnchor($, href, done) {
+  if (!href || !href.startsWith("#"))
+    return done(new Error("Not a heading anchor"));
 
-  const existingMatch =
-    findAnchorByIdOrName($, anchor) || findAnchorByIdOrName($, slug);
+  const anchor = href.slice(1);
+  const slug = makeSlug(anchor);
 
-  if (existingMatch) return existingMatch;
+  const finalAnchor =
+    findAnchorByIdOrName($, anchor) ||
+    findAnchorByIdOrName($, slug) ||
+    findAnchorByHeadingText($, slug) ||
+    findAnchorBySlug($, slug) ||
+    slug ||
+    anchor;
 
-  const headingMatch = findAnchorByHeadingText($, slug);
-  if (headingMatch) return headingMatch;
-
-  const fuzzyMatch = findAnchorBySlug($, slug);
-  if (fuzzyMatch) return fuzzyMatch;
-
-  return slug || anchor;
+  done(null, {
+    type: "heading-anchor",
+    href: "#" + finalAnchor,
+    anchor: finalAnchor,
+  });
 };
 
 function findAnchorByIdOrName($, value) {

@@ -30,23 +30,20 @@ function render($, callback, { blogID, path }) {
       // [[target|Title here]]
       const piped = makeSlug($(node).html()) !== makeSlug(href);
 
-      if (href.startsWith("#")) {
-        const anchor = href.slice(1);
-        const normalizedAnchor = makeSlug(anchor);
-        const finalAnchor = byHeadingAnchor($, anchor, normalizedAnchor);
-
-        $(node).attr("href", "#" + finalAnchor);
-
-        return next();
-      }
-
       const lookups = [
         byPath.bind(null, blogID, path, href),
         byURL.bind(null, blogID, href),
         byTitle.bind(null, blogID, href),
+        byHeadingAnchor.bind(null, $, href),
       ];
 
       tryEach(lookups, function (err, entry) {
+        if (entry && entry.type === "heading-anchor") {
+          $(node).attr("href", entry.href);
+
+          return next();
+        }
+
         if (entry) {
           const link = entry.url;
 
@@ -55,7 +52,10 @@ function render($, callback, { blogID, path }) {
           if (!piped) $(node).html(entry.title);
 
           dependencies.push(entry.path);
-        } else {
+          return next();
+        }
+
+        if (!href.startsWith("#")) {
           // we failed to find a path, we should register paths to watch
           // if pathOfPost is '/Posts/foo.txt' then dirOfPost is '/Posts'
           const dirOfPost = dirname(path);
@@ -72,6 +72,7 @@ function render($, callback, { blogID, path }) {
 
           pathsToWatch.forEach((path) => dependencies.push(path));
         }
+
         next();
       });
     },
