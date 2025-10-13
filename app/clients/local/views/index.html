@@ -3,7 +3,13 @@
 <div class="line">
     <span class="label">Folder</span>
     <span class="center">
-        data/blogs/{{blog.id}}
+        {{localClientFolderPath}}
+        <a href="{{localClientOpenFolderAction}}" class="open-folder-link">
+            Open folder
+        </a>
+        {{#localClientOpenFolderStatus}}
+        <span class="open-folder-feedback" style="margin-left:8px;{{#localClientOpenFolderIsError}}color:#ff3e00;{{/localClientOpenFolderIsError}}">{{localClientOpenFolderStatus}}</span>
+        {{/localClientOpenFolderStatus}}
     </span>
 </div>
 
