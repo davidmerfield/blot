@@ -6,6 +6,7 @@ Summer newsletter
 
 **Changes**  
 - Webp images now can become thumbnails
+- output for task lists in markdown documents has changed: https://github.com/davidmerfield/blot/pull/956
 
 **Bug fixes**  
 - Fixed an issue with images in Word Documents for people who are not using Blot's CDN.
