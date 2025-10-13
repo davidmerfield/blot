@@ -10,8 +10,7 @@ module.exports = function byHeadingAnchor($, href, done) {
   const resolution =
     findAnchorByIdOrName($, target, slug) ||
     findAnchorByHeadingText($, target, slug) ||
-    findAnchorBySlug($, slug) ||
-    fallbackAnchor(target, slug);
+    findAnchorBySlug($, slug);
 
   if (!resolution) return done(new Error("Not a heading anchor"));
 
@@ -43,15 +42,6 @@ function ensureHash(anchor) {
 function stripHash(anchor) {
   if (!anchor) return "";
   return anchor.startsWith("#") ? anchor.slice(1) : anchor;
-}
-
-function fallbackAnchor(target, slug) {
-  if (!target && !slug) return null;
-
-  return {
-    anchor: slug || target,
-    title: target,
-  };
 }
 
 function findAnchorByIdOrName($, value, slug) {

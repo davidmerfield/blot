@@ -72,8 +72,10 @@ describe("wikilinks plugin", function () {
     const contents =
       '<h2 id="headinghere">Heading Here</h2>\n\nSee [[#Heading Here]].';
     const path = "/hello.txt";
-    const html =
-      '<h2 id="headinghere">\n    Heading Here\n    </h2>\n<p>See <a href="#headinghere" title="wikilink">Heading Here</a>.</p>';
+    const html = `<h2 id="headinghere">
+Heading Here
+</h2>
+<p>See <a href="#headinghere" title="wikilink">Heading Here</a>.</p>`;
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -84,7 +86,10 @@ describe("wikilinks plugin", function () {
       '<h3><a id="h.abc123"></a>Heading From Docs</h3>\n\nSee [[#Heading From Docs]].';
     const path = "/hello.txt";
     const html =
-      '<h3>\n    <a id="h.abc123"></a>Heading From Docs\n    </h3>\n<p>See <a href="#h.abc123" title="wikilink">Heading From Docs</a>.</p>';
+      `<h3>
+<a id="h.abc123"></a>Heading From Docs
+</h3>
+<p>See <a href="#h.abc123" title="wikilink">Heading From Docs</a>.</p>`;
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
