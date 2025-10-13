@@ -1,74 +1,123 @@
 const makeSlug = require("helper/makeSlug");
 
 module.exports = function byHeadingAnchor($, href, done) {
-  if (!href || !href.startsWith("#"))
-    return done(new Error("Not a heading anchor"));
+  const target = normalizeTarget(href);
 
-  const anchor = href.slice(1);
-  const slug = makeSlug(anchor);
+  if (!target) return done(new Error("Not a heading anchor"));
 
-  const finalAnchor =
-    findAnchorByIdOrName($, anchor) ||
-    findAnchorByIdOrName($, slug) ||
-    findAnchorByHeadingText($, slug) ||
+  const slug = makeSlug(target);
+
+  const resolution =
+    findAnchorByIdOrName($, target, slug) ||
+    findAnchorByHeadingText($, target, slug) ||
     findAnchorBySlug($, slug) ||
-    slug ||
-    anchor;
+    fallbackAnchor(target, slug);
+
+  if (!resolution) return done(new Error("Not a heading anchor"));
 
   done(null, {
     type: "heading-anchor",
-    href: "#" + finalAnchor,
-    anchor: finalAnchor,
+    href: ensureHash(resolution.anchor),
+    anchor: stripHash(resolution.anchor),
+    title: resolution.title || target,
   });
 };
 
-function findAnchorByIdOrName($, value) {
-  if (!value) return null;
+function normalizeTarget(href) {
+  if (!href) return null;
 
-  let match = null;
+  const trimmed = String(href).trim();
+  if (!trimmed) return null;
 
-  $(`[id]`).each((_, element) => {
-    if ($(element).attr("id") === value) {
-      match = value;
-      return false;
-    }
-  });
+  const withoutHash = trimmed.startsWith("#") ? trimmed.slice(1) : trimmed;
 
-  if (match) return match;
-
-  $(`[name]`).each((_, element) => {
-    if ($(element).attr("name") === value) {
-      match = value;
-      return false;
-    }
-  });
-
-  return match;
+  return withoutHash.trim() || null;
 }
 
-function findAnchorByHeadingText($, targetSlug) {
-  if (!targetSlug) return null;
+function ensureHash(anchor) {
+  if (!anchor) return "";
+  const stripped = stripHash(anchor);
+  return "#" + stripped;
+}
 
-  const headings = $("h1, h2, h3, h4, h5, h6");
+function stripHash(anchor) {
+  if (!anchor) return "";
+  return anchor.startsWith("#") ? anchor.slice(1) : anchor;
+}
+
+function fallbackAnchor(target, slug) {
+  if (!target && !slug) return null;
+
+  return {
+    anchor: slug || target,
+    title: target,
+  };
+}
+
+function findAnchorByIdOrName($, value, slug) {
+  if (!value && !slug) return null;
+
+  const selectors = [
+    { selector: "[id]", attr: "id" },
+    { selector: "[name]", attr: "name" },
+  ];
+
+  for (const { selector, attr } of selectors) {
+    let match = null;
+
+    $(selector).each((_, element) => {
+      if (match) return false;
+
+      const attrValue = $(element).attr(attr);
+      if (!attrValue) return;
+
+      if (anchorMatches(attrValue, value, slug)) {
+        match = {
+          anchor: stripHash(attrValue),
+          title: findHeadingTextForElement($, element),
+        };
+        return false;
+      }
+    });
+
+    if (match) return match;
+  }
+
+  return null;
+}
+
+function findAnchorByHeadingText($, value, slug) {
+  if (!value && !slug) return null;
+
   let match = null;
 
-  headings.each((_, element) => {
+  $("h1, h2, h3, h4, h5, h6").each((_, element) => {
     if (match) return false;
 
     const $heading = $(element);
-    const headingSlug = makeSlug($heading.text());
+    const headingText = cleanHeadingText($heading.text());
+    const headingSlug = makeSlug(headingText);
 
-    if (!headingSlug || headingSlug !== targetSlug) return;
-
-    const anchorId =
-      $heading.attr("id") ||
-      findFirstAttribute($, $heading, "id") ||
-      findFirstAttribute($, $heading, "name");
-
-    if (anchorId) {
-      match = anchorId;
-      return false;
+    if (
+      !headingText ||
+      (!matchesText(headingText, value) && headingSlug !== slug)
+    ) {
+      return;
     }
+
+    const anchor =
+      stripHash($heading.attr("id")) ||
+      stripHash($heading.attr("name")) ||
+      stripHash(findFirstAttribute($, $heading, "id")) ||
+      stripHash(findFirstAttribute($, $heading, "name")) ||
+      slug;
+
+    if (!anchor) return;
+
+    match = {
+      anchor,
+      title: headingText,
+    };
   });
 
   return match;
@@ -77,27 +126,87 @@ function findAnchorByHeadingText($, targetSlug) {
 function findAnchorBySlug($, slug) {
   if (!slug) return null;
 
-  let match = null;
+  const selectors = [
+    { selector: "[id]", attr: "id" },
+    { selector: "[name]", attr: "name" },
+  ];
 
-  $(`[id]`).each((_, element) => {
-    const id = $(element).attr("id");
-    if (id && makeSlug(id) === slug) {
-      match = id;
-      return false;
-    }
-  });
+  for (const { selector, attr } of selectors) {
+    let match = null;
 
-  if (match) return match;
+    $(selector).each((_, element) => {
+      if (match) return false;
 
-  $(`[name]`).each((_, element) => {
-    const name = $(element).attr("name");
-    if (name && makeSlug(name) === slug) {
-      match = name;
-      return false;
-    }
-  });
+      const value = $(element).attr(attr);
+      if (!value) return;
 
-  return match;
+      if (makeSlug(value) === slug) {
+        match = {
+          anchor: stripHash(value),
+          title: findHeadingTextForElement($, element),
+        };
+        return false;
+      }
+    });
+
+    if (match) return match;
+  }
+
+  return null;
+}
+
+function anchorMatches(anchor, value, slug) {
+  if (!anchor) return false;
+
+  const stripped = stripHash(anchor);
+  const normalizedAnchor = makeSlug(stripped);
+  const normalizedValue = value ? makeSlug(value) : "";
+  const compactAnchor = normalizedAnchor.replace(/-/g, "");
+  const compactSlug = slug ? slug.replace(/-/g, "") : "";
+  const compactValue = normalizedValue.replace(/-/g, "");
+
+  if (value && matchesText(stripped, value)) return true;
+
+  if (slug && normalizedAnchor === slug) return true;
+  if (slug && compactAnchor === compactSlug) return true;
+
+  if (value && normalizedAnchor === normalizedValue) return true;
+  if (value && compactAnchor === compactValue) return true;
+
+  return false;
+}
+
+function matchesText(headingText, value) {
+  if (!headingText || !value) return false;
+  return cleanHeadingText(headingText) === cleanHeadingText(value);
+}
+
+function cleanHeadingText(text) {
+  if (!text) return "";
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function findHeadingTextForElement($, element) {
+  const $element = $(element);
+
+  if (!$element || !$element.length) return null;
+
+  if (isHeading($element)) return cleanHeadingText($element.text());
+
+  const parents = $element.parents("h1, h2, h3, h4, h5, h6");
+
+  if (parents && parents.length) {
+    return cleanHeadingText(parents.first().text());
+  }
+
+  return null;
+}
+
+function isHeading($element) {
+  if (!$element || !$element.length) return false;
+  const node = $element[0];
+  if (!node || !node.name) return false;
+  return /^h[1-6]$/i.test(node.name);
 }
 
 function findFirstAttribute($, $element, attribute) {
