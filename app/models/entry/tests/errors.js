@@ -30,4 +30,39 @@ describe("entry error handling", function () {
       done();
     });
   });
+
+  it("propagates getByUrl errors when computing backlinks to update", function (done) {
+    const error = new Error("getByUrl failure");
+    const getByUrlPath = require.resolve("../getByUrl");
+    const originalGetByUrl = require(getByUrlPath);
+    const backlinksPath = require.resolve("../_backlinksToUpdate");
+
+    require.cache[getByUrlPath].exports = function (blogID, url, callback) {
+      callback(error);
+    };
+
+    delete require.cache[backlinksPath];
+    const backlinksToUpdate = require(backlinksPath);
+
+    const restore = () => {
+      require.cache[getByUrlPath].exports = originalGetByUrl;
+      delete require.cache[backlinksPath];
+    };
+
+    const entry = {
+      internalLinks: ["/linked"],
+      deleted: false,
+      backlinks: [],
+      permalink: "/entry",
+    };
+
+    backlinksToUpdate(this.blog.id, entry, [], entry.permalink, function (err) {
+      try {
+        expect(err).toBe(error);
+        done();
+      } finally {
+        restore();
+      }
+    });
+  });
 });

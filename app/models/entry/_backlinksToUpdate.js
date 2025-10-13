@@ -39,27 +39,34 @@ function backlinksToUpdate(
 
 	async.filter(
 		allInternalLinks,
-		function (urlPath, next) {
-			debug("getting", blogID, urlPath);
-			getByUrl(blogID, urlPath, function (backLinkedEntry) {
-				if (!backLinkedEntry) {
-					debug("no backlinked entry for", urlPath);
-					return next(null, false);
-				}
+                function (urlPath, next) {
+                        debug("getting", blogID, urlPath);
+                        getByUrl(blogID, urlPath, function (err, backLinkedEntry) {
+                                if (err) {
+                                        debug("error getting backlinked entry for", urlPath, err);
+                                        return next(err);
+                                }
 
-				debug("found backlinked entry", backLinkedEntry.path, "for", urlPath);
-				changes[urlPath] = {
-					path: backLinkedEntry.path,
-					backlinks: backLinkedEntry.backlinks,
-					previousBacklinks: backLinkedEntry.backlinks.slice(),
-				};
-				next(null, true);
-			});
-		},
-		function (err, validInternalLinks) {
-			debug(entry.path, ":validInternalLinks", validInternalLinks);
-			// Remove this entry from the backlinks list
-			// of the entries which contain it.
+                                if (!backLinkedEntry) {
+                                        debug("no backlinked entry for", urlPath);
+                                        return next(null, false);
+                                }
+
+                                debug("found backlinked entry", backLinkedEntry.path, "for", urlPath);
+                                changes[urlPath] = {
+                                        path: backLinkedEntry.path,
+                                        backlinks: backLinkedEntry.backlinks,
+                                        previousBacklinks: backLinkedEntry.backlinks.slice(),
+                                };
+                                next(null, true);
+                        });
+                },
+                function (err, validInternalLinks) {
+                        if (err) return callback(err);
+
+                        debug(entry.path, ":validInternalLinks", validInternalLinks);
+                        // Remove this entry from the backlinks list
+                        // of the entries which contain it.
 			formerInternalLinks
 				.filter((link) => validInternalLinks.indexOf(link) > -1)
 				.forEach((link) => {
