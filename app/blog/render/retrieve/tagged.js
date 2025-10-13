@@ -25,7 +25,8 @@ module.exports = function (req, callback) {
     function (err, allEntryIDs) {
       let entryIDs = _.intersection.apply(null, allEntryIDs);
 
-      Entry.get(blogID, entryIDs, function (entries) {
+      Entry.get(blogID, entryIDs, function (err, entries) {
+        if (err) return callback(err);
         entries.sort(function (a, b) {
           return b.dateStamp - a.dateStamp;
         });

@@ -4,7 +4,8 @@ var moment = require("moment");
 require("moment-timezone");
 
 module.exports = function (req, callback) {
-  Entries.getAll(req.blog.id, function (allEntries) {
+  Entries.getAll(req.blog.id, function (err, allEntries) {
+    if (err) return callback(err);
     var years = {};
 
     for (var x in allEntries) {

@@ -38,7 +38,10 @@ const main = async (blog, cb) => {
           nextEntry();
         });
       },
-      () => done(null, cb)
+      (err) => {
+        if (err) return done(err, cb);
+        done(null, cb);
+      }
     );
   });
 };

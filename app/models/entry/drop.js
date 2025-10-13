@@ -6,7 +6,10 @@ var get = require("./get");
 module.exports = function drop(blogID, path, callback) {
   ensure(blogID, "string").and(path, "string").and(callback, "function");
 
-  get(blogID, path, function (entry) {
+  get(blogID, path, function (err, entry) {
+    if (err) {
+      return callback(err);
+    }
     if (!entry) {
       return callback();
     }

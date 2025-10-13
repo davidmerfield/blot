@@ -25,7 +25,8 @@ function main (callback) {
             if (err) return next(err);
             total_entries += total;
 
-            Entries.getRecent(blog.id, function (entries) {
+            Entries.getRecent(blog.id, function (err, entries) {
+              if (err) return next(err);
               entries.forEach(function (entry) {
                 if (entry.created < yesterday) return;
                 if (entry.title) {

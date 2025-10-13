@@ -24,7 +24,8 @@ eachEntry(
       Entry.set(blog.id, entry.id, entry, function (err) {
         if (err) throw err;
 
-        Entry.get(blog.id, entry.id, function (savedEntry) {
+        Entry.get(blog.id, entry.id, function (err, savedEntry) {
+          if (err) return next(err);
           // The entry changed, lets work out
           // why before continuing
           if (!_.isEqual(savedEntry, entry)) {

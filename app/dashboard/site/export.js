@@ -134,17 +134,21 @@ require("moment-timezone");
 
 const loadEntries = (blogID) => {
     return new Promise((resolve, reject) => {
-        Entries.getAll(blogID, function (allEntries) {
+        Entries.getAll(blogID, function (err, allEntries) {
+            if (err) return reject(err);
             resolve(allEntries);
         });
     });
 }
 
+Export.get('/wordpress', async function (req, res, next) {
+    let allEntries;
 
-
-Export.get('/wordpress', async function (req, res) {
-
-    const allEntries = await loadEntries(req.blog.id);
+    try {
+        allEntries = await loadEntries(req.blog.id);
+    } catch (err) {
+        return next(err);
+    }
 
     allEntries.forEach((entry, index) => {
         entry.absoluteURL =

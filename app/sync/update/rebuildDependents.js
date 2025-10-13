@@ -32,7 +32,11 @@ module.exports = function (blogID, path, callback) {
       async.eachSeries(
         dependent_paths,
         function (dependent_path, next) {
-          Entry.get(blogID, dependent_path, function (entry) {
+          Entry.get(blogID, dependent_path, function (err, entry) {
+            if (err) {
+              log("Error fetching dependent entry", dependent_path, err);
+              return next(err);
+            }
             if (!entry) {
               log("No entry for dependent_path:", dependent_path);
               return next();

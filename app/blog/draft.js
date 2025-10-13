@@ -75,7 +75,8 @@ module.exports = function route(server) {
 
     // console.log('Draft: Rendering draft HTML for entry at: ' + filePath);
 
-    Entry.get(blogID, filePath, function (entry) {
+    Entry.get(blogID, filePath, function (err, entry) {
+      if (err) return next(err);
       if (!entry || !entry.draft || entry.deleted) return next();
 
       // GET FULL ENTRY RETURNS NULL SINCE IT"S DRAFT
@@ -86,7 +87,8 @@ module.exports = function route(server) {
       Entries.adjacentTo(
         blogID,
         entry.id,
-        function (nextEntry, previousEntry, index) {
+        function (err, nextEntry, previousEntry, index) {
+          if (err) return next(err);
           entry.next = nextEntry;
           entry.index = index;
           entry.previous = previousEntry;

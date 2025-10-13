@@ -11,13 +11,13 @@ module.exports = function (req, res, next) {
   Entries.getListIDs(blogID, "scheduled", options, function (err, ids) {
     if (err) {
       console.log(err);
-      return next();
+      return next(err);
     }
 
-    Entry.get(blogID, ids, function (entries) {
+    Entry.get(blogID, ids, function (err, entries) {
       if (err) {
         console.log(err);
-        return next();
+        return next(err);
       }
 
       res.locals.more_scheduled_entries =

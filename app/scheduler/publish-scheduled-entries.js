@@ -10,7 +10,7 @@ function publishScheduledEntries (callback = function () {}) {
       blogIDs,
       function (blogID, nextBlog) {
         Entries.get(blogID, { lists: ["scheduled"] }, function (err, list) {
-          if (err) return callback(err);
+          if (err) return nextBlog(err);
           async.each(
             list.scheduled,
             function (futureEntry, nextEntry) {

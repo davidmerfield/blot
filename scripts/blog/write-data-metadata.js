@@ -39,7 +39,11 @@ get(process.argv[2], function (err, user, blog) {
       console.log(entry.path, "writing");
       client.write(blog.id, entry.path, contents, next);
     },
-    function () {
+    function (err) {
+      if (err) {
+        console.log(err);
+        process.exit(1);
+      }
       console.log("Done!");
       process.exit();
     }

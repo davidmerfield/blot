@@ -13,7 +13,7 @@ module.exports = function (blogID, entryIDs, callback) {
 
   // Empty list of entry IDs, leave now!
   if (type(entryIDs, "array") && !entryIDs.length) {
-    return callback([]);
+    return callback(null, []);
   }
 
   // We're only getting one entry now...
@@ -29,7 +29,7 @@ module.exports = function (blogID, entryIDs, callback) {
   ensure(entryIDs, "array");
 
   redis.mget(entryIDs, function (err, entries) {
-    if (err) throw err;
+    if (err) return callback(err);
 
     entries = entries || [];
 
@@ -45,8 +45,8 @@ module.exports = function (blogID, entryIDs, callback) {
       entries = entries[0];
     }
 
-    if (single && !entries) return callback();
+    if (single && !entries) return callback(null);
 
-    return callback(entries);
+    return callback(null, entries);
   });
 };

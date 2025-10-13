@@ -27,7 +27,11 @@ get(handle, function (user, blog) {
 
       nextEntry();
     },
-    function () {
+    function (err) {
+      if (err) {
+        console.error(err);
+        process.exit(1);
+      }
       console.log();
       console.log("Search complete!");
       process.exit();

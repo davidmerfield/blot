@@ -13,12 +13,14 @@ module.exports = function get(url, callback) {
     // getByUrl fails otherwise. This is probably a flaw?
     url.path = decodeURIComponent(url.path);
 
-    Entry.getByUrl(blog.id, url.path, function (entryFromPermalink) {
-      Entry.get(blog.id, url.path, function (entryFromPath) {
+    Entry.getByUrl(blog.id, url.path, function (err, entryFromPermalink) {
+      if (err) return callback(err);
+      Entry.get(blog.id, url.path, function (entryErr, entryFromPath) {
+        if (entryErr) return callback(entryErr);
         if (!entryFromPermalink && !entryFromPath)
           return callback(new Error("No entry"), user, blog);
 
-        callback(err, user, blog, entryFromPermalink || entryFromPath);
+        callback(null, user, blog, entryFromPermalink || entryFromPath);
       });
     });
   });

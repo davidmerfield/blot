@@ -94,7 +94,8 @@ module.exports = function (req, res, entry, callback) {
       if (typeof linkUrl !== "string") {
         return next(null, null);
       }
-      Entry.getByUrl(req.blog.id, linkUrl, function (entry) {
+      Entry.getByUrl(req.blog.id, linkUrl, function (err, entry) {
+        if (err) return next(err);
         if (entry) {
           debug("Found", entry.path, "for", linkUrl);
         } else {

@@ -9,7 +9,9 @@ module.exports = function (server) {
     var slug = request.params.tag;
 
     Tags.get(blogID, slug, function (err, entryIDs, tag) {
-      Entry.get(blogID, entryIDs, function (entries) {
+      if (err) return next(err);
+      Entry.get(blogID, entryIDs, function (err, entries) {
+        if (err) return next(err);
         entries = _.sortBy(entries, "dateStamp").reverse();
 
         response.locals.tag = tag;

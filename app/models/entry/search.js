@@ -1,11 +1,7 @@
 const ensure = require("helper/ensure");
 const client = require("models/client");
 const { promisify } = require("util");
-const get = promisify((blogID, entryIDs, callback) =>
-  require("./get")(blogID, entryIDs, function (entries) {
-    callback(null, entries);
-  })
-);
+const get = promisify(require("./get"));
 
 const zscan = promisify(client.zscan).bind(client);
 const TIMEOUT = 8000;

@@ -42,7 +42,8 @@ module.exports = function (req, callback) {
               });
             },
             function (done) {
-              Entry.get(req.blog.id, fullPathToItem, function (entry) {
+              Entry.get(req.blog.id, fullPathToItem, function (err, entry) {
+                if (err) return done(err);
                 done(null, { entry });
               });
             },
@@ -62,7 +63,7 @@ module.exports = function (req, callback) {
         );
       },
       function (err, contents) {
-        if (err) return callback(null, []);
+        if (err) return callback(err);
         callback(null, {
           contents,
           parent,

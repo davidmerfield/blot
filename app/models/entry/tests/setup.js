@@ -10,8 +10,9 @@ module.exports = function () {
 
   beforeEach(function () {
     this.get = async path => {
-      return new Promise(resolve => {
-        get(this.blog.id, path, entry => {
+      return new Promise((resolve, reject) => {
+        get(this.blog.id, path, (err, entry) => {
+          if (err) return reject(err);
           resolve(entry);
         });
       });
@@ -27,8 +28,9 @@ module.exports = function () {
     };
 
     this.drop = async path => {
-      return new Promise(resolve => {
-        drop(this.blog.id, path, () => {
+      return new Promise((resolve, reject) => {
+        drop(this.blog.id, path, err => {
+          if (err) return reject(err);
           resolve();
         });
       });
@@ -38,7 +40,8 @@ module.exports = function () {
       return new Promise((resolve, reject) => {
         fs.remove(this.blogDirectory + path, err => {
           if (err) reject(err);
-          drop(this.blog.id, path, () => {
+          drop(this.blog.id, path, err => {
+            if (err) return reject(err);
             resolve();
           });
         });
@@ -50,12 +53,13 @@ module.exports = function () {
         fs.outputFileSync(this.blogDirectory + path, contents);
         build(this.blog, path, (err, entry) => {
           if (err) return reject(err);
-          set(this.blog.id, path, entry, err => {
-            if (err) return reject(err);
-            get(this.blog.id, path, entry => {
-              resolve(entry);
+            set(this.blog.id, path, entry, err => {
+              if (err) return reject(err);
+              get(this.blog.id, path, (getErr, entry) => {
+                if (getErr) return reject(getErr);
+                resolve(entry);
+              });
             });
-          });
         });
       });
     };

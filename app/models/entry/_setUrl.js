@@ -159,7 +159,8 @@ function check (blogID, candidate, entryID, callback) {
     if (existingID === entryID) return callback();
 
     // This url points to a different entry
-    get(blogID, existingID, function (existingEntry) {
+    get(blogID, existingID, function (err, existingEntry) {
+      if (err) return callback(err);
       // For some reason (bug) the url key was
       // set but the entry does not exist. Claim the url.
       if (!existingEntry) return callback();

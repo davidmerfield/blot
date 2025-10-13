@@ -21,7 +21,8 @@ module.exports = function main(blog, callback) {
           async.each(
             entryIDs,
             function (entryID, next) {
-              Entry.get(blog.id, entryID, function (entry) {
+              Entry.get(blog.id, entryID, function (err, entry) {
+                if (err) return next(err);
                 if (!entry) {
                   report.push(["MISSING", entryID]);
                   const multi = client.multi();

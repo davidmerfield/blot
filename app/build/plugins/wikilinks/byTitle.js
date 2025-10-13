@@ -5,7 +5,8 @@ module.exports = function byTitle(blogID, href, done) {
   // model and build so this is neccessary for now...
   const { getAll } = require("models/entries");
 
-  getAll(blogID, function (allEntries) {
+  getAll(blogID, function (err, allEntries) {
+    if (err) return done(err);
     const perfectMatch = allEntries.find((entry) => entry.title === href);
 
     if (perfectMatch) return done(null, perfectMatch);

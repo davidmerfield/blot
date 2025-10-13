@@ -25,7 +25,9 @@ module.exports = function (request, response, next) {
   url = decodeURIComponent(url);
   url = url.toLowerCase();
 
-  Entry.getByUrl(blog.id, url, function (entry) {
+  Entry.getByUrl(blog.id, url, function (err, entry) {
+    if (err) return next(err);
+
     if (!entry || entry.deleted || entry.draft) return next();
 
     // If comments are enabled in settings, they are shown on all blog posts and pages
@@ -56,10 +58,12 @@ module.exports = function (request, response, next) {
     if (normalize(entry.url) !== normalize(url) && url === "/") return next();
 
     Entries.adjacentTo(blog.id, entry.id, function (
+      err,
       nextEntry,
       previousEntry,
       index
     ) {
+      if (err) return next(err);
       entry.next = nextEntry;
       entry.previous = previousEntry;
       entry.adjacent = !!(nextEntry || previousEntry);

@@ -54,7 +54,8 @@ function main (callback) {
           User.getById(blog.owner, function (err, user) {
             if (err || !user || user.isDisabled) return next();
 
-            Entries.getPage(blog.id, 1, 1, function (entries) {
+            Entries.getPage(blog.id, 1, 1, function (err, entries) {
+              if (err) return next(err);
               if (!entries.length) return next();
 
               next(null, {

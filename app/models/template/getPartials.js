@@ -16,9 +16,9 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
   var Entry = require("../entry");
   var allPartials = {};
   var retrieve = {};
-  var getEntry = promisify((blogID, partial, cb) => Entry.get(blogID, partial, function(entry){
-    cb(null, entry);
-  }));
+  var getEntry = promisify((blogID, partial, cb) =>
+    Entry.get(blogID, partial, cb)
+  );
 
   for (var i in partials) if (partials[i]) allPartials[i] = partials[i];
 
@@ -39,14 +39,19 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
         // If the partial's name starts with a slash,
         // it is a path to an entry.
         if (partial.charAt(0) === "/") {
-          Entry.get(blogID, partial, async function (entry) {
+          Entry.get(blogID, partial, async function (err, entry) {
+            if (err) return next(err);
             // empty string and not undefined to
             // prevent infinite fetches
             allPartials[partial] = "";
 
             // try lower case
             if (!entry || !entry.html) {
-              entry = await getEntry(blogID, partial.toLowerCase());
+              try {
+                entry = await getEntry(blogID, partial.toLowerCase());
+              } catch (error) {
+                return next(error);
+              }
             }
 
             if (!entry || !entry.html) {

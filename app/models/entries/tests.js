@@ -76,10 +76,10 @@ describe("entries", function () {
         // if array, return an array of fake entries
         if (Array.isArray(ids)) {
             const entries = ids.map((id) => ({ id }));
-            return callback(entries);
+            return callback(null, entries);
             // return a single fake entry
         } else {
-            return callback({ id: ids });
+            return callback(null, { id: ids });
         }
     });
 
@@ -88,7 +88,8 @@ describe("entries", function () {
     const blogID = this.blog.id;
 
     // get the second page of entries, 2 per page, sorted by date with newest first
-    Entries.getPage(blogID, pageNo, pageSize, function (entries, pagination) {
+    Entries.getPage(blogID, pageNo, pageSize, function (err, entries, pagination) {
+        expect(err).toBeNull();
         expect(entries.map((entry) => entry.id)).toEqual(["/d.txt", "/c.txt"]);
         expect(pagination).toEqual({
             current: 2,
@@ -99,10 +100,12 @@ describe("entries", function () {
         });
 
         // get the first page of entries, 2 per page, sorted reverse alphabetically
-        Entries.getPage(blogID, 1, pageSize, function (entries, pagination) {
+        Entries.getPage(blogID, 1, pageSize, function (err2, entries, pagination) {
+            expect(err2).toBeNull();
             expect(entries.map((entry) => entry.id)).toEqual(["/f.txt", "/e.txt"]);
             // get the first page of entries, 2 per page, sorted alphabetically
-            Entries.getPage(blogID, 1, pageSize, function (entries, pagination) {
+            Entries.getPage(blogID, 1, pageSize, function (err3, entries, pagination) {
+                expect(err3).toBeNull();
                 expect(entries.map((entry) => entry.id)).toEqual(["/a.txt", "/b.txt"]);
                 done();
             }, { sortBy: "id", order: "asc" });
@@ -122,10 +125,11 @@ describe("entries", function () {
         id,
         dateStamp: Date.now() - index * 1000,
       }));
-      callback(entries);
+      callback(null, entries);
     });
 
-    Entries.getRecent(this.blog.id, function (entries) {
+    Entries.getRecent(this.blog.id, function (err, entries) {
+      expect(err).toBeNull();
       expect(entries.map((entry) => entry.id)).toEqual(["id3", "id2", "id1"]);
       expect(entries[0].index).toBe(3);
       expect(entries[1].index).toBe(2);
@@ -135,7 +139,8 @@ describe("entries", function () {
   });
 
   it("getRecent should return an empty array if there are no entries", function (done) {
-    Entries.getRecent(this.blog.id, function (entries) {
+    Entries.getRecent(this.blog.id, function (err, entries) {
+      expect(err).toBeNull();
       expect(entries).toEqual([]);
       done();
     });
@@ -145,7 +150,7 @@ describe("entries", function () {
     beforeEach(function () {
       spyOn(Entry, "get").and.callFake((blogID, ids, callback) => {
         const entries = ids.map((id) => ({ id }));
-        callback(entries);
+        callback(null, entries);
       });
     });
 
@@ -155,7 +160,8 @@ describe("entries", function () {
       // Add mock entries in Redis
       await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
 
-      Entries.adjacentTo(this.blog.id, "id2", function (next, previous, rank) {
+      Entries.adjacentTo(this.blog.id, "id2", function (err, next, previous, rank) {
+        expect(err).toBeNull();
         expect(previous).toEqual({ id: "id1" });
         expect(next).toEqual({ id: "id3" });
         expect(rank).toBe(2);
@@ -169,7 +175,8 @@ describe("entries", function () {
       // Add mock entries in Redis
       await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
 
-      Entries.adjacentTo(this.blog.id, "id1", function (next, previous, rank) {
+      Entries.adjacentTo(this.blog.id, "id1", function (err, next, previous, rank) {
+        expect(err).toBeNull();
         expect(previous).toBeUndefined();
         expect(next).toEqual({ id: "id2" });
         expect(rank).toBe(1);
@@ -183,7 +190,8 @@ describe("entries", function () {
       // Add mock entries in Redis
       await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
 
-      Entries.adjacentTo(this.blog.id, "id3", function (next, previous, rank) {
+      Entries.adjacentTo(this.blog.id, "id3", function (err, next, previous, rank) {
+        expect(err).toBeNull();
         expect(previous).toEqual({ id: "id2" });
         expect(next).toBeUndefined();
         expect(rank).toBe(3);
@@ -212,13 +220,13 @@ describe("entries", function () {
       // Mock Entry.get to return the entries
       spyOn(Entry, "get").and.callFake((blogID, id, callback) => {
         const result = entries.find((entry) => entry.id === id);
-        callback(result);
+        callback(null, result);
       });
 
       // Mock Entry.set
       spyOn(Entry, "set").and.callFake((blogID, path, changes, callback) => {
         expect(changes).toEqual(jasmine.any(Object));
-        callback();
+        callback(null);
       });
 
       Entries.resave(this.blog.id, function (err) {

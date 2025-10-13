@@ -9,10 +9,11 @@ var key = require("./key");
 // password flow.
 module.exports = function (token, callback) {
   client.get(key.accessToken(token), function (err, value) {
-    if (err || !value) return callback(new Error("Invalid access token"));
+    if (err) return callback(err);
+    if (!value) return callback(new Error("Invalid access token"));
 
     client.del(key.accessToken(token), function (err) {
-      if (err) throw err;
+      if (err) return callback(err);
 
       callback(null, value);
     });

@@ -20,7 +20,8 @@ module.exports = function (req, res, next) {
 
   // Fetch entries and render the view
   req.log("Loading entries for page", pageNo, "with page size", pageSize);
-  Entries.getPage(blog.id, pageNo, pageSize, (entries, pagination) => {
+  Entries.getPage(blog.id, pageNo, pageSize, (err, entries, pagination) => {
+    if (err) return next(err);
     pagination.current = pageNo;
 
     res.locals.entries = entries;

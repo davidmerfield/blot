@@ -10,7 +10,8 @@ function main(blog, callback) {
   async.map(
     blog.menu,
     function (item, next) {
-      Entry.get(blog.id, item.id, function (entry) {
+      Entry.get(blog.id, item.id, function (err, entry) {
+        if (err) return next(err);
         if (entry && entry.deleted) {
           report.push(["Delete", item]);
           next(null, null);

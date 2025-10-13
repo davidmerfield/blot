@@ -20,7 +20,8 @@ module.exports = async function (blog, path) {
         });
       }),
       new Promise((resolve, reject) => {
-        Entry.get(blogID, path, function (entry) {
+        Entry.get(blogID, path, function (err, entry) {
+          if (err) return reject(err);
           resolve(entry);
         });
       }),

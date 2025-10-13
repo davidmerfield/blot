@@ -18,7 +18,8 @@ function main(blog, callback) {
         async.each(
           res,
           function (id, next) {
-            Entry.get(blog.id, id, function (entry) {
+            Entry.get(blog.id, id, function (err, entry) {
+              if (err) return next(err);
               if (entry && entry.id === id) return next();
 
               report.push([list, "MISMATCH", id]);

@@ -12,7 +12,10 @@ const getAllIDs = promisify(Entries.getAllIDs);
 const setEntry = promisify(Entry.set);
 const getEntry = (blogID, id) =>
   new Promise((resolve, reject) =>
-    Entry.get(blogID, id, (entry) => resolve(entry))
+    Entry.get(blogID, id, (err, entry) => {
+      if (err) return reject(err);
+      resolve(entry);
+    })
   );
 
 const main = async (blogID) => {

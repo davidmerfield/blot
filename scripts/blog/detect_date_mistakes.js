@@ -90,8 +90,8 @@ function loadEntries(blogID, callback) {
   Entries.get(blogID, { list: "deleted" }, function (err, { deleted }) {
     if (err) return callback(err);
 
-    Entries.getAll(blogID, function (published) {
-      if (err) return callback(err);
+    Entries.getAll(blogID, function (allErr, published) {
+      if (allErr) return callback(allErr);
 
       callback(null, { published, deleted });
     });

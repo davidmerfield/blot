@@ -9,7 +9,8 @@ module.exports = function (req, res, next) {
   const queryString = queryIndex >= 0 ? url.slice(queryIndex) : "";
 
   // todo: implement Entries.random using srandmember
-  Entries.getAll(req.blog.id, function (entries) {
+  Entries.getAll(req.blog.id, function (err, entries) {
+    if (err) return next(err);
     if (!entries || !entries.length) return next();
     let entry = randomFrom(entries);
     let attempts = 0;

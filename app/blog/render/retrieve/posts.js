@@ -20,13 +20,14 @@ module.exports = function (req, callback) {
 
   // Fetch entries and render the view
   req.log("Loading entries for page", pageNo, "with page size", pageSize);
-  Entries.getPage(blog.id, pageNo, pageSize, (entries, pagination) => {
+  Entries.getPage(blog.id, pageNo, pageSize, (err, entries, pagination) => {
+    if (err) return callback(err);
     pagination.current = pageNo;
 
 
     if (entries.length > 0) {
         entries.at(-1).pagination = pagination;
-    } 
+    }
 
     callback(null, entries);
   }, { sortBy, order });

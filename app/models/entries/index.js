@@ -43,11 +43,11 @@ module.exports = (function () {
 
     // Get the index of the entry in the list of entries
     redis.zrank(listKey(blogID, "entries"), entryID, function (error, rank) {
-      if (error) throw error;
+      if (error) return callback(error);
 
       // If the entry has no rank its not got siblings
       // make sure you don't just bang rank, 0 is falsy in JS!
-      if (typeof rank !== "number") return callback();
+      if (typeof rank !== "number") return callback(null);
 
       var lowerBound = rank > 0 ? rank - 1 : 0;
 
@@ -56,9 +56,10 @@ module.exports = (function () {
         lowerBound,
         rank + 1,
         function (error, entryIDs) {
-          if (error) throw error;
+          if (error) return callback(error);
 
-          Entry.get(blogID, entryIDs, function (entries) {
+          Entry.get(blogID, entryIDs, function (err, entries) {
+            if (err) return callback(err);
             // {skinny: true},
 
             var next, previous;
@@ -71,7 +72,7 @@ module.exports = (function () {
                   : undefined;
             }
 
-            return callback(next, previous, ++rank);
+            return callback(null, next, previous, ++rank);
           });
         }
       );
@@ -117,25 +118,37 @@ module.exports = (function () {
     // Skinny is true by default
     options.skinny = options.skinny !== false;
 
-    var totalToFetch = 0,
-      response = {},
-      lists = options.lists.slice();
+    var response = {},
+      lists = options.lists.slice(),
+      totalToFetch = lists.length,
+      completed = 0,
+      finished = false;
 
     delete options.lists;
 
+    if (!totalToFetch) {
+      return callback(null, response);
+    }
+
     for (var i in lists) {
-      totalToFetch++;
       options.list = lists[i];
       getRange(blogID, 0, -1, options, onComplete(options.list));
     }
 
     function onComplete(listName) {
-      return function (listOfEntries) {
-        totalToFetch--;
+      return function (err, listOfEntries) {
+        if (finished) return;
+
+        if (err) {
+          finished = true;
+          return callback(err);
+        }
 
         response[listName] = listOfEntries;
+        completed++;
 
-        if (!totalToFetch) {
+        if (completed === totalToFetch) {
+          finished = true;
           callback(null, response);
         }
       };
@@ -159,7 +172,7 @@ module.exports = (function () {
     }
 
     redis.zrevrange(list, start, end, function (err, ids) {
-      if (err) throw err;
+      if (err) return callback(err);
 
       return callback(null, ids);
     });
@@ -170,12 +183,13 @@ module.exports = (function () {
     ensure(blogID, "string").and(dothis, "function").and(callback, "function");
 
     redis.zrevrange(listKey(blogID, "all"), 0, -1, function (error, ids) {
-      if (error) throw error;
+      if (error) return callback(error);
 
       async.eachSeries(
         ids,
         function (id, next) {
-          Entry.get(blogID, id, function (entry) {
+          Entry.get(blogID, id, function (err, entry) {
+            if (err) return next(err);
             dothis(entry, next);
           });
         },
@@ -192,7 +206,8 @@ module.exports = (function () {
     redis.ZRANGEBYSCORE(key, after, Date.now(), function (err, ids) {
       if (err) return callback(err);
 
-      Entry.get(blogID, ids, function (entries) {
+      Entry.get(blogID, ids, function (entryErr, entries) {
+        if (entryErr) return callback(entryErr);
         callback(null, entries || []);
       });
     });
@@ -206,7 +221,8 @@ module.exports = (function () {
     redis.ZRANGEBYSCORE(key, after, Date.now(), function (err, ids) {
       if (err) return callback(err);
 
-      Entry.get(blogID, ids, function (entries) {
+      Entry.get(blogID, ids, function (entryErr, entries) {
+        if (entryErr) return callback(entryErr);
         callback(null, entries || []);
       });
     });
@@ -223,14 +239,14 @@ module.exports = (function () {
     var key = listKey(blogID, listName);
 
     redis.zrevrange(key, start, end, function (err, entryIDs) {
-      // todo add err as first parameter of callback
-      if (err) return callback([]);
+      if (err) return callback(err);
 
-      if (!options.full && !options.skinny) return callback(entryIDs);
+      if (!options.full && !options.skinny) return callback(null, entryIDs);
 
       // options,
-      Entry.get(blogID, entryIDs, function (entries) {
-        return callback(entries);
+      Entry.get(blogID, entryIDs, function (entryErr, entries) {
+        if (entryErr) return callback(entryErr);
+        return callback(null, entries);
       });
     });
   }
@@ -263,14 +279,14 @@ module.exports = (function () {
       redis.sort(sortOptions, function (error, entryIDs) {
         if (error) {
           console.error(error);
-          return callback([]);
+          return callback(error);
         }
 
 
         redis.zcard(listKey(blogID, "entries"), function (error, totalEntries) {
           if (error) {
             console.error(error);
-            return callback([]);
+            return callback(error);
           }
           handlePaginationAndCallback(
             blogID,
@@ -296,14 +312,14 @@ module.exports = (function () {
         function (error, entryIDs) {
           if (error) {
             console.error(error);
-            return callback([]);
+            return callback(error);
           }
           redis.zcard(
             listKey(blogID, "entries"),
             function (error, totalEntries) {
               if (error) {
                 console.error(error);
-                return callback([]);
+                return callback(error);
               }
 
               handlePaginationAndCallback(
@@ -337,8 +353,9 @@ module.exports = (function () {
     callback
   ) {
 
-    Entry.get(blogID, entryIDs, function (entries) {
-        
+    Entry.get(blogID, entryIDs, function (err, entries) {
+      if (err) return callback(err);
+
       var pagination = {};
 
       totalEntries = parseInt(totalEntries);
@@ -364,24 +381,26 @@ module.exports = (function () {
         index--;
       });
 
-      return callback(entries, pagination);
+      return callback(null, entries, pagination);
     });
   }
 
   function lastUpdate(blogID, callback) {
-    getRange(blogID, 0, 1, { skinny: true }, function (entries) {
+    getRange(blogID, 0, 1, { skinny: true }, function (err, entries) {
+      if (err) return callback(err);
       if (entries && entries.length)
         return callback(null, entries[0].dateStamp);
 
-      return callback();
+      return callback(null);
     });
   }
 
   function getRecent(blogID, callback) {
-    getRange(blogID, 0, 30, { skinny: true }, function (entries) {
+    getRange(blogID, 0, 30, { skinny: true }, function (err, entries) {
+      if (err) return callback(err);
       redis.zcard(listKey(blogID, "entries"), function (error, totalEntries) {
         // We need to add error handling
-        if (error) return callback([]);
+        if (error) return callback(error);
 
         // The first entry published should have an index of 1
         // The fifth entry published should have an index of 5
@@ -393,7 +412,7 @@ module.exports = (function () {
           index--;
         });
 
-        callback(entries);
+        callback(null, entries);
       });
     });
   }
