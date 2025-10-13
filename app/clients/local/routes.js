@@ -4,7 +4,10 @@ var disconnect = require("./disconnect");
 const fetch = require("node-fetch");
 
 const DEFAULT_OPEN_FOLDER_ORIGIN =
-  process.env.LOCAL_OPEN_FOLDER_ORIGIN || "http://localhost:3020";
+  process.env.LOCAL_OPEN_FOLDER_ORIGIN ||
+  (process.env.CONTAINER_NAME
+    ? "http://host.docker.internal:3020"
+    : "http://localhost:3020");
 
 // It's important this is an Express router
 // and not an Express app for reasons unknown
