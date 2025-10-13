@@ -66,7 +66,7 @@ module.exports = function (blog, text, options, callback) {
     "1000",
 
     // we use our own highlighint library (hljs) later
-    "--no-highlight",
+    "--syntax-highlighting=none",
 
     // such a dumb default feature... sorry john!
     "--email-obfuscation=none",
@@ -94,10 +94,12 @@ module.exports = function (blog, text, options, callback) {
 
   pandoc.stdout.on("data", function (data) {
     result += data;
+    console.log("Pandoc stdout:", data.toString());
   });
 
   pandoc.stderr.on("data", function (data) {
     error += data;
+    console.log("Pandoc stderr:", data.toString());
   });
 
   setTimeout(function () {
