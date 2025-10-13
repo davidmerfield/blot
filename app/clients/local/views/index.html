@@ -1,16 +1,8 @@
 {{> status-line}}
 
-<div class="line">
+<a class="line" href="{{{base}}}/open">
     <span class="label">Folder</span>
-    <span class="center">
-        {{localClientFolderPath}}
-        <a href="{{localClientOpenFolderAction}}" class="open-folder-link">
-            Open folder
-        </a>
-        {{#localClientOpenFolderStatus}}
-        <span class="open-folder-feedback" style="margin-left:8px;{{#localClientOpenFolderIsError}}color:#ff3e00;{{/localClientOpenFolderIsError}}">{{localClientOpenFolderStatus}}</span>
-        {{/localClientOpenFolderStatus}}
-    </span>
+    <span class="center"><span class="link">Open folder</span></span>
 </div>
 
 {{> disconnect-line}}
