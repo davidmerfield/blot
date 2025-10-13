@@ -3,6 +3,7 @@ const { resolve, dirname } = require("path");
 const byPath = require("./byPath");
 const byURL = require("./byURL");
 const byTitle = require("./byTitle");
+const byHeadingAnchor = require("./byHeadingAnchor");
 const { decode } = require("he");
 const makeSlug = require("helper/makeSlug");
 
@@ -28,6 +29,16 @@ function render($, callback, { blogID, path }) {
       // if they don't match the user did something like this:
       // [[target|Title here]]
       const piped = makeSlug($(node).html()) !== makeSlug(href);
+
+      if (href.startsWith("#")) {
+        const anchor = href.slice(1);
+        const normalizedAnchor = makeSlug(anchor);
+        const finalAnchor = byHeadingAnchor($, anchor, normalizedAnchor);
+
+        $(node).attr("href", "#" + finalAnchor);
+
+        return next();
+      }
 
       const lookups = [
         byPath.bind(null, blogID, path, href),
