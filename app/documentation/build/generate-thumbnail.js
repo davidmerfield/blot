@@ -4,6 +4,7 @@ const hashFile = require("helper/hashFile");
 const { join } = require("path");
 const fs = require("fs-extra");
 const hashString = require("helper/hash");
+const ensureWebSafeP3 = require("../../build/plugins/image/web-safe-p3");
 const TMP_DIRECTORY = config.tmp_directory;
 
 module.exports = async function generateThumbnail(
@@ -33,7 +34,11 @@ module.exports = async function generateThumbnail(
   }
 
   try {
-    await sharp(from).resize(options).toFile(to);
+    const metadata = await sharp(from).metadata();
+
+    await ensureWebSafeP3(sharp(from), metadata)
+      .resize(options)
+      .toFile(to);
 
     await fs.copy(to, cachedFilePath);
   } catch (e) {}

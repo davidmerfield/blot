@@ -5,6 +5,7 @@ var tempDir = require("helper/tempDir")();
 var fs = require("fs-extra");
 var uuid = require("uuid/v4");
 var extname = require("path").extname;
+var ensureWebSafeP3 = require("./web-safe-p3");
 
 // We don't do .gif because sharp cannot handle animated
 // gifs at the moment. Perhaps in future...
@@ -26,7 +27,6 @@ module.exports = function (path, callback) {
 
   var output = tempDir + uuid();
   var extension = extname(path).toLowerCase();
-  var image;
 
   // Since this image is not one we can resize, we fetch
   // its dimensions and continue...
@@ -35,28 +35,33 @@ module.exports = function (path, callback) {
     return sharp(path).metadata(callback);
   }
 
-  try {
-    debug("Resizing", path);
-    image = sharp(path)
-      .keepIccProfile()
-      .rotate()
-      .resize(3000, 3000, { withoutEnlargement: true, fit: "inside" });
-  } catch (e) {
-    return callback(e);
-  }
+  sharp(path).metadata(function (err, metadata) {
+    if (err) return callback(err);
 
-  image.toFile(output, function (err, info) {
-    if (err || !info) return callback(err || "No info");
+    var image;
 
-    // Remove the unresized file
-    fs.remove(path, function (err) {
-      if (err) return callback(err);
+    try {
+      debug("Resizing", path);
+      image = ensureWebSafeP3(sharp(path), metadata)
+        .rotate()
+        .resize(3000, 3000, { withoutEnlargement: true, fit: "inside" });
+    } catch (e) {
+      return callback(e);
+    }
 
-      // Move the resized file
-      fs.move(output, path, function (err) {
+    image.toFile(output, function (err, info) {
+      if (err || !info) return callback(err || "No info");
+
+      // Remove the unresized file
+      fs.remove(path, function (err) {
         if (err) return callback(err);
 
-        return callback(null, info);
+        // Move the resized file
+        fs.move(output, path, function (err) {
+          if (err) return callback(err);
+
+          return callback(null, info);
+        });
       });
     });
   });

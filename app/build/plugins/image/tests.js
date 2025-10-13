@@ -7,8 +7,23 @@ describe("image", function () {
   var localPath = require("helper/localPath");
   var config = require("config");
   var join = require("path").join;
+  var dirname = require("path").dirname;
   var crypto = require("crypto");
   var sharp = require("sharp");
+
+  var HDR_DISPLAY_P3_PQ_PROFILE = Buffer.from(
+    [
+      "AAACJGFwcGwEAAAAbW50clJHQiBYWVogB98ACgAOAA0ACAA5YWNzcEFQUEwAAAAAQVBQTAAAAAAAAAAAAAAAAAAAAAAAAPbW",
+      "AAEAAAAA0y1hcHBs5bsOmGe9Rs1LvkRuvRt1mAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKZGVzYwAAAPwAAABl",
+      "Y3BydAAAAWQAAAAjd3RwdAAAAYgAAAAUclhZWgAAAZwAAAAUZ1hZWgAAAbAAAAAUYlhZWgAAAcQAAAAUclRSQwAAAdgAAAAg",
+      "Y2hhZAAAAfgAAAAsYlRSQwAAAdgAAAAgZ1RSQwAAAdgAAAAgZGVzYwAAAAAAAAALRGlzcGxheSBQUQAAAAAAAAAAAAAAAAAA",
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXh0",
+      "AAAAAENvcHlyaWdodCBBcHBsZSBJbmMuLCAyMDE1AABYWVogAAAAAAAA81EAAQAAAAEWzFhZWiAAAAAAAACD3wAAPb////+7",
+      "WFlaIAAAAAAAAEq/AACxNwAACrlYWVogAAAAAAAAKDgAABELAADIuXBhcmEAAAAAAAMAAAACZmYAAPKwAAANUAAAE7YAAAn8",
+      "c2YzMgAAAAAAAQxCAAAF3v//8yYAAAeTAAD9kP//+6L///2jAAAD3AAAwG4=",
+    ].join(""),
+    "base64"
+  );
 
   afterEach(function () {
     if (!this.result) return;
@@ -57,11 +72,43 @@ describe("image", function () {
         if (err) return done.fail(err);
 
         expect(metadata.icc).toBeDefined();
-        expect(metadata.icc).toContain('P3'); // Ensure it is preserved
+
+        var profile = metadata.icc.toString("ascii");
+
+        expect(profile).toContain("Display P3"); // Ensure it is preserved
 
         done();
       });
     });
+  });
+
+  it("will convert HDR Display P3 PQ images to web-safe Display P3", function (done) {
+    var test = this;
+    var image = "/tests-hdr-image.png";
+    var html = '<img src="' + image + '">';
+
+    createHdrDisplayP3Image(localPath(test.blog.id, image))
+      .then(function () {
+        render(test.blog, html, function (err, result) {
+          if (err) return done.fail(err);
+
+          var path = extractCachedImagePaths(test.blog, result)[0];
+
+          sharp(path).metadata(function (err, metadata) {
+            if (err) return done.fail(err);
+
+            var profile = metadata.icc.toString("ascii").replace(/\u0000/g, " ");
+
+            expect(profile).toContain("Display P3");
+            expect(profile).not.toContain("PQ");
+
+            done();
+          });
+        });
+      })
+      .catch(function (err) {
+        done.fail(err);
+      });
   });
 
   it("will fetch dimensions of GIFs but will not resize them", function (done) {
@@ -211,6 +258,22 @@ describe("image", function () {
         return fail(e);
       }
     });
+  }
+
+  function createHdrDisplayP3Image (destination) {
+    fs.ensureDirSync(dirname(destination));
+
+    return sharp({
+      create: {
+        width: 32,
+        height: 32,
+        channels: 3,
+        background: { r: 255, g: 128, b: 0 },
+      },
+    })
+      .png()
+      .withMetadata({ icc: HDR_DISPLAY_P3_PQ_PROFILE })
+      .toFile(destination);
   }
 
   // Wrapper around dumb API for this plugin
