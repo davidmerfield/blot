@@ -23,15 +23,11 @@ Dashboard.get("/", function (req, res) {
 });
 
 Dashboard.get("/open", async function (req, res, next) {
-  const folderPath = `data/blogs/${req.blog.id}`;
   try {
-    const response = await fetch(`${DEFAULT_OPEN_FOLDER_ORIGIN}/open-folder`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ path: folderPath }),
-    });
+    const openUrl = new URL(`${DEFAULT_OPEN_FOLDER_ORIGIN}/open-folder`);
+    openUrl.searchParams.set("blogID", req.blog.id);
+
+    const response = await fetch(openUrl.href);
 
     if (!response.ok) {
       throw new Error("Request failed");

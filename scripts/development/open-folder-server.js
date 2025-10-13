@@ -4,6 +4,8 @@ const path = require("path");
 
 const PORT = Number(process.env.LOCAL_OPEN_FOLDER_PORT) || 3020;
 const REPO_ROOT = path.resolve(__dirname, "../../");
+const RATE_LIMIT_WINDOW_MS = 5 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
 
 const openerForPlatform = () => {
   if (process.platform === "darwin") return "open";
@@ -13,9 +15,30 @@ const openerForPlatform = () => {
 
 const app = express();
 
+const requestLog = new Map();
+
+app.use((req, res, next) => {
+  const key = req.ip || "unknown";
+  const now = Date.now();
+  const recentRequests = (requestLog.get(key) || []).filter(
+    (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS
+  );
+
+  if (recentRequests.length >= RATE_LIMIT_MAX_REQUESTS) {
+    return res
+      .status(429)
+      .json({ error: "Too many open-folder requests. Please slow down." });
+  }
+
+  recentRequests.push(now);
+  requestLog.set(key, recentRequests);
+
+  next();
+});
+
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "POST,OPTIONS");
+  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.sendStatus(204);
@@ -25,11 +48,32 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-app.post("/open-folder", (req, res) => {
-  try {
-    const { path: relativePath } = req.body || {};
+const resolveRequestedPath = (req) => {
+  const { blogID, path: queryPath } = req.query || {};
 
-    if (!relativePath || typeof relativePath !== "string") {
+  if (typeof blogID === "string" && blogID.trim()) {
+    return path.join("data", "blogs", blogID.trim());
+  }
+
+  if (req.method === "POST") {
+    const { path: bodyPath } = req.body || {};
+    if (bodyPath && typeof bodyPath === "string") {
+      return bodyPath;
+    }
+  }
+
+  if (typeof queryPath === "string" && queryPath.trim()) {
+    return queryPath.trim();
+  }
+
+  return null;
+};
+
+const handleOpenFolder = (req, res) => {
+  try {
+    const relativePath = resolveRequestedPath(req);
+
+    if (!relativePath) {
       return res.status(400).json({ error: "Missing folder path" });
     }
 
@@ -65,7 +109,10 @@ app.post("/open-folder", (req, res) => {
     console.error("Error handling open-folder request", error);
     res.status(500).json({ error: "Unexpected error" });
   }
-});
+};
+
+app.post("/open-folder", handleOpenFolder);
+app.get("/open-folder", handleOpenFolder);
 
 app.listen(PORT, () => {
   console.log(`Open folder server listening on http://localhost:${PORT}`);
