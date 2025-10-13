@@ -33,7 +33,9 @@ module.exports = function set (blogID, path, updates, callback) {
   debug("set", blogID, path);
 
   // Get the entry stored against this ID
-  get(blogID, path, function (entry) {
+  get(blogID, path, function (err, entry) {
+    if (err) return callback(err);
+
     // Create an empty object if new entry
     entry = entry || {};
 
