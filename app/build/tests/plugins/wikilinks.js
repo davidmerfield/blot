@@ -130,7 +130,7 @@ describe("wikilinks plugin", function () {
     this.syncAndCheck(files, entry, done);
   });
 
-  xit("will support media embedding", async function (done) {
+  it("will support media embedding", async function (done) {
     await this.blog.write({
       path: "/_Image.png",
       content: await global.test.fake.pngBuffer()
@@ -138,11 +138,18 @@ describe("wikilinks plugin", function () {
 
     await this.blog.write({
       path: "/Post.txt",
-      content: "![[_Image.png]]"
+      content: "![[_Image|An example image]]"
     });
 
     await this.blog.rebuild();
-    await this.blog.check({ path: "/Post.txt", html: "foo" });
+
+    const entry = await this.blog.check({ path: "/Post.txt" });
+
+    expect(entry.html).toContain('<img');
+    expect(entry.html).toContain('src="');
+    
+    expect(entry.html).toContain('title="wikilink"');
+    expect(entry.html).toContain('alt="An example image"');
 
     done();
   });

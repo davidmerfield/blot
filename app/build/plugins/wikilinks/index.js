@@ -8,27 +8,37 @@ const { decode } = require("he");
 const makeSlug = require("helper/makeSlug");
 
 function render($, callback, { blogID, path }) {
-  const wikilinks = $("a[title='wikilink']");
+  const wikilinks = $("[title='wikilink']");
   let dependencies = [];
 
   eachOf(
     wikilinks,
     function (node, i, next) {
-      // The cheerio object contains other
-      // shit. We only want img tag elements
-      if (!node || node.name !== "a") return next();
+      if (!node || !node.name) return next();
+
+      const $node = $(node);
+      const isLink = node.name === "a";
+      const mediaSource = $node.attr("src");
+      const isMedia = !isLink && mediaSource !== undefined;
+
+      if (!isLink && !isMedia) return next();
+
+      const attribute = isLink ? "href" : "src";
+      const rawTarget = isLink ? $node.attr(attribute) : mediaSource;
+
+      if (!rawTarget) return next();
 
       // Pandoc encodes certain characters in the
       // wikilink as HTML entities, e.g.
       // "Hello's" to "Hello&#39;s"
       // This library will decode HTML entities (HE)
       // for us, hopefully safely
-      const href = decode($(node).attr("href"));
+      const href = decode(rawTarget);
 
       // Rougly compare the href and text contents of the link
       // if they don't match the user did something like this:
       // [[target|Title here]]
-      const piped = makeSlug($(node).html()) !== makeSlug(href);
+      const piped = isLink && makeSlug($node.html()) !== makeSlug(href);
 
       const lookups = [
         byPath.bind(null, blogID, path, href),
@@ -49,9 +59,9 @@ function render($, callback, { blogID, path }) {
         if (entry) {
           const link = entry.url;
 
-          $(node).attr("href", link);
+          $node.attr(attribute, link);
 
-          if (!piped) $(node).html(entry.title);
+          if (isLink && !piped) $node.html(entry.title);
 
           dependencies.push(entry.path);
           return next();
@@ -70,6 +80,12 @@ function render($, callback, { blogID, path }) {
             resolvedHref,
             resolvedHref + ".md",
             resolvedHref + ".txt",
+            resolvedHref + ".png",
+            resolvedHref + ".jpg",
+            resolvedHref + ".gif",
+            resolvedHref + ".PNG",
+            resolvedHref + ".JPG",
+            resolvedHref + ".GIF",
           ];
 
           pathsToWatch.forEach((path) => dependencies.push(path));

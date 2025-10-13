@@ -2,7 +2,7 @@
 # This stage installs all dependencies and builds the application if needed
 FROM node:22.13.1-alpine AS base
 
-ARG PANDOC_VERSION=3.1.1
+ARG PANDOC_VERSION=3.6.1
 ARG TARGETPLATFORM
 
 EXPOSE 8080
