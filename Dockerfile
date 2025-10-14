@@ -50,8 +50,9 @@ RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
   && chmod +x /usr/local/bin/pandoc \
   && rm -r pandoc-${PANDOC_VERSION}
 
-# Copy package file
+# Copy package file and any install hooks required during npm install
 COPY package.json ./
+COPY scripts/install/rebuild-sharp.js ./scripts/install/
 
 RUN npm install --maxsockets 1 && \
     npm cache clean --force
