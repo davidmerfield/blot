@@ -58,7 +58,7 @@
     "multiparty": "4.2.3",
     "mustache": "4.2.0",
     "node-fetch": "2.6.7",
-    "node-schedule": "0.1.16",
+    "node-schedule": "^2.1.1",
     "parse5": "7.2.1",
     "path-to-regexp": "8.2.0",
     "pretty": "2.0.0",

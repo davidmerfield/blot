@@ -3,7 +3,7 @@ var async = require("async");
 var dailyUpdate = require("./daily");
 var email = require("helper/email");
 var clfdate = require("helper/clfdate");
-var schedule = require("node-schedule").scheduleJob;
+const scheduler = require("node-schedule");
 var checkFeaturedSites = require("../documentation/featured/check");
 var config = require("config");
 var publishScheduledEntries = require("./publish-scheduled-entries");
@@ -24,7 +24,7 @@ let NOTIFIED_LOW_DISK_SPACE = false;
 
 module.exports = function () {
   // Log useful system information, once per minute
-  schedule("* * * * *", function () {
+  scheduler.scheduleJob("* * * * *", function () {
     // Detect any zombie processes
     zombies(function (err) {
       if (err) throw err;
@@ -131,7 +131,7 @@ module.exports = function () {
   });
 
   console.log(clfdate(), "Scheduled daily check of storage disk usage");
-  schedule({ hour: 10, minute: 0 }, function () {
+  scheduler.scheduleJob({ hour: 10, minute: 0 }, function () {
     console.log(clfdate(), "Scheduler: Checking available disk space");
 
     exec("df -h", function (err, stdout) {
@@ -166,7 +166,7 @@ module.exports = function () {
   //   clfdate(),
   //   "Scheduled daily check of folders for sync abnormalities"
   // );
-  // schedule({ hour: 8, minute: 0 }, function () {
+  // scheduler.scheduleJob({ hour: 8, minute: 0 }, function () {
   //   console.log(clfdate(), "Fix sync: checking folders");
   //   fix(function (err, report) {
   //     if (err) {
@@ -180,7 +180,7 @@ module.exports = function () {
 
 
   console.log(clfdate(), "Scheduled daily check of suspected fraudulent users");
-  schedule({ hour: 11, minute: 0 }, async function () {
+  scheduler.scheduleJob({ hour: 11, minute: 0 }, async function () {
     console.log(clfdate(), "Checking for potential fraudulent users");
 
     let customers;
@@ -199,7 +199,7 @@ module.exports = function () {
   });
 
   console.log(clfdate(), "Scheduled daily check of featured sites");
-  schedule({ hour: 8, minute: 0 }, function () {
+  scheduler.scheduleJob({ hour: 8, minute: 0 }, function () {
     console.log(clfdate(), "Checking featured sites");
     checkFeaturedSites(function (err) {
       if (err) {
@@ -212,7 +212,7 @@ module.exports = function () {
 
   // At some point I should check this doesnt consume too much memory
   console.log(clfdate(), "Scheduled daily update email");
-  schedule({ hour: 12, minute: 0 }, function () {
+  scheduler.scheduleJob({ hour: 12, minute: 0 }, function () {
     console.log(clfdate(), "Generating daily update email...");
     dailyUpdate(function () {
       console.log(clfdate(), "Daily update email update was sent.");
