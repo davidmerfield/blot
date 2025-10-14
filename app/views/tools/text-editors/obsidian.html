@@ -8,3 +8,52 @@ Popular: true
 <h1>Obsidian</h1>
 
 <h2>Create a website with Obsidian</h2>
+
+<p>
+  Obsidian is a Markdown note-taking app that uses plain files stored on your
+  computer. Because Blot turns folders of files into websites, the two work
+  well together—just point Blot at the same folder you use as your Obsidian
+  vault.
+</p>
+
+<h3>Recommended settings</h3>
+
+<ul>
+  <li>
+    Set <strong>New link format</strong> to <em>relative path to file</em>. Blot
+    also understands <em>absolute path in vault</em> if your vault is the root of
+    your blog folder.
+  </li>
+  <li>
+    Keep your attachments in a folder inside the vault (Obsidian's default
+    <code>attachments</code> location works). Blot mirrors this folder structure
+    when publishing your site.
+  </li>
+</ul>
+
+<h3>Blot features for Obsidian users</h3>
+
+<ul>
+  <li>
+    <strong>Wikilinks</strong>: Blot resolves <code>[[Links]]</code> using the
+    same filename logic as Obsidian. You can customise the link text with the
+    <code>[[Page name|Custom text]]</code> syntax.
+  </li>
+  <li>
+    <strong>Embeds</strong>: Obsidian's <code>![[...]]</code> syntax works for
+    images, audio, video, PDFs, and notes. Alt text after the pipe (for example
+    <code>![[File.png|Caption]]</code>) becomes the published <code>alt</code>
+    attribute.
+  </li>
+  <li>
+    <strong>Markdown notes as components</strong>: Embedding another note (for
+    example <code>![[Project overview]]</code>) renders the Markdown inline on
+    your site, so you can reuse content in multiple posts.
+  </li>
+</ul>
+
+<p>
+  See the <a href="/how/formatting/wikilinks">wikilinks guide</a> for detailed
+  examples of how embeds and link resolution behave when your notes are
+  published with Blot.
+</p>
