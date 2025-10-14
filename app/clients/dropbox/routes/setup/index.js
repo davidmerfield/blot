@@ -49,7 +49,9 @@ function setup(account, session, callback) {
     client.on("message", function (channel, message) {
       if (message !== "Attempting to disconnect from Dropbox") return;
       signal.aborted = true;
-      finish(new Error("Aborted setup"));
+      abortHandled = true;
+      cleanup();
+      done(new Error("Aborted setup"), callback);
     });
 
     try {
