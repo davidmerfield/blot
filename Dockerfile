@@ -1,6 +1,6 @@
 ## Stage 1 (base)
 # This stage installs all dependencies and builds the application if needed
-FROM node:22.13.1-alpine AS base
+FROM node:22-alpine AS base
 
 ARG PANDOC_VERSION=3.6.1
 ARG TARGETPLATFORM
