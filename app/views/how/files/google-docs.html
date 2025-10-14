@@ -1,17 +1,56 @@
 <h1>Google Docs</h1>
 
-.gdoc
-
-<p>Supports files created by <a href="https://en.wikipedia.org/wiki/Google_Docs">Google Docs</a>. Much formatting is stripped so posts match the style of your blog.</p>
+<p>Supports files created by <a href="https://en.wikipedia.org/wiki/Google_Docs">Google Docs</a>. Much formatting is stripped so
+ posts match the style of your blog.</p>
 
 <p>You must sync your folder with <a href="/how/sync/google-drive">Google Drive</a> in order to publish Google Docs.</p>
 
+<h2>How Google Doc exports are converted</h2>
+
+<ul>
+  <li><strong>Headings are promoted.</strong> The built-in <em>Title</em> style becomes an <code>&lt;h1&gt;</code> on your blog and the <em>Subtitle</em> style becomes <code>&lt;h2&gt;</code>. Use normal heading levels inside the body of the document for the rest of your structure.</li>
+  <li><strong>Metadata is parsed.</strong> Optional YAML-style front matter at the top of the document becomes post metadata (see below).</li>
+  <li><strong>Links are cleaned.</strong> Google’s tracking redirects are removed so each link on your blog points directly to the original URL.</li>
+  <li><strong>Inline styles are stripped.</strong> Bold and italic text are converted to semantic HTML (<code>&lt;strong&gt;</code>/<code>&lt;em&gt;</code>) and the remaining inline styles are removed so the post inherits your theme’s typography.</li>
+  <li><strong>Line breaks are preserved.</strong> Soft line breaks entered with <kbd>Shift</kbd>+<kbd>Enter</kbd> are kept by default so poetry or addresses appear as expected.</li>
+  <li><strong>Images and other assets are downloaded.</strong> Embedded images are fetched, stored inside your blog’s <code>_assets</code> folder and the image references are updated to point to those local copies.</li>
+  <li><strong>5&nbsp;MB size limit.</strong> Google’s HTML export must be smaller than 5&nbsp;MB. Larger documents should be split or simplified before they can be published.</li>
+</ul>
+
+<h2>Add metadata and front matter</h2>
+
+<p>Blot reads YAML front matter written at the very top of your Google Doc. Start with <code>---</code> on the first line, follow with one key–value pair per paragraph, and close the block with another <code>---</code>. For example:</p>
+
+<pre>---
+Title: October Newsletter
+Tags: announcements, fall
+Summary: A quick update on what shipped in October.
+---
+</pre>
+
+<p>Everything after the closing <code>---</code> becomes the body of your post. You can include any of Blot&rsquo;s <a href="/how/posts/metadata">supported metadata fields</a>, such as <code>Slug</code>, <code>Draft</code> or <code>Updated</code>. If you prefer a lighter syntax, you can skip the opening and closing markers and simply start the document with lines like <code>Title: Example</code> and <code>Tags: one, two</code>; Blot will stop reading metadata as soon as it encounters a paragraph without a colon.</p>
+
+<h2>Embed images and other files</h2>
+
+<p>Insert images directly in Google Docs—they will be downloaded and stored beside the post.</p>
+
+<p>Google Docs embeds are flattened to standard <code>&lt;img&gt;</code> tags. Captions are preserved if they are part of the image in Google Docs, but complex layouts (drawing canvases, absolute positioning, etc.) are converted into simple blocks. For media Google Docs cannot export (videos, drive files), add a normal link instead.</p>
+
+<h2>Formatting tips</h2>
+
+<ul>
+  <li>Use the Google Docs heading styles (<code>Heading 1</code>, <code>Heading 2</code>, etc.) for in-post structure. They are converted to matching HTML heading levels on your blog.</li>
+  <li>Use <em>Title</em> and <em>Subtitle</em> styles only if you want them to turn into the main title and an introductory subheading.</li>
+  <li>Block quotes, lists, code blocks and other semantic elements should be created with Google Docs’ default formatting options. Blot converts them to standard HTML equivalents.</li>
+  <li>If you paste content from another editor, clear any inline styles (<strong>Format → Clear formatting</strong>) so the resulting post inherits your theme’s fonts and colors.</li>
+  <li>For poetry or addresses that rely on manual line breaks, press <kbd>Shift</kbd>+<kbd>Enter</kbd> for each soft break.</li>
+</ul>
+
 <h2>Blockquotes</h2>
 
-<p>You can use Markdown or email-style > characters for block quoting. They are presented as:</p>
+<p>You can use Markdown or email-style &gt; characters for block quoting. They are presented as:</p>
 
-<pre>> This is a blockquote with two paragraphs.
->
-> This is the second pragraph. Vestibulum enim wisi.</pre>
-
+<pre>&gt; This is a blockquote with two paragraphs.
+&gt;
+&gt; This is the second paragraph. Vestibulum enim wisi.</pre>
 
