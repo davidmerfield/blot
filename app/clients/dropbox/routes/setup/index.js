@@ -50,8 +50,7 @@ function setup(account, session, callback) {
       if (message !== "Attempting to disconnect from Dropbox") return;
       signal.aborted = true;
       abortHandled = true;
-      cleanup();
-      done(new Error("Aborted setup"), callback);
+      finish(new Error("Dropbox setup aborted"));
     });
 
     try {
