@@ -7,7 +7,7 @@ const hash = require("helper/hash");
 const sharp = require("sharp");
 const config = require("config");
 
-const EXTENSIONS_TO_CONVERT = [".tif", ".tiff", ".webp", ".avif"];
+const EXTENSIONS_TO_CONVERT = [".tif", ".tiff", ".webp", ".avif", ".heic"];
 const SUPPORTED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ...EXTENSIONS_TO_CONVERT];
 
 
