@@ -16,9 +16,6 @@ WORKDIR /usr/src/app
 
 # Install necessary packages for Puppeteer, the git client, and HEIF-enabled libvips
 RUN apk add --no-cache --update \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
     git \
     curl \
     chromium \
@@ -26,15 +23,24 @@ RUN apk add --no-cache --update \
     freetype \
     harfbuzz \
     ca-certificates \
-    ttf-freefont \
+    ttf-freefont
+
+# Install sharp dependencies and build tools
+RUN apk add --no-cache --update \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
     vips \
     vips-dev \
     vips-heif \
     libheif \
-    libde265 \
-    libjpeg-turbo \
     libpng \
+    libjpeg-turbo \
+    libde265 \
     libwebp \
+    g++ \
+    make \
+    gcc \
     build-base \
     python3 \
     pkgconfig
@@ -54,8 +60,12 @@ RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
 COPY package.json ./
 COPY ./scripts/install/rebuild-sharp.js ./scripts/install/rebuild-sharp.js
 
-RUN npm install --maxsockets 1 && \
+RUN npm install --maxsockets 1 --no-package-lock && \
     npm cache clean --force
+
+# Optional cleanup
+RUN apk del g++ make gcc build-base
+
 
 ## Stage 2 (development)
 # This stage is for development and testing purposes
@@ -66,9 +76,11 @@ FROM base AS dev
 
 ENV NODE_ENV=development
 ENV PATH=/usr/src/app/node_modules/.bin:$PATH
+ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
 
-RUN npm install
-
+RUN npm install --maxsockets 1 --no-package-lock && \
+    npm cache clean --force
+    
 # Configure git so the git client doesn't complain
 RUN git config --global --add safe.directory /usr/src/app && git config --global user.email "you@example.com" && git config --global user.name "Your Name"
 
@@ -82,12 +94,15 @@ WORKDIR /usr/src/app
 
 # Copy files and set ownership for non-root user
 COPY ./config ./config
+COPY ./scripts ./scripts
 COPY ./app ./app
 COPY ./TODO ./TODO
 
 ## Stage 4 (default, production)
 # The final production stage
 FROM source AS prod
+
+ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=120s --start-interval=5s --retries=3 \
   CMD curl --fail http://localhost:8080/health || exit 1
