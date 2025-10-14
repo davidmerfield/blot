@@ -44,7 +44,6 @@
     "fs-extra": "11.1.0",
     "googleapis": "144.0.0",
     "he": "1.1.0",
-    "helmet": "3.21.2",
     "highlight.js": "10.4.1",
     "html-minifier": "4.0.0",
     "http-auth": "3.2.3",

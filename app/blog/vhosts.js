@@ -98,6 +98,7 @@ module.exports = function (req, res, next) {
     if (previewTemplate) {
       // Necessary to allow the template editor to embed the page
       res.removeHeader("X-Frame-Options");
+      res.removeHeader("Content-Security-Policy");
 
       req.preview = true;
       res.set("Cache-Control", "no-cache");
