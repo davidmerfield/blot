@@ -32,6 +32,8 @@ module.exports = function (req, res, next) {
 
       template.editURL = "/sites/" + blog.handle + "/template/" + template.slug;
 
+      template.isCurrent = template.id === currentTemplate;
+
       template.previewURL =
         previewHost +
         "-" +

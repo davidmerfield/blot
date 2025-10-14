@@ -60,21 +60,102 @@ New template
   // <div id="template-list" style="overflow-y: scroll;width: 100%;height: 100%;padding-right: 17px;">
     var template_list = document.getElementById('template-list');
 
-    var scroll_offset = sessionStorage.getItem('scroll_offset');
-    if (scroll_offset) {
-      template_list.scrollTop = scroll_offset;
+    if (template_list) {
+      var scroll_offset = sessionStorage.getItem('scroll_offset');
+      if (scroll_offset) {
+        template_list.scrollTop = scroll_offset;
+      }
+
+      // dropdown controls for template rows
+      var openRow = null;
+
+      function closeDropdown(row) {
+        if (!row) return;
+        row.classList.remove('menu-open');
+        var toggle = row.querySelector('[data-template-dropdown-toggle]');
+        if (toggle) {
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      }
+
+      function openDropdown(row) {
+        if (!row) return;
+        row.classList.add('menu-open');
+        var toggle = row.querySelector('[data-template-dropdown-toggle]');
+        if (toggle) {
+          toggle.setAttribute('aria-expanded', 'true');
+          toggle.focus();
+        }
+      }
+
+      // whenever the user scrolls the template list, save the scroll offset
+      template_list.addEventListener('scroll', function() {
+        sessionStorage.setItem('scroll_offset', template_list.scrollTop);
+        if (openRow) {
+          closeDropdown(openRow);
+          openRow = null;
+        }
+      });
+
+      template_list.addEventListener('click', function(event) {
+        var toggle = event.target.closest('[data-template-dropdown-toggle]');
+        if (toggle) {
+          event.preventDefault();
+          event.stopPropagation();
+          var row = toggle.closest('[data-template-row]');
+          if (!row) return;
+          var isOpen = row.classList.contains('menu-open');
+          if (isOpen) {
+            closeDropdown(row);
+            openRow = null;
+          } else {
+            closeDropdown(openRow);
+            openDropdown(row);
+            openRow = row;
+          }
+          return;
+        }
+
+        var menuItem = event.target.closest('[data-template-dropdown] a');
+        if (menuItem) {
+          closeDropdown(openRow);
+          openRow = null;
+        }
+      });
+
+      template_list.addEventListener('focusin', function(event) {
+        if (!openRow) return;
+        if (openRow.contains(event.target)) return;
+        closeDropdown(openRow);
+        openRow = null;
+      });
+
+      document.addEventListener('click', function(event) {
+        if (!event.target.closest('[data-template-row]')) {
+          closeDropdown(openRow);
+          openRow = null;
+        }
+      });
+
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+          var rowToClose = openRow;
+          closeDropdown(openRow);
+          openRow = null;
+          if (rowToClose) {
+            var toggle = rowToClose.querySelector('[data-template-dropdown-toggle]');
+            if (toggle) {
+              toggle.focus();
+            }
+          }
+        }
+      });
     }
-
-
-// whenever the user scrolls the template list, save the scroll offset
-template_list.addEventListener('scroll', function() {
-  sessionStorage.setItem('scroll_offset', template_list.scrollTop);
-});
 
 
 // when the page loads, scroll to the last scroll offset
 window.addEventListener('DOMContentLoaded', function() {
-  
+
   // whenever the <form action="{{{base}}}/install" is submitted, remove the scroll offset
   var install_form = document.querySelector('form[action="{{{base}}}/install"]');
   if (install_form) {
