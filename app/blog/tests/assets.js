@@ -333,4 +333,21 @@ describe("asset middleware", function () {
       expect(res.headers.get("content-type")).toContain(file.type);
     }
   });
+
+  it("does not crash on malformed percent-encoding in asset requests", async function () {
+    await this.write({ path: "/malformed.txt", content: "Bad" });
+
+    let error;
+    let res;
+
+    try {
+      res = await this.get("/%E0%A4%A.txt", { redirect: "manual" });
+    } catch (err) {
+      error = err;
+    }
+
+    if (error) throw error;
+
+    expect(res.status).toEqual(404);
+  });
 });
