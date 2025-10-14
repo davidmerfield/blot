@@ -15,7 +15,12 @@ function setup(account, session, callback) {
 
     const client = new redis();
     const signal = { aborted: false };
+    let cleaned = false;
+    let finished = false;
+
     const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
       console.log("Cleaning up Dropbox setup");
       try {
         delete session.dropbox;
@@ -23,8 +28,19 @@ function setup(account, session, callback) {
         client.unsubscribe();
         client.quit();
       } catch (e) {
-        console.log("Error cleaning up:", err);
+        if (e && e.code === "NR_CLOSED") {
+          console.log("Redis connection already closed during cleanup:", e);
+          return;
+        }
+        console.log("Error cleaning up:", e);
       }
+    };
+
+    const finish = (err) => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      done(err, callback);
     };
 
     client.subscribe("sync:status:" + account.blog.id);
@@ -32,8 +48,7 @@ function setup(account, session, callback) {
     client.on("message", function (channel, message) {
       if (message !== "Attempting to disconnect from Dropbox") return;
       signal.aborted = true;
-      cleanup();
-      done(new Error("Aborted setup"), callback);
+      finish(new Error("Aborted setup"));
     });
 
     try {
@@ -70,12 +85,10 @@ function setup(account, session, callback) {
       if (signal.aborted) return;
     } catch (err) {
       folder.status("Error: " + err.message);
-      cleanup();
-      return done(err, callback);
+      return finish(err);
     }
 
-    cleanup();
-    done(null, callback);
+    finish(null);
   });
 }
 
