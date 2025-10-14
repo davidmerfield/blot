@@ -42,7 +42,21 @@ The wikilink above is equivalent to this Markdown:
   <li>
     <strong>By title</strong> Works for posts and pages, is case-insensitive.
   </li>
+  <li>
+    <strong>By heading anchor</strong> Blot supports linking to headings within
+    the same post or page. The following wikilink forms are accepted and treated
+    interchangeably: <code>[[Heading Title]]</code>,
+    <code>[[#Heading Title]]</code>, <code>[[heading-id]]</code>, and
+    <code>[[#heading-id]]</code>.
+  </li>
 </ol>
+
+<pre><code>[[#My section heading]]</code></pre>
+
+<p>
+  The snippet above links directly to the <code>My section heading</code> heading
+  in the current document.
+</p>
 
 <h2>Examples</h2>
 
