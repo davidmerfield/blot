@@ -9,12 +9,35 @@ EXPOSE 8080
 
 ENV NODE_ENV=production
 ENV NODE_PATH=/usr/src/app/app
+ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
 
 # Set the working directory in the Docker container
 WORKDIR /usr/src/app
 
-# Install necessary packages for Puppeteer, the git client, image processing
-RUN apk add --no-cache git curl chromium nss freetype harfbuzz ca-certificates ttf-freefont
+# Install necessary packages for Puppeteer, the git client, and HEIF-enabled libvips
+RUN apk add --no-cache --update \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
+    git \
+    curl \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    vips \
+    vips-dev \
+    vips-heif \
+    libheif \
+    libde265 \
+    libjpeg-turbo \
+    libpng \
+    libwebp \
+    build-base \
+    python3 \
+    pkgconfig
 
 # Set the Puppeteer executable path
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
