@@ -52,7 +52,7 @@ RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
 
 # Copy package file and any install hooks required during npm install
 COPY package.json ./
-COPY ./scripts/install/rebuild-sharp.js ./scripts/install/rebuild-sharp.js
+COPY ./scripts ./scripts
 
 RUN npm install --maxsockets 1 && \
     npm cache clean --force
@@ -81,7 +81,6 @@ FROM base AS source
 WORKDIR /usr/src/app
 
 # Copy files and set ownership for non-root user
-COPY ./scripts ./scripts
 COPY ./config ./config
 COPY ./app ./app
 COPY ./TODO ./TODO
