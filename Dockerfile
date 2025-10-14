@@ -1,6 +1,6 @@
 ## Stage 1 (base)
 # This stage installs all dependencies and builds the application if needed
-FROM node:22.13.1-alpine AS base
+FROM node:22-alpine AS base
 
 ARG PANDOC_VERSION=3.6.1
 ARG TARGETPLATFORM
@@ -9,12 +9,35 @@ EXPOSE 8080
 
 ENV NODE_ENV=production
 ENV NODE_PATH=/usr/src/app/app
+ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
 
 # Set the working directory in the Docker container
 WORKDIR /usr/src/app
 
-# Install necessary packages for Puppeteer, the git client, image processing
-RUN apk add --no-cache git curl chromium nss freetype harfbuzz ca-certificates ttf-freefont
+# Install necessary packages for Puppeteer, the git client, and HEIF-enabled libvips
+RUN apk add --no-cache --update \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
+    git \
+    curl \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    vips \
+    vips-dev \
+    vips-heif \
+    libheif \
+    libde265 \
+    libjpeg-turbo \
+    libpng \
+    libwebp \
+    build-base \
+    python3 \
+    pkgconfig
 
 # Set the Puppeteer executable path
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
@@ -27,8 +50,9 @@ RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
   && chmod +x /usr/local/bin/pandoc \
   && rm -r pandoc-${PANDOC_VERSION}
 
-# Copy package file
+# Copy package file and any install hooks required during npm install
 COPY package.json ./
+COPY ./scripts ./scripts
 
 RUN npm install --maxsockets 1 && \
     npm cache clean --force
@@ -57,7 +81,6 @@ FROM base AS source
 WORKDIR /usr/src/app
 
 # Copy files and set ownership for non-root user
-COPY ./scripts ./scripts
 COPY ./config ./config
 COPY ./app ./app
 COPY ./TODO ./TODO
