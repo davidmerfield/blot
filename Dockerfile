@@ -9,8 +9,6 @@ EXPOSE 8080
 
 ENV NODE_ENV=production
 ENV NODE_PATH=/usr/src/app/app
-ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
-ENV npm_config_build_from_source=true
 
 # Set the working directory in the Docker container
 WORKDIR /usr/src/app
@@ -72,8 +70,6 @@ FROM base AS dev
 
 ENV NODE_ENV=development
 ENV PATH=/usr/src/app/node_modules/.bin:$PATH
-ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
-ENV npm_config_build_from_source=true
 
 RUN npm install --no-package-lock && npm cache clean --force
     
@@ -97,9 +93,6 @@ COPY ./TODO ./TODO
 ## Stage 4 (default, production)
 # The final production stage
 FROM source AS prod
-
-ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
-ENV npm_config_build_from_source=true
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=120s --start-interval=5s --retries=3 \
   CMD curl --fail http://localhost:8080/health || exit 1

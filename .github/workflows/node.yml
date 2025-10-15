@@ -142,7 +142,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Find unused dependencies
-        run: npx depcheck --ignores=depcheck,nyc,nodemon,blessed-contrib,fontkit,text-to-svg --skip-missing
+        run: npx depcheck --ignores=node-addon-api,node-gyp,depcheck,nyc,nodemon,blessed-contrib,fontkit,text-to-svg --skip-missing
 
   detect-unexecuted-specs:
     needs: setup-tests
