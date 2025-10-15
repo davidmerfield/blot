@@ -90,6 +90,7 @@
     "nock": "13.5.4",
     "nodemon": "3.1.0",
     "nyc": "17.1.0",
+    "sinon": "18.0.0",
     "seedrandom": "2.4.4",
     "spritesmith": "3.4.1"
   }

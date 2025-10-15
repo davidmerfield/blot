@@ -1,3 +1,5 @@
+const sinon = require('sinon');
+
 describe("entry", function () {
 
     require('./util/setup')();
@@ -39,24 +41,71 @@ describe("entry", function () {
         expect(res3.status).not.toEqual(302);
     });
 
-    it("will not render a scheduled entry unless the query string scheduled is set to true", async function () {
+    describe("scheduled entries", function () {
+        let clock;
+        let now;
 
-        // 1 year from now
-        const date = new Date();
-        date.setFullYear(date.getFullYear() + 1);
-        const dateString = date.toISOString();
+        beforeEach(function () {
+            now = new Date("2020-01-01T00:00:00Z");
+            clock = sinon.useFakeTimers({
+                now: now.getTime(),
+                toFake: [
+                    "Date",
+                    "setTimeout",
+                    "clearTimeout",
+                    "setInterval",
+                    "clearInterval",
+                    "setImmediate",
+                    "clearImmediate"
+                ]
+            });
+        });
 
-        await this.write({path: '/a.txt', content: 'Link: a\nDate: ' + dateString + '\n\nHello, A!'});
+        afterEach(function () {
+            clock.restore();
+        });
 
-        const res = await this.get('/a');
+        it("will not render a scheduled entry unless the query string scheduled is set to true", async function () {
 
-        expect(res.status).toEqual(404);
+            // 1 year from now
+            const date = new Date();
+            date.setFullYear(date.getFullYear() + 1);
+            const dateString = date.toISOString();
 
-        const res2 = await this.get('/a?scheduled=true');
-        const body = await res2.text();
+            await this.write({path: '/a.txt', content: 'Link: a\nDate: ' + dateString + '\n\nHello, A!'});
 
-        expect(res2.status).toEqual(200);
-        expect(body).toContain('Hello, A!');
+            const res = await this.get('/a');
+
+            expect(res.status).toEqual(404);
+
+            const res2 = await this.get('/a?scheduled=true');
+            const body = await res2.text();
+
+            expect(res2.status).toEqual(200);
+            expect(body).toContain('Hello, A!');
+        });
+
+        it("promotes a scheduled entry once its publication time arrives", async function () {
+            const publishDelay = 60 * 1000;
+            const buffer = 1000;
+            const futureDate = new Date(now.getTime() + publishDelay);
+
+            await this.write({path: '/scheduled.txt', content: 'Link: scheduled\nDate: ' + futureDate.toISOString() + '\n\nHello, future!'});
+
+            const prePublishRes = await this.get('/scheduled');
+            expect(prePublishRes.status).toEqual(404);
+
+            await clock.tickAsync(publishDelay + buffer);
+            await new Promise(function (resolve) {
+                setImmediate(resolve);
+            });
+
+            const postPublishRes = await this.get('/scheduled');
+            const body = await postPublishRes.text();
+
+            expect(postPublishRes.status).toEqual(200);
+            expect(body).toContain('Hello, future!');
+        });
     });
 
     it("redirects to the source file for a post with ?source=true", async function () {
@@ -89,5 +138,4 @@ describe("entry", function () {
             expect(body).toContain('Hello, A!');
         }
     });
-
 });
