@@ -7,24 +7,36 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!statusContainer) return;
 
   function updateContainerClass() {
-
     statusContainer = document.querySelector(".sync-status");
 
     if (!statusContainer) return;
-    
-    if (statusContainer.innerHTML.startsWith("Synced")) {
-      statusContainer.innerHTML =
-        '<span style="color:green;font-size: 12px;margin-right: 4px;position: relative;top:-2px" class="icon-small-check"></span> ' +
-        statusContainer.innerHTML;
-    } else if (statusContainer.innerHTML.startsWith("Error")) {
-      statusContainer.innerHTML =
-        '<span style="color: orange; font-size: 12px; margin-right: 4px; position: relative; top: -2px" class="icon-small-alert"></span> ' +
-        statusContainer.innerHTML;
-      
-    } else if (!statusContainer.innerHTML.startsWith("<span")) {
-      statusContainer.innerHTML =
-        '<span class="loading"></span> ' +
-        statusContainer.innerHTML;
+
+    var iconElement = statusContainer.querySelector(".sync-status__icon");
+    var textElement = statusContainer.querySelector(".sync-status__text");
+
+    if (!iconElement || !textElement) return;
+
+    var message = textElement.textContent.trim();
+
+    iconElement.removeAttribute("style");
+    iconElement.className = "sync-status__icon";
+
+    if (message.startsWith("Synced")) {
+      iconElement.classList.add("icon-small-check");
+      iconElement.style.color = "green";
+      iconElement.style.fontSize = "12px";
+      iconElement.style.marginRight = "4px";
+      iconElement.style.position = "relative";
+      iconElement.style.top = "-2px";
+    } else if (message.startsWith("Error")) {
+      iconElement.classList.add("icon-small-alert");
+      iconElement.style.color = "orange";
+      iconElement.style.fontSize = "12px";
+      iconElement.style.marginRight = "4px";
+      iconElement.style.position = "relative";
+      iconElement.style.top = "-2px";
+    } else {
+      iconElement.classList.add("loading");
     }
   }
 
@@ -219,8 +231,17 @@ document.addEventListener("DOMContentLoaded", function () {
       message = "Syncing " + filename;
     }
 
+    statusContainer = document.querySelector(".sync-status");
+
+    if (!statusContainer) return;
+
+    var textElement = statusContainer.querySelector(".sync-status__text");
+
     statusContainer.removeAttribute("data-text");
-    statusContainer.innerHTML = message;
+
+    if (textElement) {
+      textElement.textContent = message;
+    }
 
     updateContainerClass();
 
