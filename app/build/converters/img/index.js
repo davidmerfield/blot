@@ -6,6 +6,7 @@ const LocalPath = require("helper/localPath");
 const hash = require("helper/hash");
 const sharp = require("sharp");
 const config = require("config");
+const Transformer = require("helper/transformer");
 
 const EXTENSIONS_TO_CONVERT = [".tif", ".tiff", ".webp", ".avif"];
 const SUPPORTED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ...EXTENSIONS_TO_CONVERT];
@@ -15,41 +16,75 @@ function is(path) {
   return SUPPORTED_EXTENSIONS.includes(extname(path).toLowerCase());
 }
 
-function read(blog, path, callback) {
+async function read(blog, path, callback) {
   ensure(blog, "object")
     .and(path, "string")
     .and(callback, "function");
 
   const localPath = LocalPath(blog.id, path);
-  // if we need to convert the image to another format, store the converted image in the asset directory
   const assetDirectory = join(config.blog_static_files_dir, blog.id);
-  
-  fs.stat(localPath, async (err, stat) => {
-    if (err) return callback(err);
+  // If we need to convert the image to another format, store the converted
+  // image in the asset directory for the blog.
 
+  try {
+    const stat = await fs.stat(localPath);
     const name = basename(path);
     const pathForTitle = join(dirname(path), name);
     const title = titlify(pathForTitle);
     const isRetina = path.toLowerCase().includes("@2x") ? 'data-2x="true"' : "";
+    let outputPath = path;
 
     if (EXTENSIONS_TO_CONVERT.includes(extname(path).toLowerCase())) {
-      const convertedPath = join("/_assets", hash(path), `${name}.png`);
-      // ensure asset directory exists
-      await fs.ensureDir(join(assetDirectory, "_assets", hash(path)));
-      // remove any existing converted image
-      await fs.remove(join(assetDirectory, convertedPath));
-      try {
-        await sharp(localPath).png().toFile(join(assetDirectory, convertedPath));
-      } catch (e) {
-        return callback(e);
+      const transformer = new Transformer(blog.id, "img-converter");
+      const hashPath = hash(path);
+      const convertedFilename = `${name}.png`;
+      const assetsDir = join(assetDirectory, "_assets", hashPath);
+      const convertedAbsolutePath = join(assetsDir, convertedFilename);
+      const convertedRelativePath = `/_assets/${hashPath}/${convertedFilename}`;
+
+      const convertImage = async (sourcePath) => {
+        await fs.ensureDir(assetsDir);
+        await fs.remove(convertedAbsolutePath);
+        await sharp(sourcePath).png().toFile(convertedAbsolutePath);
+
+        return { relativePath: convertedRelativePath };
+      };
+
+      const conversion = await lookupWithTransformer(
+        transformer,
+        path,
+        convertImage
+      );
+
+      if (!(await fs.pathExists(convertedAbsolutePath))) {
+        await convertImage(localPath);
       }
 
-      path = convertedPath;
+      outputPath = conversion?.relativePath || convertedRelativePath;
     }
 
-    const contents = `<img src="${encodeURI(path)}" title="${title}" alt="${title}" ${isRetina}/>`;
-    
+    const contents = `<img src="${encodeURI(outputPath)}" title="${title}" alt="${title}" ${isRetina}/>`;
+
     callback(null, contents, stat);
+  } catch (err) {
+    callback(err);
+  }
+}
+
+function lookupWithTransformer(transformer, src, transform) {
+  return new Promise((resolve, reject) => {
+    transformer.lookup(
+      src,
+      (resolvedPath, done) => {
+        Promise.resolve(transform(resolvedPath))
+          .then((result) => done(null, result))
+          .catch(done);
+      },
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      }
+    );
   });
 }
 
