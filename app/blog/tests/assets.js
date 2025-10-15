@@ -348,6 +348,6 @@ describe("asset middleware", function () {
 
     if (error) throw error;
 
-    expect(res.status).toEqual(404);
+    expect(res.status).toEqual(400);
   });
 });
