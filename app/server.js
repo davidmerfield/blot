@@ -1,6 +1,5 @@
 var config = require("config");
 var Express = require("express");
-var helmet = require("helmet");
 var vhost = require("vhost");
 var blog = require("blog");
 var site = require("site");
@@ -46,8 +45,34 @@ server.get("/redis-health", function (req, res) {
   });
 });
 
-// Prevent <iframes> embedding pages served by Blot
-server.use(helmet.frameguard("allow-from", config.host));
+// Prevent <iframes> embedding pages served by Blot while allowing
+// exceptions for the configured host. Adds both X-Frame-Options and an
+// equivalent Content-Security-Policy directive.
+server.use(function (req, res, next) {
+  if (!config.host) return next();
+
+  var allowFromHeader = config.host;
+  var allowFromOrigin = config.protocol + config.host;
+  var frameAncestorsSources = ["'self'", allowFromOrigin];
+  var frameAncestors = "frame-ancestors " + frameAncestorsSources.join(" ");
+
+  res.set("X-Frame-Options", "ALLOW-FROM " + allowFromHeader);
+
+  var existingCSP = res.get("Content-Security-Policy");
+
+  if (existingCSP && /frame-ancestors/i.test(existingCSP)) {
+    return next();
+  }
+
+  if (existingCSP) {
+    var sanitized = existingCSP.trim().replace(/;$/, "");
+    res.set("Content-Security-Policy", sanitized + "; " + frameAncestors);
+  } else {
+    res.set("Content-Security-Policy", frameAncestors);
+  }
+
+  next();
+});
 
 // Log response time in development mode
 server.use(trace.init);

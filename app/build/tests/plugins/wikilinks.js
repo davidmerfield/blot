@@ -81,6 +81,32 @@ Heading Here
     this.buildAndCheck({ path, contents }, { html }, done);
   });
 
+  it("will match heading links to explicit ids", function (done) {
+    const contents =
+      '<h2 id="heading-here">Heading Here</h2>\n\nSee [[heading-here]].';
+    const path = "/hello.txt";
+    const html = `<h2 id="heading-here">
+Heading Here
+</h2>
+<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>`;
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
+  it("will match heading links to explicit ids with hash", function (done) {
+    const contents =
+      '<h2 id="heading-here">Heading Here</h2>\n\nSee [[#heading-here]].';
+    const path = "/hello.txt";
+    const html = `<h2 id="heading-here">
+Heading Here
+</h2>
+<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>`;
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
   it("will match heading links to nested anchors", function (done) {
     const contents =
       '<h3><a id="h.abc123"></a>Heading From Docs</h3>\n\nSee [[#Heading From Docs]].';

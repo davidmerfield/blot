@@ -1,0 +1,45 @@
+Summer newsletter  
+
+*You received this email because you subscribed to [Blot’s newsletter](https://blot.im/news). You can [unsubscribe](https://blot.im/news/cancel) if you like. Please reply directly to this email if you have any thoughts or questions.*  
+
+*New features**
+- You can now [publish HEIC and HEIF photos](https://blot.im/how/files/images) directly. This format is used by iPhones and now Blot converts them automatically when you add them to your folder.
+- Wikilinks understand more targets: `![[image.png]]` turns into an embedded asset, and `[[#Heading]]` jumps to anchored sections. [Learn more](https://blot.im/how/formatting/wikilinks).
+- You can now add blockquotes to posts and pages created from [Google Docs](https://blot.im/how/files/google-docs).
+
+**Changes**
+- Blot’s source code is now [licensed under the GPL](https://blot.im/questions/3053).
+- The template editor received a sizeable refresh with a reorganized sidebar, clearer install flow, and updated copy throughout the dashboard.
+- The Google Drive and iCloud setup flows were rewritten with new setup pages, clearer status messaging, and improved disconnect/reset experiences.
+- Documentation for Wikilinks, Google Docs, Word documents, Obsidian, and image handling now includes fresh examples and troubleshooting notes.
+- Hardened infrastructure with per-site rate limiting, webhook cache bypasses, fail2ban automation, and new bot blocking rules to protect dashboards and webhooks.
+- Vimeo embeds get full size thumbnails, as opposed to the lower resolution thumbnail previously loaded.
+- Links to files in your site's folder are now delivered via our CDN, improving the performance of your site.
+- Blot can now preserve single line breaks in Google Docs.
+- Add preload metadata to audio and video tags by default
+
+**Bug fixes**
+- You can now use YAML fenced metadata in Google Docs.
+- Browsing large folders via the dashboard no longer crashes; the folder viewer now copes with deep hierarchies and has regression tests.
+- Images embedded using windows-style backslash paths now work.
+- Bandcamp embeds render reliably again—including inside Word documents—after refining the embed parser.
+- WordPress exports encode posts correctly and skip empty template files when you download an archive of your site.
+- Dropbox resets respect abort signals and cached transformer downloads no longer throw errors when the upstream responds from cache.
+
+**Questions**
+- [Adding time or tags to photos?](https://blot.im/questions/1440)
+- [What new methods of syncing a folder would you like?](https://blot.im/questions/1387)
+- [What have you made with Blot?](https://blot.im/questions/1635)
+
+**Mistakes**
+- We struggled significantly with bot traffic over the summer. The silver lining was that it helped me identify weak areas of the codebase which render pages on your site. I have lots of work over the next few months to make these processes faster.
+- There was a major issue with subfolder syncing on iCloud drive.
+
+**Plans for the winter**
+
+
+If you have any thoughts or questions, please don’t hesitate to reply directly to this email.  
+
+Sincerely,  
+David  
+
