@@ -24,7 +24,15 @@ const images = [
     {
         name: 'land.avif',
         color: {r: 255, g: 255, b: 255},
-    }
+    },
+    {
+        name: 'photo.heic',
+        color: {r: 0, g: 125, b: 125},
+    },
+    {
+        name: 'image.heif',
+        color: {r: 125, g: 0, b: 125},
+    }        
 ];
     
 

@@ -30,7 +30,7 @@ module.exports = function (url, headers, callback) {
 
   // The expire date is greater than now!
   // We don't need to download anything.
-  if (isFresh(headers)) return callback();
+  if (isFresh(headers)) return callback(null, null, headers);
 
   callback = callOnce(callback);
 

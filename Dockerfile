@@ -1,6 +1,6 @@
 ## Stage 1 (base)
 # This stage installs all dependencies and builds the application if needed
-FROM node:22.13.1-alpine AS base
+FROM node:22-alpine AS base
 
 ARG PANDOC_VERSION=3.6.1
 ARG TARGETPLATFORM
@@ -13,8 +13,16 @@ ENV NODE_PATH=/usr/src/app/app
 # Set the working directory in the Docker container
 WORKDIR /usr/src/app
 
-# Install necessary packages for Puppeteer, the git client, image processing
-RUN apk add --no-cache git curl chromium nss freetype harfbuzz ca-certificates ttf-freefont
+# Install necessary packages for Puppeteer, the git client, and HEIF-enabled libvips
+RUN apk add --no-cache --update \
+    git \
+    curl \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
 
 # Set the Puppeteer executable path
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
@@ -27,11 +35,31 @@ RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
   && chmod +x /usr/local/bin/pandoc \
   && rm -r pandoc-${PANDOC_VERSION}
 
-# Copy package file
+# Sharp Runtime libs
+RUN apk add --no-cache --update \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
+    vips \
+    vips-dev \
+    vips-heif \
+    libheif \
+    libpng \
+    libjpeg-turbo \
+    libde265 \
+    libwebp
+
+# Sharp Build toolchain (temporary)
+RUN apk add --no-cache --virtual .build-deps \
+    g++ make gcc build-base python3 pkgconfig
+
+# Copy package file and any install hooks required during npm install
 COPY package.json ./
 
-RUN npm install --maxsockets 1 && \
-    npm cache clean --force
+RUN npm install --no-package-lock && npm cache clean --force
+
+# Cleanup toolchain
+RUN apk del .build-deps
 
 ## Stage 2 (development)
 # This stage is for development and testing purposes
@@ -43,8 +71,8 @@ FROM base AS dev
 ENV NODE_ENV=development
 ENV PATH=/usr/src/app/node_modules/.bin:$PATH
 
-RUN npm install
-
+RUN npm install --no-package-lock && npm cache clean --force
+    
 # Configure git so the git client doesn't complain
 RUN git config --global --add safe.directory /usr/src/app && git config --global user.email "you@example.com" && git config --global user.name "Your Name"
 
@@ -57,8 +85,8 @@ FROM base AS source
 WORKDIR /usr/src/app
 
 # Copy files and set ownership for non-root user
-COPY ./scripts ./scripts
 COPY ./config ./config
+COPY ./scripts ./scripts
 COPY ./app ./app
 COPY ./TODO ./TODO
 
