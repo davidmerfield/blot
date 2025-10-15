@@ -42,7 +42,21 @@ The wikilink above is equivalent to this Markdown:
   <li>
     <strong>By title</strong> Works for posts and pages, is case-insensitive.
   </li>
+  <li>
+    <strong>By heading anchor</strong> Blot supports linking to headings within
+    the same post or page. The following wikilink forms are accepted and treated
+    interchangeably: <code>[[Heading Title]]</code>,
+    <code>[[#Heading Title]]</code>, <code>[[heading-id]]</code>, and
+    <code>[[#heading-id]]</code>.
+  </li>
 </ol>
+
+<pre><code>[[#My section heading]]</code></pre>
+
+<p>
+  The snippet above links directly to the <code>My section heading</code> heading
+  in the current document.
+</p>
 
 <h2>Examples</h2>
 
@@ -105,4 +119,73 @@ your own text using the following syntax:
   <em>relative path to file</em>. Blot will work with the
   <em>New link format</em> set to <em>absolute path in vault</em> as long as
   your Obsidian Vault is not inside a subdirectory of your site folder on Blot.
+</p>
+
+<h2>Embedding files with Obsidian</h2>
+
+<p>
+  Obsidian lets you embed files such as images, audio, video, PDFs, and
+  Markdown notes using the same wikilink syntax prefixed with an exclamation
+  mark: <code>![[...]]</code>. Blot mirrors this behaviour and converts embeds
+  into the correct HTML output when your site is built.
+</p>
+
+<p>
+  You can embed any file that Blot already knows how to publish. This includes
+  common image formats (<code>.png</code>, <code>.jpg</code>, <code>.jpeg</code>,
+  <code>.gif</code>, <code>.svg</code>), audio (<code>.mp3</code>,
+  <code>.wav</code>), video (<code>.mp4</code>, <code>.mov</code>), PDFs, and
+  Markdown notes. Attachments from your Obsidian vault sync to Blot in the same
+  folder structure, so embeds continue to work when your site is published.
+</p>
+
+<p>Here are some common examples of Obsidian-style embeds:</p>
+
+<table>
+  <tr>
+    <th>Intent</th>
+    <th>Markdown</th>
+    <th>Notes</th>
+  </tr>
+  <tr>
+    <td>Image with custom alt text</td>
+    <td><code>![[Garden/Flowers.png|Summer wildflowers]]</code></td>
+    <td>
+      The text after the pipe becomes the image's alt text on your published
+      site.
+    </td>
+  </tr>
+  <tr>
+    <td>Relative path from the current note</td>
+    <td><code>![[../Audio/Birds.mp3]]</code></td>
+    <td>
+      Uses a relative path to embed a file in a nearby folder. This mirrors
+      Obsidian's <em>New link format → relative path to file</em> preference.
+    </td>
+  </tr>
+  <tr>
+    <td>Absolute path within the vault</td>
+    <td><code>![[/Reference/Slides/Overview.pdf]]</code></td>
+    <td>
+      Works when Obsidian is configured to use <em>absolute path in vault</em>
+      links. The leading slash points to the root of your site folder on Blot.
+    </td>
+  </tr>
+  <tr>
+    <td>Embed another note</td>
+    <td><code>![[Project plan]]</code></td>
+    <td>
+      Inserts the rendered Markdown from another note inline. This is useful
+      for reusing checklists, snippets, or reference material across pages.
+    </td>
+  </tr>
+</table>
+
+<p>
+  When embedding Markdown notes, Blot renders the note's content inline on the
+  page. Media files are rendered with the appropriate HTML element and include
+  any alt text, captions, or titles that you add within Obsidian. If you prefer
+  to keep embeds in a dedicated <code>attachments</code> folder, Obsidian's
+  default attachment settings work without extra configuration—just make sure
+  the folder is inside your blog directory so the files can sync to Blot.
 </p>

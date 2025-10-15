@@ -30,7 +30,7 @@ module.exports = function (url, headers, callback) {
 
   // The expire date is greater than now!
   // We don't need to download anything.
-  if (isFresh(headers)) return callback();
+  if (isFresh(headers)) return callback(null, null, headers);
 
   callback = callOnce(callback);
 
@@ -57,18 +57,6 @@ module.exports = function (url, headers, callback) {
     .then(res => {
       debug("Received response:");
 
-      if (!res.ok) {
-        debug("  it has a bad status code:", res.status);
-        throw new Error(res.status);
-      }
-
-      if (res.status === 304) {
-        debug("  it has 304 unchanged status");
-        file.end(); // close the file stream as we won't write anything to it
-        throw new Error("Not Modified");
-      }
-
-      // Update response headers
       const cacheControl = res.headers.get(CACHE_CONTROL);
       const lastModified = res.headers.get(LAST_MODIFIED);
       const expires = res.headers.get("expires");
@@ -81,19 +69,41 @@ module.exports = function (url, headers, callback) {
         tidy.expire(cacheControl) ||
         headers.expires ||
         "";
+      headers.url = headers.url || url;
+
+      if (res.status === 304) {
+        debug("  it has 304 unchanged status");
+        file.end(); // close the file stream as we won't write anything to it
+        return { status: 304, headers };
+      }
+
+      if (!res.ok) {
+        debug("  it has a bad status code:", res.status);
+        throw new Error(res.status);
+      }
 
       debug("  updated latest response headers for status", res.status);
       res.body.pipe(file); // start piping the response body to the file
 
       return new Promise((resolve, reject) => {
-        file.on("finish", resolve);
+        file.on("finish", () => resolve({ status: res.status, path, headers }));
         file.on("error", reject);
       });
     })
-    .then(() => {
-      debug("Calling back with path", path, "and res headers:");
-      debug(print(headers));
-      callback(null, path, headers);
+    .then(result => {
+      if (!result) return;
+
+      if (result.status === 304) {
+        debug("Calling back with cached headers for 304 response:");
+        debug(print(result.headers));
+        fs.unlink(path).catch(() => {});
+        callback(null, null, result.headers);
+        return;
+      }
+
+      debug("Calling back with path", result.path, "and res headers:");
+      debug(print(result.headers));
+      callback(null, result.path, result.headers);
     })
     .catch(err => {
       debug("Download error:", err);

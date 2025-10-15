@@ -1,6 +1,14 @@
+Deliver autumn newsletter
+
+The frequency of updates to sync status when setting up the git client can result in 429 errors and an IP ban accidentally
+
 Fix thrashing of 'sync status' blinking icons during mega-syncs (preserve the same node, just update the status message text) by refactoring the sync-status.html partial and sync-status.js
 
 Fix possible bug with changing folder name in Google Drive from uppercase to lowercase (what happens to file inside?). Is this related to entry lookup for deleted files? How was the missing ghost file undeleteable? the case of one variant was deleted but the other was not. The case of the ID mismatched. The folder lock was stuck.
+
+Fix bug with efficiency of popular_tags method
+- add new properties to underlying model in db to make counting each tag easier ahead of time
+- Tell [Jarrod](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqHTtpTqVQPZwJHdRGFjvlhhN)
 
 Modify slowest function to aggregate by upstream response time
 - amend daily update:
@@ -151,8 +159,6 @@ Fix bugs with template engine:
 - Fix date selector for template and tell [Zach](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxTFSjkTvfDRgNHZwSQqDzWKFB)
 - Fix bug with forking / editing new templates and tell [Jarrod](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrbRSDCZqMwzjDdqdGCkScxpsw) when local template folders better reflect template names
 
-Fix bugs with RSS feeds validation. Perhaps extend absoluteURLs helper function? Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxvzMBqKpcLTtxTzcfvMCVckLMJJ)
-
 Fix bug with script to import wordpress posts and follow up with [Simon](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGCtMPcJhlmcdNvWwtWvgzWJvZ)
 
 Fix issues with menu links based on case-sensitivity switch
@@ -212,8 +218,6 @@ Fix bug with nested Markdown and tell [Martin](https://mail.google.com/mail/u/0/
 
 Fix bug with with initial transfer and [Michael's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
 
-Fix bugs with RSS feeds validation. Perhaps extend absoluteURLs helper function? Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxvzMBqKpcLTtxTzcfvMCVckLMJJ)
-
 Fix bug with [Rodrigo's Word Document files](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVWRXqnjmjBDmcRXKcdxjcDfr)
 
 Fix bug with image minification which produces larger file than source file and tell [Jan](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBTkHlNvhcJLGVRCPvXvjbwsWR)
@@ -247,10 +251,6 @@ Fix bug with Bruce's local template, [possibly related to Ryan's issue](https://
 Fix bug accessibility issue with menu links reordering and tell [Grace](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfBpBkKCLVRWBGxzDDDkhSXfl)
 
 Fix bug with accessibility issues with scrolling and code blocks and tell [Eli](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwqJjjrrGHDWjLPzfxGpnkZTh) if I make any changes
-
-Fix bug with thumbnail generator for posts on Chris' site
-- it's to do with 304 responses in transformer - handle these properly
-- fix issue with 304s for [Fabrice](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrKfFnvrTQzDHvtnXPMMlqkB) e.g. on this post: https://www.poirpom.com/bas-les-cloches
 
 ---
 
@@ -598,8 +598,6 @@ Improvements to local folder experience
 
 Use [thumbhash](https://github.com/evanw/thumbhash?tab=readme-ov-file) to generate placeholders when lazy loading images and tell [David](https://mail.google.com/mail/u/0/#inbox/FMfcgxwJXfqzZvHgrtSxzLBCwcvTsFFB) and [Marius](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLtQPwXwJrwgMzjfvDtcwFZzFC)
 
-Add more efficient popular_tags method
-- add new properties to underlying model
 
 Surface recently edited posts on the sites tab of the dashboard
 
@@ -655,8 +653,6 @@ Surface Blot client sync errors on dashboard, add email notifications for errors
 ---
 
 Preserve single line breaks in Word Docs for poetry and [tell Isabel](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcpKhwFRpStFNWhztKGPqQJfsq) and [tell Paul](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxTNzPZwwxJPTDlBBBcnbpPcJJ)
-
-Use custom libvips so we can convert HEIC files
 
 Expose exif data on Photo posts?  [https://github.com/lovell/sharp/issues/285](https://github.com/lovell/sharp/issues/285)
   See if you can add comments to image metadata and tell [Riley](https://mail.google.com/mail/u/0/sent/164756616df069dd)
@@ -956,29 +952,7 @@ Improvements to Dropbox client:
 - [ ] handle a sync lock failure on second blog when migrating an app folder
 - [ ] check content hash for upload possible
 
---
-
-Add support for Obsidian media embedding
-- ```![[_image.png]]```
-- https://help.obsidian.md/Linking+notes+and+files/Embedding+files
-- [ ] Tell [Kevin](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtxSqKVMPjDzpgJtrmcRRZCcpp)
-- [Look into Wikipedia's blended wikilinks](https://en.wikipedia.org/wiki/Help:Wikitext#Blend_link)
-- [ ] Update response to question about adding `class="wikilink"` replacing it with `title="wikilink"`
-- [ ] Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgzGkbDftzhXHGrmzXrjtcMbGrmxM) 
-- [ ] Tell [Robert](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlksJFbBlWtzMHgcxcdBRBhQSJ) 
-- [ ] Tell [Levo](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcrrDnssHhbwmzzNFnSbMJqKh)
-- [ ] Tell [kevin](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtxSqKVMPjDzpgJtrmcRRZCcpp)
-- [ ]Follow up with Marco about:
-  `![La Escocesa 2006-2010](files/_laescocesaold.png) ![[files/_laescocesaold.png]]`
-- [ ] Tell [Matthew](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsmNTdHRCzndwFkJLDSgnzHvrV)
-
 ---
-
-Move Wikilinks to Pandoc
-- Update version of pandoc
-- Support [Obsidian's syntax for embedding files](https://help.obsidian.md/How+to/Embed+files) and images, and tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgzGkbDftzhXHGrmzXrjtcMbGrmxM) and [Robert](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlksJFbBlWtzMHgcxcdBRBhQSJ) and [Levo](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcrrDnssHhbwmzzNFnSbMJqKh)
-- Follow up with Marco about:
-  `![La Escocesa 2006-2010](files/_laescocesaold.png) ![[files/_laescocesaold.png]]`
 
 Add explanation for which files are causing which menu links 
 

@@ -48,6 +48,7 @@ h2 {
     height: calc(100vh);
     padding-right: 17px;
     box-sizing: content-box;
+    position: relative;
 }
 
 #template-list:after {
@@ -58,6 +59,9 @@ h2 {
 
 .template-row {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: .25rem;
 }
 
  
@@ -66,7 +70,13 @@ h2 {
     border-radius: var(--border-radius);
 }
 
-.template-row > a {
+.template-row.menu-open {
+    background: #e4eafb75;
+    border-radius: var(--border-radius);
+}
+
+.template-row > a,
+.template-row__link {
     display: block;
     color: #656e82;
     font-size: 14px;
@@ -74,11 +84,88 @@ h2 {
     box-sizing: border-box;
     display: flex;
     align-items: center;
+    flex: 1;
 }
 
 .template-row.selected a {
     color: var(--accent-color);
     font-weight: 600;
+}
+
+.template-row__menu-trigger {
+    appearance: none;
+    background: none;
+    border: none;
+    color: #7f8799;
+    font-size: 16px;
+    line-height: 1;
+    padding: .2rem .3rem;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .15s ease, background-color .15s ease;
+}
+
+.template-row__menu-trigger:focus-visible,
+.template-row__menu-trigger:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.template-row:hover .template-row__menu-trigger,
+.template-row.menu-open .template-row__menu-trigger,
+.template-row__menu-trigger:focus-visible {
+    opacity: 1;
+}
+
+.template-row__menu-icon {
+    display: inline-block;
+}
+
+.template-action-menu {
+    position: absolute;
+    right: 0;
+    min-width: 180px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0px 18px 40px rgba(24, 34, 67, 0.12), 0px 2px 6px rgba(24, 34, 67, 0.08);
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity .15s ease, transform .15s ease;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.template-action-menu.is-open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.template-action-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: .4rem 0;
+}
+
+.template-action-menu li {
+    margin: 0;
+}
+
+.template-action-menu a {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: 13px;
+    color: #434a5d;
+    padding: .35rem .9rem;
+    text-decoration: none;
+}
+
+.template-action-menu a:hover,
+.template-action-menu a:focus-visible {
+    background: #f2f4fb;
+    color: var(--accent-color);
+    outline: none;
 }
 
 .template-row .preview {

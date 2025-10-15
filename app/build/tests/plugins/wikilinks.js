@@ -48,6 +48,79 @@ describe("wikilinks plugin", function () {
     this.buildAndCheck({ path, contents }, { html }, done);
   });
 
+  it("will normalize same-page heading anchors", function (done) {
+    const contents = "# Heading Here\n\nSee [[#Heading Here]].";
+    const path = "/hello.txt";
+    const html =
+      '<h1 id="heading-here">Heading Here</h1>\n<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>';
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
+  it("will match heading anchors without an explicit hash", function (done) {
+    const contents = "# Heading Here\n\nSee [[Heading Here]].";
+    const path = "/hello.txt";
+    const html =
+      '<h1 id="heading-here">Heading Here</h1>\n<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>';
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
+  it("will match heading links to custom ids", function (done) {
+    const contents =
+      '<h2 id="headinghere">Heading Here</h2>\n\nSee [[#Heading Here]].';
+    const path = "/hello.txt";
+    const html = `<h2 id="headinghere">
+Heading Here
+</h2>
+<p>See <a href="#headinghere" title="wikilink">Heading Here</a>.</p>`;
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
+  it("will match heading links to explicit ids", function (done) {
+    const contents =
+      '<h2 id="heading-here">Heading Here</h2>\n\nSee [[heading-here]].';
+    const path = "/hello.txt";
+    const html = `<h2 id="heading-here">
+Heading Here
+</h2>
+<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>`;
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
+  it("will match heading links to explicit ids with hash", function (done) {
+    const contents =
+      '<h2 id="heading-here">Heading Here</h2>\n\nSee [[#heading-here]].';
+    const path = "/hello.txt";
+    const html = `<h2 id="heading-here">
+Heading Here
+</h2>
+<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>`;
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
+  it("will match heading links to nested anchors", function (done) {
+    const contents =
+      '<h3><a id="h.abc123"></a>Heading From Docs</h3>\n\nSee [[#Heading From Docs]].';
+    const path = "/hello.txt";
+    const html =
+      `<h3>
+<a id="h.abc123"></a>Heading From Docs
+</h3>
+<p>See <a href="#h.abc123" title="wikilink">Heading From Docs</a>.</p>`;
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
   it("will convert wikilinks next to ignored nodes", function (done) {
     const contents =
       "<script>console.log('hey');</script>\n\nA **[[wikilink elsewhere]]** ";
@@ -88,7 +161,7 @@ describe("wikilinks plugin", function () {
     this.syncAndCheck(files, entry, done);
   });
 
-  xit("will support media embedding", async function (done) {
+  it("will support media embedding", async function (done) {
     await this.blog.write({
       path: "/_Image.png",
       content: await global.test.fake.pngBuffer()
@@ -96,11 +169,133 @@ describe("wikilinks plugin", function () {
 
     await this.blog.write({
       path: "/Post.txt",
-      content: "![[_Image.png]]"
+      content: "![[_Image|An example image]]"
     });
 
     await this.blog.rebuild();
-    await this.blog.check({ path: "/Post.txt", html: "foo" });
+
+    const entry = await this.blog.check({ path: "/Post.txt" });
+
+    expect(entry.html).toContain('<img');
+    expect(entry.html).toContain('src="');
+
+    expect(entry.html).toContain('title="wikilink"');
+    expect(entry.html).toContain('alt="An example image"');
+
+    done();
+  });
+
+  it("will support media embedding with spaces in filenames", async function (done) {
+    await this.blog.write({
+      path: "/Pasted image 2024-01-01.png",
+      content: await global.test.fake.pngBuffer()
+    });
+
+    await this.blog.write({
+      path: "/SpacesPost.txt",
+      content: "![[Pasted image 2024-01-01.png]]"
+    });
+
+    await this.blog.rebuild();
+
+    const entry = await this.blog.check({ path: "/SpacesPost.txt" });
+
+    expect(entry.html).toContain('<img');
+    expect(entry.html).toContain('src="');
+
+    expect(entry.html).toContain('title="wikilink"');
+    expect(entry.html).toContain('Pasted image 2024-01-01');
+
+    done();
+  });
+
+  it("will support media embedding from nested folders", async function (done) {
+    await this.blog.write({
+      path: "/Assets/image.png",
+      content: await global.test.fake.pngBuffer()
+    });
+
+    await this.blog.write({
+      path: "/NestedPost.txt",
+      content: "![[Assets/image.png]]"
+    });
+
+    await this.blog.rebuild();
+
+    const entry = await this.blog.check({ path: "/NestedPost.txt" });
+
+    expect(entry.html).toContain('<img');
+    expect(entry.html).toContain('src="');
+
+    expect(entry.html).toContain('title="wikilink"');
+    expect(entry.html).toMatch(/assets\/?image\.png/i);
+
+    done();
+  });
+
+  it("will support video embedding with piped alt text", async function (done) {
+    await this.blog.write({
+      path: "/Assets/video.mp4",
+      content: Buffer.from("fake video content")
+    });
+
+    await this.blog.write({
+      path: "/PipedAltPost.txt",
+      content: "![[Assets/video.mp4|Demo video]]"
+    });
+
+    await this.blog.rebuild();
+
+    const entry = await this.blog.check({ path: "/PipedAltPost.txt" });
+
+    expect(entry.html).toContain('src="');
+    expect(entry.html).toContain('video.mp4');
+    expect(entry.html).toContain('title="wikilink"');
+    expect(entry.html).toContain('Demo video');
+
+    done();
+  });
+
+  it("will support audio embedding via wikilinks", async function (done) {
+    await this.blog.write({
+      path: "/Assets/audio.mp3",
+      content: Buffer.from("fake audio content")
+    });
+
+    await this.blog.write({
+      path: "/AudioPost.txt",
+      content: "![[Assets/audio.mp3|Sample audio]]"
+    });
+
+    await this.blog.rebuild();
+
+    const entry = await this.blog.check({ path: "/AudioPost.txt" });
+
+    expect(entry.html).toContain('src="');
+    expect(entry.html).toContain('audio.mp3');
+    expect(entry.html).toContain('title="wikilink"');
+    expect(entry.html).toContain('Sample audio');
+
+    done();
+  });
+
+  it("will support document embedding via wikilinks", async function (done) {
+    await this.blog.write({
+      path: "/Assets/document.pdf",
+      content: Buffer.from("%PDF-1.4 fake pdf content")
+    });
+
+    await this.blog.write({
+      path: "/DocumentPost.txt",
+      content: "![[Assets/document.pdf|Reference PDF]]"
+    });
+
+    await this.blog.rebuild();
+
+    const entry = await this.blog.check({ path: "/DocumentPost.txt" });
+
+    expect(entry.html).toContain('<embed src="/Assets/document.pdf"');
+    expect(entry.html).toContain('title="wikilink"');
 
     done();
   });

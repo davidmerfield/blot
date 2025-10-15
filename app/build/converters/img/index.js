@@ -8,7 +8,7 @@ const sharp = require("sharp");
 const config = require("config");
 const Transformer = require("helper/transformer");
 
-const EXTENSIONS_TO_CONVERT = [".tif", ".tiff", ".webp", ".avif"];
+const EXTENSIONS_TO_CONVERT = [".tif", ".tiff", ".webp", ".avif", ".heic", ".heif"];
 const SUPPORTED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ...EXTENSIONS_TO_CONVERT];
 
 

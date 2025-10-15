@@ -43,4 +43,37 @@ describe("build", function () {
     this.blog.plugins.titlecase = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
   });
+
+  it("defaults embedded media preload to metadata", function (done) {
+    const path = "/media.txt";
+    const contents = [
+      '<audio controls src="/audio/example.mp3"></audio>',
+      '<video controls src="/video/example.mp4"></video>',
+      '<audio controls preload="none" src="/audio/custom.mp3"></audio>',
+      '<video controls preload="auto" src="/video/custom.mp4"></video>',
+    ].join("\n");
+
+    fs.outputFileSync(this.blogDirectory + path, contents);
+
+    this.blog.plugins.mediaPreload = { enabled: true, options: {} };
+
+    build(this.blog, path, (err, entry) => {
+      if (err) return done.fail(err);
+
+      expect(entry.html).toContain(
+        '<audio controls="" src="/audio/example.mp3" preload="metadata">'
+      );
+      expect(entry.html).toContain(
+        '<video controls="" src="/video/example.mp4" preload="metadata">'
+      );
+      expect(entry.html).toContain(
+        '<audio controls="" preload="none" src="/audio/custom.mp3">'
+      );
+      expect(entry.html).toContain(
+        '<video controls="" preload="auto" src="/video/custom.mp4">'
+      );
+
+      done();
+    });
+  });
 });

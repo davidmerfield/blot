@@ -1,9 +1,17 @@
-const Mailgun = require("mailgun-js");
+const Mailgun = require("mailgun.js");
+const formData = require("form-data");
 const config = require("config");
 const from = config.mailgun.from;
-const mailgun = new Mailgun({
-  apiKey: config.mailgun.key,
-  domain: config.mailgun.domain,
+const mailgun = new Mailgun(formData);
+
+if (!config.mailgun || !config.mailgun.key || !config.mailgun.domain) {
+  console.error("Mailgun credentials are not configured");
+  process.exit(1);
+}
+
+const client = mailgun.client({
+  username: (config.mailgun && config.mailgun.username) || "api",
+  key: config.mailgun.key,
 });
 
 const to = process.argv[2];
@@ -23,12 +31,13 @@ var email = {
   to,
 };
 
-mailgun.messages().send(email, function (err, body) {
-  if (err) {
+client.messages
+  .create(config.mailgun.domain, email)
+  .then(() => {
+    console.log("Email sent");
+    process.exit(0);
+  })
+  .catch((err) => {
     console.error(err);
     process.exit(1);
-  }
-
-  console.log("Email sent");
-  process.exit(0);
-});
+  });
