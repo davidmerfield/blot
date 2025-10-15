@@ -15,8 +15,8 @@ describe("Blog.get", function () {
         if (err) return done.fail(err);
 
         expect(blog.imageExif).toBe("off");
-        expect(blog.isImageExifOff).toBeTrue();
-        expect(blog.isImageExifBasic).toBeFalse();
+        expect(blog.isImageExifOff).toBe(true);
+        expect(blog.isImageExifBasic).toBe(false);
         done();
       });
     });

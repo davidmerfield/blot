@@ -37,8 +37,8 @@ describe("Blog.create", function () {
       test.blog = blog;
 
       expect(blog.imageExif).toBe("basic");
-      expect(blog.isImageExifBasic).toBeTrue();
-      expect(blog.isImageExifOff).toBeFalse();
+      expect(blog.isImageExifBasic).toBe(true);
+      expect(blog.isImageExifOff).toBe(false);
 
       done();
     });

@@ -25,8 +25,8 @@ describe("Blog.set", function () {
         if (err) return done.fail(err);
 
         expect(blog.imageExif).toBe("off");
-        expect(blog.isImageExifOff).toBeTrue();
-        expect(blog.isImageExifBasic).toBeFalse();
+        expect(blog.isImageExifOff).toBe(true);
+        expect(blog.isImageExifBasic).toBe(false);
         done();
       });
     });
@@ -42,8 +42,8 @@ describe("Blog.set", function () {
         if (err) return done.fail(err);
 
         expect(blog.imageExif).toBe("full");
-        expect(blog.isImageExifFull).toBeTrue();
-        expect(blog.isImageExifOff).toBeFalse();
+        expect(blog.isImageExifFull).toBe(true);
+        expect(blog.isImageExifOff).toBe(false);
         done();
       });
     });

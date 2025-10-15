@@ -15,7 +15,7 @@ describe("publishing settings", function () {
 
     const blogAfterOff = await promisify(Blog.get)({ id: this.blog.id });
     expect(blogAfterOff.imageExif).toBe("off");
-    expect(blogAfterOff.isImageExifOff).toBeTrue();
+    expect(blogAfterOff.isImageExifOff).toBe(true);
 
     await this.submit(`/sites/${this.blog.handle}`, {
       redirect: `/sites/${this.blog.handle}/publishing`,
@@ -24,6 +24,6 @@ describe("publishing settings", function () {
 
     const blogAfterFull = await promisify(Blog.get)({ id: this.blog.id });
     expect(blogAfterFull.imageExif).toBe("full");
-    expect(blogAfterFull.isImageExifFull).toBeTrue();
+    expect(blogAfterFull.isImageExifFull).toBe(true);
   });
 });
