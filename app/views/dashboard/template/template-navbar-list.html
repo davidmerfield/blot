@@ -114,7 +114,11 @@ function closeTemplateMenu() {
 
 function positionTemplateMenu(row) {
   if (!templateActionMenu) return;
-  templateActionMenu.style.top = row.offsetTop + 'px';
+  var offsetTop = row.offsetTop;
+  if (template_list) {
+    offsetTop -= template_list.scrollTop;
+  }
+  templateActionMenu.style.top = offsetTop + 'px';
 }
 
 function updateTemplateMenu(trigger) {
