@@ -38,17 +38,23 @@ async function read(blog, path, callback) {
       const transformer = new Transformer(blog.id, "img-converter");
       const hashPath = hash(path);
       const convertedFilename = `${name}.png`;
-      const assetsDir = join(assetDirectory, "_assets", hashPath);
-      const convertedAbsolutePath = join(assetsDir, convertedFilename);
       const convertedRelativePath = `/_assets/${hashPath}/${convertedFilename}`;
 
-      const convertImage = async (sourcePath) => {
-        await fs.ensureDir(assetsDir);
-        await fs.remove(convertedAbsolutePath);
-        await sharp(sourcePath).png().toFile(convertedAbsolutePath);
+      const absoluteFromRelative = (relativePath) =>
+        join(assetDirectory, relativePath.replace(/^\//, ""));
 
-        return { relativePath: convertedRelativePath };
+      const writeConversion = async (sourcePath, relativePath) => {
+        const absolutePath = absoluteFromRelative(relativePath);
+
+        await fs.ensureDir(dirname(absolutePath));
+        await fs.remove(absolutePath);
+        await sharp(sourcePath).png().toFile(absolutePath);
+
+        return { relativePath };
       };
+
+      const convertImage = async (sourcePath) =>
+        writeConversion(sourcePath, convertedRelativePath);
 
       const conversion = await lookupWithTransformer(
         transformer,
@@ -56,11 +62,15 @@ async function read(blog, path, callback) {
         convertImage
       );
 
-      if (!(await fs.pathExists(convertedAbsolutePath))) {
-        await convertImage(localPath);
+      const conversionRelativePath =
+        conversion?.relativePath || convertedRelativePath;
+      const conversionAbsolutePath = absoluteFromRelative(conversionRelativePath);
+
+      if (!(await fs.pathExists(conversionAbsolutePath))) {
+        await writeConversion(localPath, conversionRelativePath);
       }
 
-      outputPath = conversion?.relativePath || convertedRelativePath;
+      outputPath = conversionRelativePath;
     }
 
     const contents = `<img src="${encodeURI(outputPath)}" title="${title}" alt="${title}" ${isRetina}/>`;

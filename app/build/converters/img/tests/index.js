@@ -59,6 +59,58 @@ describe("img converter", function () {
         });
     });
 
+    it("restores missing cached conversions using cached path", function (done) {
+        const test = this;
+        const firstPath = "/land.avif";
+        const secondPath = "/land-copy.avif";
+
+        fs.copySync(__dirname + firstPath, test.blogDirectory + firstPath);
+
+        img.read(test.blog, firstPath, function (err) {
+            if (err) return done.fail(err);
+
+            const cachedAssetPath = path.join(
+                config.blog_static_files_dir,
+                test.blog.id,
+                "_assets",
+                hash(firstPath),
+                path.basename(firstPath) + ".png"
+            );
+
+            expect(fs.existsSync(cachedAssetPath)).toBe(true);
+
+            fs.removeSync(cachedAssetPath);
+
+            const fallbackAssetPath = path.join(
+                config.blog_static_files_dir,
+                test.blog.id,
+                "_assets",
+                hash(secondPath),
+                path.basename(secondPath) + ".png"
+            );
+
+            if (fs.existsSync(fallbackAssetPath)) {
+                fs.removeSync(fallbackAssetPath);
+            }
+
+            fs.copySync(__dirname + firstPath, test.blogDirectory + secondPath);
+
+            img.read(test.blog, secondPath, function (err, result) {
+                if (err) return done.fail(err);
+
+                const expectedSrc = encodeURI(
+                    `/_assets/${hash(firstPath)}/${path.basename(firstPath)}.png`
+                );
+
+                expect(result).toContain(`src="${expectedSrc}"`);
+                expect(fs.existsSync(cachedAssetPath)).toBe(true);
+                expect(fs.existsSync(fallbackAssetPath)).toBe(false);
+
+                done();
+            });
+        });
+    });
+
     it("returns an error if the image does not exist", function (done) {
         const test = this;
         const path = "/test.png";
