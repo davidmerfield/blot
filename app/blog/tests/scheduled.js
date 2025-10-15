@@ -16,19 +16,14 @@ describe("scheduled entries", function () {
   it("promotes a scheduled entry once its publication time arrives", async function () {
     const publishDelay = 60 * 1000; // 1 minute
     const buffer = 1000; // 1 second
-    const futureDate = new Date(now.getTime() + publishDelay);
+    const futureDate = new Date(now.getTime() + publishDelay).toISOString();
 
     console.log("Writing scheduled.txt with date", futureDate);
 
     await this.write({
       path: "/scheduled.txt",
-      content:
-        "Link: scheduled\nDate: " +
-        futureDate.toISOString() +
-        "\n\nHello, future!",
+      content: "Link: a\nDate: " + futureDate + "\n\nHello, future!",
     });
-
-    console.log("Checking /scheduled before publish time");
 
     console.log("Advancing clock by", publishDelay + buffer, "ms");
     jasmine.clock().tick(publishDelay + buffer);
@@ -36,8 +31,8 @@ describe("scheduled entries", function () {
     // Force queued microtasks to run
     await new Promise((resolve) => setImmediate(resolve));
 
-    console.log("Immediate resolved, checking /scheduled again");
-    const postPublishRes = await this.get("/scheduled");
+    console.log("Immediate resolved, checking /a again");
+    const postPublishRes = await this.get("/a");
     const body = await postPublishRes.text();
 
     expect(postPublishRes.status).toEqual(200);
