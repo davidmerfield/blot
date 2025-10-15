@@ -50,7 +50,6 @@ jobs:
           sparse-checkout: |
             Dockerfile
             package.json
-            scripts/install/rebuild-sharp.js
             .github/workflows/node.yml
           sparse-checkout-cone-mode: false
 
@@ -58,7 +57,7 @@ jobs:
         id: hash
         run: |
           # Create a list of files to hash
-          FILES_TO_HASH="Dockerfile package.json .github/workflows/node.yml scripts/install/rebuild-sharp.js"
+          FILES_TO_HASH="Dockerfile package.json .github/workflows/node.yml"
           
           echo "Hashing files: $FILES_TO_HASH"
           
