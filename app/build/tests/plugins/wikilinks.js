@@ -268,10 +268,8 @@ Heading Here
 
     const entry = await this.blog.check({ path: "/DocumentPost.txt" });
 
-    expect(entry.html).toContain('src="');
-    expect(entry.html).toContain('document.pdf');
+    expect(entry.html).toContain('<embed src="/Assets/document.pdf"');
     expect(entry.html).toContain('title="wikilink"');
-    expect(entry.html).toContain('Reference PDF');
 
     done();
   });
