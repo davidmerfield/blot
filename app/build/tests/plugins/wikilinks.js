@@ -48,6 +48,79 @@ describe("wikilinks plugin", function () {
     this.buildAndCheck({ path, contents }, { html }, done);
   });
 
+  it("will normalize same-page heading anchors", function (done) {
+    const contents = "# Heading Here\n\nSee [[#Heading Here]].";
+    const path = "/hello.txt";
+    const html =
+      '<h1 id="heading-here">Heading Here</h1>\n<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>';
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
+  it("will match heading anchors without an explicit hash", function (done) {
+    const contents = "# Heading Here\n\nSee [[Heading Here]].";
+    const path = "/hello.txt";
+    const html =
+      '<h1 id="heading-here">Heading Here</h1>\n<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>';
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
+  it("will match heading links to custom ids", function (done) {
+    const contents =
+      '<h2 id="headinghere">Heading Here</h2>\n\nSee [[#Heading Here]].';
+    const path = "/hello.txt";
+    const html = `<h2 id="headinghere">
+Heading Here
+</h2>
+<p>See <a href="#headinghere" title="wikilink">Heading Here</a>.</p>`;
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
+  it("will match heading links to explicit ids", function (done) {
+    const contents =
+      '<h2 id="heading-here">Heading Here</h2>\n\nSee [[heading-here]].';
+    const path = "/hello.txt";
+    const html = `<h2 id="heading-here">
+Heading Here
+</h2>
+<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>`;
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
+  it("will match heading links to explicit ids with hash", function (done) {
+    const contents =
+      '<h2 id="heading-here">Heading Here</h2>\n\nSee [[#heading-here]].';
+    const path = "/hello.txt";
+    const html = `<h2 id="heading-here">
+Heading Here
+</h2>
+<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>`;
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
+  it("will match heading links to nested anchors", function (done) {
+    const contents =
+      '<h3><a id="h.abc123"></a>Heading From Docs</h3>\n\nSee [[#Heading From Docs]].';
+    const path = "/hello.txt";
+    const html =
+      `<h3>
+<a id="h.abc123"></a>Heading From Docs
+</h3>
+<p>See <a href="#h.abc123" title="wikilink">Heading From Docs</a>.</p>`;
+
+    this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.buildAndCheck({ path, contents }, { html }, done);
+  });
+
   it("will convert wikilinks next to ignored nodes", function (done) {
     const contents =
       "<script>console.log('hey');</script>\n\nA **[[wikilink elsewhere]]** ";
@@ -88,7 +161,7 @@ describe("wikilinks plugin", function () {
     this.syncAndCheck(files, entry, done);
   });
 
-  xit("will support media embedding", async function (done) {
+  it("will support media embedding", async function (done) {
     await this.blog.write({
       path: "/_Image.png",
       content: await global.test.fake.pngBuffer()
@@ -96,11 +169,18 @@ describe("wikilinks plugin", function () {
 
     await this.blog.write({
       path: "/Post.txt",
-      content: "![[_Image.png]]"
+      content: "![[_Image|An example image]]"
     });
 
     await this.blog.rebuild();
-    await this.blog.check({ path: "/Post.txt", html: "foo" });
+
+    const entry = await this.blog.check({ path: "/Post.txt" });
+
+    expect(entry.html).toContain('<img');
+    expect(entry.html).toContain('src="');
+    
+    expect(entry.html).toContain('title="wikilink"');
+    expect(entry.html).toContain('alt="An example image"');
 
     done();
   });

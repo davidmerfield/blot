@@ -10,5 +10,6 @@ describe("urlNormalizer", function () {
     is("http://blot.im/foo/bar", "/foo/bar");
     is("/foo/bar/", "/foo/bar");
     is("foo/bar/", "/foo/bar");
+    is("mailto:test@example.com", "");
   });
 });

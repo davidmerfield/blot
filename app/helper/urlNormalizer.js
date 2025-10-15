@@ -9,10 +9,13 @@ function urlNormalizer(url) {
   if (!url) return "";
 
   try {
-    url = parse(url).pathname;
+    const parsed = parse(url);
+    url = (parsed && parsed.pathname) || "";
   } catch (e) {
     return "";
   }
+
+  if (!url) return "";
 
   if (url.slice(0, 1) !== "/") url = "/" + url;
 

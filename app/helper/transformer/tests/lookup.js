@@ -1,5 +1,7 @@
 describe("transformer", function () {
   var fs = require("fs-extra");
+  var Keys = require("../keys");
+  var client = require("models/client");
   var STATIC_DIRECTORY = require("config").blog_static_files_dir;
 
   // Creates test environment
@@ -158,6 +160,69 @@ describe("transformer", function () {
       expect(result).toEqual(jasmine.any(Object));
       expect(result.size).toEqual(jasmine.any(Number));
       done();
+    });
+  });
+
+  it("uses cached transform when the url responds with 304", function (done) {
+    var test = this;
+    var firstTransform = jasmine.createSpy().and.callFake(test.transform);
+    var secondTransform = jasmine.createSpy().and.callFake(test.transform);
+
+    test.transformer.lookup(test.url, firstTransform, function (err, firstResult) {
+      if (err) return done.fail(err);
+
+      test.transformer.lookup(test.url, secondTransform, function (err, secondResult) {
+        if (err) return done.fail(err);
+
+        expect(firstTransform).toHaveBeenCalled();
+        expect(secondTransform).not.toHaveBeenCalled();
+        expect(secondResult).toEqual(firstResult);
+        done();
+      });
+    });
+  });
+
+  it("reuses cached headers when the stored response is still fresh", function (done) {
+    var test = this;
+    var keys = Keys(test.blog.id, "transformer");
+    var headersKey = keys.url.headers(test.url);
+    var firstTransform = jasmine.createSpy().and.callFake(test.transform);
+    var secondTransform = jasmine.createSpy().and.callFake(test.transform);
+    var futureExpires = new Date(Date.now() + 60 * 60 * 1000).toUTCString();
+
+    test.transformer.lookup(test.url, firstTransform, function (err, firstResult) {
+      if (err) return done.fail(err);
+
+      client.get(headersKey, function (err, stringifiedHeaders) {
+        if (err) return done.fail(err);
+
+        var headers = {};
+
+        try {
+          headers = JSON.parse(stringifiedHeaders) || {};
+        } catch (e) {
+          headers = {};
+        }
+
+        headers.expires = futureExpires;
+        headers.url = test.url;
+
+        client.set(headersKey, JSON.stringify(headers), function (err) {
+          if (err) return done.fail(err);
+
+          test.transformer.lookup(test.url, secondTransform, function (
+            err,
+            secondResult
+          ) {
+            if (err) return done.fail(err);
+
+            expect(firstTransform).toHaveBeenCalled();
+            expect(secondTransform).not.toHaveBeenCalled();
+            expect(secondResult).toEqual(firstResult);
+            done();
+          });
+        });
+      });
     });
   });
 });

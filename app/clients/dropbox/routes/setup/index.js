@@ -15,7 +15,13 @@ function setup(account, session, callback) {
 
     const client = new redis();
     const signal = { aborted: false };
+    let abortHandled = false;
+    let cleaned = false;
+    let finished = false;
+
     const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
       console.log("Cleaning up Dropbox setup");
       try {
         delete session.dropbox;
@@ -23,8 +29,19 @@ function setup(account, session, callback) {
         client.unsubscribe();
         client.quit();
       } catch (e) {
-        console.log("Error cleaning up:", err);
+        if (e && e.code === "NR_CLOSED") {
+          console.log("Redis connection already closed during cleanup:", e);
+          return;
+        }
+        console.log("Error cleaning up:", e);
       }
+    };
+
+    const finish = (err) => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      done(err, callback);
     };
 
     client.subscribe("sync:status:" + account.blog.id);
@@ -32,8 +49,8 @@ function setup(account, session, callback) {
     client.on("message", function (channel, message) {
       if (message !== "Attempting to disconnect from Dropbox") return;
       signal.aborted = true;
-      cleanup();
-      done(new Error("Aborted setup"), callback);
+      abortHandled = true;
+      finish(new Error("Dropbox setup aborted"));
     });
 
     try {
@@ -65,17 +82,22 @@ function setup(account, session, callback) {
 
       // upload folder contents to dropbox
       // todo: pass in signal
-      await resetFromBlot(account.blog.id, folder.status);
+      await resetFromBlot(account.blog.id, folder.status, signal);
 
       if (signal.aborted) return;
     } catch (err) {
+      if (err && err.name === "AbortError") {
+        folder.status("Dropbox setup aborted");
+        if (abortHandled) return;
+        cleanup();
+        return done(err, callback);
+      }
+
       folder.status("Error: " + err.message);
-      cleanup();
-      return done(err, callback);
+      return finish(err);
     }
 
-    cleanup();
-    done(null, callback);
+    finish(null);
   });
 }
 
