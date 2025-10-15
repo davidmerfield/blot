@@ -1,12 +1,14 @@
 <h1>Images</h1>
 
-.png&nbsp;&nbsp;.jpeg&nbsp;&nbsp;.gif&nbsp;&nbsp;.tiff&nbsp;&nbsp;.webp&nbsp;&nbsp;.avif
+.png&nbsp;&nbsp;.jpeg&nbsp;&nbsp;.gif&nbsp;&nbsp;.tiff&nbsp;&nbsp;.webp&nbsp;&nbsp;.avif&nbsp;&nbsp;.heic&nbsp;&nbsp;.heif
 
 <p>
   Put images directly into your site's folder and Blot will publish them as
   individual posts. Blot generates optimized versions to deliver to your
   readers. Use the path to add <a href="/how/metadata">tags</a> or change the
-  <a href="/how/metadata">publication date</a>.
+  <a href="/how/metadata">publication date</a>. Images in formats not widely
+  supported on the web, such as TIFF, WebP, and AVIF, are automatically
+  converted into PNG assets when published.
 </p>
 
 <h2>Compression and color profile</h2>
@@ -32,8 +34,10 @@ Trip to France
 
 <h2>Captioning an image</h2>
 <p>
-  Blot uses the image's filename, without its extension to generate a caption
-  for the image.
+  Blot uses the image's filename, without its extension, to generate both the
+  caption and the alt text for the image. If the filename ends with
+  <code>@2x</code>, Blot adds the necessary retina markup to reference the
+  higher-resolution asset automatically.
 </p>
 
 <h2>Change the date of an image post</h2>

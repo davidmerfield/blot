@@ -31,6 +31,14 @@ function Metadata (html) {
       // and understand them
       let mixedCaseMetadata = YAML.parse(frontmatter);
 
+      if (
+        !mixedCaseMetadata ||
+        typeof mixedCaseMetadata !== "object" ||
+        Array.isArray(mixedCaseMetadata)
+      ) {
+        mixedCaseMetadata = {};
+      }
+
       // Map { Permalink } to { permalink }
       // Blot uses lowercase metadata keys
       Object.keys(mixedCaseMetadata).forEach(mixedCaseKey => {

@@ -14,11 +14,40 @@ module.exports = function ($) {
   let prevNode = null;
   let emptyCount = 0;
 
+  const flushCurrentGroup = () => {
+    if (currGroup.length === 0) return null;
+
+    const firstP = currGroup[0];
+    const lines = currGroup.map((n) => $(n).html().trim());
+    $(firstP).html(lines.join("<br>"));
+    for (let j = 1; j < currGroup.length; j++) {
+      $(currGroup[j]).remove();
+    }
+    currGroup = [];
+
+    return firstP;
+  };
+
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const tag = node.tagName ? node.tagName.toLowerCase() : node.name;
 
     if (tag === "p") {
+      if (currGroup.length > 0) {
+        const lastInGroup = currGroup.at(-1);
+        const nextPOrHr = $(lastInGroup).nextAll("p, hr").first()[0];
+        const betweenNodes = $(lastInGroup).nextUntil("p, hr");
+
+        if (nextPOrHr !== node || betweenNodes.length > 0) {
+          const flushedFirst = flushCurrentGroup();
+          prevNode =
+            betweenNodes.length > 0
+              ? betweenNodes.last()[0] || flushedFirst
+              : flushedFirst;
+          emptyCount = 0;
+        }
+      }
+
       const inner = $(node).html().trim();
 
       // Is this an empty line?
@@ -33,15 +62,9 @@ module.exports = function ($) {
         $(node).remove();
 
         // If we have a current group, close it
-        if (currGroup.length > 0) {
-          const firstP = currGroup[0];
-          const lines = currGroup.map((n) => $(n).html().trim());
-          $(firstP).html(lines.join("<br>"));
-          for (let j = 1; j < currGroup.length; j++) {
-            $(currGroup[j]).remove();
-          }
-          prevNode = firstP;
-          currGroup = [];
+        const flushedFirst = flushCurrentGroup();
+        if (flushedFirst) {
+          prevNode = flushedFirst;
         }
       } else {
         // Before starting a new group, insert <br> for extra empty lines (if any)
@@ -63,15 +86,9 @@ module.exports = function ($) {
       }
     } else if (tag === "hr") {
       // If we have a current group, close it (no <br> before <hr>)
-      if (currGroup.length > 0) {
-        const firstP = currGroup[0];
-        const lines = currGroup.map((n) => $(n).html().trim());
-        $(firstP).html(lines.join("<br>"));
-        for (let j = 1; j < currGroup.length; j++) {
-          $(currGroup[j]).remove();
-        }
-        prevNode = firstP;
-        currGroup = [];
+      const flushedFirst = flushCurrentGroup();
+      if (flushedFirst) {
+        prevNode = flushedFirst;
       }
       emptyCount = 0; // Reset empty count after <hr>
       prevNode = node; // Update prevNode to <hr>
@@ -79,13 +96,5 @@ module.exports = function ($) {
   }
 
   // Handle any trailing group
-  if (currGroup.length > 0) {
-    const firstP = currGroup[0];
-    const lines = currGroup.map((n) => $(n).html().trim());
-    $(firstP).html(lines.join("<br>"));
-    for (let j = 1; j < currGroup.length; j++) {
-      $(currGroup[j]).remove();
-    }
-    currGroup = [];
-  }
+  flushCurrentGroup();
 };

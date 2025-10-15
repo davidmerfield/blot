@@ -1,5 +1,9 @@
-<div class="template-row {{#selected}}selected{{/selected}}">
-  <a href="{{{editURL}}}">
+<div
+  class="template-row {{#selected}}selected{{/selected}}"
+  data-template-slug="{{slug}}"
+  data-template-name="{{#localEditing}}{{slug}}{{/localEditing}}{{^localEditing}}{{name}}{{/localEditing}}"
+>
+  <a href="{{{editURL}}}" class="template-row__link">
       <span class="preview" style="position: relative;">
       {{^localEditing}}
       <img src="{{#cdn}}/images/examples/{{thumbnailSlug}}/0-icon.png{{/cdn}}">
@@ -18,5 +22,17 @@
     {{slug}}
     {{/localEditing}}
   </a>
+  <button
+    class="template-row__menu-trigger"
+    type="button"
+    aria-label="Template actions for {{#localEditing}}{{slug}}{{/localEditing}}{{^localEditing}}{{name}}{{/localEditing}}"
+    aria-haspopup="true"
+    aria-expanded="false"
+    data-editurl="{{{editURL}}}"
+    data-previewurl="{{{previewMenuURL}}}"
+  >
+    <span aria-hidden="true" class="template-row__menu-icon">⋮</span>
+  </button>
 </div>
+
   

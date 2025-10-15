@@ -1,7 +1,8 @@
 var getById = require("./getById");
 var email = require("helper/email");
 var debug = require("debug")("blot:user:scheduleSubscriptionEmail");
-var schedule = require("node-schedule").scheduleJob;
+const scheduler = require("node-schedule");
+const scheduledNotifications = new Map();
 
 // The number of days before a subscription is renewed or
 // expired to send an email notification to the customer.
@@ -33,15 +34,27 @@ module.exports = function (uid, callback) {
 
     debug(user.uid, user.email, "needs to be notified on", notificationDate);
 
+    const existing = scheduledNotifications.get(uid);
+
     // When the server starts, we schedule a notification email for every user
     // If they should have been notified in the past, we stop now since we
     // don't want to email the user more than once.
     if (notificationDate.getTime() < Date.now()) {
+      if (existing) {
+        existing.cancel();
+        scheduledNotifications.delete(uid);
+      }
+
       debug(user.email, "should already been notified on", notificationDate);
       return callback();
     }
 
-    schedule(notificationDate, function () {
+    if (existing) {
+      existing.cancel();
+      scheduledNotifications.delete(uid);
+    }
+
+    const job = scheduler.scheduleJob(notificationDate, function () {
       // We fetch the latest state of the user's subscription
       // from the database in case the user's subscription
       // has changed since the time the server started.
@@ -79,6 +92,18 @@ module.exports = function (uid, callback) {
         );
       });
     });
+
+    if (job) {
+      scheduledNotifications.set(uid, job);
+
+      job.on("run", function () {
+        scheduledNotifications.delete(uid);
+      });
+
+      job.on("canceled", function () {
+        scheduledNotifications.delete(uid);
+      });
+    }
 
     // Let the callee know the email is schedule
     debug(user.uid, user.email, "scheduled warning email....");

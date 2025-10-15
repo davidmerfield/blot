@@ -340,7 +340,18 @@ describe("build", function () {
       array: ["one", "two"],
       object: { key: "value" },
     });
-    
+
+    done();
+  });
+
+  it("will tolerate empty YAML front matter", async function (done) {
+    const path = "/post.txt";
+    const contents = `---\n---\n\n# Hello`;
+    const entry = await this.build(path, contents);
+
+    expect(entry.metadata).toEqual({});
+    expect(entry.html.trim()).toEqual("<h1 id=\"hello\">Hello</h1>");
+
     done();
   });
 

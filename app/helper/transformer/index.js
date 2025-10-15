@@ -214,9 +214,12 @@ function Transformer(blogID, name) {
         // responses nicely.
         if (err) return callback(err);
 
-        var path = results[0];
+        if (!Array.isArray(results)) results = [];
 
-        headers = results[1];
+        var path = results[0];
+        var newHeaders = results[1];
+
+        if (newHeaders) headers = newHeaders;
 
         // We didn't redownload the file since it's
         if (!path && result) return callback(null, result);

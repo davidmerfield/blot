@@ -43,6 +43,16 @@ module.exports = function (req, res, next) {
         config.host +
         "?screenshot=true";
 
+      template.previewMenuURL =
+        previewHost +
+        "-" +
+        mySubDomain +
+        template.slug +
+        "-on-" +
+        blog.handle +
+        "." +
+        config.host;
+
       if (template.owner === blogID) yourTemplates.push(template);
 
       if (template.owner !== blogID) blotTemplates.push(template);

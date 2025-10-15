@@ -31,6 +31,7 @@ var loaded = loadPlugins({
   imageCaption: require("./imageCaption"),
   katex: require("./katex"),
   linebreaks: require("./linebreaks"),
+  mediaPreload: require("./mediaPreload"),
   linkScreenshot: require("./linkScreenshot"),
   titlecase: require("./titlecase"),
   twitter: require("./twitter"),
