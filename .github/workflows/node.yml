@@ -50,7 +50,6 @@ jobs:
           sparse-checkout: |
             Dockerfile
             package.json
-            scripts/install/rebuild-sharp.js
             .github/workflows/node.yml
           sparse-checkout-cone-mode: false
 
@@ -58,7 +57,7 @@ jobs:
         id: hash
         run: |
           # Create a list of files to hash
-          FILES_TO_HASH="Dockerfile package.json .github/workflows/node.yml scripts/install/rebuild-sharp.js"
+          FILES_TO_HASH="Dockerfile package.json .github/workflows/node.yml"
           
           echo "Hashing files: $FILES_TO_HASH"
           
@@ -142,7 +141,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Find unused dependencies
-        run: npx depcheck --ignores=depcheck,nyc,nodemon,blessed-contrib,fontkit,text-to-svg --skip-missing
+        run: npx depcheck --ignores=node-addon-api,node-gyp,depcheck,nyc,nodemon,blessed-contrib,fontkit,text-to-svg --skip-missing
 
   detect-unexecuted-specs:
     needs: setup-tests

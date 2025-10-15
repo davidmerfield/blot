@@ -9,16 +9,12 @@ EXPOSE 8080
 
 ENV NODE_ENV=production
 ENV NODE_PATH=/usr/src/app/app
-ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
 
 # Set the working directory in the Docker container
 WORKDIR /usr/src/app
 
 # Install necessary packages for Puppeteer, the git client, and HEIF-enabled libvips
 RUN apk add --no-cache --update \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
     git \
     curl \
     chromium \
@@ -26,18 +22,7 @@ RUN apk add --no-cache --update \
     freetype \
     harfbuzz \
     ca-certificates \
-    ttf-freefont \
-    vips \
-    vips-dev \
-    vips-heif \
-    libheif \
-    libde265 \
-    libjpeg-turbo \
-    libpng \
-    libwebp \
-    build-base \
-    python3 \
-    pkgconfig
+    ttf-freefont
 
 # Set the Puppeteer executable path
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
@@ -50,12 +35,31 @@ RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
   && chmod +x /usr/local/bin/pandoc \
   && rm -r pandoc-${PANDOC_VERSION}
 
+# Sharp Runtime libs
+RUN apk add --no-cache --update \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
+    vips \
+    vips-dev \
+    vips-heif \
+    libheif \
+    libpng \
+    libjpeg-turbo \
+    libde265 \
+    libwebp
+
+# Sharp Build toolchain (temporary)
+RUN apk add --no-cache --virtual .build-deps \
+    g++ make gcc build-base python3 pkgconfig
+
 # Copy package file and any install hooks required during npm install
 COPY package.json ./
-COPY ./scripts/install/rebuild-sharp.js ./scripts/install/rebuild-sharp.js
 
-RUN npm install --maxsockets 1 && \
-    npm cache clean --force
+RUN npm install --no-package-lock && npm cache clean --force
+
+# Cleanup toolchain
+RUN apk del .build-deps
 
 ## Stage 2 (development)
 # This stage is for development and testing purposes
@@ -67,8 +71,8 @@ FROM base AS dev
 ENV NODE_ENV=development
 ENV PATH=/usr/src/app/node_modules/.bin:$PATH
 
-RUN npm install
-
+RUN npm install --no-package-lock && npm cache clean --force
+    
 # Configure git so the git client doesn't complain
 RUN git config --global --add safe.directory /usr/src/app && git config --global user.email "you@example.com" && git config --global user.name "Your Name"
 
