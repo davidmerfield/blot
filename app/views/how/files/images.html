@@ -14,9 +14,24 @@
 <h2>Compression and color profile</h2>
 <p>Blot aims to compress your images as little as possible to preserve its quality. Blot also preserves the color profile of images when publishing them to your site and generating thumbnails.</p>
 
+<h2>Image metadata</h2>
+<p>
+  By default, Blot uses the <strong>Basic</strong> metadata mode for images. Basic
+  retains common descriptive EXIF fields such as camera make and model while
+  stripping sensitive details. Switch to <strong>Full</strong> mode to keep all
+  available EXIF information, including GPS/location data, or choose
+  <strong>Off</strong> to remove metadata entirely.
+</p>
+<p>
+  You can change the metadata setting in <strong>Dashboard → Settings →
+  Publishing</strong>. Any metadata you keep becomes available to templates via
+  <code>entry.exif</code>; GPS coordinates and other location fields are only
+  included when Full mode is enabled.
+</p>
+
 <background class="green">
   <pre class="folder" title="Your site"><code>Apple.jpeg
-Banana.png  
+Banana.png
 Cherry.gif
 Trip to France
   _image.png  
