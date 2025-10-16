@@ -36,10 +36,15 @@ module.exports = function (blogID, blog, callback) {
 
       if (err) return callback(err);
 
+      var previousMode = (former && former.imageExif) || "off";
+
       if (Object.prototype.hasOwnProperty.call(latest, "imageExif")) {
-        var previous = (former && former.imageExif) || "off";
         latest.imageExif = normalizeImageExif(latest.imageExif, {
-          fallback: previous,
+          fallback: previousMode,
+        });
+      } else if (!former.imageExif) {
+        latest.imageExif = normalizeImageExif(previousMode, {
+          fallback: "off",
         });
       }
 
