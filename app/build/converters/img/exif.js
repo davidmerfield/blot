@@ -14,6 +14,9 @@ const SENSITIVE_KEY_FRAGMENTS = [
 ];
 
 function parseExif(buffer) {
+
+  console.log('Parsing EXIF data from buffer of length:', buffer ? buffer.length : 0);
+  
   if (!buffer || !Buffer.isBuffer(buffer) || buffer.length === 0) return {};
 
   try {

@@ -6,21 +6,31 @@ const LocalPath = require("helper/localPath");
 const hash = require("helper/hash");
 const sharp = require("sharp");
 const config = require("config");
-const { parseExif, sanitizeExif } = require("./exif");
+const exif = require("./exif");
 const Transformer = require("helper/transformer");
 
-const EXTENSIONS_TO_CONVERT = [".tif", ".tiff", ".webp", ".avif", ".heic", ".heif"];
-const SUPPORTED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ...EXTENSIONS_TO_CONVERT];
-
+const EXTENSIONS_TO_CONVERT = [
+  ".tif",
+  ".tiff",
+  ".webp",
+  ".avif",
+  ".heic",
+  ".heif",
+];
+const SUPPORTED_EXTENSIONS = [
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ...EXTENSIONS_TO_CONVERT,
+];
 
 function is(path) {
   return SUPPORTED_EXTENSIONS.includes(extname(path).toLowerCase());
 }
 
 async function read(blog, path, callback) {
-  ensure(blog, "object")
-    .and(path, "string")
-    .and(callback, "function");
+  ensure(blog, "object").and(path, "string").and(callback, "function");
 
   const localPath = LocalPath(blog.id, path);
   const assetDirectory = join(config.blog_static_files_dir, blog.id);
@@ -43,12 +53,19 @@ async function read(blog, path, callback) {
       metadata = {};
     }
 
-    const parsedExif = parseExif(metadata.exif);
-    const sanitizedExif = sanitizeExif(parsedExif, blog.imageExif);
+    const parsedExif = exif.parseExif(metadata.exif);
+
+    console.log("Parsed EXIF:", parsedExif);
+
+    const sanitizedExif = exif.sanitizeExif(parsedExif, blog.imageExif);
+
+    console.log("Sanitized EXIF:", sanitizedExif);
 
     const extras = Object.keys(sanitizedExif).length
       ? { exif: sanitizedExif }
       : undefined;
+
+    console.log("Extras to be returned:", extras);
 
     if (EXTENSIONS_TO_CONVERT.includes(extname(path).toLowerCase())) {
       const transformer = new Transformer(blog.id, "img-converter");
@@ -80,7 +97,9 @@ async function read(blog, path, callback) {
 
       const conversionRelativePath =
         conversion?.relativePath || convertedRelativePath;
-      const conversionAbsolutePath = absoluteFromRelative(conversionRelativePath);
+      const conversionAbsolutePath = absoluteFromRelative(
+        conversionRelativePath
+      );
 
       if (!(await fs.pathExists(conversionAbsolutePath))) {
         await writeConversion(localPath, conversionRelativePath);
@@ -89,7 +108,9 @@ async function read(blog, path, callback) {
       outputPath = conversionRelativePath;
     }
 
-    const contents = `<img src="${encodeURI(outputPath)}" title="${title}" alt="${title}" ${isRetina}/>`;
+    const contents = `<img src="${encodeURI(
+      outputPath
+    )}" title="${title}" alt="${title}" ${isRetina}/>`;
 
     callback(null, contents, stat, extras);
   } catch (err) {
