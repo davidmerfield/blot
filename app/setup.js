@@ -14,6 +14,103 @@ const configureLocalBlogs = require("./configure-local-blogs");
 const log = (...args) =>
   console.log.apply(null, [clfdate(), "Setup:", ...args]);
 
+async function runPostListenTasks() {
+  log("Running post-listen tasks asynchronously");
+  const logError = (message, error) => {
+    console.error(clfdate(), "Setup:", message, error || "");
+  };
+
+  try {
+    if (config.master) {
+      log("Starting scheduler asynchronously");
+      scheduler();
+    }
+  } catch (err) {
+    logError("Failed to start scheduler", err);
+  }
+
+  try {
+    if (config.master) {
+      const clients = Object.values(require("clients"));
+      for (const { init, display_name } of clients) {
+        if (init) {
+          console.log(
+            clfdate(),
+            display_name + " client:",
+            "Initializing asynchronously"
+          );
+          try {
+            init();
+          } catch (err) {
+            logError(`Error initializing ${display_name} client`, err);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    logError("Failed while initializing clients", err);
+  }
+
+  try {
+    log("Flushing caches asynchronously");
+    flush();
+  } catch (err) {
+    logError("Failed to flush caches", err);
+  }
+
+  try {
+    if (config.environment === "development") {
+      log("Configuring local blogs asynchronously");
+      configureLocalBlogs();
+    }
+  } catch (err) {
+    logError("Failed to configure local blogs", err);
+  }
+
+  if (config.environment !== "production") {
+    log("Skipping CDN purge (not in production)");
+    return;
+  }
+
+  if (!config.bunny.secret) {
+    log("Skipping CDN purge (missing credentials)");
+    return;
+  }
+
+  try {
+    const cdnURL = require("documentation/tools/cdn-url-helper")({
+      cacheID: new Date().getTime(),
+      viewDirectory: config.views_directory,
+    })();
+
+    const urls = [
+      "/dashboard.min.css",
+      "/dashboard.min.js",
+      "/documentation.min.css",
+      "/documentation.min.js",
+    ]
+      .map((path) => cdnURL(path, (p) => p))
+      .map((p) => encodeURIComponent(p));
+
+    for (const urlToPurge of urls) {
+      const url = `https://api.bunny.net/purge?url=${urlToPurge}&async=false`;
+      const options = {
+        method: "POST",
+        headers: { AccessKey: config.bunny.secret },
+      };
+      console.log("Purging Bunny CDN cache", url);
+      const res = await fetch(url, options);
+      if (res.status !== 200) {
+        console.error("Failed to purge Bunny CDN cache", res.status);
+      } else {
+        console.log("Purged Bunny CDN cache", res.status);
+      }
+    }
+  } catch (err) {
+    logError("Failed to run function to purge Bunny CDN cache", err);
+  }
+}
+
 function main(callback) {
   async.series(
     [
@@ -91,87 +188,11 @@ function main(callback) {
         }
       },
 
-      function (callback) {
-        if (!config.master) return callback();
-
-        // Launch scheduler for background tasks, like backups, emails
-        scheduler();
-        callback();
-      },
-
-      function (callback) {
-        if (!config.master) return callback();
-
-        // Run any initialization that clients need
-        // Google Drive will renew any webhooks, e.g.
-        const clients = Object.values(require("clients"));
-        for (const { init, display_name } of clients) {
-          if (init) {
-            console.log(clfdate(), display_name + " client:", "Initializing");
-            init();
-          }
-        }
-        callback();
-      },
-
-      function (callback) {
-        // Flush the cache of the public site and documentation
-        flush();
-        callback();
-      },
-
-      function (callback) {
-        if (config.environment !== "development") return callback();
-
-        configureLocalBlogs();
-        callback();
-      },
-
-      // This is neccessary because when we deploy new dashboard or site code
-      // the old container will continue to serve the old code until they are
-      // replaced. So once the new code is deployed, we need to purge the CDN
-      // at the end of each setup.
-      async function () {
-        if (!config.bunny.secret) return;
-
-        if (config.environment !== "production") return;
-
-        try {
-          const cdnURL = require("documentation/tools/cdn-url-helper")({
-            cacheID: new Date().getTime(),
-            viewDirectory: config.views_directory,
-          })();
-
-          const urls = [
-            "/dashboard.min.css",
-            "/dashboard.min.js",
-            "/documentation.min.css",
-            "/documentation.min.js",
-          ]
-            .map((path) => cdnURL(path, (p) => p))
-            .map((p) => encodeURIComponent(p));
-
-          for (const urlToPurge of urls) {
-            const url = `https://api.bunny.net/purge?url=${urlToPurge}&async=false`;
-            const options = {
-              method: "POST",
-              headers: { AccessKey: config.bunny.secret },
-            };
-            console.log("Purging Bunny CDN cache", url);
-            const res = await fetch(url, options);
-            if (res.status !== 200) {
-              console.error("Failed to purge Bunny CDN cache", res.status);
-            } else {
-              console.log("Purged Bunny CDN cache", res.status);
-            }
-          }
-        } catch (e) {
-          console.error("Failed to run function to purge Bunny CDN cache", e);
-        }
-      },
     ],
     callback
   );
 }
+
+main.runPostListenTasks = runPostListenTasks;
 
 module.exports = main;
