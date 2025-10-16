@@ -192,6 +192,86 @@ describe("entries", function () {
     });
   });
 
+  describe("random", function () {
+    it("returns undefined when there are no published entries", function (done) {
+      const originalZrandmember = redis.zrandmember;
+
+      spyOn(redis, "zrandmember").and.callFake(function (key, callback) {
+        callback(null, null);
+      });
+
+      Entries.random(this.blog.id, (entry) => {
+        try {
+          expect(entry).toBeUndefined();
+          done();
+        } catch (err) {
+          done.fail(err);
+        } finally {
+          redis.zrandmember = originalZrandmember;
+        }
+      });
+    });
+
+    it("retries until an entry with a public URL is found", function (done) {
+      const originalZrandmember = redis.zrandmember;
+      const originalEntryGet = Entry.get;
+      const candidates = ["missing", "valid"];
+
+      spyOn(redis, "zrandmember").and.callFake(function (key, callback) {
+        callback(null, candidates.shift());
+      });
+
+      spyOn(Entry, "get").and.callFake(function (blogID, entryID, callback) {
+        if (entryID === "missing") return callback({ id: entryID });
+
+        callback({ id: entryID, url: "/valid" });
+      });
+
+      Entries.random(this.blog.id, function (entry) {
+        try {
+          expect(entry).toEqual(jasmine.objectContaining({ id: "valid", url: "/valid" }));
+          expect(redis.zrandmember.calls.count()).toBe(2);
+          expect(Entry.get.calls.count()).toBe(2);
+          done();
+        } catch (err) {
+          done.fail(err);
+        } finally {
+          redis.zrandmember = originalZrandmember;
+          Entry.get = originalEntryGet;
+        }
+      });
+    });
+
+    it("stops after the maximum attempts when entries have no public URL", function (done) {
+      const originalZrandmember = redis.zrandmember;
+      const originalEntryGet = Entry.get;
+      let calls = 0;
+
+      spyOn(redis, "zrandmember").and.callFake(function (key, callback) {
+        callback(null, "missing");
+      });
+
+      spyOn(Entry, "get").and.callFake(function (blogID, entryID, callback) {
+        calls++;
+        callback({ id: entryID });
+      });
+
+      Entries.random(this.blog.id, function (entry) {
+        try {
+          expect(entry).toBeUndefined();
+          expect(calls).toBe(Entries.random.MAX_ATTEMPTS);
+          done();
+        } catch (err) {
+          done.fail(err);
+        } finally {
+          redis.zrandmember = originalZrandmember;
+          Entry.get = originalEntryGet;
+        }
+      });
+    });
+
+  });
+
   describe("resave", function () {
     it("should update entries with new dateStamps", async function (done) {
       const blog = { id: this.blog.id, permalink: true };

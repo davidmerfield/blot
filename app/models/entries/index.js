@@ -5,6 +5,8 @@ var Entry = require("../entry");
 var DateStamp = require("../../build/prepare/dateStamp");
 var Blog = require("../blog");
 
+var MAX_RANDOM_ATTEMPTS = 10;
+
 module.exports = (function () {
   var lists = [
     "all",
@@ -234,6 +236,50 @@ module.exports = (function () {
       });
     });
   }
+
+  function random(blogID, callback) {
+    ensure(blogID, "string").and(callback, "function");
+
+    var key = listKey(blogID, "entries");
+    var attempts = 0;
+
+    function attempt() {
+      if (attempts >= MAX_RANDOM_ATTEMPTS) return callback();
+
+      attempts++;
+
+      pickRandomEntryID(function (err, entryID) {
+        if (err) return callback();
+
+        if (!entryID) return callback();
+
+        Entry.get(blogID, entryID, function (entry) {
+          if (!entry || !entry.url) return attempt();
+
+          callback(entry);
+        });
+      });
+    }
+
+    function pickRandomEntryID(done) {
+      redis.zrandmember(key, function (err, entryID) {
+        if (err) return done(err);
+
+        done(null, normalizeEntryID(entryID));
+      });
+    }
+
+    function normalizeEntryID(entryID) {
+      if (Array.isArray(entryID)) entryID = entryID[0];
+      if (Buffer.isBuffer(entryID)) entryID = entryID.toString();
+
+      return entryID || null;
+    }
+
+    attempt();
+  }
+
+  random.MAX_ATTEMPTS = MAX_RANDOM_ATTEMPTS;
   function getPage(blogID, pageNo, pageSize, callback, options = {}) {
     ensure(blogID, "string")
       .and(pageNo, "number")
@@ -421,5 +467,6 @@ module.exports = (function () {
     lastUpdate: lastUpdate,
     getCreated: getCreated,
     getDeleted: getDeleted,
+    random: random,
   };
 })();
