@@ -178,7 +178,7 @@ module.exports = function (options = {}) {
 
           params.append("_csrf", csrfTokenMatch[1]);
 
-          const res = await this.fetch(formMatch, {
+          const res = await this.fetch(formPath, {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",

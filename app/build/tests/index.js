@@ -163,37 +163,25 @@ describe("build", function () {
   });
 
   it("attaches sanitized EXIF data to image entries", function (done) {
-    var path = "/photo.jpg";
+    var path = "/gps.jpg";
 
     fs.copySync(
-      require("path").join(__dirname, "../converters/img/tests/bunny.png"),
+      require("path").join(__dirname, "../converters/img/tests/gps.jpg"),
       this.blogDirectory + path
     );
 
-    var sampleExif = {
-      image: { Make: "Canon", Model: "5D" },
-      exif: {
-        LensModel: "EF 50mm",
-        SerialNumber: "123456",
-        DateTimeOriginal: new Date("2024-01-01T00:00:00Z"),
-      },
-      gps: { Latitude: 51.5, Longitude: -0.1 },
-    };
-
-    var parseSpy = spyOn(exif, "parseExif").and.returnValue(sampleExif);
-
-    this.blog.imageExif = "basic";
-
     build(this.blog, path, function (err, entry) {
-      parseSpy.and.callThrough();
       if (err) return done.fail(err);
 
       expect(entry.exif).toEqual({
-        image: { Make: "Canon", Model: "5D" },
-        exif: {
-          LensModel: "EF 50mm",
-          DateTimeOriginal: "2024-01-01T00:00:00.000Z",
-        },
+        ImageDescription: "                               ",
+        Make: "NIKON",
+        Model: "COOLPIX P6000",
+        ExposureTime: "1/178",
+        FNumber: 4.5,
+        ISO: 64,
+        Flash: "Off, Did not fire",
+        FocalLength: "6.0 mm",
       });
 
       done();
@@ -350,7 +338,7 @@ describe("build", function () {
     const entry = await this.build(path, contents);
 
     expect(entry.metadata).toEqual({});
-    expect(entry.html.trim()).toEqual("<h1 id=\"hello\">Hello</h1>");
+    expect(entry.html.trim()).toEqual('<h1 id="hello">Hello</h1>');
 
     done();
   });
@@ -366,7 +354,7 @@ describe("build", function () {
     });
 
     expect(entry.tags).toEqual(["one", "two"]);
-    
+
     done();
   });
 
@@ -387,7 +375,6 @@ describe("build", function () {
     expect(entry.path).toEqual(path);
     done();
   });
-
 
   it("will build without error if draft is a YAML array (i.e. not a bool)", async function (done) {
     const path = "/post.txt";
@@ -415,5 +402,4 @@ describe("build", function () {
     expect(entry.path).toEqual(path);
     done();
   });
-
 });
