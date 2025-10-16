@@ -2,6 +2,7 @@ describe("Blog.create", function () {
   var create = require("../create");
   var remove = require("../remove");
   var getAllIDs = require("../getAllIDs");
+  var extend = require("../extend");
 
   // Create a test user before each spec
   global.test.user();
@@ -34,11 +35,11 @@ describe("Blog.create", function () {
     create(test.user.uid, { handle: "exampleblog" }, function (err, blog) {
       if (err) return done.fail(err);
 
-      test.blog = blog;
+      test.blog = extend(blog);
 
-      expect(blog.imageExif).toBe("basic");
-      expect(blog.isImageExifBasic).toBe(true);
-      expect(blog.isImageExifOff).toBe(false);
+      expect(test.blog.imageExif).toBe("basic");
+      expect(test.blog.isImageExifBasic).toBe(true);
+      expect(test.blog.isImageExifOff).toBe(false);
 
       done();
     });
