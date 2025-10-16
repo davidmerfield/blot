@@ -65,6 +65,7 @@ module.exports = function set (blogID, path, updates, callback) {
     if (entry.dependencies === undefined) entry.dependencies = [];
     if (entry.backlinks === undefined) entry.backlinks = [];
     if (entry.internalLinks === undefined) entry.internalLinks = [];
+    if (!entry.exif || typeof entry.exif !== "object") entry.exif = {};
 
     entry.scheduled = entry.dateStamp > Date.now();
 
