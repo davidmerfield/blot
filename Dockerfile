@@ -53,6 +53,12 @@ RUN apk add --no-cache --update \
 RUN apk add --no-cache --virtual .build-deps \
     g++ make gcc build-base python3 pkgconfig
 
+# --- ExifTool (runtime perl + temp make) ---
+# perl is already installed above; use a small temp layer for make
+RUN apk add exiftool
+
+RUN exiftool -ver
+
 # Copy package file and any install hooks required during npm install
 COPY package.json ./
 

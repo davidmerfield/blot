@@ -1,94 +1,77 @@
-const exifReader = require("exif-reader");
-const { normalize } = require("models/blog/util/imageExif");
+// exif.js — exiftool-backed, path-based
 
-const SENSITIVE_KEY_FRAGMENTS = [
-  "gps",
-  "location",
-  "position",
-  "latitude",
-  "longitude",
-  "serial",
-  "owner",
-  "address",
-  "contact",
+const { execFile } = require("node:child_process");
+const fs = require("node:fs/promises");
+
+const EXIFTOOL = process.env.EXIFTOOL_PATH || "exiftool";
+
+const BASIC_WHITELIST = [
+  "Make",
+  "Model",
+  "ExposureTime",
+  "FNumber",
+  "ISO",
+  "FocalLength",
+  "LensModel",
+  "ImageDescription",
+  "Flash",
 ];
 
-function parseExif(buffer) {
+const FULL_WHITELIST = [
+  ...BASIC_WHITELIST,
+  "GPSPosition",
+  "GPSLatitude",
+  "GPSLongitude",
+  "GPSAltitude",
+];
 
-  console.log('Parsing EXIF data from buffer of length:', buffer ? buffer.length : 0);
-  
-  if (!buffer || !Buffer.isBuffer(buffer) || buffer.length === 0) return {};
+function execExifTool(filePath, extraArgs = []) {
+  return new Promise((resolve) => {
+    const args = [
+      "-j", // JSON
+      filePath,
+      ...extraArgs,
+    ];
+    execFile(EXIFTOOL, args, (err, stdout) => {
+      if (err) return resolve(null);
+      try {
+        const parsed = JSON.parse(stdout);
+        resolve(Array.isArray(parsed) && parsed.length ? parsed[0] : null);
+      } catch {
+        resolve(null);
+      }
+    });
+  });
+}
 
+async function parseExif(filePath, mode = "off") {
+  if (mode === "off") return {};
+
+  if (!filePath || typeof filePath !== "string") return {};
   try {
-    return exifReader(buffer);
-  } catch (err) {
+    const stat = await fs.stat(filePath).catch(() => null);
+    if (!stat || !stat.isFile() || stat.size === 0) return {};
+    const raw = await execExifTool(filePath);
+
+    console.log("Raw EXIF data:", raw);
+
+    const result = {};
+
+    Object.keys(raw || {}).forEach((key) => {
+      if (
+        (mode === "full" && FULL_WHITELIST.includes(key)) ||
+        (mode === "basic" && BASIC_WHITELIST.includes(key))
+      ) {
+        result[key] = raw[key];
+      }
+    });
+
+    return result;
+  } catch {
     return {};
   }
 }
 
-function toSerializable(value) {
-  if (value === undefined || value === null) return value;
-  if (Buffer.isBuffer(value)) return value.toString("base64");
-  if (value instanceof Date) return value.toISOString();
-
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => toSerializable(item))
-      .filter((item) => item !== undefined);
-  }
-
-  if (typeof value === "object") {
-    const result = {};
-    Object.keys(value).forEach((key) => {
-      const serialized = toSerializable(value[key]);
-      if (serialized !== undefined) result[key] = serialized;
-    });
-    return result;
-  }
-
-  return value;
-}
-
-function stripSensitive(value) {
-  if (value === undefined || value === null) return undefined;
-
-  if (Array.isArray(value)) {
-    const arr = value
-      .map((item) => stripSensitive(item))
-      .filter((item) => item !== undefined);
-    return arr.length ? arr : undefined;
-  }
-
-  if (typeof value !== "object") return value;
-
-  const result = {};
-
-  Object.keys(value).forEach((key) => {
-    const lower = key.toLowerCase();
-    if (SENSITIVE_KEY_FRAGMENTS.some((fragment) => lower.includes(fragment))) return;
-
-    const sanitized = stripSensitive(value[key]);
-    if (sanitized !== undefined) result[key] = sanitized;
-  });
-
-  return Object.keys(result).length ? result : undefined;
-}
-
-function sanitizeExif(exifData, mode) {
-  const normalizedMode = normalize(mode, { fallback: "off" });
-
-  if (normalizedMode === "off") return {};
-
-  const serializable = toSerializable(exifData || {});
-
-  if (normalizedMode === "full") return serializable || {};
-
-  const sanitized = stripSensitive(serializable || {});
-  return sanitized || {};
-}
-
 module.exports = {
   parseExif,
-  sanitizeExif,
-  SENSITIVE_KEY_FRAGMENTS,
 };

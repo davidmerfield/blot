@@ -146,6 +146,7 @@ module.exports = function (options = {}) {
             redirect: "manual",
           });
 
+          
           const headers = Object.fromEntries(page.headers);
           const cookies = headers["set-cookie"];
           const csrfCookie = cookies.match(/csrf=([^;]+)/);
@@ -155,6 +156,15 @@ module.exports = function (options = {}) {
 
           const pageText = await page.text();
           const csrfTokenMatch = pageText.match(/name="_csrf" value="([^"]+)"/);
+          
+          let formPath = path;
+
+          // determine the form path in case it is different
+          const formMatch = cheerio.load(pageText)('form[action][method="post"]').attr('action');
+          
+          if (formMatch) {
+            formPath = formMatch;
+          }
 
           if (!csrfTokenMatch) {
             return reject(new Error("CSRF token not found in form"));
@@ -168,7 +178,7 @@ module.exports = function (options = {}) {
 
           params.append("_csrf", csrfTokenMatch[1]);
 
-          const res = await this.fetch(path, {
+          const res = await this.fetch(formMatch, {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",

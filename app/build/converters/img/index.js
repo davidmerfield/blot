@@ -53,16 +53,12 @@ async function read(blog, path, callback) {
       metadata = {};
     }
 
-    const parsedExif = exif.parseExif(metadata.exif);
+    const parsedExif = await exif.parseExif(localPath, blog.imageExif);
 
     console.log("Parsed EXIF:", parsedExif);
 
-    const sanitizedExif = exif.sanitizeExif(parsedExif, blog.imageExif);
-
-    console.log("Sanitized EXIF:", sanitizedExif);
-
-    const extras = Object.keys(sanitizedExif).length
-      ? { exif: sanitizedExif }
+    const extras = Object.keys(parsedExif).length
+      ? { exif: parsedExif }
       : undefined;
 
     console.log("Extras to be returned:", extras);
