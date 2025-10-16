@@ -353,6 +353,7 @@ function createViewSnapshot(view) {
   return {
     content: view.content,
     url: urlInfo.url,
+    urlPatterns: urlInfo.urlPatterns,
     partials: partials,
     locals: view.locals || {},
   };
@@ -394,6 +395,7 @@ function createStoredViewSnapshot(views) {
     map[view.name] = {
       content: view.content,
       url: view.url,
+      urlPatterns: view.urlPatterns || (view.url ? [view.url] : []),
       partials: view.partials || {},
       locals: view.locals || {},
     };
