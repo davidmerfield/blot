@@ -6,7 +6,7 @@ var stripe = require("stripe")(config.stripe.secret);
 var email = "dmerfield" + Date.now() + "@gmail.com";
 var uuid = require("uuid/v4");
 var debug = require("debug")("scripts:user:overdue-subscription");
-var access = require("../access");
+var access = require("../blog/access");
 var fetchSubscription = require("./fetch-subscription-from-stripe");
 
 var customer = {
