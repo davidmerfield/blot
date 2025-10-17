@@ -28,16 +28,21 @@ const handle =
   (initial = false) =>
   async (path) => {
     try {
-      console.log(clfdate(), (initial ? "Initial" : "Changed"), "file:", path);
-      
+      console.time("Processed " + path);
+
       if (path.endsWith("README")) {
+        console.timeEnd("Processed " + path);
         return;
       }
 
       if (path.includes("tools/")) {
-        if (initial) return;
+        if (initial) {
+          console.timeEnd("Processed " + path);
+          return;
+        }
         console.log("Rebuilding tools");
         await tools();
+        console.timeEnd("Processed " + path);
         return;
       }
 
@@ -83,8 +88,10 @@ const handle =
           join(DESTINATION_DIRECTORY, path)
         );
       }
+      console.timeEnd("Processed " + path);
     } catch (e) {
       console.error(e);
+      console.timeEnd("Processed " + path);
     }
   };
 
