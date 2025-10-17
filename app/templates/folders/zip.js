@@ -29,11 +29,7 @@ const main = () => {
         const tmpPath = tmp + "folder-zips/" + folder + ".zip";
 
         if (fs.existsSync(tmpPath)) {
-          console.log(
-            clfdate(),
-            folder,
-            "Copying cached ZIP"
-          );
+          console.log(clfdate(), folder, "Copying cached ZIP", tmpPath);
           return fs.copy(tmpPath, VIEW_DIRECTORY + "/" + folder + ".zip", next);
         }
 
@@ -48,7 +44,14 @@ const main = () => {
         });
 
         output.on("close", function () {
-          console.log(archive.pointer() + " total bytes for", folder);
+          console.log(
+            clfdate(),
+            folder,
+            archive.pointer() + " total bytes for",
+            folder,
+            tmpPath
+          );
+          
           cache[folder] = tmpPath;
           const outputPath = VIEW_DIRECTORY + "/" + folder + ".zip";
           fs.removeSync(outputPath);
