@@ -14,8 +14,6 @@ setup(async (err) => {
   server.listen(config.port, function () {
     console.log(clfdate(), `Server listening`);
 
-    console.log('change')
-    
     // Run non-blocking setup tasks after the port is bound so startup isn't delayed.
     if (typeof setup.runPostListenTasks === "function") {
       setup
