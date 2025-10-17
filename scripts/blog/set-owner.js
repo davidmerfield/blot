@@ -17,14 +17,4 @@ get(process.argv[2], function (err, user, blog) {
       });
     });
   });
-
-  // User.getById(user.uid, function(err, oldOwner) {
-  //   oldOwner.blogs = oldOwner.blogs.filter(function(id) {
-  //     return id !== blog.id;
-  //   });
-
-  //   User.set(oldOwner.uid, { blogs: oldOwner.blogs }, function(err) {
-  //     console.log("Removed", oldOwner.uid, "as owner of", blog.id);
-  //   });
-  // });
 });

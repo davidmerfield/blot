@@ -2,10 +2,10 @@
 var Blog = require("models/blog");
 var User = require("models/user");
 var format = require("url").format;
-var config = require("../config");
+var config = require("../../config");
 
 if (require.main === module) {
-  require("./get/blog")(process.argv[2], function (err, user, blog) {
+  require("../get/blog")(process.argv[2], function (err, user, blog) {
     main((blog && blog.handle) || process.argv[2], function (err, url) {
       if (err) throw err;
       console.log(url);

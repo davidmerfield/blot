@@ -2,7 +2,7 @@ var getConfirmation = require("../util/getConfirmation");
 var Blog = require("models/blog");
 var User = require("models/user");
 var validate = require("models/blog/validate/handle");
-var access = require("../access");
+var access = require("./access");
 
 if (require.main === module) {
   main(process.argv[2], process.argv[3], function (err) {

@@ -1,4 +1,4 @@
-const each = require("./each/entry");
+const each = require("../each/entry");
 const localPath = require("helper/localPath");
 const TMP = require("helper/tempDir")() + "/thousand";
 const fs = require("fs-extra");
