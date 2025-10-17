@@ -86,7 +86,7 @@ const handle =
     }
   };
 
-module.exports = async ({ watch = false, skipZip = false } = {}) => {
+module.exports = async ({ watch = false } = {}) => {
   const now = Date.now();
 
   // we only reset the destination directory in production
@@ -96,7 +96,7 @@ module.exports = async ({ watch = false, skipZip = false } = {}) => {
     await fs.ensureDir(DESTINATION_DIRECTORY);
   }
 
-  if (!skipZip) await zip();
+  await zip();
 
   await favicon(
     join(SOURCE_DIRECTORY, "images/logo.svg"),

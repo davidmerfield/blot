@@ -318,18 +318,18 @@ jobs:
       - name: Compute folder template hash
         id: folder-hash
         run: |
-          HASH=$(find app/templates/folders -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d ' ' -f 1)
+          HASH=$(find ${{ github.workspace }}/app/templates/folders -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d ' ' -f 1)
           echo "hash=$HASH" >> $GITHUB_OUTPUT
 
       - name: Prepare folder zip cache directory
-        run: mkdir -p data/tmp/folder-zips
+        run: mkdir -p ${{ github.workspace }}/data/tmp/folder-zips
 
       - name: Restore folder zip cache
         id: restore-folder-zips
         uses: actions/cache@v4
         with:
-          path: data/tmp/folder-zips
-          key: folder-zip-cache-${{ steps.folder-hash.outputs.hash }}
+          path: ${{ github.workspace }}/data/tmp/folder-zips
+          key: folder-cache-${{ steps.folder-hash.outputs.hash }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2

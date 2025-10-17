@@ -18,7 +18,7 @@ module.exports = function (options = {}) {
   // we also build the templates into the cache
   beforeAll(async () => {
     console.log(clfdate(), "Test site: Building views");
-    await build({ watch: false, skipZip: true });
+    await build({ watch: false });
     console.log(clfdate(), "Test site: Building templates");
     await templates({ watch: false });
   }, 60000);
