@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Setup tests
         id: setup
-        uses: ./.github/actions/setup-tests
+        uses: ./.github/setup-tests
 
   detect-unused-dependencies:
     needs: setup-tests
