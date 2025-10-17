@@ -100,18 +100,15 @@ module.exports = async function (blog, path) {
             return { internalLink };
           });
 
-          const metadata = entry.metadata || {};
-          entry.metadata = Object.keys(metadata).map((key) => {
-            return { key, value: metadata[key] };
+          entry.metadata = Object.keys(entry.metadata).map((key) => {
+            return { key, value: entry.metadata[key] };
           });
-          Object.assign(entry.metadata, metadata);
 
           if (entry.exif && typeof entry.exif === "object") {
             const exif = entry.exif;
             entry.exif = Object.keys(exif).map((key) => {
               return { key, value: exif[key] };
             });
-            Object.assign(entry.exif, exif);
           } else {
             entry.exif = [];
           }
