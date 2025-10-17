@@ -645,4 +645,24 @@ Heading Here
 
     this.syncAndCheck(files, entry, done);
   });
+
+    // You can embed images by wikilink using only the filename
+  it("turns wikilinks into embedded images using the filename and respects the caption", function (done) {
+    const path = "/contains-image.md";
+    const content = "![[pic.png|Caption text]]";
+
+    const imagePath = "/Files/Pic.png";
+    const imageContent = "BinaryImageContent";
+
+    const html = '<p><img src="/Files/Pic.png" title="Caption text" alt="Caption text"><span class="caption">Caption text</span></p>';
+
+    const files = [
+      { path: imagePath, content: imageContent },
+      { path, content },
+    ];
+
+    const entry = { path, html, dependencies: ["/pic.png", "/Files/Pic.png"] };
+
+    this.syncAndCheck(files, entry, done);
+  });
 });

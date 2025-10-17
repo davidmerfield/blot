@@ -50,7 +50,6 @@ function render($, callback, { blogID, path }) {
       ];
 
       tryEach(lookups, function (err, result) {
-        
         if (err || !result || !result.url) {
           // we failed to find a path, we should register paths to watch
           // if pathOfPost is '/Posts/foo.txt' then dirOfPost is '/Posts'
@@ -73,12 +72,34 @@ function render($, callback, { blogID, path }) {
         const { url, title, path: linkedPath } = result;
 
         if (isLink) {
+          console.log("Setting link href to", url);
           $node.attr("href", url);
           if (!piped) {
+            console.log("Setting link text to", title || url);
             $node.text(title || url);
           }
         } else {
-          $node.attr("src", url);
+          $node.attr("src", linkedPath);
+
+          // if the node is an image, replace the title text with the alt text
+          // if the title text is 'wikilink' (which is what pandoc sets it to)
+          const altText = $node.attr("alt");
+          if (altText && altText.toLowerCase() !== "wikilink") {
+            $node.attr("title", altText);
+          }
+
+          // if the node is an image and the next node is a span class=caption
+          // then we set the caption text to the alt text
+          const nextNode = $node.next();
+          if (
+            nextNode &&
+            nextNode.length &&
+            nextNode[0].name === "span" &&
+            nextNode.attr("class") === "caption" &&
+            nextNode.text().trim() === "wikilink"
+          ) {
+            nextNode.text(altText || "");
+          }
         }
 
         if (linkedPath) {
