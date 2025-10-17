@@ -322,13 +322,13 @@ jobs:
           echo "hash=$HASH" >> $GITHUB_OUTPUT
 
       - name: Prepare folder zip cache directory
-        run: mkdir -p /usr/src/app/data/tmp/folder-zips
+        run: mkdir -p data/tmp/folder-zips
 
       - name: Restore folder zip cache
         id: restore-folder-zips
         uses: actions/cache@v4
         with:
-          path: /usr/src/app/data/tmp/folder-zips
+          path: data/tmp/folder-zips
           key: folder-zip-cache-${{ steps.folder-hash.outputs.hash }}
 
       - name: Log in to GitHub Container Registry
