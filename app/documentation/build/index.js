@@ -96,8 +96,11 @@ module.exports = async ({ watch = false } = {}) => {
     await fs.ensureDir(DESTINATION_DIRECTORY);
   }
 
+  console.log(clfdate(), "Building documentation from", SOURCE_DIRECTORY);
+
   await zip();
 
+  console.log(clfdate(), "Generating favicon.ico from logo.svg");
   await favicon(
     join(SOURCE_DIRECTORY, "images/logo.svg"),
     join(DESTINATION_DIRECTORY, "favicon.ico")
@@ -109,12 +112,16 @@ module.exports = async ({ watch = false } = {}) => {
 
   const initialHandler = handle(true);
 
+  console.log(clfdate(), "Processing", paths.length, "files");
   await Promise.all(paths.map(initialHandler));
 
+  console.log(clfdate(), "Generating tools documentation");
   await tools();
 
+  console.log(clfdate(), "Building CSS");
   await buildCSS();
 
+  console.log(clfdate(), "Building JS");
   await buildJS();
 
   try {

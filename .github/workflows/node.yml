@@ -322,14 +322,14 @@ jobs:
           echo "hash=$HASH" >> $GITHUB_OUTPUT
 
       - name: Prepare folder zip cache directory
-        run: mkdir -p ${{ github.workspace }}/data/tmp/folder-zips
+        run: mkdir -p ${{ github.workspace }}/app/templates/folders/.zips
 
       - name: Restore folder zip cache
         id: restore-folder-zips
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/data/tmp/folder-zips
-          key: folder-cache-${{ steps.folder-hash.outputs.hash }}
+          path: ${{ github.workspace }}/app/templates/folders/.zips
+          key: folder-cacher-${{ steps.folder-hash.outputs.hash }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2

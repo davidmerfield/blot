@@ -6,7 +6,7 @@ const clfdate = require("helper/clfdate");
 const VIEW_DIRECTORY = config.views_directory + "/folders";
 const FOLDER_DIRECTORY = __dirname;
 
-const tmp = require("helper/tempDir")();
+const tmp = __dirname + '/.zips/';
 const cache = {};
 
 const main = () => {
@@ -26,7 +26,7 @@ const main = () => {
           );
         }
 
-        const tmpPath = tmp + "folder-zips/" + folder + ".zip";
+        const tmpPath = tmp + folder + ".zip";
 
         if (fs.existsSync(tmpPath)) {
           console.log(clfdate(), folder, "Copying cached ZIP", tmpPath);
@@ -34,8 +34,7 @@ const main = () => {
         }
 
         fs.removeSync(tmpPath);
-
-        fs.ensureDirSync(tmp + "folder-zips");
+        fs.ensureDirSync(tmp);
 
         const output = fs.createWriteStream(tmpPath);
 
@@ -51,7 +50,7 @@ const main = () => {
             folder,
             tmpPath
           );
-          
+
           cache[folder] = tmpPath;
           const outputPath = VIEW_DIRECTORY + "/" + folder + ".zip";
           fs.removeSync(outputPath);
