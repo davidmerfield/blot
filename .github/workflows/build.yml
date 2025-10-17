@@ -13,115 +13,127 @@ name: build
 
 on:
   push:
-    branches:
-      - "master"
+    branches: [master]
   pull_request:
-    branches:
-      - "master"
+    branches: [master]
 
 permissions:
-  contents: read  # To check out code
-  packages: write # To push to GitHub Container Registry
+  contents: read
+  packages: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/blot
 
 jobs:
-  build-production-images:
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runs-on: ubuntu-latest
+          - arch: arm64
+            platform: linux/arm64
+            runs-on: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runs-on }}
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
+      - name: Setup Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build production image
+      # Per-arch registry cache. Keeps layers hot on each native runner.
+      - name: Build and push (${{ matrix.arch }})
+        id: build
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64,linux/arm64
-          target: prod
           context: .
+          target: prod
+          platforms: ${{ matrix.platform }}          # native, no QEMU
           push: true
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot,mode=max
-          tags: ghcr.io/${{ github.repository_owner }}/blot:${{ github.sha }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}-${{ matrix.arch }}
+          cache-from: |
+            type=registry,ref=${{ env.IMAGE_NAME }}:cache-${{ matrix.arch }}
+          cache-to: |
+            type=registry,ref=${{ env.IMAGE_NAME }}:cache-${{ matrix.arch }},mode=max
 
-      - name: Verify built-in health check
+      - name: Verify health check (${{ matrix.arch }})
         env:
-          IMAGE: ghcr.io/${{ github.repository_owner }}/blot:${{ github.sha }}
+          IMAGE: ${{ env.IMAGE_NAME }}:${{ github.sha }}-${{ matrix.arch }}
         run: |
+          set -euo pipefail
           docker network create test_network
 
-          # Start a Redis container
           redis_container_id=$(docker run -d --name test_redis --network test_network redis:latest)
 
-          # Ensure Redis started successfully
-          if [ -z "$redis_container_id" ]; then
-            echo "Failed to start the Redis container. Exiting..."
-            exit 1
-          fi
-
-          echo "Waiting for Redis ($redis_container_id) to become ready..."
-          timeout=30
-          interval=2
-          elapsed=0
-          while ! docker exec $redis_container_id redis-cli ping | grep -q PONG; do
+          timeout=30; interval=2; elapsed=0
+          until docker exec "$redis_container_id" redis-cli ping | grep -q PONG; do
             if [ $elapsed -ge $timeout ]; then
-              echo "Redis did not become ready within $timeout seconds. Exiting..."
-              docker stop $redis_container_id
-              docker rm $redis_container_id
+              echo "Redis not ready in $timeout s"
+              docker logs "$redis_container_id" || true
               exit 1
             fi
-            sleep $interval
-            elapsed=$((elapsed + interval))
+            sleep $interval; elapsed=$((elapsed+interval))
           done
-          echo "Redis is ready."
 
-          # Start the app container with Redis environment variables
-          container_id=$(docker run -d --network test_network --env BLOT_REDIS_HOST=test_redis -p 8080:8080 $IMAGE)
+          app_id=$(docker run -d --network test_network -e BLOT_REDIS_HOST=test_redis -p 8080:8080 "$IMAGE")
 
-          # Ensure the app container started successfully
-          if [ -z "$container_id" ]; then
-            echo "Failed to start the app container. Exiting..."
-            docker stop $redis_container_id
-            docker rm $redis_container_id
-            exit 1
-          fi
-
-          echo "Waiting for the app container ($container_id) to pass the built-in health check..."
-
-          # Wait for the app container's health status to become "healthy"
-          timeout=60
-          interval=5
-          elapsed=0
-          while [ "$(docker inspect --format='{{json .State.Health.Status}}' $container_id)" != '"healthy"' ]; do
+          timeout=60; interval=5; elapsed=0
+          until [ "$(docker inspect --format='{{json .State.Health.Status}}' "$app_id")" = '"healthy"' ]; do
             if [ $elapsed -ge $timeout ]; then
-              echo "Health check failed: app container did not become healthy within $timeout seconds."
-
-              echo "Final log contents:"
-              docker logs $container_id
-              docker stop $container_id
-              docker rm $container_id
-              docker stop $redis_container_id
-              docker rm $redis_container_id
+              echo "App health check failed"
+              docker logs "$app_id" || true
               exit 1
             fi
-            sleep $interval
-            elapsed=$((elapsed + interval))
+            sleep $interval; elapsed=$((elapsed+interval))
           done
 
-          echo "App container passed the health check."
+          docker rm -f "$app_id" "$redis_container_id"
+          docker network rm test_network
 
-          # Clean up
-          docker stop $container_id
-          docker rm $container_id
-          docker stop $redis_container_id
-          docker rm $redis_container_id
+  manifest:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ always() && needs.build.result == 'success' }}
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create and push multi-arch manifest
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/${{ github.repository_owner }}/blot"
+          SHA="${{ github.sha }}"
+          docker buildx imagetools create \
+            -t "$IMAGE:$SHA" \
+            "$IMAGE:$SHA-amd64" \
+            "$IMAGE:$SHA-arm64"
+
+          # Optional: tag branch and latest on default branch
+          if [ "${{ github.ref_name }}" = "master" ]; then
+            docker buildx imagetools create \
+              -t "$IMAGE:latest" \
+              "$IMAGE:$SHA"
+          fi
