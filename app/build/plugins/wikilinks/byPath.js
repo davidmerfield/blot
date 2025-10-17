@@ -28,7 +28,7 @@ const fs = require("fs-extra");
 // wikilink: [[/Posts/target]]
 // target: /Posts/target.txt
 
-module.exports = function byPath(blogID, pathOfPost, href, callback) {
+module.exports = function byPath(blogID, pathOfPost, href, isLink, callback) {
   const root = localPath(blogID, "/");
   const getEntry = require("models/entry").get;
 

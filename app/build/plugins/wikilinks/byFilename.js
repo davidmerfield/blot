@@ -3,14 +3,16 @@ const { dirname, join, basename, normalize } = require("path");
 const localPath = require("helper/localPath");
 const caseSensitivePath = require("helper/caseSensitivePath");
 
-module.exports = function byFilename(blogID, pathOfPost, href, callback) {
+module.exports = function byFilename(
+  blogID,
+  pathOfPost,
+  href,
+  isLink,
+  callback
+) {
   if (!href) return callback(new Error("No filename provided"));
 
   const stripped = href.split("|")[0].trim();
-
-  if (!stripped || stripped.includes("/") || stripped.includes("#"))
-    return callback(new Error("No filename"));
-
   const targetName = basename(stripped);
 
   if (!targetName) return callback(new Error("No filename"));
@@ -60,19 +62,29 @@ module.exports = function byFilename(blogID, pathOfPost, href, callback) {
           });
         }
 
-        caseSensitivePath(root, join(current, targetName), function (matchErr, matchPath) {
-          if (!matchErr && matchPath && matchPath.startsWith(root)) {
-            const resolvedPath = "/" + matchPath.slice(root.length);
+        caseSensitivePath(
+          root,
+          join(current, targetName),
+          function (matchErr, matchPath) {
+            if (!matchErr && matchPath && matchPath.startsWith(root)) {
+              const resolvedPath = "/" + matchPath.slice(root.length);
 
-            return getEntry(blogID, resolvedPath, function (entry) {
-              if (entry) return callback(null, entry);
+              return getEntry(blogID, resolvedPath, function (entry) {
+                if (entry) {
+                  return callback(null, entry);
+                } else {
+                  return callback(null, {
+                    url: resolvedPath,
+                    title: targetName,
+                    path: resolvedPath,
+                  });
+                }
+              });
+            }
 
-              searchNext();
-            });
+            searchNext();
           }
-
-          searchNext();
-        });
+        );
       }
     );
   }

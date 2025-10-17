@@ -42,34 +42,16 @@ function render($, callback, { blogID, path }) {
       const piped = isLink && makeSlug($node.html()) !== makeSlug(href);
 
       const lookups = [
-        byPath.bind(null, blogID, path, href),
-        byFilename.bind(null, blogID, path, href),
+        byPath.bind(null, blogID, path, href, isLink),
+        byFilename.bind(null, blogID, path, href, isLink),
         byURL.bind(null, blogID, href),
         byTitle.bind(null, blogID, href),
         byHeadingAnchor.bind(null, $, href),
       ];
 
-      tryEach(lookups, function (err, entry) {
-        if (entry && entry.type === "heading-anchor") {
-          $(node).attr("href", entry.href);
-
-          if (!piped && entry.title) $(node).html(entry.title);
-
-          return next();
-        }
-
-        if (entry) {
-          const link = entry.url;
-
-          $node.attr(attribute, link);
-
-          if (isLink && !piped) $node.html(entry.title);
-
-          dependencies.push(entry.path);
-          return next();
-        }
-
-        if (!href.startsWith("#")) {
+      tryEach(lookups, function (err, result) {
+        
+        if (err || !result || !result.url) {
           // we failed to find a path, we should register paths to watch
           // if pathOfPost is '/Posts/foo.txt' then dirOfPost is '/Posts'
           const dirOfPost = dirname(path);
@@ -82,15 +64,25 @@ function render($, callback, { blogID, path }) {
             resolvedHref,
             resolvedHref + ".md",
             resolvedHref + ".txt",
-            resolvedHref + ".png",
-            resolvedHref + ".jpg",
-            resolvedHref + ".gif",
-            resolvedHref + ".PNG",
-            resolvedHref + ".JPG",
-            resolvedHref + ".GIF",
           ];
 
           pathsToWatch.forEach((path) => dependencies.push(path));
+          return next();
+        }
+
+        const { url, title, path: linkedPath } = result;
+
+        if (isLink) {
+          $node.attr("href", url);
+          if (!piped) {
+            $node.text(title || url);
+          }
+        } else {
+          $node.attr("src", url);
+        }
+
+        if (linkedPath) {
+          dependencies.push(linkedPath);
         }
 
         next();

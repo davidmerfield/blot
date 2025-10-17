@@ -625,4 +625,24 @@ Heading Here
 
     this.syncAndCheck(files, entry, done);
   });
+
+  // You can embed images by wikilink using only the filename
+  it("turns wikilinks into links using dependencies", function (done) {
+    const path = "/contains-wikilink.md";
+    const content = "![[Image.jpg]]";
+
+    const imagePath = "/_Images/Image.jpg";
+    const imageContent = "BinaryImageContent";
+
+    const html = '<p><img src="/_Images/Image.jpg" title="wikilink" alt="Image.jpg"><span class="caption">wikilink</span></p>';
+
+    const files = [
+      { path: imagePath, content: imageContent },
+      { path, content },
+    ];
+
+    const entry = { path, html, dependencies: ["/Image.jpg", "/_Images/Image.jpg"] };
+
+    this.syncAndCheck(files, entry, done);
+  });
 });

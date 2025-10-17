@@ -15,9 +15,8 @@ module.exports = function byHeadingAnchor($, href, done) {
   if (!resolution) return done(new Error("Not a heading anchor"));
 
   done(null, {
-    type: "heading-anchor",
-    href: ensureHash(resolution.anchor),
-    anchor: stripHash(resolution.anchor),
+    url: ensureHash(resolution.anchor),
+    path: null,
     title: resolution.title || target,
   });
 };
