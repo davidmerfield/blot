@@ -1,6 +1,7 @@
 const { tryEach, eachOf } = require("async");
 const { resolve, dirname } = require("path");
 const byPath = require("./byPath");
+const byFilename = require("./byFilename");
 const byURL = require("./byURL");
 const byTitle = require("./byTitle");
 const byHeadingAnchor = require("./byHeadingAnchor");
@@ -42,6 +43,7 @@ function render($, callback, { blogID, path }) {
 
       const lookups = [
         byPath.bind(null, blogID, path, href),
+        byFilename.bind(null, blogID, path, href),
         byURL.bind(null, blogID, href),
         byTitle.bind(null, blogID, href),
         byHeadingAnchor.bind(null, $, href),
