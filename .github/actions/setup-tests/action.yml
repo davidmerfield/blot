@@ -1,0 +1,127 @@
+name: Setup tests
+
+description: Compute the reusable matrix and Docker image metadata for test jobs.
+
+inputs:
+  test-suites:
+    description: >-
+      YAML list of test suites to convert into the matrix consumed by downstream jobs.
+    required: false
+    default: |
+      - app/blog
+      - app/build
+      - app/clients
+      - app/dashboard
+      - app/documentation
+      - app/helper
+      - app/models
+      - app/site
+      - app/sync
+      - app/templates
+
+outputs:
+  matrix:
+    description: JSON payload containing the matrix configuration for test suites.
+    value: ${{ steps.set-matrix.outputs.matrix }}
+  image_hash:
+    description: Hash of the build-related files used to tag the Docker image.
+    value: ${{ steps.hash.outputs.image_hash }}
+  image_tag:
+    description: Fully qualified container image tag for running tests.
+    value: ${{ steps.set-image-tag.outputs.image_tag }}
+
+runs:
+  using: composite
+  steps:
+    - name: Sparse checkout for hash calculation
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: |
+          Dockerfile
+          .dockerignore
+          package.json
+          .github/actions/setup-tests/action.yml
+        sparse-checkout-cone-mode: false
+
+    - name: Calculate hash of build-related files
+      id: hash
+      shell: bash
+      run: |
+        FILES_TO_HASH="Dockerfile .dockerignore package.json .github/actions/setup-tests/action.yml"
+
+        echo "Hashing files: $FILES_TO_HASH"
+
+        HASH=$(cat $FILES_TO_HASH 2>/dev/null | sha256sum | cut -d ' ' -f 1)
+        echo "image_hash=$HASH" >> "$GITHUB_OUTPUT"
+        echo "Hash: $HASH"
+
+    - name: Set image tag
+      id: set-image-tag
+      shell: bash
+      run: |
+        IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/blot:test-${{ steps.hash.outputs.image_hash }}"
+        echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+        echo "Image tag: $IMAGE_TAG"
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Check if image exists
+      id: check-image
+      shell: bash
+      run: |
+        IMAGE_TAG="${{ steps.set-image-tag.outputs.image_tag }}"
+
+        if docker manifest inspect "$IMAGE_TAG" > /dev/null 2>&1; then
+          echo "Image $IMAGE_TAG exists, skipping build"
+          echo "image_exists=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "Image $IMAGE_TAG does not exist, will build it"
+          echo "image_exists=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Checkout full code for build
+      if: steps.check-image.outputs.image_exists != 'true'
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      if: steps.check-image.outputs.image_exists != 'true'
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build test image
+      if: steps.check-image.outputs.image_exists != 'true'
+      uses: docker/build-push-action@v6
+      with:
+        platforms: linux/amd64
+        target: dev
+        context: .
+        push: true
+        cache-from: |
+          type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot:buildcache
+          type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot:${{ github.sha }}
+        cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot:buildcache,mode=max
+        tags: |
+          ${{ steps.set-image-tag.outputs.image_tag }}
+          ghcr.io/${{ github.repository_owner }}/blot:test-latest
+
+    - name: Convert test suites to matrix
+      id: set-matrix
+      shell: bash
+      env:
+        TEST_SUITES: ${{ inputs.test-suites }}
+      run: |
+        echo "Test suites defined:"
+        echo "$TEST_SUITES"
+
+        CLEANED_TEST_SUITES=$(echo "$TEST_SUITES" | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')
+
+        TEST_SUITES_JSON=$(echo "$CLEANED_TEST_SUITES" | grep '^- ' | sed 's/^- /"/g' | sed 's/$/"/g' | tr '\n' ',' | sed 's/,$//' | sed 's/^/[/' | sed 's/$/]/')
+
+        echo "Creating matrix JSON..."
+        MATRIX_JSON="{\"test_suite\":$TEST_SUITES_JSON}"
+        echo "$MATRIX_JSON" | jq '.'
+        echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"

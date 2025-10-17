@@ -1,0 +1,68 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - "master"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  setup-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.setup.outputs.matrix }}
+      image_hash: ${{ steps.setup.outputs.image_hash }}
+      image_tag: ${{ steps.setup.outputs.image_tag }}
+    steps:
+      - name: Setup tests
+        id: setup
+        uses: ./.github/actions/setup-tests
+
+  test:
+    needs: setup-tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.setup-tests.outputs.matrix) }}
+      fail-fast: false
+
+    services:
+      redis:
+        image: redis:6
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run tests - ${{ matrix.test_suite }}
+        env:
+          BLOT_STRIPE_KEY: ${{ secrets.BLOT_STRIPE_KEY }}
+          BLOT_STRIPE_SECRET: ${{ secrets.BLOT_STRIPE_SECRET }}
+          BLOT_STRIPE_PRODUCT: ${{ secrets.BLOT_STRIPE_PRODUCT }}
+          IMAGE_TAG: ${{ needs.setup-tests.outputs.image_tag }}
+        run: |
+          docker run --rm \
+            --network host \
+            -e BLOT_REDIS_HOST=localhost \
+            -e BLOT_STRIPE_KEY=$BLOT_STRIPE_KEY \
+            -e BLOT_STRIPE_SECRET=$BLOT_STRIPE_SECRET \
+            -e BLOT_STRIPE_PRODUCT=$BLOT_STRIPE_PRODUCT \
+            -v ${{ github.workspace }}/app:/usr/src/app/app \
+            -v ${{ github.workspace }}/scripts:/usr/src/app/scripts \
+            -v ${{ github.workspace }}/config:/usr/src/app/config \
+            $IMAGE_TAG \
+            sh -c "node scripts/tests ${{ matrix.test_suite }}"

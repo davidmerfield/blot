@@ -1,0 +1,143 @@
+name: checks
+
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - "master"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  setup-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.setup.outputs.matrix }}
+      image_hash: ${{ steps.setup.outputs.image_hash }}
+      image_tag: ${{ steps.setup.outputs.image_tag }}
+    steps:
+      - name: Setup tests
+        id: setup
+        uses: ./.github/actions/setup-tests
+
+  detect-unused-dependencies:
+    needs: setup-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Find unused dependencies
+        run: npx depcheck --ignores=node-addon-api,node-gyp,depcheck,nyc,nodemon,blessed-contrib,fontkit,text-to-svg --skip-missing
+
+  detect-unexecuted-specs:
+    needs: setup-tests
+    runs-on: ubuntu-latest
+    env:
+      SKIP_PATHS: |
+        - config/openresty
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract test suites from matrix
+        run: |
+          echo "Test suites defined in matrix:"
+          MATRIX_JSON='${{ needs.setup-tests.outputs.matrix }}'
+          echo "$MATRIX_JSON"
+
+          TEST_SUITES=$(echo "$MATRIX_JSON" | jq -r '.test_suite[]')
+          echo "Extracted test suites:"
+          echo "$TEST_SUITES"
+
+          echo "$TEST_SUITES" > matrix_suites.txt
+
+      - name: Find all spec files
+        run: |
+          echo "Finding all potential spec files..."
+          DESCRIBE_FILES=$(grep -r --include="*.js" -l "describe(" . |
+                        grep -v "node_modules" || true)
+
+          echo "Files with describe():"
+          echo "$DESCRIBE_FILES"
+
+          if [ -n "$DESCRIBE_FILES" ]; then
+            echo "Filtering for files with both describe() and it()..."
+            SPEC_FILES=$(echo "$DESCRIBE_FILES" | xargs grep -l "it(" || true)
+          else
+            SPEC_FILES=""
+          fi
+
+          echo "Files with both describe() and it() - pre-filtering:"
+          echo "$SPEC_FILES"
+
+          echo "Processing skip paths..."
+          FINAL_SPEC_FILES=""
+          while IFS= read -r file; do
+            if [ -z "$file" ]; then continue; fi
+
+            SKIP=false
+            while IFS= read -r skip_path; do
+              skip_path=$(echo "$skip_path" | sed 's/^- //')
+              if [ -z "$skip_path" ]; then continue; fi
+
+              if [[ "$file" == *"$skip_path"* ]]; then
+                echo "Skipping file: $file (matches skip path: $skip_path)"
+                SKIP=true
+                break
+              fi
+            done < <(echo "$SKIP_PATHS" | grep "^- ")
+
+            if [[ "$SKIP" != "true" ]]; then
+              FINAL_SPEC_FILES+="$file"$'\n'
+            fi
+          done < <(echo "$SPEC_FILES")
+
+          echo "Final spec files (after applying filters):"
+          echo "$FINAL_SPEC_FILES"
+
+          echo "$FINAL_SPEC_FILES" > all_spec_files.txt
+
+      - name: Check if all specs are executed by test matrix
+        run: |
+          if [ ! -s all_spec_files.txt ]; then
+            echo "No spec files found or all have been filtered out. Nothing to check."
+            exit 0
+          fi
+
+          PATTERN=""
+          while read -r suite; do
+            if [ -n "$suite" ]; then
+              PATTERN="${PATTERN}|^\./${suite}/.*/tests/.*\\.js|^\./${suite}/.*tests\\.js|^\./${suite}/tests/.*\\.js"
+            fi
+          done < matrix_suites.txt
+
+          if [ -z "$PATTERN" ]; then
+            echo "No test suites defined in matrix. Cannot perform check."
+            exit 1
+          fi
+
+          PATTERN="${PATTERN:1}"
+          echo "Test execution pattern: $PATTERN"
+
+          echo "Checking for spec files not executed by any test suite in the matrix..."
+          UNEXECUTED_SPECS=$(grep -v -E "$PATTERN" all_spec_files.txt || true)
+
+          if [ -n "$UNEXECUTED_SPECS" ]; then
+            echo "WARNING: Found spec files that contain tests but won't be executed by the test runner:"
+            echo "$UNEXECUTED_SPECS"
+            echo ""
+            echo "These files contain describe() and it() blocks but aren't in a /tests/ directory or named tests.js,"
+            echo "so they won't be picked up by the test runner within their respective test suites."
+            echo ""
+            echo "Please either:"
+            echo "1. Move them to a /tests/ directory"
+            echo "2. Rename them to tests.js"
+            echo "3. Add their directories to SKIP_PATHS if they should be skipped"
+            exit 1
+          else
+            echo "All spec files are properly located to be executed by the test runner. Good job!"
+          fi
