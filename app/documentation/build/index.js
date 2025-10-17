@@ -28,6 +28,8 @@ const handle =
   (initial = false) =>
   async (path) => {
     try {
+      console.log(clfdate(), (initial ? "Initial" : "Changed"), "file:", path);
+      
       if (path.endsWith("README")) {
         return;
       }
