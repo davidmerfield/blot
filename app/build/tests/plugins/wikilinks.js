@@ -634,7 +634,7 @@ Heading Here
     const imagePath = "/_Images/Image.jpg";
     const imageContent = "BinaryImageContent";
 
-    const html = '<p><img src="/_Images/Image.jpg" title="wikilink" alt="Image.jpg"><span class="caption">wikilink</span></p>';
+    const html = '<p><img src="/_Images/Image.jpg" title="Image.jpg" alt="Image.jpg"><span class="caption">Image.jpg</span></p>';
 
     const files = [
       { path: imagePath, content: imageContent },
