@@ -116,6 +116,10 @@ USER 1000
 # Re-configuring git for the non-root user
 RUN git config --global user.email "you@example.com" && git config --global user.name "Your Name"
 
+# Copy in data/tmp/folder-zips from the build cache if it exists
+# to speed up documentation build
+COPY data/tmp/folder-zips /usr/src/app/data/tmp/folder-zips
+
 # Build the documentation
 RUN node app/documentation/build
 

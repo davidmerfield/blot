@@ -354,8 +354,6 @@ jobs:
           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot
           cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot,mode=max
           tags: ghcr.io/${{ github.repository_owner }}/blot:${{ github.sha }}
-          volumes: |
-            ${{ github.workspace }}/data/tmp:/usr/src/app/data/tmp
 
       - name: Verify built-in health check
         env:
