@@ -1,10 +1,5 @@
-const { join, dirname, basename, extname } = require("path");
-
-if (!process.env.BLOT_TMP_DIRECTORY) {
-  process.env.BLOT_TMP_DIRECTORY = join(__dirname, "data", "tmp");
-}
-
 const config = require("config");
+const { join, dirname, basename, extname } = require("path");
 const fs = require("fs-extra");
 const chokidar = require("chokidar");
 const html = require("./html");
@@ -101,11 +96,7 @@ module.exports = async ({ watch = false, skipZip = false } = {}) => {
     await fs.ensureDir(DESTINATION_DIRECTORY);
   }
 
-  await fs.ensureDir(DESTINATION_DIRECTORY);
-
-  if (!skipZip) {
-    await zip();
-  }
+  if (!skipZip) await zip();
 
   await favicon(
     join(SOURCE_DIRECTORY, "images/logo.svg"),
