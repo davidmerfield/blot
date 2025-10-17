@@ -40,14 +40,14 @@ runs:
           Dockerfile
           .dockerignore
           package.json
-          .github/setup-tests/action.yml
+          .github/setup-tests.yml
         sparse-checkout-cone-mode: false
 
     - name: Calculate hash of build-related files
       id: hash
       shell: bash
       run: |
-        FILES_TO_HASH="Dockerfile .dockerignore package.json .github/setup-tests/action.yml"
+        FILES_TO_HASH="Dockerfile .dockerignore package.json .github/setup-tests.yml"
 
         echo "Hashing files: $FILES_TO_HASH"
 
