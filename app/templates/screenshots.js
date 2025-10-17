@@ -36,7 +36,7 @@ const templateOptions = {
     handle: "photographer"
   },
   reference: {
-    handle: "frances"
+    handle: "bjorn"
   },
   blank: {
     handle: "david"
@@ -57,9 +57,6 @@ const foldersOptions = {
   },
   david: {
     template: "blog"
-  },
-  frances: {
-    template: "reference"
   }
 };
 
