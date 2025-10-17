@@ -329,7 +329,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /usr/src/app/data/tmp/folder-zips
-          key: folder-zips-${{ steps.folder-hash.outputs.hash }}
+          key: folder-zip-cache-${{ steps.folder-hash.outputs.hash }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
