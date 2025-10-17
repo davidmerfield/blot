@@ -315,6 +315,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Compute folder template hash
+        id: folder-hash
+        run: |
+          HASH=$(find app/templates/folders -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d ' ' -f 1)
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+
+      - name: Prepare folder zip cache directory
+        run: mkdir -p app/documentation/build/data/tmp/folder-zips
+
+      - name: Restore folder zip cache
+        id: restore-folder-zips
+        uses: actions/cache@v4
+        with:
+          path: app/documentation/build/data/tmp/folder-zips
+          key: folder-zips-${{ runner.os }}-${{ steps.folder-hash.outputs.hash }}
+
+      - name: Build folder zips
+        env:
+          NODE_ENV: production
+          NODE_PATH: ${{ github.workspace }}/app
+          BLOT_TMP_DIRECTORY: ${{ github.workspace }}/app/documentation/build/data/tmp
+        run: |
+          mkdir -p app/views-built/folders
+          NODE_PATH=$NODE_PATH node -e "require('./app/templates/folders/zip')().then(() => process.exit(0)).catch((err) => { console.error(err); process.exit(1); });"
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
