@@ -1,14 +1,3 @@
-# The reason this is so complicated is because github actions cache for docker
-# build doesn't seem to work as well as it should. Ideally it just caches the
-# work it has done before but I couldn't get this to work with much trying.
-# So we manually compute the hash of the files which the base docker image layer
-# depends upon and use this to tag images. If for some reason at some point
-# the github actions docker cache works more efficiently, we can simplyify.
-
-# The goals are:
-# - reproducible builds
-# - fast tests
-# - fast deployments
 name: build
 
 on:
@@ -27,6 +16,7 @@ concurrency:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/blot
+  SHOULD_PUSH: ${{ github.event_name != 'pull_request' }}
 
 jobs:
   build:
@@ -56,21 +46,23 @@ jobs:
       - name: Setup Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Per-arch registry cache. Keeps layers hot on each native runner.
-      - name: Build and push (${{ matrix.arch }})
-        id: build
+      # 1) Build for local use (no push), then test it
+      - name: Build (load locally) ${{ matrix.arch }}
+        id: build_local
         uses: docker/build-push-action@v6
         with:
           context: .
           target: prod
-          platforms: ${{ matrix.platform }}          # native, no QEMU
-          push: true
-          tags: |
-            ${{ env.IMAGE_NAME }}:${{ github.sha }}-${{ matrix.arch }}
+          platforms: ${{ matrix.platform }}   # single-arch, so load works
+          load: true                          # image available to `docker run`
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}-${{ matrix.arch }}
           cache-from: |
+            type=gha,scope=${{ matrix.arch }}
             type=registry,ref=${{ env.IMAGE_NAME }}:cache-${{ matrix.arch }}
           cache-to: |
-            type=registry,ref=${{ env.IMAGE_NAME }}:cache-${{ matrix.arch }},mode=max
+            type=gha,scope=${{ matrix.arch }},mode=max
+          provenance: false
 
       - name: Verify health check (${{ matrix.arch }})
         env:
@@ -78,9 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           docker network create test_network
-
-          redis_container_id=$(docker run -d --name test_redis --network test_network redis:latest)
-
+          redis_container_id=$(docker run -d --name test_redis --network test_network redis:7-alpine)
           timeout=30; interval=2; elapsed=0
           until docker exec "$redis_container_id" redis-cli ping | grep -q PONG; do
             if [ $elapsed -ge $timeout ]; then
@@ -90,9 +80,7 @@ jobs:
             fi
             sleep $interval; elapsed=$((elapsed+interval))
           done
-
           app_id=$(docker run -d --network test_network -e BLOT_REDIS_HOST=test_redis -p 8080:8080 "$IMAGE")
-
           timeout=60; interval=5; elapsed=0
           until [ "$(docker inspect --format='{{json .State.Health.Status}}' "$app_id")" = '"healthy"' ]; do
             if [ $elapsed -ge $timeout ]; then
@@ -102,14 +90,31 @@ jobs:
             fi
             sleep $interval; elapsed=$((elapsed+interval))
           done
-
           docker rm -f "$app_id" "$redis_container_id"
           docker network rm test_network
+
+      # 2) Push only on non-PRs; reuses cache so it’s fast
+      - name: Build and push ${{ matrix.arch }}
+        if: env.SHOULD_PUSH == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: prod
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}-${{ matrix.arch }}
+          cache-from: |
+            type=gha,scope=${{ matrix.arch }}
+            type=registry,ref=${{ env.IMAGE_NAME }}:cache-${{ matrix.arch }}
+          cache-to: |
+            type=registry,ref=${{ env.IMAGE_NAME }}:cache-${{ matrix.arch }},mode=max
+          provenance: false
 
   manifest:
     needs: build
     runs-on: ubuntu-latest
-    if: ${{ always() && needs.build.result == 'success' }}
+    if: github.event_name == 'push' && needs.build.result == 'success'
     steps:
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -130,10 +135,6 @@ jobs:
             -t "$IMAGE:$SHA" \
             "$IMAGE:$SHA-amd64" \
             "$IMAGE:$SHA-arm64"
-
-          # Optional: tag branch and latest on default branch
           if [ "${{ github.ref_name }}" = "master" ]; then
-            docker buildx imagetools create \
-              -t "$IMAGE:latest" \
-              "$IMAGE:$SHA"
+            docker buildx imagetools create -t "$IMAGE:latest" "$IMAGE:$SHA"
           fi

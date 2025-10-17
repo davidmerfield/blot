@@ -311,3 +311,4 @@ jobs:
             -v ${{ github.workspace }}/config:/usr/src/app/config \
             $IMAGE_TAG \
             sh -c "node scripts/tests ${{ matrix.test_suite }}"
+
