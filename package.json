@@ -8,12 +8,11 @@
     "download-folder": "read -p 'Enter blog identifier: ' BLOGID && ssh blot \"docker exec blot-container-blue node /usr/src/app/scripts/info \\\"$BLOGID\\\"\" | grep 'blog_' | head -n1 | cut -d ' ' -f 2 | xargs -I {} bash -c 'rsync -avz blot:/var/www/blot/data/blogs/{} ~/Downloads/ && open ~/Downloads/{}'",
     "test": "./scripts/tests/invoke.sh",
     "start": "node scripts/development/start.js",
-    "start:compose": "docker-compose -f scripts/development/docker-compose.yml up --build",
     "deploy-node": "node scripts/deploy",
     "deploy-macserver": "./scripts/macserver/deploy.sh",
     "deploy-localmacserver": "./scripts/macserver/local-deploy.sh",
     "deploy-openresty": ". /etc/blot/openresty-deploy-environment.sh && ./config/openresty/deploy-config.sh",
-    "local-login": "docker exec -it blot-node-app-1 /bin/sh",
+    "login": "docker exec -it blot-node-app-1 /bin/sh",
     "featured": "docker exec blot-node-app-1 node app/documentation/featured/build",
     "folder": "docker exec blot-node-app-1 npx nodemon app/templates/folders --ext '*' --watch /usr/src/app/app/templates/folders",
     "preview-newsletter": "open $(docker exec -e PREVIEW_NEWSLETTER=true $(docker ps --filter \"name=blot\" --format \"{{.ID}}\" | head -n1) node scripts/email/newsletter $(ls -1 app/helper/email/newsletters | tail -n 3 | head -n 1) | grep 'preview' | awk -F\"'\" '{gsub(\"/usr/src/app/\", \"./\", $2); print $2}')"
