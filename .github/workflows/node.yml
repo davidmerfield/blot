@@ -109,8 +109,10 @@ jobs:
           target: dev
           context: .
           push: true
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot,mode=max
+          cache-from: |
+            type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot:buildcache
+            type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot:${{ github.sha }}
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/blot:buildcache,mode=max
           tags: |
             ${{ steps.set-image-tag.outputs.image_tag }}
             ghcr.io/${{ github.repository_owner }}/blot:test-latest
