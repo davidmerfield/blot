@@ -74,7 +74,7 @@ server.use(function (req, res, next) {
   next();
 });
 
-// Log response time in development mode
+// Log response time when in development mode
 server.use(trace.init);
 
 server.use(require('./request-logger'));
