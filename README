@@ -27,3 +27,13 @@ https://example.localhost/ - Your site
 You can edit the folder for the example blog inside the `data` directory:
 
 ./data/blogs/blog_$ID
+
+## Docker build context
+
+The `.dockerignore` file keeps the Docker build context lean by excluding
+directories that are regenerated during image builds or contain local caches,
+such as `node_modules/`, `data/`, and other temporary output. The Dockerfile
+continues to copy the source code, configuration, and scripts that are required
+at runtime (`app/`, `config/`, `scripts/`, and `TODO`). If you add new
+directories that only contain build artifacts, remember to add them to
+`.dockerignore` so they do not slow down image builds.

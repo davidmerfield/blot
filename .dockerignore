@@ -1,0 +1,20 @@
+# Files and directories excluded from the Docker build context
+# These paths are regenerated during image builds or are not required at runtime.
+.git
+.github
+.gitignore
+.env
+*.env
+*.log
+*.rdb
+npm-debug.log*
+yarn-error.log*
+node_modules/
+package-lock.json
+app/views-built/
+blogs/
+cache/
+data/
+scripts/deploy/out/
+static/
+tmp/
