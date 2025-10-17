@@ -1,6 +1,5 @@
 #e15f16 zacharykeeting.com Zachary Keeting, is an artist
 #da9a87 blog.andrewjanjigian.com Andrew Janjigian, is a photographer
-#dc1c8e hannautkin.com Hanna Utkin, is a filmmaker
 #7a8aa8 keywords.oxus.net Kerim Friedman, is an anthropologist
 #b59681 discombobulated.co.nz Jessica Nickelsen, is a writer
 #1b6cb5 rebeccakukshtel.com Rebecca Kukshtel, is a software engineer
@@ -10,7 +9,6 @@
 #60b7dc www.failuretolerated.com Sean McCoy, is a game designer
 #ab4548 mrfrisby.com Stuart Frisby, is a designer
 #696e66 vaughntan.org Vaughn Tan, is a writer
-#c56d64 blog.pixelswithin.com Diana Lopez, is a designer
 #e2c556 eli.li Eli Mellen, is a software engineer
 #d08573 paul.af Paul Esch-Laurent, is a software engineer
 #9e826d diary.craigwhite.nyc Craig White, is an artist
@@ -34,7 +32,6 @@
 #945830 poetry.bencallahan.com Ben Callahan, is a poet
 #6b98d2 www.maxkeith.co Max Keith, is a runner
 #99abc4 spittingdog.net Dave Haysom, is a translator
-#b07246 anitaposch.com Anita Posch, is a writer from Austria
 #d28f00 reillybrennan.com Reilly Brennan, is a venture capitalist
 #c40002 sidenote.ridwansanusi.com Ridwan Sanusi, is a designer
 #6e44b3 max.engineer Max Chernyak, is a software engineer
@@ -54,11 +51,9 @@
 #000000 www.carsonteuscher.com Carson Teuscher, is a historian
 #000000 erinkissane.com Erin Kissane, is a writer
 #000000 nonaneva.com ノナネヷ, is an artist
-#000000 ilovewasting.ink Peter Orosz, is a writer
 #000000 blog.vesikar.com Yash Vesikar, is a computer scientist
 #000000 words.studiopallister.com James Pallister, is a writer
 #000000 www.gillianrosselli.com Gillian Rosselli, is an artist
-#000000 chrispugh.com Chris Pugh, is a newspaper editor
 #000000 www.caitlinmrivers.com Caitlin Rivers, is an epidemiologist
 #000000 jbeau.info Jeremy Beaudry, is an artist
 #000000 www.audunberdal.no Audun Berdal, is a designer
