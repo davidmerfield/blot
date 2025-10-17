@@ -11,8 +11,6 @@ const constants = require("./constants");
 const { CONTAINERS } = constants;
 const { REGISTRY_URL, PLATFORM_OS } = constants;
 
-let confirmed = false;
-
 async function detectPlatform() {
   console.log("Detecting server platform...");
   const platformOs = PLATFORM_OS;
@@ -71,17 +69,6 @@ async function deployContainer(container, platform, imageHash) {
   console.log(dockerRunCommand);
   console.log();
 
-  if (!confirmed) {
-    confirmed = await askForConfirmation(
-      "Are you sure you want to run this command? (y/n): "
-    );
-  }
-
-  if (!confirmed) {
-    console.log("Deployment canceled.");
-    process.exit(0);
-  }
-
   console.log("Pulling new image...");
   await sshCommand(`docker pull ${REGISTRY_URL}:${imageHash}`);
 
@@ -120,6 +107,15 @@ async function main() {
       throw new Error(
         `Image for platform ${platform.platformOs}/${platform.platformArch} does not exist.`
       );
+    }
+
+    const confirmed = await askForConfirmation(
+      "Are you sure you want to deploy this image? (y/n): "
+    );
+
+    if (!confirmed) {
+      console.log("Deployment canceled.");
+      process.exit(0);
     }
 
     // validate that each container has a unique name and port
