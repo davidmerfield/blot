@@ -18,7 +18,8 @@ async function hydrate(blogID) {
 
   console.log(blogID, "hydrating tags sorted sets");
 
-  const allTags = await smembersAsync(key.all(blogID));
+  const allTagsKey = key.all(blogID);
+  const allTags = await smembersAsync(allTagsKey);
 
   console.log(blogID, "found tags to hydrate:", allTags);
 
@@ -35,6 +36,13 @@ async function hydrate(blogID) {
     console.log(blogID, "getting entries for tag:", tag, "with IDs:", entryIDs);
     const entries = await getEntries(blogID, entryIDs);
     console.log(blogID, "got entries for tag:", tag, "entries:", entries);
+
+    if (!entries || !entries.length) {
+      multi.del(sortedTagKey);
+      multi.del(tagKey);
+      multi.srem(allTagsKey, tag);
+      continue;
+    }
 
     for (const entry of entries) {
       let score = entry.dateStamp;
