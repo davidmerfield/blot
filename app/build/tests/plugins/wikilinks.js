@@ -203,8 +203,8 @@ Heading Here
     expect(entry.html).toContain('<img');
     expect(entry.html).toContain('src="');
 
-    expect(entry.html).toContain('title="wikilink"');
-    expect(entry.html).toContain('Pasted image 2024-01-01');
+    expect(entry.html).toContain('/_image_cache/');
+    expect(entry.html).toContain('alt="Pasted image 2024-01-01.png"');
 
     done();
   });
@@ -227,8 +227,8 @@ Heading Here
     expect(entry.html).toContain('<img');
     expect(entry.html).toContain('src="');
 
-    expect(entry.html).toContain('title="wikilink"');
-    expect(entry.html).toMatch(/assets\/?image\.png/i);
+    expect(entry.html).toContain('alt="Assets/image.png"');
+    expect(entry.html).toContain('/_image_cache/');
 
     done();
   });
