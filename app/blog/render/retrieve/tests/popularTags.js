@@ -13,14 +13,14 @@ describe("popular tags", function () {
         await this.write({path: '/e.txt', content: 'Tags: def\n\nQuux'});
 
         await this.template({
-            'entries.html': `<ul>{{#popular_tags}}<li>{{tag}}</li>{{/popular_tags}}</ul>`
+            'entries.html': `<ul>{{#popular_tags}}<li>{{tag}} {{entries.length}}</li>{{/popular_tags}}</ul>`
         });
 
         const res = await this.get('/');
         const body = await res.text();
 
         expect(res.status).toEqual(200);
-        expect(body.trim()).toEqual('<ul><li>def</li><li>abc</li></ul>');
+        expect(body.trim()).toEqual('<ul><li>def 3</li><li>abc 2</li></ul>');
     });
 
     it("lists popular tags with many posts", async function () {
