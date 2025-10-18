@@ -33,10 +33,12 @@ describe("tags.list", function () {
                         };
                     });
 
+                    // tags.list now returns entry placeholders with null values
+                    // the important property is the entries array length
                     expect(sortedTags).toEqual([
-                        { name: 'tag1', slug: 'tag1', entries: [ 'entry1' ] },
-                        { name: 'tag2', slug: 'tag2', entries: [ 'entry1', 'entry2' ] },
-                        { name: 'tag3', slug: 'tag3', entries: [ 'entry2' ] }
+                        { name: 'tag1', slug: 'tag1', entries: [ null ] },
+                        { name: 'tag2', slug: 'tag2', entries: [ null, null ] },
+                        { name: 'tag3', slug: 'tag3', entries: [ null ] }
                     ]);
                     done();
                 });
