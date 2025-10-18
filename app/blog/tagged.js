@@ -3,56 +3,49 @@ module.exports = function (server) {
   var Tags = require("models/tags");
   var _ = require("lodash");
 
-  server.get(["/tagged/:tag", "/tagged/:tag/page/:page"], function (
-    request,
-    response,
-    next
-  ) {
-    var blog = request.blog;
-    var blogID = blog.id;
-    var slug = request.params.tag;
+  server.get(
+    ["/tagged/:tag", "/tagged/:tag/page/:page"],
+    function (request, response, next) {
+      var blog = request.blog;
+      var blogID = blog.id;
+      var slug = request.params.tag;
 
-    var page = parseInt(request.params.page, 10);
-    if (!page || page < 1) page = 1;
+      var page = parseInt(request.params.page, 10);
+      if (!page || page < 1) page = 1;
 
-    var perPage =
-      request.template && request.template.locals
-        ? request.template.locals.page_size
-        : undefined;
-    perPage = parseInt(perPage, 10);
-    if (!perPage || perPage < 1 || perPage > 500) perPage = 100;
+      var limit =
+        request.template && request.template.locals
+          ? request.template.locals.page_size
+          : undefined;
 
-    var offset = (page - 1) * perPage;
+      limit = parseInt(limit, 10);
 
-    Tags.get(
-      blogID,
-      slug,
-      { limit: perPage, offset: offset },
-      function (err, entryIDs, tag, totalEntries) {
-        if (err) return next(err);
+      if (!limit || limit < 1 || limit > 500) limit = 100;
 
-        Entry.get(blogID, entryIDs || [], function (entries) {
-          entries = _.sortBy(entries, "dateStamp").reverse();
+      var offset = (page - 1) * limit;
 
-          var pagination = buildPagination(slug, page, perPage, totalEntries || 0);
+      Tags.get(
+        blogID,
+        slug,
+        { limit, offset },
+        function (err, entryIDs, tag, total) {
+          Entry.get(blogID, entryIDs || [], function (entries) {
+            entries = _.sortBy(entries, "dateStamp").reverse();
 
-          if (!entries.length) {
-            entries.push({ pagination: pagination });
-          } else {
-            entries[entries.length - 1].pagination = pagination;
-          }
+            var pagination = buildPagination(slug, page, limit, total || 0);
 
-          response.locals.tag = tag;
-          response.locals.slug = slug;
-          response.locals.entries = entries;
-          response.locals.total = totalEntries || 0;
-          response.locals.pagination = pagination;
+            response.locals.tag = tag;
+            response.locals.slug = slug;
+            response.locals.entries = entries;
+            response.locals.total = total || 0;
+            response.locals.pagination = pagination;
 
-          response.renderView("tagged.html", next);
-        });
-      }
-    );
-  });
+            response.renderView("tagged.html", next);
+          });
+        }
+      );
+    }
+  );
 };
 
 function buildPagination(slug, page, perPage, totalEntries) {
@@ -87,6 +80,6 @@ function buildPagination(slug, page, perPage, totalEntries) {
     hasPrev: hasPrev,
     hasNext: hasNext,
     prevUrl: prevUrl,
-    nextUrl: nextUrl
+    nextUrl: nextUrl,
   };
 }
