@@ -6,7 +6,7 @@ module.exports = function (req, callback) {
   // We could make this limit configurable through req.query or config
   const limit = 10;
   
-  Tags.popular(req.blog.id, limit, function(err, tags) {
+  Tags.popular(req.blog.id, { limit: limit, offset: 0 }, function(err, tags) {
     if (err) return callback(err);
 
     // Map to match expected format

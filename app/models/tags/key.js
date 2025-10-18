@@ -2,6 +2,9 @@ module.exports = {
   all: function (blogID) {
     return "blog:" + blogID + ":tags:all";
   },
+  popular: function (blogID) {
+    return "blog:" + blogID + ":tags:popular";
+  },
   tag: function (blogID, normalizedTag) {
     return "blog:" + blogID + ":tags:entries:" + normalizedTag;
   },

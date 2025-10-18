@@ -21,8 +21,11 @@ async function hydrate(blogID) {
   const allTags = await smembersAsync(key.all(blogID));
 
   console.log(blogID, "found tags to hydrate:", allTags);
-  
+
   const multi = client.multi();
+  const popularityKey = key.popular(blogID);
+
+  multi.del(popularityKey);
 
   for (const tag of allTags) {
     const tagKey = key.tag(blogID, tag);
@@ -49,7 +52,11 @@ async function hydrate(blogID) {
       );
       multi.zadd(sortedTagKey, score, entry.id);
     }
+
+    multi.zadd(popularityKey, entryIDs.length, tag);
   }
+
+  multi.zremrangebyscore(popularityKey, "-inf", 0);
   
   await new Promise((resolve, reject) => {
     multi.exec((err, results) => {
