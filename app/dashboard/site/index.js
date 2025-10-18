@@ -11,6 +11,8 @@ site
     trace("saved redirects"),
     save.format,
     trace("formated form"),
+    save.injectTitle,
+    trace("updated injectTitle options"),
     save.analytics,
     trace("saved analytics"),
     save.avatar,

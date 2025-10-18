@@ -29,6 +29,7 @@ var loaded = loadPlugins({
   flickr: require("./flickr"),
   image: require("./image"),
   imageCaption: require("./imageCaption"),
+  injectTitle: require("./injectTitle"),
   katex: require("./katex"),
   linebreaks: require("./linebreaks"),
   mediaPreload: require("./mediaPreload"),

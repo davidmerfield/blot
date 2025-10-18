@@ -3,6 +3,7 @@ module.exports = {
   avatar: require("./avatar"),
   finish: require("./finish"),
   format: require("./format"),
+  injectTitle: require("./injectTitle"),
   removeTmpFiles: require("./removeTmpFiles"),
   redirects: require("./redirects")
 };

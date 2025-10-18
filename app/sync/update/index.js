@@ -6,6 +6,7 @@ var drop = require("./drop");
 var set = require("./set");
 var flushCache = require("models/blog/flushCache");
 var pathNormalizer = require("helper/pathNormalizer");
+var Blog = require("models/blog");
 
 module.exports = function (blog, log, status) {
   return function update(path, callback) {
@@ -56,8 +57,10 @@ module.exports = function (blog, log, status) {
             done(err);
           });
         } else if (stat && stat.isDirectory()) {
-          // there is nothing to do for directories
-          done();
+          maybeEnableInjectTitle(blog, path, function () {
+            // there is nothing else to do for directories
+            done();
+          });
         } else {
           log(path, "Saving file in database");
           set(blog, path, function (err) {
@@ -73,3 +76,50 @@ module.exports = function (blog, log, status) {
     });
   };
 };
+
+function maybeEnableInjectTitle(blog, path, callback) {
+  try {
+    const normalizedPath = pathNormalizer(path).toLowerCase();
+
+    const segments = normalizedPath.split("/").filter(Boolean);
+
+    const hasObsidianFolder = segments.includes(".obsidian");
+
+    if (!hasObsidianFolder) return callback();
+
+    const currentPlugins = blog.plugins || {};
+    const injectTitleConfig = currentPlugins.injectTitle || {};
+    const currentOptions = injectTitleConfig.options || {};
+
+    if (currentOptions.manuallyDisabled) return callback();
+
+    if (injectTitleConfig.enabled) return callback();
+
+    const nextPlugins = Object.assign({}, currentPlugins);
+    const nextOptions = Object.assign({}, currentOptions, {
+      manuallyDisabled: false,
+    });
+
+    nextPlugins.injectTitle = Object.assign({}, injectTitleConfig, {
+      enabled: true,
+      options: nextOptions,
+    });
+
+    Blog.set(
+      blog.id,
+      {
+        plugins: nextPlugins,
+      },
+      function (err) {
+        if (!err) {
+          blog.plugins = nextPlugins;
+        }
+        if (err) console.error(clfdate(), blog.id, path, err);
+        callback();
+      }
+    );
+  } catch (error) {
+    console.error(clfdate(), blog.id, path, error);
+    callback();
+  }
+}
