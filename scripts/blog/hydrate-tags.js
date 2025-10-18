@@ -1,9 +1,7 @@
 const get = require("../get/blog");
-const each = require("../each/blog");
-const getConfirmation = require("../util/getConfirmation");
-const hydrate = require("models/tags/_hydrate");
+const removeLegacyTagSetKeys = require("../db/remove-legacy-tag-set-keys");
 
-console.log("Hydrate tag sorted sets for Blot blogs.");
+console.log("Remove legacy tag set data for Blot blogs.");
 console.log("Pass a blog handle, domain, or ID to target a single blog.");
 console.log("Run without arguments to process every blog (confirmation required).");
 
@@ -18,60 +16,33 @@ if (identifier) {
       return;
     }
 
-    hydrate(blog.id)
+    removeLegacyTagSetKeys(blog.id)
       .then(function () {
-        console.log("Hydrated tag sorted sets for", blog.id, blog.handle || "");
+        console.log(
+          "Removed legacy tag set keys for",
+          blog.id,
+          blog.handle || ""
+        );
         process.exit(0);
       })
       .catch(function (error) {
-        console.error("Failed to hydrate tag sorted sets for", blog.id, blog.handle || "");
+        console.error(
+          "Failed to remove legacy tag set keys for",
+          blog.id,
+          blog.handle || ""
+        );
         console.error(error);
         process.exit(1);
       });
   });
 } else {
-  getConfirmation("Hydrate tag sorted sets for every blog?")
-    .then(function (ok) {
-      if (!ok) {
-        console.log("No blogs were hydrated.");
-        process.exit(0);
-        return;
-      }
-
-      console.log("Hydrating tag sorted sets for every blog...");
-
-      each(
-        function (user, blog, next) {
-          hydrate(blog.id)
-            .then(function () {
-              console.log("Hydrated tag sorted sets for", blog.id, blog.handle || "");
-              next();
-            })
-            .catch(function (error) {
-              console.error(
-                "Failed to hydrate tag sorted sets for",
-                blog.id,
-                blog.handle || ""
-              );
-              console.error(error);
-              next(error);
-            });
-        },
-        function (err) {
-          if (err) {
-            console.error("Stopped hydrating tag sorted sets early due to an error.");
-            console.error(err);
-            process.exit(1);
-            return;
-          }
-
-          console.log("Finished hydrating tag sorted sets for every blog.");
-          process.exit(0);
-        }
-      );
+  removeLegacyTagSetKeys()
+    .then(function () {
+      console.log("Finished removing legacy tag set keys.");
+      process.exit(0);
     })
     .catch(function (error) {
-      console.error("Failed to obtain confirmation.");
+      console.error("Failed to remove legacy tag set keys.");
       console.error(error);
       process.exit(1);
     });

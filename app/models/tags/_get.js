@@ -2,7 +2,6 @@ const client = require("models/client");
 const ensure = require("helper/ensure");
 const type = require("helper/type");
 const key = require("./key");
-const hydrate = require("./_hydrate");
 
 // This is a private method which assumes the tag has been normalized.
 module.exports = function get(blogID, tag, options, callback) {
@@ -28,36 +27,15 @@ module.exports = function get(blogID, tag, options, callback) {
 
   const tagKey = key.name(blogID, tag);
   const sortedTagKey = key.sortedTag(blogID, tag);
-  const setKey = key.tag(blogID, tag);
 
   const batch = client.batch();
 
   batch.get(tagKey);
-  batch.exists(sortedTagKey);
-  batch.exists(setKey);
 
-  batch.exec(async function (err, results) {
+  batch.exec(function (err, results) {
     if (err) return callback(err);
 
     const pretty = results[0] || tag;
-    const existsSortedTagKey = results[1] === 1;
-    const existsSetKey = results[2] === 1;
-
-    // we have not created the sorted set yet so we should iterate over all
-    // tags for the blog and fetch the entries for those matching this tag
-    // and populate the sorted sets accordingly. this should only happen once
-    // per site and should affect all tags on the site.
-
-    // todo: when we remove the old set keys, we can also remove this check and the
-    // hydrate call here too.
-    if (existsSetKey && !existsSortedTagKey) {
-      try {
-        await hydrate(blogID);
-      } catch (e) {
-        console.error("Error hydrating tags for blog:", blogID, e);
-        return callback(e);
-      }
-    }
 
     var start = offset;
     var stop = limit === undefined ? -1 : offset + limit - 1;

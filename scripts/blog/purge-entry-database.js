@@ -22,7 +22,7 @@ async function collectKeys(blog) {
     `${blogPrefix}url:*`,
     `${blogPrefix}dependents:*`,
     `${blogPrefix}tags:all`,
-    `${blogPrefix}tags:entries:*`,
+    `${blogPrefix}tags:entries-by-dateStamp:*`,
     `${blogPrefix}tags:entry:*`,
     `${blogPrefix}tags:name:*`,
     `${blogPrefix}ignored_files`,

@@ -29,7 +29,7 @@ module.exports = async function getAll(blogID, callback) {
           });
         }),
         new Promise((resolve, reject) => {
-          client.scard(key.tag(blogID, tag), (err, result) => {
+          client.zcard(key.sortedTag(blogID, tag), (err, result) => {
             if (err) return reject(err);
             resolve(result || 0);
           });

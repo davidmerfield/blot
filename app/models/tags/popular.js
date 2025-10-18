@@ -2,7 +2,6 @@ const client = require("models/client");
 const ensure = require("helper/ensure");
 const type = require("helper/type");
 const key = require("./key");
-const hydrate = require("./_hydrate");
 
 module.exports = function getPopular(blogID, options, callback) {
   if (typeof options === "function") {
@@ -34,32 +33,10 @@ module.exports = function getPopular(blogID, options, callback) {
   if (limit === 0) return callback(null, []);
 
   const popularityKey = key.popular(blogID);
-  const allKey = key.all(blogID);
-
-  const batch = client.batch();
-  batch.exists(popularityKey);
-  batch.exists(allKey);
-  batch.zcard(popularityKey);
-  batch.scard(allKey);
-
-  batch.exec(async function (err, results) {
+  client.zcard(popularityKey, function (err, total) {
     if (err) return callback(err);
 
-    const popularityExists = results[0] === 1;
-    const legacyExists = results[1] === 1;
-    const popularityCount = Number(results[2]) || 0;
-    const legacyCount = Number(results[3]) || 0;
-
-    const countsMismatch = legacyCount > 0 && popularityCount < legacyCount;
-
-    if (legacyExists && (!popularityExists || countsMismatch)) {
-      try {
-        await hydrate(blogID);
-      } catch (e) {
-        console.error("Error hydrating popular tags for blog:", blogID, e);
-        return callback(e);
-      }
-    }
+    if (!total) return callback(null, []);
 
     var start = offset;
     var stop = offset + limit - 1;

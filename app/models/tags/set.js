@@ -88,10 +88,6 @@ module.exports = function (blogID, entry, callback) {
       names.push(key.name(blogID, tag));
       names.push(prettyTags[i]);
 
-      // For each of the entry's current tags
-      // store the entry's id against the tag's key
-      // Redis will autocreate a key of the right type
-      multi.sadd(key.tag(blogID, tag), entry.id);
       var score = entry.dateStamp;
       if (typeof score !== "number" || isNaN(score)) {
         score = Date.now();
@@ -104,7 +100,6 @@ module.exports = function (blogID, entry, callback) {
     // neccessary when the user updates an entry and
     // removes a previously existing tag
     removed.forEach(function (tag) {
-      multi.srem(key.tag(blogID, tag), entry.id);
       multi.zrem(key.sortedTag(blogID, tag), entry.id);
       multi.srem(existingKey, tag);
       multi.zincrby(popularityKey, -1, tag);
