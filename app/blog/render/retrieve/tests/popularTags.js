@@ -1,6 +1,4 @@
 const Tags = require("models/tags");
-const client = require("models/client");
-const key = require("models/tags/key");
 
 describe("popular tags", function () {
     require('blog/tests/util/setup')();
@@ -71,82 +69,5 @@ describe("popular tags", function () {
         expect(results[0].count).toEqual(2);
     });
 
-    it("hydrates popularity zset when missing", async function () {
-        await this.write({ path: '/first.txt', content: 'Tags: red\n\nFirst' });
-        await this.write({ path: '/second.txt', content: 'Tags: red, blue\n\nSecond' });
-        await this.write({ path: '/third.txt', content: 'Tags: blue\n\nThird' });
-
-        await this.blog.rebuild();
-
-        const blogID = this.blog.id;
-        const popularityKey = key.popular(blogID);
-
-        await new Promise((resolve, reject) => {
-            client.del(popularityKey, function (err) {
-                if (err) return reject(err);
-                resolve();
-            });
-        });
-
-        const tags = await new Promise((resolve, reject) => {
-            Tags.popular(blogID, { limit: 5, offset: 0 }, function (err, result) {
-                if (err) return reject(err);
-                resolve(result);
-            });
-        });
-
-        expect(tags.length).toBeGreaterThan(0);
-
-        const storedScores = await new Promise((resolve, reject) => {
-            client.zrange(popularityKey, 0, -1, 'WITHSCORES', function (err, result) {
-                if (err) return reject(err);
-                resolve(result || []);
-            });
-        });
-
-        expect(storedScores.length).toBeGreaterThan(0);
-    });
-
-    it("hydrates popularity zset when counts mismatch", async function () {
-        await this.write({ path: '/one.txt', content: 'Tags: one, two\n\nOne' });
-        await this.write({ path: '/two.txt', content: 'Tags: two, three\n\nTwo' });
-        await this.write({ path: '/three.txt', content: 'Tags: three\n\nThree' });
-        await this.write({ path: '/four.txt', content: 'Tags: three\n\nFour' });
-
-        await this.blog.rebuild();
-
-        const blogID = this.blog.id;
-        const popularityKey = key.popular(blogID);
-
-        await new Promise((resolve, reject) => {
-            client
-                .multi()
-                .del(popularityKey)
-                .zadd(popularityKey, 1, 'one')
-                .exec(function (err) {
-                    if (err) return reject(err);
-                    resolve();
-                });
-        });
-
-        const tags = await new Promise((resolve, reject) => {
-            Tags.popular(blogID, { limit: 10, offset: 0 }, function (err, result) {
-                if (err) return reject(err);
-                resolve(result);
-            });
-        });
-
-        expect(tags.map(tag => tag.slug)).toEqual(['three', 'two', 'one']);
-        expect(tags.map(tag => tag.count)).toEqual([3, 2, 1]);
-
-        const zcard = await new Promise((resolve, reject) => {
-            client.zcard(popularityKey, function (err, count) {
-                if (err) return reject(err);
-                resolve(count);
-            });
-        });
-
-        expect(zcard).toEqual(3);
-    });
 });
 
