@@ -39,14 +39,20 @@ module.exports = function getPopular(blogID, options, callback) {
   const batch = client.batch();
   batch.exists(popularityKey);
   batch.exists(allKey);
+  batch.zcard(popularityKey);
+  batch.scard(allKey);
 
   batch.exec(async function (err, results) {
     if (err) return callback(err);
 
     const popularityExists = results[0] === 1;
     const legacyExists = results[1] === 1;
+    const popularityCount = Number(results[2]) || 0;
+    const legacyCount = Number(results[3]) || 0;
 
-    if (legacyExists && !popularityExists) {
+    const countsMismatch = legacyCount > 0 && popularityCount < legacyCount;
+
+    if (legacyExists && (!popularityExists || countsMismatch)) {
       try {
         await hydrate(blogID);
       } catch (e) {

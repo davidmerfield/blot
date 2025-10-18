@@ -106,5 +106,47 @@ describe("popular tags", function () {
 
         expect(storedScores.length).toBeGreaterThan(0);
     });
+
+    it("hydrates popularity zset when counts mismatch", async function () {
+        await this.write({ path: '/one.txt', content: 'Tags: one, two\n\nOne' });
+        await this.write({ path: '/two.txt', content: 'Tags: two, three\n\nTwo' });
+        await this.write({ path: '/three.txt', content: 'Tags: three\n\nThree' });
+        await this.write({ path: '/four.txt', content: 'Tags: three\n\nFour' });
+
+        await this.blog.rebuild();
+
+        const blogID = this.blog.id;
+        const popularityKey = key.popular(blogID);
+
+        await new Promise((resolve, reject) => {
+            client
+                .multi()
+                .del(popularityKey)
+                .zadd(popularityKey, 1, 'one')
+                .exec(function (err) {
+                    if (err) return reject(err);
+                    resolve();
+                });
+        });
+
+        const tags = await new Promise((resolve, reject) => {
+            Tags.popular(blogID, { limit: 10, offset: 0 }, function (err, result) {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        });
+
+        expect(tags.map(tag => tag.slug)).toEqual(['three', 'two', 'one']);
+        expect(tags.map(tag => tag.count)).toEqual([3, 2, 1]);
+
+        const zcard = await new Promise((resolve, reject) => {
+            client.zcard(popularityKey, function (err, count) {
+                if (err) return reject(err);
+                resolve(count);
+            });
+        });
+
+        expect(zcard).toEqual(3);
+    });
 });
 
