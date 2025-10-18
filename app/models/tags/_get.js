@@ -62,10 +62,18 @@ module.exports = function get(blogID, tag, options, callback) {
     var start = offset;
     var stop = limit === undefined ? -1 : offset + limit - 1;
 
-    client.zrevrange(sortedTagKey, start, stop, function (err, entryIDs) {
+    const fetchBatch = client.batch();
+
+    fetchBatch.zcard(sortedTagKey);
+    fetchBatch.zrevrange(sortedTagKey, start, stop);
+
+    fetchBatch.exec(function (err, results) {
       if (err) return callback(err);
 
-      return callback(null, entryIDs, pretty);
+      const total = results[0] || 0;
+      const entryIDs = results[1] || [];
+
+      return callback(null, entryIDs, pretty, total);
     });
   });
 };
