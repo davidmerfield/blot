@@ -65,7 +65,7 @@ async function hydrate(blogID) {
   }
 
   multi.zremrangebyscore(popularityKey, "-inf", 0);
-  
+
   await new Promise((resolve, reject) => {
     multi.exec((err, results) => {
       if (err) return reject(err);
@@ -74,6 +74,46 @@ async function hydrate(blogID) {
   });
 
   console.log(blogID, "finished hydrating tags sorted sets");
+
+  // verify the count of the popularity sorted set matches the number of tags
+  const popularityCount = await new Promise((resolve, reject) => {
+    client.zcard(popularityKey, (err, result) => {
+      if (err) return reject(err);
+      resolve(result || 0);
+    });
+  });
+
+  if (popularityCount !== allTags.length) {
+    const membersOfSortedSet = await new Promise((resolve, reject) => {
+      client.zrange(popularityKey, 0, -1, (err, result) => {
+        if (err) return reject(err);
+        resolve(result || []);
+      });
+    });
+
+    const membersOfSet = await new Promise((resolve, reject) => {
+      client.smembers(key.all(blogID), (err, result) => {
+        if (err) return reject(err);
+        resolve(result || []);
+      });
+    });
+
+    console.log(
+      blogID,
+      "members of popularity sorted set which are not in all tags set:",
+      membersOfSortedSet.filter((tag) => !membersOfSet.includes(tag))
+    );
+
+    console.log(
+      blogID,
+      "members of all tags set which are not in popularity sorted set:",
+      membersOfSet.filter((tag) => !membersOfSortedSet.includes(tag))
+    );
+
+    throw new Error(
+      `Hydration failed: popularity sorted set count (${popularityCount}) does not match number of tags (${allTags.length})`
+    );
+  }
 }
 
 module.exports = hydrate;
