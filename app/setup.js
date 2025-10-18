@@ -67,6 +67,19 @@ async function runPostListenTasks() {
     logError("Failed to configure local blogs", err);
   }
 
+  if (config.master && config.environment === "production") {
+    log("Building folders asynchronously");
+
+    setImmediate(async () => {
+      try {
+        await folders();
+        log("Built folders asynchronously");
+      } catch (err) {
+        logError("Error building folders", err);
+      }
+    });
+  }
+
   if (config.environment !== "production") {
     log("Skipping CDN purge (not in production)");
     return;
@@ -173,19 +186,6 @@ function main(callback) {
         // The docker build stage for production runs this script ahead of time
         if (config.environment !== "development") return;
         await documentation({ watch: true });
-      },
-
-      async function () {
-        if (config.environment !== "production") return;
-        if (!config.master) return;
-
-        log("Building folders");
-        try {
-          await folders();
-          log("Built folders");
-        } catch (e) {
-          log("Error building folders", e);
-        }
       },
 
     ],
