@@ -24,33 +24,17 @@ async function hydrate(blogID) {
 
   const multi = client.multi();
   const popularityKey = key.popular(blogID);
-  const hydrationToken = [
-    "hydrate",
-    Date.now(),
-    process.pid,
-    Math.random().toString(36).slice(2),
-  ].join(":");
-  const tempPopularityKey = `${popularityKey}:${hydrationToken}`;
-  const placeholderMember = "__hydrating_placeholder__";
 
-  multi.zadd(tempPopularityKey, 0, placeholderMember);
+  multi.del(popularityKey);
 
   for (const tag of allTags) {
     const tagKey = key.tag(blogID, tag);
     const sortedTagKey = key.sortedTag(blogID, tag);
-    const tempSortedTagKey = `${sortedTagKey}:${hydrationToken}`;
 
     const entryIDs = await smembersAsync(tagKey);
     console.log(blogID, "getting entries for tag:", tag, "with IDs:", entryIDs);
     const entries = await getEntries(blogID, entryIDs);
     console.log(blogID, "got entries for tag:", tag, "entries:", entries);
-
-    if (!entries || !entries.length) {
-      multi.del(sortedTagKey);
-      continue;
-    }
-
-    multi.zadd(tempSortedTagKey, 0, placeholderMember);
 
     for (const entry of entries) {
       let score = entry.dateStamp;
@@ -66,19 +50,14 @@ async function hydrate(blogID) {
         "score:",
         score
       );
-      multi.zadd(tempSortedTagKey, score, entry.id);
+      multi.zadd(sortedTagKey, score, entry.id);
     }
 
-    multi.rename(tempSortedTagKey, sortedTagKey);
-    multi.zrem(sortedTagKey, placeholderMember);
-
-    multi.zadd(tempPopularityKey, entryIDs.length, tag);
+    multi.zadd(popularityKey, entryIDs.length, tag);
   }
 
-  multi.rename(tempPopularityKey, popularityKey);
-  multi.zrem(popularityKey, placeholderMember);
   multi.zremrangebyscore(popularityKey, "-inf", 0);
-
+  
   await new Promise((resolve, reject) => {
     multi.exec((err, results) => {
       if (err) return reject(err);
