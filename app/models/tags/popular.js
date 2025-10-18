@@ -94,7 +94,6 @@ module.exports = function getPopular(blogID, options, callback) {
         const detailsBatch = client.batch();
 
         tagsWithCounts.forEach(function ({ slug }) {
-          detailsBatch.smembers(key.tag(blogID, slug));
           detailsBatch.get(key.name(blogID, slug));
         });
 
@@ -104,11 +103,11 @@ module.exports = function getPopular(blogID, options, callback) {
           const hydrated = [];
 
           tagsWithCounts.forEach(function ({ slug, count }, index) {
-            const entries = details[index * 2] || [];
-            const name = details[index * 2 + 1] || slug;
+            if (!count) return;
 
-            if (!entries || !entries.length) return;
-
+            const name = details[index] || slug;
+            const entries = Array.from({ length: count });
+            
             hydrated.push({
               name,
               slug,
