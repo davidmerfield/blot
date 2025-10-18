@@ -20,6 +20,26 @@ async function runPostListenTasks() {
     console.error(clfdate(), "Setup:", message, error || "");
   };
 
+  let templatesBuilt = false;
+
+  if (config.master) {
+    log("Building templates after listen");
+    try {
+      await new Promise((resolve, reject) => {
+        templates(
+          { watch: config.environment === "development" },
+          (err) => (err ? reject(err) : resolve())
+        );
+      });
+      templatesBuilt = true;
+      log("Built templates after listen");
+    } catch (err) {
+      logError("Failed to build templates after listen", err);
+    }
+  } else {
+    log("Skipping template build after listen (not master)");
+  }
+
   try {
     if (config.master) {
       log("Starting scheduler asynchronously");
@@ -52,7 +72,11 @@ async function runPostListenTasks() {
   }
 
   try {
-    log("Flushing caches asynchronously");
+    if (templatesBuilt) {
+      log("Flushing caches after template rebuild");
+    } else {
+      log("Flushing caches asynchronously");
+    }
     flush();
   } catch (err) {
     logError("Failed to flush caches", err);
@@ -151,22 +175,12 @@ function main(callback) {
       },
 
       function (callback) {
-        // we only want to build the templates once per deployment
         if (config.master) {
-          log("Building templates");
-          templates(
-            // we only want to watch for changes in the templates in development
-            { watch: config.environment === "development" },
-            function (err) {
-              if (err) throw err;
-              log("Built templates");
-              callback();
-            }
-          );
+          log("Deferring template build until after listen");
         } else {
-          log("Skipping template build");
-          callback();
+          log("Skipping template build (not master)");
         }
+        callback();
       },
 
       async function () {
