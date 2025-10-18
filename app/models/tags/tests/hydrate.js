@@ -8,6 +8,7 @@ describe("tags._hydrate", function () {
   const { promisify } = require("util");
   const zrevrange = promisify(client.zrevrange).bind(client);
   const del = promisify(client.del).bind(client);
+  const get = promisify(require("../get"));
 
   it("populates sorted tag sets from tag sets", async function () {
     await this.publish({
@@ -49,5 +50,49 @@ describe("tags._hydrate", function () {
     const entryIDsA = await zrevrange(key.sortedTag(this.blog.id, "a"), 0, -1);
 
     expect(entryIDsA).toEqual(["/entry-1.txt"]);
+  });
+
+    
+
+  it("will not hydrate when get is called for a non-existent tag", async function () {
+    await this.publish({
+      path: "/entry-1.txt",
+      content: "Tags: A, B, C\n\nEntry 1",
+    });
+
+    // Delete sorted tag sets
+    await del(
+      key.sortedTag(this.blog.id, "a"),
+      key.sortedTag(this.blog.id, "b"),
+      key.sortedTag(this.blog.id, "c")
+    );
+
+    // Should not hydrate since tag D does not exist
+    await get(this.blog.id, "d");
+
+    // Check sorted tag set for tag A
+    const entryIDsA = await zrevrange(key.sortedTag(this.blog.id, "a"), 0, -1);
+
+    expect(entryIDsA).toEqual([]); // Should be empty
+  });
+
+  it("will hydrate when get is called for an existing tag", async function () {
+     await this.publish({
+      path: "/entry-1.txt",
+      content: "Tags: A, B, C\n\nEntry 1",
+    });
+
+    // Delete sorted tag sets
+    await del(
+      key.sortedTag(this.blog.id, "a"),
+      key.sortedTag(this.blog.id, "b"),
+      key.sortedTag(this.blog.id, "c")
+    );
+
+    // Should ydrate since tag a does exist
+    await get(this.blog.id, "a");
+
+    // Check sorted tag set for tag A
+    const entryIDsA = await zrevrange(key.sortedTag(this.blog.id, "a"), 0, -1);
   });
 });

@@ -28,23 +28,26 @@ module.exports = function get(blogID, tag, options, callback) {
 
   const tagKey = key.name(blogID, tag);
   const sortedTagKey = key.sortedTag(blogID, tag);
+  const setKey = key.tag(blogID, tag);
 
   const batch = client.batch();
 
   batch.get(tagKey);
   batch.exists(sortedTagKey);
+  batch.exists(setKey);
 
   batch.exec(async function (err, results) {
     if (err) return callback(err);
 
     const pretty = results[0] || tag;
-    const exists = results[1];
-
+    const existsSortedTagKey = results[1] === 1;
+    const existsSetKey = results[2] === 1;
+    
     // we have not created the sorted set yet so we should iterate over all
     // tags for the blog and fetch the entries for those matching this tag
     // and populate the sorted sets accordingly. this should only happen once
     // per site and should affect all tags on the site.
-    if (!exists) {
+    if (existsSetKey && !existsSortedTagKey) {
       try {
         await hydrate(blogID);
       } catch (e) {
