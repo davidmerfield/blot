@@ -77,6 +77,10 @@ module.exports = function (blog, log, status) {
   };
 };
 
+// Obsidian references the file system path as the note title, so the exported
+// Markdown often lacks an `h1`. To keep published posts readable, we auto-enable
+// the injectTitle plugin when a `.obsidian` folder is detected—unless the author
+// has explicitly turned it off.
 function maybeEnableInjectTitle(blog, path, callback) {
   try {
     const normalizedPath = pathNormalizer(path).toLowerCase();
