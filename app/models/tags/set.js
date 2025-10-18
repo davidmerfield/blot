@@ -68,7 +68,9 @@ module.exports = function (blogID, entry, callback) {
       // Redis will autocreate a key of the right type
       multi.sadd(key.tag(blogID, tag), entry.id);
       var score = entry.dateStamp;
-      if (typeof score !== "number") score = Date.now();
+      if (typeof score !== "number" || isNaN(score)) {
+        score = Date.now();
+      }
       multi.zadd(key.sortedTag(blogID, tag), score, entry.id);
     });
 

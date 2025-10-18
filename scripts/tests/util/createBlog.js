@@ -47,6 +47,11 @@ module.exports = function (done) {
 
     if (context.remove === undefined) context.remove = context.blog.remove;
 
+    if (context.publish === undefined) context.publish = async ({ path, content }) => {
+      await context.blog.write({ path, content });
+      await context.blog.rebuild();
+    };
+    
     done(err);
   });
 };

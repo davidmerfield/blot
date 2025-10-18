@@ -6,7 +6,7 @@ module.exports = {
     return "blog:" + blogID + ":tags:entries:" + normalizedTag;
   },
   sortedTag: function (blogID, normalizedTag) {
-    return "blog:" + blogID + ":tags:entries:" + normalizedTag + ":sorted";
+    return "blog:" + blogID + ":tags:entries-by-dateStamp:" + normalizedTag;
   },
   entry: function (blogID, entryID) {
     return "blog:" + blogID + ":tags:entry:" + entryID;
