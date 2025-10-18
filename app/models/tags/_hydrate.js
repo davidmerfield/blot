@@ -4,6 +4,15 @@ const key = require("./key");
 const { promisify } = require("util");
 
 async function hydrate(blogID) {
+
+  try {
+    await verifyHydration(blogID);
+    console.log(blogID, "hydration verification passed, no need to hydrate");
+    return;
+  } catch (e) {
+    console.log(blogID, "hydration verification failed, proceeding to hydrate:", e);
+  }
+
   const smembersAsync = promisify(client.smembers).bind(client);
 
   const getEntries = (blogID, entryIDs) => {
@@ -33,9 +42,7 @@ async function hydrate(blogID) {
     const sortedTagKey = key.sortedTag(blogID, tag);
 
     const entryIDs = await smembersAsync(tagKey);
-    console.log(blogID, "getting entries for tag:", tag, "with IDs:", entryIDs);
     const entries = await getEntries(blogID, entryIDs);
-    console.log(blogID, "got entries for tag:", tag, "entries:", entries);
 
     if (!entries || !entries.length) {
       console.log("", blogID, "no entries for tag:", tag, "removing tag");
@@ -77,6 +84,13 @@ async function hydrate(blogID) {
 
   console.log(blogID, "finished hydrating tags sorted sets");
 
+  await verifyHydration(blogID);
+}
+
+async function verifyHydration(blogID) {
+  const popularityKey = key.popular(blogID);
+  const allTagsKey = key.all(blogID);
+
   // verify the count of the popularity sorted set matches the number of tags
   const popularityCount = await new Promise((resolve, reject) => {
     client.zcard(popularityKey, (err, result) => {
@@ -101,7 +115,7 @@ async function hydrate(blogID) {
     });
 
     const membersOfSet = await new Promise((resolve, reject) => {
-      client.smembers(key.all(blogID), (err, result) => {
+      client.smembers(allTagsKey, (err, result) => {
         if (err) return reject(err);
         resolve(result || []);
       });
@@ -120,8 +134,42 @@ async function hydrate(blogID) {
     );
 
     throw new Error(
-      `Hydration failed: popularity sorted set count (${popularityCount}) does not match number of tags (${allTags.length})`
+      `Hydration failed: popularity sorted set count (${popularityCount}) does not match all tags set count (${allTagsCount})`
     );
+  }
+
+  // for each tag, verify that there is a sorted set of the entries with the same number of members
+  // as the tag set
+  const allTags = await new Promise((resolve, reject) => {
+    client.smembers(allTagsKey, (err, result) => {
+      if (err) return reject(err);
+      resolve(result || []);
+    });
+  });
+
+  for (const tag of allTags) {
+    const sortedTagKey = key.sortedTag(blogID, tag);
+    const tagKey = key.tag(blogID, tag);
+
+    const sortedSetCount = await new Promise((resolve, reject) => {
+      client.zcard(sortedTagKey, (err, result) => {
+        if (err) return reject(err);
+        resolve(result || 0);
+      });
+    });
+
+    const tagSetCount = await new Promise((resolve, reject) => {
+      client.scard(tagKey, (err, result) => {
+        if (err) return reject(err);
+        resolve(result || 0);
+      });
+    });
+
+    if (sortedSetCount !== tagSetCount) {
+      throw new Error(
+        `Hydration failed for tag "${tag}": sorted set count (${sortedSetCount}) does not match tag set count (${tagSetCount})`
+      );
+    }
   }
 }
 
