@@ -1,4 +1,5 @@
 // Utility functions
+const fs = require("fs").promises;
 const sshCommand = require("./util/sshCommand");
 const askForConfirmation = require("./util/askForConfirmation");
 const checkBranch = require("./util/checkBranch");
@@ -10,6 +11,20 @@ const constants = require("./constants");
 
 const { CONTAINERS } = constants;
 const { REGISTRY_URL, PLATFORM_OS } = constants;
+
+async function dumpFailedContainerLogs(containerName) {
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[:]/g, "-")
+    .replace(/\s+/g, "_");
+  const filePath = `./data/${containerName}-fail-${timestamp}.logs`;
+
+  const logs = await sshCommand(`docker logs ${containerName}`);
+
+  await fs.mkdir("./data", { recursive: true });
+  await fs.writeFile(filePath, logs, "utf8");
+  console.log(`Wrote failure logs to ${filePath}`);
+}
 
 async function detectPlatform() {
   console.log("Detecting server platform...");
@@ -157,6 +172,15 @@ async function main() {
         await deployContainer(container, platform, imageHash);
       } catch (error) {
         console.error(`Deployment failed for ${container.name}`);
+
+        try {
+          await dumpFailedContainerLogs(container.name);
+        } catch (logError) {
+          console.warn(
+            `Failed to collect logs for ${container.name}:`,
+            logError
+          );
+        }
 
         if (!rollbackHash) {
           console.error("No previous image to rollback to. Exiting...");
