@@ -5,7 +5,7 @@
 // avoid affecting other asset types. The sync layer enables it automatically
 // for detected Obsidian vaults, but authors can still opt out via the plugin
 // settings.
-const titlify = require("../prepare/titlify");
+const titlify = require("../../prepare/titlify");
 
 function render($, callback, options = {}) {
   try {
