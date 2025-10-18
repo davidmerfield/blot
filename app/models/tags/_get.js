@@ -34,8 +34,30 @@ module.exports = function get(blogID, tag, options, callback) {
     client.exists(sortedTagKey, function (err, exists) {
       if (err) return callback(err);
 
-      if (exists) return fetchFromSorted(prettyTag);
+      if (!exists) return hydrateFromLegacy(prettyTag);
 
+      client
+        .multi()
+        .scard(tagSetKey)
+        .zcard(sortedTagKey)
+        .exec(function (err, counts) {
+          if (err) return callback(err);
+
+          var legacyCount = counts && counts[0] ? counts[0] : 0;
+          var sortedCount = counts && counts[1] ? counts[1] : 0;
+
+          if (!legacyCount) {
+            if (!sortedCount) return callback(null, [], prettyTag);
+            return fetchFromSorted(prettyTag);
+          }
+
+          if (sortedCount >= legacyCount) return fetchFromSorted(prettyTag);
+
+          hydrateFromLegacy(prettyTag);
+        });
+    });
+
+    function hydrateFromLegacy(prettyTag) {
       client.smembers(tagSetKey, function (err, entryIDs) {
         if (err) return callback(err);
 
@@ -48,7 +70,7 @@ module.exports = function get(blogID, tag, options, callback) {
           fetchFromSorted(prettyTag);
         });
       });
-    });
+    }
 
     function fetchFromSorted(pretty) {
       var start = offset;

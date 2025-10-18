@@ -187,4 +187,57 @@ describe("tags.get", function () {
             });
         });
     });
+
+    it("hydrates missing legacy members when the sorted set exists", function (done) {
+        const blogID = this.blog.id;
+        const tagName = "Tag Four";
+        const normalized = normalize(tagName);
+        const legacyEntries = [
+            {
+                id: "entry-j",
+                blogID,
+                path: "/entry-j",
+                tags: [tagName],
+                dateStamp: 1000,
+            },
+            {
+                id: "entry-k",
+                blogID,
+                path: "/entry-k",
+                tags: [tagName],
+                dateStamp: 2000,
+            },
+        ];
+
+        saveEntries(blogID, legacyEntries, function (err) {
+            if (err) return done.fail(err);
+
+            const sortedKey = key.sortedTag(blogID, normalized);
+
+            client.del(sortedKey, function (err) {
+                if (err) return done.fail(err);
+
+                const newEntry = {
+                    id: "entry-l",
+                    blogID,
+                    path: "/entry-l",
+                    tags: [tagName],
+                    dateStamp: 3000,
+                };
+
+                set(blogID, newEntry, function (err) {
+                    if (err) return done.fail(err);
+
+                    get(blogID, tagName, { limit: 10 }, function (err, entryIDs, tag) {
+                        if (err) return done.fail(err);
+
+                        expect(entryIDs).toEqual(["entry-l", "entry-k", "entry-j"]);
+                        expect(tag).toEqual(tagName);
+
+                        done();
+                    });
+                });
+            });
+        });
+    });
 });
