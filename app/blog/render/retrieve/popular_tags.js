@@ -4,7 +4,7 @@ module.exports = function (req, callback) {
   req.log('Listing popular tags');
   
   // We could make this limit configurable through req.query or config
-  const limit = 10;
+  const limit = 100;
   
   Tags.popular(req.blog.id, { limit: limit, offset: 0 }, function(err, tags) {
     if (err) return callback(err);
