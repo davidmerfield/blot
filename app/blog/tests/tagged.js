@@ -215,12 +215,10 @@ describe("tags work on sites", function () {
       {
         "tagged.html": `
         {
-            "page": {{pagination.page}},
-            "totalPages": {{pagination.totalPages}},
-            "hasPrev": {{pagination.hasPrev}},
-            "hasNext": {{pagination.hasNext}},
-            "prevUrl": {{#pagination.prevUrl}}"{{{pagination.prevUrl}}}"{{/pagination.prevUrl}}{{^pagination.prevUrl}}null{{/pagination.prevUrl}},
-            "nextUrl": {{#pagination.nextUrl}}"{{{pagination.nextUrl}}}"{{/pagination.nextUrl}}{{^pagination.nextUrl}}null{{/pagination.nextUrl}},
+            "current": {{pagination.current}},
+            "total": {{pagination.total}},
+            "previous": "{{pagination.previous}}",
+            "next": "{{pagination.next}}",
             "entries": [
                 {{#entries}}
                     "{{title}}"{{^last}},{{/last}}
@@ -239,12 +237,10 @@ describe("tags work on sites", function () {
 
     expect(parsed).toEqual(
       jasmine.objectContaining({
-        page: 1,
-        totalPages: 2,
-        hasPrev: false,
-        hasNext: true,
-        prevUrl: null,
-        nextUrl: "/tagged/paginated/page/2",
+        current: 1,
+        total: 2,
+        previous: "",
+        next: "2",
       })
     );
     expect(parsed.entries.map((title) => title.toLowerCase())).toEqual([
@@ -260,12 +256,10 @@ describe("tags work on sites", function () {
 
     expect(parsedPage2).toEqual(
       jasmine.objectContaining({
-        page: 2,
-        totalPages: 2,
-        hasPrev: true,
-        hasNext: false,
-        prevUrl: "/tagged/paginated",
-        nextUrl: null,
+        current: 2,
+        total: 2,
+        previous: "1",
+        next: "",
       })
     );
     expect(parsedPage2.entries.map((title) => title.toLowerCase())).toEqual([
@@ -280,12 +274,10 @@ describe("tags work on sites", function () {
 
     expect(parsedPage3).toEqual(
       jasmine.objectContaining({
-        page: 3,
-        totalPages: 2,
-        hasPrev: true,
-        hasNext: false,
-        prevUrl: "/tagged/paginated/page/2",
-        nextUrl: null,
+        current: 3,
+        total: 2,
+        previous: "2",
+        next: "",
       })
     );
     expect(parsedPage3.entries).toEqual([]);

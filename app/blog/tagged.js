@@ -1,7 +1,6 @@
 module.exports = function (server) {
-  var Entry = require("models/entry");
-  var Tags = require("models/tags");
-  var _ = require("lodash");
+  const Entry = require("models/entry");
+  const Tags = require("models/tags");
 
   server.get(
     ["/tagged/:tag", "/tagged/:tag/page/:page"],
@@ -23,63 +22,45 @@ module.exports = function (server) {
       if (!limit || limit < 1 || limit > 500) limit = 100;
 
       var offset = (page - 1) * limit;
+      var options = { limit, offset };
 
-      Tags.get(
-        blogID,
-        slug,
-        { limit, offset },
-        function (err, entryIDs, tag, total) {
-          Entry.get(blogID, entryIDs || [], function (entries) {
-            entries = _.sortBy(entries, "dateStamp").reverse();
+      Tags.get(blogID, slug, options, function (err, ...results) {
+        const [entryIDs, tag, totalEntries] = results;
 
-            var pagination = buildPagination(slug, page, limit, total || 0);
+        Entry.get(blogID, entryIDs || [], function (entries) {
+          response.locals.tag = tag;
+          response.locals.slug = slug;
+          response.locals.total = totalEntries || 0;
+          response.locals.entries = entries;
+          response.locals.pagination = buildPagination(
+            page,
+            limit,
+            totalEntries || 0
+          );
 
-            response.locals.tag = tag;
-            response.locals.slug = slug;
-            response.locals.entries = entries;
-            response.locals.total = total || 0;
-            response.locals.pagination = pagination;
-
-            response.renderView("tagged.html", next);
-          });
-        }
-      );
+          response.renderView("tagged.html", next);
+        });
+      });
     }
   );
 };
 
-function buildPagination(slug, page, perPage, totalEntries) {
-  var baseUrl = "/tagged/" + (slug || "");
-  var totalPages = perPage > 0 ? Math.ceil(totalEntries / perPage) : 0;
+function buildPagination(current, pageSize, totalEntries) {
+  var totalPages = pageSize > 0 ? Math.ceil(totalEntries / pageSize) : 0;
 
   if (!totalEntries) {
     totalPages = 0;
   }
 
-  var hasPrev = page > 1;
-  var hasNext = totalPages > 0 && page < totalPages;
-
-  var prevUrl = null;
-  var nextUrl = null;
-
-  if (hasPrev) {
-    var prevPage = page - 1;
-    prevUrl = prevPage === 1 ? baseUrl : baseUrl + "/page/" + prevPage;
-  }
-
-  if (hasNext) {
-    var nextPage = page + 1;
-    nextUrl = baseUrl + "/page/" + nextPage;
-  }
+  var previous = current > 1 ? current - 1 : null;
+  var next = totalPages > 0 && current < totalPages ? current + 1 : null;
 
   return {
-    page: page,
-    perPage: perPage,
+    current,
+    pageSize,
+    total: totalPages,
     totalEntries: totalEntries,
-    totalPages: totalPages,
-    hasPrev: hasPrev,
-    hasNext: hasNext,
-    prevUrl: prevUrl,
-    nextUrl: nextUrl,
+    previous,
+    next,
   };
 }
