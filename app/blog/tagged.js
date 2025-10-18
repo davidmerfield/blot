@@ -2,6 +2,10 @@ module.exports = function (server) {
   const Entry = require("models/entry");
   const Tags = require("models/tags");
 
+
+  // todo: refactor and consolidate ./render/retrieve/tagged.js and this file
+  // they do very similar things but this one supports pagination and the other
+  // supports multiple tags so merge them into a single function
   server.get(
     ["/tagged/:tag", "/tagged/:tag/page/:page"],
     function (request, response, next) {
