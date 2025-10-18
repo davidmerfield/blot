@@ -36,25 +36,7 @@ module.exports = function get(blogID, tag, options, callback) {
 
       if (!exists) return hydrateFromLegacy(prettyTag);
 
-      client
-        .multi()
-        .scard(tagSetKey)
-        .zcard(sortedTagKey)
-        .exec(function (err, counts) {
-          if (err) return callback(err);
-
-          var legacyCount = counts && counts[0] ? counts[0] : 0;
-          var sortedCount = counts && counts[1] ? counts[1] : 0;
-
-          if (!legacyCount) {
-            if (!sortedCount) return callback(null, [], prettyTag);
-            return fetchFromSorted(prettyTag);
-          }
-
-          if (sortedCount >= legacyCount) return fetchFromSorted(prettyTag);
-
-          hydrateFromLegacy(prettyTag);
-        });
+      hydrateMissingLegacyMembers(prettyTag);
     });
 
     function hydrateFromLegacy(prettyTag) {
@@ -68,6 +50,35 @@ module.exports = function get(blogID, tag, options, callback) {
         hydrateSortedSet(entryIDs, function (err) {
           if (err) return callback(err);
           fetchFromSorted(prettyTag);
+        });
+      });
+    }
+
+    function hydrateMissingLegacyMembers(prettyTag) {
+      client.smembers(tagSetKey, function (err, legacyEntryIDs) {
+        if (err) return callback(err);
+
+        if (!legacyEntryIDs || !legacyEntryIDs.length) {
+          return fetchFromSorted(prettyTag);
+        }
+
+        client.zrange(sortedTagKey, 0, -1, function (err, sortedEntryIDs) {
+          if (err) return callback(err);
+
+          sortedEntryIDs = sortedEntryIDs || [];
+
+          var sortedSet = new Set(sortedEntryIDs);
+
+          var missingLegacyEntryIDs = legacyEntryIDs.filter(function (entryID) {
+            return !sortedSet.has(entryID);
+          });
+
+          if (!missingLegacyEntryIDs.length) return fetchFromSorted(prettyTag);
+
+          hydrateSortedSet(missingLegacyEntryIDs, function (err) {
+            if (err) return callback(err);
+            fetchFromSorted(prettyTag);
+          });
         });
       });
     }
