@@ -54,7 +54,7 @@ async function hydrate(blogID) {
     );
 
     multi.del(sortedTagKey);
-    
+
     for (const entry of entries) {
       let score = entry.dateStamp;
       if (typeof score !== "number" || isNaN(score)) {
@@ -85,7 +85,14 @@ async function hydrate(blogID) {
     });
   });
 
-  if (popularityCount !== allTags.length) {
+  const allTagsCount = await new Promise((resolve, reject) => {
+    client.scard(allTagsKey, (err, result) => {
+      if (err) return reject(err);
+      resolve(result || 0);
+    });
+  });
+
+  if (popularityCount !== allTagsCount) {
     const membersOfSortedSet = await new Promise((resolve, reject) => {
       client.zrange(popularityKey, 0, -1, (err, result) => {
         if (err) return reject(err);
