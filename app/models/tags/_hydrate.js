@@ -38,26 +38,28 @@ async function hydrate(blogID) {
     console.log(blogID, "got entries for tag:", tag, "entries:", entries);
 
     if (!entries || !entries.length) {
+      console.log("", blogID, "no entries for tag:", tag, "removing tag");
       multi.del(sortedTagKey);
       multi.del(tagKey);
       multi.srem(allTagsKey, tag);
       continue;
     }
 
+    console.log(
+      blogID,
+      "hydrating sorted set for tag:",
+      tag,
+      "with entries:",
+      entries.length
+    );
+
+    multi.del(sortedTagKey);
+    
     for (const entry of entries) {
       let score = entry.dateStamp;
       if (typeof score !== "number" || isNaN(score)) {
         score = Date.now();
       }
-      console.log(
-        blogID,
-        "adding to sorted set:",
-        sortedTagKey,
-        "entry ID:",
-        entry.id,
-        "score:",
-        score
-      );
       multi.zadd(sortedTagKey, score, entry.id);
     }
 
