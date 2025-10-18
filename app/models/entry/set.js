@@ -106,7 +106,28 @@ module.exports = function set (blogID, path, updates, callback) {
       redis.set(entryKey, JSON.stringify(entry), function (err) {
         if (err) return callback(err);
 
-        queue = [
+        var ttlAction = entry.deleted
+          ? function (next) {
+              redis.expire(entryKey, 24 * 60 * 60, function (err, result) {
+                if (err) return next(err);
+                if (!result)
+                  return next(
+                    new Error("Failed to set expiration for deleted entry")
+                  );
+                next();
+              });
+            }
+          : function (next) {
+              redis.persist(entryKey, function (err) {
+                if (err) return next(err);
+                next();
+              });
+            };
+
+        ttlAction(function (err) {
+          if (err) return callback(err);
+
+          queue = [
           updateTagList.bind(this, blogID, entry),
           assignToLists.bind(this, blogID, entry),
           rebuildDependencyGraph.bind(this, blogID, entry, previousDependencies)
@@ -117,57 +138,58 @@ module.exports = function set (blogID, path, updates, callback) {
 
         if (entry.draft) queue.push(notifyDrafts.bind(this, blogID, entry));
 
-        async.parallel(queue, function (err) {
-          if (err) return callback(err);
-          backlinksToUpdate(
-            blogID,
-            entry,
-            previousInternalLinks,
-            previousPermalink,
-            function (err, changes) {
-              if (err) return callback(err);
+          async.parallel(queue, function (err) {
+            if (err) return callback(err);
+            backlinksToUpdate(
+              blogID,
+              entry,
+              previousInternalLinks,
+              previousPermalink,
+              function (err, changes) {
+                if (err) return callback(err);
 
-              if (changes.length)
-                console.log(
-                  clfdate(),
-                  blogID.slice(0, 12),
-                  "updating backlinks:",
-                  path
-                );
-              async.eachOf(
-                changes,
-                function (backlinks, linkedEntryPath, next) {
+                if (changes.length)
                   console.log(
                     clfdate(),
                     blogID.slice(0, 12),
-                    "    - linked entry:",
-                    linkedEntryPath
+                    "updating backlinks:",
+                    path
                   );
-                  set(blogID, linkedEntryPath, { backlinks }, function (err) {
-                    if (err) {
-                      console.log(
-                        clfdate(),
-                        blogID.slice(0, 12),
-                        "    - error updating linked entry:",
-                        linkedEntryPath
-                      );
-                      console.log(err);
+                async.eachOf(
+                  changes,
+                  function (backlinks, linkedEntryPath, next) {
+                    console.log(
+                      clfdate(),
+                      blogID.slice(0, 12),
+                      "    - linked entry:",
+                      linkedEntryPath
+                    );
+                    set(blogID, linkedEntryPath, { backlinks }, function (err) {
+                      if (err) {
+                        console.log(
+                          clfdate(),
+                          blogID.slice(0, 12),
+                          "    - error updating linked entry:",
+                          linkedEntryPath
+                        );
+                        console.log(err);
+                      }
+                      next();
+                    });
+                  },
+                  function (err) {
+                    if (err) return callback(err);
+                    if (entry.deleted) {
+                      console.log(clfdate(), blogID.slice(0, 12), "delete", path);
+                    } else {
+                      console.log(clfdate(), blogID.slice(0, 12), "update", path);
                     }
-                    next();
-                  });
-                },
-                function (err) {
-                  if (err) return callback(err);
-                  if (entry.deleted) {
-                    console.log(clfdate(), blogID.slice(0, 12), "delete", path);
-                  } else {
-                    console.log(clfdate(), blogID.slice(0, 12), "update", path);
+                    callback();
                   }
-                  callback();
-                }
-              );
-            }
-          );
+                );
+              }
+            );
+          });
         });
       });
     });

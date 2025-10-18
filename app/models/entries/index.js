@@ -186,6 +186,49 @@ module.exports = (function () {
     });
   }
 
+  function pruneMissing(blogID, callback) {
+    if (!callback) callback = function () {};
+
+    ensure(blogID, "string").and(callback, "function");
+
+    async.eachSeries(
+      lists,
+      function (listName, nextList) {
+        var key = listKey(blogID, listName);
+
+        redis.zrange(key, 0, -1, function (err, ids) {
+          if (err) return nextList(err);
+          if (!ids || !ids.length) return nextList();
+
+          Entry.get(blogID, ids, function (entries) {
+            entries = entries || [];
+
+            var existing = {};
+
+            entries.forEach(function (entry) {
+              if (entry && entry.id) existing[entry.id] = true;
+            });
+
+            var missing = ids.filter(function (id) {
+              return !existing[id];
+            });
+
+            if (!missing.length) return nextList();
+
+            var args = [key].concat(missing);
+            args.push(function (err) {
+              if (err) return nextList(err);
+              nextList();
+            });
+
+            redis.zrem.apply(redis, args);
+          });
+        });
+      },
+      callback
+    );
+  }
+
   function getCreated(blogID, after, callback) {
     ensure(blogID, "string").and(after, "number").and(callback, "function");
 
@@ -457,6 +500,7 @@ module.exports = (function () {
     get: get,
     resave: resave,
     each: each,
+    pruneMissing: pruneMissing,
     adjacentTo: adjacentTo,
     getPage: getPage,
     getListIDs: getListIDs,
