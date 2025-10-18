@@ -67,6 +67,9 @@ module.exports = function (blogID, entry, callback) {
       // store the entry's id against the tag's key
       // Redis will autocreate a key of the right type
       multi.sadd(key.tag(blogID, tag), entry.id);
+      var score = entry.dateStamp;
+      if (typeof score !== "number") score = Date.now();
+      multi.zadd(key.sortedTag(blogID, tag), score, entry.id);
     });
 
     // For each tagName in the list of tags which the
@@ -75,6 +78,7 @@ module.exports = function (blogID, entry, callback) {
     // removes a previously existing tag
     removed.forEach(function (tag) {
       multi.srem(key.tag(blogID, tag), entry.id);
+      multi.zrem(key.sortedTag(blogID, tag), entry.id);
       multi.srem(existingKey, tag);
     });
 

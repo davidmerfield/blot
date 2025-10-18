@@ -8,7 +8,14 @@ var get = require("./_get");
 // then the tag as it was entered,
 // then the tag as it was entered but decoded, e.g.
 // "Hello%20World" -> "Hello World"
-module.exports = function (blogID, tag, callback) {
+module.exports = function (blogID, tag, options, callback) {
+  if (typeof options === "function") {
+    callback = options;
+    options = {};
+  }
+
+  options = options || {};
+
   let normalizedTag = tag;
   let decodedTag = tag;
 
@@ -24,17 +31,17 @@ module.exports = function (blogID, tag, callback) {
     // do nothing if decoding fails
   }
 
-  get(blogID, normalizedTag, function (err, entryIDs, prettyTag) {
+  get(blogID, normalizedTag, options, function (err, entryIDs, prettyTag) {
     if (entryIDs && entryIDs.length) {
       return callback(null, entryIDs, prettyTag);
     }
 
-    get(blogID, tag, function (err, entryIDs, prettyTag) {
+    get(blogID, tag, options, function (err, entryIDs, prettyTag) {
       if (entryIDs && entryIDs.length) {
         return callback(null, entryIDs, prettyTag);
       }
 
-      get(blogID, decodedTag, callback);
+      get(blogID, decodedTag, options, callback);
     });
   });
 };
