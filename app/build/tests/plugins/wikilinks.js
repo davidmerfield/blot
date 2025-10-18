@@ -233,6 +233,27 @@ Heading Here
     done();
   });
 
+  it("will process embedded media through the image cache", async function (done) {
+    await this.blog.write({
+      path: "/Assets/photo.png",
+      content: await global.test.fake.pngBuffer()
+    });
+
+    await this.blog.write({
+      path: "/CachedMediaPost.txt",
+      content: "![[Assets/photo.png]]"
+    });
+
+    await this.blog.rebuild();
+
+    const entry = await this.blog.check({ path: "/CachedMediaPost.txt" });
+
+    expect(entry.html).toContain('<img');
+    expect(entry.html).toContain('/_image_cache/');
+
+    done();
+  });
+
   it("will support video embedding with piped alt text", async function (done) {
     await this.blog.write({
       path: "/Assets/video.mp4",

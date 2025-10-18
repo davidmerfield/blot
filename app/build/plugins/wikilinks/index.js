@@ -138,4 +138,5 @@ module.exports = {
   category: "Typography",
   title: "Wikilinks",
   description: "Convert Wikilinks into links",
+  first: true,
 };
