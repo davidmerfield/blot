@@ -31,14 +31,18 @@ module.exports = function (blogID, tag, options, callback) {
     // do nothing if decoding fails
   }
 
-  get(blogID, normalizedTag, options, function (err, entryIDs, prettyTag) {
+  get(blogID, normalizedTag, options, function (err, entryIDs, prettyTag, total) {
+    if (err) return callback(err);
+
     if (entryIDs && entryIDs.length) {
-      return callback(null, entryIDs, prettyTag);
+      return callback(null, entryIDs, prettyTag, total);
     }
 
-    get(blogID, tag, options, function (err, entryIDs, prettyTag) {
+    get(blogID, tag, options, function (err, entryIDs, prettyTag, total) {
+      if (err) return callback(err);
+
       if (entryIDs && entryIDs.length) {
-        return callback(null, entryIDs, prettyTag);
+        return callback(null, entryIDs, prettyTag, total);
       }
 
       get(blogID, decodedTag, options, callback);
