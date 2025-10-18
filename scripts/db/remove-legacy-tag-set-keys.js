@@ -5,6 +5,7 @@ const getConfirmation = require("../util/getConfirmation");
 
 const LEGACY_PATTERN = "blog:*:tags:entries:*";
 const KEY_FORMAT = /^blog:([^:]+):tags:entries:(.+)$/;
+const DELETE_BATCH_SIZE = 500;
 
 async function collectLegacyKeys(blogID) {
   const pattern = blogID
@@ -56,30 +57,38 @@ async function removeLegacyTagSetKeys(blogID) {
     return;
   }
 
-  await new Promise((resolve, reject) => {
-    const multi = client.multi();
-    allKeys.forEach((key) => multi.del(key));
-    multi.exec((err, results) => {
-      if (err) return reject(err);
+  let totalDeleted = 0;
 
-      const deleted = Array.isArray(results)
-        ? results.reduce(
-            (sum, value) => sum + (typeof value === "number" ? value : 0),
-            0
-          )
-        : 0;
+  for (let i = 0; i < allKeys.length; i += DELETE_BATCH_SIZE) {
+    const batchKeys = allKeys.slice(i, i + DELETE_BATCH_SIZE);
 
-      console.log(
-        colors.green(
-          `Deleted ${allKeys.length} key${
-            allKeys.length === 1 ? "" : "s"
-          }. Redis removed ${deleted} key${deleted === 1 ? "" : "s"}.`
-        )
-      );
+    const batchDeleted = await new Promise((resolve, reject) => {
+      const multi = client.multi();
+      batchKeys.forEach((key) => multi.del(key));
+      multi.exec((err, results) => {
+        if (err) return reject(err);
 
-      resolve();
+        const deleted = Array.isArray(results)
+          ? results.reduce(
+              (sum, value) => sum + (typeof value === "number" ? value : 0),
+              0
+            )
+          : 0;
+
+        resolve(deleted);
+      });
     });
-  });
+
+    totalDeleted += batchDeleted;
+  }
+
+  console.log(
+    colors.green(
+      `Deleted ${allKeys.length} key${
+        allKeys.length === 1 ? "" : "s"
+      }. Redis removed ${totalDeleted} key${totalDeleted === 1 ? "" : "s"}.`
+    )
+  );
 }
 
 if (require.main === module) {
