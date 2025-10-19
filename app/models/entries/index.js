@@ -178,6 +178,7 @@ module.exports = (function () {
         ids,
         function (id, next) {
           Entry.get(blogID, id, function (entry) {
+            if (!entry) return next();
             dothis(entry, next);
           });
         },
