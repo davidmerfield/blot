@@ -26,7 +26,7 @@
     </form>
   {{/secret}}
 
-  <form method="post" action="/sites/account/two-factor/confirm">
+  <form method="post" action="/sites/account/two-factor/enable">
     <input type="hidden" name="_csrf" value="{{csrftoken}}" />
     <label for="code">Enter the six-digit code</label>
     <input type="text" name="code" id="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9 ]*" required />

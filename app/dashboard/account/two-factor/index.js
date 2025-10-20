@@ -39,6 +39,17 @@ router.get("/", (req, res) => {
   });
 });
 
+router.get("/start", (req, res) => {
+  if (req.user.twoFactorEnabled) {
+    return res.redirect(req.baseUrl);
+  }
+
+  res.render("dashboard/account/two-factor/index", {
+    twoFactor: req.user.twoFactor,
+    twoFactorEnabled: req.user.twoFactorEnabled,
+  });
+});
+
 router.post("/start", (req, res, next) => {
   if (req.user.twoFactorEnabled) {
     return res.message(
@@ -86,7 +97,7 @@ router.get("/enable", async (req, res, next) => {
   }
 });
 
-router.post("/confirm", (req, res, next) => {
+router.post("/enable", (req, res, next) => {
   const setup = getSetup(req);
 
   if (!setup || !setup.secret) {
@@ -122,10 +133,7 @@ router.post("/confirm", (req, res, next) => {
 
       clearSetup(req);
 
-      res.message(
-        req.baseUrl + "/codes",
-        "Two-factor authentication enabled"
-      );
+      res.message(req.baseUrl + "/codes", "Two-factor authentication enabled");
     }
   );
 });
