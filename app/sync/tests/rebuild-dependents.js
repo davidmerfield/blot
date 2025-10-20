@@ -29,7 +29,7 @@ describe("rebuild dependents cleanup", function () {
 
       Entry.get(this.blog.id, postPath, function (entry) {
         expect(entry).toBeDefined();
-        expect(entry.deleted).toBeTrue();
+        expect(entry.deleted).toBe(true);
         done();
       });
     });

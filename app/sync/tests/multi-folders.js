@@ -117,7 +117,7 @@ describe("sync multi-folder support", function () {
 
                         Entry.get(blogID, "/images/photo.md", function (oldEntry) {
                           if (oldEntry) {
-                            expect(oldEntry.deleted).toBeTrue();
+                            expect(oldEntry.deleted).toBe(true);
                           }
                           done();
                         });

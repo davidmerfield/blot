@@ -28,7 +28,7 @@ describe("build multiple", function () {
     var entry = await this.buildEntry("/album+");
 
     expect(entry.path).toEqual("/album");
-    expect(entry.html).toContain("<h1>One</h1>");
+    expect(entry.html).toContain("<h1 id=\"one\">One</h1>");
     expect(entry.html).toContain("<p>Body</p>");
     expect(entry.html).toContain("Second");
     expect(entry.metadata._sourcePaths).toEqual([
