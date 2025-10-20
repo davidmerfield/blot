@@ -43,7 +43,7 @@ async function storeRemoteContainerLogs(containerName, reason) {
 
   const captureCommand = [
     `mkdir -p '${remoteDir}'`,
-    `docker logs ${containerName} > '${remotePath}' 2>&1 || true`,
+    `(docker logs ${containerName} > '${remotePath}' 2>&1 || true)`,
     pruneCommand,
   ].join(" && ");
 
