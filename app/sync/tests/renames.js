@@ -81,12 +81,25 @@ describe("update", function () {
   it("detects a large number of renamed files", function (testDone) {
     var items = [];
     var ctx = this;
+    var usedPaths = new Set();
+
+    function uniquePath(ext) {
+      var path;
+
+      do {
+        path = ctx.fake.path(ext);
+      } while (usedPaths.has(path));
+
+      usedPaths.add(path);
+
+      return path;
+    }
 
     // Create 100 fake files
     for (var i = 0; i < 10; i++)
       items.push({
-        oldPath: this.fake.path(".txt"),
-        newPath: this.fake.path(".txt"),
+        oldPath: uniquePath(".txt"),
+        newPath: uniquePath(".txt"),
         content: this.fake.file({title: i + '-' + Date.now()}),
       });
 
