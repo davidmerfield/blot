@@ -2,8 +2,6 @@ const ensure = require("helper/ensure");
 const crypto = require("crypto");
 const { authenticator } = require("otplib");
 
-const setUser = require("./set");
-const getById = require("./getById");
 
 function createDefaultConfig() {
   return {
@@ -132,6 +130,8 @@ function enable(uid, config, callback) {
     (config && config.backupCodes) || generateBackupCodes()
   );
 
+  const setUser = require("./set");
+
   const twoFactor = {
     enabled: true,
     secret,
@@ -154,6 +154,8 @@ function ensureSecret(secret) {
 function disable(uid, callback) {
   ensure(uid, "string").and(callback, "function");
 
+  const setUser = require("./set");
+
   setUser(uid, { twoFactor: createDefaultConfig() }, callback);
 }
 
@@ -163,6 +165,8 @@ function validate(uid, token, callback) {
   const normalized = normalizeToken(token);
 
   if (!normalized) return callback(null, { verified: false });
+
+  const getById = require("./getById");
 
   getById(uid, function (err, user) {
     if (err) return callback(err);
@@ -209,6 +213,8 @@ function validate(uid, token, callback) {
         lastUsedAt: new Date(getEpochOverride() || Date.now()).toISOString(),
       },
     };
+
+    const setUser = require("./set");
 
     setUser(uid, updated, function (setErr) {
       if (setErr) return callback(setErr);
