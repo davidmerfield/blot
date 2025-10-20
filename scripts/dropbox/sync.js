@@ -26,7 +26,6 @@ function runFullSync(blog, callback) {
 }
 
 function main(blog, next) {
-  console.log("Syncing", blog.title, blog.id, new Date(blog.cacheID));
   runFullSync(blog, async function (err) {
     if (err) {
       console.error(
@@ -58,6 +57,13 @@ function main(blog, next) {
 if (process.argv[2]) {
   get(process.argv[2], function (err, user, blog) {
     if (err) throw err;
+    console.log(
+      "1/1 blogs",
+      "- Syncing",
+      blog.title,
+      blog.id,
+      new Date(blog.cacheID)
+    );
     main(blog, function (err) {
       if (err) {
         console.error("Sync finished with error", err.message || err);
@@ -77,19 +83,35 @@ if (process.argv[2]) {
       next();
     },
     function () {
-      // Sort blogs to sync least recently synced first
-      blogs.sort(function (a, b) {
-        return a.cacheID > b.cacheID ? 1 : -1;
-      });
+      // Shuffle blogs so sync order is random
+      for (var i = blogs.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = blogs[i];
+        blogs[i] = blogs[j];
+        blogs[j] = temp;
+      }
 
-      async.eachSeries(blogs, main, function (err) {
-        if (err) {
-          console.error("Sync finished with error", err.message || err);
+      async.eachOfSeries(
+        blogs,
+        function (blog, index, next) {
+          console.log(
+            index + 1 + "/" + blogs.length + " blogs",
+            "- Syncing",
+            blog.title,
+            blog.id,
+            new Date(blog.cacheID)
+          );
+          main(blog, next);
+        },
+        function (err) {
+          if (err) {
+            console.error("Sync finished with error", err.message || err);
+          }
+
+          console.log("Done!");
+          process.exit();
         }
-
-        console.log("Done!");
-        process.exit();
-      });
+      );
     }
   );
 }

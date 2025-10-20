@@ -1,5 +1,4 @@
 // Utility functions
-const fs = require("fs").promises;
 const sshCommand = require("./util/sshCommand");
 const askForConfirmation = require("./util/askForConfirmation");
 const checkBranch = require("./util/checkBranch");
@@ -12,21 +11,83 @@ const constants = require("./constants");
 const { CONTAINERS } = constants;
 const { REGISTRY_URL, PLATFORM_OS } = constants;
 
-async function dumpFailedContainerLogs(containerName) {
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[:]/g, "-")
-    .replace(/\s+/g, "_");
-  const filePath = `./data/${containerName}-fail-${timestamp}.logs`;
+const MAX_REMOTE_LOGS = 5;
+let remoteTempDirPromise;
 
-  const logs = await sshCommand(`docker logs ${containerName}`);
+async function getRemoteTempDir() {
+  if (!remoteTempDirPromise) {
+    remoteTempDirPromise = sshCommand(
+      "(env | grep '^TMPDIR=' | head -n 1 | cut -d= -f2-) || true"
+    );
+  }
 
-  await fs.mkdir("./data", { recursive: true });
-  await fs.writeFile(filePath, logs, "utf8");
-  console.log(`Wrote failure logs to ${filePath}`);
+  try {
+    const dir = (await remoteTempDirPromise).replace(/\s+$/g, "");
+    if (!dir) return "/tmp";
+    return dir.replace(/\/$/, "");
+  } catch (error) {
+    remoteTempDirPromise = null;
+    throw error;
+  }
 }
 
-async function archiveRedeployedContainerLogs(containerName) {
+async function storeRemoteContainerLogs(containerName, reason) {
+  // optional: validate inputs
+  const safeName = (s) => {
+    if (!/^[a-z0-9][a-z0-9_.-]+$/.test(s))
+      throw new Error("Bad container name");
+    return s;
+  };
+  safeName(containerName);
+
+  const timestamp = new Date().toISOString().replace(/[:]/g, "-");
+  const remoteTempDir = await getRemoteTempDir();
+  const remoteDir = `${remoteTempDir}/blot-deploy-logs/${containerName}`;
+  const remotePath = `${remoteDir}/${containerName}-${reason}-${timestamp}.log`;
+  const tmpPath = `${remoteDir}/.${containerName}-${reason}-${timestamp}.tmp`;
+
+  // 1) Ensure dir exists
+  await sshCommand(`mkdir -p '${remoteDir}'`);
+
+  // 2) Capture logs to a temp file (atomic move later)
+  await sshCommand(
+    `(docker logs '${containerName}' > '${tmpPath}' 2>&1 || true)`
+  );
+
+  // 3) Atomically move into place
+  await sshCommand(`mv -f '${tmpPath}' '${remotePath}'`);
+
+  // 4) Compute prune list on server
+  const listToDelete = await sshCommand(
+    `cd '${remoteDir}' && ls -1t | awk 'NR>${MAX_REMOTE_LOGS}'`
+  );
+
+  // 5) Delete old files one by one with full paths and --
+  const files = listToDelete
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  for (const f of files) {
+    await sshCommand(`rm -f -- '${remoteDir}/${f}'`);
+  }
+
+  // 6) Provide a fetch hint
+  const fetchCommand = `scp blot:'${remotePath}' ./`;
+  return { remotePath, fetchCommand };
+}
+
+async function dumpFailedContainerLogs(containerName) {
+  const { remotePath, fetchCommand } = await storeRemoteContainerLogs(
+    containerName,
+    "fail"
+  );
+
+  console.log(`Stored failure logs on remote server: ${remotePath}`);
+  console.log(`Fetch them locally with: ${fetchCommand}`);
+}
+
+async function archiveContainerLogs(containerName) {
   const exists = await sshCommand(
     `docker ps -a --format '{{.Names}}' | grep -q '^${containerName}$' && echo yes || echo no`
   );
@@ -35,18 +96,12 @@ async function archiveRedeployedContainerLogs(containerName) {
     return null;
   }
 
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[:]/g, "-")
-    .replace(/\s+/g, "_");
-  const filePath = `./data/${containerName}-redeploy-${timestamp}.logs`;
+  const { remotePath, fetchCommand } = await storeRemoteContainerLogs(
+    containerName,
+    "deploy"
+  );
 
-  const logs = await sshCommand(`docker logs ${containerName}`);
-
-  await fs.mkdir("./data", { recursive: true });
-  await fs.writeFile(filePath, logs, "utf8");
-
-  return filePath;
+  return { remotePath, fetchCommand };
 }
 
 async function detectPlatform() {
@@ -112,14 +167,17 @@ async function deployContainer(container, platform, imageHash) {
 
   console.log("Removing running container...");
   try {
-    const archivedLogsPath = await archiveRedeployedContainerLogs(
+    const archivedLogsInfo = await archiveContainerLogs(
       container.name
     );
 
-    if (archivedLogsPath) {
-      console.log(`Archived logs to ${archivedLogsPath}`);
+    if (archivedLogsInfo) {
+      console.log(`Archived logs to ${archivedLogsInfo.remotePath}`);
+      console.log(`Fetch them locally with: ${archivedLogsInfo.fetchCommand}`);
     } else {
-      console.log(`No existing container logs to archive for ${container.name}.`);
+      console.log(
+        `No existing container logs to archive for ${container.name}.`
+      );
     }
   } catch (logError) {
     console.warn(
@@ -141,10 +199,14 @@ async function main() {
       throw new Error("Too many arguments provided.");
     }
 
-    console.log("When running a deployment, it's helpful to ssh into the server and run in two seperate windows");
+    console.log(
+      "When running a deployment, it's helpful to ssh into the server and run in two seperate windows"
+    );
     console.log("See live overview of docker containers:");
     console.log("watch 'docker ps' ");
-    console.log("Watch traffic to backup servers (ideally this should not happen during deployment):");
+    console.log(
+      "Watch traffic to backup servers (ideally this should not happen during deployment):"
+    );
     console.log("backup-servers");
 
     await checkBranch();
@@ -254,7 +316,7 @@ if (require.main === module) {
 
 module.exports = {
   dumpFailedContainerLogs,
-  archiveRedeployedContainerLogs,
+  archiveContainerLogs,
   deployContainer,
   main,
 };

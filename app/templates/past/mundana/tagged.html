@@ -25,14 +25,26 @@
   <a class="text-dark" href="{{{url}}}">{{title}} <small class="text-muted">
             {{#formatDate}}MMM DD, YYYY{{/formatDate}}
   </small></a>
-             
-              
+
+
   </small>
-              
+
             </div>
-            
+
           </div>
           {{/entries}}
+
+          {{#pagination}}
+          <div class="pagination">
+            {{#previous}}
+            <a href="/tagged/{{slug}}/page/{{previous}}">&larr; Newer</a>
+            {{/previous}}
+            Page {{current}} of {{total}}
+            {{#next}}
+            <a href="/tagged/{{slug}}/page/{{next}}">Older &rarr;</a>
+            {{/next}}
+          </div>
+          {{/pagination}}
 
 
         </div>

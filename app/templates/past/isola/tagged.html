@@ -7,13 +7,24 @@
 			<div id="content" class="site-content">
 				<div id="primary" class="content-area">
 					<main id="main" class="site-main" role="main">
-						<header class="page-header">
-							<h1 class="page-title"><span>{{tag}}</span></h1>
-						</header>
-						{{#entries}} {{> article}} {{/entries}}
-					</main>
-					<!-- #main -->
-				</div>
+                                                <header class="page-header">
+                                                        <h1 class="page-title"><span>{{tag}}</span></h1>
+                                                </header>
+                                                {{#entries}} {{> article}} {{/entries}}
+                                                {{#pagination}}
+                                                <div class="pagination">
+                                                        {{#previous}}
+                                                        <a href="/tagged/{{slug}}/page/{{previous}}">&larr; Newer</a>
+                                                        {{/previous}}
+                                                        Page {{current}} of {{total}}
+                                                        {{#next}}
+                                                        <a href="/tagged/{{slug}}/page/{{next}}">Older &rarr;</a>
+                                                        {{/next}}
+                                                </div>
+                                                {{/pagination}}
+                                        </main>
+                                        <!-- #main -->
+                                </div>
 				<!-- #primary -->
 			</div>
 			<!-- #content -->

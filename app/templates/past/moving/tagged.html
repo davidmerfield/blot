@@ -22,6 +22,17 @@
                 </a>
             </li>
             {{/entries}}
+            {{#pagination}}
+            <div class="pagination">
+              {{#previous}}
+              <a href="/tagged/{{slug}}/page/{{previous}}">&larr; Newer</a>
+              {{/previous}}
+              Page {{current}} of {{total}}
+              {{#next}}
+              <a href="/tagged/{{slug}}/page/{{next}}">Older &rarr;</a>
+              {{/next}}
+            </div>
+            {{/pagination}}
           </ul>
         </ul>
       </div>

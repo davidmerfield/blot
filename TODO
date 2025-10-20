@@ -1,6 +1,5 @@
 Document new tag pagination
 - Force retrieve/tagged to use the pagination too
-- Finish implementations in templates
 - Tell Chuck
 
 Finish [setting up Francesco's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcNCpRcDFrsBhMlBwlXLNxNq)
@@ -513,6 +512,8 @@ Clean out all but the neccessary information from deleted entries to save redis 
 Make iCloud site routes blocking so the mac server waits for the main server to finish building before sending the next sync update? But consider timeout
 
 Think about how to purge the old versions of files cached by bunny's permacache
+
+Can we avoid changing cache id for a site after a sync with no changes?
 
 How can we serve template files over CDN?
 - do we have to remap references to other files in stylesheets since we're doing a switcheroo
