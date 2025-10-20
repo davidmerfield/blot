@@ -2,6 +2,8 @@ describe("update", function () {
   var sync = require("../index");
   var fs = require("fs-extra");
   var async = require("async");
+  var redis = require("models/client");
+  var entryKey = require("models/entry/key").entry;
 
   it("detects a renamed file across multiple syncs", function (done) {
     var path = this.fake.path(".txt");
@@ -141,6 +143,82 @@ describe("update", function () {
           });
         }
       );
+    });
+  });
+
+  it("skips missing deleted-entry records while detecting renames", function (testDone) {
+    var ctx = this;
+    var blogID = ctx.blog.id;
+
+    var path = ctx.fake.path(".txt");
+    var newPath = ctx.fake.path(".txt");
+    var ghostPath = ctx.fake.path(".txt");
+    var ghostNewPath = ctx.fake.path(".txt");
+
+    var content = ctx.fake.file();
+    var ghostContent = ctx.fake.file();
+
+    ctx.writeAndSync(path, content, function (err) {
+      if (err) return testDone.fail(err);
+
+      ctx.writeAndSync(newPath, content, function (err) {
+        if (err) return testDone.fail(err);
+
+        ctx.writeAndSync(ghostPath, ghostContent, function (err) {
+          if (err) return testDone.fail(err);
+
+          ctx.writeAndSync(ghostNewPath, ghostContent, function (err) {
+            if (err) return testDone.fail(err);
+
+            sync(blogID, function (err, folder, done) {
+              if (err) return testDone.fail(err);
+
+              async.series(
+                [
+                  function (next) {
+                    fs.removeSync(folder.path + path);
+                    folder.update(path, next);
+                  },
+                  function (next) {
+                    fs.removeSync(folder.path + ghostPath);
+                    folder.update(ghostPath, next);
+                  },
+                ],
+                function (err) {
+                  if (err) return testDone.fail(err);
+
+                  redis.del(entryKey(blogID, ghostPath), function (err) {
+                    if (err) return testDone.fail(err);
+
+                    done(null, function (err) {
+                      if (err) return testDone.fail(err);
+
+                      ctx.checkRename(path, newPath, function (err) {
+                        if (err) return testDone.fail(err);
+
+                        ctx.checkEntry(
+                          { path: ghostPath, deleted: true },
+                          function (err) {
+                            if (err) return testDone.fail(err);
+
+                            ctx.checkEntry(
+                              { path: ghostNewPath, deleted: false },
+                              function (err) {
+                                if (err) return testDone.fail(err);
+                                testDone();
+                              }
+                            );
+                          }
+                        );
+                      });
+                    });
+                  });
+                }
+              );
+            });
+          });
+        });
+      });
     });
   });
 
