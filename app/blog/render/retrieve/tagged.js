@@ -201,7 +201,22 @@ module.exports = function (req, callback) {
 
   var tags = req.query.name || req.query.tag || req.params.tag || "";
 
-  fetchTaggedEntries(blogID, tags, function (err, result) {
+  var page = parseInt(req.params.page, 10);
+  if (!page || page < 1) page = 1;
+
+  var limit =
+    req.template && req.template.locals
+      ? req.template.locals.page_size
+      : undefined;
+
+  limit = parseInt(limit, 10);
+
+  if (!limit || limit < 1 || limit > 500) limit = 100;
+
+  var offset = (page - 1) * limit;
+  var options = { limit, offset };
+
+  fetchTaggedEntries(blogID, tags, options, function (err, result) {
     if (err) return callback(err);
 
     Entry.get(blogID, result.entryIDs || [], function (entries) {
@@ -209,13 +224,19 @@ module.exports = function (req, callback) {
         return b.dateStamp - a.dateStamp;
       });
 
+      const totalEntries =
+        result.total !== undefined
+          ? result.total
+          : (result.entryIDs || []).length;
+
       return callback(null, {
         tag: result.tag,
         tagged: result.tagged,
         is: result.tagged, // alias
         entries,
         pagination: result.pagination,
-        total: result.total,
+        total: totalEntries,
+        entryIDs: result.entryIDs || [],
         slugs: result.slugs,
         prettyTags: result.prettyTags,
       });
