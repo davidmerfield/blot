@@ -21,7 +21,7 @@ describe("build multiple", function () {
     fs.outputFileSync(path.join(root, "one.md"), "# One\n\nBody");
     fs.outputFileSync(
       path.join(root, "two.md"),
-      "Title: Second\n\n![Image](/album+/cover.jpg)"
+      "## Second\n\n![Image](/album+/cover.jpg)"
     );
     fs.outputFileSync(path.join(root, "cover.jpg"), Buffer.from("fake"));
 
@@ -31,7 +31,8 @@ describe("build multiple", function () {
     expect(entry.html).toContain("<h1 id=\"one\">One</h1>");
     expect(entry.html).toContain("<p>Body</p>");
     expect(entry.html).toContain("Second");
-    expect(entry.metadata._sourcePaths).toEqual([
+    expect(entry.metadata._sourcePaths.sort()).toEqual([
+      "/album+/cover.jpg",
       "/album+/one.md",
       "/album+/two.md",
     ]);
