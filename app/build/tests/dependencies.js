@@ -38,6 +38,7 @@ describe("dependencies", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
+    // Disable the image plugin to prevent remote fetches during the build.
     this.blog.plugins.image.enabled = false;
 
     build(this.blog, path, function (err, entry) {
