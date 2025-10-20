@@ -1,8 +1,41 @@
 describe("flickr plugin", function () {
   const replaceURLsWithEmbeds = require("./index.js").render;
   const cheerio = require("cheerio");
+  const nock = require("nock");
 
   global.test.timeout(10000); // 10 seconds
+
+  beforeEach(function () {
+    nock.disableNetConnect();
+
+    nock("https://www.flickr.com")
+      .persist()
+      .get("/services/oembed/")
+      .query(true)
+      .reply(function (uri) {
+        const requestUrl = new URL(`https://www.flickr.com${uri}`).searchParams.get(
+          "url"
+        );
+
+        const anchorHref =
+          requestUrl && requestUrl.startsWith("https://www.flickr.com/")
+            ? requestUrl
+            : "https://www.flickr.com/photos/example/12345/";
+
+        const html =
+          `<a data-flickr-embed='true' href='${anchorHref}'>` +
+          "<img src='https://live.staticflickr.com/65535/example.jpg' alt='Example photo'/>" +
+          "</a>" +
+          "<script async src='https://embedr.flickr.com/assets/client-code.js' charset='utf-8'></script>";
+
+        return [200, { html }];
+      });
+  });
+
+  afterEach(function () {
+    nock.cleanAll();
+    nock.enableNetConnect();
+  });
 
   it("works for short flickr URLs", function (done) {
     // html bare link to a post on bluesky
