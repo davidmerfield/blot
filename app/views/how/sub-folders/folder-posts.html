@@ -1,0 +1,5 @@
+<h1>Folder posts</h1>
+<p>You can turn a folder into a single post by adding a <code>+</code> to the end of its name. When Blot sees a directory such as <code>Album+</code>, it collects every convertible file inside and publishes the merged result at <code>/album</code>.</p>
+<p>Any Markdown files are combined in alphabetical order, so headings and body copy from <code>one.md</code> appear before <code>two.md</code>. Other supported formats such as images or HTML are also included, and their metadata, dependencies, and statistics are merged just as if you had uploaded a single file.</p>
+<p>The generated entry inherits the folder&apos;s location. Rename a folder from <code>photos</code> to <code>photos+</code> to convert an existing gallery into a multi-file post without breaking links. If you remove the folder, Blot removes the synthesized post and its preview automatically.</p>
+<p>Because the aggregated post is rebuilt whenever any child file changes, you can keep related assets together—draft Markdown, images, and other attachments—while still publishing a single entry on your site.</p>
