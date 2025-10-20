@@ -2,9 +2,6 @@ const config = require("config");
 const express = require("express");
 const mime = require("mime-types");
 const { join, basename, dirname } = require("path");
-const { promisify } = require("util");
-const fs = require("fs-extra");
-const caseSensitivePath = promisify(require("helper/caseSensitivePath"));
 
 // Constants
 const LARGEST_POSSIBLE_MAXAGE = 86400000;
@@ -104,20 +101,6 @@ assets.use(async (req, res, next) => {
 
   try {
     await sendFile(join(blogFolder, decodedPath.toLowerCase()), { req, res });
-    return;
-  } catch (e) {}
-
-  try {
-    const pathWithCorrectCase = await caseSensitivePath(
-      blogFolder,
-      decodedPath
-    );
-
-    const stat = await fs.stat(pathWithCorrectCase);
-
-    if (!stat.isFile()) throw new Error("Not a file");
-
-    await sendFile(pathWithCorrectCase, { req, res });
     return;
   } catch (e) {}
 
