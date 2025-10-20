@@ -24,7 +24,14 @@ get(identifier, function (err, user, blog) {
   Entries.each(
     blog.id,
     function (entry, next) {
-      if (entry.deleted || entry.draft || entry.scheduled || entry.page)
+      if (
+        !entry ||
+        entry.deleted ||
+        entry.draft ||
+        entry.scheduled ||
+        entry.page ||
+        typeof entry.path !== "string"
+      )
         return next();
 
       // if (entry.metadata.date) return next();

@@ -179,7 +179,11 @@ module.exports = (function () {
         function (id, next) {
           Entry.get(blogID, id, function (entry) {
             if (!entry) return next();
-            dothis(entry, next);
+            try {
+              dothis(entry, next);
+            } catch (err) {
+              next(err);
+            }
           });
         },
         callback

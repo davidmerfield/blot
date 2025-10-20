@@ -22,12 +22,21 @@ const main = async (blog, cb) => {
     Entries.each(
       blog.id,
       function (entry, nextEntry) {
+        if (!entry || typeof entry.id !== "string") {
+          return nextEntry();
+        }
+
+        if (entry.deleted) {
+          console.log("Skipping", entry.id, "deleted entry");
+          return nextEntry();
+        }
+
         if (!entry.id.endsWith(".webloc")) {
           console.log("Skipping", entry.id, "not a webloc file");
           return nextEntry();
         }
 
-        if (entry.thumbnail.large) {
+        if (entry.thumbnail && entry.thumbnail.large) {
           console.log("Skipping", entry.id, "already has a thumbnail");
           return nextEntry();
         }

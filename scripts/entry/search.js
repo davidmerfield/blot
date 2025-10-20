@@ -15,13 +15,17 @@ if (!handle || !query) {
   return process.exit();
 }
 
+const normalizedQuery = query.trim().toLowerCase();
+
 get(handle, function (user, blog) {
   Entries.each(
     blog.id,
     function (entry, nextEntry) {
-      if (entry.deleted) return nextEntry();
+      if (!entry || entry.deleted || typeof entry.path !== "string") {
+        return nextEntry();
+      }
 
-      if (entry.path.toLowerCase().indexOf(query.trim().toLowerCase()) === 0) {
+      if (entry.path.toLowerCase().indexOf(normalizedQuery) === 0) {
         console.log(entry.path);
       }
 

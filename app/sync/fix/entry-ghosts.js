@@ -4,7 +4,11 @@ const Entry = require("models/entry");
 const localPath = require("helper/localPath");
 const async = require("async");
 
-function resolvePath (blogID, path, callback) {
+function resolvePath(blogID, path, callback) {
+  if (typeof path !== "string" || !path.trim()) {
+    return callback(new Error("INVALID_PATH: " + String(path)));
+  }
+
   var candidates = [];
 
   candidates.push(path);
@@ -50,23 +54,25 @@ function main (blog, callback) {
   var edit = [];
   var report = [];
 
-  Entries.each(
-    blog.id,
-    function (_entry, next) {
+  Entries.each(blog.id, function (_entry, next) {
+    if (!_entry) return next();
 
-      if (!_entry) return next();
-      
-      if (_entry.deleted) return next();
+    if (_entry.deleted) return next();
 
-      resolvePath(blog.id, _entry.path, function (err, path) {
-        if (path && path !== _entry.path) {
-          edit.push({ entry: _entry, path: path });
-        } else if (err) {
-          missing.push({ entry: _entry, path: _entry.path });
-        }
-        next();
-      });
-    },
+    if (typeof _entry.path !== "string" || !_entry.path.trim()) {
+      missing.push({ entry: _entry, path: _entry && _entry.path });
+      return next();
+    }
+
+    resolvePath(blog.id, _entry.path, function (err, path) {
+      if (path && path !== _entry.path) {
+        edit.push({ entry: _entry, path: path });
+      } else if (err) {
+        missing.push({ entry: _entry, path: _entry.path });
+      }
+      next();
+    });
+  },
     function (err) {
       if (err) return callback(err);
 
