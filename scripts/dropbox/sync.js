@@ -1,3 +1,5 @@
+var path = require("path");
+var spawn = require("child_process").spawn;
 var sync = require("clients/dropbox/sync");
 var get = require("../get/blog");
 var each = require("../each/blog");
@@ -5,12 +7,41 @@ var async = require("async");
 console.warn("Warning: this uses an internal method of the Dropbox client.");
 console.log('Consider debugging with "export DEBUG=clients:dropbox*"');
 
+function runFixEntryDates(blogID, callback) {
+  var scriptPath = path.join(__dirname, "fix-entry-dates.js");
+  var child = spawn(process.execPath, [scriptPath, blogID], {
+    stdio: "inherit",
+  });
+
+  child.on("error", callback);
+  child.on("close", function (code) {
+    if (code !== 0) {
+      return callback(new Error("fix-entry-dates exited with code " + code));
+    }
+
+    callback();
+  });
+}
+
 if (process.argv[2]) {
   get(process.argv[2], function (err, user, blog) {
     if (err) throw err;
     sync(blog, function (err) {
       if (err) throw err;
-      process.exit();
+      runFixEntryDates(blog.id, function (fixErr) {
+        if (fixErr) {
+          console.error(
+            "Error fixing entry dates for blog",
+            blog.title,
+            blog.id,
+            "-",
+            fixErr.message || fixErr
+          );
+          process.exit(1);
+        }
+
+        process.exit();
+      });
     });
   });
 } else {
@@ -40,9 +71,22 @@ if (process.argv[2]) {
                 "-",
                 err.message || err
               );
+              return next();
             }
 
-            next();
+            runFixEntryDates(blog.id, function (fixErr) {
+              if (fixErr) {
+                console.error(
+                  "Error fixing entry dates for blog",
+                  blog.title,
+                  blog.id,
+                  "-",
+                  fixErr.message || fixErr
+                );
+              }
+
+              next();
+            });
           });
         },
         function (err) {
