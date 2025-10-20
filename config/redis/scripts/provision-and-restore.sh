@@ -103,12 +103,79 @@ fi
 AWS_BASE=(aws --profile "$AWS_PROFILE" --region "$AWS_REGION")
 
 info "Listing backups in s3://${SNAPSHOT_BUCKET}/${SNAPSHOT_PREFIX}"
+MAX_SNAPSHOTS=${MAX_SNAPSHOTS:-20}
 mapfile -t snapshot_lines < <(
-  "${AWS_BASE[@]}" s3api list-objects-v2 \
-    --bucket "$SNAPSHOT_BUCKET" \
-    --prefix "$SNAPSHOT_PREFIX" \
-    --query 'reverse(sort_by(Contents,&LastModified))[:20].[Key,LastModified,Size]' \
-    --output text
+  AWS_PROFILE="$AWS_PROFILE" \
+  AWS_REGION="$AWS_REGION" \
+  SNAPSHOT_BUCKET="$SNAPSHOT_BUCKET" \
+  SNAPSHOT_PREFIX="$SNAPSHOT_PREFIX" \
+  MAX_SNAPSHOTS="$MAX_SNAPSHOTS" \
+  python3 <<'PY'
+import json
+import os
+import subprocess
+import sys
+
+bucket = os.environ["SNAPSHOT_BUCKET"]
+prefix = os.environ["SNAPSHOT_PREFIX"]
+profile = os.environ.get("AWS_PROFILE", "")
+region = os.environ.get("AWS_REGION", "")
+max_snapshots = int(os.environ.get("MAX_SNAPSHOTS", "20"))
+
+base_cmd = ["aws"]
+if profile:
+    base_cmd.extend(["--profile", profile])
+if region:
+    base_cmd.extend(["--region", region])
+base_cmd.extend([
+    "s3api",
+    "list-objects-v2",
+    "--bucket",
+    bucket,
+    "--prefix",
+    prefix,
+    "--max-keys",
+    "1000",
+])
+
+items = []
+continuation = None
+
+while True:
+    cmd = list(base_cmd)
+    if continuation:
+        cmd.extend(["--continuation-token", continuation])
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        sys.stderr.write(result.stderr)
+        sys.exit(result.returncode)
+
+    payload = json.loads(result.stdout or "{}")
+    contents = payload.get("Contents", []) or []
+    for entry in contents:
+        key = entry.get("Key")
+        if key:
+            items.append(
+                (
+                    key,
+                    entry.get("LastModified", ""),
+                    int(entry.get("Size", 0) or 0),
+                )
+            )
+
+    continuation = payload.get("NextContinuationToken")
+    if not continuation:
+        break
+
+if not items:
+    sys.exit(0)
+
+items.sort(key=lambda row: row[1], reverse=True)
+
+for key, last_modified, size in items[:max_snapshots]:
+    sys.stdout.write(f"{key}\t{last_modified}\t{size}\n")
+PY
 )
 
 if [ "${#snapshot_lines[@]}" -eq 0 ]; then
