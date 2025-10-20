@@ -1,6 +1,6 @@
-const { execFile } = require("child_process");
+const { exec } = require("child_process");
 const { promisify } = require("util");
-const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 
 module.exports = async function sshCommand(command) {
   const timeoutMs = 60 * 1000;
@@ -8,7 +8,7 @@ module.exports = async function sshCommand(command) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    const { stdout } = await execFileAsync("ssh", ["blot", command], {
+    const { stdout } = await execAsync(`ssh blot "${command}"`, {
       signal: controller.signal,
     });
 
