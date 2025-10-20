@@ -31,10 +31,24 @@ if (process.argv[2]) {
         blogs,
         function (blog, next) {
           console.log("Syncing", blog.title, blog.id, new Date(blog.cacheID));
-          sync(blog, next);
+          sync(blog, function (err) {
+            if (err) {
+              console.error(
+                "Error syncing blog",
+                blog.title,
+                blog.id,
+                "-",
+                err.message || err
+              );
+            }
+
+            next();
+          });
         },
         function (err) {
-          if (err) throw err;
+          if (err) {
+            console.error("Sync finished with error", err.message || err);
+          }
           console.log("Done!");
           process.exit();
         }
