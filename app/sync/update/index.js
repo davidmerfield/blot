@@ -50,6 +50,7 @@ module.exports = function (blog, log, status) {
         if (err && err.code === "ENOENT") {
           var dropTargets = [path];
           var multiInfo = build.findMultiFolder(path);
+          var rebuildTarget = null;
 
           if (
             multiInfo &&
@@ -58,12 +59,53 @@ module.exports = function (blog, log, status) {
             dropTargets.indexOf(multiInfo.entryPath) === -1
           ) {
             dropTargets.push(multiInfo.entryPath);
+          } else if (
+            multiInfo &&
+            multiInfo.folderPath !== path &&
+            multiInfo.folderPath &&
+            !rebuildTarget
+          ) {
+            rebuildTarget = multiInfo.folderPath;
           }
 
           var dropError = null;
 
           (function nextDrop(index) {
-            if (index >= dropTargets.length) return done(dropError);
+            if (index >= dropTargets.length) {
+              if (!rebuildTarget) return done(dropError);
+
+              return fs.pathExists(
+                localPath(blog.id, rebuildTarget),
+                function (existsErr, exists) {
+                  if (existsErr) {
+                    if (!dropError) dropError = existsErr;
+                    return done(dropError);
+                  }
+
+                  if (!exists) return done(dropError);
+
+                  log(rebuildTarget, "Rebuilding multi-folder in database");
+
+                  set(blog, rebuildTarget, function (err) {
+                    if (err) {
+                      log(
+                        rebuildTarget,
+                        "Error rebuilding multi-folder in database",
+                        err
+                      );
+                      if (!dropError) dropError = err;
+                    } else {
+                      log(
+                        rebuildTarget,
+                        "Rebuilding multi-folder in database succeeded"
+                      );
+                    }
+
+                    done(dropError);
+                  });
+                }
+              );
+            }
 
             var target = dropTargets[index];
             log(target, "Dropping from database");
