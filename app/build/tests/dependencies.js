@@ -38,6 +38,8 @@ describe("dependencies", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
+    this.blog.plugins.image.enabled = false;
+
     build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
 
