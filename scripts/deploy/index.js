@@ -26,6 +26,29 @@ async function dumpFailedContainerLogs(containerName) {
   console.log(`Wrote failure logs to ${filePath}`);
 }
 
+async function archiveRedeployedContainerLogs(containerName) {
+  const exists = await sshCommand(
+    `docker ps -a --format '{{.Names}}' | grep -q '^${containerName}$' && echo yes || echo no`
+  );
+
+  if (exists.trim() !== "yes") {
+    return null;
+  }
+
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[:]/g, "-")
+    .replace(/\s+/g, "_");
+  const filePath = `./data/${containerName}-redeploy-${timestamp}.logs`;
+
+  const logs = await sshCommand(`docker logs ${containerName}`);
+
+  await fs.mkdir("./data", { recursive: true });
+  await fs.writeFile(filePath, logs, "utf8");
+
+  return filePath;
+}
+
 async function detectPlatform() {
   console.log("Detecting server platform...");
   const platformOs = PLATFORM_OS;
@@ -88,6 +111,22 @@ async function deployContainer(container, platform, imageHash) {
   await sshCommand(`docker pull ${REGISTRY_URL}:${imageHash}`);
 
   console.log("Removing running container...");
+  try {
+    const archivedLogsPath = await archiveRedeployedContainerLogs(
+      container.name
+    );
+
+    if (archivedLogsPath) {
+      console.log(`Archived logs to ${archivedLogsPath}`);
+    } else {
+      console.log(`No existing container logs to archive for ${container.name}.`);
+    }
+  } catch (logError) {
+    console.warn(
+      `Failed to archive logs for ${container.name}:`,
+      logError.message || logError
+    );
+  }
   await removeContainer(container.name);
   console.log("Starting new container...");
   await sshCommand(dockerRunCommand);
@@ -209,4 +248,13 @@ async function main() {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  dumpFailedContainerLogs,
+  archiveRedeployedContainerLogs,
+  deployContainer,
+  main,
+};
