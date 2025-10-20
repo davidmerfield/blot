@@ -38,11 +38,9 @@ module.exports = function (server) {
           response.locals.total = totalEntries;
           response.locals.entries = entries;
           response.locals.tagged = result.tagged;
-          response.locals.pagination = buildPagination(
-            page,
-            limit,
-            totalEntries
-          );
+          response.locals.pagination =
+            result.pagination ||
+            retrieveTagged.buildPagination(page, limit, totalEntries);
 
           response.renderView("tagged.html", next);
         });
@@ -50,23 +48,3 @@ module.exports = function (server) {
     }
   );
 };
-
-function buildPagination(current, pageSize, totalEntries) {
-  var totalPages = pageSize > 0 ? Math.ceil(totalEntries / pageSize) : 0;
-
-  if (!totalEntries) {
-    totalPages = 0;
-  }
-
-  var previous = current > 1 ? current - 1 : null;
-  var next = totalPages > 0 && current < totalPages ? current + 1 : null;
-
-  return {
-    current,
-    pageSize,
-    total: totalPages,
-    totalEntries: totalEntries,
-    previous,
-    next,
-  };
-}

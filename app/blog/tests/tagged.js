@@ -336,5 +336,15 @@ describe("tags work on sites", function () {
     expect(result.total).toBe(2);
     expect(result.entryIDs.length).toBe(1);
     expect(result.tag).toBe("Counted");
+    expect(result.pagination).toEqual(
+      jasmine.objectContaining({
+        current: 1,
+        pageSize: 1,
+        total: 2,
+        totalEntries: 2,
+        previous: null,
+        next: 2,
+      })
+    );
   });
 });

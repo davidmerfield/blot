@@ -4,6 +4,26 @@ const type = require("helper/type");
 const _ = require("lodash");
 const async = require("async");
 
+function buildPagination(current, pageSize, totalEntries) {
+  var totalPages = pageSize > 0 ? Math.ceil(totalEntries / pageSize) : 0;
+
+  if (!totalEntries) {
+    totalPages = 0;
+  }
+
+  var previous = current > 1 ? current - 1 : null;
+  var next = totalPages > 0 && current < totalPages ? current + 1 : null;
+
+  return {
+    current,
+    pageSize,
+    total: totalPages,
+    totalEntries: totalEntries,
+    previous,
+    next,
+  };
+}
+
 function buildTagMetadata(prettyTags) {
   const filtered = (prettyTags || []).filter(Boolean);
   const label = filtered.join(" + ");
@@ -32,6 +52,49 @@ function normalizeSlugs(slugs) {
   throw new Error("Unexpected type of tag");
 }
 
+function sanitizePaginationOptions(options) {
+  if (!options || options.limit === undefined) {
+    return { hasPagination: false };
+  }
+
+  var parsedLimit = parseInt(options.limit, 10);
+  if (!Number.isFinite(parsedLimit) || parsedLimit < 1) {
+    return { hasPagination: false };
+  }
+
+  var parsedOffset = parseInt(options.offset, 10);
+  if (!Number.isFinite(parsedOffset) || parsedOffset < 0) {
+    parsedOffset = 0;
+  }
+
+  return {
+    hasPagination: true,
+    limit: parsedLimit,
+    offset: parsedOffset,
+    currentPage: Math.floor(parsedOffset / parsedLimit) + 1,
+  };
+}
+
+function attachPagination(metadata, paginationOptions) {
+  if (!paginationOptions.hasPagination) {
+    return metadata;
+  }
+
+  var totalEntries =
+    metadata.total !== undefined
+      ? metadata.total
+      : (metadata.entryIDs || []).length;
+
+  metadata.total = totalEntries;
+  metadata.pagination = buildPagination(
+    paginationOptions.currentPage,
+    paginationOptions.limit,
+    totalEntries
+  );
+
+  return metadata;
+}
+
 function fetchTaggedEntries(blogID, slugs, options, callback) {
   if (typeof options === "function") {
     callback = options;
@@ -39,6 +102,7 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
   }
 
   options = options || {};
+  var paginationOptions = sanitizePaginationOptions(options);
 
   let normalizedSlugs;
 
@@ -49,14 +113,14 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
   }
 
   if (!normalizedSlugs.length) {
-    return callback(null, {
+    return callback(null, attachPagination({
       entryIDs: [],
       total: options.limit !== undefined ? 0 : undefined,
       tag: "",
       tagged: {},
       prettyTags: [],
       slugs: [],
-    });
+    }, paginationOptions));
   }
 
   if (normalizedSlugs.length === 1) {
@@ -67,14 +131,14 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
 
       const metadata = buildTagMetadata([prettyTag || slug]);
 
-      return callback(null, {
+      return callback(null, attachPagination({
         entryIDs: entryIDs || [],
         total: options.limit !== undefined ? total || 0 : undefined,
         tag: metadata.tag,
         tagged: metadata.tagged,
         prettyTags: [prettyTag || slug],
         slugs: normalizedSlugs,
-      });
+      }, paginationOptions));
     });
   }
 
@@ -103,10 +167,25 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
       const prettyTags = results.map((result) => result.prettyTag);
       const metadata = buildTagMetadata(prettyTags);
 
+      if (paginationOptions.hasPagination) {
+        const sliced = entryIDs.slice(
+          paginationOptions.offset,
+          paginationOptions.offset + paginationOptions.limit
+        );
+
+        return callback(null, attachPagination({
+          entryIDs: sliced,
+          total: entryIDs.length,
+          tag: metadata.tag,
+          tagged: metadata.tagged,
+          prettyTags,
+          slugs: normalizedSlugs,
+        }, paginationOptions));
+      }
+
       return callback(null, {
         entryIDs,
-        total:
-          options && options.limit !== undefined ? entryIDs.length : undefined,
+        total: undefined,
         tag: metadata.tag,
         tagged: metadata.tagged,
         prettyTags,
@@ -135,9 +214,14 @@ module.exports = function (req, callback) {
         tagged: result.tagged,
         is: result.tagged, // alias
         entries,
+        pagination: result.pagination,
+        total: result.total,
+        slugs: result.slugs,
+        prettyTags: result.prettyTags,
       });
     });
   });
 };
 
 module.exports.fetch = fetchTaggedEntries;
+module.exports.buildPagination = buildPagination;
