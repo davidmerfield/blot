@@ -41,7 +41,7 @@ async function storeRemoteContainerLogs(containerName, reason) {
   const remoteDir = `${remoteTempDir}/blot-deploy-logs/${containerName}`;
   const remotePath = `${remoteDir}/${containerName}-${reason}-${timestamp}.logs`;
 
-  const pruneCommand = `(cd '${remoteDir}' && ls -1t | awk 'NR>${MAX_REMOTE_LOGS}' | while read file; do [ -n "$file" ] && rm -f -- "$file"; done)`;
+  const pruneCommand = `(cd '${remoteDir}' && ls -1t | awk 'NR>${MAX_REMOTE_LOGS}' | while read file; do [ -n "\\$file" ] && rm -f -- "\\$file"; done)`;
 
   const captureCommand = [
     `mkdir -p '${remoteDir}'`,
