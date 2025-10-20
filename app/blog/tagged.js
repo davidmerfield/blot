@@ -7,29 +7,31 @@ module.exports = function (server) {
       retrieveTagged(request, function (err, result) {
         if (err) return next(err);
 
-        const slug = request.params.tag;
-        const totalEntries =
-          result && result.total !== undefined
-            ? result.total
-            : (result && result.entries ? result.entries.length : 0);
+        const data = result || {};
+        const entries = Array.isArray(data.entries) ? data.entries : [];
+        const slug =
+          data.slug ||
+          (Array.isArray(data.slugs) && data.slugs.length === 1
+            ? data.slugs[0]
+            : request.params.tag);
+        const tag = data.tag || slug;
+        const total =
+          data.total !== undefined ? data.total : entries.length;
 
-        response.locals.tagged = result || {};
-        response.locals.tag = (result && result.tag) || slug;
-        response.locals.slug = slug;
-        response.locals.entries = (result && result.entries) || [];
-        response.locals.total = totalEntries;
-        response.locals.pagination = result ? result.pagination : undefined;
-        response.locals.is = response.locals.tagged
-          ? response.locals.tagged.tagged
-          : undefined;
+        const tagged = Object.assign({}, data, {
+          entries,
+          slug,
+          tag,
+          total,
+        });
 
-        if (response.locals.tagged) {
-          response.locals.tagged.total = totalEntries;
-          response.locals.tagged.entries = response.locals.entries;
-          response.locals.tagged.pagination = response.locals.pagination;
-          response.locals.tagged.tag = response.locals.tag;
-          response.locals.tagged.slug = slug;
-        }
+        response.locals.tagged = tagged;
+        response.locals.tag = tagged.tag;
+        response.locals.slug = tagged.slug;
+        response.locals.entries = tagged.entries;
+        response.locals.total = tagged.total;
+        response.locals.pagination = tagged.pagination;
+        response.locals.is = tagged.is;
 
         response.renderView("tagged.html", next);
       });
