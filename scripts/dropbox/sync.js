@@ -1,6 +1,6 @@
 var path = require("path");
 var spawn = require("child_process").spawn;
-var sync = require("clients/dropbox/sync");
+var resetToBlot = require("clients/dropbox/sync/reset-to-blot");
 var get = require("../get/blog");
 var each = require("../each/blog");
 var async = require("async");
@@ -23,10 +23,29 @@ function runFixEntryDates(blogID, callback) {
   });
 }
 
+function runFullSync(blog, callback) {
+  var publish = function () {
+    var args = Array.prototype.slice.call(arguments);
+    console.log.apply(
+      console,
+      ["Dropbox sync", blog.title, blog.id + ":"].concat(args)
+    );
+  };
+
+  resetToBlot(blog.id, publish).then(
+    function () {
+      callback();
+    },
+    function (err) {
+      callback(err);
+    }
+  );
+}
+
 if (process.argv[2]) {
   get(process.argv[2], function (err, user, blog) {
     if (err) throw err;
-    sync(blog, function (err) {
+    runFullSync(blog, function (err) {
       if (err) throw err;
       runFixEntryDates(blog.id, function (fixErr) {
         if (fixErr) {
@@ -62,7 +81,7 @@ if (process.argv[2]) {
         blogs,
         function (blog, next) {
           console.log("Syncing", blog.title, blog.id, new Date(blog.cacheID));
-          sync(blog, function (err) {
+          runFullSync(blog, function (err) {
             if (err) {
               console.error(
                 "Error syncing blog",
