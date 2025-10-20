@@ -9,6 +9,7 @@ const hashFile = promisify((path, cb) => {
   });
 });
 const download = promisify(require("../util/download"));
+const { MAX_FILE_SIZE, hasUnsupportedExtension } = require("../util/constants");
 
 const set = promisify(require("../database").set);
 const createClient = promisify((blogID, cb) =>
@@ -125,6 +126,32 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
 
       await walk(blogID, client, publish, dropboxRoot, join(dir, name));
     } else {
+      if (hasUnsupportedExtension(pathOnDropbox)) {
+        publish("Skipping unsupported file", pathOnBlot);
+        try {
+          await fs.outputFile(pathOnDisk, "");
+        } catch (err) {
+          publish("Failed to create placeholder", pathOnBlot, err.message);
+        }
+        continue;
+      }
+
+      if (
+        typeof remoteItem.size === "number" &&
+        remoteItem.size > MAX_FILE_SIZE
+      ) {
+        publish(
+          "Skipping oversized file",
+          `${pathOnBlot} (${remoteItem.size} bytes > ${MAX_FILE_SIZE} byte limit)`
+        );
+        try {
+          await fs.outputFile(pathOnDisk, "");
+        } catch (err) {
+          publish("Failed to create placeholder", pathOnBlot, err.message);
+        }
+        continue;
+      }
+
       const identicalLocally =
         localCounterpart &&
         localCounterpart.content_hash === remoteItem.content_hash;
