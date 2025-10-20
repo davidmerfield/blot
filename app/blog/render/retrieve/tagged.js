@@ -244,5 +244,3 @@ module.exports = function (req, callback) {
   });
 };
 
-module.exports.fetch = fetchTaggedEntries;
-module.exports.buildPagination = buildPagination;

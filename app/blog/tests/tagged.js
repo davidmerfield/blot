@@ -50,9 +50,13 @@ describe("tags work on sites", function () {
     });
 
     const result = await new Promise((resolve, reject) => {
-      retrieveTagged.fetch(
-        this.blog.id,
-        ["alpha", "beta"],
+      retrieveTagged(
+        {
+          blog: this.blog,
+          query: { tag: ["alpha", "beta"] },
+          params: {},
+          template: {},
+        },
         (err, data) => {
           if (err) return reject(err);
           resolve(data);
@@ -322,10 +326,13 @@ describe("tags work on sites", function () {
     });
 
     const result = await new Promise((resolve, reject) => {
-      retrieveTagged.fetch(
-        this.blog.id,
-        ["counted"],
-        { limit: 1, offset: 0 },
+      retrieveTagged(
+        {
+          blog: this.blog,
+          query: { tag: "counted" },
+          params: { tag: "counted", page: "1" },
+          template: { locals: { page_size: 1 } },
+        },
         (err, data) => {
           if (err) return reject(err);
           resolve(data);
