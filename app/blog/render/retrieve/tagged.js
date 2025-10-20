@@ -1,98 +1,70 @@
 const Entry = require("models/entry");
 const Tags = require("models/tags");
-const type = require("helper/type");
-const _ = require("lodash");
-const async = require("async");
 
 function buildPagination(current, pageSize, totalEntries) {
-  var totalPages = pageSize > 0 ? Math.ceil(totalEntries / pageSize) : 0;
-
-  if (!totalEntries) {
-    totalPages = 0;
-  }
-
-  var previous = current > 1 ? current - 1 : null;
-  var next = totalPages > 0 && current < totalPages ? current + 1 : null;
-
-  return {
-    current,
-    pageSize,
-    total: totalPages,
-    totalEntries: totalEntries,
-    previous,
-    next,
-  };
+  const total = pageSize > 0 ? Math.ceil(totalEntries / pageSize) : 0;
+  const previous = current > 1 ? current - 1 : null;
+  const next = total > 0 && current < total ? current + 1 : null;
+  return { current, pageSize, total, totalEntries, previous, next };
 }
 
 function buildTagMetadata(prettyTags) {
-  const filtered = (prettyTags || []).filter(Boolean);
-  const label = filtered.join(" + ");
+  const label = (prettyTags || []).filter(Boolean).join(" + ");
   const tagged = {};
-
   if (label) {
     tagged[label] = true;
     tagged[label.toLowerCase()] = true;
   }
-
-  return {
-    tag: label,
-    tagged,
-  };
+  return { tag: label, tagged };
 }
 
 function normalizeSlugs(slugs) {
-  if (type(slugs, "array")) {
-    return slugs.filter(Boolean).map(String);
-  }
-
-  if (type(slugs, "string")) {
-    return [slugs];
-  }
-
+  if (Array.isArray(slugs)) return slugs.filter(Boolean).map(String);
+  if (typeof slugs === "string") return [slugs];
   throw new Error("Unexpected type of tag");
 }
 
-function sanitizePaginationOptions(options) {
-  if (!options || options.limit === undefined) {
-    return { hasPagination: false };
-  }
-
-  var parsedLimit = parseInt(options.limit, 10);
-  if (!Number.isFinite(parsedLimit) || parsedLimit < 1) {
-    return { hasPagination: false };
-  }
-
-  var parsedOffset = parseInt(options.offset, 10);
-  if (!Number.isFinite(parsedOffset) || parsedOffset < 0) {
-    parsedOffset = 0;
-  }
-
+function parsePaginationOptions(options) {
+  if (!options || options.limit === undefined) return { hasPagination: false };
+  const limit = parseInt(options.limit, 10);
+  if (!Number.isFinite(limit) || limit < 1) return { hasPagination: false };
+  let offset = parseInt(options.offset, 10);
+  if (!Number.isFinite(offset) || offset < 0) offset = 0;
   return {
     hasPagination: true,
-    limit: parsedLimit,
-    offset: parsedOffset,
-    currentPage: Math.floor(parsedOffset / parsedLimit) + 1,
+    limit,
+    offset,
+    currentPage: Math.floor(offset / limit) + 1,
   };
 }
 
-function attachPagination(metadata, paginationOptions) {
-  if (!paginationOptions.hasPagination) {
-    return metadata;
+function attachPagination(meta, pg) {
+  if (!pg.hasPagination) return meta;
+  const totalEntries =
+    meta.total !== undefined ? meta.total : (meta.entryIDs || []).length;
+  meta.total = totalEntries;
+  meta.pagination = buildPagination(pg.currentPage, pg.limit, totalEntries);
+  return meta;
+}
+
+function intersectMany(arrays) {
+  if (!arrays.length) return [];
+  let set = new Set(arrays[0]);
+  for (let i = 1; i < arrays.length; i++) {
+    const nextSet = new Set(arrays[i]);
+    set = new Set([...set].filter((x) => nextSet.has(x)));
+    if (!set.size) break;
   }
+  return [...set];
+}
 
-  var totalEntries =
-    metadata.total !== undefined
-      ? metadata.total
-      : (metadata.entryIDs || []).length;
-
-  metadata.total = totalEntries;
-  metadata.pagination = buildPagination(
-    paginationOptions.currentPage,
-    paginationOptions.limit,
-    totalEntries
-  );
-
-  return metadata;
+function getTag(blogID, slug, opts) {
+  return new Promise((resolve, reject) => {
+    // Tags.get may accept options for single-tag queries
+    const cb = (err, entryIDs, prettyTag, total) =>
+      err ? reject(err) : resolve({ entryIDs: entryIDs || [], prettyTag: prettyTag || slug, total });
+    opts ? Tags.get(blogID, slug, opts, cb) : Tags.get(blogID, slug, cb);
+  });
 }
 
 function fetchTaggedEntries(blogID, slugs, options, callback) {
@@ -100,136 +72,123 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
     callback = options;
     options = {};
   }
-
   options = options || {};
-  var paginationOptions = sanitizePaginationOptions(options);
 
-  let normalizedSlugs;
+  const pg = parsePaginationOptions(options);
 
+  let normalized;
   try {
-    normalizedSlugs = normalizeSlugs(slugs);
-  } catch (err) {
-    return callback(err);
+    normalized = normalizeSlugs(slugs);
+  } catch (e) {
+    return callback(e);
   }
 
-  if (!normalizedSlugs.length) {
-    return callback(null, attachPagination({
-      entryIDs: [],
-      total: options.limit !== undefined ? 0 : undefined,
-      tag: "",
-      tagged: {},
-      prettyTags: [],
-      slugs: [],
-    }, paginationOptions));
+  if (!normalized.length) {
+    return callback(
+      null,
+      attachPagination(
+        {
+          entryIDs: [],
+          total: options.limit !== undefined ? 0 : undefined,
+          tag: "",
+          tagged: {},
+          prettyTags: [],
+          slugs: [],
+        },
+        pg
+      )
+    );
   }
 
-  if (normalizedSlugs.length === 1) {
-    const slug = normalizedSlugs[0];
-
-    return Tags.get(blogID, slug, options, function (err, entryIDs, prettyTag, total) {
-      if (err) return callback(err);
-
-      const metadata = buildTagMetadata([prettyTag || slug]);
-
-      return callback(null, attachPagination({
-        entryIDs: entryIDs || [],
-        total: options.limit !== undefined ? total || 0 : undefined,
-        tag: metadata.tag,
-        tagged: metadata.tagged,
-        prettyTags: [prettyTag || slug],
-        slugs: normalizedSlugs,
-      }, paginationOptions));
-    });
-  }
-
-  async.mapSeries(
-    normalizedSlugs,
-    function (slug, next) {
-      Tags.get(blogID, slug, function (err, entryIDs, prettyTag) {
-        if (err) return next(err);
-
-        next(null, {
-          entryIDs: entryIDs || [],
-          prettyTag: prettyTag || slug,
-        });
-      });
-    },
-    function (err, results) {
-      if (err) return callback(err);
-
-      const entryIDLists = results.map((result) => result.entryIDs || []);
-      let entryIDs = [];
-
-      if (entryIDLists.length) {
-        entryIDs = _.intersection.apply(null, entryIDLists) || [];
-      }
-
-      const prettyTags = results.map((result) => result.prettyTag);
-      const metadata = buildTagMetadata(prettyTags);
-
-      if (paginationOptions.hasPagination) {
-        const sliced = entryIDs.slice(
-          paginationOptions.offset,
-          paginationOptions.offset + paginationOptions.limit
+  if (normalized.length === 1) {
+    const slug = normalized[0];
+    return getTag(blogID, slug, options)
+      .then(({ entryIDs, prettyTag, total }) => {
+        const meta = buildTagMetadata([prettyTag]);
+        return callback(
+          null,
+          attachPagination(
+            {
+              entryIDs,
+              total: options.limit !== undefined ? total || 0 : undefined,
+              tag: meta.tag,
+              tagged: meta.tagged,
+              prettyTags: [prettyTag],
+              slugs: normalized,
+            },
+            pg
+          )
         );
+      })
+      .catch(callback);
+  }
 
-        return callback(null, attachPagination({
-          entryIDs: sliced,
-          total: entryIDs.length,
-          tag: metadata.tag,
-          tagged: metadata.tagged,
-          prettyTags,
-          slugs: normalizedSlugs,
-        }, paginationOptions));
+  // Multiple tags: fetch without pagination options, then intersect and slice locally
+  Promise.all(normalized.map((slug) => getTag(blogID, slug)))
+    .then((results) => {
+      const lists = results.map((r) => r.entryIDs || []);
+      const entryIDs = intersectMany(lists);
+      const prettyTags = results.map((r) => r.prettyTag);
+      const meta = buildTagMetadata(prettyTags);
+
+      if (pg.hasPagination) {
+        const sliced = entryIDs.slice(pg.offset, pg.offset + pg.limit);
+        return callback(
+          null,
+          attachPagination(
+            {
+              entryIDs: sliced,
+              total: entryIDs.length,
+              tag: meta.tag,
+              tagged: meta.tagged,
+              prettyTags,
+              slugs: normalized,
+            },
+            pg
+          )
+        );
       }
 
       return callback(null, {
         entryIDs,
         total: undefined,
-        tag: metadata.tag,
-        tagged: metadata.tagged,
+        tag: meta.tag,
+        tagged: meta.tagged,
         prettyTags,
-        slugs: normalizedSlugs,
+        slugs: normalized,
       });
-    }
-  );
+    })
+    .catch(callback);
 }
 
 module.exports = function (req, callback) {
-  var blog = req.blog;
-  var blogID = blog.id;
+  const blogID = req.blog.id;
+  const tags = req.query.name || req.query.tag || req.params.tag || "";
 
-  var tags = req.query.name || req.query.tag || req.params.tag || "";
-
-  var page = parseInt(req.params.page, 10);
+  let page = parseInt(req.params.page, 10);
   if (!page || page < 1) page = 1;
 
-  var limit =
+  let limit =
     req.template && req.template.locals
-      ? req.template.locals.page_size
+      ? parseInt(req.template.locals.page_size, 10)
       : undefined;
-
-  limit = parseInt(limit, 10);
 
   if (!limit || limit < 1 || limit > 500) limit = 100;
 
-  var offset = (page - 1) * limit;
-  var options = { limit, offset };
+  const offset = (page - 1) * limit;
 
-  fetchTaggedEntries(blogID, tags, options, function (err, result) {
+  fetchTaggedEntries(blogID, tags, { limit, offset }, function (err, result) {
     if (err) return callback(err);
 
     Entry.get(blogID, result.entryIDs || [], function (entries) {
-      entries.sort(function (a, b) {
-        return b.dateStamp - a.dateStamp;
-      });
+      entries.sort((a, b) => b.dateStamp - a.dateStamp);
 
       const totalEntries =
         result.total !== undefined
           ? result.total
           : (result.entryIDs || []).length;
 
-      return callback(null, {
+      callback(null, {
         tag: result.tag,
         tagged: result.tagged,
         is: result.tagged, // alias
@@ -243,4 +202,3 @@ module.exports = function (req, callback) {
     });
   });
 };
-
