@@ -7,6 +7,7 @@ var set = require("./set");
 var flushCache = require("models/blog/flushCache");
 var pathNormalizer = require("helper/pathNormalizer");
 var Blog = require("models/blog");
+var build = require("build");
 
 module.exports = function (blog, log, status) {
   return function update(path, callback) {
@@ -58,8 +59,25 @@ module.exports = function (blog, log, status) {
           });
         } else if (stat && stat.isDirectory()) {
           maybeEnableInjectTitle(blog, path, function () {
-            // there is nothing else to do for directories
-            done();
+            var multiInfo = build.findMultiFolder(path);
+
+            if (multiInfo) {
+              var targetPath = multiInfo.folderPath;
+
+              log(path, "Saving multi-folder in database");
+
+              set(blog, targetPath, function (err) {
+                if (err) {
+                  log(targetPath, "Error saving multi-folder in database", err);
+                } else {
+                  log(targetPath, "Saving multi-folder in database succeeded");
+                }
+                done(err);
+              });
+            } else {
+              // there is nothing else to do for directories
+              done();
+            }
           });
         } else {
           log(path, "Saving file in database");
