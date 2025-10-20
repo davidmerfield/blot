@@ -65,7 +65,13 @@ form
     res.render("dashboard/log-in");
   })
 
-  .post(require("./rateLimit"), checkEmail, checkReset, checkPassword)
+  .post(
+    require("./rateLimit"),
+    checkEmail,
+    checkReset,
+    checkPassword,
+    require("./checkTwoFactor")
+  )
 
   .all(errorHandler)
 

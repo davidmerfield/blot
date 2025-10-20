@@ -2,12 +2,20 @@ var ensure = require("helper/ensure");
 var async = require("async");
 
 var MODEL = require("../model");
+var twoFactor = require("../twoFactor");
 
 var validators = {
   email: require("./email"),
+  twoFactor: require("./twoFactor"),
 };
 
 module.exports = function validate(user, updates, callback) {
+  user.twoFactor = twoFactor.normalizeStoredConfig(user.twoFactor);
+
+  if (updates.twoFactor !== undefined) {
+    updates.twoFactor = twoFactor.normalizeStoredConfig(updates.twoFactor);
+  }
+
   ensure(user, MODEL).and(updates, "object").and(callback, "function");
 
   var changes = [];

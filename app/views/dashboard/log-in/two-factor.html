@@ -1,0 +1,39 @@
+<section class="authenticate-container">
+  <form method="POST" action="/sites/log-in">
+    <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+    <input type="hidden" name="email" value="{{email}}" />
+    {{#then}}<input type="hidden" name="then" value="{{then}}" />{{/then}}
+
+    <p style="margin-top: 0;margin-bottom: 2em;">
+      <strong style="font-weight: 600;">Two-factor required</strong>
+    </p>
+
+    {{#BADTWOFACTOR}}
+      <p class="error">That code was not valid. Try again or use a backup code.</p>
+    {{/BADTWOFACTOR}}
+
+    {{#NOTWOFACTORTOKEN}}
+      <p class="error">Enter the code from your authenticator app.</p>
+    {{/NOTWOFACTORTOKEN}}
+
+    <p>
+      <label for="token">Enter your authentication code</label>
+      <input
+        type="text"
+        name="token"
+        id="token"
+        required
+        autocomplete="one-time-code"
+        inputmode="numeric"
+        pattern="[0-9A-Za-z\- ]*"
+        autofocus
+      />
+    </p>
+
+    <p class="hint">
+      This can be the six-digit code from your authenticator app or one of your backup codes.
+    </p>
+
+    <input type="submit" value="Verify" />
+  </form>
+</section>

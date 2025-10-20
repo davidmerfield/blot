@@ -4,6 +4,7 @@ var client = require("models/client");
 var validate = require("./validate");
 var generateId = require("./generateId");
 var scheduleSubscriptionEmail = require("./scheduleSubscriptionEmail");
+var twoFactor = require("./twoFactor");
 
 module.exports = function create (
   email,
@@ -29,7 +30,8 @@ module.exports = function create (
     email: email,
     subscription: subscription,
     paypal: paypal,
-    passwordHash: passwordHash
+    passwordHash: passwordHash,
+    twoFactor: twoFactor.createDefaultConfig()
   };
 
   validate({ uid: uid }, user, function (err, user) {

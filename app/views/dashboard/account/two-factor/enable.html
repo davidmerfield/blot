@@ -1,0 +1,35 @@
+<section class="setting">
+  <h1>Set up two-factor authentication</h1>
+
+  <p>
+    Scan this QR code with your authenticator app to link it to your Blot account, then enter the six-digit code below to confirm.
+  </p>
+
+  <div class="two-factor-qr">
+    <img src="{{qr}}" alt="Scan this QR code with your authenticator app" width="200" height="200" />
+  </div>
+
+  <p>
+    If you cannot scan the code, enter this key manually: <code>{{maskedSecret}}</code>
+  </p>
+
+  {{#secret}}
+    <p>
+      Reveal: <code>{{secret}}</code>
+    </p>
+  {{/secret}}
+
+  {{^secret}}
+    <form method="post" action="/sites/account/two-factor/enable/reveal" style="margin-bottom: 1em;">
+      <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+      <input type="submit" value="Show secret" />
+    </form>
+  {{/secret}}
+
+  <form method="post" action="/sites/account/two-factor/confirm">
+    <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+    <label for="code">Enter the six-digit code</label>
+    <input type="text" name="code" id="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9 ]*" required />
+    <input type="submit" value="Confirm" />
+  </form>
+</section>

@@ -1,0 +1,40 @@
+<section class="setting">
+  <h1>Two-factor authentication</h1>
+
+  {{#twoFactorEnabled}}
+    <p>
+      Two-factor authentication is currently <strong>enabled</strong> on your account.
+    </p>
+
+    {{#twoFactor.lastUsedAt}}
+      <p>
+        Last confirmed login was recorded at <code>{{twoFactor.lastUsedAt}}</code>.
+      </p>
+    {{/twoFactor.lastUsedAt}}
+
+    <p>
+      You have <strong>{{twoFactor.backupCodesCount}}</strong> backup codes remaining.
+    </p>
+
+    <form method="post" action="/sites/account/two-factor/codes" class="form-inline">
+      <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+      <input type="submit" value="View backup codes" />
+    </form>
+
+    <form method="post" action="/sites/account/two-factor/disable" class="form-inline" style="margin-top:1em;">
+      <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+      <input type="submit" value="Disable two-factor" />
+    </form>
+  {{/twoFactorEnabled}}
+
+  {{^twoFactorEnabled}}
+    <p>
+      Add an extra layer of security by requiring a time-based one-time code in addition to your password when signing in.
+    </p>
+
+    <form method="post" action="/sites/account/two-factor/start">
+      <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+      <input type="submit" value="Enable two-factor" />
+    </form>
+  {{/twoFactorEnabled}}
+</section>

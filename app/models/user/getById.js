@@ -1,6 +1,7 @@
 var ensure = require("helper/ensure");
 var client = require("models/client");
 var key = require("./key");
+var twoFactor = require("./twoFactor");
 
 module.exports = function getById(uid, callback) {
   ensure(uid, "string").and(callback, "function");
@@ -16,6 +17,8 @@ module.exports = function getById(uid, callback) {
     } catch (err) {
       return callback(new Error("BADJSON"));
     }
+
+    user.twoFactor = twoFactor.normalizeStoredConfig(user.twoFactor);
 
     return callback(null, user);
   });

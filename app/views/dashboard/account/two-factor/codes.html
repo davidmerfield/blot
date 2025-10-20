@@ -1,0 +1,17 @@
+<section class="setting">
+  <h1>Your backup codes</h1>
+
+  <p>
+    Store these one-time backup codes in a safe place. Each code can be used once to sign in if you lose access to your authenticator app.
+  </p>
+
+  <ul class="two-factor-codes">
+    {{#codes}}
+      <li><code>{{.}}</code></li>
+    {{/codes}}
+  </ul>
+
+  <p>
+    Keep this page private. You can generate new codes by disabling and re-enabling two-factor authentication.
+  </p>
+</section>

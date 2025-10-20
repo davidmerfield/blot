@@ -2,6 +2,7 @@ var amountInWords = require("helper/amountInWords");
 var prettyDate = require("helper/prettyDate");
 var prettyPrice = require("helper/prettyPrice");
 var config = require("config");
+var twoFactor = require("./twoFactor");
 
 module.exports = function extend (user) {
   // True if the user has set a password, false otherwise
@@ -97,6 +98,20 @@ module.exports = function extend (user) {
     user.s = "";
     user.are = "is";
   }
+
+  if (!user.twoFactor) {
+    user.twoFactor = twoFactor.createDefaultConfig();
+  }
+
+  user.twoFactorEnabled = !!user.twoFactor.enabled;
+
+  user.twoFactor = {
+    enabled: !!user.twoFactor.enabled,
+    backupCodesCount: Array.isArray(user.twoFactor.backupCodes)
+      ? user.twoFactor.backupCodes.length
+      : 0,
+    lastUsedAt: user.twoFactor.lastUsedAt || "",
+  };
 
   return user;
 };

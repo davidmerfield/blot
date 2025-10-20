@@ -6,7 +6,13 @@ var MODEL = {
   lastSession: "string",
   passwordHash: "string",
   subscription: "object",
-  paypal: "object"
+  paypal: "object",
+  twoFactor: {
+    enabled: "boolean",
+    secret: "string",
+    backupCodes: ["string"],
+    lastUsedAt: "string",
+  }
 };
 
 module.exports = MODEL;

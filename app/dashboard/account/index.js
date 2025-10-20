@@ -71,6 +71,7 @@ Account.use("/email", require("./email"));
 Account.use("/create-site", require("./create-site"));
 Account.use("/subscription", require("./subscription"));
 Account.use("/pay-subscription", require("./pay-subscription"));
+Account.use("/two-factor", require("./two-factor"));
 
 const { updateSubscription } = require("dashboard/webhooks/paypal_webhook");
 
