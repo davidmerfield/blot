@@ -48,15 +48,36 @@ module.exports = function (blog, log, status) {
 
       fs.stat(localPath(blog.id, path), function (err, stat) {
         if (err && err.code === "ENOENT") {
-          log(path, "Dropping from database");
-          drop(blog.id, path, function (err) {
-            if (err) {
-              log(path, "Error dropping from database", err);
-            } else {
-              log(path, "Dropping from database succeeded");
-            }
-            done(err);
-          });
+          var dropTargets = [path];
+          var multiInfo = build.findMultiFolder(path);
+
+          if (
+            multiInfo &&
+            multiInfo.folderPath === path &&
+            multiInfo.entryPath &&
+            dropTargets.indexOf(multiInfo.entryPath) === -1
+          ) {
+            dropTargets.push(multiInfo.entryPath);
+          }
+
+          var dropError = null;
+
+          (function nextDrop(index) {
+            if (index >= dropTargets.length) return done(dropError);
+
+            var target = dropTargets[index];
+            log(target, "Dropping from database");
+            drop(blog.id, target, function (err) {
+              if (err) {
+                log(target, "Error dropping from database", err);
+                if (!dropError) dropError = err;
+              } else {
+                log(target, "Dropping from database succeeded");
+              }
+
+              nextDrop(index + 1);
+            });
+          })(0);
         } else if (stat && stat.isDirectory()) {
           maybeEnableInjectTitle(blog, path, function () {
             var multiInfo = build.findMultiFolder(path);
