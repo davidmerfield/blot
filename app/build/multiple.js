@@ -60,7 +60,6 @@ module.exports = function buildMultiple(blog, info, callback) {
       function (err, results) {
         if (err) return callback(err);
 
-        var combinedHtml = [];
         var combinedMetadata = {};
         var combinedDependencies = [];
         var combinedExtras = {};
@@ -71,7 +70,6 @@ module.exports = function buildMultiple(blog, info, callback) {
         };
 
         results.forEach(function (result) {
-          combinedHtml.push(result.html);
           combinedMetadata = mergeMetadata(combinedMetadata, result.metadata);
           combinedDependencies = combinedDependencies.concat(result.dependencies);
           combinedExtras = mergeMetadata(combinedExtras, result.extras);
@@ -110,7 +108,7 @@ module.exports = function buildMultiple(blog, info, callback) {
           _sourcePaths: files,
         });
 
-        var html = combinedHtml.join("\n\n");
+        var html = renderHtmlSections(results, folderPath);
 
         debug(
           "Blog:",
@@ -177,6 +175,42 @@ function collectConvertibleFiles(blog, folderPath, callback) {
   });
 }
 
+function renderHtmlSections(results, folderPath) {
+  var sections = results.map(function (result, index) {
+    var attributes = [
+      'class="multi-file-entry"',
+      'data-file="' + escapeAttribute(result.path) + '"',
+      'data-index="' + index + '"',
+    ];
+
+    var extension = path.extname(result.path).slice(1);
+
+    if (extension) {
+      attributes.push(
+        'data-extension="' + escapeAttribute(extension.toLowerCase()) + '"'
+      );
+    }
+
+    var innerHtml = result.html || "";
+
+    return (
+      "\n  <section " +
+      attributes.join(" ") +
+      ">\n" +
+      innerHtml +
+      "\n  </section>"
+    );
+  });
+
+  return (
+    '<section class="multi-file-post" data-folder="' +
+    escapeAttribute(folderPath) +
+    '">' +
+    sections.join("") +
+    "\n</section>"
+  );
+}
+
 function isConvertible(filePath) {
   return converters.some(function (converter) {
     return converter.is(filePath);
@@ -223,6 +257,15 @@ function mergeMetadata(target, source) {
   });
 
   return result;
+}
+
+function escapeAttribute(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/'/g, "&#39;");
 }
 
 function cloneValue(value) {

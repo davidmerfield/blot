@@ -28,9 +28,21 @@ describe("build multiple", function () {
     var entry = await this.buildEntry("/album+");
 
     expect(entry.path).toEqual("/album");
+    expect(entry.html).toContain(
+      '<section class="multi-file-post" data-folder="/album+">'
+    );
+    expect(entry.html).toContain(
+      '<section class="multi-file-entry" data-file="/album+/cover.jpg" data-index="0" data-extension="jpg">'
+    );
+    expect(entry.html).toContain(
+      '<section class="multi-file-entry" data-file="/album+/one.md" data-index="1" data-extension="md">'
+    );
+    expect(entry.html).toContain(
+      '<section class="multi-file-entry" data-file="/album+/two.md" data-index="2" data-extension="md">'
+    );
     expect(entry.html).toContain("<h1 id=\"one\">One</h1>");
     expect(entry.html).toContain("<p>Body</p>");
-    expect(entry.html).toContain("Second");
+    expect(entry.html).toContain("<h2 id=\"second\">Second</h2>");
     expect(entry.metadata._sourcePaths.sort()).toEqual([
       "/album+/cover.jpg",
       "/album+/one.md",
@@ -50,6 +62,12 @@ describe("build multiple", function () {
     var entry = await this.buildEntry("/note+/first.md");
 
     expect(entry.path).toEqual("/note");
+    expect(entry.html).toContain(
+      '<section class="multi-file-entry" data-file="/note+/first.md" data-index="0" data-extension="md">'
+    );
+    expect(entry.html).toContain(
+      '<section class="multi-file-entry" data-file="/note+/second.md" data-index="1" data-extension="md">'
+    );
     expect(entry.html).toContain("First");
     expect(entry.html).toContain("Second");
   });
