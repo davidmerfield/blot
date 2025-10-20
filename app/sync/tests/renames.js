@@ -157,6 +157,7 @@ describe("update", function () {
 
     var content = ctx.fake.file();
     var ghostContent = ctx.fake.file();
+    var ghostEntryID;
 
     ctx.writeAndSync(path, content, function (err) {
       if (err) return testDone.fail(err);
@@ -181,36 +182,58 @@ describe("update", function () {
                   },
                   function (next) {
                     fs.removeSync(folder.path + ghostPath);
-                    folder.update(ghostPath, next);
+                    folder.update(ghostPath, function (err) {
+                      if (err) return next(err);
+
+                      ctx.checkEntry(
+                        { path: ghostPath, deleted: true },
+                        function (err, entry) {
+                          if (err) return next(err);
+                          ghostEntryID = entry.id;
+                          next();
+                        }
+                      );
+                    });
+                  },
+                  function (next) {
+                    redis.del(entryKey(blogID, ghostPath), function (err) {
+                      if (err) return next(err);
+
+                      var deletedListKey = "blog:" + blogID + ":deleted";
+
+                      redis.zscore(deletedListKey, ghostEntryID, function (err, score) {
+                        if (err) return next(err);
+
+                        expect(score).not.toBeNull();
+                        next();
+                      });
+                    });
                   },
                 ],
                 function (err) {
                   if (err) return testDone.fail(err);
 
-                  redis.del(entryKey(blogID, ghostPath), function (err) {
+                  done(null, function (err) {
                     if (err) return testDone.fail(err);
 
-                    done(null, function (err) {
+                    ctx.checkRename(path, newPath, function (err) {
                       if (err) return testDone.fail(err);
 
-                      ctx.checkRename(path, newPath, function (err) {
-                        if (err) return testDone.fail(err);
+                      ctx.checkEntry(
+                        { path: ghostPath, ignored: true },
+                        function (err, entry) {
+                          if (err) return testDone.fail(err);
+                          expect(entry).toBeFalsy();
 
-                        ctx.checkEntry(
-                          { path: ghostPath, deleted: true },
-                          function (err) {
-                            if (err) return testDone.fail(err);
-
-                            ctx.checkEntry(
-                              { path: ghostNewPath, deleted: false },
-                              function (err) {
-                                if (err) return testDone.fail(err);
-                                testDone();
-                              }
-                            );
-                          }
-                        );
-                      });
+                          ctx.checkEntry(
+                            { path: ghostNewPath, deleted: false },
+                            function (err) {
+                              if (err) return testDone.fail(err);
+                              testDone();
+                            }
+                          );
+                        }
+                      );
                     });
                   });
                 }
