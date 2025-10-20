@@ -16,7 +16,9 @@ let remoteTempDirPromise;
 
 async function getRemoteTempDir() {
   if (!remoteTempDirPromise) {
-    remoteTempDirPromise = sshCommand("echo ${TMPDIR:-/tmp}");
+    remoteTempDirPromise = sshCommand(
+      "(env | grep '^TMPDIR=' | head -n 1 | cut -d= -f2-) || true"
+    );
   }
 
   try {
