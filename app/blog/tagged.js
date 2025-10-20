@@ -1,11 +1,7 @@
 module.exports = function (server) {
   const Entry = require("models/entry");
-  const Tags = require("models/tags");
+  const retrieveTagged = require("./render/retrieve/tagged");
 
-
-  // todo: refactor and consolidate ./render/retrieve/tagged.js and this file
-  // they do very similar things but this one supports pagination and the other
-  // supports multiple tags so merge them into a single function
   server.get(
     ["/tagged/:tag", "/tagged/:tag/page/:page"],
     function (request, response, next) {
@@ -28,18 +24,24 @@ module.exports = function (server) {
       var offset = (page - 1) * limit;
       var options = { limit, offset };
 
-      Tags.get(blogID, slug, options, function (err, ...results) {
-        const [entryIDs, tag, totalEntries] = results;
+      retrieveTagged.fetch(blogID, [slug], options, function (err, result) {
+        if (err) return next(err);
 
-        Entry.get(blogID, entryIDs || [], function (entries) {
-          response.locals.tag = tag;
+        const totalEntries =
+          result.total !== undefined
+            ? result.total
+            : (result.entryIDs || []).length;
+
+        Entry.get(blogID, result.entryIDs || [], function (entries) {
+          response.locals.tag = result.tag || slug;
           response.locals.slug = slug;
-          response.locals.total = totalEntries || 0;
+          response.locals.total = totalEntries;
           response.locals.entries = entries;
+          response.locals.tagged = result.tagged;
           response.locals.pagination = buildPagination(
             page,
             limit,
-            totalEntries || 0
+            totalEntries
           );
 
           response.renderView("tagged.html", next);
