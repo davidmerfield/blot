@@ -5,7 +5,6 @@ var get = require("../get/user");
 var each = require("../each/user");
 var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
-var async = require("async");
 var getConfirmation = require("../util/getConfirmation");
 var moment = require("moment");
 var colors = require("colors/safe");
@@ -78,19 +77,11 @@ function main(user, callback) {
           console.log(colors.red("Did not disable " + user.email));
           return callback();
         }
-        async.eachSeries(
-          user.blogs,
-          function (blogID, next) {
-            Blog.set(blogID, { isDisabled: true }, next);
-          },
-          function () {
-            User.set(user.uid, { isDisabled: true }, function (err) {
-              if (err) return callback(err);
-              console.log(colors.green("Disabled " + user.email));
-              callback();
-            });
-          }
-        );
+        User.disable(user, function (err) {
+          if (err) return callback(err);
+          console.log(colors.green("Disabled " + user.email));
+          callback();
+        });
       });
     }
   );
