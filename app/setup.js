@@ -1,5 +1,6 @@
 const config = require("config");
 const fs = require("fs-extra");
+const path = require("path");
 
 const client = require("models/client");
 const documentation = require("./documentation/build");
@@ -152,6 +153,16 @@ async function runPostListenTasks() {
 function main(callback) {
   async.series(
     [
+      async function () {
+        const featuredDir = path.join(config.data_directory, "featured");
+        const featuredFile = path.join(featuredDir, "featured.json");
+
+        log("Clearing featured cache file");
+        await fs.ensureDir(featuredDir);
+        await fs.remove(featuredFile);
+        log("Cleared featured cache file");
+      },
+
       async function () {
         log("Creating required directories");
         await fs.ensureDir(config.blog_folder_dir);
