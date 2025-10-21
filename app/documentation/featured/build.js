@@ -5,7 +5,7 @@
 // about sites featured on the homepage, like template used...
 
 const THUMBNAIL_SIZE = 96;
-const JPEG_QUALITY = 90;
+const JPEG_QUALITY = 100;
 const { toUnicode } = require("helper/punycode");
 
 const sharp = require("sharp");
