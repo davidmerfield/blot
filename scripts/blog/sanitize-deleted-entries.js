@@ -24,6 +24,8 @@ eachBlog(
       return nextBlog();
     }
 
+    let blogHadError = false;
+
     Entries.each(
       blog.id,
       function (entry, nextEntry) {
@@ -34,6 +36,7 @@ eachBlog(
         Entry.drop(blog.id, entry.path, function (err) {
           if (err) {
             errors += 1;
+            blogHadError = true;
             console.error(
               colors.red(
                 `Failed to drop deleted entry ${blog.id} ${entry.path}: ${
@@ -54,6 +57,7 @@ eachBlog(
       function (err) {
         if (err) {
           errors += 1;
+          blogHadError = true;
           console.error(
             colors.red(
               `Failed to iterate deleted entries for blog ${blog.id}: ${
@@ -61,6 +65,15 @@ eachBlog(
               }`
             )
           );
+        }
+
+        if (blogHadError) {
+          console.log(
+            colors.yellow(
+              `Skipped updating flags for blog ${blog.id} due to errors.`
+            )
+          );
+          return nextBlog();
         }
 
         const existingFlags = blog.flags ? Object.assign({}, blog.flags) : {};
