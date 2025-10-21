@@ -5,6 +5,7 @@
 // about sites featured on the homepage, like template used...
 
 const THUMBNAIL_SIZE = 96;
+const JPEG_QUALITY = 90;
 const { toUnicode } = require("helper/punycode");
 
 const sharp = require("sharp");
@@ -125,7 +126,7 @@ async function generateImages(sites) {
       })
       .toFormat("jpeg")
       .jpeg({
-        quality: 90,
+        quality: JPEG_QUALITY,
       })
       .toFile(path);
 
