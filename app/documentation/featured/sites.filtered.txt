@@ -63,3 +63,4 @@
 #000000 robinschoenbaechler.com Robin Schoenbaechler, is a designer
 #000000 www.stephgreen.co.uk Steph Green, is a writer
 #000000 davidelitompkins.com David Eli Tompkins, is a painter
+#000000 tormodotterjohansen.se Tormod Johansen, is an academic

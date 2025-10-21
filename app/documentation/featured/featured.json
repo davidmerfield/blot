@@ -455,6 +455,13 @@
       "name": "David Eli Tompkins",
       "bio": "is a painter",
       "image": "/images/featured/davidelitompkins.com.jpg"
+    },
+    {
+      "link": "https://tormodotterjohansen.se",
+      "host": "tormodotterjohansen.se",
+      "name": "Tormod Johansen",
+      "bio": "is an academic",
+      "image": "/images/featured/tormodotterjohansen.se.jpg"
     }
   ]
 }
