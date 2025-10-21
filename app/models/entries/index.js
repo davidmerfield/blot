@@ -5,6 +5,8 @@ var Entry = require("../entry");
 var DateStamp = require("../../build/prepare/dateStamp");
 var Blog = require("../blog");
 
+var MAX_RANDOM_ATTEMPTS = 10;
+
 module.exports = (function () {
   var lists = [
     "all",
@@ -176,12 +178,56 @@ module.exports = (function () {
         ids,
         function (id, next) {
           Entry.get(blogID, id, function (entry) {
+            if (!entry) return next();
             dothis(entry, next);
           });
         },
         callback
       );
     });
+  }
+
+  function pruneMissing(blogID, callback) {
+    if (!callback) callback = function () {};
+
+    ensure(blogID, "string").and(callback, "function");
+
+    async.eachSeries(
+      lists,
+      function (listName, nextList) {
+        var key = listKey(blogID, listName);
+
+        redis.zrange(key, 0, -1, function (err, ids) {
+          if (err) return nextList(err);
+          if (!ids || !ids.length) return nextList();
+
+          Entry.get(blogID, ids, function (entries) {
+            entries = entries || [];
+
+            var existing = {};
+
+            entries.forEach(function (entry) {
+              if (entry && entry.id) existing[entry.id] = true;
+            });
+
+            var missing = ids.filter(function (id) {
+              return !existing[id];
+            });
+
+            if (!missing.length) return nextList();
+
+            var args = [key].concat(missing);
+            args.push(function (err) {
+              if (err) return nextList(err);
+              nextList();
+            });
+
+            redis.zrem.apply(redis, args);
+          });
+        });
+      },
+      callback
+    );
   }
 
   function getCreated(blogID, after, callback) {
@@ -234,6 +280,50 @@ module.exports = (function () {
       });
     });
   }
+
+  function random(blogID, callback) {
+    ensure(blogID, "string").and(callback, "function");
+
+    var key = listKey(blogID, "entries");
+    var attempts = 0;
+
+    function attempt() {
+      if (attempts >= MAX_RANDOM_ATTEMPTS) return callback();
+
+      attempts++;
+
+      pickRandomEntryID(function (err, entryID) {
+        if (err) return callback();
+
+        if (!entryID) return callback();
+
+        Entry.get(blogID, entryID, function (entry) {
+          if (!entry || !entry.url) return attempt();
+
+          callback(entry);
+        });
+      });
+    }
+
+    function pickRandomEntryID(done) {
+      redis.zrandmember(key, function (err, entryID) {
+        if (err) return done(err);
+
+        done(null, normalizeEntryID(entryID));
+      });
+    }
+
+    function normalizeEntryID(entryID) {
+      if (Array.isArray(entryID)) entryID = entryID[0];
+      if (Buffer.isBuffer(entryID)) entryID = entryID.toString();
+
+      return entryID || null;
+    }
+
+    attempt();
+  }
+
+  random.MAX_ATTEMPTS = MAX_RANDOM_ATTEMPTS;
   function getPage(blogID, pageNo, pageSize, callback, options = {}) {
     ensure(blogID, "string")
       .and(pageNo, "number")
@@ -411,6 +501,7 @@ module.exports = (function () {
     get: get,
     resave: resave,
     each: each,
+    pruneMissing: pruneMissing,
     adjacentTo: adjacentTo,
     getPage: getPage,
     getListIDs: getListIDs,
@@ -421,5 +512,6 @@ module.exports = (function () {
     lastUpdate: lastUpdate,
     getCreated: getCreated,
     getDeleted: getDeleted,
+    random: random,
   };
 })();

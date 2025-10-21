@@ -13,7 +13,21 @@ setup(async (err) => {
   // Open the server to handle requests
   server.listen(config.port, function () {
     console.log(clfdate(), `Server listening`);
-    
+
+    // Run non-blocking setup tasks after the port is bound so startup isn't delayed.
+    if (typeof setup.runPostListenTasks === "function") {
+      setup
+        .runPostListenTasks()
+        .catch((err) =>
+          console.error(
+            clfdate(),
+            "Setup:",
+            "Post-listen tasks encountered an error",
+            err
+          )
+        );
+    }
+
     // Send an email notification if the server starts or restarts
     email.SERVER_START(null, { container: config.container });
   });

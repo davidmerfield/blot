@@ -1,63 +1,9 @@
 
-<form action="{{{base}}}/install" method="POST" style="display: flex;margin-bottom: 3rem;">
-    <input type="hidden" name="_csrf" value="{{csrftoken}}">
-    <input type="hidden" name="template" value="{{template.id}}">
-    {{^template.checked}}
-        <button style="margin: 0;border:none;cursor: pointer; font-size:14px;display:  inline-block;border-radius: var(--border-radius);background-color: var(--accent-color);color:var(--background-color);padding:0.333em 0.66em;font-weight: 600;margin-right: 6px;">
-            <svg  style="fill:currentColor;vertical-align: middle;position:relative;top:-0.1em"  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M4 8a4 4 0 1 1 8 0 4 4 0 0 1-8 0Zm4-2.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"></path></svg>
-            Install template</span>
-    </button>
-    {{/template.checked}}
-    {{#template.checked}}
-    <button disabled style="cursor: default;
-    margin: 0;
-      margin-right: 0px;
-    border: none;
-    font-size: 14px;
-    display: inline-block;
-    border-radius: var(--border-radius);
-    background-color: #eeeeec;
-    color: #bfbfbf;
-    padding: 0.333em 0.66em;
-    font-weight: 600;
-    margin-right: 6px;
-    box-shadow: inset 0 2px 2px rgba(0,0,0,0.05);">
-        <svg style="fill:currentColor;vertical-align: middle;position:relative;top:-0.1em" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M8 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"></path></svg>
-        Installed template</span>
-    </button>
-    {{/template.checked}}
+<div style="display: flex;margin-top:2rem">
+    <div style="width: 33.33333%;flex-grow: 0;flex-shrink: 0;box-sizing: border-box;padding:0 1rem 0 0">
 
         
-    <a href="{{{base}}}/rename" class="template-button">
-        <svg style="fill:currentColor;vertical-align: middle;position:relative;top:-0.1em" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"></path></svg>
-        Rename
-    </a>
-    <a href="{{{base}}}/source-code" class="template-button">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="m11.28 3.22 4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L13.94 8l-3.72-3.72a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215Zm-6.56 0a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L2.06 8l3.72 3.72a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L.47 8.53a.75.75 0 0 1 0-1.06Z"></path></svg>
-        Edit
-    </a>
-    <a href="{{{base}}}/download" class="template-button">
-        <span class="icon-download"></span>
-        Download
-    </a>
-    <!-- <a href="{{{base}}}/duplicate" class="template-button">
-        <svg style="fill:currentColor;vertical-align: middle;position:relative;top:-0.1em" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg> 
-        Duplicate
-    </a> -->
-    <a href="{{{base}}}/delete" class="template-button red">
-        <svg style="fill:currentColor;vertical-align: middle;position:relative;top:-0.1em" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"></path></svg> 
-        Delete
-    </a>
-    <div style="flex-grow: 1;"></div>
-    <a  href="{{{preview}}}" target="_blank" class="template-button right-aligned">
-        Preview
-        <svg style="fill:currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M3.75 7.5a.75.75 0 0 1 .75-.75h2.25V4.5a.75.75 0 0 1 1.5 0v2.25h2.25a.75.75 0 0 1 0 1.5H8.25v2.25a.75.75 0 0 1-1.5 0V8.25H4.5a.75.75 0 0 1-.75-.75Z"></path><path d="M7.5 0a7.5 7.5 0 0 1 5.807 12.247l2.473 2.473a.749.749 0 1 1-1.06 1.06l-2.473-2.473A7.5 7.5 0 1 1 7.5 0Zm-6 7.5a6 6 0 1 0 12 0 6 6 0 0 0-12 0Z"></path></svg>
-    </a>
-</form>
 
-
-<div style="display: flex;">
-    <div style="width: 33.33333%;flex-grow: 0;flex-shrink: 0;box-sizing: border-box;padding:0 1rem 0 0">
         {{> template-editor-sidebar}}
 
 
@@ -153,7 +99,7 @@
             // Save the path they have viewed on the server
             var http = new XMLHttpRequest();
             var url = "{{{base}}}";
-            var params = "previewPath=" + path;
+            var params = "previewPath=" + path + "&_csrf=" + "{{{csrftoken}}}";
             http.open("POST", url, true);
             http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
             http.send(params);

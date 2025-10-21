@@ -1,5 +1,5 @@
 var send = require("helper/email").send;
-var yesno = require("yesno");
+var getConfirmation = require("../util/getConfirmation");
 var async = require("async");
 var fs = require("fs-extra");
 var colors = require("colors/safe");
@@ -22,10 +22,9 @@ module.exports = function (emailFile, users, callback) {
       colors.dim("\n-------------------\n")
   );
 
-  yesno.ask(
+  getConfirmation(
     "Send email to " + colors.green(users.length + " users") + "? (y/n)",
-    false,
-    function (ok) {
+    function (err, ok) {
       if (!ok) {
         console.log("Emails were not sent.");
         return process.exit();

@@ -1,6 +1,5 @@
 Support message
 
-Sent from {{email}}
+Message from: {{email}} {{^email}}no email provided{{/email}}
 
 {{message}}
-

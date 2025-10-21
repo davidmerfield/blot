@@ -2,11 +2,119 @@ const redis = require("models/client");
 const Entries = require("./index"); // Replace with the correct path to the Entries module
 const Entry = require("../entry");
 const Blog = require("../blog");
+const entryKey = require("../entry/key").entry;
+
+function buildEntry(path, overrides) {
+  const now = Date.now();
+  const normalizedPath = path.startsWith("/") ? path : "/" + path;
+  const id = overrides && overrides.id ? overrides.id : normalizedPath;
+
+  const base = {
+    id,
+    guid: id + ":guid",
+    url: "",
+    permalink: "",
+    title: "Test entry",
+    titleTag: "<h1>Test entry</h1>",
+    body: "<p>Body</p>",
+    summary: "Body",
+    teaser: "Body",
+    teaserBody: "<p>Body</p>",
+    more: false,
+    html: "<h1>Test entry</h1><p>Body</p>",
+    slug: id.replace(/\//g, "-").replace(/\./g, "-"),
+    name: normalizedPath.replace(/^\//, ""),
+    path: normalizedPath,
+    size: 0,
+    tags: [],
+    dependencies: [],
+    backlinks: [],
+    internalLinks: [],
+    menu: false,
+    page: false,
+    deleted: false,
+    draft: false,
+    scheduled: false,
+    thumbnail: {},
+    dateStamp: now,
+    created: now,
+    updated: now,
+    metadata: {},
+    exif: {},
+  };
+
+  return Object.assign(base, overrides || {});
+}
 
 describe("entries", function () {
   // Cleans up the Redis database after each test
   // and exposes a test blog to each test
   global.test.blog();
+
+  describe("entry TTL management", function () {
+    it("sets a TTL when deleted and clears it when restored", function (done) {
+      const blogID = this.blog.id;
+      const path = "/ttl-entry.txt";
+      const key = entryKey(blogID, path);
+
+      Entry.set(blogID, path, buildEntry(path), function (err) {
+        if (err) return done.fail(err);
+
+        redis.ttl(key, function (err, ttl) {
+          if (err) return done.fail(err);
+          expect(ttl).toBe(-1);
+
+          Entry.set(blogID, path, { deleted: true }, function (err) {
+            if (err) return done.fail(err);
+
+            redis.ttl(key, function (err, ttlAfterDelete) {
+              if (err) return done.fail(err);
+              expect(ttlAfterDelete).toBeGreaterThan(0);
+              expect(ttlAfterDelete).toBeLessThanOrEqual(24 * 60 * 60);
+
+              Entry.set(blogID, path, { deleted: false }, function (err) {
+                if (err) return done.fail(err);
+
+                redis.ttl(key, function (err, ttlAfterRestore) {
+                  if (err) return done.fail(err);
+                  expect(ttlAfterRestore).toBe(-1);
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+
+  describe("pruneMissing", function () {
+    it("removes orphaned IDs from entry lists", function (done) {
+      const blogID = this.blog.id;
+      const path = "/prune-entry.txt";
+      const ghostID = "/ghost-entry";
+      const listKey = `blog:${blogID}:entries`;
+
+      Entry.set(blogID, path, buildEntry(path), function (err) {
+        if (err) return done.fail(err);
+
+        redis.zadd(listKey, Date.now(), ghostID, function (err) {
+          if (err) return done.fail(err);
+
+          Entries.pruneMissing(blogID, function (err) {
+            if (err) return done.fail(err);
+
+            redis.zrange(listKey, 0, -1, function (err, members) {
+              if (err) return done.fail(err);
+              expect(members).toContain(path);
+              expect(members).not.toContain(ghostID);
+              done();
+            });
+          });
+        });
+      });
+    });
+  });
 
   it("getTotal should return the total number of entries for a blog", async function (done) {
     const key = `blog:${this.blog.id}:entries`;
@@ -190,6 +298,86 @@ describe("entries", function () {
         done();
       });
     });
+  });
+
+  describe("random", function () {
+    it("returns undefined when there are no published entries", function (done) {
+      const originalZrandmember = redis.zrandmember;
+
+      spyOn(redis, "zrandmember").and.callFake(function (key, callback) {
+        callback(null, null);
+      });
+
+      Entries.random(this.blog.id, (entry) => {
+        try {
+          expect(entry).toBeUndefined();
+          done();
+        } catch (err) {
+          done.fail(err);
+        } finally {
+          redis.zrandmember = originalZrandmember;
+        }
+      });
+    });
+
+    it("retries until an entry with a public URL is found", function (done) {
+      const originalZrandmember = redis.zrandmember;
+      const originalEntryGet = Entry.get;
+      const candidates = ["missing", "valid"];
+
+      spyOn(redis, "zrandmember").and.callFake(function (key, callback) {
+        callback(null, candidates.shift());
+      });
+
+      spyOn(Entry, "get").and.callFake(function (blogID, entryID, callback) {
+        if (entryID === "missing") return callback({ id: entryID });
+
+        callback({ id: entryID, url: "/valid" });
+      });
+
+      Entries.random(this.blog.id, function (entry) {
+        try {
+          expect(entry).toEqual(jasmine.objectContaining({ id: "valid", url: "/valid" }));
+          expect(redis.zrandmember.calls.count()).toBe(2);
+          expect(Entry.get.calls.count()).toBe(2);
+          done();
+        } catch (err) {
+          done.fail(err);
+        } finally {
+          redis.zrandmember = originalZrandmember;
+          Entry.get = originalEntryGet;
+        }
+      });
+    });
+
+    it("stops after the maximum attempts when entries have no public URL", function (done) {
+      const originalZrandmember = redis.zrandmember;
+      const originalEntryGet = Entry.get;
+      let calls = 0;
+
+      spyOn(redis, "zrandmember").and.callFake(function (key, callback) {
+        callback(null, "missing");
+      });
+
+      spyOn(Entry, "get").and.callFake(function (blogID, entryID, callback) {
+        calls++;
+        callback({ id: entryID });
+      });
+
+      Entries.random(this.blog.id, function (entry) {
+        try {
+          expect(entry).toBeUndefined();
+          expect(calls).toBe(Entries.random.MAX_ATTEMPTS);
+          done();
+        } catch (err) {
+          done.fail(err);
+        } finally {
+          redis.zrandmember = originalZrandmember;
+          Entry.get = originalEntryGet;
+        }
+      });
+    });
+
   });
 
   describe("resave", function () {

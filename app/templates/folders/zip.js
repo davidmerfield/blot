@@ -2,9 +2,8 @@ const async = require("async");
 const fs = require("fs-extra");
 const archiver = require("archiver");
 const config = require("config");
-
-const VIEW_DIRECTORY =
-  config.views_directory + "/folders";
+const clfdate = require("helper/clfdate");
+const VIEW_DIRECTORY = config.views_directory + "/folders";
 const FOLDER_DIRECTORY = __dirname;
 
 const tmp = require("helper/tempDir")();
@@ -14,7 +13,7 @@ const main = () => {
   return new Promise((resolve, reject) => {
     const folders = fs
       .readdirSync(FOLDER_DIRECTORY)
-      .filter(i => i.indexOf(".") === -1);
+      .filter((i) => i.indexOf(".") === -1);
 
     async.eachSeries(
       folders,
@@ -32,7 +31,9 @@ const main = () => {
         if (config.environment === "development") {
           if (fs.existsSync(tmpPath)) {
             console.log(
-              folder, "Copying cached ZIP since we are in development environment"
+              clfdate(),
+              folder,
+              "Copying cached ZIP since we are in development environment"
             );
             return fs.copy(
               tmpPath,
@@ -49,7 +50,7 @@ const main = () => {
         const output = fs.createWriteStream(tmpPath);
 
         const archive = archiver("zip", {
-          zlib: { level: 9 } // Sets the compression level.
+          zlib: { level: 9 }, // Sets the compression level.
         });
 
         output.on("close", function () {

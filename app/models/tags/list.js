@@ -21,26 +21,26 @@ module.exports = async function getAll(blogID, callback) {
     // Iterate over tags and fetch their details
     const tags = [];
     for (const tag of allTags) {
-      const [entries, name] = await Promise.all([
-        new Promise((resolve, reject) => {
-          client.smembers(key.tag(blogID, tag), (err, result) => {
-            if (err) return reject(err);
-            resolve(result || []);
-          });
-        }),
+      const [name, count] = await Promise.all([
         new Promise((resolve, reject) => {
           client.get(key.name(blogID, tag), (err, result) => {
             if (err) return reject(err);
             resolve(result || "");
           });
         }),
+        new Promise((resolve, reject) => {
+          client.zcard(key.sortedTag(blogID, tag), (err, result) => {
+            if (err) return reject(err);
+            resolve(result || 0);
+          });
+        }),
       ]);
 
-      if (entries.length > 0) {
+      if (count > 0) {
         tags.push({
           name,
           slug: tag,
-          entries,
+          entries: new Array(count).fill(null),
         });
       }
     }

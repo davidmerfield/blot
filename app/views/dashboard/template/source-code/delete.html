@@ -2,6 +2,7 @@
   {{> source-code-header}}
   <div style="background: rgba(0, 0, 0, 0.1);padding: 0 1rem"></div>
 <form action="{{{base}}}/source-code/{{view.name}}/delete" method="post" style="background: #fff;width: 100%">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}" />
 	<button class="button disabled small" type="submit">Delete</button>
 	<a href="{{{base}}}/source-code/{{view.name}}/edit">Cancel</a>
 </form>

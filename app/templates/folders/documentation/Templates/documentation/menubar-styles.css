@@ -1,0 +1,79 @@
+.menubar {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: var(--background-color)
+  }
+  
+  .menubar > li {
+    position: relative;
+  }
+  
+  .menubar a {
+    display: block;
+    padding: 0;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  
+  /* Add chevron for top-level items with submenus */
+  .menubar > li:has(.sub-menu) > a::after {
+    content: '';
+    display: inline-block;
+    width: 0.4em;
+    height: 0.4em;
+    margin-left: 0.5em;
+    border: 1px solid currentColor;
+    border-width: 0 1px 1px 0;
+    transform: translateY(-0.1em) rotate(45deg);
+  }
+  
+  /* Add chevron for submenu items that have children */
+  .submenu li:has(.sub-menu) > a::after {
+    content: '';
+    display: inline-block;
+    width: 0.4em;
+    height: 0.4em;
+    margin-left: 0.5em;
+    border: 1px solid currentColor;
+    border-width: 0 1px 1px 0;
+    transform: translateY(-0.1em) rotate(-45deg);
+  }
+  
+  .menubar > li > a:hover,
+  .sub-menu li:hover > a {
+
+  }
+  
+  .sub-menu {
+    display: none;
+    position: fixed;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+  }
+
+  .sub-menu a {
+    min-width: 100px;
+    padding: 1em;
+  }
+
+  .sub-menu > li:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .submenu .sub-menu {
+    top: 0;
+    left: 100%;
+  }
+  
+  .menubar li:hover > .sub-menu {
+    display: block;
+  }
+  
+  .submenu li {
+    position: relative;
+  }

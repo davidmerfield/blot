@@ -6,7 +6,7 @@ var each = require("../each/user");
 var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
 var async = require("async");
-var yesno = require("yesno");
+var getConfirmation = require("../util/getConfirmation");
 var moment = require("moment");
 var colors = require("colors/safe");
 
@@ -73,7 +73,7 @@ function main(user, callback) {
           colors.yellow(user.email) +
           "? (y/n)"
       );
-      yesno.ask(message.join("\n"), true, function (ok) {
+      getConfirmation(message.join("\n"), function (err, ok) {
         if (!ok) {
           console.log(colors.red("Did not disable " + user.email));
           return callback();

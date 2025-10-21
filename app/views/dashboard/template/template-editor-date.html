@@ -4,6 +4,10 @@
     id="dateSettings"
     method="post"
 >
+
+
+    <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+    
     {{^hide_dates}}
     {{#displayFormats.length}}
     <label style="padding:0 1rem">

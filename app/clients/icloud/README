@@ -1,0 +1,30 @@
+Guide to debugging issues on remote server:
+
+ssh into the server:
+
+ssh macserver
+
+use VNC viewer to log into remote server
+
+browse error logs:
+
+pm2 logs -e macserver
+
+Guide to running this client locally:
+
+use the script:
+
+npm run deploy-localmacserver
+
+if needed, ssh into the localmacserver:
+
+ssh localmacserver
+
+and then start pm2:
+
+cd ~/blot/app/clients/icloud/macserver
+
+pm2 start ...
+
+when initially setting up the client, you need to switch users to press on the 'accept icloud sharing link' prompt manually since macos doesn't seem to allow a background gui process (required by the applescript). this can be fiddly to get right but once connected it's fairly smooth.
+

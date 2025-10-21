@@ -3,7 +3,7 @@ var get = require("../../get/blog");
 var Keys = require("../../db/keys");
 var keysToDelete = [];
 var client = require("client");
-var yesno = require("yesno");
+var getConfirmation = require("../util/getConfirmation");
 
 if (require.main === module) {
   get(process.argv[2], function (err, user, blog) {
@@ -34,10 +34,9 @@ function main(blog, callback) {
         process.exit();
       }
       console.log(JSON.stringify(keysToDelete, null, 2));
-      yesno.ask(
+      getConfirmation(
         "Delete " + keysToDelete.length + " keys? (y/n)",
-        false,
-        function (ok) {
+        function (err, ok) {
           if (!ok) return callback();
           multi.del(keysToDelete);
           multi.exec(callback);

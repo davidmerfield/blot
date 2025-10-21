@@ -22,8 +22,7 @@
   </div>
   <ul class="tool-list top-tools" style="position: relative;flex-grow: 1;">
     {{#top_tools}}
-    <li><a href="/tools/{{slug}}">{{#icon}}<img src="/tools{{{icon}}}" width="16">{{/icon}}<span class="a"><b>{{title}} 
-      <!-- {{#popular}}<span style="font-size:11px">popular</span>{{/popular}} -->
+    <li><a href="/tools/{{slug}}">{{#icon}}<img src="{{#cdn}}/tools{{{icon}}}{{/cdn}}" width="16">{{/icon}}<span class="a"><b>{{title}} 
     </b><br>{{subtitle}} </span></a></li>
     {{/top_tools}}  
     <li style="position: absolute;
@@ -48,7 +47,7 @@
 {{#category}}
 <ul class="tool-list">
   {{#tools}}
-  <li><a href="/tools/{{slug}}">{{#icon}}<img src="/tools{{{icon}}}" width="16">{{/icon}}<span class="a"><b>{{title}} 
+  <li><a href="/tools/{{slug}}">{{#icon}}<img src="{{#cdn}}/tools{{{icon}}}{{/cdn}}" width="16">{{/icon}}<span class="a"><b>{{title}} 
     <!-- {{#popular}}<span style="font-size:11px">popular</span>{{/popular}} -->
   </b><br>{{subtitle}} </span></a></li>
   {{/tools}}  

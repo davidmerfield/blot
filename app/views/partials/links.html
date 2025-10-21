@@ -2,11 +2,11 @@
   <li class="{{ selected.howIndex }}" >
     <a href="/how">Getting started</a>
   </li>
-  <li class="{{ selected.syncIndex }}">
+  <li class="{{ selected.sync}}">
     <a
       
       href="/how/sync"
-      >Sync folder</a
+      >Sync the folder</a
     >
     <ul>
       <li class="{{ selected.dropbox }}" >
@@ -22,7 +22,7 @@
     </ul>
   </li>
     
-    <li         class="{{ selected.filesIndex }}"
+    <li         class="{{ selected.files }}"
     >
       <a
         href="/how/files"
@@ -75,8 +75,8 @@
       </ul>
 
     </li>
-    <li class="{{ selected.sub-foldersIndex }}">
-      <a  href="/how/sub-folders">Sub-folders</a>
+    <li class="{{ selected.sub-folders }}">
+      <a  href="/how/sub-folders">Subfolders</a>
       <ul>
         <li class="{{ selected.drafts }}">
           <a  href="/how/sub-folders/drafts"
@@ -97,8 +97,8 @@
   
       </ul>
     </li>
-    <li class="{{selected.formattingIndex}}">
-      <a  href="/how/formatting">Formatting</a>
+    <li class="{{selected.formatting}}">
+      <a  href="/how/formatting">Formatting guides</a>
       <ul>
         <li class="{{ selected.tex }}"><a  href="/how/formatting/tex">Mathematics</a> </li>
         <li class="{{ selected.layout-tags }}"><a  href="/how/formatting/layout-tags">Layout</a> </li>
@@ -110,22 +110,22 @@
     
     
     
-    <li class="{{ selected.configureIndex }}">
+    <li class="{{ selected.configure }}">
       <a
         
         href="/how/configure"
-        >Set up site</a
+        >Set up your site</a
       >
       <ul>
         
-        <li class="{{ selected.import }}">
-          <a  href="/how/configure/import"
-            >Import</a
-          >
-        </li>
         <li>
           <a class="{{ selected.domain }}" href="/how/configure/domain"
             >Domain</a
+          >
+        </li>
+        <li class="{{ selected.import }}">
+          <a  href="/how/configure/import"
+            >Import</a
           >
         </li>
         <li>
@@ -152,9 +152,4 @@
         </li>
       </ul>
     </li>
-    <li class="{{ selected.reference }}" >
-      <a href="/how/reference">Reference</a>
-    </li>
-  
-
   </ol> 

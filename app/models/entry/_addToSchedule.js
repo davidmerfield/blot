@@ -1,5 +1,5 @@
-var scheduler = require("node-schedule");
-var scheduled = {};
+const scheduler = require("node-schedule");
+const scheduled = new Map();
 var ensure = require("helper/ensure");
 var model = require("./model");
 
@@ -7,11 +7,6 @@ module.exports = function (blogID, entry, callback) {
   ensure(blogID, "string").and(entry, model).and(callback, "function");
 
   var set = require("./set");
-
-  // If the entry is scheduled for future publication,
-  // register an event to update the entry. This is
-  // neccessary to switch the 'scheduled' flag
-  if (!entry.scheduled) return callback();
 
   // Refresh will perform a re-save of the entry
   var refresh = set.bind(this, blogID, entry.path, {}, function () {
@@ -25,14 +20,34 @@ module.exports = function (blogID, entry, callback) {
     });
   });
 
-  // This key is to ensure one event per entry
-  // this needs to be stored to a queue in redis
-  // so we don't need to build this expensively on restart
-  var key = [blogID, entry.path, entry.dateStamp].join(":");
-  var at = new Date(entry.dateStamp);
+  // Use a deterministic key to ensure one scheduled job per entry path.
+  // We reschedule whenever the entry's publication date changes.
+  var key = [blogID, entry.path].join(":");
+  var existing = scheduled.get(key);
 
-  if (scheduled[key] === undefined) {
-    scheduled[key] = scheduler.scheduleJob(at, refresh);
+  if (existing) {
+    existing.cancel();
+    scheduled.delete(key);
+  }
+
+  // If the entry is scheduled for future publication,
+  // register an event to update the entry. This is
+  // neccessary to switch the 'scheduled' flag
+  if (!entry.scheduled) return callback();
+
+  var at = new Date(entry.dateStamp);
+  var job = scheduler.scheduleJob(at, refresh);
+
+  if (job) {
+    scheduled.set(key, job);
+
+    job.on("run", function () {
+      scheduled.delete(key);
+    });
+
+    job.on("canceled", function () {
+      scheduled.delete(key);
+    });
   }
 
   return callback();

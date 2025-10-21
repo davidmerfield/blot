@@ -1,0 +1,18 @@
+
+<p>
+  Sync folder with <strong>Google Drive</strong> 
+</p>
+<ul>
+  <li>Blot will ask you to share a folder in Google Drive for this site.</li>
+  <li>Blot will only have access to this folder.</li>
+  <li>You can switch from Google Drive to another sync method at any time.</li>
+</ul>
+<form class="dashboard-form" action="{{{base}}}/disconnect" method="post">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}">
+  <div class="buttons">
+    <a href="{{{base}}}/setup">Sync with Google Drive</a>
+    <button type="submit" name="cancel" value="cancel">Cancel</button>
+  </div>
+</form>
+
+

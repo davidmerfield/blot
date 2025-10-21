@@ -1,16 +1,13 @@
 var resaveEntries = require("models/entries").resave;
-var build = require("build");
 var Blog = require("models/blog");
-var Entries = require("models/entries");
-var Entry = require("models/entry");
 var _ = require("lodash");
-var basename = require("path").basename;
 var rebuild = require("sync/rebuild");
 
 var dictionary = {
   permalink: "Saved changes to your link format",
   forceSSL: "Saved SSL redirect setting",
   roundAvatar: "Saved photo settings",
+  imageExif: "Saved image metadata preferences",
   avatar: "Saved changes to your photo",
   menu: "Saved changes to your links",
   dateFormat: "Saved changes to the order in which you write your dates",
@@ -34,9 +31,12 @@ module.exports = function (req, res, next) {
     }
 
     // We need to build all the blog's entries if the user
-    // has changed any of the plugins or their permalink
-    // format. This should be improved but we.
-    if (changes && changes.indexOf("plugins") > -1) {
+    // has changed any of the plugins or the image metadata
+    // preference so the stored EXIF matches their setting.
+    if (
+      changes &&
+      (changes.indexOf("plugins") > -1 || changes.indexOf("imageExif") > -1)
+    ) {
       // we need to fetch the latest version of the blog to rebuild
       const options = {
         thumbnails: false, // do not re-generate thumbnails

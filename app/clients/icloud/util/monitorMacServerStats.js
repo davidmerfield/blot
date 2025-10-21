@@ -11,6 +11,7 @@ const DISK_SPACE_LIMIT = config.icloud.diskSpaceLimit;
 
 const ICLOUD_SPACE_WARNING_THRESHOLD = config.icloud.iCloudSpaceWarning;
 const ICLOUD_SPACE_LIMIT = config.icloud.iCloudSpaceLimit;
+const fetch = require("node-fetch");
 
 const POLLING_INTERVAL = 60 * 1000; // 1 minute
 

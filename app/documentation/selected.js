@@ -5,7 +5,7 @@ var TITLES = {
   "terms": "Terms of use",
   "privacy": "Privacy policy",
   "posts": "Files and posts",
-  "sync": "Sync folder",
+  "sync": "Sync",
   "org": "Org Mode",
   "configure": "Set up site",
   "google-drive": "Google Drive",

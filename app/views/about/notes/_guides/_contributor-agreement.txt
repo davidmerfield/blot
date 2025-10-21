@@ -2,4 +2,4 @@
 
 1. Blot's source code is used to run a hosting service at http://blot.im. You understand that your contributions do not entitle you to ownership of this hosting service.
 
-2. Blot's source code is dedicated to the public domain under the CC0 license. You understand that any contributions you make to Blot's source code will fall under this license.
+2. Blot's source code is available under the AGPL license. You understand that any contributions you make to Blot's source code will fall under this license.

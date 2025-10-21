@@ -1,15 +1,19 @@
 ol.steps {
+    margin-top:6px;
     padding: 0 0 0 1.2rem;
+    counter-reset: my-counter-name;
 }
 
 ol.steps li {
-    padding: 4px 1rem;
+    padding: 6px 1rem;
     position: relative;
+    counter-increment: my-counter-name;
 }
 
 ol.steps li::marker {
-    font-size: 12px;
-    color: var(--accent-color);
+    font-size: 13px;
+    color: var(--light-text-color);
+    content: counter(my-counter-name);
 }
 
 ol.steps li::before {
@@ -18,7 +22,7 @@ ol.steps li::before {
     top: 0.4em;
     font-size: 20px;
     z-index: -1;
-    left: -1em;
+    left: -0.68em;
     width: 1em;
     height: 1em;
     border-radius: 100%;
@@ -38,8 +42,8 @@ ol.steps li::after {
     position: absolute;
     top: 0;
     z-index: -1;
-    width: 2px;
-    left: -0.666em;
+    width: 1px;
+    left: -0.26em;
     bottom: 0;
     background: var(--light-background-color);
 }

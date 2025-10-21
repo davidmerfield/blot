@@ -1,7 +1,7 @@
 var blogID = process.argv[2];
 var addToUserID = process.argv[3];
 
-var User = require("user");
+var User = require("models/user");
 
 var getUser = require("../get/user");
 var getBlog = require("../get/blog");

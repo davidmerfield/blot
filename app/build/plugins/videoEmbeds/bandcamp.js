@@ -25,9 +25,10 @@ module.exports = async function (href, callback) {
     const height = Number(
       $('meta[property="og:video:height"]').attr("content")
     );
-    const html = $('meta[property="og:video"]').attr("content");
 
-    if (!html || isNaN(height) || isNaN(width)) {
+    let src = $('meta[property="og:video"]').attr("content");
+
+    if (!src || isNaN(height) || isNaN(width)) {
       return callback(new Error(ERROR_MESSAGE));
     }
 
@@ -36,9 +37,7 @@ module.exports = async function (href, callback) {
     // the video player will not show. This causes issues with
     // inline elements displaying (adds extra space) solution needed
     // that doesn't disrupt page layout...
-    const embedHTML = `<div style="width:0;height:0"> </div><div class="videoContainer bandcamp" style="padding-bottom: ${height}px"><iframe width="${width}" height="${height}" src="${encodeURI(
-      href
-    )}" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`;
+    const embedHTML = `<div style="width:0;height:0"> </div><div class="videoContainer bandcamp" style="padding-bottom: ${height}px"><iframe width="${width}" height="${height}" src="${src}" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`;
 
     callback(null, embedHTML);
   } catch (error) {

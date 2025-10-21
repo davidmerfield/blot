@@ -6,7 +6,7 @@ var stripe = require("stripe")(config.stripe.secret);
 
 var get = require("../get/blog");
 
-var User = require("user");
+var User = require("models/user");
 
 User.getByEmail(from, function (err, user) {
   if (!user) throw "No user";

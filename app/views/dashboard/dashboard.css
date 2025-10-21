@@ -1,5 +1,5 @@
 .sites-list-container {
-  min-height: calc(100vh - 9rem);
+  min-height: calc(100vh - 7.8rem);
   display: flex;
   flex-direction: column;
 }
@@ -7,22 +7,36 @@
 .sites {
   flex-grow: 1;
   min-width: none;
+  padding-bottom: calc(var(--spacing) * 2);
 }
 
 .site {
   position: relative;
-}
-
-a.blog-link {
   background-color: var(--background-color);
   transition: background-color 0.2s;
+  border-top: 1px solid var(--border-color);
+}
+
+.preview-holder{
+  width: 60px;height:40px;    position: absolute;
+			height: 40px;
+			width: 60px;
+			top: 10px;
+			left: 1.25rem;
+			margin: 4px 0 10px;
+      transform: scale(1);
+}
+
+
+a.blog-link {
   display: flex;
   justify-content: space-between;
   margin: 0;
+  position: relative;
+  z-index: 1;
   border-radius: 0;
   border: none;
-  padding-left: 90px;
-  border-top: 1px solid #eee;
+  padding-left: 100px;
   padding-right: 1rem;
   color: var(--accent-color);
 }
@@ -35,12 +49,26 @@ a.blog-link .text-info {
   width: 100%;
 }
 
-a.blog-link:hover {
-  background-color: #f0f4ff70;
+.site:hover {
+  background-color: #e4eafb75
+}
+
+.site:active {
+  background-color: var(--background-color)
 }
 
 a.blog-link .title {
   display: block;
+  white-space: nowrap; overflow: hidden; word-break: break-word;
+}
+
+a.blog-link .icon-chevron {
+  font-size:24px;color:var(--border-color);align-self:center;
+  transition: color 0.2s;
+}
+
+a.blog-link:hover .icon-chevron {
+  color: var(--accent-color);
 }
 
 a.blog-link .url {
@@ -49,17 +77,20 @@ a.blog-link .url {
   font-weight: 400;
   height: 1.4em;
   font-size: var(--small-font-size);
+  white-space: nowrap; overflow: hidden; word-break: break-word;
 }
 
 button.logout {
   cursor: pointer;
   background: none;
-  font-size: 14px;
+  font-size: var(--font-size);
+  font-weight: 400;
   border: none;
   padding: 8px 12px;
-  margin: 12px 0;
-  font-weight: 600;
-  color: rgb(153, 153, 153);
+  margin: 0 0 24px;
+  position: relative;
+  top:6px;
+  color: var(--medium-text-color);
   border-radius: var(--border-radius);
   transition: background-color 0.2s, color 0.2s;
 }
@@ -71,7 +102,7 @@ button.logout:hover {
 
 form.create-site-button {
   position: absolute;
-  top: 18px;
+  top: 0;
   right: 0;
 }
 
@@ -86,6 +117,7 @@ form.create-site-button button {
   color: var(--background-color);
   padding: 0.5em 0.75em;
   font-weight: 600;
+  margin:0;
 }
 
 

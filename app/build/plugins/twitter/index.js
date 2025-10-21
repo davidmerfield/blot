@@ -63,7 +63,7 @@ function render($, callback) {
 
 module.exports = {
   render: render,
-  category: "external",
+  category: "typography",
   title: "Tweets",
   description: "Embed tweets from Twitter URLs",
 };

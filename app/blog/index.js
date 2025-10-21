@@ -2,9 +2,7 @@ const renderView = require("./render/middleware");
 const express = require("express");
 
 // This serves the content of users' blogs
-const blog = express();
-
-blog.disable("x-powered-by");
+const blog = express.Router();
 
 blog.use((req, res, next) => {
   req.log = req.log || console.log;

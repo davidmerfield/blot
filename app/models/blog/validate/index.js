@@ -7,6 +7,7 @@ var validator = {
   handle: require("./handle"),
   plugins: require("./plugins"),
   timeZone: require("./timeZone"),
+  title: require("./title"),
 };
 
 // validator models should not modifiy the state of

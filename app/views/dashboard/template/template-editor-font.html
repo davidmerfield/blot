@@ -2,6 +2,8 @@
 
 <form method="post" id="font_picker_{{key}}" style="width: 100%;overflow: hidden;">
 
+	<input type="hidden" name="_csrf" value="{{csrftoken}}" />
+	
 	<!-- hidden inputs for controlling the font picker -->
 	<input type="hidden" name="locals.{{key}}.id" value="{{{value.id}}}">
 	<input type="radio" id="show_all_{{key}}" checked name="filter{{key}}" style="display: none">

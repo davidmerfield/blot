@@ -2,6 +2,7 @@ var Jasmine = require("jasmine");
 var jasmine = new Jasmine();
 var colors = require("colors");
 var client = require("models/client");
+var clfdate = require("helper/clfdate");
 var seedrandom = require("seedrandom");
 var async = require("async");
 var seed;
@@ -20,7 +21,7 @@ var config = {
 
 // Pass in a custom test glob for running only specific tests
 if (process.argv[2]) {
-  console.log("Running specs in", colors.cyan(process.argv[2]));
+  console.log(clfdate(), "Running specs in", colors.cyan(process.argv[2]));
 
   // We have passed specific file to run
   if (process.argv[2].slice(-3) === ".js") {
@@ -31,7 +32,7 @@ if (process.argv[2]) {
     config.spec_dir = process.argv[2];
   }
 } else {
-  console.log(
+  console.log(clfdate(), 
     "If you want to run tests from a subdirectory:",
     colors.cyan("npm test {path_to_specs}")
   );
@@ -41,7 +42,7 @@ if (process.argv[3]) {
   seed = process.argv[3];
 } else {
   seed = process.env.BLOT_TESTS_SEED || Math.floor(Math.random() * 100000) + "";
-  console.log(
+  console.log(clfdate(), 
     'If you want your own seed run "npm test {path_to_specs} {seed}"'
   );
 }
@@ -70,7 +71,7 @@ jasmine.addReporter({
     durations[result.fullName] = Date.now() - startTimes[result.fullName];
   },
   jasmineDone: function () {
-    console.log("Slowest specs:");
+    console.log(clfdate(), "Slowest specs:");
     Object.keys(durations)
       .sort(function (a, b) {
         return durations[b] - durations[a];

@@ -1,6 +1,12 @@
 <h1>Getting started</h1>
 
-<p style="margin-top: 0;">Blot turns a folder into a website. Files become posts on your site. Drag-and-drop to publish. There is no interface, just files, so you can use your favorite tools. You can create all sorts of sites with Blot: blogs, photography sites, portfolios and much more. Fundamentally, they all work the same way.</p>
+<p style="margin-top: 0;">Blot creates a website from a folder. Files in the folder become posts or pages on your site. You update your site by adding, removing, or editing files directly.</p>
+
+
+<p>You can use Blot to build many types of sites, including blogs, photo galleries, and portfolios. </p>
+
+<p>Because Blot uses a file-based workflow, it works with the tools you already use—including your favorite text editor.
+</p>
 
 <p ><a href="/watch"><span class="icon-play" style="margin-right: 8px;"></span>Watch demo (6:25)</a></p> 
 
@@ -8,10 +14,10 @@
 <ol class="steps">
 <li><a href="/sign-up">Sign up</a> and create a site.</li>
 <li> <a href="/how/sync">Sync the folder</a> for your site. Blot publishes <a href="/how/files">files</a> inside your folder.</li>
-<li>Select a <a href="/templates">template</a> to customize the look of your site.</li>
+<li>Select a <a href="/templates">template</a> and finish <a href="/how/configure">setting up your site</a>.</li>
 </ol>
 
-<h2 >Sync the folder</h2>
+<h2>Sync the folder</h2>
 {{> client_list}}
 
 <h2><a href="/how/posts">Files</a></h2>
@@ -19,13 +25,13 @@
 
 {{> ignore_file}}
 
-<h2>Sub-folders</h2>
+<h2>Subfolders</h2>
 <p>You can organize your folder however you like. By default, files inside becomes posts. However, Blot treats files in the following folders differently:</p>
 {{> sub_folder_list}}
 
 <h2>Your folder is public</h2>
 
-<p>The files in your site’s folder are public. This is useful if you want to embed an image, a video or an audio file in a post. You can also use this to share files with your readers. For example, given the folder below, your readers can download <em>Archive.zip</em> if they visit <em>/Files/Archive.zip</em> on your site.</p>
+<p>All of the files in your site’s folder are public. This is useful if you want to embed an image, a video or an audio file in a post. You can also share files with your readers. For example, given the folder below, your readers can download <em>Archive.zip</em> if they visit <em>/Files/Archive.zip</em> on your site.</p>
 
 <background>
   <pre class="folder" title="Your site"><code>Files
@@ -38,3 +44,26 @@ Posts
 
 </code></pre>
 </background>
+
+<h2>Formatting posts</h2>
+
+<ul class="clients">
+  <li><a href="/how/posts/markdown"><span class="a">Markdown</span><br>  A lightweight plain text markup language.  {{> chevron}}</a> </li>
+  <li><a href="/how/posts/tex"><span class="a">\(\TeX\)</span><br> A math typesetting library with powerful formatting features. {{> chevron}}</a> </li>
+  <li><a href="/how/posts/layout-tags"><span class="a">Layout</span><br> A custom Markdown extension which offers simple layout directives. {{> chevron}}</a> </li>
+  <li><a href="/how/posts/embedding"><span class="a">Embedding</span><br> Automatically generate embedded widgets from Youtube urls and other links. {{> chevron}}</a> </li>
+  <li><a href="/how/posts/citations"><span class="a">Citations</span><br>  For external citations and bibliographies. {{> chevron}}</a> </li>
+  <li><a href="/how/posts/wikilinks"><span class="a">Wikilinks</span><br>  For simple internal links between posts. {{> chevron}}</a> </li>
+</ul>
+
+<h2>Set up your site</h2>
+
+<ul class="clients">
+  <li><a href="/how/configure/import"><span class="a">Import</span><br>Import posts and pages from an existing site. {{> chevron}}</a></li>
+  <li><a href="/how/configure/domain"><span class="a">Domain</span><br>Use your own domain. {{> chevron}}</a></li>
+  <li><a href="/how/configure/comments"><span class="a">Comments</span><br>Add comments to your site. {{> chevron}}</a></li>
+  <li><a href="/how/configure/analytics"><span class="a">Analytics</span><br>Track visitors to your site. {{> chevron}}</a></li>
+  <li><a href="/how/configure/redirects"><span class="a">Redirects</span><br>Set up redirects and prevent broken links. {{> chevron}}</a></li>
+  <li><a href="/how/configure/link-format"><span class="a">Link format</span><br>Change the format of your post URLs. {{> chevron}}</a></li>
+</ul>
+

@@ -2,6 +2,7 @@
   {{> source-code-header}}
   <div style="background: rgba(0, 0, 0, 0.1);padding: 0 1rem"></div>
 <form method="post" action="{{{base}}}/source-code/{{view.name}}/rename"  method="post" style="background: #fff;width: 100%">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}" />
   <strong>Rename {{view.name}}</strong><br>
   <label>Name:</label><br>
   <input type="text" name="name" value="{{view.name}}" /><br>

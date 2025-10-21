@@ -3,7 +3,7 @@
 
 @media (max-width: 768px) {
 
-    .header {margin-bottom: 12px;}
+    .header {margin-bottom: 12px;position:relative!important;display:block!important}
     
     .header label {
       display: block!important;
@@ -48,8 +48,13 @@
     .content {
       padding: 0 1rem;
     }
+  .header {
+      padding: 1rem!important;
+    }
+
+    
   }
   
-  #navbar-toggle:checked + .site-container .navbar {
+  #navbar-toggle:checked ~ .site-container .navbar {
     display: block;
   }

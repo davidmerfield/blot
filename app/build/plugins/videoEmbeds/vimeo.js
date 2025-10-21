@@ -1,40 +1,50 @@
 const fetch = require("node-fetch");
 const { parse } = require("url");
 
-var FAIL = "Could not retrieve video properties";
-
 module.exports = async function (href, callback) {
   try {
-    const { hostname, pathname } = parse(href);
+    const { hostname } = parse(href);
 
-    if (!hostname || !hostname.match(/vimeo.com$/)) throw new Error(FAIL);
+    if (!hostname || !hostname.match(/vimeo.com$/))
+      throw new Error("Invalid Vimeo URL");
 
-    // parse the video id from the url, even if it has a trailing slash
-    const id = pathname.match(/\/(\d+)\/?$/)[1];
+    const res = await fetch(
+      "https://vimeo.com/api/oembed.json?url=" + encodeURIComponent(href)
+    );
 
-    if (!id) throw new Error(FAIL);
+    if (!res.ok) throw new Error("Could not retrieve API response from Vimeo");
 
-    const res = await fetch("https://vimeo.com/api/v2/video/" + id + ".json");
     const body = await res.json();
 
-    const el = body[0];
+    if (!body || !body.width || !body.height)
+      throw new Error("Could not retrieve video properties from API response");
 
-    if (!el || !el.width || !el.height) throw new Error(FAIL);
-
-    const thumbnail = el.thumbnail_large + ".jpg";
-    const height = el.height;
-    const width = el.width;
+    const id = body.video_id;
+    const height = body.height;
+    const width = body.width;
     const ratio = (height / width) * 100;
 
-    // we prepend a zero-width char because of a weird fucking
-    // bug on mobile safari where if the embed is the first child,
+    let thumbnail;
+
+    try {
+      // map 'https://i.vimeocdn.com/video/466717816-33ad450eea4c71be9149dbe2e0d18673874917cadd5f1af29de3731e4d22a77f-d_295x166?region=us'
+      // to 'https://i.vimeocdn.com/video/466717816-33ad450eea4c71be9149dbe2e0d18673874917cadd5f1af29de3731e4d22a77f-d'
+      thumbnail =
+        body.thumbnail_url.slice(0, body.thumbnail_url.lastIndexOf("-")) +
+        "-d.jpg";
+    } catch (e) {}
+
+    // we prepend a zero-width char because of a weird bug on mobile safari
+    // where if the embed is the first child,
     // the video player will not show. This causes issues with
     // inline elements displaying (adds extra space) solution needed
     // that doesn't disrupt page layout...
-    const embedHTML = `<div style="width:0;height:0"> </div><div class="videoContainer vimeo" style="padding-bottom: ${ratio}%" ><iframe data-thumbnail="${thumbnail}" src="//player.vimeo.com/video/${id}?badge=0&color=ffffff&byline=0&portrait=0" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`;
+    const embedHTML = `<div style="width:0;height:0"> </div><div class="videoContainer vimeo" style="padding-bottom: ${ratio}%" ><iframe ${
+      thumbnail ? `data-thumbnail="${thumbnail}"` : ``
+    } src="//player.vimeo.com/video/${id}?badge=0&color=ffffff&byline=0&portrait=0" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></div>`;
 
     return callback(null, embedHTML);
   } catch (e) {
-    return callback(new Error(FAIL));
+    return callback(new Error("Could not retrieve video properties"));
   }
 };

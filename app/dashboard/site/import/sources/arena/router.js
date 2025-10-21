@@ -13,7 +13,7 @@ Importer.route("/are.na")
     res.locals.breadcrumbs.add("Are.na", "are.na");
     res.render("dashboard/import/arena");
   })
-  .post(require("dashboard/util/parse"), async (req, res) => {
+  .post(async (req, res) => {
     const { importDirectory, outputDirectory, finish, status } = init({
       blogID: req.blog.id,
       label: "Are.na",

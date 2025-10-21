@@ -66,7 +66,7 @@ module.exports = async (path) => {
     console.log(`Latest blocks: ${stat.blocks} / ${expectedBlocks}`);
 
     if (stat.blocks === expectedBlocks) {
-      console.log(`All blocks present, file is downloaded from iCloud: ${path}`);
+      console.log(`Finish brctl download: ${path}`);
       return stat;
     } 
   }

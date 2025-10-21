@@ -6,7 +6,7 @@
 // for the site servers because they need to run chromium
 // and pandoc for building posts. The blog servers don't.
 const siteConfig = {
-  cpus: 1,
+  cpus: 2, // we overcommit cpu slightly
   memory: "1.5g",
   maxOldSpaceSize: 750,
 };
@@ -15,14 +15,16 @@ const siteConfig = {
 // also the esbuild process which is much lighter so the
 // gap between memory and maxOldSpaceSize can be smaller.
 const blogsConfig = {
-  cpus: 1,
-  memory: "1g",
-  maxOldSpaceSize: 900,
+  cpus: 2,
+  memory: "2g",
+  maxOldSpaceSize: 1500,
 };
 
 module.exports = {
   REGISTRY_URL: "ghcr.io/davidmerfield/blot",
   PLATFORM_OS: "linux",
+  LOG_MAX_SIZE: "512m",
+  LOG_MAX_FILE: 1,
 
   // This is the port each container listens on internally
   // Externally they listen on the port specified in the container
@@ -52,16 +54,10 @@ module.exports = {
       ...siteConfig,
     },
 
-    // Blog servers (previews, published blogs)
+    // Blog server (previews, published blogs)
     YELLOW: {
       name: "blot-container-yellow",
       port: 8090,
-      ...blogsConfig,
-    },
-
-    PURPLE: {
-      name: "blot-container-purple",
-      port: 8091,
       ...blogsConfig,
     },
   },

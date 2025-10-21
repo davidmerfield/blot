@@ -79,6 +79,15 @@
       type: boolean
       description: true if you’ve indicated your avatar is round, false if not
 
+    - name: imageExif
+      type: string
+      description: |
+        Controls how much image metadata Blot preserves. One of `off`, `basic`, or `full`—the default is `basic`.
+        - Off: strips all EXIF data before publishing.
+        - Basic: keeps core camera and exposure details such as `Make`, `Model`, `LensMake`, `LensModel`, `ExposureTime`, `FNumber`, `ISO`, `FocalLength`, `ExposureCompensation`, and `DateTimeOriginal`.
+        - Full: keeps everything from Basic plus GPS coordinates including `GPSLatitude`, `GPSLatitudeRef`, `GPSLongitude`, `GPSLongitudeRef`, `GPSAltitude`, and `GPSAltitudeRef`.
+      example: "{{blog.imageExif}}"
+
 - name: entry
   keys:
     - name: id
@@ -206,6 +215,32 @@
     - name: metadata
       type: object
       description: object containing the metadata for the entry, if they exist.
+
+    - name: exif
+      type: object
+      description: |
+        Sanitized EXIF metadata populated for image-based entries when EXIF preservation is enabled on the blog. Templates can iterate over the object as a context block, for example: `{{#entry.exif}}{{Make}}{{/entry.exif}}`.
+      example: |
+        {{#entry.exif}}
+        {{Make}} {{Model}} — {{ExposureTime}}s at ƒ/{{FNumber}}, ISO {{ISO}}
+        {{/entry.exif}}
+
+        Basic mode keys:
+          - Make
+          - Model
+          - ExposureTime
+          - FNumber
+          - ISO
+          - FocalLength
+          - LensMake
+          - LensModel
+          - ImageDescription
+
+        Full mode also includes:
+          - GPSLatitude
+          - GPSLongitude
+          - GPSAltitude
+          - GPSPosition
 
     - name: name
       type: string

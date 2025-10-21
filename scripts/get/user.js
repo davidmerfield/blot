@@ -20,7 +20,7 @@ module.exports = function get(identifier, callback) {
           user =
             userFromBlog || userFromID || userFromCustomerID || userFromEmail;
 
-          require("../access")(user.email, function (err, url) {
+          require("../blog/access")(user.email, function (err, url) {
             if (err) return callback(err);
             callback(err, user, url);
           });

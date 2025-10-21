@@ -7,6 +7,7 @@ var STATUS = { syncID: "string", message: "string", datestamp: "number" };
 
 var FLAGS = {
   google_drive_beta: "boolean",
+  google_docs_preserve_linebreaks: "boolean",
 };
 
 // KEY, TYPE, WRITE?, PUBLIC?
@@ -37,6 +38,7 @@ var DECLARATION = {
   cssURL: ["string", false, true],
   scriptURL: ["string", false, true],
   roundAvatar: ["boolean", true, true],
+  imageExif: ["string", true, true],
 };
 
 var MODEL = { TYPE: {}, PUBLIC: [], WRITEABLE: [] };

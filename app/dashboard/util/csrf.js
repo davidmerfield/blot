@@ -1,11 +1,36 @@
-const csurf = require("csurf");
+const crypto = require('crypto');
+const clfdate = require('helper/clfdate');
 
-// For each GET request -> Appends a one-time CSRF-checking token
-// for each POST request -> validates this token using csurf
+module.exports = (req, res, next) => {
+    // Skip CSRF for non-mutation requests
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+        setupToken();
+        return next();
+    }
 
-module.exports = function (req, res, next) {
-  csurf()(req, res, function (err) {
-    res.locals.csrftoken = req.csrfToken();
-    req.next();
-  });
+    // Validate token for mutation requests
+    const cookieToken = req.cookies?.csrf;
+    const bodyToken = req.body?._csrf;
+    
+    if (!cookieToken || !bodyToken || cookieToken !== bodyToken) {
+        console.log(clfdate(), `CSRF error: cookie=${cookieToken} body=${bodyToken}`);
+        return res.status(403).send('Invalid CSRF token');
+    }
+
+    setupToken();
+    next();
+
+    function setupToken() {
+        if (!req.cookies?.csrf) {
+            const token = crypto.randomBytes(32).toString('hex');
+            res.cookie('csrf', token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'strict'
+            });
+            res.locals.csrftoken = token;
+        } else {
+            res.locals.csrftoken = req.cookies.csrf;
+        }
+    }
 };

@@ -1,25 +1,26 @@
 {{#folder}}
 
 {{#root}}
-  <div class="folder-container">
+  <div class="folder-container" style="position:relative;top:-7px">
     <a class="line" href="{{{base}}}/client{{#blog.client}}/{{client.name}}{{/blog.client}}">
       <span class="label">Folder</span>
       {{^blog.client}}
-      <span class="link">Sync this folder</span>
+      <span class="link">Sync the folder</span>
       {{/blog.client}}
       {{#blog.client}}
       <span class="center">
         <img width="16" height="16" src="{{#cdn}}/images/sync/{{blog.client}}.svg{{/cdn}}" />
         {{client.display_name}}
+        <span class="link" style="margin-left: 12px;">Edit</span>
+
       </span>
-      <span class="link" style="margin-left: 12px;">Edit</span>
       {{/blog.client}}
     </a>
     <div class="folder-corner"></div>
     <div class="folder-top"></div>
     {{/root}}
 
-    <div class="folder-box {{#root}}root{{/root}} {{#directory}}directory{{/directory}}" style="{{^root}}min-height:60vh{{/root}}">
+    <div class="folder-box {{#root}}root{{/root}} {{#directory}}directory{{/directory}}" style="{{^root}}min-height:calc(100vh - 11rem){{/root}}">
     {{#directory}}
     <table class="directory-list {{^contents.length}}empty{{/contents.length}}">
         <thead style="height: 1.4em;">
@@ -39,7 +40,7 @@
               text-align: center;{{#directory}}min-height: 300px;{{/directory}}
               color: var(--light-text-color);justify-content: center;">  
                 <span style="align-self: center; text-align: center;display: block;">
-                  {{#root}}This folder is empty.<br>{{^blog.client}}<a style="display: inline;" href="{{{base}}}/client">Sync this folder</a>{{/blog.client}}{{/root}}
+                  {{#root}}Folder is empty.<br>{{^blog.client}}<a style="display: inline;" href="{{{base}}}/client">Sync the folder</a>{{/blog.client}}{{/root}}
                   {{^root}}There is nothing here.{{/root}}
                 </span>
               </small>
@@ -50,7 +51,7 @@
           {{#contents}}
           <tr>
             <td>
-              <a href="{{{base}}}/folder{{{path}}}" class="{{#directory}}directory{{/directory}} {{#entry}}entry{{/entry}}">
+              <a href="{{{base}}}/folder{{{url}}}" class="{{#directory}}directory{{/directory}} {{#entry}}entry{{/entry}}">
       
             {{#directory}}
             <span class="icon-folder"></span>
@@ -107,7 +108,7 @@
           function sortTable() {
             
             var order = state.order || 'sorted';
-            var column = state.column;
+            var column = state.column || 0;
 
             var reverse = order === 'reverse';
             var header = table.querySelector('th:nth-child(' + (parseInt(column) + 1) + ')');
@@ -115,7 +116,7 @@
             var index = Array.from(header.parentNode.children).indexOf(header);
             var rows = Array.from(table.querySelectorAll('tbody tr'));
 
-            if (rows.length === 1 && rows[0].querySelector('td').textContent.trim() === 'This folder is empty.') {
+            if (rows.length === 1 && rows[0].querySelector('td').textContent.trim() === 'Folder is empty.') {
               document.querySelector('.directory-list').classList.add('empty');
             } else {
               document.querySelector('.directory-list').classList.remove('empty');
@@ -156,6 +157,8 @@
               table.querySelector('tbody').appendChild(row);
             });
           }
+
+          window.sortTable = sortTable;
       
           // add sorting to the directory list
           document.querySelectorAll('.directory-list th').forEach(function (header) {
@@ -226,8 +229,8 @@
   </div>
 {{#blog.client}}
 {{#directory}}
-<a href="{{{base}}}/client" class="status-link">
-  <span class="sync-status" data-sync-status-url="{{{base}}}/status">{{blog.status.message}} {{blog.status.fromNow}}</span>
+<a href="{{{base}}}/client" class="status-link" style="{{^root}}border:1px solid var(--border-color);{{/root}}border-radius: 0 0 6px 6px;">
+  {{> sync-status}}
 </a>
 {{/directory}}
 {{/blog.client}}

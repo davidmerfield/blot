@@ -2,7 +2,7 @@ footer {
 display: flex;
 justify-content: space-between;
 flex-wrap: wrap;
-padding: var(--spacing) 0;
+padding: var(--spacing) 0 0;
 }
 
 footer ul {

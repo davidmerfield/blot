@@ -19,9 +19,21 @@ dashboard.use(async function (req, res, next) {
 });
 
 dashboard.get("/", function (req, res) {
-  console.log("Rendering dashboard", config.icloud.email);
+  if (!res.locals.account) {
+    return res.redirect(req.baseUrl + "/connect");
+  }
+
   res.locals.blotiCloudAccount = config.icloud.email;
   res.render(VIEWS + "index");
+});
+
+dashboard.route("/connect").get(function (req, res) {
+  res.render(VIEWS + "connect");
+});
+
+dashboard.route("/setup").get(function (req, res) {
+  res.locals.blotiCloudAccount = config.icloud.email;
+  res.render(VIEWS + "setup");
 });
 
 dashboard
@@ -47,18 +59,19 @@ dashboard
 
       // Store the sharingLink in the database if provided
       if (sharingLink) {
-
         // validate the sharing link format
         // it should look like: https://www.icloud.com/iclouddrive/08d83wAt2lMHc46hEEi0D5zcQ#example
-        if (!/^https:\/\/www\.icloud\.com\/iclouddrive\/[a-zA-Z0-9_-]+#/.test(sharingLink)) {
+        if (
+          !/^https:\/\/www\.icloud\.com\/iclouddrive\/[a-zA-Z0-9_-]+#/.test(
+            sharingLink
+          )
+        ) {
           return next(new Error("Invalid sharing link format"));
         }
 
         await database.store(blogID, { sharingLink, blotiCloudAccount });
       } else {
-        // this allows us to reset the client
-        await database.delete(blogID);
-        return res.redirect(req.baseUrl);
+        return next(new Error("Paste the sharing link into the box"));
       }
 
       // Make the request to the Macserver /setup endpoint
@@ -67,23 +80,24 @@ dashboard
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": MACSERVER_AUTH, // Use the Macserver Authorization header
-          "blogID": blogID,
-          "sharingLink": sharingLink || "", // Include the sharingLink header, even if empty
+          Authorization: MACSERVER_AUTH, // Use the Macserver Authorization header
+          blogID: blogID,
+          sharingLink: sharingLink || "", // Include the sharingLink header, even if empty
         },
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`Macserver /setup request failed: ${response.status} - ${errorText}`);
+        console.error(
+          `Macserver /setup request failed: ${response.status} - ${errorText}`
+        );
         return next(new Error(`Failed to set up folder: ${errorText}`));
       }
 
       console.log(`Macserver /setup request succeeded for blogID: ${blogID}`);
-        const { folder, done } = await establishSyncLock(blogID);
-        folder.status("Waiting for folder setup to complete...");
-        await done();
-      
+      const { folder, done } = await establishSyncLock(blogID);
+      folder.status("Waiting for folder setup to complete...");
+      await done();
 
       // Redirect back to the dashboard
       res.redirect(req.baseUrl);

@@ -1,7 +1,7 @@
-var User = require("user");
+var User = require("models/user");
 var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
-var yesno = require("yesno");
+var getConfirmation = require("../util/getConfirmation");
 var each = require("../each/user");
 var colors = require("colors/safe");
 
@@ -93,10 +93,9 @@ if (require.main === module) {
       main(user, done);
     });
   } else {
-    yesno.ask(
+    getConfirmation(
       "Fetch latest subscription information from Stripe for all users? (y/N)",
-      false,
-      function (ok) {
+      function (err, ok) {
         if (!ok) return process.exit();
         each(main, done);
       }

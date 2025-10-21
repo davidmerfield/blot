@@ -3,11 +3,11 @@ var Entry = require("models/entry");
 var async = require("async");
 
 module.exports = function (req, callback) {
-  req.log('Listing tags');
+  req.log("Listing all tags");
   Tags.list(req.blog.id, function (err, tags) {
     // In future, we might want to expose
     // other options for this sorting...
-    req.log('Sorting tags');
+    req.log("Sorting all tags");
     tags = tags.sort(function (a, b) {
       var nameA = a.name.toLowerCase();
       var nameB = b.name.toLowerCase();
@@ -19,34 +19,14 @@ module.exports = function (req, callback) {
       return 0;
     });
 
+    req.log("Counting all tags");
     tags = tags.map((tag) => {
       tag.tag = tag.name;
       tag.total = tag.entries.length;
       return tag;
     });
 
-    req.log('Listed tags');
+    req.log("Listed all tags");
     callback(null, tags);
-  //   async.eachSeries(
-  //     tags,
-  //     function (tag, next) {
-  //       // so we can do {{tag}} since I like it.
-  //       tag.tag = tag.name;
-  //       tag.total = tag.entries.length;
-
-  //       Entry.get(req.blog.id, tag.entries, function (entries) {
-  //         tag.entries = entries.sort(function(a, b){
-  //           if (a.dateStamp > b.dateStamp) return -1;
-  //           if (b.dateStamp > a.dateStamp) return 1;
-  //           return 0;
-  //         });
-
-  //         next();
-  //       });
-  //     },
-  //     function () {
-  //       callback(null, tags);
-  //     }
-  //   );
   });
 };

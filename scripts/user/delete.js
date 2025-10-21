@@ -1,10 +1,10 @@
 var config = require("config");
 var Delete = require("dashboard/account/delete");
 var get = require("../get/user");
-var yesno = require("yesno");
+var getConfirmation = require("../util/getConfirmation");
 var colors = require("colors");
 var async = require("async");
-var Blog = require("blog");
+var Blog = require("models/blog");
 var each = require("../each/user");
 var moment = require("moment");
 
@@ -32,7 +32,7 @@ if (!process.argv[2]) {
   });
 }
 
-function main (user, callback) {
+function main(user, callback) {
   async.map(
     user.blogs,
     function (blogID, next) {
@@ -41,7 +41,7 @@ function main (user, callback) {
     function (err, blogs) {
       if (err) return callback(err);
       var message = [
-        "Do you want to delete account " + colors.red(user.email) + "?"
+        "Do you want to delete account " + colors.red(user.email) + "?",
       ];
 
       if (user.isDisabled) {
@@ -81,7 +81,7 @@ function main (user, callback) {
         message.push("- No blogs to delete");
       }
 
-      yesno.ask(message.join("\n"), true, function (yes) {
+      getConfirmation(message.join("\n"), function (err, yes) {
         if (!yes) {
           console.log("\nDid not delete " + user.email);
           return callback();
@@ -92,9 +92,9 @@ function main (user, callback) {
 
         async.applyEachSeries(
           async.reflectAll([
-            Delete.exports.blogs,
             Delete.exports.subscription,
-            Delete.exports.user
+            Delete.exports.blogs,
+            Delete.exports.user,
           ]),
           req,
           res,

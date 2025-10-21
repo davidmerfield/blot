@@ -9,11 +9,9 @@ var NO_CUSTOMER = "No Customer";
 var Express = require("express");
 var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
-var parse = require("body-parser").urlencoded({ extended: false });
 var User = require("models/user");
 var Email = require("helper/email");
 var signup = Express.Router();
-var csrf = require("csurf")();
 
 signup.use(function (req, res, next) {
   if (req.session && req.session.uid) return res.redirect("/sites");
@@ -39,15 +37,14 @@ if (config.maintenance) {
 // For users who paid by PayPal or institutional customers
 // who paid on Stripe I have a tool to skip the form using
 // a generated access token.
-alreadyPaid.get(csrf, function (req, res) {
+alreadyPaid.get(function (req, res) {
   res.locals.title = "Sign up";
   res.locals.menu = { "sign-up": "selected" };
   res.locals.error = req.query.error;
-  res.locals.csrf = req.csrfToken();
   res.render("dashboard/sign-up/paid");
 });
 
-alreadyPaid.post(parse, csrf, validateEmail, function (req, res, next) {
+alreadyPaid.post(validateEmail, function (req, res, next) {
   // First we make sure that the access token passed is valid.
   User.checkAccessToken(req.params.token, function (err) {
     if (err) {
@@ -81,7 +78,7 @@ function validateEmail (req, res, next) {
   });
 }
 
-paymentForm.get(csrf, function (req, res, next) {
+paymentForm.get(function (req, res, next) {
   if (
     req.session &&
     req.session.email &&
@@ -100,11 +97,10 @@ paymentForm.get(csrf, function (req, res, next) {
   res.locals.stripe_key = config.stripe.key;
   res.locals.paypal_plan = config.paypal.plan;
   res.locals.paypal_client_id = config.paypal.client_id;
-  res.locals.csrf = req.csrfToken();
   res.render("dashboard/sign-up");
 });
 
-paymentForm.post(parse, csrf, validateEmail, function (req, res, next) {
+paymentForm.post(validateEmail, function (req, res, next) {
   // Card is a stripe token generated on the client
   const card = req.body && req.body.stripeToken;
 
@@ -152,17 +148,16 @@ passwordForm.all(function (req, res, next) {
   next();
 });
 
-passwordForm.get(csrf, function (req, res) {
+passwordForm.get(function (req, res) {
   res.locals.title = "Sign up";
   res.locals.email = req.session.email;
   res.locals.subscription = !!req.session.subscription || !!req.session.paypal;
   res.locals.error = req.query.error;
   res.locals.change_email = req.query.change_email;
-  res.locals.csrf = req.csrfToken();
   res.render("dashboard/sign-up/password");
 });
 
-passwordForm.post(parse, csrf, function (req, res, next) {
+passwordForm.post(function (req, res, next) {
   var subscription = req.session.subscription || {};
   var paypal = req.session.paypal || {};
   var email = req.body.email;

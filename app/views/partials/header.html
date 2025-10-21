@@ -1,11 +1,15 @@
+<input type="checkbox" id="navbar-toggle">
 <section class="header">
   <label for="navbar-toggle">
     <span class="icon-menu"></span>
   </label>
   <section class="spacer"></section>
-  {{^user}}
+</section>
+{{^user}}
+<section class="call-to-action">
+  <section class="spacer"></section>
   <a class="signed-out" href="/sites/log-in">Log in</a>
   <a class="signed-out" href="/sites/sign-up">Sign up</a>
-  {{/user}}
 </section>
+{{/user}}
 

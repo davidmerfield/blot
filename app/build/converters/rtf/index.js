@@ -12,10 +12,9 @@ function is (path) {
   return [".rtf"].indexOf(extname(path).toLowerCase()) > -1;
 }
 
-function read (blog, path, options, callback) {
+function read (blog, path, callback) {
   ensure(blog, "object")
     .and(path, "string")
-    .and(options, "object")
     .and(callback, "function");
 
   var localPath = LocalPath(blog.id, path);
@@ -34,7 +33,7 @@ function read (blog, path, options, callback) {
 
       if (err) return callback(err);
 
-      convert(blog, text, options, function (err, html) {
+      convert(blog, text, function (err, html) {
         if (err) return callback(err);
         var metadata = {};
         var $ = cheerio.load(html, { decodeEntities: false }, false);

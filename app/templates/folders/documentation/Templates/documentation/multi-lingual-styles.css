@@ -1,0 +1,71 @@
+.code-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 0 0;
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    margin-bottom: -1px; /* Remove gap between toolbar and pre */
+  }
+  
+  .code-tabs {
+    display: flex;
+  }
+  
+  .code-tab {
+    padding: 6px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    cursor: pointer;
+    font-size: 0.8em;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: #6b7280;
+    transition: all 0.2s;
+  }
+  
+  .code-tab.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+  }
+  
+  .code-tab:hover:not(.active) {
+    color: #374151;
+    border-bottom-color: #e5e7eb;
+  }
+  
+  .copy-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    background: none;
+    font-size: 0.8em;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .copy-button:hover {
+    background: #f9fafb;
+    color: #374151;
+  }
+  
+  .code-block-wrapper {
+    display: none;
+  }
+  
+  .code-block-wrapper.active {
+    display: block;
+  }
+  
+  pre {
+    border-radius: 0 0 6px 6px;
+    margin-top: 0;
+  }
+
+  pre code.hljs {
+    margin: 0!important;
+  }

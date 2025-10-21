@@ -1,5 +1,5 @@
 const each = require("../each/blog");
-const access = require('../access');
+const access = require('../blog/access');
 const database = require('clients/google-drive/database');
 const config = require('config');
 

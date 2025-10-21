@@ -1,6 +1,5 @@
 var rebuildDependents = require("./rebuildDependents");
 var Ignore = require("./ignore");
-var Metadata = require("models/metadata");
 var Entry = require("models/entry");
 var Preview = require("./preview");
 var isPreview = require("./drafts").isPreview;
@@ -29,8 +28,8 @@ function isTemplate(path) {
   return pathNormalizer(path).toLowerCase().startsWith("/templates/");
 }
 
-function buildAndSet(blog, path, options, callback) {
-  build(blog, path, options, function (err, entry) {
+function buildAndSet(blog, path, callback) {
+  build(blog, path, function (err, entry) {
     if (err && err.code === "WRONGTYPE")
       return Ignore(blog.id, path, WRONG_TYPE, callback);
 
@@ -50,10 +49,20 @@ function buildAndSet(blog, path, options, callback) {
   });
 }
 
-module.exports = function (blog, path, options, callback) {
-  if (callback === undefined && typeof options === "function") {
-    callback = options;
-    options = {};
+module.exports = function (blog, path, callback) {
+  // if typoeof callback is not function, throw error
+  if (typeof callback !== "function") {
+    throw new Error("sync.set: callback must be a function");
+  }
+
+  // if typeof blog is not object, return error
+  if (typeof blog !== "object") {
+    return callback(new Error("sync.set: blog must be an object"));
+  }
+
+  // if typeof path is not string, return error
+  if (typeof path !== "string") {
+    return callback(new Error("sync.set: path must be a string"));
   }
 
   path = pathNormalizer(path);
@@ -62,12 +71,6 @@ module.exports = function (blog, path, options, callback) {
 
   isPreview(blog.id, path, function (err, is_preview) {
     if (err) return callback(err);
-
-    // Store the case-preserved name against the
-    // path to this file
-    if (options.name) {
-      queue.metadata = Metadata.add.bind(this, blog.id, path, options.name);
-    }
 
     // The file is public. Its name begins
     // with an underscore, or it's inside a folder
@@ -79,7 +82,7 @@ module.exports = function (blog, path, options, callback) {
 
     // This file should become a blog post or page!
     if (!isPublic(path) && !isTemplate(path) && !is_preview) {
-      queue.buildAndSet = buildAndSet.bind(this, blog, path, options);
+      queue.buildAndSet = buildAndSet.bind(this, blog, path);
     }
 
     async.parallel(queue, function (err) {

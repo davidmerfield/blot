@@ -11,12 +11,12 @@
 // - user ID, see its blogs, subscription info
 // - email, see its blogs, subscription info
 
-var User = require("user");
+var User = require("models/user");
 var getEntry = require("../get/entry");
 var getBlog = require("../get/blog");
 var config = require("config");
 var colors = require("colors/safe");
-var access = require("../access");
+var access = require("../blog/access");
 var identifier = process.argv[2];
 var moment = require("moment");
 var prettyPrice = require("helper/prettyPrice");
@@ -96,14 +96,19 @@ function showBlog(blog, user, callback) {
 }
 
 function showUser(user, callback) {
-  var subscriptionMessage;
 
   console.log();
   console.log(colors.dim("Found " + user.uid));
   console.log("Email: " + user.email);
 
+  var subscriptionMessage;
+
+  if (user.subscription.status) {
+    subscriptionMessage = user.subscription.status + ", ";
+  }
+
   if (user.subscription && user.subscription.plan) {
-    subscriptionMessage =
+    subscriptionMessage = subscriptionMessage +
       user.subscription.quantity +
       " x " +
       prettyPrice(user.subscription.plan.amount) +
@@ -111,14 +116,13 @@ function showUser(user, callback) {
       user.subscription.plan.interval;
   }
 
-  // console.log(user.subscription);
   if (user.subscription.status) {
     var end = moment
       .utc(user.subscription.current_period_end * 1000)
       .format("LL");
 
     if (user.subscription.status !== "active") {
-      subscriptionMessage = colors.red(subscriptionMessage + ", end " + end);
+      subscriptionMessage = subscriptionMessage + ", ends " + end;
     } else {
       subscriptionMessage = subscriptionMessage + ", renewing " + end;
     }

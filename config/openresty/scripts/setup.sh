@@ -60,6 +60,9 @@ mkdir -p /etc/ssl/private
 redis-cli -h $REDIS_IP get 'blot:openresty:ssl:key' > /etc/ssl/private/letsencrypt-domain.key
 redis-cli -h $REDIS_IP get 'blot:openresty:ssl:pem' > /etc/ssl/private/letsencrypt-domain.pem
 
+# Install the tool used to list the disks used by mount-instance-store.sh
+yum install -y nvme-cli
+
 # install cron
 yum install -y cronie
 systemctl start crond

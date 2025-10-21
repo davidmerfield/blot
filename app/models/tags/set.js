@@ -35,14 +35,33 @@ module.exports = function (blogID, entry, callback) {
 
   // Remove the tags from a hiddden entry before saving, so it doesn't
   // show up in the tag search results page. Entry has already been set
-  if (shouldHide(entry)) {
+  var hide = shouldHide(entry);
+
+  if (hide) {
     prettyTags = [];
   }
 
-  // First we make a slug from each tag name
-  // so that 'A B C' is stored as the same tag
-  // as 'a b c', otherwise would be annoying
-  var tags = prettyTags.map(normalize);
+  var normalizedMap = Object.create(null);
+  var uniquePrettyTags = [];
+  var tags = [];
+
+  // First we make a slug from each tag name so that duplicates collapse and can
+  // be part of a url
+  prettyTags.forEach(function (tag) {
+    var normalized = normalize(tag);
+
+    if (normalizedMap[normalized]) return;
+
+    normalizedMap[normalized] = tag;
+    uniquePrettyTags.push(tag);
+    tags.push(normalized);
+  });
+
+  if (!hide) {
+    prettyTags = uniquePrettyTags;
+  } else {
+    tags = [];
+  }
 
   var existingKey = key.entry(blogID, entry.id);
 
@@ -55,18 +74,25 @@ module.exports = function (blogID, entry, callback) {
     // should NOT be present on (intersection of entry's
     // current tags and all the tags used on the blog)
     var removed = _.difference(existing, tags);
+    var added = _.difference(tags, existing);
     var names = [];
 
     var multi = client.multi();
+    var popularityKey = key.popular(blogID);
+
+    added.forEach(function (tag) {
+      multi.zincrby(popularityKey, 1, tag);
+    });
 
     tags.forEach(function (tag, i) {
       names.push(key.name(blogID, tag));
       names.push(prettyTags[i]);
 
-      // For each of the entry's current tags
-      // store the entry's id against the tag's key
-      // Redis will autocreate a key of the right type
-      multi.sadd(key.tag(blogID, tag), entry.id);
+      var score = entry.dateStamp;
+      if (typeof score !== "number" || isNaN(score)) {
+        score = Date.now();
+      }
+      multi.zadd(key.sortedTag(blogID, tag), score, entry.id);
     });
 
     // For each tagName in the list of tags which the
@@ -74,8 +100,9 @@ module.exports = function (blogID, entry, callback) {
     // neccessary when the user updates an entry and
     // removes a previously existing tag
     removed.forEach(function (tag) {
-      multi.srem(key.tag(blogID, tag), entry.id);
+      multi.zrem(key.sortedTag(blogID, tag), entry.id);
       multi.srem(existingKey, tag);
+      multi.zincrby(popularityKey, -1, tag);
     });
 
     // Finally add all the entry's tags to the
@@ -85,6 +112,8 @@ module.exports = function (blogID, entry, callback) {
       multi.sadd(key.all(blogID), tags);
       multi.sadd(existingKey, tags);
     }
+
+    multi.zremrangebyscore(popularityKey, "-inf", 0);
 
     multi.exec(function (err) {
       if (err) throw err;

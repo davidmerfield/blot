@@ -5,6 +5,8 @@ const config = require("config");
 const chokidar = require("chokidar");
 const localPath = require("helper/localPath");
 const Fix = require("sync/fix");
+const clfdate = require("helper/clfdate");
+const prefix = () => clfdate() + " Local folder client:";
 
 let watchers = {};
 
@@ -16,7 +18,7 @@ function setup(blogID, callback) {
       if (config.environment === "development") {
         watch(blogID);
       }
-      console.log("Setup complete");
+      console.log(prefix(), "Setup complete", blogID);
       callback();
     });
   });
@@ -65,6 +67,7 @@ function watch(blogID) {
     // To stop this watcher, call watcher.close();
     const watcher = chokidar.watch(localPath(blogID, "/"), {
       cwd: localPath(blogID, "/"),
+      ignoreInitial: true,
     });
 
     watcher.on("all", (event, path) => {

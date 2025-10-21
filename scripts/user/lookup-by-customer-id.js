@@ -1,6 +1,6 @@
 var async = require("async");
 var customerID = process.argv[2];
-var User = require("user");
+var User = require("models/user");
 
 User.getAllIds(function (err, uids) {
   if (err) throw err;

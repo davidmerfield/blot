@@ -1,0 +1,24 @@
+.breadcrumbs:not(:empty) {
+    display: flex;
+    font-size: 14px;
+    margin: 2em 0 0.5em;
+}
+
+.breadcrumbs a {
+    color: var(--light-text-color);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.breadcrumbs a:not(:first-child)::before {
+    content: "›";
+    margin: 0 0.5em;
+}
+
+.breadcrumbs a:hover {
+    color: var(--text-color);
+}
+
+.breadcrumbs:not(:empty) + .entry > h1:first-child {
+    margin-top: 0;
+}

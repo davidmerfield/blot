@@ -5,7 +5,7 @@ How to feature a new site
 
 example.com Julius Caesar, is a politician from Rome
 
-2. Add an image for the site inside the avatars folder named for the new host:
+2. Add an image for the site inside the ./avatars folder named for the new host:
 
 example.com.png
 

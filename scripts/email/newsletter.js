@@ -37,6 +37,11 @@ function main(letter, callback) {
     async.filter(emails, alreadySent, function (err, emails) {
       if (err) return callback(err);
 
+      // When we want to preview a newsletter before it goes out
+      if (process.env.PREVIEW_NEWSLETTER === 'true') {
+        emails = ['example@example.com'];
+      }
+
       async.eachSeries(
         emails,
         function (email, next) {

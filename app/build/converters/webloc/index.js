@@ -91,10 +91,9 @@ function extractFromBPlist(localPath, callback) {
   });
 }
 
-function read(blog, path, options, callback) {
+function read(blog, path, callback) {
   ensure(blog, "object")
     .and(path, "string")
-    .and(options, "object")
     .and(callback, "function");
 
   var localPath = LocalPath(blog.id, path);
@@ -112,7 +111,7 @@ function read(blog, path, options, callback) {
         '<p><a href="' +
         url +
         '" class="bookmark">' +
-        (titlify(options.name || "") || titlify(path)) +
+        titlify(path) +
         "</a></p>";
 
       callback(null, contents, stat);

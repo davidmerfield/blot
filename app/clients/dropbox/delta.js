@@ -46,7 +46,6 @@ module.exports = function delta(client, folderID) {
 
         if (results[1]) {
           result.path_display = results[1].result.path_display;
-          result.path_lower = results[1].result.path_lower;
         }
 
         // Filter entries to only those changes applied
@@ -56,19 +55,19 @@ module.exports = function delta(client, folderID) {
           result.entries = result.entries
             .filter(function (entry) {
               return (
-                entry.path_lower.indexOf(result.path_lower) === 0 &&
-                entry.path_lower !== result.path_lower
+                entry.path_display.indexOf(result.path_display) === 0 &&
+                entry.path_display !== result.path_display
               );
             })
             .map(function (entry) {
-              entry.relative_path = entry.path_lower.slice(
-                result.path_lower.length
+              entry.relative_path = entry.path_display.slice(
+                result.path_display.length
               );
               return entry;
             });
         } else {
           result.entries = result.entries.map(function (entry) {
-            entry.relative_path = entry.path_lower;
+            entry.relative_path = entry.path_display;
             return entry;
           });
         }

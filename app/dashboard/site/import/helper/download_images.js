@@ -40,18 +40,22 @@ function download(url, _callback) {
       }
       console.log("Successfully downloaded", url);
 
-      return res.buffer();
+      return res.blob(); // First get the blob
     })
-    .then(function (data) {
-      sharp(data).metadata(function (err, metadata) {
+    .then(function (blob) {
+      return blob.arrayBuffer(); // Convert blob to arrayBuffer
+    })
+    .then(function (arrayBuffer) {
+      const buffer = Buffer.from(arrayBuffer); // Convert arrayBuffer to Buffer
+      sharp(buffer).metadata(function (err, metadata) {
         var format;
         if (metadata && metadata.format) {
           format = metadata.format;
         }
 
-        callback(null, data, format);
+        callback(null, buffer, format);
       });
-        })
+    })
     .catch(function (err) {
       console.log("Failed to download", url, err);
       callback(err);
@@ -99,7 +103,7 @@ module.exports = function download_images(post, callback) {
         var src = $(el).attr("src");
 
         if (!src) return next();
-         
+
         var name = nameFrom(src);
 
         if (name.charAt(0) !== "_") name = "_" + name;

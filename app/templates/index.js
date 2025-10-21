@@ -10,6 +10,8 @@ var async = require("async");
 var Blog = require("models/blog");
 var _ = require("lodash");
 var chokidar = require("chokidar");
+var parseTemplate = require("models/template/parseTemplate");
+var urlNormalizer = require("helper/urlNormalizer");
 var TEMPLATES_DIRECTORY = require("path").resolve(__dirname + "/latest");
 var PAST_TEMPLATES_DIRECTORY = require("path").resolve(__dirname + "/past");
 var TEMPLATES_OWNER = "SITE";
@@ -129,6 +131,7 @@ function build(directory, callback) {
 
   var templatePackage, isPublic;
   var name, template, description, id;
+  var snapshot;
 
   try {
     templatePackage = fs.readJsonSync(directory + "/package.json");
@@ -195,23 +198,60 @@ function build(directory, callback) {
     );
   }
 
-  Template.drop(TEMPLATES_OWNER, basename(directory), function () {
-    Template.create(TEMPLATES_OWNER, name, template, function (err) {
-      if (err) return callback(err);
+  snapshot = assembleTemplateSnapshot(directory, templatePackage, template.locals);
 
-      buildViews(directory, id, templatePackage.views, function (err) {
-        if (err) return callback(err);
+  Template.getMetadata(id, function (metadataErr, storedMetadata) {
+    if (metadataErr && metadataErr.code !== "ENOENT") return callback(metadataErr);
 
-        emptyCacheForBlogsUsing(id, function (err) {
+    Template.getAllViews(id, function (viewsErr, storedViews) {
+      if (viewsErr && viewsErr.code !== "ENOENT") return callback(viewsErr);
+
+      var metadataSnapshot = {
+        name: name,
+        description: description,
+        isPublic: isPublic,
+        locals: snapshot.locals,
+      };
+
+      var storedMetadataSnapshot = storedMetadata
+        ? {
+            name: storedMetadata.name,
+            description: storedMetadata.description,
+            isPublic: storedMetadata.isPublic,
+            locals: storedMetadata.locals || {},
+          }
+        : null;
+
+      var storedViewSnapshot = createStoredViewSnapshot(storedViews);
+
+      var metadataMatches =
+        storedMetadataSnapshot && _.isEqual(storedMetadataSnapshot, metadataSnapshot);
+      var viewsMatch = _.isEqual(storedViewSnapshot, snapshot.views);
+
+      if (metadataMatches && viewsMatch) {
+        debug("..", basename(directory), "unchanged, skipping rebuild.");
+        return callback();
+      }
+
+      Template.drop(TEMPLATES_OWNER, basename(directory), function () {
+        Template.create(TEMPLATES_OWNER, name, template, function (err) {
           if (err) return callback(err);
 
-          if (!isPublic || config.environment !== "development")
-            return callback();
+          buildViews(id, snapshot.definitions, function (err) {
+            if (err) return callback(err);
 
-          // in development, we want to reset any versions of the template
-          // otherwise it seems local changes are not reflected
-          removeOldVersionFromTestBlogs(id, function (err) {
-            callback();
+            emptyCacheForBlogsUsing(id, function (err) {
+              if (err) return callback(err);
+
+              if (!isPublic || config.environment !== "development")
+                return callback();
+
+              // in development, we want to reset any versions of the template
+              // otherwise it seems local changes are not reflected
+              removeOldVersionFromTestBlogs(id, function (err) {
+                callback();
+              });
+            });
           });
         });
       });
@@ -219,50 +259,22 @@ function build(directory, callback) {
   });
 }
 
-function buildViews(directory, id, views, callback) {
-  var viewpaths;
-
-  viewpaths = fs.readdirSync(directory).map(function (n) {
-    return directory + "/" + n;
-  });
+function buildViews(id, definitions, callback) {
+  var views = Object.keys(definitions || {}).sort();
 
   async.eachSeries(
-    viewpaths,
-    function (path, next) {
-      var viewFilename = basename(path);
-
-      if (viewFilename === "package.json" || viewFilename.slice(0, 1) === ".")
-        return next();
-
-      var viewName = viewFilename;
-      var viewContent;
-      if (viewName.slice(0, 1) === "_") {
-        viewName = viewName.slice(1);
-      }
-
-      try {
-        viewContent = fs.readFileSync(path, "utf-8");
-      } catch (err) {
-        return next();
-      }
-
-      var view = {
-        name: viewName,
-        content: viewContent,
-        url: "/" + viewName,
-      };
-
-      if (views && views[view.name]) {
-        var newView = views[view.name];
-        extend(newView).and(view);
-        view = newView;
-      }
+    views,
+    function (name, next) {
+      var definition = definitions[name];
+      var view = definition.view;
+      var path = definition.path;
 
       Template.setView(id, view, function onSet(err) {
         if (err) {
-          view.content = err.toString();
-          Template.setView(id, view, function () {});
-          err.message += " in " + path;
+          var errorView = _.cloneDeep(view);
+          errorView.content = err.toString();
+          Template.setView(id, errorView, function () {});
+          if (path) err.message += " in " + path;
           return next(err);
         }
 
@@ -271,6 +283,125 @@ function buildViews(directory, id, views, callback) {
     },
     callback
   );
+}
+
+function assembleTemplateSnapshot(directory, templatePackage, locals) {
+  var definitions = {};
+  var views = {};
+  var overrides = templatePackage.views || {};
+
+  fs.readdirSync(directory).forEach(function (entry) {
+    var path = directory + "/" + entry;
+    var viewFilename = basename(path);
+
+    if (viewFilename === "package.json" || viewFilename.slice(0, 1) === ".")
+      return;
+
+    var viewName = viewFilename;
+
+    if (viewName.slice(0, 1) === "_") {
+      viewName = viewName.slice(1);
+    }
+
+    var viewContent;
+
+    try {
+      viewContent = fs.readFileSync(path, "utf-8");
+    } catch (err) {
+      return;
+    }
+
+    var view = {
+      name: viewName,
+      content: viewContent,
+      url: "/" + viewName,
+    };
+
+    if (overrides && overrides[view.name]) {
+      var newView = _.cloneDeep(overrides[view.name]);
+      extend(newView).and(view);
+      view = newView;
+    }
+
+    if (!view.name) view.name = viewName;
+    if (!view.url) view.url = "/" + viewName;
+    view.locals = view.locals || {};
+    view.partials = view.partials || {};
+
+    definitions[view.name] = {
+      path: path,
+      view: view,
+    };
+
+    views[view.name] = createViewSnapshot(view);
+  });
+
+  return {
+    definitions: definitions,
+    views: views,
+    locals: _.cloneDeep(locals || {}),
+  };
+}
+
+function createViewSnapshot(view) {
+  var urlInfo = normalizeUrl(view.url, view.name);
+  var parseResult = parseTemplate(view.content || "");
+  var partials = _.cloneDeep(view.partials || {});
+
+  extend(partials).and(parseResult.partials || {});
+
+  return {
+    content: view.content,
+    url: urlInfo.url,
+    urlPatterns: urlInfo.urlPatterns,
+    partials: partials,
+    locals: view.locals || {},
+  };
+}
+
+function normalizeUrl(url, name) {
+  var urls;
+
+  if (_.isArray(url)) {
+    urls = url;
+  } else if (_.isString(url)) {
+    urls = [url];
+  } else {
+    urls = ["/" + name];
+  }
+
+  var normalized = urls.map(urlNormalizer);
+
+  return { url: normalized[0], urlPatterns: normalized };
+}
+
+function createStoredViewSnapshot(views) {
+  var map = {};
+  var list;
+
+  if (!views) return map;
+
+  if (Array.isArray(views)) {
+    list = views;
+  } else {
+    list = Object.keys(views).map(function (key) {
+      return views[key];
+    });
+  }
+
+  list.forEach(function (view) {
+    if (!view || !view.name) return;
+
+    map[view.name] = {
+      content: view.content,
+      url: view.url,
+      urlPatterns: view.urlPatterns || (view.url ? [view.url] : []),
+      partials: view.partials || {},
+      locals: view.locals || {},
+    };
+  });
+
+  return map;
 }
 
 function checkForExtinctTemplates(directory, callback) {

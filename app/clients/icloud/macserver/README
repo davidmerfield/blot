@@ -13,6 +13,60 @@ Create a `.env` file to store your environment variables:
 
 ### Step 2: Setup
 
+#### 0. Disable spotlight indexing
+
+sudo mdutil -a -i off
+
+This avoids high CPU usage with all the files...
+
+#### 0. Increase system open file limits
+
+It defaults to 256 files which isn't enough:
+
+launchctl limit maxfiles
+sysctl kern.maxfiles kern.maxfilesperproc
+
+
+To increase this limit permanently:
+
+sudo sysctl -w kern.maxfiles=524288
+sudo sysctl -w kern.maxfilesperproc=524288
+
+Create the LaunchDaemon file with elevated limits:
+
+sudo tee /Library/LaunchDaemons/limit.maxfiles.plist << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>limit.maxfiles</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>launchctl</string>
+      <string>limit</string>
+      <string>maxfiles</string>
+      <string>524288</string>
+      <string>524288</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>ServiceIPC</key>
+    <false/>
+  </dict>
+</plist>
+EOF
+
+Load the LaunchDaemon:
+sudo launchctl load -w /Library/LaunchDaemons/limit.maxfiles.plist
+
+After running these commands, verify the new limits:
+bash
+
+launchctl limit maxfiles
+sysctl kern.maxfiles kern.maxfilesperproc
+
+
 #### 1. Install Node.js
 
 Ensure Node.js is installed on your system. You can download it from the website

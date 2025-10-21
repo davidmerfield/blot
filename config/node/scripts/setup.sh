@@ -120,6 +120,9 @@ chown -R ec2-user:ec2-user /etc/blot
 
 chown -R ec2-user:ec2-user $BLOT_DIRECTORY
 
+# Install the tool used to list the disks used by mount-data-disk.sh
+yum install -y nvme-cli
+
 cp $SCRIPTS_DIRECTORY/mount-data-disk.service /etc/systemd/system/mount-data-disk.service
 
 # reload systemd
@@ -140,18 +143,3 @@ cp $SCRIPTS_DIRECTORY/node.service /etc/systemd/system/node.service
 systemctl daemon-reload
 
 amazon-linux-extras install epel -y
-
-#  add the following to '.bashrc'
-
-# export PS1='[BLOT:\u] \W > '
-
-# cd /var/www/blot
-
-# . /etc/blot/environment.sh
-
-
-# alias access="node /var/www/blot/scripts/access"
-# alias info="node /var/www/blot/scripts/info"
-# alias deploy="cd /var/www/blot && git pull origin master && /var/www/blot/scripts/reload-server.sh"
-# alias restart="cd /var/www/blot && git pull origin master && /var/www/blot/scripts/restart-server.sh"
-

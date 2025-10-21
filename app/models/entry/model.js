@@ -14,7 +14,6 @@ module.exports = {
   slug: "string",
   name: "string",
   path: "string",
-  pathDisplay: "string", // path with case-preserved, for clients in which everything is lowercased
   size: "number",
   tags: "array",
   dependencies: "array",
@@ -30,4 +29,5 @@ module.exports = {
   created: "number", // UTC timestamp for when the entry was added to Blot
   updated: "number", // UTC timestamp for file mtime
   metadata: "object",
+  exif: "object",
 };

@@ -3,14 +3,14 @@
       {{#plugins}}
       <div class="plugin {{checked}}">
         <label style="margin:0;display:flex">
-          <span style="flex-grow: 1;">{{{description}}}</span>
           <span style="">
             <input name='plugins.{{id}}.enabled' type='hidden' value='off' >
             <input name='plugins.{{id}}.enabled' type="checkbox" {{checked}}/>
             &nbsp;
           </span>
+          <span style="flex-grow: 1;">{{{description}}}</span>
         </label>
-        <div class="pluginOptions" style="clear:both;margin:0;padding-left:2em">
+        <div class="pluginOptions" style="clear:both;margin:0;padding-left:2.75em">
           {{{formHTML}}}
           {{#formHTML}}
           <div class="buttons">

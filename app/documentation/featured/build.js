@@ -23,17 +23,21 @@ if (require.main === module) {
   build(async (err, sites) => {
     if (err) throw err;
     await fs.outputJson(__dirname + "/featured.json", sites, { spaces: 2 });
+    // purge the cached version of the featured sites
+    await fs.remove(config.data_directory + "/featured");
     process.exit();
   });
 }
 
-async function build (callback) {
-  const avatars = await fs.readdir(avatarDirectory);
+async function build(callback) {
+  const avatars = (await fs.readdir(avatarDirectory)).filter(
+    (i) => !i.startsWith(".")
+  );
 
   let sites = (await fs.readFile(__dirname + "/sites.txt", "utf-8"))
     .split("\n")
-    .filter(i => i)
-    .map(line => {
+    .filter((i) => i)
+    .map((line) => {
       var words = line.split(" ");
       var link = "https://" + words[1];
       var name = words.slice(2).join(" ").split(",")[0];
@@ -42,7 +46,7 @@ async function build (callback) {
       );
       var host = toUnicode(parse(link).host);
 
-      if (!avatars.find(i => i.startsWith(host)))
+      if (!avatars.find((i) => i.startsWith(host)))
         throw new Error("Missing avatar for " + host);
 
       return {
@@ -52,26 +56,37 @@ async function build (callback) {
         bio,
         avatar: join(
           avatarDirectory,
-          avatars.find(i => i.startsWith(host))
-        )
+          avatars.find((i) => i.startsWith(host))
+        ),
       };
     });
-  
 
+  // if there are some avatars without a corresponding site
+  // log them and remove them from the list
+  const missingAvatars = avatars.filter(
+    (avatar) => !sites.find((site) => avatar.startsWith(site.host))
+  );
+
+
+  // remove the avatars without a corresponding site
+  for (let avatar of missingAvatars) {
+    console.log("Removing avatar without corresponding site", avatar);
+    await fs.remove(join(avatarDirectory, avatar));
+  }
 
   sites = await Promise.all(
-    sites.map(async site => {
+    sites.map(async (site) => {
       const isOnline = await verifySiteIsOnline(site.host);
       return isOnline ? site : null;
     })
-  ).then(sites => sites.filter(i => i));
+  ).then((sites) => sites.filter((i) => i));
 
   sites = await generateSprite(sites);
-  
+
   callback(null, sites);
 }
 
-const tidy = bio => {
+const tidy = (bio) => {
   // if the bio ends with 'based in...' or 'from ...'
   // remove everything after that
   bio = bio.trim();
@@ -91,7 +106,7 @@ const tidy = bio => {
   return bio;
 };
 
-async function generateSprite (sites) {
+async function generateSprite(sites) {
   await fs.emptyDir(thumbnailDirectory);
 
   for (let site of sites) {
@@ -101,11 +116,11 @@ async function generateSprite (sites) {
         width: THUMBNAIL_SIZE,
         height: THUMBNAIL_SIZE,
         fit: sharp.fit.cover,
-        position: sharp.strategy.entropy
+        position: sharp.strategy.entropy,
       })
       .toFormat("jpeg")
       .jpeg({
-        quality: 90
+        quality: 90,
       })
       .toFile(path);
 
@@ -119,7 +134,7 @@ async function generateSprite (sites) {
     // we need to set the dest path of the sprite to thumbnailDirectory/sprite.jpg
     spritesmith.run(
       {
-        src: sites.map(site => site.thumbnail)
+        src: sites.map((site) => site.thumbnail),
       },
       (err, result) => {
         if (err) return reject(err);
@@ -127,7 +142,7 @@ async function generateSprite (sites) {
         const { coordinates, properties } = result;
         const { width, height } = properties;
 
-        sites.forEach(site => {
+        sites.forEach((site) => {
           const { x, y } = coordinates[site.thumbnail];
           site.x = x / 2;
           site.y = y / 2;
@@ -135,7 +150,7 @@ async function generateSprite (sites) {
           delete site.avatar;
         });
 
-        fs.outputFile(spriteDestination, result.image, "binary", err => {
+        fs.outputFile(spriteDestination, result.image, "binary", (err) => {
           if (err) return reject(err);
           resolve({ width, height });
         });
@@ -152,8 +167,8 @@ async function generateSprite (sites) {
       await fs.readFile(__dirname + "/sites.txt", "utf-8")
     )
       .split("\n")
-      .filter(i => i)
-      .filter(line => sites.find(site => line.includes(site.host)))
+      .filter((i) => i)
+      .filter((line) => sites.find((site) => line.includes(site.host)))
       .join("\n"),
     "utf-8"
   );
@@ -164,20 +179,20 @@ async function generateSprite (sites) {
       await fs.readFile(__dirname + "/sites.txt", "utf-8")
     )
       .split("\n")
-      .filter(i => i)
-      .filter(line => !sites.find(site => line.includes(site.host)))
+      .filter((i) => i)
+      .filter((line) => !sites.find((site) => line.includes(site.host)))
       .join("\n"),
     "utf-8"
   );
 
   // empty the thumbnail directory
   await fs.emptyDir(thumbnailDirectory);
-  
+
   return {
     width: width / 2,
     height: height / 2,
     sprite,
     sites,
-    thumbnail_width: THUMBNAIL_SIZE / 2
+    thumbnail_width: THUMBNAIL_SIZE / 2,
   };
 }

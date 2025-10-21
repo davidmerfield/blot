@@ -1,4 +1,7 @@
 <h1>Word Documents</h1>
+
+.docx &nbsp;.odt
+
 <p>
   Supports files created by
   <a href="https://en.wikipedia.org/wiki/Microsoft_Word">Microsoft Word</a>,
@@ -6,4 +9,38 @@
   <a href="https://en.wikipedia.org/wiki/Google_Docs">Google Docs</a> and
   <a href="https://en.wikipedia.org/wiki/OpenOffice.org">OpenOffice</a>. Much
   formatting is stripped so posts match the style of your site.
+</p>
+
+<h2>Metadata</h2>
+
+<p>
+  Add <a href="/how/metadata">metadata</a> to your document by starting with a
+  block of <code>key: value</code> pairs in the first paragraph or by inserting
+  a <a href="/how/metadata#yaml">YAML front matter</a> block. Blot reads this
+  information the same way it does for plain text posts, so fields like
+  <code>Title</code>, <code>Date</code> and <code>Tags</code> are picked up
+  automatically.
+</p>
+
+<h2>Headings</h2>
+
+<p>
+  Blot looks for bold text to determine the structure of the post. A bold line
+  at the top becomes the post title, and additional bold paragraphs are turned
+  into headings so the published page has a sensible outline.
+</p>
+
+<h2>Images and assets</h2>
+
+<p>
+  Blot extracts images embedded in the document and adds them directly to the
+  post created from the Word file, so they appear in the same place as they did
+  in your document.
+</p>
+
+<h2>Formatting cleanup</h2>
+
+<p>
+  Inline styles and unused tags are removed during conversion. This keeps the
+  post lightweight and lets your site's theme control the final appearance.
 </p>

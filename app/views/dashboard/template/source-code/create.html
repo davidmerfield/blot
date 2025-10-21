@@ -1,7 +1,9 @@
 <form method="post" action="{{{base}}}/source-code/create" style="background: #fff;width: 100%">
+	<input type="hidden" name="_csrf" value="{{csrftoken}}" />
   <strong>Create new view</strong><br>
   <label>Name:</label><br>
 	<input type="text" name="name" /><br>
+
 	<input type="submit" name="" value="Create" />
 	<a href="{{{base}}}/source-code">Cancel</a>
 </form>

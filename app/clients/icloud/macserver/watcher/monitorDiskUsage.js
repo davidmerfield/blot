@@ -1,7 +1,5 @@
 const fs = require("fs-extra");
-const { promisify } = require("util");
-const exec = require("../exec");
-
+const { execFile } = require("child_process");
 const { iCloudDriveDirectory } = require("../config");
 
 const POLL_INTERVAL = 15 * 1000; // Check every 15 seconds
@@ -12,14 +10,34 @@ const MAX_DISK_USAGE_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
 const largestFilesMap = new Map();
 const blogUpdateTimes = new Map(); // Tracks the last update time for each blog
 
-const getDiskUsage = async () => {
-  const { stdout, stderr } = await exec("du", ["-sk", iCloudDriveDirectory]);
+// We don't use ../exec because it can't tolerate stderr or non-zero exit codes
+// which happens when there is a file in someone's folder with a name that's too
+// long and produces du:  File name too long 
+const getDiskUsage = () => {
+  return new Promise((resolve, reject) => {
+    // Run du -sk <dir> with stderr redirected to /dev/null
+    console.log(`Getting disk usage for iCloud Drive...`);
+    const child = execFile(
+      "du",
+      ["-sk", iCloudDriveDirectory],
+      { stdio: ["ignore", "pipe", "ignore"] }, // [stdin, stdout, stderr]
+      (error, stdout, stderr) => {
+        if (!stdout) {
+          return reject(new Error(`No output from du command`));
+        }
 
-  if (stderr) {
-    throw new Error(`Error getting disk usage: ${stderr}`);
-  }
-  
-  return parseInt(stdout.split("\t")[0]) * 1024;
+        try {
+          console.log(`Disk usage output: ${stdout}`);
+          // Parse output
+          const bytes = parseInt(stdout.split("\t")[0]) * 1024;
+          console.log(`Disk usage: ${bytes} bytes`);
+          resolve(bytes);
+        } catch (parseError) {
+          reject(new Error(`Error parsing du output: ${parseError.message}`));
+        }
+      }
+    );
+  });
 };
 
 const removeBlog = (blogID) => {
@@ -116,6 +134,10 @@ const check = async (evictFiles) => {
   }
 
   let bytesToEvict = diskUsage - MAX_DISK_USAGE_BYTES;
+
+  console.log(
+    `Disk usage is above threshold: ${diskUsage} bytes, need to evict ${bytesToEvict} bytes`
+  );
 
   // Get blogs sorted by least recent update time
   const sortedBlogs = sortBlogsByUpdateTime();

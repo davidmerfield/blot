@@ -3,6 +3,7 @@ describe("build", function () {
   var fs = require("fs-extra");
   var express = require("express");
   var app = express();
+  var exif = require("../converters/img/exif");
 
   // Only serve a test image when query contains valid user and password
   app.get("/small.jpg", function (req, res) {
@@ -23,7 +24,7 @@ describe("build", function () {
     this.build = async (path, contents) => {
       return new Promise((resolve, reject) => {
         fs.outputFileSync(this.blogDirectory + path, contents);
-        require("../index")(this.blog, path, {}, function (err, entry) {
+        require("../index")(this.blog, path, function (err, entry) {
           if (err) return reject(err);
           resolve(entry);
         });
@@ -40,7 +41,7 @@ describe("build", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
 
       // verify the image was cached
@@ -62,7 +63,7 @@ describe("build", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, (err, entry) => {
+    build(this.blog, path, (err, entry) => {
       if (err) return done.fail(err);
       expect(entry.tags).toEqual(["foo", "bar", "baz"]);
       done();
@@ -75,7 +76,7 @@ describe("build", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, (err, entry) => {
+    build(this.blog, path, (err, entry) => {
       if (err) return done.fail(err);
       expect(entry.title).toEqual("Hello");
       expect(entry.page).toEqual(true);
@@ -89,24 +90,10 @@ describe("build", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, (err, entry) => {
+    build(this.blog, path, (err, entry) => {
       if (err) return done.fail(err);
       expect(entry.title).toEqual("Hello");
       expect(entry.page).toEqual(true);
-      done();
-    });
-  });
-
-  it("extracts tags with case from an optional path with case", function (done) {
-    const path = "/[foo]/bar.txt";
-    const pathDisplay = "/[Foo]/bar.txt";
-    const contents = "Hello";
-
-    fs.outputFileSync(this.blogDirectory + path, contents);
-
-    build(this.blog, path, { pathDisplay }, (err, entry) => {
-      if (err) return done.fail(err);
-      expect(entry.tags).toEqual(["Foo"]);
       done();
     });
   });
@@ -117,7 +104,7 @@ describe("build", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
       expect(entry.summary).toEqual("This should appear in the summary");
       done();
@@ -130,7 +117,7 @@ describe("build", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
       expect(entry.summary).toEqual("the summary");
       done();
@@ -144,7 +131,7 @@ describe("build", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
 
       // It won't be cached since the image doesn't exist
@@ -158,7 +145,7 @@ describe("build", function () {
 
     fs.copySync(__dirname + "/small.jpg", this.blogDirectory + pathToImage);
 
-    build(this.blog, pathToImage, {}, function (err, entry) {
+    build(this.blog, pathToImage, function (err, entry) {
       if (err) return done.fail(err);
 
       // verify the image was cached
@@ -175,6 +162,32 @@ describe("build", function () {
     });
   });
 
+  it("attaches sanitized EXIF data to image entries", function (done) {
+    var path = "/gps.jpg";
+
+    fs.copySync(
+      require("path").join(__dirname, "../converters/img/tests/gps.jpg"),
+      this.blogDirectory + path
+    );
+
+    build(this.blog, path, function (err, entry) {
+      if (err) return done.fail(err);
+
+      expect(entry.exif).toEqual({
+        ImageDescription: "                               ",
+        Make: "NIKON",
+        Model: "COOLPIX P6000",
+        ExposureTime: "1/178",
+        FNumber: 4.5,
+        ISO: 64,
+        Flash: "Off, Did not fire",
+        FocalLength: 6,
+      });
+
+      done();
+    });
+  });
+
   it("handles images with accents and spaces in their filename", function (done) {
     var path = "/blog/Hello world.txt";
     var contents = "![Best Image Ever](óå g.jpg)";
@@ -183,7 +196,7 @@ describe("build", function () {
     fs.outputFileSync(this.blogDirectory + path, contents);
     fs.copySync(__dirname + "/small.jpg", this.blogDirectory + pathToImage);
 
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
 
       // verify the image was cached
@@ -206,7 +219,7 @@ describe("build", function () {
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
 
       expect(entry.menu).toEqual(false);
@@ -222,7 +235,7 @@ describe("build", function () {
     fs.outputFileSync(this.blogDirectory + path, contents);
     fs.copySync(__dirname + "/too-small.jpg", this.blogDirectory + pathToImage);
 
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
 
       // verify no thumbnail was generated from the image
@@ -240,7 +253,7 @@ describe("build", function () {
     let blog = this.blog;
     blog.plugins.imageCaption.enabled = true;
 
-    build(blog, path, {}, function (err, entry) {
+    build(blog, path, function (err, entry) {
       if (err) return done.fail(err);
 
       // verify a thumbnail was generated from the image
@@ -255,7 +268,7 @@ describe("build", function () {
     var contents = "No date in this file";
 
     fs.outputFileSync(this.blogDirectory + path, contents);
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
       expect(entry.dateStamp).toEqual(undefined);
       done();
@@ -271,7 +284,7 @@ describe("build", function () {
     // creates <embed>'s instead of <img> for certain URLs
     fs.outputFileSync(this.blogDirectory + path, contents);
 
-    build(this.blog, path, {}, function (err, entry) {
+    build(this.blog, path, function (err, entry) {
       if (err) return done.fail(err);
 
       // verify the image was not cached
@@ -315,7 +328,18 @@ describe("build", function () {
       array: ["one", "two"],
       object: { key: "value" },
     });
-    
+
+    done();
+  });
+
+  it("will tolerate empty YAML front matter", async function (done) {
+    const path = "/post.txt";
+    const contents = `---\n---\n\n# Hello`;
+    const entry = await this.build(path, contents);
+
+    expect(entry.metadata).toEqual({});
+    expect(entry.html.trim()).toEqual('<h1 id="hello">Hello</h1>');
+
     done();
   });
 
@@ -330,7 +354,7 @@ describe("build", function () {
     });
 
     expect(entry.tags).toEqual(["one", "two"]);
-    
+
     done();
   });
 
@@ -351,7 +375,6 @@ describe("build", function () {
     expect(entry.path).toEqual(path);
     done();
   });
-
 
   it("will build without error if draft is a YAML array (i.e. not a bool)", async function (done) {
     const path = "/post.txt";
@@ -379,5 +402,4 @@ describe("build", function () {
     expect(entry.path).toEqual(path);
     done();
   });
-
 });

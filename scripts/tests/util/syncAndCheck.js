@@ -15,9 +15,9 @@ module.exports = function SyncAndCheck(blogID) {
 
       async.eachSeries(
         files,
-        ({ path, content, options = {} }, next) => {
+        ({ path, content }, next) => {
           fs.outputFileSync(join(folder.path, path), content, "utf-8");
-          folder.update(path, options, next);
+          folder.update(path, next);
         },
         (err) => {
           if (err) return syncDone(err, callback);

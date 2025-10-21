@@ -3,6 +3,7 @@ const MAC_SERVER_ADDRESS = config.icloud.server_address;
 const MACSERVER_AUTH = config.icloud.secret; // The Macserver Authorization secret from config
 const localPath = require("helper/localPath");
 const fs = require("fs-extra");
+const fetch = require("node-fetch");
 
 module.exports = async (blogID, path) => {
   const pathBase64 = Buffer.from(path).toString("base64");

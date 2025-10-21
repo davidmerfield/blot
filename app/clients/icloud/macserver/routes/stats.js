@@ -33,5 +33,6 @@ module.exports = async (req, res) => {
     console.error(`Error getting number of blogs connected: ${error}`);
   }
 
+  console.log("Sending stats:", result);
   res.json(result);
 };

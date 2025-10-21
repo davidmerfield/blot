@@ -11,11 +11,11 @@ Instead, we offer a straightforward proposition: we provide hosting for your web
 
 ## Will you sell Blot one day?
 
-My exit strategy is death. I've made strategic decisions, like dedicating the source code to the public domain, to reduce my temptation to ever sell Blot.
+No, I plan to work on Blot for the rest of my life. I've made various decisions, including releasing the source code under the AGPL license, to reduce the value of Blot to a potential purchaser and therefore the temptation to sell Blot.
 
 ## Leave money on the table
 
-Blot is not optimized to generate as much revenue as possible in the next quarter. I try to take a long-term view where I can. For example, I do lots of things which might hurt my short-term customer churn-rate. I'm serious about making Blot a long-term business and view these sacrifices as investments.
+Blot is not optimized to generate as much revenue as possible in the next quarter. I try to take a long-term view where I can. For example, I do lots of things which might hurt my short-term customer churn-rate. I'm serious about making Blot a long-term business and view these short-term sacrifices as investments.
 
 ## Allow customers to leave with ease
 

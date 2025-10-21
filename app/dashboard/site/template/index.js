@@ -1,6 +1,5 @@
 const Express = require("express");
 const TemplateEditor = new Express.Router();
-const parse = require("dashboard/util/parse");
 const formJSON = require("helper/formJSON");
 const Template = require("models/template");
 const Blog = require("models/blog");
@@ -30,11 +29,10 @@ TemplateEditor.get('/', (req, res) => {
 
 TemplateEditor.route('/deleted')
   .get((req, res) => {
-    res.locals.breadcrumbs.add('Deleted', 'deleted');
     res.locals.title = 'Deleted templates';
     res.render('dashboard/template/deleted');
   })
-  .post(parse, (req, res, next) => {
+  .post((req, res, next) => {
     // either undelete a specific template
     // or purge all deleted templates
   });
@@ -42,11 +40,10 @@ TemplateEditor.route('/deleted')
 
 TemplateEditor.route('/disable')
   .get((req, res) => {
-    res.locals.breadcrumbs.add('Disable', 'disable');
     res.locals.title = 'Disable template';
     res.render('dashboard/template/disable');
   })
-  .post(parse, (req, res, next) => {
+  .post((req, res, next) => {
     // either disable the current template
     // or enable the current template
   });
@@ -54,11 +51,12 @@ TemplateEditor.route('/disable')
 
 TemplateEditor.route('/new')
   .get((req, res) => {
+    res.locals.newSelected = 'selected'
     res.locals.breadcrumbs.add('New template', 'new');
     res.locals.title = 'New template';
     res.render('dashboard/template/new');
   })
-  .post(parse, (req, res, next) => {
+  .post((req, res, next) => {
     Template.create(req.blog.id, req.body.name, (err, template) => {
       if (err) return next(err);
       res.redirect(req.baseUrl + '/' + template.slug);
@@ -66,7 +64,12 @@ TemplateEditor.route('/new')
   });
 
 TemplateEditor.route("/:templateSlug/install")
-  .post(parse, function (req, res, next) {
+  .get(function (req, res) {
+    res.locals.title = `Install - ${req.template.name}`;
+    res.locals.selected = {...res.locals.selected , install: 'selected'};
+    res.render("dashboard/template/install");
+  })
+  .post(function (req, res, next) {
     var templateID = req.body.template;
     if (!templateID) return next(new Error("No template ID"));
     var updates = {template: templateID};
@@ -84,7 +87,6 @@ TemplateEditor.route("/:templateSlug")
   .all(require("./load/navigation-inputs"))
   .all(require("./load/dates"))
   .post(
-    parse,
     require('./save/fork-if-needed'),
     require("./save/previewPath"),
     function (req, res, next) {
@@ -137,6 +139,7 @@ TemplateEditor.route("/:templateSlug")
     }
   )
   .get(function (req, res) {
+    res.locals.selected = {...res.locals.selected , settings: 'selected'};
     res.render("dashboard/template/settings");
   });
 
@@ -154,7 +157,7 @@ TemplateEditor.route("/:templateSlug/local-editing")
     res.locals.title = `Local editing - ${req.template.name}`;
     res.render("dashboard/template/local-editing");
   })
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     Template.setMetadata(
       req.template.id,
       { localEditing: true },
@@ -218,11 +221,10 @@ TemplateEditor.route("/:templateSlug/local-editing")
   TemplateEditor.route("/:templateSlug/duplicate")
   .get(function (req, res) {
     res.locals.title = `Duplicate - ${req.template.name}`;
-    res.locals.breadcrumbs.add("Duplicate", "duplicate");
-
+  
     res.render("dashboard/template/duplicate");
   })
-  .post(parse, async (req, res, next) => {
+  .post(async (req, res, next) => {
     try {
       const template = await createTemplate({
         isPublic: false,
@@ -241,10 +243,10 @@ TemplateEditor.route("/:templateSlug/local-editing")
 TemplateEditor.route("/:templateSlug/rename")
   .get(function (req, res) {
     res.locals.title = `Rename - ${req.template.name}`;
-    res.locals.breadcrumbs.add("Rename", "rename");
+    res.locals.selected = {...res.locals.selected , rename: 'selected'};
     res.render("dashboard/template/rename");
   })
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     Template.setMetadata(
       req.template.id,
       { name: req.body.name },
@@ -262,7 +264,7 @@ TemplateEditor.route("/:templateSlug/links")
   res.locals.breadcrumbs.add("Links", "links");
   res.render("dashboard/template/links");
 })
-.post(parse, function (req, res, next) {
+.post(function (req, res, next) {
   
       res.message(res.locals.base, "Saved links!");
     
@@ -274,7 +276,7 @@ TemplateEditor.route("/:templateSlug/photo")
   res.locals.breadcrumbs.add("Photo", "photo");
   res.render("dashboard/template/photo");
 })
-.post(parse, function (req, res, next) {
+.post(function (req, res, next) {
   
       res.message(res.locals.base, "Saved photo!");
     
@@ -284,12 +286,12 @@ TemplateEditor.route("/:templateSlug/download")
 
   .get(function (req, res) {
     res.locals.title = `Download - ${req.template.name}`;
+    res.locals.selected = {...res.locals.selected , download: 'selected'};
     res.locals.shareURL = `${req.protocol}://${req.hostname}/sites/share-template/${res.locals.template.shareID}`;
-    res.locals.breadcrumbs.add("Download", "download");
 
     res.render("dashboard/template/download");
   })
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     if (req.template.shareID) {
       Template.dropShareID(req.template.shareID, function (err) {
         if (err) return next(err);
@@ -313,8 +315,7 @@ TemplateEditor.route("/:templateSlug/delete")
 
   .get(function (req, res, next) {
     res.locals.title = `Delete - ${req.template.name}`;
-    res.locals.breadcrumbs.add("Delete", "delete");
-
+    res.locals.selected = {...res.locals.selected , delete: 'selected'};
     res.render("dashboard/template/delete");
   })
   .post(function (req, res, next) {

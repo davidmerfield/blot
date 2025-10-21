@@ -19,6 +19,7 @@
 	}
 </style>
 <form action="{{{base}}}/delete" method="post">
+	<input type="hidden" name="_csrf" value="{{csrftoken}}" />
 	<p>
 		Are you sure you want to delete this template?
 	</p>

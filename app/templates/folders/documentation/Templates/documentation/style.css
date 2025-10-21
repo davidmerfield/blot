@@ -1,0 +1,630 @@
+/* GLOBAL STYLES AND RESETS */
+
+/* Injected styles from templates and external sources */
+{{{appCSS}}}
+{{{body_font.styles}}}
+{{{syntax_highlighter.styles}}}
+{{> toc-styles.css}}
+{{> multi-lingual-styles.css}}
+{{> next-previous-styles.css}}
+{{> navigation-styles.css}}
+{{> menubar-styles.css}}
+{{> breadcrumbs-styles.css}}
+
+/* Root variables for theme customization */
+:root {
+  {{#body_font}}
+  --font-family: {{{stack}}};
+  --font-size: {{{font_size}}}px;
+  --line-height: {{{line_height}}};
+  {{/body_font}}
+  --red-color: rgba({{#rgb}}{{red_color}}{{/rgb}}, 1);
+  --red-color-border: rgba({{#rgb}}{{red_color}}{{/rgb}}, 0.1);
+  --red-color-background: rgba({{#rgb}}{{red_color}}{{/rgb}}, 0.02);
+  --green-color: rgba({{#rgb}}{{green_color}}{{/rgb}}, 1);
+  --green-color-border: rgba({{#rgb}}{{green_color}}{{/rgb}}, 0.1);
+  --green-color-background: rgba({{#rgb}}{{green_color}}{{/rgb}}, 0.02);
+  --yellow-color: rgba({{#rgb}}{{yellow_color}}{{/rgb}}, 1);
+  --yellow-color-border: rgba({{#rgb}}{{yellow_color}}{{/rgb}}, 0.1);
+  --yellow-color-background: rgba({{#rgb}}{{yellow_color}}{{/rgb}}, 0.02);
+  --background-color: {{background_color}};
+  --text-color: {{text_color}};
+  --off-background-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.02);
+  --light-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
+  --medium-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6666);
+  --border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.06);
+  --link-color: {{link_color}};
+
+  --padding: 1.4rem;
+
+  --navigation-height: 3em;
+  --navigation-background-color: var(--background-color);
+
+}
+
+{{{syntax_highlighter.styles}}}
+
+/* Dark mode variables */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: {{dark_background_color}};
+    --off-background-color: rgba({{#rgb}}{{dark_text_color}}{{/rgb}}, 0.04);
+    --text-color: {{dark_text_color}};
+    --border-color: rgba({{#rgb}}{{dark_text_color}}{{/rgb}}, 0.08);
+    --light-text-color: rgba({{#rgb}}{{dark_text_color}}{{/rgb}}, 0.3333);
+    --medium-text-color: rgba({{#rgb}}{{dark_text_color}}{{/rgb}}, 0.6666);
+    --link-color: {{dark_link_color}};
+  }
+
+  /**/
+  {{{dark_syntax_highlighter.styles}}}
+  /**/
+}
+
+/* General resets */
+html, body {
+  width: 100%; padding: 0; margin: 0 auto; -webkit-font-smoothing: antialiased;
+  color: var(--text-color); background: var(--background-color);
+  font-family: var(--font-family); font-size: var(--font-size); line-height: var(--line-height);
+}
+
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 1em 0;
+}
+
+.column-container {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.column {
+  width: 250px; /* Fixed width for sidebars */
+  flex-shrink: 0;
+  padding: 15px;
+  box-sizing: border-box;
+  align-items: stretch;
+  position: relative;
+}
+
+.column:nth-child(1) {
+  border-right: 1px solid var(--border-color); /* Add a border between columns */
+}
+
+.column a {
+  color: var(--light-text-color);
+  text-decoration: none;
+}
+
+.column a.active {
+  color: var(--text-color);
+}
+
+.main {
+  flex-grow: 1; /* Main content takes up remaining space */
+  padding: 0 4em 10em;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Hidden Checkboxes */
+.toggle-checkbox {
+  display: none;
+}
+
+/* Control Bar */
+.control-bar {
+  display: none; /* Hidden by default on large screens */
+  border-bottom: 1px solid var(--border-color);
+  z-index: 20;
+  padding: 6px 15px;
+  box-sizing: border-box;
+}
+
+.control-label {
+  visibility: hidden;
+  cursor: pointer;
+  color: #007BFF;
+  text-decoration: none;
+}
+
+/* Responsive Behavior */
+@media (max-width: 1024px) {
+  .control-bar {
+    display: flex; /* Show the control bar at smaller screens */
+    justify-content: space-between; /* Align the toggle buttons */
+    align-items: center; /* Vertically center the labels */
+  }
+
+  #toc-wrapper {
+    display: none;
+  }
+
+  .control-label:last-child {
+    visibility: visible
+  }
+  /* Hide the right column unless toggled */
+  .column:nth-child(3) {
+    display: none;
+  }
+
+  /* Show the right column when the checkbox is toggled */
+  #toggle-right:checked ~ .column-container > .column:nth-child(3) {
+    position: absolute;
+    display: flex;
+    right:0;
+    }
+
+    #toggle-right:checked ~ .column-container > .column:nth-child(3) #toc-wrapper {
+      display: block;
+      position: absolute;
+      padding: 2em;
+      border: 1px solid var(--border-color);
+      margin: 0;
+      top: 0;
+      right: 0;
+        }
+}
+
+@media (max-width: 768px) {
+  
+    .control-label:first-child {
+    visibility: visible
+  }
+
+  /* Hide the left column unless toggled */
+  .column:nth-child(1) {
+    display: none;
+  }
+
+  /* Show the left column when the checkbox is toggled */
+  #toggle-left:checked ~ .column-container > .column:nth-child(1) {
+    position: absolute;
+    display: flex;
+    left:0;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+  }
+
+  .main {
+    padding: 0 1em;
+  }
+}
+
+
+.control-label:hover {
+  text-decoration: underline;
+}
+
+
+
+.nav-container {
+  display: flex;
+  flex-wrap: wrap;
+  height: var(--navigation-height);
+  border-bottom: 1px solid var(--border-color);
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+}
+
+/* This forces the navigation links to wrap when they would
+    otherwise overflow the screen */
+.nav-container:before {
+  content: "";
+  width: 1px;
+  margin-right: -1px;
+  height: var(--navigation-height);
+}
+
+.popup-cover {
+  content: "";
+  opacity: 0;
+  position: absolute;
+  top:0;
+  right:0;
+  bottom:0;
+  left: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: -1;
+}
+
+.nav-label {
+  display: flex;
+  align-items: center;
+  height: var(--navigation-height); /* Default height */
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+  z-index: 2; /* Ensure it's above the links */
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: none;
+  gap: 1.4rem;
+  background-color: var(--navigation-background-color);
+  position: relative;
+  z-index: 3;
+}
+
+.nav-container a {
+  white-space: nowrap; /* Prevents breaking individual links */
+  text-decoration: none;
+  color: var(--light-text-color);
+  transition: color 0.2s;
+}
+
+.nav-container a:hover,
+.nav-container a.active {
+  color: var(--text-color);
+}
+
+#nav-toggle {
+  display: none;
+}
+
+/* When checkbox is checked, expand the navigation */
+#nav-toggle:checked ~ .nav-container {
+  height: auto; /* Remove height restriction */
+}
+
+#nav-toggle:checked ~ .popup-cover {
+  opacity: 1;
+  z-index: 1;
+}
+
+#nav-toggle:checked ~ .nav-container .nav-links {
+  flex-direction: column; /* Stack links vertically */
+  width: 100%;
+  align-items: flex-start;
+}
+
+.index-link {
+    display: flex;
+  align-items: center;
+  flex-wrap: none;
+  gap: 1rem;
+  margin-right: 1em;
+}
+
+.index-link a {
+  color:var(--text-color);
+  font-weight: 600;
+}
+
+.nav-container {
+  padding: 0 1em;
+}
+
+.nav-label {
+  right: 1em;
+}
+
+
+span[class^="icon-"],
+.info:before,
+.warning:before,
+.error:before,
+.success:before {
+    background-color: currentColor;
+    mask-repeat: no-repeat;
+    mask-position: 0 0;
+    width: 1em;
+    height: 1em;
+    mask-size: 1em;
+    display: inline-block;
+    vertical-align: sub;
+    position: relative;
+    top:-0.02em;
+}
+
+.icon-search {
+  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZD0iTTEwLjY4IDExLjc0YTYgNiAwIDAgMS03LjkyMi04Ljk4MiA2IDYgMCAwIDEgOC45ODIgNy45MjJsMy4wNCAzLjA0YS43NDkuNzQ5IDAgMCAxLS4zMjYgMS4yNzUuNzQ5Ljc0OSAwIDAgMS0uNzM0LS4yMTVaTTExLjUgN2E0LjQ5OSA0LjQ5OSAwIDEgMC04Ljk5NyAwQTQuNDk5IDQuNDk5IDAgMCAwIDExLjUgN1oiLz48L3N2Zz4=");
+}
+
+.icon-dots {
+   mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZD0iTTggOWExLjUgMS41IDAgMSAwIDAtMyAxLjUgMS41IDAgMCAwIDAgM1pNMS41IDlhMS41IDEuNSAwIDEgMCAwLTMgMS41IDEuNSAwIDAgMCAwIDNabTEzIDBhMS41IDEuNSAwIDEgMCAwLTMgMS41IDEuNSAwIDAgMCAwIDNaIi8+PC9zdmc+")
+}
+
+.icon-close {
+  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZD0iTTMuNzIgMy43MmEuNzUuNzUgMCAwIDEgMS4wNiAwTDggNi45NGwzLjIyLTMuMjJhLjc0OS43NDkgMCAwIDEgMS4yNzUuMzI2Ljc0OS43NDkgMCAwIDEtLjIxNS43MzRMOS4wNiA4bDMuMjIgMy4yMmEuNzQ5Ljc0OSAwIDAgMS0uMzI2IDEuMjc1Ljc0OS43NDkgMCAwIDEtLjczNC0uMjE1TDggOS4wNmwtMy4yMiAzLjIyYS43NTEuNzUxIDAgMCAxLTEuMDQyLS4wMTguNzUxLjc1MSAwIDAgMS0uMDE4LTEuMDQyTDYuOTQgOCAzLjcyIDQuNzhhLjc1Ljc1IDAgMCAxIDAtMS4wNloiLz48L3N2Zz4=")
+}
+
+.icon-info, .info:before {
+  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZD0iTTAgOGE4IDggMCAxIDEgMTYgMEE4IDggMCAwIDEgMCA4Wm04LTYuNWE2LjUgNi41IDAgMSAwIDAgMTMgNi41IDYuNSAwIDAgMCAwLTEzWk02LjUgNy43NUEuNzUuNzUgMCAwIDEgNy4yNSA3aDFhLjc1Ljc1IDAgMCAxIC43NS43NXYyLjc1aC4yNWEuNzUuNzUgMCAwIDEgMCAxLjVoLTJhLjc1Ljc1IDAgMCAxIDAtMS41aC4yNXYtMmgtLjI1YS43NS43NSAwIDAgMS0uNzUtLjc1Wk04IDZhMSAxIDAgMSAxIDAtMiAxIDEgMCAwIDEgMCAyWiIvPjwvc3ZnPg==")
+}
+
+.icon-warning, .warning:before, .error:before {
+  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZD0iTTYuNDU3IDEuMDQ3Yy42NTktMS4yMzQgMi40MjctMS4yMzQgMy4wODYgMGw2LjA4MiAxMS4zNzhBMS43NSAxLjc1IDAgMCAxIDE0LjA4MiAxNUgxLjkxOGExLjc1IDEuNzUgMCAwIDEtMS41NDMtMi41NzVabTEuNzYzLjcwN2EuMjUuMjUgMCAwIDAtLjQ0IDBMMS42OTggMTMuMTMyYS4yNS4yNSAwIDAgMCAuMjIuMzY4aDEyLjE2NGEuMjUuMjUgMCAwIDAgLjIyLS4zNjhabS41MyAzLjk5NnYyLjVhLjc1Ljc1IDAgMCAxLTEuNSAwdi0yLjVhLjc1Ljc1IDAgMCAxIDEuNSAwWk05IDExYTEgMSAwIDEgMS0yIDAgMSAxIDAgMCAxIDIgMFoiLz48L3N2Zz4=")
+}
+
+
+.icon-success, .success:before {
+  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZD0iTTEzLjc4IDQuMjJhLjc1Ljc1IDAgMCAxIDAgMS4wNmwtNy4yNSA3LjI1YS43NS43NSAwIDAgMS0xLjA2IDBMMi4yMiA5LjI4YS43NTEuNzUxIDAgMCAxIC4wMTgtMS4wNDIuNzUxLjc1MSAwIDAgMSAxLjA0Mi0uMDE4TDYgMTAuOTRsNi43Mi02LjcyYS43NS43NSAwIDAgMSAxLjA2IDBaIi8+PC9zdmc+")
+}
+
+
+/* When checkbox is checked, expand the navigation */
+#nav-toggle:checked ~ .nav-container {
+  border-radius: 0 0 12px 12px;
+  padding-bottom: 16px;
+}
+
+.nav-container form {
+  flex-grow: 1;
+  margin-right: 2em;
+}
+
+.nav-container form  input {
+  width: 100%;
+  padding: 0.5em;
+  margin: 0.5em 0;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+}
+
+
+
+code.hljs {
+  background: transparent
+}
+
+code {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.code-group, code {
+  background: var(--off-background-color);
+}
+
+.code-group pre code {
+  border-radius: 0 0 4px 4px;
+  border-top: none;
+  background: none;
+}
+
+
+
+details {
+  max-width: 600px;
+  border-top: 1px solid var(--border-color);
+  background: white;
+}
+
+summary {
+  list-style: none;
+  padding: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  padding-left: 32px;
+}
+
+summary:focus {
+  outline: none;
+}
+
+/* Remove default marker */
+summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Custom + and - symbol */
+summary::before,
+summary::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 12px;
+  height: 2px;
+  background-color: #4b5563;
+  transition: all 0.3s ease;
+}
+
+summary::after {
+  transform: rotate(90deg);
+}
+
+details[open] {
+  padding-bottom: 16px;
+}
+
+details[open] summary::after {
+  transform: rotate(0);
+  opacity: 0;
+}
+
+details[open] summary::before {
+  transform: rotate(180deg);
+}
+
+
+
+.steps ol {
+  list-style: none;
+  counter-reset: steps;
+  padding-left: 32px;
+  position: relative;
+}
+
+.steps  ol li {
+  counter-increment: steps;
+  margin: 0 0 1em 0;
+  position: relative;
+}
+
+.steps  ol li::before {
+  content: counter(steps);
+  border: 1px solid var(--border-color);
+  color: var(--light-text-color);
+  width: 1.25rem;
+  height: 1.25rem;
+  line-height: 1.25;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: -32px;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+.steps ol li::after {
+  content: "";
+  position: absolute;
+  left: calc(1.25rem/2 - 32px);
+  top: calc(1.25rem + 1px);
+  width: 1px;
+  bottom: calc(-1.25rem + 3px);
+  background: var(--border-color);
+}
+
+.steps  ol li:last-child::after {
+  display: none;
+}
+
+a {
+  color: var(--link-color)
+}
+
+.main ul {
+  list-style-type: circle;
+  padding: 0;margin-left:0;margin-right:0;
+}
+
+.main ul li {
+  margin-left: 1em;
+  padding-left: 8px;
+  margin-bottom: 8px;
+}
+
+h1 {
+  font-size: 24px;
+font-weight: 550;
+line-height: 28.6333px;
+margin-bottom: 24px;
+}
+
+h2 {
+  font-size: 20px;
+  line-height: 22.67px;
+  font-weight: 550;
+  margin-bottom: 24px;
+  margin-top: 36px;
+}
+
+h3 {
+  font-size: 18px;
+  line-height: 22.67px;
+  font-weight: 550;
+  margin-bottom: 24px;
+  margin-top: 24px;
+}
+
+b, strong {
+  font-weight: 600;
+}
+
+.info, .warning, .success, .error {
+  padding: 0 1em 0 2.8em;
+  margin: 1em 0;
+  border-radius: 4px;
+  border: 1px solid;
+  font-size: 14px;
+  position: relative;
+}
+
+.error {
+  color: var(--red-color);
+  border-color: var(--red-color-border);
+  background-color: var(--red-color-background);
+}
+
+.warning {
+  color: var(--yellow-color);
+  border-color: var(--yellow-color-border);
+  background-color: var(--yellow-color-background);
+}
+
+.success {
+  color: var(--green-color);
+  border-color: var(--green-color-border);
+  background-color: var(--green-color-background);
+}
+
+.info {
+  border-color:  var(--border-color);
+  background-color: var(--off-background-color);
+  color: var(--medium-text-color)
+}
+
+.info:before,
+.warning:before,
+.error:before,
+.success:before {
+  content: "";
+  display: inline-block;
+  position: absolute;
+  top: 1.2em;
+  left: 1em;
+}
+
+
+
+/* Apple-style Table CSS */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+  color: var(--medium-text-color);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+thead {
+  background-color: var(--off-background-color);
+  color: var(--text-color);
+}
+
+th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-color);
+}
+
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+/* Responsive table adjustments */
+@media (max-width: 768px) {
+  table {
+    font-size: 0.85rem;
+  }
+  
+  th, td {
+    padding: 0.5rem 0.75rem;
+  }
+}

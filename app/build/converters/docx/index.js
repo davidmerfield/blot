@@ -21,10 +21,9 @@ function TempDir () {
   return tempDir() + makeUid(20);
 }
 
-function read (blog, path, options, callback) {
+function read (blog, path, callback) {
   ensure(blog, "object")
     .and(path, "string")
-    .and(options, "object")
     .and(callback, "function");
 
   var localPath = LocalPath(blog.id, path);

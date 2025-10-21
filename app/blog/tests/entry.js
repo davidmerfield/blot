@@ -90,4 +90,22 @@ describe("entry", function () {
         }
     });
 
+    it("does not crash when the URL contains malformed percent-encoding", async function () {
+
+        await this.write({ path: '/malformed.txt', content: 'Hello!' });
+
+        let error;
+        let res;
+
+        try {
+            res = await this.get('/%E0%A4%A', { redirect: 'manual' });
+        } catch (err) {
+            error = err;
+        }
+
+        if (error) throw error;
+
+        expect(res.status).toEqual(400);
+    });
+
 });

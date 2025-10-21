@@ -9,6 +9,7 @@ var client = require("models/client");
 var config = require("config");
 var BackupDomain = require("./util/backupDomain");
 var flushCache = require("./flushCache");
+var normalizeImageExif = require("./util/imageExif").normalize;
 
 function Changes(latest, former) {
   var changes = {};
@@ -34,6 +35,18 @@ module.exports = function (blogID, blog, callback) {
       former = former || {};
 
       if (err) return callback(err);
+
+      var previousMode = (former && former.imageExif) || "off";
+
+      if (Object.prototype.hasOwnProperty.call(latest, "imageExif")) {
+        latest.imageExif = normalizeImageExif(latest.imageExif, {
+          fallback: previousMode,
+        });
+      } else if (!former.imageExif) {
+        latest.imageExif = normalizeImageExif(previousMode, {
+          fallback: "off",
+        });
+      }
 
       changes = Changes(latest, former);
 

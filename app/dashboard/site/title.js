@@ -1,5 +1,4 @@
 const express = require('express');
-const parse = require("dashboard/util/parse");
 
 const updateBlog = require('dashboard/util/update-blog');
 const title = express.Router();
@@ -9,7 +8,7 @@ title.route('/')
         res.locals.breadcrumbs.add('Title');
         res.render('dashboard/settings/title');
     })
-    .post(parse, async (req, res) => {
+    .post(async (req, res) => {
         try {
             const changes = await updateBlog(req.blog.id, {
                 title: req.body.title

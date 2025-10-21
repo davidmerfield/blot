@@ -2,6 +2,10 @@ name: blot
 services:
   node-app:
     image: blot
+    # even though the os.cpu stats don't reflect this, it does seem capable
+    # of throttling the performance of the node.js service, somehow! 
+    # useful to simulate real-life server resources
+    cpus: 0.75
     build:
       context: ../../
       dockerfile: Dockerfile
@@ -22,9 +26,9 @@ services:
       - ../../tests:/usr/src/app/tests
       - ../../notes:/usr/src/app/notes
       - ../../scripts:/usr/src/app/scripts
-      - ../../todo.txt:/usr/src/app/todo.txt
+      - ../../TODO:/usr/src/app/TODO
       - ../../config:/usr/src/app/config
-    command: npx nodemon /usr/src/app/app/index.js --watch /usr/src/app/app -e js,html,css --ignore /usr/src/app/app/documentation/data --ignore /usr/src/app/app/documentation/output --ignore /usr/src/app/app/views --ignore /usr/src/app/app/views-built  --ignore /usr/src/app/app/clients/*/views --ignore /usr/src/app/app/templates/folders --ignore /usr/src/app/app/templates/latest --ignore /usr/src/app/app/templates/past
+    command: npx --node-options="--max-old-space-size=750 --trace-deprecation" nodemon /usr/src/app/app/index.js --watch /usr/src/app/app -e js,html,css --ignore /usr/src/app/app/documentation/data --ignore /usr/src/app/app/documentation/output --ignore /usr/src/app/app/views --ignore /usr/src/app/app/views-built  --ignore /usr/src/app/app/clients/*/views --ignore /usr/src/app/app/templates/folders --ignore /usr/src/app/app/templates/latest --ignore /usr/src/app/app/templates/past
 
   redis:
     image: "redis:alpine"

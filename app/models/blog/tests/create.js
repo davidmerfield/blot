@@ -2,6 +2,7 @@ describe("Blog.create", function () {
   var create = require("../create");
   var remove = require("../remove");
   var getAllIDs = require("../getAllIDs");
+  var extend = require("../extend");
 
   // Create a test user before each spec
   global.test.user();
@@ -24,6 +25,22 @@ describe("Blog.create", function () {
       test.blog = blog; // will be cleaned up at the end of this test
 
       expect(blog).toEqual(jasmine.any(Object));
+      done();
+    });
+  });
+
+  it("defaults image exif preferences", function (done) {
+    var test = this;
+
+    create(test.user.uid, { handle: "exampleblog" }, function (err, blog) {
+      if (err) return done.fail(err);
+
+      test.blog = extend(blog);
+
+      expect(test.blog.imageExif).toBe("basic");
+      expect(test.blog.isImageExifBasic).toBe(true);
+      expect(test.blog.isImageExifOff).toBe(false);
+
       done();
     });
   });

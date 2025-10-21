@@ -1,0 +1,42 @@
+Spring newsletter  
+
+*You received this email because you subscribed to [Blot’s newsletter](https://blot.im/news). You can [unsubscribe](https://blot.im/news/cancel) if you like. Please reply directly to this email if you have any thoughts or questions.*  
+
+**New features**  
+- You can now [sync your folder using iCloud](https://blot.im/how/sync/icloud).  
+- Three new templates are available. Download the folders to see how Blot generates each site:  
+  - [CV](https://blot.im/templates/cv) – A profile page that works well as a personal site.  
+  - [Documentation](https://blot.im/templates/documentation) – A developer documentation template, also suitable for a digital garden.  
+  - [Event](https://blot.im/templates/event) – A template for conferences, lectures, parties, and weddings.  
+- Blot now [preserves the color profiles](https://blot.im/how/files/images#compression-and-color-profile) of images you publish, meaning you can use the P3 color space.  
+- [TIFF, WEBP, and AVIF](https://blot.im/how/files/images) files now become image posts.  
+- Added plugins that convert bare links to *Bluesky* and *Flickr* posts into embeds.  
+
+**Changes**  
+- Rewrote the [Google Drive](https://blot.im/how/sync/google-drive) integration to bypass new API restrictions that temporarily disrupted syncing.  
+- Adjusted the Twitter embedder to support *x.com* URLs.  
+- Updated dependencies to patch known security vulnerabilities, as per tradition.  
+
+**Bug fixes**  
+- Resolved issues with nested objects, arrays, and tags in [YAML metadata](https://blot.im/how/metadata).  
+- Fixed a bug where empty renamed files caused new posts to have incorrect dates.  
+- Fixed a [Markdown](https://blot.im/how/files/markdown) conversion issue that inserted extra paragraph tags.  
+
+**Questions**  
+- [How would one go about implementing Tufte CSS?](https://blot.im/questions/1449)  
+- [Image gallery on an ordinary Markdown Blot page?](https://blot.im/questions/2993)  
+- [Posting videos?](https://blot.im/questions/1753)  
+
+**Mistakes**  
+There were no major downtime incidents this season. However, there was a persistent issue between the reverse proxy and Blot’s application servers. At times, visitors briefly saw an error page even when both application servers were running and healthy. After extensive debugging, I traced the problem to a long-standing issue in the blog renderer. Some ancient parts of the blog renderer were returning incorrect HTTP error codes in response to specific template issues. As a result, the proxy incorrectly marked the application server as offline. When both were marked offline, your visitors saw the error page. This is now fixed.
+
+**Plans for the summer**  
+- Considering changing Blot’s license from [CC0 to GPL](https://blot.im/questions/3053). Feel free to [share your thoughts](https://blot.im/questions/3053) or reply to this email.  
+- Adding more templates. If you have any requests, please reply to this email.  
+- Improving the template engine and developer documentation.  
+
+If you have any thoughts or questions, please don’t hesitate to reply directly to this email.  
+
+Sincerely,  
+David  
+

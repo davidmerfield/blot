@@ -6,51 +6,128 @@ const LocalPath = require("helper/localPath");
 const hash = require("helper/hash");
 const sharp = require("sharp");
 const config = require("config");
+const exif = require("./exif");
+const Transformer = require("helper/transformer");
 
-const EXTENSIONS_TO_CONVERT = [".tif", ".tiff", ".webp", ".avif"];
-const SUPPORTED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ...EXTENSIONS_TO_CONVERT];
-
+const EXTENSIONS_TO_CONVERT = [
+  ".tif",
+  ".tiff",
+  ".webp",
+  ".avif",
+  ".heic",
+  ".heif",
+];
+const SUPPORTED_EXTENSIONS = [
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ...EXTENSIONS_TO_CONVERT,
+];
 
 function is(path) {
   return SUPPORTED_EXTENSIONS.includes(extname(path).toLowerCase());
 }
 
-function read(blog, path, options, callback) {
-  ensure(blog, "object")
-    .and(path, "string")
-    .and(options, "object")
-    .and(callback, "function");
+async function read(blog, path, callback) {
+  ensure(blog, "object").and(path, "string").and(callback, "function");
 
   const localPath = LocalPath(blog.id, path);
-  // if we need to convert the image to another format, store the converted image in the asset directory
   const assetDirectory = join(config.blog_static_files_dir, blog.id);
-  
-  fs.stat(localPath, async (err, stat) => {
-    if (err) return callback(err);
+  // If we need to convert the image to another format, store the converted
+  // image in the asset directory for the blog.
 
-    const name = options.name || basename(path);
-    const pathForTitle = options.pathDisplay || join(dirname(path), name);
+  try {
+    const stat = await fs.stat(localPath);
+    const name = basename(path);
+    const pathForTitle = join(dirname(path), name);
     const title = titlify(pathForTitle);
     const isRetina = path.toLowerCase().includes("@2x") ? 'data-2x="true"' : "";
+    let outputPath = path;
 
-    if (EXTENSIONS_TO_CONVERT.includes(extname(path).toLowerCase())) {
-      const convertedPath = join("/_assets", hash(path), `${name}.png`);
-      // ensure asset directory exists
-      await fs.ensureDir(join(assetDirectory, "_assets", hash(path)));
-      // remove any existing converted image
-      await fs.remove(join(assetDirectory, convertedPath));
-      try {
-        await sharp(localPath).png().toFile(join(assetDirectory, convertedPath));
-      } catch (e) {
-        return callback(e);
-      }
+    let metadata = {};
 
-      path = convertedPath;
+    try {
+      metadata = await sharp(localPath).metadata();
+    } catch (metadataErr) {
+      metadata = {};
     }
 
-    const contents = `<img src="${encodeURI(path)}" title="${title}" alt="${title}" ${isRetina}/>`;
-    
-    callback(null, contents, stat);
+    const parsedExif = await exif.parseExif(localPath, blog.imageExif);
+
+    console.log("Parsed EXIF:", parsedExif);
+
+    const extras = Object.keys(parsedExif).length
+      ? { exif: parsedExif }
+      : undefined;
+
+    console.log("Extras to be returned:", extras);
+
+    if (EXTENSIONS_TO_CONVERT.includes(extname(path).toLowerCase())) {
+      const transformer = new Transformer(blog.id, "img-converter");
+      const hashPath = hash(path);
+      const convertedFilename = `${name}.png`;
+      const convertedRelativePath = `/_assets/${hashPath}/${convertedFilename}`;
+
+      const absoluteFromRelative = (relativePath) =>
+        join(assetDirectory, relativePath.replace(/^\//, ""));
+
+      const writeConversion = async (sourcePath, relativePath) => {
+        const absolutePath = absoluteFromRelative(relativePath);
+
+        await fs.ensureDir(dirname(absolutePath));
+        await fs.remove(absolutePath);
+        await sharp(sourcePath).png().toFile(absolutePath);
+
+        return { relativePath };
+      };
+
+      const convertImage = async (sourcePath) =>
+        writeConversion(sourcePath, convertedRelativePath);
+
+      const conversion = await lookupWithTransformer(
+        transformer,
+        path,
+        convertImage
+      );
+
+      const conversionRelativePath =
+        conversion?.relativePath || convertedRelativePath;
+      const conversionAbsolutePath = absoluteFromRelative(
+        conversionRelativePath
+      );
+
+      if (!(await fs.pathExists(conversionAbsolutePath))) {
+        await writeConversion(localPath, conversionRelativePath);
+      }
+
+      outputPath = conversionRelativePath;
+    }
+
+    const contents = `<img src="${encodeURI(
+      outputPath
+    )}" title="${title}" alt="${title}" ${isRetina}/>`;
+
+    callback(null, contents, stat, extras);
+  } catch (err) {
+    callback(err);
+  }
+}
+
+function lookupWithTransformer(transformer, src, transform) {
+  return new Promise((resolve, reject) => {
+    transformer.lookup(
+      src,
+      (resolvedPath, done) => {
+        Promise.resolve(transform(resolvedPath))
+          .then((result) => done(null, result))
+          .catch(done);
+      },
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      }
+    );
   });
 }
 

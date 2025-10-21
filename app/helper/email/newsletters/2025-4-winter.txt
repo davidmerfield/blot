@@ -1,0 +1,24 @@
+Winter newsletter
+
+*You received this email because you subscribed to [Blot’s newsletter](https://blot.im/about/news). You can [unsubscribe](https://blot.im/about/news/cancel) if you like. Please reply directly to this email if you have any thoughts or questions.*
+
+**New features**
+- Plugin which injects titles into markdown posts without them. This makes using Obsidian much easier. 
+- added pagination to tagged template pages
+
+**Changes**
+- added file size limit to dropbox client
+
+**Bugs fixed**
+- fixed bug with issue syncing large files via dropbox
+- fixed bug with wikilinks referencing deleted entries
+
+**Questions**
+
+**Mistakes**
+
+**Plans for this season**
+
+If you have any thoughts or questions about any of this, please don’t hesitate to reply directly to this email.
+
+Sincerely, David

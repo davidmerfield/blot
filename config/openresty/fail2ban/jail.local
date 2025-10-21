@@ -1,0 +1,51 @@
+[DEFAULT]
+backend = polling
+banaction = iptables-multiport
+bantime  = 3600
+findtime = 600
+maxretry = 3
+
+bantime.increment = true
+bantime.factor = 24
+bantime.formula = ban.Time * (1<<(ban.Count-1))
+bantime.maxtime = 604800
+
+[nginx-403]
+filter = nginx-403
+enabled = true
+logpath = /var/instance-ssd/logs/access.log
+backend = polling
+port = http,https
+maxretry = 15
+bantime = 1800
+banaction = iptables-multiport
+logencoding = auto
+polling_file = true
+findtime = 30
+maxlines = 100
+
+[nginx-404]
+enabled = true
+logpath = /var/instance-ssd/logs/access.log
+backend = polling
+port = http,https
+maxretry = 30
+bantime = 1800
+banaction = iptables-multiport
+logencoding = auto
+polling_file = true
+findtime = 30
+maxlines = 100
+
+[nginx-429]
+enabled = true
+logpath = /var/instance-ssd/logs/access.log
+backend = polling
+port = http,https
+maxretry = 10 
+bantime = 1800
+banaction = iptables-multiport
+logencoding = auto
+polling_file = true
+findtime = 30
+maxlines = 100

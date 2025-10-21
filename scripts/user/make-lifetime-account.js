@@ -1,7 +1,7 @@
 var from = process.argv[2];
 var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
-var User = require("user");
+var User = require("models/user");
 
 User.getByEmail(from, function (err, user) {
   if (!user) throw "No user";

@@ -1,0 +1,68 @@
+.sidebar {
+  visibility: hidden;
+}
+.sidebar.initialized {
+  visibility: visible;
+  transition: visibility 0s;
+}
+
+.sidebar {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  
+  .sidebar li {
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+  }
+  
+  .sidebar a {
+    display: block;
+    padding: 6px 12px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+  }
+  
+  .sidebar a:hover {
+    color: var(--text-color);
+  }
+  
+  .sidebar a.active {
+    color: var(--text-color);
+    font-weight: 500;
+  }
+
+  .sidebar [data-depth] > a {
+    font-weight: 500;
+  }
+  
+  .sidebar [data-depth] {
+    padding-left: calc((var(--depth) - 1) * 1.5rem);
+    font-size: calc(1em - ((var(--depth) - 1) * 0.05em));
+    color: hsl(0, 0%, calc(20% + ((var(--depth) - 1) * 20%)));
+  }
+  
+  .sidebar .submenu {
+    height: 0;
+    overflow: hidden;
+    transition: height 0.3s ease-out;
+  }
+  
+  .sidebar .submenu.expanded {
+    height: auto;
+  }
+  
+  .sidebar .has-submenu > a::after {
+    content: "›";
+    float: right;
+    transition: transform 0.3s;
+  }
+  
+  .sidebar .has-submenu.expanded > a::after {
+    transform: rotate(90deg);
+  }
+  
+  

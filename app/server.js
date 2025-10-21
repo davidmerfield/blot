@@ -1,65 +1,16 @@
 var config = require("config");
 var Express = require("express");
-var helmet = require("helmet");
 var vhost = require("vhost");
 var blog = require("blog");
 var site = require("site");
 var trace = require("helper/trace");
 var clfdate = require("helper/clfdate");
 
-// const { PerformanceObserver } = require('perf_hooks');
-
-// // 1. GC Observer
-// const obs = new PerformanceObserver((list) => {
-//   list.getEntries().forEach((entry) => {
-//     // Get memory usage details
-//     const memoryUsage = process.memoryUsage();
-//     const heapUsedMB = (memoryUsage.heapUsed / 1024 / 1024).toFixed(2);
-//     const heapTotalMB = (memoryUsage.heapTotal / 1024 / 1024).toFixed(2);
-
-//     // Log GC event and heap size
-//     console.log(
-//       `${clfdate()} [GC] kind=${entry.kind}, duration=${entry.duration}ms, ` +
-//       `heapUsed=${heapUsedMB}MB, heapTotal=${heapTotalMB}MB`
-//     );
-//   });
-// });
-// obs.observe({ entryTypes: ['gc'], buffered: true });
-
-// // 2. Event-Loop Lag Measurement
-// // We'll measure the delay in setInterval to gauge how behind the event loop is.
-// const CHECK_INTERVAL_MS = 1000; // How frequently to check in ms
-// let lastCheck = process.hrtime.bigint();
-
-// setInterval(() => {
-//   const now = process.hrtime.bigint();
-//   // Convert nanoseconds to milliseconds, then see how far we deviated from 1000 ms
-//   const diffMs = (Number(now - lastCheck) / 1e6) - CHECK_INTERVAL_MS;
-
-//   // Get memory usage details
-//   const memoryUsage = process.memoryUsage();
-//   const heapUsedMB = (memoryUsage.heapUsed / 1024 / 1024).toFixed(2);
-//   const heapTotalMB = (memoryUsage.heapTotal / 1024 / 1024).toFixed(2);
-
-//   // Log event loop lag and heap size
-//   console.log(
-//     `${clfdate()} [LoopLag] ${diffMs.toFixed(2)}ms, ` +
-//     `heapUsed=${heapUsedMB}MB, heapTotal=${heapTotalMB}MB`
-//   );
-
-//   lastCheck = now;
-// }, CHECK_INTERVAL_MS);
-
-
-
-
 // Welcome to Blot. This is the Express application which listens on port 8080.
 // NGINX listens on port 80 in front of Express app and proxies requests to
 // port 8080. NGINX handles SSL termination, cached response delivery and
 // compression. See ../config/nginx for more. Blot does the rest.
 var server = Express();
-
-server.set("etag", false); // turn off etags for responses
 
 // Removes a header otherwise added by Express. No wasted bytes
 server.disable("x-powered-by");
@@ -94,8 +45,34 @@ server.get("/redis-health", function (req, res) {
   });
 });
 
-// Prevent <iframes> embedding pages served by Blot
-server.use(helmet.frameguard("allow-from", config.host));
+// Prevent <iframes> embedding pages served by Blot while allowing
+// exceptions for the configured host. Adds both X-Frame-Options and an
+// equivalent Content-Security-Policy directive.
+server.use(function (req, res, next) {
+  if (!config.host) return next();
+
+  var allowFromHeader = config.host;
+  var allowFromOrigin = config.protocol + config.host;
+  var frameAncestorsSources = ["'self'", allowFromOrigin];
+  var frameAncestors = "frame-ancestors " + frameAncestorsSources.join(" ");
+
+  res.set("X-Frame-Options", "ALLOW-FROM " + allowFromHeader);
+
+  var existingCSP = res.get("Content-Security-Policy");
+
+  if (existingCSP && /frame-ancestors/i.test(existingCSP)) {
+    return next();
+  }
+
+  if (existingCSP) {
+    var sanitized = existingCSP.trim().replace(/;$/, "");
+    res.set("Content-Security-Policy", sanitized + "; " + frameAncestors);
+  } else {
+    res.set("Content-Security-Policy", frameAncestors);
+  }
+
+  next();
+});
 
 // Log response time in development mode
 server.use(trace.init);

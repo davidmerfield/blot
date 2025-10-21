@@ -1,7 +1,6 @@
 const { build } = require("esbuild");
 const { join } = require("path");
- 
-
+const clfdate = require("helper/clfdate");
 
 module.exports = ({source, destination}) => async () => {
     await build({
@@ -13,7 +12,7 @@ module.exports = ({source, destination}) => async () => {
       outfile: join(destination, "documentation.min.js")
     });
     
-    console.log('built documentation.min.js');
+    console.log(clfdate(), 'built documentation.min.js');
     
     await build({
       entryPoints: [join(source, "js/dashboard.js")],
@@ -24,7 +23,7 @@ module.exports = ({source, destination}) => async () => {
       outfile: join(destination, "dashboard.min.js")
     });
     
-    console.log('built dashboard.min.js');
+    console.log(clfdate(), 'built dashboard.min.js');
   }
   
   

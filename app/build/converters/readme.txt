@@ -11,7 +11,6 @@ Converter must expose two methods, ```read``` and ```is```.
 Arguments:
 - blog <object>
 - path <string>
-- options <object>
 - callback <function>
   is invoked with err <null or Error>, html <string>, stat <fs.Stat object>
 

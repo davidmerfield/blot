@@ -22,14 +22,25 @@
 {{> status-line}}
 
 {{#sharingLink}}
-{{^setupComplete}}
 {{^error}}
 <div class="line">
-  <span class="label">Setup</span>
-  <span class="center">Setting up folder...</span>
+  <span class="label">Folder</span>
+  <span class="center">
+    
+    {{#setupComplete}}
+    Set up complete
+    <span style="color:rgb(158, 154, 152);max-width:500px;display: block;margin-top: 10px;font-size: 14px;">
+    You can rename, move or make changes to your site’s folder in iCloud.</span>
+    {{/setupComplete}}
+    {{^setupComplete}}
+    Transferring files to iCloud   
+    <span style="color:rgb(158, 154, 152);max-width:500px;display: block;margin-top: 10px;font-size: 14px;">
+      Do not make changes to your site’s folder in iCloud until the transfer is complete.</span>
+    {{/setupComplete}}
+
+  </span>  
 </div>
 {{/error}}
-{{/setupComplete}}
 {{/sharingLink}}
 
 
@@ -42,36 +53,4 @@
 
 </div>
 <br><br>
-{{/account}}
-
-{{^account}}
-<div class="inset">
-  <p>
-    <img width="16" height="16" src="{{#cdn}}/images/sync/icloud.svg{{/cdn}}" style="position: relative;top:2px;margin-right: 4px;width:16px" />
-    iCloud
-  </p>  
-  <ol>
-    <li>Create a new folder in your iCloud Drive.</li>
-    <li>Right-click the folder, select ‘<b>Share</b>’, then choose ‘<b>Invite with Link</b>.  
-        Add the following email as a collaborator:  
-        <strong>{{blotiCloudAccount}}</strong>  
-        <button class="copy" data-copy="{{blotiCloudAccount}}">
-            <span class="icon-copy"></span> Copy
-        </button>
-    </li>
-    <li>Paste the generated share link in the field below:</li>
-</ol>
-  <form class="dashboard-form" action="{{{base}}}/set-up-folder" method="post">
-    <input type="hidden" name="_csrf" value="{{csrftoken}}">
-    <input type="hidden" name="redirect" value="{{{base}}}">
-    <input type="hidden" name="blotiCloudAccount" value="{{blotiCloudAccount}}">
-    <label for="email">iCloud folder sharing link:</label>
-    <input type="text" name="sharingLink" value="">
-    <div class="buttons">
-      <button type="submit">Submit link</button> 
-      <button type="submit" name="cancel" value="true">Cancel</button> 
-    </div>
-  </form>
-
-</div>
 {{/account}}

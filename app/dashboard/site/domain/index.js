@@ -53,7 +53,7 @@ Domain.route('/')
     .get((req, res) => {
         res.render('dashboard/settings/domain');
     })
-    .post(require('dashboard/util/parse'), async (req, res) => {
+    .post(async (req, res) => {
         const blogID = req.blog.id;
         const domainInput = req.body.domain;
         const { hostname } = parse(domainInput);

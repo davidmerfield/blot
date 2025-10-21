@@ -20,7 +20,7 @@ var he = require("he");
 // Maps https://cdn.blot.im/blog_xyz/_image_cache/abc.jpg to
 // /_image_cache/abc.jpg to enable us to look up the file quickly
 // on disk without making an HTTP request
-function resolveCDNPath (src) {
+function resolveCDNPath(src) {
   if (src.indexOf(config.cdn.origin) !== 0) return src;
 
   try {
@@ -35,12 +35,12 @@ function resolveCDNPath (src) {
   }
 }
 
-function Transformer (blogID, name) {
+function Transformer(blogID, name) {
   ensure(blogID, "string").and(name, "string");
 
   var keys = Keys(blogID, name);
 
-  function lookup (src, transform, callback) {
+  function lookup(src, transform, callback) {
     if (type(src) !== "string") {
       return callback(new Error("Transformer: src is not a string"));
     }
@@ -130,6 +130,51 @@ function Transformer (blogID, name) {
         );
       });
 
+    // If the path contains a backward slash, we try and resolve it as if
+    // it were a forward path. This is to handle users used to the
+    // Windows convention of backward slashes in paths.
+    if (path.indexOf("\\") !== -1) {
+      // first with the original case
+      tasks.push(function (next) {
+        var backslashPath = path.split("\\").join("/");
+        debug("attempting to resolve backslash path", backslashPath);
+        fullLocalPath = localPath(blogID, backslashPath);
+        fromPath(fullLocalPath, transform, next);
+      });
+
+      // then case-insensitively
+      tasks.push(function (next) {
+        var backslashPath = path.split("\\").join("/");
+        debug("attempting backslash path case-insensitively", backslashPath);
+        caseSensitivePath(
+          localPath(blogID, "/"),
+          backslashPath,
+          function (err, fullLocalPath) {
+            if (err) return next(err);
+            fromPath(fullLocalPath, transform, next);
+          }
+        );
+      });
+
+      // then URI-decoded and case-insensitively
+      if (decodedURI)
+        tasks.push(function (next) {
+          var backslashPath = decodedURI.split("\\").join("/");
+          debug(
+            "attempting backslash URI-decoded path case-insensitively",
+            backslashPath
+          );
+          caseSensitivePath(
+            localPath(blogID, "/"),
+            backslashPath,
+            function (err, fullLocalPath) {
+              if (err) return next(err);
+              fromPath(fullLocalPath, transform, next);
+            }
+          );
+        });
+    }
+
     // Will work down the list of paths. If one of the paths
     // works then it'll stop and return the result!
     async.tryEach(tasks, function (err, results) {
@@ -140,7 +185,7 @@ function Transformer (blogID, name) {
   }
 
   // callback must be passed an error or null and result
-  function fromURL (url, transform, callback) {
+  function fromURL(url, transform, callback) {
     var tasks = [];
 
     // Look in the database to see if we have downloaded
@@ -169,9 +214,12 @@ function Transformer (blogID, name) {
         // responses nicely.
         if (err) return callback(err);
 
-        var path = results[0];
+        if (!Array.isArray(results)) results = [];
 
-        headers = results[1];
+        var path = results[0];
+        var newHeaders = results[1];
+
+        if (newHeaders) headers = newHeaders;
 
         // We didn't redownload the file since it's
         if (!path && result) return callback(null, result);
@@ -198,7 +246,7 @@ function Transformer (blogID, name) {
     });
   }
 
-  function fromPath (path, transform, callback) {
+  function fromPath(path, transform, callback) {
     ensure(path, "string").and(transform, "function").and(callback, "function");
 
     debug(path, "hashing file");
@@ -229,7 +277,7 @@ function Transformer (blogID, name) {
     });
   }
 
-  function getURL (url, callback) {
+  function getURL(url, callback) {
     var info = [keys.url.headers(url), keys.url.content(url)];
 
     client.mget(info, function (err, res) {
@@ -251,7 +299,7 @@ function Transformer (blogID, name) {
     });
   }
 
-  function get (hash, callback) {
+  function get(hash, callback) {
     client.get(keys.content(hash), function (err, stringifiedResult) {
       if (err) throw err;
 
@@ -265,7 +313,7 @@ function Transformer (blogID, name) {
     });
   }
 
-  function setURL (url, headers, hash, result, callback) {
+  function setURL(url, headers, hash, result, callback) {
     callback = callback || nothing;
 
     ensure(url, "string")
@@ -295,7 +343,7 @@ function Transformer (blogID, name) {
       .exec(callback);
   }
 
-  function set (hash, result, callback) {
+  function set(hash, result, callback) {
     callback = callback || nothing;
 
     ensure(hash, "string").and(result, "object").and(callback, "function");
@@ -310,7 +358,7 @@ function Transformer (blogID, name) {
       .exec(callback);
   }
 
-  function flush (callback) {
+  function flush(callback) {
     client.smembers(keys.everything, function (err, keys) {
       client.del(keys, function () {
         callback();
@@ -320,19 +368,19 @@ function Transformer (blogID, name) {
 
   return {
     lookup: lookup,
-    flush: flush
+    flush: flush,
   };
 }
 
-function nothing (err) {
+function nothing(err) {
   if (err) throw err;
 }
 
-function missing (src) {
+function missing(src) {
   return new Error("Transformer: URL could not be downloaded: " + clip(src));
 }
 
-function clip (src) {
+function clip(src) {
   if (src.length > 50)
     src =
       src.slice(0, 50) + "... (" + (src.length - 50) + " characters removed)";

@@ -10,7 +10,7 @@
 
         <ul class="tool-list">
             {{#related}}
-            <li><a href="/tools/{{slug}}">{{#icon}}<img src="/tools/{{{icon}}}" width="16">{{/icon}}<span class="a">{{title}}</span></a></li>
+            <li><a href="/tools/{{slug}}">{{#icon}}<img src="{{#cdn}}/tools/{{{icon}}}{{/cdn}}" width="16">{{/icon}}<span class="a">{{title}}</span></a></li>
             {{/related}}  
           </ul>
           

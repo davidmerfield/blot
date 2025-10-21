@@ -14,7 +14,7 @@ Intellectual property as a legal regime has its costs and its benefits. While id
 Making Blot's source code public means Blot is more appealing to technical people. More importantly 'open-source' implies an insouciance towards money which I like. It is not financially sensible for me to make [Blot's source code](/source-code) available freely under the most permissive license possible. However, I'm determined to not sell Blot, ever. Releasing the source code has the benefit of increasing the value of the hosted service to potential customers while reducing the value of Blot if I were to attempt to sell it in a moment of weakness. 
 
 
-I also like the spectacle of open-source. Work on Blot is done in public. I suspect it's reassuring to potential customers to see [my git commit messages](/updates) neatly formatted on the news page, for them to know that Blot is alive. I like the ideals of the free software movement and I like Richard Stallman. However, I think the *free* part of Stallman's term *free software* is confusing. I'm also aware of the politics of the term 'open source', so I avoid both and when I address this topic on Blot's website I say that _Blot's source code is dedicated to the public domain_. 
+I also like the spectacle of open-source. Work on Blot is done in public. I suspect it's reassuring to potential customers to see [my git commit messages](/updates) neatly formatted on the news page, for them to know that Blot is alive. I like the ideals of the free software movement and I like Richard Stallman. However, I think the *free* part of Stallman's term *free software* is confusing. I'm also aware of the politics of the term 'open source', so I avoid both and when I address this topic on Blot's website I say that _Blot's source code is available under the AGPL license_.
 
 # Censorship
 
@@ -64,4 +64,4 @@ I want to provide a platform for the interesting and radical even if it means to
 
 ## What if I still disagree with you?
 
-I do think that reasonable people can disagree about the principle of free speech. Blot's source-code is dedicated to the public domain, you can host it yourself if you like.
+I do think that reasonable people can disagree about the principle of free speech. Blot's source-code is available, you can host it yourself if you like.

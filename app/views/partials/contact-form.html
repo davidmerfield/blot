@@ -1,12 +1,17 @@
 
 <form id="contact-form" method="POST" style="padding: 0 24px;">
-    <textarea required name="message" style="min-height: 120px;box-sizing: border-box;border:1px solid #dddddc;border-radius: 5px;width:100%;padding:0.5rem;margin:0.5rem 0"></textarea>
+    <input type="hidden" name="_csrf" value="{{csrftoken}}">
+    <input type="text" name="name" placeholder="Name" aria-hidden="true" tabindex="-1">
+    <textarea name="message"></textarea>
+    <textarea name="contact_e879"></textarea>
     <label style="user-select: none;cursor: pointer;">
       <input type="checkbox" name="emailToggle" value="yes" style="display: inline;width: auto;margin-right: 6px;">
       Include my email so I can be contacted
     </label>
     <label style="display: none;margin: 6px 0 0;">
-      <input type="email" name="email" placeholder="Email address" style="box-sizing: border-box;border:1px solid #dddddc;border-radius: 5px;width:100%;padding:0.5rem;margin:0.5rem 0 0">
+        Email address:
+        <input type="email" name="email">
+      <input type="text" name="contact_7d45" style="box-sizing: border-box;border:1px solid #dddddc;border-radius: 5px;width:100%;padding:0.5rem;margin:0.5rem 0 0">
     </label>
     <button style="display: block;border:none;cursor: pointer;font-size:14px;margin-top:24px;border-radius: var(--border-radius);background-color: var(--accent-color);color:var(--background-color);padding:0.5em 0.75em;font-weight: 600;" type="submit">Send</button>
     <br><br>

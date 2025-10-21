@@ -1,0 +1,18 @@
+<!-- Hidden checkbox to toggle navigation -->
+<input type="checkbox" id="nav-toggle" />
+<nav class="nav-container">
+  <label for="nav-toggle" class="nav-label"
+    ><span class="icon-dots"></span
+  ></label>
+  <div class="index-link" style="flex-grow: 1;">
+    <a href="/">{{title}}</a>
+  </div>
+
+  <ul class="nav-links menubar">
+    {{#menu}}
+    <li data-path="{{{id}}}"><a href="{{{url}}}">{{{label}}}</a></li>
+    {{/menu}}
+    <li><a href="/search"><span class="icon-search"></span></a></li>
+  </ul>
+</nav>
+<label for="nav-toggle" class="popup-cover"></label>

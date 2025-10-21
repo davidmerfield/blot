@@ -24,40 +24,28 @@ Importer.route("/wordpress")
       label: "Wordpress",
     });
 
-    const form = new multiparty.Form({
-      importDirectory,
-      maxFieldsSize,
-      maxFilesSize,
-    });
+    res.message(req.baseUrl, "Began import");
 
-    form.parse(req, function (err, fields, files) {
+    const exportUpload = req.files.exportUpload[0];
+    const identifier = exportUpload.originalFilename;
+    const inputXML = exportUpload.path;
+
+    fs.outputFileSync(
+      join(importDirectory, "identifier.txt"),
+      identifier,
+      "utf-8"
+    );
+
+    wordpress(inputXML, outputDirectory, status, {}, async function (err) {
       if (err) {
-        return res.message(req.baseUrl, new Error("Failed to parse upload"));
+        return fs.outputFile(join(importDirectory, "error.txt"), err.message);
       }
 
-      res.message(req.baseUrl, "Began import");
-
-      const exportUpload = files.exportUpload[0];
-      const identifier = exportUpload.originalFilename;
-      const inputXML = exportUpload.path;
-
-      fs.outputFileSync(
-        join(importDirectory, "identifier.txt"),
-        identifier,
-        "utf-8"
-      );
-
-      wordpress(inputXML, outputDirectory, status, {}, async function (err) {
-        if (err) {
-          return fs.outputFile(join(importDirectory, "error.txt"), err.message);
-        }
-
-        try {
-          await finish();
-        } catch (err) {
-          fs.outputFile(join(importDirectory, "error.txt"), err.message);
-        }
-      });
+      try {
+        await finish();
+      } catch (err) {
+        fs.outputFile(join(importDirectory, "error.txt"), err.message);
+      }
     });
   });
 

@@ -11,10 +11,6 @@ module.exports = {
     title: "David",
     template: "SITE:blog",
   },
-  frances: {
-    title: "Frances Benjamin Johnston",
-    template: "SITE:reference",
-  },
   illustrator: {
     title: "Thought-forms",
     template: "SITE:portfolio",

@@ -1,5 +1,47 @@
 <h1>Google Docs</h1>
-<p>Supports files created by <a href="https://en.wikipedia.org/wiki/Google_Docs">Google Docs</a>. Much formatting is stripped so posts match the style of your blog.</p>
-<p>You must sync your folder with <a href="/how/sync/google-drive">Google Drive</a> in order to publish Google Docs.</p>
+
+<p>Supports files created by <a href="https://en.wikipedia.org/wiki/Google_Docs">Google Docs</a>. You must sync your folder with <a href="/how/sync/google-drive">Google Drive</a> in order to publish Google Docs.</p>
+
+<h2>Add metadata and front matter</h2>
+
+<p>Blot reads <a href="/how/files/google-docs">metadata</a> at the very top of your Google Doc. For example:</p>
+
+<pre>Title: October Newsletter
+Tags: announcements, fall
+Summary: A quick update on what shipped in October.
+
+The rest of your post goes here.
+</pre>
+
+<h2>Embed images and other files</h2>
+
+<p>Insert images directly in Google Docs—they will be downloaded and stored beside the post. Alt and title text are preserved if they are part of the image in Google Docs.</p>
+
+<h2>Formatting tips</h2>
+
+<ul>
+  <li>Use the Google Docs heading styles (<code>Heading 1</code>, <code>Heading 2</code>, etc.) for in-post structure. They are converted to matching HTML heading levels on your blog.</li>
+  <li>Use <em>Title</em> and <em>Subtitle</em> styles only if you want them to turn into the main title and an introductory subheading.</li>
+  <li>Block quotes, lists, code blocks and other semantic elements should be created with Google Docs’ default formatting options. Blot converts them to standard HTML equivalents.</li>
+</ul>
+
+<h2>Blockquotes</h2>
+
+<p>You can use Markdown or email-style &gt; characters for block quoting. They are presented as:</p>
+
+<pre>&gt; This is a blockquote with two paragraphs.
+&gt;
+&gt; This is the second paragraph. Vestibulum enim wisi.</pre>
 
 
+<h2>How Google Doc exports are converted</h2>
+
+<ul>
+  <li><strong>Headings are preserved.</strong> The built-in <em>Title</em> style becomes a title on your site and the <em>Subtitle</em> style becomes subheadings. Use normal heading levels inside the body of the document for the rest of your structure.</li>
+  <li><strong>Links are cleaned.</strong> Google’s tracking redirects are removed so each link on your blog points directly to the original URL.</li>
+  <li><strong>Metadata is parsed.</strong> Optional YAML-style front matter at the top of the document becomes post metadata.</li>
+  <li><strong>Inline styles are stripped.</strong> Bold and italic text are converted to semantic HTML (<code>&lt;strong&gt;</code>/<code>&lt;em&gt;</code>) and the remaining inline styles are removed so the post inherits your theme’s typography.</li>
+  <li><strong>Line breaks are preserved.</strong> Single line breaks are kept by default so poetry or addresses appear as expected.</li>
+  <li><strong>Images and other assets are downloaded.</strong> Embedded images are fetched, stored on Blot and the image references are updated to point to those local copies.</li>
+  <li><strong>5&nbsp;MB size limit.</strong> Google’s HTML export must be smaller than 5&nbsp;MB. Larger documents should be split or simplified before they can be published.</li>
+</ul>

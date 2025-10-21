@@ -6,7 +6,7 @@ const debug = require("debug")("blot:converters:org");
 const cheerio = require("cheerio");
 const extractMetadata = require("build/metadata");
 
-module.exports = function (blog, text, options, callback) {
+module.exports = function (blog, text, callback) {
   var args = [
     // Limit the heap size for the pandoc process
     // to prevent pandoc consuming all the system's

@@ -1,24 +1,20 @@
 #e15f16 zacharykeeting.com Zachary Keeting, is an artist
 #da9a87 blog.andrewjanjigian.com Andrew Janjigian, is a photographer
-#dc1c8e hannautkin.com Hanna Utkin, is a filmmaker
 #7a8aa8 keywords.oxus.net Kerim Friedman, is an anthropologist
 #b59681 discombobulated.co.nz Jessica Nickelsen, is a writer
-#d790c0 blog.aurynn.com Aurynn Shaw, is an engineer
+#1b6cb5 rebeccakukshtel.com Rebecca Kukshtel, is a software engineer
+#d790c0 blog.aurynn.com Aurynn Shaw, is a software engineer
 #a5a374 john.pavlusoffice.com John Pavlus, is a writer
 #a0aab9 iiiiiiiii.in Ishtaarth Dalmia, is a writer
 #60b7dc www.failuretolerated.com Sean McCoy, is a game designer
 #ab4548 mrfrisby.com Stuart Frisby, is a designer
 #696e66 vaughntan.org Vaughn Tan, is a writer
-#c56d64 blog.pixelswithin.com Diana Lopez, is a designer
-#e2c556 eli.li Eli Mellen, is a web developer
-#e13934 www.elisamirkil.com Elisa Mirkil, is a designer
+#e2c556 eli.li Eli Mellen, is a software engineer
 #d08573 paul.af Paul Esch-Laurent, is a software engineer
 #9e826d diary.craigwhite.nyc Craig White, is an artist
-#44679d mariusmasalar.me Marius Masalar, is a photographer
-#4c919c www.ishshah.me Ish Shah, is a software engineer
-#5177a4 www.chrbutler.com Chris Butler, is a designer
+#5177a4 www.chrbutler.com Christopher Butler, is a designer
 #576c50 benlog.net Ben Greenberg, is a journalist
-#111111 afc.letterspace.org Robert van Vliet, is a writer
+#111111 www.letterspace.org Robert van Vliet, is a writer
 #94c5df inhab.it Wil Turner, is a writer
 #828282 www.skellis.net Simon Ellis, is an artist
 #da6d8d ianamurray.work Iana Murray, is a journalist
@@ -32,14 +28,13 @@
 #d0a66f tellyou.today Neale Stokes, is a librarian
 #7a9951 brainsister.com Jessica Doyle, is a writer
 #945830 poetry.bencallahan.com Ben Callahan, is a poet
-#6b98d2 www.maxkeith.co Max Keith, is a trail runner from Chile
+#6b98d2 www.maxkeith.co Max Keith, is a runner
 #99abc4 spittingdog.net Dave Haysom, is a translator
-#b07246 anitaposch.com Anita Posch, is a writer from Austria
 #d28f00 reillybrennan.com Reilly Brennan, is a venture capitalist
 #c40002 sidenote.ridwansanusi.com Ridwan Sanusi, is a designer
 #6e44b3 max.engineer Max Chernyak, is a software engineer
 #f1bd00 oliviaastawood.com Olivia Wood, is a writer
-#387db9 nowaykohei.com Kohei Foss, is a student 
+#387db9 nowaykohei.com Kohei Foss, is a project manager 
 #21732d www.nitinpai.in Nitin Pai, is a think-tank director
 #000000 jeankapsa.com Jean Kapsa, is a pianist
 #000000 www.declad.com Lewis Martin, is an architect
@@ -47,11 +42,24 @@
 #000000 bgreen.lol Brandon Lucas Green, is a musician
 #000000 meredithgran.com Meredith Gran, is a cartoonist
 #000000 ellanew.com Ellane W, is a designer
-#000000 raw.taisukemino.com Taisuke Mino, is a programmer
 #000000 alongtheray.com Raymond Hines, is a writer
 #000000 matthiaszeeb.net Matthias Zeeb, is an economist
-#000000 simonuvarov.com Simon Uvarov, is a programmer
-#000000 karaman.is Georgios Karamanis, is a designer
+#000000 simonuvarov.com Simon Uvarov, is a software engineer
 #000000 www.carsonteuscher.com Carson Teuscher, is a historian
 #000000 erinkissane.com Erin Kissane, is a writer
 #000000 nonaneva.com ノナネヷ, is an artist
+#000000 ilovewasting.ink Peter Orosz, is a writer
+#000000 blog.vesikar.com Yash Vesikar, is a computer scientist
+#000000 words.studiopallister.com James Pallister, is a writer
+#000000 www.gillianrosselli.com Gillian Rosselli, is an artist
+#000000 www.caitlinmrivers.com Caitlin Rivers, is an epidemiologist
+#000000 jbeau.info Jeremy Beaudry, is an artist
+#000000 www.audunberdal.no Audun Berdal, is a designer
+#000000 www.amirsharif.com Amir Sharif, is a software engineer
+#000000 www.spakhm.com Slava Akhmechet, is a software engineer
+#000000 www.hayalpozanti.com Hayal Pozanti, is an artist
+#000000 www.rossrichardson.com Ross Richardson, is a cinematographer
+#000000 alineleynen.com Aline Leynen, is a jeweller
+#000000 robinschoenbaechler.com Robin Schoenbaechler, is a designer
+#000000 www.stephgreen.co.uk Steph Green, is a writer
+#000000 davidelitompkins.com David Eli Tompkins, is a painter

@@ -7,6 +7,7 @@ const retry = require("./retry");
 const callOnce = require("helper/callOnce");
 
 const TIMEOUT = 30 * 1000; // 30 seconds
+const { MAX_FILE_SIZE, hasUnsupportedExtension } = require("./constants");
 
 async function download(client, source, destination, callback) {
   const id = uuid();
@@ -30,6 +31,41 @@ async function download(client, source, destination, callback) {
   });
 
   try {
+    const { result: metadata } = await client.filesGetMetadata({ path: source });
+    if (timedOut) return;
+
+    const metadataPath = metadata.path_display || source;
+
+    if (hasUnsupportedExtension(metadataPath)) {
+      console.log(
+        prefix(),
+        "skipping download because file extension is unsupported",
+        metadataPath
+      );
+      await fs.outputFile(destination, "");
+      if (timedOut) return;
+      if (metadata.client_modified) {
+        await setMtime(destination, metadata.client_modified);
+        if (timedOut) return;
+      }
+      return cleanup();
+    }
+
+    if (metadata.size > MAX_FILE_SIZE) {
+      console.log(
+        prefix(),
+        "skipping download because file exceeds size limit",
+        metadata.size,
+        ">",
+        MAX_FILE_SIZE
+      );
+      await fs.outputFile(destination, "");
+      if (timedOut) return;
+      await setMtime(destination, metadata.client_modified);
+      if (timedOut) return;
+      return cleanup();
+    }
+
     const { result } = await client.filesDownload({ path: source });
     if (timedOut) return;
     await fs.outputFile(destination, result.fileBinary);

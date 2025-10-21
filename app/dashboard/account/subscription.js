@@ -6,7 +6,6 @@ var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
 var email = require("helper/email");
 var prettyPrice = require("helper/prettyPrice");
-const parse = require("dashboard/util/parse");
 const PLAN_MAP = config.stripe.plan_map;
 
 Subscription.route("/").get(function (req, res) {
@@ -38,7 +37,7 @@ Subscription.route("/payment-method")
     });
   })
 
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     // Stripe generates a token for a payment method
     // on the client. This token is passed to Blot
     // through the update payment method form. We store
@@ -141,7 +140,6 @@ Subscription.route("/cancel")
   })
 
   .post(
-    parse,
     cancelStripeSubscription,
     cancelPaypalSubscription,
     function (req, res) {
@@ -202,7 +200,7 @@ Subscription.route("/billing-interval")
     });
   })
 
-  .post(parse, function (req, res, next) {
+  .post(function (req, res, next) {
     stripe.customers.updateSubscription(
       req.user.subscription.customer,
       req.user.subscription.id,
@@ -254,7 +252,7 @@ Subscription.route("/create")
     });
   })
 
-  .post(parse, createStripeSubscription, function (req, res) {
+  .post(createStripeSubscription, function (req, res) {
     email.CREATED_BLOG(req.user.uid);
     res.message(req.baseUrl, "You created a subscription");
   });
@@ -272,7 +270,7 @@ Subscription.route("/restart")
     });
   })
 
-  .post(parse, restartStripeSubscription, function (req, res) {
+  .post(restartStripeSubscription, function (req, res) {
     email.RESTART(req.user.uid);
     res.message(req.baseUrl, "Restarted your subscription");
   });
@@ -289,7 +287,7 @@ Subscription.route("/restart/pay")
     });
   })
 
-  .post(parse, recreateStripeSubscription, function (req, res) {
+  .post(recreateStripeSubscription, function (req, res) {
     email.RESTART(req.user.uid);
     res.message(req.baseUrl, "Restarted your subscription");
   });

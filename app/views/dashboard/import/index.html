@@ -3,42 +3,48 @@
 <p><strong>Your imports:</strong></h2>
 
 <style type="text/css">
-  .i {display: flex;align-items:baseline;padding: 11px 0;border-top:1px solid rgba(0,0,0,0.05);}
+  .i {border-top:1px solid rgba(0,0,0,0.05);}
   .i:hover {background: rgba(0,0,0,0.02)}
-  .i > * {margin:0 1rem;}
-  .i > *:first-child {margin-left: 0}
-  .i > *:last-child {margin-right: 0}
-  .i > form {flex-shrink: 0}
+  .i > td form {flex-shrink: 0}
 </style>
+<table style="max-width: none;table-layout: auto;font-size:14px;">
+
 {{#imports}} 
-<div class="i" id="{{id}}">
+<tr class="i" id="{{id}}">
 
-  <span class="{{^complete}}{{^error}}working{{/error}}{{/complete}}{{#error}}error{{/error}} status" style="margin-left: 2rem;padding-left: 0.5rem">{{name}}</span> 
+  <td class="{{^complete}}{{^error}}working{{/error}}{{/complete}}{{#error}}error{{/error}} status">{{name}}</td> 
 
-  <span class="truncate" style="    color: rgb(158, 154, 152);
-    font-size: 14px;
-">{{identifier}}, {{started}}</span> 
+
   
-  <span style="flex-grow: 1" id="status-{{id}}" class="truncate">{{lastStatus}}</span>  
 
   {{#complete}}
+  <td style="width:100%;color:rgba(0,0,0,0.5)">{{identifier}}</td> 
 
   {{^error}}
-  <a href="{{{importBase}}}/download/{{id}}" target="_blank" class="s no-underline" style="line-height:28px;border-radius:4px;padding:11px 20px;font-weight:600;flex-shrink:0;color:#0070e8;border: 1px solid rgba(0,0,0,0.1)">Download result as zip ({{size}})  ↓</a>
+  <td style="padding-right:0"><a href="{{{importBase}}}/download/{{id}}" target="_blank" class="s no-underline" style="display:block;border-radius:4px;white-space: nowrap;padding:4px 11px;text-decoration:none;font-weight: 600;flex-shrink:0;color:#0070e8;border: 1px solid rgba(0,0,0,0.1)">Download result ({{size}} zip)  ↓</a></td>
   {{/error}}
 
-  <form  method="post" action="{{{importBase}}}/delete/{{id}}">
-    <button type="submit">Remove import</button>
-  </form>
+  <td><form  method="post" action="{{{importBase}}}/delete/{{id}}">
+    <input type="hidden" name="_csrf" value="{{csrftoken}}">
+    <button type="submit" style="display:block;border-radius:4px;white-space: nowrap;padding:6px 11px;text-decoration:none;font-weight: 600;flex-shrink:0;color: #ff3e00;border: 1px solid rgba(0,0,0,0.1);cursor:pointer;background:none;line-height: 1.275;">Remove</button>
+  </form></td>
 {{/complete}}
 
 {{^complete}}
+
+<td style="width:100%" colspan="2"><span style="color:rgba(0,0,0,0.5)">{{identifier}}</span><span id="status-{{id}}" style="width:100%" class="truncate">{{lastStatus}}</span></td> 
+
+
+<td>
 <form method="post" action="{{{importBase}}}/cancel/{{id}}">
-  <button type="submit">Cancel import</button>
-</form>
+  <input type="hidden" name="_csrf" value="{{csrftoken}}">
+  <button type="submit" style="display:block;border-radius:4px;white-space: nowrap;padding:6px 11px;text-decoration:none;font-weight: 600;flex-shrink:0;color: #ff3e00;border: 1px solid rgba(0,0,0,0.1);cursor:pointer;background:none;line-height: 1.275;">Cancel</button>
+</form></td>
 {{/complete}}
-</div>
+</tr>
+
 {{/imports}} 
+</table>
 <br>
 </div>
 {{/imports.length}}
@@ -126,5 +132,5 @@ function loadFolder(callback) {
 </script>
 
 <div class="buttons">
-  <a href="{{{base}}}" class="button"><span class="icon-small-chevron-right"></span> Back to dashboard</a>
+  <a href="{{{base}}}" class="button">Cancel</a>
 </div>

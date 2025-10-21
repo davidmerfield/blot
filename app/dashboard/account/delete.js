@@ -10,22 +10,20 @@ var Blog = require("models/blog");
 var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
 
-const parse = require("dashboard/util/parse");
 
 Delete.route("/")
 
   .get(function (req, res) {
     res.render("dashboard/account/delete", {
       title: "Delete your account",
-      breadcrumb: "Delete"
+      breadcrumb: "Delete",
     });
   })
 
   .post(
-    parse,
     checkPassword,
-    deleteBlogs,
     deleteSubscription,
+    deleteBlogs,
     deleteUser,
     emailUser,
     logout,
@@ -34,47 +32,60 @@ Delete.route("/")
     }
   );
 
-function emailUser (req, res, next) {
+function emailUser(req, res, next) {
   Email.DELETED("", req.user, next);
 }
-function deleteBlogs (req, res, next) {
+function deleteBlogs(req, res, next) {
   async.each(req.user.blogs, Blog.remove, next);
 }
 
-function deleteUser (req, res, next) {
+function deleteUser(req, res, next) {
   User.remove(req.user.uid, next);
 }
 
-async function deleteSubscription (req, res, next) {
-  if (req.user.paypal.status) {
-    try {
-      const response = await fetch(
-        `${config.paypal.api_base}/v1/billing/subscriptions/${req.user.paypal.id}/cancel`,
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Basic ${Buffer.from(
-              `${config.paypal.client_id}:${config.paypal.secret}`
-            ).toString("base64")}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            reason: "Customer deleted account"
-          })
-        }
-      );
-
-      // if successful, we should get a 204 response
-      // otherwise throw an error
-      if (response.status !== 204) {
-        throw new Error("PayPal subscription cancellation failed");
+function deleteSubscription(req, res, next) {
+  if (req.user.paypal?.status) {
+    fetch(
+      `${config.paypal.api_base}/v1/billing/subscriptions/${req.user.paypal.id}/cancel`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${Buffer.from(
+            `${config.paypal.client_id}:${config.paypal.secret}`
+          ).toString("base64")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reason: "Customer deleted account",
+        }),
       }
-      next();
-    } catch (e) {
-      return next(e);
-    }
-  } else if (req.user.subscription.customer) {
-    stripe.customers.del(req.user.subscription.customer, next);
+    )
+      .then(async (response) => {
+        if (response.status !== 204) {
+          const error = await response.json();
+          throw new Error(`PayPal API error: ${error.message}`);
+        }
+        console.log("PayPal subscription canceled");
+        next();
+      })
+      .catch((error) => {
+        console.error("Error in deleting PayPal subscription:", error);
+        next(error); // Pass error to error handler
+      });
+  } else if (req.user.subscription?.customer) {
+    stripe.customers
+      .del(req.user.subscription.customer)
+      .then((res) => {
+        if (!res || res.deleted !== true) {
+          throw new Error("Stripe customer not deleted");
+        }
+        console.log("Stripe customer deleted");
+        next()
+      })
+      .catch((error) => {
+        console.error("Error in deleting Stripe customer:", error);
+        next(error); // Pass error to error handler
+      });
   } else {
     next();
   }
@@ -94,7 +105,7 @@ if (Delete.exports !== undefined)
 Delete.exports = {
   blogs: deleteBlogs,
   user: deleteUser,
-  subscription: deleteSubscription
+  subscription: deleteSubscription,
 };
 
 module.exports = Delete;

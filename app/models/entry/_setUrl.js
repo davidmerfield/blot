@@ -192,6 +192,11 @@ module.exports = function (blogID, entry, callback) {
     return callback(e);
   }
 
+  if (entry.metadata === undefined) {
+    console.log('Error: Blog:', blogID, 'Entry.setURL: Entry metadata is unexpectedly undefined', entry);
+    return callback(null, "");
+  }
+
   debug("Setting url for", entry.path);
 
   if (entry.draft || entry.deleted) return callback(null, "");

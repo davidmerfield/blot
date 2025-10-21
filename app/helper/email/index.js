@@ -7,25 +7,26 @@ const tempDir = require("helper/tempDir")();
 const Mustache = require("mustache");
 const { marked } = require("marked");
 const clfdate = require("helper/clfdate");
-const Mailgun = require("mailgun-js");
-let mailgun;
 
-if (config && config.mailgun && config.mailgun.key) {
-  mailgun = new Mailgun({
-    apiKey: config.mailgun.key,
-    domain: config.mailgun.domain
-  });
-} else {
-  mailgun = {
-    messages: function () {
-      return {
-        send: function (email, callback) {
-          callback(null);
-        }
-      };
-    }
-  };
-}
+const mailgunClient = (() => {
+  if (config && config.mailgun && config.mailgun.key && config.mailgun.domain) {
+    const Mailgun = require("mailgun.js");
+    const formData = require("form-data");
+    const mailgun = new Mailgun(formData);
+
+    return mailgun.client({
+      username: (config.mailgun && config.mailgun.username) || "api",
+      key: config.mailgun.key
+    });
+  }
+
+  return null;
+})();
+
+const hasMailgunClient =
+  mailgunClient &&
+  mailgunClient.messages &&
+  typeof mailgunClient.messages.create === "function";
 
 var adminDir = __dirname + "/admin/";
 var userDir = __dirname + "/user/";
@@ -56,6 +57,7 @@ var MESSAGES = [
   "ICLOUD_QUOTA_LIMIT",
   "ICLOUD_SERVER_STARTED",
   "ICLOUD_SERVER_DOWN",
+  "ICLOUD_SERVER_PANIC",
   "LONG_DELAY",
   "LONG_SYNC",
   "NETWORK_ERROR",
@@ -181,25 +183,36 @@ function send (locals, messageFile, to, callback) {
       return callback();
     }
 
-    mailgun.messages().send(email, function (err, body) {
-      if (err) {
+    if (!hasMailgunClient) {
+      console.log(
+        clfdate(),
+        "Email: Mailgun client unavailable, skipping send for",
+        email.to,
+        '"' + email.subject + '"'
+      );
+      return callback();
+    }
+
+    mailgunClient.messages
+      .create(config.mailgun.domain, email)
+      .then(function (body) {
+        console.log(
+          clfdate(),
+          "Email: sent to",
+          email.to,
+          '"' + email.subject + '"',
+          "(" + (body && body.id) + ")"
+        );
+        callback();
+      })
+      .catch(function (err) {
         console.log(
           clfdate(),
           "Email: error: Mailgun failed to send transactional email:",
           err
         );
-        return callback(err);
-      }
-
-      console.log(
-        clfdate(),
-        "Email: sent to",
-        email.to,
-        '"' + email.subject + '"',
-        "(" + (body && body.id) + ")"
-      );
-      callback();
-    });
+        callback(err);
+      });
   });
 }
 

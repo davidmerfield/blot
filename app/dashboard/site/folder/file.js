@@ -1,7 +1,6 @@
 const debug = require("debug")("blot:dashboard:folder:kind");
 const basename = require("path").basename;
 const extname = require("path").extname;
-const Metadata = require("models/metadata");
 const Entry = require("models/entry");
 const IgnoredFiles = require("models/ignoredFiles");
 const moment = require("moment");
@@ -15,12 +14,6 @@ module.exports = async function (blog, path) {
 
     Promise.all([
       new Promise((resolve, reject) => {
-        Metadata.get(blogID, path, function (err, casePresevedName) {
-          if (err) return reject(err);
-          resolve(casePresevedName);
-        });
-      }),
-      new Promise((resolve, reject) => {
         IgnoredFiles.getStatus(blogID, path, function (err, ignored) {
           if (err) return reject(err);
           resolve(ignored);
@@ -32,7 +25,7 @@ module.exports = async function (blog, path) {
         });
       }),
     ])
-      .then(([casePresevedName, ignoredReason, entry]) => {
+      .then(([ignoredReason, entry]) => {
         
         let ignored = {};
 
@@ -60,8 +53,8 @@ module.exports = async function (blog, path) {
 
         file.kind = kind(path);
         file.path = path;
-        file.url = encodeURIComponent(path.slice(1));
-        file.name = casePresevedName || basename(path);
+        file.url = path.split('/').map(encodeURIComponent).join('/');
+        file.name = basename(path);
 
         // a dictionary we use to display conditionally in the UI
         file.extension = {};
@@ -91,14 +84,6 @@ module.exports = async function (blog, path) {
             .tz(blog.timeZone)
             .format("MMMM Do YYYY, h:mma");
 
-          if (
-            entry.page &&
-            entry.menu === false &&
-            [".txt", ".md", ".html"].indexOf(extname(entry.path)) === -1
-          ) {
-            entry.url = entry.path;
-          }
-
           if (entry.draft) {
             entry.url = "/draft/view" + entry.path;
           }
@@ -118,6 +103,15 @@ module.exports = async function (blog, path) {
           entry.metadata = Object.keys(entry.metadata).map((key) => {
             return { key, value: entry.metadata[key] };
           });
+
+          if (entry.exif && typeof entry.exif === "object") {
+            const exif = entry.exif;
+            entry.exif = Object.keys(exif).map((key) => {
+              return { key, value: exif[key] };
+            });
+          } else {
+            entry.exif = [];
+          }
 
           if (entry.scheduled) {
             entry.url += "?scheduled=true";

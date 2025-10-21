@@ -1,5 +1,5 @@
-var Blog = require("blog");
-var yesno = require("yesno");
+var Blog = require("models/blog");
+var getConfirmation = require("../util/getConfirmation");
 
 // We don't use get() since it throws an error if the user does not
 // exist and sometimes with want to be able to clean up blogs
@@ -10,10 +10,9 @@ Blog.get({ handle: process.argv[2] }, function (err, blogFromHandle) {
 
       if (!blog || !blog.id) throw new Error("No blog: " + process.argv[2]);
 
-      yesno.ask(
+      getConfirmation(
         "Delete " + blog.id + " " + blog.handle + "? (y/N)",
-        false,
-        function (ok) {
+        function (err, ok) {
           if (!ok) throw new Error("Not ok!");
 
           Blog.remove(blog.id, function (err) {

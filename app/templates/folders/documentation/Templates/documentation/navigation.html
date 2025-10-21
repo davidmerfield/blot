@@ -1,0 +1,24 @@
+
+    <!-- Hidden Checkboxes -->
+    <input type="checkbox" id="toggle-left" class="toggle-checkbox" />
+    <input type="checkbox" id="toggle-right" class="toggle-checkbox" />
+
+    <!-- Control Bar -->
+    <div class="control-bar">
+      <label for="toggle-left" class="control-label">Navigation</label>
+      <label for="toggle-right" class="control-label">On this page</label>
+    </div>
+    <div class="column-container">
+      <!-- Left Column: High-Level Navigation -->
+      <div class="column">
+        <div class="navigation">
+          <ul class="sidebar">
+            {{#posts}}
+            <li data-path="{{{path}}}"><a class="{{active}}" href="{{{url}}}">{{title}}</a></li>
+            {{/posts}}
+          </ul>   
+      </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main">

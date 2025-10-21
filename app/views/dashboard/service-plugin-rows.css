@@ -26,56 +26,61 @@ form.dashboard-form .plugin label {padding-top:0}
 form.dashboard-form label{
   margin:0;padding:0
 }
-.plugin input[type="checkbox"] {
-  -webkit-appearance: none;
+
+.plugin label {
+  cursor: pointer;
+}
+
+form.dashboard-form .plugin input[type="checkbox"] {
+-webkit-appearance: none;
   appearance: none;
-  margin: 0;
+  margin: 0 1em 0 0;
   font: inherit;
-  width: 3.4em;
+    font-size: inherit;
+  width: 3.3em;
   height: 2em;
   border: none;
   border-radius: 2em;
-  transform: translateY(-0.075em);
+  transform: translateY(-.075em);
   display: grid;
   cursor: pointer;
   place-content: center;
-  background-color: #bbb;
-  font-size: 12px;
+  background-color: var(--medium-text-color);
+  font-size: 10px;
 }
 
-.plugin input[type="checkbox"]::before {
-  content: "";
-  width: 1.5em;
-  height: 1.5em;
-  border-radius: 1.5em;
+form.dashboard-form .plugin input[type="checkbox"]::before {
+content: "";
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: 1.7em;
   position: absolute;
-  top: 0.25em; 
-  right: 1.6em;
-  transition: 120ms width ease-in-out, 120ms transform ease-in-out, right 120ms ease-in-out;
+  top: .15em;
+  right: 1.45em;
+  transition: width 120ms ease-in-out,transform 120ms ease-in-out,right 120ms ease-in-out;
   box-shadow: inset 1em 1em var(--form-control-color);
-  /* Windows High Contrast Mode */
-  background-color: white;
+  background-color: #fff;
 }
 
-.plugin  input[type="checkbox"]:checked {
+form.dashboard-form .plugin input[type="checkbox"]:checked {
   background-color: blue;
 }
 
-.plugin  input[type="checkbox"]:checked::before {
+form.dashboard-form .plugin input[type="checkbox"]:checked::before {
   left: auto;
-  right: 0.3em;
+  right: 0.15em;
 }
 
-.plugin  input[type="checkbox"]:focus {
+form.dashboard-form .plugin  input[type="checkbox"]:focus {
   outline: none;
 }
 
-.plugin  input[type="checkbox"]:active::before {
+form.dashboard-form .plugin input[type="checkbox"]:active::before {
   width:1.8em;
   right: 1.1em;
 }
 
-.plugin  input[type="checkbox"]:disabled {
+form.dashboard-form .plugin input[type="checkbox"]:disabled {
   --form-control-color: var(--form-control-disabled);
 
   color: var(--form-control-disabled);

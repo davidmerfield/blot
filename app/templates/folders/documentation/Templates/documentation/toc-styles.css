@@ -1,0 +1,72 @@
+#toc {
+  overflow-y: auto;
+}
+#toc > .toc-list {
+  overflow: hidden;
+  position: relative;
+}
+#toc > .toc-list li {
+  list-style: none;
+}
+.toc-list {
+  margin: 0;
+  padding: 0 16px 0 0;
+}
+a.toc-link {
+  color: currentColor;
+  height: 100%;
+  position: relative;
+  display: block;
+  padding-left: 1em;
+}
+.is-collapsible {
+  max-height: 1000px;
+  overflow: hidden;
+}
+.is-collapsed {
+  max-height: 0;
+}
+.is-position-fixed {
+  position: fixed !important;
+  top: 0;
+}
+a.toc-link.is-active-link {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.toc-list .toc-list a {
+  font-size: 14px;
+  padding-left: 2em;
+}
+
+.toc-link::before {
+  background-color: var(--border-color);
+  content: " ";
+  display: inline-block;
+  height: inherit;
+  left: 0;
+  top:0;
+  bottom: 0;
+  position: absolute;
+  width: 1px;
+}
+.is-active-link::before {
+  background-color: var(--text-color);
+} /*# sourceMappingURL=tocbot.css.map */
+
+#toc-wrapper {
+  overflow: hidden;
+  position: fixed;
+  background: var(--background-color);
+}
+
+#toc-wrapper p:first-child {
+  font-size: 0.8em;
+  color: var(--light-text-color);
+  opacity: 0.8;
+}
+
+.toc-list {
+  list-style-type: none;
+}

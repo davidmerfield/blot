@@ -10,11 +10,15 @@ module.exports = function main(blog, callback) {
       tags,
       function (tag, next) {
         Tags.get(blog.id, tag.slug, function (err, entryIDs) {
+          if (err) return next(err);
+
+          const tagKey = Tags.key.sortedTag(blog.id, tag.slug);
+
           if (!entryIDs.length) {
             report.push(["EMPTY TAG", tag]);
             const multi = client.multi();
             multi.srem(Tags.key.all(blog.id), tag.slug);
-            multi.del(Tags.key.tag(blog.id, tag.slug));
+            multi.del(tagKey);
             return multi.exec(next);
           }
 
@@ -25,7 +29,7 @@ module.exports = function main(blog, callback) {
                 if (!entry) {
                   report.push(["MISSING", entryID]);
                   const multi = client.multi();
-                  multi.srem(tagKey, entryID);
+                  multi.zrem(tagKey, entryID);
                   return multi.exec(next);
                 }
 
@@ -35,11 +39,14 @@ module.exports = function main(blog, callback) {
                 var multi = client.multi();
                 var entryKeyForIncorrectID = Tags.key.entry(blog.id, entryID);
                 var entryKeyForCorrectID = Tags.key.entry(blog.id, entry.id);
-                var tagKey = Tags.key.tag(blog.id, tag.slug);
+                var score = entry.dateStamp;
+                if (typeof score !== "number" || isNaN(score)) {
+                  score = Date.now();
+                }
 
                 multi.rename(entryKeyForIncorrectID, entryKeyForCorrectID);
-                multi.srem(tagKey, entryID);
-                multi.sadd(tagKey, entry.id);
+                multi.zrem(tagKey, entryID);
+                multi.zadd(tagKey, score, entry.id);
                 multi.exec(function (err) {
                   if (err) return next(err);
                   Entry.set(blog.id, entry.id, entry, next);

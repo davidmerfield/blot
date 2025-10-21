@@ -18,11 +18,12 @@
   }
 
   .folder-box:not(.root).directory{
-    border-radius:var(--border-radius);overflow:hidden;border:1px solid #eeeeec;
+    border-radius:var(--border-radius) var(--border-radius) 0 0;overflow:hidden;border:1px solid #eeeeec;
+    border-bottom: none;
   }
 
   .status-link {
-    border-top:1px solid #eeeeec;display: block;width: 100%;box-sizing: border-box;padding: 8px 16px;font-size: 14px;overflow: hidden;color:var(--light-text-color);
+    border-top:1px solid #eeeeec;display: block;width: 100%;box-sizing: border-box;padding: 8px 16px;font-size: 14px;overflow: hidden;color:var(--medium-text-color);
     background-color: none;
     transition: background-color 0.2s;
     position: relative;
@@ -39,7 +40,7 @@
   }
 
   .status-link:hover {
-    background-color: #f0f4ff70;
+    background-color: #e4eafb75;
   }
 
   .sync-status {
@@ -246,16 +247,13 @@
 }
 
 .directory-list tr:hover {
-  background-color: #f0f4ff70;
+  background-color: #e4eafb75;
 }
 
 .directory-list tr:first-child:last-child:hover {
   background-color: transparent;
 }
 
-.directory-list thead {
-  background-color: #fafaff;
-}
 
 
 .directory-list th.sorted, .directory-list th.sorted.reverse {

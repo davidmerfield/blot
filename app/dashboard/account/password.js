@@ -2,7 +2,6 @@ var Express = require("express");
 var Password = new Express.Router();
 var User = require("models/user");
 var checkPassword = require("./util/checkPassword");
-const parse = require("dashboard/util/parse");
 
 Password.route("/")
 
@@ -15,7 +14,7 @@ Password.route("/")
     });
   })
 
-  .post(parse, checkPassword, checkMatching, save);
+  .post(checkPassword, checkMatching, save);
 
 Password.route("/set")
 
@@ -32,7 +31,7 @@ Password.route("/set")
   // verification can only happen once and the
   // user might make a mistake typing their
   // password twice or submitting an empty form.
-  .post(parse, checkMatching, verifyToken, save);
+  .post(checkMatching, verifyToken, save);
 
 function requireExisting(req, res, next) {
   if (req.user.hasPassword) {

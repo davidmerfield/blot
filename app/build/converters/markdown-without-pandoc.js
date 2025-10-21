@@ -7,7 +7,7 @@ const extname = require("path").extname;
 const localPath = require("helper/localPath");
 
 module.exports = {
-  read: function (blog, path, options, callback) {
+  read: function (blog, path, callback) {
     path = localPath(blog.id, path);
 
     const text = fs.readFileSync(path, "utf-8");

@@ -53,6 +53,9 @@ function main (blog, callback) {
   Entries.each(
     blog.id,
     function (_entry, next) {
+
+      if (!_entry) return next();
+      
       if (_entry.deleted) return next();
 
       resolvePath(blog.id, _entry.path, function (err, path) {

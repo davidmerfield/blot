@@ -1,11 +1,11 @@
-var Blog = require("blog");
+var Blog = require("models/blog");
 var fs = require("fs-extra");
 var BLOGS_DIRECTORY = require("config").blog_folder_dir;
 var STATIC_DIRECTORY = require("config").blog_static_files_dir;
 
 var tmp = require("helper/tempDir")();
 var async = require("async");
-var yesno = require("yesno");
+var getConfirmation = require("../util/getConfirmation");
 var colors = require("colors/safe");
 
 if (require.main === module)
@@ -52,10 +52,9 @@ function main(callback) {
     async.eachSeries(
       strayFolders,
       function ({ from, to }, next) {
-        yesno.ask(
+        getConfirmation(
           "Move?" + colors.dim("\nFrom: " + from + "\n. To: " + to),
-          true,
-          function (ok) {
+          function (err, ok) {
             if (!ok) return next();
             console.log("Moving");
             fs.move(from, to, next);

@@ -23,8 +23,6 @@ site.disable("x-powered-by");
 // Trusts secure requests terminated by NGINX, as far as I know
 site.set("trust proxy", true);
 
-site.set("etag", false); // turn off etags for responses
-
 // Register the engine we will use to
 // render the views.
 site.set("view engine", "html");

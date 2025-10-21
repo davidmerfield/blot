@@ -1,11 +1,10 @@
 var each = require("../each/blog");
 var gitDatabase = require("clients/git/database");
-var yesno = require("yesno");
+var getConfirmation = require("../util/getConfirmation");
 
-yesno.ask(
+getConfirmation(
   "Do you want to reset the git token for all blogs? (y/n)",
-  false,
-  function (ok) {
+  function (err, ok) {
     if (!ok) {
       return process.exit();
     }

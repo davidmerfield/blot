@@ -1,0 +1,10 @@
+/var/instance-ssd/logs/error.log {
+    size 150M
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    rotate 0
+    daily
+}

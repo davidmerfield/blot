@@ -11,33 +11,29 @@
 	<div class="sites">
 		{{#blogs}}
 		<div class="site">
-			<a href="/sites/{{handle}}" class="blog-link">
+			<a href="/sites/{{handle}}" class="blog-link" style="padding-left: 1rem;">
 				<span class="text-info">
 					<span class="title truncate">{{pretty.label}}</span>
 					<span class="truncate url">{{pretty.url}}</span>
 				</span>
+				<span class="icon-chevron"></span>
 			</a>
-			<div style="width: 60px;height:40px;    position: absolute;
-			height: 40px;
-			width: 60px;
-			top: 10px;
-			left: 1em;
-			margin: 4px 0 10px;
-		">
+			<!-- <div class="preview-holder">
 				<div class="site-preview" data-url="{{{previewURL}}}" data-cache-id="{{cacheID}}"></div>
-			</div>
+			</div> -->
 		</div>
 		{{/blogs}}
 	</div>
 
 	<div>
 		<form class="foot" action="/sites/account/log-out" method="post" style="float:right;background:none;padding:0 0 0;font-size: 14px;color: var(--border-color);">
+			<input type="hidden" name="_csrf" value="{{csrftoken}}">
 			<button type="submit" class="logout">
-				Log out &rarr;
+				Log out 
 			</button>
 		</form>
 
-		<span style="padding:11px 0;display:block;font-weight: 400;color: var(--light-text-color);">Account</span>
+		<span style="padding:11px 0;display:block;font-weight: 400;color: var(--medium-text-color);">Account</span>
 	</div>
 
 	<div style="border-radius: 4px;border:1px solid var(--border-color);overflow: hidden;">

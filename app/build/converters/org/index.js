@@ -11,10 +11,9 @@ function is (path) {
   return [".org"].indexOf(extname(path).toLowerCase()) > -1;
 }
 
-function read (blog, path, options, callback) {
+function read (blog, path, callback) {
   ensure(blog, "object")
     .and(path, "string")
-    .and(options, "object")
     .and(callback, "function");
 
   var localPath = LocalPath(blog.id, path);
@@ -35,7 +34,7 @@ function read (blog, path, options, callback) {
 
       const { html, metadata } = Metadata(contents);
 
-      convert(blog, html, options, function (err, html) {
+      convert(blog, html, function (err, html) {
         if (err) return callback(err);
 
         let metadataString = "<!--";

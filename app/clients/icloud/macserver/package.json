@@ -9,10 +9,11 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
-    "chokidar": "4.0.3",
+    "chokidar": "3.6.0",
     "bottleneck": "2.19.5",
     "dotenv": "16.4.7",
     "express": "4.21.2",
-    "fs-extra": "11.3.0"
+    "fs-extra": "11.3.0",
+    "node-fetch": "2.6.7"    
   }
 }

@@ -11,7 +11,9 @@ module.exports = function (server) {
       (req.blog.domain && req.originalHost !== req.blog.domain)
     ) {
       res.header("Content-type", "text/plain");
-      return res.sendFile(__dirname + "/static/robots_deny.txt");
+      const robotsContent = `User-agent: *
+Disallow: /`;
+      return res.send(robotsContent);
     }
 
     return next();

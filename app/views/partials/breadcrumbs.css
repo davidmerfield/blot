@@ -3,7 +3,8 @@
   align-items: baseline;
   flex-wrap: wrap;
   justify-content: space-between;
-  margin-bottom: 28px;
+  font-size: 18px;
+  margin-bottom: 2em;
 }
 
 #breadcrumbs {
@@ -16,8 +17,8 @@
   max-width: 300px;
   overflow: hidden;
   color: var(--medium-text-color);
-  font-size: 16px;
   text-decoration: none;
+  transition: color 0.2s;
 }
 
 #breadcrumbs span {

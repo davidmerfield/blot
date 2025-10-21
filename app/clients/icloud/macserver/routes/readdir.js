@@ -1,6 +1,7 @@
 const fs = require("fs-extra");
 const { join } = require("path");
 const { iCloudDriveDirectory } = require("../config");
+const { ls } = require("../brctl");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
@@ -13,6 +14,18 @@ module.exports = async (req, res) => {
   console.log(`Received readdir request for blogID: ${blogID}, path: ${path}`);
 
   const dirPath = join(iCloudDriveDirectory, blogID, path);
+
+  // first we issue a request to ls to ensure the directory is downloaded
+  // otherwise, files or subdirectories may be missing. if this stops working
+  // you can use brctl monitor -p [path] to force iCloud to sync the directory
+  // listing (this will not download the files, just the list of contents)
+  try {
+    await ls(dirPath);
+  } catch (error) {
+    console.error("Error listing directory:", dirPath, error);
+  }
+
+  // now that we are sure the directory is in sync, we can read it
   const files = await fs.readdir(dirPath, { withFileTypes: true });
 
   // Ignore dotfiles and directories

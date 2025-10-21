@@ -1,4 +1,5 @@
 <form method="post" class="boolean" id="{{key}}">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}" />
 <label class="bool" style="padding:5px 1rem;border-bottom: 1px solid #eee;display: block;font-size:14px">
   <input type="hidden" value="off" name="locals.{{key}}" />
   <input type="checkbox" name="locals.{{key}}" {{#value}}checked{{/value}} /> {{label}}

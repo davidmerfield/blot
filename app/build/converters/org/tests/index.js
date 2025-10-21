@@ -13,7 +13,7 @@ describe("org converter", function () {
         fs.copySync(dir, this.blogDirectory);
 
         const path = "/" + file;
-        org.read(this.blog, path, {}, function (err, html) {
+        org.read(this.blog, path, function (err, html) {
           if (err) return done.fail(err);
 
           let expected;

@@ -1,14 +1,13 @@
-var colors = require("colors/safe");
-var yesno = require("yesno");
-var Blog = require("blog");
-var User = require("user");
+var getConfirmation = require("../util/getConfirmation");
+var Blog = require("models/blog");
+var User = require("models/user");
 var validate = require("models/blog/validate/handle");
-var access = require("../access");
+var access = require("./access");
 
 if (require.main === module) {
   main(process.argv[2], process.argv[3], function (err) {
     if (err) {
-      console.error(colors.red("Error:", err.message));
+      console.error("Error:", err.message);
       return process.exit(1);
     }
 
@@ -33,22 +32,22 @@ function main(email, handle, callback) {
     User.getByEmail(email, function (err, user) {
       if (err || !user) {
         return callback(
-          new Error("No user with email " + colors.underline(email))
+          new Error("No user with email " + email + " found in database")
         );
       }
 
       var message =
-        colors.dim("Email: ") +
+        "Email: " +
         user.email +
-        colors.dim("\nUser ID: ") +
+        "\nUser ID: " +
         user.uid +
-        colors.dim("\nHandle: ") +
+        "\nHandle: " +
         handle +
         "\n\nCreate blog " +
-        colors.bold(handle) +
+        handle +
         "? (y/N)";
 
-      yesno.ask(message, false, function (ok) {
+      getConfirmation(message, function (err, ok) {
         if (!ok) return callback(new Error("User was not created"));
         Blog.create(user.uid, { handle: handle }, function (err) {
           if (err) return callback(err);
@@ -57,7 +56,7 @@ function main(email, handle, callback) {
             if (err) return callback(err);
 
             console.log(
-              colors.green("Added new blog", handle, "to", email, ":")
+              "Added new blog", handle, "to", email, ":"
             );
             console.log(url);
             callback(null);

@@ -9,6 +9,9 @@ const WARN_FREE_SPACE_BYTES = 10 * 1024 * 1024 * 1024; // 5 GB
 const prefix = () => `${clfdate()} Google Drive:`;
 
 // Select a service account for a blog
+// We query the database to retrieve all the service accounts, then
+// sort them by the available space (storageQuota.available - storageQuota.used)
+// to find the one with the most available space.
 module.exports = async function () {
   // Fetch the list of all service account IDs from the database
   const serviceAccountIds = await database.serviceAccount.list();

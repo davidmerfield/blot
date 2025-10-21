@@ -23,6 +23,24 @@ module.exports = function (req, res, entry, callback) {
     req.blog.locals.blogURL +
     entry.url.split("/").map(encodeURIComponent).join("/");
 
+  // if the entry exif object is empty, delete it
+  if (
+    entry.exif &&
+    type(entry.exif, "object") &&
+    Object.keys(entry.exif).length === 0
+  ) {
+    delete entry.exif;
+  }
+
+  // if the entry thumbnail object is empty, delete it
+  if (
+    entry.thumbnail &&
+    type(entry.thumbnail, "object") &&
+    Object.keys(entry.thumbnail).length === 0
+  ) {
+    delete entry.thumbnail;
+  }
+
   var tags = [];
   var tagged = {};
   var totalTags = entry.tags.length;

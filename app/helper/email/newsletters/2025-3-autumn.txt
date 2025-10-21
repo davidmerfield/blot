@@ -1,0 +1,46 @@
+Autumn newsletter  
+
+*You received this email because you subscribed to [Blot’s newsletter](https://blot.im/news). You can [unsubscribe](https://blot.im/news/cancel) at any time. Please reply directly to this email if you have any thoughts or questions.*  
+
+**New features**
+- Blot can now extract [EXIF metadata](https://blot.im/how/files/images#exif) from photos. You can display details about the camera, lens and exposure settings [in your template](https://blot.im/developers/reference#.exif). You’ll need to enable this feature for existing sites on the [publishing settings page](https://blot.im/sites/settings/publishing).
+- You can now [publish HEIC photos](https://blot.im/how/files/images) directly as posts. This format is used by iPhones.
+- Obsidian-style [media embedding](https://blot.im/how/formatting/wikilinks#embedding-files-with-obsidian) is now possible. For example, `![[image.png]]` turns into an image.
+- Wikilinks can now match [headings on the same page](https://blot.im/how/formatting/wikilinks#how-are-wikilinks-resolved). For example, `[[#Apple]]` will link to the heading 'Apple' on the same page.
+- You can now add blockquotes to posts and pages created from [Google Docs](https://blot.im/how/files/google-docs).
+
+**Changes**
+- Blot’s [source code](https://blot.im/source-code) is now [licensed under the GPL](https://blot.im/questions/3053) instead of the CC0.
+- Links to files in your site’s folder are now delivered via our CDN, improving your site’s loading speed.
+- The [Google Drive](https://blot.im/how/sync/google-drive) and [iCloud](https://blot.im/how/sync/icloud) setup processes were rewritten with new setup pages and improved disconnect/reset reliability.
+- The hosting infrastructure has been hardened with rate-limiting, fail2ban automation, and new blocking rules to protect your site and the dashboard from a large increase in bot and scraper traffic over the last few months.
+- Blot can now preserve single line breaks in [Google Docs](https://blot.im/how/files/google-docs).
+- Preload metadata is added to audio and video tags by default.
+- [Vimeo embeds](https://blot.im/how/formatting/embedding) now get full size thumbnails, as opposed to the lower resolution thumbnail previously loaded.
+- We updated Blot’s dependencies to patch known security vulnerabilities and made changes to the dashboard and documentation, per tradition.
+
+**Bug fixes**
+- [YAML metadata](https://blot.im/how/metadata) works in [Google Docs](https://blot.im/how/files/google-docs).
+- [Images](https://blot.im/how/files/markdown#images) referenced using windows-style backslash paths now work.
+- [Bandcamp embeds](https://blot.im/how/formatting/embedding) render reliably again—including inside Word documents—after refining the embed parser.
+- The [exporter](https://blot.im/sites/settings/export) now encodes HTML in posts correctly when you export your site to Wordpress.
+
+**Questions**
+- [Adding time or tags to photos?](https://blot.im/questions/1440)
+- [What new methods of syncing a folder would you like?](https://blot.im/questions/1387)
+- [What have you made with Blot?](https://blot.im/questions/1635)
+
+**Mistakes**
+- We struggled significantly with increased bot traffic over the summer. Some of these attacks crashed our servers repeatedly in June. We now have improved defenses in place and [the servers are stable](https://status.blot.im/). It did help us identify slow areas in the code that render your site’s pages. We have lots of work over the next few months to make these processes faster.
+- There was a major issue with subfolder syncing on [iCloud](https://blot.im/how/sync/icloud) which appeared as the number of people using iCloud increased. It took too long to work out how to fix the issue, but it is now resolved.
+
+**Plans for the winter**
+- Improve the templates, especially their mobile experience.
+- Fix the template editor and improve the developer documentation.
+- Increase the performance and reliability of the renderer for your sites.
+
+If you have any thoughts or questions, please don’t hesitate to reply directly to this email.  
+
+Sincerely,  
+David  
+

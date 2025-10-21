@@ -79,6 +79,8 @@ site.get("/webhook", function (req, res, next) {
   if (!req.query || !req.query.challenge) return next();
   res.send(req.query.challenge);
 });
+// Track ongoing syncs with a Set of blog IDs
+const ongoingSyncs = new Set();
 
 site.post("/webhook", function (req, res) {
   if (config.maintenance) return res.sendStatus(503);
@@ -131,21 +133,28 @@ site.post("/webhook", function (req, res) {
 
           debug("Syncing", blogs.length, "blogs");
 
-          blogs.forEach(function (blog) {
+          // Filter out blogs that are currently syncing
+          const blogsToSync = blogs.filter(blog => !ongoingSyncs.has(blog.id));
+          
+          blogsToSync.forEach(function (blog) {
             // Used for testing purposes only
             started(blog.id);
+            // Mark sync as started
+            ongoingSyncs.add(blog.id);
           });
 
           // blogs can be synced in parallel
           async.each(
-            blogs,
+            blogsToSync,
             function (blog, next) {
               sync(blog, function () {
+                // Remove from ongoing syncs when complete
+                ongoingSyncs.delete(blog.id);
                 next();
               });
             },
             function () {
-              blogs.forEach(function (blog) {
+              blogsToSync.forEach(function (blog) {
                 debug("Finish sync for", blog.id);
                 finished(blog.id);
               });

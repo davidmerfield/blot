@@ -6,7 +6,7 @@
 
   <h1><span class="icon-file{{#entry}}-check{{/entry}}"></span>{{name}}</h1>
  
-  <a href="{{{base}}}/folder-download{{{path}}}" target="_blank" class="template-button right-aligned file-helper">
+  <a href="{{{base}}}/folder-download{{{url}}}" target="_blank" class="template-button right-aligned file-helper">
     Download file
     <span class="icon-download"></span>
   </a>
@@ -19,7 +19,7 @@
 
     <tr>
       <td>File URL:</td>
-      <td>https://{{{blog.pretty.url}}}{{{path}}} <button class="copy"><span class="icon-copy"></span> Copy</button></td>
+      <td>https://{{{blog.pretty.url}}}{{{url}}} <button class="copy"><span class="icon-copy"></span> Copy</button></td>
     </tr>
 
     <tr>
@@ -354,7 +354,7 @@
      <td>Metadata:</td>
      <td>
        {{#metadata.length}}
-       <table style="border: 1px solid #eeeeec;margin: 6px 0;padding: 0;">
+       <table class="file-stat-nested">
          {{#metadata}}
          <tr>
            <td>{{key}}</td>
@@ -368,6 +368,29 @@
        <details>
          <summary><span class="icon-support"></span> Explain</summary>
          <p>The metadata associated with this post.</p>
+       </details>
+     </td>
+   </tr>
+
+   <!-- EXIF -->
+   <tr>
+     <td>EXIF:</td>
+     <td>
+       {{#exif.length}}
+       <table class="file-stat-nested">
+         {{#exif}}
+         <tr>
+           <td>{{key}}</td>
+           <td>{{value}}</td>
+         </tr>
+         {{/exif}}
+       </table>
+       {{/exif.length}}
+       {{^exif.length}}--
+       {{/exif.length}}
+       <details>
+         <summary><span class="icon-support"></span> Explain</summary>
+         <p>EXIF data preserved from the original file, when available.</p>
        </details>
      </td>
    </tr>

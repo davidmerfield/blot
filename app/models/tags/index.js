@@ -3,5 +3,6 @@ module.exports = {
   key: require("./key"),
   list: require("./list"),
   normalize: require("./normalize"),
+  popular: require("./popular"),
   set: require("./set"),
 };

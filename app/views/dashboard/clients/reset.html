@@ -15,11 +15,10 @@ button[type="submit"]:hover {background: rgba(0,0,0,0.03);cursor: pointer;}
 
   <input type="hidden" name="_csrf" value="{{csrftoken}}">
 
-  <p><B>Reset your folder</B></p>
+<p style="max-width: 500px">Use these tools to sync your folder or rebuild your site. <a href="/contact">Contact support</a> if something isn’t working.</p>
 
-  <p style="max-width: 500px">Use the tools on this page to resync your folder or rebuild your site. If everything works as it should, you shouldn't need to use them. Please don't hestiate to <a href="/contact">contact support</a>.</p>
+  <p>{{> sync-status}}</p>
 
-<p class="sync-status" data-sync-status-url="{{{base}}}/status">{{blog.status.message}} {{blog.status.fromNow}}</p>
 </form>
 
 
@@ -27,7 +26,7 @@ button[type="submit"]:hover {background: rgba(0,0,0,0.03);cursor: pointer;}
 <form style="padding-top:0;padding-bottom: 0" method='post' class="dashboard-form"  action="{{{base}}}/client/reset/resync">
 
   <input type="hidden" name="_csrf" value="{{csrftoken}}">
-  <button type="submit">Resync your folder from {{client.display_name}}</button>
+  <button type="submit">Resync folder from {{client.display_name}}</button>
 
 </form>
 {{/client.canResync}}
@@ -48,7 +47,7 @@ button[type="submit"]:hover {background: rgba(0,0,0,0.03);cursor: pointer;}
 <form style="padding-top:0;padding-bottom: 0" method='post' class="dashboard-form"  action="{{{base}}}/client/reset/rebuild?imageCache=true">
 
   <input type="hidden" name="_csrf" value="{{csrftoken}}">
-  <button type="submit">Remove and re-fetch cached images</button>
+  <button type="submit">Re-fetch cached images</button>
 
 </form>
 

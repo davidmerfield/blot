@@ -59,10 +59,11 @@ module.exports = function route(server) {
     response.set("Cache-Control", "no-cache");
 
     renderDraft(request, response, next, filePath, function (html) {
-      // this is to override the header set by the middleware
-      // helmet.frameguard in server.js. It prevents Firefox
-      // from rendering the iframe in the preview file.
+      // Remove the frame protection headers added by the server
+      // middleware. They prevent Firefox from rendering the iframe
+      // used in the preview file.
       response.removeHeader("X-Frame-Options");
+      response.removeHeader("Content-Security-Policy");
 
       // bodyHTML is passed after HTML
       response.send(html);

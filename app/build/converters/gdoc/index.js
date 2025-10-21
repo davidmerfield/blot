@@ -10,16 +10,17 @@ const config = require("config");
 const sharp = require("sharp");
 const Metadata = require("build/metadata");
 const extend = require("helper/extend");
+const yaml = require("yaml");
 
-function is (path) {
+const blockquotes = require("./blockquotes");
+const linebreaks = require("./linebreaks");
+
+function is(path) {
   return [".gdoc"].indexOf(extname(path).toLowerCase()) > -1;
 }
 
-async function read (blog, path, options, callback) {
-  ensure(blog, "object")
-    .and(path, "string")
-    .and(options, "object")
-    .and(callback, "function");
+async function read(blog, path, callback) {
+  ensure(blog, "object").and(path, "string").and(callback, "function");
 
   try {
     const localPath = LocalPath(blog.id, path);
@@ -49,8 +50,42 @@ async function read (blog, path, options, callback) {
 
     var metadata = {};
 
+    // restore the original URL of all links and strip Google's nasty tracking
+    // redirect e.g. map https://www.google.com/url?q=https://example.com&amp;sa=D&amp;source=editors&amp;ust=1751016887642460&amp;usg=AOvVaw05ZCiUPYVBgPd61MWsgljs -> https://example.com
+    $("a").each(function (i, elem) {
+      var href = $(this).attr("href");
+      // parse the URL to get the original URL and ensure the current url host is 'google.com'
+      var url = new URL(href, "https://example.com");
+      if (url.hostname === "www.google.com" && url.searchParams.has("q")) {
+        var originalUrl = url.searchParams.get("q");
+        if (originalUrl) {
+          $(this).attr("href", originalUrl);
+        }
+      }
+    });
+
+    let yamlOpeningTag;
+
+    // parse metadata from paragraphs
     $("p").each(function (i) {
       var text = $(this).text();
+
+      // If the first paragraph is a YAML front matter opening tag
+      // then we should remove it if and only if the next paragraph
+      // contains a valid YAML key-value pair.
+      if ((text.trim() === "---" || text.trim() === "—") && i === 0) {
+        yamlOpeningTag = $(this);
+        return;
+      }
+
+      if (
+        Object.keys(metadata).length > 0 &&
+        (text.trim() === "---" || text.trim() === "—")
+      ) {
+        // this is a closing tag, so we should stop parsing metadata
+        $(this).remove();
+        return false;
+      }
 
       if (text.indexOf(":") === -1) return false;
 
@@ -64,6 +99,13 @@ async function read (blog, path, options, callback) {
       if (parsed.html === text) return false;
 
       extend(metadata).and(parsed.metadata);
+
+      // Since we have a valid YAML front matter opening tag,
+      // we should also check for a closing tag.
+      if (yamlOpeningTag && i === 1) {
+        yamlOpeningTag.remove();
+        validYAML = true;
+      }
 
       $(this).remove();
     });
@@ -80,6 +122,13 @@ async function read (blog, path, options, callback) {
 
     // remove all inline style attributes
     $("[style]").removeAttr("style");
+
+    console.log("HERE", blog.flags);
+    
+    // handle line breaks
+    if (blog.flags.google_docs_preserve_linebreaks !== false) {
+      linebreaks($);
+    }
 
     const images = [];
 
@@ -100,7 +149,7 @@ async function read (blog, path, options, callback) {
         try {
           ext = disposition
             .split(";")
-            .find(i => i.includes("filename"))
+            .find((i) => i.includes("filename"))
             .split("=")
             .pop()
             .replace(/"/g, "")
@@ -122,16 +171,21 @@ async function read (blog, path, options, callback) {
       }
     }
 
+    // handle blockquotes
+    blockquotes($);
+
     let html = $("body").html();
 
-    var metadataString = "<!--";
-
-    for (var i in metadata) metadataString += "\n" + i + ": " + metadata[i];
-
-    if (metadataString !== "<!--") {
-      metadataString += "\n-->\n";
-      html = metadataString + html;
+    if (Object.keys(metadata).length > 0) {
+      html = "---\n" + yaml.stringify(metadata) + "---\n" + html;
     }
+
+    // make output more readable by inserting new lines after block elements
+    // handle hr and br separately as it is self-closing
+    html = html
+      .replace(/<\/(h1|h2|h3|h4|h5|h6|p|blockquote|ul|ol|li)>/g, "</$1>\n")
+      .replace(/<(hr|br)[^>]*>/g, "<$1>\n")
+      .trim();
 
     callback(null, html, stat);
   } catch (err) {

@@ -1,4 +1,4 @@
-var User = require("user");
+var User = require("models/user");
 var get = require("../get/blog");
 var identifier = process.argv[2];
 

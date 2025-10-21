@@ -1,3 +1,9 @@
+#error:not(:empty) {
+  padding: calc(var(--spacing)*0.5) calc(var(--spacing)*0.75);
+  color: var(--error-text-color);
+  background: var(--error-background-color);
+}
+
 input[type="submit"],
 input[type="text"],
 input[type="password"] {
@@ -111,7 +117,10 @@ input:focus:-moz-placeholder {
   color: #c5c4c4;
 }
 
-input#email {
+input#contact_gfhkj {
 border-top-right-radius: 0;
 border-bottom-right-radius: 0;
+display: block;
+  width: 100%;
+
 }

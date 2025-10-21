@@ -3,7 +3,7 @@ const RESYNC_WINDOW = 1000 * 60 * 10; // 10 minutes
 const clfdate = require("helper/clfdate");
 
 const database = require("../database");
-const resync = require("../sync/from_iCloud");
+const resync = require("../sync/fromiCloud");
 const Blog = require("models/blog");
 
 const getLastSyncDateStamp = (blogID) => {
@@ -24,7 +24,17 @@ const getLastSyncDateStamp = (blogID) => {
 module.exports = async () => {
   console.log(clfdate(), "Resyncing recently synced blogs");
 
-  await database.iterate(async (blogID) => {
+  await database.iterate(async (blogID, account) => {
+  
+    if (!account.setupComplete) {
+      console.log(
+        clfdate(),
+        "Account setup not complete, skipping resync: ",
+        blogID
+      );
+      return;
+    }
+
     const lastSync = await getLastSyncDateStamp(blogID);
 
     if (!lastSync) {

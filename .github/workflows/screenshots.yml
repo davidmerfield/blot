@@ -107,7 +107,9 @@ jobs:
           export BLOT_CACHE_DIRECTORY=$(pwd)/cache
           node app/templates/index.js --no-watch
           node app/index.js &
+          echo "Building folders"
           node app/templates/folders/index.js
+          echo "Taking screenshots"
           node app/templates/screenshots.js
 
       - name: Commit changes and create pull request

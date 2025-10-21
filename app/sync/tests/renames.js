@@ -2,6 +2,8 @@ describe("update", function () {
   var sync = require("../index");
   var fs = require("fs-extra");
   var async = require("async");
+  var redis = require("models/client");
+  var entryKey = require("models/entry/key").entry;
 
   it("detects a renamed file across multiple syncs", function (done) {
     var path = this.fake.path(".txt");
@@ -81,12 +83,25 @@ describe("update", function () {
   it("detects a large number of renamed files", function (testDone) {
     var items = [];
     var ctx = this;
+    var usedPaths = new Set();
+
+    function uniquePath(ext) {
+      var path;
+
+      do {
+        path = ctx.fake.path(ext);
+      } while (usedPaths.has(path));
+
+      usedPaths.add(path);
+
+      return path;
+    }
 
     // Create 100 fake files
     for (var i = 0; i < 10; i++)
       items.push({
-        oldPath: this.fake.path(".txt"),
-        newPath: this.fake.path(".txt"),
+        oldPath: uniquePath(".txt"),
+        newPath: uniquePath(".txt"),
         content: this.fake.file({title: i + '-' + Date.now()}),
       });
 
@@ -141,6 +156,105 @@ describe("update", function () {
           });
         }
       );
+    });
+  });
+
+  it("skips missing deleted-entry records while detecting renames", function (testDone) {
+    var ctx = this;
+    var blogID = ctx.blog.id;
+
+    var path = ctx.fake.path(".txt");
+    var newPath = ctx.fake.path(".txt");
+    var ghostPath = ctx.fake.path(".txt");
+    var ghostNewPath = ctx.fake.path(".txt");
+
+    var content = ctx.fake.file();
+    var ghostContent = ctx.fake.file();
+    var ghostEntryID;
+
+    ctx.writeAndSync(path, content, function (err) {
+      if (err) return testDone.fail(err);
+
+      ctx.writeAndSync(newPath, content, function (err) {
+        if (err) return testDone.fail(err);
+
+        ctx.writeAndSync(ghostPath, ghostContent, function (err) {
+          if (err) return testDone.fail(err);
+
+          ctx.writeAndSync(ghostNewPath, ghostContent, function (err) {
+            if (err) return testDone.fail(err);
+
+            sync(blogID, function (err, folder, done) {
+              if (err) return testDone.fail(err);
+
+              async.series(
+                [
+                  function (next) {
+                    fs.removeSync(folder.path + path);
+                    folder.update(path, next);
+                  },
+                  function (next) {
+                    fs.removeSync(folder.path + ghostPath);
+                    folder.update(ghostPath, function (err) {
+                      if (err) return next(err);
+
+                      ctx.checkEntry(
+                        { path: ghostPath, deleted: true },
+                        function (err, entry) {
+                          if (err) return next(err);
+                          ghostEntryID = entry.id;
+                          next();
+                        }
+                      );
+                    });
+                  },
+                  function (next) {
+                    redis.del(entryKey(blogID, ghostPath), function (err) {
+                      if (err) return next(err);
+
+                      var deletedListKey = "blog:" + blogID + ":deleted";
+
+                      redis.zscore(deletedListKey, ghostEntryID, function (err, score) {
+                        if (err) return next(err);
+
+                        expect(score).not.toBeNull();
+                        next();
+                      });
+                    });
+                  },
+                ],
+                function (err) {
+                  if (err) return testDone.fail(err);
+
+                  done(null, function (err) {
+                    if (err) return testDone.fail(err);
+
+                    ctx.checkRename(path, newPath, function (err) {
+                      if (err) return testDone.fail(err);
+
+                      ctx.checkEntry(
+                        { path: ghostPath, ignored: true },
+                        function (err, entry) {
+                          if (err) return testDone.fail(err);
+                          expect(entry).toBeFalsy();
+
+                          ctx.checkEntry(
+                            { path: ghostNewPath, deleted: false },
+                            function (err) {
+                              if (err) return testDone.fail(err);
+                              testDone();
+                            }
+                          );
+                        }
+                      );
+                    });
+                  });
+                }
+              );
+            });
+          });
+        });
+      });
     });
   });
 

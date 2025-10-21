@@ -1,6 +1,6 @@
 <h2 class="template-heading">{{label}}</h2>
 <form method="post">
-
+  <input type="hidden" name="_csrf" value="{{csrftoken}}" />
   <label for="{{key}}-toggle">
     {{#value}}
       {{#name}}
@@ -56,7 +56,7 @@ label[for="{{key}}-toggle"]:hover {background: #fff}
 
 input[name="{{key}}-toggle"]:checked + .options {display: block;}
 
-.options {display: none;margin:0.5em;border:1px solid #aaa;user-select: none;}
+.options {display: none;margin:0.5em;border:1px solid #aaa;user-select: none;width:300px}
       
 .filters {
   font-size:12px;

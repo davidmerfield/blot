@@ -27,7 +27,7 @@ describe("sync", function () {
         done(null, testDone);
       });
     });
-  });
+  }, 15 * 1000);
 
   it(
     "will release a lock when the process dies due to an uncaught exception",

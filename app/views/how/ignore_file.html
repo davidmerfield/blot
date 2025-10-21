@@ -1,33 +1,25 @@
-<h2>Prevent a file becoming a post</h2>
-<p> Files and folders whose name starts with an underscore are ignored. Ignored files don’t become posts but you can <a href="#files-in-your-folder-are-public">embed</a> them. For example, none of these files become posts:</p>
+<h2>Ignore a file</h2>
+<p>You can <a href="/how/posts#prevent-a-file-becoming-a-post"></a>prevent a file from becoming a post or page if you
+  start its name with an underscore. For example:</p>
 
-<table >
+<table style="table-layout: auto;">
   <tbody>
     <tr>
-      <td>
+      <td style="white-space: nowrap;">
         <span class="icon-file"></span> _Apple.jpg
      </td>
      <td>
-        Not published because file name starts with an underscore.
+        Not published because the image’s name starts with an underscore.
      </td>
     </tr>
   <tr>
-    <td>
+    <td style="white-space: nowrap;border:none">
       <span class="icon-folder"></span> _Fruit
       <span class="light">›</span>
       <span class="icon-file"></span> Banana.jpg
    </td>
-    <td>
-        Not published because file is in folder whose name starts with an underscore.
-    </tr>
-    <tr>
-      <td>
-        <span class="icon-file-check"></span> Apple.jpg
-     </td>
-     <td>
-        Published because it's a <a href="/how/files#supported-file-types">type of file Blot can publish</a>.
-     </td>
-    </tr>
-   
+    <td style="border:none">
+        Not published because the image is in folder whose name starts with an underscore.
+    </tr>   
   </tbody>
 </table>

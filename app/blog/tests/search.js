@@ -20,6 +20,22 @@ describe("search", function () {
         expect(body).toContain('hello');
     });
 
+
+
+    it("does not error if there are multiple queries", async function () {
+        
+        await this.template({ "search.html": `<h1>{{query}}</h1> {{#entries}} {{{html}}} {{/entries}}`});
+
+        await this.write({path: '/a.txt', content: 'Hello, A!'});
+
+        const res = await this.get('/search?q=hello&q=a');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body).toContain('Hello, A!');
+    }); 
+
+
     it("if there is no query it returns an empty list", async function () {
         
         await this.template({ "search.html": `<h1>{{query}}</h1> {{#entries}} {{{html}}} {{/entries}}`});

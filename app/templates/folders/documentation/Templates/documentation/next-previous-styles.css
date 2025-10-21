@@ -1,0 +1,57 @@
+.next-previous {
+    display: flex;
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+  
+  .next-previous a {
+    flex: 1;
+    padding: 1rem;
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+  }
+  
+  .next-previous a:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+  }
+  
+  .next-previous .previous {
+    text-align: left;
+  }
+  
+  .next-previous .next {
+    text-align: right;
+  }
+  .next-previous .label {
+    display: block;
+  }
+  
+  .next-previous .title {
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 1.1em;
+  }
+  
+  .next-previous a {
+    color: var(--light-text-color);
+  }
+  
+  /* Handle single link cases */
+  .next-previous a:only-child {
+    flex: 0 0 100%;
+  }
+  
+  /* Optional: Add subtle directional indicators */
+  .previous .label::before {
+    content: "←";
+    margin-right: 0.5em;
+  }
+  
+  .next .label::after {
+    content: "→";
+    margin-left: 0.5em;
+  }

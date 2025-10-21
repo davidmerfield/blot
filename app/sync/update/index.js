@@ -4,15 +4,20 @@ var clfdate = require("helper/clfdate");
 var hashFile = require("helper/hashFile");
 var drop = require("./drop");
 var set = require("./set");
-var mkdir = require("./mkdir");
 var flushCache = require("models/blog/flushCache");
 var pathNormalizer = require("helper/pathNormalizer");
+var Blog = require("models/blog");
 
 module.exports = function (blog, log, status) {
-  return function update(path, options, callback) {
-    if (callback === undefined && typeof options === "function") {
-      callback = options;
-      options = {};
+  return function update(path, callback) {
+    // if typoeof callback is not function, throw error
+    if (typeof callback !== "function") {
+      throw new Error("sync.update: callback must be a function");
+    }
+
+    // if typeof path is not string, return error
+    if (typeof path !== "string") {
+      return callback(new Error("sync.update: path must be a string"));
     }
 
     path = pathNormalizer(path);
@@ -28,7 +33,7 @@ module.exports = function (blog, log, status) {
         hashFile(localPath(blog.id, path), function (err, hashAfter) {
           if (hashBefore !== hashAfter) {
             status("Re-syncing " + path);
-            return update(path, options, callback);
+            return update(path, callback);
           }
 
           // the cache is flushed at the end of a sync too
@@ -43,7 +48,7 @@ module.exports = function (blog, log, status) {
       fs.stat(localPath(blog.id, path), function (err, stat) {
         if (err && err.code === "ENOENT") {
           log(path, "Dropping from database");
-          drop(blog.id, path, options, function (err) {
+          drop(blog.id, path, function (err) {
             if (err) {
               log(path, "Error dropping from database", err);
             } else {
@@ -52,18 +57,13 @@ module.exports = function (blog, log, status) {
             done(err);
           });
         } else if (stat && stat.isDirectory()) {
-          log(path, "Adding folder to database");
-          mkdir(blog.id, path, options, function (err) {
-            if (err) {
-              log(path, "Error adding folder", err);
-            } else {
-              log(path, "Adding folder to database succeeded");
-            }
-            done(err);
+          maybeEnableInjectTitle(blog, path, function () {
+            // there is nothing else to do for directories
+            done();
           });
         } else {
           log(path, "Saving file in database");
-          set(blog, path, options, function (err) {
+          set(blog, path, function (err) {
             if (err) {
               log(path, "Error saving file in database", err);
             } else {
@@ -76,3 +76,54 @@ module.exports = function (blog, log, status) {
     });
   };
 };
+
+// Obsidian references the file system path as the note title, so the exported
+// Markdown often lacks an `h1`. To keep published posts readable, we auto-enable
+// the injectTitle plugin when a `.obsidian` folder is detected—unless the author
+// has explicitly turned it off.
+function maybeEnableInjectTitle(blog, path, callback) {
+  try {
+    const normalizedPath = pathNormalizer(path).toLowerCase();
+
+    const segments = normalizedPath.split("/").filter(Boolean);
+
+    const hasObsidianFolder = segments.includes(".obsidian");
+
+    if (!hasObsidianFolder) return callback();
+
+    const currentPlugins = blog.plugins || {};
+    const injectTitleConfig = currentPlugins.injectTitle || {};
+    const currentOptions = injectTitleConfig.options || {};
+
+    if (currentOptions.manuallyDisabled) return callback();
+
+    if (injectTitleConfig.enabled) return callback();
+
+    const nextPlugins = Object.assign({}, currentPlugins);
+    const nextOptions = Object.assign({}, currentOptions, {
+      manuallyDisabled: false,
+    });
+
+    nextPlugins.injectTitle = Object.assign({}, injectTitleConfig, {
+      enabled: true,
+      options: nextOptions,
+    });
+
+    Blog.set(
+      blog.id,
+      {
+        plugins: nextPlugins,
+      },
+      function (err) {
+        if (!err) {
+          blog.plugins = nextPlugins;
+        }
+        if (err) console.error(clfdate(), blog.id, path, err);
+        callback();
+      }
+    );
+  } catch (error) {
+    console.error(clfdate(), blog.id, path, error);
+    callback();
+  }
+}

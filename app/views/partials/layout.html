@@ -4,14 +4,13 @@
   {{> head}}
 </head>
 <body>
-  <input type="checkbox" id="navbar-toggle">
+  {{> header}}
   <section class="site-container">
     <section class="navbar">
       {{> navigation}}
     </section>
     <section class="content">
       <section class="main-section">
-        {{> header}}
         {{> breadcrumbs}}
         {{#selected.how}}
           <section class="main-section-how">

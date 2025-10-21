@@ -4,7 +4,7 @@ var blogID = process.argv[3];
 if (!userID) throw new Error("Please pass userID as first argument");
 if (!blogID) throw new Error("Please pass blogID as second argument");
 
-var User = require("user");
+var User = require("models/user");
 
 User.getById(userID, function (err, user) {
   if (err || !user) throw err || new Error("No user with userID " + userID);

@@ -2,13 +2,13 @@ Name files like this:
 
 YYYY-ID-SEASON.txt
 
-To send out a file:
+To send out a file, ssh into server, then login to a running container and run:
 
 node scripts/email/newsletter YYYY-ID-SEASON.txt
 
-You can use a database-state I generated to make things easier:
+To preview a newsletter in development environment:
 
-node scripts/state newsletter && node scripts/email/newsletter $(ls app/helper/email/newsletters | tail -n 3 | head -n 1)
+npm run preview-newsletter
 
 Find PRs using this search query:
 

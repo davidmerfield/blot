@@ -3,6 +3,31 @@ const config = require("config");
 const fs = require("fs-extra");
 const child_process = require("child_process");
 
+function fetchCDNIPs() {
+  const bunnyCDNIPURL = `https://bunnycdn.com/api/system/edgeserverlist`;
+  try {
+    const result = child_process.spawnSync("/usr/bin/curl", [
+      "-s",
+      bunnyCDNIPURL,
+    ]);
+    if (result.error) throw result.error;
+    const ips = JSON.parse(result.stdout.toString());
+    if (!Array.isArray(ips)) throw new Error("Invalid response from BunnyCDN");
+    return ips;
+  } catch (error) {
+    console.error("Error fetching CDN IPs:", error);
+    return [];
+  }
+}
+
+const cdnIPs = fetchCDNIPs();
+
+if (!cdnIPs.length) {
+  throw new Error("No CDN IPs fetched");
+}
+
+console.log(`Fetched ${cdnIPs.length} CDN IPs`);
+
 function loadEnvFile() {
   const envPath = require('path').join(__dirname, "..", "..", ".env");
   try {
@@ -99,6 +124,9 @@ const locals = {
   NETDATA_PASSWORD,
   NETDATA_USER,
   NETDATA_PORT,
+
+  // BunnyCDN IPs for whitelisting from rate limiting
+  cdn_ips: cdnIPs.map((ip) => { return { ip }; }),
 };
 
 // move the previous contents of the data directory to a backup
