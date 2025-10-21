@@ -4,6 +4,7 @@ const User = require("models/user");
 const webhook = require("dashboard/webhooks/stripe_webhook");
 
 const setUser = promisify(User.set);
+const setBlog = promisify(Blog.set);
 const getUser = promisify(User.getById);
 const getBlog = promisify(Blog.get);
 
@@ -145,6 +146,53 @@ describe("Stripe subscription webhooks", function () {
 
     const blog = await getBlog({ id: this.blog.id });
     expect(blog.isDisabled).toBe(true);
+  });
+
+  it("re-enables disabled accounts when subscription becomes active", async function () {
+    await setUser(this.user.uid, {
+      isDisabled: true,
+      subscription: {
+        id: this.subscriptionId,
+        customer: this.customerId,
+        status: "canceled",
+        plan: { amount: 500, interval: "month" },
+        quantity: 1,
+        cancel_at_period_end: false,
+      },
+    });
+
+    await setBlog(this.blog.id, { isDisabled: true });
+
+    const event = {
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: this.subscriptionId,
+          customer: this.customerId,
+          status: "active",
+          plan: { amount: 700, interval: "month" },
+          quantity: 2,
+          cancel_at_period_end: false,
+        },
+      },
+    };
+
+    const response = await this.fetch("/", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(event),
+    });
+
+    expect(response.status).toBe(200);
+
+    await delay(100);
+
+    const user = await getUser(this.user.uid);
+    expect(user.subscription.status).toBe("active");
+    expect(user.isDisabled).toBe(false);
+
+    const blog = await getBlog({ id: this.blog.id });
+    expect(blog.isDisabled).toBe(false);
   });
 
   it("returns 400 when verification fails", async function () {

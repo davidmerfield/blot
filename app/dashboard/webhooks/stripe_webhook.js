@@ -166,6 +166,10 @@ function update_subscription(customer_id, subscription, callback) {
       handler = function (next) {
         User.disable(user, updates, next);
       };
+    } else if (subscription.status === "active" && user.isDisabled) {
+      handler = function (next) {
+        User.enable(user, updates, next);
+      };
     }
 
     handler(callback);
