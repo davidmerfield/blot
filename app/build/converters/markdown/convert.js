@@ -1,4 +1,5 @@
 var spawn = require("child_process").spawn;
+var cheerio = require("cheerio");
 var indentation = require("./indentation");
 var footnotes = require("./footnotes");
 var time = require("helper/time");
@@ -10,6 +11,12 @@ var debug = require("debug")("blot:converters:markdown");
 // '+hard_line_breaks' +
 
 module.exports = function (blog, text, options, callback) {
+  var implicitFiguresEnabled =
+    blog &&
+    blog.plugins &&
+    blog.plugins.imageCaption &&
+    blog.plugins.imageCaption.enabled;
+
   var extensions =
 
     // resolves issue with html tags in markdown
@@ -34,6 +41,8 @@ module.exports = function (blog, text, options, callback) {
     "+lists_without_preceding_blankline" +
     "-blank_before_header" +
     "-blank_before_blockquote";
+
+  if (!implicitFiguresEnabled) extensions += "-implicit_figures";
 
   // This feature fucks with [@twitter]() links
   // perhaps make it an option in future?
@@ -125,6 +134,10 @@ module.exports = function (blog, text, options, callback) {
     result = safely(footnotes, result);
     time.end("footnotes");
 
+    if (implicitFiguresEnabled) {
+      result = safely(applyImplicitFigureCaptions, result);
+    }
+
     debug("Final:", result);
     callback(null, result);
   });
@@ -168,4 +181,32 @@ function safely(method, input) {
   }
 
   return input;
+}
+
+function applyImplicitFigureCaptions(html) {
+  var $ = cheerio.load(html, { decodeEntities: false });
+
+  $("figure").each(function () {
+    var figure = $(this);
+    var image = figure.children("img").first();
+
+    if (!image.length) return;
+
+    var titleText = (image.attr("title") || "").trim();
+    if (!titleText) return;
+
+    var figcaption = figure.children("figcaption").first();
+
+    if (figcaption.length) {
+      figcaption.text(titleText);
+    } else {
+      var newFigcaption = $("<figcaption></figcaption>")
+        .attr("aria-hidden", "true")
+        .text(titleText);
+
+      figure.append(newFigcaption);
+    }
+  });
+
+  return $.html();
 }
