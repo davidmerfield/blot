@@ -43,7 +43,6 @@ customer.subscription.deleted IF IS FINAL CHARGE ATTEMPT
 var parser = require("body-parser");
 var Express = require("express");
 var config = require("config");
-var stripe = require("stripe")(config.stripe.secret);
 var email = require("helper/email");
 var User = require("models/user");
 
@@ -51,6 +50,7 @@ var webhooks = Express.Router();
 
 // Stripe event codes
 var UPDATED_SUBSCRIPTION = "customer.subscription.updated";
+var DELETED_SUBSCRIPTION = "customer.subscription.deleted";
 
 // Error messages
 var NO_SUBSCRIPTION = "No subscription retrieved from Stripe";
@@ -73,47 +73,57 @@ webhooks.post("/", parser.json(), function (req, res) {
   var event_data = event.data.object;
 
   // A customer's subscription was changed, save changed info
-  if (event.type === UPDATED_SUBSCRIPTION)
-    update_subscription(event_data.customer, event_data.id, function () {});
+  if (event.type === UPDATED_SUBSCRIPTION || event.type === DELETED_SUBSCRIPTION)
+    update_subscription(event_data.customer, event_data, function () {});
 
   return res.sendStatus(200);
 });
 
-function update_subscription(customer_id, subscription_id, callback) {
-  stripe.customers.retrieveSubscription(customer_id, subscription_id, function (
-    err,
-    subscription
-  ) {
-    if (err || !subscription)
-      return callback(err || new Error(NO_SUBSCRIPTION));
+function update_subscription(customer_id, subscription, callback) {
+  callback = callback || function () {};
 
-    User.getByCustomerId(customer_id, function (err, user) {
-      if (err || !user) return callback(err || new Error(NO_USER));
+  if (!subscription) return callback(new Error(NO_SUBSCRIPTION));
 
-      if (subscription.status === "canceled" && user.isDisabled)
-        email.ALREADY_CANCELLED(user.uid);
+  User.getByCustomerId(customer_id, function (err, user) {
+    if (err || !user) return callback(err || new Error(NO_USER));
 
-      if (subscription.status === "canceled" && !user.isDisabled)
-        email.CLOSED(user.uid);
+    var previousSubscription = user.subscription || {};
 
-      if (subscription.status === "past_due") email.OVERDUE(user.uid);
+    if (subscription.status === "canceled" && user.isDisabled)
+      email.ALREADY_CANCELLED(user.uid);
 
-      if (
-        subscription.status === "active" &&
-        (user.subscription.status === "past_due" ||
-          subscription.status === "unpaid")
-      )
-        email.RECOVERED(user.uid);
+    if (subscription.status === "canceled" && !user.isDisabled)
+      email.CLOSED(user.uid);
 
-      if (
-        subscription.status === "unpaid" &&
-        user.subscription.status !== "unpaid"
-      )
-        email.OVERDUE_CLOSURE(user.uid);
+    if (subscription.status === "past_due") email.OVERDUE(user.uid);
 
-      User.set(user.uid, { subscription: subscription }, callback);
-    });
+    if (
+      subscription.status === "active" &&
+      (previousSubscription.status === "past_due" ||
+        previousSubscription.status === "unpaid")
+    )
+      email.RECOVERED(user.uid);
+
+    if (
+      subscription.status === "unpaid" &&
+      previousSubscription.status !== "unpaid"
+    )
+      email.OVERDUE_CLOSURE(user.uid);
+
+    var updates = { subscription: subscription };
+    var handler = function (next) {
+      User.set(user.uid, updates, next);
+    };
+
+    if (subscription.status === "canceled") {
+      handler = function (next) {
+        User.disable(user, updates, next);
+      };
+    }
+
+    handler(callback);
   });
 }
 
 module.exports = webhooks;
+module.exports.update_subscription = update_subscription;
