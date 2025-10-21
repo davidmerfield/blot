@@ -1,6 +1,6 @@
 var async = require("async");
 var ensure = require("helper/ensure");
-var Blog = require("models/blog");
+var setBlog = require("models/blog/set");
 var set = require("./set");
 
 module.exports = function disable(user, updates, callback) {
@@ -26,7 +26,7 @@ module.exports = function disable(user, updates, callback) {
     async.each(
       blogs,
       function (blogID, next) {
-        Blog.set(blogID, { isDisabled: true }, next);
+        setBlog(blogID, { isDisabled: true }, next);
       },
       callback
     );
