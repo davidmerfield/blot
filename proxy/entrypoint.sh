@@ -12,6 +12,11 @@ if [[ "$USE_STAGING" == "true" ]]; then
 fi
 
 # Ensure BLOT_HOST is set
+if [[ -z "$BLOT_HOST" ]]; then
+  echo "Error: BLOT_HOST is not set. Please provide the domain via the BLOT_HOST environment variable." >&2
+  exit 1
+fi
+
 echo "BLOT_HOST=$BLOT_HOST"
 
 # Check if AWS credentials are set
