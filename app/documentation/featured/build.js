@@ -130,7 +130,7 @@ async function generateImages(sites) {
       })
       .toFile(path);
 
-    site.image = path.replace(__dirname + "/../../views", "");
+    site.image = '/images/featured/' + filename;
     generatedImages.add(filename);
     delete site.avatar;
   }
