@@ -226,11 +226,11 @@ TemplateEditor.route("/:templateSlug/local-editing")
   })
   .post(async (req, res, next) => {
     try {
+      const duplicatedName = req.template.name + " copy";
       const template = await createTemplate({
         isPublic: false,
         owner: req.blog.id,
-        name: req.template.name + ' copy',
-        slug: req.template.slug + '-copy',
+        name: duplicatedName,
         cloneFrom: req.template.id,
       });
 
