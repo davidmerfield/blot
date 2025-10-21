@@ -8,15 +8,13 @@ const THUMBNAIL_SIZE = 96;
 const { toUnicode } = require("helper/punycode");
 
 const sharp = require("sharp");
-const spritesmith = require("spritesmith");
 const fs = require("fs-extra");
 const { parse } = require("url");
 const { join } = require("path");
 
 const config = require("config");
 const avatarDirectory = __dirname + "/avatars";
-const thumbnailDirectory = config.tmp_directory + "/featured/thumbnails";
-const spriteDestination = __dirname + "/../../views/images/featured.jpg";
+const outputDirectory = join(__dirname, "../../views/images/featured");
 const verifySiteIsOnline = require("./verifySiteIsOnline");
 
 if (require.main === module) {
@@ -81,9 +79,9 @@ async function build(callback) {
     })
   ).then((sites) => sites.filter((i) => i));
 
-  sites = await generateSprite(sites);
+  const result = await generateImages(sites);
 
-  callback(null, sites);
+  callback(null, result);
 }
 
 const tidy = (bio) => {
@@ -106,11 +104,18 @@ const tidy = (bio) => {
   return bio;
 };
 
-async function generateSprite(sites) {
-  await fs.emptyDir(thumbnailDirectory);
+async function generateImages(sites) {
+  await fs.ensureDir(outputDirectory);
+
+  const existingImages = new Set(
+    (await fs.readdir(outputDirectory).catch(() => []))
+      .filter((file) => file.endsWith(".jpg"))
+  );
+  const generatedImages = new Set();
 
   for (let site of sites) {
-    const path = join(thumbnailDirectory, site.host + ".jpg");
+    const filename = site.host + ".jpg";
+    const path = join(outputDirectory, filename);
     await sharp(site.avatar)
       .resize({
         width: THUMBNAIL_SIZE,
@@ -124,42 +129,15 @@ async function generateSprite(sites) {
       })
       .toFile(path);
 
-    site.thumbnail = path;
+    site.image = path.replace(__dirname + "/../../views", "");
+    generatedImages.add(filename);
+    delete site.avatar;
   }
 
-  // use spritesmith to generate a sprite and output it to thumbnailDirectory/sprite.jpg
-  // then append the coordinates to each site
-  const { width, height } = await new Promise((resolve, reject) => {
-    // how do we set the dest path of the sprite?
-    // we need to set the dest path of the sprite to thumbnailDirectory/sprite.jpg
-    spritesmith.run(
-      {
-        src: sites.map((site) => site.thumbnail),
-      },
-      (err, result) => {
-        if (err) return reject(err);
-
-        const { coordinates, properties } = result;
-        const { width, height } = properties;
-
-        sites.forEach((site) => {
-          const { x, y } = coordinates[site.thumbnail];
-          site.x = x / 2;
-          site.y = y / 2;
-          delete site.thumbnail;
-          delete site.avatar;
-        });
-
-        fs.outputFile(spriteDestination, result.image, "binary", (err) => {
-          if (err) return reject(err);
-          resolve({ width, height });
-        });
-      }
-    );
-  });
-
-  // return relative path to views directory of the sprite
-  const sprite = spriteDestination.replace(__dirname + "/../../views", "");
+  const obsolete = [...existingImages].filter((file) => !generatedImages.has(file));
+  for (const file of obsolete) {
+    await fs.remove(join(outputDirectory, file));
+  }
 
   await fs.outputFile(
     __dirname + "/sites.filtered.txt",
@@ -185,14 +163,8 @@ async function generateSprite(sites) {
     "utf-8"
   );
 
-  // empty the thumbnail directory
-  await fs.emptyDir(thumbnailDirectory);
-
   return {
-    width: width / 2,
-    height: height / 2,
-    sprite,
+    image_size: THUMBNAIL_SIZE / 2,
     sites,
-    thumbnail_width: THUMBNAIL_SIZE / 2,
   };
 }

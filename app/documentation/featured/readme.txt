@@ -9,7 +9,7 @@ example.com Julius Caesar, is a politician from Rome
 
 example.com.png
 
-3. Run the script to rebuild the list of featured sites in featured.json then commit your changes:
+3. Run the script to rebuild the list of featured sites in featured.json then commit your changes (including the regenerated images inside app/views/images/featured/):
 
 npm run featured
 
