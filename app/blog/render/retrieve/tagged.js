@@ -168,10 +168,18 @@ module.exports = function (req, callback) {
   let page = parseInt(req.params.page, 10);
   if (!page || page < 1) page = 1;
 
-  let limit =
-    req.template && req.template.locals
-      ? parseInt(req.template.locals.page_size, 10)
-      : undefined;
+  const templateLocals = (req.template && req.template.locals) || {};
+
+  let preferredLimit;
+
+  if (templateLocals.tagged_page_size !== undefined) {
+    preferredLimit = templateLocals.tagged_page_size;
+  } else {
+    preferredLimit = templateLocals.page_size;
+  }
+
+  let limit = parseInt(preferredLimit, 10);
+  if (!Number.isFinite(limit)) limit = undefined;
 
   if (!limit || limit < 1 || limit > 500) limit = 100;
 

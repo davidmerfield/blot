@@ -315,6 +315,126 @@ describe("tags work on sites", function () {
     expect(parsedPage3.entries).toEqual([]);
   });
 
+  it("prefers tagged_page_size over default template page size", async function () {
+    await this.publish({
+      path: "/tag-one.txt",
+      content: "Title: Tag One\nTags: Special\n\nFirst",
+    });
+    await this.publish({
+      path: "/tag-two.txt",
+      content: "Title: Tag Two\nTags: Special\n\nSecond",
+    });
+    await this.publish({
+      path: "/tag-three.txt",
+      content: "Title: Tag Three\nTags: Special\n\nThird",
+    });
+
+    await this.template(
+      {
+        "entries.html": "{{#entries}}{{title}}\n{{/entries}}",
+        "tagged.html":
+          "pageSize={{pagination.pageSize}};current={{pagination.current}};entries={{#entries}}{{title}}|{{/entries}}",
+      },
+      { locals: { page_size: 1, tagged_page_size: 2 } }
+    );
+
+    const indexRes = await this.get(`/`);
+    expect(indexRes.status).toBe(200);
+    const indexTitles = (await indexRes.text())
+      .trim()
+      .split(/\n+/)
+      .filter(Boolean);
+    expect(indexTitles.length).toBe(1);
+
+    const res = await this.get(`/tagged/special`);
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    const [pageSizePart, currentPart, entriesPart] = body.split(";");
+    expect(pageSizePart).toBe("pageSize=2");
+    expect(currentPart).toBe("current=1");
+    const entries = entriesPart
+      .replace(/^entries=/, "")
+      .split("|")
+      .filter(Boolean)
+      .map((title) => title.toLowerCase());
+
+    expect(entries).toEqual(["tag three", "tag two"]);
+
+    const resPage2 = await this.get(`/tagged/special/page/2`);
+    expect(resPage2.status).toBe(200);
+    const bodyPage2 = await resPage2.text();
+    const [pageSizePart2, currentPart2, entriesPart2] = bodyPage2.split(";");
+
+    expect(pageSizePart2).toBe("pageSize=2");
+    expect(currentPart2).toBe("current=2");
+    const entriesPage2 = entriesPart2
+      .replace(/^entries=/, "")
+      .split("|")
+      .filter(Boolean)
+      .map((title) => title.toLowerCase());
+
+    expect(entriesPage2).toEqual(["tag one"]);
+  });
+
+  it("falls back to the default template page size when tagged_page_size is absent", async function () {
+    await this.publish({
+      path: "/fallback-one.txt",
+      content: "Title: Fallback One\nTags: Alt\n\nFirst",
+    });
+    await this.publish({
+      path: "/fallback-two.txt",
+      content: "Title: Fallback Two\nTags: Alt\n\nSecond",
+    });
+    await this.publish({
+      path: "/fallback-three.txt",
+      content: "Title: Fallback Three\nTags: Alt\n\nThird",
+    });
+    await this.publish({
+      path: "/fallback-four.txt",
+      content: "Title: Fallback Four\nTags: Alt\n\nFourth",
+    });
+
+    await this.template(
+      {
+        "tagged.html":
+          "pageSize={{pagination.pageSize}};current={{pagination.current}};entries={{#entries}}{{title}}|{{/entries}}",
+      },
+      { locals: { page_size: 3 } }
+    );
+
+    const res = await this.get(`/tagged/alt`);
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    const [pageSizePart, currentPart, entriesPart] = body.split(";");
+
+    expect(pageSizePart).toBe("pageSize=3");
+    expect(currentPart).toBe("current=1");
+    const entries = entriesPart
+      .replace(/^entries=/, "")
+      .split("|")
+      .filter(Boolean)
+      .map((title) => title.toLowerCase());
+
+    expect(entries).toEqual([
+      "fallback four",
+      "fallback three",
+      "fallback two",
+    ]);
+
+    const resPage2 = await this.get(`/tagged/alt/page/2`);
+    expect(resPage2.status).toBe(200);
+    const bodyPage2 = await resPage2.text();
+    const [pageSizePart2, currentPart2, entriesPart2] = bodyPage2.split(";");
+    expect(pageSizePart2).toBe("pageSize=3");
+    expect(currentPart2).toBe("current=2");
+    const entriesPage2 = entriesPart2
+      .replace(/^entries=/, "")
+      .split("|")
+      .filter(Boolean)
+      .map((title) => title.toLowerCase());
+    expect(entriesPage2).toEqual(["fallback one"]);
+  });
+
   it("reports total count when pagination options are provided", async function () {
     await this.publish({
       path: "/page-a.txt",
