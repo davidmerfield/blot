@@ -33,17 +33,28 @@ module.exports = id => {
             question.tags = [];
           }
 
-          question.replies = replies.map(reply => {
-            const date = new Date(parseInt(reply.created_at));
+          question.replies = replies.map((reply) => {
+            const date = new Date(parseInt(reply.created_at, 10));
             reply.time = moment(date).fromNow();
             return reply;
           });
 
-          const date = new Date(parseInt(last_reply_created_at));
+          const createdDate = new Date(parseInt(question.created_at, 10));
+          const createdTime = moment(createdDate).fromNow();
+
+          const hasLastReplyTimestamp =
+            last_reply_created_at !== null &&
+            !Number.isNaN(parseInt(last_reply_created_at, 10));
+          const lastReplyTimestamp = hasLastReplyTimestamp
+            ? last_reply_created_at
+            : question.created_at;
+          const lastReplyDate = new Date(parseInt(lastReplyTimestamp, 10));
 
           question.number_of_replies = replies.length;
-          question.last_reply_created_at = last_reply_created_at;
-          question.time = moment(date).fromNow();
+          question.last_reply_created_at = lastReplyTimestamp;
+          question.last_reply_time = moment(lastReplyDate).fromNow();
+          question.created_time = createdTime;
+          question.time = createdTime;
 
           resolve(question);
         });
