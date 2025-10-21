@@ -54,10 +54,33 @@ module.exports = ({
               const last_reply_created_at = results[index * 3 + 1];
               const number_of_replies = results[index * 3 + 2];
 
-              const date = new Date(parseInt(last_reply_created_at));
-              question.last_reply_created_at = last_reply_created_at;
-              question.time = moment(date).fromNow();
-              question.number_of_replies = parseInt(number_of_replies);
+              const createdTimestamp = parseInt(question.created_at, 10);
+              const hasValidCreatedTimestamp = !Number.isNaN(createdTimestamp);
+              const createdDate = hasValidCreatedTimestamp
+                ? new Date(createdTimestamp)
+                : new Date();
+              const createdTime = moment(createdDate).fromNow();
+
+              const hasLastReplyTimestamp =
+                last_reply_created_at !== null &&
+                !Number.isNaN(parseInt(last_reply_created_at, 10));
+              const lastReplyTimestamp = hasLastReplyTimestamp
+                ? last_reply_created_at
+                : question.created_at;
+              const lastReplyTimestampInt = parseInt(lastReplyTimestamp, 10);
+              const lastReplyDate = Number.isNaN(lastReplyTimestampInt)
+                ? createdDate
+                : new Date(lastReplyTimestampInt);
+
+              question.last_reply_created_at = lastReplyTimestamp;
+              question.last_reply_time = moment(lastReplyDate).fromNow();
+              question.created_time = createdTime;
+              question.time = createdTime;
+
+              const parsedNumberOfReplies = parseInt(number_of_replies, 10);
+              question.number_of_replies = Number.isNaN(parsedNumberOfReplies)
+                ? 0
+                : parsedNumberOfReplies;
 
               try {
                 question.tags = JSON.parse(question.tags);

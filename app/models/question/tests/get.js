@@ -26,9 +26,6 @@ describe("questions.get", function () {
     const reply = await create({ body: "Answer", parent: id });
 
     const question = await get(id);
-    console.log('id', id);
-    console.log('reply', reply);
-    console.log('question', question);
 
     expect(question.replies[0].id).toEqual(reply.id);
   });
