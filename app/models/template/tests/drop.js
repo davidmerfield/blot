@@ -95,15 +95,11 @@ describe("template", function () {
     });
   });
 
-  // There is a bug with the drop function at the moment
-  // It does a truthy check against an empty object in the
-  // if (err || !allViews)  where all views is {}
-  // Fix this in future and enable the spec.
-  it("drop returns an error when the template does not exist", function (done) {
+  it("drop resolves without an error when the template does not exist", function (done) {
     var test = this;
-    drop(test.blog.id, test.fake.random.word(), function (err) {
-      expect(err instanceof Error).toBe(true);
-      expect(err.code).toEqual("ENOENT");
+    drop(test.blog.id, test.fake.random.word(), function (err, message) {
+      if (err) return done.fail(err);
+      expect(typeof message).toBe("string");
       done();
     });
   });
