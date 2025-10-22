@@ -22,19 +22,11 @@ if (previewIframeContainer) {
 
   var doc = document.querySelector("iframe").contentWindow.document;
 
-  // we can use this to steam changes to CSS properties to the iframe
-  var scriptObj = doc.createElement("script");
-  scriptObj.type = "text/javascript";
-  scriptObj.innerHTML = 'console.log("test");';
-  doc.body.appendChild(scriptObj);
-
   // Listen to messages sent from the iframe which contains
   // the preview of the template. We inject the script
   // which sends these messages before the </body> tag of
   // all HTML pages rendered on preview subdomains.
   var receiveMessage = function receiveMessage(e) {
-
-    console.log("Received message from iframe:", e.data);
 
     // Only react to messages from the preview subdomain
     // The user can click on links and load external pages
@@ -50,7 +42,6 @@ if (previewIframeContainer) {
     http.open("POST", url, true);
     http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     http.send(params);
-    console.log("Sent preview path to server:", path);
   };
 
   window.addEventListener("message", receiveMessage, false);
