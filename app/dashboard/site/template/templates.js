@@ -23,12 +23,15 @@ module.exports = function (req, res, next) {
 
       var mySubDomain = template.isMine ? "my-" : "";
 
+      // remap the slug to be everything after the first colon in the ID
+      template.slug = template.id.split(':').slice(1).join(':');
+
       template.selected =
         req.path.split("/")[1] === template.slug ? "selected" : "";
 
       // Todo replace the thumbnail with a real thumbnail of the template
       if (template.owner === blog.id) {
-        if (template.cloneFrom) {
+        if (template.cloneFrom && template.cloneFrom.startsWith("SITE:")) {
           if (template.slug.indexOf("-copy") !== -1) {
             template.thumbnailSlug = template.slug.split("-copy")[0];
           } else {
@@ -69,13 +72,13 @@ module.exports = function (req, res, next) {
       if (template.owner !== blogID) blotTemplates.push(template);
     });
 
-    // if there are two templates with the same slug, hide the template owned by 'SITE'
+    // if there are two templates with the same slug and the same name, hide the template owned by 'SITE'
     // so only the template owned by the blog is shown
     // use reduce to filter out the duplicate templates
     templates = templates.reduce(function (acc, template) {
       // ensure that the template owned by the blog id is in the list
       // rather than the template owned by 'SITE' if there are two templates
-      if (acc.some((t) => t.slug === template.slug)) {
+      if (acc.some((t) => t.slug === template.slug && t.name === template.name)) {
         // if the template is owned by the blog id, replace the template owned by 'SITE'
         // with the template owned by the blog id
         if (template.owner === blogID) {
@@ -124,6 +127,8 @@ module.exports = function (req, res, next) {
     res.locals.currentTemplate = templates.filter(
       (template) => template.id === currentTemplate
     )[0];
+
+    console.log(res.locals.yourTemplates);
 
     next();
   });

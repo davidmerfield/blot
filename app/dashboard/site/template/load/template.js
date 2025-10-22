@@ -6,20 +6,28 @@ var makeSlug = require("helper/makeSlug");
 // or a template owned by the site if it exists or null if neither exist
 const loadTemplate = async (blogID, templateSlug) => {
   const slug = makeSlug(templateSlug);
-  let template;
 
-  template = await getMetadata(Template.makeID(blogID, slug));
+  const idsToTry = [
+    Template.makeID(blogID, slug),
+    Template.makeID("SITE", slug),
+  ];
 
-  if (template) return template;
+  console.log("Trying to load template with IDs:", idsToTry);
 
-  template = await getMetadata(Template.makeID("SITE", slug));
-
-  if (template) return template;
+  for (const id of idsToTry) {
+    console.log("Trying to load template with ID:", id);
+    const template = await getMetadata(id);
+    if (template) {
+      console.log("Found template with ID:", id, template);
+      return template;
+    }
+    console.log("No template found with ID:", id);
+  }
 
   return null;
 };
 
-const getMetadata = templateID => {
+const getMetadata = (templateID) => {
   return new Promise((resolve, reject) => {
     Template.getMetadata(templateID, (err, template) => {
       if (err || !template) return resolve(null);
@@ -34,15 +42,14 @@ module.exports = async function (req, res, next) {
     const template = await loadTemplate(req.blog.id, slug);
     const templateMissing = !template;
 
-    const hydrated =
-      template || {
-        owner: req.blog.id,
-        slug,
-        id: Template.makeID(req.blog.id, slug),
-        locals: {},
-        partials: {},
-        previewPath: "",
-      };
+    const hydrated = template || {
+      owner: req.blog.id,
+      slug,
+      id: Template.makeID(req.blog.id, slug),
+      locals: {},
+      partials: {},
+      previewPath: "",
+    };
 
     hydrated.owner = hydrated.owner || req.blog.id;
     hydrated.slug = hydrated.slug || slug || req.params.templateSlug;
@@ -62,6 +69,7 @@ module.exports = async function (req, res, next) {
     hydrated.locals = hydrated.locals || {};
     hydrated.partials = hydrated.partials || {};
     hydrated.previewPath = hydrated.previewPath || "";
+    hydrated.isMine = hydrated.owner === req.blog.id;
 
     hydrated.checked = hydrated.id === req.blog.template ? "checked" : "";
 
