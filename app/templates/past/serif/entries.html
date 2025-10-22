@@ -4,12 +4,12 @@
   <body>
     {{> header}}
 
-    <p style="font-size: 30px">
+    <p class="entries">
       {{#entries}}
-      <a href="{{{url}}}" style="text-decoration: none; color: inherit"
-        ><span style="line-height: 1.2">{{title}}</span>
+      <a href="{{{url}}}" 
+        ><span>{{title}}</span>
       </a>
-      <span style="color: #bbb">{{date}} {{^last}}//{{/last}}</span>
+      <span class="light">{{date}} {{^last}}//{{/last}}</span>
       {{/entries}}
     </p>
 

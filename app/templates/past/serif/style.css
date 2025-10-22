@@ -26,6 +26,20 @@ body {
   margin: 0 auto;
 }
 
+.entries {
+  font-size: calc({{{body_font.font_size}}}px * 1.25);
+}
+
+.entries a + span {opacity:0.75}
+
+.light {
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
+}
+
+.entries a {
+  text-decoration: none; color: inherit
+}
+
 h1, h2, h3, h4, h5, h6 {font-size: inherit;}
 
 h2, h3 {margin-top: 2em}

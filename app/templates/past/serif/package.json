@@ -5,10 +5,10 @@
     "page_size": 48,
     "background_color": "#ffffff",
     "accent_color": "#0000FF",
-    "navigation_background_color": "#ffffff",
     "hide_dates": false,
     "date_display": "MMMM D, Y",
     "body_font": {
+      "id": "charter",
       "font_size": 24,
       "line_height": 1.5
     },
