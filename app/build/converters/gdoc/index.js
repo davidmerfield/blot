@@ -13,6 +13,7 @@ const extend = require("helper/extend");
 const yaml = require("yaml");
 
 const blockquotes = require("./blockquotes");
+const footnotes = require("./footnotes");
 const linebreaks = require("./linebreaks");
 
 function is(path) {
@@ -173,6 +174,9 @@ async function read(blog, path, callback) {
 
     // handle blockquotes
     blockquotes($);
+
+    // handle footnotes
+    footnotes($);
 
     let html = $("body").html();
 
