@@ -112,16 +112,16 @@ module.exports = function (req, res, next) {
 
     res.locals.yourTemplates = templates.filter(
       (template) =>
-        template.isMine && !template.localEditing && !template.checked
+        template.isMine && !template.localEditing
     );
 
     res.locals.templatesInYourFolder = templates.filter(
       (template) =>
-        template.isMine && template.localEditing === true && !template.checked
+        template.isMine && template.localEditing === true
     );
 
     res.locals.blotTemplates = templates.filter(
-      (template) => !template.isMine && !template.checked
+      (template) => !template.isMine 
     );
 
     res.locals.currentTemplate = templates.filter(

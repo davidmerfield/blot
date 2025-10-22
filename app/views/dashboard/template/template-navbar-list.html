@@ -1,9 +1,4 @@
-<div id="template-list">
-    <h2 style="margin-top:2rem">Current template</h2>
-
-  {{#currentTemplate}}
-  {{> template-row}}
-  {{/currentTemplate}}
+<div id="template-list" style="margin-top:2rem">
 
   {{#templatesInYourFolder.length}}
   <h2>Templates in folder</h2>
@@ -14,7 +9,7 @@
   {{/templatesInYourFolder}}
 
   {{#yourTemplates.length}}
-  <h2>Your templates</h2>
+  <h2>Your {{#templatesInYourFolder.length}}other{{/templatesInYourFolder.length}} templates</h2>
   {{/yourTemplates.length}}
 
 
