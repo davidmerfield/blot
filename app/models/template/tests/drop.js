@@ -5,6 +5,7 @@ describe("template", function () {
   var getTemplateList = require("../index").getTemplateList;
   var client = require("models/client");
   var Blog = require("models/blog");
+  var key = require("../key");
 
   it("drops a template", function (done) {
     drop(this.blog.id, this.template.name, done);
@@ -68,6 +69,28 @@ describe("template", function () {
         if (err) return done.fail(err);
         expect(blog.cacheID).not.toEqual(initialCacheID);
         done();
+      });
+    });
+  });
+
+  it("cleans up references when metadata is missing", function (done) {
+    var test = this;
+
+    client.del(key.metadata(test.template.id), function (err) {
+      if (err) return done.fail(err);
+
+      drop(test.blog.id, test.template.name, function (err) {
+        if (err) return done.fail(err);
+
+        client.sismember(
+          key.blogTemplates(test.blog.id),
+          test.template.id,
+          function (err, isMember) {
+            if (err) return done.fail(err);
+            expect(isMember).toEqual(0);
+            done();
+          }
+        );
       });
     });
   });
