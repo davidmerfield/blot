@@ -15,17 +15,112 @@ body {
   margin: 0 4em 0 10em;
 }
 
-.clear {width: 100%;clear: both;}
-
 h1, h2, h3, h4, h5, h6 {font-size: inherit;}
 
 h2, h3 {margin-top: 2em}
 
-h1 {text-transform: uppercase;letter-spacing: 0.1em}
+h1 {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
 
-h1 a {text-decoration: none;color: inherit;}
+h1 a {
+  text-decoration: none;
+  color: inherit;
+}
 
-.nav a {margin: 0 0 0 2em}
+.site-header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5em;
+  margin-bottom: 2em;
+}
+
+.site-nav-toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(100%);
+  overflow: hidden;
+}
+
+.site-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  width: 100%;
+}
+
+.site-title {
+  font-size: 16px;
+  margin: 0;
+}
+
+.site-menu-toggle {
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: {{medium_text}};
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-block;
+  padding: 0.25em 0;
+}
+
+.site-menu-toggle:hover,
+.site-menu-toggle:focus {
+  color: {{highlight_color}};
+}
+
+#site-nav-toggle:focus-visible ~ .site-header-bar .site-menu-toggle {
+  outline: 2px solid {{highlight_color}};
+  outline-offset: 2px;
+}
+
+.site-nav {
+  display: none;
+  width: 100%;
+}
+
+#site-nav-toggle:checked ~ .site-nav {
+  display: block;
+}
+
+.site-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.site-nav li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.site-nav a {
+  text-decoration: none;
+  color: inherit;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.site-nav-spacer {
+  display: none;
+}
+
+#site-nav-toggle:checked ~ .site-header-bar .site-menu-toggle {
+  color: {{highlight_color}};
+}
 
 .small, h1 {font-size: 16px;}
 
@@ -81,5 +176,51 @@ input[type="submit"] {
   cursor: pointer;
 }
 
-{{> plugin}}
+.site-header {
+  border-bottom: 1px solid {{light_text}};
+  padding-bottom: 1em;
+}
 
+.site-nav a:hover,
+.site-nav a:focus {
+  color: {{highlight_color}};
+}
+
+@media (min-width: 640px) {
+  .site-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+  }
+
+  .site-header-bar {
+    flex: 0 0 auto;
+  }
+
+  .site-menu-toggle {
+    display: none;
+  }
+
+  .site-nav {
+    display: block;
+    width: auto;
+  }
+
+  .site-nav ul {
+    flex-direction: row;
+    gap: 0;
+    align-items: center;
+  }
+
+  .site-nav li {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .site-nav-spacer {
+    display: inline;
+  }
+}
+
+{{> plugin}}
