@@ -1,12 +1,7 @@
 
 <div style="display: flex;margin-top:2rem">
     <div style="width: 33.33333%;flex-grow: 0;flex-shrink: 0;box-sizing: border-box;padding:0 1rem 0 0">
-
-        
-
         {{> template-editor-sidebar}}
-
-
             <a class="line" style="padding:0;background: none;border-radius: var(--border-radius) var(--border-radius) 0 0;" href="{{{base}}}/links">
                 <span class="label">Links</span>
                 <span class="center" style="margin-top: 4px;white-space: nowrap;overflow: hidden;position: relative;">
@@ -20,9 +15,7 @@
                     <span class="link" style="position: absolute;top:0;right:0" >Edit</span>
                 </span>
                 </span>
-                
                 </a>
-                
                 <a class="line" href="{{{base}}}/photo"  style="padding:0;background: none;border-bottom: none;border-radius: 0 0 var(--border-radius) var(--border-radius);"> 
                 <span class="label" style="margin-bottom: 4px;">Photo</span>  
                 {{^blog.avatar}}
@@ -43,14 +36,7 @@
     <div style="box-sizing: border-box;flex-grow: 1;width: 66.66666%;
     flex-grow: 0;flex-shrink: 0;padding:0 0 0 1rem;            position: sticky;
     top: 0;">
-
-        
-
-
-
-       
-       
-        <div class="iframe-container">
+        <div class="iframe-container" data-base="{{{base}}}" data-origin="{{{previewOrigin}}}" data-csrf="{{{csrftoken}}}">
             <iframe id="full_size_preview"
                       width="1200"
                       height="900"
@@ -58,74 +44,7 @@
                     src="{{{preview}}}"
                     ></iframe>
         </div>
-        <script>
-            var iframeContainerWidth = document.querySelector('.iframe-container').offsetWidth;
-            document.documentElement.style.setProperty('--iframe-container-width', iframeContainerWidth);
-            window.addEventListener('resize', function() {
-                var iframeContainerWidth = document.querySelector('.iframe-container').offsetWidth;
-                document.documentElement.style.setProperty('--iframe-container-width', iframeContainerWidth);
-            });
-        </script>
-        
-                    <!-- <a href="">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M3.75 0h8.5C13.216 0 14 .784 14 1.75v12.5A1.75 1.75 0 0 1 12.25 16h-8.5A1.75 1.75 0 0 1 2 14.25V1.75C2 .784 2.784 0 3.75 0ZM3.5 1.75v12.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25ZM8 13a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>
-                    </a>
-                    <a href="">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M0 2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 14.25 15H1.75A1.75 1.75 0 0 1 0 13.25ZM14.5 6h-13v7.25c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25Zm-6-3.5v2h6V2.75a.25.25 0 0 0-.25-.25ZM5 2.5v2h2v-2Zm-3.25 0a.25.25 0 0 0-.25.25V4.5h2v-2Z"></path></svg>
-                    </a> -->
-        <script type="text/javascript">
-        var content = document.querySelector("iframe");
-        
-        var doc = document.querySelector('iframe').contentWindow.document;
-        
-        // we can use this to steam changes to CSS properties to the iframe
-        var scriptObj = doc.createElement("script");
-        scriptObj.type = "text/javascript";
-        scriptObj.innerHTML = 'console.log("test");';
-        doc.body.appendChild(scriptObj);
-        
-        // Listen to messages sent from the iframe which contains
-        // the preview of the template. We inject the script
-        // which sends these messages before the </body> tag of 
-        // all HTML pages rendered on preview subdomains.
-        var receiveMessage = function receiveMessage(e) {
-            // Only react to messages from the preview subdomain
-            // The user can click on links and load external pages
-            if (e.origin !== "{{{previewOrigin}}}") return;
-        
-            // Extract the path of the page they are viewing
-            let path = e.data.slice("iframe:".length);
-        
-            // Save the path they have viewed on the server
-            var http = new XMLHttpRequest();
-            var url = "{{{base}}}";
-            var params = "previewPath=" + path + "&_csrf=" + "{{{csrftoken}}}";
-            http.open("POST", url, true);
-            http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-            http.send(params);
-        };
-        
-        window.addEventListener("message", receiveMessage, false);
-        </script>
-        
-        <!-- <br>
-        <div style="border:1px solid #eeeeec;border-radius: 4px;overflow: hidden;">
-            <a class="line"  style="border-bottom: none;">
-                <span class="label">Preview URL</span>
-                <span class="center">{{{preview}}}</span>
-                <span class="right">
-                    Open in new tab
-                </span>
-            </a>
-            
-        
-        </div> -->
-                                        
-
         <br><br>
     </div>
-    
-
-
 </div>
 

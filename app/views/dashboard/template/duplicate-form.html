@@ -1,5 +1,12 @@
-<form action="{{{editURL}}}/duplicate" method="post">
+<form action="{{{editURL}}}/duplicate" method="post" style="background: #f8faff;border-radius:var(--border-radius);box-shadow: var(--box-shadow);padding:1rem">
         <input type="hidden" name="_csrf" value="{{csrftoken}}" />
-        <span style="font-size: 14px;">{{name}}</span>
-        <button class="button small" type="submit">Duplicate</button>
+        <center>
+        <span style="font-size: 14px;">{{name}}</span><br>
+        <img src="{{#cdn}}/images/examples/{{thumbnailSlug}}/0-icon.png{{/cdn}}" style="width: 24px;border: 1px solid var(--border-color);border-radius: var(--border-radius);margin: 0.5rem 0;" />
+
+        <div class="buttons">
+            <button type="submit" class="blue">Duplicate</button>
+            <a href="{{{base}}}" style="visibility: hidden;">Cancel</a>
+        </div>
+        </center>
   </form>
