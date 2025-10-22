@@ -12,7 +12,7 @@ body {
 .container {
   max-width: 672px;
   padding: 3em 0 5em;
-  margin: 0 4em 0 10em;
+  margin: 0 auto;
 }
 
 h1, h2, h3, h4, h5, h6 {font-size: inherit;}
@@ -54,11 +54,11 @@ h1 a {
   align-items: center;
   justify-content: space-between;
   gap: 0.5em;
-  width: 100%;
 }
 
 .site-title {
   font-size: 16px;
+  font-weight: 400;
   margin: 0;
 }
 
@@ -110,12 +110,15 @@ h1 a {
 .site-nav a {
   text-decoration: none;
   color: inherit;
+  font-size: 16px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .site-nav-spacer {
   display: none;
+  margin:0 6px;
+  font-size: 16px;
 }
 
 #site-nav-toggle:checked ~ .site-header-bar .site-menu-toggle {
@@ -177,7 +180,6 @@ input[type="submit"] {
 }
 
 .site-header {
-  border-bottom: 1px solid {{light_text}};
   padding-bottom: 1em;
 }
 
@@ -186,7 +188,9 @@ input[type="submit"] {
   color: {{highlight_color}};
 }
 
-@media (min-width: 640px) {
+
+@media (min-width: 800px) {
+
   .site-header {
     flex-direction: row;
     align-items: center;
