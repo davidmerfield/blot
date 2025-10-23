@@ -62,7 +62,13 @@ function getTag(blogID, slug, opts) {
   return new Promise((resolve, reject) => {
     // Tags.get may accept options for single-tag queries
     const cb = (err, entryIDs, prettyTag, total) =>
-      err ? reject(err) : resolve({ entryIDs: entryIDs || [], prettyTag: prettyTag || slug, total });
+      err
+        ? reject(err)
+        : resolve({
+            entryIDs: entryIDs || [],
+            prettyTag: prettyTag || slug,
+            total,
+          });
     opts ? Tags.get(blogID, slug, opts, cb) : Tags.get(blogID, slug, cb);
   });
 }
@@ -163,7 +169,12 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
 
 module.exports = function (req, res, callback) {
   const blogID = req.blog.id;
-  const tags = req.query.name || req.query.tag || req.params.tag || "";
+  const tags =
+    req.query.name ||
+    req.query.tag ||
+    req.params.tag ||
+    (res.locals && res.locals.tag) ||
+    "";
 
   let page = parseInt(req.params.page, 10);
   if (!page || page < 1) page = 1;

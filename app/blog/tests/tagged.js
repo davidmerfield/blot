@@ -57,7 +57,7 @@ describe("tags work on sites", function () {
           params: {},
           template: {},
         },
-        {locals: {}},
+        { locals: {} },
         (err, data) => {
           if (err) return reject(err);
           resolve(data);
@@ -69,6 +69,29 @@ describe("tags work on sites", function () {
     expect(result.tag).toBe("Alpha + Beta");
     expect(result.tagged["Alpha + Beta"]).toBe(true);
     expect(result.tagged["alpha + beta"]).toBe(true);
+  });
+
+  fit("lets you filter entries with a specific tag", async function () {
+    await this.publish({ path: "/first.txt", content: "Tags: A\n\nFoo" });
+    await this.publish({ path: "/second.txt", content: "Tags: A,B\n\nBar" });
+    await this.publish({ path: "/third.txt", content: "Tags: B,C\n\nBaz" });
+
+    await this.template(
+      {
+        "index.html": "{{#tagged}}{{#entries}}{{title}}{{/entries}}{{/tagged}}",
+      },
+      {
+        views: {
+          "index.html": {
+            url: ["/", "/page/:page"],
+          },
+        },
+        locals: { tag: "b", page_size: 1 },
+      }
+    );
+
+    expect(await this.text(`/`)).toEqual("third");
+    expect(await this.text(`/page/2`)).toEqual("second");
   });
 
   it("excludes entries without tags from tagged feeds", async function () {
@@ -454,7 +477,7 @@ describe("tags work on sites", function () {
           params: { tag: "counted", page: "1" },
           template: { locals: { page_size: 1 } },
         },
-        {locals: {}},
+        { locals: {} },
         (err, data) => {
           if (err) return reject(err);
           resolve(data);
