@@ -2,37 +2,55 @@ module.exports = ($) => {
   // Find all paragraph elements
   $("p").each(function () {
     const $p = $(this);
-    let isBlockquote = false;
-    let hasNonBlockquoteContent = false;
+    let hasBlockquotePrefix = false;
+    let hasLeadingNonBlockquoteContent = false;
 
-    // Check if this paragraph contains spans starting with '&gt; '
-    $p.find("span").each(function () {
-      const text = $(this).text();
+    // Determine if the first non-empty piece of text starts with a blockquote prefix
+    $p.contents().each(function () {
+      if (hasBlockquotePrefix) {
+        return;
+      }
+
+      const $node = $(this);
+      const text = $node.text().trim();
+
+      if (!text) {
+        return;
+      }
+
       if (text.startsWith("> ") || text.startsWith("&gt; ")) {
-        isBlockquote = true;
+        hasBlockquotePrefix = true;
       } else {
-        hasNonBlockquoteContent = true;
+        hasLeadingNonBlockquoteContent = true;
       }
     });
 
-    // If this paragraph is a blockquote and doesn't have non-blockquote content
-    if (isBlockquote && !hasNonBlockquoteContent) {
+    // Only convert paragraphs where the first content is blockquote-prefixed
+    if (hasBlockquotePrefix && !hasLeadingNonBlockquoteContent) {
       // Create a new blockquote element
       const $blockquote = $("<blockquote></blockquote>");
 
       // Move all content from paragraph to blockquote
       $p.contents().each(function () {
-        const $this = $(this);
+        const node = this;
+        const $clone = $(node).clone();
 
-        if ($this.is("span")) {
-          // Remove the '&gt; ' prefix from span text
-          const text = $this.text();
+        if ($clone.is("span") || node.nodeType === 3) {
+          // Remove the '&gt; ' prefix from relevant text nodes
+          const text = $clone.text();
           const newText = text.replace(/^(&gt;|>) /, "");
-          $this.text(newText);
+
+          if (text !== newText) {
+            if (node.nodeType === 3) {
+              $clone[0].nodeValue = newText;
+            } else {
+              $clone.text(newText);
+            }
+          }
         }
 
-        // Clone the node and append to blockquote
-        $blockquote.append($this.clone());
+        // Append the cloned node to the blockquote
+        $blockquote.append($clone);
       });
 
       // Replace the paragraph with the blockquote
