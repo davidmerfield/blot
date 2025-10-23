@@ -981,19 +981,7 @@ ul.pill-navigation {
 
 .sync-status {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
   overflow: hidden;
-}
-
-.sync-status .sync-status-icon,
-.sync-status .sync-status-text {
-  position: relative;
-}
-
-.sync-status .sync-status-icon {
-  z-index: 2;
 }
 
 .sync-status.syncing::before {
