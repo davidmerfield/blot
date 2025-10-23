@@ -504,6 +504,13 @@
       "name": "Maggie Wang",
       "bio": "is an academic",
       "image": "/images/featured/maggiewangphotography.com.jpg"
+    },
+    {
+      "link": "https://chuckpearson.blog",
+      "host": "chuckpearson.blog",
+      "name": "Chuck Pearson",
+      "bio": "is a designer",
+      "image": "/images/featured/chuckpearson.blog.jpg"
     }
   ]
 }
