@@ -71,7 +71,7 @@ describe("tags work on sites", function () {
     expect(result.tagged["alpha + beta"]).toBe(true);
   });
 
-  fit("lets you filter entries with a specific tag", async function () {
+  it("lets you filter entries with a specific tag", async function () {
     await this.publish({ path: "/first.txt", content: "Tags: A\n\nFoo" });
     await this.publish({ path: "/second.txt", content: "Tags: A,B\n\nBar" });
     await this.publish({ path: "/third.txt", content: "Tags: B,C\n\nBaz" });
@@ -84,9 +84,10 @@ describe("tags work on sites", function () {
         views: {
           "index.html": {
             url: ["/", "/page/:page"],
+            locals: { tag: "b" },
           },
         },
-        locals: { tag: "b", page_size: 1 },
+        locals: { page_size: 1 },
       }
     );
 
