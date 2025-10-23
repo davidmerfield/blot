@@ -1,7 +1,6 @@
 var normalize = require("models/tags").normalize;
 var type = require("helper/type");
 var Entry = require("models/entry");
-var FormatDate = require("./formatDate");
 var async = require("async");
 var _ = require("lodash");
 var moment = require("moment");
@@ -139,3 +138,18 @@ module.exports = function (req, res, entry, callback) {
     }
   );
 };
+
+function FormatDate(dateStamp, zone) {
+  return function () {
+    return function (text, render) {
+      try {
+        text = text.trim();
+        text = moment.utc(dateStamp).tz(zone).format(text);
+      } catch (e) {
+        text = "";
+      }
+
+      return render(text);
+    };
+  };
+}
