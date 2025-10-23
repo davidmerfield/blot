@@ -57,7 +57,7 @@ describe("tags work on sites", function () {
           params: {},
           template: {},
         },
-        {},
+        {locals: {}},
         (err, data) => {
           if (err) return reject(err);
           resolve(data);
@@ -454,6 +454,7 @@ describe("tags work on sites", function () {
           params: { tag: "counted", page: "1" },
           template: { locals: { page_size: 1 } },
         },
+        {locals: {}},
         (err, data) => {
           if (err) return reject(err);
           resolve(data);
