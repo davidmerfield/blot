@@ -47,6 +47,14 @@
       type: number
       description: A datestamp for when your site was last updated
 
+    - name: updated
+      type: function
+      description: Used to display the time your site was last updated, using the property directly or by passing in any of the supported [date tokens](#date-tokens).
+      example: |
+        Updated on {{updated}}.
+
+        Updated on {{#updated}}MMMM DDDo, YYYY{{/updated}}.
+
     - name: timezone
       type: string
       description: Your site’s timezone in the [tz database format](https://en.wikipedia.org/wiki/Tz_database)

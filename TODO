@@ -1,12 +1,5 @@
 Finish [setting up Francesco's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcNCpRcDFrsBhMlBwlXLNxNq)
 
-Add regression tests for date rendering
-- Include configuration settings, e.g. date_format, hide_dates
-- Implement toString for all existing template lambda
-- Map {{date}} => {{#date}}...{{/date}} and {{#updated}} and {{#created}} etc.
-- Update developer docs
-- Can we use this technique elsewhere? Simple string vs. function...
-
 Add tormod's template to default templates and [follow up with question](https://blot.im/questions/1449) about tufte css.
 
 Remap docker containers:
@@ -425,6 +418,11 @@ Launch new server and test that the new scripts to mount the instance store and 
 
 Automate the detection and removal of long-overdue sites (> 1 year)
 - Prevent long-overdue customers from accessing the service, then tell [Matvey](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNgWvzTkMVZXFrSpjGfcCrWJG)
+
+Implement toString for all existing template lambda, see retrieve/updated.js for an example
+- Map {{date}} => {{#date}}...{{/date}} and {{#updated}} and {{#created}} etc.
+- Update developer docs
+- Can we use this technique elsewhere? Simple string vs. function...
 
 Improve folder to CDN pipeline
 - Could we respond with redirects to Blot's CDN?
