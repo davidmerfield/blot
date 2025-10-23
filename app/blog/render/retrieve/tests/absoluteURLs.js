@@ -19,7 +19,7 @@ describe("absoluteURLs", function () {
     var html = '<a href="/foo"></a>';
     var template = "{{#absoluteURLs}}" + html + "{{/absoluteURLs}}";
 
-    absoluteURLs(this.request, function (err, lambda) {
+    absoluteURLs(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { absoluteURLs: lambda });
       expect(result).toEqual('<a href="http://example.com/foo"></a>');
       done();
@@ -32,7 +32,7 @@ describe("absoluteURLs", function () {
     var html = '<img src="/bar.jpg">';
     var template = "{{#absoluteURLs}}" + html + "{{/absoluteURLs}}";
 
-    absoluteURLs(this.request, function (err, lambda) {
+    absoluteURLs(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { absoluteURLs: lambda });
       expect(result).toEqual('<img src="http://example.com/bar.jpg">');
       done();
@@ -46,7 +46,7 @@ describe("absoluteURLs", function () {
       '<a href="http://example.com/foo"><img src="http://example.com/bar.jpg"></a>';
     var template = "{{#absoluteURLs}}" + html + "{{/absoluteURLs}}";
 
-    absoluteURLs(this.request, function (err, lambda) {
+    absoluteURLs(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { absoluteURLs: lambda });
       expect(result).toEqual(html);
       done();

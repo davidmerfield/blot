@@ -41,7 +41,7 @@ var dictionary = {
   "updated": require("./updated"),
 };
 
-module.exports = function (req, retrieve, callback) {
+module.exports = function (req, res, retrieve, callback) {
   ensure(req, "object").and(retrieve, "object").and(callback, "function");
 
   var locals = {};
@@ -55,7 +55,7 @@ module.exports = function (req, retrieve, callback) {
       }
 
       req.log("Retrieving local", localName);
-      dictionary[localName](req, function (err, value) {
+      dictionary[localName](req, res, function (err, value) {
         if (err) console.log(err);
 
         if (value !== undefined) locals[localName] = value;

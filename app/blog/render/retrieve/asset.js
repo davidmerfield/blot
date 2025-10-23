@@ -1,4 +1,4 @@
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   return callback(null, function () {
     return function (text, render) {
       let extension;

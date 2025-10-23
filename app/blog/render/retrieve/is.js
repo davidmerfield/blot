@@ -25,7 +25,7 @@ move to handlebars, say.
 
 */
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   let is = {};
 
   for (let local in req.template.locals) {

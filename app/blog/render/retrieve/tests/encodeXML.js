@@ -9,7 +9,7 @@ describe("encodeXML", function () {
       protocol: "http",
       get: function () {
         return "example.com";
-      }
+      },
     };
   });
 
@@ -19,7 +19,7 @@ describe("encodeXML", function () {
     var html = '<a href="/foo"></a>';
     var template = "{{#encodeXML}}" + html + "{{/encodeXML}}";
 
-    encodeXML(this.request, function (err, lambda) {
+    encodeXML(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { encodeXML: lambda });
       expect(result).toEqual('<a href="http://example.com/foo"></a>');
       done();
@@ -32,7 +32,7 @@ describe("encodeXML", function () {
     var html = "& foo &#xFF08;&#x4FBF;&#x5229;";
     var template = "{{#encodeXML}}" + html + "{{/encodeXML}}";
 
-    encodeXML(this.request, function (err, lambda) {
+    encodeXML(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { encodeXML: lambda });
       expect(result).toEqual("&amp; foo （便利");
       done();
@@ -45,7 +45,7 @@ describe("encodeXML", function () {
     var html = "<script>alert('foo');</script><p>Hey</p>";
     var template = "{{#encodeXML}}" + html + "{{/encodeXML}}";
 
-    encodeXML(this.request, function (err, lambda) {
+    encodeXML(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { encodeXML: lambda });
       expect(result).toEqual("<p>Hey</p>");
       done();

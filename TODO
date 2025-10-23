@@ -1,7 +1,4 @@
-Remap docker containers:
-- deploy first:   green:  sync / cdn files
-- deploy second:  blue:   dashboard
-- deploy third:   yellow: sites
+Finish [setting up Francesco's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcNCpRcDFrsBhMlBwlXLNxNq)
 
 Add regression tests for date rendering
 - Include configuration settings, e.g. date_format, hide_dates
@@ -10,13 +7,20 @@ Add regression tests for date rendering
 - Update developer docs
 - Can we use this technique elsewhere? Simple string vs. function...
 
-Fix bug with navigation on Blog template on mobile and [tell Darren](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBbMCpvjfDWVgNZcvdgfMQd)
+Add tormod's template to default templates and [follow up with question](https://blot.im/questions/1449) about tufte css.
 
-Finish [setting up Francesco's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcNCpRcDFrsBhMlBwlXLNxNq)
+Remap docker containers:
+- deploy first:   green:  sync / cdn files
+- deploy second:  blue:   dashboard
+- deploy third:   yellow: sites
+
+Fix bug with navigation on Blog template on mobile and [tell Darren](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBbMCpvjfDWVgNZcvdgfMQd)
 
 Fix terminal template display on mobile and tell [questioner](https://blot.im/questions/3254)
 
-Add tormod's template to default templates and [follow up with question](https://blot.im/questions/1449) about tufte css.
+Add embed feature (bare link -> card) and tell [Guy](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBbftcBdFZZfZmqhfKNklbd)
+
+Add size / time limits to image caching function which fetches remote images
 
 ---
 
@@ -889,6 +893,7 @@ Make it possible to link between org mode files with: `[[file:another-test.org][
 
 ---
 
+Investigate memberful, maybe add a guide to setting it up on a site?
 
 Add simple server-side analytics:
 - Tell [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNMCtRwGccFxfVKcwlcqfMpg) 

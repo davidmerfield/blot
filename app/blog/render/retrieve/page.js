@@ -1,6 +1,6 @@
 var Entries = require("models/entries");
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   var blog = req.blog,
     pageNo = parseInt(req.query.page) || 1,
     pageSize = req.blog.pageSize || 5;

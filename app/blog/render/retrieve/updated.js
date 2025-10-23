@@ -1,7 +1,7 @@
 const moment = require("moment");
 require("moment-timezone");
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   return callback(null, function () {
     const d = moment.utc(req.blog.cacheID).tz(req.blog.timeZone);
 
@@ -24,7 +24,7 @@ module.exports = function (req, callback) {
     renderDate.toString = function () {
       let text = "";
       try {
-        text = d.format();
+        text = d.format(res.locals.date_display || "MMMM D, Y");
       } catch (e) {
         text = "";
       }

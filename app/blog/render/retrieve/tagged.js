@@ -161,7 +161,7 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
     .catch(callback);
 }
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   const blogID = req.blog.id;
   const tags = req.query.name || req.query.tag || req.params.tag || "";
 

@@ -2,7 +2,7 @@ var join = require("path").join;
 var blog_folder_dir = require("config").blog_folder_dir;
 var fs = require("fs-extra");
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   var path = join(blog_folder_dir, req.blog.id, "public");
 
   fs.readdir(path, function (err, contents) {

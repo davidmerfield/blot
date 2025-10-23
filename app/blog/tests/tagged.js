@@ -57,6 +57,7 @@ describe("tags work on sites", function () {
           params: {},
           template: {},
         },
+        {},
         (err, data) => {
           if (err) return reject(err);
           resolve(data);

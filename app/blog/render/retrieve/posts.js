@@ -3,7 +3,7 @@ const Entries = require("models/entries");
 /**
  * Handles rendering of the page with entries and pagination.
  */
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   const blog = req.blog;
 
   // Parse and validate page number (user input)
