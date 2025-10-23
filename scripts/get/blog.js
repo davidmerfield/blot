@@ -18,14 +18,25 @@ module.exports = function get(identifier, callback) {
 
   handle = identifier;
 
+  var identifierWithoutTrailingSlash = (identifier || "").replace(/\/+$/, "");
+  var identifierForParsing = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(
+    identifierWithoutTrailingSlash
+  )
+    ? identifierWithoutTrailingSlash
+    : "https://" + identifierWithoutTrailingSlash;
+
   try {
-    // Map 'preview.default.foo.blot.im' -> 'foo.blot.im'
-    if (parseUrl(identifier).host.indexOf("preview.") === 0)
-      domain = parseUrl(identifier.toLowerCase()).host.split(".").slice(-3).join(".");
-    else domain = parseUrl(identifier.toLowerCase()).host;
-  } catch (e) {
-    domain = identifier.toLowerCase();
-  }
+    var parsed = parseUrl(identifierForParsing.toLowerCase());
+
+    if (parsed && parsed.host) {
+      // Map 'preview.default.foo.blot.im' -> 'foo.blot.im'
+      if (parsed.host.indexOf("preview.") === 0)
+        domain = parsed.host.split(".").slice(-3).join(".");
+      else domain = parsed.host;
+    }
+  } catch (e) {}
+
+  if (!domain) domain = identifierWithoutTrailingSlash.toLowerCase();
 
   Blog.get({ id: identifier }, function (err, blogFromID) {
     Blog.get({ domain: domain }, function (err, blogFromDomain) {

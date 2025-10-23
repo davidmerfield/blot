@@ -25,7 +25,7 @@ alias nginx-stats='ps aux | grep nginx | grep -v grep | awk "{sum+=\$6} END {pri
 alias client='redis-cli -h $(grep BLOT_REDIS_HOST /etc/blot/secrets.env | cut -d"=" -f2 | tr -d " ")'
 alias login="docker exec -it blot-container-blue /bin/sh"
 alias candidates="docker exec blot-container-blue node app/documentation/featured/candidates"
-alias access="docker exec blot-container-blue node /usr/src/app/scripts/access.js"
+alias access="docker exec blot-container-blue node /usr/src/app/scripts/blog/access.js"
 alias info="docker exec blot-container-blue node /usr/src/app/scripts/info"
 alias errors="tail -n 10000000 \$LOGS/access.log | egrep ' (500|501|502|504) '"
 alias 404s="cat /var/instance-ssd/logs/access.log | grep ' 404 ' | cut -d ' ' -f7 | sed -E 's|https?://[^/]+| |' |  sort | uniq -c | sort -rn | head -n 100"

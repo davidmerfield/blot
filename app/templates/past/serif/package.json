@@ -1,21 +1,26 @@
 {
   "name": "Serif",
   "locals": {
-    "page_size": 18,
+    "text_color": "#000000",
+    "page_size": 48,
     "background_color": "#ffffff",
-    "dark_text": "#000000",
-    "light_text": "#ababab",
-    "medium_text": "#696969",
-    "highlight_color": "blue"
+    "accent_color": "#0000FF",
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
+    "body_font": {
+      "id": "charter",
+      "font_size": 24,
+      "line_height": 1.5
+    },
+    "syntax_highlighter": {
+      "id": "stackoverflow-light"
+    },
+    "syntax_highlighter_font": {
+      "font_size": 18
+    }
   },
   "isPublic": false,
   "views": {
-    "public": {
-      "partials": {
-        "title": "Index of {{{path}}}",
-        "description": "All the files and folders inside {{{path}}}"
-      }
-    },
     "archives.html": {
       "url": "/archives",
       "partials": {
@@ -25,14 +30,14 @@
     },
     "tagged.html": {
       "partials": {
-        "title": "Entries tagged {{{tag}}} from {{{title}}}",
+        "title": "{{{tag}}} - {{{title}}}",
         "description": "All of the entries posted on {{{title}}} tagged {{{tag}}}"
       }
     },
     "entries.html": {
       "partials": {
         "title": "{{{title}}}",
-        "description": "The latest entries posted on {{{title}}}"
+        "description": "The latest posted on {{{title}}}"
       }
     },
     "error.html": {
@@ -50,7 +55,7 @@
     "search.html": {
       "partials": {
         "title": "Search - {{{title}}}",
-        "description": "Search all the entries posted on {{{title}}}"
+        "description": "Search of {{{title}}}"
       }
     }
   }

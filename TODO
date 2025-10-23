@@ -1,5 +1,7 @@
 Finish [setting up Francesco's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcNCpRcDFrsBhMlBwlXLNxNq)
 
+Add tormod's template to default templates and [follow up with question](https://blot.im/questions/1449) about tufte css.
+
 ---
 
 Fix possible bug with changing file or folder case in Dropbox 
@@ -870,6 +872,16 @@ Make it possible to link between org mode files with: `[[file:another-test.org][
 
 ---
 
+
+Add simple server-side analytics:
+- Tell [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNMCtRwGccFxfVKcwlcqfMpg) 
+- Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMjqlPTxhSXLNBDCmqXLQHdvX) 
+- Tell [Romain](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjKngCZjbxTNvLQLRMLfzwHxG)
+
+Add simple commenting system
+- Tell [Precious](https://mail.google.com/mail/u/0/#inbox/QgrcJHrtwLwTldzhrTKHMtnhwVqMXVzCTqv)
+- Tell [Hochan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBZsPZvGMNQLFVmjBkBzhQW) who is willing to beta test
+
 Add [textbundle support](http://textbundle.org/spec/) and tell [questioner](https://blot.im/questions/1385)
 - this will help me understand how best to accomplish multi-file posts
 
@@ -1575,10 +1587,6 @@ Plugins
 - Ensure Youtube plugin still functions if apis fails
 
 ---
-
-Consider adding simple server-side analytics and tell [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNMCtRwGccFxfVKcwlcqfMpg) and [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMjqlPTxhSXLNBDCmqXLQHdvX) and [Romain](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjKngCZjbxTNvLQLRMLfzwHxG)
-
-Consider adding simple commenting system and tell [Precious](https://mail.google.com/mail/u/0/#inbox/QgrcJHrtwLwTldzhrTKHMtnhwVqMXVzCTqv)
 
 Consider supporting Micro pub and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVzptjbWjjqlhBQtgJsRstVSD)
 

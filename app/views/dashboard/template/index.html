@@ -1,101 +1,11 @@
-<h1>Templates</h1>
-
+<br>
+<h1>Your templates</h1>
 <div class="template-grid">
+  {{#yourTemplates}} {{> template-grid-link}} {{/yourTemplates}}
+  {{> template-grid-new-link}}
+</div>
 
-    {{#currentTemplate}}
-    {{> template-grid-link}}
-    {{/currentTemplate}}
-    
-    {{#yourTemplates}}
-    {{> template-grid-link}}
-    {{/yourTemplates}}
-    
-    {{#blotTemplates}}
-    {{> template-grid-link}}
-    {{/blotTemplates}}
-    </div>
-
-    <style>
-
-        .template-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 20px;
-        }
-    
-        #drop-area {
-            max-width: 600px;
-            border: 1px dashed #aaa;
-            min-height: 100px;
-            border-radius: 12px;
-            padding:36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            margin-bottom: 20px;
-        }
-    
-        #drop-area .placeholder {
-            text-align: center;
-            color: #888;
-        }
-    
-        #drop-area.highlight {
-            background-color: #eee;
-            border-color: blue;
-        }
-    
-        .hidden {
-            display: none;
-        }
-    
-        #file-list {
-            list-style-type: none;
-            padding: 0;
-        }
-    
-        #file-list li {
-            margin: 5px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #888;
-        }
-    
-        #drop-area .hidden {
-            display: none;
-        }
-    
-        #file-list li button {
-            margin-left: 10px;
-            background-color: red;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            padding: 0.2rem 0.5rem;
-        }
-    
-        .btn {
-            margin-top: 1rem;
-            padding: 0.5rem 1rem;
-            background-color: blue;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-    
-        .btn:disabled {
-            background-color: grey;
-            cursor: not-allowed;
-        }
-    
-        input[type="text"] {
-            width: 100%;
-            padding: 0.5rem;
-            margin: 0.5rem 0;
-        }
-    </style>
-    
+<h1>Default templates</h1>
+<div class="template-grid">
+  {{#blotTemplates}} {{> template-grid-link}} {{/blotTemplates}}
+</div>

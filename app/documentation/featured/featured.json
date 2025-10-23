@@ -497,6 +497,13 @@
       "name": "Kristine Morgan",
       "bio": "is a writer",
       "image": "/images/featured/kristinemorgan.com.jpg"
+    },
+    {
+      "link": "https://maggiewangphotography.com",
+      "host": "maggiewangphotography.com",
+      "name": "Maggie Wang",
+      "bio": "is an academic",
+      "image": "/images/featured/maggiewangphotography.com.jpg"
     }
   ]
 }

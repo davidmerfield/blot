@@ -279,3 +279,9 @@ form.color-picker,
 label[for^="show_picker"] {
     padding: 0 16px;
 }
+
+.template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 20px;
+        }

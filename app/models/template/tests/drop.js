@@ -5,6 +5,7 @@ describe("template", function () {
   var getTemplateList = require("../index").getTemplateList;
   var client = require("models/client");
   var Blog = require("models/blog");
+  var key = require("../key");
 
   it("drops a template", function (done) {
     drop(this.blog.id, this.template.name, done);
@@ -72,15 +73,33 @@ describe("template", function () {
     });
   });
 
-  // There is a bug with the drop function at the moment
-  // It does a truthy check against an empty object in the
-  // if (err || !allViews)  where all views is {}
-  // Fix this in future and enable the spec.
-  it("drop returns an error when the template does not exist", function (done) {
+  it("cleans up references when metadata is missing", function (done) {
     var test = this;
-    drop(test.blog.id, test.fake.random.word(), function (err) {
-      expect(err instanceof Error).toBe(true);
-      expect(err.code).toEqual("ENOENT");
+
+    client.del(key.metadata(test.template.id), function (err) {
+      if (err) return done.fail(err);
+
+      drop(test.blog.id, test.template.name, function (err) {
+        if (err) return done.fail(err);
+
+        client.sismember(
+          key.blogTemplates(test.blog.id),
+          test.template.id,
+          function (err, isMember) {
+            if (err) return done.fail(err);
+            expect(isMember).toEqual(0);
+            done();
+          }
+        );
+      });
+    });
+  });
+
+  it("drop resolves without an error when the template does not exist", function (done) {
+    var test = this;
+    drop(test.blog.id, test.fake.random.word(), function (err, message) {
+      if (err) return done.fail(err);
+      expect(typeof message).toBe("string");
       done();
     });
   });
