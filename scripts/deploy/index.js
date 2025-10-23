@@ -1,6 +1,5 @@
 // Utility functions
 const sshCommand = require("./util/sshCommand");
-const askForConfirmation = require("./util/askForConfirmation");
 const checkBranch = require("./util/checkBranch");
 const getGitCommit = require("./util/getGitCommit");
 const checkHealth = require("./util/checkHealth");
@@ -226,14 +225,15 @@ async function main() {
       );
     }
 
-    const confirmed = await askForConfirmation(
-      "Are you sure you want to deploy this image? (y/n): "
-    );
+    // const askForConfirmation = require("./util/askForConfirmation");
+    // const confirmed = await askForConfirmation(
+    //   "Are you sure you want to deploy this image? (y/n): "
+    // );
 
-    if (!confirmed) {
-      console.log("Deployment canceled.");
-      process.exit(0);
-    }
+    // if (!confirmed) {
+    //   console.log("Deployment canceled.");
+    //   process.exit(0);
+    // }
 
     // validate that each container has a unique name and port
     const containerNames = Object.values(CONTAINERS).map(

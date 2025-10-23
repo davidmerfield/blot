@@ -28,21 +28,21 @@ module.exports = function (req, res, next, handle) {
       return next(e);
     }
 
-    Template.getMetadata(blog.template, function (err, metadata) {
+    const siteTemplate = blog.template.startsWith("SITE:");
+    const slug = blog.template.split(":").slice(1).join(":");
 
-      if (metadata) {
-        res.locals.template = metadata;
-        res.locals.previewURL = `https://preview-of-${metadata.owner === blog.id ? 'my-' : ''}${metadata.slug}-on-${blog.handle}.${config.host}?screenshot=true`;  
-      }
-      
-      req.blog = blog;
-      res.locals.blog = blog;
-      res.locals.base = `/sites/${req.params.handle}`;
-      res.locals.dashboardBase = res.locals.base; // alias for use in clients
-      res.locals.breadcrumbs.add("Sites", "/sites");
-      res.locals.breadcrumbs.add(req.blog.pretty.label, `${req.params.handle}`);
-      res.locals.title = req.blog.pretty.label;
-      next();
-    });
+    res.locals.template = { slug, id: blog.template };
+    res.locals.previewURL = `https://preview-of-${
+      siteTemplate ? "" : "my-"
+    }${slug}-on-${blog.handle}.${config.host}`;
+
+    req.blog = blog;
+    res.locals.blog = blog;
+    res.locals.base = `/sites/${req.params.handle}`;
+    res.locals.dashboardBase = res.locals.base; // alias for use in clients
+    res.locals.breadcrumbs.add("Sites", "/sites");
+    res.locals.breadcrumbs.add(req.blog.pretty.label, `${req.params.handle}`);
+    res.locals.title = req.blog.pretty.label;
+    next();
   });
 };

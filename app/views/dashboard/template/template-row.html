@@ -4,37 +4,53 @@
   data-template-name="{{#localEditing}}{{slug}}{{/localEditing}}{{^localEditing}}{{name}}{{/localEditing}}"
 >
   <a href="{{{editURL}}}" class="template-row__link">
-      <span class="preview" style="position: relative;">
+    <span class="preview" style="position: relative">
       {{^localEditing}}
-      <img src="{{#cdn}}/images/examples/{{thumbnailSlug}}/0-icon.png{{/cdn}}">
-      {{/localEditing}}
-      {{#localEditing}}
-      <span style="position: absolute;bottom: 0;right:-0;font-size:16px;width:16px;height:16px;">
-        <span class="icon-folder" style="position: absolute;top:0;left:0"></span>
+      <img
+        src="{{#cdn}}/images/examples/{{thumbnailSlug}}/0-icon.png{{/cdn}}"
+      />
+      {{/localEditing}} {{#localEditing}}
+      <span
+        style="
+          position: absolute;
+          bottom: 0;
+          right: -0;
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+        "
+      >
+        <span
+          class="icon-folder"
+          style="position: absolute; top: 0; left: 0"
+        ></span>
       </span>
       {{/localEditing}}
-      </span>
-      
-    {{^localEditing}}
-    {{name}}    
-    {{/localEditing}}
-    {{#localEditing}}
-    {{slug}}
-    {{/localEditing}}
+    </span>
 
-    {{#checked}} <span style="color: var(--success-text-color);background-color:var(--success-background-color);font-size:10px;font-weight: bold;border-radius:var(--border-radius);padding:2px 4px;margin-left:6px">In use</span> {{/checked}}
+    {{^localEditing}} {{name}} {{/localEditing}} {{#localEditing}} {{slug}}
+    {{/localEditing}} {{#checked}}
+    <span
+      style="
+        color: var(--success-text-color);
+        background-color: var(--success-background-color);
+        font-size: 10px;
+        font-weight: bold;
+        border-radius: var(--border-radius);
+        padding: 2px 4px;
+        margin-left: 6px;
+        text-wrap: nowrap;
+      "
+      >In use</span
+    >
+    {{/checked}}
   </a>
   <button
     class="template-row__menu-trigger"
     type="button"
-    aria-label="Template actions for {{#localEditing}}{{slug}}{{/localEditing}}{{^localEditing}}{{name}}{{/localEditing}}"
-    aria-haspopup="true"
-    aria-expanded="false"
     data-editurl="{{{editURL}}}"
     data-previewurl="{{{previewMenuURL}}}"
   >
-    <span aria-hidden="true" class="template-row__menu-icon">⋮</span>
+    <span class="icon-dots"></span>
   </button>
 </div>
-
-  

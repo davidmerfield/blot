@@ -1,36 +1,35 @@
+Fix terminal template display on mobile and tell [questioner](https://blot.im/questions/3254)
+
 Finish [setting up Francesco's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcNCpRcDFrsBhMlBwlXLNxNq)
 
+Add tormod's template to default templates and [follow up with question](https://blot.im/questions/1449) about tufte css.
+
 ---
-
-Fix possible bug with changing file or folder case in Dropbox 
-
-Fix possible bug with changing folder name in Google Drive from uppercase to lowercase (what happens to file inside?). Is this related to entry lookup for deleted files? How was the missing ghost file undeleteable? the case of one variant was deleted but the other was not. The case of the ID mismatched. The folder lock was stuck.
 
 Fix bug with recursive partials which took down server
 - seems possible in local templates
 - possibly on web templates too
 
-Fix bug handling large files Dropbox (>150mb) and tell Peter – right now it crashes the server
-- add an error state for a single file and proceed? track files pre-and-post sync? only re-attempt once?
-- add a timeout for folder lock process which is solid
-- add abortsignal so we can disconnect seamlessly
+Fix bug with [~/gitbug folder](https://mail.google.com/mail/u/0/#inbox/KtbxLxgKJJfmhMNplLBcTcFCPgBVNlGtHL) during setup
+- surface setup errors with git client
+- handle these errors nicely through sync status
+
+Fix bugs with documentation template and tell [Ray](https://blot.im/questions/3233)
+
+Fix possible bug with changing file or folder case in Dropbox 
+
+Fix possible bug with changing folder name in Google Drive from uppercase to lowercase (what happens to file inside?). Is this related to entry lookup for deleted files? How was the missing ghost file undeleteable? the case of one variant was deleted but the other was not. The case of the ID mismatched. The folder lock was stuck.
 
 Fix bug with crash loop for page rendering issue
 - cache 502 responses in proxy cache for X mins?
 - how to handle this at a high level?
 - ensure doens't break zero downtime deploy
 
-Fix bug with [~/gitbug folder](https://mail.google.com/mail/u/0/#inbox/KtbxLxgKJJfmhMNplLBcTcFCPgBVNlGtHL) during setup
-- surface setup errors with git client
-- handle these errors nicely through sync status
-
 Fix bug with crash loop for entry build
 - add a timeout for entry build process which is solid
 
 Fix bug with folder viewer which crashes server for large number of entries
 - add pagination
-
-Fix bugs with documentation template and tell [Ray](https://blot.im/questions/3233)
 
 Fix bug with 'failed to update folder lock' that throws an error – is the issue ebs?
 - I can't reproduce the problem locally.
@@ -870,6 +869,16 @@ Make it possible to link between org mode files with: `[[file:another-test.org][
 
 ---
 
+
+Add simple server-side analytics:
+- Tell [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNMCtRwGccFxfVKcwlcqfMpg) 
+- Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMjqlPTxhSXLNBDCmqXLQHdvX) 
+- Tell [Romain](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjKngCZjbxTNvLQLRMLfzwHxG)
+
+Add simple commenting system
+- Tell [Precious](https://mail.google.com/mail/u/0/#inbox/QgrcJHrtwLwTldzhrTKHMtnhwVqMXVzCTqv)
+- Tell [Hochan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBZsPZvGMNQLFVmjBkBzhQW) who is willing to beta test
+
 Add [textbundle support](http://textbundle.org/spec/) and tell [questioner](https://blot.im/questions/1385)
 - this will help me understand how best to accomplish multi-file posts
 
@@ -1575,10 +1584,6 @@ Plugins
 - Ensure Youtube plugin still functions if apis fails
 
 ---
-
-Consider adding simple server-side analytics and tell [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNMCtRwGccFxfVKcwlcqfMpg) and [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMjqlPTxhSXLNBDCmqXLQHdvX) and [Romain](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjKngCZjbxTNvLQLRMLfzwHxG)
-
-Consider adding simple commenting system and tell [Precious](https://mail.google.com/mail/u/0/#inbox/QgrcJHrtwLwTldzhrTKHMtnhwVqMXVzCTqv)
 
 Consider supporting Micro pub and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVzptjbWjjqlhBQtgJsRstVSD)
 
