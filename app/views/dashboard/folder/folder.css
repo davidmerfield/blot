@@ -44,10 +44,8 @@
   }
 
   .sync-status {
-    display: flex;
-    align-items: center;
-    min-height: 1.5em;
-    position: relative;
+    height: 1.5em;
+    display: block;
     overflow: hidden;
   }
 
