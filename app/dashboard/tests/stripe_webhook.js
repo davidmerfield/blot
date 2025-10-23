@@ -232,4 +232,35 @@ describe("Stripe subscription webhooks", function () {
     const blog = await getBlog({ id: this.blog.id });
     expect(blog.isDisabled).toBe(false);
   });
+
+  it("returns 400 for malformed payloads without touching state", async function () {
+    const malformedEvent = {
+      data: {
+        object: {
+          id: this.subscriptionId,
+          customer: this.customerId,
+        },
+      },
+    };
+
+    const response = await this.fetch("/", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(malformedEvent),
+    });
+
+    expect(response.status).toBe(400);
+    expect(this.stripeClient.customers.retrieveSubscription).not.toHaveBeenCalled();
+
+    await delay(100);
+
+    const user = await getUser(this.user.uid);
+    expect(user.subscription.status).toBe("past_due");
+    expect(user.subscription.quantity).toBe(1);
+    expect(user.subscription.plan.amount).toBe(500);
+    expect(user.isDisabled).toBe(false);
+
+    const blog = await getBlog({ id: this.blog.id });
+    expect(blog.isDisabled).toBe(false);
+  });
 });

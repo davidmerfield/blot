@@ -85,15 +85,25 @@ webhooks.post("/", parser.json(), function (req, res) {
 
   var event = req.body;
 
+  if (!event || !event.type) {
+    console.error("Stripe webhook missing event type");
+    return res.sendStatus(400);
+  }
+
   var event_data = event.data && event.data.object;
 
-  // A customer's subscription was changed, save changed info
-  if (event.type === UPDATED_SUBSCRIPTION || event.type === DELETED_SUBSCRIPTION) {
+  if (
+    event.type === UPDATED_SUBSCRIPTION ||
+    event.type === DELETED_SUBSCRIPTION
+  ) {
     if (!event_data || !event_data.customer || !event_data.id) {
       console.error("Stripe subscription event missing identifiers");
       return res.sendStatus(400);
     }
+  }
 
+  // A customer's subscription was changed, save changed info
+  if (event.type === UPDATED_SUBSCRIPTION || event.type === DELETED_SUBSCRIPTION) {
     var stripe = getStripeClient();
 
     if (!stripe || !stripe.customers || !stripe.customers.retrieveSubscription) {
