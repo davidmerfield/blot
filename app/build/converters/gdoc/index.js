@@ -121,8 +121,6 @@ async function read(blog, path, callback) {
 
     // remove all inline style attributes
     $("[style]").removeAttr("style");
-
-    console.log("HERE", blog.flags);
     
     // handle line breaks
     if (blog.flags.google_docs_preserve_linebreaks !== false) {
