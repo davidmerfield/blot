@@ -2,36 +2,6 @@
 <div style="display: flex;margin-top:2rem">
     <div style="width: 33.33333%;flex-grow: 0;flex-shrink: 0;box-sizing: border-box;padding:0 1rem 0 0">
         {{> template-editor-sidebar}}
-            <a class="line" style="padding:0;background: none;border-radius: var(--border-radius) var(--border-radius) 0 0;" href="{{{base}}}/links">
-                <span class="label">Links</span>
-                <span class="center" style="margin-top: 4px;white-space: nowrap;overflow: hidden;position: relative;">
-                    {{#blog.menu}}
-                    <span class="tablet">{{label}}</span>
-                    {{/blog.menu}}
-                    
-                    {{^blog.menu.length}}
-                    <i>Your menu is empty</i>
-                    {{/blog.menu.length}}
-                    <span class="link" style="position: absolute;top:0;right:0" >Edit</span>
-                </span>
-                </span>
-                </a>
-                <a class="line" href="{{{base}}}/photo"  style="padding:0;background: none;border-bottom: none;border-radius: 0 0 var(--border-radius) var(--border-radius);"> 
-                <span class="label" style="margin-bottom: 4px;">Photo</span>  
-                {{^blog.avatar}}
-                <span class="center" style="border: 1px dashed var(--border-color);width: 48px;height:48px;display:inline-block; vertical-align: middle;margin-right: 0.5rem;margin-bottom: 4px;">
-                </span>
-                <span class="link">Choose a photo</span>
-                {{/blog.avatar}}
-                
-                {{#blog.avatar}}
-                <span class="center" style="width: 48px;height:48px;display:inline-block; vertical-align: middle;">
-                    <img style="max-width:48px;max-height:48px;vertical-align: baseline; display: inline;" src="{{blog.avatar}}" class="{{#blog.roundAvatar}}rounded{{/blog.roundAvatar}}" />
-                </span>
-                <span class="right" >Edit</span>    
-                    {{/blog.avatar}}
-                
-                </a>
     </div>
     <div style="box-sizing: border-box;flex-grow: 1;width: 66.66666%;
     flex-grow: 0;flex-shrink: 0;padding:0 0 0 1rem;            position: sticky;

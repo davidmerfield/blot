@@ -266,9 +266,14 @@ h2 {
 h2.template-heading {
     margin: 0;
     padding: 6px 16px;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 400;
     color: #969caa;
+    border-bottom: 1px solid var(--border-color);
+}
+
+h2.template-heading:not(:first-child) {
+    border-top: 1px solid var(--border-color);
 }
 
 form.color-picker,
