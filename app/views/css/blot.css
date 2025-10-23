@@ -979,6 +979,74 @@ ul.pill-navigation {
   max-width: 400px;
 }
 
+.sync-status {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  overflow: hidden;
+}
+
+.sync-status .sync-status-icon,
+.sync-status .sync-status-text {
+  position: relative;
+}
+
+.sync-status .sync-status-icon {
+  z-index: 2;
+}
+
+.sync-status.loading::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    transparent 20%,
+    var(--background-color) 50%,
+    transparent 80%
+  );
+  opacity: 0.35;
+  transform: translateX(-120%);
+  z-index: 1;
+  animation: sync-status-swoosh 1s ease-in-out infinite;
+}
+
+.sync-status.loading .sync-status-text {
+  animation: sync-status-text-pulse 1s ease-in-out infinite;
+}
+
+@keyframes sync-status-swoosh {
+  0% {
+    transform: translateX(-120%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes sync-status-text-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sync-status.loading::before,
+  .sync-status.loading .sync-status-text {
+    animation: none;
+    transform: none;
+  }
+}
+
 .sync-status .sync-status-icon > * {
   display: none;
 }
