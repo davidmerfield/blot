@@ -156,6 +156,198 @@ nav a:not([href]) {
   text-decoration: none!important;
 }
 
+.navigation-location-left,
+.navigation-location-right {
+  padding-top: 0;
+}
+
+.navigation-location-left {
+  padding-left: var(--sidebar-width);
+}
+
+.navigation-location-right {
+  padding-right: var(--sidebar-width);
+}
+
+.navigation-location-left .header-wrapper,
+.navigation-location-right .header-wrapper {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  padding: 2em;
+  box-sizing: border-box;
+  display: flex;
+  background: {{navigation_background_color}};
+  overflow-y: auto;
+  z-index: 2;
+}
+
+.navigation-location-left .header-wrapper {
+  left: 0;
+}
+
+.navigation-location-right .header-wrapper {
+  right: 0;
+}
+
+.navigation-location-left .header-wrapper .container,
+.navigation-location-right .header-wrapper .container {
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.navigation-location-left header,
+.navigation-location-right header {
+  position: static;
+  height: auto;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: calc({{spacing}}rem/2);
+  padding: 0;
+}
+
+.navigation-location-right header {
+  align-items: flex-end;
+}
+
+.navigation-location-left header > a,
+.navigation-location-right header > a {
+  margin-left: 0;
+}
+
+.navigation-location-left header > a:first-child,
+.navigation-location-right header > a:first-child {
+  margin-bottom: calc({{spacing}}rem/2);
+}
+
+.navigation-location-right header > a {
+  text-align: right;
+}
+
+.navigation-location-left nav,
+.navigation-location-right nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc({{spacing}}rem/2);
+  width: 100%;
+  background: none;
+  padding: 0;
+}
+
+.navigation-location-right nav {
+  align-items: flex-end;
+}
+
+.navigation-location-left nav .spacer,
+.navigation-location-right nav .spacer {
+  display: none;
+}
+
+.navigation-location-left nav a,
+.navigation-location-right nav a {
+  margin: 0;
+}
+
+.navigation-location-right nav a {
+  text-align: right;
+}
+
+.navigation-location-left #toggle,
+.navigation-location-right #toggle {
+  display: none;
+}
+
+.navigation-location-left #hidden-toggle,
+.navigation-location-right #hidden-toggle {
+  display: none;
+}
+
+.navigation-location-left .hamburger-box,
+.navigation-location-right .hamburger-box {
+  display: none;
+}
+
+@media screen and (max-width: 900px) {
+  .navigation-location-left,
+  .navigation-location-right {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .navigation-location-left .header-wrapper,
+  .navigation-location-right .header-wrapper {
+    position: relative;
+    width: auto;
+    padding: 2em 0;
+    overflow: visible;
+  }
+
+  .navigation-location-left .header-wrapper .container,
+  .navigation-location-right .header-wrapper .container {
+    padding: 0 1em;
+  }
+
+  .navigation-location-left header,
+  .navigation-location-right header {
+    flex-direction: row;
+    align-items: center;
+    height: {{font.line_height}}em;
+    justify-content: space-between;
+    padding: calc({{spacing}}rem/2) calc({{spacing}}rem);
+  }
+
+  .navigation-location-left header > a,
+  .navigation-location-right header > a {
+    margin-left: calc({{spacing}}rem/4);
+    margin-right: calc({{spacing}}rem/4);
+  }
+
+  .navigation-location-left header > a:first-child,
+  .navigation-location-right header > a:first-child {
+    margin-bottom: 0;
+  }
+
+  .navigation-location-left nav,
+  .navigation-location-right nav {
+    flex-direction: column;
+    align-items: flex-start;
+    background: {{navigation_background_color}};
+    padding: 0;
+  }
+
+  .navigation-location-right header,
+  .navigation-location-right nav {
+    align-items: flex-start;
+  }
+
+  .navigation-location-left nav a,
+  .navigation-location-right nav a {
+    margin-left: 1em;
+  }
+
+  .navigation-location-left #toggle,
+  .navigation-location-right #toggle {
+    display: block;
+  }
+
+  .navigation-location-left #hidden-toggle,
+  .navigation-location-right #hidden-toggle {
+    display: none;
+  }
+
+  .navigation-location-left .hamburger-box,
+  .navigation-location-right .hamburger-box {
+    display: inline-block;
+  }
+}
+
 #toggle {
   position: absolute;
   top: calc({{spacing}}rem/2);
