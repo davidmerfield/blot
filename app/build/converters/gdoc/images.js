@@ -15,127 +15,90 @@ async function processImages($, assetDir, docPath, transformer) {
 
   await fs.ensureDir(assetDir);
 
-  for (const elem of images) {
+  const dataImages = images.filter((elem) => {
     const src = $(elem).attr("src");
+    return src && src.startsWith("data:");
+  });
 
+  const nonDataImages = images.filter((elem) => {
+    const src = $(elem).attr("src");
+    return src && !src.startsWith("data:");
+  });
+
+  // Handle images which embed image data directly
+  for (const elem of dataImages) {
     try {
+      const src = $(elem).attr("src");
+
       let buffer;
       let ext;
       let filename;
 
-      if (src && src.startsWith("data:")) {
-        const commaIndex = src.indexOf(",");
+      const commaIndex = src.indexOf(",");
 
-        if (commaIndex === -1) {
-          continue;
-        }
-
-        const metadataPart = src.slice(5, commaIndex);
-        const dataPart = src.slice(commaIndex + 1);
-        const metadataParts = metadataPart.split(";");
-        const mimeType = metadataParts.shift() || "";
-        const isBase64 = metadataParts.includes("base64");
-
-        try {
-          buffer = Buffer.from(
-            isBase64 ? dataPart : decodeURIComponent(dataPart),
-            isBase64 ? "base64" : "utf8"
-          );
-        } catch (err) {
-          console.log(err);
-          continue;
-        }
-
-        if (mimeType) {
-          ext = mime.extension(mimeType);
-        }
-
-        if (!ext) {
-          const metadata = await sharp(buffer).metadata();
-          ext = metadata.format;
-        }
-      } else if (transformer) {
-        const filenameBase = hash(src);
-        const metadataPath = join(assetDir, `${filenameBase}.meta.json`);
-
-        let result;
-
-        try {
-          result = await lookupWithTransformer(
-            transformer,
-            src,
-            (resolvedPath, done) => {
-              determineExtension(resolvedPath)
-                .then((determinedExt) => {
-                  const computedFilename = `${filenameBase}.${determinedExt}`;
-                  const destination = join(assetDir, computedFilename);
-
-                  return fs
-                    .pathExists(destination)
-                    .then((exists) =>
-                      exists ? null : fs.copy(resolvedPath, destination)
-                    )
-                    .then(() =>
-                      fs.writeJson(
-                        metadataPath,
-                        { filename: computedFilename },
-                        { spaces: 2 }
-                      )
-                    )
-                    .then(() => done(null, { filename: computedFilename }));
-                })
-                .catch(done);
-            }
-          );
-        } catch (err) {
-          result = await fs.readJson(metadataPath).catch(() => null);
-
-          if (!result || !result.filename) {
-            console.log(err);
-            continue;
-          }
-        }
-
-        filename = result && result.filename;
-
-        if (!filename) continue;
-
-        const destination = join(assetDir, filename);
-
-        if (!(await fs.pathExists(destination))) {
-          console.log(new Error("Missing cached file for " + src));
-          continue;
-        }
-      } else {
-        const res = await fetch(src);
-        const disposition = res.headers.get("content-disposition");
-        buffer = await res.buffer();
-
-        try {
-          ext = disposition
-            .split(";")
-            .find((i) => i.includes("filename"))
-            .split("=")
-            .pop()
-            .replace(/"/g, "")
-            .split(".")
-            .pop();
-        } catch (err) {}
-
-        if (!ext) {
-          const metadata = await sharp(buffer).metadata();
-          ext = metadata.format;
-        }
+      if (commaIndex === -1) {
+        continue;
       }
 
-      if (buffer) {
-        filename = hash(src) + "." + ext;
-        await fs.outputFile(join(assetDir, filename), buffer);
+      const metadataPart = src.slice(5, commaIndex);
+      const dataPart = src.slice(commaIndex + 1);
+      const metadataParts = metadataPart.split(";");
+      const mimeType = metadataParts.shift() || "";
+      const isBase64 = metadataParts.includes("base64");
+
+      buffer = Buffer.from(
+        isBase64 ? dataPart : decodeURIComponent(dataPart),
+        isBase64 ? "base64" : "utf8"
+      );
+
+      if (mimeType) {
+        ext = mime.extension(mimeType);
       }
 
-      if (!filename) continue;
+      if (!ext) {
+        const metadata = await sharp(buffer).metadata();
+        ext = metadata.format;
+      }
+
+      filename = hash(src) + "." + ext;
+      await fs.outputFile(join(assetDir, filename), buffer);
 
       $(elem).attr("src", "/_assets/" + docHash + "/" + filename);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  // Handle images which reference external resources
+  for (const elem of nonDataImages) {
+    try {
+      const src = $(elem).attr("src");
+      const filenameBase = hash(src);
+
+      const fetchImage = async (resolvedPath, done) => {
+        console.log("Fetched image for gdoc:", src, resolvedPath);
+        try {
+          const determinedExt = await determineExtension(resolvedPath);
+
+          const computedFilename = `${filenameBase}.${determinedExt}`;
+          const destination = join(assetDir, computedFilename);
+
+          await fs.copy(resolvedPath, destination);
+          done(null, {
+            output: "/_assets/" + docHash + "/" + computedFilename,
+          });
+        } catch (err) {
+          done(err);
+        }
+      };
+
+      const { output } = await lookupWithTransformer(
+        transformer,
+        src,
+        fetchImage
+      );
+
+      $(elem).attr("src", output);
     } catch (err) {
       console.log(err);
     }
@@ -145,6 +108,7 @@ async function processImages($, assetDir, docPath, transformer) {
 function lookupWithTransformer(transformer, src, transform) {
   return new Promise((resolve, reject) => {
     transformer.lookup(src, transform, (err, result) => {
+      console.log("HERE", err, result);
       if (err) return reject(err);
       resolve(result);
     });
