@@ -36,3 +36,24 @@
 #breadcrumbs a:hover {
   color: var(--accent-color);
 }
+
+@media (max-width: 700px) {
+  #breadcrumbs span {
+    display: none;
+  }
+
+  #breadcrumbs a {
+    display: none;
+  }
+
+  #breadcrumbs a:nth-last-of-type(2) {
+    display: block;
+    max-width: none;
+    width: 100%;
+  }
+
+  #breadcrumbs a:nth-last-of-type(2)::before {
+    content: "< ";
+    margin-right: 0.25em;
+  }
+}
