@@ -102,7 +102,7 @@ describe("gdoc converter", function () {
     });
   });
 
-  fit("reuses cached transformer asset when the remote URL expires", async function () {
+  it("reuses cached transformer asset when the remote URL expires", async function () {
     const test = this;
     const path = `/image-alt-title.gdoc`;
     const input = await fs.readFile(__dirname + path, "utf8");

@@ -3,13 +3,9 @@ const ensure = require("helper/ensure");
 const LocalPath = require("helper/localPath");
 const extname = require("path").extname;
 const cheerio = require("cheerio");
-const hash = require("helper/hash");
-const { join } = require("path");
-const config = require("config");
 const Metadata = require("build/metadata");
 const extend = require("helper/extend");
 const yaml = require("yaml");
-const Transformer = require("helper/transformer");
 
 const blockquotes = require("./blockquotes");
 const footnotes = require("./footnotes");
@@ -25,8 +21,6 @@ async function read(blog, path, callback) {
 
   try {
     const localPath = LocalPath(blog.id, path);
-    const blogDir = join(config.blog_static_files_dir, blog.id);
-    const assetDir = join(blogDir, "_assets", hash(path));
 
     const stat = await fs.stat(localPath);
 
@@ -123,15 +117,13 @@ async function read(blog, path, callback) {
 
     // remove all inline style attributes
     $("[style]").removeAttr("style");
-    
+
     // handle line breaks
     if (blog.flags.google_docs_preserve_linebreaks !== false) {
       linebreaks($);
     }
 
-    const transformer = new Transformer(blog.id, "gdoc-images");
-
-    await processImages($, assetDir, path, transformer);
+    await processImages(blog.id, path, $);
 
     // handle blockquotes
     blockquotes($);

@@ -1,12 +1,18 @@
+const Transformer = require("helper/transformer");
 const fs = require("fs-extra");
 const { join, extname } = require("path");
 const hash = require("helper/hash");
-const fetch = require("node-fetch");
+const config = require("config");
 const sharp = require("sharp");
 const mime = require("mime-types");
 
-async function processImages($, assetDir, docPath, transformer) {
+async function processImages(blogID, docPath, $) {
   const docHash = hash(docPath);
+  const blogDir = join(config.blog_static_files_dir, blogID);
+  const assetDir = join(blogDir, "_assets", docHash);
+
+  const transformer = new Transformer(blogID, "gdoc-images");
+
   const images = [];
 
   $("img").each(function (i, elem) {
