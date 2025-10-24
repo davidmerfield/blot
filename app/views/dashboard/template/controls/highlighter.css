@@ -1,11 +1,3 @@
-[name="{{key}}-filter"],
-[name="{{key}}-toggle"] {display: none;}
-
-label[for="{{key}}-toggle"] {padding:0.333em 1em;cursor: pointer;border-bottom: 1px solid #ddd;display: block;margin:0;user-select: none;}
-
-label[for="{{key}}-toggle"]:hover {background: #fff}
-
-input[name="{{key}}-toggle"]:checked + .options {display: block;}
 
 .options {display: none;margin:0.5em;border:1px solid #aaa;user-select: none;width:300px}
       
@@ -25,15 +17,3 @@ width: 100%;
 text-align:left;margin:0;border-radius:0;border:none;outline:none;background:#fafafa;border-top: 1px solid #ddd;padding:0.333em 0.5em;       }
 
 .options button:hover{background: #fff}
-
-[id="{{key}}-show-all"]:checked ~
-.options label[for="{{key}}-show-all"],
-[id="{{key}}-show-light"]:checked ~
-.options label[for="{{key}}-show-light"],
-[id="{{key}}-show-dark"]:checked ~
-.options label[for="{{key}}-show-dark"] {background: #e0e0e0;}
-
-[id="{{key}}-show-dark"]:checked ~
- .options button:not([data-tag="dark"]),
-[id="{{key}}-show-light"]:checked ~
- .options button:not([data-tag="light"]) {display: none;}

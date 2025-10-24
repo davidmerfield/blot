@@ -1,3 +1,27 @@
+<style>
+    [name="{{key}}-filter"],
+[name="{{key}}-toggle"] {display: none;}
+
+label[for="{{key}}-toggle"] {padding:0.333em 1em;cursor: pointer;border-bottom: 1px solid #ddd;display: block;margin:0;user-select: none;}
+
+label[for="{{key}}-toggle"]:hover {background: #fff}
+
+input[name="{{key}}-toggle"]:checked + .options {display: block;}
+
+
+[id="{{key}}-show-all"]:checked ~
+.options label[for="{{key}}-show-all"],
+[id="{{key}}-show-light"]:checked ~
+.options label[for="{{key}}-show-light"],
+[id="{{key}}-show-dark"]:checked ~
+.options label[for="{{key}}-show-dark"] {background: #e0e0e0;}
+
+[id="{{key}}-show-dark"]:checked ~
+ .options button:not([data-tag="dark"]),
+[id="{{key}}-show-light"]:checked ~
+ .options button:not([data-tag="light"]) {display: none;}
+</style>
+
 <div class="settings-group">
 <h2 class="template-heading">{{label}}</h2>
 <form method="post" class="syntax-highlighter select">
@@ -45,3 +69,5 @@
 {{#font}}
 {{> font}} 
 {{/font}}
+
+</div>
