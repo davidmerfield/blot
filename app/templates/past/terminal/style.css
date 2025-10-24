@@ -30,6 +30,75 @@ a {color: white;text-decoration: none;}
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 1.5em;
+  overflow: hidden;
+}
+
+.terminal-nav-toggle {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.terminal-nav-toggle__label {
+  display: none;
+  margin-left: auto;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25em 0;
+  width: 2.5em;
+  height: 2.5em;
+  position: relative;
+}
+
+.terminal-nav-toggle__icon,
+.terminal-nav-toggle__icon::before,
+.terminal-nav-toggle__icon::after {
+  display: block;
+  width: 1.6em;
+  height: 2px;
+  background: currentColor;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.terminal-nav-toggle__icon {
+  position: relative;
+}
+
+.terminal-nav-toggle__icon::before,
+.terminal-nav-toggle__icon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.terminal-nav-toggle__icon::before {
+  top: -6px;
+}
+
+.terminal-nav-toggle__icon::after {
+  top: 6px;
+}
+
+.terminal-nav-toggle__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
 }
 
 .terminal-header .nav {
@@ -42,6 +111,20 @@ a {color: white;text-decoration: none;}
 
 .terminal-header .nav a {
   margin: 0;
+}
+
+.terminal-nav-toggle:checked ~ .terminal-nav-toggle__label .terminal-nav-toggle__icon {
+  transform: rotate(45deg);
+}
+
+.terminal-nav-toggle:checked ~ .terminal-nav-toggle__label .terminal-nav-toggle__icon::before {
+  top: 0;
+  transform: rotate(90deg);
+}
+
+.terminal-nav-toggle:checked ~ .terminal-nav-toggle__label .terminal-nav-toggle__icon::after {
+  top: 0;
+  opacity: 0;
 }
 
 hr {
@@ -132,22 +215,35 @@ input:focus {outline: none;}
     margin: 2em 0 1.5em;
   }
 
+  .terminal-nav-toggle__label {
+    display: flex;
+  }
+
   .terminal-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1.25em;
+    align-items: center;
   }
 
   .terminal-header .nav {
+    order: 4;
     width: 100%;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75em;
     margin-left: 0;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0;
+    transition: max-height 0.2s ease;
   }
 
   .terminal-header .nav a {
     padding: 0.35em 0;
+    width: 100%;
+  }
+
+  .terminal-nav-toggle:checked ~ .nav {
+    max-height: 100vh;
+    padding-top: 0.5em;
   }
 
   .grid-sizer,
