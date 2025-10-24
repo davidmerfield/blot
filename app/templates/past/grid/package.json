@@ -4,9 +4,10 @@
     "page_size": 96,
     "text_color": "#000000",
     "background_color": "#FFFFFF",
-    "accent_color": "#0078D9",
-    "navigation_background_color": "#F7F7F7",
-    "body_font": {}
+    "accent_color": "blue",
+    "body_font": {
+      "font_size": 14
+    }
   },
   "isPublic": false,
   "views": {

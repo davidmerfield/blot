@@ -19,12 +19,6 @@ body {
   {{/body_font}}
 }
 
-{{#navigation_background_color}}
-header {
-  background: {{navigation_background_color}};
-}
-{{/navigation_background_color}}
-
 header {margin: 2em 0}
 
 .pagination {text-align: center;margin: 2em 0}
