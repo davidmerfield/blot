@@ -243,12 +243,16 @@ const withAjax = (url) => {
         }
 };
 
-const previewFrame = document.getElementById('full_size_preview');
 
 const refreshTemplatePreview = () => {
-        if (previewFrame) {
-                previewFrame.src = previewFrame.src;
-        }
+const previewFrame = document.getElementById('full_size_preview');
+
+if (previewFrame) {
+			console.log('refreshing preview');
+                previewFrame.src += '';
+        } else {
+			console.log('no preview frame to refresh');
+		}
 };
 
 const handleAjaxSaveResponse = (response) => {
