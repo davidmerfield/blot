@@ -15,13 +15,6 @@ const updateBlog = (blogID, updates) => {
 
 module.exports = async (req, res, next) => {
 
-    const bodyKeys = Object.keys(req.body || {});
-    const previewOnlyKeys = new Set(["previewPath", "_csrf"]);
-
-    if (bodyKeys.length && bodyKeys.every((key) => previewOnlyKeys.has(key))) {
-        return next();
-    }
-
     if (req.template.owner === req.blog.id) {
         return next();
     }

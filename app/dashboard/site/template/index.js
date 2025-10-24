@@ -78,7 +78,6 @@ TemplateEditor.route("/:templateSlug")
   .all(require("./load/dates"))
   .post(
     require("./save/fork-if-needed"),
-    require("./save/previewPath"),
     function (req, res, next) {
       let body = formJSON(req.body, Template.metadataModel);
       let newLocals = body.locals;

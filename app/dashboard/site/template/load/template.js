@@ -84,11 +84,10 @@ module.exports = async function (req, res, next) {
     res.locals.previewOrigin = `https://preview-of${
       hydrated.owner === req.blog.id ? "-my" : ""
     }-${hydrated.slug}-on-${req.blog.handle}.${config.host}`;
-    // we persist the path of the page of the template
-    // last viewed by the user in the database
+    // the preview iframe defaults to the template origin; the client stores
+    // the most recent path in localStorage and applies it on load
 
-    res.locals.preview =
-      res.locals.previewOrigin + (req.template.previewPath || "");
+    res.locals.preview = res.locals.previewOrigin;
 
     res.locals.breadcrumbs.add(req.template.name, req.template.slug);
 
