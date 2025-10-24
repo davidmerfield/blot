@@ -46,28 +46,18 @@ header > a {
   position: relative;
   padding: 2em 0;
   background: {{navigation_background_color}};
-}
-
-header {
-  height: {{font.line_height}}em;
-  overflow: hidden;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  position: relative;
-  padding: calc({{spacing}}rem/2) calc({{spacing}}rem);
-  {{^sticky_navigation}}
+    {{^sticky_navigation}}
   position: relative;
   z-index: 1;
   {{/sticky_navigation}}
   {{#sticky_navigation}}
   position: fixed;
-  {{#is.navigation_position.top}}
+  {{#is.navigation_location.top}}
   top: 0;
-  {{/is.navigation_position.top}}
-  {{#is.navigation_position.bottom}}
+  {{/is.navigation_location.top}}
+  {{#is.navigation_location.bottom}}
   bottom: 0;
-  {{/is.navigation_position.bottom}}
+  {{/is.navigation_location.bottom}}
   {{#is.navigation_alignment.justified}}
   left:0;
   right:0;
@@ -80,6 +70,17 @@ header {
   {{/is.navigation_alignment.right}}
   z-index: 1;
   {{/sticky_navigation}}
+
+}
+
+header {
+  height: {{font.line_height}}em;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  position: relative;
+  padding: calc({{spacing}}rem/2) calc({{spacing}}rem);
 }
 
 
@@ -154,6 +155,12 @@ nav a:not([href]) {
   cursor: default;
   color:  rgba({{#rgb}}{{text_color}}{{/rgb}},0.3);
   text-decoration: none!important;
+}
+
+.navigation-location-top {
+  {{#sticky_navigation}}
+  padding-top: 5.5rem;
+  {{/sticky_navigation}}
 }
 
 .navigation-location-left,

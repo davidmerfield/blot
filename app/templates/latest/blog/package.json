@@ -45,7 +45,6 @@
     ],
     "hide_dates": false,
     "spacing": 0,
-    "infinite_scroll": true,
     "sticky_navigation": false,
     "collapse_navigation_by_default": false,
     "navigation_alignment": "justified",
