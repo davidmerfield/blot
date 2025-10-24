@@ -1,13 +1,15 @@
 <div class="terminal-header">
   <input class="terminal-nav-toggle" type="checkbox" id="terminal-nav-toggle" aria-controls="terminal-nav" />
-  <a class="terminal-header__title" href="/" title="">{{title}}</a>
-  <label class="terminal-nav-toggle__label" for="terminal-nav-toggle">
-    <span class="terminal-nav-toggle__sr">Menu</span>
-    <span class="terminal-nav-toggle__icon"></span>
-  </label>
-  <nav class="nav" aria-label="Site navigation" id="terminal-nav">
-    {{#menu}}
-    <a href="{{{url}}}" title="{{label}}">{{label}}</a>
-    {{/menu}}
-  </nav>
+  <header class="terminal-header__bar">
+    <a class="terminal-header__title" href="/" title="">{{title}}</a>
+    <label class="terminal-nav-toggle__label" for="terminal-nav-toggle">
+      <span class="terminal-nav-toggle__sr">Menu</span>
+      <span class="terminal-nav-toggle__icon"></span>
+    </label>
+    <nav class="nav" aria-label="Site navigation" id="terminal-nav">
+      {{#menu}}
+      <a href="{{{url}}}" title="{{label}}">{{label}}</a>
+      {{/menu}}
+    </nav>
+  </header>
 </div>
