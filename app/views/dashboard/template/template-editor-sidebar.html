@@ -333,9 +333,8 @@ Array.from(document.querySelectorAll('form[id^="font_picker"]')).forEach(functio
 					body.append(node.name, node.value);
 					
 					// append the hidden inputs
-					form.querySelector('input[name="_csrf"]').forEach(function(hidden){
-						body.append(hidden.name, hidden.value);
-					});
+                                        const csrfInput = form.querySelector('input[name="_csrf"]');
+                                        if (csrfInput) body.append(csrfInput.name, csrfInput.value);
 					
 		
                                         fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
