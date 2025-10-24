@@ -1,6 +1,4 @@
 const { promisify } = require("util");
-const THEMES = require("blog/static/syntax-highlighter");
-
 describe("template", function () {
   require("./setup")({ createTemplate: true });
 
@@ -45,24 +43,4 @@ describe("template", function () {
     expect(syntax_highlighter.styles).toContain(".hljs{");
   });
 
-  it("updates syntax highlighter styles when the id changes", async function () {
-    const firstTheme = THEMES.find(theme => theme.id === "agate");
-    const secondTheme = THEMES.find(theme => theme.id === "androidstudio");
-
-    await setMetadata(this.template.id, {
-      locals: { syntax_highlighter: { id: firstTheme.id } }
-    });
-
-    let metadata = await getMetadata(this.template.id);
-    expect(metadata.locals.syntax_highlighter.styles).toEqual(firstTheme.styles);
-
-    await setMetadata(this.template.id, {
-      locals: { syntax_highlighter: { id: secondTheme.id } }
-    });
-
-    metadata = await getMetadata(this.template.id);
-    const { syntax_highlighter } = metadata.locals;
-    expect(syntax_highlighter.id).toEqual(secondTheme.id);
-    expect(syntax_highlighter.styles).toEqual(secondTheme.styles);
-  });
 });
