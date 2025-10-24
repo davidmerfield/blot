@@ -89,12 +89,14 @@
 .link-card--large .link-card__thumbnail {
   width: 100%;
   height: auto;
-  max-height: 240px;
+  max-height: 500px;
   border-radius: 12px 12px 0 0;
 }
 
 .link-card--large .link-card__thumbnail img {
-  height: 100%;
+  width: 100%;
+  height: auto;
+  max-height: 500px;
 }
 
 .link-card--large .link-card__content {

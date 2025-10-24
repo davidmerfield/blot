@@ -16,6 +16,29 @@ function normalizeLinkCardLayout(value) {
   return "compact";
 }
 
+function normalizeLinkCardOptions(linkCards, options) {
+  if (!linkCards) return;
+
+  if (!linkCards.options) linkCards.options = {};
+
+  const shouldDefaultToCompact = Boolean(
+    options &&
+      options.defaultLayout &&
+      linkCards.enabled &&
+      !linkCards.options.layout
+  );
+
+  if (shouldDefaultToCompact) {
+    linkCards.options.layout = "compact";
+  }
+
+  const layout = normalizeLinkCardLayout(linkCards.options.layout);
+
+  linkCards.options.layout = layout;
+  linkCards.options.layoutCompact = layout === "compact";
+  linkCards.options.layoutLarge = layout === "large";
+}
+
 module.exports = function (req, res, next) {
   try {
     req.updates = formJSON(req.body, Blog.scheme.TYPE);
@@ -63,16 +86,6 @@ module.exports = function (req, res, next) {
       if (!req.updates.plugins[i].options) req.updates.plugins[i].options = {};
     }
 
-    if (req.updates.plugins.linkCards) {
-      const layout = normalizeLinkCardLayout(
-        req.updates.plugins.linkCards.options.layout
-      );
-
-      req.updates.plugins.linkCards.options.layout = layout;
-      req.updates.plugins.linkCards.options.layoutCompact = layout === "compact";
-      req.updates.plugins.linkCards.options.layoutLarge = layout === "large";
-    }
-
     if (req.updates.plugins.typeset) {
       for (var x in req.updates.plugins.typeset.options)
         req.updates.plugins.typeset.options[x] =
@@ -82,13 +95,9 @@ module.exports = function (req, res, next) {
     extend(req.updates.plugins).and(req.blog.plugins);
 
     if (req.updates.plugins.linkCards) {
-      const layout = normalizeLinkCardLayout(
-        req.updates.plugins.linkCards.options.layout
-      );
-
-      req.updates.plugins.linkCards.options.layout = layout;
-      req.updates.plugins.linkCards.options.layoutCompact = layout === "compact";
-      req.updates.plugins.linkCards.options.layoutLarge = layout === "large";
+      normalizeLinkCardOptions(req.updates.plugins.linkCards, {
+        defaultLayout: true,
+      });
     }
 
     // We mpdify the analytics settings after the extend function because
