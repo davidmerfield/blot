@@ -367,6 +367,29 @@ Array.from(document.querySelectorAll('form[id^="font_picker"]')).forEach(functio
 			
 // boolean inputs
 
+document.querySelectorAll('form.syntax-highlighter').forEach(function(form){
+    const csrfInput = form.querySelector('input[name="_csrf"]');
+
+    form.querySelectorAll('button[type="submit"]').forEach(function(button){
+        button.addEventListener('click', function(event){
+            const body = new URLSearchParams();
+
+            if (button.name) {
+                body.append(button.name, button.value);
+            }
+
+            if (csrfInput) {
+                body.append(csrfInput.name, csrfInput.value);
+            }
+
+            fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
+
+            event.preventDefault();
+            return false;
+        });
+    });
+});
+
 document.querySelectorAll('form.boolean').forEach(function(form){
     form.querySelectorAll('input').forEach(function(node){
       node.addEventListener('change',  (event) => {
@@ -402,7 +425,7 @@ document.querySelectorAll('form.boolean').forEach(function(form){
   })
 
 // select inputs
-document.querySelectorAll('form.select').forEach(function(form){
+document.querySelectorAll('form.select:not(.syntax-highlighter)').forEach(function(form){
 	form.querySelectorAll('button').forEach(function(node){
 	  node.addEventListener('click',  (event) => {
 
