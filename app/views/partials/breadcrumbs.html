@@ -3,9 +3,10 @@
 <div id="breadcrumbs-container">
   <div id="breadcrumbs">
     {{#breadcrumbs}}
-    <a href="{{{url}}}" class="truncate">
-      <span class="icon-small-chevron-right breadcrumb-back-icon" aria-hidden="true"></span>{{label}}
-    </a>
+    <div class="breadcrumb-item">
+      <span class="icon-small-chevron-right" aria-hidden="true"></span>
+      <a href="{{{url}}}" class="truncate">{{label}}</a>
+    </div>
     <span class="icon-small-chevron-right breadcrumb-separator" aria-hidden="true"></span>
     {{/breadcrumbs}}
   </div>
