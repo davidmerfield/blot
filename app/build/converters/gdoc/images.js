@@ -61,21 +61,32 @@ async function processImages($, assetDir, docPath, transformer) {
         let result;
 
         try {
-          result = await lookupWithTransformer(transformer, src, async (path) => {
-            const determinedExt = await determineExtension(path);
-            const computedFilename = `${filenameBase}.${determinedExt}`;
-            const destination = join(assetDir, computedFilename);
+          result = await lookupWithTransformer(
+            transformer,
+            src,
+            (resolvedPath, done) => {
+              determineExtension(resolvedPath)
+                .then((determinedExt) => {
+                  const computedFilename = `${filenameBase}.${determinedExt}`;
+                  const destination = join(assetDir, computedFilename);
 
-            await fs.copy(path, destination);
-
-            await fs.writeJson(
-              metadataPath,
-              { filename: computedFilename },
-              { spaces: 2 }
-            );
-
-            return { filename: computedFilename };
-          });
+                  return fs
+                    .pathExists(destination)
+                    .then((exists) =>
+                      exists ? null : fs.copy(resolvedPath, destination)
+                    )
+                    .then(() =>
+                      fs.writeJson(
+                        metadataPath,
+                        { filename: computedFilename },
+                        { spaces: 2 }
+                      )
+                    )
+                    .then(() => done(null, { filename: computedFilename }));
+                })
+                .catch(done);
+            }
+          );
         } catch (err) {
           result = await fs.readJson(metadataPath).catch(() => null);
 
@@ -131,20 +142,12 @@ async function processImages($, assetDir, docPath, transformer) {
   }
 }
 
-async function lookupWithTransformer(transformer, src, transform) {
+function lookupWithTransformer(transformer, src, transform) {
   return new Promise((resolve, reject) => {
-    transformer.lookup(
-      src,
-      (resolvedPath, done) => {
-        Promise.resolve(transform(resolvedPath))
-          .then((result) => done(null, result))
-          .catch(done);
-      },
-      (err, result) => {
-        if (err) return reject(err);
-        resolve(result);
-      }
-    );
+    transformer.lookup(src, transform, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
   });
 }
 

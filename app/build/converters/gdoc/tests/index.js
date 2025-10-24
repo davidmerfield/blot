@@ -5,6 +5,8 @@ const sharp = require("sharp");
 const config = require("config");
 const hash = require("helper/hash");
 const { join } = require("path");
+const nock = require("nock");
+const Transformer = require("helper/transformer");
 
 describe("gdoc converter", function () {
   global.test.blog();
@@ -99,64 +101,73 @@ describe("gdoc converter", function () {
     const path = `/${name}`;
     const expected = await fs.readFile(`${__dirname + path}.html`, "utf8");
 
-    const downloadPath = require.resolve("helper/transformer/download");
-    const originalDownload = require(downloadPath);
-    let callCount = 0;
+    const assetDir = join(
+      config.blog_static_files_dir,
+      test.blog.id,
+      "_assets",
+      hash(path)
+    );
 
-    function stubDownload(url, headers, callback) {
-      callCount += 1;
+    await fs.remove(assetDir);
 
-      if (callCount === 1) {
-        return originalDownload(url, headers, callback);
-      }
+    const input = await fs.readFile(__dirname + path, "utf8");
 
-      process.nextTick(() => callback(new Error("expired")));
-    }
+    const originalSrc = input.match(
+      /https:\/\/lh[0-9]+-rt\.googleusercontent\.com\/docsz\/[A-Za-z0-9_\-]+\?[^"']+/i
+    )[0];
 
-    require.cache[downloadPath].exports = stubDownload;
+    const remoteUrl = new URL(originalSrc);
+
+    const imageBuffer = await sharp({
+      create: {
+        width: 120,
+        height: 120,
+        channels: 3,
+        background: { r: 0, g: 0, b: 255 },
+      },
+    })
+      .jpeg()
+      .toBuffer();
+
+    const scope = nock(remoteUrl.origin)
+      .get(remoteUrl.pathname)
+      .query(true)
+      .reply(200, imageBuffer, {
+        "Content-Type": "image/jpeg",
+        "Cache-Control": "max-age=0",
+      })
+      .get(remoteUrl.pathname)
+      .query(true)
+      .reply(410, "gone");
+
+    await fs.writeFile(test.blogDirectory + path, input, "utf8");
+
+    const transformer = new Transformer(test.blog.id, "gdoc-images");
+
+    await new Promise((resolve) => transformer.flush(resolve));
+
+    const readDoc = () =>
+      new Promise((resolve, reject) => {
+        gdoc.read(test.blog, path, function (err, result) {
+          if (err) return reject(err);
+          resolve(result);
+        });
+      });
 
     try {
-      const assetDir = join(
-        config.blog_static_files_dir,
-        test.blog.id,
-        "_assets",
-        hash(path)
-      );
-
-      await fs.remove(assetDir);
-
-      let input = await fs.readFile(__dirname + path, "utf8");
-
-      const replacementSrc = "http://localhost:7391/image.jpg";
-
-      input = input.replace(
-        /https:\/\/lh[0-9]+-rt\.googleusercontent\.com\/docsz\/[A-Za-z0-9_\-]+(\?key=[A-Za-z0-9_\-]+)/g,
-        replacementSrc
-      );
-
-      await fs.writeFile(test.blogDirectory + path, input, "utf8");
-
-      const readDoc = () =>
-        new Promise((resolve, reject) => {
-          gdoc.read(test.blog, path, function (err, result) {
-            if (err) return reject(err);
-            resolve(result);
-          });
-        });
-
       const first = await readDoc();
       expect(first).toEqual(expected);
 
       const second = await readDoc();
       expect(second).toEqual(expected);
 
-      expect(callCount).toBe(2);
-
       const files = await fs.readdir(assetDir);
-      const expectedPrefix = hash(replacementSrc);
+      const expectedPrefix = hash(originalSrc);
       expect(files.some((file) => file.startsWith(expectedPrefix))).toBeTrue();
     } finally {
-      require.cache[downloadPath].exports = originalDownload;
+      nock.cleanAll();
     }
+
+    expect(scope.isDone()).toBeTrue();
   });
 });
