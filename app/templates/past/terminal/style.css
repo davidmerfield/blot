@@ -94,7 +94,32 @@ input:focus {outline: none;}
 {{> plugin}}
 
 .grid-sizer,
-.grid-item { width: 20%;padding:0em 1em;box-sizing:border-box; }
+.grid-item {
+  width: 20%;
+  padding: 0 1em;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1200px) {
+  .grid-sizer,
+  .grid-item {
+    width: 25%;
+  }
+}
+
+@media (max-width: 900px) {
+  .grid-sizer,
+  .grid-item {
+    width: 33.3333%;
+  }
+}
+
+@media (max-width: 700px) {
+  .grid-sizer,
+  .grid-item {
+    width: 50%;
+  }
+}
 
 @media (max-width: 600px) {
   body {
