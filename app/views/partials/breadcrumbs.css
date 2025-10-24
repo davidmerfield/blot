@@ -45,24 +45,25 @@
 
   #breadcrumbs a,
   #breadcrumbs span {
-    display: none;
+    display: none!important;
   }
 
   #breadcrumbs a:nth-last-of-type(2) {
-    display: block;
+    display: block !important;
     max-width: none !important;
     overflow: visible !important;
     white-space: normal !important;
     width: 100%;
-    padding-left: 1.5em;
+    padding-left: 1.2em;
   }
 
   #breadcrumbs a:nth-last-of-type(2) + .icon-small-chevron-right {
-    display: block;
+    display: block !important;
     position: absolute;
     left: 0;
     top: 50%;
-    transform: translateY(-50%) rotate(180deg);
+    margin-left:0;
+    transform: translateY(-45%) rotate(180deg);
     color: var(--medium-text-color);
   }
 }
