@@ -212,7 +212,10 @@ function Transformer(blogID, name) {
         // Now we try and download the URL, passing in previously
         // stored headers if any. This module interprets 304
         // responses nicely.
-        if (err) return callback(err);
+        if (err) {
+          if (result) return callback(null, result);
+          return callback(err);
+        }
 
         if (!Array.isArray(results)) results = [];
 
