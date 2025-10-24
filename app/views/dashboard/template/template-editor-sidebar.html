@@ -392,12 +392,21 @@ document.querySelectorAll('form.boolean').forEach(function(form){
   document.querySelectorAll('#dateSettings').forEach(function(form){
     form.querySelectorAll('input, select').forEach(function(node){
       node.addEventListener('change',  (event) => {
-		// trigger the form submission, e.g. $('#dateSettings').submit();
-		// don't use jquery or fetch or xhr, just use the form submission
-		form.submit();
-		event.preventDefault();
-		return false;
-	  })
+                const body = new URLSearchParams();
+
+                if (node.type === 'checkbox') {
+                        body.append(node.name, node.checked ? 'on' : 'off');
+                } else {
+                        body.append(node.name, node.value);
+                }
+
+                const csrfInput = form.querySelector('input[name="_csrf"]');
+                if (csrfInput) body.append(csrfInput.name, csrfInput.value);
+
+                fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
+                event.preventDefault();
+                return false;
+          })
     })
   })
 
