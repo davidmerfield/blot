@@ -3,6 +3,19 @@ var formJSON = require("helper/formJSON");
 var extend = require("helper/extend");
 var normalizeImageExif = require("models/blog/util/imageExif").normalize;
 
+const VALID_LINK_CARD_LAYOUTS = ["compact", "large"];
+
+function normalizeLinkCardLayout(value) {
+  if (typeof value === "string") {
+    const normalized = value.toLowerCase();
+    if (VALID_LINK_CARD_LAYOUTS.indexOf(normalized) > -1) {
+      return normalized;
+    }
+  }
+
+  return "compact";
+}
+
 module.exports = function (req, res, next) {
   try {
     req.updates = formJSON(req.body, Blog.scheme.TYPE);
@@ -50,6 +63,16 @@ module.exports = function (req, res, next) {
       if (!req.updates.plugins[i].options) req.updates.plugins[i].options = {};
     }
 
+    if (req.updates.plugins.linkCards) {
+      const layout = normalizeLinkCardLayout(
+        req.updates.plugins.linkCards.options.layout
+      );
+
+      req.updates.plugins.linkCards.options.layout = layout;
+      req.updates.plugins.linkCards.options.layoutCompact = layout === "compact";
+      req.updates.plugins.linkCards.options.layoutLarge = layout === "large";
+    }
+
     if (req.updates.plugins.typeset) {
       for (var x in req.updates.plugins.typeset.options)
         req.updates.plugins.typeset.options[x] =
@@ -57,6 +80,16 @@ module.exports = function (req, res, next) {
     }
 
     extend(req.updates.plugins).and(req.blog.plugins);
+
+    if (req.updates.plugins.linkCards) {
+      const layout = normalizeLinkCardLayout(
+        req.updates.plugins.linkCards.options.layout
+      );
+
+      req.updates.plugins.linkCards.options.layout = layout;
+      req.updates.plugins.linkCards.options.layoutCompact = layout === "compact";
+      req.updates.plugins.linkCards.options.layoutLarge = layout === "large";
+    }
 
     // We mpdify the analytics settings after the extend function because
     // the extend function will not overwrite existing conflicting providers
