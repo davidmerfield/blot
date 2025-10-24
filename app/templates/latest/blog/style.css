@@ -51,11 +51,14 @@ header > a {
   z-index: 1;
   {{/sticky_navigation}}
   {{#sticky_navigation}}
-  position: fixed;
   {{#is.navigation_location.top}}
+  position: sticky;
   top: 0;
   left: 0;
   right: 0;
+  {{/is.navigation_location.top}}
+  {{^is.navigation_location.top}}
+  position: fixed;
   {{/is.navigation_location.top}}
   z-index: 1;
   {{/sticky_navigation}}
@@ -148,7 +151,7 @@ nav a:not([href]) {
 
 .navigation-location-top {
   {{#sticky_navigation}}
-  padding-top: 5.5rem;
+  scroll-padding-top: calc({{font.line_height}}em + {{spacing}}rem + 4em);
   {{/sticky_navigation}}
 }
 
