@@ -5,6 +5,7 @@ const Template = require("models/template");
 const Blog = require("models/blog");
 const archiver = require("archiver");
 const duplicateTemplate = require("./save/duplicate-template");
+const { isAjaxRequest, sendAjaxResponse } = require("./save/ajax-response");
 
 TemplateEditor.param("viewSlug", require("./load/template-views"));
 
@@ -122,6 +123,10 @@ TemplateEditor.route("/:templateSlug")
         { locals: req.locals, partials: req.partials },
         function (err) {
           if (err) return next(err);
+          if (isAjaxRequest(req)) {
+            return sendAjaxResponse(res);
+          }
+
           res.message(req.baseUrl + req.url, "Success!");
         }
       );
