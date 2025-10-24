@@ -46,7 +46,7 @@ header > a {
   position: relative;
   padding: 2em 0;
   background: {{navigation_background_color}};
-    {{^sticky_navigation}}
+  {{^sticky_navigation}}
   position: relative;
   z-index: 1;
   {{/sticky_navigation}}
@@ -54,20 +54,9 @@ header > a {
   position: fixed;
   {{#is.navigation_location.top}}
   top: 0;
+  left: 0;
+  right: 0;
   {{/is.navigation_location.top}}
-  {{#is.navigation_location.bottom}}
-  bottom: 0;
-  {{/is.navigation_location.bottom}}
-  {{#is.navigation_alignment.justified}}
-  left:0;
-  right:0;
-  {{/is.navigation_alignment.justified}}
-  {{#is.navigation_alignment.left}}
-  left:0;
-  {{/is.navigation_alignment.left}}
-  {{#is.navigation_alignment.right}}
-  right:0;
-  {{/is.navigation_alignment.right}}
   z-index: 1;
   {{/sticky_navigation}}
 
@@ -373,16 +362,17 @@ nav a:not([href]) {
 
 #hidden-toggle:checked~header {
   height: auto;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1)
 }
 
 #hidden-toggle:checked~header nav {
-  width: 100%
+  width: 100%;
+  padding: 2em 0;
 }
 
 #hidden-toggle:checked~header nav a {
   display: block;
-  margin-left: 0
+  margin-left: 0;
+  padding: 0.5em 0;
 }
 
 #hidden-toggle:checked~header .hamburger-inner:after {
@@ -461,15 +451,7 @@ font-feature-settings: 'tnum';
   max-width: {{max_width}}px;  
   padding-left: 1em;
   padding-right: 1em;
-  {{#is.site_alignment.center}}
   margin:0 auto;
-  {{/is.site_alignment.center}}
-  {{#is.site_alignment.left}}
-  margin:0 auto 0 2em;
-  {{/is.site_alignment.left}}
-  {{#is.site_alignment.right}}
-  margin:0 2em 0 auto;
-  {{/is.site_alignment.right}}
 }
 
 .entry {margin: 0 0 192px}
