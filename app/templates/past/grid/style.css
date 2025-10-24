@@ -1,15 +1,36 @@
 {{{appCSS}}}
+{{{body_font.styles}}}
 
 body {
-  margin:2em;
+  margin: 2em;
   text-rendering: optimizelegibility;
-  font: normal 14px / 1.5 -apple-system, BlinkMacSystemFont, "Roboto", "Droid Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background: {{background_color}};
+  color: {{text_color}};
+  {{#body_font}}
+  font-family: {{{stack}}};
+  font-size: {{{font_size}}}px;
+  line-height: {{{line_height}}};
+  {{#weight}}
+  font-weight: {{{.}}};
+  {{/weight}}
+  {{#style}}
+  font-style: {{{.}}};
+  {{/style}}
+  {{/body_font}}
 }
+
+{{#navigation_background_color}}
+header {
+  background: {{navigation_background_color}};
+}
+{{/navigation_background_color}}
 
 header {margin: 2em 0}
 
 .pagination {text-align: center;margin: 2em 0}
 .pagination a {margin: 0 1em;display: inline-block;}
+
+a {color: {{accent_color}};}
 
 a.active {color: inherit;text-decoration: none;}
 
@@ -27,7 +48,6 @@ img {max-width: 100%;height: auto;vertical-align: middle;}
   margin: 2em;
   position: relative;
 }
-
 
 .entry:hover img {opacity: 0.8}
 
@@ -48,13 +68,17 @@ img {max-width: 100%;height: auto;vertical-align: middle;}
   margin: auto;
 }
 
-
 .entry .teaser {
   padding: 0.33em;
   max-width:120px;max-height:160px;
   overflow: hidden;
-  border: 1px solid #000;
+  border: 1px solid {{text_color}};
   border-radius: 4px;
 }
 
-.entry .teaser * {font-size: 12px;line-height: 15px;text-align: center;}
+.entry .teaser * {
+  font-size: calc({{body_font.font_size}}px * 0.8571428571);
+  line-height: calc({{body_font.font_size}}px * 1.0714285714);
+  text-align: center;
+  color: {{text_color}};
+}
