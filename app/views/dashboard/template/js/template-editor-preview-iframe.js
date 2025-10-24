@@ -37,7 +37,17 @@ if (previewIframeContainer) {
 
     // Save the path they have viewed on the server
     var http = new XMLHttpRequest();
-    var url = previewIframeContainer.getAttribute("data-base");
+    var withAjax = function(url) {
+      try {
+        var target = new URL(url, window.location.href);
+        target.searchParams.set("ajax", "true");
+        return target.toString();
+      } catch (err) {
+        return url.indexOf("?") === -1 ? url + "?ajax=true" : url + "&ajax=true";
+      }
+    };
+
+    var url = withAjax(previewIframeContainer.getAttribute("data-base"));
     var params = "previewPath=" + path + "&_csrf=" + csrfToken;
     http.open("POST", url, true);
     http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
