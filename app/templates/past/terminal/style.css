@@ -41,7 +41,6 @@ a {color: white;text-decoration: none;}
   width: 100%;
   height: 3.5em;
   padding: 0.75em 0;
-  padding-right: 3.5em;
   overflow: hidden;
 }
 
@@ -73,6 +72,7 @@ a {color: white;text-decoration: none;}
   cursor: pointer;
   width: 2.5em;
   height: 2.5em;
+  z-index: 0;
 }
 
 .terminal-nav-toggle__icon,
@@ -126,6 +126,9 @@ a {color: white;text-decoration: none;}
   margin-left: auto;
   padding: 0;
   white-space: nowrap;
+  position: relative;
+  z-index: 1;
+  background: black;
 }
 
 .terminal-header__bar .nav a {
