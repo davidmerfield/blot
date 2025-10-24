@@ -225,4 +225,128 @@ describe("transformer", function () {
       });
     });
   });
+
+  describe("url download caching", function () {
+    it("stores the transformed result after a successful download", function (done) {
+      var test = this;
+      var body = "Initial response " + Date.now();
+      var etag = '"seq-etag-' + Date.now() + '"';
+      var lastModified = new Date().toUTCString();
+      var firstTransform = jasmine.createSpy().and.callFake(test.transform);
+      var secondTransform = jasmine.createSpy().and.callFake(test.transform);
+
+      test.queueRemoteResponse({ body: body, etag: etag, lastModified: lastModified });
+      test.queueRemoteResponse({ status: 304, etag: etag, lastModified: lastModified });
+
+      test.transformer.lookup(test.sequenceUrl, firstTransform, function (err, firstResult) {
+        if (err) return done.fail(err);
+
+        test.transformer.lookup(test.sequenceUrl, secondTransform, function (
+          err,
+          secondResult
+        ) {
+          if (err) return done.fail(err);
+
+          expect(firstTransform).toHaveBeenCalled();
+          expect(secondTransform).not.toHaveBeenCalled();
+          expect(secondResult).toEqual(firstResult);
+          expect(firstResult.size).toEqual(Buffer.byteLength(body));
+
+          done();
+        });
+      });
+    });
+
+    it("overwrites the cached result after a subsequent successful download", function (done) {
+      var test = this;
+      var firstBody = "First body " + Date.now();
+      var secondBody = "Second body " + Date.now();
+      var firstEtag = '"seq-etag-' + Date.now() + '-1"';
+      var secondEtag = '"seq-etag-' + Date.now() + '-2"';
+      var firstModified = new Date().toUTCString();
+      var secondModified = new Date(Date.now() + 1000).toUTCString();
+      var firstTransform = jasmine.createSpy().and.callFake(test.transform);
+      var secondTransform = jasmine.createSpy().and.callFake(test.transform);
+
+      test.queueRemoteResponse({
+        body: firstBody,
+        etag: firstEtag,
+        lastModified: firstModified,
+      });
+      test.queueRemoteResponse({
+        body: secondBody,
+        etag: secondEtag,
+        lastModified: secondModified,
+      });
+
+      test.transformer.lookup(test.sequenceUrl, firstTransform, function (err, firstResult) {
+        if (err) return done.fail(err);
+
+        test.transformer.lookup(test.sequenceUrl, secondTransform, function (
+          err,
+          secondResult
+        ) {
+          if (err) return done.fail(err);
+
+          expect(firstTransform).toHaveBeenCalled();
+          expect(secondTransform).toHaveBeenCalled();
+          expect(secondResult.size).toEqual(Buffer.byteLength(secondBody));
+          expect(secondResult.size).not.toEqual(firstResult.size);
+
+          done();
+        });
+      });
+    });
+
+    it("returns the last successful result when a download fails", function (done) {
+      var test = this;
+      var firstBody = "First body " + Date.now();
+      var secondBody = "Second body " + Date.now();
+      var firstEtag = '"seq-etag-' + Date.now() + '-1"';
+      var secondEtag = '"seq-etag-' + Date.now() + '-2"';
+      var firstModified = new Date().toUTCString();
+      var secondModified = new Date(Date.now() + 1000).toUTCString();
+      var firstTransform = jasmine.createSpy().and.callFake(test.transform);
+      var secondTransform = jasmine.createSpy().and.callFake(test.transform);
+      var thirdTransform = jasmine.createSpy().and.callFake(test.transform);
+
+      test.queueRemoteResponse({
+        body: firstBody,
+        etag: firstEtag,
+        lastModified: firstModified,
+      });
+      test.queueRemoteResponse({
+        body: secondBody,
+        etag: secondEtag,
+        lastModified: secondModified,
+      });
+      test.queueRemoteResponse({ status: 500 });
+
+      test.transformer.lookup(test.sequenceUrl, firstTransform, function (err, firstResult) {
+        if (err) return done.fail(err);
+
+        test.transformer.lookup(test.sequenceUrl, secondTransform, function (
+          err,
+          secondResult
+        ) {
+          if (err) return done.fail(err);
+
+          test.transformer.lookup(test.sequenceUrl, thirdTransform, function (
+            err,
+            thirdResult
+          ) {
+            if (err) return done.fail(err);
+
+            expect(firstTransform).toHaveBeenCalled();
+            expect(secondTransform).toHaveBeenCalled();
+            expect(thirdTransform).not.toHaveBeenCalled();
+            expect(secondResult.size).toEqual(Buffer.byteLength(secondBody));
+            expect(thirdResult).toEqual(secondResult);
+
+            done();
+          });
+        });
+      });
+    });
+  });
 });
