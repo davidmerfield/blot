@@ -243,6 +243,29 @@ const withAjax = (url) => {
         }
 };
 
+const previewFrame = document.getElementById('full_size_preview');
+
+const refreshTemplatePreview = () => {
+        if (previewFrame) {
+                previewFrame.src = previewFrame.src;
+        }
+};
+
+const handleAjaxSaveResponse = (response) => {
+        const forked =
+                response &&
+                response.headers &&
+                response.headers.get('X-Template-Forked');
+
+        if (forked === '1') {
+                window.location.reload();
+                return response;
+        }
+
+        refreshTemplatePreview();
+        return response;
+};
+
 Array.from(document.querySelectorAll('form.color-picker')).forEach(form => {
 
 	// Simple example, see optional options for more configuration.
@@ -278,9 +301,7 @@ Array.from(document.querySelectorAll('form.color-picker')).forEach(form => {
         fetch(withAjax(window.location.href), {
             method: "post",
             body: new URLSearchParams(new FormData(form)) // for application/x-www-form-urlencoded
-        }).then(function (response) {
-            document.getElementById("full_size_preview").src += "";
-        });
+        }).then(handleAjaxSaveResponse);
 
         // close pickr after save
         instance.hide();
@@ -313,9 +334,7 @@ Array.from(document.querySelectorAll('form[id^="font_picker"]')).forEach(functio
 					});
 					
 		
-                                        fetch(withAjax(window.location.href), { method: "post", body }).then(function (response) {
-                                                document.getElementById("full_size_preview").src += "";
-                                        });
+                                        fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
 
 					// if this was a button, we need to close the picker
 					// and replace the innerHTML of show_picker with the new font
@@ -358,9 +377,7 @@ document.querySelectorAll('form.boolean').forEach(function(form){
 		body.append('_csrf', form.querySelector('input[name="_csrf"]').value)
 		;
 
-        fetch(withAjax(window.location.href), { method: "post", body }).then(function (response) {
-          document.getElementById("full_size_preview").src += "";
-        });
+        fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
 
         event.preventDefault();
         return false;
@@ -396,9 +413,7 @@ document.querySelectorAll('form.select').forEach(function(form){
 
 		console.log(body);
 
-                fetch(withAjax(window.location.href), { method: "post", body }).then(function (response) {
-                  document.getElementById("full_size_preview").src += "";
-                });
+                fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
 
 		// set the class="selected" of the button that was clicked
 		node.parentNode.querySelectorAll('button').forEach(function(button){

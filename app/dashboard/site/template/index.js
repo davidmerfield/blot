@@ -124,7 +124,11 @@ TemplateEditor.route("/:templateSlug")
         function (err) {
           if (err) return next(err);
           if (isAjaxRequest(req)) {
-            return sendAjaxResponse(res);
+            const ajaxOptions = {};
+            if (res.locals.templateForked) {
+              ajaxOptions.headers = { "X-Template-Forked": "1" };
+            }
+            return sendAjaxResponse(res, ajaxOptions);
           }
 
           res.message(req.baseUrl + req.url, "Success!");
