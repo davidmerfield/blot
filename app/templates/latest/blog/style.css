@@ -35,104 +35,222 @@ body {
   padding: 0
 }
 
+/* NAVIGATION */ 
 
-/* :: Navigation */
-
-.navigation {
-  padding: 2em 0;
-  {{#navigation_background_color}}
-  background: {{navigation_background_color}};
-  {{/navigation_background_color}}
-  {{^navigation_background_color}}
-  background: {{background_color}};
-  {{/navigation_background_color}}
-  box-sizing: border-box;
-  z-index: 100;
+header > a {
+  white-space: nowrap;
+  margin-bottom: calc({{spacing}}rem/2); /* This ensures the nav wraps underneath */
 }
 
-.navigation .container {
+.header-wrapper {
+  position: relative;
+  padding: 2em 0;
+  background: {{navigation_background_color}};
+}
+
+header {
+  height: {{font.line_height}}em;
+  overflow: hidden;
   display: flex;
   flex-wrap: wrap;
-  align-items:baseline;
   justify-content: space-between;
-}
-
-.navigation.alignment-center .container {justify-content: center;}
-.navigation.alignment-left  .container {justify-content: flex-start;}
-.navigation.alignment-right .container {justify-content: flex-end;}
-
-.navigation-location-left {
-  padding-left: var(--sidebar-width);
-}
-
-.naviation-location-right {
-  padding-right: var(--sidebar-width);
-}
-.navigation-location-left .container,
-.navigation-location-right .container {
-  padding-top: 2em}
-
-
-.navigation-location-left .navigation,
-.navigation-location-right .navigation {
-  position: absolute;
+  position: relative;
+  padding: calc({{spacing}}rem/2) calc({{spacing}}rem);
+  {{^sticky_navigation}}
+  position: relative;
+  z-index: 1;
+  {{/sticky_navigation}}
+  {{#sticky_navigation}}
+  position: fixed;
+  {{#is.navigation_position.top}}
   top: 0;
+  {{/is.navigation_position.top}}
+  {{#is.navigation_position.bottom}}
   bottom: 0;
-  width: var(--sidebar-width);
-  padding: 2em;
-}
-
-.navigation-location-left .navigation {
-  left: 0;
-}
-
-.navigation-location-right .navigation {
-  right: 0;
-}
-
-.navigation-location-left .navigation .container,
-.navigation-location-right .navigation .container {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.navigation-location-left .navigation #logo,
-.navigation-location-right .navigation #logo {
-  margin-bottom: 1.4em;
-}
-
-.navigation-location-left .navigation .links,
-.navigation-location-right .navigation .links {
-  flex-direction: column;
-  display: flex;
-}
-  
-.navigation a {margin-right: 1em;color: {{text_color}};text-decoration: none}
-.navigation .links a {color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);}
-.navigation a:last-child {margin-right: 0}
-.navigation a {opacity: 0.6666;transition: opacity,color 0.2s ease}
-.navigation:hover a {opacity: 1}
-.navigation a:hover {color: {{text_color}};}
-
-.navigation .links {
-  display: flex;
-  margin: 0;
-  align-content: baseline;
-  flex-shrink: 0;
-}
-
-.links a {
-  order: 1;
-}
-
-#logo {
-  color: {{text_color}};
-  flex-shrink: 0;
-  margin-right: 2em;
+  {{/is.navigation_position.bottom}}
+  {{#is.navigation_alignment.justified}}
+  left:0;
+  right:0;
+  {{/is.navigation_alignment.justified}}
+  {{#is.navigation_alignment.left}}
+  left:0;
+  {{/is.navigation_alignment.left}}
+  {{#is.navigation_alignment.right}}
+  right:0;
+  {{/is.navigation_alignment.right}}
+  z-index: 1;
+  {{/sticky_navigation}}
 }
 
 
-#logo:hover {opacity: 0.8}
+.header-wrapper a {
+  opacity: 0.6666;
+  transition: opacity,color .2s ease;
+}
+
+header a {
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.header-wrapper:hover a {
+  opacity: 1;
+}
+
+header a:visited {
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.5)
+}
+
+header a:hover {
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.75);
+}
+
+header a:active {
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.5);
+}
+
+
+nav {
+  background: {{navigation_background_color}};
+  position: relative;
+  {{#collapse_navigation_by_default}}
+  width: 100%;
+  {{/collapse_navigation_by_default}}
+}
+
+header a,
+header .tabular-numerals {
+    margin-left: calc({{spacing}}rem/4);
+    margin-right: calc({{spacing}}rem/4);
+}
+
+header > a:first-child {
+  margin-left: 0;
+}
+
+nav a[href="/search"] {display: none}
+
+nav .spacer {
+    height: 22px;
+    border-right: 1px solid rgba({{#rgb}}{{text_color}}{{/rgb}},0.1);
+    margin: 0 calc({{spacing}}rem / 2);
+}
+
+nav a {
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.6666);
+  transition: opacity,color .2s ease;
+}
+
+nav a:hover {
+  opacity: 1;
+}
+
+nav a {
+  margin-left: 1em;
+}
+
+nav a:not([href]) {
+  cursor: default;
+  color:  rgba({{#rgb}}{{text_color}}{{/rgb}},0.3);
+  text-decoration: none!important;
+}
+
+#toggle {
+  position: absolute;
+  top: calc({{spacing}}rem/2);
+  right:  {{spacing}}rem;
+  background: {{navigation_background_color}};
+  cursor: pointer;
+  padding-left:.7em;
+  width: 1.4em;
+  height: 1.4em;
+}
+
+
+#hidden-toggle {
+  display: none
+}
+
+#hidden-toggle:checked~header {
+  height: auto;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1)
+}
+
+#hidden-toggle:checked~header nav {
+  width: 100%
+}
+
+#hidden-toggle:checked~header nav a {
+  display: block;
+  margin-left: 0
+}
+
+#hidden-toggle:checked~header .hamburger-inner:after {
+  bottom: 0;
+  transform: rotate(-90deg);
+}
+
+#hidden-toggle:checked~header .hamburger-inner:before {
+  top: 0;
+  opacity: 0;
+}
+
+#hidden-toggle:checked~header .hamburger-inner {
+  transform: rotate(45deg);
+}
+
+.hamburger-inner,
+.hamburger-inner:after,
+.hamburger-inner:before {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background-color: {{text_color}};
+}
+
+.hamburger-box {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  height: 1.4em;
+}
+
+.hamburger-inner:after,
+.hamburger-inner:before {
+  display: block;
+  content: "";
+}
+
+.hamburger-inner:before {
+  top: -7px;
+}
+
+.hamburger-inner:after {
+  bottom: -7px;
+}
+
+.hamburger-inner {
+  top: 50%;
+  display: block;
+  margin-top: -1px;
+}
+
+.tabular-numerals {
+font-feature-settings: 'tnum';
+-webkit-font-feature-settings: 'tnum';
+-moz-font-feature-settings: 'tnum';
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}
+
+
 
 
 /*  :: General layout */
