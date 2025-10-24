@@ -114,9 +114,11 @@ async function processImages(blogID, docPath, $) {
 function lookupWithTransformer(transformer, src, transform) {
   return new Promise((resolve, reject) => {
     transformer.lookup(src, transform, (err, result) => {
-      console.log("HERE", err, result);
-      if (err) return reject(err);
-      resolve(result);
+      if (result) {
+        resolve(result);
+      } else {
+        reject(err || new Error("Image lookup failed for " + src));
+      }
     });
   });
 }
