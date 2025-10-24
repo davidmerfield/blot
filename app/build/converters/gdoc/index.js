@@ -9,6 +9,7 @@ const config = require("config");
 const Metadata = require("build/metadata");
 const extend = require("helper/extend");
 const yaml = require("yaml");
+const Transformer = require("helper/transformer");
 
 const blockquotes = require("./blockquotes");
 const footnotes = require("./footnotes");
@@ -128,7 +129,9 @@ async function read(blog, path, callback) {
       linebreaks($);
     }
 
-    await processImages($, assetDir, path);
+    const transformer = new Transformer(blog.id, "gdoc-images");
+
+    await processImages($, assetDir, path, transformer);
 
     // handle blockquotes
     blockquotes($);

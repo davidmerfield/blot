@@ -2,6 +2,9 @@ const gdoc = require("../index");
 const fs = require("fs-extra");
 const express = require("express");
 const sharp = require("sharp");
+const config = require("config");
+const hash = require("helper/hash");
+const { join } = require("path");
 
 describe("gdoc converter", function () {
   global.test.blog();
@@ -88,5 +91,72 @@ describe("gdoc converter", function () {
         resolve();
       });
     });
+  });
+
+  it("reuses cached transformer asset when the remote URL expires", async function () {
+    const test = this;
+    const name = "image-alt-title.gdoc";
+    const path = `/${name}`;
+    const expected = await fs.readFile(`${__dirname + path}.html`, "utf8");
+
+    const downloadPath = require.resolve("helper/transformer/download");
+    const originalDownload = require(downloadPath);
+    let callCount = 0;
+
+    function stubDownload(url, headers, callback) {
+      callCount += 1;
+
+      if (callCount === 1) {
+        return originalDownload(url, headers, callback);
+      }
+
+      process.nextTick(() => callback(new Error("expired")));
+    }
+
+    require.cache[downloadPath].exports = stubDownload;
+
+    try {
+      const assetDir = join(
+        config.blog_static_files_dir,
+        test.blog.id,
+        "_assets",
+        hash(path)
+      );
+
+      await fs.remove(assetDir);
+
+      let input = await fs.readFile(__dirname + path, "utf8");
+
+      const replacementSrc = "http://localhost:7391/image.jpg";
+
+      input = input.replace(
+        /https:\/\/lh[0-9]+-rt\.googleusercontent\.com\/docsz\/[A-Za-z0-9_\-]+(\?key=[A-Za-z0-9_\-]+)/g,
+        replacementSrc
+      );
+
+      await fs.writeFile(test.blogDirectory + path, input, "utf8");
+
+      const readDoc = () =>
+        new Promise((resolve, reject) => {
+          gdoc.read(test.blog, path, function (err, result) {
+            if (err) return reject(err);
+            resolve(result);
+          });
+        });
+
+      const first = await readDoc();
+      expect(first).toEqual(expected);
+
+      const second = await readDoc();
+      expect(second).toEqual(expected);
+
+      expect(callCount).toBe(2);
+
+      const files = await fs.readdir(assetDir);
+      const expectedPrefix = hash(replacementSrc);
+      expect(files.some((file) => file.startsWith(expectedPrefix))).toBeTrue();
+    } finally {
+      require.cache[downloadPath].exports = originalDownload;
+    }
   });
 });
