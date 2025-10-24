@@ -140,6 +140,10 @@ a {color: white;text-decoration: none;}
   overflow: visible;
 }
 
+.terminal-nav-toggle:checked ~ .terminal-header__bar .terminal-nav-toggle__label {
+  z-index: 2;
+}
+
 .terminal-nav-toggle:checked ~ .terminal-header__bar .nav {
   width: 100%;
   margin-left: 0;
