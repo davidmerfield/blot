@@ -30,19 +30,10 @@
       "left",
       "right"
     ],
-    "navigation_alignment": "justified",
-    "navigation_alignment_options": [
-      "justified",
-      "left",
-      "right",
-      "center"
-    ],
-    "site_alignment": "center",
-    "site_alignment_options": [
-      "center",
-      "left",
-      "right"
-    ],
+    "hide_dates": false,
+    "spacing": 0,
+    "sticky_navigation": false,
+    "collapse_navigation_by_default": false,
     "demo_folder": "david",
     "template_categories": [
       "writing"

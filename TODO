@@ -1,17 +1,9 @@
 Finish [setting up Francesco's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcNCpRcDFrsBhMlBwlXLNxNq)
 
-Run:
-
-node scripts/template/archive essay-old
-node scripts/template/archive essay-two
-node scripts/template/archive wordpress-export
-
 Remap docker containers:
 - deploy first:   green:  sync / cdn files
 - deploy second:  blue:   dashboard
 - deploy third:   yellow: sites
-
-Fix bug with navigation on Blog template on mobile and [tell Darren](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBbMCpvjfDWVgNZcvdgfMQd)
 
 Fix terminal template display on mobile and tell [questioner](https://blot.im/questions/3254)
 
@@ -300,6 +292,9 @@ Improve server performance by 1. Create `app/build/plugins/folderAssets/index.js
 
 Can we use lightningcss to replace the existing css minifier for performance?
 
+Transformer should short-circuit network lookups to {{config.host}} or {{cdn}} urls and pull the files directly
+- and have limits on resource size and time
+
 Migrate JSON blob entry into a redis hash:
 - Use hash to store entries rather than a JSON string:
 - app/models/entry/get.js
@@ -455,7 +450,10 @@ Move image zoom plugin to templates
 
 Review, revise, test and run redis orchestration script to restore from s3 backup into new instance
 
+Migrate repository to new account
+
 Improve iCloud client
+- Resolve flakiness disconnecting, transfering existing folder contents
     ## 1. Harden sync pipeline
     - [ ] Add integration tests covering end-to-end sync flows via `sync/toiCloud.js` and `sync/fromiCloud.js`, including handling of deletions, renames, and empty files.
     - [ ] Implement retry and backoff logic around mac server HTTP uploads (`macserver/httpClient/upload.js`) and downloads (`macserver/brctl/download.js`) to recover from transient iCloud errors.
@@ -555,6 +553,8 @@ Add script to resync all icloud folders – make sure they are up to date
 Check that Google Drive is staying in sync:
 - login -> node scripts/google-drive/reset.js
 - add proper bottlenecks then run this regularly
+
+Add https://www.textasticapp.com/ to text editor tools
 
 Write proper tests for clients:
 - Dropbox
