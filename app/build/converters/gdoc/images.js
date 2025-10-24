@@ -77,9 +77,20 @@ async function processImages(blogID, docPath, $) {
 
   // Handle images which reference external resources
   for (const elem of nonDataImages) {
+    const src = $(elem).attr("src");
+    const filenameBase = hash(src);
+
     try {
-      const src = $(elem).attr("src");
-      const filenameBase = hash(src);
+
+      const cachedFilename = await findCachedAsset(assetDir, filenameBase);
+
+      if (cachedFilename) {
+        $(elem).attr(
+          "src",
+          "/_assets/" + docHash + "/" + cachedFilename
+        );
+        continue;
+      }
 
       const fetchImage = async (resolvedPath, done) => {
         console.log("Fetched image for gdoc:", src, resolvedPath);
@@ -107,6 +118,26 @@ async function processImages(blogID, docPath, $) {
       $(elem).attr("src", output);
     } catch (err) {
       console.log(err);
+
+      const fallbackFilename = await findCachedAsset(assetDir, filenameBase);
+
+      if (fallbackFilename) {
+        $(elem).attr(
+          "src",
+          "/_assets/" + docHash + "/" + fallbackFilename
+        );
+      }
+    }
+  }
+}
+
+async function findCachedAsset(assetDir, filenameBase) {
+  try {
+    const files = await fs.readdir(assetDir);
+    return files.find((file) => file.startsWith(`${filenameBase}.`));
+  } catch (err) {
+    if (err && err.code !== "ENOENT") {
+      throw err;
     }
   }
 }
