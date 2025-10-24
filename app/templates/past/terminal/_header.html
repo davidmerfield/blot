@@ -1,6 +1,8 @@
-<a href="/" title="">{{title}}</a>
-<div class="nav">
-  {{#menu}}
-  <a href="{{{url}}}" title="{{label}}">{{label}}</a>
-  {{/menu}}
+<div class="terminal-header">
+  <a class="terminal-header__title" href="/" title="">{{title}}</a>
+  <nav class="nav" aria-label="Site navigation">
+    {{#menu}}
+    <a href="{{{url}}}" title="{{label}}">{{label}}</a>
+    {{/menu}}
+  </nav>
 </div>
