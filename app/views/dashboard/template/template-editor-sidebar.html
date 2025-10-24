@@ -1,154 +1,7 @@
-<script type="text/javascript" src="/js/pickr/es5.min.js"></script>
-
-<style type="text/css">
-
-	body{
-		font-family: ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji
-	}
-button {background: white;border: 2px solid #ddd;border-radius: 4px;font:inherit;font-size: 14px;line-height: 1.45;margin: 6px 3px 0 0;cursor: pointer;}
-button.selected {border:2px solid #0075ff;border-radius: 4px}
-
-div[class^="color-picker-"]:hover {
-	background: #fff
-}
-
-.pickr {
-	z-index: auto;
-}
-
-.pcr-app .pcr-selection .pcr-picker {
-	z-index: 1;
-}
-
-.pcr-app.visible {
-	transition: none;
-	visibility: visible;
-	opacity: 1;
-}
-
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-chooser,
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-opacity {
-	height: .65em;
-	margin-top: .65em;
-}
-
-.pcr-app {
-	transition: none;
-	box-shadow: 0 1.5em 1.5em 0 rgba(0, 0, 0, .1), 0 1em 1em 0 rgba(0, 0, 0, .03);
-	border-radius: 0
-}
-
-.pcr-app[data-theme=monolith] {
-	width: 16rem;
-	padding: 1em;
-	margin-top: -8px;
-	box-shadow: 0 0 1px #000;
-}
-
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-preview {
-	display: none;
-}
-
-.color-picker .previous {
-	outline: 1px solid rgba(0,0,0,0.2);outline-offset:-1px;margin:0 16px 0 0;width:2rem;height:1.25rem;
-	border-radius: 2px;display: block;
-}
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-palette .pcr-palette,
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-chooser .pcr-slider,
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-opacity .pcr-slider,
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-preview .pcr-current-color {
-	border-radius: 0;
-	outline: 1px solid rgba(0, 0, 0, 0.1);
-	outline-offset: -1px;
-
-}
-
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-opacity .pcr-slider {
-	outline: 1px solid rgba(0, 0, 0, 0.3);
-}
-
-.pcr-app .pcr-interaction .pcr-save {
-	background: #4285f4;
-	flex-grow: 1;
-}
-
-.pcr-app .pcr-swatches,
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-preview .pcr-last-color {
-	display: none;
-}
-
-
-
-/* FONTS */
-form[id^="font_picker"] svg {height: 1.5em;display: block;}
-
-.options {display: none;margin:0.5em;border:1px solid #aaa;user-select: none;}
-
-input[id^="show_picker"]:checked ~ .options {display: block;}
-
-label[for^="show_picker"] {padding:0.333em 16px;cursor: pointer;position:relative;border-bottom: 1px solid #ddd;display: block;margin:0;user-select: none;}
-
-label[for^="show_picker"]:hover {background: #fff}
-
-label[for^="show_picker"]:after{
-	content: "";
-	width: 1em;
-	height: 1em;
-	position: absolute;
-	top:50%;
-	margin-top: -0.5em;
-	right:1em;
-	background:  url('data:image/svg+xml;utf8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22utf-8%22%3F%3E%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2043.764%2030.594%22%3E%3Cpath%20stroke%3D%22%23000%22%20d%3D%22M21.871%2024.621c.236%200%20.408-.172.602-.365L38.092%206.875c.107-.129.193-.215.193-.365%200-.301-.236-.537-.537-.537a.644.644%200%200%200-.387.129l-15.468%2017.23L6.359%206.102c-.064-.086-.236-.13-.365-.13a.528.528%200%200%200-.515.538c0%20.15.107.258.214.386L21.27%2024.3c.193.172.343.322.601.322Z%22%2F%3E%3C%2Fsvg%3E') no-repeat 1rem center;
-	background-size: 1em;
-}
-
-.filters {
-	font-size:12px;
-	padding:0.15em 0.5em;user-select: none;
-}
-
-.filters label {
-	border-radius: 10px;padding: 0.15em 0.5em;
-	cursor: pointer;
-	color:#666;
-}
-
-input[id^="show_all"]:checked ~ .options label[for^="show_all"],
-input[id^="show_sans"]:checked ~ .options label[for^="show_sans"],
-input[id^="show_serif"]:checked ~ .options label[for^="show_serif"],
-input[id^="show_other"]:checked ~ .options label[for^="show_other"],
-input[id^="show_mono"]:checked ~ .options label[for^="show_mono"]
-{background: #e0e0e0;}
-
-input[id^="show_sans"]:checked ~ .options button:not([data-tag="sans"]),
-input[id^="show_mono"]:checked ~ .options button:not([data-tag="mono"]),
-input[id^="show_serif"]:checked ~ .options button:not([data-tag="serif"]),
-input[id^="show_other"]:checked ~ .options button:not([data-tag="other"])
-{display: none;}
-
-.options button {
-	width: 100%;
-	text-align:left;
-	margin:0;
-	border-radius:0;
-	border:none;outline:none;
-	background:#fafafa;border-top: 1px solid #ddd;padding:0.333em 0.5em;
-}
-
-.options button:hover{background: #fff}
-
-.settings-group {
-	border: 1px solid var(--border-color);
-	border-radius: var(--border-radius);
-	margin-bottom: 1.5rem;
-}
-</style>
-
-
 <div class="inputs">
 	
 		<div class="settings-group">
-		<h2 class="template-heading">Menu links</h2>
+			<h2 class="template-heading">Menu links</h2>
 
 	 <a class="line" style="border-bottom:none" href="{{{base}}}/links">
                 <span class="center" style="margin-top: 4px;white-space: nowrap;overflow: hidden;position: relative;">
@@ -164,6 +17,7 @@ input[id^="show_other"]:checked ~ .options button:not([data-tag="other"])
                 </span>
                 </a>
 				</div>	
+
 			<div class="settings-group">
 		<h2 class="template-heading">Photo</h2>
 
@@ -189,7 +43,7 @@ input[id^="show_other"]:checked ~ .options button:not([data-tag="other"])
 	<div class="settings-group">
 		<h2 class="template-heading">Colors</h2>
 	{{#colors}} 
-	{{> template-editor-color}} 
+	{{> color}} 
 	{{/colors}}
 	</div>
 	{{/colors.length}}
@@ -197,8 +51,8 @@ input[id^="show_other"]:checked ~ .options button:not([data-tag="other"])
 	{{#fonts.length}} 	
 	<div class="settings-group">
 		{{#fonts}} 
-	{{> template-editor-font}} 
-	{{/fonts}} 
+		{{> font}} 
+		{{/fonts}} 
 	</div>
 	{{/fonts.length}} 	
 
@@ -215,269 +69,19 @@ input[id^="show_other"]:checked ~ .options button:not([data-tag="other"])
 
 	{{#index_page.length}}
 		<div class="settings-group">
-	<h2 class="template-heading">Index page</h2>
-	{{#index_page}}
-	{{> template-editor-group}}
-	{{/index_page}}
+		<h2 class="template-heading">Index page</h2>
+		{{#index_page}}
+		{{> template-editor-group}}
+		{{/index_page}}
 		</div>
 	{{/index_page.length}}
 
-	{{> template-editor-date}}
+	{{> date}}
 
 	{{#syntax_themes}}
-	{{> template-editor-highlighter}}
+		{{> highlighter}}
 	{{/syntax_themes}}
 
-<br>		
+</div>
 </div>
 
-<script type="text/javascript">
-
-const withAjax = (url) => {
-        try {
-                const target = new URL(url, window.location.href);
-                target.searchParams.set('ajax', 'true');
-                return target.toString();
-        } catch (err) {
-                return url.indexOf('?') === -1 ? url + '?ajax=true' : url + '&ajax=true';
-        }
-};
-
-
-const refreshTemplatePreview = () => {
-const previewFrame = document.getElementById('full_size_preview');
-
-if (previewFrame) {
-			console.log('refreshing preview');
-                previewFrame.src += '';
-        } else {
-			console.log('no preview frame to refresh');
-		}
-};
-
-const handleAjaxSaveResponse = (response) => {
-        const forked =
-                response &&
-                response.headers &&
-                response.headers.get('X-Template-Forked');
-
-        if (forked === '1') {
-                window.location.reload();
-                return response;
-        }
-
-        refreshTemplatePreview();
-        return response;
-};
-
-Array.from(document.querySelectorAll('form.color-picker')).forEach(form => {
-
-	// Simple example, see optional options for more configuration.
-    const pickr = Pickr.create({
-        el: form.querySelector('.color-picker-popup'),
-        theme: 'monolith', // or 'monolith', or 'nano'
-        default: form.querySelector('input.value').value,
-        useAsButton: true,
-        position: 'bottom-end',
-        components: {
-
-            // Main components
-            preview: true,
-            opacity: true,
-            hue: true,
-
-            // Input / output Options
-            interaction: {
-                // hex: true,
-                // rgba: true,
-                // hsla: true,
-                // hsva: true,
-                // cmyk: true,
-                input: true,
-                // clear: true,
-                save: true
-            }
-        }
-    });
-
-	pickr.on('save', (color, instance) => {
-        form.querySelector('input.value').value = color.toHEXA().toString();
-        fetch(withAjax(window.location.href), {
-            method: "post",
-            body: new URLSearchParams(new FormData(form)) // for application/x-www-form-urlencoded
-        }).then(handleAjaxSaveResponse);
-
-        // close pickr after save
-        instance.hide();
-    }).on('change', (color, instance) => {
-        form.querySelector('.previous').style.background = color.toHEXA();
-    });
-});
-
-
-
-
-
-// FONT PICKER
-
-Array.from(document.querySelectorAll('form[id^="font_picker"]')).forEach(function(form){
-			
-			form.querySelectorAll('input, select, button').forEach(function(node){
-				if (node.style.display === 'none') return;
-				
-				const submitForm = (event) => {
-		
-					// construct the body based on the single input or button that was clicked
-					const body = new URLSearchParams();
-					
-					body.append(node.name, node.value);
-					
-					// append the hidden inputs
-                                        const csrfInput = form.querySelector('input[name="_csrf"]');
-                                        if (csrfInput) body.append(csrfInput.name, csrfInput.value);
-					
-		
-                                        fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
-
-					// if this was a button, we need to close the picker
-					// and replace the innerHTML of show_picker with the new font
-					if (node.tagName === 'BUTTON') {
-						node.parentNode.parentNode.querySelector('input[id^="show_picker"]').checked = false;
-						node.parentNode.parentNode.querySelector('label[for^="show_picker"]').innerHTML = node.innerHTML;
-					}
-					
-					
-
-					event.preventDefault();
-					return false;
-				}
-		
-				// if a button, handle click
-				if (node.tagName === 'BUTTON') {
-					node.addEventListener('click', submitForm)
-					return;
-				} else {
-					node.addEventListener('change', submitForm)
-					return;
-				}
-			})
-		
-		});
-		
-			
-// boolean inputs
-
-document.querySelectorAll('form.syntax-highlighter').forEach(function(form){
-        const csrfInput = form.querySelector('input[name="_csrf"]');
-        const toggleInput = form.querySelector('input[name$="-toggle"]');
-        const toggleLabel = toggleInput ? form.querySelector('label[for="' + toggleInput.id + '"]') : null;
-
-        form.querySelectorAll('button').forEach(function(node){
-                const submitForm = (event) => {
-                        const body = new URLSearchParams();
-
-                        if (node.name) {
-                                body.append(node.name, node.value);
-                        }
-
-                        if (csrfInput) {
-                                body.append(csrfInput.name, csrfInput.value);
-                        }
-
-                        fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
-
-                        if (toggleInput) {
-                                toggleInput.checked = false;
-                        }
-
-                        if (toggleLabel) {
-                                toggleLabel.innerHTML = node.innerHTML;
-                        }
-
-                        form.querySelectorAll('button').forEach(function(button){
-                                button.classList.remove('selected');
-                        });
-
-                        node.classList.add('selected');
-
-                        event.preventDefault();
-                        return false;
-                };
-
-                node.addEventListener('click', submitForm);
-        });
-});
-
-document.querySelectorAll('form.boolean').forEach(function(form){
-    form.querySelectorAll('input').forEach(function(node){
-      node.addEventListener('change',  (event) => {
-        // construct the body based on the single input or button that was clicked
-        const body = new URLSearchParams();
-
-		// why is this always 'on'?
-		// because the value is set to 'on' in the template
-        body.append(node.name, node.checked ? 'on' : 'off');
-		// append the csrf token
-		body.append('_csrf', form.querySelector('input[name="_csrf"]').value)
-		;
-
-        fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
-
-        event.preventDefault();
-        return false;
-        })
-    })
-  })
-
-
-  document.querySelectorAll('#dateSettings').forEach(function(form){
-    form.querySelectorAll('input, select').forEach(function(node){
-      node.addEventListener('change',  (event) => {
-                const body = new URLSearchParams();
-
-                if (node.type === 'checkbox') {
-                        body.append(node.name, node.checked ? 'on' : 'off');
-                } else {
-                        body.append(node.name, node.value);
-                }
-
-                const csrfInput = form.querySelector('input[name="_csrf"]');
-                if (csrfInput) body.append(csrfInput.name, csrfInput.value);
-
-                fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
-                event.preventDefault();
-                return false;
-          })
-    })
-  })
-
-// select inputs
-document.querySelectorAll('form.select:not(.syntax-highlighter)').forEach(function(form){
-	form.querySelectorAll('button').forEach(function(node){
-	  node.addEventListener('click',  (event) => {
-
-		// construct the body based on the single input or button that was clicked
-		const body = new URLSearchParams();
-
-		body.append(node.name, node.value);
-
-		// append the csrf token
-		body.append('_csrf', form.querySelector('input[name="_csrf"]').value)
-
-		console.log(body);
-
-                fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
-
-		// set the class="selected" of the button that was clicked
-		node.parentNode.querySelectorAll('button').forEach(function(button){
-			button.classList.remove('selected');
-		});
-
-		node.classList.add('selected');
-
-		event.preventDefault();
-		return false;
-		})
-	})
-  })
-</script>

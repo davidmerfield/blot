@@ -1,0 +1,47 @@
+<div class="settings-group">
+<h2 class="template-heading">{{label}}</h2>
+<form method="post" class="syntax-highlighter select">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+  <label for="{{key}}-toggle">
+    {{#value}}
+      {{#name}}
+      <span style="font-family: {{stack}};">{{name}}</span>
+      {{/name}}
+      {{^name}}
+      Select a color scheme
+      {{/name}}
+    {{/value}}
+  </label>    
+
+  <input name="{{key}}-filter" type="radio" id="{{key}}-show-all" checked>
+  <input name="{{key}}-filter" type="radio" id="{{key}}-show-light">
+  <input name="{{key}}-filter" type="radio" id="{{key}}-show-dark">
+
+  <input name="{{key}}-toggle" type="checkbox" id="{{key}}-toggle">
+
+  <div class="options">
+    <div class="filters">
+      <label for="{{key}}-show-all">All</label>
+      <label for="{{key}}-show-light">Light</label>
+      <label for="{{key}}-show-dark">Dark</label>
+    </div>
+    {{#options}}
+    <button 
+      type="submit" 
+      {{#tags}}
+      data-tag="{{tag}}"
+      {{/tags}}
+      name="locals.{{key}}.id" 
+      value="{{{id}}}" 
+      style="background:{{background}};color:{{color}}" 
+      {{selected}}>
+      {{{name}}}
+      {{#colors}}<span style="color:{{color}}">&bull;</span>{{/colors}}
+    </button>
+    {{/options}}
+  </div>
+</form>
+
+{{#font}}
+{{> font}} 
+{{/font}}
