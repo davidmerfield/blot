@@ -1,16 +1,29 @@
 const debug = require("debug")("blot:dashboard:folder:kind");
-const basename = require("path").basename;
-const extname = require("path").extname;
+const path = require("path");
+const basename = path.basename;
+const extname = path.extname;
 const Entry = require("models/entry");
 const IgnoredFiles = require("models/ignoredFiles");
 const moment = require("moment");
 const converters = require("build/converters");
+const Build = require("build");
+const fs = require("fs-extra");
+const localPath = require("helper/localPath");
 
 require("moment-timezone");
+
+const findMultiFolder =
+  (Build && Build.findMultiFolder) ||
+  function () {
+    return null;
+  };
 
 module.exports = async function (blog, path) {
   return new Promise((resolve, reject) => {
     const blogID = blog.id;
+
+    const multiInfo = findMultiFolder(path);
+    const entryLookupPath = multiInfo ? multiInfo.entryPath : path;
 
     Promise.all([
       new Promise((resolve, reject) => {
@@ -20,7 +33,7 @@ module.exports = async function (blog, path) {
         });
       }),
       new Promise((resolve, reject) => {
-        Entry.get(blogID, path, function (entry) {
+        Entry.get(blogID, entryLookupPath, function (entry) {
           resolve(entry);
         });
       }),
@@ -51,15 +64,16 @@ module.exports = async function (blog, path) {
 
         const file = {};
 
-        file.kind = kind(path);
+        file.kind = kind(path, entry);
         file.path = path;
-        file.url = path.split('/').map(encodeURIComponent).join('/');
+        file.url = encodePath(path);
         file.name = basename(path);
+        file.entryPath = entryLookupPath;
 
         // a dictionary we use to display conditionally in the UI
         file.extension = {};
         file.extension = normalizeExtension(path)
-        
+
         file.entry = entry;
         file.ignored = ignored;
 
@@ -67,14 +81,26 @@ module.exports = async function (blog, path) {
           // Replace with case-preserving
           entry.name = file.name;
 
-          entry.converter = {};
-          entry.converter[converters.find((converter) => {
-            return converter.is(path);
-          }).id] = true;
-          
+          let converter;
+
+          if (isMultiEntry(entry)) {
+            entry.converter = { multi: true };
+          } else {
+            converter = converters.find((converter) => {
+              return converter.is(path);
+            });
+
+            if (converter) {
+              entry.converter = {};
+              entry.converter[converter.id] = true;
+            } else {
+              entry.converter = {};
+            }
+          }
+
           entry.type = entry.draft ? 'draft' : entry.page ? 'page' :  'post';
           entry.Type = entry.type.charAt(0).toUpperCase() + entry.type.slice(1);
-          
+
           entry.tags = entry.tags.map((tag, i, arr) => {
             return { tag, first: i === 0, last: i === arr.length - 1 };
           });
@@ -96,12 +122,35 @@ module.exports = async function (blog, path) {
             return { dependency };
            });
 
-           entry.internalLinks = entry.internalLinks.map((internalLink) => {
+          entry.internalLinks = entry.internalLinks.map((internalLink) => {
             return { internalLink };
           });
 
-          entry.metadata = Object.keys(entry.metadata).map((key) => {
-            return { key, value: entry.metadata[key] };
+          const rawMetadata = { ...(entry.metadata || {}) };
+          const sourcePaths = Array.isArray(rawMetadata._sourcePaths)
+            ? rawMetadata._sourcePaths.slice()
+            : null;
+
+          if (sourcePaths) {
+            delete rawMetadata._sourcePaths;
+
+            const folderDetails =
+              multiInfo ||
+              (sourcePaths.length
+                ? findMultiFolder(sourcePaths[0])
+                : null) || { entryPath: entry.path };
+
+            entry.multi = buildMultiEntryData({
+              blogID,
+              entry,
+              folderDetails,
+              sourcePaths,
+              currentPath: path,
+            });
+          }
+
+          entry.metadata = Object.keys(rawMetadata).map((key) => {
+            return { key, value: rawMetadata[key] };
           });
 
           if (entry.exif && typeof entry.exif === "object") {
@@ -151,12 +200,16 @@ const CATEGORIES = {
   "video": ["mp4", "avi", "mkv", "mov", "flv", "wmv"],
 };
 
-function kind (path) {
+function kind(path, entry) {
+  if (entry && isMultiEntry(entry)) {
+    return "Folder post";
+  }
+
   let kind = "File";
   let extension;
 
   extension = extname(path).toLowerCase().slice(1);
-  kind = KIND[extension] || extension.toUpperCase();
+  kind = KIND[extension] || (extension ? extension.toUpperCase() : "File");
   debug(path, extension, kind);
 
   return kind;
@@ -181,4 +234,62 @@ function normalizeExtension (path) {
   res[extension] = true;
 
   return res;
+}
+
+function encodePath(input) {
+  return input
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
+function isMultiEntry(entry) {
+  return (
+    entry &&
+    entry.metadata &&
+    Array.isArray(entry.metadata._sourcePaths) &&
+    entry.metadata._sourcePaths.length > 0
+  );
+}
+
+function buildMultiEntryData({
+  blogID,
+  entry,
+  folderDetails,
+  sourcePaths,
+  currentPath,
+}) {
+  const folderPath = folderDetails ? folderDetails.folderPath : null;
+  const entryPath = folderDetails ? folderDetails.entryPath : entry.path;
+
+  const sources = sourcePaths.map((sourcePath, index) => {
+    const absolute = localPath(blogID, sourcePath);
+    let exists = false;
+
+    try {
+      exists = fs.existsSync(absolute);
+    } catch (err) {
+      exists = false;
+    }
+
+    return {
+      path: sourcePath,
+      name: basename(sourcePath),
+      url: encodePath(sourcePath),
+      index: index,
+      displayIndex: index + 1,
+      current: sourcePath === currentPath,
+      exists: exists,
+    };
+  });
+
+  return {
+    folderPath: folderPath,
+    folderUrl: folderPath ? encodePath(folderPath) : null,
+    entryPath: entryPath,
+    entryUrl: entry.url,
+    viewingSource: sources.some((source) => source.current),
+    sources: sources,
+    hasMissing: sources.some((source) => !source.exists),
+  };
 }

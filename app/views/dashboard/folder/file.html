@@ -41,12 +41,26 @@
 
 <div class="publishing-steps {{^entry}}no-entry{{/entry}}" s>
   {{#entry}}
-    
 
        <!-- File is a post or page -->
+  {{#multi}}
+  <p>
+    <i><span class="icon-small-check"></span></i>
+    {{#viewingSource}}
+    <b>This file is part of a folder post</b>. Changes to this file update the {{type}} published at <a href="{{{blog.url}}}{{{url}}}" target="_blank">{{entryPath}}</a>.
+    {{/viewingSource}}
+    {{^viewingSource}}
+    <b>This folder post is published as a {{type}}</b>. Add, rename, or delete files inside
+    {{#folderUrl}}<a href="{{{base}}}/folder{{{folderUrl}}}">{{/folderUrl}}<code>{{folderPath}}</code>{{#folderUrl}}</a>{{/folderUrl}}
+    to update it.
+    {{/viewingSource}}
+  </p>
+  {{/multi}}
+  {{^multi}}
   <p>
     <i><span class="icon-small-check"></span></i>
     <b>File is a {{type}}</b>. To ignore this file, start the file name with an underscore or move it inside a folder that starts with an underscore.</p>
+  {{/multi}}
   {{#scheduled}}
   {{^draft}}
   <!-- File is scheduled for future publication -->
@@ -128,6 +142,29 @@
 
 {{#entry}}
 <div class="entry-info">
+
+  {{#multi}}
+  <section class="folder-post-summary">
+    <h2><span class="icon-folder"></span> Folder post</h2>
+    <p>
+      Blot builds this {{type}} from the files inside
+      {{#folderUrl}}<a href="{{{base}}}/folder{{{folderUrl}}}">{{/folderUrl}}<code>{{folderPath}}</code>{{#folderUrl}}</a>{{/folderUrl}}.
+      The order below matches the way they appear on your site.
+    </p>
+    <ol class="folder-post-files">
+      {{#sources}}
+      <li class="folder-post-file {{#current}}current{{/current}} {{^exists}}missing{{/exists}}">
+        <a href="{{{base}}}/folder{{{url}}}">
+          <span class="file-index">{{displayIndex}}.</span>
+          <span class="file-name">{{name}}</span>
+          <span class="file-path">{{path}}</span>
+        </a>
+        {{^exists}}<span class="file-missing-note">File missing from folder</span>{{/exists}}
+      </li>
+      {{/sources}}
+    </ol>
+  </section>
+  {{/multi}}
 
   <h1><a href="{{{blog.url}}}{{{url}}}" target="_blank"><span class="icon-website"></span>{{title}}</a></h1>
 
@@ -232,10 +269,16 @@
        {{#converter.webloc}}
        <a href="/how/files/bookmarks">Bookmarks</a>
        {{/converter.webloc}}
-       
+       {{#converter.multi}}
+       Multiple files
+       {{/converter.multi}}
+
        <details>
          <summary><span class="icon-support"></span> Explain</summary>
-         <p>The converter used to generate this post was chosen based on the file type.</p>
+         <p>
+          {{#converter.multi}}This {{type}} is built from multiple files, so its converter depends on each source file inside the folder.{{/converter.multi}}
+          {{^converter.multi}}The converter used to generate this post was chosen based on the file type.{{/converter.multi}}
+         </p>
        </details>
      </td>
    </tr>

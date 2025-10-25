@@ -310,3 +310,94 @@ a.template-button.file-helper span {margin-left: 0.5em;}
   font-size: .9em;
   padding: 3px 6px;
 }
+
+.folder-post-summary {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: #f9fafc;
+  padding: 16px 20px 8px;
+  margin: 0 0 24px;
+}
+
+.folder-post-summary h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  color: var(--text-color);
+}
+
+.folder-post-summary p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--medium-text-color);
+}
+
+.folder-post-summary code {
+  font-size: 13px;
+}
+
+.folder-post-files {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.folder-post-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5em;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.folder-post-file:last-child {
+  border-bottom: none;
+}
+
+.folder-post-file a {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+}
+
+.folder-post-file .file-index {
+  font-weight: 600;
+  color: var(--light-text-color);
+}
+
+.folder-post-file .file-name {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.folder-post-file .file-path {
+  color: var(--light-text-color);
+  font-size: 13px;
+}
+
+.folder-post-file.current {
+  background: rgba(228, 234, 251, 0.4);
+}
+
+.folder-post-file.current .file-name {
+  color: var(--accent-color);
+}
+
+.folder-post-file.missing .file-name,
+.folder-post-file.missing .file-path {
+  text-decoration: line-through;
+  color: #c0392b;
+}
+
+.folder-post-file .file-missing-note {
+  width: 100%;
+  font-size: 12px;
+  color: #c0392b;
+  margin-top: 4px;
+}
