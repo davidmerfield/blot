@@ -157,13 +157,8 @@ async function ensureIssueDeletionRefund(req) {
         const issued = await issueStripeRefund(req, now);
         if (issued) return;
       } catch (error) {
-        if (isStripeAlreadyRefunded(error)) {
-          console.warn("Stripe charge already refunded:", error.message || error);
-          recordRefundError(req, "stripe", error, { alreadyRefunded: true });
-        } else {
-          console.error("Stripe refund failed:", error);
-          recordRefundError(req, "stripe", error);
-        }
+        console.error("Stripe refund failed:", error);
+        recordRefundError(req, "stripe", error);
       }
     }
 
@@ -171,13 +166,8 @@ async function ensureIssueDeletionRefund(req) {
       try {
         await issuePaypalRefund(req, now, paypalStartMs);
       } catch (error) {
-        if (isPaypalAlreadyRefunded(error)) {
-          console.warn("PayPal capture already refunded:", error.message || error);
-          recordRefundError(req, "paypal", error, { alreadyRefunded: true });
-        } else {
-          console.error("PayPal refund failed:", error);
-          recordRefundError(req, "paypal", error);
-        }
+        console.error("PayPal refund failed:", error);
+        recordRefundError(req, "paypal", error);
       }
     }
   } catch (error) {
@@ -287,29 +277,7 @@ async function issuePaypalRefund(req, now, startMs) {
   );
 
   if (!refundResponse.ok) {
-    const errorPayload = await readPaypalErrorBody(refundResponse);
-
-    if (
-      isPaypalAlreadyRefundedResponse(
-        errorPayload?.body,
-        errorPayload?.text
-      )
-    ) {
-      const message =
-        paypalAlreadyRefundedMessage(errorPayload?.body, errorPayload?.text) ||
-        "PayPal refund already processed";
-      const error = new Error(message);
-      error.code = "PAYPAL_ALREADY_REFUNDED";
-      error.alreadyRefunded = true;
-      throw error;
-    }
-
-    throw await paypalError(
-      refundResponse,
-      "PayPal refund error",
-      errorPayload?.body,
-      errorPayload?.text
-    );
+    throw await paypalError(refundResponse, "PayPal refund error");
   }
 
   const refund = await refundResponse.json();
@@ -520,126 +488,6 @@ function normalizeErrorMessage(error) {
   } catch (_) {
     return String(error);
   }
-}
-
-function isStripeAlreadyRefunded(error) {
-  const code = error?.code || error?.raw?.code;
-  if (typeof code === "string" && code.toLowerCase() === "charge_already_refunded") {
-    return true;
-  }
-
-  const message = normalizeErrorMessage(error);
-  return typeof message === "string"
-    ? message.toLowerCase().includes("already refunded")
-    : false;
-}
-
-function isPaypalAlreadyRefunded(error) {
-  if (!error) return false;
-
-  if (error.alreadyRefunded) return true;
-
-  if (typeof error.code === "string") {
-    const code = error.code.toLowerCase();
-    if (code.includes("refund") && code.includes("already")) return true;
-  }
-
-  if (Array.isArray(error.details)) {
-    const match = error.details.some((detail) =>
-      typeof detail?.issue === "string"
-        ? detail.issue.toLowerCase().includes("refund") &&
-          detail.issue.toLowerCase().includes("already")
-        : false
-    );
-    if (match) return true;
-  }
-
-  const message = normalizeErrorMessage(error);
-  return typeof message === "string"
-    ? message.toLowerCase().includes("refund") &&
-        message.toLowerCase().includes("already")
-    : false;
-}
-
-async function readPaypalErrorBody(response) {
-  if (!response) return {};
-
-  let body;
-  let text;
-
-  try {
-    body = await response.json();
-  } catch (_) {
-    body = undefined;
-  }
-
-  if (body !== undefined) {
-    try {
-      text = JSON.stringify(body);
-    } catch (_) {
-      text = undefined;
-    }
-  }
-
-  if (!text) {
-    try {
-      text = await response.text();
-    } catch (_) {
-      text = undefined;
-    }
-  }
-
-  return { body, text };
-}
-
-function isPaypalAlreadyRefundedResponse(body, text) {
-  if (Array.isArray(body?.details)) {
-    const match = body.details.some((detail) => {
-      const issue = detail?.issue || detail?.description;
-      return typeof issue === "string"
-        ? issue.toLowerCase().includes("refund") &&
-            issue.toLowerCase().includes("already")
-        : false;
-    });
-    if (match) return true;
-  }
-
-  if (typeof body?.message === "string") {
-    const message = body.message.toLowerCase();
-    if (message.includes("refund") && message.includes("already")) return true;
-  }
-
-  if (typeof text === "string") {
-    const lower = text.toLowerCase();
-    if (lower.includes("refund") && lower.includes("already")) return true;
-  }
-
-  return false;
-}
-
-function paypalAlreadyRefundedMessage(body, text) {
-  if (Array.isArray(body?.details)) {
-    const detail = body.details.find((item) => {
-      const issue = item?.issue || item?.description;
-      return typeof issue === "string"
-        ? issue.toLowerCase().includes("refund") &&
-            issue.toLowerCase().includes("already")
-        : false;
-    });
-
-    if (detail?.description) return detail.description;
-    if (detail?.issue) return detail.issue;
-  }
-
-  if (typeof body?.message === "string") {
-    return body.message;
-  }
-
-  if (typeof text === "string") {
-    return text;
-  }
-
-  return undefined;
 }
 
 // We expose these methods for our scripts

@@ -269,7 +269,7 @@ describe("Dashboard account deletion refunds", function () {
     expect(req.refund).toBeUndefined();
   });
 
-  it("ignores Stripe already-refunded errors", async function () {
+  it("continues when Stripe reports a refund has already happened", async function () {
     const now = Date.now();
     const created = Math.floor((now - 7 * 24 * 60 * 60 * 1000) / 1000);
 
@@ -313,7 +313,6 @@ describe("Dashboard account deletion refunds", function () {
         provider: "stripe",
         providerPretty: "Stripe",
         skipped: true,
-        alreadyRefunded: true,
         error: jasmine.stringMatching(/already refunded/i),
       })
     );
@@ -363,7 +362,7 @@ describe("Dashboard account deletion refunds", function () {
     );
   });
 
-  it("ignores PayPal already-refunded errors", async function () {
+  it("continues when PayPal reports a refund has already happened", async function () {
     const startTime = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
     const expectedAuth = `Basic ${Buffer.from("client:secret").toString("base64")}`;
 
@@ -421,7 +420,6 @@ describe("Dashboard account deletion refunds", function () {
         provider: "paypal",
         providerPretty: "PayPal",
         skipped: true,
-        alreadyRefunded: true,
         error: jasmine.stringMatching(/already/i),
       })
     );
