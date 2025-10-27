@@ -240,7 +240,7 @@ function loadToDo (req, res, next) {
       );
     });
 
-    res.locals.todo = $.html();
+    res.locals.todo = $("body").html();
     return next();
   });
 }
