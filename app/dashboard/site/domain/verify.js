@@ -74,20 +74,17 @@ async function validate({ hostname, handle, ourIP, ourHost }) {
     const nameserverDetails = nameserverResolutionErrors.length
         ? nameserverResolutionErrors.join(', ')
         : null;
+    const noNameserverIPs = nameserverIPs.length === 0;
 
     const attachNameserverDetails = (error) => {
         if (nameserverDetails && !error.details) {
             error.details = nameserverDetails;
+        } else if (noNameserverIPs && !error.details) {
+            error.details = 'NO_NAMESERVER_IP_ADDRESSES';
         }
 
         return error;
     };
-
-    if (nameserverIPs.length === 0) {
-        const error = new Error('NO_NAMESERVER_IP_ADDRESSES');
-        error.nameservers = nameservers;
-        throw attachNameserverDetails(error);
-    }
 
     const resolverNameservers = Array.from(
         new Set([...nameserverIPs, ...fallbackNameservers])
