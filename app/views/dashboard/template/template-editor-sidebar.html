@@ -71,8 +71,16 @@
 
 	{{> date}}
 
-	{{#syntax_themes}}
-		{{> highlighter}}
-	{{/syntax_themes}}
+{{#syntax_themes}}
+                {{> highlighter}}
+        {{/syntax_themes}}
 </div>
+
+{{#template.isMirror}}
+<div class="settings-group">
+        <a class="line" href="{{{base}}}/reset" style="padding: 11px 20px;">
+                <span class="center">Reset template</span>
+        </a>
+</div>
+{{/template.isMirror}}
 
