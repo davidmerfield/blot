@@ -117,11 +117,12 @@ async function deleteSubscription(req, res, next) {
 async function issueDeletionRefund(req, res, next) {
   try {
     await ensureIssueDeletionRefund(req);
-    next();
   } catch (error) {
     console.error("Error issuing deletion refund:", error);
-    next(error);
+    recordRefundError(req, undefined, error);
   }
+
+  next();
 }
 
 async function ensureIssueDeletionRefund(req) {
@@ -131,32 +132,57 @@ async function ensureIssueDeletionRefund(req) {
 
   req.issueDeletionRefundHandled = true;
 
-  const now = Date.now();
+  try {
+    const now = Date.now();
 
-  const stripeCreatedMs = toMs(req.user.subscription?.created);
-  const paypalStartMs = toMs(req.user.paypal?.start_time);
+    const stripeCreatedMs = toMs(req.user.subscription?.created);
+    const paypalStartMs = toMs(req.user.paypal?.start_time);
 
-  const stripeEligible = Boolean(
-    req.user.subscription?.customer &&
-      stripeCreatedMs &&
-      now - stripeCreatedMs <= THIRTY_DAYS_MS
-  );
+    const stripeEligible = Boolean(
+      req.user.subscription?.customer &&
+        stripeCreatedMs &&
+        now - stripeCreatedMs <= THIRTY_DAYS_MS
+    );
 
-  const paypalEligible = Boolean(
-    req.user.paypal?.id &&
-      paypalStartMs &&
-      now - paypalStartMs <= THIRTY_DAYS_MS
-  );
+    const paypalEligible = Boolean(
+      req.user.paypal?.id &&
+        paypalStartMs &&
+        now - paypalStartMs <= THIRTY_DAYS_MS
+    );
 
-  if (!stripeEligible && !paypalEligible) return;
+    if (!stripeEligible && !paypalEligible) return;
 
-  if (stripeEligible) {
-    const issued = await issueStripeRefund(req, now);
-    if (issued) return;
-  }
+    if (stripeEligible) {
+      try {
+        const issued = await issueStripeRefund(req, now);
+        if (issued) return;
+      } catch (error) {
+        if (isStripeAlreadyRefunded(error)) {
+          console.warn("Stripe charge already refunded:", error.message || error);
+          recordRefundError(req, "stripe", error, { alreadyRefunded: true });
+        } else {
+          console.error("Stripe refund failed:", error);
+          recordRefundError(req, "stripe", error);
+        }
+      }
+    }
 
-  if (paypalEligible) {
-    await issuePaypalRefund(req, now, paypalStartMs);
+    if (paypalEligible) {
+      try {
+        await issuePaypalRefund(req, now, paypalStartMs);
+      } catch (error) {
+        if (isPaypalAlreadyRefunded(error)) {
+          console.warn("PayPal capture already refunded:", error.message || error);
+          recordRefundError(req, "paypal", error, { alreadyRefunded: true });
+        } else {
+          console.error("PayPal refund failed:", error);
+          recordRefundError(req, "paypal", error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Unexpected refund error:", error);
+    recordRefundError(req, undefined, error);
   }
 }
 
@@ -260,7 +286,29 @@ async function issuePaypalRefund(req, now, startMs) {
   );
 
   if (!refundResponse.ok) {
-    throw await paypalError(refundResponse, "PayPal refund error");
+    const errorPayload = await readPaypalErrorBody(refundResponse);
+
+    if (
+      isPaypalAlreadyRefundedResponse(
+        errorPayload?.body,
+        errorPayload?.text
+      )
+    ) {
+      const message =
+        paypalAlreadyRefundedMessage(errorPayload?.body, errorPayload?.text) ||
+        "PayPal refund already processed";
+      const error = new Error(message);
+      error.code = "PAYPAL_ALREADY_REFUNDED";
+      error.alreadyRefunded = true;
+      throw error;
+    }
+
+    throw await paypalError(
+      refundResponse,
+      "PayPal refund error",
+      errorPayload?.body,
+      errorPayload?.text
+    );
   }
 
   const refund = await refundResponse.json();
@@ -381,31 +429,216 @@ function buildPaypalAuthHeader() {
   ).toString("base64")}`;
 }
 
-async function paypalError(response, prefix) {
+async function paypalError(response, prefix, bodyOverride, textOverride) {
   let message = `${prefix}: ${response.status}`;
+  let body = bodyOverride;
+  let text = textOverride;
 
-  try {
-    const body = await response.json();
-    if (body?.message) {
-      message = `${prefix}: ${body.message}`;
-    } else if (body?.name || body?.details) {
-      message = `${prefix}: ${body.name || ""} ${
-        Array.isArray(body.details)
-          ? body.details
-              .map((detail) => detail.issue || detail.description)
-              .filter(Boolean)
-              .join(", ")
-          : ""
-      }`.trim();
-    }
-  } catch (error) {
+  if (!body) {
     try {
-      const text = await response.text();
-      if (text) message = `${prefix}: ${text}`;
+      body = await response.json();
     } catch (_) {}
   }
 
-  return new Error(message);
+  if (!text && body) {
+    try {
+      text = JSON.stringify(body);
+    } catch (_) {}
+  }
+
+  if (!text) {
+    try {
+      text = await response.text();
+    } catch (_) {}
+  }
+
+  if (body?.message) {
+    message = `${prefix}: ${body.message}`;
+  } else if (body?.name || body?.details) {
+    message = `${prefix}: ${body.name || ""} ${
+      Array.isArray(body?.details)
+        ? body.details
+            .map((detail) => detail.issue || detail.description)
+            .filter(Boolean)
+            .join(", ")
+        : ""
+    }`.trim();
+  } else if (text) {
+    message = `${prefix}: ${text}`;
+  }
+
+  const error = new Error(message);
+
+  if (body?.name && !error.code) {
+    error.code = body.name;
+  }
+
+  if (Array.isArray(body?.details) && !error.details) {
+    error.details = body.details;
+  }
+
+  return error;
+}
+
+function getProviderPretty(provider) {
+  if (provider === "stripe") return "Stripe";
+  if (provider === "paypal") return "PayPal";
+  return provider;
+}
+
+function recordRefundError(req, provider, error, extra) {
+  if (!req) return;
+
+  if (req.refund?.issued) return;
+
+  const message = normalizeErrorMessage(error);
+  const base = req.refund && !req.refund.issued ? req.refund : {};
+  const updates = Object.assign({ issued: false, skipped: true }, extra || {});
+
+  if (message && updates.error === undefined) {
+    updates.error = message;
+  }
+
+  if (provider && !updates.provider) {
+    updates.provider = provider;
+  }
+
+  if (provider && !updates.providerPretty) {
+    updates.providerPretty = getProviderPretty(provider);
+  }
+
+  req.refund = Object.assign({}, base, updates);
+}
+
+function normalizeErrorMessage(error) {
+  if (!error) return undefined;
+  if (typeof error === "string") return error;
+  if (error && typeof error.message === "string") return error.message;
+  try {
+    return JSON.stringify(error);
+  } catch (_) {
+    return String(error);
+  }
+}
+
+function isStripeAlreadyRefunded(error) {
+  const code = error?.code || error?.raw?.code;
+  if (typeof code === "string" && code.toLowerCase() === "charge_already_refunded") {
+    return true;
+  }
+
+  const message = normalizeErrorMessage(error);
+  return typeof message === "string"
+    ? message.toLowerCase().includes("already refunded")
+    : false;
+}
+
+function isPaypalAlreadyRefunded(error) {
+  if (!error) return false;
+
+  if (error.alreadyRefunded) return true;
+
+  if (typeof error.code === "string") {
+    const code = error.code.toLowerCase();
+    if (code.includes("refund") && code.includes("already")) return true;
+  }
+
+  if (Array.isArray(error.details)) {
+    const match = error.details.some((detail) =>
+      typeof detail?.issue === "string"
+        ? detail.issue.toLowerCase().includes("refund") &&
+          detail.issue.toLowerCase().includes("already")
+        : false
+    );
+    if (match) return true;
+  }
+
+  const message = normalizeErrorMessage(error);
+  return typeof message === "string"
+    ? message.toLowerCase().includes("refund") &&
+        message.toLowerCase().includes("already")
+    : false;
+}
+
+async function readPaypalErrorBody(response) {
+  if (!response) return {};
+
+  let body;
+  let text;
+
+  try {
+    body = await response.json();
+  } catch (_) {
+    body = undefined;
+  }
+
+  if (body !== undefined) {
+    try {
+      text = JSON.stringify(body);
+    } catch (_) {
+      text = undefined;
+    }
+  }
+
+  if (!text) {
+    try {
+      text = await response.text();
+    } catch (_) {
+      text = undefined;
+    }
+  }
+
+  return { body, text };
+}
+
+function isPaypalAlreadyRefundedResponse(body, text) {
+  if (Array.isArray(body?.details)) {
+    const match = body.details.some((detail) => {
+      const issue = detail?.issue || detail?.description;
+      return typeof issue === "string"
+        ? issue.toLowerCase().includes("refund") &&
+            issue.toLowerCase().includes("already")
+        : false;
+    });
+    if (match) return true;
+  }
+
+  if (typeof body?.message === "string") {
+    const message = body.message.toLowerCase();
+    if (message.includes("refund") && message.includes("already")) return true;
+  }
+
+  if (typeof text === "string") {
+    const lower = text.toLowerCase();
+    if (lower.includes("refund") && lower.includes("already")) return true;
+  }
+
+  return false;
+}
+
+function paypalAlreadyRefundedMessage(body, text) {
+  if (Array.isArray(body?.details)) {
+    const detail = body.details.find((item) => {
+      const issue = item?.issue || item?.description;
+      return typeof issue === "string"
+        ? issue.toLowerCase().includes("refund") &&
+            issue.toLowerCase().includes("already")
+        : false;
+    });
+
+    if (detail?.description) return detail.description;
+    if (detail?.issue) return detail.issue;
+  }
+
+  if (typeof body?.message === "string") {
+    return body.message;
+  }
+
+  if (typeof text === "string") {
+    return text;
+  }
+
+  return undefined;
 }
 
 // We expose these methods for our scripts

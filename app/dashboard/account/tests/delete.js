@@ -212,6 +212,217 @@ describe("Dashboard account deletion refunds", function () {
     expect(req.refund).toBeUndefined();
   });
 
+  it("ignores Stripe already-refunded errors", async function () {
+    const now = Date.now();
+    const created = Math.floor((now - 7 * 24 * 60 * 60 * 1000) / 1000);
+
+    const stripeError = new Error("Charge already refunded");
+    stripeError.code = "charge_already_refunded";
+
+    const stripeClient = {
+      invoices: {
+        list: jasmine.createSpy("list").and.returnValue(
+          Promise.resolve({
+            data: [
+              { id: "in_987", paid: true, charge: "ch_987", created },
+            ],
+          })
+        ),
+      },
+      refunds: {
+        create: jasmine.createSpy("create").and.returnValue(
+          Promise.reject(stripeError)
+        ),
+      },
+      customers: { del: jasmine.createSpy("del") },
+    };
+
+    Delete._setStripeClient(stripeClient);
+
+    const req = {
+      user: {
+        subscription: { customer: "cus_refunded", created },
+        email: "user@example.com",
+      },
+    };
+
+    await runMiddleware(Delete.exports.refund, req);
+
+    expect(stripeClient.invoices.list).toHaveBeenCalled();
+    expect(stripeClient.refunds.create).toHaveBeenCalled();
+    expect(req.refund).toEqual(
+      jasmine.objectContaining({
+        issued: false,
+        provider: "stripe",
+        providerPretty: "Stripe",
+        skipped: true,
+        alreadyRefunded: true,
+        error: jasmine.stringMatching(/already refunded/i),
+      })
+    );
+  });
+
+  it("continues when Stripe refunds fail unexpectedly", async function () {
+    const now = Date.now();
+    const created = Math.floor((now - 5 * 24 * 60 * 60 * 1000) / 1000);
+
+    const stripeClient = {
+      invoices: {
+        list: jasmine.createSpy("list").and.returnValue(
+          Promise.resolve({
+            data: [
+              { id: "in_777", paid: true, charge: "ch_777", created },
+            ],
+          })
+        ),
+      },
+      refunds: {
+        create: jasmine.createSpy("create").and.returnValue(
+          Promise.reject(new Error("Stripe outage"))
+        ),
+      },
+      customers: { del: jasmine.createSpy("del") },
+    };
+
+    Delete._setStripeClient(stripeClient);
+
+    const req = {
+      user: {
+        subscription: { customer: "cus_fail", created },
+        email: "user@example.com",
+      },
+    };
+
+    await runMiddleware(Delete.exports.refund, req);
+
+    expect(stripeClient.refunds.create).toHaveBeenCalled();
+    expect(req.refund).toEqual(
+      jasmine.objectContaining({
+        issued: false,
+        provider: "stripe",
+        skipped: true,
+        error: jasmine.stringMatching(/stripe outage/i),
+      })
+    );
+  });
+
+  it("ignores PayPal already-refunded errors", async function () {
+    const startTime = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    const expectedAuth = `Basic ${Buffer.from("client:secret").toString("base64")}`;
+
+    const transactionsData = {
+      transactions: [
+        {
+          id: "CAPTURE321",
+          status: "COMPLETED",
+          time: new Date().toISOString(),
+          amount: { value: "10.00", currency: "USD" },
+        },
+      ],
+    };
+
+    const refundError = {
+      name: "UNPROCESSABLE_ENTITY",
+      details: [
+        {
+          issue: "REFUND_ALREADY_COMPLETED",
+          description: "Refund has already been completed for this capture.",
+        },
+      ],
+      message: "Refund has already been completed for this capture.",
+    };
+
+    const fetchSpy = jasmine.createSpy("fetch").and.callFake((url, options = {}) => {
+      if (url.includes("/transactions")) {
+        expect(options.headers.Authorization).toBe(expectedAuth);
+        return Promise.resolve(mockResponse(200, transactionsData));
+      }
+
+      if (url.includes("/refund")) {
+        expect(options.method).toBe("POST");
+        return Promise.resolve(mockResponse(422, refundError));
+      }
+
+      return Promise.reject(new Error(`Unexpected URL ${url}`));
+    });
+
+    global.fetch = fetchSpy;
+
+    const req = {
+      user: {
+        paypal: { id: "I-ALREADY", status: "ACTIVE", start_time: startTime },
+        email: "user@example.com",
+      },
+    };
+
+    await runMiddleware(Delete.exports.refund, req);
+
+    expect(fetchSpy.calls.count()).toBe(2);
+    expect(req.refund).toEqual(
+      jasmine.objectContaining({
+        issued: false,
+        provider: "paypal",
+        providerPretty: "PayPal",
+        skipped: true,
+        alreadyRefunded: true,
+        error: jasmine.stringMatching(/already/i),
+      })
+    );
+  });
+
+  it("continues when PayPal refunds fail unexpectedly", async function () {
+    const startTime = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    const expectedAuth = `Basic ${Buffer.from("client:secret").toString("base64")}`;
+
+    const transactionsData = {
+      transactions: [
+        {
+          id: "CAPTURE500",
+          status: "COMPLETED",
+          time: new Date().toISOString(),
+          amount_with_breakdown: {
+            gross_amount: { value: "25.00", currency_code: "USD" },
+          },
+        },
+      ],
+    };
+
+    const refundError = { name: "INTERNAL_SERVER_ERROR", message: "boom" };
+
+    const fetchSpy = jasmine.createSpy("fetch").and.callFake((url, options = {}) => {
+      if (url.includes("/transactions")) {
+        return Promise.resolve(mockResponse(200, transactionsData));
+      }
+
+      if (url.includes("/refund")) {
+        return Promise.resolve(mockResponse(500, refundError));
+      }
+
+      return Promise.reject(new Error(`Unexpected URL ${url}`));
+    });
+
+    global.fetch = fetchSpy;
+
+    const req = {
+      user: {
+        paypal: { id: "I-FAIL", status: "ACTIVE", start_time: startTime },
+        email: "user@example.com",
+      },
+    };
+
+    await runMiddleware(Delete.exports.refund, req);
+
+    expect(fetchSpy.calls.count()).toBe(2);
+    expect(req.refund).toEqual(
+      jasmine.objectContaining({
+        issued: false,
+        provider: "paypal",
+        skipped: true,
+        error: jasmine.stringMatching(/boom/i),
+      })
+    );
+  });
+
   it("sends the refund email when a refund is issued", function (done) {
     const refund = {
       issued: true,
