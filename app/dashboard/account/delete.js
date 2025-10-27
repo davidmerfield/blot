@@ -198,26 +198,27 @@ async function issueStripeRefund(req, now) {
     limit: 100,
   });
 
-  const paidInvoices = (invoicesResponse?.data || []).filter(
-    (invoice) => invoice && invoice.paid && invoice.charge
-  );
+  const eligibleInvoices = (invoicesResponse?.data || [])
+    .filter((invoice) => invoice && invoice.paid && invoice.charge)
+    .map((invoice) => ({ invoice, createdMs: toMs(invoice.created) }))
+    .filter(
+      ({ createdMs }) =>
+        typeof createdMs === "number" && now - createdMs <= THIRTY_DAYS_MS
+    );
 
-  if (!paidInvoices.length) return false;
+  if (!eligibleInvoices.length) return false;
 
-  const earliestInvoice = paidInvoices.reduce((earliest, invoice) => {
-    if (!earliest) return invoice;
+  const { invoice: targetInvoice, createdMs: invoiceCreatedMs } =
+    eligibleInvoices.reduce((latest, current) => {
+      if (!latest) return current;
 
-    return invoice.created < earliest.created ? invoice : earliest;
-  }, null);
+      return current.createdMs >= latest.createdMs ? current : latest;
+    }, null);
 
-  const invoiceCreatedMs = toMs(earliestInvoice?.created);
-
-  if (!invoiceCreatedMs || now - invoiceCreatedMs > THIRTY_DAYS_MS) {
-    return false;
-  }
+  if (!invoiceCreatedMs) return false;
 
   const refund = await client.refunds.create({
-    charge: earliestInvoice.charge,
+    charge: targetInvoice.charge,
     reason: "requested_by_customer",
   });
 
@@ -233,8 +234,8 @@ async function issueStripeRefund(req, now) {
     provider: "stripe",
     providerPretty: "Stripe",
     id: refund.id,
-    invoice: earliestInvoice.id,
-    charge: earliestInvoice.charge,
+    invoice: targetInvoice.id,
+    charge: targetInvoice.charge,
     amount,
     currency,
     amountPretty: formatAmount(amount, currency),

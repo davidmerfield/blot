@@ -101,6 +101,63 @@ describe("Dashboard account deletion refunds", function () {
     );
   });
 
+  it("refunds the most recent eligible Stripe invoice when older history exists", async function () {
+    const now = Date.now();
+    const recentCreated = Math.floor((now - 6 * 24 * 60 * 60 * 1000) / 1000);
+    const oldCreated = Math.floor((now - 120 * 24 * 60 * 60 * 1000) / 1000);
+
+    const stripeClient = {
+      invoices: {
+        list: jasmine.createSpy("list").and.returnValue(
+          Promise.resolve({
+            data: [
+              { id: "in_old", paid: true, charge: "ch_old", created: oldCreated },
+              {
+                id: "in_recent",
+                paid: true,
+                charge: "ch_recent",
+                created: recentCreated,
+              },
+            ],
+          })
+        ),
+      },
+      refunds: {
+        create: jasmine
+          .createSpy("create")
+          .and.returnValue(
+            Promise.resolve({ id: "re_recent", amount: 500, currency: "usd" })
+          ),
+      },
+      customers: { del: jasmine.createSpy("del") },
+    };
+
+    Delete._setStripeClient(stripeClient);
+
+    const req = {
+      user: {
+        subscription: { customer: "cus_history", created: recentCreated },
+        email: "user@example.com",
+      },
+    };
+
+    await runMiddleware(Delete.exports.refund, req);
+
+    expect(stripeClient.invoices.list).toHaveBeenCalled();
+    expect(stripeClient.refunds.create).toHaveBeenCalledWith({
+      charge: "ch_recent",
+      reason: "requested_by_customer",
+    });
+    expect(req.refund).toEqual(
+      jasmine.objectContaining({
+        issued: true,
+        provider: "stripe",
+        invoice: "in_recent",
+        charge: "ch_recent",
+      })
+    );
+  });
+
   it("skips Stripe refunds outside the first month", async function () {
     const created = Math.floor((Date.now() - 40 * 24 * 60 * 60 * 1000) / 1000);
 
