@@ -52,6 +52,8 @@ const sortAndPaginate = (questions, page_size, page) => {
   return questions.slice(startIndex, endIndex + 1);
 };
 
+const hasNonEmptyBody = body => typeof body === "string" && body.trim().length > 0;
+
 const load = ids => {
   return new Promise((resolve, reject) => {
     const batch = client.batch();
@@ -83,10 +85,15 @@ const load = ids => {
         }
 
         const questions = results
-          .filter(result => !result.parent)
+          .filter(result => result && !result.parent && hasNonEmptyBody(result.body))
           .map(result => {
             result.replies = results
-              .filter(reply => reply.parent === result.id)
+              .filter(
+                reply =>
+                  reply &&
+                  reply.parent === result.id &&
+                  hasNonEmptyBody(reply.body)
+              )
               .map(reply => {
                 return { body: reply.body };
               });
