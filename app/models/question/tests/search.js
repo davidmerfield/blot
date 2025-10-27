@@ -59,4 +59,28 @@ describe("questions.search", function () {
     expect(results.length).toBe(1);
     expect(results[0].id).toBe(one.id);
   });
+
+  it("omits questions with empty bodies", async function () {
+    const emptyBody = await create({ title: "How", body: "   " });
+    const valid = await create({ title: "How", body: "Yes" });
+
+    const results = await search({ query: "how" });
+
+    const ids = results.map(result => result.id);
+    expect(ids).toContain(valid.id);
+    expect(ids).not.toContain(emptyBody.id);
+  });
+
+  it("ignores replies with empty bodies", async function () {
+    const withoutReplyMatch = await create({ title: "One", body: "Hello" });
+    await create({ body: "   ", parent: withoutReplyMatch.id });
+
+    const withReplyMatch = await create({ title: "Two", body: "Hello" });
+    await create({ body: "Test reply", parent: withReplyMatch.id });
+
+    const results = await search({ query: "test" });
+
+    expect(results.length).toBe(1);
+    expect(results[0].id).toBe(withReplyMatch.id);
+  });
 });

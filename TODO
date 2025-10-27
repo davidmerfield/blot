@@ -1,5 +1,13 @@
 Finish [setting up Andrew's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRCkhdsXvnSjxbbfGSxxDtlW)
 
+Fix drag and drop image behavior obsidian and tell John P
+
+Add photo/pictures/pics/images grid to tagged page of blog template and photos subfolder to default folder.
+
+Refactor front end domain page to have radio button to seelct between custom domain and blot subdomain
+Inbox
+- don't delete custom domain, though (maybe add property redirectDomain ?)
+
 Work on template editor
 - Verify local template editing works for all clients
 - Add button to enable local template editing to editor
@@ -11,6 +19,8 @@ Add link card feature (bare links) and tell [Guy](https://mail.google.com/mail/u
 Add folder post feature
 
 ---
+
+Fix bug with huge draft crashing the sync server /a327ex/drafts/it_follows.txt
 
 Fix bug with swiper css - it totally breaks site when pasted into css file...
 
@@ -267,6 +277,11 @@ Fix bug with accessibility issues with scrolling and code blocks and tell [Eli](
 
 Do preview subdomains respond to etags?
 
+Switch from mustache to handlebars
+- Precompile using template content hash
+- Add strict verification for output differences 
+- Can we generally do a ‘static’ build out directly into a cache (e.g. openresty)?
+
 Identify areas of the codebase which need resource limits to be more secure, e.g. max file size for the image converter, max file size for the docx converter. look across the codebase and create a series of implementation tasks for the most pressing
 
 Modify slowest function to aggregate by upstream response time
@@ -456,6 +471,8 @@ Move image zoom plugin to templates
 Review, revise, test and run redis orchestration script to restore from s3 backup into new instance
 
 Migrate repository to new account
+
+Add webmentions plugin point-and-click on dashboard
 
 Improve iCloud client
 - Resolve flakiness disconnecting, transfering existing folder contents

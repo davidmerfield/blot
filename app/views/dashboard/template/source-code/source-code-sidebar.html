@@ -4,7 +4,13 @@
 	<a style="text-decoration:none;display: block;padding: 5px 20px;color:#666;font-size: 14px" href="{{{base}}}/source-code/create">+ Create new file</a>
  </div>
 
-	{{#views}}
-	<a class="{{selected}}" href="{{{base}}}/source-code/{{name}}/edit">{{name}}</a>
-	{{/views}}
+        {{#views}}
+        <a class="{{selected}}" href="{{{base}}}/source-code/{{name}}/edit">{{name}}</a>
+        {{/views}}
+
+        {{#template.isMirror}}
+        <div style="margin-top: 1rem;">
+                <a class="reset" style="text-decoration:none;display: block;padding: 5px 20px;color:#666;font-size: 14px" href="{{{base}}}/reset">Reset template</a>
+        </div>
+        {{/template.isMirror}}
 </div>

@@ -1,31 +1,29 @@
 {{> header}}
 
-<div class="mt4 pt3"></div>
-{{> tag_list}}
+<section class="pt5 pb4">
+  <h1 class="fw9 lh-title f1 measure-narrow black-90 mt0 mb3">All sections</h1>
+  <p class="measure lh-copy f4 black-60 mt0">
+    Browse every tag in the magazine and jump straight to the stories that interest you most.
+  </p>
+</section>
 
-{{#all_tags}}
-<span class="cf db pb5"></span>
+{{#all_tags.length}}
+<section class="pb5">
+  <div class="cf nl3 nr3">
+    {{#all_tags}}
+    <a class="pa3 lh-title w-100 w-50-m w-third-l fl dim no-underline br1" href="/tagged/{{slug}}">
+      <span class="db f3 fw6 black-80">{{tag}}</span>
+      <span class="db mt2 f6 fw4 black-50">{{total}} posts</span>
+    </a>
+    {{/all_tags}}
+  </div>
+</section>
+{{/all_tags.length}}
 
-<a class="fr  pt2 black-50 no-underline " href="/tagged/{{slug}}">All in {{tag}} →</a>
-<span class="db fw5 black-80 b--black-05 pv2 bb">Latest in {{tag}}</span>
-<span class="cf db"></span>
-<div class="clip-3 nl3 nr3">
-  {{#entries}}
-  <a href="{{{url}}}" class="pa3  lh-title w-third fl dim no-underline">
-<span class="db">
-  <span class="db" style="outline: 1px solid rgba(0,0,0,.12);
-    outline-offset: -1px;max-height:10rem;overflow:hidden">
-    {{#thumbnail.medium}}
-    <img style="width:100%" src="{{{url}}}">
-    {{/thumbnail.medium}}
-   </span>
-</span>
-    <span class="mt3 fw6 black-80 db f5 pb2 tracked-tight" >{{title}}</span>
-  
-</a>
-  {{/entries}}
-</div>
-
-{{/all_tags}}
+{{^all_tags.length}}
+<section class="pv5 tc">
+  <p class="f4 black-50 mv0">No sections available yet.</p>
+</section>
+{{/all_tags.length}}
 
 {{> footer}}
