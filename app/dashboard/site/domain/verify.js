@@ -34,17 +34,37 @@ async function validate({ hostname, handle, ourIP, ourHost }) {
     const parsed = parse(hostname);
     const apexDomain = parsed.domain;
 
-    const [cnameHost, aRecordIPs, nameservers] = await Promise.all([
-        dns.resolveCname(hostname).then(cnames => cnames[0] || null).catch(() => null),
-        dns.resolve4(hostname).catch(() => []),
-        dns.resolveNs(apexDomain).catch(() => [])
-    ]);
+    let nameservers = [];
+
+    try {
+        nameservers = await dns.resolveNs(apexDomain);
+    } catch (err) {
+        const error = new Error('NO_NAMESERVERS');
+        error.nameservers = nameservers;
+        error.details = err && (err.code || err.message);
+        throw error;
+    }
 
     if (nameservers.length === 0) {
         const error = new Error('NO_NAMESERVERS');
         error.nameservers = nameservers;
         throw error;
     }
+
+    const resolver = new dns.Resolver();
+    const fallbackNameservers = ['1.1.1.1', '8.8.8.8'];
+    const resolverNameservers = [...nameservers];
+
+    for (const fallback of fallbackNameservers) {
+        if (!resolverNameservers.includes(fallback)) resolverNameservers.push(fallback);
+    }
+
+    resolver.setServers(resolverNameservers);
+
+    const [cnameHost, aRecordIPs] = await Promise.all([
+        resolver.resolveCname(hostname).then(cnames => cnames[0] || null).catch(() => null),
+        resolver.resolve4(hostname).catch(() => [])
+    ]);
 
     if (cnameHost) {
         if (cnameHost === ourHost) {
