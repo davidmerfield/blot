@@ -12,6 +12,9 @@ describe("domain verifier", function () {
         spyOn(dns, 'resolveCname').and.callThrough();
         spyOn(dns, 'resolve4').and.callThrough();
         spyOn(dns, 'resolveNs').and.callThrough();
+        spyOn(dns, 'lookup').and.returnValue(
+            Promise.resolve([{ address: '203.0.113.1' }])
+        );
     });
 
     afterEach(() => {
