@@ -25,6 +25,7 @@ var loaded = loadPlugins({
   codeHighlighting: require("./codeHighlighting"),
   commento: require("./commento"),
   disqus: require("./disqus"),
+  webmentions: require("./webmentions"),
   externalLinks: require("./externalLinks"),
   flickr: require("./flickr"),
   image: require("./image"),

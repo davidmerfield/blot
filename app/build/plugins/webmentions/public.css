@@ -1,0 +1,113 @@
+#post-mentions[hidden] {
+  display: none;
+}
+
+.post-mentions {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+  border-radius: 0.5rem;
+  background: var(--background, transparent);
+  color: var(--text, inherit);
+}
+
+.post-mentions__title {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.mentions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mention {
+  margin: 1.5rem 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.mention + .mention {
+  border-top: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+  padding-top: 1.5rem;
+}
+
+.mention-author {
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  text-transform: lowercase;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.mention-author a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mention-author a:hover,
+.mention-author a:focus {
+  text-decoration: underline;
+}
+
+.mention-author img.u-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10%;
+  object-fit: cover;
+}
+
+.mention-text {
+  margin: 0 0 0.75rem 2.5rem;
+}
+
+.mention-text p {
+  margin: 0.5rem 0;
+}
+
+.mention-text a {
+  text-transform: lowercase;
+}
+
+.mention-meta {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--muted, rgba(0, 0, 0, 0.6));
+  margin-left: 2.5rem;
+}
+
+.mention-meta a {
+  color: inherit;
+}
+
+.mention-meta a:hover,
+.mention-meta a:focus {
+  text-decoration: underline;
+}
+
+.mention-social {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  font-size: 0.95rem;
+  color: var(--text, inherit);
+}
+
+.mention-social img.u-photo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10%;
+  object-fit: cover;
+}
+
+.mention-social__text {
+  font-weight: 500;
+  font-size: 0.9rem;
+}

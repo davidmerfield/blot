@@ -1,0 +1,62 @@
+---
+Link: https://webmention.io/
+---
+
+<h1>Webmentions</h1>
+
+<p>
+  Webmentions let you collect replies, likes, and reposts from other sites.
+  Blot's Webmentions plugin uses <a href="https://webmention.io/">webmention.io</a>
+  to fetch those conversations and show them beneath your posts.
+</p>
+
+<h2>Set up webmention.io</h2>
+
+<ol>
+  <li>
+    <p>
+      Visit <a href="https://webmention.io/">webmention.io</a> and sign in with one
+      of the supported providers.
+    </p>
+  </li>
+  <li>
+    <p>
+      Add your site's domain (for example, <code>example.com</code>) to your
+      webmention.io account. Follow the prompts to verify ownership of the domain
+      &mdash; webmention.io will ask you to add a short verification token to your
+      site before continuing.
+    </p>
+  </li>
+  <li>
+    <p>
+      In the webmention.io dashboard, ensure that <strong>Receive Webmentions</strong>
+      (incoming webmentions) is enabled for your domain. This allows the service to
+      accept and store mentions on your behalf.
+    </p>
+  </li>
+  <li>
+    <p>
+      Copy the Webmention and Pingback endpoint URLs that webmention.io shows for
+      your domain. Add them to your site's template inside the
+      <code>&lt;head&gt;</code> element, either by editing your custom template or by
+      using the <em>Custom &gt; Head</em> setting:
+    </p>
+    <pre><code>&lt;link rel="webmention" href="https://webmention.io/yourdomain/webmention"&gt;
+&lt;link rel="pingback" href="https://webmention.io/yourdomain/xmlrpc"&gt;
+</code></pre>
+  </li>
+  <li>
+    <p>
+      Enable the <strong>Webmentions</strong> service on Blot's
+      <a href="/settings/services">Services</a> page. Once enabled, Blot will load
+      the widget on posts and display mentions automatically when webmention.io
+      reports them for each URL.
+    </p>
+  </li>
+</ol>
+
+<p>
+  New mentions can take a few minutes to appear after they are received by
+  webmention.io. The widget only appears on your site when there are mentions to
+  show, so you can enable it ahead of time without affecting existing posts.
+</p>
