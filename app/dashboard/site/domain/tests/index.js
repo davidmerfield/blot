@@ -7,12 +7,18 @@ describe("domain verifier", function () {
 
     const ourIP = config.ip;
     const ourHost = config.host;
+    let resolver;
 
     beforeEach(() => {
-        spyOn(dns, 'resolveCname').and.callThrough();
-        spyOn(dns, 'resolve4').and.callThrough();
-        spyOn(dns, 'resolveNs').and.callThrough();
-        spyOn(dns, 'lookup').and.returnValue(
+        resolver = {
+            resolveCname: jasmine.createSpy('resolveCname').and.returnValue(Promise.resolve([])),
+            resolve4: jasmine.createSpy('resolve4').and.returnValue(Promise.resolve([])),
+            setServers: jasmine.createSpy('setServers'),
+        };
+
+        spyOn(dns, 'Resolver').and.returnValue(resolver);
+        spyOn(dns, 'resolveNs').and.returnValue(Promise.resolve([]));
+        spyOn(dns, 'lookup').and.callFake(() =>
             Promise.resolve([{ address: '203.0.113.1' }])
         );
     });
@@ -25,8 +31,8 @@ describe("domain verifier", function () {
         const hostname = "fhdjkhfkdjhfkjdhjfkhdjkfdjk.com";
         const handle = "example";
 
-        dns.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
-        dns.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+        resolver.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+        resolver.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
         dns.resolveNs.and.returnValue(Promise.resolve([]));
 
         try {
@@ -42,8 +48,8 @@ describe("domain verifier", function () {
         const hostname = "correct-a-record.com";
         const handle = "example";
 
-        dns.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
-        dns.resolve4.and.returnValue(Promise.resolve([ourIP]));
+        resolver.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+        resolver.resolve4.and.returnValue(Promise.resolve([ourIP]));
         dns.resolveNs.and.returnValue(Promise.resolve(['ns1.correct.com', 'ns2.correct.com']));
 
         const result = await verify({ hostname, handle, ourIP, ourHost });
@@ -54,8 +60,8 @@ describe("domain verifier", function () {
         const hostname = "multiple-a-records.com";
         const handle = "example";
 
-        dns.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
-        dns.resolve4.and.returnValue(Promise.resolve([ourIP, '1.2.3.4']));
+        resolver.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+        resolver.resolve4.and.returnValue(Promise.resolve([ourIP, '1.2.3.4']));
         dns.resolveNs.and.returnValue(Promise.resolve(['ns1.multiple.com', 'ns2.multiple.com']));
 
         try {
@@ -72,8 +78,8 @@ describe("domain verifier", function () {
         const hostname = "incorrect-cname-record.com";
         const handle = "example";
 
-        dns.resolveCname.and.returnValue(Promise.resolve(['incorrect.host.com']));
-        dns.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+        resolver.resolveCname.and.returnValue(Promise.resolve(['incorrect.host.com']));
+        resolver.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
         dns.resolveNs.and.returnValue(Promise.resolve(['ns1.incorrect.com', 'ns2.incorrect.com']));
 
         try {
@@ -89,8 +95,8 @@ describe("domain verifier", function () {
         const hostname = "correct-handle.com";
         const handle = "example";
 
-        dns.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
-        dns.resolve4.and.returnValue(Promise.resolve(['1.2.3.4']));
+        resolver.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+        resolver.resolve4.and.returnValue(Promise.resolve(['1.2.3.4']));
         dns.resolveNs.and.returnValue(Promise.resolve(['ns1.correct.com', 'ns2.correct.com']));
 
         nock(`http://1.2.3.4`)
@@ -105,8 +111,8 @@ describe("domain verifier", function () {
         const hostname = "incorrect-handle.com";
         const handle = "example";
 
-        dns.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
-        dns.resolve4.and.returnValue(Promise.resolve(['1.2.3.4']));
+        resolver.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+        resolver.resolve4.and.returnValue(Promise.resolve(['1.2.3.4']));
         dns.resolveNs.and.returnValue(Promise.resolve(['ns1.incorrect.com', 'ns2.incorrect.com']));
 
         nock(`http://1.2.3.4`)
@@ -128,8 +134,8 @@ describe("domain verifier", function () {
         const hostname = "request-fails.com";
         const handle = "example";
 
-        dns.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
-        dns.resolve4.and.returnValue(Promise.resolve(['1.2.3.4']));
+        resolver.resolveCname.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+        resolver.resolve4.and.returnValue(Promise.resolve(['1.2.3.4']));
         dns.resolveNs.and.returnValue(Promise.resolve(['ns1.request-fails.com', 'ns2.request-fails.com']));
 
         nock(`http://1.2.3.4`)
