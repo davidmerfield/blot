@@ -1,0 +1,7 @@
+Refund
+
+We've refunded your recent Blot payment of {{refund.amountPretty}} via {{refund.providerPretty}} because you deleted your account within the first month.
+
+The refund should appear on your original payment method within a few business days. If you change your mind or need anything else, just reply—I'd be happy to help.
+
+Thank you for giving Blot a try.
