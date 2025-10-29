@@ -1,52 +1,90 @@
-
 const ajax = require('../js/ajax.js');
 const withAjax = ajax.withAjax;
 const handleAjaxSaveResponse = ajax.handleAjaxSaveResponse;
+const getFontPicker = require('./font-picker');
 
-// FONT PICKER
+const picker = getFontPicker();
+const getPickerElement = () => document.querySelector('[data-template-font-picker]');
 
-Array.from(document.querySelectorAll('form[id^="font_picker"]')).forEach(
-  function (form) {
-    form.querySelectorAll("input, select, button").forEach(function (node) {
-      if (node.style.display === "none") return;
+const submitUpdate = (form, name, value) => {
+  const body = new URLSearchParams();
+  body.append(name, value);
 
-      const submitForm = (event) => {
-        // construct the body based on the single input or button that was clicked
-        const body = new URLSearchParams();
+  const csrfInput = form.querySelector('input[name="_csrf"]');
+  if (csrfInput) body.append(csrfInput.name, csrfInput.value);
 
-        body.append(node.name, node.value);
+  fetch(withAjax(window.location.href), { method: 'post', body }).then(
+    handleAjaxSaveResponse
+  );
+};
 
-        // append the hidden inputs
-        const csrfInput = form.querySelector('input[name="_csrf"]');
-        if (csrfInput) body.append(csrfInput.name, csrfInput.value);
+Array.from(document.querySelectorAll('[data-font-picker-form]')).forEach(form => {
+  const trigger = form.querySelector('[data-font-picker-trigger]');
+  const label = form.querySelector('[data-font-picker-label]');
+  const valueInput = form.querySelector('[data-font-picker-value]');
 
-        fetch(withAjax(window.location.href), { method: "post", body }).then(
-          handleAjaxSaveResponse
-        );
+  if (!trigger || !label || !valueInput) return;
 
-        // if this was a button, we need to close the picker
-        // and replace the innerHTML of show_picker with the new font
-        if (node.tagName === "BUTTON") {
-          node.parentNode.parentNode.querySelector(
-            'input[id^="show_picker"]'
-          ).checked = false;
-          node.parentNode.parentNode.querySelector(
-            'label[for^="show_picker"]'
-          ).innerHTML = node.innerHTML;
-        }
-
-        event.preventDefault();
-        return false;
-      };
-
-      // if a button, handle click
-      if (node.tagName === "BUTTON") {
-        node.addEventListener("click", submitForm);
-        return;
-      } else {
-        node.addEventListener("change", submitForm);
-        return;
+  const openPicker = () => {
+    picker.cancelHide();
+    trigger.setAttribute('aria-expanded', 'true');
+    picker.show({
+      anchor: trigger,
+      currentValue: valueInput.value,
+      onSelect(option) {
+        const html = option.html || 'Select a font';
+        valueInput.value = option.id || '';
+        label.innerHTML = html;
+        submitUpdate(form, valueInput.name, valueInput.value);
+      },
+      onHide() {
+        trigger.setAttribute('aria-expanded', 'false');
       }
     });
-  }
-);
+  };
+
+  const scheduleHide = () => picker.scheduleHide();
+  const cancelHide = () => picker.cancelHide();
+
+  trigger.addEventListener('click', event => {
+    event.preventDefault();
+    openPicker();
+  });
+
+  trigger.addEventListener('focus', openPicker);
+  trigger.addEventListener('mouseenter', openPicker);
+
+  trigger.addEventListener('blur', event => {
+    const next = event.relatedTarget;
+    const pickerElement = getPickerElement();
+    if (
+      next &&
+      (trigger.contains(next) || (pickerElement && pickerElement.contains(next)))
+    ) {
+      return;
+    }
+    scheduleHide();
+  });
+  trigger.addEventListener('mouseleave', scheduleHide);
+
+  form.addEventListener('mouseenter', cancelHide);
+  form.addEventListener('mouseleave', scheduleHide);
+  form.addEventListener('focusin', cancelHide);
+  form.addEventListener('focusout', event => {
+    const next = event.relatedTarget;
+    const pickerElement = getPickerElement();
+    if (
+      next &&
+      (form.contains(next) || (pickerElement && pickerElement.contains(next)))
+    ) {
+      return;
+    }
+    scheduleHide();
+  });
+
+  form.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener('change', () => {
+      submitUpdate(form, input.name, input.value);
+    });
+  });
+});

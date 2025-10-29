@@ -9,6 +9,7 @@ module.exports = (key, value) => {
         tags: option.tags.map(i => {
           return { tag: i };
         }),
+        tagsString: option.tags.join(" "),
         selected: value.id && option.id === value.id ? "selected" : "",
         name: option.name,
         svg: option.svg,
