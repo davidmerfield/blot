@@ -147,27 +147,30 @@ TemplateEditor.route("/:templateSlug/local-editing")
     res.locals.title = `Local editing - ${req.template.name}`;
     res.render("dashboard/template/local-editing");
   })
-  .post(function (req, res, next) {
-    Template.setMetadata(
-      req.template.id,
-      { localEditing: true },
-      function (err) {
-        if (err) return next(err);
+  .post(
+    require("./save/fork-if-needed"),
+    function (req, res, next) {
+      Template.setMetadata(
+        req.template.id,
+        { localEditing: true },
+        function (err) {
+          if (err) return next(err);
 
-        res.message(
-          "/sites/" + req.blog.handle + "/template",
-          "Transferred template <b>" + req.template.name + "</b> to your folder"
-        );
+          res.message(
+            "/sites/" + req.blog.handle + "/template",
+            "Transferred template <b>" + req.template.name + "</b> to your folder"
+          );
 
-        Template.writeToFolder(req.blog.id, req.template.id, function () {
-          // could we do something with this error? Could we wait to render the page?
-          // it would be useful to have a progress bar here to prevent
-          // busted folder state
-          // we should also do something with the error
-        });
-      }
-    );
-  });
+          Template.writeToFolder(req.blog.id, req.template.id, function () {
+            // could we do something with this error? Could we wait to render the page?
+            // it would be useful to have a progress bar here to prevent
+            // busted folder state
+            // we should also do something with the error
+          });
+        }
+      );
+    }
+  );
 
 TemplateEditor.route("/:templateSlug/download-zip").get(function (req, res) {
   // create a zip file of the template on the fly and send it to the user
