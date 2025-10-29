@@ -29,7 +29,7 @@ const dns = require('dns').promises;
 const fetch = require('node-fetch');
 const { parse } = require('tldts');
 
-async function validate({ hostname, handle, ourIP, ourHost }) {
+async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
     
     const parsed = parse(hostname);
     const apexDomain = parsed.domain;
@@ -110,8 +110,10 @@ async function validate({ hostname, handle, ourIP, ourHost }) {
     }
 
     const allAddressRecords = [...aRecordIPs, ...aaaaRecordIPs];
-    const isCorrectAddress = (value) => value === ourIP || value === ourHost;
-    const hasCorrectAddress = allAddressRecords.some(isCorrectAddress);
+    const correctAddresses = [ourIP, ourIPv6].filter(Boolean);
+    const isCorrectAddress = (value) => correctAddresses.includes(value);
+    const hasCorrectAddress =
+        correctAddresses.length > 0 && allAddressRecords.some(isCorrectAddress);
 
     if (hasCorrectAddress) {
         const incorrectRecords = Array.from(

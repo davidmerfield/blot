@@ -9,6 +9,7 @@ const identifyNameServers = require('./identifyNameServers');
 const Domain = express.Router();
 
 const ip = config.ip;
+const ipv6 = config.ipv6;
 const host = config.host;
 
 Domain.use((req, res, next) => {
@@ -25,6 +26,7 @@ Domain.use((req, res, next) => {
     res.locals.customDomain = customDomain;
     res.locals.host = host;
     res.locals.ip = ip;
+    res.locals.ipv6 = ipv6;
         
     if (error) {
         res.locals.lastChecked = moment(error.lastChecked).fromNow();
@@ -81,7 +83,7 @@ Domain.route('/')
         }
 
         try {
-            const isValid = await verify({ hostname, handle: req.blog.handle, ourIP: ip, ourHost: host });
+            const isValid = await verify({ hostname, handle: req.blog.handle, ourIP: ip, ourIPv6: ipv6, ourHost: host });
 
             if (isValid) {
                 // Clear the blog session
