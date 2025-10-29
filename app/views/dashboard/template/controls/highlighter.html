@@ -24,7 +24,7 @@ input[name="{{key}}-toggle"]:checked + .options {display: block;}
 
 <div class="settings-group">
 <h2 class="template-heading">{{label}}</h2>
-<form method="post" class="syntax-highlighter select">
+<form method="post" class="syntax-highlighter select" {{#expanded}}data-expanded="true"{{/expanded}}>
   <input type="hidden" name="_csrf" value="{{csrftoken}}" />
   <label for="{{key}}-toggle">
     {{#value}}
@@ -41,7 +41,7 @@ input[name="{{key}}-toggle"]:checked + .options {display: block;}
   <input name="{{key}}-filter" type="radio" id="{{key}}-show-light">
   <input name="{{key}}-filter" type="radio" id="{{key}}-show-dark">
 
-  <input name="{{key}}-toggle" type="checkbox" id="{{key}}-toggle">
+  <input name="{{key}}-toggle" type="checkbox" id="{{key}}-toggle" {{#expanded}}checked{{/expanded}}>
 
   <div class="options">
     <div class="filters">

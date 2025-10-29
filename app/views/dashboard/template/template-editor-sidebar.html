@@ -72,7 +72,13 @@
 	{{> date}}
 
 {{#syntax_themes}}
-                {{> highlighter}}
+        <div class="settings-group">
+                <h2 class="template-heading">Syntax highlighter</h2>
+                <a class="line" href="{{{base}}}/syntax-highlighter" style="padding: 11px 20px;">
+                        <span class="center">Open syntax controls</span>
+                        <span class="right">Edit</span>
+                </a>
+        </div>
         {{/syntax_themes}}
 </div>
 
