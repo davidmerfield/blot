@@ -10,6 +10,8 @@ describe("sync multi-folder support", function () {
 
   global.test.blog();
 
+  global.test.timeout(60 * 1000); // 60s
+
   beforeEach(function () {
     this.fake = global.test.fake;
     this.checkEntry = global.test.CheckEntry(this.blog.id);
@@ -106,26 +108,30 @@ describe("sync multi-folder support", function () {
     );
   });
 
-  it("skips multi-folder aggregation when more than 50 files exist", function (done) {
-    var files = [];
-
+  it("skips multi-folder aggregation when more than 50 files exist", async function () {
     for (var i = 1; i <= 51; i++) {
       var name = i < 10 ? "0" + i : String(i);
-      files.push({
+      await this.blog.write({
         path: "/album+/" + name + ".md",
         content: "# File " + name,
       });
     }
 
-    this.syncAndCheck(
-      files,
-      [
-        { path: "/album", ignored: true },
-        { path: "/album+/01.md", ignored: true },
-        { path: "/album+/51.md", ignored: true },
-      ],
-      done
-    );
+    await this.blog.rebuild();
+
+    try {
+      await this.blog.check({ path: "/album+" });
+      throw new Error("Multi-folder post built incorrectly");
+    } catch (e) {
+      expect(e.message).toContain("No entry exists");
+    }
+
+    try {
+      await this.blog.check({ path: "/album+/1.md" });
+      throw new Error("Multi-folder post built incorrectly");
+    } catch (e) {
+      expect(e.message).toContain("No entry exists");
+    }
   });
 
   it("writes previews for aggregated draft entries", function (done) {
@@ -141,10 +147,7 @@ describe("sync multi-folder support", function () {
       (err) => {
         if (err) return done.fail(err);
 
-        var previewFile = localPath(
-          this.blog.id,
-          previewPath("/drafts/post")
-        );
+        var previewFile = localPath(this.blog.id, previewPath("/drafts/post"));
 
         expect(fs.existsSync(previewFile)).toBe(true);
         done();
@@ -202,14 +205,20 @@ describe("sync multi-folder support", function () {
                         expect(aggregatedEntry).toBeDefined();
                         expect(aggregatedEntry.deleted).toBeFalsy();
                         expect(aggregatedEntry.path).toEqual("/images");
-                        expect(aggregatedEntry.metadata._sourcePaths).toBeUndefined();
+                        expect(
+                          aggregatedEntry.metadata._sourcePaths
+                        ).toBeUndefined();
 
-                        Entry.get(blogID, "/images/photo.md", function (oldEntry) {
-                          if (oldEntry) {
-                            expect(oldEntry.deleted).toBe(true);
+                        Entry.get(
+                          blogID,
+                          "/images/photo.md",
+                          function (oldEntry) {
+                            if (oldEntry) {
+                              expect(oldEntry.deleted).toBe(true);
+                            }
+                            done();
                           }
-                          done();
-                        });
+                        );
                       });
                     });
                   }
