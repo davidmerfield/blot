@@ -146,6 +146,8 @@ function collectConvertibleFiles(blog, folderPath, callback) {
             path.join(currentPath, entry.name)
           );
 
+          if (shouldIgnore(entryPath)) return next();
+
           if (entry.isDirectory()) {
             if (entry.name.endsWith("+") && entryPath !== folderPath) {
               return next();
@@ -221,6 +223,18 @@ function isPreviewFile(name) {
   return (
     name.endsWith(".preview.html") ||
     name.toLowerCase().indexOf("[preview]") > -1
+  );
+}
+
+function shouldIgnore(entryPath) {
+  const normalized = pathNormalizer(entryPath).toLowerCase();
+
+  if (!normalized || normalized === "/") return false;
+
+  return (
+    normalized.startsWith("/public/") ||
+    normalized.includes("/_") ||
+    normalized.includes("/.")
   );
 }
 

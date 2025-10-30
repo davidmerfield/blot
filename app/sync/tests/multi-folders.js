@@ -39,6 +39,32 @@ describe("sync multi-folder support", function () {
     );
   });
 
+  it("ignores hidden files inside multi-folders", function (done) {
+    this.syncAndCheck(
+      [
+        { path: "/album+/one.md", content: "# One" },
+        { path: "/album+/_two.md", content: "# Two" },
+        { path: "/album+/_hidden/three.md", content: "# Three" },
+      ],
+      [
+        {
+          path: "/album",
+          html: function (html) {
+            return (
+              html.indexOf("One") > -1 &&
+              html.indexOf("Two") === -1 &&
+              html.indexOf("Three") === -1
+            );
+          },
+        },
+        { path: "/album+/one.md", ignored: true },
+        { path: "/album+/_two.md", ignored: true },
+        { path: "/album+/_hidden/three.md", ignored: true },
+      ],
+      done
+    );
+  });
+
   it("writes previews for aggregated draft entries", function (done) {
     this.syncAndCheck(
       { path: "/drafts/post+/index.md", content: "# Draft" },
