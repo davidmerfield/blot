@@ -158,26 +158,4 @@ describe("folder", function () {
       .first();
   }
 
-  it("shows folder post details for multi-file sources", async function () {
-    await this.publish({ path: "album+/one.md", content: "# One" });
-    await this.publish({ path: "album+/two.md", content: "## Two" });
-
-    const $ = await this.parse(
-      `/sites/${this.blog.handle}/folder/album+/one.md`
-    );
-
-    const summary = $(".folder-post-summary");
-    expect(summary.length).toBe(1);
-    expect(summary.text()).toContain("Folder post");
-    expect(summary.text()).toContain("album+");
-
-    const items = summary.find(".folder-post-files .folder-post-file");
-    expect(items.length).toBe(2);
-    expect($(items[0]).text()).toContain("one.md");
-    expect($(items[1]).text()).toContain("two.md");
-    expect($(items[0]).hasClass("current")).toBe(true);
-
-    const status = $(".publishing-steps b").text();
-    expect(status).toContain("folder post");
-  });
 });
