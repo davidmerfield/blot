@@ -1,14 +1,12 @@
 Finish [setting up Andrew's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRCkhdsXvnSjxbbfGSxxDtlW)
+- Turn on preserve linebreaks
+- Turn on auto title injection
 
 Work on template editor
 - Verify local template editing works for all clients
 - Add button to enable local template editing to editor
 - When setting up local editing, Copy the case used elsewhere when creating templates directory, e.g. pages -> templates, Posts -> Templates
 - Turn all folders into templates
-
-Fix drag and drop image behavior obsidian and tell John P
-
-Re-test domain setup flow in production
 
 Add link card feature (bare links) and tell [Guy](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBbftcBdFZZfZmqhfKNklbd)
 
@@ -270,6 +268,10 @@ Fix bug accessibility issue with menu links reordering and tell [Grace](https://
 Fix bug with accessibility issues with scrolling and code blocks and tell [Eli](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwqJjjrrGHDWjLPzfxGpnkZTh) if I make any changes
 
 ---
+
+Compute 'words' text property for each entry (unique words, sorted possibly?) to improve the speed of search queries
+
+Turn on 'preserve linebreaks by default' for markdown 
 
 Do preview subdomains respond to etags?
 

@@ -4,14 +4,12 @@
         We can't identify the nameservers which control {{customDomain}}. Do you own this domain? If not, please purchase it from a domain registrar.
     </p>
     {{/nameservers.length}}
-    {{#nameservers.length}}
-
 
     <p style="margin: 0">
-        {{#revalidation}} Domain does not point to Blot.{{/revalidation}} 
+        {{#revalidation}} Domain does not point to Blot.{{/revalidation}}
         Please create this DNS record{{#dnsProvider}} on <a target="_blank" href="{{{URL}}}">{{name}}</a>{{/dnsProvider}}:
     </p>
-    
+
     {{#dnsProvider.is.cloudflare}}
     {{> record-guide-cloudflare}}
     {{/dnsProvider.is.cloudflare}}
@@ -19,8 +17,6 @@
     {{^dnsProvider.is.cloudflare}}
     {{> record-guide-other}}
     {{/dnsProvider.is.cloudflare}}
-          
-    {{/nameservers.length}}
     <br>
     <button class="revalidate" type="submit">Revalidate domain
         <span class="icon-refresh"></span>
