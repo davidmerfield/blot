@@ -34,4 +34,14 @@ module.exports =
     });
 
     console.log(clfdate(), "built template-editor.min.js");
+
+    await build({
+      entryPoints: [join(source, "dashboard/template/js/source-code-editor.js")],
+      bundle: true,
+      minify: true,
+      target: ["chrome58", "firefox57", "safari11", "edge16"],
+      outfile: join(destination, "js/template-source-editor.min.js"),
+    });
+
+    console.log(clfdate(), "built template-source-editor.min.js");
   };
