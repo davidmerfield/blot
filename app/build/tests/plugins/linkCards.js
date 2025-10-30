@@ -62,7 +62,7 @@ describe("link cards plugin", function () {
     );
 
     expect(entry.html).toContain(
-      '<div class="link-card__content"><h3 class="link-card__title">Example Page</h3><p class="link-card__description">An example description.</p><span class="link-card__url">Example</span></div></a></article>'
+      '<div class="link-card__content"><h3 class="link-card__title">Example Page</h3><p class="link-card__description">An example description.</p><span class="link-card__url"><span class="link-card__url-text">Example</span></span></div></a></article>'
     );
   });
 
@@ -120,7 +120,7 @@ describe("link cards plugin", function () {
       '<article class="link-card link-card--large"><a class="link-card__anchor" href="https://example.com/large" rel="noopener noreferrer"><div class="link-card__thumbnail">'
     );
     expect(entry.html).toContain(
-      '<div class="link-card__content"><h3 class="link-card__title">Large Layout</h3><p class="link-card__description">Rendered with the large layout.</p><span class="link-card__url">Example</span></div></a></article>'
+      '<div class="link-card__content"><h3 class="link-card__title">Large Layout</h3><p class="link-card__description">Rendered with the large layout.</p><span class="link-card__url"><span class="link-card__url-text">Example</span></span></div></a></article>'
     );
   });
 
@@ -159,11 +159,8 @@ describe("link cards plugin", function () {
 
     const entry = await this.blog.check({ path });
 
-    expect(entry.html).toContain(
-      '<article class="link-card link-card--compact"><a class="link-card__anchor" href="https://example.com/unsafe" rel="noopener noreferrer">'
-    );
-    expect(entry.html).toContain(
-      '<div class="link-card__content"><h3 class="link-card__title">Example Page</h3><p class="link-card__description">An example description.</p><span class="link-card__url">Example</span></div></a></article>'
+    expect(entry.html).toBe(
+      '<article class="link-card link-card--compact"><a class="link-card__anchor" href="https://example.com/unsafe" rel="noopener noreferrer"><div class="link-card__content"><h3 class="link-card__title">Example Page</h3><p class="link-card__description">An example description.</p><span class="link-card__url"><span class="link-card__url-text">Example</span></span></div></a></article>'
     );
     expect(entry.html).not.toContain("link-card__thumbnail");
     expect(entry.html).not.toContain("javascript:alert(1)");
