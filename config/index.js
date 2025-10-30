@@ -10,6 +10,7 @@ const BLOT_DATA_DIRECTORY =
 const BLOT_HOST = process.env.BLOT_HOST || "localhost";
 const BLOT_PORT = process.env.BLOT_PORT || "8080";
 const BLOT_PROTOCOL = process.env.BLOT_PROTOCOL || "https";
+const BLOT_IPV6 = process.env.BLOT_IPV6 || null;
 
 const BLOT_CDN = BLOT_PROTOCOL + "://cdn." + BLOT_HOST;
 
@@ -61,6 +62,7 @@ module.exports = {
   blog_folder_dir: BLOT_DATA_DIRECTORY + "/blogs",
 
   ip: process.env.BLOT_IP || "127.0.0.1",
+  ipv6: BLOT_IPV6,
 
   port: BLOT_PORT,
   clients_port: 8888,

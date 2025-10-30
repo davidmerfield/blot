@@ -4,12 +4,44 @@
   <body>
     {{> header}}
     <div class="container">
-      <h1>Posts tagged “{{tag}}”</h1>
+      <h1>{{tag}}</h1>
+      
+     <div class="grid">
+
+        <div class="grid-sizer"></div>
+
       {{#entries}}
-      <a href="{{{url}}}">{{title}}</a>
-      <span class="small">{{date}}</span>
-      <br />
+        <div class="grid-item">
+
+          <a href="{{{url}}}" style="line-height:1.5;display:block;margin:1em 0;font-size:16px">
+
+          {{#thumbnail.medium}}
+          <span style="width:100%;display:block;height:0;padding-bottom:{{ratio}};margin: 0 0 1em 0;">
+            <img src="{{{url}}}"/>
+          </span>
+          {{/thumbnail.medium}}
+
+
+          {{title}} <span style="color:gray">  – {{summary}}</span>
+          </a>
+
+        </div>
+
       {{/entries}}
+
+      </div>
+
+      {{#pagination}}
+      <div class="pagination">
+        {{#previous}}
+        <a href="/tagged/{{slug}}/page/{{previous}}">&larr; Newer</a>
+        {{/previous}}
+        Page {{current}} of {{total}}
+        {{#next}}
+        <a href="/tagged/{{slug}}/page/{{next}}">Older &rarr;</a>
+        {{/next}}
+      </div>
+      {{/pagination}}
     </div>
     {{> footer}}
   </body>

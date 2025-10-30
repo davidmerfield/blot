@@ -1,7 +1,13 @@
 {
   "name": "Grid",
   "locals": {
-    "page_size": 96
+    "page_size": 96,
+    "text_color": "#000000",
+    "background_color": "#FFFFFF",
+    "accent_color": "blue",
+    "body_font": {
+      "font_size": 14
+    }
   },
   "isPublic": false,
   "views": {

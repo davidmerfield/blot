@@ -12,7 +12,14 @@ module.exports = function drop(owner, templateName, callback) {
   ensure(owner, "string").and(templateID, "string").and(callback, "function");
 
   getAllViews(templateID, function (err, views, metadata) {
-    if (err) return callback(err);
+    if (err && err.code !== "ENOENT") return callback(err);
+
+    if (err && err.code === "ENOENT") {
+      metadata = null;
+      views = {};
+    }
+
+    views = views || {};
 
     multi.srem(key.blogTemplates(owner), templateID);
     multi.srem(key.publicTemplates(), templateID);
@@ -20,7 +27,7 @@ module.exports = function drop(owner, templateName, callback) {
     multi.del(key.urlPatterns(templateID));
     multi.del(key.allViews(templateID));
 
-    if (metadata.shareID) {
+    if (metadata && metadata.shareID) {
       multi.del(key.share(metadata.shareID));
     }
 
@@ -30,7 +37,9 @@ module.exports = function drop(owner, templateName, callback) {
     }
 
     multi.exec(function (err) {
-      Blog.set(metadata.owner, { cacheID: Date.now() }, function (err) {
+      const ownerID = metadata && metadata.owner ? metadata.owner : owner;
+
+      Blog.set(ownerID, { cacheID: Date.now() }, function (err) {
         callback(err, "Deleted " + templateID);
       });
     });

@@ -25,10 +25,34 @@ alias nginx-stats='ps aux | grep nginx | grep -v grep | awk "{sum+=\$6} END {pri
 alias client='redis-cli -h $(grep BLOT_REDIS_HOST /etc/blot/secrets.env | cut -d"=" -f2 | tr -d " ")'
 alias login="docker exec -it blot-container-blue /bin/sh"
 alias candidates="docker exec blot-container-blue node app/documentation/featured/candidates"
-alias access="docker exec blot-container-blue node /usr/src/app/scripts/access.js"
+alias access="docker exec blot-container-blue node /usr/src/app/scripts/blog/access.js"
 alias info="docker exec blot-container-blue node /usr/src/app/scripts/info"
 alias errors="tail -n 10000000 \$LOGS/access.log | egrep ' (500|501|502|504) '"
 alias 404s="cat /var/instance-ssd/logs/access.log | grep ' 404 ' | cut -d ' ' -f7 | sed -E 's|https?://[^/]+| |' |  sort | uniq -c | sort -rn | head -n 100"
+alias upstream='tail -f /var/instance-ssd/logs/access.log | stdbuf -oL grep MISS | stdbuf -oL awk "{print \$10, \$3, \$4, \$7}"'
+alias rebuild='docker exec blot-container-blue node /usr/src/app/scripts/entry/rebuild'
+
+question() {
+  if [ -z "$1" ]; then
+    echo "Usage: question <question-url>"
+    return 1
+  fi
+
+  local url="$1"
+  local container="blot-container-blue"
+
+  # Get the user ID from the question script
+  local user_id
+  user_id=$(docker exec -i "$container" node scripts/questions/author.js "$url" | tr -d '\r\n')
+
+  if [ -z "$user_id" ]; then
+    echo "No user found for $url"
+    return 1
+  fi
+
+  # Call info with the user ID
+  info "$user_id"
+}
 
 req() {
     grep -h --line-buffered "$1" <(tail -n 1000000 $LOGS/error.log $LOGS/access.log) <(docker logs blot-container-blue 2>&1) <(docker logs blot-container-green 2>&1) <(docker logs blot-container-yellow 2>&1)

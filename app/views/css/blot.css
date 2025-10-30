@@ -979,6 +979,37 @@ ul.pill-navigation {
   max-width: 400px;
 }
 
+.sync-status {
+  position: relative;
+  overflow: hidden;
+}
+
+.sync-status.syncing::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 10%,
+   var(--background-color) 80%,
+    transparent 90%
+  );
+  opacity: 0.35;
+  transform: translateX(-120%);
+  z-index: 1;
+  animation: sync-status-swoosh 2s infinite;
+}
+
+@keyframes sync-status-swoosh {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .sync-status .sync-status-icon > * {
   display: none;
 }

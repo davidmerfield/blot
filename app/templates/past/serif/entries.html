@@ -2,19 +2,30 @@
 <html>
   {{> head}}
   <body>
+    {{> header}}
 
+    <p class="entries">
+      {{#entries}}
+      <a href="{{{url}}}" 
+        ><span>{{title}}</span>
+      </a>
+      <span class="light">{{date}} {{^last}}//{{/last}}</span>
+      {{/entries}}
+    </p>
 
-      {{> header}}
+    <br /><br />
 
-      <p style="font-size:30px">
-      {{#recentEntries}}
-        <a href="{{{url}}}" style="text-decoration:none;color:inherit;"><span style="line-height:1.2">{{title}}</span> </a>
-        <span style="color:#bbb;">{{date}} //</span>
-      {{/recentEntries}}
-      </p>
-
-      <br /><Br />
-
+    {{#pagination}}
+      <div class="pagination small">
+        {{#previous}}
+        <a class="light" href="/page/{{previous}}">&larr; Previous page</a>
+        &nbsp; &nbsp; &nbsp;
+        {{/previous}}
+        {{#next}}
+        <a class="light" href="/page/{{next}}">Next page &rarr;</a>
+        {{/next}}
+      </div>
+      {{/pagination}}
 
     {{> footer}}
   </body>

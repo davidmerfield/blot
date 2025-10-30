@@ -1,4 +1,4 @@
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   return callback(null, function () {
     this.entries = this.entries.sort(function (a, b) {
       var textA = a.path.toUpperCase();

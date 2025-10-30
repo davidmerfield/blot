@@ -1,5 +1,16 @@
-<h1 style="font-weight:normal;font-size:14px">
-  <a href="/">{{title}}</a>&nbsp;
-  <span style="float:right">{{#menu}}<a href="{{{url}}}" title="{{label}}">{{label}}</a>&nbsp;&nbsp;◊&nbsp;&nbsp;{{/menu}}</span>
-</h1>
-<br />
+<header class="site-header">
+  <input type="checkbox" id="site-nav-toggle" class="site-nav-toggle-input" aria-label="Toggle navigation" aria-controls="site-menu" />
+  <div class="site-header-bar">
+    <h1 class="site-title"><a href="/">{{title}}</a></h1>
+    <label for="site-nav-toggle" class="site-menu-toggle">menu</label>
+  </div>
+  <nav id="site-menu" class="site-nav" aria-label="Main menu">
+    <ul>
+      {{#menu}}
+      <li>
+        <a href="{{{url}}}" title="{{label}}">{{label}}</a>{{^last}}<span class="site-nav-spacer" aria-hidden="true">&nbsp;&nbsp;◊&nbsp;&nbsp;</span>{{/last}}
+      </li>
+      {{/menu}}
+    </ul>
+  </nav>
+</header>

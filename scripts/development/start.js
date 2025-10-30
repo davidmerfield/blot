@@ -34,8 +34,20 @@ spawnProcess("node", [path.join(__dirname, "open-folder-server.js")], {
   env: process.env,
 });
 
+const composeEnv = {
+  ...process.env,
+};
+
+if (composeEnv.COMPOSE_DOCKER_CLI_BUILD == null) {
+  composeEnv.COMPOSE_DOCKER_CLI_BUILD = "bake";
+}
+
+if (composeEnv.DOCKER_BUILDKIT == null) {
+  composeEnv.DOCKER_BUILDKIT = "1";
+}
+
 const compose = spawnProcess("docker-compose", composeArgs, {
-  env: process.env,
+  env: composeEnv,
 });
 
 function shutdown() {

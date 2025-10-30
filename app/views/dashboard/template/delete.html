@@ -1,30 +1,37 @@
-<style type="text/css">
-	button.red,
-	.grey {
-		border: none;
-		color: white;
-		padding: 1rem;
-	}
-
-	button.red {
-		flex-grow: 1;
-		background: red;
-				margin-right: 2rem
-	}
-
-	.grey {
-		flex-grow: 0.5;
-		background: #ccc;
-		color: #fff;
-	}
-</style>
-<form action="{{{base}}}/delete" method="post">
+<br><br>
+<form method="POST" class="dashboard-form">
 	<input type="hidden" name="_csrf" value="{{csrftoken}}" />
-	<p>
-		Are you sure you want to delete this template?
-	</p>
-	<div style="display: flex;margin: 0 1rem">
-		<button class="red" type="submit" style="cursor: pointer;">Delete</button>
-		<a class="grey" href="{{{base}}}">Cancel</a>
-	</div>
+    {{#template.isMine}}
+	    {{^template.checked}}
+    
+	
+  <p>
+    If you <b>delete the {{template.name}} template</b>, Blot will permanently remove its code and its settings. This cannot be undone.
+  </p>
+
+  <div class="buttons">
+    <button type="submit" class="red">
+      Delete {{template.name}}
+    </button>
+    <a href="{{{base}}}">Do not delete</a>
+  </div>
+    {{/template.checked}}
+    {{/template.isMine}}
+
+    {{#template.checked}}
+    <p>The <strong>{{template.name}}</strong> template is your current template and cannot be deleted. Use another template first, then delete this one.</p>
+        <div class="buttons" style="opacity: 0.5;">
+        <a href="{{{base}}}">Cancel</a>
+    </div>
+    </button>
+
+    {{/template.checked}}
+
+    {{^template.isMine}}
+    <p>You cannot delete a default template.</p>
+    <div class="buttons" style="opacity: 0.5;">
+        <a href="{{{base}}}">Cancel</a>
+    </div>
+    {{/template.isMine}}
+
 </form>

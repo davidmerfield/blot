@@ -3,7 +3,7 @@ var arrayify = require("helper/arrayify");
 var moment = require("moment");
 require("moment-timezone");
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   Entries.getAll(req.blog.id, function (allEntries) {
     var years = {};
 

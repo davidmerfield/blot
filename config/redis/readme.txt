@@ -1,143 +1,124 @@
-TODO:
+Redis orchestration tools
+=========================
 
-mounting the backup disk does not work on reboot / shutdown / restart apparently
+This directory now contains scripts to provision a replacement Redis
+instance from S3 backups, verify it against the production database, and
+clean up instances once they are no longer required. The tooling is
+intended for operators who already have SSH access to the Blot
+infrastructure and an AWS profile with the minimal permissions described
+below.
 
+Prerequisites
+-------------
 
+* AWS CLI v2 configured with a profile that can interact with the Blot
+  AWS account.
+* SSH access to the Redis launch template (private key on disk) and to
+  the primary Blot host via the `ssh blot` alias.
+* The scripts rely only on core system utilities (`bash`, `ssh`, `scp`,
+  `python3`) and do not require additional packages.
 
+Minimal IAM policy snippets
+---------------------------
 
+Use a dedicated profile that is limited to the following actions. Adjust
+resource ARNs if the bucket name or region ever changes.
 
-
-
-
-Move redis into its own instance?
-deployment process for new server
-1. write a script for the remote server
-2. write a script to run here
-3. write script to run on existing server which bgsaves, then duplicates dump.rdb so we can rsync to new server
-
-  - since redis is currently on same server, we should have been communicating with unix sockets, not tcp
-  - test if systemctl will auto reboot it by doing `kill -9 <pid>` if not, follow this guide:
-    https://ma.ttias.be/auto-restart-crashed-service-systemd/
-  - check old implementation for switching into read-only mode for redis
-  - write new backup script for redis instance
-    - make it run hourly
-  - test backup procedure on this instance before we switch production to it
-  - review best practices for ec2 instance:
-    - https://redis.com/blog/5-tips-for-running-redis-over-aws/
-    - https://stackoverflow.com/questions/11765502/best-ec2-setup-for-redis-server
-      - I've confirmed the xgd2 instance is HVM by checking the AMI associated with it
-  - document redis instance setup and config:
-    ```sudo dnf install -y redis6
-sudo systemctl start redis6
-sudo systemctl enable redis6
-sudo systemctl is-enabled redis6
-redis6-server --version
-redis6-cli ping
 ```
-  then changed in redis.conf
-    ```
-    bind $EC2_PRIVATE_IP 127.0.0.1
-    ```
-    https://serverfault.com/a/1129059
-  
-  then modified the systemctl service using systemctl edit:
-  https://askubuntu.com/questions/659267/how-do-i-override-or-configure-systemd-services
-
-  Restart=always
-
-  then I transfered the dump file, and moved it to wherever
-
-  redis6-cli config get dir
-
-  I then locked down outbound traffic
-
-  - purchased reserved instance for 3-year convertible, no upfront
-
-# look into transparent huge pages
-
-does this help performance?
-
-i also installed cron:
-
-
-
-
-
--------- Perform on Redis server
-
-# stop redis, this takes a while
-sudo systemctl stop redis6
-
-# verify that redis is not running
-redis6-cli ping
-
-# delete the old dump file
-sudo rm /var/lib/redis6/dump.rdb
-
-
--------- Perform on Blot server
-
-redis-cli bgsave
-
-# wait for the background save to complete
-redis-cli lastsave
-
-
--------- Perform on Redis server
-
-# copy the new dump file
-sudo scp -v -i projects.pem ec2-user@54.191.179.131:/var/www/blot/db/dump.rdb /var/lib/redis6/dump.rdb
-
-# start redis, takes a while
-sudo systemctl start redis6
-
-
--------- Perform on Blot server
-
-sudo stop blot
-
-save edits to environment.sh
-
-sudo start blot
-
-edit nginx config
-
-./scripts/production/reload_nginx_configuration.sh
-
-
-
-
 {
-  "MaxCount": 1,
-  "MinCount": 1,
-  "ImageId": "ami-xxx",
-  "InstanceType": "x2gd.medium",
-  "KeyName": "projects",
-  "EbsOptimized": true,
-  "NetworkInterfaces": [
+  "Version": "2012-10-17",
+  "Statement": [
     {
-      "SubnetId": "subnet-xxx",
-      "AssociatePublicIpAddress": true,
-      "DeviceIndex": 0,
-      "Groups": [
-        "sg-xxx"
-      ]
-    }
-  ],
-  "TagSpecifications": [
-    {
-      "ResourceType": "instance",
-      "Tags": [
-        {
-          "Key": "Name",
-          "Value": "Staging redis"
+      "Sid": "RedisBackupListing",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::blot-redis-backups",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "daily/*"
+          ]
         }
-      ]
+      }
+    },
+    {
+      "Sid": "RedisProvisioning",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:RunInstances",
+        "ec2:DescribeInstances",
+        "ec2:DescribeInstanceStatus",
+        "ec2:CreateTags",
+        "ec2:ModifyInstanceAttribute",
+        "ec2:StopInstances",
+        "ec2:TerminateInstances"
+      ],
+      "Resource": "*"
     }
-  ],
-  "PrivateDnsNameOptions": {
-    "HostnameType": "ip-name",
-    "EnableResourceNameDnsARecord": false,
-    "EnableResourceNameDnsAAAARecord": false
-  }
+  ]
 }
+```
+
+Provisioning and restore workflow
+---------------------------------
+
+Run `config/redis/scripts/provision-and-restore.sh` from the repository
+root.
+
+1. The script lists recent snapshots from
+   `s3://blot-redis-backups/daily`. Choose the desired backup when
+   prompted.
+2. Provide the path to the Redis instance SSH key (or export
+   `REDIS_SSH_KEY`). The tool launches a new instance using launch
+   template `lt-09f38dac82c204d58` in `us-west-2`, ensuring security
+   group `sg-0b3b200323d36ce2e` is attached. Metadata tags include
+   `RedisProvisionedBy=redis-restore-script`, the snapshot name, and an
+   ISO8601 timestamp. Details are appended to
+   `config/redis/scripts/provisioned-instances.log` for later review.
+3. Once AWS reports the instance is running, the script waits for SSH and
+   invokes `config/redis/transfer.sh` to copy helper scripts to the
+   server. If the instance profile does not provide S3 access you can
+   supply temporary AWS credentials when prompted so the remote restore
+   succeeds.
+4. The chosen snapshot is restored by running
+   `restore-from-backup.sh` on the new instance. Afterwards the script
+   compares the restored Redis dataset against the production database by
+   executing `redis-cli` on the main Blot host (`ssh blot`). DB size,
+   keyspace information, and ping results are displayed side-by-side.
+5. If the operator confirms that the data looks correct, the script
+   updates `BLOT_REDIS_HOST` in `/etc/blot/secrets.env`, restarts all
+   Docker containers (`docker restart blot-container-*`), and reloads
+   OpenResty (`sudo openresty -t && sudo openresty -s reload`). If not,
+   no configuration is changed.
+6. Use `--dry-run` to preview AWS API calls and SSH steps without creating
+   resources.
+
+Cleanup workflow
+----------------
+
+Use `config/redis/scripts/cleanup-provisioned.sh` to find and decommission
+instances that were created by the provisioning script.
+
+1. The script queries AWS for EC2 instances tagged with
+   `RedisProvisionedBy=redis-restore-script` and prints their state, launch
+   time, and private IP. Cross-reference with
+   `config/redis/scripts/provisioned-instances.log` if additional context
+   is needed.
+2. Select an instance and choose whether to stop or terminate it. A
+   default of terminate is suggested for stopped instances.
+3. Confirm the action. When run with `--dry-run` the AWS command is
+   printed but not executed.
+
+Safety features
+---------------
+
+* Both scripts use `set -euo pipefail`, consistent error handling, and
+  explicit confirmation prompts before making irreversible changes.
+* Provisioning waits for SSH availability, verifies Redis connectivity
+  with `redis-cli`, and skips environment changes if validation fails.
+* Cleanup refuses to stop an already stopped instance and always
+  requests operator confirmation.
+* Logs are kept in `config/redis/scripts/provisioned-instances.log` to aid
+  later cleanup or auditing.

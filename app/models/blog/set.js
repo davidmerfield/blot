@@ -72,14 +72,21 @@ module.exports = function (blogID, blog, callback) {
         // so that we can redirect the former handle easily,
         // whilst leaving it free for other users to claim.
         if (former.handle) {
-          multi.del(key.domain(former.handle + "." + config.host), blogID);
+          multi.del(key.domain(former.handle + "." + config.host));
         }
       }
 
       // We check against empty string, because if the
       // user removes their domain from the page on the
       // dashboard, changes.domain will be an empty string
-      if (changes.domain || changes.domain === "") {
+      var domainChanged = Object.prototype.hasOwnProperty.call(
+        changes,
+        "domain"
+      );
+
+      if (domainChanged) {
+        var latestDomain = changes.domain;
+
         // We calculate a backup domain to check against
         // Lots of users have difficulty understanding the
         // difference between www.example.com and example.com
@@ -103,9 +110,9 @@ module.exports = function (blogID, blog, callback) {
         // to ensure that when the user changes the domain
         // from www.example.com to example.com on the dashboard
         // we don't accidentally delete the new settings.
-        if (latest.domain) {
-          backupDomain = BackupDomain(latest.domain);
-          multi.set(key.domain(latest.domain), blogID);
+        if (latestDomain) {
+          backupDomain = BackupDomain(latestDomain);
+          multi.set(key.domain(latestDomain), blogID);
           multi.set(key.domain(backupDomain), blogID);
         }
       }

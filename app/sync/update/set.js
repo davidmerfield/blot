@@ -9,6 +9,11 @@ var PUBLIC_FILE = "PUBLIC_FILE";
 var isHidden = require("build/prepare/isHidden");
 var build = require("build");
 var pathNormalizer = require("helper/pathNormalizer");
+var makeSlug = require("helper/makeSlug");
+var path = require("path");
+
+var basename = (path.posix || path).basename;
+var noop = () => {};
 
 function isPublic(path) {
   const normalizedPath = pathNormalizer(path).toLowerCase();
@@ -39,6 +44,13 @@ function dropEntryAndPreview(blogID, targetPath, callback) {
 
       if (entry.draft && !isHidden(targetPath)) {
         Preview.remove(blogID, targetPath, callback);
+      }
+
+      // This file is a draft, write a preview file
+      // to the users Dropbox and continue down
+      // We look up the remote path later in this module...
+      if (entry.draft && !isHidden(entry.path)) {
+        Preview.write(blog.id, path, callback);
       } else {
         callback();
       }
@@ -89,6 +101,24 @@ function buildAndSet(blog, path, multiInfo, callback) {
 
           Entry.set(blog.id, entry.path, entry, function (err) {
             if (err) return next(err);
+
+            const syntheticKeys = new Set();
+
+            const slugToken = makeSlug(
+              entry.slug || entry.metadata.title || entry.title || ""
+            );
+            if (slugToken) {
+              syntheticKeys.add(`/__wikilink_slug__/${slugToken}`);
+            }
+
+            const filenameToken = entry.path ? basename(entry.path) : "";
+            if (filenameToken) {
+              syntheticKeys.add(`/__wikilink_filename__/${filenameToken}`);
+            }
+
+            syntheticKeys.forEach((syntheticKey) =>
+              rebuildDependents(blog.id, syntheticKey, noop)
+            );
 
             if (entry.draft && !isHidden(entry.path)) {
               Preview.write(blog.id, entry.path, next);

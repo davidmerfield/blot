@@ -314,6 +314,86 @@ describe("wikilinks", function () {
     expect(body).not.toContain('href="/notes/drafts/dawn"');
   });
 
+  it("rebuilds dependent entries when a slug-matched wikilink target is saved", async function () {
+    await this.write({
+      path: "/Notes/Waiting.md",
+      content: [
+        "Title: Waiting Note",
+        "Link: notes/waiting",
+        "",
+        "This links to [[Future Note]].",
+      ].join("\n"),
+    });
+    await this.blog.rebuild();
+
+    const initialRes = await this.get("/notes/waiting");
+    const initialBody = await initialRes.text();
+
+    expect(initialRes.status).toEqual(200);
+    expect(initialBody).toContain('href="Future Note"');
+    expect(initialBody).toContain(">Future Note<");
+
+    await this.write({
+      path: "/Library/Knowledge.txt",
+      content: [
+        "Title: Future Note",
+        "Link: library/future-note",
+        "",
+        "# Future Note",
+      ].join("\n"),
+    });
+
+    await this.blog.rebuild();
+
+    const res = await this.get("/notes/waiting");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain('href="/library/future-note"');
+    expect(body).toContain(">Future Note<");
+    expect(body).not.toContain('href="Future Note"');
+  });
+
+  it("rebuilds dependent entries when a filename-matched wikilink target is saved", async function () {
+    await this.write({
+      path: "/Notes/Waiting.md",
+      content: [
+        "Title: Waiting Note",
+        "Link: notes/waiting",
+        "",
+        "This links to [[Spec Sheet.md]].",
+      ].join("\n"),
+    });
+    await this.blog.rebuild();
+
+    const initialRes = await this.get("/notes/waiting");
+    const initialBody = await initialRes.text();
+
+    expect(initialRes.status).toEqual(200);
+    expect(initialBody).toContain('href="Spec Sheet.md"');
+    expect(initialBody).toContain(">Spec Sheet.md<");
+
+    await this.write({
+      path: "/Library/Spec Sheet.md",
+      content: [
+        "Title: Research Summary",
+        "Link: library/research-summary",
+        "",
+        "# Research Summary",
+      ].join("\n"),
+    });
+
+    await this.blog.rebuild();
+
+    const res = await this.get("/notes/waiting");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain('href="/library/research-summary"');
+    expect(body).toContain(">Research Summary<");
+    expect(body).not.toContain('href="Spec Sheet.md"');
+  });
+
   // todo: implement a test spec which verifies filename lookup works *without* file extension
   // which is currently not implemented
 });

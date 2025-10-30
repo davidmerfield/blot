@@ -1,6 +1,6 @@
 var Tags = require("models/tags");
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   req.log('Listing popular tags');
   
   // We could make this limit configurable through req.query or config

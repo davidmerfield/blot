@@ -1,6 +1,6 @@
 /* FOOTNOTES */
 .footnote-ref {
-  font-size: 12px;
+  font-size: calc({{{body_font.font_size}}}px * 0.5);
   line-height: 0.5em;
   vertical-align: baseline;
   position: relative;
@@ -29,32 +29,32 @@ pre, code {font: inherit;}
 
 .hljs-comment,
 .hljs-quote {
-  color: {{medium_text}};
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6);
   font-style: italic;
 }
 
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-subst {
-  color: {{dark_text}};
+  color: {{text_color}};
   font-weight: bold;
 }
 
 .hljs-number,
 .hljs-literal {
-  color: {{medium_text}};
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6);
 }
 
 .hljs-string,
 .hljs-doctag,
 .hljs-formula {
-  color: {{medium_text}};
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6);
 }
 
 .hljs-title,
 .hljs-section,
 .hljs-selector-id {
-  color: {{dark_text}};
+  color: {{text_color}};
   font-weight: bold;
 }
 
@@ -65,32 +65,32 @@ pre, code {font: inherit;}
 .hljs-class .hljs-title,
 .hljs-type,
 .hljs-name {
-  color: {{medium_text}};
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6);
   font-weight: bold;
 }
 
 .hljs-tag {
-  color: {{medium_text}};
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6);
 }
 
 .hljs-regexp {
-    color: {{medium_text}};
+    color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6);
 }
 
 .hljs-symbol,
 .hljs-bullet,
 .hljs-link {
-  color: {{dark_text}};
+  color: {{text_color}};
 }
 
 .hljs-built_in,
 .hljs-builtin-name {
-  color: {{dark_text}};
+  color: {{text_color}};
   text-decoration: underline;
 }
 
 .hljs-meta {
-  color: {{light_text}};
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.4);
   font-weight: bold;
 }
 
@@ -99,7 +99,7 @@ pre, code {font: inherit;}
 }
 
 .hljs-addition {
-  color: {{dark_text}};
+  color: {{text_color}};
 }
 
 .hljs-emphasis {

@@ -47,6 +47,14 @@
       type: number
       description: A datestamp for when your site was last updated
 
+    - name: updated
+      type: function
+      description: Used to display the time your site was last updated, using the property directly or by passing in any of the supported [date tokens](#date-tokens).
+      example: |
+        Updated on {{updated}}.
+
+        Updated on {{#updated}}MMMM DDDo, YYYY{{/updated}}.
+
     - name: timezone
       type: string
       description: Your site’s timezone in the [tz database format](https://en.wikipedia.org/wiki/Tz_database)
@@ -78,15 +86,6 @@
     - name: roundAvatar
       type: boolean
       description: true if you’ve indicated your avatar is round, false if not
-
-    - name: imageExif
-      type: string
-      description: |
-        Controls how much image metadata Blot preserves. One of `off`, `basic`, or `full`—the default is `basic`.
-        - Off: strips all EXIF data before publishing.
-        - Basic: keeps core camera and exposure details such as `Make`, `Model`, `LensMake`, `LensModel`, `ExposureTime`, `FNumber`, `ISO`, `FocalLength`, `ExposureCompensation`, and `DateTimeOriginal`.
-        - Full: keeps everything from Basic plus GPS coordinates including `GPSLatitude`, `GPSLatitudeRef`, `GPSLongitude`, `GPSLongitudeRef`, `GPSAltitude`, and `GPSAltitudeRef`.
-      example: "{{blog.imageExif}}"
 
 - name: entry
   keys:

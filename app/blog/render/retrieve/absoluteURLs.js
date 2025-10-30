@@ -44,7 +44,7 @@ function absoluteURLs (base, $) {
   return $;
 }
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   return callback(null, function () {
     return function (text, render) {
       var base = req.protocol + "://" + req.get("host");

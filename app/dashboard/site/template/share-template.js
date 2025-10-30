@@ -31,8 +31,6 @@ share
         redirect: `/sites/${req.blog.handle}/template`
       };
 
-      console.log("req.body", req.body);
-
       next();
     },
     require("./save/newTemplate")

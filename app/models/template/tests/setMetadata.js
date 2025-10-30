@@ -1,5 +1,4 @@
 const { promisify } = require("util");
-
 describe("template", function () {
   require("./setup")({ createTemplate: true });
 
@@ -43,4 +42,5 @@ describe("template", function () {
     expect(syntax_highlighter.id).toEqual("agate");
     expect(syntax_highlighter.styles).toContain(".hljs{");
   });
+
 });

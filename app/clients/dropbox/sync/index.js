@@ -1,6 +1,9 @@
 var debug = require("debug")("blot:clients:dropbox:sync");
 var createClient = require("../util/createClient");
 var Download = require("../util/download");
+var _require = require("../util/constants");
+var MAX_FILE_SIZE = _require.MAX_FILE_SIZE;
+var hasUnsupportedExtension = _require.hasUnsupportedExtension;
 var hashFile = require("helper/hashFile");
 var Database = require("../database");
 var join = require("path").join;
@@ -239,8 +242,63 @@ function Apply(client, blogFolder, log, status) {
     // relative path to an item, since the root of the
     // Dropbox folder might not be the root of the blog.
     function download(item, callback) {
+      var pathForUnsupportedCheck = item.path_display || item.relative_path || "";
+
+      if (hasUnsupportedExtension(pathForUnsupportedCheck)) {
+        var unsupportedMessage =
+          "Skipping download because file extension is unsupported";
+        log(item.relative_path, unsupportedMessage);
+        status("Skipping unsupported file " + item.relative_path);
+
+        return fs.outputFile(
+          join(blogFolder, item.relative_path),
+          "",
+          function (err) {
+            if (err) {
+              log(
+                item.relative_path,
+                "Error creating placeholder for unsupported file",
+                err
+              );
+              status("Error creating placeholder " + item.relative_path);
+            }
+
+            callback();
+          }
+        );
+      }
+
+      if (typeof item.size === "number" && item.size > MAX_FILE_SIZE) {
+        var message =
+          "Skipping download because file exceeds size limit (" +
+          item.size +
+          " > " +
+          MAX_FILE_SIZE +
+          ")";
+        log(item.relative_path, message);
+        status("Skipping oversized file " + item.relative_path);
+
+        return fs.outputFile(
+          join(blogFolder, item.relative_path),
+          "",
+          function (err) {
+            if (err) {
+              log(
+                item.relative_path,
+                "Error creating placeholder for oversized file",
+                err
+              );
+              status("Error creating placeholder " + item.relative_path);
+            }
+
+            callback();
+          }
+        );
+      }
+
       log(item.relative_path, "Hashing any existing file contents");
       status("Downloading " + item.relative_path);
+
       hashFile(join(blogFolder, item.relative_path), function (
         err,
         content_hash

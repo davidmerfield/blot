@@ -7,6 +7,7 @@ const { DATA_DIRECTORY_ON_SERVER } = CONSTANTS;
 const { DATA_DIRECTORY_ON_CONTAINER } = CONSTANTS;
 const { ENV_FILE_ON_SERVER } = CONSTANTS;
 const { REGISTRY_URL } = CONSTANTS;
+const { LOG_MAX_SIZE, LOG_MAX_FILE } = CONSTANTS;
 
 const VALID_PLATFORMS = {
   linux: ["amd64", "arm64"],
@@ -181,8 +182,8 @@ async function generateDockerCommand(container, platform, commitHash) {
 
     // Log driver configuration
     "--log-driver json-file",
-    "--log-opt max-size=120m",
-    "--log-opt max-file=5",
+    `--log-opt max-size=${LOG_MAX_SIZE}`,
+    `--log-opt max-file=${LOG_MAX_FILE}`,
 
     // Expose the internal port to the host network
     // Since each container listens on the same internal port

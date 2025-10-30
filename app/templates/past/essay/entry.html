@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+    <div class="container">
+      {{#entry}}
+		
+        {{{titleTag}}}
+
+       
+
+        {{{body}}}
+	
+        <Br />
+         <p class="subtitle">
+          {{date}}
+
+          {{#tags.length}}
+          
+            {{#tags}}
+            · <a class="light" href="/tagged/{{slug}}">{{name}}</a>
+            {{/tags}}
+          {{/tags.length}}
+        </p>
+      {{/entry}}
+    {{> footer}}
+  </body>
+</html>

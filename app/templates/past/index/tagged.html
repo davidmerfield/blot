@@ -12,11 +12,23 @@
     All posts tagged {{tag}}:
     </small>
 
-    {{#entries}}
-    <a href="{{{url}}}" class="row"><b>{{title}}</b> {{#date}}&nbsp;·&nbsp; <span style="white-space: nowrap;">{{date}}</span>{{/date}}</a>
-    {{/entries}}
+      {{#entries}}
+      <a href="{{{url}}}" class="row"><b>{{title}}</b> {{#date}}&nbsp;·&nbsp; <span style="white-space: nowrap;">{{date}}</span>{{/date}}</a>
+      {{/entries}}
 
-    {{> footer}}
+      {{#pagination}}
+      <div class="pagination">
+        {{#previous}}
+        <a href="/tagged/{{slug}}/page/{{previous}}">&larr; Newer</a>
+        {{/previous}}
+        Page {{current}} of {{total}}
+        {{#next}}
+        <a href="/tagged/{{slug}}/page/{{next}}">Older &rarr;</a>
+        {{/next}}
+      </div>
+      {{/pagination}}
+
+      {{> footer}}
 
   </body>
 </html>

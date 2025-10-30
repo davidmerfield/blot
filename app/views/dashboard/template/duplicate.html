@@ -1,6 +1,24 @@
+<br><br>
+<form action="{{{base}}}/duplicate" method="post" class="dashboard-form">
+	<input type="hidden" name="_csrf" value="{{csrftoken}}" />
+	
+		<p>You can make a copy of this template which you can edit:</p>
 
-<form action="{{{base}}}/duplicate" method="post">
-	<input type="text" name="name" value="{{template.name}}" />
-	<button class="button disabled small" type="submit">Rename</button>
-	<a href="{{{base}}}">Cancel</a>
+  <div class="buttons">
+    <button type="submit">
+      Duplicate {{template.name}}
+    </button>
+	<a href="{{{base}}}" style="visibility: hidden;">Cancel</a>
+  </div>
+
+  <br><br>
+
+	<p>Or download an archive of the template's source code and settings configuration files:</p>
+
+  
+<a href="{{{base}}}/download-zip" target="_blank" style="font-size:14px;margin-top:24px;display:  inline-block;border-radius: var(--border-radius);background-color: var(--accent-color);color:var(--background-color);padding:0.5em 0.75em;font-weight: 600;">
+   
+    Download template 
+</a>
+
 </form>

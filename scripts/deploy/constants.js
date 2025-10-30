@@ -23,6 +23,8 @@ const blogsConfig = {
 module.exports = {
   REGISTRY_URL: "ghcr.io/davidmerfield/blot",
   PLATFORM_OS: "linux",
+  LOG_MAX_SIZE: "512m",
+  LOG_MAX_FILE: 1,
 
   // This is the port each container listens on internally
   // Externally they listen on the port specified in the container

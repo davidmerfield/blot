@@ -35,104 +35,414 @@ body {
   padding: 0
 }
 
+/* NAVIGATION */ 
 
-/* :: Navigation */
-
-.navigation {
-  padding: 2em 0;
-  {{#navigation_background_color}}
-  background: {{navigation_background_color}};
-  {{/navigation_background_color}}
-  {{^navigation_background_color}}
-  background: {{background_color}};
-  {{/navigation_background_color}}
-  box-sizing: border-box;
-  z-index: 100;
+header > a {
+  white-space: nowrap;
+  margin-bottom: calc({{spacing}}rem/2); /* This ensures the nav wraps underneath */
 }
 
-.navigation .container {
+.header-wrapper {
+  position: relative;
+  padding: 2em 0;
+  background: {{navigation_background_color}};
+  {{^sticky_navigation}}
+  position: relative;
+  z-index: 1;
+  {{/sticky_navigation}}
+  {{#sticky_navigation}}
+  {{#is.navigation_location.top}}
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  {{/is.navigation_location.top}}
+  {{^is.navigation_location.top}}
+  position: fixed;
+  {{/is.navigation_location.top}}
+  z-index: 1;
+  {{/sticky_navigation}}
+
+}
+
+header {
+  height: {{font.line_height}}em;
+  overflow: hidden;
   display: flex;
   flex-wrap: wrap;
-  align-items:baseline;
   justify-content: space-between;
+  position: relative;
+  padding: calc({{spacing}}rem/2) calc({{spacing}}rem);
 }
 
-.navigation.alignment-center .container {justify-content: center;}
-.navigation.alignment-left  .container {justify-content: flex-start;}
-.navigation.alignment-right .container {justify-content: flex-end;}
+
+.header-wrapper a {
+  opacity: 0.6666;
+  transition: opacity,color .2s ease;
+}
+
+header a {
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.header-wrapper:hover a {
+  opacity: 1;
+}
+
+header a:visited {
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.5)
+}
+
+header a:hover {
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.75);
+}
+
+header a:active {
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.5);
+}
+
+
+nav {
+  background: {{navigation_background_color}};
+  position: relative;
+  {{#collapse_navigation_by_default}}
+  width: 100%;
+  {{/collapse_navigation_by_default}}
+}
+
+header a,
+header .tabular-numerals {
+    margin-left: calc({{spacing}}rem/4);
+    margin-right: calc({{spacing}}rem/4);
+}
+
+header > a:first-child {
+  margin-left: 0;
+}
+
+nav a[href="/search"] {display: none}
+
+nav .spacer {
+    height: 22px;
+    border-right: 1px solid rgba({{#rgb}}{{text_color}}{{/rgb}},0.1);
+    margin: 0 calc({{spacing}}rem / 2);
+}
+
+nav a {
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.6666);
+  transition: opacity,color .2s ease;
+}
+
+nav a:hover {
+  opacity: 1;
+}
+
+nav a {
+  margin-left: 1em;
+}
+
+nav a:not([href]) {
+  cursor: default;
+  color:  rgba({{#rgb}}{{text_color}}{{/rgb}},0.3);
+  text-decoration: none!important;
+}
+
+.navigation-location-top {
+  {{#sticky_navigation}}
+  scroll-padding-top: calc({{font.line_height}}em + {{spacing}}rem + 4em);
+  {{/sticky_navigation}}
+}
+
+.navigation-location-left,
+.navigation-location-right {
+  padding-top: 0;
+}
 
 .navigation-location-left {
   padding-left: var(--sidebar-width);
 }
 
-.naviation-location-right {
+.navigation-location-right {
   padding-right: var(--sidebar-width);
 }
-.navigation-location-left .container,
-.navigation-location-right .container {
-  padding-top: 2em}
 
-
-.navigation-location-left .navigation,
-.navigation-location-right .navigation {
-  position: absolute;
+.navigation-location-left .header-wrapper,
+.navigation-location-right .header-wrapper {
+  position: fixed;
   top: 0;
   bottom: 0;
   width: var(--sidebar-width);
   padding: 2em;
+  box-sizing: border-box;
+  display: flex;
+  background: {{navigation_background_color}};
+  overflow-y: auto;
+  z-index: 2;
 }
 
-.navigation-location-left .navigation {
+.navigation-location-left .header-wrapper {
   left: 0;
 }
 
-.navigation-location-right .navigation {
+.navigation-location-right .header-wrapper {
   right: 0;
 }
 
-.navigation-location-left .navigation .container,
-.navigation-location-right .navigation .container {
+.navigation-location-left .header-wrapper .container,
+.navigation-location-right .header-wrapper .container {
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.navigation-location-left header,
+.navigation-location-right header {
+  position: static;
+  height: auto;
+  width: 100%;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: flex-start;
+  gap: calc({{spacing}}rem/2);
+  padding: 0;
 }
 
-.navigation-location-left .navigation #logo,
-.navigation-location-right .navigation #logo {
-  margin-bottom: 1.4em;
+.navigation-location-right header {
+  align-items: flex-end;
 }
 
-.navigation-location-left .navigation .links,
-.navigation-location-right .navigation .links {
+.navigation-location-left header > a,
+.navigation-location-right header > a {
+  margin-left: 0;
+}
+
+.navigation-location-left header > a:first-child,
+.navigation-location-right header > a:first-child {
+  margin-bottom: calc({{spacing}}rem/2);
+}
+
+.navigation-location-right header > a {
+  text-align: right;
+}
+
+.navigation-location-left nav,
+.navigation-location-right nav {
+  display: flex;
   flex-direction: column;
-  display: flex;
+  align-items: flex-start;
+  gap: calc({{spacing}}rem/2);
+  width: 100%;
+  background: none;
+  padding: 0;
 }
-  
-.navigation a {margin-right: 1em;color: {{text_color}};text-decoration: none}
-.navigation .links a {color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);}
-.navigation a:last-child {margin-right: 0}
-.navigation a {opacity: 0.6666;transition: opacity,color 0.2s ease}
-.navigation:hover a {opacity: 1}
-.navigation a:hover {color: {{text_color}};}
 
-.navigation .links {
-  display: flex;
+.navigation-location-right nav {
+  align-items: flex-end;
+}
+
+.navigation-location-left nav .spacer,
+.navigation-location-right nav .spacer {
+  display: none;
+}
+
+.navigation-location-left nav a,
+.navigation-location-right nav a {
   margin: 0;
-  align-content: baseline;
-  flex-shrink: 0;
 }
 
-.links a {
-  order: 1;
+.navigation-location-right nav a {
+  text-align: right;
 }
 
-#logo {
-  color: {{text_color}};
-  flex-shrink: 0;
-  margin-right: 2em;
+.navigation-location-left #toggle,
+.navigation-location-right #toggle {
+  display: none;
+}
+
+.navigation-location-left #hidden-toggle,
+.navigation-location-right #hidden-toggle {
+  display: none;
+}
+
+.navigation-location-left .hamburger-box,
+.navigation-location-right .hamburger-box {
+  display: none;
+}
+
+@media screen and (max-width: 900px) {
+  .navigation-location-left,
+  .navigation-location-right {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .navigation-location-left .header-wrapper,
+  .navigation-location-right .header-wrapper {
+    position: relative;
+    width: auto;
+    padding: 2em 0;
+    overflow: visible;
+  }
+
+  .navigation-location-left .header-wrapper .container,
+  .navigation-location-right .header-wrapper .container {
+    padding: 0 1em;
+  }
+
+  .navigation-location-left header,
+  .navigation-location-right header {
+    flex-direction: row;
+    align-items: center;
+    height: {{font.line_height}}em;
+    justify-content: space-between;
+    padding: calc({{spacing}}rem/2) calc({{spacing}}rem);
+  }
+
+  .navigation-location-left header > a,
+  .navigation-location-right header > a {
+    margin-left: calc({{spacing}}rem/4);
+    margin-right: calc({{spacing}}rem/4);
+  }
+
+  .navigation-location-left header > a:first-child,
+  .navigation-location-right header > a:first-child {
+    margin-bottom: 0;
+  }
+
+  .navigation-location-left nav,
+  .navigation-location-right nav {
+    flex-direction: column;
+    align-items: flex-start;
+    background: {{navigation_background_color}};
+    padding: 0;
+  }
+
+  .navigation-location-right header,
+  .navigation-location-right nav {
+    align-items: flex-start;
+  }
+
+  .navigation-location-left nav a,
+  .navigation-location-right nav a {
+    margin-left: 1em;
+  }
+
+  .navigation-location-left #toggle,
+  .navigation-location-right #toggle {
+    display: block;
+  }
+
+  .navigation-location-left #hidden-toggle,
+  .navigation-location-right #hidden-toggle {
+    display: none;
+  }
+
+  .navigation-location-left .hamburger-box,
+  .navigation-location-right .hamburger-box {
+    display: inline-block;
+  }
+}
+
+#toggle {
+  position: absolute;
+  top: calc({{spacing}}rem/2);
+  right:  {{spacing}}rem;
+  background: {{navigation_background_color}};
+  cursor: pointer;
+  padding-left:.7em;
+  width: 1.4em;
+  height: 1.4em;
 }
 
 
-#logo:hover {opacity: 0.8}
+#hidden-toggle {
+  display: none
+}
+
+#hidden-toggle:checked~header {
+  height: auto;
+}
+
+#hidden-toggle:checked~header nav {
+  width: 100%;
+  padding: 2em 0;
+}
+
+#hidden-toggle:checked~header nav a {
+  display: block;
+  margin-left: 0;
+  padding: 0.5em 0;
+}
+
+#hidden-toggle:checked~header .hamburger-inner:after {
+  bottom: 0;
+  transform: rotate(-90deg);
+}
+
+#hidden-toggle:checked~header .hamburger-inner:before {
+  top: 0;
+  opacity: 0;
+}
+
+#hidden-toggle:checked~header .hamburger-inner {
+  transform: rotate(45deg);
+}
+
+.hamburger-inner,
+.hamburger-inner:after,
+.hamburger-inner:before {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background-color: {{text_color}};
+}
+
+.hamburger-box {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  height: 1.4em;
+}
+
+.hamburger-inner:after,
+.hamburger-inner:before {
+  display: block;
+  content: "";
+}
+
+.hamburger-inner:before {
+  top: -7px;
+}
+
+.hamburger-inner:after {
+  bottom: -7px;
+}
+
+.hamburger-inner {
+  top: 50%;
+  display: block;
+  margin-top: -1px;
+}
+
+.tabular-numerals {
+font-feature-settings: 'tnum';
+-webkit-font-feature-settings: 'tnum';
+-moz-font-feature-settings: 'tnum';
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}
+
+
 
 
 /*  :: General layout */
@@ -144,15 +454,7 @@ body {
   max-width: {{max_width}}px;  
   padding-left: 1em;
   padding-right: 1em;
-  {{#is.site_alignment.center}}
   margin:0 auto;
-  {{/is.site_alignment.center}}
-  {{#is.site_alignment.left}}
-  margin:0 auto 0 2em;
-  {{/is.site_alignment.left}}
-  {{#is.site_alignment.right}}
-  margin:0 2em 0 auto;
-  {{/is.site_alignment.right}}
 }
 
 .entry {margin: 0 0 192px}

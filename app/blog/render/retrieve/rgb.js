@@ -3,7 +3,7 @@
 // background: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.1);
 const tinyColor = require("helper/tinyColor");
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   return callback(null, function () {
     return function (text, render) {
       var rgb = "";

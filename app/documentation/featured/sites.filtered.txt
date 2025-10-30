@@ -12,8 +12,6 @@
 #e2c556 eli.li Eli Mellen, is a software engineer
 #d08573 paul.af Paul Esch-Laurent, is a software engineer
 #9e826d diary.craigwhite.nyc Craig White, is an artist
-#44679d mariusmasalar.me Marius Masalar, is a photographer
-#4c919c www.ishshah.me Ish Shah, is a software engineer
 #5177a4 www.chrbutler.com Christopher Butler, is a designer
 #576c50 benlog.net Ben Greenberg, is a journalist
 #111111 www.letterspace.org Robert van Vliet, is a writer
@@ -47,10 +45,10 @@
 #000000 alongtheray.com Raymond Hines, is a writer
 #000000 matthiaszeeb.net Matthias Zeeb, is an economist
 #000000 simonuvarov.com Simon Uvarov, is a software engineer
-#000000 karaman.is Georgios Karamanis, is a designer
 #000000 www.carsonteuscher.com Carson Teuscher, is a historian
 #000000 erinkissane.com Erin Kissane, is a writer
 #000000 nonaneva.com ノナネヷ, is an artist
+#000000 ilovewasting.ink Peter Orosz, is a writer
 #000000 blog.vesikar.com Yash Vesikar, is a computer scientist
 #000000 words.studiopallister.com James Pallister, is a writer
 #000000 www.gillianrosselli.com Gillian Rosselli, is an artist
@@ -62,3 +60,14 @@
 #000000 www.hayalpozanti.com Hayal Pozanti, is an artist
 #000000 www.rossrichardson.com Ross Richardson, is a cinematographer
 #000000 alineleynen.com Aline Leynen, is a jeweller
+#000000 robinschoenbaechler.com Robin Schoenbaechler, is a designer
+#000000 www.stephgreen.co.uk Steph Green, is a writer
+#000000 davidelitompkins.com David Eli Tompkins, is a painter
+#000000 tormodotterjohansen.se Tormod Johansen, is an academic
+#000000 merissalombardo.com Merissa Lombardo, is a production designer
+#000000 alyssabrocato.com Alyssa Brocato, is a cinematographer
+#000000 shaileshchitnis.com Shailesh Chitnis, is a journalist
+#000000 elenarazlogova.net Elena Razlogova, is a historian
+#000000 kristinemorgan.com Kristine Morgan, is a writer
+#000000 maggiewangphotography.com Maggie Wang, is an academic
+#000000 chuckpearson.blog Chuck Pearson, is a designer

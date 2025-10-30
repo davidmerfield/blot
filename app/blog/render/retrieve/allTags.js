@@ -2,7 +2,7 @@ var Tags = require("models/tags");
 var Entry = require("models/entry");
 var async = require("async");
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   req.log("Listing all tags");
   Tags.list(req.blog.id, function (err, tags) {
     // In future, we might want to expose

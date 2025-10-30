@@ -79,7 +79,7 @@ module.exports = function (req, res, _next) {
 
       extend(res.locals.partials).and(viewPartials);
       
-      retrieve(req, missingLocals, function (err, foundLocals) {
+      retrieve(req, res, missingLocals, function (err, foundLocals) {
         extend(res.locals).and(foundLocals);
 
         // LOAD ANY LOCALS OR PARTIALS

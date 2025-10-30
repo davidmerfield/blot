@@ -40,10 +40,12 @@ module.exports = async function (req, res, next) {
         return res.status(400).send(html);
     }
 
-    req.template = {
+    const template = {
         locals: metadata.locals,
         id: req.blog.template
     };
+
+    req.template = template;
 
     req.log("Loaded template", req.blog.template);
     return next();

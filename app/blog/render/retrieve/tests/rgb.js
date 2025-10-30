@@ -17,7 +17,7 @@ describe("rgb", function () {
     var result;
     var template = "{{#rgb}}#000{{/rgb}}";
 
-    rgb(this.request, function (err, lambda) {
+    rgb(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { rgb: lambda });
       expect(result).toEqual("0, 0, 0");
       done();
@@ -28,7 +28,7 @@ describe("rgb", function () {
     var result;
     var template = "{{#rgb}}rgba(2,3,4,0.5){{/rgb}}";
 
-    rgb(this.request, function (err, lambda) {
+    rgb(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { rgb: lambda });
       expect(result).toEqual("2, 3, 4");
       done();

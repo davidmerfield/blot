@@ -26,6 +26,11 @@ const main = async (blogID) => {
 
     const entry = await getEntry(blogID, id);
 
+    if (!entry) {
+      console.log("Skipping missing entry", id);
+      continue;
+    }
+    
     if (entry.deleted) {
       console.log("Skipping deleted", id);
       continue;
@@ -127,3 +132,5 @@ if (process.argv[2]) {
     }
   );
 }
+
+module.exports = main;

@@ -1,359 +1,92 @@
-<script type="text/javascript" src="/js/pickr/es5.min.js"></script>
+<div class="inputs">
+	<div class="settings-group">
+		<h2 class="template-heading">Menu links</h2>
+		<a class="line" style="border-bottom:none" href="{{{base}}}/links">
+			<span class="center" style="margin-top: 4px;white-space: nowrap;overflow: hidden;position: relative;">
+				{{#blog.menu}}
+				<span class="tablet">{{label}}</span>
+				{{/blog.menu}}
+				
+				{{^blog.menu.length}}
+				<i>Your menu is empty</i>
+				{{/blog.menu.length}}
+				<span class="link" style="position: absolute;top:0;right:0" >Edit</span>
+			</span>
+			</a>
+	</div>	
 
-<style type="text/css">
+	<div class="settings-group">
+		<h2 class="template-heading">Photo</h2>
+		<a class="line" href="{{{base}}}/photo"  style="padding: 11px 20px;border-bottom: none;"> 
+		{{^blog.avatar}}
+		<span class="center" style="border: 1px dashed var(--border-color);width: 48px;height:48px;display:inline-block; vertical-align: middle;margin-right: 0.5rem;margin-bottom: 4px;">
+		</span>
+		<span class="link">Choose a photo</span>
+		{{/blog.avatar}}
+		
+		{{#blog.avatar}}
+		<span class="center" style="width: 48px;height:48px;display:inline-block; vertical-align: middle;">
+			<img style="max-width:48px;max-height:48px;vertical-align: baseline; display: inline;" src="{{blog.avatar}}" class="{{#blog.roundAvatar}}rounded{{/blog.roundAvatar}}" />
+		</span>
+		<span class="right" >Edit</span>    
+			{{/blog.avatar}}
+		</a>
+	</div>
 
-	body{
-		font-family: ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji
-	}
-button {background: white;border: 2px solid #ddd;border-radius: 4px;font:inherit;font-size: 14px;line-height: 1.45;margin: 6px 3px 0 0;cursor: pointer;}
-button.selected {border:2px solid #0075ff;border-radius: 4px}
-
-div[class^="color-picker-"]:hover {
-	background: #fff
-}
-
-.pickr {
-	z-index: auto;
-}
-
-.pcr-app .pcr-selection .pcr-picker {
-	z-index: 1;
-}
-
-.pcr-app.visible {
-	transition: none;
-	visibility: visible;
-	opacity: 1;
-}
-
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-chooser,
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-opacity {
-	height: .65em;
-	margin-top: .65em;
-}
-
-.pcr-app {
-	transition: none;
-	box-shadow: 0 1.5em 1.5em 0 rgba(0, 0, 0, .1), 0 1em 1em 0 rgba(0, 0, 0, .03);
-	border-radius: 0
-}
-
-.pcr-app[data-theme=monolith] {
-	width: 16rem;
-	padding: 1em;
-	margin-top: -8px;
-	box-shadow: 0 0 1px #000;
-}
-
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-preview {
-	display: none;
-}
-
-.color-picker .previous {
-	outline: 1px solid rgba(0,0,0,0.2);outline-offset:-1px;margin:0 16px 0 0;width:2rem;height:1.25rem;
-	border-radius: 2px;display: block;
-}
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-palette .pcr-palette,
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-chooser .pcr-slider,
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-opacity .pcr-slider,
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-preview .pcr-current-color {
-	border-radius: 0;
-	outline: 1px solid rgba(0, 0, 0, 0.1);
-	outline-offset: -1px;
-
-}
-
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-opacity .pcr-slider {
-	outline: 1px solid rgba(0, 0, 0, 0.3);
-}
-
-.pcr-app .pcr-interaction .pcr-save {
-	background: #4285f4;
-	flex-grow: 1;
-}
-
-.pcr-app .pcr-swatches,
-.pcr-app[data-theme=monolith] .pcr-selection .pcr-color-preview .pcr-last-color {
-	display: none;
-}
-
-
-
-/* FONTS */
-form[id^="font_picker"] svg {height: 1.5em;display: block;}
-
-.options {display: none;margin:0.5em;border:1px solid #aaa;user-select: none;}
-
-input[id^="show_picker"]:checked ~ .options {display: block;}
-
-label[for^="show_picker"] {padding:0.333em 16px;cursor: pointer;position:relative;border-bottom: 1px solid #ddd;display: block;margin:0;user-select: none;}
-
-label[for^="show_picker"]:hover {background: #fff}
-
-label[for^="show_picker"]:after{
-	content: "";
-	width: 1em;
-	height: 1em;
-	position: absolute;
-	top:50%;
-	margin-top: -0.5em;
-	right:1em;
-	background:  url('data:image/svg+xml;utf8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22utf-8%22%3F%3E%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2043.764%2030.594%22%3E%3Cpath%20stroke%3D%22%23000%22%20d%3D%22M21.871%2024.621c.236%200%20.408-.172.602-.365L38.092%206.875c.107-.129.193-.215.193-.365%200-.301-.236-.537-.537-.537a.644.644%200%200%200-.387.129l-15.468%2017.23L6.359%206.102c-.064-.086-.236-.13-.365-.13a.528.528%200%200%200-.515.538c0%20.15.107.258.214.386L21.27%2024.3c.193.172.343.322.601.322Z%22%2F%3E%3C%2Fsvg%3E') no-repeat 1rem center;
-	background-size: 1em;
-}
-
-.filters {
-	font-size:12px;
-	padding:0.15em 0.5em;user-select: none;
-}
-
-.filters label {
-	border-radius: 10px;padding: 0.15em 0.5em;
-	cursor: pointer;
-	color:#666;
-}
-
-input[id^="show_all"]:checked ~ .options label[for^="show_all"],
-input[id^="show_sans"]:checked ~ .options label[for^="show_sans"],
-input[id^="show_serif"]:checked ~ .options label[for^="show_serif"],
-input[id^="show_other"]:checked ~ .options label[for^="show_other"],
-input[id^="show_mono"]:checked ~ .options label[for^="show_mono"]
-{background: #e0e0e0;}
-
-input[id^="show_sans"]:checked ~ .options button:not([data-tag="sans"]),
-input[id^="show_mono"]:checked ~ .options button:not([data-tag="mono"]),
-input[id^="show_serif"]:checked ~ .options button:not([data-tag="serif"]),
-input[id^="show_other"]:checked ~ .options button:not([data-tag="other"])
-{display: none;}
-
-.options button {
-	width: 100%;
-	text-align:left;
-	margin:0;
-	border-radius:0;
-	border:none;outline:none;
-	background:#fafafa;border-top: 1px solid #ddd;padding:0.333em 0.5em;
-}
-
-.options button:hover{background: #fff}
-
-</style>
-
-
-<div class="inputs" >
-	
 	{{#colors.length}}
-		<h2 class="template-heading">Colors</h2>
-	
+	<div class="settings-group">
+	<h2 class="template-heading">Colors</h2>
 	{{#colors}} 
-	{{> template-editor-color}} 
+	{{> color}} 
 	{{/colors}}
-	<br>
+	</div>
 	{{/colors.length}}
-	
+
 	{{#fonts.length}} 	
-		{{#fonts}} 
-	{{> template-editor-font}} 
+	<div class="settings-group">
+	{{#fonts}} 
+	{{> font}} 
 	{{/fonts}} 
-	<br>
+	</div>
 	{{/fonts.length}} 	
 
 	{{#navigation.length}}
-		<h2 class="template-heading">Navigation</h2>
+	<div class="settings-group">
+	<h2 class="template-heading">Navigation</h2>
 	{{#navigation}}
 	{{> template-editor-group}}
 	{{/navigation}}
-		<br>
-
+	</div>
 	{{/navigation.length}}
 
 
 	{{#index_page.length}}
-		<h2 class="template-heading">Index page</h2>
+	<div class="settings-group">
+	<h2 class="template-heading">Index page</h2>
 	{{#index_page}}
 	{{> template-editor-group}}
 	{{/index_page}}
-	<br>
+	</div>
 	{{/index_page.length}}
 
-	{{> template-editor-date}}
-	<br>
+	{{> date}}
 
-		{{#syntax_themes}}
-	{{> template-editor-highlighter}}
-	{{/syntax_themes}}
-
+{{#syntax_themes}}
+        <div class="settings-group">
+                <h2 class="template-heading">Syntax highlighter</h2>
+                <a class="line" href="{{{base}}}/syntax-highlighter" style="padding: 11px 20px;">
+                        <span class="center">Open syntax controls</span>
+                        <span class="right">Edit</span>
+                </a>
+        </div>
+        {{/syntax_themes}}
 </div>
 
-<script type="text/javascript">
+{{#template.isMirror}}
+<div class="settings-group">
+        <a class="line" href="{{{base}}}/reset" style="padding: 11px 20px;">
+                <span class="center">Reset template</span>
+        </a>
+</div>
+{{/template.isMirror}}
 
-Array.from(document.querySelectorAll('form.color-picker')).forEach(form => {
-
-	// Simple example, see optional options for more configuration.
-    const pickr = Pickr.create({
-        el: form.querySelector('.color-picker-popup'),
-        theme: 'monolith', // or 'monolith', or 'nano'
-        default: form.querySelector('input.value').value,
-        useAsButton: true,
-        position: 'bottom-end',
-        components: {
-
-            // Main components
-            preview: true,
-            opacity: true,
-            hue: true,
-
-            // Input / output Options
-            interaction: {
-                // hex: true,
-                // rgba: true,
-                // hsla: true,
-                // hsva: true,
-                // cmyk: true,
-                input: true,
-                // clear: true,
-                save: true
-            }
-        }
-    });
-
-	pickr.on('save', (color, instance) => {
-        form.querySelector('input.value').value = color.toHEXA().toString();
-        fetch(window.location.href, {
-            method: "post",
-            body: new URLSearchParams(new FormData(form)) // for application/x-www-form-urlencoded
-        }).then(function (response) {
-            document.getElementById("full_size_preview").src += "";
-        });
-
-        // close pickr after save
-        instance.hide();
-    }).on('change', (color, instance) => {
-        form.querySelector('.previous').style.background = color.toHEXA();
-    });
-});
-
-
-
-
-
-// FONT PICKER
-
-Array.from(document.querySelectorAll('form[id^="font_picker"]')).forEach(function(form){
-			
-			form.querySelectorAll('input, select, button').forEach(function(node){
-				if (node.style.display === 'none') return;
-				
-				const submitForm = (event) => {
-		
-					// construct the body based on the single input or button that was clicked
-					const body = new URLSearchParams();
-					
-					body.append(node.name, node.value);
-					
-					// append the hidden inputs
-					form.querySelector('input[name="_csrf"]').forEach(function(hidden){
-						body.append(hidden.name, hidden.value);
-					});
-					
-		
-					fetch(window.location.href, { method: "post", body }).then(function (response) {
-						document.getElementById("full_size_preview").src += "";
-					});
-
-					// if this was a button, we need to close the picker
-					// and replace the innerHTML of show_picker with the new font
-					if (node.tagName === 'BUTTON') {
-						node.parentNode.parentNode.querySelector('input[id^="show_picker"]').checked = false;
-						node.parentNode.parentNode.querySelector('label[for^="show_picker"]').innerHTML = node.innerHTML;
-					}
-					
-					
-
-					event.preventDefault();
-					return false;
-				}
-		
-				// if a button, handle click
-				if (node.tagName === 'BUTTON') {
-					node.addEventListener('click', submitForm)
-					return;
-				} else {
-					node.addEventListener('change', submitForm)
-					return;
-				}
-			})
-		
-		});
-		
-			
-// boolean inputs
-
-document.querySelectorAll('form.boolean').forEach(function(form){
-    form.querySelectorAll('input').forEach(function(node){
-      node.addEventListener('change',  (event) => {
-        // construct the body based on the single input or button that was clicked
-        const body = new URLSearchParams();
-
-		// why is this always 'on'?
-		// because the value is set to 'on' in the template
-        body.append(node.name, node.checked ? 'on' : 'off');
-		// append the csrf token
-		body.append('_csrf', form.querySelector('input[name="_csrf"]').value)
-		;
-
-        fetch(window.location.href, { method: "post", body }).then(function (response) {
-          document.getElementById("full_size_preview").src += "";
-        });
-
-        event.preventDefault();
-        return false;
-        })
-    })
-  })
-
-
-  document.querySelectorAll('#dateSettings').forEach(function(form){
-    form.querySelectorAll('input, select').forEach(function(node){
-      node.addEventListener('change',  (event) => {
-		// trigger the form submission, e.g. $('#dateSettings').submit();
-		// don't use jquery or fetch or xhr, just use the form submission
-		form.submit();
-		event.preventDefault();
-		return false;
-	  })
-    })
-  })
-
-// select inputs
-document.querySelectorAll('form.select').forEach(function(form){
-	form.querySelectorAll('button').forEach(function(node){
-	  node.addEventListener('click',  (event) => {
-
-		// construct the body based on the single input or button that was clicked
-		const body = new URLSearchParams();
-
-		body.append(node.name, node.value);
-
-		// append the csrf token
-		body.append('_csrf', form.querySelector('input[name="_csrf"]').value)
-
-		console.log(body);
-
-		fetch(window.location.href, { method: "post", body }).then(function (response) {
-		  document.getElementById("full_size_preview").src += "";
-		});
-
-		// set the class="selected" of the button that was clicked
-		node.parentNode.querySelectorAll('button').forEach(function(button){
-			button.classList.remove('selected');
-		});
-
-		node.classList.add('selected');
-
-		event.preventDefault();
-		return false;
-		})
-	})
-  })
-</script>

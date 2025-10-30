@@ -1,44 +1,55 @@
-Document new tag pagination
-- Force retrieve/tagged to use the pagination too
-- Finish implementations in templates
-- Tell Chuck
+Finish [setting up Andrew's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRCkhdsXvnSjxbbfGSxxDtlW)
+- Turn on preserve linebreaks
+- Turn on auto title injection
 
-Finish [setting up Francesco's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcNCpRcDFrsBhMlBwlXLNxNq)
+Transfer theme for [Fede](https://wordpress.org/themes/kanso/)
+- Set up vanilla zoom
+- Use as [reference](https://fsanchez.io)
 
-Keep running scripts/blog/sanitize-deleted-entries.js in production
-- maybe work out how to make it skip already sanitized entries?
+Work on template editor
+- Verify local template editing works for all clients
+- Add button to enable local template editing to editor
+- When setting up local editing, Copy the case used elsewhere when creating templates directory, e.g. pages -> templates, Posts -> Templates
+- Turn all folders into templates
+
+Add link card feature (bare links) and tell [Guy](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBbftcBdFZZfZmqhfKNklbd)
+
+Add folder post feature
 
 ---
 
-Fix possible bug with changing file or folder case in Dropbox 
+Fix bug with huge draft crashing the sync server /a327ex/drafts/it_follows.txt
 
-Fix possible bug with changing folder name in Google Drive from uppercase to lowercase (what happens to file inside?). Is this related to entry lookup for deleted files? How was the missing ghost file undeleteable? the case of one variant was deleted but the other was not. The case of the ID mismatched. The folder lock was stuck.
+Fix bug with swiper css - it totally breaks site when pasted into css file...
+
+Fix bug with title based wikilinks [[Corsi|...more]] -> Corsi/Index.md 'Title: Corsi'
+
+Fix bug linking to relative pdf in subfolders, e.g. Pages/File.md '[](./file.pdf)' breaks
 
 Fix bug with recursive partials which took down server
 - seems possible in local templates
 - possibly on web templates too
 
-Fix bug handling large files Dropbox (>150mb) and tell Peter – right now it crashes the server
-- add an error state for a single file and proceed? track files pre-and-post sync? only re-attempt once?
-- add a timeout for folder lock process which is solid
-- add abortsignal so we can disconnect seamlessly
+Fix bug with [~/gitbug folder](https://mail.google.com/mail/u/0/#inbox/KtbxLxgKJJfmhMNplLBcTcFCPgBVNlGtHL) during setup
+- surface setup errors with git client
+- handle these errors nicely through sync status
+
+Fix bugs with documentation template and tell [Ray](https://blot.im/questions/3233)
+
+Fix possible bug with changing file or folder case in Dropbox 
+
+Fix possible bug with changing folder name in Google Drive from uppercase to lowercase (what happens to file inside?). Is this related to entry lookup for deleted files? How was the missing ghost file undeleteable? the case of one variant was deleted but the other was not. The case of the ID mismatched. The folder lock was stuck.
 
 Fix bug with crash loop for page rendering issue
 - cache 502 responses in proxy cache for X mins?
 - how to handle this at a high level?
 - ensure doens't break zero downtime deploy
 
-Fix bug with [~/gitbug folder](https://mail.google.com/mail/u/0/#inbox/KtbxLxgKJJfmhMNplLBcTcFCPgBVNlGtHL) during setup
-- surface setup errors with git client
-- handle these errors nicely through sync status
-
 Fix bug with crash loop for entry build
 - add a timeout for entry build process which is solid
 
 Fix bug with folder viewer which crashes server for large number of entries
 - add pagination
-
-Fix bugs with documentation template and tell [Ray](https://blot.im/questions/3233)
 
 Fix bug with 'failed to update folder lock' that throws an error – is the issue ebs?
 - I can't reproduce the problem locally.
@@ -243,6 +254,7 @@ Fix bug with some blogs are accessible after deletion
 
 Fix iCloud bugs
 - Work out issue with iCloud disconnect / setup with [Florian's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTzSJsxwwRTMNxWTMrGCQXTlh)
+- It seems we ran into an issue where icloud was not syncing *updates* to an existing file. When we perform a full sync, can we force brctl download for each folder? is that enough? or do we need to brctl download each file too? 
 - Investigate the 500 timeout errors – are these caused by pending syncs / folder locks?
   - tail -n 1000000 /var/instance-ssd/logs/access.log | grep " 500 " | grep "/clients/icloud"
 - Why are there unrenamed folders in the mac server icloud drive?
@@ -262,6 +274,17 @@ Fix bug with accessibility issues with scrolling and code blocks and tell [Eli](
 
 ---
 
+Compute 'words' text property for each entry (unique words, sorted possibly?) to improve the speed of search queries
+
+Turn on 'preserve linebreaks by default' for markdown 
+
+Do preview subdomains respond to etags?
+
+Switch from mustache to handlebars
+- Precompile using template content hash
+- Add strict verification for output differences 
+- Can we generally do a ‘static’ build out directly into a cache (e.g. openresty)?
+
 Identify areas of the codebase which need resource limits to be more secure, e.g. max file size for the image converter, max file size for the docx converter. look across the codebase and create a series of implementation tasks for the most pressing
 
 Modify slowest function to aggregate by upstream response time
@@ -270,6 +293,12 @@ Modify slowest function to aggregate by upstream response time
 - send daily report of biggest URLs and bandwidth
 
 Build out simple discover page with links to publish in daily email
+
+Add photo/pictures/pics/images grid to tagged page of blog template and photos subfolder to default folder.
+
+Refactor front end domain page to have radio button to seelct between custom domain and blot subdomain
+Inbox
+- don't delete custom domain, though (maybe add property redirectDomain ?)
 
 Think about how to improve the efficieny of the app/views/js/sync_status.js response from the server when loading the new contents of `.live-updates`. perhaps we could intercept send requests and use cheerio to filter out everything except the live update div? or some other method? and once we do that we could then leverage etags for improved performance too
 
@@ -290,6 +319,11 @@ Improve server performance by 1. Create `app/build/plugins/folderAssets/index.js
 - 2. Register the plugin in `app/build/plugins/index.js` so it runs for HTML entries (respecting `options.isHTML`) and make it default-enabled for blogs.
 - 3. Add new tests under `app/build/plugins/folderAssets/tests` to confirm the plugin emits CDN URLs and leaves untouched cases alone.
 
+Can we use lightningcss to replace the existing css minifier for performance?
+
+Transformer should short-circuit network lookups to {{config.host}} or {{cdn}} urls and pull the files directly
+- and have limits on resource size and time
+
 Migrate JSON blob entry into a redis hash:
 - Use hash to store entries rather than a JSON string:
 - app/models/entry/get.js
@@ -302,6 +336,16 @@ Migrate JSON blob entry into a redis hash:
 * Cover the new pathways with unit coverage (or targeted integration coverage) once tests are runnable, verifying full-entry fetches, hash fallback to legacy JSON, and single-field lookups.
 
 Add [preload=none](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/audio#preload) to all audio and video tags without it defined or maybe preload="metadata"? 
+
+Speed up 404s
+- Analyze req trace
+- Remove case insensitive lookup and add path resolution to plugins
+- ensure all dropbox folders are reset and re-synced
+
+Work out how to easily have a different page_size for the tagged pages vs the index page
+- can we get rid of blog/tagged.js and update the urls of existing tagged.html files to have dynamic routes?
+
+Add size / time limits to image caching function which fetches remote images
 
 Improvements to template engine
 - Performance improvements
@@ -405,6 +449,11 @@ Launch new server and test that the new scripts to mount the instance store and 
 Automate the detection and removal of long-overdue sites (> 1 year)
 - Prevent long-overdue customers from accessing the service, then tell [Matvey](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNgWvzTkMVZXFrSpjGfcCrWJG)
 
+Implement toString for all existing template lambda, see retrieve/updated.js for an example
+- Map {{date}} => {{#date}}...{{/date}} and {{#updated}} and {{#created}} etc.
+- Update developer docs
+- Can we use this technique elsewhere? Simple string vs. function...
+
 Improve folder to CDN pipeline
 - Could we respond with redirects to Blot's CDN?
 - Why isn't the WAV file in this footnote being properly replaced with a CDN URL?
@@ -419,7 +468,23 @@ Add per request resource monitoring, e.g. heap size before/after
 
 Tune proxy next upstream status code conditions to preserve zero-downtime-deployments but prevent expensive requests (timeout?)
 
+Move image zoom plugin to templates
+  For each blog:
+    if image zoom plugin enabled:
+      for each template:
+        inject required CSS just above {{{appCSS}}} and save
+        inject required JS just above {{{appJS}}} and save
+      disable image zoom plugin
+  Remove image zoom plugin
+
+Review, revise, test and run redis orchestration script to restore from s3 backup into new instance
+
+Migrate repository to new account
+
+Add webmentions plugin point-and-click on dashboard
+
 Improve iCloud client
+- Resolve flakiness disconnecting, transfering existing folder contents
     ## 1. Harden sync pipeline
     - [ ] Add integration tests covering end-to-end sync flows via `sync/toiCloud.js` and `sync/fromiCloud.js`, including handling of deletions, renames, and empty files.
     - [ ] Implement retry and backoff logic around mac server HTTP uploads (`macserver/httpClient/upload.js`) and downloads (`macserver/brctl/download.js`) to recover from transient iCloud errors.
@@ -471,6 +536,8 @@ Improve the camera make and model names extracted by exiftool using a third-part
 
 Move folder lock location to instance ssd for improved reliability and performance (non-networked drive...) – could be inside the cache
 
+Write about mustache technique for {{#updated}} and {{updated}} to work at the same time (toString)
+
 Pandoc doesn't support autolinking for Chrome's copy link to highlight feature – should we make this work? e.g. `https://stackoverflow.com/questions/71806679/how-to-copy-link-to-highlight-using-chrome-api#:~:text=How%20to%20copy%20link%20to%20highlight`
 
 Run dropbox reset as ec2-user not root
@@ -507,6 +574,8 @@ Make iCloud site routes blocking so the mac server waits for the main server to 
 
 Think about how to purge the old versions of files cached by bunny's permacache
 
+Can we avoid changing cache id for a site after a sync with no changes?
+
 How can we serve template files over CDN?
 - do we have to remap references to other files in stylesheets since we're doing a switcheroo
 
@@ -517,6 +586,10 @@ Add script to resync all icloud folders – make sure they are up to date
 Check that Google Drive is staying in sync:
 - login -> node scripts/google-drive/reset.js
 - add proper bottlenecks then run this regularly
+
+Add https://www.textasticapp.com/ to text editor tools
+
+Ensure we handle google doc link cards properly
 
 Write proper tests for clients:
 - Dropbox
@@ -725,6 +798,8 @@ Add global site search of:
 - questions
 - templates
 
+Write a guide to using Formspark to add a contact form to a site
+
 Add an option to use the date modified property of the file, rather than the date created property as the publish date. This would be especially useful for the Dropbox client, which nukes the original file creation date but preserves the client modified data. This should be opt in because it could lead to misleading behaviour where an old file is dragged into your folder and is published way deep in your archives. Tell [Dirt](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTMSlvtWcHcckPtWlJljHVPdH)
 
 Improvements to local folder experience
@@ -856,6 +931,17 @@ Improvements to search engine:
 Make it possible to link between org mode files with: `[[file:another-test.org][another test]]` and tell [questioners](https://blot.im/questions/2163)
 
 ---
+
+Investigate memberful, maybe add a guide to setting it up on a site?
+
+Add simple server-side analytics:
+- Tell [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNMCtRwGccFxfVKcwlcqfMpg) 
+- Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMjqlPTxhSXLNBDCmqXLQHdvX) 
+- Tell [Romain](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjKngCZjbxTNvLQLRMLfzwHxG)
+
+Add simple commenting system
+- Tell [Precious](https://mail.google.com/mail/u/0/#inbox/QgrcJHrtwLwTldzhrTKHMtnhwVqMXVzCTqv)
+- Tell [Hochan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBZsPZvGMNQLFVmjBkBzhQW) who is willing to beta test
 
 Add [textbundle support](http://textbundle.org/spec/) and tell [questioner](https://blot.im/questions/1385)
 - this will help me understand how best to accomplish multi-file posts
@@ -999,7 +1085,10 @@ Add support for proxying particular analytics files and tell [questioner](https:
 
 One bad latex equation should not [tank the build process for the whole post](https://blot.im/questions/2037)
 
-Follow up with [Tim](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwCvckCnTJHxSFsQDZnkTPBzp) about activitypub
+Add support for activitypub and tell
+- [Tim](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwCvckCnTJHxSFsQDZnkTPBzp)
+- [Questioner](https://blot.im/questions/2543)
+- [Rhys](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRDsGrLZFghZhShLQHNZdchS)
 
 Work out why we get a 'Zombie process' notification email every morning at 9:05am – now 8:05am it seems the process hangs
 
@@ -1081,6 +1170,9 @@ Improvements to Dropbox client:
 - [ ] check content hash for upload possible
 
 ---
+
+Add profile photo cropping/masking tool
+- include circle, oval, and other shapes (e.g. https://www.jayceeday.com)
 
 Add explanation for which files are causing which menu links 
 
@@ -1562,10 +1654,6 @@ Plugins
 - Ensure Youtube plugin still functions if apis fails
 
 ---
-
-Consider adding simple server-side analytics and tell [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNMCtRwGccFxfVKcwlcqfMpg) and [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMjqlPTxhSXLNBDCmqXLQHdvX) and [Romain](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjKngCZjbxTNvLQLRMLfzwHxG)
-
-Consider adding simple commenting system and tell [Precious](https://mail.google.com/mail/u/0/#inbox/QgrcJHrtwLwTldzhrTKHMtnhwVqMXVzCTqv)
 
 Consider supporting Micro pub and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVzptjbWjjqlhBQtgJsRstVSD)
 

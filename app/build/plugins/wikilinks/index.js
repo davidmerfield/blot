@@ -1,5 +1,6 @@
 const { tryEach, eachOf } = require("async");
-const { resolve, dirname } = require("path");
+const path = require("path");
+const { resolve, dirname } = path;
 const byPath = require("./byPath");
 const byFilename = require("./byFilename");
 const byURL = require("./byURL");
@@ -8,6 +9,8 @@ const byHeadingAnchor = require("./byHeadingAnchor");
 const { decode } = require("he");
 const makeSlug = require("helper/makeSlug");
 const debug = require("debug")("blot:entry:build:plugins:wikilinks");
+
+const basename = (path.posix || path).basename;
 
 function render($, callback, { blogID, path }) {
   const wikilinks = $("[title='wikilink']");
@@ -72,13 +75,33 @@ function render($, callback, { blogID, path }) {
           // resolvedHref is '/Posts/sub/Foo.txt'
           const resolvedHref = resolve(dirOfPost, href);
 
+          const strippedHref = href.split("|")[0].trim();
+          const sanitizedHref = strippedHref.split(/[?#]/)[0];
+
           const pathsToWatch = [
             resolvedHref,
             resolvedHref + ".md",
             resolvedHref + ".txt",
           ];
 
-          pathsToWatch.forEach((path) => dependencies.push(path));
+          const slugToken = makeSlug(strippedHref);
+          const filenameToken = basename(sanitizedHref || strippedHref);
+
+          const syntheticDependencies = [];
+
+          if (slugToken) {
+            syntheticDependencies.push(`/__wikilink_slug__/${slugToken}`);
+          }
+
+          if (filenameToken) {
+            syntheticDependencies.push(`/__wikilink_filename__/${filenameToken}`);
+          }
+
+          pathsToWatch
+            .concat(syntheticDependencies)
+            .forEach((path) => {
+              if (path && !dependencies.includes(path)) dependencies.push(path);
+            });
 
           debug("Wikilink target not found for", href);
           return next();
