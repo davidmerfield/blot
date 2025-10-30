@@ -61,7 +61,7 @@
   color: inherit;
   opacity: 0.5;
   font-size: 0.85em;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .link-card__url {
@@ -72,13 +72,21 @@
 }
 
 .link-card--compact .link-card__anchor {
-  align-items: center;
+  align-items: stretch;
+  flex-direction: row-reverse;
+  padding: 0;
 }
 
 .link-card--compact .link-card__thumbnail {
-  flex-basis: 72px;
-  width: 72px;
-  height: 72px;
+  flex: 0 0 30%;
+  width: 30%;
+  height: auto;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0;
+}
+
+.link-card--compact .link-card__content {
+  padding: 1rem;
 }
 
 .link-card--large .link-card__anchor {
