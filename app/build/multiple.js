@@ -7,6 +7,7 @@ var ensure = require("helper/ensure");
 var pathNormalizer = require("helper/pathNormalizer");
 var Single = require("./single");
 var converters = require("./converters");
+var titlecase = require("helper/titlecase");
 
 var MAX_MULTI_FILES = 50;
 
@@ -229,13 +230,55 @@ function renderHtmlSections(results, folderPath) {
     );
   });
 
+  var combinedHtml = sections.join("");
+  var headerHtml = deriveHeading(folderPath, combinedHtml);
+
   return (
     '<section class="multi-file-post" data-folder="' +
     escapeAttribute(folderPath) +
     '">' +
-    sections.join("") +
+    headerHtml +
+    combinedHtml +
     "\n</section>"
   );
+}
+
+function deriveHeading(folderPath, combinedHtml) {
+  if (/<h1(\s|>)/i.test(combinedHtml)) return "";
+
+  var title = deriveTitleFromFolder(folderPath);
+
+  if (!title) return "";
+
+  return (
+    '\n  <h1 class="multi-file-title">' +
+    escapeHtml(title) +
+    "</h1>"
+  );
+}
+
+function deriveTitleFromFolder(folderPath) {
+  if (!folderPath) return "";
+
+  var base = path.basename(folderPath);
+
+  if (!base) return "";
+
+  var withoutSuffix = base.replace(/\+$/, "");
+
+  if (!withoutSuffix) return "";
+
+  var decoded = withoutSuffix;
+
+  try {
+    decoded = decodeURIComponent(withoutSuffix);
+  } catch (error) {}
+
+  var spaced = decoded.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+
+  if (!spaced) return "";
+
+  return titlecase(spaced);
 }
 
 function isConvertible(filePath) {
@@ -305,6 +348,13 @@ function escapeAttribute(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/'/g, "&#39;");
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function cloneValue(value) {

@@ -72,6 +72,24 @@ describe("build multiple", function () {
     expect(entry.html).toContain("Second");
   });
 
+  it("injects a folder-based title when no heading exists", async function () {
+    var root = path.join(this.blogDirectory, "vacation-photos+");
+
+    fs.outputFileSync(
+      path.join(root, "notes.md"),
+      "A quiet afternoon on the beach."
+    );
+
+    var entry = await this.buildEntry("/vacation-photos+");
+
+    expect(entry.html).toContain(
+      '<h1 class="multi-file-title">Vacation Photos</h1>'
+    );
+    expect(entry.html).toContain(
+      '<section class="multi-file-entry" data-file="/vacation-photos+/notes.md" data-index="0" data-extension="md">'
+    );
+  });
+
   it("returns an EMPTY error when no convertible files are present", function (done) {
     var root = path.join(this.blogDirectory, "void+");
     fs.ensureDirSync(root);
