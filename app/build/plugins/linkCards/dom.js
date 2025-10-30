@@ -144,9 +144,9 @@ function textContent(str) {
 function formatDisplayURL(href) {
   try {
     const url = new URL(href);
-    const pathname = url.pathname && url.pathname !== "/" ? url.pathname : "";
-    const search = url.search && url.search !== "?" ? url.search : "";
-    return `${url.hostname}${pathname}${search}`;
+    const hostname = url.hostname;
+    const hostnameWithoutLeadingWWW = hostname.startsWith('www.') ? hostname.slice('www.'.length) : hostname;
+    return hostnameWithoutLeadingWWW;
   } catch (err) {
     return href;
   }

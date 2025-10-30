@@ -59,12 +59,13 @@
 .link-card__description {
   margin: 0;
   color: inherit;
-  opacity: 0.75;
+  opacity: 0.5;
+  font-size: 0.85em;
   line-height: 1.5;
 }
 
 .link-card__url {
-  font-size: 0.875rem;
+  font-size: 0.7em;
   color: inherit;
   opacity: 0.7;
   word-break: break-word;
@@ -91,6 +92,7 @@
   height: auto;
   max-height: 500px;
   border-radius: 12px 12px 0 0;
+  flex: auto;
 }
 
 .link-card--large .link-card__thumbnail img {
