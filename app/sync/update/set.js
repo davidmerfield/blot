@@ -66,6 +66,9 @@ function buildAndSet(blog, path, multiInfo, callback) {
     if (err && err.code === "EMPTY" && multiInfo)
       return dropEntryAndPreview(blog.id, multiInfo.entryPath, callback);
 
+    if (err && err.code === "TOO_MANY_FILES" && multiInfo)
+      return dropEntryAndPreview(blog.id, multiInfo.entryPath, callback);
+
     if (err) return callback(err);
 
     var sourcePaths = [];

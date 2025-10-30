@@ -39,6 +39,47 @@ describe("sync multi-folder support", function () {
     );
   });
 
+  it("aggregates nested multi-folder files in alphabetical order", function (done) {
+    this.syncAndCheck(
+      [
+        { path: "/album+/1.md", content: "# One" },
+        { path: "/album+/2/a.md", content: "# Two A" },
+        { path: "/album+/2/b.md", content: "# Two B" },
+        { path: "/album+/3.md", content: "# Three" },
+      ],
+      [
+        {
+          path: "/album",
+          html: function (html) {
+            var order = [
+              'data-file="/album+/1.md"',
+              'data-file="/album+/2/a.md"',
+              'data-file="/album+/2/b.md"',
+              'data-file="/album+/3.md"',
+            ];
+
+            var lastIndex = -1;
+
+            return order.every(function (token) {
+              var index = html.indexOf(token);
+              if (index === -1 || index < lastIndex) return false;
+              lastIndex = index;
+              return true;
+            });
+          },
+          metadata: function (metadata) {
+            return !metadata._sourcePaths;
+          },
+        },
+        { path: "/album+/1.md", ignored: true },
+        { path: "/album+/2/a.md", ignored: true },
+        { path: "/album+/2/b.md", ignored: true },
+        { path: "/album+/3.md", ignored: true },
+      ],
+      done
+    );
+  });
+
   it("ignores hidden files inside multi-folders", function (done) {
     this.syncAndCheck(
       [
@@ -60,6 +101,28 @@ describe("sync multi-folder support", function () {
         { path: "/album+/one.md", ignored: true },
         { path: "/album+/_two.md", ignored: true },
         { path: "/album+/_hidden/three.md", ignored: true },
+      ],
+      done
+    );
+  });
+
+  it("skips multi-folder aggregation when more than 50 files exist", function (done) {
+    var files = [];
+
+    for (var i = 1; i <= 51; i++) {
+      var name = i < 10 ? "0" + i : String(i);
+      files.push({
+        path: "/album+/" + name + ".md",
+        content: "# File " + name,
+      });
+    }
+
+    this.syncAndCheck(
+      files,
+      [
+        { path: "/album", ignored: true },
+        { path: "/album+/01.md", ignored: true },
+        { path: "/album+/51.md", ignored: true },
       ],
       done
     );

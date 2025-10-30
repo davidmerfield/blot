@@ -8,6 +8,8 @@ var pathNormalizer = require("helper/pathNormalizer");
 var Single = require("./single");
 var converters = require("./converters");
 
+var MAX_MULTI_FILES = 50;
+
 module.exports = function buildMultiple(blog, info, callback) {
   ensure(blog, "object")
     .and(info, "object")
@@ -130,6 +132,10 @@ function collectConvertibleFiles(blog, folderPath, callback) {
   const files = [];
 
   function walk(currentPath, done) {
+    if (files.length > MAX_MULTI_FILES) {
+      return done(createTooManyFilesError(folderPath));
+    }
+
     const absolute = localPath(blog.id, currentPath);
 
     fs.readdir(absolute, { withFileTypes: true }, function (err, entries) {
@@ -142,6 +148,10 @@ function collectConvertibleFiles(blog, folderPath, callback) {
       async.eachSeries(
         entries,
         function (entry, next) {
+          if (files.length > MAX_MULTI_FILES) {
+            return next(createTooManyFilesError(folderPath));
+          }
+
           const entryPath = pathNormalizer(
             path.join(currentPath, entry.name)
           );
@@ -161,6 +171,11 @@ function collectConvertibleFiles(blog, folderPath, callback) {
           if (!isConvertible(entryPath)) return next();
 
           files.push(entryPath);
+
+          if (files.length > MAX_MULTI_FILES) {
+            return next(createTooManyFilesError(folderPath));
+          }
+
           next();
         },
         done
@@ -175,6 +190,16 @@ function collectConvertibleFiles(blog, folderPath, callback) {
     });
     callback(null, files);
   });
+}
+
+function createTooManyFilesError(folderPath) {
+  var err = new Error(
+    "Multi-folder contains more than " + MAX_MULTI_FILES + " convertible files"
+  );
+  err.code = "TOO_MANY_FILES";
+  err.folderPath = folderPath;
+  err.limit = MAX_MULTI_FILES;
+  return err;
 }
 
 function renderHtmlSections(results, folderPath) {
