@@ -99,6 +99,13 @@ function buildImageMarkup(metadata, layout) {
 
   const attrs = [`src="${escapeAttribute(src)}"`, 'alt=""', 'loading="lazy"'];
 
+  const width = getPrimaryImageDimension(metadata, "width");
+  const height = getPrimaryImageDimension(metadata, "height");
+
+  if (width && height) {
+    attrs.push(`width="${width}"`, `height="${height}"`);
+  }
+
   if (imageSet && imageSet.srcset) {
     attrs.push(`srcset="${escapeAttribute(imageSet.srcset)}"`);
     const sizes =
@@ -109,6 +116,37 @@ function buildImageMarkup(metadata, layout) {
   }
 
   return `<img ${attrs.join(" ")}>`;
+}
+
+function getPrimaryImageDimension(metadata, dimension) {
+  if (!metadata) return null;
+
+  const value = Number(metadata[`image${capitalize(dimension)}`]);
+  if (Number.isFinite(value) && value > 0) {
+    return Math.round(value);
+  }
+
+  if (
+    metadata.imageSet &&
+    Array.isArray(metadata.imageSet.items) &&
+    metadata.imageSet.items.length
+  ) {
+    const items = metadata.imageSet.items.slice().sort((a, b) => a.width - b.width);
+    const target = items[items.length - 1];
+    if (target) {
+      const numeric = Number(target[dimension]);
+      if (Number.isFinite(numeric) && numeric > 0) {
+        return Math.round(numeric);
+      }
+    }
+  }
+
+  return null;
+}
+
+function capitalize(value) {
+  if (!value || typeof value !== "string") return "";
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function buildIconMarkup(metadata) {

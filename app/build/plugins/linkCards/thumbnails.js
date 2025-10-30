@@ -19,6 +19,8 @@ async function ensureThumbnails(metadata, blogID, transformer) {
   if (!blogID) {
     metadata.imageSet = null;
     metadata.image = metadata.remoteImage;
+    metadata.imageWidth = null;
+    metadata.imageHeight = null;
     return;
   }
 
@@ -27,6 +29,8 @@ async function ensureThumbnails(metadata, blogID, transformer) {
     await cleanupThumbnails(metadata.imageSet, blogID);
     metadata.imageSet = null;
     metadata.image = "";
+    metadata.imageWidth = null;
+    metadata.imageHeight = null;
     return;
   }
 
@@ -46,6 +50,8 @@ async function ensureThumbnails(metadata, blogID, transformer) {
   if (!generated) {
     metadata.imageSet = null;
     metadata.image = remoteImage;
+    metadata.imageWidth = null;
+    metadata.imageHeight = null;
     return;
   }
 
@@ -71,13 +77,28 @@ function applyPublicImagePaths(metadata, blogID) {
 
   const src = items[items.length - 1].src;
   const srcset = items.map((item) => `${item.src} ${item.width}w`).join(", ");
+  const largest = items[items.length - 1];
+  const width = sanitizeDimension(largest && largest.width);
+  const height = sanitizeDimension(largest && largest.height);
 
   metadata.imageSet = Object.assign({}, imageSet, {
     items,
     src,
     srcset,
+    width,
+    height,
   });
   metadata.image = src;
+  metadata.imageWidth = width;
+  metadata.imageHeight = height;
+}
+
+function sanitizeDimension(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) {
+    return null;
+  }
+  return Math.round(number);
 }
 
 async function thumbnailsExist(imageSet, blogID) {

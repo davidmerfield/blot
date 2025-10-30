@@ -52,6 +52,8 @@ function fallbackMetadata(href) {
       siteName: display,
       icon: "",
       iconPath: "",
+      imageWidth: null,
+      imageHeight: null,
     };
   } catch (err) {
     return {
@@ -62,6 +64,8 @@ function fallbackMetadata(href) {
       siteName: href,
       icon: "",
       iconPath: "",
+      imageWidth: null,
+      imageHeight: null,
     };
   }
 }
@@ -79,17 +83,46 @@ function sanitizeMetadata(metadata, href) {
   const icon = sanitizeIcon(metadata, href);
   metadata.remoteIcon = icon;
 
+  metadata.imageWidth = sanitizeDimension(metadata.imageWidth);
+  metadata.imageHeight = sanitizeDimension(metadata.imageHeight);
+
   if (metadata.imageSet && Array.isArray(metadata.imageSet.items)) {
     metadata.imageSet.items = metadata.imageSet.items
       .map((item) => sanitizeImageSetItem(item))
       .filter(Boolean);
+    metadata.imageSet.items.sort((a, b) => a.width - b.width);
     metadata.imageSet.remote = remote;
+
+    metadata.imageSet.width = sanitizeDimension(
+      metadata.imageSet.width || metadata.imageWidth
+    );
+    metadata.imageSet.height = sanitizeDimension(
+      metadata.imageSet.height || metadata.imageHeight
+    );
+
+    const largest =
+      metadata.imageSet.items[metadata.imageSet.items.length - 1] || null;
+    if (largest) {
+      if (!metadata.imageSet.width) {
+        metadata.imageSet.width = sanitizeDimension(largest.width);
+      }
+      if (!metadata.imageSet.height) {
+        metadata.imageSet.height = sanitizeDimension(largest.height);
+      }
+    }
+
+    metadata.imageWidth = metadata.imageSet.width || null;
+    metadata.imageHeight = metadata.imageSet.height || null;
   } else {
     metadata.imageSet = null;
+    metadata.imageWidth = null;
+    metadata.imageHeight = null;
   }
 
   if (metadata.imageSet && metadata.imageSet.items.length === 0) {
     metadata.imageSet = null;
+    metadata.imageWidth = null;
+    metadata.imageHeight = null;
   }
 
   metadata.iconPath = sanitizePath(metadata.iconPath);
@@ -162,6 +195,13 @@ function sanitizeImageSetItem(item) {
 function sanitizePath(path) {
   if (!path || typeof path !== "string") return "";
   return path.replace(/\\+/g, "/").replace(/^\/+/, "").trim();
+}
+
+function sanitizeDimension(value) {
+  if (value == null) return null;
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return null;
+  return Math.round(number);
 }
 
 function extractIcon($) {
