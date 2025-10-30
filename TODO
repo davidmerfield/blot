@@ -250,6 +250,7 @@ Fix bug with some blogs are accessible after deletion
 
 Fix iCloud bugs
 - Work out issue with iCloud disconnect / setup with [Florian's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTzSJsxwwRTMNxWTMrGCQXTlh)
+- It seems we ran into an issue where icloud was not syncing *updates* to an existing file. When we perform a full sync, can we force brctl download for each folder? is that enough? or do we need to brctl download each file too? 
 - Investigate the 500 timeout errors – are these caused by pending syncs / folder locks?
   - tail -n 1000000 /var/instance-ssd/logs/access.log | grep " 500 " | grep "/clients/icloud"
 - Why are there unrenamed folders in the mac server icloud drive?

@@ -4,7 +4,7 @@ if (typeof window !== "undefined") {
   window.$ = window.jQuery = $;
 }
 
-const codeMirrorModule = require("../../../js/codemirror/codemirror.js");
+const codeMirrorModule = require("./codemirror/codemirror.js");
 const CodeMirror =
   (codeMirrorModule && codeMirrorModule.default) ||
   codeMirrorModule ||
@@ -14,14 +14,14 @@ if (typeof window !== "undefined" && CodeMirror) {
   window.CodeMirror = CodeMirror;
 }
 
-require("../../../js/codemirror/active-line.js");
-require("../../../js/codemirror/mode-css.js");
-require("../../../js/codemirror/mode-simple.js");
-require("../../../js/codemirror/mode-multiplex.js");
-require("../../../js/codemirror/mode-handlebars.js");
-require("../../../js/codemirror/mode-htmlmixed.js");
-require("../../../js/codemirror/mode-javascript.js");
-require("../../../js/codemirror/mode-xml.js");
+require("./codemirror/active-line.js");
+require("./codemirror/mode-css.js");
+require("./codemirror/mode-simple.js");
+require("./codemirror/mode-multiplex.js");
+require("./codemirror/mode-handlebars.js");
+require("./codemirror/mode-htmlmixed.js");
+require("./codemirror/mode-javascript.js");
+require("./codemirror/mode-xml.js");
 
 function initializeSourceEditor() {
   if (typeof window === "undefined" || !window.document || !CodeMirror) {
