@@ -113,18 +113,28 @@ async function cleanupThumbnails(imageSet, blogID) {
 }
 
 async function lookupThumbnails(remoteImage, blogID, transformer) {
-  const fallback = async () => {
+  const regenerate = async () => {
     const buffer = await fetchImageBuffer(remoteImage);
     if (!buffer) return null;
     return processThumbnails(buffer, remoteImage, blogID);
   };
 
-  return transformerLookup(
+  const result = await transformerLookup(
     transformer,
     remoteImage,
     createThumbnailTransform(blogID, remoteImage),
-    fallback
+    regenerate
   );
+
+  if (!result) return null;
+
+  if (await thumbnailsExist(result, blogID)) {
+    return result;
+  }
+
+  await cleanupThumbnails(result, blogID);
+
+  return regenerate();
 }
 
 async function fetchImageBuffer(remoteImage) {

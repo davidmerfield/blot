@@ -8,6 +8,7 @@ function buildCardHTML(href, metadata, layout) {
   const pieces = [];
 
   const imageMarkup = buildImageMarkup(metadata, layout);
+  const iconMarkup = buildIconMarkup(metadata);
   if (imageMarkup) {
     pieces.push(`<div class="link-card__thumbnail">${imageMarkup}</div>`);
   }
@@ -28,7 +29,10 @@ function buildCardHTML(href, metadata, layout) {
     );
   }
 
-  text.push(`<span class="link-card__url">${escapeHTML(displayURL)}</span>`);
+  const urlMarkup = buildURLMarkup(displayURL, iconMarkup);
+  if (urlMarkup) {
+    text.push(urlMarkup);
+  }
 
   pieces.push(`<div class="link-card__content">${text.join("")}</div>`);
 
@@ -105,6 +109,33 @@ function buildImageMarkup(metadata, layout) {
   }
 
   return `<img ${attrs.join(" ")}>`;
+}
+
+function buildIconMarkup(metadata) {
+  const icon = metadata.icon;
+
+  if (!icon) return "";
+
+  return `<img class="link-card__icon" src="${escapeAttribute(icon)}" alt="">`;
+}
+
+function buildURLMarkup(displayURL, iconMarkup) {
+  const content = [];
+
+  if (iconMarkup) {
+    content.push(iconMarkup);
+  }
+
+  const text = escapeHTML(displayURL);
+  if (text) {
+    content.push(`<span class="link-card__url-text">${text}</span>`);
+  }
+
+  if (content.length === 0) {
+    return "";
+  }
+
+  return `<span class="link-card__url">${content.join("")}</span>`;
 }
 
 function isExternal(href, options) {

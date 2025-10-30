@@ -2,6 +2,7 @@ const { fetchMetadata } = require("./remote");
 const { getCachePath, readCache, writeCache } = require("./cache");
 const { sanitizeMetadata, fallbackMetadata } = require("./metadata");
 const { ensureThumbnails } = require("./thumbnails");
+const { ensureIcon } = require("./icons");
 
 async function loadMetadata(href, blogID, transformers = {}) {
   if (!href) return null;
@@ -13,6 +14,7 @@ async function loadMetadata(href, blogID, transformers = {}) {
     sanitizeMetadata(cached, href);
     cached.url = href;
     await ensureThumbnails(cached, blogID, transformers.image);
+    await ensureIcon(cached, blogID);
     await writeCache(cachePath, cached);
     return cached;
   }
@@ -22,6 +24,7 @@ async function loadMetadata(href, blogID, transformers = {}) {
     sanitizeMetadata(fetched, href);
     fetched.url = href;
     await ensureThumbnails(fetched, blogID, transformers.image);
+    await ensureIcon(fetched, blogID);
     await writeCache(cachePath, fetched);
     return fetched;
   }
