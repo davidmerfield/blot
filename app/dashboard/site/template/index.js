@@ -5,6 +5,7 @@ const Template = require("models/template");
 const Blog = require("models/blog");
 const archiver = require("archiver");
 const duplicateTemplate = require("./save/duplicate-template");
+const { isAjaxRequest, sendAjaxResponse } = require("./save/ajax-response");
 
 TemplateEditor.param("viewSlug", require("./load/template-views"));
 
@@ -69,6 +70,56 @@ TemplateEditor.route("/:templateSlug/install")
     });
   });
 
+function prepareTemplateUpdate(req, res, next) {
+  let body = formJSON(req.body, Template.metadataModel);
+  let newLocals = body.locals;
+  let newPartials = body.partials;
+  let locals = req.template.locals;
+  let partials = req.template.partials;
+
+  for (const local in locals) {
+    if (typeof locals[local] === "boolean" && newLocals[local] !== undefined)
+      newLocals[local] = newLocals[local] === "on";
+  }
+
+  for (let key in newLocals) {
+    if (typeof locals[key] === "object") {
+      for (let prop in newLocals[key]) {
+        locals[key][prop] = newLocals[key][prop];
+      }
+    } else {
+      locals[key] = newLocals[key];
+    }
+  }
+
+  for (let key in newPartials) partials[key] = newPartials[key];
+
+  req.locals = locals;
+  req.partials = partials || {};
+
+  next();
+}
+
+function persistTemplateUpdate(req, res, next) {
+  Template.update(
+    req.blog.id,
+    req.params.templateSlug,
+    { locals: req.locals, partials: req.partials },
+    function (err) {
+      if (err) return next(err);
+      if (isAjaxRequest(req)) {
+        const ajaxOptions = {};
+        if (res.locals.templateForked) {
+          ajaxOptions.headers = { "X-Template-Forked": "1" };
+        }
+        return sendAjaxResponse(res, ajaxOptions);
+      }
+
+      res.message(req.baseUrl + req.url, "Success!");
+    }
+  );
+}
+
 TemplateEditor.route("/:templateSlug")
   .all(require("./load/font-inputs"))
   .all(require("./load/syntax-highlighter"))
@@ -78,96 +129,68 @@ TemplateEditor.route("/:templateSlug")
   .all(require("./load/dates"))
   .post(
     require("./save/fork-if-needed"),
-    require("./save/previewPath"),
-    function (req, res, next) {
-      let body = formJSON(req.body, Template.metadataModel);
-      let newLocals = body.locals;
-      let newPartials = body.partials;
-      let locals = req.template.locals;
-      let partials = req.template.partials;
-
-      for (const local in locals) {
-        if (
-          typeof locals[local] === "boolean" &&
-          newLocals[local] !== undefined
-        )
-          newLocals[local] = newLocals[local] === "on";
-      }
-
-      for (let key in newLocals) {
-        // if locals[key] is an object, merge the newLocals[key] object into it
-        // otherwise simply assign newLocals[key] to locals[key]
-        // this makes it possible to update a single property of an object without
-        // overwriting the entire object
-        if (typeof locals[key] === "object") {
-          for (let prop in newLocals[key]) {
-            locals[key][prop] = newLocals[key][prop];
-          }
-        } else {
-          locals[key] = newLocals[key];
-        }
-      }
-
-      for (let key in newPartials) partials[key] = newPartials[key];
-
-      req.locals = locals;
-      req.partials = partials || {};
-
-      next();
-    },
+    prepareTemplateUpdate,
     require("./save/layout-inputs"),
-    function (req, res, next) {
-      Template.update(
-        req.blog.id,
-        req.params.templateSlug,
-        { locals: req.locals, partials: req.partials },
-        function (err) {
-          if (err) return next(err);
-          res.message(req.baseUrl + req.url, "Success!");
-        }
-      );
-    }
+    persistTemplateUpdate
   )
   .get(function (req, res) {
     res.locals.selected = { ...res.locals.selected, settings: "selected" };
     res.render("dashboard/template/settings");
   });
 
-TemplateEditor.route("/:templateSlug/local-editing")
+TemplateEditor.route("/:templateSlug/syntax-highlighter")
   .all(require("./load/font-inputs"))
   .all(require("./load/syntax-highlighter"))
   .all(require("./load/color-inputs"))
   .all(require("./load/index-inputs"))
   .all(require("./load/navigation-inputs"))
   .all(require("./load/dates"))
+  .post(
+    require("./save/fork-if-needed"),
+    prepareTemplateUpdate,
+    require("./save/layout-inputs"),
+    persistTemplateUpdate
+  )
+  .get(function (req, res) {
+    res.locals.selected = { ...res.locals.selected, settings: "selected" };
+    if (res.locals.syntax_themes) {
+      res.locals.syntax_themes.expanded = true;
+    }
+    res.locals.breadcrumbs.add("Syntax highlighter", "syntax-highlighter");
+    res.locals.title = `Syntax highlighter - ${req.template.name}`;
+    res.render("dashboard/template/syntax-highlighter");
+  });
 
-  .all(require("./load/dates"))
+TemplateEditor.route("/:templateSlug/local-editing")
   .get(function (req, res) {
     res.locals.enabled = req.template.localEditing;
     res.locals.title = `Local editing - ${req.template.name}`;
     res.render("dashboard/template/local-editing");
   })
-  .post(function (req, res, next) {
-    Template.setMetadata(
-      req.template.id,
-      { localEditing: true },
-      function (err) {
-        if (err) return next(err);
+  .post(
+    require("./save/fork-if-needed"),
+    function (req, res, next) {
+      Template.setMetadata(
+        req.template.id,
+        { localEditing: true },
+        function (err) {
+          if (err) return next(err);
 
-        res.message(
-          "/sites/" + req.blog.handle + "/template",
-          "Transferred template <b>" + req.template.name + "</b> to your folder"
-        );
+          res.message(
+            "/sites/" + req.blog.handle + "/template",
+            "Transferred template <b>" + req.template.name + "</b> to your folder"
+          );
 
-        Template.writeToFolder(req.blog.id, req.template.id, function () {
-          // could we do something with this error? Could we wait to render the page?
-          // it would be useful to have a progress bar here to prevent
-          // busted folder state
-          // we should also do something with the error
-        });
-      }
-    );
-  });
+          Template.writeToFolder(req.blog.id, req.template.id, function () {
+            // could we do something with this error? Could we wait to render the page?
+            // it would be useful to have a progress bar here to prevent
+            // busted folder state
+            // we should also do something with the error
+          });
+        }
+      );
+    }
+  );
 
 TemplateEditor.route("/:templateSlug/download-zip").get(function (req, res) {
   // create a zip file of the template on the fly and send it to the user

@@ -36,3 +36,34 @@
 #breadcrumbs a:hover {
   color: var(--accent-color);
 }
+
+@media (max-width: 700px) {
+  #breadcrumbs {
+    display: block;
+    position: relative;
+  }
+
+  #breadcrumbs a,
+  #breadcrumbs span {
+    display: none!important;
+  }
+
+  #breadcrumbs a:nth-last-of-type(2) {
+    display: block !important;
+    max-width: none !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    width: 100%;
+    padding-left: 1.2em;
+  }
+
+  #breadcrumbs a:nth-last-of-type(2) + .icon-small-chevron-right {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    margin-left:0;
+    transform: translateY(-45%) rotate(180deg);
+    color: var(--medium-text-color);
+  }
+}

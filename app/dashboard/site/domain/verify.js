@@ -29,22 +29,74 @@ const dns = require('dns').promises;
 const fetch = require('node-fetch');
 const { parse } = require('tldts');
 
-async function validate({ hostname, handle, ourIP, ourHost }) {
+async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
     
     const parsed = parse(hostname);
     const apexDomain = parsed.domain;
 
-    const [cnameHost, aRecordIPs, nameservers] = await Promise.all([
-        dns.resolveCname(hostname).then(cnames => cnames[0] || null).catch(() => null),
-        dns.resolve4(hostname).catch(() => []),
-        dns.resolveNs(apexDomain).catch(() => [])
-    ]);
+    let nameservers = [];
+
+    try {
+        nameservers = await dns.resolveNs(apexDomain);
+    } catch (err) {
+        const error = new Error('NO_NAMESERVERS');
+        error.nameservers = nameservers;
+        error.details = err && (err.code || err.message);
+        throw error;
+    }
 
     if (nameservers.length === 0) {
         const error = new Error('NO_NAMESERVERS');
         error.nameservers = nameservers;
         throw error;
     }
+
+    const resolver = new dns.Resolver();
+    const fallbackNameservers = ['1.1.1.1', '8.8.8.8'];
+    const nameserverResolutionErrors = [];
+    const nameserverIPs = [];
+
+    for (const ns of nameservers) {
+        try {
+            const records = await dns.lookup(ns, { all: true });
+            if (records.length === 0) {
+                nameserverResolutionErrors.push(`${ns}: NO_IP_ADDRESSES`);
+            }
+
+            for (const record of records) {
+                nameserverIPs.push(record.address);
+            }
+        } catch (err) {
+            nameserverResolutionErrors.push(`${ns}: ${err.code || err.message}`);
+        }
+    }
+
+    const nameserverDetails = nameserverResolutionErrors.length
+        ? nameserverResolutionErrors.join(', ')
+        : null;
+    const noNameserverIPs = nameserverIPs.length === 0;
+
+    const attachNameserverDetails = (error) => {
+        if (nameserverDetails && !error.details) {
+            error.details = nameserverDetails;
+        } else if (noNameserverIPs && !error.details) {
+            error.details = 'NO_NAMESERVER_IP_ADDRESSES';
+        }
+
+        return error;
+    };
+
+    const resolverNameservers = Array.from(
+        new Set([...nameserverIPs, ...fallbackNameservers])
+    );
+
+    resolver.setServers(resolverNameservers);
+
+    const [cnameHost, aRecordIPs, aaaaRecordIPs] = await Promise.all([
+        resolver.resolveCname(hostname).then(cnames => cnames[0] || null).catch(() => null),
+        resolver.resolve4(hostname).catch(() => []),
+        resolver.resolve6(hostname).catch(() => [])
+    ]);
 
     if (cnameHost) {
         if (cnameHost === ourHost) {
@@ -53,26 +105,35 @@ async function validate({ hostname, handle, ourIP, ourHost }) {
         } else {
             const error = new Error('CNAME_RECORD_EXISTS_BUT_DOES_NOT_MATCH');
             error.nameservers = nameservers;
-            throw error;
+            throw attachNameserverDetails(error);
         }
     }
 
-    if (aRecordIPs.includes(ourIP)) {
-        if (aRecordIPs.length === 1) {
-            // A record matches our IP, return success
+    const allAddressRecords = [...aRecordIPs, ...aaaaRecordIPs];
+    const correctAddresses = [ourIP, ourIPv6].filter(Boolean);
+    const isCorrectAddress = (value) => correctAddresses.includes(value);
+    const hasCorrectAddress =
+        correctAddresses.length > 0 && allAddressRecords.some(isCorrectAddress);
+
+    if (hasCorrectAddress) {
+        const incorrectRecords = Array.from(
+            new Set(allAddressRecords.filter((value) => !isCorrectAddress(value)))
+        );
+
+        if (incorrectRecords.length === 0) {
             return true;
-        } else {
-            const error = new Error('MULTIPLE_ADDRESS_BUT_ONE_IS_CORRECT');
-            error.recordToRemove = aRecordIPs.filter(ip => ip !== ourIP);
-            error.nameservers = nameservers;
-            throw error;
         }
+
+        const error = new Error('MULTIPLE_ADDRESS_BUT_ONE_IS_CORRECT');
+        error.recordToRemove = incorrectRecords;
+        error.nameservers = nameservers;
+        throw attachNameserverDetails(error);
     }
 
     if (aRecordIPs.length === 0) {
         const error = new Error('NO_A_RECORD');
         error.nameservers = nameservers;
-        throw error;
+        throw attachNameserverDetails(error);
     }
 
     let text;
@@ -89,7 +150,7 @@ async function validate({ hostname, handle, ourIP, ourHost }) {
         const error = new Error('HANDLE_VERIFICATION_REQUEST_FAILED');
         error.message = err.message;
         error.nameservers = nameservers;
-        throw error;
+        throw attachNameserverDetails(error);
     }
 
     // Verify the response text matches the handle
@@ -100,7 +161,7 @@ async function validate({ hostname, handle, ourIP, ourHost }) {
         error.expected = handle;
         error.received = text;
         error.nameservers = nameservers;
-        throw error;
+        throw attachNameserverDetails(error);
     }
 }
 

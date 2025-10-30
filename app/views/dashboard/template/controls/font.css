@@ -1,0 +1,147 @@
+/* Font picker control */
+.template-font-control {
+  width: 100%;
+  overflow: visible;
+}
+
+.font-picker-trigger {
+  width: 100%;
+  padding: 0.333em 16px;
+  cursor: pointer;
+  position: relative;
+  border: none;
+  background: #fafafa;
+  text-align: left;
+  display: block;
+  border-bottom: 1px solid #ddd;
+  font: inherit;
+  color: inherit;
+}
+
+.font-picker-trigger:hover,
+.font-picker-trigger:focus {
+  background: #fff;
+  outline: none;
+}
+
+.font-picker-trigger::after {
+  content: "";
+  width: 1em;
+  height: 1em;
+  position: absolute;
+  top: 50%;
+  margin-top: -0.5em;
+  right: 1em;
+  background: url('data:image/svg+xml;utf8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22utf-8%22%3F%3E%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2043.764%2030.594%22%3E%3Cpath%20stroke%3D%22%23000%22%20d%3D%22M21.871%2024.621c.236%200%20.408-.172.602-.365L38.092%206.875c.107-.129.193-.215.193-.365%200-.301-.236-.537-.537-.537a.644.644%200%200%200-.387.129l-15.468%2017.23L6.359%206.102c-.064-.086-.236-.13-.365-.13a.528.528%200%200%200-.515.538c0%20.15.107.258.214.386L21.27%2024.3c.193.172.343.322.601.322Z%22%2F%3E%3C%2Fsvg%3E')
+    no-repeat 1rem center;
+  background-size: 1em;
+}
+
+.font-picker-trigger svg {
+  height: 1.5em;
+  display: block;
+}
+
+.font-picker-sizing {
+  display: flex;
+  font-size: 11px;
+  border-bottom: 1px solid #ddd;
+}
+
+.font-picker-sizing__field {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  flex-grow: 1;
+  box-sizing: border-box;
+}
+
+.font-picker-sizing__field--size {
+  border-right: 1px solid #ddd;
+}
+
+.font-picker-sizing__field label {
+  flex-grow: 1;
+}
+
+.font-picker-sizing__field input[type="number"] {
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+  flex-grow: 0;
+  width: 60px;
+}
+
+.font-picker-sizing__field--size input[type="number"] {
+  width: 50px;
+}
+
+/* Shared picker */
+.template-font-picker {
+  position: absolute;
+  z-index: 1000;
+  background: #fafafa;
+  border: 1px solid #aaa;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  max-height: 340px;
+  min-width: 220px;
+}
+
+.template-font-picker[hidden] {
+  display: none;
+}
+
+.template-font-picker__filters {
+  font-size: 12px;
+  padding: 0.15em 0.5em;
+  display: flex;
+  gap: 0.25em;
+  flex-wrap: wrap;
+}
+
+.template-font-picker__filter {
+  border-radius: 10px;
+  padding: 0.15em 0.5em;
+  cursor: pointer;
+  color: #666;
+  border: none;
+  background: transparent;
+}
+
+.template-font-picker__filter.is-active {
+  background: #e0e0e0;
+  color: #111;
+}
+
+.template-font-picker__options {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.template-font-picker__option {
+  width: 100%;
+  text-align: left;
+  margin: 0;
+  display: block;
+  border: none;
+  outline: none;
+  background: #fafafa;
+  border-top: 1px solid #ddd;
+  padding: 0.333em 0.5em;
+  cursor: pointer;
+}
+
+.template-font-picker__option:hover {
+  background: #fff;
+}
+
+.template-font-picker__option.is-selected {
+  background: #e0e0e0;
+}
+
+.template-font-picker__option svg {
+  height: 1.5em;
+  display: block;
+}

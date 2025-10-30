@@ -52,11 +52,17 @@ const sortAndPaginate = (questions, page_size, page) => {
   return questions.slice(startIndex, endIndex + 1);
 };
 
-const load = ids => {
+const hasNonEmptyBody = (body) =>
+  typeof body === "string" && body.trim().length > 0;
+
+const hasNonEmptyTitle = (title) =>
+  typeof title === "string" && title.trim().length > 0;
+
+const load = (ids) => {
   return new Promise((resolve, reject) => {
     const batch = client.batch();
 
-    ids.forEach(id => {
+    ids.forEach((id) => {
       batch.zrange(keys.children(id), 0, -1);
     });
 
@@ -67,12 +73,12 @@ const load = ids => {
 
       const batch = client.batch();
 
-      ids.forEach(id => {
+      ids.forEach((id) => {
         batch.hgetall(keys.item(id));
       });
 
-      results.forEach(ids => {
-        ids.forEach(id => {
+      results.forEach((ids) => {
+        ids.forEach((id) => {
           batch.hgetall(keys.item(id));
         });
       });
@@ -83,11 +89,22 @@ const load = ids => {
         }
 
         const questions = results
-          .filter(result => !result.parent)
-          .map(result => {
+          .filter(
+            (result) =>
+              result &&
+              !result.parent &&
+              hasNonEmptyBody(result.body) &&
+              hasNonEmptyTitle(result.title)
+          )
+          .map((result) => {
             result.replies = results
-              .filter(reply => reply.parent === result.id)
-              .map(reply => {
+              .filter(
+                (reply) =>
+                  reply &&
+                  reply.parent === result.id &&
+                  hasNonEmptyBody(reply.body)
+              )
+              .map((reply) => {
                 return { body: reply.body };
               });
 
@@ -95,7 +112,7 @@ const load = ids => {
               id: result.id,
               title: result.title,
               body: result.body,
-              replies: result.replies
+              replies: result.replies,
             };
           });
 
@@ -118,13 +135,13 @@ module.exports = ({ query, page = 1, page_size = PAGE_SIZE } = {}) => {
 
       const candidates = await load(ids);
 
-      candidates.forEach(result => {
+      candidates.forEach((result) => {
         const score = Score(query, result);
         if (score > 0) {
           questions.push({
             title: result.title,
             id: result.id,
-            score
+            score,
           });
         }
       });

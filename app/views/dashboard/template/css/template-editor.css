@@ -1,3 +1,6 @@
+
+
+
 #breadcrumbs-container {
     margin-bottom: 1rem
 }
@@ -286,3 +289,10 @@ label[for^="show_picker"] {
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 20px;
         }
+
+
+.settings-group {
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius);
+	margin-bottom: 1.5rem;
+}

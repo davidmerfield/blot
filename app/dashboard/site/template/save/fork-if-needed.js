@@ -14,6 +14,7 @@ const updateBlog = (blogID, updates) => {
 }
 
 module.exports = async (req, res, next) => {
+    res.locals.templateForked = false;
 
     if (req.template.owner === req.blog.id) {
         return next();
@@ -34,6 +35,7 @@ module.exports = async (req, res, next) => {
         });
     }
 
+    res.locals.templateForked = true;
     req.template = res.locals.template = template;
     next();
-}
+};

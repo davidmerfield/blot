@@ -81,7 +81,7 @@ module.exports = function (req, res, next) {
       if (acc.some((t) => t.slug === template.slug && t.name === template.name)) {
         // if the template is owned by the blog id, replace the template owned by 'SITE'
         // with the template owned by the blog id and also set the property
-        if (template.owner === blogID) {
+        if (template.owner === blogID && !template.localEditing) {
           template.isMine = false;
           template.isMirror = true;
           return acc.filter((t) => t.slug !== template.slug).concat(template);

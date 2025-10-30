@@ -1,0 +1,94 @@
+
+.CodeMirror {
+	flex-grow: 1;
+	min-height: calc(100vh - 15rem);
+	font-family: monospace;
+}
+
+.CodeMirror-gutters {
+	background-color: #fbf8f6;
+}
+
+.CodeMirror-linenumber {
+	color: rgb(158, 154, 152);
+}
+
+.file-list {
+	padding: 1rem 0;
+}
+
+.file-list .selected {
+	background: rgba(255, 255, 255, 0.5);
+	color: #000;
+}
+.file-list a {
+	font-size: 14px;
+	padding: 0 1rem;
+	display: block;
+	color: #777;
+	text-decoration: none;
+}
+
+.tab.selected {
+	border-bottom: none;
+	font-weight: 500;
+	color: #000;
+	background: transparent;
+}
+
+.smallLink {font-size: 11px;color: #555;margin-left:0.2rem}
+  
+  .CodeMirror-lines {
+    padding: 0;
+  }
+  .CodeMirror-gutters {
+    background: var(--background-color);
+  }
+
+
+ .error {padding: 0.75rem 1rem;
+    background: oldlace;
+    /* margin: 1rem; */
+    border: 1px solid orange;
+    /* border-bottom: 1px solid orange; */
+    color: #a06800;
+    margin: 0 15px 7px;
+    z-index: 2;}
+
+  #save.button {
+        border-radius: 2px;
+    padding: 4px 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    color: #555;
+    background-color: rgb(255, 255, 255);
+    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.12) 0px 1px 1px 0px, rgba(60, 66, 87, 0.16) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    flex-grow: 1;
+    text-align: left;
+    border: none;
+    cursor: pointer;
+
+  }
+
+  #save.button:before {
+    content: "●";
+    color: green;
+    text-shadow: 0 0 6px green;
+    padding: 0 1rem 0 0.75rem
+  }
+
+  #save.button.disabled:before {color: #ddd;text-shadow: none;}
+
+  #save.button.disabled {
+    background-color: transparent;
+    color: #888;
+    font-weight: 500;
+    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.12) 0px 1px 1px 0px, rgba(60, 66, 87, 0.16) 0px 0px 0px -1px;
+  }
+
+  #save.button:focus {border:none;outline: none}
+
+  .CodeMirror-sizer {
+    border-top: 1px solid #ccc;
+  }
