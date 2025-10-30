@@ -29,18 +29,13 @@
 	text-decoration: none;
 }
 
-
-h1 {
-	font-weight: 400;
-	margin: 0;
-	color: #ccc;
-}
 .tab.selected {
 	border-bottom: none;
 	font-weight: 500;
 	color: #000;
 	background: transparent;
 }
+
 .smallLink {font-size: 11px;color: #555;margin-left:0.2rem}
   
   .CodeMirror-lines {
@@ -60,7 +55,7 @@ h1 {
     margin: 0 15px 7px;
     z-index: 2;}
 
-  .button {
+  #save.button {
         border-radius: 2px;
     padding: 4px 8px;
     font-size: 14px;
@@ -76,23 +71,24 @@ h1 {
 
   }
 
-  .button:before {
+  #save.button:before {
     content: "●";
     color: green;
     text-shadow: 0 0 6px green;
     padding: 0 1rem 0 0.75rem
   }
 
-  .button.disabled:before {color: #ddd;text-shadow: none;}
+  #save.button.disabled:before {color: #ddd;text-shadow: none;}
 
-  .button.disabled {
+  #save.button.disabled {
     background-color: transparent;
     color: #888;
     font-weight: 500;
     box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.12) 0px 1px 1px 0px, rgba(60, 66, 87, 0.16) 0px 0px 0px -1px;
   }
 
-  .button:focus {border:none;outline: none}
+  #save.button:focus {border:none;outline: none}
+
   .CodeMirror-sizer {
     border-top: 1px solid #ccc;
   }
