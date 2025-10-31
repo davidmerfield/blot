@@ -23,35 +23,66 @@ function writeToFolder (blogID, templateID, callback) {
           return callback(err);
         }
 
-        var dir = joinpath("Templates", metadata.slug);
-
-        // Reset the folder before writing. This fixes a bug in which
-        // there were two views with the same name, but different extension.
-        client.remove(blogID, dir, function (err) {
-          if (err) {
-            return callback(err);
+        determineTemplateFolder(blogID, function (folderErr, folderName) {
+          if (folderErr) {
+            return callback(folderErr);
           }
 
-          metadata.enabled = blogTemplate === templateID;
+          var dir = joinpath(folderName, metadata.slug);
 
-          writePackage(blogID, client, dir, metadata, views, function (err) {
+          // Reset the folder before writing. This fixes a bug in which
+          // there were two views with the same name, but different extension.
+          client.remove(blogID, dir, function (err) {
             if (err) {
               return callback(err);
             }
 
-            async.eachOfSeries(
-              views,
-              function (view, name, next) {
-                if (!view.name || !view.content) return next();
+            metadata.enabled = blogTemplate === templateID;
 
-                write(blogID, client, dir, view, next);
-              },
-              callback
-            );
+            writePackage(blogID, client, dir, metadata, views, function (err) {
+              if (err) {
+                return callback(err);
+              }
+
+              async.eachOfSeries(
+                views,
+                function (view, name, next) {
+                  if (!view.name || !view.content) return next();
+
+                  write(blogID, client, dir, view, next);
+                },
+                callback
+              );
+            });
           });
         });
       });
     });
+  });
+}
+
+function determineTemplateFolder(blogID, callback) {
+  var root = localPath(blogID, "/");
+
+  fs.readdir(root, function (err, entries) {
+    if (err || !Array.isArray(entries)) {
+      return callback(null, "Templates");
+    }
+
+    if (entries.indexOf("Templates") > -1) return callback(null, "Templates");
+    if (entries.indexOf("templates") > -1) return callback(null, "templates");
+
+    var visible = entries.filter(function (name) {
+      return name && name[0] !== ".";
+    });
+
+    if (visible.length && visible.every(function (name) {
+      return name === name.toLowerCase();
+    })) {
+      return callback(null, "templates");
+    }
+
+    callback(null, "Templates");
   });
 }
 
