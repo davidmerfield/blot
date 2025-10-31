@@ -20,9 +20,7 @@ const categories = [
     templates: [
       "blog",
       "magazine",
-      "isola",
-      "rosa",
-      "manifesto",
+      "fieldnotes",
       "index",
     ]
   },
@@ -31,13 +29,7 @@ const categories = [
     slug: "photography",
     templates: [
       "portfolio",
-      "reference",
-      "illustrator",
-      "painter",
-      "photographer",
-      "grid",
-      "photo",
-      "photo-old"
+      "album"
     ]
   },
   {
@@ -45,8 +37,6 @@ const categories = [
     slug: "personal",
     templates: [
       "cv",
-      "painter",
-      "marfa"
     ]
   },
   {
@@ -54,7 +44,6 @@ const categories = [
     slug: "organizations",
     templates: [
       "event",
-      "forty",
       "documentation",
     ]
   }
@@ -79,7 +68,7 @@ const getTemplate = async slug => {
 const loadTemplates = async () => {
   const latestTemplateFiles = await fs.readdir(templatesDirectory);
   const templateFiles = latestTemplateFiles
-    .filter(i => !i.startsWith(".") && !i.endsWith(".js") && !i.endsWith(".md") && !i.includes("wordpress-export"));
+    .filter(i => !i.startsWith(".") && !i.endsWith(".js") && !i.endsWith(".md"));
 
   const templates = await Promise.all(templateFiles.map(async i => {
     const template = await getTemplate(i);
@@ -89,7 +78,7 @@ const loadTemplates = async () => {
       name: NAME_MAP[i] || i[0].toUpperCase() + i.slice(1),
       slug: i,
       demo_folder,
-      source: `https://github.com/davidmerfield/Blot/tree/master/app/templates/${ latestTemplateFiles.includes(i) ? 'latest' : 'past'}/${i}`,
+      source: `https://github.com/davidmerfield/Blot/tree/master/app/templates/source/${i}`,
 
     };
   }));
