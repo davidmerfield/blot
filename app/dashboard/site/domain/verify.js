@@ -29,6 +29,12 @@ const dns = require('dns').promises;
 const fetch = require('node-fetch');
 const { parse } = require('tldts');
 
+const VERIFICATION_TIMEOUT_MS = 5000;
+const VERIFICATION_TIMEOUT_SECONDS = VERIFICATION_TIMEOUT_MS / 1000;
+const VERIFICATION_TIMEOUT_LABEL = Number.isInteger(VERIFICATION_TIMEOUT_SECONDS)
+    ? `${VERIFICATION_TIMEOUT_SECONDS} seconds`
+    : `${VERIFICATION_TIMEOUT_SECONDS.toFixed(2)} seconds`;
+
 async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
     
     const parsed = parse(hostname);
@@ -139,18 +145,41 @@ async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
     let text;
 
     // Proceed with the verification using the resolved A record IP
+    const controller = typeof AbortController !== 'undefined'
+        ? new AbortController()
+        : null;
+
+    const timeout = controller
+        ? setTimeout(() => controller.abort(), VERIFICATION_TIMEOUT_MS)
+        : null;
+
     try {
         const response = await fetch(`http://${aRecordIPs[0]}/verify/domain-setup`, {
-            headers: { Host: hostname }
+            headers: { Host: hostname },
+            ...(controller
+                ? { signal: controller.signal }
+                : { timeout: VERIFICATION_TIMEOUT_MS })
         });
 
         text = await response.text();
 
     } catch (err) {
         const error = new Error('HANDLE_VERIFICATION_REQUEST_FAILED');
-        error.message = err.message;
+        if (err.name === 'AbortError' || err.type === 'request-timeout') {
+            error.message = 'REQUEST_TIMEOUT';
+            error.details = `Verification request timed out after ${VERIFICATION_TIMEOUT_LABEL}.`;
+        } else {
+            error.message = err.message;
+            if (err.type && !error.details) {
+                error.details = err.type;
+            }
+        }
         error.nameservers = nameservers;
         throw attachNameserverDetails(error);
+    } finally {
+        if (timeout) {
+            clearTimeout(timeout);
+        }
     }
 
     // Verify the response text matches the handle

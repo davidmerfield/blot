@@ -109,4 +109,11 @@
     Are the host (e.g. <code>www</code>) and value (e.g. <code>blot.im</code>)
     fields in the DNS record reversed?
   </li>
+  <li>
+    Does the dashboard report a <code>REQUEST_TIMEOUT</code> error? This means
+    Blot could reach your domain's IP address but the
+    <code>/verify/domain-setup</code> check did not respond within five seconds.
+    Confirm the domain serves your blog and isn't blocking HTTP requests from
+    Blot before revalidating.
+  </li>
 </ul>
