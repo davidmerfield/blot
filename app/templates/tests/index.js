@@ -7,8 +7,7 @@ describe("Templates", function () {
   global.test.site();
 
   const templates = require("fs")
-    .readdirSync(__dirname + "/../latest")
-    .concat(require("fs").readdirSync(__dirname + "/../past"))
+    .readdirSync(__dirname + "/../source")
     .filter((i) => i.indexOf(".") === -1);
 
   templates.forEach((template) => {

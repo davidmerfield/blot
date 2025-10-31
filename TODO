@@ -1,7 +1,4 @@
 Work on template editor
-- Verify local template editing works for all clients
-- Add button to enable local template editing to editor
-- When setting up local editing, Copy the case used elsewhere when creating templates directory, e.g. pages -> templates, Posts -> Templates
 - Turn all folders into templates
 
 ---

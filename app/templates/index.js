@@ -12,8 +12,7 @@ var _ = require("lodash");
 var chokidar = require("chokidar");
 var parseTemplate = require("models/template/parseTemplate");
 var urlNormalizer = require("helper/urlNormalizer");
-var TEMPLATES_DIRECTORY = require("path").resolve(__dirname + "/latest");
-var PAST_TEMPLATES_DIRECTORY = require("path").resolve(__dirname + "/past");
+var TEMPLATES_DIRECTORY = require("path").resolve(__dirname + "/source");
 var TEMPLATES_OWNER = "SITE";
 
 const redis = require("models/redis");
@@ -74,33 +73,28 @@ function main(options, callback) {
   buildAll(TEMPLATES_DIRECTORY, options, function (err) {
     if (err) return callback(err);
 
-    buildAll(PAST_TEMPLATES_DIRECTORY, options, function (err) {
+    checkForExtinctTemplates(TEMPLATES_DIRECTORY, function (err) {
       if (err) return callback(err);
 
-      checkForExtinctTemplates(TEMPLATES_DIRECTORY, function (err) {
-        if (err) return callback(err);
+      if (options.watch) {
+        debug("Built all templates.");
+        debug("Watching templates directory for changes");
+        watch(TEMPLATES_DIRECTORY);
 
-        if (options.watch) {
-          debug("Built all templates.");
-          debug("Watching templates directory for changes");
-          watch(TEMPLATES_DIRECTORY);
-          watch(PAST_TEMPLATES_DIRECTORY);
+        // Rebuilds templates when we load new states
+        // using scripts/state/info.js
+        const templateClient = new redis();
 
-          // Rebuilds templates when we load new states
-          // using scripts/state/info.js
-          const templateClient = new redis();
+        templateClient.subscribe("templates:rebuild");
 
-          templateClient.subscribe("templates:rebuild");
+        templateClient.on("message", function () {
+          main({}, function () {});
+        });
 
-          templateClient.on("message", function () {
-            main({}, function () {});
-          });
-
-          callback(null);
-        } else {
-          callback(null);
-        }
-      });
+        callback(null);
+      } else {
+        callback(null);
+      }
     });
   });
 }
@@ -198,10 +192,15 @@ function build(directory, callback) {
     );
   }
 
-  snapshot = assembleTemplateSnapshot(directory, templatePackage, template.locals);
+  snapshot = assembleTemplateSnapshot(
+    directory,
+    templatePackage,
+    template.locals
+  );
 
   Template.getMetadata(id, function (metadataErr, storedMetadata) {
-    if (metadataErr && metadataErr.code !== "ENOENT") return callback(metadataErr);
+    if (metadataErr && metadataErr.code !== "ENOENT")
+      return callback(metadataErr);
 
     Template.getAllViews(id, function (viewsErr, storedViews) {
       if (viewsErr && viewsErr.code !== "ENOENT") return callback(viewsErr);
@@ -225,7 +224,8 @@ function build(directory, callback) {
       var storedViewSnapshot = createStoredViewSnapshot(storedViews);
 
       var metadataMatches =
-        storedMetadataSnapshot && _.isEqual(storedMetadataSnapshot, metadataSnapshot);
+        storedMetadataSnapshot &&
+        _.isEqual(storedMetadataSnapshot, metadataSnapshot);
       var viewsMatch = _.isEqual(storedViewSnapshot, snapshot.views);
 
       if (metadataMatches && viewsMatch) {
@@ -546,17 +546,23 @@ function removeOldVersionFromTestBlogs(templateID, callback) {
 
             if (!TemplateToRemove) return next();
 
-            
-            console.log("Removing old version of development template", TemplateToRemove.id);
+            console.log(
+              "Removing old version of development template",
+              TemplateToRemove.id
+            );
             Template.drop(blogID, TemplateToRemove.slug, function (err) {
               if (err) return next(err);
 
               if (TemplateToRemove.id === blog.template) {
-                Blog.set(blogID, { template: TemplateToRemove.cloneFrom }, function (err) {
-                  if (err) return next(err);
-                  console.log("Removed template from", blogID);
-                  next();
-                });
+                Blog.set(
+                  blogID,
+                  { template: TemplateToRemove.cloneFrom },
+                  function (err) {
+                    if (err) return next(err);
+                    console.log("Removed template from", blogID);
+                    next();
+                  }
+                );
               } else {
                 next();
               }

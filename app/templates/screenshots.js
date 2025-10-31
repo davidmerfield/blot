@@ -5,70 +5,64 @@ const config = require("config");
 const { dirname } = require("path");
 const root = require("helper/rootDir");
 const fs = require("fs-extra");
-const TEMPLATES_DIRECTORY = root + "/app/templates/latest";
-const TEMPLATE_ARCHIVE_DIRECTORY = root + "/app/templates/past";
+const TEMPLATES_DIRECTORY = root + "/app/templates/source";
 const FOLDERS_DIRECTORY = root + "/app/templates/folders";
 const IMAGE_DIRECTORY = root + "/app/views/images/examples";
 
 const templateOptions = {
   blog: {
-    handle: "david"
+    handle: "david",
   },
   magazine: {
-    handle: "plants"
+    handle: "plants",
   },
   grid: {
-    handle: "botanist"
+    handle: "botanist",
   },
   photo: {
-    handle: "william"
+    handle: "william",
   },
   portfolio: {
-    handle: "bjorn"
+    handle: "bjorn",
   },
-  'photo-old': {
-    handle: "photographer"
+  "photo-old": {
+    handle: "photographer",
   },
   scroll: {
     handle: "illustrator",
   },
   terminal: {
-    handle: "photographer"
+    handle: "photographer",
   },
   reference: {
-    handle: "bjorn"
+    handle: "bjorn",
   },
   blank: {
-    handle: "david"
+    handle: "david",
   },
   isola: {
-    handle: "writer"
+    handle: "writer",
   },
   marfa: {
-    handle: "david"
-  }
+    handle: "david",
+  },
 };
 
 // you don't need to do this for folders with
 // a template in the Templates folder
 const foldersOptions = {
   bjorn: {
-    template: "portfolio"
+    template: "portfolio",
   },
   david: {
-    template: "blog"
-  }
+    template: "blog",
+  },
 };
 
 const templates = fs
   .readdirSync(TEMPLATES_DIRECTORY)
-  .filter(i => !i.startsWith(".") && !i.endsWith(".md"))
-  .concat(
-    fs
-      .readdirSync(TEMPLATE_ARCHIVE_DIRECTORY)
-      .filter(i => !i.startsWith(".") && !i.endsWith(".md"))
-  )
-  .map(i => {
+  .filter((i) => !i.startsWith(".") && !i.endsWith(".md"))
+  .map((i) => {
     const handle = templateOptions[i] ? templateOptions[i].handle : "david";
     const template = i;
     const pages =
@@ -79,15 +73,15 @@ const templates = fs
     return pages.map((page, index) => {
       return {
         url: `${config.protocol}preview-of-${template}-on-${handle}.${config.host}${page}`,
-        destination: `${IMAGE_DIRECTORY}/${template}/${index}`
+        destination: `${IMAGE_DIRECTORY}/${template}/${index}`,
       };
     });
   });
 
 const folders = fs
   .readdirSync(FOLDERS_DIRECTORY)
-  .filter(i => !i.startsWith(".") && !i.endsWith(".md") && !i.endsWith(".js"))
-  .map(folder => {
+  .filter((i) => !i.startsWith(".") && !i.endsWith(".md") && !i.endsWith(".js"))
+  .map((folder) => {
     const pages =
       foldersOptions[folder] && foldersOptions[folder].pages
         ? foldersOptions[folder].pages
@@ -99,13 +93,13 @@ const folders = fs
         ? `my-${
             fs
               .readdirSync(`${FOLDERS_DIRECTORY}/${folder}/Templates`)
-              .filter(i => !i.startsWith("."))[0]
+              .filter((i) => !i.startsWith("."))[0]
           }`
         : "blog";
     return pages.map((page, index) => {
       return {
         url: `${config.protocol}preview-of-${template}-on-${folder}.${config.host}${page}`,
-        destination: `${IMAGE_DIRECTORY}/${folder}/${index}`
+        destination: `${IMAGE_DIRECTORY}/${folder}/${index}`,
       };
     });
   });
@@ -127,7 +121,7 @@ const main = async () => {
         takeScreenshot(screenshot),
         new Promise((resolve, reject) => {
           setTimeout(() => reject("Timeout"), 15000);
-        })
+        }),
       ]);
     } catch (error) {
       console.error(error);
