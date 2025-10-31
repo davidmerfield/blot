@@ -31,49 +31,46 @@ function writeToFolder (blogID, templateID, callback) {
           }
 
           var dir = joinpath(folderName, metadata.slug);
+          var supportsListing = client && typeof client.list === "function";
+          var shouldCompareWrites = supportsListing;
+
+          metadata.enabled = blogTemplate === templateID;
+
+          if (!supportsListing) {
+            return client.remove(blogID, dir, function (err) {
+              if (err) {
+                return callback(err);
+              }
+
+              writeTemplateContents(
+                blogID,
+                client,
+                dir,
+                metadata,
+                views,
+                { compare: shouldCompareWrites },
+                callback
+              );
+            });
+          }
 
           listExistingFiles(blogID, client, dir, function (err, existingFiles) {
             if (err) {
               return callback(err);
             }
 
-            existingFiles = existingFiles.map(normalizePath);
-
-            metadata.enabled = blogTemplate === templateID;
-
-            var written = new Set();
-
-            writePackage(blogID, client, dir, metadata, views, function (err) {
-              if (err) {
-                return callback(err);
-              }
-
-              written.add(normalizePath(PACKAGE));
-
-              async.eachOfSeries(
-                views,
-                function (view, name, next) {
-                  if (!view || !view.name || !view.content) return next();
-
-                  write(blogID, client, dir, view, function (err) {
-                    if (!err) written.add(normalizePath(view.name));
-                    next(err);
-                  });
-                },
-                function (err) {
-                  if (err) return callback(err);
-
-                  removeOrphanedFiles(
-                    blogID,
-                    client,
-                    dir,
-                    existingFiles,
-                    written,
-                    callback
-                  );
-                }
-              );
-            });
+            writeTemplateContents(
+              blogID,
+              client,
+              dir,
+              metadata,
+              views,
+              {
+                compare: shouldCompareWrites,
+                existingFiles: existingFiles,
+              },
+              callback
+            );
           });
         });
       });
@@ -106,9 +103,9 @@ function determineTemplateFolder(blogID, callback) {
   });
 }
 
-function writePackage (blogID, client, dir, metadata, views, callback) {
+function writePackage (blogID, client, dir, metadata, views, compare, callback) {
   var Package = generatePackage(blogID, metadata, views);
-  writeFileIfChanged(blogID, client, joinpath(dir, PACKAGE), Package, callback);
+  writeFile(blogID, client, joinpath(dir, PACKAGE), Package, compare, callback);
 }
 
 function makeClient (blogID, callback) {
@@ -135,21 +132,80 @@ function makeClient (blogID, callback) {
   });
 }
 
-function write (blogID, client, dir, view, callback) {
+function write (blogID, client, dir, view, compare, callback) {
   callback = callOnce(callback);
 
   var path = joinpath(dir, view.name);
   var content = view.content;
 
-  writeFileIfChanged(blogID, client, path, content, callback);
+  writeFile(blogID, client, path, content, compare, callback);
 }
 
-function writeFileIfChanged(blogID, client, path, content, callback) {
+function writeFile(blogID, client, path, content, compare, callback) {
+  if (typeof compare === "function") {
+    callback = compare;
+    compare = true;
+  }
+
+  if (!compare) return client.write(blogID, path, content, callback);
+
   var absolute = localPath(blogID, path);
 
   fs.readFile(absolute, "utf-8", function (err, existing) {
     if (!err && existing === content) return callback();
     client.write(blogID, path, content, callback);
+  });
+}
+
+function writeTemplateContents(
+  blogID,
+  client,
+  dir,
+  metadata,
+  views,
+  options,
+  callback
+) {
+  options = options || {};
+
+  var compare = options.compare !== false;
+  var existingFiles = Array.isArray(options.existingFiles)
+    ? options.existingFiles.map(normalizePath)
+    : null;
+  var written = existingFiles ? new Set([normalizePath(PACKAGE)]) : null;
+
+  writePackage(blogID, client, dir, metadata, views, compare, function (err) {
+    if (err) {
+      return callback(err);
+    }
+
+    async.eachOfSeries(
+      views,
+      function (view, name, next) {
+        if (!view || !view.name || !view.content) return next();
+
+        write(blogID, client, dir, view, compare, function (err) {
+          if (!err && written) written.add(normalizePath(view.name));
+          next(err);
+        });
+      },
+      function (err) {
+        if (err) return callback(err);
+
+        if (written) {
+          removeOrphanedFiles(
+            blogID,
+            client,
+            dir,
+            existingFiles,
+            written,
+            callback
+          );
+        } else {
+          callback();
+        }
+      }
+    );
   });
 }
 

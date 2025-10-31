@@ -234,6 +234,47 @@ describe("template", function () {
       });
     });
   });
+
+  it("falls back to resetting the folder when the client cannot list files", function (done) {
+    var test = this;
+    var view = {
+      name: test.fake.random.word() + ".html",
+      content: test.fake.random.word(),
+    };
+
+    this.blog
+      .update({ client: "local" })
+      .then(function () {
+        setView(test.template.id, view, function (err) {
+          if (err) return done.fail(err);
+
+          writeToFolder(test.blog.id, test.template.id, function (err) {
+            if (err) return done.fail(err);
+
+            var templateDir = getTemplateDir(test);
+            var viewPath = join(templateDir, view.name);
+            var originalStat = fs.statSync(viewPath);
+            var orphanPath = join(templateDir, "orphan.html");
+
+            fs.outputFileSync(orphanPath, "orphan");
+
+            writeToFolder(test.blog.id, test.template.id, function (err) {
+              if (err) return done.fail(err);
+
+              var rewrittenStat = fs.statSync(viewPath);
+
+              expect(fs.existsSync(orphanPath)).toEqual(false);
+              expect(rewrittenStat.mtimeMs).not.toEqual(originalStat.mtimeMs);
+              expect(fs.readFileSync(viewPath, "utf-8")).toEqual(view.content);
+              done();
+            });
+          });
+        });
+      })
+      .catch(function (err) {
+        done.fail(err);
+      });
+  });
 });
 
 function getTemplateDir(test) {
