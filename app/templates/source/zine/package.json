@@ -1,9 +1,25 @@
 {
-  "name": "Blog",
-  "isPublic": false,
+  "name": "Zine",
   "locals": {
-    "page_size": 20
+    "text_color": "#000000",
+    "page_size": 48,
+    "background_color": "#ffffff",
+    "accent_color": "#0000FF",
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
+    "body_font": {
+      "id": "charter",
+      "font_size": 24,
+      "line_height": 1.5
+    },
+    "syntax_highlighter": {
+      "id": "stackoverflow-light"
+    },
+    "syntax_highlighter_font": {
+      "font_size": 18
+    }
   },
+  "isPublic": false,
   "views": {
     "archives.html": {
       "url": "/archives",
@@ -14,14 +30,14 @@
     },
     "tagged.html": {
       "partials": {
-        "title": "Entries tagged {{{tag}}} from {{{title}}}",
+        "title": "{{{tag}}} - {{{title}}}",
         "description": "All of the entries posted on {{{title}}} tagged {{{tag}}}"
       }
     },
     "entries.html": {
       "partials": {
         "title": "{{{title}}}",
-        "description": "The latest entries posted on {{{title}}}"
+        "description": "The latest posted on {{{title}}}"
       }
     },
     "error.html": {
@@ -36,16 +52,10 @@
         "description": "{{{entry.summary}}}"
       }
     },
-    "public.html": {
-      "partials": {
-        "title": "Index of {{{path}}}",
-        "description": "All the files and folders inside {{{path}}}"
-      }
-    },
     "search.html": {
       "partials": {
         "title": "Search - {{{title}}}",
-        "description": "Search all the entries posted on {{{title}}}"
+        "description": "Search of {{{title}}}"
       }
     }
   }

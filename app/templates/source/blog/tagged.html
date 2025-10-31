@@ -1,32 +1,34 @@
 <!DOCTYPE html>
 <html>
-{{> head}}
+  {{> head}}
+  <body>
 
-<body class="navigation-location-{{navigation_location}}">
-  {{> header}}
-  <div class="container">
-    <div class="main">
-      <h1>{{tag}}</h1>
-      <div>
-        {{#entries}}
-        <a class="full-line" href="{{{url}}}"><em>{{title}}</em> &nbsp;<span class="small">{{date}}</span></a>
-        {{/entries}}
-      </div>
-      {{#pagination}}
-      <div class="pagination">
-        {{#previous}}
-        <a href="/tagged/{{slug}}/page/{{previous}}">&larr; Newer</a>
-        {{/previous}}
-        Page {{current}} of {{total}}
-        {{#next}}
-        <a href="/tagged/{{slug}}/page/{{next}}">Older &rarr;</a>
-        {{/next}}
-      </div>
-      {{/pagination}}
-      <p><a class="small date" href="/archives">View the archives &rarr;</a></p>
+    {{> sidebar}}
+
+    <h1>Posts tagged “{{tag}}”</h1>
+
+    <div class="entry">
+
+      {{#entries}}
+      <a href="{{{url}}}">{{title}}</a>
+      <span class="light">{{date}}</span>
+      <br />
+      {{/entries}}
+
     </div>
-  </div>
-  {{> footer}}
-</body>
 
+    {{#pagination}}
+    <div class="pagination">
+      {{#previous}}
+      <a href="/tagged/{{slug}}/page/{{previous}}">&larr; Newer</a>
+      {{/previous}}
+      Page {{current}} of {{total}}
+      {{#next}}
+      <a href="/tagged/{{slug}}/page/{{next}}">Older &rarr;</a>
+      {{/next}}
+    </div>
+    {{/pagination}}
+
+    {{> footer}}
+  </body>
 </html>

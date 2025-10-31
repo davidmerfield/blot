@@ -9,13 +9,13 @@
   {{#menu}}
   {{#isPage}}
   <url>
-    <loc>{{blogURL}}{{url}}/</loc> 
+    <loc>{{blogURL}}{{url}}/</loc>
   </url>
   {{/isPage}}
   {{/menu}}    
   {{#allEntries}}  
   <url>
     <loc>{{blogURL}}{{url}}/</loc> 
-  </url>
+    <lastmod>{{#formatUpdated}}YYYY-MM-DD{{/formatUpdated}}</lastmod>  </url>
   {{/allEntries}}  
 </urlset>

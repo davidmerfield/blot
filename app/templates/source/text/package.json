@@ -1,0 +1,82 @@
+{
+  "name": "Text",
+  "locals": {
+    "max_width": 700,
+    "page_size": 6,
+    "text_color": "#000000",
+    "background_color": "#FFFFFF",
+    "navigation_background_color": "#F7F7F7",
+    "accent_color": "#0078D9",
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
+    "font": {
+      "font_size": 19
+    },
+    "syntax_highlighter": {
+      "id": "stackoverflow-light"
+    },
+    "syntax_highlighter_font": {
+      "font_size": 18
+    },
+    "index_layout": "post_in_full",
+    "index_layout_options": [
+      "titles",
+      "title_and_summary",
+      "post_in_full"
+    ],
+    "navigation_location": "top",
+    "navigation_location_options": [
+      "top",
+      "left",
+      "right"
+    ],
+    "hide_dates": false,
+    "spacing": 0,
+    "sticky_navigation": false,
+    "collapse_navigation_by_default": false,
+    "demo_folder": "david",
+    "template_categories": [
+      "writing"
+    ]
+  },
+  "isPublic": true,
+  "views": {
+    "archives.html": {
+      "url": "/archives",
+      "partials": {
+        "title": "Archives - {{{title}}}",
+        "description": "All the entries posted on {{{title}}}"
+      }
+    },
+    "tagged.html": {
+      "partials": {
+        "title": "{{{tag}}} - {{{title}}}",
+        "description": "All of the entries posted on {{{title}}} tagged {{{tag}}}"
+      }
+    },
+    "entries.html": {
+      "partials": {
+        "title": "{{{title}}}",
+        "description": "The latest on {{{title}}}"
+      }
+    },
+    "error.html": {
+      "partials": {
+        "title": "{{{error.title}}} - {{{title}}}",
+        "description": "Error on {{{title}}}"
+      }
+    },
+    "entry.html": {
+      "partials": {
+        "title": "{{{entry.title}}} - {{{title}}}",
+        "description": "{{{entry.summary}}}"
+      }
+    },
+    "search.html": {
+      "partials": {
+        "title": "Search - {{{title}}}",
+        "description": "Search {{{title}}}"
+      }
+    }
+  }
+}

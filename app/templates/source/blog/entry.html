@@ -1,85 +1,47 @@
+
 <!DOCTYPE html>
 <html>
-{{> head}}
+  {{> head}}
+  <body>
 
-<body class="navigation-location-{{navigation_location}}">
-  {{> header}}
-  <div class="container">
-    <div class="main">
+    {{> sidebar}}
+
+    {{#entry}}
+
       <div class="entry">
-        {{#entry}}
-
         {{{html}}}
-
-        {{#tags.length}}
-        <div class="wide">
-          <hr class="minimal">
-        </div>
-        <div class="left-label">
-          <h5>Tags</h5>
-
-          {{#tags}}
-          <a class="small tag" href="/tagged/{{slug}}">{{name}}</a>
-          {{/tags}}
-
-        </div>
-        {{/tags.length}}
-
-        {{#date}}
-        <hr class="minimal">
-        <div class="left-label">
-          <h5>Date</h5>
-
-          {{date}}
-        </div>
-        {{/date}}
-
-        {{#backlinks.length}}
-        <hr class="minimal">
-        <div class="left-label">
-          <h5>Links here</h5>
-          {{#backlinks}}
-          <a class="rounded-link" href="{{{url}}}">
-            <span class="title">{{title}}</span>
-            <span class="summary">{{summary}}</span>
-          </a>
-          {{/backlinks}}
-        </div>
-        {{/backlinks.length}}
-
-        {{#next}}
-        <hr class="minimal">
-        <div class="left-label">
-          <h5>Next</h5>
-          <a class="rounded-link" href="{{{url}}}">
-            <span class="title">{{title}}</span>
-            <span class="summary">{{summary}}</span>
-          </a>
-        </div>
-        {{/next}}
-
-        {{#previous}}
-        {{^next}}
-        <hr class="minimal">
-        {{/next}}
-        <div class="left-label">
-          <h5>Previously</h5>
-          <a class="rounded-link" href="{{{url}}}">
-            <span class="title">{{title}}</span>
-            <span class="summary">{{summary}}</span>
-          </a>
-        </div>
-        {{/previous}}
-
-        <div class="clear"></div>
-        {{> pluginHTML}}
-        <div class="clear"></div>
-
-        {{/entry}}
       </div>
-      {{> footer}}
-    </div>
-  </div>
-</body>
 
+      <div class="light">{{#date}}
+        <a href="{{{url}}}" title="Permalink for {{title}}">{{date}}</a>
+        {{/date}}{{#tags}}
+        · <a title="Everything tagged {{name}}" href="/tagged/{{slug}}">{{name}}</a>
+      {{/tags}}</div>
+
+      <br />
+
+      {{#adjacent}}
+      <br />
+      <p class="entry">
+
+      {{#previous}}
+      <span class="light adjacent">Previous:</span><a href="{{{url}}}" title="{{title}}">{{title}}</a><br />
+      {{/previous}}
+
+      {{#next}}
+      <span class="light adjacent">Next:</span><a href="{{{url}}}" title="{{title}}">{{title}}</a>
+      {{/next}}
+
+      </p>
+      <br />
+      <br />
+      <br />
+      {{/adjacent}}
+
+      {{> pluginHTML}}
+
+    {{/entry}}
+
+    {{> footer}}
+  </body>
 </html>

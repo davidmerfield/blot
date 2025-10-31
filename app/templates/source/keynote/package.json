@@ -1,10 +1,16 @@
 {
-  "name": "Blog",
-  "isPublic": false,
+  "name": "Keynote",
   "locals": {
-    "page_size": 20
+    "page_size": 12
   },
+  "isPublic": false,
   "views": {
+    "public": {
+      "partials": {
+        "title": "Index of {{{path}}}",
+        "description": "All the files and folders inside {{{path}}}"
+      }
+    },
     "archives.html": {
       "url": "/archives",
       "partials": {
@@ -34,12 +40,6 @@
       "partials": {
         "title": "{{{entry.title}}} - {{{title}}}",
         "description": "{{{entry.summary}}}"
-      }
-    },
-    "public.html": {
-      "partials": {
-        "title": "Index of {{{path}}}",
-        "description": "All the files and folders inside {{{path}}}"
       }
     },
     "search.html": {

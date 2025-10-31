@@ -1,10 +1,34 @@
 {
-  "name": "Blog",
-  "isPublic": false,
+  "name": "Organization",
   "locals": {
-    "page_size": 20
+    "page_size": 12
   },
+  "isPublic": false,
   "views": {
+    "error": {
+      "partials": {
+        "title": "{{{error.title}}} - {{{title}}}",
+        "description": "Error on {{{title}}}"
+      }
+    },
+    "public": {
+      "partials": {
+        "title": "Index of {{{path}}}",
+        "description": "All the files and folders inside {{{path}}}"
+      }
+    },
+    "script": {
+      "url": "/script.js"
+    },
+    "sitemap": {
+      "url": "/sitemap.xml"
+    },
+    "feed": {
+      "url": "/feed.rss"
+    },
+    "robots": {
+      "url": "/robots.txt"
+    },
     "archives.html": {
       "url": "/archives",
       "partials": {
@@ -24,22 +48,10 @@
         "description": "The latest entries posted on {{{title}}}"
       }
     },
-    "error.html": {
-      "partials": {
-        "title": "{{{error.title}}} - {{{title}}}",
-        "description": "Error on {{{title}}}"
-      }
-    },
     "entry.html": {
       "partials": {
         "title": "{{{entry.title}}} - {{{title}}}",
         "description": "{{{entry.summary}}}"
-      }
-    },
-    "public.html": {
-      "partials": {
-        "title": "Index of {{{path}}}",
-        "description": "All the files and folders inside {{{path}}}"
       }
     },
     "search.html": {

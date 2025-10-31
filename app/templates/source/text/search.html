@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+{{> head}}
+
+<body class="navigation-location-{{navigation_location}}">
+  {{> header}}
+  <div class="container">
+    <div class="main">
+      <form action='/search'>
+        <input placeholder="Search" value="{{#query}}{{query}}{{/query}}" name="q" type="text" />
+      </form>
+      <div>
+
+        {{#entries.length}}
+        <p>Found
+          {{#entries}}
+          {{#first}}
+          {{#last}}
+          {{entries.length}} result
+          {{/last}}
+          {{^last}}
+          {{entries.length}} results
+          {{/last}}
+          {{/first}}
+          {{/entries}}
+        </p>
+        {{/entries.length}}
+        {{^entries}}
+        {{#query}}
+        <p>No results</p>
+        {{/query}}
+        {{/entries}}
+
+        <p>
+          {{#entries}}
+          <a class="full-line" href="{{{url}}}"><em>{{title}}</em> &nbsp;<span class="small">{{date}}</span></a>
+          {{/entries}}
+        </p>
+
+
+
+        {{#query}}
+        <p><a class="small date" href="/archives">View the archives &rarr;</a></p>
+        {{/query}}
+      </div>
+      {{> footer}}
+    </div>
+  </div>
+  <script type="text/javascript">
+    var search = document.getElementById('search');
+    search.focus();
+  </script>
+</body>
+
+</html>

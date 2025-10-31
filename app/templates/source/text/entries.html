@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+{{> head}}
+
+<body class="navigation-location-{{navigation_location}}">
+  {{> header}}
+  <div class="container">
+    <div class="main">
+      {{#entries}}
+
+      {{#is.index_layout.titles}}
+      <p><a href="{{{url}}}">{{title}}</a><br>
+        <a class="small date" href="{{{url}}}">{{date}}</a>
+        {{#tags}}
+        <a class="small tag" href="/tagged/{{slug}}">{{name}}</a>
+        {{/tags}}
+      </p>
+      <div class="clear"></div>
+      {{/is.index_layout.titles}}
+
+      {{#is.index_layout.title_and_summary}}
+      <p><a href="{{{url}}}">{{title}}</a><span style="display: block;margin:0.5em 0">{{{summary}}}</span>
+        <a class="small date" href="{{{url}}}">{{date}}</a>
+        {{#tags}}
+        <a class="small tag" href="/tagged/{{slug}}">{{name}}</a>
+        {{/tags}}
+      </p>
+      <div class="clear" style="margin-bottom: 2em"></div>
+      {{/is.index_layout.title_and_summary}}
+
+      {{#is.index_layout.post_in_full}}
+      <div class="entry on-index-page" data-url="{{{url}}}">
+        {{{html}}}
+        <div class="clear"></div>
+        <p>
+          <a class="small date" href="{{{url}}}">{{date}}</a>
+          {{#tags}}
+          <a class="small tag" href="/tagged/{{slug}}">{{name}}</a>
+          {{/tags}}
+        </p>
+      </div>
+      <div class="wide">
+        <br><br>
+        <hr class="minimal">
+        <br><br>
+      </div>
+      {{/is.index_layout.post_in_full}}
+
+      {{/entries}}
+
+      {{#pagination}}
+      <div class="pagination">
+        {{#previous}}
+        <a href="/page/{{previous}}">&larr; Newer</a>
+        {{/previous}}
+        Page {{current}} of {{total}}
+        {{#next}}
+        <a href="/page/{{next}}">Older &rarr;</a>
+        {{/next}}
+      </div>
+      {{/pagination}}
+
+      {{> footer}}
+    </div>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+{{> head}}
+
+<body class="navigation-location-{{navigation_location}}">
+  {{> header}}
+  <div class="container">
+    <div class="main">
+      <div class="entry">
+        {{#entry}}
+
+        {{{html}}}
+
+        {{#tags.length}}
+        <div class="wide">
+          <hr class="minimal">
+        </div>
+        <div class="left-label">
+          <h5>Tags</h5>
+
+          {{#tags}}
+          <a class="small tag" href="/tagged/{{slug}}">{{name}}</a>
+          {{/tags}}
+
+        </div>
+        {{/tags.length}}
+
+        {{#date}}
+        <hr class="minimal">
+        <div class="left-label">
+          <h5>Date</h5>
+
+          {{date}}
+        </div>
+        {{/date}}
+
+        {{#backlinks.length}}
+        <hr class="minimal">
+        <div class="left-label">
+          <h5>Links here</h5>
+          {{#backlinks}}
+          <a class="rounded-link" href="{{{url}}}">
+            <span class="title">{{title}}</span>
+            <span class="summary">{{summary}}</span>
+          </a>
+          {{/backlinks}}
+        </div>
+        {{/backlinks.length}}
+
+        {{#next}}
+        <hr class="minimal">
+        <div class="left-label">
+          <h5>Next</h5>
+          <a class="rounded-link" href="{{{url}}}">
+            <span class="title">{{title}}</span>
+            <span class="summary">{{summary}}</span>
+          </a>
+        </div>
+        {{/next}}
+
+        {{#previous}}
+        {{^next}}
+        <hr class="minimal">
+        {{/next}}
+        <div class="left-label">
+          <h5>Previously</h5>
+          <a class="rounded-link" href="{{{url}}}">
+            <span class="title">{{title}}</span>
+            <span class="summary">{{summary}}</span>
+          </a>
+        </div>
+        {{/previous}}
+
+        <div class="clear"></div>
+        {{> pluginHTML}}
+        <div class="clear"></div>
+
+        {{/entry}}
+      </div>
+      {{> footer}}
+    </div>
+  </div>
+</body>
+
+</html>
