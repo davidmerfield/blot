@@ -11,6 +11,9 @@ var Delta = require("../delta");
 var fs = require("fs-extra");
 var async = require("async");
 var Sync = require("sync");
+var FileErrors = require("models/fileErrors");
+
+var FILE_ERROR_CODES = FileErrors.codes;
 
 var MAX_CHECKS_WITHOUT_RESULTS = 5;
 
@@ -42,7 +45,13 @@ module.exports = function main(blog, callback) {
       folder.log("Constructing methods to sync changes");
 
       var delta = new Delta(client, account.folder_id);
-      var apply = new Apply(client, folder.path, folder.log, folder.status);
+      var apply = new Apply(
+        client,
+        folder.path,
+        folder.log,
+        folder.status,
+        folder.error
+      );
 
       var checksWithoutResults = 0;
 
@@ -118,15 +127,29 @@ module.exports = function main(blog, callback) {
                 // file can be computed nicely, along with the display path, which also
                 // has case-preserved, for things like extracting tags from tag folders.
                 folder.log(item.relative_path, "Updating path");
-                folder.update(
-                  item.relative_path,
-                  function (err) {
-                    // We don't want an error here to block other
-                    // changes from being applied.
-                    if (err) console.log("Dropbox client:", err);
-                    next();
+                folder.update(item.relative_path, function (err) {
+                  // We don't want an error here to block other
+                  // changes from being applied.
+                  if (err) console.log("Dropbox client:", err);
+
+                  if (item.syncErrorCode) {
+                    return folder.error(
+                      item.relative_path,
+                      item.syncErrorCode,
+                      function (errorErr) {
+                        if (errorErr) {
+                          console.log(
+                            "Dropbox client: error recording sync error",
+                            errorErr
+                          );
+                        }
+                        next();
+                      }
+                    );
                   }
-                );
+
+                  next();
+                });
               },
               function () {
                 // If Dropbox says there are more changes
@@ -167,7 +190,14 @@ module.exports = function main(blog, callback) {
   });
 };
 
-function Apply(client, blogFolder, log, status) {
+function Apply(client, blogFolder, log, status, reportError) {
+  reportError =
+    typeof reportError === "function"
+      ? reportError
+      : function (_path, _code, callback) {
+          if (typeof callback === "function") callback();
+        };
+
   return function apply(changes, callback) {
     debug("Retrieved changes", changes);
 
@@ -244,6 +274,21 @@ function Apply(client, blogFolder, log, status) {
     function download(item, callback) {
       var pathForUnsupportedCheck = item.path_display || item.relative_path || "";
 
+      function recordError(code, done) {
+        item.syncErrorCode = code;
+        reportError(item.relative_path, code, function (err) {
+          if (err) {
+            log(
+              item.relative_path,
+              "Error recording sync error",
+              err
+            );
+          }
+
+          done();
+        });
+      }
+
       if (hasUnsupportedExtension(pathForUnsupportedCheck)) {
         var unsupportedMessage =
           "Skipping download because file extension is unsupported";
@@ -262,8 +307,10 @@ function Apply(client, blogFolder, log, status) {
               );
               status("Error creating placeholder " + item.relative_path);
             }
-
-            callback();
+            recordError(
+              FILE_ERROR_CODES.DROPBOX_UNSUPPORTED_EXTENSION,
+              callback
+            );
           }
         );
       }
@@ -290,8 +337,7 @@ function Apply(client, blogFolder, log, status) {
               );
               status("Error creating placeholder " + item.relative_path);
             }
-
-            callback();
+            recordError(FILE_ERROR_CODES.DROPBOX_FILE_TOO_LARGE, callback);
           }
         );
       }
@@ -337,6 +383,13 @@ function Apply(client, blogFolder, log, status) {
 
             // Swallow errors generally so we can proceed to next file
             // we might want to mark an error somehow
+            if (err) {
+              return recordError(
+                FILE_ERROR_CODES.DROPBOX_DOWNLOAD_FAILED,
+                callback
+              );
+            }
+
             callback();
           }
         );

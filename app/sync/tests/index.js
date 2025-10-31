@@ -10,6 +10,7 @@ describe("sync", function () {
 
       expect(folder.path).toEqual(jasmine.any(String));
       expect(folder.update).toEqual(jasmine.any(Function));
+      expect(folder.error).toEqual(jasmine.any(Function));
       expect(done).toEqual(jasmine.any(Function));
 
       done(null, testDone);

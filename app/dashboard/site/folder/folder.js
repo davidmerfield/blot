@@ -5,6 +5,23 @@ const localPath = require("helper/localPath");
 const Stat = require("./stat");
 const client = require("models/client");
 const pathNormalize = require("helper/pathNormalizer");
+const FileErrors = require("models/fileErrors");
+const { promisify } = require("util");
+
+const getFileErrors = promisify(FileErrors.getAll);
+
+function buildError(code) {
+  const definition = FileErrors.definitions[code] || {};
+
+  return {
+    code,
+    title: definition.title || "File has a sync error",
+    message:
+      definition.message ||
+      "Blot can't sync this file yet. Please try again or update it.",
+    source: definition.source || "Sync client",
+  };
+}
 
 async function getContents(blog, dir) {
   const local = localPath(blog.id, dir);
@@ -45,9 +62,22 @@ async function getContents(blog, dir) {
     ),
   ]);
 
+  const errors = await getFileErrors(blog.id);
+
   const result = alphanum(
-    stats.map((stat, index) => {
+    stats.map((stat) => {
       stat.entry = entries.includes(stat.name);
+
+      const normalizedPath = pathNormalize(stat.path || "");
+      const code = errors[normalizedPath];
+
+      if (code) {
+        stat.errorCode = code;
+        stat.error = buildError(code);
+        stat.errorMessage = stat.error.message;
+        stat.errorTitle = stat.error.title;
+      }
+
       return stat;
     }),
     { property: "name" }

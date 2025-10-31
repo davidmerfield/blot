@@ -175,6 +175,30 @@ a.template-button.file-helper span {margin-left: 0.5em;}
   position:relative;z-index: 5;border:1px solid var(--border-color);padding-bottom: 12px;border-radius: var(--border-radius);padding:36px;
 }
 
+.file-info .file-error {
+  background-color: var(--error-background-color);
+  border-radius: var(--border-radius);
+  color: var(--error-text-color);
+  font-size: 14px;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+}
+
+.file-info .file-error strong {
+  color: var(--error-text-color);
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.file-info .file-error p {
+  margin: 0;
+}
+
+.file-info .file-error p + p {
+  margin-top: 8px;
+}
+
   
 .file-info h1,
 .entry-info h1 {
