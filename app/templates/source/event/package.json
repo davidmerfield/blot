@@ -28,7 +28,8 @@
       "id": "system-sans",
       "line_height": 1.6,
       "font_size": 15
-    }
+    },
+    "demo_folder": "lecture"
   },
   "enabled": true,
   "views": {
