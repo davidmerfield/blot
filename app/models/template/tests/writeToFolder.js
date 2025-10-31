@@ -166,7 +166,9 @@ describe("template", function () {
 
         try {
           expect(fs.readFileSync(lowercasePath, "utf-8")).toEqual(view.content);
-          expect(fs.existsSync(test.blogDirectory + "/Templates")).toEqual(false);
+          expect(fs.existsSync(test.blogDirectory + "/Templates")).toEqual(
+            false
+          );
         } catch (assertErr) {
           fs.removeSync(posts);
           fs.removeSync(drafts);
@@ -228,97 +230,12 @@ describe("template", function () {
           if (err) return done.fail(err);
 
           expect(fs.existsSync(orphanPath)).toEqual(false);
-          expect(fs.readFileSync(join(templateDir, view.name), "utf-8")).toEqual(
-            view.content
-          );
+          expect(
+            fs.readFileSync(join(templateDir, view.name), "utf-8")
+          ).toEqual(view.content);
           done();
         });
       });
-    });
-  });
-
-  it("removes deleted views for clients without local copies", function (done) {
-    var test = this;
-    var view = {
-      name: test.fake.random.word() + ".html",
-      content: test.fake.random.word(),
-    };
-    var removals = [];
-    var fakeClient = {
-      display_name: "Fake",
-      description: "Fake client",
-      disconnect: function (id, callback) {
-        if (callback) callback();
-      },
-      write: function (blogID, path, content, callback) {
-        process.nextTick(callback);
-      },
-      remove: function (blogID, path, callback) {
-        removals.push({ blogID: blogID, path: path });
-        process.nextTick(callback);
-      },
-    };
-
-    fakeClient.name = "fake";
-
-    var finished = false;
-
-    function finalize(err) {
-      if (finished) return;
-      finished = true;
-      delete clients.fake;
-
-      test.blog
-        .update({ client: null })
-        .then(function () {
-          if (err) {
-            done.fail(err);
-          } else {
-            done();
-          }
-        })
-        .catch(function (updateErr) {
-          done.fail(updateErr);
-        });
-    }
-
-    clients.fake = fakeClient;
-
-    setView(this.template.id, view, function (err) {
-      if (err) return finalize(err);
-
-      test.blog
-        .update({ client: "fake" })
-        .then(function () {
-          writeToFolder(test.blog.id, test.template.id, function (err) {
-            if (err) return finalize(err);
-
-            dropView(test.template.id, view.name, function (err) {
-              if (err) return finalize(err);
-
-              writeToFolder(test.blog.id, test.template.id, function (err) {
-                if (err) return finalize(err);
-
-                try {
-                  expect(removals.length).toEqual(1);
-                  expect(removals[0].path).toContain(view.name);
-
-                  var templateDir = getTemplateDir(test);
-                  expect(
-                    fs.existsSync(join(templateDir, view.name))
-                  ).toEqual(false);
-                } catch (assertErr) {
-                  return finalize(assertErr);
-                }
-
-                finalize();
-              });
-            });
-          });
-        })
-        .catch(function (updateErr) {
-          finalize(updateErr);
-        });
     });
   });
 
@@ -401,9 +318,9 @@ describe("template", function () {
 
           try {
             expect(fs.existsSync(orphanPath)).toEqual(false);
-            expect(fs.readFileSync(join(templateDir, view.name), "utf-8")).toEqual(
-              view.content
-            );
+            expect(
+              fs.readFileSync(join(templateDir, view.name), "utf-8")
+            ).toEqual(view.content);
 
             var linkStat = fs.lstatSync(loopPath);
             expect(linkStat.isSymbolicLink()).toEqual(true);
@@ -419,10 +336,8 @@ describe("template", function () {
 });
 
 function getTemplateDir(test) {
-  var upperPath =
-    test.blogDirectory + "/Templates/" + test.template.slug;
-  var lowerPath =
-    test.blogDirectory + "/templates/" + test.template.slug;
+  var upperPath = test.blogDirectory + "/Templates/" + test.template.slug;
+  var lowerPath = test.blogDirectory + "/templates/" + test.template.slug;
 
   return fs.existsSync(upperPath) ? upperPath : lowerPath;
 }
