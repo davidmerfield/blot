@@ -31,30 +31,11 @@ function writeToFolder (blogID, templateID, callback) {
           }
 
           var dir = joinpath(folderName, metadata.slug);
-          var supportsListing = client && typeof client.list === "function";
-          var shouldCompareWrites = supportsListing;
+          var shouldCompareWrites = true;
 
           metadata.enabled = blogTemplate === templateID;
 
-          if (!supportsListing) {
-            return client.remove(blogID, dir, function (err) {
-              if (err) {
-                return callback(err);
-              }
-
-              writeTemplateContents(
-                blogID,
-                client,
-                dir,
-                metadata,
-                views,
-                { compare: shouldCompareWrites },
-                callback
-              );
-            });
-          }
-
-          listExistingFiles(blogID, client, dir, function (err, existingFiles) {
+          listLocalFiles(blogID, dir, function (err, existingFiles) {
             if (err) {
               return callback(err);
             }
@@ -121,9 +102,6 @@ function makeClient (blogID, callback) {
         },
         write: function (blogID, path, content, callback) {
           fs.outputFile(localPath(blogID, path), content, callback);
-        },
-        list: function (blogID, path, callback) {
-          listLocalFiles(blogID, path, callback);
         }
       });
     }
@@ -207,20 +185,6 @@ function writeTemplateContents(
       }
     );
   });
-}
-
-function listExistingFiles(blogID, client, dir, callback) {
-  if (client && typeof client.list === "function") {
-    return client.list(blogID, dir, function (err, files) {
-      if (err) return callback(err);
-
-      if (!Array.isArray(files)) files = [];
-
-      callback(null, files.map(normalizePath));
-    });
-  }
-
-  listLocalFiles(blogID, dir, callback);
 }
 
 function listLocalFiles(blogID, dir, callback) {

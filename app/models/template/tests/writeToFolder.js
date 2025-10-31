@@ -235,7 +235,7 @@ describe("template", function () {
     });
   });
 
-  it("falls back to resetting the folder when the client cannot list files", function (done) {
+  it("removes orphans while preserving existing files with the local client", function (done) {
     var test = this;
     var view = {
       name: test.fake.random.word() + ".html",
@@ -264,7 +264,7 @@ describe("template", function () {
               var rewrittenStat = fs.statSync(viewPath);
 
               expect(fs.existsSync(orphanPath)).toEqual(false);
-              expect(rewrittenStat.mtimeMs).not.toEqual(originalStat.mtimeMs);
+              expect(rewrittenStat.mtimeMs).toEqual(originalStat.mtimeMs);
               expect(fs.readFileSync(viewPath, "utf-8")).toEqual(view.content);
               done();
             });
