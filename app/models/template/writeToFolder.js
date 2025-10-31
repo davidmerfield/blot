@@ -125,13 +125,19 @@ function writeFile(blogID, client, path, content, compare, callback) {
     compare = true;
   }
 
-  if (!compare) return client.write(blogID, path, content, callback);
-
   var absolute = localPath(blogID, path);
+
+  function finish(err) {
+    if (err) return callback(err);
+
+    fs.outputFile(absolute, content, callback);
+  }
+
+  if (!compare) return client.write(blogID, path, content, finish);
 
   fs.readFile(absolute, "utf-8", function (err, existing) {
     if (!err && existing === content) return callback();
-    client.write(blogID, path, content, callback);
+    client.write(blogID, path, content, finish);
   });
 }
 
@@ -248,7 +254,17 @@ function removeOrphanedFiles(blogID, client, dir, existingFiles, written, callba
   async.eachSeries(
     toRemove,
     function (file, next) {
-      client.remove(blogID, joinpath(dir, file), next);
+      var relativePath = joinpath(dir, file);
+      var absolutePath = localPath(blogID, relativePath);
+
+      client.remove(blogID, relativePath, function (err) {
+        if (err && err.code !== "ENOENT") return next(err);
+
+        fs.remove(absolutePath, function (fsErr) {
+          if (fsErr && fsErr.code !== "ENOENT") return next(fsErr);
+          next();
+        });
+      });
     },
     callback
   );

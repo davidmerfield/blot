@@ -1,9 +1,11 @@
 var fs = require("fs-extra");
 var join = require("path").join;
+var clients = require("clients");
 
 describe("template", function () {
   var writeToFolder = require("../index").writeToFolder;
   var setView = require("../index").setView;
+  var dropView = require("../index").dropView;
   var setMetadata = require("../index").setMetadata;
 
   require("./setup")({ createTemplate: true });
@@ -232,6 +234,91 @@ describe("template", function () {
           done();
         });
       });
+    });
+  });
+
+  it("removes deleted views for clients without local copies", function (done) {
+    var test = this;
+    var view = {
+      name: test.fake.random.word() + ".html",
+      content: test.fake.random.word(),
+    };
+    var removals = [];
+    var fakeClient = {
+      display_name: "Fake",
+      description: "Fake client",
+      disconnect: function (id, callback) {
+        if (callback) callback();
+      },
+      write: function (blogID, path, content, callback) {
+        process.nextTick(callback);
+      },
+      remove: function (blogID, path, callback) {
+        removals.push({ blogID: blogID, path: path });
+        process.nextTick(callback);
+      },
+    };
+
+    fakeClient.name = "fake";
+
+    var finished = false;
+
+    function finalize(err) {
+      if (finished) return;
+      finished = true;
+      delete clients.fake;
+
+      test.blog
+        .update({ client: null })
+        .then(function () {
+          if (err) {
+            done.fail(err);
+          } else {
+            done();
+          }
+        })
+        .catch(function (updateErr) {
+          done.fail(updateErr);
+        });
+    }
+
+    clients.fake = fakeClient;
+
+    setView(this.template.id, view, function (err) {
+      if (err) return finalize(err);
+
+      test.blog
+        .update({ client: "fake" })
+        .then(function () {
+          writeToFolder(test.blog.id, test.template.id, function (err) {
+            if (err) return finalize(err);
+
+            dropView(test.template.id, view.name, function (err) {
+              if (err) return finalize(err);
+
+              writeToFolder(test.blog.id, test.template.id, function (err) {
+                if (err) return finalize(err);
+
+                try {
+                  expect(removals.length).toEqual(1);
+                  expect(removals[0].path).toContain(view.name);
+
+                  var templateDir = getTemplateDir(test);
+                  expect(
+                    fs.existsSync(join(templateDir, view.name))
+                  ).toEqual(false);
+                } catch (assertErr) {
+                  return finalize(assertErr);
+                }
+
+                finalize();
+              });
+            });
+          });
+        })
+        .catch(function (updateErr) {
+          finalize(updateErr);
+        });
     });
   });
 
