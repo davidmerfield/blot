@@ -1,6 +1,15 @@
 Work on template editor
 - Turn all folders into templates
 
+Work out how to set the navigation for the event template folder:
+  "navigation": [
+        {"url": "/", "label": "Information"},
+        {"url": "/speakers", "label": "Speakers"},
+        {"url": "/faqs", "label": "FAQs"},
+        {"url": "/page/1", "label": "Announcements"},
+        {"url": "/tickets", "label": "Get tickets"}
+      ],
+
 ---
 
 Finish [setting up Andrew's site](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRCkhdsXvnSjxbbfGSxxDtlW)

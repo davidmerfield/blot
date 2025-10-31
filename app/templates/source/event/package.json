@@ -2,13 +2,6 @@
   "name": "Event",
   "locals": {
     "title": "The Cartography of Solitude",
-    "navigation": [
-      {"url": "/", "label": "Information"},
-      {"url": "/speakers", "label": "Speakers"},
-      {"url": "/faqs", "label": "FAQs"},
-      {"url": "/page/1", "label": "Announcements"},
-      {"url": "/tickets", "label": "Get tickets"}
-    ],
     "call_to_action": "/tickets",
     "page_size": 18,
     "spacing": 1,
