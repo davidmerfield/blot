@@ -51,8 +51,12 @@ Array.from(document.querySelectorAll('[data-font-picker-form]')).forEach(form =>
     openPicker();
   });
 
-  trigger.addEventListener('focus', openPicker);
-  trigger.addEventListener('mouseenter', openPicker);
+  trigger.addEventListener('keydown', event => {
+    const activationKeys = ['Enter', ' ', 'Spacebar'];
+    if (!activationKeys.includes(event.key)) return;
+    event.preventDefault();
+    openPicker();
+  });
 
   trigger.addEventListener('blur', event => {
     const next = event.relatedTarget;
