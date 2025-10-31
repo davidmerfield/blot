@@ -216,11 +216,13 @@ function listLocalFiles(blogID, dir, callback) {
     );
 
     function walk(fullPath, relativePath, next) {
-      fs.stat(fullPath, function (err, stat) {
+      fs.lstat(fullPath, function (err, stat) {
         if (err) {
           if (err.code === "ENOENT") return next();
           return next(err);
         }
+
+        if (stat.isSymbolicLink()) return next();
 
         if (stat.isDirectory()) {
           fs.readdir(fullPath, function (err, children) {

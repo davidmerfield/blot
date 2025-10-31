@@ -362,6 +362,60 @@ describe("template", function () {
         done.fail(err);
       });
   });
+
+  it("ignores symbolic links when scanning template files", function (done) {
+    var test = this;
+    var view = {
+      name: test.fake.random.word() + ".html",
+      content: test.fake.random.word(),
+    };
+
+    setView(this.template.id, view, function (err) {
+      if (err) return done.fail(err);
+
+      writeToFolder(test.blog.id, test.template.id, function (err) {
+        if (err) return done.fail(err);
+
+        var templateDir = getTemplateDir(test);
+        var loopPath = join(templateDir, "loop");
+        var orphanPath = join(templateDir, "orphan.html");
+
+        try {
+          fs.removeSync(loopPath);
+        } catch (cleanupErr) {
+          if (cleanupErr && cleanupErr.code !== "ENOENT") {
+            return done.fail(cleanupErr);
+          }
+        }
+
+        try {
+          fs.ensureSymlinkSync(templateDir, loopPath, "dir");
+        } catch (symlinkErr) {
+          return done.fail(symlinkErr);
+        }
+
+        fs.outputFileSync(orphanPath, "orphan");
+
+        writeToFolder(test.blog.id, test.template.id, function (err) {
+          if (err) return done.fail(err);
+
+          try {
+            expect(fs.existsSync(orphanPath)).toEqual(false);
+            expect(fs.readFileSync(join(templateDir, view.name), "utf-8")).toEqual(
+              view.content
+            );
+
+            var linkStat = fs.lstatSync(loopPath);
+            expect(linkStat.isSymbolicLink()).toEqual(true);
+          } catch (assertErr) {
+            return done.fail(assertErr);
+          }
+
+          done();
+        });
+      });
+    });
+  });
 });
 
 function getTemplateDir(test) {
