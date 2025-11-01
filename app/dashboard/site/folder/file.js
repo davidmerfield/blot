@@ -5,8 +5,22 @@ const Entry = require("models/entry");
 const IgnoredFiles = require("models/ignoredFiles");
 const moment = require("moment");
 const converters = require("build/converters");
+const FileErrors = require("models/fileErrors");
 
 require("moment-timezone");
+
+function buildError(code) {
+  const definition = FileErrors.definitions[code] || {};
+
+  return {
+    code,
+    title: definition.title || "File has a sync error",
+    message:
+      definition.message ||
+      "Blot can't sync this file yet. Please try again or update it.",
+    source: definition.source || "Sync client",
+  };
+}
 
 module.exports = async function (blog, path) {
   return new Promise((resolve, reject) => {
@@ -24,12 +38,18 @@ module.exports = async function (blog, path) {
           resolve(entry);
         });
       }),
+      new Promise((resolve, reject) => {
+        FileErrors.getStatus(blogID, path, function (err, code) {
+          if (err) return reject(err);
+          resolve(code);
+        });
+      }),
     ])
-      .then(([ignoredReason, entry]) => {
-        
+      .then(([ignoredReason, entry, errorCode]) => {
+
         let ignored = {};
 
-        if (!entry) {
+        if (!entry && !errorCode) {
 
           if (ignoredReason && ignoredReason === 'WRONG_TYPE') {
             ignored.wrongType = true;
@@ -59,9 +79,13 @@ module.exports = async function (blog, path) {
         // a dictionary we use to display conditionally in the UI
         file.extension = {};
         file.extension = normalizeExtension(path)
-        
+
         file.entry = entry;
         file.ignored = ignored;
+
+        if (errorCode) {
+          file.error = buildError(errorCode);
+        }
 
         if (entry) {
           // Replace with case-preserving

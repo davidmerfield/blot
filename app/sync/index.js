@@ -5,6 +5,7 @@ const localPath = require("helper/localPath");
 const renames = require("./renames");
 const lockfile = require("proper-lockfile");
 const messenger = require("./messenger");
+const FileErrors = require("models/fileErrors");
 
 const LOCK_STALE_TIMEOUT_MS = 10 * 1000;
 const LOCK_UPDATE_INTERVAL_MS = 3 * 1000; // lowered from 5s to avoid ECOMPROMISED errors?
@@ -68,7 +69,47 @@ function sync(blogID, callback) {
       path,
       update: function () {
         changes = true;
-        _update.apply(_update, arguments);
+        const args = Array.prototype.slice.call(arguments);
+        const targetPath = args[0];
+
+        if (typeof targetPath === "string" && targetPath.length) {
+          try {
+            FileErrors.clear(blog.id, targetPath, function (err) {
+              if (err) {
+                log(
+                  targetPath,
+                  "Error clearing recorded sync error before update",
+                  err
+                );
+              }
+            });
+          } catch (err) {
+            log(targetPath, "Error clearing recorded sync error", err);
+          }
+        }
+
+        _update.apply(_update, args);
+      },
+      error: function (path, code, callback) {
+        if (typeof callback !== "function") callback = function () {};
+
+        if (typeof code !== "string" || !code.length) {
+          return process.nextTick(function () {
+            callback(new Error("Expected error code as a non-empty string"));
+          });
+        }
+
+        changes = true;
+        try {
+          FileErrors.set(blog.id, path, code, function (err) {
+            if (err) return callback(err);
+            callback();
+          });
+        } catch (err) {
+          process.nextTick(function () {
+            callback(err);
+          });
+        }
       },
       status,
       log,

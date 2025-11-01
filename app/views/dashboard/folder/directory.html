@@ -49,20 +49,25 @@
           {{/contents.length}}
       
           {{#contents}}
-          <tr>
+          <tr class="{{#error}}has-error{{/error}}">
             <td>
               <a href="{{{base}}}/folder{{{url}}}" class="{{#directory}}directory{{/directory}} {{#entry}}entry{{/entry}}">
-      
+
             {{#directory}}
             <span class="icon-folder"></span>
             {{/directory}}
-            {{^directory}}  
-            {{#entry}}    
+            {{^directory}}
+            {{#error}}
+            <span class="icon-file-error"></span>
+            {{/error}}
+            {{^error}}
+            {{#entry}}
             <span class="icon-file-check"></span>
             {{/entry}}
             {{^entry}}
             <span class="icon-file"></span>
             {{/entry}}
+            {{/error}}
             {{/directory}}
             <span class="truncate">{{name}}</span></a>
             </td>

@@ -4,8 +4,26 @@
 
 <div class="file-info">
 
-  <h1><span class="icon-file{{#entry}}-check{{/entry}}"></span>{{name}}</h1>
- 
+  <h1>
+    {{#error}}
+    <span class="icon-file-error"></span>
+    {{/error}}
+    {{^error}}
+    <span class="icon-file{{#entry}}-check{{/entry}}"></span>
+    {{/error}}
+    {{name}}
+  </h1>
+
+  {{#error}}
+  <div class="file-error">
+    <strong>{{title}}</strong>
+    <p>{{message}}</p>
+    {{#source}}
+    <p class="file-error-source">Reported by {{source}}</p>
+    {{/source}}
+  </div>
+  {{/error}}
+
   <a href="{{{base}}}/folder-download{{{url}}}" target="_blank" class="template-button right-aligned file-helper">
     Download file
     <span class="icon-download"></span>
