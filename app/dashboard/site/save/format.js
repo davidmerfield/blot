@@ -2,6 +2,7 @@ var Blog = require("models/blog");
 var formJSON = require("helper/formJSON");
 var extend = require("helper/extend");
 var normalizeImageExif = require("models/blog/util/imageExif").normalize;
+var parseBoolean = require("helper/parseBoolean");
 
 module.exports = function (req, res, next) {
   try {
@@ -46,14 +47,18 @@ module.exports = function (req, res, next) {
     // this bullshit below is because I haven't properly declared
     // the model for blog.plugins so formJSON needs a little help...
     for (var i in req.updates.plugins) {
-      req.updates.plugins[i].enabled = req.updates.plugins[i].enabled === "on";
-      if (!req.updates.plugins[i].options) req.updates.plugins[i].options = {};
-    }
+      var plugin = req.updates.plugins[i];
 
-    if (req.updates.plugins.typeset) {
-      for (var x in req.updates.plugins.typeset.options)
-        req.updates.plugins.typeset.options[x] =
-          req.updates.plugins.typeset.options[x] === "on";
+      plugin.enabled = parseBoolean(plugin.enabled) === true;
+
+      if (!plugin.options) plugin.options = {};
+
+      for (var option in plugin.options) {
+        if (Object.prototype.hasOwnProperty.call(plugin.options, option)) {
+          var parsed = parseBoolean(plugin.options[option]);
+          if (typeof parsed === "boolean") plugin.options[option] = parsed;
+        }
+      }
     }
 
     extend(req.updates.plugins).and(req.blog.plugins);
