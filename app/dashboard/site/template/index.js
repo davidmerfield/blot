@@ -163,18 +163,13 @@ TemplateEditor.route("/:templateSlug/local-editing")
   .post(require("./save/fork-if-needed"), function (req, res, next) {
 
     if (req.template.localEditing) {
-      Template.setMetadata(
-        req.template.id,
-        { localEditing: false },
-        function (err) {
+      Template.removeFromFolder(req.blog.id, req.template.id, function () {
+        Template.setMetadata(req.template.id, { localEditing: false }, function (err) {
           if (err) return next(err);
           res.message(req.baseUrl, "Disabled local editing");
-          Template.removeFromFolder(req.blog.id, req.template.id, function () {
-            // could we do something with this error? Could we wait to render the page?
-          });
-        }
-      );
-    } else {
+        });
+    });
+  } else {
     Template.setMetadata(
       req.template.id,
       { localEditing: true },
