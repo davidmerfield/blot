@@ -5,6 +5,7 @@ var async = require("async");
 var _ = require("lodash");
 var moment = require("moment");
 var debug = require("debug")("blog:render:augment");
+var aliasMetadata = require("build/metadata/aliases");
 require("moment-timezone");
 
 module.exports = function (req, res, entry, callback) {
@@ -14,6 +15,10 @@ module.exports = function (req, res, entry, callback) {
   // or from the template, or from the view
   var hideDate = res.locals.hide_dates || false;
   var dateDisplay = res.locals.date_display || "MMMM D, Y";
+
+  if (entry.metadata && typeof entry.metadata === "object") {
+    aliasMetadata(entry.metadata);
+  }
 
   entry.formatDate = FormatDate(entry.dateStamp, req.blog.timeZone);
   entry.formatUpdated = FormatDate(entry.updated, req.blog.timeZone);

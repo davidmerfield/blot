@@ -3,7 +3,7 @@ describe("augment", function () {
     require('../../tests/util/setup')();
 
     it("adds formatDate function to entries", async function () {
-        
+
         await this.write({path: "/first.txt", content: "Foo"});
         await this.template({
             'entry.html': '{{#entry}}{{#formatDate}}YYYY{{/formatDate}}{{/entry}}'
@@ -15,9 +15,9 @@ describe("augment", function () {
         expect(res.status).toEqual(200);
         expect(body.trim()).toEqual(new Date().getFullYear().toString());
     });
-    
+
     it("adds ratio property to thumbnails", async function () {
-    
+
         const image = await require('sharp')({
             create: {
                 width: 100,
@@ -40,7 +40,7 @@ describe("augment", function () {
     });
 
     it("renders entry backlinks", async function () {
-        
+
         await this.write({path: "/first.txt", content: "Foo"});
         await this.write({path: "/second.txt", content: "Title: Second\n\n[[first]]"});
         await this.template({
@@ -52,5 +52,23 @@ describe("augment", function () {
 
         expect(res.status).toEqual(200);
         expect(body.trim()).toEqual('Second');
+    });
+
+    it("aliases metadata for templates", async function () {
+
+        await this.write({
+            path: "/first.txt",
+            content: ["CustomKey: Value", "", "Body"].join("\n")
+        });
+
+        await this.template({
+            'entry.html': '{{#entry}}{{metadata.customkey}}{{/entry}}'
+        });
+
+        const res = await this.get('/first');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body.trim()).toEqual('Value');
     });
 });
