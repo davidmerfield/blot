@@ -88,6 +88,41 @@ describe("entries", function () {
     });
   });
 
+  describe("scheduled rebuilds", function () {
+    it("clears the scheduled flag when the dateStamp is removed", function (done) {
+      const blogID = this.blog.id;
+      const path = "/scheduled-entry.txt";
+      const future = Date.now() + 24 * 60 * 60 * 1000;
+
+      const initialEntry = buildEntry(path, { dateStamp: future });
+
+      Entry.set(blogID, path, initialEntry, function (err) {
+        if (err) return done.fail(err);
+
+        Entry.get(blogID, path, function (stored) {
+          expect(stored.scheduled).toBe(true);
+
+          const rebuild = Object.assign({}, stored, {
+            metadata: {},
+            dateStampWasRemoved: true,
+          });
+
+          delete rebuild.dateStamp;
+
+          Entry.set(blogID, path, rebuild, function (err) {
+            if (err) return done.fail(err);
+
+            Entry.get(blogID, path, function (updated) {
+              expect(updated.scheduled).toBe(false);
+              expect(updated.dateStamp).toBe(updated.created);
+              done();
+            });
+          });
+        });
+      });
+    });
+  });
+
   describe("pruneMissing", function () {
     it("removes orphaned IDs from entry lists", function (done) {
       const blogID = this.blog.id;

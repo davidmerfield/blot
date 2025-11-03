@@ -72,7 +72,10 @@ module.exports = function build(blog, path, callback) {
             updated: moment.utc(stat.mtime).valueOf(),
           };
 
-          if (entry.dateStamp === undefined) delete entry.dateStamp;
+          if (entry.dateStamp === undefined) {
+            entry.dateStampWasRemoved = true;
+            delete entry.dateStamp;
+          }
 
           debug(
             "Blog:",

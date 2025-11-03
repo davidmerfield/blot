@@ -50,6 +50,12 @@ module.exports = function set (blogID, path, updates, callback) {
     // Overwrite any updates to the entry
     for (var i in updates) entry[i] = updates[i];
 
+    var dateStampWasRemoved = entry.dateStampWasRemoved;
+
+    if (dateStampWasRemoved) {
+      delete entry.dateStamp;
+    }
+
     if (entry.guid === undefined) entry.guid = "entry_" + guid();
 
     // This is for new entries
@@ -69,6 +75,8 @@ module.exports = function set (blogID, path, updates, callback) {
     if (!entry.exif || typeof entry.exif !== "object") entry.exif = {};
 
     entry.scheduled = entry.dateStamp > Date.now();
+
+    delete entry.dateStampWasRemoved;
 
     // Draft entries should not be in the
     // menu or scheduled list
