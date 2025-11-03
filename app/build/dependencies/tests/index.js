@@ -98,6 +98,42 @@ describe("dependencies", function () {
     },
   });
 
+  // Should ignore non-file URL schemes (mailto)
+  should_get_dependencies({
+    html: '<img src="mailto:user@example.com">',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<img src="mailto:user@example.com">',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // Should ignore non-file URL schemes (tel)
+  should_get_dependencies({
+    html: '<img src="tel:+15551234567">',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<img src="tel:+15551234567">',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // Should ignore non-file URL schemes (sms)
+  should_get_dependencies({
+    html: '<img src="sms:+15551234567">',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<img src="sms:+15551234567">',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
   // SHould not consider itself a dependency
   should_get_dependencies({
     html: '<img src="/image.jpg">',
