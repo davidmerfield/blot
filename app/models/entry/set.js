@@ -24,7 +24,7 @@ var assignToLists = require("./_assign");
 module.exports = function set (blogID, path, updates, callback) {
   ensure(blogID, "string")
     .and(path, "string")
-    .and(updates, model)
+    .and(updates, "object")
     .and(callback, "function");
 
   var entryKey = key.entry(blogID, path);
