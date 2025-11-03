@@ -161,6 +161,20 @@ TemplateEditor.route("/:templateSlug/local-editing")
     res.render("dashboard/template/local-editing");
   })
   .post(require("./save/fork-if-needed"), function (req, res, next) {
+
+    if (req.template.localEditing) {
+      Template.setMetadata(
+        req.template.id,
+        { localEditing: false },
+        function (err) {
+          if (err) return next(err);
+          res.message(req.baseUrl, "Disabled local editing");
+          Template.removeFromFolder(req.blog.id, req.template.id, function () {
+            // could we do something with this error? Could we wait to render the page?
+          });
+        }
+      );
+    } else {
     Template.setMetadata(
       req.template.id,
       { localEditing: true },
@@ -168,8 +182,11 @@ TemplateEditor.route("/:templateSlug/local-editing")
         if (err) return next(err);
 
         res.message(
-          "/sites/" + req.blog.handle + "/template",
-          "Transferred template <b>" + req.template.name + "</b> to your folder"
+          "/sites/" +
+            req.blog.handle +
+            "/template/" +
+            req.template.id.split(":").slice(1).join(":"),
+          "Transferred template to your folder"
         );
 
         Template.writeToFolder(req.blog.id, req.template.id, function () {
@@ -180,6 +197,7 @@ TemplateEditor.route("/:templateSlug/local-editing")
         });
       }
     );
+  }
   });
 
 TemplateEditor.route("/:templateSlug/download-zip").get(function (req, res) {
@@ -293,19 +311,21 @@ TemplateEditor.route("/:templateSlug/delete")
   })
   .post(function (req, res, next) {
     const idSlug = req.template.id.split(":").slice(1).join(":");
-    Template.drop(req.blog.id, idSlug, function (err) {
-      if (err) return next(err);
+    Template.removeFromFolder(req.blog.id, req.template.id, function () {
+      Template.drop(req.blog.id, idSlug, function (err) {
+        if (err) return next(err);
 
-      const currentTemplateIDSlug = req.blog.template
-        .split(":")
-        .slice(1)
-        .join(":");
+        const currentTemplateIDSlug = req.blog.template
+          .split(":")
+          .slice(1)
+          .join(":");
 
-      res.message(
-        res.locals.dashboardBase + "/template/" + (currentTemplateIDSlug || ""),
-        "Deleted template <b>" + req.template.name + "</b>"
-      );
-    });
+        res.message(
+          res.locals.dashboardBase + "/template/" + (currentTemplateIDSlug || ""),
+          "Deleted template <b>" + req.template.name + "</b>"
+        );
+      });
+    });    
   });
 
 TemplateEditor.route("/:templateSlug/reset")

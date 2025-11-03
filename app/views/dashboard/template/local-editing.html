@@ -2,12 +2,24 @@
 <form action="{{{base}}}/local-editing" method="post" class="dashboard-form">
 	<input type="hidden" name="_csrf" value="{{csrftoken}}" />
 	
+  {{^template.localEditing}}
+
 		<p>You can move the source files for this template into your site's folder.</p>
 
   <div class="buttons">
     <button type="submit">
       Switch to local editing
     </button>
+  {{/template.localEditing}}
+
+    {{#template.localEditing}}
+    <p>You are editing this template locally.</p>
+    <div class="buttons">
+      <button type="submit">
+        Disable local editing
+      </button>
+      {{/template.localEditing}}
+
 	<a href="{{{base}}}" style="visibility: hidden;">Cancel</a>
   </div>
 </form>
