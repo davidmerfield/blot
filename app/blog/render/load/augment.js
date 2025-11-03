@@ -73,7 +73,7 @@ module.exports = function (req, res, entry, callback) {
     tags.push({
       name: tag,
       tag: tag,
-      slug: slug,
+      slug: encodeURIComponent(slug),
       first: i === 0,
       last: i === totalTags - 1,
     });
