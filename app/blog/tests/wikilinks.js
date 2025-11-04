@@ -394,6 +394,33 @@ describe("wikilinks", function () {
     expect(body).not.toContain('href="Spec Sheet.md"');
   });
 
+  it("does not match folders when resolving by filename", async function () {
+    
+    await this.write({
+      path: "/Hello.md",
+      content: [
+        "Link: hello",
+        "",
+        "[[Corsi|...more]]",
+      ].join("\n"),
+    });
+    
+    await this.write({
+      path: "/Corsi/Index.md",
+      content: [
+        "Title: Corsi",
+        "Link: resolved",
+        "",
+        "This is the target",
+      ].join("\n"),
+    });
+
+    await this.blog.rebuild();
+
+    expect(await this.text("/hello")).toContain('<a href="/resolved"') // match by post title
+    expect(await this.text("/hello")).not.toContain('<a href="/Corsi"') // match for folder name (incorrect)
+  });
+
   // todo: implement a test spec which verifies filename lookup works *without* file extension
   // which is currently not implemented
 });
