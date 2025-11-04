@@ -158,8 +158,8 @@ function render($, callback, { blogID, path }) {
 }
 module.exports = {
   render,
-  category: "Typography",
+  category: "links",
   title: "Wikilinks",
-  description: "Convert Wikilinks into links",
+  description: "Convert wikilinks to standard links",
   first: true,
 };

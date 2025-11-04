@@ -1,5 +1,5 @@
 module.exports = {
-  category: "Typography",
+  category: "codemath",
   title: "Math",
-  description: "Render TeX into HTML",
+  description: "Render TeX in Markdown files",
 };

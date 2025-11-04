@@ -1,12 +1,25 @@
 {{> settings-form-header}}
 
-<h1>Settings</h1>
+<h1>General</h1>
 
-{{#categories.Formatting}}
+<h2>Links</h2>
+{{#categories.Links}}
 {{> plugin-row}}
-{{/categories.Formatting}}
+{{/categories.Links}}
 
 
+<h2>Headings</h2>
+{{#categories.Headings}}
+{{> plugin-row}}
+{{/categories.Headings}}
+
+<h2>Code and math</h2>
+
+{{#categories.Codemath}}
+{{> plugin-row}}
+{{/categories.Codemath}}
+
+<h2>Typography</h2>
 {{#categories.Typography}}
 {{> plugin-row}}
 {{/categories.Typography}}

@@ -56,9 +56,9 @@ function isMarkdown(path = "") {
 module.exports = {
   render,
   isDefault: false,
-  category: "Formatting",
+  category: "headings",
   title: "Inject title",
-  description: "Insert a heading derived from the file name when none exists.",
+  description: "Insert a heading from file name if missing",
   options: {
     manuallyDisabled: false,
   },

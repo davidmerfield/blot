@@ -78,7 +78,7 @@ site.get("/settings/services", load.plugins, (req, res) => {
 });
 
 site.get("/settings/redirects", load.redirects, (req, res) => {
-  res.render("dashboard/site/redirects");
+  res.render("dashboard/site/settings/redirects");
 });
 
 site
@@ -86,14 +86,14 @@ site
   .get(load.fourOhFour, function (req, res) {
     res.locals.breadcrumbs.add("Redirects", "redirects");
     res.locals.breadcrumbs.add("404 log", "404s");
-    res.render("dashboard/site/redirects/404s");
+    res.render("dashboard/site/settings/redirects/404s");
   })
   .post(require("./save/404"));
 
 site.route("/settings/redirects/bulk").get(load.redirects, function (req, res) {
   res.locals.breadcrumbs.add("Redirects", "redirects");
   res.locals.breadcrumbs.add("Bulk editor", "bulk");
-  res.render("dashboard/site/redirects/bulk");
+  res.render("dashboard/site/settings/redirects/bulk");
 });
 
 module.exports = site;
