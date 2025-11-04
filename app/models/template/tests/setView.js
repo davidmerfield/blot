@@ -80,6 +80,30 @@ describe("template", function () {
     }
   });
 
+  it("won't set views that reference each other infinitely", async function () {
+    const test = this;
+    const baseName = test.fake.random.word();
+    const headerName = `${baseName}-header.html`;
+    const entriesName = `${baseName}-entries.html`;
+
+    await setView(test.template.id, {
+      name: headerName,
+      content: `{{> ${entriesName}}}`,
+    });
+
+    try {
+      await setView(test.template.id, {
+        name: entriesName,
+        content: `{{> ${headerName}}}`,
+      });
+
+      throw new Error("Expected setView to fail");
+    } catch (err) {
+      expect(err instanceof Error).toBe(true);
+      expect(err.message).toContain("infinitely nested partials");
+    }
+  });
+
   it("won't set a view against a template that does not exist", async function () {
     const test = this;
     const view = { name: test.fake.random.word() };

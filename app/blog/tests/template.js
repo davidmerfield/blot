@@ -121,6 +121,19 @@ describe("template engine", function () {
     expect(body).toContain("Error with your template");
   });
 
+  it("does not render templates when views include each other infinitely", async function () {
+    await this.template({
+      "entries.html": "{{> header.html}}",
+      "header.html": "{{> entries.html}}",
+    });
+
+    const res = await this.get(`/`);
+    const body = await res.text();
+
+    expect(res.status).toEqual(400);
+    expect(body).toContain("Error with your template");
+  });
+
   it("does not render the contents of an thumbnail block for posts without thumbnails", async function () {
     await this.write({
       path: "/hello.txt",
