@@ -1,12 +1,6 @@
-{{> message}}
+{{> settings-form-header}}
 
-<form class="dashboard-form" method="POST">
-
-    <input type="hidden" name="_csrf" value="{{csrftoken}}" />
-
-<p>  Posts and page are assigned a URL according to this link format. If you change this format, Blot will update your existing posts and pages and then redirect the old URLs automatically. You can change a specific post or page's URL in its <a href="/how/metadata">metadata</a>.</p>
-
-<p style="margin-top: 36px;"><b>Link format</b></p>
+<h1>Link format</h1>
 
 {{#permalinkFormats}}
 <label class="format" style="border-top: 1px solid #eeeeec;line-height:inherit;margin:0;text-transform:none;font-size:16px;letter-spacing:0;padding:9px 0 9px 10px">

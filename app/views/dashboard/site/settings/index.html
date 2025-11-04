@@ -1,56 +1,6 @@
-{{> form-header}}
-<input type="hidden" name="redirect" value="{{{base}}}/publishing" />
+{{> settings-form-header}}
 
-<section class="setting-block" id="image-metadata">
-  <h3>Image metadata</h3>
-  <p class="setting-help">
-    Control whether Blot preserves the EXIF information embedded in your photos.
-    Basic mode keeps camera details while removing sensitive data such as
-    locations; Full mode publishes everything.
-  </p>
-  <div class="option-group">
-    <label class="option">
-      <input
-        type="radio"
-        name="imageExif"
-        value="off"
-        {{#blog.isImageExifOff}}checked{{/blog.isImageExifOff}}
-      />
-      <span class="option-title">Off</span>
-      <span class="option-description">Strip all metadata before publishing.</span>
-    </label>
-    <label class="option">
-      <input
-        type="radio"
-        name="imageExif"
-        value="basic"
-        {{#blog.isImageExifBasic}}checked{{/blog.isImageExifBasic}}
-      />
-      <span class="option-title">Basic</span>
-      <span class="option-description">
-        Keep camera settings and capture details, but remove locations and contact
-        information.
-      </span>
-    </label>
-    <label class="option">
-      <input
-        type="radio"
-        name="imageExif"
-        value="full"
-        {{#blog.isImageExifFull}}checked{{/blog.isImageExifFull}}
-      />
-      <span class="option-title">Full</span>
-      <span class="option-description">
-        Publish the complete EXIF record for each image, including sensitive
-        fields.
-      </span>
-    </label>
-  </div>
-</section>
-
-{{#categories.Images}}
-{{> plugin-row}}
-{{/categories.Images}}
+<h1>Settings</h1>
 
 {{#categories.Formatting}}
 {{> plugin-row}}
@@ -61,11 +11,8 @@
 {{> plugin-row}}
 {{/categories.Typography}}
 
-</form>
 
-<div class="buttons">
-  <a href="{{{base}}}" class="button"><span class="icon-small-chevron-right"></span> Back to dashboard</a>
-</div>
+{{> settings-form-footer}}
 
 <script>
 function submitForm(form) {
@@ -164,3 +111,5 @@ exifRadios.forEach(function(radio) {
     }
   }
 </style>
+</div>
+</div>

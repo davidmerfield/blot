@@ -1,0 +1,55 @@
+{{> settings-form-header}}
+
+<h1>Images</h1>
+
+
+{{#categories.Images}}
+{{> plugin-row}}
+{{/categories.Images}}
+
+<section class="setting-block" id="image-metadata">
+  <h3>Image metadata</h3>
+  <p class="setting-help">
+    Control whether Blot preserves the EXIF information embedded in your photos.
+    Basic mode keeps camera details while removing sensitive data such as
+    locations; Full mode publishes everything.
+  </p>
+  <div class="option-group">
+    <label class="option">
+      <input
+        type="radio"
+        name="imageExif"
+        value="off"
+        {{#blog.isImageExifOff}}checked{{/blog.isImageExifOff}}
+      />
+      <span class="option-title">Off</span>
+      <span class="option-description">Strip all metadata before publishing.</span>
+    </label>
+    <label class="option">
+      <input
+        type="radio"
+        name="imageExif"
+        value="basic"
+        {{#blog.isImageExifBasic}}checked{{/blog.isImageExifBasic}}
+      />
+      <span class="option-title">Basic</span>
+      <span class="option-description">
+        Keep camera settings and capture details, but remove locations and contact
+        information.
+      </span>
+    </label>
+    <label class="option">
+      <input
+        type="radio"
+        name="imageExif"
+        value="full"
+        {{#blog.isImageExifFull}}checked{{/blog.isImageExifFull}}
+      />
+      <span class="option-title">Full</span>
+      <span class="option-description">
+        Publish the complete EXIF record for each image, including sensitive
+        fields.
+      </span>
+    </label>
+  </div>
+</section>

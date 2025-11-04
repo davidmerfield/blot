@@ -554,6 +554,8 @@ Write proper tests for clients:
     * Update the test harness (e.g., by adding the new spec directory to `scripts/tests/invoke.sh` or test globbing) so the Drive client tests execute in CI.
 - iCloud
 
+Reduce size of css file by only shipping katex css once the site first publishes a post with katex
+
 Make initial health check /health more powerful
 - inspect blogs directory and verify there are the expected number of folders
 - check we can communicate with redis

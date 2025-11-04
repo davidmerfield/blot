@@ -20,6 +20,11 @@ const {minifyJS, minifyCSS} = require("./minify");
 const replaceFolderLinks = require("./replaceFolderLinks/html");
 const replaceFolderLinksCSS = require("./replaceFolderLinks/css");
 
+// In-memory cache for minified CSS/JS per blog/template/view and cacheID
+// Keeps first-hit latency low without persisting across deploys
+const MINIFIED_CACHE_MAX_ENTRIES = 500;
+const minifiedAssetCache = new Map();
+
 var cacheDuration = "public, max-age=31536000";
 var JS = "text/javascript";
 var STYLE = "text/css";
@@ -156,16 +161,28 @@ module.exports = function (req, res, _next) {
               req.log("Replaced folder links with CDN links");
             }
 
-            if (viewType === STYLE && !req.preview) {
-              req.log("Minifying CSS");
-              output = minifyCSS(output);
-              req.log("Minified CSS");
-            }
-            
-            if (viewType === JS && !req.preview) {
-              req.log("Minifying JavaScript");
-              output = await minifyJS(output);
-              req.log("Minified JavaScript");
+            if ((viewType === STYLE || viewType === JS) && !req.preview) {
+              const cacheKey = `${req.blog.id}:${req.template.id}:${name}:${req.blog.cacheID}:${viewType}`;
+              const cached = minifiedAssetCache.get(cacheKey);
+              if (cached) {
+                req.log("Using cached minified output");
+                output = cached;
+              } else {
+                if (viewType === STYLE) {
+                  req.log("Minifying CSS");
+                  output = minifyCSS(output);
+                  req.log("Minified CSS");
+                } else {
+                  req.log("Minifying JavaScript");
+                  output = await minifyJS(output);
+                  req.log("Minified JavaScript");
+                }
+
+                if (minifiedAssetCache.size > MINIFIED_CACHE_MAX_ENTRIES) {
+                  minifiedAssetCache.clear();
+                }
+                minifiedAssetCache.set(cacheKey, output);
+              }
             }
             
             try {
