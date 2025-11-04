@@ -11,6 +11,7 @@ var serialize = require("./util/serialize");
 var getMetadata = require("./getMetadata");
 var Blog = require("models/blog");
 var parseTemplate = require("./parseTemplate");
+var ERROR = require("../../blog/render/error");
 
 module.exports = function setView(templateID, updates, callback) {
   ensure(templateID, "string").and(updates, "object").and(callback, "function");
@@ -110,6 +111,9 @@ module.exports = function setView(templateID, updates, callback) {
 
         extend(view.partials).and(parseResult.partials);
 
+        var infiniteError = detectInfinitePartialDependency(view, parseResult);
+        if (infiniteError) return callback(infiniteError);
+
         view.retrieve = parseResult.retrieve || [];
 
         view = serialize(view, viewModel);
@@ -127,3 +131,75 @@ module.exports = function setView(templateID, updates, callback) {
     });
   });
 };
+
+function detectInfinitePartialDependency(view, parseResult) {
+  var graph = {};
+  var viewName = view && view.name;
+  var viewPartials = (view && view.partials) || {};
+  var parsePartials = (parseResult && parseResult.partials) || {};
+
+  if (viewName) {
+    graph[viewName] = Object.keys(parsePartials);
+  }
+
+  var ensureNode = function (name) {
+    if (!graph[name]) graph[name] = [];
+  };
+
+  if (graph[viewName]) {
+    graph[viewName].forEach(ensureNode);
+  }
+
+  for (var partialName in viewPartials) {
+    ensureNode(partialName);
+
+    var partialValue = viewPartials[partialName];
+    var partialContent = partialValue;
+
+    if (type(partialValue, "object") && type(partialValue.content, "string")) {
+      partialContent = partialValue.content;
+    }
+
+    if (type(partialContent, "string")) {
+      var parsed = parseTemplate(partialContent || "");
+      graph[partialName] = Object.keys((parsed && parsed.partials) || {});
+      graph[partialName].forEach(ensureNode);
+    }
+  }
+
+  var visiting = {};
+  var visited = {};
+
+  function walk(node) {
+    if (!node) return null;
+    if (visiting[node]) return ERROR.INFINITE();
+    if (visited[node]) return null;
+
+    visiting[node] = true;
+
+    var deps = graph[node] || [];
+    for (var i = 0; i < deps.length; i++) {
+      var dep = deps[i];
+      var err = walk(dep);
+      if (err) return err;
+    }
+
+    visiting[node] = false;
+    visited[node] = true;
+
+    return null;
+  }
+
+  var roots = [];
+
+  if (viewName) roots.push(viewName);
+
+  roots = roots.concat(Object.keys(viewPartials));
+
+  for (var r = 0; r < roots.length; r++) {
+    var error = walk(roots[r]);
+    if (error) return error;
+  }
+
+  return null;
+}

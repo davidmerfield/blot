@@ -97,6 +97,29 @@ describe("template engine", function () {
     expect((await res1.text()).trim()).toEqual("");
   });
 
+  it("does not render templates with infinitely nested partials", async function () {
+    await this.template(
+      {
+        "entries.html": "{{> first}}",
+      },
+      {
+        views: {
+          "entries.html": {
+            partials: {
+              first: "{{> second}}",
+              second: "{{> first}}",
+            },
+          },
+        },
+      }
+    );
+
+    const res = await this.get(`/`);
+    const body = await res.text();
+
+    expect(res.status).toEqual(400);
+    expect(body).toContain("Error with your template");
+  });
 
   it("does not render the contents of an thumbnail block for posts without thumbnails", async function () {
     await this.write({
