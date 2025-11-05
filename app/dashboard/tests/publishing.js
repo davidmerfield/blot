@@ -6,7 +6,7 @@ describe("publishing settings", function () {
 
   it("saves image metadata preferences", async function () {
     const publishingPage = await this.text(
-      `/sites/${this.blog.handle}/publishing`
+      `/sites/${this.blog.handle}/settings/images`
     );
 
     expect(publishingPage).toMatch("Image metadata");
