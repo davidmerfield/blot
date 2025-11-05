@@ -86,5 +86,5 @@ module.exports = {
   render: render,
   category: "embeds",
   title: "Bluesky",
-  description: "Embed posts from Bluesky URLs",
+  description: "Embed posts from Bluesky links",
 };

@@ -65,5 +65,5 @@ module.exports = {
   render: render,
   category: "embeds",
   title: "Tweets",
-  description: "Embed tweets from Twitter URLs",
+  description: "Embed posts from Twitter links",
 };

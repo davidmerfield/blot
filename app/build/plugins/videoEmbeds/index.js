@@ -101,5 +101,5 @@ module.exports = {
   render: render,
   category: "embeds",
   title: "Videos",
-  description: "Embed videos from video/audio URLs",
+  description: "Embed videos or audio from media links",
 };

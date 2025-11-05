@@ -57,5 +57,5 @@ module.exports = {
   render: render,
   category: "embeds",
   title: "Images",
-  description: "Embed images from image URLs",
+  description: "Embed images from image links",
 };
