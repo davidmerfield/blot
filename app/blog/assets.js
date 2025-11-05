@@ -47,10 +47,7 @@ assets.use((req, res, next) => {
 
 // Global static files
 GLOBAL_STATIC_SUBDIRECTORIES.forEach((dir) => {
-  assets.use(
-    dir,
-    express.static(GLOBAL_STATIC_FILES + dir, { maxAge: "1y", immutable: true })
-  );
+  assets.use(dir, express.static(GLOBAL_STATIC_FILES + dir, { maxAge: "1y" }));
 });
 
 assets.get("/html2canvas.min.js", async (req, res, next) => {
@@ -195,7 +192,6 @@ function sendFile(path, { req, res, maxAge = 0, immutable = false } = {}) {
 
   if (req && req.query.cache && req.query.extension) {
     options.maxAge = LARGEST_POSSIBLE_MAXAGE;
-    options.immutable = true;
   }
 
   return new Promise((resolve, reject) => {
