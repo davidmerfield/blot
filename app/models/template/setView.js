@@ -192,7 +192,10 @@ function detectInfinitePartialDependency(templateID, view, parseResult, callback
       }
 
       var deps = node.deps || [];
-      var childContext = node.inlinePartials || {};
+      var childContext = {};
+      if (type(contextInlinePartials, "object")) extend(childContext).and(contextInlinePartials);
+      if (type(node.inlinePartials, "object")) extend(childContext).and(node.inlinePartials);
+      if (type(rootInlinePartials, "object")) extend(childContext).and(rootInlinePartials);
 
       eachSeries(
         deps,
@@ -216,6 +219,15 @@ function detectInfinitePartialDependency(templateID, view, parseResult, callback
       contextInlinePartials[name] !== undefined
     ) {
       return done(null, buildFromInline(contextInlinePartials[name]));
+    }
+
+    if (
+      rootInlinePartials &&
+      Object.prototype.hasOwnProperty.call(rootInlinePartials, name) &&
+      rootInlinePartials[name] !== null &&
+      rootInlinePartials[name] !== undefined
+    ) {
+      return done(null, buildFromInline(rootInlinePartials[name]));
     }
 
     if (cache[name]) return done(null, cache[name]);
