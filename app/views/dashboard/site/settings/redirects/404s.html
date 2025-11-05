@@ -39,7 +39,7 @@
       color: var(--accent-color);
       border: 1px solid #eeeeec;
       padding: 0.5em 0.75em;
-      font-weight: 600;" class="link" href="{{{base}}}/redirects?create={{url}}" style="text-decoration:none">
+      font-weight: 600;" class="link" href="{{{base}}}/settings/redirects?create={{url}}" style="text-decoration:none">
       <svg style="fill:currentColor;vertical-align: middle;position:relative;top:-0.1em" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"></path></svg>
       Add redirect</a>  
     </div>
@@ -60,9 +60,10 @@
   {{/ignored.length}}
 
   {{#ignored}}
-  <form style="display:block;float:right;z-index:10;" method='post' action='?_csrf={{csrftoken}}'>
+  <form style="display:block;float:right;z-index:10;" method='post'>
+    <input type="hidden" name="_csrf" value="{{csrftoken}}">
     <button class="button small" name="unignore" value="{{{url}}}">Unignore</button>
-    <a class="link" href="/settings/urls/redirects#{{url}}" style="text-decoration:none">Redirect</a>
+    <a class="link" href="{{{base}}}/settings/redirects?create={{url}}" style="text-decoration:none">Redirect</a>
   </form>
   <p><a href="{{blog.url}}{{url}}">{{url}}</a></p>
   {{/ignored}}

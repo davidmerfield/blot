@@ -1,7 +1,5 @@
 const express = require("express");
 const date = express.Router();
-const { resave: resaveEntries } = require("models/entries");
-const updateBlog = require("dashboard/util/update-blog");
 const moment = require("moment-timezone");
 
 // Formats and their aliases
@@ -74,26 +72,6 @@ date.get("/", (req, res, next) => {
       date: alias[format],
     })),
   });
-});
-
-date.post("/", async (req, res) => {
-  const { timeZone, dateFormat } = req.body;
-
-  try {
-    const changes = await updateBlog(req.blog.id, { timeZone, dateFormat });
-
-    if (
-      changes &&
-      (changes.includes("timeZone") || changes.includes("dateFormat"))
-    ) {
-      // Resave entries if timeZone or dateFormat has changed
-      resaveEntries(req.blog.id, () => {});
-    }
-
-    res.message(req.baseUrl, "Saved changes to date and time");
-  } catch (error) {
-    res.message(req.baseUrl, error.message);
-  }
 });
 
 module.exports = date;
