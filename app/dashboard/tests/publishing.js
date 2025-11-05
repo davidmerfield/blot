@@ -11,7 +11,7 @@ describe("publishing settings", function () {
 
     expect(publishingPage).toMatch("Image metadata");
 
-    await this.submit(`/sites/${this.blog.handle}/publishing`, {
+    await this.submit(`/sites/${this.blog.handle}/settings/images`, {
       imageExif: "off",
     });
 
@@ -21,12 +21,12 @@ describe("publishing settings", function () {
     expect(blogAfterOff.isImageExifOff).toBe(true);
 
     const updatedPublishingPage = await this.text(
-      `/sites/${this.blog.handle}/publishing`
+      `/sites/${this.blog.handle}/settings/images`
     );
 
     expect(updatedPublishingPage).toMatch("Image metadata");
 
-    await this.submit(`/sites/${this.blog.handle}/publishing`, {
+    await this.submit(`/sites/${this.blog.handle}/settings/images`, {
       imageExif: "full",
     });
 
