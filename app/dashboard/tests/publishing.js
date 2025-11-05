@@ -9,7 +9,7 @@ describe("publishing settings", function () {
       `/sites/${this.blog.handle}/settings/images`
     );
 
-    expect(publishingPage).toMatch("Image metadata");
+    expect(publishingPage).toMatch("Exif data");
 
     await this.submit(`/sites/${this.blog.handle}/settings/images`, {
       imageExif: "off",
@@ -24,7 +24,7 @@ describe("publishing settings", function () {
       `/sites/${this.blog.handle}/settings/images`
     );
 
-    expect(updatedPublishingPage).toMatch("Image metadata");
+    expect(updatedPublishingPage).toMatch("Exif data");
 
     await this.submit(`/sites/${this.blog.handle}/settings/images`, {
       imageExif: "full",
