@@ -3,26 +3,28 @@ var site = express.Router();
 var load = require("./load");
 var save = require("./save");
 var trace = require("helper/trace");
-const sse = require("helper/sse")({ channel: (req) => `sync:status:${req.blog.id}` });
+const sse = require("helper/sse")({
+  channel: (req) => `sync:status:${req.blog.id}`,
+});
 
-site
-  .post("/",
-    save.redirects,
-    trace("saved redirects"),
-    save.format,
-    trace("formated form"),
-    save.injectTitle,
-    trace("updated injectTitle options"),
-    save.analytics,
-    trace("saved analytics"),
-    save.avatar,
-    trace("saved avatar"),
-    save.removeTmpFiles,
-    trace("removed any tmp files"),
-    save.finish
-  )
+site.post(
+  "/",
+  save.redirects,
+  trace("saved redirects"),
+  save.format,
+  trace("formated form"),
+  save.injectTitle,
+  trace("updated injectTitle options"),
+  save.analytics,
+  trace("saved analytics"),
+  save.avatar,
+  trace("saved avatar"),
+  save.removeTmpFiles,
+  trace("removed any tmp files"),
+  save.finish
+);
 
-site.get("/", require('./load/scheduled'));
+site.get("/", require("./load/scheduled"));
 
 // Load the files and folders inside a blog's folder
 site.get(["/", "/folder/:path(*)"], require("./folder"));
@@ -39,49 +41,59 @@ site.use("/export", require("./export"));
 site.use("/domain", require("./domain"));
 site.use("/client", require("./client"));
 site.use("/title", require("./title"));
-site.use("/date", require("./date"));
-site.use('/link-format', require('./link-format'));
+
+site.use("/settings/date", require("./date"));
+site.use("/settings/link-format", require("./link-format"));
 
 site.get("/status", sse);
 
 // allow the download of files directly
-site.use("/folder-download/:path(*)", require('./folder/download'));
+site.use("/folder-download/:path(*)", require("./folder/download"));
 
-site.get("/", require('dashboard/site/load/client'), (req, res) => {
-  res.render("dashboard/settings", { 
-      title: req.blog.pretty.label, 
-    })
+site.get("/", require("dashboard/site/load/client"), (req, res) => {
+  res.render("dashboard/site", {
+    title: req.blog.pretty.label,
+  });
 });
 
-site.get("/services", load.plugins, (req, res)=>{
-  res.locals.breadcrumbs.add("Services", "services");
-  res.render("dashboard/settings/services");
+site.use("/settings", (req, res, next) => {
+  res.locals.breadcrumbs.add("Settings", "settings");
+  next();
 });
 
-site.get("/publishing", load.plugins, (req, res)=>{
-  res.locals.breadcrumbs.add("Publishing", "publishing");
-  res.render("dashboard/settings/publishing");
+site.get("/settings", load.plugins,  (req, res) => {
+  res.render("dashboard/site/settings");
 });
 
-site.get("/redirects", load.redirects, (req, res) => {
-  res.locals.breadcrumbs.add("Redirects", "redirects");
-  res.render("dashboard/settings/redirects");
+site.get("/settings/images", load.plugins,  (req, res) => {
+  res.render("dashboard/site/settings/images");
+});
+
+site.get("/settings/embeds", load.plugins, (req, res) => {
+  res.render("dashboard/site/settings/embeds");
+});
+
+site.get("/settings/services", load.plugins, (req, res) => {
+  res.render("dashboard/site/settings/services");
+});
+
+site.get("/settings/redirects", load.redirects, (req, res) => {
+  res.render("dashboard/site/settings/redirects");
 });
 
 site
-  .route("/redirects/404s")
+  .route("/settings/redirects/404s")
   .get(load.fourOhFour, function (req, res) {
     res.locals.breadcrumbs.add("Redirects", "redirects");
     res.locals.breadcrumbs.add("404 log", "404s");
-    res.render("dashboard/settings/redirects/404s");
+    res.render("dashboard/site/settings/redirects/404s");
   })
   .post(require("./save/404"));
 
-  site.route("/redirects/bulk")
-  .get(load.redirects, function (req, res) {
-    res.locals.breadcrumbs.add("Redirects", "redirects");
-    res.locals.breadcrumbs.add("Bulk editor", "bulk");
-    res.render("dashboard/settings/redirects/bulk");
-  })
+site.route("/settings/redirects/bulk").get(load.redirects, function (req, res) {
+  res.locals.breadcrumbs.add("Redirects", "redirects");
+  res.locals.breadcrumbs.add("Bulk editor", "bulk");
+  res.render("dashboard/site/settings/redirects/bulk");
+});
 
 module.exports = site;

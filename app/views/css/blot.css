@@ -1094,3 +1094,29 @@ ul.steps li:last-child:before {
 }
 
 
+
+ .panel-link {
+    display: block;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    color: #656e82;
+    font-size: 14px;
+    background-color: var(--background-color);
+    transition: background-color 0.2s;
+  }
+
+  .panel-link:hover {
+    background-color: var(--light-background-color);
+  }
+
+  div > .panel-link:last-child {
+    border-bottom: none;
+  }
+
+  .panel-link svg {
+    fill: currentColor;
+    vertical-align: middle;
+    position: relative;
+    top: -0.1em;
+    margin-right: 0.5em;
+  }

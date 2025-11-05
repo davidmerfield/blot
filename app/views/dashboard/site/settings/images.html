@@ -1,13 +1,14 @@
-{{> form-header}}
-<input type="hidden" name="redirect" value="{{{base}}}/publishing" />
+{{> settings-form-header}}
+
+<h1>Images</h1>
+
+{{#categories.Images}}
+{{> plugin-row}}
+{{/categories.Images}}
 
 <section class="setting-block" id="image-metadata">
-  <h3>Image metadata</h3>
-  <p class="setting-help">
-    Control whether Blot preserves the EXIF information embedded in your photos.
-    Basic mode keeps camera details while removing sensitive data such as
-    locations; Full mode publishes everything.
-  </p>
+  <h3>Exif data</h3>
+
   <div class="option-group">
     <label class="option">
       <input
@@ -48,24 +49,6 @@
   </div>
 </section>
 
-{{#categories.Images}}
-{{> plugin-row}}
-{{/categories.Images}}
-
-{{#categories.Formatting}}
-{{> plugin-row}}
-{{/categories.Formatting}}
-
-
-{{#categories.Typography}}
-{{> plugin-row}}
-{{/categories.Typography}}
-
-</form>
-
-<div class="buttons">
-  <a href="{{{base}}}" class="button"><span class="icon-small-chevron-right"></span> Back to dashboard</a>
-</div>
 
 <script>
 function submitForm(form) {
@@ -76,25 +59,6 @@ function submitForm(form) {
   xhr.send(new FormData(form));
 }
 
-//  when any of the input checkboxes are toggled
-var checkboxes = document.querySelectorAll('.plugin input[type=checkbox]');
-checkboxes.forEach(function(checkbox) {
-  checkbox.addEventListener('change', function() {
-    var form = this.closest('form');
-    var el = this;
-
-    if (!el.closest('.pluginOptions')) {
-      if (el.checked) {
-        el.closest('.plugin').classList.add('checked');
-      } else {
-        el.closest('.plugin').classList.remove('checked');
-      }
-    }
-
-    submitForm(form);
-  });
-});
-
 var exifRadios = document.querySelectorAll('input[name="imageExif"]');
 exifRadios.forEach(function(radio) {
   radio.addEventListener('change', function() {
@@ -102,15 +66,11 @@ exifRadios.forEach(function(radio) {
     submitForm(form);
   });
 });
-
 </script>
 
 <style>
   #image-metadata {
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+    margin: 2rem 0;
     background: var(--background-color);
   }
 
@@ -164,3 +124,5 @@ exifRadios.forEach(function(radio) {
     }
   }
 </style>
+
+{{> settings-form-footer}}

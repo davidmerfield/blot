@@ -1,20 +1,17 @@
-{{> message}}
-
-<form class="dashboard-form" method="POST">
+{{> settings-form-header}}
+</form>
+<form method='post' class="dashboard-form" enctype='multipart/form-data' style="max-width: 540px;padding:0;margin:0">
 
     <input type="hidden" name="_csrf" value="{{csrftoken}}" />
 
-<p>  Posts and page are assigned a URL according to this link format. If you change this format, Blot will update your existing posts and pages and then redirect the old URLs automatically. You can change a specific post or page's URL in its <a href="/how/metadata">metadata</a>.</p>
-
-<p style="margin-top: 36px;"><b>Link format</b></p>
+<h1>Link format</h1>
 
 {{#permalinkFormats}}
-<label class="format" style="border-top: 1px solid #eeeeec;line-height:inherit;margin:0;text-transform:none;font-size:16px;letter-spacing:0;padding:9px 0 9px 10px">
+<label class="format" style="border-bottom: 1px solid #eeeeec;line-height:inherit;margin:0;text-transform:none;font-size:16px;letter-spacing:0;padding:9px 0 9px 10px">
   <input style="margin:5px 10px 20px 0;float:left" type="radio" name="format" value="{{value}}" {{checked}}>
   
   <b style="font-weight:500;display:block;cursor: pointer;color:var(--text-color)">{{name}}</b>
 
-  {{#custom}}Read the <a style="color:var(--accent-color);text-decoration: underline;" href="/how/configure/link-format">guide to custom link formats</a>{{/custom}} 
 
   {{^custom}}<span style="background:none;font-size:14px;color:rgb(153, 153, 153)">{{example}}</span>{{/custom}}
 
@@ -46,11 +43,6 @@
 </noscript>
 
 </form>
-
-
-<div class="buttons">
-  <a href="{{{base}}}" class="button"><span class="icon-small-chevron-right"></span> Back to dashboard</a>
-</div>
 
 <script type="text/javascript">
   // when the user changes any of the radio buttons, serialize the form and submit it
@@ -177,3 +169,17 @@ details[open] summary::before {
   }
 }
 </style>
+
+
+<br>
+
+<a
+href="/how/configure/link-format"
+style="
+  color: var(--accent-color);
+  line-height: 40px;
+  display: block;
+ 
+">
+Guide to link formats <span style="float: right">&rarr;</span>
+</a>

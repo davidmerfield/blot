@@ -1,9 +1,8 @@
-{{> message}}
+{{> settings-form-header}}
 
-<form class="dashboard-form" method="POST">
+<h1>Date and time</h1>
 
-    <input type="hidden" name="_csrf" value="{{csrftoken}}" />
-
+<input type="hidden" name="redirect" value="{{{base}}}/settings/date" />
 
 <p>
   <label>

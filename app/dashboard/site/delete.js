@@ -22,7 +22,7 @@ Delete.route("/")
   .get(function (req, res) {
     res.locals.title = "Delete " + req.blog.pretty.label;
     res.locals.breadcrumbs.add("Delete", "delete");
-    res.render("dashboard/settings/delete");
+    res.render("dashboard/site/delete");
   })
 
   // Save any changes to the user's subscription
@@ -53,7 +53,7 @@ Delete.route("/")
     }
   );
 
-function calculateSubscriptionChange (req, res, next) {
+function calculateSubscriptionChange(req, res, next) {
   var subscription = req.user.subscription;
 
   // The user does not have an active subscription
@@ -83,7 +83,7 @@ function calculateSubscriptionChange (req, res, next) {
   return next();
 }
 
-function decreaseSubscription (req, res, next) {
+function decreaseSubscription(req, res, next) {
   var subscription = req.user.subscription;
   var quantity = req.newQuantity;
 

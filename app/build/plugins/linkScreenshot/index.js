@@ -67,5 +67,5 @@ module.exports = {
   render,
   isDefault: true,
   category: "images",
-  description: "Add a screenshot to posts from bookmarks",
+  description: "Add screenshots to bookmark file posts",
 };

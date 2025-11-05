@@ -25,7 +25,7 @@ for (const path of files) {
   documentation.get(path, (req, res) =>
     res.sendFile(join(VIEW_DIRECTORY, path), {
       lastModified: false, // do not send Last-Modified header
-      maxAge: 86400000, // cache forever
+      maxAge: "1y", // cache long-term
       acceptRanges: false, // do not allow ranged requests
       immutable: true, // the file will not change
     })
@@ -37,7 +37,8 @@ documentation.use(
   Express.static(VIEW_DIRECTORY, {
     index: false, // Without 'index: false' this will server the index.html files inside
     redirect: false, // Without 'redirect: false' this will redirect URLs to existent directories
-    maxAge: 86400000, // cache forever
+    maxAge: "1y", // cache long-term
+    immutable: true,
   })
 );
 

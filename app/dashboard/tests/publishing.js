@@ -6,12 +6,12 @@ describe("publishing settings", function () {
 
   it("saves image metadata preferences", async function () {
     const publishingPage = await this.text(
-      `/sites/${this.blog.handle}/publishing`
+      `/sites/${this.blog.handle}/settings/images`
     );
 
-    expect(publishingPage).toMatch("Image metadata");
+    expect(publishingPage).toMatch("Exif data");
 
-    await this.submit(`/sites/${this.blog.handle}/publishing`, {
+    await this.submit(`/sites/${this.blog.handle}/settings/images`, {
       imageExif: "off",
     });
 
@@ -21,12 +21,12 @@ describe("publishing settings", function () {
     expect(blogAfterOff.isImageExifOff).toBe(true);
 
     const updatedPublishingPage = await this.text(
-      `/sites/${this.blog.handle}/publishing`
+      `/sites/${this.blog.handle}/settings/images`
     );
 
-    expect(updatedPublishingPage).toMatch("Image metadata");
+    expect(updatedPublishingPage).toMatch("Exif data");
 
-    await this.submit(`/sites/${this.blog.handle}/publishing`, {
+    await this.submit(`/sites/${this.blog.handle}/settings/images`, {
       imageExif: "full",
     });
 

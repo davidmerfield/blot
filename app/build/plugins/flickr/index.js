@@ -69,7 +69,7 @@ function render($, callback) {
 
 module.exports = {
   render: render,
-  category: "typography",
+  category: "embeds",
   title: "Flickr",
-  description: "Embed Flickr posts and galleries",
+  description: "Embed photos and galleries from Flickr",
 };
