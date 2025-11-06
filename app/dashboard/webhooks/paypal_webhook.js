@@ -4,6 +4,15 @@ const parser = require("body-parser");
 const User = require("models/user");
 const config = require("config");
 const clfdate = require("helper/clfdate");
+const Delete = require("dashboard/account/delete");
+
+const buildPaypalAuthHeader =
+  (Delete.exports && Delete.exports.buildPaypalAuthHeader) ||
+  function () {
+    return `Basic ${Buffer.from(
+      `${config.paypal.client_id}:${config.paypal.secret}`
+    ).toString("base64")}`;
+  };
 
 const SUBSCRIPTION_EVENTS = [
   "BILLING.SUBSCRIPTION.CANCELLED",
@@ -48,23 +57,37 @@ const updateSubscription = async subscriptionID => {
           new Error("No user associated with subscription ID " + subscriptionID)
         );
 
+      const authHeader = buildPaypalAuthHeader();
       const response = await fetch(
         `${config.paypal.api_base}/v1/billing/subscriptions/${subscriptionID}`,
         {
           headers: {
             "Content-Type": "application/json",
             "Accept-Language": "en_US",
-            "Authorization": `Basic ${Buffer.from(
-              `${config.paypal.client_id}:${config.paypal.secret}`
-            ).toString("base64")}`
-          }
+            Authorization: authHeader,
+          },
         }
       );
 
       const paypal = await response.json();
 
-      User.set(user.uid, { paypal }, err => {
-        if (err) return reject(err);
+      const status = paypal && paypal.status;
+      const updates = { paypal };
+
+      let handler = (next) => User.set(user.uid, updates, next);
+
+      if (status === "SUSPENDED") {
+        updates.pause = buildPauseState("paypal", true);
+        handler = (next) => User.disable(user, updates, next);
+      } else if (status === "ACTIVE" || status === "RE-ACTIVATED") {
+        updates.pause = buildPauseState("paypal", false);
+        handler = (next) => User.enable(user, updates, next);
+      } else if (user.pause && user.pause.active) {
+        updates.pause = buildPauseState("paypal", false);
+      }
+
+      handler((handlerErr) => {
+        if (handlerErr) return reject(handlerErr);
         resolve();
       });
     });
@@ -74,3 +97,11 @@ const updateSubscription = async subscriptionID => {
 paypal.updateSubscription = updateSubscription;
 
 module.exports = paypal;
+
+function buildPauseState(provider, active) {
+  return {
+    active: !!active,
+    provider: provider || null,
+    updatedAt: new Date().toISOString(),
+  };
+}

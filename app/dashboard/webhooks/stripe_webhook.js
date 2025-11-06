@@ -167,23 +167,64 @@ function update_subscription(customer_id, subscription, callback) {
     )
       email.OVERDUE_CLOSURE(user.uid);
 
+    var isPaused =
+      subscription.pause_collection &&
+      Object.keys(subscription.pause_collection).length > 0;
+
     var updates = { subscription: subscription };
+
+    if (isPaused) {
+      updates.pause = buildPauseState("stripe", true);
+    } else if (user.pause && user.pause.active) {
+      updates.pause = buildPauseState("stripe", false);
+    }
+
     var handler = function (next) {
       User.set(user.uid, updates, next);
     };
 
     if (subscription.status === "canceled") {
       handler = function (next) {
-        User.disable(user, updates, next);
+        User.disable(
+          user,
+          Object.assign({}, updates, {
+            pause: buildPauseState("stripe", false),
+          }),
+          next
+        );
+      };
+    } else if (isPaused) {
+      handler = function (next) {
+        User.disable(
+          user,
+          Object.assign({}, updates, {
+            pause: buildPauseState("stripe", true),
+          }),
+          next
+        );
       };
     } else if (subscription.status === "active" && user.isDisabled) {
       handler = function (next) {
-        User.enable(user, updates, next);
+        User.enable(
+          user,
+          Object.assign({}, updates, {
+            pause: buildPauseState("stripe", false),
+          }),
+          next
+        );
       };
     }
 
     handler(callback);
   });
+}
+
+function buildPauseState(provider, active) {
+  return {
+    active: !!active,
+    provider: provider || null,
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 module.exports = webhooks;

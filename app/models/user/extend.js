@@ -15,6 +15,7 @@ module.exports = function extend (user) {
   user.pretty = {};
 
   var subscription = user.subscription;
+  var derivedPause = false;
 
   if (subscription) {
     if (subscription.plan) {
@@ -39,6 +40,9 @@ module.exports = function extend (user) {
     )
       user.isSubscribed = true;
 
+    if (subscription.pause_collection && Object.keys(subscription.pause_collection).length)
+      derivedPause = true;
+
     if (subscription.cancel_at_period_end) user.willCancel = true;
 
     if (!subscription.customer && !user.paypal.status)
@@ -54,9 +58,14 @@ module.exports = function extend (user) {
   }
 
   if (user.paypal && user.paypal.status) {
-    if (user.paypal.status === "ACTIVE") user.isSubscribed = true;
+    var paypalStatus = user.paypal.status;
 
-    if (user.paypal.status === "CANCELLED") user.willCancel = true;
+    if (paypalStatus === "ACTIVE" || paypalStatus === "SUSPENDED")
+      user.isSubscribed = true;
+
+    if (paypalStatus === "SUSPENDED") derivedPause = true;
+
+    if (paypalStatus === "CANCELLED") user.willCancel = true;
 
     const plan_identifier = Object.keys(config.paypal.plans).find(
       identifier => config.paypal.plans[identifier] === user.paypal.plan_id
@@ -87,6 +96,10 @@ module.exports = function extend (user) {
 
     user.pretty.price = prettyPrice(amount * quantity);
   }
+
+  if (user.pause && user.pause.active) derivedPause = true;
+
+  user.isPaused = !!derivedPause;
 
   if (user.blogs.length !== 1) {
     user.multipleBlogs = true;

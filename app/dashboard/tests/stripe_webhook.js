@@ -148,6 +148,106 @@ describe("Stripe subscription webhooks", function () {
     expect(blog.isDisabled).toBe(true);
   });
 
+  it("disables the account when pause_collection is present", async function () {
+    this.stripeClient.customers.retrieveSubscription.and.callFake(
+      (customerId, subscriptionId, callback) =>
+        callback(null, {
+          id: subscriptionId,
+          customer: customerId,
+          status: "active",
+          plan: { amount: 500, interval: "month" },
+          quantity: 1,
+          pause_collection: { behavior: "mark_uncollectible" },
+        })
+    );
+
+    const event = {
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: this.subscriptionId,
+          customer: this.customerId,
+        },
+      },
+    };
+
+    const response = await this.fetch("/", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(event),
+    });
+
+    expect(response.status).toBe(200);
+
+    await delay(100);
+
+    const user = await getUser(this.user.uid);
+    expect(user.pause).toEqual(
+      jasmine.objectContaining({ active: true, provider: "stripe" })
+    );
+    expect(user.isDisabled).toBe(true);
+
+    const blog = await getBlog({ id: this.blog.id });
+    expect(blog.isDisabled).toBe(true);
+  });
+
+  it("keeps accounts disabled while Stripe pause_collection remains", async function () {
+    await setUser(this.user.uid, {
+      isDisabled: true,
+      pause: { active: true, provider: "stripe" },
+      subscription: {
+        id: this.subscriptionId,
+        customer: this.customerId,
+        status: "active",
+        plan: { amount: 500, interval: "month" },
+        quantity: 1,
+      },
+    });
+
+    await setBlog(this.blog.id, { isDisabled: true });
+
+    this.stripeClient.customers.retrieveSubscription.and.callFake(
+      (customerId, subscriptionId, callback) =>
+        callback(null, {
+          id: subscriptionId,
+          customer: customerId,
+          status: "active",
+          plan: { amount: 500, interval: "month" },
+          quantity: 1,
+          pause_collection: { behavior: "keep_as_draft" },
+        })
+    );
+
+    const event = {
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: this.subscriptionId,
+          customer: this.customerId,
+        },
+      },
+    };
+
+    const response = await this.fetch("/", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(event),
+    });
+
+    expect(response.status).toBe(200);
+
+    await delay(100);
+
+    const user = await getUser(this.user.uid);
+    expect(user.pause).toEqual(
+      jasmine.objectContaining({ active: true, provider: "stripe" })
+    );
+    expect(user.isDisabled).toBe(true);
+
+    const blog = await getBlog({ id: this.blog.id });
+    expect(blog.isDisabled).toBe(true);
+  });
+
   it("re-enables disabled accounts when subscription becomes active", async function () {
     await setUser(this.user.uid, {
       isDisabled: true,

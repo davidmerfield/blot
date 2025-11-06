@@ -14,8 +14,15 @@
     site{{user.s}} will shut down.</span></div
     >
     {{/user.cancel_at_period_end}}
-    
-    {{#user.isSubscribed}} 
+
+    {{#user.isPaused}}
+    <div class="line"
+      ><span class="label">Paused</span
+      ><span class="center">Your subscription is paused. Your site{{user.s}} are offline until you resume.</span></div
+    >
+    {{/user.isPaused}}
+
+    {{#user.isSubscribed}}
 
     {{#user.pretty.amount}}
 
@@ -49,6 +56,7 @@
     >
     {{/user.isFreeForLife}}
 
+    {{^user.isPaused}}
     {{#user.willCancel}}
     <a class="line" href="/dashboard/account/subscription/restart"
       ><span class="label">Restart</span
@@ -57,11 +65,13 @@
       ></a
     >
     {{/user.willCancel}}
+    {{/user.isPaused}}
 
     {{#user.isSubscribed}}
 
     <div class="clear"></div>
 
+    {{^user.isPaused}}
     {{^user.paypal.status}}
     <a class="line" href="/dashboard/account/subscription/billing-interval"
       ><span class="label">Billing interval</span
@@ -71,6 +81,7 @@
       <span class="right">Switch to {{#monthly}}annual{{/monthly}}{{^monthly}}monthly{{/monthly}} billing</span>
     </a>
     {{/user.paypal.status}}
+    {{/user.isPaused}}
 
     {{#user.subscription.status}}
     <a class="line" href="/dashboard/account/subscription/payment-method"
@@ -81,6 +92,33 @@
     >
     {{/user.subscription.status}}
 
+    {{^user.isPaused}}
+    <button
+      class="line"
+      type="submit"
+      formaction="/sites/account/subscription/pause"
+      formmethod="post"
+      style="background: none; border: none; width: 100%; padding: 0; text-align: left; cursor: pointer;"
+    >
+      <span class="label">Pause</span>
+      <span class="center"><span class="link">Pause subscription</span></span>
+    </button>
+    {{/user.isPaused}}
+
+    {{#user.isPaused}}
+    <button
+      class="line"
+      type="submit"
+      formaction="/sites/account/subscription/resume"
+      formmethod="post"
+      style="background: none; border: none; width: 100%; padding: 0; text-align: left; cursor: pointer;"
+    >
+      <span class="label">Resume</span>
+      <span class="center"><span class="link">Resume subscription</span></span>
+    </button>
+    {{/user.isPaused}}
+
+    {{^user.isPaused}}
     {{^user.paypal.status}}
     <a class="line" href="/dashboard/account/subscription/cancel"
       ><span class="label">Cancel</span
@@ -89,6 +127,7 @@
       ></a
     >
     {{/user.paypal.status}}
+    {{/user.isPaused}}
 
 
     {{/user.isSubscribed}}
