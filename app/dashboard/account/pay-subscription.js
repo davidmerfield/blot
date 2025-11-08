@@ -70,12 +70,89 @@ function listUnpaidInvoices(req, res, next) {
   });
 }
 
+function formatStripeError(err, fallbackMessage) {
+  if (!err) return err;
+
+  var message =
+    (err.raw && err.raw.message) || err.message || fallbackMessage || "Stripe error";
+
+  var declineCode =
+    (err.raw && err.raw.decline_code) || err.decline_code || err.code;
+
+  if (
+    err.type === "StripeCardError" ||
+    err.type === "card_error" ||
+    declineCode === "card_declined"
+  ) {
+    message = "Stripe declined your payment method: " + message;
+  }
+
+  var formattedError = new Error(message);
+  formattedError.cause = err;
+
+  return formattedError;
+}
+
+function storeCustomerOnRequest(req, customer) {
+  req.updatedCustomer = customer;
+  req.defaultPaymentMethod =
+    customer &&
+    customer.invoice_settings &&
+    customer.invoice_settings.default_payment_method;
+  req.defaultSource = customer && customer.default_source;
+}
+
 function updateCard(req, res, next) {
   var stripeToken = req.body.stripeToken;
 
   if (!stripeToken) return next(new Error("No card token passed"));
 
-  stripe.customers.update(req.customer, { card: stripeToken }, next);
+  function handleCustomerUpdate(err, customer) {
+    if (err)
+      return next(
+        formatStripeError(err, "Unable to update your payment method.")
+      );
+
+    storeCustomerOnRequest(req, customer);
+
+    next();
+  }
+
+  // Handle modern payment methods (pm_...) separately
+  if (stripeToken.indexOf("pm_") === 0) {
+    if (!stripe.paymentMethods || !stripe.paymentMethods.attach) {
+      return next(
+        new Error("Stripe payment methods are not supported on this server.")
+      );
+    }
+
+    stripe.paymentMethods.attach(
+      stripeToken,
+      { customer: req.customer },
+      function (err) {
+        if (err)
+          return next(
+            formatStripeError(err, "Unable to attach your payment method.")
+          );
+
+        stripe.customers.update(
+          req.customer,
+          {
+            invoice_settings: { default_payment_method: stripeToken },
+          },
+          handleCustomerUpdate
+        );
+      }
+    );
+
+    return;
+  }
+
+  stripe.customers.update(
+    req.customer,
+    { card: stripeToken },
+    handleCustomerUpdate
+  );
 }
 
 function payUnpaidInvoices(req, res, next) {
@@ -88,7 +165,27 @@ function payUnpaidInvoices(req, res, next) {
         if (invoice.paid) return nextInvoice();
 
         // You can only pay an invoice once
-        stripe.invoices.pay(invoice.id, nextInvoice);
+        var options = {};
+
+        if (req.defaultPaymentMethod) {
+          options.payment_method = req.defaultPaymentMethod;
+        } else if (req.defaultSource) {
+          options.source = req.defaultSource;
+        }
+
+        if (Object.keys(options).length) {
+          stripe.invoices.pay(invoice.id, options, function (err) {
+            nextInvoice(
+              formatStripeError(err, "Unable to pay outstanding invoices.")
+            );
+          });
+        } else {
+          stripe.invoices.pay(invoice.id, function (err) {
+            nextInvoice(
+              formatStripeError(err, "Unable to pay outstanding invoices.")
+            );
+          });
+        }
       },
       next
     );
