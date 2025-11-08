@@ -2,14 +2,16 @@ class SidebarNavigation {
   constructor() {
     this.root = document.querySelector(".sidebar");
     if (!this.root) return;
-    this.cacheKey = "sidebarState:" + document.querySelector('meta[name="blot-cache-id"]')?.content;
+    this.cacheKey =
+      "sidebarState:" +
+      document.querySelector('meta[name="blot-cache-id"]')?.content;
     this.maxPages = 100;
   }
 
   // ------- cache -------
   _loadCache() {
     try {
-    console.log('getting', this.cacheKey);
+      console.log("getting", this.cacheKey);
       return localStorage.getItem(this.cacheKey);
     } catch {
       return null;
@@ -17,13 +19,13 @@ class SidebarNavigation {
   }
   _saveCache() {
     try {
-    console.log('setting', this.cacheKey);
+      console.log("setting", this.cacheKey);
       localStorage.setItem(this.cacheKey, this.root.innerHTML);
     } catch {}
   }
   _clearCache() {
     try {
-    console.log('clearing', this.cacheKey);    
+      console.log("clearing", this.cacheKey);
       localStorage.removeItem(this.cacheKey);
     } catch {}
   }
@@ -70,15 +72,17 @@ class SidebarNavigation {
     if (!this.root || this.root.dataset.treeBuilt === "1") return;
     this.root.dataset.treeBuilt = "1";
 
-    const files =
-      this.items || Array.from(this.root.querySelectorAll(":scope > li"));
+    // separate menu items from normal posts
+    const allLis = Array.from(this.root.querySelectorAll(":scope > li"));
+    const menuItems = allLis.filter((li) => li.hasAttribute("data-menu"));
+    const postItems = allLis.filter((li) => !li.hasAttribute("data-menu"));
+
     const byPath = new Map();
     byPath.set("", { el: this.root, submenu: this.root });
     const segTitle = (s) => s.replace(/[-_]/g, " ");
 
     const ensureFolder = (folderPath) => {
       if (byPath.has(folderPath)) return byPath.get(folderPath);
-
       const seg = folderPath.split("/").filter(Boolean).at(-1) || "";
       const li = document.createElement("li");
       li.className = "folder has-submenu";
@@ -101,7 +105,8 @@ class SidebarNavigation {
       return node;
     };
 
-    files.forEach((li) => {
+    // build nested tree for post items only
+    postItems.forEach((li) => {
       const path = li.getAttribute("data-path") || "";
       const parts = path.split("/").filter(Boolean);
       const folderParts = parts.slice(0, -1);
@@ -121,6 +126,12 @@ class SidebarNavigation {
     });
 
     this.sortTree(this.root);
+
+    // append menu items flat, in original order
+    if (menuItems.length) {
+      menuItems[0].classList.add("menu-separator");
+      menuItems.forEach((li) => this.root.appendChild(li));
+    }
   }
 
   // ------- sorting -------
@@ -205,7 +216,7 @@ class SidebarNavigation {
     if (!this.root) return;
 
     const cached = this._loadCache();
-    
+
     if (cached) {
       this.root.innerHTML = cached;
       this._bindEvents();
@@ -223,7 +234,10 @@ class SidebarNavigation {
 
   static saveCache() {
     try {
-      localStorage.setItem("sidebarState:" + document.querySelector('meta[name="blot-cache-id"]')?.content, this.root.innerHTML);
+      localStorage.setItem(
+        "sidebarState:" +
+          document.querySelector('meta[name="blot-cache-id"]')?.content
+      );
     } catch {}
   }
 }

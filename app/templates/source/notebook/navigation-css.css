@@ -196,3 +196,8 @@ background: no-repeat center / contain
   }
   
   
+  .sidebar > li.menu-separator {
+  border-top: 1px solid var(--border, #ddd);
+  margin-top: .75rem;
+  padding-top: .5rem;
+}
