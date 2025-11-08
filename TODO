@@ -4,6 +4,8 @@ Transfer theme for [Fede](https://wordpress.org/themes/kanso/)
 - Set up vanilla zoom
 - Use as [reference](https://fsanchez.io)
 
+Add lang selector (map english -> en) to template editor
+
 Work on template editor
 
 Create a new template local '{{{system-css}}}' which merges `{{{appCSS}}}, {{{font.styles}}}, {{{title_font.styles}}}`

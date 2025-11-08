@@ -1,51 +1,37 @@
 {
   "name": "Notebook",
-  "isPublic": false,
   "locals": {
-    "page_size": 12
+    "page_size": 100,
+    "lang": "en",
+    "sort_by": "id",
+    "background_color": "#fff",
+    "sidebar_background_color": "#fafafa",
+    "text_color": "rgb(34, 34, 34)",
+    "link_color": "rgb(0, 75, 224)",
+    "syntax_highlighter": {
+      "id": "solarized-light"
+    },
+    "syntax_highlighter_font": {
+      "id": "plex-mono"
+    },
+    "body_font": {
+      "id": "system-sans"
+    },
+    "demo_folder": "notebook"
   },
   "views": {
-    "public": {
-      "partials": {
-        "title": "Index of {{{path}}}",
-        "description": "All the files and folders inside {{{path}}}"
-      }
-    },
-    "archives.html": {
-      "url": "/archives",
-      "partials": {
-        "title": "Archives - {{{title}}}",
-        "description": "All the entries posted on {{{title}}}"
-      }
-    },
-    "tagged.html": {
-      "partials": {
-        "title": "Entries tagged {{{tag}}} from {{{title}}}",
-        "description": "All of the entries posted on {{{title}}} tagged {{{tag}}}"
-      }
-    },
-    "entries.html": {
-      "partials": {
-        "title": "{{{title}}}",
-        "description": "The latest entries posted on {{{title}}}"
-      }
-    },
-    "error.html": {
-      "partials": {
-        "title": "{{{error.title}}} - {{{title}}}",
-        "description": "Error on {{{title}}}"
-      }
+    "pagination.html": {
+      "url": "/pagination/:page"
     },
     "entry.html": {
       "partials": {
         "title": "{{{entry.title}}} - {{{title}}}",
-        "description": "{{{entry.summary}}}"
+        "description": "{{{entry.title}}} - {{{title}}}"
       }
     },
-    "search.html": {
+    "error.html": {
       "partials": {
-        "title": "Search - {{{title}}}",
-        "description": "Search all the entries posted on {{{title}}}"
+        "title": "{{{error.title}}} - {{{title}}}"
       }
     }
   }

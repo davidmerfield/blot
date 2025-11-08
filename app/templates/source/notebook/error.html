@@ -1,17 +1,12 @@
 <!DOCTYPE html>
-<html>
-  {{> head}}
-  <body>
-
-    <div class="container">
-
-      {{> header}}
-
-      <h1 class="header-area">{{error.title}}</h1>
-
-      <p>Something has gone wrong. {{error.message}}</p>
-
-    </div>
+<html lang="{{lang}}">
+{{> head}}
+<body>
+    {{> navigation}}
+    <main>
+      <h1>{{error.title}}</h1>
+      <p>{{error.message}}</p>
+    </main>
     {{> footer}}
-  </body>
+</body>
 </html>

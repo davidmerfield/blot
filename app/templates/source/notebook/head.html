@@ -1,0 +1,24 @@
+{{^query.partial}}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{> title}}</title>
+		<meta name="blot-cache-id" content="{{cacheID}}">
+		<meta name="description" content="{{> description}}">
+    <meta property="og:title" content="{{> title}}">
+    <meta property="og:description" content="{{> description}}">
+    <meta property="og:type" content="website">
+    {{#entry}}
+    {{#thumbnail.large}}
+    <meta property="og:image" content="{{{url}}}">
+    <meta name="twitter:card" content="summary_large_image">
+    {{/thumbnail.large}}
+    <meta property="og:url" content="{{{absoluteURL}}}">
+    {{/entry}}
+    <link rel="icon" type="image/x-icon" href="{{{blogURL}}}/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="{{title}}" href="{{{blogURL}}}{{{feedURL}}}">
+    {{#avatar}}<link rel="icon" href="{{{avatar}}}" type="image/x-icon">{{/avatar}}
+    <link rel="stylesheet" href="{{{cssURL}}}">
+    <script type="module" src="/navigation-js.js"></script>
+</head>
+{{/query.partial}}

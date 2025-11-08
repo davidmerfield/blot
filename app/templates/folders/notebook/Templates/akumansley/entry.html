@@ -1,0 +1,35 @@
+
+{{^query.partial}}
+{{> head}}
+{{> header}}
+{{> navigation}}
+{{/query.partial}}
+
+{{#query.partial}}
+<html>
+  <head><title>{{> title}}</title></head>
+{{/query.partial}}
+
+<main>
+<div class="breadcrumbs"></div>
+<div class="entry">
+{{{entry.html}}}
+{{#entry.backlinks.length}}
+<br>
+<hr>
+<h4>Links to this page</h4>
+<p>
+{{#entry.backlinks}}
+<a href="{{{url}}}">{{title}}</a><br>
+{{/entry.backlinks}}
+</p>
+{{/entry.backlinks.length}}
+</div>
+</main>
+
+{{^query.partial}}
+{{> footer}}
+{{/query.partial}}
+{{#query.partial}}
+</html>
+{{/query.partial}}

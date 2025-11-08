@@ -1,199 +1,475 @@
-{{{appCSS}}}
+/* GLOBAL STYLES AND RESETS */
 
-body {
-  font: normal 16px / 1.5 sans-serif;
+/* Injected styles from templates and external sources */
+{{{appCSS}}}
+{{{body_font.styles}}}
+{{{syntax_highlighter.styles}}}
+{{> navigation-css.css}}
+{{> heading-anchor.css}}
+{{> pre-copy-styles.css}}
+
+/* Root variables for theme customization */
+:root {
+  {{#body_font}}
+  --font-family: {{{stack}}};
+  --font-size: {{{font_size}}}px;
+  --line-height: {{{line_height}}};
+  {{/body_font}}
+  --background-color: {{background_color}};
+  --text-color: {{text_color}};
+  --off-background-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.02);
+  --light-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
+  --medium-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6666);
+  --border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.06);
+  --dark-border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.12);
+  --link-color: {{link_color}};
+  --padding: 1.4rem;
+  --navigation-height: 3em;
+  --navigation-background-color: var(--background-color);
+}
+
+/* General resets */
+html, body {
+  width: 100%; padding: 0; margin: 0 auto;
+  color: var(--text-color); background: var(--background-color);
+  font-family: var(--font-family); font-size: var(--font-size); line-height: var(--line-height);
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 1em 0;
+}
+
+.column-container {
+  display: flex;
   margin: 0;
   padding: 0;
-  color: #111
-}
-
-.clear {width: 100%;display: block;clear: both;}
-h1, h2, h3, h4, h5, h6 {
-  color: #000;
-  font-size: 16px;
-  margin: 26px 0
-}
-
-h1 {font-size: 20px;font-family: sans-serif;line-height: 1.3}
-
-a {color: inherit;text-decoration: none;}
-
-blockquote {color: #585858;margin-left: 52px}
-
-hr {width: 100%;border: none;border-bottom: 1px solid rgba(0,0,0,0.15)}
-
-#header, .entry {
-  border-bottom: 1px solid rgba(0,0,0,0.1)
-}
-
-.date {font-family: Menlo, monospace;
-  float:left;
-  margin:1em 0;color: #aaa;font-size: 13px}
-
-#header {padding: 2em 4em;font-size: 14px;}
-#header a {padding: 0.5em;margin: 0 0.5em;font-weight: bold;}
-#header a:hover {background: #000;color: #fff}
-
-.avatar {
-  width:36px;
-  {{#roundAvatar}}
-  border-radius:50%;
-  {{/roundAvatar}}
-  position:absolute;
-  top:-3px;
-  left:-48px
-}
-
-.entry {font-family: Georgia, serif;font-size:15px;padding: 3em 4em;}
-.entry h1:first-of-type {margin-top: 0.3em}
-
-.contents {margin: 0 4em 0 8em;max-width: 800px}
-
-.caption {
-  font: 14px / 1.4333 sans-serif;
-  color: gray;
-  display: block;
-  margin: 0 0 13px 0
-}
-
-.contents a {border-bottom: 1px solid black}
-.margin a {font-weight: normal;}
-
-
-/* IMAGE CAPTION */
-.caption {display: block;}
-
-/*
-TYPOGRAPHIC SUBSTITUTION
-
-This handles hanging punctuation.*/
-
-.pull-double {margin-left:-.45em}
-.push-double {margin-right:.45em}
-
-.pull-single {margin-left:-0.25em}
-.push-single {margin-left:0.25em}
-
-
-/* IMAGE SIZE */
-img {max-width: 100%;height: auto;}
-
-
-
-
-.footnote-ref {
-  font-size: 11px;
-  line-height: 0.5em;
-  vertical-align: baseline;
   position: relative;
-  top: -0.4em;
+}
+
+.column, main {
+  padding: 34px 16px;
+}
+
+.entry {
+  overflow-wrap: anywhere;
+}
+
+main.loading {
+  display: none;
+}
+
+.column {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  align-items: stretch;
+  position: relative;
+}
+
+.column:nth-child(1) {
+  background: {{sidebar_background_color}};
 }
 
 
 
-
-.katex {font-size: 1.15em}
-
-
-
-.inside {max-width: 45%;overflow: auto;}
-.inside p {margin-top: 0}
-
-.right.inside {float: right;margin-left: 1em;}
-.left.inside {float: left;margin-right: 1em}
-
-pre, code {font-family: Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, monospace;}
-
-.hljs {
-  display: block;
-  overflow-x: auto;
+main {
+  flex-grow: 1; /* Main content takes up remaining space */
+  padding-right: 4em;
+  padding-left: 48px;
+  padding-bottom: 10em;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
-.hljs-comment,
-.hljs-quote {
-  color: {{medium_text}};
-  font-style: italic;
+/* Hidden Checkboxes */
+.toggle-checkbox {
+  display: none;
 }
 
-.hljs-keyword,
-.hljs-selector-tag,
-.hljs-subst {
-  color: {{dark_text}};
-  font-weight: bold;
+/* Control Bar */
+.control-bar {
+  display: none; /* Hidden by default on large screens */
+  border-bottom: 1px solid var(--dark-border-color);
+  z-index: 20;
+  padding: 12px 15px;
+  box-sizing: border-box;
 }
 
-.hljs-number,
-.hljs-literal {
-  color: {{medium_text}};
+.control-bar  a {
+  color: var(--text-color);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
 }
 
-.hljs-string,
-.hljs-doctag,
-.hljs-formula {
-  color: {{medium_text}};
-  background: {{light_background}}
+.control-label {
+  visibility: hidden;
+  height: 24px;
+  cursor: pointer;
+  color: var(--light-text-color);
+  text-decoration: none;
 }
 
-.hljs-title,
-.hljs-section,
-.hljs-selector-id {
-  color: {{dark_text}};
-  font-weight: bold;
+
+
+@media (max-width: 768px) {
+    .control-bar {
+    display: flex; /* Show the control bar at smaller screens */
+    align-items: center; /* Vertically center the labels */
+    gap: 1em;
+    background-color: var(--background-color);
+    margin-bottom: 1em;
+    position: sticky;
+    top:0;
+  }
+
+
+  .control-label:last-child {
+    visibility: visible
+  }
+  
+    .control-label:first-child {
+    visibility: visible
+  }
+
+  /* Hide the left column unless toggled */
+  .column:nth-child(1) {
+    display: none;
+  }
+
+  /* Show the left column when the checkbox is toggled */
+  #toggle-left:checked ~ .column-container > .column:nth-child(1) {
+    display: flex;
+    width: 100%;
+    justify-content: flex-start;
+    padding-top: 0;
+    right: 0;
+    min-height: 100vh;
+    height: auto;
+    background: var(--background-color);
+    z-index: 1;
+  }
+    #toggle-left:checked ~ .column-container > main {
+      display: none;
+    }
+#toggle-left:checked ~ .column-container > .column:nth-child(1) .navigation,
+#toggle-left:checked ~ .column-container > .column:nth-child(1) .navigation .sidebar {
+  width: auto;
+  overflow: visible;
+  height: auto;
 }
 
-.hljs-subst {
-  font-weight: normal;
+#toggle-left:checked ~ .column-container > .column:nth-child(1) .navigation .sidebar a,
+#toggle-left:checked ~ .column-container > .column:nth-child(1) .navigation .sidebar button {
+  font-size: 15px;
 }
 
-.hljs-class .hljs-title,
-.hljs-type,
-.hljs-name {
-  color: {{medium_text}};
-  font-weight: bold;
+  #toggle-left:checked ~ .column-container > .column:nth-child(1) .navigation > a {
+    display: none;
+  }
+
+  main {
+    padding: 0 1em;
+  }
 }
 
-.hljs-tag {
-  color: {{medium_text}};
+
+.control-label:hover {
+  color:var(--text-color);
 }
 
-.hljs-regexp {
-    color: {{medium_text}};
-    background: {{light_background}}
+
+
+.nav-container {
+  display: flex;
+  flex-wrap: wrap;
+  height: var(--navigation-height);
+  border-bottom: 1px solid var(--border-color);
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
 }
 
-.hljs-symbol,
-.hljs-bullet,
-.hljs-link {
-  color: {{dark_text}};
-  background: {{light_background}}
+/* This forces the navigation links to wrap when they would
+    otherwise overflow the screen */
+.nav-container:before {
+  content: "";
+  width: 1px;
+  margin-right: -1px;
+  height: var(--navigation-height);
 }
 
-.hljs-built_in,
-.hljs-builtin-name {
-  color: {{dark_text}};
-  text-decoration: underline;
+.popup-cover {
+  content: "";
+  opacity: 0;
+  position: absolute;
+  top:0;
+  right:0;
+  bottom:0;
+  left: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: -1;
 }
 
-.hljs-meta {
-  color: {{light_text}};
-  font-weight: bold;
+.nav-label {
+  display: flex;
+  align-items: center;
+  height: var(--navigation-height); /* Default height */
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+  z-index: 2; /* Ensure it's above the links */
 }
 
-.hljs-deletion {
-  color: {{background_color}};
-  background: {{light_background}}
+.nav-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: none;
+  gap: 1.4rem;
+  background-color: var(--navigation-background-color);
+  position: relative;
+  z-index: 3;
 }
 
-.hljs-addition {
-  color: {{dark_text}};
-  background: {{light_background}}
+.nav-container a {
+  white-space: nowrap; /* Prevents breaking individual links */
+  text-decoration: none;
+  color: var(--light-text-color);
+  transition: color 0.2s;
 }
 
-.hljs-emphasis {
-  font-style: italic;
+.nav-container a:hover,
+.nav-container a.active {
+  color: var(--text-color);
 }
 
-.hljs-strong {
-  font-weight: bold;
+#nav-toggle {
+  display: none;
 }
 
+/* When checkbox is checked, expand the navigation */
+#nav-toggle:checked ~ .nav-container {
+  height: auto; /* Remove height restriction */
+}
+
+#nav-toggle:checked ~ .popup-cover {
+  opacity: 1;
+  z-index: 1;
+}
+
+#nav-toggle:checked ~ .nav-container .nav-links {
+  flex-direction: column; /* Stack links vertically */
+  width: 100%;
+  align-items: flex-start;
+}
+
+.index-link {
+    display: flex;
+  align-items: center;
+  flex-wrap: none;
+  gap: 1rem;
+  margin-right: 1em;
+}
+
+.index-link a {
+  color:var(--text-color);
+  font-weight: 600;
+}
+
+.nav-container {
+  padding: 0 1em;
+}
+
+.nav-label {
+  right: 1em;
+}
+
+/* When checkbox is checked, expand the navigation */
+#nav-toggle:checked ~ .nav-container {
+  border-radius: 0 0 12px 12px;
+  padding-bottom: 16px;
+}
+
+.nav-container form {
+  flex-grow: 1;
+  margin-right: 2em;
+}
+
+.nav-container form  input {
+  width: 100%;
+  padding: 0.5em;
+  margin: 0.5em 0;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+}
+
+code.hljs {
+  background: transparent
+}
+
+code {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+a {
+  color: var(--link-color)
+}
+
+main ul {
+  list-style-type: disc;
+  padding: 0;margin-left:0;margin-right:0;
+}
+
+main ul li::marker {
+  color: var(--light-text-color); 
+}
+
+main ul li {
+  margin-inline-start: 30.25px
+}
+
+p, h1, h2, h3, h4, h5, h6, ol, ul, pre, hr, .videoContainer {
+  max-width: 704px;
+}
+
+pre code.hljs {
+  font-size: 14px;
+}
+
+.entry a {
+  text-decoration: none;
+}
+
+
+.entry img {
+  max-width: 100%;
+  height: auto;
+  outline: none;
+}
+
+.entry a:hover {
+  opacity: 0.8;
+}
+
+.entry a[target="_blank"]:after {
+  content: "";
+  display: inline-block;
+  width: 13px;
+  margin-left: 2px;
+  height: 13px;
+  vertical-align: middle;
+  background: no-repeat center / contain
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'><path fill='rgba(0,0,0,0.4)' d='M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z'/></svg>");
+}
+
+.entry #footnotes {
+  font-size: 14px;
+  margin-top:40px;
+}
+
+#footnotes hr {border-top-width: 2px;margin-bottom:20px}
+
+.footnotes li::marker,
+.footnote-back {
+  color: var(--light-text-color); 
+}
+
+.footnote-back {margin-left: 3px;}
+.footnote-back:hover {color:var(--link-color)}
+
+li p {
+  margin: 0.075em 0
+}
+
+.entry .footnote-ref sup:before {
+  content: "[";
+}
+
+.entry .footnote-ref sup:after {
+  content: "]";
+}
+
+p {
+  margin-block-end: 16px;
+margin-block-start: 16px
+}
+
+.entry h1, .entry h2, .entry h3 {
+  font-size: 17.6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #eaeaea;
+font-weight: 550;
+line-height: 28.6333px;
+margin-block-end: 8.8px;
+margin-block-start: 40px;
+font-weight: 700;
+}
+
+.entry h2, .entry h3 {font-weight: 600;}
+.entry h2 {font-size: 16px;}
+.entry h3 {font-size: 14px;}
+
+.entry > :first-child
+ {
+  margin-top: 12px;
+}
+
+
+h4 {
+  text-transform: uppercase;
+  font-size: 13px;
+}
+b, strong {
+  font-weight: 600;
+}
+
+/* Apple-style Table CSS */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+  color: var(--medium-text-color);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+thead {
+  background-color: var(--off-background-color);
+  color: var(--text-color);
+}
+
+th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-color);
+}
+
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+/* Responsive table adjustments */
+@media (max-width: 768px) {
+  table {
+    font-size: 0.85rem;
+  }
+  
+  th, td {
+    padding: 0.5rem 0.75rem;
+  }
+}
