@@ -3,6 +3,7 @@ var User = require("models/user");
 
 var PAY = "/sites/account/pay-subscription";
 var DELETE = "/sites/account/subscription/delete";
+var RESUME = "/sites/account/subscription/resume";
 
 module.exports = function (req, res, next) {
   if (!req.session || !req.session.uid) return next();
@@ -22,7 +23,20 @@ module.exports = function (req, res, next) {
     // but this is no longer possible. Once all
     // users with isDisabled:true are removed you
     // can delete this check safely.
-    if (user.isDisabled) {
+    if (user.isPaused) {
+      var url = req.originalUrl || "";
+      var allowResumePath =
+        url === RESUME ||
+        url === DELETE ||
+        url.indexOf(RESUME + "/") === 0 ||
+        url.indexOf(RESUME + "?") === 0;
+
+      if (!allowResumePath) {
+        return res.redirect(RESUME);
+      }
+    }
+
+    if (user.isDisabled && !user.isPaused) {
       return res.redirect("/sites/disabled");
     }
 
@@ -31,7 +45,11 @@ module.exports = function (req, res, next) {
     req.user = User.extend(user);
     res.locals.user = user;
 
-    if (user.needsToPay && req.originalUrl !== PAY && req.originalUrl !== DELETE) {
+    if (
+      user.needsToPay &&
+      req.originalUrl !== PAY &&
+      req.originalUrl !== DELETE
+    ) {
       return res.redirect(PAY);
     }
 

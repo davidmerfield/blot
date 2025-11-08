@@ -508,6 +508,7 @@ Delete.exports = {
   refund: issueDeletionRefund,
   email: emailUser,
   ensureRefund: ensureIssueDeletionRefund,
+  buildPaypalAuthHeader,
 };
 
 Delete._setStripeClient = function (client) {

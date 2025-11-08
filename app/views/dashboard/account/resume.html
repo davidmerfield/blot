@@ -1,0 +1,17 @@
+<form class="account" action="/sites/account/subscription/resume" method="post" style="padding: 0; max-width: none;">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+  <p style="padding: 33px 20px; max-width: 600px;">
+    Your subscription is currently paused, so your site{{user.s}} are offline.
+    Resume your subscription to bring everything back online immediately.
+    If you no longer need your sites, you can still
+    <a href="/sites/account/subscription/delete">delete your account</a> at any time.
+  </p>
+  <button
+    class="line"
+    type="submit"
+    style="background: none; border: none; width: 100%; padding: 0; text-align: left; cursor: pointer;"
+  >
+    <span class="label">Resume</span>
+    <span class="center"><span class="link">Resume subscription</span></span>
+  </button>
+</form>

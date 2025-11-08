@@ -1,12 +1,28 @@
 var Express = require("express");
 var Subscription = new Express.Router();
 var User = require("models/user");
-var User = require("models/user");
 var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
 var email = require("helper/email");
 var prettyPrice = require("helper/prettyPrice");
+var Delete = require("./delete");
 const PLAN_MAP = config.stripe.plan_map;
+const PAYPAL_PAUSE_REASON = "Customer requested pause";
+const PAYPAL_RESUME_REASON = "Customer requested resume";
+
+var buildPaypalAuthHeader =
+  (Delete.exports && Delete.exports.buildPaypalAuthHeader) ||
+  function () {
+    return `Basic ${Buffer.from(
+      `${config.paypal.client_id}:${config.paypal.secret}`
+    ).toString("base64")}`;
+  };
+
+var stripeOverride;
+
+function getStripeClient() {
+  return stripeOverride || stripe;
+}
 
 Subscription.route("/").get(function (req, res) {
   res.render("dashboard/account/subscription", {
@@ -15,7 +31,7 @@ Subscription.route("/").get(function (req, res) {
   });
 });
 
-Subscription.use("/delete", require("./delete"));
+Subscription.use("/delete", Delete);
 
 // The purpose of this page is to allow the user to update the
 // card used by Stripe to charge their subscription fee
@@ -129,6 +145,39 @@ Subscription.route("/payment-method")
       }
     );
   });
+
+Subscription.route("/pause")
+
+  .all(requireSubscription)
+  .all(requireNotPaused)
+  .post(async function (req, res, next) {
+    try {
+      await pauseSubscriptionForUser(req.user);
+      res.message(req.baseUrl, "Your subscription has been paused");
+    } catch (err) {
+      next(err);
+    }
+  });
+
+Subscription.route("/resume")
+
+  .all(requireSubscription)
+  .all(requirePaused)
+  .get(function (req, res) {
+    res.render("dashboard/account/resume", {
+      title: "Resume your subscription",
+      breadcrumb: "Resume",
+    });
+  })
+  .post(async function (req, res, next) {
+    try {
+      await resumeSubscriptionForUser(req.user);
+      res.message(req.baseUrl, "Your subscription has been resumed");
+    } catch (err) {
+      next(err);
+    }
+  });
+
 Subscription.route("/cancel")
 
   .all(requireSubscription)
@@ -334,7 +383,17 @@ function requireSubscription (req, res, next) {
   }
 }
 
-const { updateSubscription } = require("dashboard/webhooks/paypal_webhook");
+function requirePaused (req, res, next) {
+  if (req.user.isPaused) return next();
+
+  return res.message(req.baseUrl, "Your subscription is already active");
+}
+
+function requireNotPaused (req, res, next) {
+  if (!req.user.isPaused) return next();
+
+  return res.message(req.baseUrl, "Your subscription is already paused");
+}
 
 async function cancelPaypalSubscription (req, res, next) {
   next();
@@ -450,5 +509,268 @@ function restartStripeSubscription (req, res, next) {
     }
   );
 }
+
+async function pauseSubscriptionForUser (user) {
+  ensureUser(user);
+
+  if (user.paypal && user.paypal.id) {
+    return pausePaypalSubscription(user);
+  }
+
+  if (user.subscription && user.subscription.id) {
+    return pauseStripeSubscription(user);
+  }
+
+  throw new Error("No subscription to pause");
+}
+
+async function resumeSubscriptionForUser (user) {
+  ensureUser(user);
+
+  if (user.paypal && user.paypal.id) {
+    return resumePaypalSubscription(user);
+  }
+
+  if (user.subscription && user.subscription.id) {
+    return resumeStripeSubscription(user);
+  }
+
+  throw new Error("No subscription to resume");
+}
+
+async function pauseStripeSubscription (user) {
+  ensureStripeSubscription(user);
+
+  var client = getStripeClient();
+
+  if (!client || !client.subscriptions || !client.subscriptions.update)
+    throw new Error("Stripe client unavailable");
+
+  var subscription = await client.subscriptions.update(
+    user.subscription.id,
+    { pause_collection: { behavior: "mark_uncollectible" } }
+  );
+
+  if (!subscription) throw new Error("No subscription");
+
+  await disableUserAccount(
+    user,
+    {
+      subscription: subscription,
+      pause: buildPauseState("stripe", true),
+    }
+  );
+
+  return subscription;
+}
+
+async function resumeStripeSubscription (user) {
+  ensureStripeSubscription(user);
+
+  var client = getStripeClient();
+
+  if (!client || !client.subscriptions || !client.subscriptions.update)
+    throw new Error("Stripe client unavailable");
+
+  var subscription = await client.subscriptions.update(user.subscription.id, {
+    pause_collection: null,
+  });
+
+  if (!subscription) throw new Error("No subscription");
+
+  await enableUserAccount(
+    user,
+    {
+      subscription: subscription,
+      pause: buildPauseState("stripe", false),
+    }
+  );
+
+  return subscription;
+}
+
+async function pausePaypalSubscription (user) {
+  ensurePaypalSubscription(user);
+
+  var authHeader = buildPaypalAuthHeader();
+  var suspendResponse = await fetch(
+    `${config.paypal.api_base}/v1/billing/subscriptions/${user.paypal.id}/suspend`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ reason: PAYPAL_PAUSE_REASON }),
+    }
+  );
+
+  await ensurePaypalSuccess(
+    suspendResponse,
+    "Unable to suspend PayPal subscription"
+  );
+
+  var paypal = await fetchPaypalSubscription(user.paypal.id, authHeader);
+
+  await disableUserAccount(
+    user,
+    {
+      paypal: paypal,
+      pause: buildPauseState("paypal", true),
+    }
+  );
+
+  return paypal;
+}
+
+async function resumePaypalSubscription (user) {
+  ensurePaypalSubscription(user);
+
+  var authHeader = buildPaypalAuthHeader();
+  var resumeResponse = await fetch(
+    `${config.paypal.api_base}/v1/billing/subscriptions/${user.paypal.id}/activate`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ reason: PAYPAL_RESUME_REASON }),
+    }
+  );
+
+  await ensurePaypalSuccess(
+    resumeResponse,
+    "Unable to resume PayPal subscription"
+  );
+
+  var paypal = await fetchPaypalSubscription(user.paypal.id, authHeader);
+
+  await enableUserAccount(
+    user,
+    {
+      paypal: paypal,
+      pause: buildPauseState("paypal", false),
+    }
+  );
+
+  return paypal;
+}
+
+async function fetchPaypalSubscription (subscriptionId, authHeader) {
+  var response = await fetch(
+    `${config.paypal.api_base}/v1/billing/subscriptions/${subscriptionId}`,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "Accept-Language": "en_US",
+        Authorization: authHeader,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    await paypalError(response, "Unable to fetch PayPal subscription");
+  }
+
+  return response.json();
+}
+
+async function ensurePaypalSuccess (response, prefix) {
+  if (response && response.ok) return;
+
+  await paypalError(response, prefix);
+}
+
+async function paypalError (response, prefix) {
+  if (!response) throw new Error(prefix);
+
+  var message = `${prefix}: ${response.status}`;
+
+  try {
+    var body = await response.json();
+    if (body && (body.message || body.name)) {
+      message = `${prefix}: ${body.message || body.name}`;
+    }
+  } catch (e) {
+    try {
+      var text = await response.text();
+      if (text) message = `${prefix}: ${text}`;
+    } catch (_) {}
+  }
+
+  throw new Error(message);
+}
+
+function buildPauseState (provider, active) {
+  return {
+    active: !!active,
+    provider: provider || null,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function disableUserAccount (user, updates) {
+  return new Promise(function (resolve, reject) {
+    User.disable(user, Object.assign({}, updates), function (err) {
+      if (err) return reject(err);
+
+      resolve();
+    });
+  });
+}
+
+function enableUserAccount (user, updates) {
+  return new Promise(function (resolve, reject) {
+    User.enable(user, Object.assign({}, updates), function (err) {
+      if (err) return reject(err);
+
+      resolve();
+    });
+  });
+}
+
+function ensureUser (user) {
+  if (!user || !user.uid) throw new Error("No user");
+}
+
+function ensureStripeSubscription (user) {
+  ensureUser(user);
+
+  if (!user.subscription || !user.subscription.id)
+    throw new Error("No Stripe subscription");
+}
+
+function ensurePaypalSubscription (user) {
+  ensureUser(user);
+
+  if (!user.paypal || !user.paypal.id)
+    throw new Error("No PayPal subscription");
+}
+
+if (Subscription.exports !== undefined)
+  throw new Error(
+    "Subscription.exports is defined (typeof=" +
+      typeof Subscription.exports +
+      ") Would clobber Subscription.exports"
+  );
+
+Subscription.exports = {
+  pauseStripe: pauseStripeSubscription,
+  resumeStripe: resumeStripeSubscription,
+  pausePaypal: pausePaypalSubscription,
+  resumePaypal: resumePaypalSubscription,
+  pauseUser: pauseSubscriptionForUser,
+  resumeUser: resumeSubscriptionForUser,
+  buildPauseState: buildPauseState,
+};
+
+Subscription._setStripeClient = function (client) {
+  stripeOverride = client;
+};
+
+Subscription._resetStripeClient = function () {
+  stripeOverride = null;
+};
 
 module.exports = Subscription;
