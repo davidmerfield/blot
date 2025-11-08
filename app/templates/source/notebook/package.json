@@ -4,10 +4,9 @@
     "page_size": 100,
     "lang": "en",
     "sort_by": "id",
-    "background_color": "#fff",
-    "sidebar_background_color": "#fafafa",
-    "text_color": "rgb(34, 34, 34)",
-    "link_color": "rgb(0, 75, 224)",
+    "background_color": "#1e1e1e",
+    "text_color": "rgb(220, 221, 222)",
+    "link_color": "rgb(68 144 225)",
     "syntax_highlighter": {
       "id": "solarized-light"
     },
@@ -23,6 +22,12 @@
     "pagination.html": {
       "url": "/pagination/:page"
     },
+    "entries.html": {
+      "partials": {
+        "title": "{{#entries}}{{#first}}{{{title}}} -  {{/first}}{{/entries}}{{{title}}}",
+        "description": "{{#entries}}{{#first}}{{{title}}} -  {{/first}}{{/entries}}{{{title}}}"
+      }
+    },
     "entry.html": {
       "partials": {
         "title": "{{{entry.title}}} - {{{title}}}",
@@ -31,7 +36,8 @@
     },
     "error.html": {
       "partials": {
-        "title": "{{{error.title}}} - {{{title}}}"
+        "title": "{{error.title}} - {{{title}}}",
+        "description": "{{error.message}}"
       }
     }
   }

@@ -236,7 +236,8 @@ class SidebarNavigation {
     try {
       localStorage.setItem(
         "sidebarState:" +
-          document.querySelector('meta[name="blot-cache-id"]')?.content
+          document.querySelector('meta[name="blot-cache-id"]')?.content,
+          document.querySelector(".sidebar").innerHTML
       );
     } catch {}
   }
