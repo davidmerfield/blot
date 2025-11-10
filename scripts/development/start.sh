@@ -4,7 +4,8 @@ set -euo pipefail
 # Resolve repo paths
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../../ && pwd)"
 
-echo $DIR
+# Create the env file if none exists
+touch $DIR/.env
 
 BLOT_HOST=${BLOT_HOST:-local.blot}
 
