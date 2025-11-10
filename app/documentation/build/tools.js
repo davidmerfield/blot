@@ -164,6 +164,7 @@ const main = async () => {
         related: result.categories
           .find(c => c.slug === 'all-' + tool.category)
           .tools.filter(t => t.slug !== tool.slug)
+          .slice(0, 3)
       },
       tool.slug + "/index.html"
     );

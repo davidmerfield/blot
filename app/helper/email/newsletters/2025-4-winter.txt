@@ -5,6 +5,7 @@ Winter newsletter
 **New features**
 - Plugin which injects titles into markdown posts without them. This makes using Obsidian much easier. 
 - added pagination to tagged template pages
+- Added support for TextBundle files.
 
 **Changes**
 - added file size limit to dropbox client

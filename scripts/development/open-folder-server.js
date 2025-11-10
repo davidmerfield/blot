@@ -29,5 +29,5 @@ http
     res.end("ok");
   })
   .listen(PORT, () => {
-    console.log(`Open folder server listening on http://localhost:${PORT}`);
+    console.log(`[start] Launched local folder opener`);
   });

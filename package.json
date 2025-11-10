@@ -7,7 +7,7 @@
   "scripts": {
     "download-folder": "read -p 'Enter blog identifier: ' BLOGID && ssh blot \"docker exec blot-container-blue node /usr/src/app/scripts/info \\\"$BLOGID\\\"\" | grep 'blog_' | head -n1 | cut -d ' ' -f 2 | xargs -I {} bash -c 'rsync -avz blot:/var/www/blot/data/blogs/{} ~/Downloads/ && open ~/Downloads/{}'",
     "test": "./scripts/tests/invoke.sh",
-    "start": "node scripts/development/start.js",
+    "start": "./scripts/development/start.sh",
     "deploy-node": "node scripts/deploy",
     "deploy-macserver": "./scripts/macserver/deploy.sh",
     "deploy-localmacserver": "./scripts/macserver/local-deploy.sh",

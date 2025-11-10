@@ -6,29 +6,36 @@ The general architecture of Blot is:
 
 The internet <> Reverse proxy (Openresty) <> Blot (express.js node application) <> Redis
 
-To get Blot running locally, you will need Docker. Once you have Docker installed and running, clone the repository:
+To get Blot running locally, you will need Docker, mkcert and dnsmasq. 
+
+Once you have Docker installed and running, clone the repository:
 
 git clone https://github.com/davidmerfield/blot --depth 1
 
-Create an empty `.env` file which you can use to further configure Blot with environment variables.
+Blot requires a huge number of subdomains to work e.g.
 
-touch .env
+https://local.blot
+https://cdn.local.blot
+https://site.local.blot
+https://preview-of-blog-on-site.local.blot
+https://preview-of-hypertext-on-site.local.blot
+
+etc...
+
+We use dnsmasq to point all requests to the fake TLD '.blot' to the loopback:
+
+brew install dnsmasq
+mkdir -pv $(brew --prefix)/etc/
+echo 'address=/.blot/127.0.0.1' >> $(brew --prefix)/etc/dnsmasq.conf
+echo 'port=53' >> $(brew --prefix)/etc/dnsmasq.conf
+sudo brew services start dnsmasq
+sudo mkdir -v /etc/resolver
+sudo bash -c 'echo "nameserver 127.0.0.1" > /etc/resolver/blot'
+
+To create the SSL certificate required for this to work locally, we use:
+
+brew install mkcert nss
 
 Then start the server:
 
 npm start
-
-By default, the development scripts use Docker's BuildKit with Compose's Bake integration
-for faster builds. Make sure you have Docker Buildx and Docker Compose v2 installed.
-If you need to opt out, unset `COMPOSE_DOCKER_CLI_BUILD` or set it to `docker`, and set
-`DOCKER_BUILDKIT=0` before running the scripts.
-
-Before you begin working on the code, you'll need to open up the following URLs in your browser and add an exception for the self-signed SSL certificates which we've generated:
-
-https://localhost/ - The dashboard
-https://cdn.localhost/ - The CDN
-https://example.localhost/ - Your site
-
-You can edit the folder for the example blog inside the `data` directory:
-
-./data/blogs/blog_$ID

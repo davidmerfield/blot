@@ -1,40 +1,35 @@
-Add {{#cdn}} template helper
-- add route to cdn.js which lets you render abritrary views from the site, e.g. /blog_id/template/style.css
-- determine which views are referenced by {{#cdn}} at template save time
-- compute hash of views which are referenced inside {{#cdn}}, including partials, whenever a referenced view is saved.
-
-Build image upload feature into template editor. Support default banner images.
-
-Update all templates to handle new empty menu at start (e.g. reference feed and move search into archives and add archives page link).
-
-Build markdown description feature into template editor. Support default site description.
-
-Make image avatar setting site-specific.
-
-Build favicon generator into template editor. Make it distinct from avatar.
-
-Adjust color settings into a simple 'presets' picker, then an option to dive into specific altertions on seperate view.
-- make it possible to conenct two colors, e.g. navigation background color -> same as background color
-
 Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
 
 Transfer theme for [Fede](https://wordpress.org/themes/kanso/)
 - Set up vanilla zoom
 - Use as [reference](https://fsanchez.io)
 
-Add lang selector (map english -> en) to template editor
+Add `{{cdn}}` template helper
+- add route to cdn.js which lets you render abritrary views from the site, e.g. /blog_id/template/style.css
+- determine which views are referenced by {{#cdn}} at template save time
+- compute hash of views which are referenced inside {{#cdn}}, including partials, whenever a referenced view is saved.
+- Make it possible to serve abritrary template views efficiently through the CDN... JS CSS etc. and remove usage of cssURL, jsURL?
 
-Work on template editor
-
-Create a new template local '{{{system-css}}}' which merges `{{{appCSS}}}, {{{font.styles}}}, {{{title_font.styles}}}`
-
-Make it possible to serve abritrary template views efficiently through the CDN... JS CSS etc. and remove usage of cssURL, jsURL?
-
-Turn andrew's template into a seperate 'Notebook' template
+Turn andrew's template into a seperate 'Hypertext' template
 
 Apply improvements from andrew's template into documentation template
 
 Turn francesco's template into a seperate 'Restaurant' template
+
+Work on template editor
+
+Build image upload feature into template editor. Support default banner images and image avatars, with default images set, maybe some kind of global library feature across templates...
+
+Build markdown description feature into template editor. Support default site description.
+
+Build favicon generator into template editor. Make it distinct from avatar.
+
+Adjust color settings into a simple 'presets' picker, then an option to dive into specific altertions on seperate view.
+- make it possible to conenct two colors, e.g. navigation background color -> same as background color
+
+Add lang selector (map english -> en) to template editor
+
+Create a new template local '{{{system-css}}}' which merges `{{{appCSS}}}, {{{font.styles}}}, {{{title_font.styles}}}`
 
 ---
 
@@ -288,6 +283,14 @@ Create abstract models/storage that could be used to eventually migrate blog dat
 - 3. Provide unit coverage mirroring `app/helper/tests/localPath.js` to confirm the new abstraction still resolves paths correctly for typical blog IDs and paths.
 - 4. Add mechanism for error storage, e.g. Dropbox .page file error or Dropbox file too large error, etc.
 
+Reach out to include Blot on textbundle website
+
+Improve tools/bear 
+- Reach out to Bear to let them know about textbundle support
+
+Improve tools/ulysses
+- Reach out to Ulysses to let them know about textbundle support
+
 Improve server performance by 1. Create `app/build/plugins/folderAssets/index.js` that exports a `render` handler; reuse the logic from `app/blog/render/replaceFolderLinks/html.js` and `lookupFile` so it asynchronously rewrites `<a href>`/`<img src>` etc. during build-time processing to CDN urls, resolving the correct case where needed.
 - 2. Register the plugin in `app/build/plugins/index.js` so it runs for HTML entries (respecting `options.isHTML`) and make it default-enabled for blogs.
 - 3. Add new tests under `app/build/plugins/folderAssets/tests` to confirm the plugin emits CDN URLs and leaves untouched cases alone.
@@ -502,6 +505,12 @@ Reduce service provider risk:
 Implement mac server screenshot endpoint
 - We should use the helper/transformer to speed up screenshot re-generation
 
+Update redis client for improved performance
+- perhaps to ioredis?
+
+Update redis server to version 8
+- take advantage of full text search
+
 Implement limit for allentries, sitemap, etc.
 
 Set long-timeout for git client requests on reverse proxy
@@ -525,7 +534,6 @@ Run dropbox reset as ec2-user not root
 
 Extend ignore files feature (currently files starting with _ or folders starting with _)
 - tell [Troy](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrSjWXGrxztLqjVWwjBtcbzl)
-- Ignore files inside 'assets' inside .textbundle directories to improve support for textbundles and tell [Thomas](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgzDLvlTkKNmfZgnXpzzLZjWN)
 - Follow up with [Shibel](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgpcJbSnrrjHZGqtgschtWwXs) about how to ignore - make it possible to achieve through a global 'ignore' setting on services page of dashboard?
 - could ignore all '.jpg' say, or all 'index.html' files, etc.
 - Can we add a 'folder rules' section to create ignore globs, multi post globs, etc.
@@ -547,8 +555,6 @@ How to fix menu links with incorrect case IDs?
 - Write script to catch these and patch
 
 Why do posts on blog_eddd8e5 take so long to set, let alone rebuild?
-
-Clean out all but the neccessary information from deleted entries to save redis space
 
 Make iCloud site routes blocking so the mac server waits for the main server to finish building before sending the next sync update? But consider timeout
 
@@ -925,9 +931,6 @@ Add simple commenting system
 - Tell [Precious](https://mail.google.com/mail/u/0/#inbox/QgrcJHrtwLwTldzhrTKHMtnhwVqMXVzCTqv)
 - Tell [Hochan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBZsPZvGMNQLFVmjBkBzhQW) who is willing to beta test
 
-Add [textbundle support](http://textbundle.org/spec/) and tell [questioner](https://blot.im/questions/1385)
-- this will help me understand how best to accomplish multi-file posts
-
 Add way to import directly
 - Add micro.blog import to dashboard and tell [Gabriel](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJRvfgrRhXwqDNDlxbpXmRlbd]
 - And recurring import from elsewhere 
@@ -1025,6 +1028,9 @@ Improve paypal integration:
 - [ ] Update scheduleEmailNotification for paypal customers
 
 Can I use proxy_store instead of openrestycache?
+
+Add support for .ulyz file created by Ulysses
+- Adapt [this script](https://github.com/arafel/ulyz-to-markdown/blob/master/ulyz-to-markdown.py)
 
 Make {{active}} strip the domain from the link [before checking](https://github.com/davidmerfield/Blot/blob/master/app/blog/render/retrieve/active.js#L22)? Or automatically strip the domain from internal links on Blot's dashboard?
 
@@ -1305,11 +1311,6 @@ Write new clients to sync blog folders
 
 ---
 
-Improvements to backup system
-- Add hourly local redis rdb dumps to /cache
-- Test maintenance mode
-- Add script to roll back into hourly local db dumps and remote backups
-
 Begin collecting proper measurements for page-rendering speed on the server
 
 Improvements to teaser generator
@@ -1323,7 +1324,6 @@ Improvements to teaser generator
 Make it possible to [disable draft preview files](https://blot.im/questions/3193)
 
 Performance improvements
-- Consider switching redis client, perhaps to ioredis?
 - Use a docker image to speed up test suite: https://github.com/davidmerfield/Blot/pull/463
 - Faster server, with SSL termination across CDN
 - set up 'cdn.blot.im' as cloudfront distribution endpoint?

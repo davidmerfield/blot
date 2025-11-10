@@ -17,6 +17,7 @@ services:
     env_file:
       - ../../.env
     environment:
+      - BLOT_HOST=${BLOT_HOST}
       - BLOT_REDIS_HOST=redis
       - CONTAINER_NAME=blot-container-green
     volumes:
@@ -45,7 +46,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ../../data/ssl:/etc/ssl
+      - ../../config/openresty/development_server.conf:/etc/nginx/nginx.conf:ro
+      - ../../config/openresty/init.sh:/etc/nginx/init.sh:ro
+      - ../../data/ssl:/etc/ssl:ro
     depends_on:
       - node-app
-    command:  /bin/sh -c "sh  /etc/nginx/init.sh"
+    command: /bin/sh -c "sh /etc/nginx/init.sh"

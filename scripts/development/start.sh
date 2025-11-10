@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# hide '^C' glyph while running ----
+if [ -t 1 ]; then
+  STTY_ORIG="$(stty -g)"
+  stty -echoctl
+  restore_tty() { stty "$STTY_ORIG" 2>/dev/null || true; }
+  trap restore_tty EXIT
+fi
+# --------------------------------------------------
+
+# Resolve repo paths
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../../ && pwd)"
+: "${BLOT_HOST:=local.blot}"
+
+# Files
+SETUP="$DIR/config/openresty/setup.sh"
+COMPOSE_FILE="$DIR/scripts/development/docker-compose.yml"
+FOLDER_SERVER="$DIR/scripts/development/open-folder-server.js"
+
+# Env for builds
+export COMPOSE_DOCKER_CLI_BUILD="${COMPOSE_DOCKER_CLI_BUILD:-bake}"
+export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
+
+# Compose wrapper
+compose() {
+  if command -v docker-compose >/dev/null 2>&1; then
+    BLOT_HOST="$BLOT_HOST" COMPOSE_BAKE=true docker-compose -f "$COMPOSE_FILE" "$@"
+  else
+    BLOT_HOST="$BLOT_HOST" COMPOSE_BAKE=true docker compose -f "$COMPOSE_FILE" "$@"
+  fi
+}
+
+# Portable timeout helper
+run_with_timeout() {
+  local seconds="$1"; shift
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$seconds" "$@"
+  elif command -v gtimeout >/dev/null 2>&1; then
+    gtimeout "$seconds" "$@"
+  else
+    "$@"   # no timeout available; run as-is
+  fi
+}
+
+echo "[start] Running setup"
+bash "$SETUP" "$BLOT_HOST"
+
+echo "[start] Launching local folder opener"
+node "$FOLDER_SERVER" &
+FOLDER_PID=$!
+
+compose up --build -d
+
+# start logs in background to avoid 'exit status 130' noise on Ctrl-C
+compose logs -f --no-log-prefix node-app &
+LOGS_PID=$!
+
+SHUTTING_DOWN=0
+cleanup() {
+  (( SHUTTING_DOWN )) && return
+  SHUTTING_DOWN=1
+
+  # stop log follower quietly first
+  kill "$LOGS_PID" 2>/dev/null || true
+  wait "$LOGS_PID" 2>/dev/null || true
+
+  # bounded silent Redis SAVE before teardown
+  if compose ps --services | grep -q '^redis$'; then
+    run_with_timeout 5 compose exec -T redis redis-cli SAVE >/dev/null 2>&1 || true
+  fi
+
+  # hard, immediate shutdown
+  compose down --remove-orphans --timeout 0 || true
+
+  # stop aux server
+  if kill -0 "$FOLDER_PID" 2>/dev/null; then
+    kill "$FOLDER_PID" 2>/dev/null || true
+    wait "$FOLDER_PID" 2>/dev/null || true
+  fi
+}
+trap cleanup INT TERM
+
+# wait on logs; normal exit handled by trap
+wait "$LOGS_PID" 2>/dev/null || true
+
+cleanup
+exit 0
