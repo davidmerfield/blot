@@ -30,12 +30,36 @@ async function computeViewsHash() {
   const files = recursiveReadDir(SOURCE_DIRECTORY);
   const hash = crypto.createHash("sha256");
 
+  // Hash all files in the views directory
   for (const file of files) {
     const stat = await fs.stat(file);
     const relativePath = file.slice(SOURCE_DIRECTORY.length + 1);
     hash.update(relativePath);
     hash.update(stat.mtime.getTime().toString());
     hash.update(stat.size.toString());
+  }
+
+  // Also hash build scripts that affect the output
+  const buildScripts = [
+    join(__dirname, "css.js"),
+    join(__dirname, "js.js"),
+    join(__dirname, "html.js"),
+    join(__dirname, "tools.js"),
+    join(__dirname, "../tools/git-commits.js"),
+  ];
+
+  for (const script of buildScripts) {
+    try {
+      if (await fs.pathExists(script)) {
+        const stat = await fs.stat(script);
+        const relativePath = script.slice(__dirname.length + 1);
+        hash.update(relativePath);
+        hash.update(stat.mtime.getTime().toString());
+        hash.update(stat.size.toString());
+      }
+    } catch (e) {
+      // Ignore errors for missing files
+    }
   }
 
   return hash.digest("hex");
