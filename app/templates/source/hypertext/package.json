@@ -1,5 +1,5 @@
 {
-  "name": "Notebook",
+  "name": "Hypertext",
   "locals": {
     "page_size": 100,
     "lang": "en",
@@ -16,7 +16,7 @@
     "body_font": {
       "id": "system-sans"
     },
-    "demo_folder": "notebook"
+    "demo_folder": "hypertext"
   },
   "views": {
     "pagination.html": {
