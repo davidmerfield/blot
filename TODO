@@ -1,3 +1,21 @@
+Add {{#cdn}} template helper
+- add route to cdn.js which lets you render abritrary views from the site, e.g. /blog_id/template/style.css
+- determine which views are referenced by {{#cdn}} at template save time
+- compute hash of views which are referenced inside {{#cdn}}, including partials, whenever a referenced view is saved.
+
+Build image upload feature into template editor. Support default banner images.
+
+Update all templates to handle new empty menu at start (e.g. reference feed and move search into archives and add archives page link).
+
+Build markdown description feature into template editor. Support default site description.
+
+Make image avatar setting site-specific.
+
+Build favicon generator into template editor. Make it distinct from avatar.
+
+Adjust color settings into a simple 'presets' picker, then an option to dive into specific altertions on seperate view.
+- make it possible to conenct two colors, e.g. navigation background color -> same as background color
+
 Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
 
 Transfer theme for [Fede](https://wordpress.org/themes/kanso/)
@@ -289,6 +307,10 @@ Migrate JSON blob entry into a redis hash:
 * Add a serializer/deserializer utility (new module under `app/models/entry/`, e.g., `format.js`) that can translate between `Entry` objects and hash field payloads (strings stay raw; other types use `JSON.stringify`/`JSON.parse`).
 * Refactor `app/models/entry/get.js` to accept an optional `fields` argument (string or array). Use `multi` to `HMGET`/`HGETALL` from the hash key and fall back to the JSON key when the hash is missing, reusing the serializer to coerce types. Ensure single-field calls return the scalar when only one entry is requested, while preserving existing behaviors for callers expecting full `Entry` objects.
 * Cover the new pathways with unit coverage (or targeted integration coverage) once tests are runnable, verifying full-entry fetches, hash fallback to legacy JSON, and single-field lookups.
+
+Improve performance rendering sitemaps by using sitemap indexes, and sharding the sitemap.
+- requires adding pagination for listing pages
+- requires using the url / param feature, e.g. [sitemap.xml, sitemap.posts.:page.xml, sitemap.pages.:page.xml]
 
 Add [preload=none](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/audio#preload) to all audio and video tags without it defined or maybe preload="metadata"? 
 

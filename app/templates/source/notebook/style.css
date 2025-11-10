@@ -18,7 +18,6 @@
   {{/body_font}}
   --background-color: {{background_color}};
   --text-color: {{text_color}};
-  --sidebar-background-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.02);
   --off-background-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.02);
   --light-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
   --medium-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6666);
@@ -27,7 +26,6 @@
   --link-color: {{link_color}};
   --padding: 1.4rem;
   --navigation-height: 3em;
-  --navigation-background-color: var(--background-color);
   --sidebar-width: 280px;
   --main-width: 800px;
 }
@@ -37,6 +35,8 @@ html, body {
   width: 100%; padding: 0; margin: 0 auto;
   color: var(--text-color); background: var(--background-color);
   font-family: var(--font-family); font-size: var(--font-size); line-height: var(--line-height);
+  text-rendering: optimizelegibility;
+  -moz-osx-font-smoothing: grayscale
 }
 
 hr {
@@ -72,7 +72,7 @@ main.loading {
 }
 
 .column:nth-child(1) {
-  background: var(--sidebar-background-color);
+  background: var(--off-background-color);
 }
 
 
@@ -195,59 +195,6 @@ main {
   z-index: 2;
 }
 
-/* This forces the navigation links to wrap when they would
-    otherwise overflow the screen */
-.nav-container:before {
-  content: "";
-  width: 1px;
-  margin-right: -1px;
-  height: var(--navigation-height);
-}
-
-.popup-cover {
-  content: "";
-  opacity: 0;
-  position: absolute;
-  top:0;
-  right:0;
-  bottom:0;
-  left: 0;
-  background: rgba(0,0,0,0.3);
-  z-index: -1;
-}
-
-.nav-label {
-  display: flex;
-  align-items: center;
-  height: var(--navigation-height); /* Default height */
-  cursor: pointer;
-  position: absolute;
-  right: 0;
-  z-index: 2; /* Ensure it's above the links */
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  flex-wrap: none;
-  gap: 1.4rem;
-  background-color: var(--navigation-background-color);
-  position: relative;
-  z-index: 3;
-}
-
-.nav-container a {
-  white-space: nowrap; /* Prevents breaking individual links */
-  text-decoration: none;
-  color: var(--light-text-color);
-  transition: color 0.2s;
-}
-
-.nav-container a:hover,
-.nav-container a.active {
-  color: var(--text-color);
-}
-
 #nav-toggle {
   display: none;
 }
@@ -266,27 +213,6 @@ main {
   flex-direction: column; /* Stack links vertically */
   width: 100%;
   align-items: flex-start;
-}
-
-.index-link {
-    display: flex;
-  align-items: center;
-  flex-wrap: none;
-  gap: 1rem;
-  margin-right: 1em;
-}
-
-.index-link a {
-  color:var(--text-color);
-  font-weight: 600;
-}
-
-.nav-container {
-  padding: 0 1em;
-}
-
-.nav-label {
-  right: 1em;
 }
 
 /* When checkbox is checked, expand the navigation */
@@ -339,7 +265,7 @@ main ul li {
   margin-inline-start: 30.25px
 }
 
-p, h1, h2, h3, h4, h5, h6, ol, ul, pre, hr, .videoContainer {
+p, h1, h2, h3, h4, h5, h6, ol, ul, pre, hr, .videoContainer, table {
   max-width: 704px;
 }
 
@@ -374,11 +300,6 @@ filter: brightness(1.15);
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'><path fill='{{{text_color}}}' d='M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z'/></svg>");
 }
 
-.entry a[target="_blank"]:hover:after {
-  background: no-repeat center / contain
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'><path fill='{{{link_color}}}' d='M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z'/></svg>");
-  opacity: 1;
-}
 
 .entry #footnotes {
   font-size: 14px;
@@ -440,17 +361,16 @@ h4 {
 b, strong {
   font-weight: 600;
 }
-
-/* Apple-style Table CSS */
 table {
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   width: 100%;
   margin: 24px 0;
   font-size: 0.9rem;
   color: var(--text-color);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   overflow: hidden;
-  border: 1px solid var(--border-color);
 }
 
 thead {
@@ -483,4 +403,14 @@ tr:last-child td {
   th, td {
     padding: 0.5rem 0.75rem;
   }
+}
+
+code.hljs {
+  background-color: var(--off-background-color)
+}
+
+.caption {
+  display: block;
+  margin: 12px 0;
+  font-size: var(--small-font-size);
 }

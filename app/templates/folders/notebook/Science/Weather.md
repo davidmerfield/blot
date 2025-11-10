@@ -1,1 +1,0 @@
-http://ww2010.atmos.uiuc.edu/(Gh)/guides/mtr/fw/geos.rxml

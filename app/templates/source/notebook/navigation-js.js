@@ -1,3 +1,6 @@
+// Map folder [Eg] to 'Eg'
+const STRIP_TAG_TOKENS = true;
+
 class SidebarNavigation {
   constructor() {
     this.root = document.querySelector(".sidebar");
@@ -79,7 +82,14 @@ class SidebarNavigation {
 
     const byPath = new Map();
     byPath.set("", { el: this.root, submenu: this.root });
-    const segTitle = (s) => s.replace(/[-_]/g, " ");
+
+    const segTitle = (s) => {
+      let out = s.replace(/[-_]/g, " ");
+      if (typeof STRIP_TAG_TOKENS !== "undefined" && STRIP_TAG_TOKENS) {
+        out = out.replace(/\[([^\]]+)\]/g, "$1"); // remove surrounding [ ]
+      }
+      return out;
+    };
 
     const ensureFolder = (folderPath) => {
       if (byPath.has(folderPath)) return byPath.get(folderPath);
@@ -237,7 +247,7 @@ class SidebarNavigation {
       localStorage.setItem(
         "sidebarState:" +
           document.querySelector('meta[name="blot-cache-id"]')?.content,
-          document.querySelector(".sidebar").innerHTML
+        document.querySelector(".sidebar").innerHTML
       );
     } catch {}
   }
