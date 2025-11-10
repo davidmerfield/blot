@@ -36,6 +36,6 @@ module.exports = {
   },
   thoughtforms: {
     title: "Thought-forms",
-    template: "SITE:hypertext",
+    template: "SITE:studio",
   },
 };
