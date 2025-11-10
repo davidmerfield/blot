@@ -7,7 +7,7 @@ const BLOT_DIRECTORY =
   process.env.BLOT_DIRECTORY || resolve(__dirname + "/../");
 const BLOT_DATA_DIRECTORY =
   process.env.BLOT_DATA_DIRECTORY || BLOT_DIRECTORY + "/data";
-const BLOT_HOST = process.env.BLOT_HOST || "blot.localhost";
+const BLOT_HOST = process.env.BLOT_HOST || "localhost";
 const BLOT_PORT = process.env.BLOT_PORT || "8080";
 const BLOT_PROTOCOL = process.env.BLOT_PROTOCOL || "https";
 const BLOT_IPV6 = process.env.BLOT_IPV6 || null;
@@ -44,7 +44,7 @@ module.exports = {
     // the development server needs to know the production
     // server's host. This let's us use the same code
     relay_host: "webhooks.blot.im",
-    development_host: "localhost",
+    development_host: "local.blot",
   },
 
   maintenance: process.env.BLOT_MAINTENANCE === "true",

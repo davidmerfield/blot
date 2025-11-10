@@ -6,6 +6,9 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../../ && pwd)"
 
 echo $DIR
 
+# change the local host
+HOST="local.blot"
+
 SETUP="$DIR/config/openresty/setup.sh"
 COMPOSE_FILE="$DIR/scripts/development/docker-compose.yml"
 FOLDER_SERVER="$DIR/scripts/development/open-folder-server.js"

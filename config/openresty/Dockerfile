@@ -1,8 +1,6 @@
 # Use the nginx:alpine image as the base image
 FROM nginx:alpine
 
-ARG BLOT_HOST=blot.localhost
-
 # Set working directory
 WORKDIR /etc/nginx
 

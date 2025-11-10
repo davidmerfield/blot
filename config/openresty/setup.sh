@@ -28,7 +28,7 @@ echo "Generating new development TLS certificates with mkcert..."
 mkcert -install
 
 mkcert -key-file "$KEY" -cert-file "$CRT" \
-  localhost "blot.localhost" "*.blot.localhost"
+  localhost "local.blot" "*.local.blot"
 
 chmod 0644 "$CRT" || true
 chmod 0600 "$KEY" || true

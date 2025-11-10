@@ -17,18 +17,3 @@ touch .env
 Then start the server:
 
 npm start
-
-By default, the development scripts use Docker's BuildKit with Compose's Bake integration
-for faster builds. Make sure you have Docker Buildx and Docker Compose v2 installed.
-If you need to opt out, unset `COMPOSE_DOCKER_CLI_BUILD` or set it to `docker`, and set
-`DOCKER_BUILDKIT=0` before running the scripts.
-
-Before you begin working on the code, you'll need to open up the following URLs in your browser and add an exception for the self-signed SSL certificates which we've generated:
-
-https://localhost/ - The dashboard
-https://cdn.localhost/ - The CDN
-https://example.localhost/ - Your site
-
-You can edit the folder for the example blog inside the `data` directory:
-
-./data/blogs/blog_$ID
