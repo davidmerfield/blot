@@ -66,9 +66,9 @@ async function computeViewsHash() {
 }
 
 async function restoreFromCache(cacheDir) {
-  if (await fs.pathExists(cacheDir)) {
+  if (fs.pathExistsSync(cacheDir)) {
     console.log(clfdate(), "Restoring documentation from cache");
-    await fs.copy(cacheDir, DESTINATION_DIRECTORY);
+    fs.copySync(cacheDir, DESTINATION_DIRECTORY);
     console.log(clfdate(), "Cache restored");
     return true;
   }
