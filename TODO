@@ -525,7 +525,6 @@ Run dropbox reset as ec2-user not root
 
 Extend ignore files feature (currently files starting with _ or folders starting with _)
 - tell [Troy](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrSjWXGrxztLqjVWwjBtcbzl)
-- Ignore files inside 'assets' inside .textbundle directories to improve support for textbundles and tell [Thomas](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgzDLvlTkKNmfZgnXpzzLZjWN)
 - Follow up with [Shibel](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgpcJbSnrrjHZGqtgschtWwXs) about how to ignore - make it possible to achieve through a global 'ignore' setting on services page of dashboard?
 - could ignore all '.jpg' say, or all 'index.html' files, etc.
 - Can we add a 'folder rules' section to create ignore globs, multi post globs, etc.
@@ -925,9 +924,6 @@ Add simple commenting system
 - Tell [Precious](https://mail.google.com/mail/u/0/#inbox/QgrcJHrtwLwTldzhrTKHMtnhwVqMXVzCTqv)
 - Tell [Hochan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBZsPZvGMNQLFVmjBkBzhQW) who is willing to beta test
 
-Add [textbundle support](http://textbundle.org/spec/) and tell [questioner](https://blot.im/questions/1385)
-- this will help me understand how best to accomplish multi-file posts
-
 Add way to import directly
 - Add micro.blog import to dashboard and tell [Gabriel](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJRvfgrRhXwqDNDlxbpXmRlbd]
 - And recurring import from elsewhere 
@@ -1025,6 +1021,9 @@ Improve paypal integration:
 - [ ] Update scheduleEmailNotification for paypal customers
 
 Can I use proxy_store instead of openrestycache?
+
+Add support for .ulyz file created by Ulysses
+- Adapt [this script](https://github.com/arafel/ulyz-to-markdown/blob/master/ulyz-to-markdown.py)
 
 Make {{active}} strip the domain from the link [before checking](https://github.com/davidmerfield/Blot/blob/master/app/blog/render/retrieve/active.js#L22)? Or automatically strip the domain from internal links on Blot's dashboard?
 
