@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+BLOT_HOST=${1:-local.blot}
+
 # project root = two levels up from this script
 PROJ_ROOT="$(cd "$(dirname "$0")/../.."; pwd)"
 CERT_DIR="$PROJ_ROOT/data/ssl"
@@ -28,7 +30,7 @@ echo "Generating new development TLS certificates with mkcert..."
 mkcert -install
 
 mkcert -key-file "$KEY" -cert-file "$CRT" \
-  localhost "local.blot" "*.local.blot"
+  "$BLOT_HOST" "*.$BLOT_HOST"
 
 chmod 0644 "$CRT" || true
 chmod 0600 "$KEY" || true

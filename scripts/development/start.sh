@@ -6,8 +6,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../../ && pwd)"
 
 echo $DIR
 
-# change the local host
-HOST="local.blot"
+BLOT_HOST=${BLOT_HOST:-local.blot}
 
 SETUP="$DIR/config/openresty/setup.sh"
 COMPOSE_FILE="$DIR/scripts/development/docker-compose.yml"
@@ -19,7 +18,7 @@ export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
 
 # 1) Host-side dev certs
 echo "[start] Running setup: $SETUP"
-bash "$SETUP"
+bash "$SETUP" "$BLOT_HOST"
 
 # 2) Start auxiliary server
 echo "[start] Launching open-folder-server: $FOLDER_SERVER"
@@ -52,10 +51,10 @@ trap cleanup INT TERM
 # 3) Bring up compose (foreground)
 echo "[start] docker compose up --build"
 if command -v docker-compose >/dev/null 2>&1; then
-  docker-compose -f "$COMPOSE_FILE" up --build
+  BLOT_HOST="$BLOT_HOST" docker-compose -f "$COMPOSE_FILE" up --build
   COMPOSE_STATUS=$?
 else
-  docker compose -f "$COMPOSE_FILE" up --build
+  BLOT_HOST="$BLOT_HOST" docker compose -f "$COMPOSE_FILE" up --build
   COMPOSE_STATUS=$?
 fi
 

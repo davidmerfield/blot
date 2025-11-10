@@ -17,7 +17,7 @@ services:
     env_file:
       - ../../.env
     environment:
-      - BLOT_HOST=local.blot
+      - BLOT_HOST=${BLOT_HOST}
       - BLOT_REDIS_HOST=redis
       - CONTAINER_NAME=blot-container-green
     volumes:
