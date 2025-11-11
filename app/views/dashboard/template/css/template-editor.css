@@ -368,7 +368,7 @@ form.upload-control:last-of-type {
 .iframe-container {
     width: 100%;
     position: relative;
-    height: calc(100vh - 124px);
+    height: calc(100vh - 148px);
     overflow: hidden;
     padding: 1px;
     box-sizing: border-box;
@@ -484,6 +484,8 @@ h2.template-heading:not(:first-child) {
 .segmented-control .template-button {
 margin:0;flex-basis: 50%;
 text-align: center;
+font-size: inherit;
+background: transparent;
 padding: 6px 0;
 }
 
