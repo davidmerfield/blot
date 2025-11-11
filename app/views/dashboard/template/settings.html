@@ -8,7 +8,20 @@
     <div style="box-sizing: border-box;flex-grow: 1;width: 66.66666%;
     flex-shrink: 0;padding:0 0 0 1rem;            position: sticky;
     top: 0;">
+    <div class="browser-toggle-overlay">
+                <div class="segmented-control browser-view-toggle" data-view-toggle>
+                    <button type="button" class="template-button selected" data-view="desktop" aria-pressed="true">Desktop</button>
+                    <button type="button" class="template-button" data-view="mobile" aria-pressed="false">Mobile</button>
+                </div>
+            </div>
         <div class="iframe-container" data-origin="{{{previewOrigin}}}">
+            <div class="browser-bar">
+                <div class="browser-dots">
+                    <span class="dot dot--red" aria-hidden="true"></span>
+                    <span class="dot dot--yellow" aria-hidden="true"></span>
+                    <span class="dot dot--green" aria-hidden="true"></span>
+                </div>
+            </div>
             <iframe id="full_size_preview"
                       width="960"
                       height="1400"
