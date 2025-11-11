@@ -391,7 +391,7 @@ form.upload-control:last-of-type {
 
 .iframe-container iframe {
     position: absolute;
-    top: var(--browser-bar-height, 36px);
+    top: var(--browser-bar-height);
     border: none;
     left:0;
     background-color: var(--background-color);
