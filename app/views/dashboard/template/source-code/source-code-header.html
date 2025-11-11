@@ -1,30 +1,36 @@
 <div
 	style="display:flex;align-items: center;height:2rem;padding:8px 6px 8px 16px;border-bottom: 1px solid var(--border-color);"
 >
-	<div style="flex-grow:1;flex-basis:50%;">
-		<strong style="">{{view.name}}</strong>
-		{{^view.isPackageJSON}}
-		<a class="smallLink" href="{{{base}}}/source-code/{{view.name}}/rename">Rename</a>
-		<a class="smallLink" href="{{{base}}}/source-code/{{view.name}}/delete">Delete</a>
-		{{/view.isPackageJSON}}
-	</div>
-	
-	<form
-		style="flex-basis: 50%;margin:0 0 0 1rem;flex-grow:1;display: flex"
-		class="save"
-		action="{{{base}}}/source-code/{{view.name}}/edit"
-	>
-		<input type="hidden" name="content" value="{{content}}" />
-		<input type="hidden" name="_csrf" value="{{csrftoken}}" />
-		<button
-			id="save"
+        <div style="display: flex;align-items: baseline;">
+                <strong style=""><a href="{{{base}}}/source-code/{{view.name}}/edit" style="color: inherit;">{{view.name}}</a></strong>
+				{{^view.isPackageJSON}}
+                <a class="smallLink {{selected.edit}}" href="{{{base}}}/source-code/{{view.name}}/edit">Edit</a>
+                <a class="smallLink {{selected.config}}" href="{{{base}}}/source-code/{{view.name}}/configure">Config</a>
+                <a class="smallLink {{selected.rename}}" href="{{{base}}}/source-code/{{view.name}}/rename">Rename</a>
+                <a class="smallLink {{selected.delete}}" href="{{{base}}}/source-code/{{view.name}}/delete">Delete</a>
+                {{/view.isPackageJSON}}
+        </div>
+
+		<div style="flex-basis: 4em;flex-shrink: 1;"></div>
+		{{#view.formAction}}
+        <form
+                style="flex-grow:1;display: flex"
+                class="save"
+                action="{{{view.formAction}}}"
+        >
+                <input type="hidden" name="content" value="{{view.content}}" />
+                <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+                <button
+                        id="save"
 			class="button disabled small"
 			type="submit"
 			value="Save"
+			style="white-space: nowrap;"
 			disabled
 		>Save changes
 		</button>
 	</form>
+		{{/view.formAction}}
 
 
 </div>

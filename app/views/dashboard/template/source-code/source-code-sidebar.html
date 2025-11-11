@@ -53,17 +53,23 @@
         </div>
         {{/views}}
 
-          <div style="border-top: 1px solid var(--border-color);padding-top:4px;margin-top:4px">
-                <a class="{{selected.create}}"  href="{{{base}}}/source-code/create"><span class="icon-plus"></span> Create new file</a>
+        <div style="border-top: 1px solid var(--border-color);padding-top:4px;margin-top:4px">
+                <div class="template-row">
+                  <a class="template-row__link {{selected.create}}"  href="{{{base}}}/source-code/create"><span class="icon-plus"></span> Create file</a>
+                </div>
               {{#template.localEditing}}
 
-          <a class="{{selected.local_editing}}" href="{{{base}}}/local-editing"><svg width="17" height="14" viewBox="0 0 17 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div class="template-row">
+          <a class="template-row__link {{selected.local_editing}}" href="{{{base}}}/local-editing"><svg width="17" height="14" viewBox="0 0 17 14" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M14.1888 10.5001L13.0158 11.7331C12.8787 11.8773 12.8044 12.07 12.8094 12.2689C12.8144 12.4677 12.8982 12.6565 13.0423 12.7936C13.1864 12.9307 13.3792 13.005 13.578 13C13.7769 12.995 13.9657 12.9113 14.1028 12.7671L16.4808 10.2671C16.6135 10.1277 16.6875 9.94258 16.6875 9.75012C16.6875 9.55765 16.6135 9.37254 16.4808 9.23311L14.1028 6.73311C13.9657 6.58897 13.7769 6.5052 13.578 6.50023C13.3792 6.49526 13.1864 6.5695 13.0423 6.70661C12.8982 6.84373 12.8144 7.0325 12.8094 7.23138C12.8044 7.43025 12.8787 7.62297 13.0158 7.76712L14.1888 9.00012L10.9378 9.00011C10.7389 9.00011 10.5481 9.07913 10.4075 9.21978C10.2668 9.36044 10.1878 9.55121 10.1878 9.75011C10.1878 9.94902 10.2668 10.1398 10.4075 10.2804C10.5481 10.4211 10.7389 10.5001 10.9378 10.5001L14.1888 10.5001Z" />
       <path d="M1.75 0C0.784 0 0 0.784 0 1.75V12.25C0 12.7141 0.184374 13.1592 0.512563 13.4874C0.840752 13.8156 1.28587 14 1.75 14C1.75 14 8 14 9 14C10 14 10 12.5 9 12.5C8 12.5 1.75 12.5 1.75 12.5C1.612 12.5 1.5 12.388 1.5 12.25V1.75C1.5 1.6837 1.52634 1.62011 1.57322 1.57322C1.62011 1.52634 1.6837 1.5 1.75 1.5H5C5.03881 1.5 5.07709 1.50904 5.1118 1.52639C5.14652 1.54375 5.17671 1.56895 5.2 1.6L6.1 2.8C6.43 3.24 6.95 3.5 7.5 3.5H14.25C14.3163 3.5 14.3799 3.52634 14.4268 3.57322C14.4737 3.62011 14.5 3.6837 14.5 3.75C14.5 3.75 14.5 3.5 14.5 4.5C14.5 5.5 16 5.5 16 4.5C16 3.5 16 3.75 16 3.75C16 2.784 15.216 2 14.25 2H7.5C7.46119 2 7.42291 1.99096 7.3882 1.97361C7.35348 1.95625 7.32329 1.93105 7.3 1.9L6.4 0.7C6.07 0.26 5.55 0 5 0H1.75Z" />
       </svg>Remove from folder</a>
+          </div>
     {{/template.localEditing}}
     {{^template.localEditing}}
-     <a class="{{selected.local_editing}}" href="{{{base}}}/local-editing"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="14" fill="none"><path d="m12.687 9 1.173-1.233a.75.75 0 0 0-1.087-1.034l-2.378 2.5a.75.75 0 0 0 0 1.034l2.378 2.5a.75.75 0 1 0 1.087-1.034L12.687 10.5h3.25a.75.75 0 0 0 0-1.5h-3.25Z"/><path d="M1.75 0A1.75 1.75 0 0 0 0 1.75v10.5A1.75 1.75 0 0 0 1.75 14H9c1 0 1-1.5 0-1.5H1.75a.25.25 0 0 1-.25-.25V1.75a.25.25 0 0 1 .25-.25H5a.25.25 0 0 1 .2.1l.9 1.2c.33.44.85.7 1.4.7h6.75a.25.25 0 0 1 .25.25v.75c0 1 1.5 1 1.5 0v-.75A1.75 1.75 0 0 0 14.25 2H7.5a.25.25 0 0 1-.2-.1L6.4.7C6.07.26 5.55 0 5 0H1.75Z"/></svg> Move to folder</a>
+     <div class="template-row">
+     <a class="template-row__link {{selected.local_editing}}" href="{{{base}}}/local-editing"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="14" fill="none"><path d="m12.687 9 1.173-1.233a.75.75 0 0 0-1.087-1.034l-2.378 2.5a.75.75 0 0 0 0 1.034l2.378 2.5a.75.75 0 1 0 1.087-1.034L12.687 10.5h3.25a.75.75 0 0 0 0-1.5h-3.25Z"/><path d="M1.75 0A1.75 1.75 0 0 0 0 1.75v10.5A1.75 1.75 0 0 0 1.75 14H9c1 0 1-1.5 0-1.5H1.75a.25.25 0 0 1-.25-.25V1.75a.25.25 0 0 1 .25-.25H5a.25.25 0 0 1 .2.1l.9 1.2c.33.44.85.7 1.4.7h6.75a.25.25 0 0 1 .25.25v.75c0 1 1.5 1 1.5 0v-.75A1.75 1.75 0 0 0 14.25 2H7.5a.25.25 0 0 1-.2-.1L6.4.7C6.07.26 5.55 0 5 0H1.75Z"/></svg> Move to folder</a>
+     </div>
     {{/template.localEditing}}
 
         <div id="source-file-action-menu" class="template-action-menu" aria-hidden="true">

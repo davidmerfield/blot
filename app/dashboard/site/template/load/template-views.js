@@ -9,6 +9,17 @@ module.exports = function (req, res, next) {
 
     views = arrayify(views);
 
+    // Hide readme files from the source list (but do not delete them)
+    views = views.filter(function (view) {
+      if (!view || !view.name) return true;
+      var lower = String(view.name).toLowerCase();
+      return (
+        lower !== "readme" &&
+        lower !== "readme.md" &&
+        lower !== "readme.txt"
+      );
+    });
+
     views.push({ name: "package.json" });
 
     views.forEach(function (view) {

@@ -95,8 +95,11 @@ a.close-button:hover > span,
     align-self: flex-end;
 }
 
+.template-button span {font-size: 14px;}
+
 .template-button svg {
     fill:currentColor;
+    width: 14px;
     vertical-align: middle;
     position:relative;
     top:-0.1em;

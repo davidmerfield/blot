@@ -32,6 +32,9 @@ const parse = (req, res, next) => {
   
   form.parse(req, (err, fields, files) => {
     if (err) {
+      if (err.code === "ETOOBIG") {
+        err.status = 413;
+      }
       return next(err);
     }
 
