@@ -10,16 +10,25 @@
 	{{/colors.length}}
 
 	{{#fonts.length}} 	
-	{{#fonts}} 
-	{{> font}} 
-	{{/fonts}} 
-	{{/fonts.length}} 	
+        {{#fonts}}
+        {{> font}}
+        {{/fonts}}
+        {{/fonts.length}}
 
-	<div class="settings-group">
-		<h2 class="template-heading">Menu</h2>
-		<a class="line links" href="{{{base}}}/links">
-			<span class="center">
-				{{#blog.menu}}
+        {{#uploads.length}}
+        <div class="settings-group">
+        <h2 class="template-heading">Uploads</h2>
+        {{#uploads}}
+        {{> upload}}
+        {{/uploads}}
+        </div>
+        {{/uploads.length}}
+
+        <div class="settings-group">
+                <h2 class="template-heading">Menu</h2>
+                <a class="line links" href="{{{base}}}/links">
+                        <span class="center">
+                                {{#blog.menu}}
 				<span class="tablet">{{label}}</span>
 				{{/blog.menu}}
 				

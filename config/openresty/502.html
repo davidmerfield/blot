@@ -32,7 +32,7 @@
         const res = await fetch("/", { cache: "no-store" });
         if (res.ok) location.reload();
       } catch {}
-      setTimeout(checkServer, 1000);
+      setTimeout(checkServer, 100);
     }
     checkServer();
   </script>

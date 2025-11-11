@@ -1,0 +1,39 @@
+<form method="post" class="upload-control" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+  <input type="hidden" name="locals.{{key}}" value="{{value}}" data-upload-value />
+
+  <div class="upload-control__fields">
+    <label class="upload-control__label" for="upload.{{key}}">
+      <span class="upload-control__title">{{label}}</span>
+      {{#value}}
+      <a class="upload-control__url" href="{{{value}}}" target="_blank" rel="noopener">{{value}}</a>
+      {{/value}}
+      {{^value}}
+      <span class="upload-control__empty">No file uploaded</span>
+      {{/value}}
+    </label>
+    {{#value}}
+    <div class="upload-control__preview">
+      <img src="{{{value}}}" alt="{{label}} preview" loading="lazy" />
+    </div>
+    {{/value}}
+  </div>
+
+  <div class="upload-control__actions">
+    <label class="upload-control__button">
+      <input
+        id="upload.{{key}}"
+        name="upload"
+        type="file"
+        class="upload-control__file-input"
+        data-upload-input
+      />
+      <span>Choose file</span>
+    </label>
+    {{#value}}
+    <button type="button" class="upload-control__clear" data-upload-clear>
+      Remove
+    </button>
+    {{/value}}
+  </div>
+</form>
