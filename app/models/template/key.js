@@ -15,6 +15,10 @@ module.exports = {
     return "template:" + templateID + ":url:" + url;
   },
 
+  cdnTargets: function cdnTargets (templateID) {
+    return "template:" + templateID + ":cdn_targets";
+  },
+
   share: function (shareID) {
     return "template:share:" + shareID;
   },

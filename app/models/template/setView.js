@@ -12,6 +12,8 @@ var getMetadata = require("./getMetadata");
 var Blog = require("models/blog");
 var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
+var updateCdnTargets = require("./util/updateCdnTargets");
+var updateCdnManifest = require("./updateCdnManifest");
 
 module.exports = function setView(templateID, updates, callback) {
   ensure(templateID, "string").and(updates, "object").and(callback, "function");
@@ -52,6 +54,9 @@ module.exports = function setView(templateID, updates, callback) {
         view = view || {};
 
         var changes;
+        var previousTargets = Array.isArray(view.cdnTargets)
+          ? view.cdnTargets.slice()
+          : [];
 
         // Handle `url` logic
         if (updates.url) {
@@ -119,22 +124,37 @@ module.exports = function setView(templateID, updates, callback) {
             if (infiniteError) return callback(infiniteError);
 
             view.retrieve = parseResult.retrieve || [];
+            var nextTargets = parseResult.cdnTargets || [];
+            view.cdnTargets = nextTargets;
 
-            view = serialize(view, viewModel);
+            updateCdnTargets(
+              templateID,
+              previousTargets,
+              nextTargets,
+              function (targetErr) {
+                if (targetErr) return callback(targetErr);
 
-            client.hmset(viewKey, view, function (err) {
-              if (err) return callback(err);
+                view = serialize(view, viewModel);
 
-              if (!changes) return callback();
+                client.hmset(viewKey, view, function (err) {
+                  if (err) return callback(err);
 
-              Blog.set(
-                metadata.owner,
-                { cacheID: Date.now() },
-                function (err) {
-                  callback(err);
-                }
-              );
-            });
+                  updateCdnManifest(templateID, function (manifestErr) {
+                    if (manifestErr) return callback(manifestErr);
+
+                    if (!changes) return callback();
+
+                    Blog.set(
+                      metadata.owner,
+                      { cacheID: Date.now() },
+                      function (err) {
+                        callback(err);
+                      }
+                    );
+                  });
+                });
+              }
+            );
           }
         );
       });

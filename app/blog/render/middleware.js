@@ -11,6 +11,7 @@ var extend = require("helper/extend");
 var callOnce = require("helper/callOnce");
 var config = require("config");
 var CACHE = config.cache;
+var path = require("path");
 
 // The http headers
 var CONTENT_TYPE = "Content-Type";
@@ -26,6 +27,7 @@ var STYLE = "text/css";
 
 module.exports = function (req, res, _next) {
   res.renderView = render;
+  res.locals.cdn = createCdnHelper(req);
 
   return _next();
 
@@ -190,3 +192,56 @@ module.exports = function (req, res, _next) {
     });
   }
 };
+
+function encodeViewSegment(segment) {
+  return segment
+    .split("/")
+    .map(function (part) {
+      return encodeURIComponent(part);
+    })
+    .join("/");
+}
+
+function createCdnHelper(req) {
+  var helper = function (text, render) {
+    var rendered = typeof render === "function" ? render(text) : text;
+    if (!rendered) return "";
+
+    rendered = rendered.trim();
+
+    if (!rendered) return "";
+
+    var manifest = (req.template && req.template.cdn) || {};
+    var templateID = req.template && req.template.id;
+
+    if (/^https?:\/\//i.test(rendered) || /^\/\//.test(rendered)) {
+      return rendered;
+    }
+
+    if (templateID && Object.prototype.hasOwnProperty.call(manifest, rendered)) {
+      var hash = manifest[rendered];
+      var ext = path.extname(rendered) || "";
+      var encodedView = encodeViewSegment(rendered);
+      var encodedTemplate = encodeURIComponent(templateID);
+      return (
+        config.cdn.origin +
+        "/view/" +
+        encodedTemplate +
+        "/" +
+        encodedView +
+        "/v-" +
+        hash +
+        ext
+      );
+    }
+
+    var prefix = rendered.charAt(0) === "/" ? "" : "/";
+    return config.cdn.origin + prefix + rendered;
+  };
+
+  helper.toString = function () {
+    return config.cdn.origin;
+  };
+
+  return helper;
+}

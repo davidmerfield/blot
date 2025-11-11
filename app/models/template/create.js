@@ -35,6 +35,7 @@ module.exports = function create (owner, name, metadata, callback) {
   metadata.name = name;
   metadata.owner = owner;
   metadata.locals = metadata.locals || {};
+  metadata.cdn = metadata.cdn || {};
   metadata.description = metadata.description || "";
   metadata.thumb = metadata.thumb || "";
   metadata.localEditing = metadata.localEditing === true;

@@ -26,6 +26,7 @@ module.exports = function drop(owner, templateName, callback) {
     multi.del(key.metadata(templateID));
     multi.del(key.urlPatterns(templateID));
     multi.del(key.allViews(templateID));
+    multi.del(key.cdnTargets(templateID));
 
     if (metadata && metadata.shareID) {
       multi.del(key.share(metadata.shareID));

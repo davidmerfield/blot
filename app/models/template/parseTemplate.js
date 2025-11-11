@@ -27,12 +27,13 @@ var retrieveThese = _.filter(modules, function (name) {
 function parseTemplate(template) {
   var retrieve = {};
   var partials = {};
+  var cdnTargets = {};
   var parsed;
 
   try {
     parsed = mustache.parse(template);
   } catch (e) {
-    return { partials: partials, retrieve: retrieve };
+    return { partials: partials, retrieve: retrieve, cdnTargets: [] };
   }
 
   process("", parsed);
@@ -46,6 +47,12 @@ function parseTemplate(template) {
 
     for (var i in list) {
       var token = list[i];
+
+      if (token[0] === "#" && token[1] === "cdn") {
+        collectCdnTargets(token[4]);
+        if (type(token[4], "array")) process(context, token[4]);
+        continue;
+      }
 
       // Is a partial
       if (token[0] === ">") {
@@ -97,7 +104,41 @@ function parseTemplate(template) {
     }
   }
 
-  return { partials: partials, retrieve: retrieve };
+  return {
+    partials: partials,
+    retrieve: retrieve,
+    cdnTargets: Object.keys(cdnTargets).sort(),
+  };
+
+  function collectCdnTargets(tokens) {
+    if (!type(tokens, "array")) return;
+
+    var buffer = "";
+    var hasDynamicTokens = false;
+
+    for (var j = 0; j < tokens.length; j++) {
+      var child = tokens[j];
+      if (child[0] === "text") {
+        buffer += child[1];
+        continue;
+      }
+
+      // Any non-text token means we cannot resolve this target statically
+      hasDynamicTokens = true;
+      break;
+    }
+
+    if (hasDynamicTokens) return;
+
+    var target = buffer.trim();
+
+    if (!target) return;
+    if (target.indexOf("//") > -1) return;
+    if (target[0] === "/") return;
+    if (target.indexOf(" ") > -1) return;
+
+    cdnTargets[target] = true;
+  }
 }
 
 // console.log(parseTemplate('{{#title}}{{#menu}}{{active}}{{/menu}}{{/title}}'));
