@@ -37,16 +37,18 @@ const updateTemplate = (blogID, templateSlug, locals) =>
 
 module.exports = async (req, res, next) => {
   const key = req.params.key;
+  const files = req.files || {};
 
+  // Always clean up uploaded files, even on validation errors
   if (!key || !/_url$/i.test(key)) {
+    await cleanupFiles(files);
     return res.status(400).json({ error: "Invalid upload key" });
   }
 
   if (!req.template.locals || !Object.prototype.hasOwnProperty.call(req.template.locals, key)) {
+    await cleanupFiles(files);
     return res.status(400).json({ error: "Unknown template field" });
   }
-
-  const files = req.files || {};
   
   if (!req.body._url || req.body._url !== key) {
     await cleanupFiles(files);
