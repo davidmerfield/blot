@@ -70,6 +70,11 @@ SourceCode.route("/create")
 
 SourceCode.route("/:viewSlug/edit")
   .get(function (req, res) {
+    req.view.formAction =
+      res.locals.base + "/source-code/" + req.view.name + "/edit";
+    req.view.showingSource = true;
+    req.view.showingConfig = false;
+
     res.locals.title = `${req.view.name} - ${req.template.name}`;
 
     res.locals.layout = "dashboard/template/layout";
@@ -128,6 +133,127 @@ SourceCode.route("/:viewSlug/edit")
     }
   });
 
+SourceCode.route("/:viewSlug/configure")
+  .get(function (req, res) {
+    if (req.params.viewSlug === "package.json") {
+      return res.redirect(
+        res.locals.base + "/source-code/" + req.view.name + "/edit"
+      );
+    }
+
+    const allViews =
+      (res.locals.getAllViews && res.locals.getAllViews.views) || {};
+    const metadata = allViews[req.view.name] || {};
+
+    let urlValue;
+
+    if (Array.isArray(metadata.urlPatterns) && metadata.urlPatterns.length) {
+      urlValue =
+        metadata.urlPatterns.length === 1
+          ? metadata.urlPatterns[0]
+          : metadata.urlPatterns;
+    }
+
+    if (urlValue === undefined) {
+      urlValue = metadata.url || req.view.url || "/" + req.view.name;
+    }
+
+    const locals = isPlainObject(metadata.locals) ? metadata.locals : {};
+    const partials = isPlainObject(metadata.partials) ? metadata.partials : {};
+
+    const configureData = {
+      url: urlValue,
+      locals,
+      partials,
+    };
+
+    req.view.content = JSON.stringify(configureData, null, 2);
+    req.view.editorMode = "javascript";
+    req.view.formAction =
+      res.locals.base + "/source-code/" + req.view.name + "/configure";
+    req.view.showingConfig = true;
+    req.view.showingSource = false;
+
+    res.locals.title = `${req.view.name} - ${req.template.name}`;
+    res.locals.layout = "dashboard/template/layout";
+    res.render("dashboard/template/source-code/configure");
+  })
+  .post(require("./save/fork-if-needed"), function (req, res, next) {
+    if (req.params.viewSlug === "package.json") {
+      return next(new Error("You cannot configure package.json"));
+    }
+
+    if (!req.body || typeof req.body.content !== "string") {
+      return next(new Error("Configuration must be a JSON object"));
+    }
+
+    let configuration;
+
+    try {
+      configuration = JSON.parse(req.body.content);
+    } catch (err) {
+      return next(err);
+    }
+
+    if (!isPlainObject(configuration)) {
+      return next(new Error("Configuration must be a JSON object"));
+    }
+
+    const updates = { name: req.view.name };
+    const allViews =
+      (res.locals.getAllViews && res.locals.getAllViews.views) || {};
+    const metadata = allViews[req.view.name] || {};
+    const fallbackUrl = metadata.url || req.view.url || "/" + req.view.name;
+
+    if (configuration.url === undefined || configuration.url === null) {
+      updates.url = fallbackUrl;
+    } else if (Array.isArray(configuration.url)) {
+      if (!configuration.url.length) {
+        return next(new Error("The provided `url` must not be empty"));
+      }
+      updates.url = configuration.url;
+    } else if (typeof configuration.url === "string") {
+      updates.url = configuration.url;
+    } else {
+      return next(new Error("The provided `url` must be a string or an array"));
+    }
+
+    const localsValue =
+      configuration.locals === undefined
+        ? metadata.locals || {}
+        : configuration.locals;
+
+    if (!isPlainObject(localsValue)) {
+      return next(new Error("The provided `locals` must be an object"));
+    }
+
+    const partialsValue =
+      configuration.partials === undefined
+        ? metadata.partials || {}
+        : configuration.partials;
+
+    if (!isPlainObject(partialsValue)) {
+      return next(new Error("The provided `partials` must be an object"));
+    }
+
+    updates.locals = localsValue;
+    updates.partials = partialsValue;
+
+    Template.setView(req.template.id, updates, function (err) {
+      if (err) return next(err);
+
+      writeChangeToFolder(req.blog, req.template, updates, function (err) {
+        if (err) return next(err);
+
+        if (res.locals.templateForked) {
+          res.set("X-Template-Forked", "1");
+        }
+
+        res.send("Saved changes!");
+      });
+    });
+  });
+
 SourceCode.route("/:viewSlug/rename")
   .get(function (req, res, next) {
     if (req.params.viewSlug === "package.json") {
@@ -183,3 +309,7 @@ SourceCode.route("/:viewSlug/delete")
   });
 
 module.exports = SourceCode;
+
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
