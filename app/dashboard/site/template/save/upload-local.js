@@ -3,6 +3,7 @@ const { join, extname } = require("path");
 const uuid = require("uuid/v4");
 const config = require("config");
 const Template = require("models/template");
+const { isAjaxRequest } = require("./ajax-response");
 
 const firstFile = (files = {}) => {
   for (const key of Object.keys(files)) {
@@ -52,10 +53,13 @@ module.exports = async (req, res, next) => {
     return res.status(400).json({ error: "Mismatched upload key" });
   }
 
+  // Check if delete button was clicked (submit button with name="upload" and empty value)
+  const isDelete = req.body.upload === "" && (!req.files || !req.files.upload);
+
   const file = firstFile(files);
 
-  // Handle clearing (no file uploaded)
-  if (!file || !file.size) {
+  // Handle clearing (delete button clicked or no file uploaded)
+  if (isDelete || !file || !file.size) {
     await cleanupFiles(files);
     req.template.locals[key] = "";
 
@@ -66,7 +70,12 @@ module.exports = async (req, res, next) => {
     }
     res.locals.template = req.template;
 
-    return res.json({ url: "", key });
+    if (isAjaxRequest(req)) {
+      return res.json({ url: "", key });
+    }
+
+    const redirect = req.body.redirect || req.baseUrl + req.url;
+    return res.message(redirect, "Removed file");
   }
 
   const templateDir = join(
@@ -103,5 +112,10 @@ module.exports = async (req, res, next) => {
   }
   res.locals.template = req.template;
 
-  res.json({ url: cdnUrl, key });
+  if (isAjaxRequest(req)) {
+    return res.json({ url: cdnUrl, key });
+  }
+
+  const redirect = req.body.redirect || req.baseUrl + req.url;
+  return res.message(redirect, "Uploaded file");
 };
