@@ -3,22 +3,46 @@ const config = require("config");
 describe("cdn manifest integration", function () {
   require("./util/setup")();
 
-  it("renders CDN URLs and serves hashed assets", async function () {
+  it("renders CDN origin string", async function () {
     await this.template({
-      "entries.html": `<span id="cdn-host">{{{cdn}}}</span>\n<link rel="stylesheet" href="{{#cdn}}style.css{{/cdn}}">`,
-      "style.css": "body { color: red; }",
+      "entries.html": `{{{cdn}}}`,
     });
 
-    const index = await this.text("/");
+    expect(await this.text("/")).toBe(config.cdn.origin);
+  });
 
-    expect(index).toContain(`<span id="cdn-host">${config.cdn.origin}</span>`);
+  it("renders CDN URLs", async function () {
+    await this.template({
+      "style.css": "body { color: red; }",
+      "entries.html": "{{#cdn}}/style.css{{/cdn}}",
+    });
 
-    const match = index.match(/href="([^"]+)"/);
-    const cdnURL = match && match[1];
+    const cdnURL = await this.text("/");
 
     expect(cdnURL).toContain(config.cdn.origin);
     expect(cdnURL).toContain("/view/");
     expect(cdnURL).toContain("/style.css");
     expect(cdnURL).toMatch(/\/v-[a-f0-9]+\.css$/);
+  });
+
+  it("updates the CDN URL when the view changes", async function () {
+    await this.template({
+      "entries.html": `{{#cdn}}style.css{{/cdn}}`,
+      "style.css": "body { color: red; }",
+    });
+
+    const cdnURL = await this.text("/");
+
+    expect(cdnURL).toContain(config.cdn.origin);
+
+    await this.template({
+      "entries.html": `{{#cdn}}style.css{{/cdn}}`,
+      "style.css": "body { color: purple; }",
+    });
+
+    const newCdnURL = await this.text("/");
+    expect(newCdnURL).toContain(config.cdn.origin);
+
+    expect(cdnURL).not.toBe(newCdnURL);
   });
 });

@@ -134,9 +134,11 @@ function parseTemplate(template) {
 
     if (!target) return;
     if (target.indexOf("//") > -1) return;
-    if (target[0] === "/") return;
     if (target.indexOf(" ") > -1) return;
 
+    if (target[0] === "/") target = target.slice(1);
+
+    retrieve["cdn"] = true;
     cdnTargets[target] = true;
   }
 }

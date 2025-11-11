@@ -15,9 +15,14 @@ module.exports = function (req, res, callback) {
 
       if (!rendered) return "";
 
+      rendered = rendered.startsWith("/") ? rendered.slice(1) : rendered;
+
       const templateID = req.template && req.template.id;
 
-      if (templateID && Object.prototype.hasOwnProperty.call(manifest, rendered)) {
+      if (
+        templateID &&
+        Object.prototype.hasOwnProperty.call(manifest, rendered)
+      ) {
         const hash = manifest[rendered];
         const ext = path.extname(rendered) || "";
         const encodedView = encodeViewSegment(rendered);
