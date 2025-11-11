@@ -3,6 +3,15 @@ const { promisify } = require("util");
 const Template = require("models/template");
 const config = require("config");
 
+function encodeView(view) {
+  return view
+    .split("/")
+    .map(function (segment) {
+      return encodeURIComponent(segment);
+    })
+    .join("/");
+}
+
 describe("cdn manifest integration", function () {
   require("blog/tests/util/setup")();
 
@@ -54,5 +63,35 @@ describe("cdn manifest integration", function () {
     expect(assetRes.status).toBe(200);
     expect(assetRes.headers.get("content-type")).toContain("text/css");
     expect(assetBody.trim()).toBe("body{color:red}");
+  });
+
+  it("serves nested view assets with hashed CDN URLs", async function () {
+    await this.template({
+      "index.html": `<link rel="stylesheet" href="{{#cdn}}assets/style.css{{/cdn}}">`,
+      "assets/style.css": "body { color: blue; }",
+    });
+
+    const templateID = this.blog.template;
+    const metadata = await getMetadata(templateID);
+    const hash = metadata.cdn["assets/style.css"];
+
+    expect(hash).toEqual(jasmine.any(String));
+
+    const encodedTemplate = encodeURIComponent(templateID);
+    const encodedView = encodeView("assets/style.css");
+    const expectedPath = `/view/${encodedTemplate}/${encodedView}/v-${hash}.css`;
+    const expectedURL = `${config.cdn.origin}${expectedPath}`;
+
+    const res = await this.get("/");
+    const body = await res.text();
+
+    expect(body).toContain(expectedURL);
+
+    const assetRes = await fetch(`${cdnOrigin}${expectedPath}`);
+    const assetBody = await assetRes.text();
+
+    expect(assetRes.status).toBe(200);
+    expect(assetRes.headers.get("content-type")).toContain("text/css");
+    expect(assetBody.trim()).toBe("body{color:blue}");
   });
 });

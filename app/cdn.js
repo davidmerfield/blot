@@ -49,9 +49,9 @@ cdn.use("/documentation/v-:version", static(config.views_directory));
 // /folder/blog_1234/favicon.ico
 cdn.use("/folder/v-:version", static(config.blog_folder_dir));
 
-cdn.get("/view/:templateID/:view/v-:hash", async (req, res, next) => {
+cdn.get("/view/:templateID/:encodedView(*)/v-:hash", async (req, res, next) => {
   const templateID = req.params.templateID;
-  const viewName = req.params.view;
+  const viewName = decodeViewParam(req.params.encodedView);
 
   try {
     const metadata = await getMetadata(templateID);
@@ -115,4 +115,19 @@ function buildBlogStub(metadata) {
   stub.permalink = stub.permalink || { format: "{{slug}}", custom: "", isCustom: false };
 
   return stub;
+}
+
+function decodeViewParam(path) {
+  if (!path) return "";
+
+  return path
+    .split("/")
+    .map(function (part) {
+      try {
+        return decodeURIComponent(part);
+      } catch (err) {
+        return part;
+      }
+    })
+    .join("/");
 }
