@@ -4,13 +4,13 @@ const handleAjaxSaveResponse = ajax.handleAjaxSaveResponse;
 
 const forms = document.querySelectorAll("form.upload-control");
 
-forms.forEach(form => {
+forms.forEach((form) => {
   const fileInput = form.querySelector("[data-upload-input]");
   const clearButton = form.querySelector("[data-upload-clear]");
   const valueInput = form.querySelector("[data-upload-value]");
 
   if (fileInput) {
-    fileInput.addEventListener("change", event => {
+    fileInput.addEventListener("change", (event) => {
       if (!fileInput.files || !fileInput.files.length) {
         return;
       }
@@ -22,12 +22,16 @@ forms.forEach(form => {
         method: "post",
         body: formData,
         credentials: "same-origin",
-      }).then(handleAjaxSaveResponse);
+      })
+        .then(handleAjaxSaveResponse)
+        .catch((err) => {
+          console.error("Upload error:", err);
+        });
     });
   }
 
   if (clearButton) {
-    clearButton.addEventListener("click", event => {
+    clearButton.addEventListener("click", (event) => {
       event.preventDefault();
 
       if (valueInput) {
@@ -48,19 +52,17 @@ forms.forEach(form => {
         formData.set(valueInput.name, "");
       }
 
-      // Ensure CSRF token is included
-      const csrfInput = form.querySelector('input[name="_csrf"]');
-      if (csrfInput && !formData.has("_csrf")) {
-        formData.append("_csrf", csrfInput.value);
-      }
-
       const action = form.getAttribute("action") || window.location.href;
 
       fetch(withAjax(action), {
         method: "post",
         body: formData,
         credentials: "same-origin",
-      }).then(handleAjaxSaveResponse);
+      })
+        .then(handleAjaxSaveResponse)
+        .catch((err) => {
+          console.error("Upload error:", err);
+        });
     });
   }
 });
