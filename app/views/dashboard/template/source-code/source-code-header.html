@@ -3,8 +3,10 @@
 >
 	<div style="flex-grow:1;flex-basis:50%;">
 		<strong style="">{{view.name}}</strong>
+		{{^view.isPackageJSON}}
 		<a class="smallLink" href="{{{base}}}/source-code/{{view.name}}/rename">Rename</a>
 		<a class="smallLink" href="{{{base}}}/source-code/{{view.name}}/delete">Delete</a>
+		{{/view.isPackageJSON}}
 	</div>
 	
 	<form
