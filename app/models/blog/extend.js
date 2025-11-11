@@ -4,7 +4,6 @@ var url = require("./url");
 var protocol = "https";
 var punycode = require("helper/punycode");
 var imageExif = require("./util/imageExif");
-var path = require("path");
 
 module.exports = function extend(blog) {
   var pages = [];
@@ -53,11 +52,8 @@ module.exports = function extend(blog) {
   }
 
   blog.blogURL = protocol + "://" + blog.handle + "." + config.host;
-  var defaultCssURL = blog.cssURL || url.css(blog.cacheID);
-  var defaultScriptURL = blog.scriptURL || url.js(blog.cacheID);
-
-  blog.cssURL = defaultCssURL;
-  blog.scriptURL = defaultScriptURL;
+  blog.cssURL = blog.cssURL || url.css(blog.cacheID);
+  blog.scriptURL = blog.scriptURL || url.js(blog.cacheID);
 
   // Exposed to templates..
   blog.locals = {
@@ -77,68 +73,5 @@ module.exports = function extend(blog) {
   // rendering context
   for (var x in blog) if (PUBLIC.indexOf(x) > -1) blog.locals[x] = blog[x];
 
-  blog.applyTemplateManifest = function (manifest) {
-    var manifestObject = manifest || {};
-    blog.templateManifest = manifestObject;
-
-    var cssFromManifest = manifestAssetURL(
-      blog.template,
-      "style.css",
-      manifestObject
-    );
-
-    var scriptFromManifest = manifestAssetURL(
-      blog.template,
-      "script.js",
-      manifestObject
-    );
-
-    blog.cssURL = cssFromManifest || defaultCssURL;
-    blog.scriptURL = scriptFromManifest || defaultScriptURL;
-
-    if (blog.locals) {
-      blog.locals.cssURL = blog.cssURL;
-      blog.locals.scriptURL = blog.scriptURL;
-    }
-  };
-
-  if (blog.templateManifest) {
-    blog.applyTemplateManifest(blog.templateManifest);
-  } else {
-    blog.templateManifest = {};
-  }
-
   return blog;
 };
-
-function manifestAssetURL(templateID, viewName, manifest) {
-  if (
-    !manifest ||
-    !templateID ||
-    !Object.prototype.hasOwnProperty.call(manifest, viewName)
-  )
-    return null;
-
-  var hash = manifest[viewName];
-  if (!hash) return null;
-
-  var ext = path.extname(viewName) || "";
-  var encodedTemplate = encodeURIComponent(templateID);
-  var encodedView = viewName
-    .split("/")
-    .map(function (part) {
-      return encodeURIComponent(part);
-    })
-    .join("/");
-
-  return (
-    config.cdn.origin +
-    "/view/" +
-    encodedTemplate +
-    "/" +
-    encodedView +
-    "/v-" +
-    hash +
-    ext
-  );
-}
