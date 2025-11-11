@@ -123,7 +123,7 @@
   }
 
   .editor-container{
-    width:calc(100vw - 670px);font-size: 14px;border:1px solid var(--border-color);border-radius: var(--border-radius);
+    width:calc(100vw - 670px);border:1px solid var(--border-color);border-radius: var(--border-radius);
   }
 
   .editor-container .error {
