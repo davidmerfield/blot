@@ -44,15 +44,16 @@ describe("template", function () {
   });
 
   it("updates the CDN manifest when metadata locals change", async function () {
-    await this.setView({
-      name: "index.html",
-      content: "{{#cdn}}style.css{{/cdn}}",
-    });
 
     await this.setView({
       name: "style.css",
       content: "body { color: {{background_color}}; }",
       locals: { background_color: "#fff" },
+    });
+
+    await this.setView({
+      name: "index.html",
+      content: "{{#cdn}}style.css{{/cdn}}",
     });
 
     const templateID = this.template.id;

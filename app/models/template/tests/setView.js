@@ -187,13 +187,13 @@ describe("template", function () {
 
   it("updates the CDN manifest when CDN targets change", async function () {
     await setView(this.template.id, {
-      name: "index.html",
-      content: "{{#cdn}}style.css{{/cdn}}",
+      name: "style.css",
+      content: "body { color: red; }",
     });
 
     await setView(this.template.id, {
-      name: "style.css",
-      content: "body { color: red; }",
+      name: "index.html",
+      content: "{{#cdn}}style.css{{/cdn}}",
     });
 
     const firstMetadata = await getMetadata(this.template.id);
