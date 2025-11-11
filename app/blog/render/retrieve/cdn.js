@@ -1,11 +1,58 @@
 const config = require("config");
 const path = require("path");
+const Template = require("models/template");
+const { promisify } = require("util");
+
+const getMetadata = promisify(Template.getMetadata);
 
 module.exports = function (req, _res, callback) {
-  return callback(null, createCdnHelper(req));
+  resolveManifest(req)
+    .then((manifest) => callback(null, createCdnHelper(req, manifest)))
+    .catch((err) => callback(err));
 };
 
-function createCdnHelper(req) {
+async function resolveManifest(req) {
+  if (req && req.template) {
+    if (req.template.cdn && typeof req.template.cdn === "object") {
+      return req.template.cdn;
+    }
+
+    if (req.template._cdnManifest) {
+      return req.template._cdnManifest;
+    }
+  }
+
+  if (req && req._cdnManifest) {
+    return req._cdnManifest;
+  }
+
+  const templateID =
+    (req && req.template && req.template.id) ||
+    (req && req.blog && req.blog.template);
+
+  if (!templateID) return {};
+
+  try {
+    const metadata = await getMetadata(templateID);
+    const manifest = (metadata && metadata.cdn) || {};
+
+    if (req && req.template) {
+      req.template._cdnManifest = manifest;
+    } else if (req) {
+      req._cdnManifest = manifest;
+    }
+
+    return manifest;
+  } catch (err) {
+    if (err && err.code === "ENOENT") {
+      return {};
+    }
+
+    throw err;
+  }
+}
+
+function createCdnHelper(req, manifest) {
   const helper = function (text, render) {
     let rendered = typeof render === "function" ? render(text) : text;
 
@@ -19,7 +66,6 @@ function createCdnHelper(req) {
       return rendered;
     }
 
-    const manifest = (req.template && req.template.cdn) || {};
     const templateID = req.template && req.template.id;
 
     if (templateID && Object.prototype.hasOwnProperty.call(manifest, rendered)) {

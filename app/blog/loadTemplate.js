@@ -40,19 +40,9 @@ module.exports = async function (req, res, next) {
         return res.status(400).send(html);
     }
 
-    const manifest = metadata.cdn || {};
-
-    if (req.blog) {
-        req.blog.templateManifest = manifest;
-        if (typeof req.blog.applyTemplateManifest === "function") {
-            req.blog.applyTemplateManifest(manifest);
-        }
-    }
-
     const template = {
         locals: metadata.locals,
-        id: req.blog.template,
-        cdn: manifest
+        id: req.blog.template
     };
 
     req.template = template;
