@@ -33,7 +33,7 @@ SourceCode.route("/")
 SourceCode.route("/create")
   .get(require("./load/template-views"))
   .get(function (req, res) {
-      res.locals.selected = { ...res.locals.selected, create: "selected" };
+    res.locals.selected = { ...res.locals.selected, create: "selected" };
     res.render("dashboard/template/source-code/create");
   })
   .post(require("./save/fork-if-needed"), function (req, res, next) {
@@ -72,8 +72,7 @@ SourceCode.route("/:viewSlug/edit")
   .get(function (req, res) {
     req.view.formAction =
       res.locals.base + "/source-code/" + req.view.name + "/edit";
-    req.view.showingSource = true;
-    req.view.showingConfig = false;
+    res.locals.selected = { ...res.locals.selected, edit: "selected" };
 
     res.locals.title = `${req.view.name} - ${req.template.name}`;
 
@@ -171,8 +170,7 @@ SourceCode.route("/:viewSlug/configure")
     req.view.editorMode = "javascript";
     req.view.formAction =
       res.locals.base + "/source-code/" + req.view.name + "/configure";
-    req.view.showingConfig = true;
-    req.view.showingSource = false;
+    res.locals.selected = { ...res.locals.selected, config: "selected" };
 
     res.locals.title = `${req.view.name} - ${req.template.name}`;
     res.locals.layout = "dashboard/template/layout";
@@ -261,6 +259,7 @@ SourceCode.route("/:viewSlug/rename")
     }
 
     res.locals.title = `Rename - ${req.view.name} - ${req.template.name}`;
+    res.locals.selected = { ...res.locals.selected, rename: "selected" };
     res.render("dashboard/template/source-code/rename");
   })
   .post(require("./save/fork-if-needed"), function (req, res, next) {
@@ -299,6 +298,7 @@ SourceCode.route("/:viewSlug/rename")
 SourceCode.route("/:viewSlug/delete")
   .get(function (req, res) {
     res.locals.title = `Delete - ${req.view.name} - ${req.template.name}`;
+    res.locals.selected = { ...res.locals.selected, delete: "selected" };
     res.render("dashboard/template/source-code/delete");
   })
   .post(require("./save/fork-if-needed"), function (req, res, next) {

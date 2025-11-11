@@ -375,19 +375,6 @@ form.upload-control:last-of-type {
     border-radius: var(--border-radius);
 }
 
-.browser-view-toggle.segmented-control {
-    background-color: transparent;
-    margin: 0;
-}
-
-.browser-view-toggle.segmented-control .template-button,
-.browser-view-toggle.segmented-control .template-button.selected {
-    font-size: 12px;
-    padding: 1px 4px;
-    background-color: transparent;
-    box-shadow: none;
-}
-
 .iframe-container iframe {
     position: absolute;
     top: 0;
@@ -475,6 +462,7 @@ h2.template-heading:not(:first-child) {
 
 .segmented-control {
     display: flex;padding:2px;border-radius: 7px;margin-bottom: 24px;
+    font-size: 14px;
     background: #f5f5f5;
     position: relative;
     overflow: hidden;
@@ -512,3 +500,5 @@ padding: 6px 0;
 .iframe-container.is-mobile  {
     width: 390px;
 }
+
+.smallLink.selected {color:var(--accent-color)}
