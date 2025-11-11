@@ -15,6 +15,116 @@ h2 {
 
 .inputs form label {color:var(--text-color);font-size: 13px;}
 
+form.upload-control {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--light-border-color);
+    font-size: 14px;
+}
+
+form.upload-control:last-of-type {
+    border-bottom: none;
+}
+
+.upload-control__fields {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.upload-control__label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--text-color);
+}
+
+.upload-control__title {
+    font-weight: 500;
+}
+
+.upload-control__url {
+    font-size: 12px;
+    color: var(--accent-color);
+    word-break: break-all;
+    text-decoration: none;
+}
+
+.upload-control__empty {
+    font-size: 12px;
+    color: var(--medium-text-color);
+}
+
+.upload-control__url:hover {
+    text-decoration: underline;
+}
+
+.upload-control__preview {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--border-radius);
+    background: var(--light-background-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.upload-control__preview img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+}
+
+.upload-control__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.upload-control__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: var(--accent-color);
+    position: relative;
+}
+
+.upload-control__button span {
+    padding: 6px 12px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background: var(--light-background-color);
+    color: inherit;
+}
+
+.upload-control__button:hover span {
+    border-color: var(--accent-color);
+}
+
+.upload-control__file-input {
+    position: absolute;
+    opacity: 0;
+    width: 0.1px;
+    height: 0.1px;
+}
+
+.upload-control__clear {
+    border: none;
+    background: none;
+    color: var(--medium-text-color);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0;
+}
+
+.upload-control__clear:hover {
+    color: var(--accent-color);
+}
+
 .template-row + h2 {
     margin-top: calc(var(--spacing) * 1);
 }
