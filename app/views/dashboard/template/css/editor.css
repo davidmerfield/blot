@@ -18,39 +18,44 @@
   border-radius: var(--border-radius);
 }
 
-.file-list .selected {
-	background-color: var(--light-background-color);
+.file-list .template-row.selected {
+  background-color: var(--light-background-color);
+}
+
+.file-list .template-row.selected .template-row__link,
+.file-list .template-row__link.selected {
   color: var(--accent-color);
   font-weight: 600;
 }
 
-.file-list a svg {
+.file-list .template-row__link svg {
     fill:currentColor;
     vertical-align: middle;
     position:relative;
     top:-0.1em;
 
 }
-.file-list a svg {
+.file-list .template-row__link svg {
   width: 18px;height: 18px;
 }
-.file-list a span,
-.file-list a svg {
+.file-list .template-row__link span,
+.file-list .template-row__link svg {
   margin-right: 0px;
 
 }
-  
-.file-list a {
-	font-size: 14px;
+
+.file-list .template-row__link {
+        font-size: 14px;
   padding:2px 11px;
-	display: block;
-	color: var(--medium-text-color);
-	text-decoration: none;
+        display: block;
+        color: var(--medium-text-color);
+        text-decoration: none;
   background-color: transparent;
   transition: background-color 0.2s;
 }
 
-.file-list a:hover {
+.file-list .template-row__link:hover,
+.file-list .template-row__link:focus-visible {
   background-color: var(--light-background-color);
 }
 

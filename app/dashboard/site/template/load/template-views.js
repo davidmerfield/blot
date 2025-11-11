@@ -16,6 +16,7 @@ module.exports = function (req, res, next) {
         view.selected = "selected";
       view.extension = {};
       view.extension[view.name.split('.').pop()] = true;
+      view.isPackageJSON = view.name === "package.json";
     });
 
     views = sort(views);

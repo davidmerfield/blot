@@ -66,6 +66,10 @@ h2 {
     height: 4rem;
 }
 
+#source-file-list {
+    position: relative;
+}
+
 .template-row {
     position: relative;
     display: flex;
@@ -171,6 +175,17 @@ h2 {
     background: #f2f4fb;
     color: var(--accent-color);
     outline: none;
+}
+
+.template-action-menu a.is-disabled {
+    color: var(--light-text-color);
+    cursor: default;
+}
+
+.template-action-menu a.is-disabled:hover,
+.template-action-menu a.is-disabled:focus-visible {
+    background: transparent;
+    color: var(--light-text-color);
 }
 
 .template-row .preview {
