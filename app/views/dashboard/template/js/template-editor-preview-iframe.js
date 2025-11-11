@@ -131,6 +131,12 @@ if (previewIframeContainer) {
       } else {
         previewIframeContainer.classList.remove("is-mobile");
       }
+      // Update --iframe-container-width after class change to reflect new container width
+      var iframeContainerWidth = previewIframeContainer.offsetWidth;
+      document.documentElement.style.setProperty(
+        "--iframe-container-width",
+        iframeContainerWidth
+      );
     }
     if (viewButtons) {
       for (var i = 0; i < viewButtons.length; i++) {
