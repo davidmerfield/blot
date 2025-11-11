@@ -222,7 +222,14 @@ SourceCode.route("/:viewSlug/configure")
       }
       updates.url = configuration.url;
     } else if (typeof configuration.url === "string") {
-      updates.url = configuration.url;
+      // Treat empty/blank strings as missing to use fallback
+      // Empty strings bypass normalization in setView and can make views unreachable
+      const trimmedUrl = configuration.url.trim();
+      if (!trimmedUrl) {
+        updates.url = fallbackUrl;
+      } else {
+        updates.url = configuration.url;
+      }
     } else {
       return next(new Error("The provided `url` must be a string or an array"));
     }
