@@ -1,101 +1,51 @@
 const config = require("config");
 const path = require("path");
-const Template = require("models/template");
-const { promisify } = require("util");
 
-const getMetadata = promisify(Template.getMetadata);
+module.exports = function (req, res, callback) {
+  return callback(null, function () {
+    const manifest = (req && req.template && req.template.cdn) || {};
 
-module.exports = function (req, _res, callback) {
-  resolveManifest(req)
-    .then((manifest) => callback(null, createCdnHelper(req, manifest)))
-    .catch((err) => callback(err));
-};
+    // Section: {{#cdn}}/path/to/file{{/cdn}}
+    var renderCdn = function (text, render) {
+      let rendered = typeof render === "function" ? render(text) : text;
 
-async function resolveManifest(req) {
-  if (req && req.template) {
-    if (req.template.cdn && typeof req.template.cdn === "object") {
-      return req.template.cdn;
-    }
+      if (!rendered) return "";
 
-    if (req.template._cdnManifest) {
-      return req.template._cdnManifest;
-    }
-  }
+      rendered = String(rendered).trim();
 
-  if (req && req._cdnManifest) {
-    return req._cdnManifest;
-  }
+      if (!rendered) return "";
 
-  const templateID =
-    (req && req.template && req.template.id) ||
-    (req && req.blog && req.blog.template);
+      const templateID = req.template && req.template.id;
 
-  if (!templateID) return {};
+      if (templateID && Object.prototype.hasOwnProperty.call(manifest, rendered)) {
+        const hash = manifest[rendered];
+        const ext = path.extname(rendered) || "";
+        const encodedView = encodeViewSegment(rendered);
+        const encodedTemplate = encodeURIComponent(templateID);
 
-  try {
-    const metadata = await getMetadata(templateID);
-    const manifest = (metadata && metadata.cdn) || {};
+        return (
+          config.cdn.origin +
+          "/view/" +
+          encodedTemplate +
+          "/" +
+          encodedView +
+          "/v-" +
+          hash +
+          ext
+        );
+      }
 
-    if (req && req.template) {
-      req.template._cdnManifest = manifest;
-    } else if (req) {
-      req._cdnManifest = manifest;
-    }
-
-    return manifest;
-  } catch (err) {
-    if (err && err.code === "ENOENT") {
-      return {};
-    }
-
-    throw err;
-  }
-}
-
-function createCdnHelper(req, manifest) {
-  const helper = function (text, render) {
-    let rendered = typeof render === "function" ? render(text) : text;
-
-    if (!rendered) return "";
-
-    rendered = String(rendered).trim();
-
-    if (!rendered) return "";
-
-    if (/^https?:\/\//i.test(rendered) || /^\/\//.test(rendered)) {
       return rendered;
-    }
+    };
 
-    const templateID = req.template && req.template.id;
+    // Interpolation: {{cdn}}
+    renderCdn.toString = function () {
+      return config.cdn.origin;
+    };
 
-    if (templateID && Object.prototype.hasOwnProperty.call(manifest, rendered)) {
-      const hash = manifest[rendered];
-      const ext = path.extname(rendered) || "";
-      const encodedView = encodeViewSegment(rendered);
-      const encodedTemplate = encodeURIComponent(templateID);
-
-      return (
-        config.cdn.origin +
-        "/view/" +
-        encodedTemplate +
-        "/" +
-        encodedView +
-        "/v-" +
-        hash +
-        ext
-      );
-    }
-
-    const prefix = rendered.charAt(0) === "/" ? "" : "/";
-    return config.cdn.origin + prefix + rendered;
-  };
-
-  helper.toString = function () {
-    return config.cdn.origin;
-  };
-
-  return helper;
-}
+    return renderCdn;
+  });
+};
 
 function encodeViewSegment(segment) {
   if (!segment) return "";
