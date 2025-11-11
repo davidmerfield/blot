@@ -209,6 +209,17 @@ SourceCode.route("/:viewSlug/configure")
       if (!configuration.url.length) {
         return next(new Error("The provided `url` must not be empty"));
       }
+      // Validate that all elements are strings (urlNormalizer will throw otherwise)
+      const invalidIndex = configuration.url.findIndex(
+        (item) => typeof item !== "string"
+      );
+      if (invalidIndex !== -1) {
+        return next(
+          new Error(
+            `The provided \`url\` array must contain only strings, but found ${typeof configuration.url[invalidIndex]} at index ${invalidIndex}`
+          )
+        );
+      }
       updates.url = configuration.url;
     } else if (typeof configuration.url === "string") {
       updates.url = configuration.url;
