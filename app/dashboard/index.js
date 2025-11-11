@@ -24,15 +24,6 @@ var FORM_OPTIONS = {
 
 // Middleware to parse multipart forms and regular forms
 const parse = (req, res, next) => {
-  if (
-    req.method === "POST" &&
-    req.originalUrl &&
-    req.originalUrl.includes("/template/") &&
-    req.originalUrl.includes("/uploads/")
-  ) {
-    return next();
-  }
-
   if (!req.is('multipart/form-data')) {
     return next();
   }
@@ -41,6 +32,9 @@ const parse = (req, res, next) => {
   
   form.parse(req, (err, fields, files) => {
     if (err) {
+      if (err.code === "ETOOBIG") {
+        err.status = 413;
+      }
       return next(err);
     }
 

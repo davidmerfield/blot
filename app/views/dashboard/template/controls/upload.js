@@ -16,10 +16,12 @@ forms.forEach(form => {
       }
 
       const formData = new FormData(form);
+      const action = form.getAttribute("action") || window.location.href;
 
-      fetch(withAjax(window.location.href), {
+      fetch(withAjax(action), {
         method: "post",
         body: formData,
+        credentials: "same-origin",
       }).then(handleAjaxSaveResponse);
     });
   }
@@ -46,9 +48,18 @@ forms.forEach(form => {
         formData.set(valueInput.name, "");
       }
 
-      fetch(withAjax(window.location.href), {
+      // Ensure CSRF token is included
+      const csrfInput = form.querySelector('input[name="_csrf"]');
+      if (csrfInput && !formData.has("_csrf")) {
+        formData.append("_csrf", csrfInput.value);
+      }
+
+      const action = form.getAttribute("action") || window.location.href;
+
+      fetch(withAjax(action), {
         method: "post",
         body: formData,
+        credentials: "same-origin",
       }).then(handleAjaxSaveResponse);
     });
   }

@@ -1,5 +1,6 @@
-<form method="post" class="upload-control" enctype="multipart/form-data">
+<form method="post" class="upload-control" enctype="multipart/form-data" action="{{{base}}}/uploads/{{key}}">
   <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+  <input type="hidden" name="_url" value="{{key}}" />
   <input type="hidden" name="locals.{{key}}" value="{{value}}" data-upload-value />
 
   <div class="upload-control__fields">

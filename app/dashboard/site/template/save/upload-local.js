@@ -1,36 +1,8 @@
-const multiparty = require("multiparty");
 const fs = require("fs-extra");
 const { join, extname } = require("path");
 const uuid = require("uuid/v4");
 const config = require("config");
 const Template = require("models/template");
-const tempDir = require("helper/tempDir")();
-
-const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30mb
-const FORM_OPTIONS = { uploadDir: tempDir, maxFilesSize: MAX_FILE_SIZE };
-
-const parseForm = (req) =>
-  new Promise((resolve, reject) => {
-    const form = new multiparty.Form(FORM_OPTIONS);
-
-    form.parse(req, (err, fields, files) => {
-      if (err) {
-        if (err.code === "ETOOBIG") {
-          err.status = 413;
-        }
-        return reject(err);
-      }
-
-      resolve({ fields, files });
-    });
-  });
-
-const normalizeFields = (fields = {}) =>
-  Object.keys(fields).reduce((acc, key) => {
-    const value = fields[key];
-    acc[key] = Array.isArray(value) ? value[0] : value;
-    return acc;
-  }, {});
 
 const firstFile = (files = {}) => {
   for (const key of Object.keys(files)) {
@@ -73,31 +45,28 @@ module.exports = async (req, res, next) => {
     return res.status(400).json({ error: "Unknown template field" });
   }
 
-  let parsed;
-  try {
-    parsed = await parseForm(req);
-  } catch (err) {
-    if (err.status === 413 || err.code === "ETOOBIG") {
-      return res
-        .status(413)
-        .json({ error: "File too large. Maximum size is 30MB." });
-    }
-    return next(err);
-  }
-
-  const { fields, files } = parsed;
-  const normalizedFields = normalizeFields(fields);
-
-  if (!normalizedFields._url || normalizedFields._url !== key) {
+  const files = req.files || {};
+  
+  if (!req.body._url || req.body._url !== key) {
     await cleanupFiles(files);
     return res.status(400).json({ error: "Mismatched upload key" });
   }
 
   const file = firstFile(files);
 
+  // Handle clearing (no file uploaded)
   if (!file || !file.size) {
     await cleanupFiles(files);
-    return res.status(400).json({ error: "No file uploaded" });
+    req.template.locals[key] = "";
+
+    try {
+      await updateTemplate(req.blog.id, req.params.templateSlug, req.template.locals);
+    } catch (err) {
+      return next(err);
+    }
+    res.locals.template = req.template;
+
+    return res.json({ url: "", key });
   }
 
   const templateDir = join(
