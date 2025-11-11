@@ -2,7 +2,8 @@
   "name": "Notebook",
   "isPublic": false,
   "locals": {
-    "page_size": 12
+    "page_size": 12,
+    "banner_image_url":""
   },
   "views": {
     "public": {

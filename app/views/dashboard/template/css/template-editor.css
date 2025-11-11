@@ -367,13 +367,12 @@ form.upload-control:last-of-type {
 
 .iframe-container {
     width: 100%;
-    height: calc(100vh - 132px);
+    position: relative;
+    height: calc(100vh - 148px);
     overflow: hidden;
-    position: sticky;
     padding: 1px;
     box-sizing: border-box;
     border-radius: var(--border-radius);
-    top: 2rem;
 }
 
 .browser-view-toggle.segmented-control {
@@ -391,7 +390,7 @@ form.upload-control:last-of-type {
 
 .iframe-container iframe {
     position: absolute;
-    top: var(--browser-bar-height);
+    top: 0;
     border: none;
     left:0;
     background-color: var(--background-color);
@@ -485,6 +484,8 @@ h2.template-heading:not(:first-child) {
 .segmented-control .template-button {
 margin:0;flex-basis: 50%;
 text-align: center;
+font-size: inherit;
+background: transparent;
 padding: 6px 0;
 }
 
@@ -505,63 +506,9 @@ padding: 6px 0;
 
 /* Fake browser chrome for template preview */
 :root {
-    --browser-bar-height: 28px;
     --preview-width: 960;
 }
 
-.browser-bar {
-position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: var(--browser-bar-height);
-  box-sizing: border-box;
-  padding: 6px 10px;
-  background: #f5f5f7;
-  z-index: 1;
-}
-
-.browser-bar:after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    bottom: 0px;
-    left: 1px;
-    right: 1px;
-    height: 1px;
-    z-index: 2;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.11);
-}
 .iframe-container.is-mobile  {
     width: 390px;
 }
-.iframe-container.is-mobile .browser-bar {
-    display: none;
-}
-
-.browser-toggle-overlay {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    z-index: 3;
-}
-
-.iframe-container .browser-dots {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.iframe-container .browser-dots .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-}
-
-.iframe-container .browser-dots .dot--red { background: #fe5e56; }
-.iframe-container .browser-dots .dot--yellow { background: #fdbb2d; }
-.iframe-container .browser-dots .dot--green { background: #28c83e; }

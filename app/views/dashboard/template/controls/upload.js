@@ -4,28 +4,34 @@ const handleAjaxSaveResponse = ajax.handleAjaxSaveResponse;
 
 const forms = document.querySelectorAll("form.upload-control");
 
-forms.forEach(form => {
+forms.forEach((form) => {
   const fileInput = form.querySelector("[data-upload-input]");
   const clearButton = form.querySelector("[data-upload-clear]");
   const valueInput = form.querySelector("[data-upload-value]");
 
   if (fileInput) {
-    fileInput.addEventListener("change", event => {
+    fileInput.addEventListener("change", (event) => {
       if (!fileInput.files || !fileInput.files.length) {
         return;
       }
 
       const formData = new FormData(form);
+      const action = form.getAttribute("action") || window.location.href;
 
-      fetch(withAjax(window.location.href), {
+      fetch(withAjax(action), {
         method: "post",
         body: formData,
-      }).then(handleAjaxSaveResponse);
+        credentials: "same-origin",
+      })
+        .then(handleAjaxSaveResponse)
+        .catch((err) => {
+          console.error("Upload error:", err);
+        });
     });
   }
 
   if (clearButton) {
-    clearButton.addEventListener("click", event => {
+    clearButton.addEventListener("click", (event) => {
       event.preventDefault();
 
       if (valueInput) {
@@ -46,10 +52,17 @@ forms.forEach(form => {
         formData.set(valueInput.name, "");
       }
 
-      fetch(withAjax(window.location.href), {
+      const action = form.getAttribute("action") || window.location.href;
+
+      fetch(withAjax(action), {
         method: "post",
         body: formData,
-      }).then(handleAjaxSaveResponse);
+        credentials: "same-origin",
+      })
+        .then(handleAjaxSaveResponse)
+        .catch((err) => {
+          console.error("Upload error:", err);
+        });
     });
   }
 });

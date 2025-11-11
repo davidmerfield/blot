@@ -137,6 +137,22 @@ TemplateEditor.route("/:templateSlug")
     res.render("dashboard/template/settings");
   });
 
+TemplateEditor.route("/:templateSlug/uploads/:key")
+  .get(require("./load/url-inputs"), function (req, res, next) {
+    res.locals.upload = res.locals.uploads.find((i) => i.key === req.params.key);
+    if (!res.locals.upload) return next();
+    res.locals.title = `${res.locals.upload.label} - ${req.template.name}`;
+    res.locals.selected = { ...res.locals.selected, settings: "selected" };
+    res.render("dashboard/template/controls/upload-form");
+  })
+  .post(require("./save/fork-if-needed"), require("./save/upload-local"));
+
+// Catch-all for /uploads/ without a key - redirect to template settings
+// This must come AFTER the specific route above
+TemplateEditor.get("/:templateSlug/uploads", function (req, res) {
+  res.redirect(res.locals.base || `${req.baseUrl}/${req.params.templateSlug}`);
+});
+
 TemplateEditor.route("/:templateSlug/syntax-highlighter")
   .all(require("./load/font-inputs"))
   .all(require("./load/syntax-highlighter"))

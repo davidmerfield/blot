@@ -1,39 +1,14 @@
-<form method="post" class="upload-control" enctype="multipart/form-data">
-  <input type="hidden" name="_csrf" value="{{csrftoken}}" />
-  <input type="hidden" name="locals.{{key}}" value="{{value}}" data-upload-value />
-
-  <div class="upload-control__fields">
-    <label class="upload-control__label" for="upload.{{key}}">
-      <span class="upload-control__title">{{label}}</span>
-      {{#value}}
-      <a class="upload-control__url" href="{{{value}}}" target="_blank" rel="noopener">{{value}}</a>
-      {{/value}}
-      {{^value}}
-      <span class="upload-control__empty">No file uploaded</span>
-      {{/value}}
-    </label>
-    {{#value}}
-    <div class="upload-control__preview">
-      <img src="{{{value}}}" alt="{{label}} preview" loading="lazy" />
-    </div>
-    {{/value}}
-  </div>
-
-  <div class="upload-control__actions">
-    <label class="upload-control__button">
-      <input
-        id="upload.{{key}}"
-        name="upload"
-        type="file"
-        class="upload-control__file-input"
-        data-upload-input
-      />
-      <span>Choose file</span>
-    </label>
-    {{#value}}
-    <button type="button" class="upload-control__clear" data-upload-clear>
-      Remove
-    </button>
-    {{/value}}
-  </div>
-</form>
+<a class="line" href="{{{base}}}/uploads/{{key}}" style="padding: 11px 14px;border-bottom: none;">
+  {{^value}}
+  <span class="center" style="border: 1px dashed var(--border-color);width: 48px;height:48px;display:inline-block; vertical-align: middle;margin-right: 0.5rem;border-radius: var(--border-radius);">
+  </span>
+  <span class="link">Choose a {{label_lower}}</span>
+  {{/value}}
+  
+  {{#value}}
+  <span class="center" style="width: 48px;height:48px;display:inline-block; vertical-align: middle;">
+    <img style="max-width:48px;max-height:48px;vertical-align: baseline; display: inline;" src="{{{value}}}" alt="{{label}} preview" />
+  </span>
+  <span class="link">Edit {{label_lower}}</span>
+  {{/value}}
+</a>
