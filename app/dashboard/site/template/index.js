@@ -136,6 +136,12 @@ TemplateEditor.route("/:templateSlug")
     res.render("dashboard/template/settings");
   });
 
+TemplateEditor.post(
+  "/:templateSlug/uploads/:key",
+  require("./save/fork-if-needed"),
+  require("./save/upload-local")
+);
+
 TemplateEditor.route("/:templateSlug/syntax-highlighter")
   .all(require("./load/font-inputs"))
   .all(require("./load/syntax-highlighter"))
