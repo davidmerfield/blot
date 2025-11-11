@@ -6,19 +6,132 @@ const key = require("./key");
 const getMetadata = require("./getMetadata");
 const getView = require("./getView");
 const getPartials = require("./getPartials");
+const mustache = require("mustache");
 
-function buildSignature(view, partials) {
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function sortObject(value) {
+  if (Array.isArray(value)) {
+    return value.map(sortObject);
+  }
+
+  if (isPlainObject(value)) {
+    const sorted = {};
+    Object.keys(value)
+      .sort()
+      .forEach((key) => {
+        sorted[key] = sortObject(value[key]);
+      });
+    return sorted;
+  }
+
+  return value;
+}
+
+function collectTemplateLocalKeys(viewContent, partials, availableKeys) {
+  const knownKeys = new Set(availableKeys || []);
+  const dependencies = new Set();
+
+  function register(name) {
+    if (!name || name === ".") return;
+
+    const parts = name.split(".");
+    const root = parts[0];
+
+    if (knownKeys.has(root)) {
+      dependencies.add(root);
+      return;
+    }
+
+    if (root === "locals" && parts.length > 1) {
+      const nested = parts[1];
+      if (knownKeys.has(nested)) dependencies.add(nested);
+    }
+  }
+
+  function traverse(tokens) {
+    if (!Array.isArray(tokens)) return;
+
+    for (const token of tokens) {
+      if (!token) continue;
+
+      const type = token[0];
+
+      if (type === "name" || type === "&" || type === "{") {
+        register(token[1]);
+        continue;
+      }
+
+      if (type === "#" || type === "^") {
+        register(token[1]);
+        traverse(token[4]);
+        if (token.length > 5) traverse(token[5]);
+        continue;
+      }
+    }
+  }
+
+  function parse(template) {
+    if (!template || typeof template !== "string") return;
+
+    let tokens;
+
+    try {
+      tokens = mustache.parse(template);
+    } catch (err) {
+      return;
+    }
+
+    traverse(tokens);
+  }
+
+  parse(viewContent);
+
+  Object.keys(partials || {}).forEach((name) => {
+    parse(partials[name]);
+  });
+
+  return Array.from(dependencies).sort();
+}
+
+function buildSignature(view, partials, templateLocals) {
+  const viewLocals = isPlainObject(view && view.locals) ? view.locals : {};
+  const metadataLocals = isPlainObject(templateLocals) ? templateLocals : {};
+  const availableKeys = [
+    ...Object.keys(viewLocals),
+    ...Object.keys(metadataLocals),
+  ];
+
+  const localKeys = collectTemplateLocalKeys(
+    view && view.content,
+    partials,
+    availableKeys
+  );
+
+  const localsSignature = {};
+
+  for (const key of localKeys) {
+    if (Object.prototype.hasOwnProperty.call(metadataLocals, key)) {
+      localsSignature[key] = metadataLocals[key];
+    } else if (Object.prototype.hasOwnProperty.call(viewLocals, key)) {
+      localsSignature[key] = viewLocals[key];
+    }
+  }
+
   const signature = {
     content: (view && view.content) || "",
     partials: {},
+    locals: localsSignature,
   };
 
-  const keys = Object.keys(partials || {}).sort();
-  for (const name of keys) {
+  const partialKeys = Object.keys(partials || {}).sort();
+  for (const name of partialKeys) {
     signature.partials[name] = partials[name] || "";
   }
 
-  return JSON.stringify(signature);
+  return JSON.stringify(sortObject(signature));
 }
 
 module.exports = function updateCdnManifest(templateID, callback) {
@@ -61,7 +174,11 @@ module.exports = function updateCdnManifest(templateID, callback) {
             ) {
               if (partialErr) return next(partialErr);
 
-              const signature = buildSignature(view, partials);
+              const signature = buildSignature(
+                view,
+                partials,
+                metadata.locals
+              );
               manifest[target] = hash(signature);
               next();
             });
