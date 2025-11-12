@@ -35,7 +35,9 @@ module.exports = function (req, res, callback) {
 
         return (
           config.cdn.origin +
-          "/view/" +
+          "/template/" +
+          req.blog.id +
+          "/" +
           encodedTemplate +
           "/" +
           encodedView +

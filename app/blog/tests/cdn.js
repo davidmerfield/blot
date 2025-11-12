@@ -20,7 +20,7 @@ const validate = (cdnURL) => {
   expect(cdnURL).toContain(config.cdn.origin, `Missing CDN: ${cdnURL}`);
 
   // Check /view/ path is present
-  expect(cdnURL).toContain("/view/", `Missing "/view/" path: ${cdnURL}`);
+  expect(cdnURL).toContain("/template/", `Missing "/template/" path: ${cdnURL}`);
 
   // Extract hash and validate structure
   const hash = extractHash(cdnURL);

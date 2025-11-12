@@ -49,29 +49,16 @@ cdn.use("/documentation/v-:version", static(config.views_directory));
 // /folder/blog_1234/favicon.ico
 cdn.use("/folder/v-:version", static(config.blog_folder_dir));
 
-cdn.get("/view/:templateID/:encodedView(*)", async (req, res, next) => {
+cdn.get("/template/:blogID/:templateID/:encodedView(*)", async (req, res, next) => {
   const templateID = req.params.templateID;
   const viewName = decodeViewParam(req.params.encodedView);
 
   try {
     const metadata = await getMetadata(templateID);
-    if (!metadata) return next();
-
     const manifest = metadata.cdn || {};
-    let blogRecord = null;
+    const blog = await getBlog({ id: req.params.blogID });
 
-    if (metadata.owner && metadata.owner !== "SITE") {
-      blogRecord = await getBlog({ id: metadata.owner });
-      if (!blogRecord) return next();
-    }
-
-    const blogInput = blogRecord || buildBlogStub(metadata);
-    blogInput.template = templateID;
-    blogInput.templateManifest = manifest;
-
-    const blog = Blog.extend(blogInput);
-
-    req.blog = blog;
+    req.blog = Blog.extend(blog);
     req.preview = false;
     req.log = req.log || console.log;
     req.template = {
@@ -79,7 +66,6 @@ cdn.get("/view/:templateID/:encodedView(*)", async (req, res, next) => {
       id: templateID,
       cdn: manifest,
     };
-
     res.locals.partials = res.locals.partials || {};
 
     renderMiddleware(req, res, function (err) {
@@ -87,8 +73,7 @@ cdn.get("/view/:templateID/:encodedView(*)", async (req, res, next) => {
       res.renderView(viewName, next);
     });
   } catch (err) {
-    if (err && err.code === "ENOENT") return next();
-    next(err);
+    next();
   }
 });
 
@@ -97,32 +82,6 @@ cdn.get("/view/:templateID/:encodedView(*)", async (req, res, next) => {
 cdn.use(static(config.blog_static_files_dir));
 
 module.exports = cdn;
-
-function buildBlogStub(metadata) {
-  const stub = JSON.parse(JSON.stringify(blogDefaults));
-
-  stub.id = metadata.owner || "SITE";
-  stub.owner = metadata.owner || "SITE";
-  stub.handle =
-    metadata.owner && metadata.owner !== "SITE" ? metadata.owner : "site";
-  stub.template = metadata.id;
-  stub.title = metadata.name || stub.title;
-  stub.cacheID = Date.now();
-  stub.menu = stub.menu || [];
-  stub.status = stub.status || {
-    message: "",
-    syncID: "",
-    datestamp: Date.now(),
-  };
-  stub.plugins = stub.plugins || {};
-  stub.permalink = stub.permalink || {
-    format: "{{slug}}",
-    custom: "",
-    isCustom: false,
-  };
-
-  return stub;
-}
 
 function decodeViewParam(path) {
   if (!path) return "";
