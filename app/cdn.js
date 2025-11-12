@@ -68,6 +68,10 @@ cdn.get("/template/:blogID/:templateID/:encodedView(*)", async (req, res, next) 
     };
     res.locals.partials = res.locals.partials || {};
 
+    // Set maximum caching headers for immutable template responses
+    res.set("Cache-Control", "public, max-age=31536000, immutable");
+    res.set("Expires", new Date(Date.now() + 31536000000).toUTCString());
+
     renderMiddleware(req, res, function (err) {
       if (err) return next(err);
       res.renderView(viewName, next);
