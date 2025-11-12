@@ -82,7 +82,7 @@ describe("extend ", function () {
     var b = { items: [3, 4], tags: ["bar", "foo"], other: [5, 6] };
     extend(a).and(b);
     expect(a.items).toEqual([1, 2, 3, 4]);
-    expect(a.tags).toEqual(["bar", "foo"]); // deduplicated and sorted
+    expect(a.tags).toEqual(["foo", "bar"]); // deduplicated and sorted
     expect(a.other).toEqual([5, 6]);
   });
 

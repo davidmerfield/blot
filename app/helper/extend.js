@@ -7,7 +7,6 @@ function extend(a) {
   return {
     and: function next(b) {
       softMerge(a, b);
-
       return extend(a);
     },
   };
@@ -20,15 +19,24 @@ function softMerge(a, b) {
   ensure(a, "object").and(b, "object");
 
   for (var i in b) {
-    // If both are arrays, merge them (union with deduplication and sorting)
-    if (type(a[i]) === "array" && type(b[i]) === "array") {
-      var combined = a[i].concat(b[i]);
-      a[i] = [...new Set(combined)].sort();
+    var aType = type(a[i]);
+    var bType = type(b[i]);
+
+    // Handle mixed types: if either is an array, normalize and merge
+    if (aType === "array" || bType === "array") {
+      // Normalize both to arrays
+      var aArray = aType === "array" ? a[i] : [];
+      var bArray = bType === "array" ? b[i] : [];
+
+      // Merge arrays (union with deduplication)
+      var combined = aArray.concat(bArray);
+
+      a[i] = [...new Set(combined)];
       continue;
     }
 
     // If both are objects, recursively merge
-    if (type(a[i]) === "object" && type(b[i]) === "object") {
+    if (aType === "object" && bType === "object") {
       softMerge(a[i], b[i]);
       continue;
     }
@@ -39,6 +47,5 @@ function softMerge(a, b) {
     }
   }
 }
-
 
 module.exports = extend;
