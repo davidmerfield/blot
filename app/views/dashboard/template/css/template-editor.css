@@ -300,8 +300,8 @@ form.upload-control:last-of-type {
 
 .template-row .preview {
     height: 16px;
-    width: 24px;
-    margin-right: 10px;
+    width: 20px;
+    margin-right: 11px;
     flex-shrink: 0;
     border: none;
 }
@@ -310,6 +310,7 @@ form.upload-control:last-of-type {
 
 .preview img {
     width: 100%;
+    height: auto;
   background: #fff;
   box-shadow: 0 -1px 0 rgba(0,0,0,.11),0 1px 0 rgba(0,0,0,.11),-1px 0 0 rgba(0,0,0,.11),1px 0 0 rgba(0,0,0,.11);
   border-radius: 2px;
