@@ -10,12 +10,6 @@ Transfer theme for [Fede](https://wordpress.org/themes/kanso/)
 - Set up vanilla zoom
 - Use as [reference](https://fsanchez.io)
 
-Add `{{cdn}}` template helper
-- add route to cdn.js which lets you render abritrary views from the site, e.g. /blog_id/template/style.css
-- determine which views are referenced by {{#cdn}} at template save time
-- compute hash of views which are referenced inside {{#cdn}}, including partials, whenever a referenced view is saved.
-- Make it possible to serve abritrary template views efficiently through the CDN... JS CSS etc. and remove usage of cssURL, jsURL?
-
 Turn andrew's template into a seperate 'Hypertext' template
 
 Apply improvements from andrew's template into documentation template
@@ -185,10 +179,6 @@ Fix bug with handling of queries and tell [this person](https://mail.google.com/
 Fix bug with Work out why Pandoc cannot handle 'linked' images (instead of conventionally embedded images). For instructiosn on reproducing bug, see [SG's email](https://mail.google.com/mail/u/0/#inbox/FMfcgxvzLhcqMVrZbNlKTcVmxVHwRmJC) and follow up when resolved.
 
 Fix bug with tags that contain slashes and tell [Jack](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpFgzpsCkCMGqnClfqMkWZqNNz)
-
-Fix bug which prevents the CDN url replacer working for drafts
-- Refactor so the draft route relies more on the middleware function
-- At the moment, drafts bypass a lot of the code – many template features won't work
 
 Fix bug with git client which occurs when you change your username with the git client
 
@@ -567,9 +557,6 @@ Make iCloud site routes blocking so the mac server waits for the main server to 
 Think about how to purge the old versions of files cached by bunny's permacache
 
 Can we avoid changing cache id for a site after a sync with no changes?
-
-How can we serve template files over CDN?
-- do we have to remap references to other files in stylesheets since we're doing a switcheroo
 
 Image cacher should work for webp, tiff, etc. as well as JPG
 
@@ -998,7 +985,9 @@ Improve webloc converter:
 
 Ensure that overdue PayPal subscription webhooks map to notification emails
 
-Purge old docs CSS and JS from CDN storage cache
+Clean up CDN permanent storage:
+- Purge old docs CSS and JS from CDN storage cache
+- Purge old {{#cdn}} helper responses from /template/ route for blogs
 
 Make sure main server can hard restart without issue
 

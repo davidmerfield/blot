@@ -238,6 +238,11 @@ function parseTemplate(template) {
     if (!target) return;
     if (target.indexOf("//") > -1) return;
     if (target.indexOf(" ") > -1) return;
+    // Add path traversal checks
+    if (target.indexOf("..") > -1) return;
+    if (target.indexOf("\\") > -1) return; // Windows path separators
+    if (target.indexOf("\0") > -1) return; // Null bytes
+    if (target.length > 255) return; // Reasonable length limit
 
     if (target[0] === "/") target = target.slice(1);
 

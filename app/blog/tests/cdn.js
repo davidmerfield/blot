@@ -364,4 +364,106 @@ describe("cdn template function", function () {
 
     expect(secondHash).not.toBe(firstHash);
   });
+
+  describe("path traversal security", function () {
+    it("rejects path traversal in CDN route view names", async function () {
+      await this.template({
+        "style.css": "body { color: red; }",
+        "entries.html": "{{#cdn}}/style.css{{/cdn}}",
+      });
+
+      // Get a valid CDN URL to extract template ID and blog ID
+      const cdnURL = await this.text("/");
+      validate(cdnURL);
+
+      // Extract template ID and blog ID from the CDN URL
+      // Pattern: https://cdn.origin/template/{blogID}/{templateID}/{viewName}.{hash}.{ext}
+      const templateMatch = cdnURL.match(/\/template\/([^\/]+)\/([^\/]+)\//);
+      expect(templateMatch).toBeTruthy();
+      const blogID = templateMatch[1];
+      const templateID = templateMatch[2];
+
+      // Test various path traversal attempts
+      const pathTraversalAttempts = [
+        "../style.css",
+        "..%2Fstyle.css",
+        "%2E%2E/style.css",
+        "subdir/../../style.css",
+        "..\\style.css",
+      ];
+
+      for (const maliciousPath of pathTraversalAttempts) {
+        const encodedPath = encodeURIComponent(maliciousPath);
+        const cdnPath = `/template/${blogID}/${templateID}/${encodedPath}.abc123d.css`;
+        const fullCdnURL = new URL(cdnPath, config.cdn.origin).toString();
+        const res = await this.fetch(fullCdnURL);
+        expect(res.status).toBe(400);
+      }
+
+      // Test null byte (encoded)
+      const nullBytePath = "style%00.css";
+      const nullByteCdnPath = `/template/${blogID}/${templateID}/${nullBytePath}.abc123d.css`;
+      const nullByteCdnURL = new URL(nullByteCdnPath, config.cdn.origin).toString();
+      const nullByteRes = await this.fetch(nullByteCdnURL);
+      expect(nullByteRes.status).toBe(400);
+    });
+
+    it("rejects path traversal in template CDN targets", async function () {
+      // Test that templates with path traversal in CDN targets are rejected
+      const maliciousTargets = [
+        "../style.css",
+        "..\\style.css",
+        "subdir/../../style.css",
+      ];
+
+      for (const maliciousTarget of maliciousTargets) {
+        await this.template({
+          "style.css": "body { color: red; }",
+          "entries.html": `{{#cdn}}/${maliciousTarget}{{/cdn}}`,
+        });
+
+        // The malicious target should be ignored, so the CDN URL should not be generated
+        // Instead, it should return the raw path
+        const result = await this.text("/");
+        expect(result).toBe(`/${maliciousTarget}`);
+        expect(result).not.toContain("/template/");
+      }
+    });
+
+    it("rejects CDN targets with backslashes", async function () {
+      await this.template({
+        "style.css": "body { color: red; }",
+        "entries.html": "{{#cdn}}/subdir\\style.css{{/cdn}}",
+      });
+
+      // Backslash should be rejected
+      const result = await this.text("/");
+      expect(result).toBe("/subdir\\style.css");
+      expect(result).not.toContain("/template/");
+    });
+
+    it("rejects CDN targets with double slashes", async function () {
+      await this.template({
+        "style.css": "body { color: red; }",
+        "entries.html": "{{#cdn}}//style.css{{/cdn}}",
+      });
+
+      // Double slash should be rejected (existing check)
+      const result = await this.text("/");
+      expect(result).toBe("//style.css");
+      expect(result).not.toContain("/template/");
+    });
+
+    it("rejects CDN targets with spaces", async function () {
+      await this.template({
+        "style.css": "body { color: red; }",
+        "entries.html": "{{#cdn}}/style .css{{/cdn}}",
+      });
+
+      // Space should be rejected (existing check)
+      const result = await this.text("/");
+      expect(result).toBe("/style .css");
+      expect(result).not.toContain("/template/");
+    });
+  });
 });

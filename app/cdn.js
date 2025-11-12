@@ -51,7 +51,14 @@ cdn.use("/folder/v-:version", static(config.blog_folder_dir));
 
 cdn.get("/template/:blogID/:templateID/:encodedView(*)", async (req, res, next) => {
   const templateID = req.params.templateID;
-  const viewName = decodeViewParam(req.params.encodedView);
+  let viewName;
+
+  try {
+    viewName = decodeViewParam(req.params.encodedView);
+  } catch (err) {
+    // Invalid view name - return 400 Bad Request
+    return res.status(400).send("Invalid view name");
+  }
 
   try {
     const metadata = await getMetadata(templateID);
@@ -94,19 +101,32 @@ function decodeViewParam(path) {
     .split("/")
     .map(function (part) {
       try {
-        return decodeURIComponent(part);
+        const decoded = decodeURIComponent(part);
+        // Validate: no path traversal, no null bytes, reasonable length
+        if (decoded.includes("..") || decoded.includes("\0") || decoded.length > 255) {
+          throw new Error("Invalid path segment");
+        }
+        return decoded;
       } catch (err) {
-        return part;
+        throw new Error("Invalid encoding");
       }
     })
     .join("/");
 
   // Remove the 7-character hash inserted during CDN URL generation
-  // Pattern: .XXXXXXX or .XXXXXXX.ext where X is any character, inserted before the extension (if any)
+  // Pattern: .XXXXXXX or .XXXXXXX.ext where X is alphanumeric, inserted before the extension (if any)
   // Example: style.abc123d.css -> style.css
   // Example: style.min.abc123d.css -> style.min.css
   // Example: Makefile.abc1234 -> Makefile
-  return decoded.replace(/\.(.{7})(\.[^/]+)?$/, (match, hash, ext) => {
+  const result = decoded.replace(/\.([a-zA-Z0-9]{7})(\.[^/]+)?$/, (match, hash, ext) => {
+    // Hash is already validated by regex pattern (alphanumeric only)
     return ext || "";
   });
+
+  // Final validation: no path traversal
+  if (result.includes("..") || result.includes("\0")) {
+    throw new Error("Invalid view name");
+  }
+
+  return result;
 }
