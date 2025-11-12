@@ -1,6 +1,8 @@
 const config = require("config");
 const path = require("path");
 
+const HASH_LENGTH = 7;
+
 module.exports = function (req, res, callback) {
   return callback(null, function () {
     const manifest = (req && req.template && req.template.cdn) || {};
@@ -23,9 +25,12 @@ module.exports = function (req, res, callback) {
         templateID &&
         Object.prototype.hasOwnProperty.call(manifest, rendered)
       ) {
-        const hash = manifest[rendered];
+        const hash = manifest[rendered].slice(0, HASH_LENGTH);
         const ext = path.extname(rendered) || "";
-        const encodedView = encodeViewSegment(rendered);
+        const viewNameWithoutExtension = ext
+          ? rendered.slice(0, -ext.length)
+          : rendered;
+        const encodedView = encodeViewSegment(viewNameWithoutExtension);
         const encodedTemplate = encodeURIComponent(templateID);
 
         return (
@@ -34,7 +39,7 @@ module.exports = function (req, res, callback) {
           encodedTemplate +
           "/" +
           encodedView +
-          "/v-" +
+          "." +
           hash +
           ext
         );

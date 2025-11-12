@@ -49,7 +49,7 @@ cdn.use("/documentation/v-:version", static(config.views_directory));
 // /folder/blog_1234/favicon.ico
 cdn.use("/folder/v-:version", static(config.blog_folder_dir));
 
-cdn.get("/view/:templateID/:encodedView(*)/v-:hash", async (req, res, next) => {
+cdn.get("/view/:templateID/:encodedView(*)", async (req, res, next) => {
   const templateID = req.params.templateID;
   const viewName = decodeViewParam(req.params.encodedView);
 
@@ -103,16 +103,23 @@ function buildBlogStub(metadata) {
 
   stub.id = metadata.owner || "SITE";
   stub.owner = metadata.owner || "SITE";
-  stub.handle = metadata.owner && metadata.owner !== "SITE"
-    ? metadata.owner
-    : "site";
+  stub.handle =
+    metadata.owner && metadata.owner !== "SITE" ? metadata.owner : "site";
   stub.template = metadata.id;
   stub.title = metadata.name || stub.title;
   stub.cacheID = Date.now();
   stub.menu = stub.menu || [];
-  stub.status = stub.status || { message: "", syncID: "", datestamp: Date.now() };
+  stub.status = stub.status || {
+    message: "",
+    syncID: "",
+    datestamp: Date.now(),
+  };
   stub.plugins = stub.plugins || {};
-  stub.permalink = stub.permalink || { format: "{{slug}}", custom: "", isCustom: false };
+  stub.permalink = stub.permalink || {
+    format: "{{slug}}",
+    custom: "",
+    isCustom: false,
+  };
 
   return stub;
 }
