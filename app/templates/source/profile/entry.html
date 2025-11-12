@@ -8,7 +8,8 @@
   <meta content="{{author}}" name="author">
   <meta content="{{description}}" name="description">
   <title>{{> title}}</title>
-  <link rel="stylesheet" href="{{{cssURL}}}">
+  <link rel="preconnect" href="{{{cdn}}}" />
+  <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
   <link href="{{{avatar}}}" rel="icon">
   <link href="/feed.json" title="{{title}}" type="application/json" rel="alternate">
   <link href="/feed.rss" title="{{title}}" type="application/rss+xml" rel="alternate">
