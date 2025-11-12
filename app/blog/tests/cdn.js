@@ -225,6 +225,25 @@ describe("cdn template function", function () {
     expect(await this.text("/style.css")).toBe("body{color:#000}");
   });
 
+  it("changes when a local used in a deeply nested referenced partial changes", async function () {
+    const template = {
+      "entries.html": `{{#cdn}}/style.css{{/cdn}}`,
+      "style.css": "{{> a.css}}",
+      "a.css": "{{> b.css}}",
+      "b.css": "{{> c.css}}",
+      "c.css": "{{wow}}",
+    };
+
+    await this.template(template, { locals: { wow: "body{color:#000}" } });
+
+    const hash = extractHash(await this.text("/"));
+
+    await this.template(template, { locals: { wow: "body{color:#fff}" } });
+
+    expect(hash).not.toBe(extractHash(await this.text("/")));
+    expect(await this.text("/style.css")).toBe("body{color:#fff}");
+  });
+
   it("preserves the URL when a non-referenced view changes", async function () {
     const template = {
       "entries.html": `{{#cdn}}/style.css{{/cdn}}`,
