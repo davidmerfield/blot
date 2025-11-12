@@ -37,14 +37,10 @@ module.exports = function () {
 
     const blogOrigin = `${config.protocol}${this.blog.handle}.${config.host}`;
 
-    const resolveURL = (pathOrUrl, base) =>
-      new URL(pathOrUrl, base).toString();
+    const resolveURL = (pathOrUrl, base) => new URL(pathOrUrl, base).toString();
 
     this.get = (path, options = {}) =>
       this.fetch(resolveURL(path, blogOrigin), options);
-
-    this.cdnFetch = (path, options = {}) =>
-      this.fetch(resolveURL(path, config.cdn.origin), options);
 
     this.text = async (path, options = {}) => {
       const res = await this.get(path, options);
