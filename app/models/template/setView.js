@@ -119,31 +119,8 @@ module.exports = function setView(templateID, updates, callback) {
           function (infiniteError) {
             if (infiniteError) return callback(infiniteError);
 
-            // Merge parseResult.retrieve into view.retrieve
-            // Handle cdn array specially - if not in parseResult, remove it
-            view.retrieve = view.retrieve || {};
-
-            if (parseResult.retrieve) {
-              for (var key in parseResult.retrieve) {
-                if (key === "cdn" && Array.isArray(parseResult.retrieve[key])) {
-                  // For cdn, use the array from parseResult (it's already deduplicated and sorted)
-                  view.retrieve.cdn = parseResult.retrieve.cdn;
-                } else {
-                  // For other retrieve keys, merge normally
-                  view.retrieve[key] = parseResult.retrieve[key];
-                }
-              }
-
-              // If cdn is not in parseResult.retrieve, remove it from view.retrieve
-              // (parseTemplate removes it when there are no CDN targets)
-              if (
-                !parseResult.retrieve.hasOwnProperty("cdn") &&
-                view.retrieve.hasOwnProperty("cdn")
-              ) {
-                delete view.retrieve.cdn;
-              }
-            }
-
+            view.retrieve = parseResult.retrieve || [];
+            
             view = serialize(view, viewModel);
 
             client.hmset(viewKey, view, function (err) {
