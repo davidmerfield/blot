@@ -62,6 +62,19 @@ describe("cdn template function", function () {
     validate(await this.text("/"));
   });
 
+  it("works when both the string and function are used in one view", async function () {
+    await this.template({
+      "style.css": "body { color: red; }",
+      "entries.html": "{{{cdn}}}|{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    const text = await this.text("/");
+    const [origin, cdnURL] = text.split("|");
+
+    expect(origin).toBe(config.cdn.origin);
+    validate(cdnURL);
+  });
+
   it("works without a leading slash", async function () {
     await this.template({
       "style.css": "body { color: red; }",

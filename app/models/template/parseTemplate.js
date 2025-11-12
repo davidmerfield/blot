@@ -74,10 +74,25 @@ function parseTemplate(template) {
           variable.indexOf(".") > -1 &&
           variable.slice(0, variable.indexOf("."));
 
-        if (retrieveThese.indexOf(variable) > -1) retrieve[variable] = true;
+        if (retrieveThese.indexOf(variable) > -1) {
+          // Special case: if 'cdn' is already an array (from {{#cdn}} sections),
+          // preserve it instead of overwriting with true
+          if (variable === "cdn" && Array.isArray(retrieve.cdn)) {
+            // Array already exists, don't overwrite it
+          } else {
+            retrieve[variable] = true;
+          }
+        }
 
-        if (retrieveThese.indexOf(variableRoot) > -1)
-          retrieve[variableRoot] = true;
+        if (retrieveThese.indexOf(variableRoot) > -1) {
+          // Special case: if 'cdn' is already an array (from {{#cdn}} sections),
+          // preserve it instead of overwriting with true
+          if (variableRoot === "cdn" && Array.isArray(retrieve.cdn)) {
+            // Array already exists, don't overwrite it
+          } else {
+            retrieve[variableRoot] = true;
+          }
+        }
 
         // console.log(context + variable);
 

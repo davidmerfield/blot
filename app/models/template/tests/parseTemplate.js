@@ -65,4 +65,16 @@ describe("parseTemplate", function () {
     var result = parseTemplate(template);
     expect(result.retrieve.cdn).toBeUndefined();
   });
+
+  it("preserves CDN array when both {{cdn}} interpolation and {{#cdn}} sections are present", function () {
+    var template = `{{cdn}}/{{#cdn}}style.css{{/cdn}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.cdn).toEqual(["style.css"]);
+  });
+
+  it("sets retrieve.cdn to true when only {{cdn}} interpolation is present", function () {
+    var template = `{{cdn}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.cdn).toBe(true);
+  });
 });
