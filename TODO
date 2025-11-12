@@ -1,3 +1,10 @@
+Memoize load template / load full view / load blog... others?
+- use a proper library, cap memory, etc.
+- should majorly improve performance on popular sites
+
+Modify nginx config to serve as many CDN static files as possible
+- eventually these files will be on s3 but for now, use nginx with try files where possible then pass on to upstream
+
 Resolve inconsistency: 'Create site' vs New template vs Create file
 
 Fix bug with iCloud sync where revisions to file content in subfolders don't sync and tell Fede and [JP](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlDfdPkKKQjHSPwcJDWTnbCW)
