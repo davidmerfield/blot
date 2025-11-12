@@ -1,48 +1,51 @@
 const config = require("config");
-const view = require("../view");
-const cdn = require("../render/retrieve/cdn");
 const { extname } = require("path");
 
-describe("cdn manifest integration", function () {
+const extractHash = (cdnURL) => {
+  const parts = cdnURL.split(".");
+
+  expect(parts.length).toBeGreaterThanOrEqual(2);
+
+  const hash = parts[parts.length - 2];
+
+  expect(typeof hash).toBe("string", `Wrong CDN hash type: ${cdnURL}`);
+  expect(hash.length).toBe(7, `Wrong CDN hash length: ${cdnURL}`);
+
+  return hash;
+};
+
+const validate = (cdnURL) => {
+  // Check CDN origin is present
+  expect(cdnURL).toContain(config.cdn.origin, `Missing CDN: ${cdnURL}`);
+
+  // Check /view/ path is present
+  expect(cdnURL).toContain("/view/", `Missing "/view/" path: ${cdnURL}`);
+
+  // Extract hash and validate structure
+  const hash = extractHash(cdnURL);
+  const fileName = cdnURL.split("/").pop();
+
+  expect(fileName).toBeTruthy(`Missing CDN filename: ${cdnURL}`);
+
+  const extension = extname(fileName);
+  const fileNameWithoutHashAndExtension = fileName
+    .split(extension)
+    .join("")
+    .split("." + hash)
+    .join("");
+
+  // Build regex pattern for hash and extension
+  // Pattern: /view/template-id/view-name.hash.ext
+  // The view name might be URL encoded, so we check for it flexibly
+  let hashPattern = `/${fileNameWithoutHashAndExtension}\\.${hash}${extension}$`;
+
+  expect(cdnURL).toMatch(new RegExp(hashPattern), `Wrong CDN url: ${cdnURL}`);
+};
+
+describe("cdn template function", function () {
   require("./util/setup")();
 
-  const extractHash = (cdnURL) => {
-    const parts = cdnURL.split(".");
-    const hash = parts[parts.length - 2];
-
-    expect(typeof hash).toBe("string");
-    expect(hash.length).toBe(7);
-
-    return hash;
-  };
-
-  const validate = (cdnURL) => {
-    console.log("validating", cdnURL);
-    // Check CDN origin is present
-    expect(cdnURL).toContain(config.cdn.origin);
-
-    // Check /view/ path is present
-    expect(cdnURL).toContain("/view/");
-
-    // Fall back
-    const hash = extractHash(cdnURL);
-    const fileName = cdnURL.split("/").pop();
-    const extension = extname(fileName);
-    const fileNameWithoutHashAndExtension = fileName
-      .split(extension)
-      .join("")
-      .split("." + hash)
-      .join("");
-
-    // Build regex pattern for hash and extension
-    // Pattern: /view/template-id/view-name.hash.ext
-    // The view name might be URL encoded, so we check for it flexibly
-    let hashPattern = `/${fileNameWithoutHashAndExtension}\\.${hash}${extension}$`;
-
-    expect(cdnURL).toMatch(new RegExp(hashPattern));
-  };
-
-  it("renders CDN origin string", async function () {
+  it("renders origin", async function () {
     await this.template({
       "entries.html": `{{{cdn}}}`,
     });
@@ -50,7 +53,7 @@ describe("cdn manifest integration", function () {
     expect(await this.text("/")).toBe(config.cdn.origin);
   });
 
-  it("renders CDN URLs", async function () {
+  it("works", async function () {
     await this.template({
       "style.css": "body { color: red; }",
       "entries.html": "{{#cdn}}/style.css{{/cdn}}",
@@ -59,7 +62,7 @@ describe("cdn manifest integration", function () {
     validate(await this.text("/"));
   });
 
-  it("renders CDN URLs for views without a leading slash", async function () {
+  it("works without a leading slash", async function () {
     await this.template({
       "style.css": "body { color: red; }",
       "entries.html": "{{#cdn}}style.css{{/cdn}}",
@@ -68,28 +71,27 @@ describe("cdn manifest integration", function () {
     validate(await this.text("/"));
   });
 
-  it("updates the CDN URL when the view changes", async function () {
-    await this.template({
+  it("updates the URL when the view changes", async function () {
+    const template = {
       "entries.html": `{{#cdn}}style.css{{/cdn}}`,
       "style.css": "body { color: red; }",
-    });
+    };
 
-    const cdnURL = await this.text("/");
-    const hash = extractHash(cdnURL);
+    await this.template(template);
+
+    const hash = extractHash(await this.text("/"));
 
     await this.template({
-      "entries.html": `{{#cdn}}/style.css{{/cdn}}`,
+      ...template,
       "style.css": "body { color: purple; }",
     });
 
-    const newCdnURL = await this.text("/");
-    const newHash = extractHash(newCdnURL);
+    const newHash = extractHash(await this.text("/"));
 
-    expect(cdnURL).not.toBe(newCdnURL);
     expect(hash).not.toBe(newHash);
   });
 
-  it("does not change the CDN URL when the blog changes", async function () {
+  it("preserves the URL when there is a new post", async function () {
     await this.template({
       "entries.html": `{{#cdn}}style.css{{/cdn}}`,
       "style.css": "body { color: red; }",
@@ -104,5 +106,98 @@ describe("cdn manifest integration", function () {
     validate(newCdnURL);
 
     expect(cdnURL).toBe(newCdnURL);
+  });
+
+  it("changes when a referenced view changes", async function () {
+    const template = {
+      "entries.html": `{{#cdn}}/style.css{{/cdn}}`,
+      "style.css": "{{> rules.css}} body { color: red; }",
+      "rules.css": "a {color: pink}",
+    };
+
+    await this.template(template);
+
+    const hash = extractHash(await this.text("/"));
+
+    await this.template({
+      ...template,
+      "rules.css": "a {color: blue}",
+    });
+
+    expect(hash).not.toBe(extractHash(await this.text("/")));
+    expect(await this.text("/style.css")).toBe("a{color:#00f}body{color:red}");
+  });
+
+  it("changes when a deeply nested referenced view changes", async function () {
+    const template = {
+      "entries.html": `{{#cdn}}/style.css{{/cdn}}`,
+      "style.css": "{{> a.css}}",
+      "a.css": "{{> b.css}}",
+      "b.css": "{{> c.css}}",
+      "c.css": "body{color:#fff}",
+    };
+
+    await this.template(template);
+
+    const hash = extractHash(await this.text("/"));
+
+    await this.template({
+      ...template,
+      "c.css": "body{color:#000}",
+    });
+
+    expect(hash).not.toBe(extractHash(await this.text("/")));
+    expect(await this.text("/style.css")).toBe("body{color:#000}");
+  });
+
+  it("preserves the URL when a non-referenced view changes", async function () {
+    const template = {
+      "entries.html": `{{#cdn}}/style.css{{/cdn}}`,
+      "style.css": "body { color: red; }",
+      "robots.txt": "ignore",
+    };
+
+    await this.template(template);
+
+    const hash = extractHash(await this.text("/"));
+
+    await this.template({
+      ...template,
+      "robots.txt": "allow",
+    });
+
+    expect(hash).toBe(extractHash(await this.text("/")));
+  });
+
+  it("changes when a referenced local changes", async function () {
+    const template = {
+      "entries.html": `{{#cdn}}/style.css{{/cdn}}`,
+      "style.css": "{{{variable}}}",
+    };
+
+    await this.template(template, { locals: { variable: "x{color:red}" } });
+    expect(await this.text("/style.css")).toBe("x{color:red}");
+
+    const hash = extractHash(await this.text("/"));
+
+    await this.template(template, { locals: { variable: "x{color:#00f}" } });
+    expect(await this.text("/style.css")).toBe("x{color:#00f}");
+    expect(hash).not.toBe(extractHash(await this.text("/")));
+  });
+
+  it("preserves the URL when a non-referenced local changes", async function () {
+    const template = {
+      "entries.html": `{{#cdn}}/style.css{{/cdn}}`,
+      "style.css": "body{color:pink}",
+    };
+
+    await this.template(template, { locals: { variable: "x" } });
+    expect(await this.text("/style.css")).toBe("body{color:pink}");
+
+    const hash = extractHash(await this.text("/"));
+
+    await this.template(template, { locals: { variable: "y" } });
+    expect(await this.text("/style.css")).toBe("body{color:pink}");
+    expect(hash).toBe(extractHash(await this.text("/")));
   });
 });
