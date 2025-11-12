@@ -33,42 +33,29 @@ module.exports = function () {
       await this.blog.rebuild();
     };
 
+    const blogOrigin = `${config.protocol}${this.blog.handle}.${config.host}`;
+
+    const resolveURL = (pathOrUrl, base) =>
+      new URL(pathOrUrl, base).toString();
+
     this.get = (path, options = {}) =>
-      this.fetch(
-        `${config.protocol}${this.blog.handle}.${config.host}${path}`,
-        options
-      );
+      this.fetch(resolveURL(path, blogOrigin), options);
 
     this.cdnFetch = (path, options = {}) =>
-      this.fetch(new URL(path, config.cdn.origin).toString(), options);
+      this.fetch(resolveURL(path, config.cdn.origin), options);
 
-    this.text = (path, options = {}) => {
-      return new Promise((resolve, reject) => {
-        this.get(path, options)
-          .then((res) => {
-            if (res.status !== 200)
-              return reject(
-                new Error(`Failed to fetch ${path}: ${res.status}`)
-              );
-            res.text().then((text) => resolve(text));
-          })
-          .catch((err) => reject(err));
-      });
+    this.text = async (path, options = {}) => {
+      const res = await this.get(path, options);
+
+      if (res.status !== 200) {
+        throw new Error(`Failed to fetch ${path}: ${res.status}`);
+      }
+
+      return res.text();
     };
 
-    this.cdnText = (path, options = {}) => {
-      return new Promise((resolve, reject) => {
-        this.cdnFetch(path, options)
-          .then((res) => {
-            if (res.status !== 200)
-              return reject(
-                new Error(`Failed to fetch ${path}: ${res.status}`)
-              );
-            res.text().then((text) => resolve(text));
-          })
-          .catch((err) => reject(err));
-      });
-    };
+    this.cdnText = (path, options = {}) =>
+      this.text(resolveURL(path, config.cdn.origin), options);
 
     this.remove = (path) => {
       return new Promise((resolve, reject) => {

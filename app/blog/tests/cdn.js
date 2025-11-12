@@ -28,10 +28,10 @@ describe("cdn integration", function () {
 
     expect(cdnURL).toEqual(lookupURL);
 
-    const response = await this.cdnFetch(cdnURL);
+    const response = await this.fetch(cdnURL);
     expect(response.status).toEqual(200);
     expect(await response.text()).toEqual(fileContents);
 
-    expect(await this.cdnText(cdnURL)).toEqual(fileContents);
+    expect(await this.text(cdnURL)).toEqual(fileContents);
   });
 });
