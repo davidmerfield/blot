@@ -10,10 +10,12 @@ module.exports = function () {
 
   const router = express.Router();
 
+  const cdnHost = new URL(config.cdn.origin).host;
+
   router.use((req, res, next) => {
     const host = req.get("host") || "";
 
-    if (host.startsWith("cdn.")) {
+    if (host === cdnHost) {
       return cdn(req, res, next);
     }
 
