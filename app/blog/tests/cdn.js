@@ -1,4 +1,5 @@
 const config = require("config");
+const { template } = require("lodash");
 const { extname } = require("path");
 
 const extractHash = (cdnURL) => {
@@ -56,6 +57,24 @@ describe("cdn template function", function () {
   it("works", async function () {
     await this.template({
       "style.css": "body { color: red; }",
+      "entries.html": "{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    validate(await this.text("/"));
+  });
+
+  it("works when you update an existing view", async function () {
+    const template = {
+      "style.css": "body { color: red; }",
+      "entries.html": "{{{cdn}}}",
+    };
+
+    await this.template(template);
+
+    expect(await this.text("/")).toBe(config.cdn.origin);
+
+    await this.template({
+      ...template,
       "entries.html": "{{#cdn}}/style.css{{/cdn}}",
     });
 
