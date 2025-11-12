@@ -115,8 +115,6 @@ describe("Blog.set", function () {
       });
 
       var originalCacheID = before.cacheID;
-      var originalCssURL = before.cssURL;
-      var originalScriptURL = before.scriptURL;
 
       set(test.blog.id, { menu: updatedMenu }, function (err) {
         if (err) return done.fail(err);
@@ -126,8 +124,6 @@ describe("Blog.set", function () {
 
           expect(after.menu[0].label).toBe(updatedMenu[0].label);
           expect(after.cacheID).not.toBe(originalCacheID);
-          expect(after.cssURL).not.toBe(originalCssURL);
-          expect(after.scriptURL).not.toBe(originalScriptURL);
 
           done();
         });

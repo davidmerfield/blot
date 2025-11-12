@@ -69,15 +69,7 @@
 
     - name: feedURL
       type: string
-      description: Path to your site’s RSS feed
-
-    - name: cssURL
-      type: string
-      description: Path to your site’s stylesheet. It contains a query string for cache-invalidation.
-
-    - name: scriptURL
-      type: string
-      description: Path to your site’s JavaScript file. It contains a query string for cache-invalidation.
+      description: Path to your site's RSS feed
 
     - name: sitemapURL
       type: string
