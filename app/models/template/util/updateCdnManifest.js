@@ -1,4 +1,4 @@
-const async = require("async");
+const { promisify } = require("util");
 const ensure = require("helper/ensure");
 const hash = require("helper/hash");
 const client = require("models/client");
@@ -8,6 +8,13 @@ const getView = require("../getView");
 const getPartials = require("../getPartials");
 const getAllViews = require("../getAllViews");
 const mustache = require("mustache");
+
+// Promisify callback-based functions
+const getMetadataAsync = promisify(getMetadata);
+const getAllViewsAsync = promisify(getAllViews);
+const getViewAsync = promisify(getView);
+const getPartialsAsync = promisify(getPartials);
+const hsetAsync = promisify(client.hset).bind(client);
 
 function isPlainObject(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -141,31 +148,136 @@ function buildSignature(view, partials, templateLocals, partialLocals) {
   return JSON.stringify(sortObject(signature));
 }
 
+/**
+ * Recursively collect locals from partial views
+ */
+async function collectPartialLocals(templateID, partialNames, processedPartials = new Set()) {
+  const partialLocals = {};
+
+  if (!partialNames || Object.keys(partialNames).length === 0) {
+    return partialLocals;
+  }
+
+  for (const partialName of Object.keys(partialNames)) {
+    // Skip missing
+    if (!partialName) {
+      continue;
+    }
+
+    // Skip entries (they start with "/") - only process template views
+    if (partialName.charAt(0) === "/") {
+      continue;
+    }
+
+    // Skip if already processed (avoid cycles)
+    if (processedPartials.has(partialName)) {
+      continue;
+    }
+
+    processedPartials.add(partialName);
+
+    try {
+      const partialView = await getViewAsync(templateID, partialName);
+      
+      if (!partialView) {
+        continue;
+      }
+
+      // Collect locals from this partial view
+      if (isPlainObject(partialView.locals)) {
+        Object.keys(partialView.locals).forEach((key) => {
+          // Only add if not already present (precedence: earlier partials win)
+          if (!Object.prototype.hasOwnProperty.call(partialLocals, key)) {
+            partialLocals[key] = partialView.locals[key];
+          }
+        });
+      }
+
+      // Recursively collect locals from nested partials
+      const nestedPartials = isPlainObject(partialView.partials)
+        ? partialView.partials
+        : {};
+      const nestedLocals = await collectPartialLocals(templateID, nestedPartials, processedPartials);
+      
+      // Merge nested locals (earlier partials take precedence)
+      Object.keys(nestedLocals).forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(partialLocals, key)) {
+          partialLocals[key] = nestedLocals[key];
+        }
+      });
+    } catch (err) {
+      // Non-fatal if partial view doesn't exist - continue processing
+      continue;
+    }
+  }
+
+  return partialLocals;
+}
+
+/**
+ * Process a single CDN target and build its manifest entry
+ */
+async function processTarget(templateID, ownerID, target, metadata) {
+  let view;
+  
+  try {
+    view = await getViewAsync(templateID, target);
+    
+    if (!view) {
+      return null;
+    }
+  } catch (err) {
+    // Treat ENOENT errors and "No view:" errors as non-fatal
+    const isNonFatalError =
+      err.code === "ENOENT" ||
+      (err.message && err.message.includes("No view:"));
+    
+    if (isNonFatalError) {
+      return null;
+    }
+    
+    throw err;
+  }
+
+  // Ensure view.partials is always an object
+  const viewPartials = isPlainObject(view.partials) ? view.partials : {};
+
+  // Get partials content
+  const partials = await getPartialsAsync(ownerID, templateID, viewPartials);
+
+  // Collect partial view locals recursively
+  const partialLocals = await collectPartialLocals(templateID, viewPartials);
+
+  // Build signature and return hash
+  const signature = buildSignature(view, partials, metadata.locals, partialLocals);
+  return hash(signature);
+}
+
 module.exports = function updateCdnManifest(templateID, callback) {
   callback = callback || function () {};
 
-  try {
-    ensure(templateID, "string");
-  } catch (err) {
-    return callback(err);
-  }
-
-  getMetadata(templateID, function (err, metadata) {
-    if (err) {
-      if (err.code === "ENOENT") return callback(null);
+  (async () => {
+    try {
+      ensure(templateID, "string");
+    } catch (err) {
       return callback(err);
     }
 
-    if (!metadata.owner) {
-      return callback(new Error("Template metadata missing owner"));
-    }
+    try {
+      const metadata = await getMetadataAsync(templateID);
+      
+      if (!metadata) {
+        return callback(null);
+      }
 
-    const ownerID = metadata.owner;
-    const manifest = {};
+      if (!metadata.owner) {
+        return callback(new Error("Template metadata missing owner"));
+      }
 
-    // Get all views and collect CDN targets from their retrieve.cdn arrays
-    getAllViews(templateID, function (err, views) {
-      if (err) return callback(err);
+      const ownerID = metadata.owner;
+
+      // Get all views and collect CDN targets from their retrieve.cdn arrays
+      const views = await getAllViewsAsync(templateID);
 
       // Collect all unique CDN targets from all views
       const allTargets = new Set();
@@ -181,119 +293,29 @@ module.exports = function updateCdnManifest(templateID, callback) {
       }
 
       const sortedTargets = Array.from(allTargets).sort();
+      const manifest = {};
 
-      // Build manifest for each target
-      async.eachSeries(
-        sortedTargets,
-        function (target, next) {
-          getView(templateID, target, function (viewErr, view) {
-            if (viewErr || !view) {
-              // Treat ENOENT errors and "No view:" errors as non-fatal
-              const isNonFatalError =
-                !viewErr ||
-                viewErr.code === "ENOENT" ||
-                (viewErr.message && viewErr.message.includes("No view:"));
-              return next(isNonFatalError ? null : viewErr);
-            }
-
-            // Ensure view.partials is always an object
-            const viewPartials = isPlainObject(view.partials)
-              ? view.partials
-              : {};
-
-            getPartials(ownerID, templateID, viewPartials, function (
-              partialErr,
-              partials
-            ) {
-              if (partialErr) return next(partialErr);
-
-              // Collect partial view locals for template views (not entries)
-              // This includes nested partials recursively
-              const partialLocals = {};
-              const processedPartials = new Set(); // Track processed partials to avoid cycles
-              
-              function collectPartialLocals(partialNames, done) {
-                if (!partialNames || Object.keys(partialNames).length === 0) {
-                  return done();
-                }
-
-                async.eachOfSeries(
-                  partialNames,
-                  function (partialName, value, partialNext) {
-                    // Skip missing
-                    if (!partialName) {
-                      return partialNext();
-                    }
-
-                    // Skip entries (they start with "/") - only process template views
-                    if (partialName.charAt(0) === "/") {
-                      return partialNext();
-                    }
-
-                    // Skip if already processed (avoid cycles)
-                    if (processedPartials.has(partialName)) {
-                      return partialNext();
-                    }
-
-                    processedPartials.add(partialName);
-
-                    getView(templateID, partialName, function (partialViewErr, partialView) {
-                      // Non-fatal if partial view doesn't exist
-                      if (partialViewErr || !partialView) {
-                        return partialNext();
-                      }
-
-                      // Collect locals from this partial view
-                      if (isPlainObject(partialView.locals)) {
-                        Object.keys(partialView.locals).forEach((key) => {
-                          // Only add if not already present (precedence: earlier partials win)
-                          if (!Object.prototype.hasOwnProperty.call(partialLocals, key)) {
-                            partialLocals[key] = partialView.locals[key];
-                          }
-                        });
-                      }
-
-                      // Recursively collect locals from nested partials
-                      const nestedPartials = isPlainObject(partialView.partials)
-                        ? partialView.partials
-                        : {};
-                      collectPartialLocals(nestedPartials, partialNext);
-                    });
-                  },
-                  done
-                );
-              }
-
-              collectPartialLocals(viewPartials, function (partialCollectErr) {
-                if (partialCollectErr) return next(partialCollectErr);
-
-                const signature = buildSignature(
-                  view,
-                  partials,
-                  metadata.locals,
-                  partialLocals
-                );
-                manifest[target] = hash(signature);
-                next();
-              });
-            });
-          });
-        },
-        function (seriesErr) {
-          if (seriesErr) return callback(seriesErr);
-
-          client.hset(
-            key.metadata(templateID),
-            "cdn",
-            JSON.stringify(manifest),
-            function (setErr) {
-              if (setErr) return callback(setErr);
-              callback(null, manifest);
-            }
-          );
+      // Process each target sequentially
+      for (const target of sortedTargets) {
+        try {
+          const hash = await processTarget(templateID, ownerID, target, metadata);
+          if (hash) {
+            manifest[target] = hash;
+          }
+        } catch (err) {
+          // If processing a target fails, continue with others
+          // but log the error
+          console.error(`Error processing CDN target ${target}:`, err);
         }
-      );
-    });
-  });
+      }
+
+      // Save manifest to Redis
+      await hsetAsync(key.metadata(templateID), "cdn", JSON.stringify(manifest));
+      
+      callback(null, manifest);
+    } catch (err) {
+      callback(err);
+    }
+  })();
 };
 
