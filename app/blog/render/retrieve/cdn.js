@@ -9,46 +9,50 @@ module.exports = function (req, res, callback) {
 
     // Section: {{#cdn}}/path/to/file{{/cdn}}
     var renderCdn = function (text, render) {
-      let rendered = typeof render === "function" ? render(text) : text;
+      try {
+        let rendered = typeof render === "function" ? render(text) : text;
 
-      if (!rendered) return "";
+        if (!rendered) return "";
 
-      rendered = String(rendered).trim();
+        rendered = String(rendered).trim();
 
-      if (!rendered) return "";
+        if (!rendered) return "";
 
-      const renderedNormalized = rendered.startsWith("/")
-        ? rendered.slice(1)
-        : rendered;
-      const templateID = req.template && req.template.id;
+        const renderedNormalized = rendered.startsWith("/")
+          ? rendered.slice(1)
+          : rendered;
+        const templateID = req.template && req.template.id;
 
-      if (
-        templateID &&
-        Object.prototype.hasOwnProperty.call(manifest, renderedNormalized)
-      ) {
-        const hash = manifest[renderedNormalized].slice(0, HASH_LENGTH);
-        const ext = path.extname(renderedNormalized) || "";
-        const viewNameWithoutExtension = ext
-          ? renderedNormalized.slice(0, -ext.length)
-          : renderedNormalized;
-        const encodedView = encodeViewSegment(viewNameWithoutExtension);
-        const encodedTemplate = encodeURIComponent(templateID);
+        if (
+          templateID &&
+          Object.prototype.hasOwnProperty.call(manifest, renderedNormalized)
+        ) {
+          const hash = manifest[renderedNormalized].slice(0, HASH_LENGTH);
+          const ext = path.extname(renderedNormalized) || "";
+          const viewNameWithoutExtension = ext
+            ? renderedNormalized.slice(0, -ext.length)
+            : renderedNormalized;
+          const encodedView = encodeViewSegment(viewNameWithoutExtension);
+          const encodedTemplate = encodeURIComponent(templateID);
 
-        return (
-          config.cdn.origin +
-          "/template/" +
-          req.blog.id +
-          "/" +
-          encodedTemplate +
-          "/" +
-          encodedView +
-          "." +
-          hash +
-          ext
-        );
+          return (
+            config.cdn.origin +
+            "/template/" +
+            req.blog.id +
+            "/" +
+            encodedTemplate +
+            "/" +
+            encodedView +
+            "." +
+            hash +
+            ext
+          );
+        }
+
+        return rendered;
+      } catch (e) {
+        return text;
       }
-
-      return rendered;
     };
 
     // Interpolation: {{cdn}}
