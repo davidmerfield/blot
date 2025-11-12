@@ -6,7 +6,7 @@ describe("parseTemplate", function () {
   it("parses an empty template", function () {
     var template = "";
     var result = parseTemplate(template);
-    expect(result).toEqual({ partials: {}, retrieve: {}, cdnTargets: [] });
+    expect(result).toEqual({ partials: {}, retrieve: {} });
   });
 
   it("parses partials from a template", function () {
@@ -15,7 +15,6 @@ describe("parseTemplate", function () {
     expect(result).toEqual({
       partials: { foo: null },
       retrieve: {},
-      cdnTargets: [],
     });
   });
 
@@ -25,14 +24,13 @@ describe("parseTemplate", function () {
     expect(result).toEqual({
       partials: {},
       retrieve: { folder: true },
-      cdnTargets: [],
     });
   });
 
   it("ignores locals that cannot be retrieved from a template", function () {
     var template = `{{xyz}}`; // not on the whitelist of variables
     var result = parseTemplate(template);
-    expect(result).toEqual({ partials: {}, retrieve: {}, cdnTargets: [] });
+    expect(result).toEqual({ partials: {}, retrieve: {} });
   });
 
   it("captures the root local used", function () {
@@ -41,7 +39,6 @@ describe("parseTemplate", function () {
     expect(result).toEqual({
       partials: {},
       retrieve: { folder: true },
-      cdnTargets: [],
     });
   });
 
@@ -50,24 +47,22 @@ describe("parseTemplate", function () {
     var result = parseTemplate(template);
     expect(result).toEqual({
       partials: {},
-      retrieve: { cdn: true },
-      cdnTargets: ["style.css"],
+      retrieve: { cdn: ["style.css"] },
     });
   });
 
-    it("records static CDN targets with leading slashes", function () {
+  it("records static CDN targets with leading slashes", function () {
     var template = `{{#cdn}}/style.css{{/cdn}}`;
     var result = parseTemplate(template);
     expect(result).toEqual({
       partials: {},
-      retrieve: { cdn: true },
-      cdnTargets: ["style.css"],
+      retrieve: { cdn: ["style.css"] },
     });
   });
 
   it("ignores dynamic CDN targets", function () {
     var template = `{{#cdn}}/images/{{slug}}.png{{/cdn}}`;
     var result = parseTemplate(template);
-    expect(result.cdnTargets).toEqual([]);
+    expect(result.retrieve.cdn).toBeUndefined();
   });
 });

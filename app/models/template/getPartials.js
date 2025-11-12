@@ -68,7 +68,20 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
             if (view) {
               allPartials[partial] = view.content;
 
-              for (var i in view.retrieve) retrieve[i] = view.retrieve[i];
+              // Merge retrieve from partial, handling cdn arrays specially
+              for (var i in view.retrieve) {
+                if (i === 'cdn' && Array.isArray(view.retrieve[i])) {
+                  // Merge cdn arrays - union of arrays
+                  if (!retrieve.cdn || !Array.isArray(retrieve.cdn)) {
+                    retrieve.cdn = [];
+                  }
+                  // Union of arrays - combine and deduplicate
+                  var combined = retrieve.cdn.concat(view.retrieve[i]);
+                  retrieve.cdn = [...new Set(combined)].sort();
+                } else {
+                  retrieve[i] = view.retrieve[i];
+                }
+              }
 
               fetchList(view.partials, next);
             } else {

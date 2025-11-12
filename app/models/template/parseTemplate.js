@@ -27,13 +27,12 @@ var retrieveThese = _.filter(modules, function (name) {
 function parseTemplate(template) {
   var retrieve = {};
   var partials = {};
-  var cdnTargets = {};
   var parsed;
 
   try {
     parsed = mustache.parse(template);
   } catch (e) {
-    return { partials: partials, retrieve: retrieve, cdnTargets: [] };
+    return { partials: partials, retrieve: retrieve };
   }
 
   process("", parsed);
@@ -104,10 +103,18 @@ function parseTemplate(template) {
     }
   }
 
+  // Ensure retrieve.cdn is sorted and deduplicated
+  // Remove it if empty (no CDN targets)
+  if (retrieve.cdn && Array.isArray(retrieve.cdn)) {
+    retrieve.cdn = [...new Set(retrieve.cdn)].sort();
+    if (retrieve.cdn.length === 0) {
+      delete retrieve.cdn;
+    }
+  }
+
   return {
     partials: partials,
     retrieve: retrieve,
-    cdnTargets: Object.keys(cdnTargets).sort(),
   };
 
   function collectCdnTargets(tokens) {
@@ -138,8 +145,15 @@ function parseTemplate(template) {
 
     if (target[0] === "/") target = target.slice(1);
 
-    retrieve["cdn"] = true;
-    cdnTargets[target] = true;
+    // Initialize retrieve.cdn as array if it doesn't exist
+    if (!retrieve.cdn || !Array.isArray(retrieve.cdn)) {
+      retrieve.cdn = [];
+    }
+
+    // Add target to array if not already present
+    if (retrieve.cdn.indexOf(target) === -1) {
+      retrieve.cdn.push(target);
+    }
   }
 }
 

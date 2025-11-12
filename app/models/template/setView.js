@@ -54,8 +54,8 @@ module.exports = function setView(templateID, updates, callback) {
         view = view || {};
 
         var changes;
-        var previousTargets = Array.isArray(view.cdnTargets)
-          ? view.cdnTargets.slice()
+        var previousTargets = Array.isArray(view.retrieve && view.retrieve.cdn)
+          ? view.retrieve.cdn.slice()
           : [];
 
         // Handle `url` logic
@@ -123,9 +123,31 @@ module.exports = function setView(templateID, updates, callback) {
           function (infiniteError) {
             if (infiniteError) return callback(infiniteError);
 
-            view.retrieve = parseResult.retrieve || [];
-            var nextTargets = parseResult.cdnTargets || [];
-            view.cdnTargets = nextTargets;
+            // Merge parseResult.retrieve into view.retrieve
+            // Handle cdn array specially - if not in parseResult, remove it
+            view.retrieve = view.retrieve || {};
+            
+            if (parseResult.retrieve) {
+              for (var key in parseResult.retrieve) {
+                if (key === 'cdn' && Array.isArray(parseResult.retrieve[key])) {
+                  // For cdn, use the array from parseResult (it's already deduplicated and sorted)
+                  view.retrieve.cdn = parseResult.retrieve.cdn;
+                } else {
+                  // For other retrieve keys, merge normally
+                  view.retrieve[key] = parseResult.retrieve[key];
+                }
+              }
+              
+              // If cdn is not in parseResult.retrieve, remove it from view.retrieve
+              // (parseTemplate removes it when there are no CDN targets)
+              if (!parseResult.retrieve.hasOwnProperty('cdn') && view.retrieve.hasOwnProperty('cdn')) {
+                delete view.retrieve.cdn;
+              }
+            }
+            
+            var nextTargets = Array.isArray(view.retrieve.cdn)
+              ? view.retrieve.cdn
+              : [];
 
             updateCdnTargets(
               templateID,

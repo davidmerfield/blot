@@ -1,4 +1,6 @@
-Fix bug with iCloud sync where revisions to file content in subfolders don't sync and tell Fede
+Resolve inconsistency: 'Create site' vs New template vs Create file
+
+Fix bug with iCloud sync where revisions to file content in subfolders don't sync and tell Fede and [JP](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlDfdPkKKQjHSPwcJDWTnbCW)
 
 ---
 

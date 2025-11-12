@@ -15,8 +15,8 @@ module.exports = function dropView(templateID, viewName, callback) {
     getView(templateID, viewName, function (err, view) {
       if (err) return callback(err);
 
-      const previousTargets = Array.isArray(view && view.cdnTargets)
-        ? view.cdnTargets
+      const previousTargets = Array.isArray(view && view.retrieve && view.retrieve.cdn)
+        ? view.retrieve.cdn
         : [];
 
       multi.del(key.view(templateID, viewName));

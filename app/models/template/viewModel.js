@@ -4,7 +4,6 @@ module.exports = {
   partials: "object",
   locals: "object",
   retrieve: "object",
-  cdnTargets: "array",
   url: "string",
   urlPatterns: "array",
 };

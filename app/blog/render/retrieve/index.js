@@ -55,7 +55,23 @@ module.exports = function (req, res, retrieve, callback) {
         return nextLocal();
       }
 
+      // Get the value - could be boolean, array, object, etc.
+      // This supports future parameter passing to retrieve functions
+      var params = retrieve[localName];
+      
+      // Skip if explicitly false, null, or undefined
+      // For arrays/objects, truthy check will pass (they should be retrieved)
+      if (params === false || params === null || params === undefined) {
+        return nextLocal();
+      }
+
       req.log("Retrieving local", localName);
+      
+      // For now, all retrieve functions have signature (req, res, callback)
+      // Params (arrays/objects) are stored but not yet passed to functions
+      // When functions are updated to accept params, they can use the signature:
+      // function(req, res, params, callback) and we can pass params here
+      // For now, params are available in retrieve[localName] if functions need them
       dictionary[localName](req, res, function (err, value) {
         if (err) console.log(err);
 
