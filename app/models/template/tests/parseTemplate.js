@@ -60,10 +60,10 @@ describe("parseTemplate", function () {
     });
   });
 
-  it("ignores dynamic CDN targets", function () {
+  it("returns empty array for dynamic CDN targets", function () {
     var template = `{{#cdn}}/images/{{slug}}.png{{/cdn}}`;
     var result = parseTemplate(template);
-    expect(result.retrieve.cdn).toBeUndefined();
+    expect(result.retrieve.cdn).toEqual([]);
   });
 
   it("preserves CDN array when both {{cdn}} interpolation and {{#cdn}} sections are present", function () {
@@ -72,9 +72,9 @@ describe("parseTemplate", function () {
     expect(result.retrieve.cdn).toEqual(["style.css"]);
   });
 
-  it("sets retrieve.cdn to true when only {{cdn}} interpolation is present", function () {
+  it("sets retrieve.cdn to empty array when only {{cdn}} interpolation is present", function () {
     var template = `{{cdn}}`;
     var result = parseTemplate(template);
-    expect(result.retrieve.cdn).toBe(true);
+    expect(result.retrieve.cdn).toEqual([]);
   });
 });

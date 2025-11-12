@@ -48,6 +48,10 @@ function parseTemplate(template) {
       var token = list[i];
 
       if (token[0] === "#" && token[1] === "cdn") {
+        // Initialize retrieve.cdn as array if it doesn't exist
+        if (!retrieve.cdn || !Array.isArray(retrieve.cdn)) {
+          retrieve.cdn = [];
+        }
         collectCdnTargets(token[4]);
         if (type(token[4], "array")) process(context, token[4]);
         continue;
@@ -75,20 +79,24 @@ function parseTemplate(template) {
           variable.slice(0, variable.indexOf("."));
 
         if (retrieveThese.indexOf(variable) > -1) {
-          // Special case: if 'cdn' is already an array (from {{#cdn}} sections),
-          // preserve it instead of overwriting with true
-          if (variable === "cdn" && Array.isArray(retrieve.cdn)) {
-            // Array already exists, don't overwrite it
+          // Special case: 'cdn' should always be an array (empty for literals, with targets for blocks)
+          // to prevent soft merge issues with multiple partials via helper/extend.js
+          if (variable === "cdn") {
+            if (!retrieve.cdn || !Array.isArray(retrieve.cdn)) {
+              retrieve.cdn = [];
+            }
           } else {
             retrieve[variable] = true;
           }
         }
 
         if (retrieveThese.indexOf(variableRoot) > -1) {
-          // Special case: if 'cdn' is already an array (from {{#cdn}} sections),
-          // preserve it instead of overwriting with true
-          if (variableRoot === "cdn" && Array.isArray(retrieve.cdn)) {
-            // Array already exists, don't overwrite it
+          // Special case: 'cdn' should always be an array (empty for literals, with targets for blocks)
+          // to prevent soft merge issues with multiple partials via helper/extend.js
+          if (variableRoot === "cdn") {
+            if (!retrieve.cdn || !Array.isArray(retrieve.cdn)) {
+              retrieve.cdn = [];
+            }
           } else {
             retrieve[variableRoot] = true;
           }
@@ -119,12 +127,9 @@ function parseTemplate(template) {
   }
 
   // Ensure retrieve.cdn is sorted and deduplicated
-  // Remove it if empty (no CDN targets)
+  // Always keep it as an array (even if empty) to prevent soft merge issues
   if (retrieve.cdn && Array.isArray(retrieve.cdn)) {
     retrieve.cdn = [...new Set(retrieve.cdn)].sort();
-    if (retrieve.cdn.length === 0) {
-      delete retrieve.cdn;
-    }
   }
 
   return {
