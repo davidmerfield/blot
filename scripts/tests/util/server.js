@@ -46,25 +46,32 @@ module.exports = function (router) {
   beforeEach(function() {
     this.fetch = (input, options = {}) => {
       const url = new URL(input, this.origin);
+      const originalProtocol = url.protocol.replace(/:$/, "");
+
+      const requestOptions = { ...options };
+      requestOptions.headers = { ...(options.headers || {}) };
 
       if (url.hostname !== "localhost") {
-        options.headers = options.headers || {};
-        options.headers["x-forwarded-host"] = url.hostname;
+        requestOptions.headers["x-forwarded-host"] = url.hostname;
         url.hostname = "localhost";
       }
 
+      requestOptions.headers["x-forwarded-proto"] =
+        requestOptions.headers["x-forwarded-proto"] || originalProtocol;
+      requestOptions.headers["X-Forwarded-Proto"] =
+        requestOptions.headers["X-Forwarded-Proto"] || originalProtocol;
+
       // Now this.Cookie will be available from the current context
       if (this.Cookie) {
-        options.headers = options.headers || {};
-        options.headers.Cookie = this.Cookie;
-      } 
+        requestOptions.headers.Cookie = this.Cookie;
+      }
 
       url.protocol = "http:";
       url.port = port;
 
       const modifiedURL = url.toString();
 
-      return fetch(modifiedURL, options);
+      return fetch(modifiedURL, requestOptions);
     };
 
     this.checkBrokenLinks = (url = this.origin, options = {}) => checkBrokenLinks(this.fetch, url, options);

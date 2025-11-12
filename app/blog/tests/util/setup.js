@@ -1,12 +1,26 @@
 module.exports = function () {
   const templates = require("templates");
   const blog = require("../../index");
+  const cdn = require("../../../cdn");
+  const express = require("express");
   const sync = require("sync");
   const config = require("config");
 
   global.test.blog();
 
-  global.test.server(blog);
+  const router = express.Router();
+
+  router.use((req, res, next) => {
+    const host = req.get("host") || "";
+
+    if (host.startsWith("cdn.")) {
+      return cdn(req, res, next);
+    }
+
+    return blog(req, res, next);
+  });
+
+  global.test.server(router);
 
   // Build the templates
   beforeAll(function (done) {
@@ -25,9 +39,26 @@ module.exports = function () {
         options
       );
 
+    this.cdnFetch = (path, options = {}) =>
+      this.fetch(new URL(path, config.cdn.origin).toString(), options);
+
     this.text = (path, options = {}) => {
       return new Promise((resolve, reject) => {
         this.get(path, options)
+          .then((res) => {
+            if (res.status !== 200)
+              return reject(
+                new Error(`Failed to fetch ${path}: ${res.status}`)
+              );
+            res.text().then((text) => resolve(text));
+          })
+          .catch((err) => reject(err));
+      });
+    };
+
+    this.cdnText = (path, options = {}) => {
+      return new Promise((resolve, reject) => {
+        this.cdnFetch(path, options)
           .then((res) => {
             if (res.status !== 200)
               return reject(
