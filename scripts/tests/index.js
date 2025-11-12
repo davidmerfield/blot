@@ -18,32 +18,45 @@ var config = {
   stopSpecOnExpectationFailure: false,
   random: true,
 };
+// Collect only the user-passed args.
+// If "--" is present, only consider args after it.
+const rawArgs = process.argv.slice(2);
+const dashdash = rawArgs.indexOf("--");
+const args = dashdash >= 0 ? rawArgs.slice(dashdash + 1) : rawArgs;
 
 // Pass in a custom test glob for running only specific tests
-if (process.argv[2]) {
-  console.log(clfdate(), "Running specs in", colors.cyan(process.argv[2]));
+if (args[0]) {
+  console.log(clfdate(), "Running specs in", colors.cyan(args[0]));
 
-  // We have passed specific file to run
-  if (process.argv[2].slice(-3) === ".js") {
-    config.spec_files = [process.argv[2]];
-
-    // We have passed directory of tests to run
+  // Specific file
+  if (args[0].endsWith(".js")) {
+    config.spec_files = [args[0]];
   } else {
-    config.spec_dir = process.argv[2];
+    // Directory
+    config.spec_dir = args[0];
   }
 } else {
-  console.log(clfdate(), 
+  console.log(
+    clfdate(),
     "If you want to run tests from a subdirectory:",
-    colors.cyan("npm test {path_to_specs}")
+    colors.cyan("npm test app/models"),
+    "or",
+    colors.cyan("npm test -- app/models")
   );
 }
 
-if (process.argv[3]) {
-  seed = process.argv[3];
+// Seed: 2nd positional arg, or env, or random
+if (args[1]) {
+  seed = args[1];
 } else {
-  seed = process.env.BLOT_TESTS_SEED || Math.floor(Math.random() * 100000) + "";
-  console.log(clfdate(), 
-    'If you want your own seed run "npm test {path_to_specs} {seed}"'
+  seed =
+    process.env.BLOT_TESTS_SEED || String(Math.floor(Math.random() * 100000));
+  console.log(
+    clfdate(),
+    "If you want your own seed run:",
+    colors.cyan("npm test app/models/test.js SEED"),
+    "or",
+    colors.cyan("npm test -- app/models/test.js SEED")
   );
 }
 
