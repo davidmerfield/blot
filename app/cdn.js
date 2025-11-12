@@ -9,6 +9,9 @@ const blogDefaults = require("models/blog/defaults");
 
 const getMetadata = promisify(Template.getMetadata);
 const getBlog = promisify(Blog.get);
+const client = require("models/client");
+const key = require("models/template/key");
+const getAsync = promisify(client.get).bind(client);
 
 const GLOBAL_STATIC_FILES = config.blot_directory + "/app/blog/static";
 
@@ -49,21 +52,82 @@ cdn.use("/documentation/v-:version", static(config.views_directory));
 // /folder/blog_1234/favicon.ico
 cdn.use("/folder/v-:version", static(config.blog_folder_dir));
 
-cdn.get("/template/:blogID/:templateID/:encodedView(*)", async (req, res, next) => {
-  const templateID = req.params.templateID;
-  let viewName;
+// New route format: /template/viewname.digest.extension
+cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
+  let viewName, hash, templateID, blogID;
 
   try {
-    viewName = decodeViewParam(req.params.encodedView);
+    // Parse URL format: viewname.digest.extension
+    const parsed = parseCdnPath(req.params.encodedViewAndHash);
+    if (!parsed) {
+      return res.status(400).send("Invalid CDN path format");
+    }
+
+    hash = parsed.hash;
+    const parsedViewName = parsed.viewName;
+    const parsedExtension = parsed.extension;
+
+    // Look up hash mapping in Redis
+    const hashKey = key.hashMapping(hash);
+    const mappingStr = await getAsync(hashKey);
+
+    if (!mappingStr) {
+      // Hash not found - return 404
+      return next();
+    }
+
+    const mapping = JSON.parse(mappingStr);
+    
+    // Validate mapping has required fields
+    if (!mapping || !mapping.blogID || !mapping.templateID || !mapping.viewName) {
+      return res.status(400).send("Invalid hash mapping");
+    }
+    
+    blogID = mapping.blogID;
+    templateID = mapping.templateID;
+    viewName = mapping.viewName; // Use the view name from mapping (includes extension)
+
+    // Verify parsed view name matches mapping (safety check)
+    // mapping.viewName is the full path like "style.css"
+    // parsedViewName + parsedExtension should match
+    const expectedViewName = parsedViewName + parsedExtension;
+    if (mapping.viewName !== expectedViewName) {
+      return res.status(400).send("View name mismatch");
+    }
+    
+    // Ensure viewName is valid before proceeding
+    if (!viewName || typeof viewName !== 'string') {
+      return res.status(400).send("Invalid view name");
+    }
   } catch (err) {
-    // Invalid view name - return 400 Bad Request
-    return res.status(400).send("Invalid view name");
+    // Invalid path or lookup failed
+    return next();
   }
 
   try {
     const metadata = await getMetadata(templateID);
+    if (!metadata) {
+      return next();
+    }
+
     const manifest = metadata.cdn || {};
-    const blog = await getBlog({ id: req.params.blogID });
+    
+    // For SITE templates, create a stub blog from defaults
+    // For blog-owned templates, fetch the actual blog
+    let blog;
+    if (blogID === 'SITE') {
+      // Create a stub blog from defaults for SITE templates
+      blog = Object.assign({}, blogDefaults, {
+        id: 'SITE',
+        owner: 'SITE',
+        handle: 'site',
+      });
+    } else {
+      blog = await getBlog({ id: blogID });
+      if (!blog) {
+        return next();
+      }
+    }
 
     req.blog = Blog.extend(blog);
     req.preview = false;
@@ -81,6 +145,8 @@ cdn.get("/template/:blogID/:templateID/:encodedView(*)", async (req, res, next) 
 
     renderMiddleware(req, res, function (err) {
       if (err) return next(err);
+      // renderView expects (name, next, callback)
+      // next is required, callback is optional
       res.renderView(viewName, next);
     });
   } catch (err) {
@@ -94,16 +160,25 @@ cdn.use(static(config.blog_static_files_dir));
 
 module.exports = cdn;
 
-function decodeViewParam(path) {
-  if (!path) return "";
+/**
+ * Parse CDN path format: viewname.digest.extension
+ * Returns {viewName, hash, extension} or null if invalid
+ */
+function parseCdnPath(path) {
+  if (!path) return null;
 
+  // Decode path segments
   const decoded = path
     .split("/")
     .map(function (part) {
       try {
         const decoded = decodeURIComponent(part);
         // Validate: no path traversal, no null bytes, reasonable length
-        if (decoded.includes("..") || decoded.includes("\0") || decoded.length > 255) {
+        if (
+          decoded.includes("..") ||
+          decoded.includes("\0") ||
+          decoded.length > 255
+        ) {
           throw new Error("Invalid path segment");
         }
         return decoded;
@@ -113,20 +188,31 @@ function decodeViewParam(path) {
     })
     .join("/");
 
-  // Remove the 7-character hash inserted during CDN URL generation
-  // Pattern: .XXXXXXX or .XXXXXXX.ext where X is alphanumeric, inserted before the extension (if any)
-  // Example: style.abc123d.css -> style.css
-  // Example: style.min.abc123d.css -> style.min.css
-  // Example: Makefile.abc1234 -> Makefile
-  const result = decoded.replace(/\.([a-zA-Z0-9]{7})(\.[^/]+)?$/, (match, hash, ext) => {
-    // Hash is already validated by regex pattern (alphanumeric only)
-    return ext || "";
-  });
+  // Extract hash (32 hex chars) and extension from the last segment
+  // Pattern: viewname.32hexchars.extension or viewname.32hexchars
+  // Example: style.abc123def456...32chars.css
+  // Example: script.abc123def456...32chars.js
+  const hashPattern = /\.([a-f0-9]{32})(\.[^/]+)?$/;
+  const match = decoded.match(hashPattern);
 
-  // Final validation: no path traversal
-  if (result.includes("..") || result.includes("\0")) {
-    throw new Error("Invalid view name");
+  if (!match) {
+    return null;
   }
 
-  return result;
+  const hash = match[1];
+  const extension = match[2] || "";
+
+  // Extract view name (everything before .hash.extension)
+  const viewName = decoded.slice(0, match.index);
+
+  // Final validation: no path traversal
+  if (viewName.includes("..") || viewName.includes("\0")) {
+    return null;
+  }
+
+  return {
+    viewName: viewName,
+    hash: hash,
+    extension: extension,
+  };
 }

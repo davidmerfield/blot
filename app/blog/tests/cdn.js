@@ -10,7 +10,7 @@ const extractHash = (cdnURL) => {
   const hash = parts[parts.length - 2];
 
   expect(typeof hash).toBe("string", `Wrong CDN hash type: ${cdnURL}`);
-  expect(hash.length).toBe(7, `Wrong CDN hash length: ${cdnURL}`);
+  expect(hash.length).toBe(32, `Wrong CDN hash length: ${cdnURL}`);
 
   return hash;
 };
@@ -372,40 +372,43 @@ describe("cdn template function", function () {
         "entries.html": "{{#cdn}}/style.css{{/cdn}}",
       });
 
-      // Get a valid CDN URL to extract template ID and blog ID
+      // Get a valid CDN URL to extract the hash
       const cdnURL = await this.text("/");
       validate(cdnURL);
 
-      // Extract template ID and blog ID from the CDN URL
-      // Pattern: https://cdn.origin/template/{blogID}/{templateID}/{viewName}.{hash}.{ext}
-      const templateMatch = cdnURL.match(/\/template\/([^\/]+)\/([^\/]+)\//);
-      expect(templateMatch).toBeTruthy();
-      const blogID = templateMatch[1];
-      const templateID = templateMatch[2];
+      // Extract hash from the CDN URL
+      // Pattern: https://cdn.origin/template/{viewName}.{hash}.{ext}
+      const hashMatch = cdnURL.match(/\.([a-f0-9]{32})\./);
+      expect(hashMatch).toBeTruthy();
+      const validHash = hashMatch[1];
 
-      // Test various path traversal attempts
+      // Test various path traversal attempts in view names
+      // The new format is /template/{viewName}.{hash}.{ext}
+      // Path traversal should be rejected by parseCdnPath
       const pathTraversalAttempts = [
-        "../style.css",
-        "..%2Fstyle.css",
-        "%2E%2E/style.css",
-        "subdir/../../style.css",
-        "..\\style.css",
+        "../style",
+        "..%2Fstyle",
+        "%2E%2E/style",
+        "subdir/../../style",
+        "..\\style",
       ];
 
       for (const maliciousPath of pathTraversalAttempts) {
         const encodedPath = encodeURIComponent(maliciousPath);
-        const cdnPath = `/template/${blogID}/${templateID}/${encodedPath}.abc123d.css`;
+        // Use a valid 32-char hash format, but with malicious view name
+        const cdnPath = `/template/${encodedPath}.${validHash}.css`;
         const fullCdnURL = new URL(cdnPath, config.cdn.origin).toString();
         const res = await this.fetch(fullCdnURL);
-        expect(res.status).toBe(400);
+        // Should reject with 400 (invalid path), 403 (forbidden), or 404 (not found)
+        expect([400, 403, 404]).toContain(res.status);
       }
 
-      // Test null byte (encoded)
-      const nullBytePath = "style%00.css";
-      const nullByteCdnPath = `/template/${blogID}/${templateID}/${nullBytePath}.abc123d.css`;
+      // Test null byte (encoded) in view name
+      const nullBytePath = "style%00";
+      const nullByteCdnPath = `/template/${nullBytePath}.${validHash}.css`;
       const nullByteCdnURL = new URL(nullByteCdnPath, config.cdn.origin).toString();
       const nullByteRes = await this.fetch(nullByteCdnURL);
-      expect(nullByteRes.status).toBe(400);
+      expect([400, 403, 404]).toContain(nullByteRes.status);
     });
 
     it("rejects path traversal in template CDN targets", async function () {

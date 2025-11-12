@@ -7,6 +7,7 @@ const getMetadata = require("../getMetadata");
 const getView = require("../getView");
 const getPartials = require("../getPartials");
 const getAllViews = require("../getAllViews");
+const parseTemplate = require("helper/express-mustache/parse");
 
 // Promisify callback-based functions
 const getMetadataAsync = promisify(getMetadata);
@@ -14,6 +15,22 @@ const getAllViewsAsync = promisify(getAllViews);
 const getViewAsync = promisify(getView);
 const getPartialsAsync = promisify(getPartials);
 const hsetAsync = promisify(client.hset).bind(client);
+const setAsync = promisify(client.set).bind(client);
+
+// Blog-specific locals that make the output unique per blog
+const BLOG_SPECIFIC_LOCALS = new Set([
+  // Blog properties from PUBLIC array
+  'handle', 'title', 'avatar', 'domain', 'timeZone', 'plugins', 
+  'permalink', 'menu', 'dateFormat', 'cacheID', 'roundAvatar', 'imageExif',
+  // Special locals
+  'feedURL', 'blogURL', 'cssURL', 'scriptURL',
+  // Retrieved locals that depend on blog data
+  'allEntries', 'recentEntries', 'allTags', 'archives', 'tagged', 'posts',
+  'all_entries', 'recent_entries', 'all_tags', 'popular_tags', 
+  'total_posts', 'updated', 'latestEntry', 'search_results', 'search_query',
+  'absoluteURLs', 'active', 'isActive', 'avatar_url', 'feed_url',
+  'folder', 'page', 'public', 'plugin_css', 'plugin_js'
+]);
 
 function isPlainObject(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -82,7 +99,42 @@ function deepMergeRetrieve(target, source) {
   return target;
 }
 
-function buildSignature(view, partials, templateLocals, partialLocals, partialRetrieve) {
+/**
+ * Detect if view content or partials reference blog-specific variables
+ */
+function detectBlogSpecificReferences(viewContent, partials) {
+  if (!viewContent && (!partials || Object.keys(partials).length === 0)) {
+    return false;
+  }
+
+  // Parse view content
+  const viewParsed = viewContent ? parseTemplate(viewContent) : { locals: [] };
+  const allLocals = new Set(viewParsed.locals || []);
+
+  // Parse all partials
+  if (partials && typeof partials === 'object') {
+    for (const partialName in partials) {
+      const partialContent = partials[partialName];
+      if (typeof partialContent === 'string') {
+        const partialParsed = parseTemplate(partialContent);
+        (partialParsed.locals || []).forEach(local => allLocals.add(local));
+      }
+    }
+  }
+
+  // Check if any referenced locals are blog-specific
+  for (const local of allLocals) {
+    // Handle nested properties like "menu.length" -> extract root "menu"
+    const rootLocal = local.split('.')[0];
+    if (BLOG_SPECIFIC_LOCALS.has(rootLocal)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function buildSignature(view, partials, templateLocals, partialLocals, partialRetrieve, blogID) {
   const viewLocals = isPlainObject(view && view.locals) ? view.locals : {};
   const metadataLocals = isPlainObject(templateLocals) ? templateLocals : {};
   const partialLocalsObj = isPlainObject(partialLocals) ? partialLocals : {};
@@ -127,6 +179,11 @@ function buildSignature(view, partials, templateLocals, partialLocals, partialRe
   const partialKeys = Object.keys(partials || {}).sort();
   for (const name of partialKeys) {
     signature.partials[name] = partials[name] || "";
+  }
+
+  // Include blogID in signature if provided (for blog-specific views)
+  if (blogID) {
+    signature.blogID = blogID;
   }
 
   return JSON.stringify(sortObject(signature));
@@ -244,9 +301,16 @@ async function processTarget(templateID, ownerID, target, metadata) {
   // Collect partial view locals and retrieve objects recursively
   const { locals: partialLocals, retrieve: partialRetrieve } = await collectPartialLocals(templateID, viewPartials);
 
-  // Build signature and return hash
-  const signature = buildSignature(view, partials, metadata.locals, partialLocals, partialRetrieve);
-  return hash(signature);
+  // Detect if view references blog-specific data
+  const hasBlogSpecificRefs = detectBlogSpecificReferences(view.content, partials);
+
+  // Build signature - include ownerID if blog-specific refs detected
+  // This ensures blog-specific views get unique hashes per blog
+  const blogID = hasBlogSpecificRefs ? ownerID : undefined;
+  const signature = buildSignature(view, partials, metadata.locals, partialLocals, partialRetrieve, blogID);
+  const computedHash = hash(signature);
+
+  return computedHash
 }
 
 module.exports = function updateCdnManifest(templateID, callback) {
@@ -294,9 +358,23 @@ module.exports = function updateCdnManifest(templateID, callback) {
       // Process each target sequentially
       for (const target of sortedTargets) {
         try {
-          const hash = await processTarget(templateID, ownerID, target, metadata);
-          if (hash) {
-            manifest[target] = hash;
+          const result = await processTarget(templateID, ownerID, target, metadata);
+          if (result && typeof result === 'string') {
+            // Store full 32-char MD5 hash as string
+            // For blog-specific views, hash includes ownerID; for shared views, hash is same across blogs
+            manifest[target] = result;
+            
+            // Store hash mapping in Redis for CDN route lookup
+            // For blog-specific hashes, this maps to ownerID; for shared hashes, any blog can use it
+            const hashKey = key.hashMapping(result);
+            const mapping = JSON.stringify({
+              blogID: ownerID,
+              templateID: templateID,
+              viewName: target
+            });
+            
+            // Store mapping - if key exists, that's fine (same output via CDN)
+            await setAsync(hashKey, mapping);
           }
         } catch (err) {
           // If processing a target fails, continue with others

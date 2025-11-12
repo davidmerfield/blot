@@ -7,6 +7,8 @@ module.exports = {
   avatar: "",
   roundAvatar: false,
   imageExif: "basic",
+  cssURL: "",
+  scriptURL: "",
   template: "SITE:blog",
   menu: [
     { id: Date.now() + 1 + "", label: "Home", url: "/" },

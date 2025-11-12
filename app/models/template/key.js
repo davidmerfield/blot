@@ -29,5 +29,9 @@ module.exports = {
 
   blogTemplates: function blogTemplates (blogID) {
     return "template:owned_by:" + blogID;
+  },
+
+  hashMapping: function hashMapping (hash) {
+    return "cdn:hash:" + hash;
   }
 };

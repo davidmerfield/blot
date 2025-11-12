@@ -35,6 +35,9 @@ var DECLARATION = {
   // Flags
   flags: [FLAGS, true, false],
 
+  // Eventually deprecate these (by incorporation into template engine)
+  cssURL: ["string", false, true],
+  scriptURL: ["string", false, true],
   roundAvatar: ["boolean", true, true],
   imageExif: ["string", true, true],
 };

@@ -1,8 +1,6 @@
 const config = require("config");
 const path = require("path");
 
-const HASH_LENGTH = 7;
-
 module.exports = function (req, res, callback) {
   return callback(null, function () {
     const manifest = (req && req.template && req.template.cdn) || {};
@@ -27,25 +25,17 @@ module.exports = function (req, res, callback) {
           templateID &&
           Object.prototype.hasOwnProperty.call(manifest, renderedNormalized)
         ) {
-          const hash = manifest[renderedNormalized].slice(0, HASH_LENGTH);
+          const hash = manifest[renderedNormalized];
           const ext = path.extname(renderedNormalized) || "";
           const viewNameWithoutExtension = ext
             ? renderedNormalized.slice(0, -ext.length)
             : renderedNormalized;
           const encodedView = encodeViewSegment(viewNameWithoutExtension);
-          const encodedTemplate = encodeURIComponent(templateID);
 
+          // New URL format: /template/viewname.digest.extension
+          // Use full 32-char hash
           return (
-            config.cdn.origin +
-            "/template/" +
-            req.blog.id +
-            "/" +
-            encodedTemplate +
-            "/" +
-            encodedView +
-            "." +
-            hash +
-            ext
+            config.cdn.origin + "/template/" + encodedView + "." + hash + ext
           );
         }
 
