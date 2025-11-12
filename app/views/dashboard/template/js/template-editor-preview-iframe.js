@@ -31,9 +31,12 @@ if (previewIframeContainer) {
     localStorageAvailable = false;
   }
 
+  var VIEW_MODE_STORAGE_KEY = "template-preview-view-mode";
+
   var storageKey = localStorageAvailable
     ? "template-preview-path:" + previewOrigin
     : null;
+  var viewModeStorageKey = localStorageAvailable ? VIEW_MODE_STORAGE_KEY : null;
 
   var normalizePath = function normalizePath(path) {
     if (!path || typeof path !== "string") return "";
@@ -62,6 +65,37 @@ if (previewIframeContainer) {
     try {
       var value = window.localStorage.getItem(storageKey);
       return normalizePath(value);
+    } catch (err) {
+      return "";
+    }
+  };
+
+  var isValidViewMode = function isValidViewMode(mode) {
+    return mode === "desktop" || mode === "mobile";
+  };
+
+  var writeStoredViewMode = function writeStoredViewMode(mode) {
+    if (!viewModeStorageKey || !localStorageAvailable) return;
+    if (!isValidViewMode(mode)) {
+      try {
+        window.localStorage.removeItem(viewModeStorageKey);
+      } catch (err) {}
+      return;
+    }
+    try {
+      window.localStorage.setItem(viewModeStorageKey, mode);
+    } catch (err) {}
+  };
+
+  var readStoredViewMode = function readStoredViewMode() {
+    if (!viewModeStorageKey || !localStorageAvailable) return "";
+    try {
+      var value = window.localStorage.getItem(viewModeStorageKey);
+      if (!isValidViewMode(value)) {
+        window.localStorage.removeItem(viewModeStorageKey);
+        return "";
+      }
+      return value;
     } catch (err) {
       return "";
     }
@@ -152,11 +186,16 @@ if (previewIframeContainer) {
     for (var i = 0; i < viewButtons.length; i++) {
       viewButtons[i].addEventListener("click", function (e) {
         var mode = this.getAttribute("data-view") || "desktop";
+        if (!isValidViewMode(mode)) {
+          mode = "desktop";
+        }
+        writeStoredViewMode(mode);
         setView(mode);
       });
     }
   }
 
-  // Initialize default view as desktop
-  setView("desktop");
+  // Initialize view using stored mode (defaulting to desktop)
+  var storedViewMode = readStoredViewMode();
+  setView(storedViewMode || "desktop");
 }
