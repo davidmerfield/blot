@@ -6,7 +6,7 @@ var metadataModel = require("./metadataModel");
 var ensure = require("helper/ensure");
 var Blog = require("models/blog");
 var injectLocals = require("./injectLocals");
-var updateCdnManifest = require("./updateCdnManifest");
+var updateCdnManifest = require("./util/updateCdnManifest");
 
 module.exports = function setMetadata(id, updates, callback) {
   try {

@@ -3,8 +3,7 @@ const client = require("models/client");
 const Blog = require("models/blog");
 const getMetadata = require("./getMetadata");
 const getView = require("./getView");
-const updateCdnTargets = require("./util/updateCdnTargets");
-const updateCdnManifest = require("./updateCdnManifest");
+const updateCdnManifest = require("./util/updateCdnManifest");
 
 module.exports = function dropView(templateID, viewName, callback) {
   const multi = client.multi();
@@ -14,10 +13,6 @@ module.exports = function dropView(templateID, viewName, callback) {
 
     getView(templateID, viewName, function (err, view) {
       if (err) return callback(err);
-
-      const previousTargets = Array.isArray(view && view.retrieve && view.retrieve.cdn)
-        ? view.retrieve.cdn
-        : [];
 
       multi.del(key.view(templateID, viewName));
       multi.hdel(key.urlPatterns(templateID), viewName);
@@ -32,20 +27,11 @@ module.exports = function dropView(templateID, viewName, callback) {
       multi.exec(function (err) {
         if (err) return callback(err);
 
-        const updateTargets = function (done) {
-          if (!previousTargets.length) return done();
-          updateCdnTargets(templateID, previousTargets, [], done);
-        };
+        updateCdnManifest(templateID, function (manifestErr) {
+          if (manifestErr) return callback(manifestErr);
 
-        updateTargets(function (targetErr) {
-          if (targetErr) return callback(targetErr);
-
-          updateCdnManifest(templateID, function (manifestErr) {
-            if (manifestErr) return callback(manifestErr);
-
-            Blog.set(metadata.owner, { cacheID: Date.now() }, function (err) {
-              callback(err, "Deleted " + templateID);
-            });
+          Blog.set(metadata.owner, { cacheID: Date.now() }, function (err) {
+            callback(err, "Deleted " + templateID);
           });
         });
       });

@@ -20,7 +20,6 @@ module.exports = {
   getByShareID: require("./getByShareID"),
 
   drop: require("./drop"),
-  updateCdnManifest: require("./updateCdnManifest"),
 
   makeID: require("./util/makeID"),
   isOwner: require("./isOwner"),

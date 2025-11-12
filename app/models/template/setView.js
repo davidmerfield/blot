@@ -12,8 +12,7 @@ var getMetadata = require("./getMetadata");
 var Blog = require("models/blog");
 var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
-var updateCdnTargets = require("./util/updateCdnTargets");
-var updateCdnManifest = require("./updateCdnManifest");
+var updateCdnManifest = require("./util/updateCdnManifest");
 
 module.exports = function setView(templateID, updates, callback) {
   ensure(templateID, "string").and(updates, "object").and(callback, "function");
@@ -54,9 +53,6 @@ module.exports = function setView(templateID, updates, callback) {
         view = view || {};
 
         var changes;
-        var previousTargets = Array.isArray(view.retrieve && view.retrieve.cdn)
-          ? view.retrieve.cdn.slice()
-          : [];
 
         // Handle `url` logic
         if (updates.url) {
@@ -126,10 +122,10 @@ module.exports = function setView(templateID, updates, callback) {
             // Merge parseResult.retrieve into view.retrieve
             // Handle cdn array specially - if not in parseResult, remove it
             view.retrieve = view.retrieve || {};
-            
+
             if (parseResult.retrieve) {
               for (var key in parseResult.retrieve) {
-                if (key === 'cdn' && Array.isArray(parseResult.retrieve[key])) {
+                if (key === "cdn" && Array.isArray(parseResult.retrieve[key])) {
                   // For cdn, use the array from parseResult (it's already deduplicated and sorted)
                   view.retrieve.cdn = parseResult.retrieve.cdn;
                 } else {
@@ -137,46 +133,36 @@ module.exports = function setView(templateID, updates, callback) {
                   view.retrieve[key] = parseResult.retrieve[key];
                 }
               }
-              
+
               // If cdn is not in parseResult.retrieve, remove it from view.retrieve
               // (parseTemplate removes it when there are no CDN targets)
-              if (!parseResult.retrieve.hasOwnProperty('cdn') && view.retrieve.hasOwnProperty('cdn')) {
+              if (
+                !parseResult.retrieve.hasOwnProperty("cdn") &&
+                view.retrieve.hasOwnProperty("cdn")
+              ) {
                 delete view.retrieve.cdn;
               }
             }
-            
-            var nextTargets = Array.isArray(view.retrieve.cdn)
-              ? view.retrieve.cdn
-              : [];
 
-            updateCdnTargets(
-              templateID,
-              previousTargets,
-              nextTargets,
-              function (targetErr) {
-                if (targetErr) return callback(targetErr);
+            view = serialize(view, viewModel);
 
-                view = serialize(view, viewModel);
+            client.hmset(viewKey, view, function (err) {
+              if (err) return callback(err);
 
-                client.hmset(viewKey, view, function (err) {
-                  if (err) return callback(err);
+              updateCdnManifest(templateID, function (manifestErr) {
+                if (manifestErr) return callback(manifestErr);
 
-                  updateCdnManifest(templateID, function (manifestErr) {
-                    if (manifestErr) return callback(manifestErr);
+                if (!changes) return callback();
 
-                    if (!changes) return callback();
-
-                    Blog.set(
-                      metadata.owner,
-                      { cacheID: Date.now() },
-                      function (err) {
-                        callback(err);
-                      }
-                    );
-                  });
-                });
-              }
-            );
+                Blog.set(
+                  metadata.owner,
+                  { cacheID: Date.now() },
+                  function (err) {
+                    callback(err);
+                  }
+                );
+              });
+            });
           }
         );
       });
@@ -184,7 +170,12 @@ module.exports = function setView(templateID, updates, callback) {
   });
 };
 
-function detectInfinitePartialDependency(templateID, view, parseResult, callback) {
+function detectInfinitePartialDependency(
+  templateID,
+  view,
+  parseResult,
+  callback
+) {
   var viewName = view && view.name;
   var viewAlias = null;
   if (type(viewName, "string") && viewName.indexOf(".") > -1) {
@@ -235,9 +226,12 @@ function detectInfinitePartialDependency(templateID, view, parseResult, callback
 
       var deps = node.deps || [];
       var childContext = {};
-      if (type(contextInlinePartials, "object")) extend(childContext).and(contextInlinePartials);
-      if (type(node.inlinePartials, "object")) extend(childContext).and(node.inlinePartials);
-      if (type(rootInlinePartials, "object")) extend(childContext).and(rootInlinePartials);
+      if (type(contextInlinePartials, "object"))
+        extend(childContext).and(contextInlinePartials);
+      if (type(node.inlinePartials, "object"))
+        extend(childContext).and(node.inlinePartials);
+      if (type(rootInlinePartials, "object"))
+        extend(childContext).and(rootInlinePartials);
 
       eachSeries(
         deps,

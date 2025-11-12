@@ -2,10 +2,11 @@ const async = require("async");
 const ensure = require("helper/ensure");
 const hash = require("helper/hash");
 const client = require("models/client");
-const key = require("./key");
-const getMetadata = require("./getMetadata");
-const getView = require("./getView");
-const getPartials = require("./getPartials");
+const key = require("../key");
+const getMetadata = require("../getMetadata");
+const getView = require("../getView");
+const getPartials = require("../getPartials");
+const getAllViews = require("../getAllViews");
 const mustache = require("mustache");
 
 function isPlainObject(value) {
@@ -152,16 +153,28 @@ module.exports = function updateCdnManifest(templateID, callback) {
     const ownerID = metadata.owner;
     const manifest = {};
 
-    client.hgetall(key.cdnTargets(templateID), function (error, targets) {
-      if (error) return callback(error);
+    // Get all views and collect CDN targets from their retrieve.cdn arrays
+    getAllViews(templateID, function (err, views) {
+      if (err) return callback(err);
 
-      const entries = Object.entries(targets || {})
-        .filter(([, count]) => parseInt(count, 10) > 0)
-        .map(([target]) => target)
-        .sort();
+      // Collect all unique CDN targets from all views
+      const allTargets = new Set();
+      for (const viewName in views) {
+        const view = views[viewName];
+        if (view && view.retrieve && Array.isArray(view.retrieve.cdn)) {
+          view.retrieve.cdn.forEach((target) => {
+            if (typeof target === "string" && target.trim()) {
+              allTargets.add(target);
+            }
+          });
+        }
+      }
 
+      const sortedTargets = Array.from(allTargets).sort();
+
+      // Build manifest for each target
       async.eachSeries(
-        entries,
+        sortedTargets,
         function (target, next) {
           getView(templateID, target, function (viewErr, view) {
             if (viewErr || !view) {
@@ -201,3 +214,4 @@ module.exports = function updateCdnManifest(templateID, callback) {
     });
   });
 };
+
