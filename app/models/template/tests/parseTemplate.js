@@ -34,11 +34,29 @@ describe("parseTemplate", function () {
   });
 
   it("captures the root local used", function () {
-    var template = `{{folder.length}}`; // not on the whitelist of variables
+    var template = `{{folder.length}}`; // folder is on the whitelist of variables
     var result = parseTemplate(template);
     expect(result).toEqual({
       partials: {},
-      retrieve: { folder: true, "folder.length": true },
+      retrieve: { folder: { length: true } },
+    });
+  });
+
+  it("handles deeper nesting", function () {
+    var template = `{{folder.subfolder.property}}`; // folder is on the whitelist
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { folder: { subfolder: { property: true } } },
+    });
+  });
+
+  it("handles both root and nested access", function () {
+    var template = `{{folder}}{{folder.length}}`; // folder is on the whitelist
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { folder: { length: true } },
     });
   });
 

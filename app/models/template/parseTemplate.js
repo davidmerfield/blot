@@ -37,6 +37,30 @@ function parseTemplate(template) {
 
   process("", parsed);
 
+  // Helper function to set nested property in retrieve object
+  // Converts boolean values to objects when needed
+  function setNestedProperty(root, propertyPath, value) {
+    if (!retrieve[root]) {
+      retrieve[root] = {};
+    } else if (retrieve[root] === true) {
+      // Convert boolean to object if we're adding nested properties
+      retrieve[root] = {};
+    }
+
+    var parts = propertyPath.split(".");
+    var current = retrieve[root];
+    
+    for (var i = 0; i < parts.length - 1; i++) {
+      var part = parts[i];
+      if (!current[part] || current[part] === true) {
+        current[part] = {};
+      }
+      current = current[part];
+    }
+    
+    current[parts[parts.length - 1]] = value;
+  }
+
   // This can be used to recursively
   // strip locals and partials we need
   // to fetch from the db before rendering
@@ -77,6 +101,9 @@ function parseTemplate(template) {
         var variableRoot =
           variable.indexOf(".") > -1 &&
           variable.slice(0, variable.indexOf("."));
+        // e.g. length (or subfolder.property for deeper nesting)
+        var propertyPath = variable.indexOf(".") > -1 &&
+          variable.slice(variable.indexOf(".") + 1);
 
         if (retrieveThese.indexOf(variable) > -1) {
           // Special case: 'cdn' should always be an array (empty for literals, with targets for blocks)
@@ -86,11 +113,19 @@ function parseTemplate(template) {
               retrieve.cdn = [];
             }
           } else {
-            retrieve[variable] = true;
+            // If variable has no dots, it's a root variable - set as boolean
+            // If it has dots, it's a nested property - build nested structure
+            if (!propertyPath) {
+              retrieve[variable] = true;
+            } else {
+              // This shouldn't happen for whitelisted variables with dots,
+              // but handle it just in case
+              retrieve[variable] = true;
+            }
           }
         }
 
-        if (retrieveThese.indexOf(variableRoot) > -1) {
+        if (retrieveThese.indexOf(variableRoot) > -1 && propertyPath) {
           // Special case: 'cdn' should always be an array (empty for literals, with targets for blocks)
           // to prevent soft merge issues with multiple partials via helper/extend.js
           if (variableRoot === "cdn") {
@@ -98,17 +133,34 @@ function parseTemplate(template) {
               retrieve.cdn = [];
             }
           } else {
-            retrieve[variableRoot] = true;
+            // Build nested structure for whitelisted root with property access
+            setNestedProperty(variableRoot, propertyPath, true);
+          }
+        } else if (retrieveThese.indexOf(variableRoot) > -1 && !propertyPath) {
+          // Root variable without property access - set as boolean if not already an object
+          if (variableRoot === "cdn") {
+            if (!retrieve.cdn || !Array.isArray(retrieve.cdn)) {
+              retrieve.cdn = [];
+            }
+          } else {
+            // Only set as boolean if it's not already an object (from previous nested access)
+            if (!retrieve[variableRoot] || retrieve[variableRoot] === true) {
+              retrieve[variableRoot] = true;
+            }
           }
         }
 
         // Track all referenced locals (including custom ones) for signature hashing
         // System locals are already tracked above, so only track non-system locals here
         // The retrieve system will safely ignore non-system locals during fetching
+        // Skip tracking if variable has dots and root is whitelisted (already handled with nested structure)
         if (retrieveThese.indexOf(variable) === -1 && variable !== "cdn") {
           // Only track the root variable, not nested properties
-          if (!retrieve[variable]) {
-            retrieve[variable] = true;
+          // If variable has dots and root is whitelisted, skip (already handled above)
+          if (!propertyPath || retrieveThese.indexOf(variableRoot) === -1) {
+            if (!retrieve[variable]) {
+              retrieve[variable] = true;
+            }
           }
         }
         
@@ -131,7 +183,15 @@ function parseTemplate(template) {
             var fix = (context + variable).slice(
               (context + variable).indexOf(approved)
             );
-            retrieve[fix] = true;
+            // For approved variables with dots, build nested structure
+            var fixRoot = fix.indexOf(".") > -1 && fix.slice(0, fix.indexOf("."));
+            var fixProperty = fix.indexOf(".") > -1 && fix.slice(fix.indexOf(".") + 1);
+            
+            if (fixRoot && fixProperty && retrieveThese.indexOf(fixRoot) > -1) {
+              setNestedProperty(fixRoot, fixProperty, true);
+            } else {
+              retrieve[fix] = true;
+            }
           }
         }
 

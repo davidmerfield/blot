@@ -98,8 +98,11 @@ function decodeViewParam(path) {
     .join("/");
 
   // Remove the 7-character hash inserted during CDN URL generation
-  // Pattern: .XXXXXXX. where X is any character, inserted before the extension
+  // Pattern: .XXXXXXX or .XXXXXXX.ext where X is any character, inserted before the extension (if any)
   // Example: style.abc123d.css -> style.css
   // Example: style.min.abc123d.css -> style.min.css
-  return decoded.replace(/\.(.{7})\.([^/]+)$/, ".$2");
+  // Example: Makefile.abc1234 -> Makefile
+  return decoded.replace(/\.(.{7})(\.[^/]+)?$/, (match, hash, ext) => {
+    return ext || "";
+  });
 }

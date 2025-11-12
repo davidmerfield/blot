@@ -37,6 +37,51 @@ function sortObject(value) {
   return value;
 }
 
+// Deep merge retrieve objects, handling nested structures and special 'cdn' array case
+function deepMergeRetrieve(target, source) {
+  if (!isPlainObject(target)) {
+    target = {};
+  }
+  if (!isPlainObject(source)) {
+    return target;
+  }
+
+  for (const key in source) {
+    // Special case: 'cdn' should be handled separately (array merging)
+    if (key === 'cdn') {
+      if (Array.isArray(source[key])) {
+        if (!Array.isArray(target[key])) {
+          target[key] = [];
+        }
+        // Merge arrays (union with deduplication)
+        const combined = target[key].concat(source[key]);
+        target[key] = [...new Set(combined)];
+      }
+      continue;
+    }
+
+    const targetValue = target[key];
+    const sourceValue = source[key];
+
+    // If both are objects (and not arrays), recursively merge
+    if (isPlainObject(targetValue) && isPlainObject(sourceValue)) {
+      deepMergeRetrieve(targetValue, sourceValue);
+    } else if (isPlainObject(sourceValue)) {
+      // Source is an object, target is not (or doesn't exist) - use source
+      target[key] = isPlainObject(targetValue) 
+        ? deepMergeRetrieve({}, sourceValue) 
+        : deepMergeRetrieve({}, sourceValue);
+    } else if (sourceValue !== undefined) {
+      // Source has a value (boolean, etc.) - use it if target doesn't exist or is not an object
+      if (!target[key] || !isPlainObject(target[key])) {
+        target[key] = sourceValue;
+      }
+    }
+  }
+
+  return target;
+}
+
 function buildSignature(view, partials, templateLocals, partialLocals, partialRetrieve) {
   const viewLocals = isPlainObject(view && view.locals) ? view.locals : {};
   const metadataLocals = isPlainObject(templateLocals) ? templateLocals : {};
@@ -134,13 +179,9 @@ async function collectPartialLocals(templateID, partialNames, processedPartials 
       }
 
       // Collect retrieve from this partial view (includes referenced locals)
+      // Use deep merge to handle nested structures
       if (isPlainObject(partialView.retrieve)) {
-        Object.keys(partialView.retrieve).forEach((key) => {
-          // Merge retrieve keys (excluding 'cdn' which is handled separately)
-          if (key !== 'cdn' && !Object.prototype.hasOwnProperty.call(partialRetrieve, key)) {
-            partialRetrieve[key] = partialView.retrieve[key];
-          }
-        });
+        deepMergeRetrieve(partialRetrieve, partialView.retrieve);
       }
 
       // Recursively collect locals and retrieve from nested partials
@@ -156,12 +197,10 @@ async function collectPartialLocals(templateID, partialNames, processedPartials 
         }
       });
 
-      // Merge nested retrieve (earlier partials take precedence)
-      Object.keys(nested.retrieve).forEach((key) => {
-        if (key !== 'cdn' && !Object.prototype.hasOwnProperty.call(partialRetrieve, key)) {
-          partialRetrieve[key] = nested.retrieve[key];
-        }
-      });
+      // Merge nested retrieve using deep merge to handle nested structures
+      if (isPlainObject(nested.retrieve)) {
+        deepMergeRetrieve(partialRetrieve, nested.retrieve);
+      }
     } catch (err) {
       // Non-fatal if partial view doesn't exist - continue processing
       continue;

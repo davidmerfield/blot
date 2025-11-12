@@ -42,13 +42,45 @@ var dictionary = {
   "updated": require("./updated"),
 };
 
+// Extract root variable names from nested retrieve structure
+// Only extracts top-level keys - nested properties are informational only
+function extractRootVariables(retrieve) {
+  var rootVars = new Set();
+  
+  for (var key in retrieve) {
+    var value = retrieve[key];
+    
+    // Special case: 'cdn' is an array, not a nested object
+    if (key === "cdn" && Array.isArray(value)) {
+      rootVars.add(key);
+      continue;
+    }
+    
+    // If value is an object (and not an array), the key is a root variable
+    // The nested structure just shows which properties are accessed
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      // This is a nested structure - the key itself is a root variable
+      rootVars.add(key);
+      // Don't recursively traverse - nested keys are just property names, not root variables
+    } else if (value !== false && value !== null && value !== undefined) {
+      // Boolean or other truthy value - this is a root variable
+      rootVars.add(key);
+    }
+  }
+  
+  return rootVars;
+}
+
 module.exports = function (req, res, retrieve, callback) {
   ensure(req, "object").and(retrieve, "object").and(callback, "function");
 
   var locals = {};
 
+  // Extract all root variables from nested retrieve structure
+  var rootVariables = Array.from(extractRootVariables(retrieve));
+
   async.each(
-    _.keys(retrieve),
+    rootVariables,
     function (localName, nextLocal) {
       if (dictionary[localName] === undefined) {
         // console.log(req.blog.handle, req.blog.id, ": No retrieve method to look up", localName);
