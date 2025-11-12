@@ -127,7 +127,7 @@ function buildBlogStub(metadata) {
 function decodeViewParam(path) {
   if (!path) return "";
 
-  return path
+  const decoded = path
     .split("/")
     .map(function (part) {
       try {
@@ -137,4 +137,10 @@ function decodeViewParam(path) {
       }
     })
     .join("/");
+
+  // Remove the 7-character hash inserted during CDN URL generation
+  // Pattern: .XXXXXXX. where X is any character, inserted before the extension
+  // Example: style.abc123d.css -> style.css
+  // Example: style.min.abc123d.css -> style.min.css
+  return decoded.replace(/\.(.{7})\.([^/]+)$/, ".$2");
 }
