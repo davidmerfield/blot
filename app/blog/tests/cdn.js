@@ -66,6 +66,35 @@ describe("cdn template function", function () {
     validate(await this.text("/"));
   });
 
+  it("works when you create views in the wrong order", async function () {
+    await this.template({
+      "entries.html": "{{#cdn}}/style.css{{/cdn}}",
+      "style.css": "body { color: red; }",
+    });
+
+    validate(await this.text("/"));
+  });
+
+  it("returns the contents of the block as-is for missing views", async function () {
+    await this.template({
+      "entries.html": "{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    expect(await this.text("/")).toBe("/style.css");
+  });
+
+  it("gracefully handles a single missing view", async function () {
+    await this.template({
+      "entries.html": "{{#cdn}}/missing.css{{/cdn}}|{{#cdn}}/style.css{{/cdn}}",
+      "style.css": "body{color:#000}",
+    });
+
+    const [invalidURL, validURL] = (await this.text("/")).split("|");
+
+    expect(invalidURL).toBe("/missing.css");
+    validate(validURL);
+  });
+
   it("works when you update an existing view", async function () {
     const template = {
       "style.css": "body { color: red; }",
@@ -293,5 +322,46 @@ describe("cdn template function", function () {
     await this.template(template, { locals: { variable: "y" } });
     expect(await this.text("/style.css")).toBe("body{color:pink}");
     expect(hash).toBe(extractHash(await this.text("/")));
+  });
+
+  it("updates the URL when the a view-specific partial changes", async function () {
+    const template = {
+      "entries.html": `{{#cdn}}style.css{{/cdn}}`,
+      "style.css": "{{> x}}",
+    };
+
+    const package = {
+      views: {
+        "style.css": {
+          partials: {
+            x: "body{color:#000}",
+          },
+        },
+      },
+    };
+
+    await this.template(template, package);
+
+    const firstCdnUrl = await this.text("/");
+    const firstHash = extractHash(firstCdnUrl);
+
+    expect(await this.text(firstCdnUrl)).toBe("body{color:#000}");
+
+    await this.template(template, {
+      views: {
+        "style.css": {
+          partials: {
+            x: "body{color:#fff}",
+          },
+        },
+      },
+    });
+
+    const secondCdnUrl = await this.text("/");
+    const secondHash = extractHash(secondCdnUrl);
+
+    expect(await this.text(secondCdnUrl)).toBe("body{color:#fff}");
+
+    expect(secondHash).not.toBe(firstHash);
   });
 });

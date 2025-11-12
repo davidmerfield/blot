@@ -17,19 +17,20 @@ module.exports = function (req, res, callback) {
 
       if (!rendered) return "";
 
-      rendered = rendered.startsWith("/") ? rendered.slice(1) : rendered;
-
+      const renderedNormalized = rendered.startsWith("/")
+        ? rendered.slice(1)
+        : rendered;
       const templateID = req.template && req.template.id;
 
       if (
         templateID &&
-        Object.prototype.hasOwnProperty.call(manifest, rendered)
+        Object.prototype.hasOwnProperty.call(manifest, renderedNormalized)
       ) {
-        const hash = manifest[rendered].slice(0, HASH_LENGTH);
-        const ext = path.extname(rendered) || "";
+        const hash = manifest[renderedNormalized].slice(0, HASH_LENGTH);
+        const ext = path.extname(renderedNormalized) || "";
         const viewNameWithoutExtension = ext
-          ? rendered.slice(0, -ext.length)
-          : rendered;
+          ? renderedNormalized.slice(0, -ext.length)
+          : renderedNormalized;
         const encodedView = encodeViewSegment(viewNameWithoutExtension);
         const encodedTemplate = encodeURIComponent(templateID);
 
