@@ -1,12 +1,28 @@
 module.exports = function () {
   const templates = require("templates");
   const blog = require("../../index");
+  const cdn = require("../../../cdn");
+  const express = require("express");
   const sync = require("sync");
   const config = require("config");
 
   global.test.blog();
 
-  global.test.server(blog);
+  const router = express.Router();
+
+  const cdnHost = new URL(config.cdn.origin).host;
+
+  router.use((req, res, next) => {
+    const host = req.get("host") || "";
+
+    if (host === cdnHost) {
+      return cdn(req, res, next);
+    }
+
+    return blog(req, res, next);
+  });
+
+  global.test.server(router);
 
   // Build the templates
   beforeAll(function (done) {
@@ -19,25 +35,25 @@ module.exports = function () {
       await this.blog.rebuild();
     };
 
-    this.get = (path, options = {}) =>
-      this.fetch(
-        `${config.protocol}${this.blog.handle}.${config.host}${path}`,
-        options
-      );
+    const blogOrigin = `${config.protocol}${this.blog.handle}.${config.host}`;
 
-    this.text = (path, options = {}) => {
-      return new Promise((resolve, reject) => {
-        this.get(path, options)
-          .then((res) => {
-            if (res.status !== 200)
-              return reject(
-                new Error(`Failed to fetch ${path}: ${res.status}`)
-              );
-            res.text().then((text) => resolve(text));
-          })
-          .catch((err) => reject(err));
-      });
+    const resolveURL = (pathOrUrl, base) => new URL(pathOrUrl, base).toString();
+
+    this.get = (path, options = {}) =>
+      this.fetch(resolveURL(path, blogOrigin), options);
+
+    this.text = async (path, options = {}) => {
+      const res = await this.get(path, options);
+
+      if (res.status !== 200) {
+        throw new Error(`Failed to fetch ${path}: ${res.status}`);
+      }
+
+      return res.text();
     };
+
+    this.cdnText = (path, options = {}) =>
+      this.text(resolveURL(path, config.cdn.origin), options);
 
     this.remove = (path) => {
       return new Promise((resolve, reject) => {

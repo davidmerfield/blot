@@ -1,3 +1,5 @@
+const cdn = require("../../cdn");
+
 describe("asset middleware", function () {
   const config = require("config");
   const fs = require("fs-extra");
@@ -38,7 +40,6 @@ describe("asset middleware", function () {
     expect(await this.text(`/pages/first.xml`)).toEqual("345");
     expect(await this.text(`/Pages/First.xml`)).toEqual("123");
   });
-
 
   it("sends a file with .html extension in the blog folder", async function () {
     const path = "/Foo/File.html";
@@ -91,7 +92,10 @@ describe("asset middleware", function () {
     for (const path of paths) {
       const content = global.test.fake.file();
       contents[path] = content;
-      await fs.outputFile(config.blog_static_files_dir + "/" + this.blog.id + path, content);
+      await fs.outputFile(
+        config.blog_static_files_dir + "/" + this.blog.id + path,
+        content
+      );
     }
 
     for (const path of paths) {
@@ -117,7 +121,6 @@ describe("asset middleware", function () {
     );
 
     expect(response1).toEqual(expected1);
-
   });
 
   // This test ensures that the middleware will pass
@@ -138,10 +141,26 @@ describe("asset middleware", function () {
     expect(body).not.toEqual(content);
   });
 
+  it("serves folder assets via the CDN", async function () {
+    const filePath = "/folder/cdn-test.txt";
+    const fileContents = "CDN integration test content";
+
+    await this.write({ path: filePath, content: fileContents });
+    await this.template({
+      "entries.html": '<a href="/folder/cdn-test.txt">Link</a>',
+    });
+
+    const cdnURL = (await this.text("/")).split('"')[1];
+    expect(await this.text(cdnURL)).toBe(fileContents);
+  });
+
   it("handles double slashes in URLs correctly", async function () {
     await this.write({ path: "/folder/file.txt", content: "Content" });
-    const res = await this.get("//folder//file.txt");
-    expect(await res.text()).toEqual("Content");
+    expect(
+      await this.text(
+        `https://${this.blog.handle}.${config.host}//folder//file.txt`
+      )
+    ).toEqual("Content");
   });
 
   it("sets correct Content-Type header for various file types", async function () {
