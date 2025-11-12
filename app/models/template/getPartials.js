@@ -1,6 +1,7 @@
 var getView = require("./getView");
 var async = require("async");
 var ensure = require("helper/ensure");
+var extend = require("helper/extend");
 var promisify = require("util").promisify;
 
 module.exports = function getPartials(blogID, templateID, partials, callback) {
@@ -68,20 +69,8 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
             if (view) {
               allPartials[partial] = view.content;
 
-              // Merge retrieve from partial, handling cdn arrays specially
-              for (var i in view.retrieve) {
-                if (i === 'cdn' && Array.isArray(view.retrieve[i])) {
-                  // Merge cdn arrays - union of arrays
-                  if (!retrieve.cdn || !Array.isArray(retrieve.cdn)) {
-                    retrieve.cdn = [];
-                  }
-                  // Union of arrays - combine and deduplicate
-                  var combined = retrieve.cdn.concat(view.retrieve[i]);
-                  retrieve.cdn = [...new Set(combined)].sort();
-                } else {
-                  retrieve[i] = view.retrieve[i];
-                }
-              }
+              // Merge retrieve from partial (extend handles array merging)
+              extend(retrieve).and(view.retrieve);
 
               fetchList(view.partials, next);
             } else {

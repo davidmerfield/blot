@@ -33,27 +33,7 @@ module.exports = function getFullView(blogID, templateID, viewName, callback) {
 
       // Now we've fetched the partials we need to
       // append the missing locals in the partials...
-      // Handle cdn arrays specially - merge arrays instead of overwriting
-      view.retrieve = view.retrieve || {};
-      retrieveFromPartials = retrieveFromPartials || {};
-      
-      // Merge retrieve, handling cdn arrays specially
-      for (var key in retrieveFromPartials) {
-        if (key === 'cdn' && Array.isArray(retrieveFromPartials[key])) {
-          // Merge cdn arrays - union of arrays
-          if (!view.retrieve.cdn || !Array.isArray(view.retrieve.cdn)) {
-            view.retrieve.cdn = [];
-          }
-          // Union of arrays - combine and deduplicate
-          var combined = view.retrieve.cdn.concat(retrieveFromPartials.cdn);
-          view.retrieve.cdn = [...new Set(combined)].sort();
-        } else {
-          // For other retrieve keys, use extend's soft merge
-          if (view.retrieve[key] === undefined) {
-            view.retrieve[key] = retrieveFromPartials[key];
-          }
-        }
-      }
+      extend(view.retrieve).and(retrieveFromPartials);
 
       var response = [
         view.locals,
