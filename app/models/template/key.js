@@ -15,12 +15,6 @@ module.exports = {
     return "template:" + templateID + ":url:" + url;
   },
 
-  // Redis key for aggregated CDN target reference counts (not view-level data)
-  // This tracks how many views reference each CDN target for manifest generation
-  cdnTargets: function cdnTargets (templateID) {
-    return "template:" + templateID + ":cdn_targets";
-  },
-
   share: function (shareID) {
     return "template:share:" + shareID;
   },
