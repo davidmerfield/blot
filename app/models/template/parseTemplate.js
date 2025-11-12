@@ -102,6 +102,22 @@ function parseTemplate(template) {
           }
         }
 
+        // Track all referenced locals (including custom ones) for signature hashing
+        // System locals are already tracked above, so only track non-system locals here
+        // The retrieve system will safely ignore non-system locals during fetching
+        if (retrieveThese.indexOf(variable) === -1 && variable !== "cdn") {
+          // Only track the root variable, not nested properties
+          if (!retrieve[variable]) {
+            retrieve[variable] = true;
+          }
+        }
+        
+        if (variableRoot && retrieveThese.indexOf(variableRoot) === -1 && variableRoot !== "cdn") {
+          if (!retrieve[variableRoot]) {
+            retrieve[variableRoot] = true;
+          }
+        }
+
         // console.log(context + variable);
 
         for (var x = 0; x < retrieveThese.length; x++) {

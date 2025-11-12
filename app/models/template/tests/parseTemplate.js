@@ -27,10 +27,10 @@ describe("parseTemplate", function () {
     });
   });
 
-  it("ignores locals that cannot be retrieved from a template", function () {
+  it("includes locals that cannot be retrieved from a template", function () {
     var template = `{{xyz}}`; // not on the whitelist of variables
     var result = parseTemplate(template);
-    expect(result).toEqual({ partials: {}, retrieve: {} });
+    expect(result).toEqual({ partials: {}, retrieve: { xyz: true } });
   });
 
   it("captures the root local used", function () {
@@ -38,7 +38,7 @@ describe("parseTemplate", function () {
     var result = parseTemplate(template);
     expect(result).toEqual({
       partials: {},
-      retrieve: { folder: true },
+      retrieve: { folder: true, "folder.length": true },
     });
   });
 

@@ -7,7 +7,6 @@ const getMetadata = require("../getMetadata");
 const getView = require("../getView");
 const getPartials = require("../getPartials");
 const getAllViews = require("../getAllViews");
-const mustache = require("mustache");
 
 // Promisify callback-based functions
 const getMetadataAsync = promisify(getMetadata);
@@ -38,93 +37,30 @@ function sortObject(value) {
   return value;
 }
 
-function collectTemplateLocalKeys(viewContent, partials, availableKeys) {
-  const knownKeys = new Set(availableKeys || []);
-  const dependencies = new Set();
-
-  function register(name) {
-    if (!name || name === ".") return;
-
-    const parts = name.split(".");
-    const root = parts[0];
-
-    if (knownKeys.has(root)) {
-      dependencies.add(root);
-      return;
-    }
-
-    if (root === "locals" && parts.length > 1) {
-      const nested = parts[1];
-      if (knownKeys.has(nested)) dependencies.add(nested);
-    }
-  }
-
-  function traverse(tokens) {
-    if (!Array.isArray(tokens)) return;
-
-    for (const token of tokens) {
-      if (!token) continue;
-
-      const type = token[0];
-
-      if (type === "name" || type === "&" || type === "{") {
-        register(token[1]);
-        continue;
-      }
-
-      if (type === "#" || type === "^") {
-        register(token[1]);
-        traverse(token[4]);
-        if (token.length > 5) traverse(token[5]);
-        continue;
-      }
-    }
-  }
-
-  function parse(template) {
-    if (!template || typeof template !== "string") return;
-
-    let tokens;
-
-    try {
-      tokens = mustache.parse(template);
-    } catch (err) {
-      return;
-    }
-
-    traverse(tokens);
-  }
-
-  parse(viewContent);
-
-  Object.keys(partials || {}).forEach((name) => {
-    parse(partials[name]);
-  });
-
-  return Array.from(dependencies).sort();
-}
-
-function buildSignature(view, partials, templateLocals, partialLocals) {
+function buildSignature(view, partials, templateLocals, partialLocals, partialRetrieve) {
   const viewLocals = isPlainObject(view && view.locals) ? view.locals : {};
   const metadataLocals = isPlainObject(templateLocals) ? templateLocals : {};
   const partialLocalsObj = isPlainObject(partialLocals) ? partialLocals : {};
+  const partialRetrieveObj = isPlainObject(partialRetrieve) ? partialRetrieve : {};
   
-  const availableKeys = [
-    ...Object.keys(viewLocals),
-    ...Object.keys(metadataLocals),
-    ...Object.keys(partialLocalsObj),
-  ];
+  // Get all referenced locals from view.retrieve and partial retrieve objects
+  // (includes both system and custom locals from main view and all nested partials)
+  // Exclude 'cdn' as it's an array, not a local key
+  // Only include locals that are actually referenced in the template or its partials
+  const mainReferencedKeys = Object.keys(view.retrieve || {})
+    .filter(k => k !== 'cdn');
+  const partialReferencedKeys = Object.keys(partialRetrieveObj)
+    .filter(k => k !== 'cdn');
+  
+  // Combine and deduplicate all referenced keys
+  const referencedKeys = [...new Set([...mainReferencedKeys, ...partialReferencedKeys])].sort();
 
-  const localKeys = collectTemplateLocalKeys(
-    view && view.content,
-    partials,
-    availableKeys
-  );
-
+  // Build signature with only the referenced keys that have actual values
   const localsSignature = {};
 
-  for (const key of localKeys) {
+  for (const key of referencedKeys) {
     // Precedence: metadata locals > view locals > partial locals
+    // Only include keys that are actually available in one of these sources
     if (Object.prototype.hasOwnProperty.call(metadataLocals, key)) {
       localsSignature[key] = metadataLocals[key];
     } else if (Object.prototype.hasOwnProperty.call(viewLocals, key)) {
@@ -132,6 +68,9 @@ function buildSignature(view, partials, templateLocals, partialLocals) {
     } else if (Object.prototype.hasOwnProperty.call(partialLocalsObj, key)) {
       localsSignature[key] = partialLocalsObj[key];
     }
+    // Note: referencedKeys from retrieve that don't have values in locals
+    // won't be included in the signature, which is correct - we only hash
+    // locals that actually have values
   }
 
   const signature = {
@@ -149,13 +88,14 @@ function buildSignature(view, partials, templateLocals, partialLocals) {
 }
 
 /**
- * Recursively collect locals from partial views
+ * Recursively collect locals and retrieve objects from partial views
  */
 async function collectPartialLocals(templateID, partialNames, processedPartials = new Set()) {
   const partialLocals = {};
+  const partialRetrieve = {};
 
   if (!partialNames || Object.keys(partialNames).length === 0) {
-    return partialLocals;
+    return { locals: partialLocals, retrieve: partialRetrieve };
   }
 
   for (const partialName of Object.keys(partialNames)) {
@@ -193,16 +133,33 @@ async function collectPartialLocals(templateID, partialNames, processedPartials 
         });
       }
 
-      // Recursively collect locals from nested partials
+      // Collect retrieve from this partial view (includes referenced locals)
+      if (isPlainObject(partialView.retrieve)) {
+        Object.keys(partialView.retrieve).forEach((key) => {
+          // Merge retrieve keys (excluding 'cdn' which is handled separately)
+          if (key !== 'cdn' && !Object.prototype.hasOwnProperty.call(partialRetrieve, key)) {
+            partialRetrieve[key] = partialView.retrieve[key];
+          }
+        });
+      }
+
+      // Recursively collect locals and retrieve from nested partials
       const nestedPartials = isPlainObject(partialView.partials)
         ? partialView.partials
         : {};
-      const nestedLocals = await collectPartialLocals(templateID, nestedPartials, processedPartials);
+      const nested = await collectPartialLocals(templateID, nestedPartials, processedPartials);
       
       // Merge nested locals (earlier partials take precedence)
-      Object.keys(nestedLocals).forEach((key) => {
+      Object.keys(nested.locals).forEach((key) => {
         if (!Object.prototype.hasOwnProperty.call(partialLocals, key)) {
-          partialLocals[key] = nestedLocals[key];
+          partialLocals[key] = nested.locals[key];
+        }
+      });
+
+      // Merge nested retrieve (earlier partials take precedence)
+      Object.keys(nested.retrieve).forEach((key) => {
+        if (key !== 'cdn' && !Object.prototype.hasOwnProperty.call(partialRetrieve, key)) {
+          partialRetrieve[key] = nested.retrieve[key];
         }
       });
     } catch (err) {
@@ -211,7 +168,7 @@ async function collectPartialLocals(templateID, partialNames, processedPartials 
     }
   }
 
-  return partialLocals;
+  return { locals: partialLocals, retrieve: partialRetrieve };
 }
 
 /**
@@ -245,11 +202,11 @@ async function processTarget(templateID, ownerID, target, metadata) {
   // Get partials content
   const partials = await getPartialsAsync(ownerID, templateID, viewPartials);
 
-  // Collect partial view locals recursively
-  const partialLocals = await collectPartialLocals(templateID, viewPartials);
+  // Collect partial view locals and retrieve objects recursively
+  const { locals: partialLocals, retrieve: partialRetrieve } = await collectPartialLocals(templateID, viewPartials);
 
   // Build signature and return hash
-  const signature = buildSignature(view, partials, metadata.locals, partialLocals);
+  const signature = buildSignature(view, partials, metadata.locals, partialLocals, partialRetrieve);
   return hash(signature);
 }
 
