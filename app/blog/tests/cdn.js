@@ -20,7 +20,10 @@ const validate = (cdnURL) => {
   expect(cdnURL).toContain(config.cdn.origin, `Missing CDN: ${cdnURL}`);
 
   // Check /view/ path is present
-  expect(cdnURL).toContain("/template/", `Missing "/template/" path: ${cdnURL}`);
+  expect(cdnURL).toContain(
+    "/template/",
+    `Missing "/template/" path: ${cdnURL}`
+  );
 
   // Extract hash and validate structure
   const hash = extractHash(cdnURL);
@@ -108,6 +111,30 @@ describe("cdn template function", function () {
     expect(origin).toBe(config.cdn.origin);
     validate(jsCdnURL);
     validate(cssCdnURL);
+  });
+
+  it("works when the view references partials which use the string and function both", async function () {
+    const template = {
+      "a.css": "{{#cdn}}/c.css{{/cdn}}",
+      "b.css": "{{{cdn}}}",
+      "c.css": "body{color:#000}",
+      "entries.html": "{{> a.css}}|{{> b.css}}",
+    };
+
+    await this.template(template);
+
+    const text = await this.text("/");
+    const [cssCdnURL, origin] = text.split("|");
+    const hash = extractHash(cssCdnURL);
+
+    expect(origin).toBe(config.cdn.origin);
+    validate(cssCdnURL);
+
+    await this.template({ ...template, "c.css": "body{color:#fff}" });
+
+    const newHash = extractHash((await this.text("/")).split("|")[0]);
+
+    expect(newHash).not.toBe(hash);
   });
 
   it("works without a leading slash", async function () {

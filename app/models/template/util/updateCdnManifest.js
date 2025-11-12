@@ -97,12 +97,15 @@ function collectTemplateLocalKeys(viewContent, partials, availableKeys) {
   return Array.from(dependencies).sort();
 }
 
-function buildSignature(view, partials, templateLocals) {
+function buildSignature(view, partials, templateLocals, partialLocals) {
   const viewLocals = isPlainObject(view && view.locals) ? view.locals : {};
   const metadataLocals = isPlainObject(templateLocals) ? templateLocals : {};
+  const partialLocalsObj = isPlainObject(partialLocals) ? partialLocals : {};
+  
   const availableKeys = [
     ...Object.keys(viewLocals),
     ...Object.keys(metadataLocals),
+    ...Object.keys(partialLocalsObj),
   ];
 
   const localKeys = collectTemplateLocalKeys(
@@ -114,10 +117,13 @@ function buildSignature(view, partials, templateLocals) {
   const localsSignature = {};
 
   for (const key of localKeys) {
+    // Precedence: metadata locals > view locals > partial locals
     if (Object.prototype.hasOwnProperty.call(metadataLocals, key)) {
       localsSignature[key] = metadataLocals[key];
     } else if (Object.prototype.hasOwnProperty.call(viewLocals, key)) {
       localsSignature[key] = viewLocals[key];
+    } else if (Object.prototype.hasOwnProperty.call(partialLocalsObj, key)) {
+      localsSignature[key] = partialLocalsObj[key];
     }
   }
 
@@ -148,6 +154,10 @@ module.exports = function updateCdnManifest(templateID, callback) {
     if (err) {
       if (err.code === "ENOENT") return callback(null);
       return callback(err);
+    }
+
+    if (!metadata.owner) {
+      return callback(new Error("Template metadata missing owner"));
     }
 
     const ownerID = metadata.owner;
@@ -186,19 +196,86 @@ module.exports = function updateCdnManifest(templateID, callback) {
               return next(isNonFatalError ? null : viewErr);
             }
 
-            getPartials(ownerID, templateID, view.partials || {}, function (
+            // Ensure view.partials is always an object
+            const viewPartials = isPlainObject(view.partials)
+              ? view.partials
+              : {};
+
+            getPartials(ownerID, templateID, viewPartials, function (
               partialErr,
               partials
             ) {
               if (partialErr) return next(partialErr);
 
-              const signature = buildSignature(
-                view,
-                partials,
-                metadata.locals
-              );
-              manifest[target] = hash(signature);
-              next();
+              // Collect partial view locals for template views (not entries)
+              // This includes nested partials recursively
+              const partialLocals = {};
+              const processedPartials = new Set(); // Track processed partials to avoid cycles
+              
+              function collectPartialLocals(partialNames, done) {
+                if (!partialNames || Object.keys(partialNames).length === 0) {
+                  return done();
+                }
+
+                async.eachOfSeries(
+                  partialNames,
+                  function (partialName, value, partialNext) {
+                    // Skip missing
+                    if (!partialName) {
+                      return partialNext();
+                    }
+
+                    // Skip entries (they start with "/") - only process template views
+                    if (partialName.charAt(0) === "/") {
+                      return partialNext();
+                    }
+
+                    // Skip if already processed (avoid cycles)
+                    if (processedPartials.has(partialName)) {
+                      return partialNext();
+                    }
+
+                    processedPartials.add(partialName);
+
+                    getView(templateID, partialName, function (partialViewErr, partialView) {
+                      // Non-fatal if partial view doesn't exist
+                      if (partialViewErr || !partialView) {
+                        return partialNext();
+                      }
+
+                      // Collect locals from this partial view
+                      if (isPlainObject(partialView.locals)) {
+                        Object.keys(partialView.locals).forEach((key) => {
+                          // Only add if not already present (precedence: earlier partials win)
+                          if (!Object.prototype.hasOwnProperty.call(partialLocals, key)) {
+                            partialLocals[key] = partialView.locals[key];
+                          }
+                        });
+                      }
+
+                      // Recursively collect locals from nested partials
+                      const nestedPartials = isPlainObject(partialView.partials)
+                        ? partialView.partials
+                        : {};
+                      collectPartialLocals(nestedPartials, partialNext);
+                    });
+                  },
+                  done
+                );
+              }
+
+              collectPartialLocals(viewPartials, function (partialCollectErr) {
+                if (partialCollectErr) return next(partialCollectErr);
+
+                const signature = buildSignature(
+                  view,
+                  partials,
+                  metadata.locals,
+                  partialLocals
+                );
+                manifest[target] = hash(signature);
+                next();
+              });
             });
           });
         },
