@@ -178,7 +178,12 @@ module.exports = function updateCdnManifest(templateID, callback) {
         function (target, next) {
           getView(templateID, target, function (viewErr, view) {
             if (viewErr || !view) {
-              return next(viewErr && viewErr.code !== "ENOENT" ? viewErr : null);
+              // Treat ENOENT errors and "No view:" errors as non-fatal
+              const isNonFatalError =
+                !viewErr ||
+                viewErr.code === "ENOENT" ||
+                (viewErr.message && viewErr.message.includes("No view:"));
+              return next(isNonFatalError ? null : viewErr);
             }
 
             getPartials(ownerID, templateID, view.partials || {}, function (

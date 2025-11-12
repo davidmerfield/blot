@@ -119,8 +119,8 @@ module.exports = function setView(templateID, updates, callback) {
           function (infiniteError) {
             if (infiniteError) return callback(infiniteError);
 
-            view.retrieve = parseResult.retrieve || [];
-            
+            view.retrieve = parseResult.retrieve || {};
+
             view = serialize(view, viewModel);
 
             client.hmset(viewKey, view, function (err) {
