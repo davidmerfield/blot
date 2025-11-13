@@ -1,3 +1,5 @@
+Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
+
 Replace existing cssURL and scriptURL and css_url and script_url properties in templates with new cdn helper
 - do this by editing the templates
 - once confirmed all templates are fixed, remove the code and documentation for these variables
