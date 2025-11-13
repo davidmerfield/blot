@@ -77,12 +77,17 @@ cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
     }
 
     const mapping = JSON.parse(mappingStr);
-    
+
     // Validate mapping has required fields
-    if (!mapping || !mapping.blogID || !mapping.templateID || !mapping.viewName) {
+    if (
+      !mapping ||
+      !mapping.blogID ||
+      !mapping.templateID ||
+      !mapping.viewName
+    ) {
       return res.status(400).send("Invalid hash mapping");
     }
-    
+
     blogID = mapping.blogID;
     templateID = mapping.templateID;
     viewName = mapping.viewName; // Use the view name from mapping (includes extension)
@@ -94,9 +99,9 @@ cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
     if (mapping.viewName !== expectedViewName) {
       return res.status(400).send("View name mismatch");
     }
-    
+
     // Ensure viewName is valid before proceeding
-    if (!viewName || typeof viewName !== 'string') {
+    if (!viewName || typeof viewName !== "string") {
       return res.status(400).send("Invalid view name");
     }
   } catch (err) {
@@ -111,17 +116,13 @@ cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
     }
 
     const manifest = metadata.cdn || {};
-    
+
     // For SITE templates, create a stub blog from defaults
     // For blog-owned templates, fetch the actual blog
     let blog;
-    if (blogID === 'SITE') {
+    if (blogID === "SITE") {
       // Create a stub blog from defaults for SITE templates
-      blog = Object.assign({}, blogDefaults, {
-        id: 'SITE',
-        owner: 'SITE',
-        handle: 'site',
-      });
+      blog = {};
     } else {
       blog = await getBlog({ id: blogID });
       if (!blog) {

@@ -1,5 +1,5 @@
 const config = require("config");
-const path = require("path");
+const generateCdnUrl = require("models/template/util/generateCdnUrl");
 
 module.exports = function (req, res, callback) {
   return callback(null, function () {
@@ -26,17 +26,7 @@ module.exports = function (req, res, callback) {
           Object.prototype.hasOwnProperty.call(manifest, renderedNormalized)
         ) {
           const hash = manifest[renderedNormalized];
-          const ext = path.extname(renderedNormalized) || "";
-          const viewNameWithoutExtension = ext
-            ? renderedNormalized.slice(0, -ext.length)
-            : renderedNormalized;
-          const encodedView = encodeViewSegment(viewNameWithoutExtension);
-
-          // New URL format: /template/viewname.digest.extension
-          // Use full 32-char hash
-          return (
-            config.cdn.origin + "/template/" + encodedView + "." + hash + ext
-          );
+          return generateCdnUrl(renderedNormalized, hash);
         }
 
         return rendered;
@@ -53,14 +43,3 @@ module.exports = function (req, res, callback) {
     return renderCdn;
   });
 };
-
-function encodeViewSegment(segment) {
-  if (!segment) return "";
-
-  return segment
-    .split("/")
-    .map(function (part) {
-      return encodeURIComponent(part);
-    })
-    .join("/");
-}

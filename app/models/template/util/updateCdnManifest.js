@@ -8,6 +8,8 @@ const getView = require("../getView");
 const getPartials = require("../getPartials");
 const getAllViews = require("../getAllViews");
 const parseTemplate = require("helper/express-mustache/parse");
+const generateCdnUrl = require("./generateCdnUrl");
+const purgeCdnUrls = require("./purgeCdnUrls");
 
 // Promisify callback-based functions
 const getMetadataAsync = promisify(getMetadata);
@@ -354,6 +356,8 @@ module.exports = function updateCdnManifest(templateID, callback) {
 
       const sortedTargets = Array.from(allTargets).sort();
       const manifest = {};
+      const oldManifest = metadata.cdn || {};
+      const urlsToPurge = [];
 
       // Process each target sequentially
       for (const target of sortedTargets) {
@@ -383,8 +387,35 @@ module.exports = function updateCdnManifest(templateID, callback) {
         }
       }
 
+      // Compare old vs new hashes and collect URLs to purge
+      for (const target of sortedTargets) {
+        const oldHash = oldManifest[target];
+        const newHash = manifest[target];
+
+        if (oldHash && oldHash !== newHash && typeof newHash === "string") {
+          // Build old CDN URL using the old hash
+          try {
+            const oldUrl = generateCdnUrl(target, oldHash);
+            urlsToPurge.push(oldUrl);
+          } catch (err) {
+            // Log error but continue - don't fail the manifest update
+            console.error(`Error generating CDN URL for purge: ${target}`, err);
+          }
+        }
+      }
+
       // Save manifest to Redis
       await hsetAsync(key.metadata(templateID), "cdn", JSON.stringify(manifest));
+
+      // Purge old URLs from Bunny CDN
+      if (urlsToPurge.length > 0) {
+        try {
+          await purgeCdnUrls(urlsToPurge);
+        } catch (err) {
+          // Log error but don't fail the manifest update
+          console.error("Error purging CDN URLs:", err);
+        }
+      }
       
       callback(null, manifest);
     } catch (err) {
