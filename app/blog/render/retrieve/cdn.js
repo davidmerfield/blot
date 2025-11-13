@@ -8,6 +8,15 @@ module.exports = function (req, res, callback) {
     // Section: {{#cdn}}/path/to/file{{/cdn}}
     var renderCdn = function (text, render) {
       try {
+        // Skip CDN URLs for preview subdomains on non-SITE templates
+        if (req.preview) {
+          const templateID = req.template && req.template.id;
+          if (templateID && !templateID.startsWith('SITE:')) {
+            // Return original path for preview subdomains on custom templates
+            return typeof render === "function" ? render(text) : text;
+          }
+        }
+
         let rendered = typeof render === "function" ? render(text) : text;
 
         if (!rendered) return "";
