@@ -197,8 +197,12 @@ module.exports = function updateCdnManifest(templateID, callback) {
     try {
       const metadata = await getMetadataAsync(templateID);
       
-      if (!metadata || !metadata.owner) {
-        return callback(metadata ? null : new Error("Template metadata missing owner"));
+      if (!metadata) {
+        return callback(new Error("Template metadata not found"));
+      }
+      
+      if (!metadata.owner) {
+        return callback(new Error("Template metadata missing owner"));
       }
 
       const ownerID = metadata.owner;
