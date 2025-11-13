@@ -436,15 +436,7 @@
     - name: cdn
       type: function
       description: |
-        Used to generate CDN URLs for template view files (e.g., CSS/JS files) with content-based hashes for cache invalidation. Can be used in two ways:
-        
-        As a section helper: `{{#cdn}}/path/to/file{{/cdn}}` returns a CDN URL with a hash for the specified template view file. The URL includes a content-based hash that changes when the file's content changes, ensuring browsers fetch the latest version.
-        
-        As an interpolation: `{{cdn}}` returns the CDN origin URL.
-        
-        **Important:** The CDN URLs will update when template views or metadata are modified. The CDN URLs will NOT update when entry-backed partials (partials whose names begin with `/`) change, or when views that render lists of entries change when new entries are posted. Files referenced using the `cdn` helper SHOULD NOT rely on posts/pages/folder content, as the CDN URLs won't update when that content changes. The `cdn` function is intended for CSS/JS files that are independent of entry content.
+        Used to generate CDN URLs for template view files, especially useful for JS and CSS. When used literally e.g. `{{cdn}}` it returns the CDN origin URL. When used as a section helper, e.g. `{{#cdn}}/path/to/file{{/cdn}}` the helper returns the URL to the view file on the CDN.
       example: |
+        <link rel="preconnect" href="{{{cdn}}}" />
         <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
-        <script src="{{#cdn}}/script.js{{/cdn}}"></script>
-        
-        The CDN origin is {{cdn}}.
