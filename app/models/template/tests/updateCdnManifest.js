@@ -204,7 +204,7 @@ describe("updateCdnManifest", function () {
     ).toBeRejectedWith(new Error("Your template has infinitely nested partials"));
   });
 
-  fit("rejects rendered output that exceeds maximum size", async function () {
+  it("rejects rendered output that exceeds maximum size", async function () {
     const test = this;
     const updateCdnManifest = require("../util/updateCdnManifest");
 
