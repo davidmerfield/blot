@@ -62,13 +62,23 @@ describe("template", function () {
     const originalHash = initialMetadata.cdn["style.css"];
     expect(originalHash).toEqual(jasmine.any(String));
 
-    await setMetadata(templateID, { locals: { background_color: "#000" } });
+    await this.setView({
+      name: "style.css",
+      content: "body { color: {{background_color}}; }",
+      locals: { background_color: "#000" },
+    });
+
     const updatedMetadata = await getMetadata(templateID);
     const updatedHash = updatedMetadata.cdn["style.css"];
     expect(updatedHash).toEqual(jasmine.any(String));
     expect(updatedHash).not.toEqual(originalHash);
 
-    await setMetadata(templateID, { locals: { background_color: "#123456" } });
+    await this.setView({
+      name: "style.css",
+      content: "body { color: {{background_color}}; }",
+      locals: { background_color: "#123456" },
+    });
+
     const nextMetadata = await getMetadata(templateID);
     expect(nextMetadata.cdn["style.css"]).toEqual(jasmine.any(String));
     expect(nextMetadata.cdn["style.css"]).not.toEqual(updatedHash);
