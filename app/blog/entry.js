@@ -38,6 +38,7 @@ module.exports = function (request, response, next) {
     ) {
       delete blog.plugins.commento;
       delete blog.plugins.disqus;
+      delete blog.plugins.blueskyComments;
     }
 
     // Redirect this entry to the file from which it was generated
