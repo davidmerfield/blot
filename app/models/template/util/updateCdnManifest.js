@@ -17,6 +17,37 @@ const hsetAsync = promisify(client.hset).bind(client);
 const delAsync = promisify(client.del).bind(client);
 const setexAsync = promisify(client.setex).bind(client);
 
+// Maximum size for rendered output (10MB)
+const MAX_RENDERED_OUTPUT_SIZE = 10 * 1024 * 1024;
+
+/**
+ * Validate target name to prevent path traversal attacks
+ * @param {string} target - The target name to validate
+ * @returns {boolean} - True if target is valid, false otherwise
+ */
+function isValidTarget(target) {
+  if (!target || typeof target !== "string") {
+    return false;
+  }
+
+  // Reject paths containing ".." (path traversal)
+  if (target.includes("..")) {
+    return false;
+  }
+
+  // Reject paths containing null bytes
+  if (target.includes("\0")) {
+    return false;
+  }
+
+  // Reject absolute paths (starting with "/")
+  if (target.startsWith("/")) {
+    return false;
+  }
+
+  return true;
+}
+
 /**
  * Render a view for CDN manifest generation
  */
@@ -32,7 +63,7 @@ async function renderViewForCdn(templateID, ownerID, viewName, metadata) {
     // Fetch or create blog object
     let blogData;
     if (ownerID === "SITE") {
-      blogData = {};
+      blogData = { id: "SITE" };
     } else {
       blogData = await getBlogAsync({ id: ownerID });
       if (!blogData) {
@@ -153,6 +184,12 @@ async function processTarget(templateID, ownerID, target, metadata) {
     return null; // Missing view or render error - skip in manifest
   }
 
+  // Validate rendered output size
+  if (renderedOutput.length > MAX_RENDERED_OUTPUT_SIZE) {
+    console.error(`Rendered output for ${target} exceeds maximum size (${renderedOutput.length} bytes > ${MAX_RENDERED_OUTPUT_SIZE} bytes)`);
+    return null;
+  }
+
   // Compute hash from templateID + rendered output
   const hashInput = templateID + ":" + renderedOutput;
   const computedHash = hash(hashInput);
@@ -163,6 +200,7 @@ async function processTarget(templateID, ownerID, target, metadata) {
     await setexAsync(renderedKey, 31536000, renderedOutput);
   } catch (err) {
     console.error(`Error storing rendered output for ${target}:`, err);
+    return null; // Don't create manifest entry if storage fails
   }
 
   return computedHash;
@@ -215,8 +253,8 @@ module.exports = function updateCdnManifest(templateID, callback) {
         const view = views[viewName];
         if (view?.retrieve?.cdn && Array.isArray(view.retrieve.cdn)) {
           view.retrieve.cdn.forEach((target) => {
-            if (typeof target === "string" && target.trim()) {
-              allTargets.add(target);
+            if (typeof target === "string" && target.trim() && isValidTarget(target.trim())) {
+              allTargets.add(target.trim());
             }
           });
         }

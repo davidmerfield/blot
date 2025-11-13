@@ -1,4 +1,5 @@
 const config = require("config");
+const fetch = require("node-fetch");
 
 /**
  * Purge URLs from Bunny CDN cache
