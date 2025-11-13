@@ -5,9 +5,7 @@ const client = require("models/client");
 const key = require("../key");
 const getMetadata = require("../getMetadata");
 const getView = require("../getView");
-const getPartials = require("../getPartials");
 const getAllViews = require("../getAllViews");
-const parseTemplate = require("helper/express-mustache/parse");
 const generateCdnUrl = require("./generateCdnUrl");
 const purgeCdnUrls = require("./purgeCdnUrls");
 
@@ -15,272 +13,140 @@ const purgeCdnUrls = require("./purgeCdnUrls");
 const getMetadataAsync = promisify(getMetadata);
 const getAllViewsAsync = promisify(getAllViews);
 const getViewAsync = promisify(getView);
-const getPartialsAsync = promisify(getPartials);
 const hsetAsync = promisify(client.hset).bind(client);
 const saddAsync = promisify(client.sadd).bind(client);
 const sremAsync = promisify(client.srem).bind(client);
 const scardAsync = promisify(client.scard).bind(client);
+const smembersAsync = promisify(client.smembers).bind(client);
 const delAsync = promisify(client.del).bind(client);
-
-// Blog-specific locals that make the output unique per blog
-const BLOG_SPECIFIC_LOCALS = new Set([
-  // Blog properties from PUBLIC array
-  'handle', 'title', 'avatar', 'domain', 'timeZone', 'plugins', 
-  'permalink', 'menu', 'dateFormat', 'cacheID', 'roundAvatar', 'imageExif',
-  // Special locals
-  'feedURL', 'blogURL', 'cssURL', 'scriptURL',
-  // Retrieved locals that depend on blog data
-  'allEntries', 'recentEntries', 'allTags', 'archives', 'tagged', 'posts',
-  'all_entries', 'recent_entries', 'all_tags', 'popular_tags', 
-  'total_posts', 'updated', 'latestEntry', 'search_results', 'search_query',
-  'absoluteURLs', 'active', 'isActive', 'avatar_url', 'feed_url',
-  'folder', 'page', 'public', 'plugin_css', 'plugin_js'
-]);
-
-function isPlainObject(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function sortObject(value) {
-  if (Array.isArray(value)) {
-    return value.map(sortObject);
-  }
-
-  if (isPlainObject(value)) {
-    const sorted = {};
-    Object.keys(value)
-      .sort()
-      .forEach((key) => {
-        sorted[key] = sortObject(value[key]);
-      });
-    return sorted;
-  }
-
-  return value;
-}
-
-// Deep merge retrieve objects, handling nested structures and special 'cdn' array case
-function deepMergeRetrieve(target, source) {
-  if (!isPlainObject(target)) {
-    target = {};
-  }
-  if (!isPlainObject(source)) {
-    return target;
-  }
-
-  for (const key in source) {
-    // Special case: 'cdn' should be handled separately (array merging)
-    if (key === 'cdn') {
-      if (Array.isArray(source[key])) {
-        if (!Array.isArray(target[key])) {
-          target[key] = [];
-        }
-        // Merge arrays (union with deduplication)
-        const combined = target[key].concat(source[key]);
-        target[key] = [...new Set(combined)];
-      }
-      continue;
-    }
-
-    const targetValue = target[key];
-    const sourceValue = source[key];
-
-    // If both are objects (and not arrays), recursively merge
-    if (isPlainObject(targetValue) && isPlainObject(sourceValue)) {
-      deepMergeRetrieve(targetValue, sourceValue);
-    } else if (isPlainObject(sourceValue)) {
-      // Source is an object, target is not (or doesn't exist) - use source
-      target[key] = isPlainObject(targetValue) 
-        ? deepMergeRetrieve({}, sourceValue) 
-        : deepMergeRetrieve({}, sourceValue);
-    } else if (sourceValue !== undefined) {
-      // Source has a value (boolean, etc.) - use it if target doesn't exist or is not an object
-      if (!target[key] || !isPlainObject(target[key])) {
-        target[key] = sourceValue;
-      }
-    }
-  }
-
-  return target;
-}
-
-/**
- * Detect if view content or partials reference blog-specific variables
- */
-function detectBlogSpecificReferences(viewContent, partials) {
-  if (!viewContent && (!partials || Object.keys(partials).length === 0)) {
-    return false;
-  }
-
-  // Parse view content
-  const viewParsed = viewContent ? parseTemplate(viewContent) : { locals: [] };
-  const allLocals = new Set(viewParsed.locals || []);
-
-  // Parse all partials
-  if (partials && typeof partials === 'object') {
-    for (const partialName in partials) {
-      const partialContent = partials[partialName];
-      if (typeof partialContent === 'string') {
-        const partialParsed = parseTemplate(partialContent);
-        (partialParsed.locals || []).forEach(local => allLocals.add(local));
-      }
-    }
-  }
-
-  // Check if any referenced locals are blog-specific
-  for (const local of allLocals) {
-    // Handle nested properties like "menu.length" -> extract root "menu"
-    const rootLocal = local.split('.')[0];
-    if (BLOG_SPECIFIC_LOCALS.has(rootLocal)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function buildSignature(view, partials, templateLocals, partialLocals, partialRetrieve, blogID) {
-  const viewLocals = isPlainObject(view && view.locals) ? view.locals : {};
-  const metadataLocals = isPlainObject(templateLocals) ? templateLocals : {};
-  const partialLocalsObj = isPlainObject(partialLocals) ? partialLocals : {};
-  const partialRetrieveObj = isPlainObject(partialRetrieve) ? partialRetrieve : {};
-  
-  // Get all referenced locals from view.retrieve and partial retrieve objects
-  // (includes both system and custom locals from main view and all nested partials)
-  // Exclude 'cdn' as it's an array, not a local key
-  // Only include locals that are actually referenced in the template or its partials
-  const mainReferencedKeys = Object.keys(view.retrieve || {})
-    .filter(k => k !== 'cdn');
-  const partialReferencedKeys = Object.keys(partialRetrieveObj)
-    .filter(k => k !== 'cdn');
-  
-  // Combine and deduplicate all referenced keys
-  const referencedKeys = [...new Set([...mainReferencedKeys, ...partialReferencedKeys])].sort();
-
-  // Build signature with only the referenced keys that have actual values
-  const localsSignature = {};
-
-  for (const key of referencedKeys) {
-    // Precedence: metadata locals > view locals > partial locals
-    // Only include keys that are actually available in one of these sources
-    if (Object.prototype.hasOwnProperty.call(metadataLocals, key)) {
-      localsSignature[key] = metadataLocals[key];
-    } else if (Object.prototype.hasOwnProperty.call(viewLocals, key)) {
-      localsSignature[key] = viewLocals[key];
-    } else if (Object.prototype.hasOwnProperty.call(partialLocalsObj, key)) {
-      localsSignature[key] = partialLocalsObj[key];
-    }
-    // Note: referencedKeys from retrieve that don't have values in locals
-    // won't be included in the signature, which is correct - we only hash
-    // locals that actually have values
-  }
-
-  const signature = {
-    content: (view && view.content) || "",
-    partials: {},
-    locals: localsSignature,
-  };
-
-  const partialKeys = Object.keys(partials || {}).sort();
-  for (const name of partialKeys) {
-    signature.partials[name] = partials[name] || "";
-  }
-
-  // Include blogID in signature if provided (for blog-specific views)
-  if (blogID) {
-    signature.blogID = blogID;
-  }
-
-  return JSON.stringify(sortObject(signature));
-}
-
-/**
- * Recursively collect locals and retrieve objects from partial views
- */
-async function collectPartialLocals(templateID, partialNames, processedPartials = new Set()) {
-  const partialLocals = {};
-  const partialRetrieve = {};
-
-  if (!partialNames || Object.keys(partialNames).length === 0) {
-    return { locals: partialLocals, retrieve: partialRetrieve };
-  }
-
-  for (const partialName of Object.keys(partialNames)) {
-    // Skip missing
-    if (!partialName) {
-      continue;
-    }
-
-    // Skip entries (they start with "/") - only process template views
-    if (partialName.charAt(0) === "/") {
-      continue;
-    }
-
-    // Skip if already processed (avoid cycles)
-    if (processedPartials.has(partialName)) {
-      continue;
-    }
-
-    processedPartials.add(partialName);
-
-    try {
-      const partialView = await getViewAsync(templateID, partialName);
-      
-      if (!partialView) {
-        continue;
-      }
-
-      // Collect locals from this partial view
-      if (isPlainObject(partialView.locals)) {
-        Object.keys(partialView.locals).forEach((key) => {
-          // Only add if not already present (precedence: earlier partials win)
-          if (!Object.prototype.hasOwnProperty.call(partialLocals, key)) {
-            partialLocals[key] = partialView.locals[key];
-          }
-        });
-      }
-
-      // Collect retrieve from this partial view (includes referenced locals)
-      // Use deep merge to handle nested structures
-      if (isPlainObject(partialView.retrieve)) {
-        deepMergeRetrieve(partialRetrieve, partialView.retrieve);
-      }
-
-      // Recursively collect locals and retrieve from nested partials
-      const nestedPartials = isPlainObject(partialView.partials)
-        ? partialView.partials
-        : {};
-      const nested = await collectPartialLocals(templateID, nestedPartials, processedPartials);
-      
-      // Merge nested locals (earlier partials take precedence)
-      Object.keys(nested.locals).forEach((key) => {
-        if (!Object.prototype.hasOwnProperty.call(partialLocals, key)) {
-          partialLocals[key] = nested.locals[key];
-        }
-      });
-
-      // Merge nested retrieve using deep merge to handle nested structures
-      if (isPlainObject(nested.retrieve)) {
-        deepMergeRetrieve(partialRetrieve, nested.retrieve);
-      }
-    } catch (err) {
-      // Non-fatal if partial view doesn't exist - continue processing
-      continue;
-    }
-  }
-
-  return { locals: partialLocals, retrieve: partialRetrieve };
-}
+const setexAsync = promisify(client.setex).bind(client);
 
 /**
  * Process a single CDN target and build its manifest entry
  */
 async function processTarget(templateID, ownerID, target, metadata) {
+  // Lazy require inside function to avoid circular dependency
+  async function renderViewForCdn(templateID, blogID, viewName, metadata) {
+    // Lazy require to avoid circular dependency
+    const Blog = require("../../../models/blog");
+    const blogDefaults = require("../../../models/blog/defaults");
+    const renderMiddleware = require("../../../blog/render/middleware");
+    const { promisify } = require("util");
+    const getBlogAsync = promisify(Blog.get);
+
+    try {
+      // Fetch or create blog object
+      let blogData;
+      if (blogID === "SITE") {
+        // For SITE templates, use defaults
+        blogData = {};
+      } else {
+        // For blog templates, fetch the actual blog
+        blogData = await getBlogAsync({ id: blogID });
+        if (!blogData) {
+          // Missing blog - skip in manifest
+          return null;
+        }
+      }
+
+      // Extend blog with defaults and extend function
+      const blog = Blog.extend(Object.assign({}, blogDefaults, blogData));
+
+      // Create mock req/res objects compatible with render middleware
+      let renderedOutput = null;
+      let renderError = null;
+
+      const req = {
+        blog: blog,
+        preview: false,
+        log: () => {}, // no-op logger
+        template: {
+          locals: metadata.locals || {},
+          id: templateID,
+          cdn: {}, // empty for CDN target rendering
+        },
+        query: {},
+        protocol: "https",
+        headers: {},
+      };
+
+      const res = {
+        locals: { partials: {} },
+        header: () => {},
+        set: () => {},
+        send: (output) => {
+          // Capture output if callback not used
+          renderedOutput = output;
+        },
+        renderView: null, // Set by render middleware
+      };
+
+      // Call render middleware
+      await new Promise((resolve) => {
+        renderMiddleware(req, res, (err) => {
+          if (err) {
+            renderError = err;
+            return resolve();
+          }
+          resolve();
+        });
+      });
+
+      if (renderError) {
+        // Log error but don't fail entire manifest update
+        console.error(`Error rendering view ${viewName} for CDN:`, renderError);
+        return null;
+      }
+
+      // Render the view using res.renderView with callback to capture output
+      let resolved = false;
+      await new Promise((resolve) => {
+        res.renderView(viewName, (err) => {
+          // next callback - called on errors or if no callback provided
+          if (resolved) return; // Already resolved by callback
+          if (err) {
+            // Handle missing view or render errors
+            if (err.code === "NO_VIEW") {
+              // Missing view - skip in manifest (not an error)
+              renderError = null;
+            } else {
+              renderError = err;
+              console.error(`Error rendering view ${viewName} for CDN:`, err);
+            }
+          }
+          // If we get here without error and no callback was used, output should be in res.send
+          resolved = true;
+          resolve();
+        }, (err, output) => {
+          // Callback pattern - captures output directly when successful
+          if (resolved) return; // Already resolved by next
+          if (err) {
+            renderError = err;
+            console.error(`Error rendering view ${viewName} for CDN:`, err);
+          } else if (output) {
+            renderedOutput = output;
+          }
+          resolved = true;
+          resolve();
+        });
+      });
+
+      if (renderError || !renderedOutput) {
+        return null;
+      }
+
+      return renderedOutput;
+    } catch (err) {
+      // Log error but don't fail entire manifest update
+      console.error(`Error in renderViewForCdn for ${viewName}:`, err);
+      return null;
+    }
+  }
+
+  // Check if view exists
   let view;
-  
   try {
     view = await getViewAsync(templateID, target);
-    
     if (!view) {
       return null;
     }
@@ -297,62 +163,28 @@ async function processTarget(templateID, ownerID, target, metadata) {
     throw err;
   }
 
-  // Ensure view.partials is always an object
-  const viewPartials = isPlainObject(view.partials) ? view.partials : {};
-
-  // Get partials content
-  const partials = await getPartialsAsync(ownerID, templateID, viewPartials);
-
-  // Collect partial view locals and retrieve objects recursively
-  const { locals: partialLocals, retrieve: partialRetrieve } = await collectPartialLocals(templateID, viewPartials);
-
-  // Detect if view references blog-specific data
-  const hasBlogSpecificRefs = detectBlogSpecificReferences(view.content, partials);
-
-  // Validate SITE templates don't use blog-specific properties
-  if (ownerID === "SITE" && hasBlogSpecificRefs) {
-    // Get list of blog-specific properties referenced
-    const viewParsed = parseTemplate(view.content);
-    const allLocals = new Set(viewParsed.locals || []);
-    
-    // Also check partials
-    if (partials && typeof partials === 'object') {
-      for (const partialName in partials) {
-        const partialContent = partials[partialName];
-        if (typeof partialContent === 'string') {
-          const partialParsed = parseTemplate(partialContent);
-          (partialParsed.locals || []).forEach(local => allLocals.add(local));
-        }
-      }
-    }
-    
-    // Find blog-specific locals
-    const blogSpecificLocals = [];
-    for (const local of allLocals) {
-      const rootLocal = local.split('.')[0];
-      if (BLOG_SPECIFIC_LOCALS.has(rootLocal)) {
-        blogSpecificLocals.push(local);
-      }
-    }
-    
-    const error = new Error(
-      `SITE template "${templateID}" view "${target}" references blog-specific properties: ${blogSpecificLocals.join(', ')}. ` +
-      `SITE templates must not use blog-specific properties as they are shared across all blogs.`
-    );
-    error.code = "SITE_TEMPLATE_BLOG_SPECIFIC_REF";
-    error.templateID = templateID;
-    error.viewName = target;
-    error.blogSpecificLocals = blogSpecificLocals;
-    throw error;
+  // Render the view to get output
+  const renderedOutput = await renderViewForCdn(templateID, ownerID, target, metadata);
+  
+  if (!renderedOutput) {
+    // Missing view or render error - skip in manifest
+    return null;
   }
 
-  // Build signature - include ownerID if blog-specific refs detected
-  // This ensures blog-specific views get unique hashes per blog
-  const blogID = hasBlogSpecificRefs ? ownerID : undefined;
-  const signature = buildSignature(view, partials, metadata.locals, partialLocals, partialRetrieve, blogID);
-  const computedHash = hash(signature);
+  // Compute hash from templateID + rendered output (ensures uniqueness per template)
+  const hashInput = templateID + ":" + renderedOutput;
+  const computedHash = hash(hashInput);
 
-  return computedHash
+  // Store rendered output in Redis with 1 year TTL (31536000 seconds)
+  const renderedKey = key.renderedOutput(templateID, computedHash);
+  try {
+    await setexAsync(renderedKey, 31536000, renderedOutput);
+  } catch (err) {
+    // Log error but continue - don't fail manifest update
+    console.error(`Error storing rendered output for ${target}:`, err);
+  }
+
+  return computedHash;
 }
 
 module.exports = function updateCdnManifest(templateID, callback) {
@@ -435,7 +267,7 @@ module.exports = function updateCdnManifest(templateID, callback) {
             // Add new mapping to set using SADD
             await saddAsync(hashKey, mapping);
             
-            // If hash changed, remove old mapping from the set
+            // If hash changed, remove old mapping from the set and delete old rendered output
             const oldHash = oldManifest[target];
             if (oldHash && oldHash !== result && typeof oldHash === 'string') {
               const oldHashKey = key.hashMapping(oldHash);
@@ -444,6 +276,15 @@ module.exports = function updateCdnManifest(templateID, callback) {
                 templateID: templateID,
                 viewName: target
               });
+              
+              // Delete old rendered output
+              const oldRenderedKey = key.renderedOutput(templateID, oldHash);
+              try {
+                await delAsync(oldRenderedKey);
+              } catch (err) {
+                // Log error but continue - don't fail the manifest update
+                console.error(`Error deleting old rendered output for ${target}:`, err);
+              }
               
               // Remove old mapping from set
               await sremAsync(oldHashKey, oldMapping);
@@ -501,6 +342,29 @@ module.exports = function updateCdnManifest(templateID, callback) {
             if (mapping.templateID === templateID) {
               const oldHashKey = key.hashMapping(oldHash);
               
+              // Delete old rendered output if no other mappings exist for this template
+              // Check if there are other mappings for this template with the same hash
+              const allMappings = await smembersAsync(oldHashKey);
+              const otherMappingsForTemplate = allMappings.filter(m => {
+                try {
+                  const parsed = JSON.parse(m);
+                  return parsed.templateID === templateID && m !== mappingStr;
+                } catch {
+                  return false;
+                }
+              });
+              
+              // If no other mappings for this template, delete rendered output
+              if (otherMappingsForTemplate.length === 0) {
+                const oldRenderedKey = key.renderedOutput(templateID, oldHash);
+                try {
+                  await delAsync(oldRenderedKey);
+                } catch (err) {
+                  // Log error but continue - don't fail the manifest update
+                  console.error(`Error deleting rendered output for removed target: ${mapping.viewName}`, err);
+                }
+              }
+              
               // Remove mapping from set
               await sremAsync(oldHashKey, mappingStr);
               
@@ -534,4 +398,5 @@ module.exports = function updateCdnManifest(templateID, callback) {
     }
   })();
 };
+
 

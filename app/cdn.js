@@ -6,12 +6,14 @@ const Template = require("models/template");
 const Blog = require("models/blog");
 const renderMiddleware = require("./blog/render/middleware");
 const blogDefaults = require("models/blog/defaults");
+const mime = require("mime-types");
 
 const getMetadata = promisify(Template.getMetadata);
 const getBlog = promisify(Blog.get);
 const client = require("models/client");
 const key = require("models/template/key");
 const srandmemberAsync = promisify(client.srandmember).bind(client);
+const getAsync = promisify(client.get).bind(client);
 
 const GLOBAL_STATIC_FILES = config.blot_directory + "/app/blog/static";
 
@@ -117,6 +119,26 @@ cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
   }
 
   try {
+    // Try to fetch rendered output from Redis cache first
+    const renderedKey = key.renderedOutput(templateID, hash);
+    const cachedOutput = await getAsync(renderedKey);
+
+    if (cachedOutput) {
+      // Cache hit - serve from Redis
+      // Determine content type from view name
+      const contentType = getContentType(viewName);
+      
+      // Set cache headers
+      res.set("Cache-Control", "public, max-age=31536000, immutable");
+      res.set("Content-Type", contentType);
+      
+      // Return cached output
+      return res.send(cachedOutput);
+    }
+
+    // Cache miss - fall back to rendering (shouldn't happen if manifest is up to date)
+    console.warn('CDN cache miss for', templateID, viewName, hash);
+
     const metadata = await getMetadata(templateID);
     if (!metadata) {
       return next();
@@ -167,6 +189,29 @@ cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
 cdn.use(static(config.blog_static_files_dir));
 
 module.exports = cdn;
+
+/**
+ * Get content type from view name
+ */
+function getContentType(viewName) {
+  // Use mime-types to detect content type
+  const contentType = mime.lookup(viewName);
+  if (contentType) {
+    return contentType;
+  }
+  
+  // Fallback for common extensions
+  const ext = viewName.split('.').pop().toLowerCase();
+  const fallbacks = {
+    'css': 'text/css',
+    'js': 'text/javascript',
+    'html': 'text/html',
+    'json': 'application/json',
+    'xml': 'application/xml',
+  };
+  
+  return fallbacks[ext] || 'text/plain';
+}
 
 /**
  * Parse CDN path format: viewname.digest.extension

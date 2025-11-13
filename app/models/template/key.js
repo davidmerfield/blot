@@ -33,5 +33,9 @@ module.exports = {
 
   hashMapping: function hashMapping (hash) {
     return "cdn:hash:" + hash;
+  },
+
+  renderedOutput: function renderedOutput(templateID, hash) {
+    return "cdn:rendered:" + templateID + ":" + hash;
   }
 };

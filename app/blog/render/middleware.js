@@ -114,6 +114,27 @@ module.exports = function (req, res, _next) {
               return next(ERROR.BAD_LOCALS());
             }
 
+            // Replace protocol of CDN links for requests served over HTTP
+            if (
+              viewType.indexOf("text/") > -1 &&
+              req.protocol === "http" &&
+              fromCloudflare === false &&
+              output.indexOf(config.cdn.origin) > -1
+            )
+              output = output
+                .split(config.cdn.origin)
+                .join(config.cdn.origin.split("https://").join("http://"));
+
+            if (viewType === "text/html" && !req.preview) {
+              req.log("Replacing folder links with CDN links");
+              output = await replaceFolderLinks(blog, output, req.log);
+              req.log("Replaced folder links with CDN links");
+            } else if (viewType === "text/css" && !req.preview) {
+              req.log("Replacing folder links with CDN links");
+              output = await replaceFolderLinksCSS(blog, output, req.log);
+              req.log("Replaced folder links with CDN links");
+            }
+
             if (callback) {
               return callback(null, output);
             }
@@ -139,27 +160,6 @@ module.exports = function (req, res, _next) {
               (viewType === STYLE || viewType === JS)
             ) {
               res.header(CACHE_CONTROL, cacheDuration);
-            }
-
-            // Replace protocol of CDN links for requests served over HTTP
-            if (
-              viewType.indexOf("text/") > -1 &&
-              req.protocol === "http" &&
-              fromCloudflare === false &&
-              output.indexOf(config.cdn.origin) > -1
-            )
-              output = output
-                .split(config.cdn.origin)
-                .join(config.cdn.origin.split("https://").join("http://"));
-
-            if (viewType === "text/html" && !req.preview) {
-              req.log("Replacing folder links with CDN links");
-              output = await replaceFolderLinks(blog, output, req.log);
-              req.log("Replaced folder links with CDN links");
-            } else if (viewType === "text/css" && !req.preview) {
-              req.log("Replacing folder links with CDN links");
-              output = await replaceFolderLinksCSS(blog, output, req.log);
-              req.log("Replaced folder links with CDN links");
             }
 
             if (viewType === STYLE && !req.preview) {
