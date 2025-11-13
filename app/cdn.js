@@ -93,23 +93,7 @@ module.exports = cdn;
  * Get content type from view name
  */
 function getContentType(viewName) {
-  // Use mime-types to detect content type
-  const contentType = mime.lookup(viewName);
-  if (contentType) {
-    return contentType;
-  }
-  
-  // Fallback for common extensions
-  const ext = viewName.split('.').pop().toLowerCase();
-  const fallbacks = {
-    'css': 'text/css',
-    'js': 'text/javascript',
-    'html': 'text/html',
-    'json': 'application/json',
-    'xml': 'application/xml',
-  };
-  
-  return fallbacks[ext] || 'text/plain';
+  return mime.lookup(viewName) || 'text/plain';
 }
 
 /**
@@ -119,52 +103,36 @@ function getContentType(viewName) {
 function parseCdnPath(path) {
   if (!path) return null;
 
-  // Decode path segments
-  const decoded = path
-    .split("/")
-    .map(function (part) {
-      try {
+  try {
+    // Decode and validate path segments
+    const decoded = path
+      .split("/")
+      .map(function (part) {
         const decoded = decodeURIComponent(part);
         // Validate: no path traversal, no null bytes, reasonable length
-        if (
-          decoded.includes("..") ||
-          decoded.includes("\0") ||
-          decoded.length > 255
-        ) {
+        if (decoded.includes("..") || decoded.includes("\0") || decoded.length > 255) {
           throw new Error("Invalid path segment");
         }
         return decoded;
-      } catch (err) {
-        throw new Error("Invalid encoding");
-      }
-    })
-    .join("/");
+      })
+      .join("/");
 
-  // Extract hash (32 hex chars) and extension from the last segment
-  // Pattern: viewname.32hexchars.extension or viewname.32hexchars
-  // Example: style.abc123def456...32chars.css
-  // Example: script.abc123def456...32chars.js
-  const hashPattern = /\.([a-f0-9]{32})(\.[^/]+)?$/;
-  const match = decoded.match(hashPattern);
+    // Extract hash (32 hex chars) and extension from the last segment
+    const hashPattern = /\.([a-f0-9]{32})(\.[^/]+)?$/;
+    const match = decoded.match(hashPattern);
+    if (!match) return null;
 
-  if (!match) {
+    const hash = match[1];
+    const extension = match[2] || "";
+    const viewName = decoded.slice(0, match.index);
+
+    // Final validation: no path traversal (already checked above, but double-check)
+    if (viewName.includes("..") || viewName.includes("\0")) {
+      return null;
+    }
+
+    return { viewName, hash, extension };
+  } catch (err) {
     return null;
   }
-
-  const hash = match[1];
-  const extension = match[2] || "";
-
-  // Extract view name (everything before .hash.extension)
-  const viewName = decoded.slice(0, match.index);
-
-  // Final validation: no path traversal
-  if (viewName.includes("..") || viewName.includes("\0")) {
-    return null;
-  }
-
-  return {
-    viewName: viewName,
-    hash: hash,
-    extension: extension,
-  };
 }

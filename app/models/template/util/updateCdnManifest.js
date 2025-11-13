@@ -18,131 +18,118 @@ const delAsync = promisify(client.del).bind(client);
 const setexAsync = promisify(client.setex).bind(client);
 
 /**
+ * Render a view for CDN manifest generation
+ */
+async function renderViewForCdn(templateID, ownerID, viewName, metadata) {
+  // Lazy require to avoid circular dependency
+  const Blog = require("../../../models/blog");
+  const blogDefaults = require("../../../models/blog/defaults");
+  const renderMiddleware = require("../../../blog/render/middleware");
+  const { promisify } = require("util");
+  const getBlogAsync = promisify(Blog.get);
+
+  try {
+    // Fetch or create blog object
+    let blogData;
+    if (ownerID === "SITE") {
+      blogData = {};
+    } else {
+      blogData = await getBlogAsync({ id: ownerID });
+      if (!blogData) {
+        return null; // Missing blog - skip in manifest
+      }
+    }
+
+    const blog = Blog.extend(Object.assign({}, blogDefaults, blogData));
+
+    // Create mock req/res objects compatible with render middleware
+    let renderedOutput = null;
+    let renderError = null;
+
+    const req = {
+      blog: blog,
+      preview: false,
+      log: () => {},
+      template: {
+        locals: metadata.locals || {},
+        id: templateID,
+        cdn: {}, // empty for CDN target rendering
+      },
+      query: {},
+      protocol: "https",
+      headers: {},
+    };
+
+    const res = {
+      locals: { partials: {} },
+      header: () => {},
+      set: () => {},
+      send: (output) => {
+        renderedOutput = output;
+      },
+      renderView: null, // Set by render middleware
+    };
+
+    // Call render middleware
+    await new Promise((resolve) => {
+      renderMiddleware(req, res, (err) => {
+        if (err) {
+          renderError = err;
+          return resolve();
+        }
+        resolve();
+      });
+    });
+
+    if (renderError) {
+      console.error(`Error rendering view ${viewName} for CDN:`, renderError);
+      return null;
+    }
+
+    // Render the view - use callback pattern which is simpler
+    await new Promise((resolve) => {
+      res.renderView(viewName, (err) => {
+        // next callback - called on errors
+        if (err) {
+          if (err.code === "NO_VIEW") {
+            // Missing view - skip in manifest (not an error)
+            renderError = null;
+          } else {
+            renderError = err;
+            console.error(`Error rendering view ${viewName} for CDN:`, err);
+          }
+        }
+        resolve();
+      }, (err, output) => {
+        // callback pattern - captures output directly
+        if (err) {
+          renderError = err;
+          console.error(`Error rendering view ${viewName} for CDN:`, err);
+        } else {
+          renderedOutput = output;
+        }
+        resolve();
+      });
+    });
+
+    if (renderError || !renderedOutput) {
+      return null;
+    }
+
+    return renderedOutput;
+  } catch (err) {
+    console.error(`Error in renderViewForCdn for ${viewName}:`, err);
+    return null;
+  }
+}
+
+/**
  * Process a single CDN target and build its manifest entry
  */
 async function processTarget(templateID, ownerID, target, metadata) {
-  // Lazy require inside function to avoid circular dependency
-  async function renderViewForCdn(templateID, blogID, viewName, metadata) {
-    // Lazy require to avoid circular dependency
-    const Blog = require("../../../models/blog");
-    const blogDefaults = require("../../../models/blog/defaults");
-    const renderMiddleware = require("../../../blog/render/middleware");
-    const { promisify } = require("util");
-    const getBlogAsync = promisify(Blog.get);
-
-    try {
-      // Fetch or create blog object
-      let blogData;
-      if (blogID === "SITE") {
-        // For SITE templates, use defaults
-        blogData = {};
-      } else {
-        // For blog templates, fetch the actual blog
-        blogData = await getBlogAsync({ id: blogID });
-        if (!blogData) {
-          // Missing blog - skip in manifest
-          return null;
-        }
-      }
-
-      // Extend blog with defaults and extend function
-      const blog = Blog.extend(Object.assign({}, blogDefaults, blogData));
-
-      // Create mock req/res objects compatible with render middleware
-      let renderedOutput = null;
-      let renderError = null;
-
-      const req = {
-        blog: blog,
-        preview: false,
-        log: () => {}, // no-op logger
-        template: {
-          locals: metadata.locals || {},
-          id: templateID,
-          cdn: {}, // empty for CDN target rendering
-        },
-        query: {},
-        protocol: "https",
-        headers: {},
-      };
-
-      const res = {
-        locals: { partials: {} },
-        header: () => {},
-        set: () => {},
-        send: (output) => {
-          // Capture output if callback not used
-          renderedOutput = output;
-        },
-        renderView: null, // Set by render middleware
-      };
-
-      // Call render middleware
-      await new Promise((resolve) => {
-        renderMiddleware(req, res, (err) => {
-          if (err) {
-            renderError = err;
-            return resolve();
-          }
-          resolve();
-        });
-      });
-
-      if (renderError) {
-        // Log error but don't fail entire manifest update
-        console.error(`Error rendering view ${viewName} for CDN:`, renderError);
-        return null;
-      }
-
-      // Render the view using res.renderView with callback to capture output
-      let resolved = false;
-      await new Promise((resolve) => {
-        res.renderView(viewName, (err) => {
-          // next callback - called on errors or if no callback provided
-          if (resolved) return; // Already resolved by callback
-          if (err) {
-            // Handle missing view or render errors
-            if (err.code === "NO_VIEW") {
-              // Missing view - skip in manifest (not an error)
-              renderError = null;
-            } else {
-              renderError = err;
-              console.error(`Error rendering view ${viewName} for CDN:`, err);
-            }
-          }
-          // If we get here without error and no callback was used, output should be in res.send
-          resolved = true;
-          resolve();
-        }, (err, output) => {
-          // Callback pattern - captures output directly when successful
-          if (resolved) return; // Already resolved by next
-          if (err) {
-            renderError = err;
-            console.error(`Error rendering view ${viewName} for CDN:`, err);
-          } else if (output) {
-            renderedOutput = output;
-          }
-          resolved = true;
-          resolve();
-        });
-      });
-
-      if (renderError || !renderedOutput) {
-        return null;
-      }
-
-      return renderedOutput;
-    } catch (err) {
-      // Log error but don't fail entire manifest update
-      console.error(`Error in renderViewForCdn for ${viewName}:`, err);
-      return null;
-    }
-  }
-
   // Check if view exists
-  let view;
   try {
-    view = await getViewAsync(templateID, target);
+    const view = await getViewAsync(templateID, target);
     if (!view) {
       return null;
     }
@@ -163,24 +150,38 @@ async function processTarget(templateID, ownerID, target, metadata) {
   const renderedOutput = await renderViewForCdn(templateID, ownerID, target, metadata);
   
   if (!renderedOutput) {
-    // Missing view or render error - skip in manifest
-    return null;
+    return null; // Missing view or render error - skip in manifest
   }
 
-  // Compute hash from templateID + rendered output (ensures uniqueness per template)
+  // Compute hash from templateID + rendered output
   const hashInput = templateID + ":" + renderedOutput;
   const computedHash = hash(hashInput);
 
-  // Store rendered output in Redis with 1 year TTL (31536000 seconds)
+  // Store rendered output in Redis with 1 year TTL
   const renderedKey = key.renderedOutput(computedHash);
   try {
     await setexAsync(renderedKey, 31536000, renderedOutput);
   } catch (err) {
-    // Log error but continue - don't fail manifest update
     console.error(`Error storing rendered output for ${target}:`, err);
   }
 
   return computedHash;
+}
+
+/**
+ * Clean up old rendered output and purge CDN URL
+ */
+async function cleanupOldHash(target, oldHash) {
+  if (!oldHash || typeof oldHash !== 'string') return;
+  
+  try {
+    const oldRenderedKey = key.renderedOutput(oldHash);
+    await delAsync(oldRenderedKey);
+    const oldUrl = generateCdnUrl(target, oldHash);
+    await purgeCdnUrls([oldUrl]);
+  } catch (err) {
+    console.error(`Error cleaning up old hash for ${target}:`, err);
+  }
 }
 
 module.exports = function updateCdnManifest(templateID, callback) {
@@ -196,24 +197,19 @@ module.exports = function updateCdnManifest(templateID, callback) {
     try {
       const metadata = await getMetadataAsync(templateID);
       
-      if (!metadata) {
-        return callback(null);
-      }
-
-      if (!metadata.owner) {
-        return callback(new Error("Template metadata missing owner"));
+      if (!metadata || !metadata.owner) {
+        return callback(metadata ? null : new Error("Template metadata missing owner"));
       }
 
       const ownerID = metadata.owner;
 
       // Get all views and collect CDN targets from their retrieve.cdn arrays
       const views = await getAllViewsAsync(templateID);
-
-      // Collect all unique CDN targets from all views
       const allTargets = new Set();
+      
       for (const viewName in views) {
         const view = views[viewName];
-        if (view && view.retrieve && Array.isArray(view.retrieve.cdn)) {
+        if (view?.retrieve?.cdn && Array.isArray(view.retrieve.cdn)) {
           view.retrieve.cdn.forEach((target) => {
             if (typeof target === "string" && target.trim()) {
               allTargets.add(target);
@@ -231,47 +227,23 @@ module.exports = function updateCdnManifest(templateID, callback) {
         try {
           const result = await processTarget(templateID, ownerID, target, metadata);
           if (result && typeof result === 'string') {
-            // Store full 32-char MD5 hash as string
             manifest[target] = result;
             
-            // If hash changed, delete old rendered output and purge CDN URL
+            // Clean up old hash if it changed
             const oldHash = oldManifest[target];
             if (oldHash && oldHash !== result && typeof oldHash === 'string') {
-              // Delete old rendered output
-              const oldRenderedKey = key.renderedOutput(oldHash);
-              try {
-                await delAsync(oldRenderedKey);
-                // Purge CDN URL
-                const oldUrl = generateCdnUrl(target, oldHash);
-                await purgeCdnUrls([oldUrl]);
-              } catch (err) {
-                // Log error but continue - don't fail the manifest update
-                console.error(`Error cleaning up old hash for ${target}:`, err);
-              }
+              await cleanupOldHash(target, oldHash);
             }
           }
         } catch (err) {
-          // If processing a target fails, continue with others
-          // but log the error
           console.error(`Error processing CDN target ${target}:`, err);
         }
       }
 
-      // Clean up rendered outputs for targets that were removed entirely from manifest
+      // Clean up rendered outputs for targets that were removed entirely
       for (const target in oldManifest) {
         if (!manifest.hasOwnProperty(target)) {
-          const oldHash = oldManifest[target];
-          if (oldHash && typeof oldHash === 'string') {
-            const oldRenderedKey = key.renderedOutput(oldHash);
-            try {
-              await delAsync(oldRenderedKey);
-              const oldUrl = generateCdnUrl(target, oldHash);
-              await purgeCdnUrls([oldUrl]);
-            } catch (err) {
-              // Log error but continue - don't fail the manifest update
-              console.error(`Error cleaning up removed target ${target}:`, err);
-            }
-          }
+          await cleanupOldHash(target, oldManifest[target]);
         }
       }
 
