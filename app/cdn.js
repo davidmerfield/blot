@@ -63,8 +63,10 @@ cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
     const renderedKey = key.renderedOutput(hash);
     const cachedOutput = await getAsync(renderedKey);
 
-    if (!cachedOutput) {
+    if (cachedOutput == null) {
       // Cache miss - return 404 (shouldn't happen if manifest is up to date)
+      // Note: cachedOutput == null checks for both null and undefined,
+      // but allows empty strings (which are valid cached values)
       console.warn('CDN cache miss for', viewName, hash);
       return next();
     }
