@@ -15,10 +15,10 @@ const getAllViewsAsync = promisify(getAllViews);
 const getViewAsync = promisify(getView);
 const hsetAsync = promisify(client.hset).bind(client);
 const delAsync = promisify(client.del).bind(client);
-const setexAsync = promisify(client.setex).bind(client);
+const setAsync = promisify(client.set).bind(client);
 
-// Maximum size for rendered output (10MB)
-const MAX_RENDERED_OUTPUT_SIZE = 10 * 1024 * 1024;
+// Maximum size for rendered output (5MB)
+const MAX_RENDERED_OUTPUT_SIZE = 5 * 1024 * 1024;
 
 /**
  * Validate target name to prevent path traversal attacks
@@ -197,7 +197,7 @@ async function processTarget(templateID, ownerID, target, metadata) {
   // Store rendered output in Redis with 1 year TTL
   const renderedKey = key.renderedOutput(computedHash);
   try {
-    await setexAsync(renderedKey, 31536000, renderedOutput);
+    await setAsync(renderedKey, renderedOutput);
   } catch (err) {
     console.error(`Error storing rendered output for ${target}:`, err);
     return null; // Don't create manifest entry if storage fails
