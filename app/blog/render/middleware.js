@@ -137,14 +137,24 @@ module.exports = function (req, res, _next) {
 
             if (viewType === STYLE && !req.preview) {
               req.log("Minifying CSS");
-              output = minifyCSS(output);
-              req.log("Minified CSS");
+              try {
+                output = minifyCSS(output);
+                req.log("Minified CSS");
+              } catch (e) {
+                req.log("Failed to minify CSS");
+                console.log(e);
+              }
             }
 
             if (viewType === JS && !req.preview) {
               req.log("Minifying JavaScript");
-              output = await minifyJS(output);
-              req.log("Minified JavaScript");
+              try {
+                output = await minifyJS(output);
+                req.log("Minified JavaScript");
+              } catch (e) {
+                req.log("Failed to minify JS");
+                console.log(e);
+              }
             }
 
             if (callback) {

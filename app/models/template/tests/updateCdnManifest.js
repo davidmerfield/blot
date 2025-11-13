@@ -145,4 +145,93 @@ describe("updateCdnManifest", function () {
     expect(metadata.cdn["/absolute.css"]).toBeUndefined();
     expect(Object.keys(metadata.cdn)).toEqual(["style.css"]);
   });
+
+  it("handles missing blog gracefully when rendering for CDN", async function () {
+    const test = this;
+    const updateCdnManifest = require("../util/updateCdnManifest");
+
+    // Create a template with invalid owner ID
+    const invalidTemplateID = "nonexistent:template";
+
+    // This should not throw, but should handle gracefully
+    await new Promise((resolve, reject) => {
+      updateCdnManifest(invalidTemplateID, (err) => {
+        // Should error because template doesn't exist
+        expect(err).toBeDefined();
+        resolve();
+      });
+    });
+  });
+
+  it("handles views that reference non-existent partials", async function () {
+    const test = this;
+
+    await setViewAsync(test.template.id, {
+      name: "entries.html",
+      content: "{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    // Create a view that references a non-existent partial
+    await setViewAsync(test.template.id, {
+      name: "style.css",
+      content: "{{> nonexistent.css}} body { color: red; }",
+    });
+
+    // Should still create manifest entry (partial errors are handled)
+    const metadata = await getMetadataAsync(test.template.id);
+    expect(metadata.cdn["style.css"]).toEqual(jasmine.any(String));
+  });
+
+  it("handles views with circular partial dependencies", async function () {
+    const test = this;
+
+    await setViewAsync(test.template.id, {
+      name: "entries.html",
+      content: "{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    // Create views with circular dependencies
+    await setViewAsync(test.template.id, {
+      name: "style.css",
+      content: "{{> a.css}}",
+    });
+
+    await expectAsync(
+      setViewAsync(test.template.id, {
+        name: "a.css",
+        content: "{{> style.css}}",
+      })
+    ).toBeRejectedWith(new Error("Your template has infinitely nested partials"));
+  });
+
+  fit("rejects rendered output that exceeds maximum size", async function () {
+    const test = this;
+    const updateCdnManifest = require("../util/updateCdnManifest");
+
+    await setViewAsync(test.template.id, {
+      name: "entries.html",
+      content: "{{#cdn}}/large.html{{/cdn}}",
+    });
+
+    // Create a view with content that exceeds 2MB
+    const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+    const largeContent = "x".repeat(MAX_SIZE + 1); // Exceeds limit
+
+    await setViewAsync(test.template.id, {
+      name: "large.html",
+      content: largeContent,
+    });
+
+    // Update manifest - should skip the large file
+    await new Promise((resolve, reject) => {
+      updateCdnManifest(test.template.id, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+
+    const metadata = await getMetadataAsync(test.template.id);
+    // Large file should not be in manifest
+    expect(metadata.cdn["large.html"]).toBeUndefined();
+  });
 });

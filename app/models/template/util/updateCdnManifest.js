@@ -17,8 +17,8 @@ const hsetAsync = promisify(client.hset).bind(client);
 const delAsync = promisify(client.del).bind(client);
 const setAsync = promisify(client.set).bind(client);
 
-// Maximum size for rendered output (5MB)
-const MAX_RENDERED_OUTPUT_SIZE = 5 * 1024 * 1024;
+// Maximum size for rendered output (2MB)
+const MAX_RENDERED_OUTPUT_SIZE = 2 * 1024 * 1024;
 
 /**
  * Validate target name to prevent path traversal attacks
