@@ -11,7 +11,7 @@ const getMetadata = promisify(Template.getMetadata);
 const getBlog = promisify(Blog.get);
 const client = require("models/client");
 const key = require("models/template/key");
-const getAsync = promisify(client.get).bind(client);
+const srandmemberAsync = promisify(client.srandmember).bind(client);
 
 const GLOBAL_STATIC_FILES = config.blot_directory + "/app/blog/static";
 
@@ -67,16 +67,23 @@ cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
     const parsedViewName = parsed.viewName;
     const parsedExtension = parsed.extension;
 
-    // Look up hash mapping in Redis
+    // Look up hash mapping in Redis - fetch one random member from set
+    // All members should produce the same result, so any one is sufficient
     const hashKey = key.hashMapping(hash);
-    const mappingStr = await getAsync(hashKey);
+    const mappingStr = await srandmemberAsync(hashKey);
 
     if (!mappingStr) {
-      // Hash not found - return 404
+      // Hash not found or set is empty - return 404
       return next();
     }
 
-    const mapping = JSON.parse(mappingStr);
+    let mapping;
+    try {
+      mapping = JSON.parse(mappingStr);
+    } catch (err) {
+      // Invalid mapping format - return 404
+      return next();
+    }
 
     // Validate mapping has required fields
     if (

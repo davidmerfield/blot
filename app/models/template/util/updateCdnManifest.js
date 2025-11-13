@@ -17,7 +17,10 @@ const getAllViewsAsync = promisify(getAllViews);
 const getViewAsync = promisify(getView);
 const getPartialsAsync = promisify(getPartials);
 const hsetAsync = promisify(client.hset).bind(client);
-const setAsync = promisify(client.set).bind(client);
+const saddAsync = promisify(client.sadd).bind(client);
+const sremAsync = promisify(client.srem).bind(client);
+const scardAsync = promisify(client.scard).bind(client);
+const delAsync = promisify(client.del).bind(client);
 
 // Blog-specific locals that make the output unique per blog
 const BLOG_SPECIFIC_LOCALS = new Set([
@@ -357,7 +360,22 @@ module.exports = function updateCdnManifest(templateID, callback) {
       const sortedTargets = Array.from(allTargets).sort();
       const manifest = {};
       const oldManifest = metadata.cdn || {};
-      const urlsToPurge = [];
+
+      // Track old mappings for cleanup: hash -> Set of mappings to remove
+      const oldHashesToCleanup = new Map();
+      for (const target in oldManifest) {
+        const oldHash = oldManifest[target];
+        if (oldHash && typeof oldHash === 'string') {
+          if (!oldHashesToCleanup.has(oldHash)) {
+            oldHashesToCleanup.set(oldHash, new Set());
+          }
+          oldHashesToCleanup.get(oldHash).add(JSON.stringify({
+            blogID: ownerID,
+            templateID: templateID,
+            viewName: target
+          }));
+        }
+      }
 
       // Process each target sequentially
       for (const target of sortedTargets) {
@@ -377,8 +395,57 @@ module.exports = function updateCdnManifest(templateID, callback) {
               viewName: target
             });
             
-            // Store mapping - if key exists, that's fine (same output via CDN)
-            await setAsync(hashKey, mapping);
+            // Add new mapping to set using SADD
+            await saddAsync(hashKey, mapping);
+            
+            // If hash changed, remove old mapping from the set
+            const oldHash = oldManifest[target];
+            if (oldHash && oldHash !== result && typeof oldHash === 'string') {
+              const oldHashKey = key.hashMapping(oldHash);
+              const oldMapping = JSON.stringify({
+                blogID: ownerID,
+                templateID: templateID,
+                viewName: target
+              });
+              
+              // Remove old mapping from set
+              await sremAsync(oldHashKey, oldMapping);
+              
+              // Check if set is now empty after removal
+              const remainingCount = await scardAsync(oldHashKey);
+              if (remainingCount === 0) {
+                // Set is empty - purge CDN URL and delete Redis key
+                try {
+                  const oldUrl = generateCdnUrl(target, oldHash);
+                  await purgeCdnUrls([oldUrl]);
+                  await delAsync(oldHashKey);
+                } catch (err) {
+                  // Log error but continue - don't fail the manifest update
+                  console.error(`Error purging CDN URL for empty set: ${target}`, err);
+                }
+              }
+              
+              // Remove from oldHashesToCleanup since we've handled it
+              if (oldHashesToCleanup.has(oldHash)) {
+                oldHashesToCleanup.get(oldHash).delete(oldMapping);
+                if (oldHashesToCleanup.get(oldHash).size === 0) {
+                  oldHashesToCleanup.delete(oldHash);
+                }
+              }
+            } else if (oldHash === result) {
+              // Hash didn't change - remove from oldHashesToCleanup since it's still in use
+              if (oldHashesToCleanup.has(oldHash)) {
+                const mappingToRemove = JSON.stringify({
+                  blogID: ownerID,
+                  templateID: templateID,
+                  viewName: target
+                });
+                oldHashesToCleanup.get(oldHash).delete(mappingToRemove);
+                if (oldHashesToCleanup.get(oldHash).size === 0) {
+                  oldHashesToCleanup.delete(oldHash);
+                }
+              }
+            }
           }
         } catch (err) {
           // If processing a target fails, continue with others
@@ -387,35 +454,42 @@ module.exports = function updateCdnManifest(templateID, callback) {
         }
       }
 
-      // Compare old vs new hashes and collect URLs to purge
-      for (const target of sortedTargets) {
-        const oldHash = oldManifest[target];
-        const newHash = manifest[target];
-
-        if (oldHash && oldHash !== newHash && typeof newHash === "string") {
-          // Build old CDN URL using the old hash
+      // Clean up mappings for targets that were removed entirely from manifest
+      // (targets in oldManifest but not in new manifest)
+      for (const [oldHash, mappingsToRemove] of oldHashesToCleanup) {
+        for (const mappingStr of mappingsToRemove) {
           try {
-            const oldUrl = generateCdnUrl(target, oldHash);
-            urlsToPurge.push(oldUrl);
+            const mapping = JSON.parse(mappingStr);
+            // Only process if this mapping is for this template
+            if (mapping.templateID === templateID) {
+              const oldHashKey = key.hashMapping(oldHash);
+              
+              // Remove mapping from set
+              await sremAsync(oldHashKey, mappingStr);
+              
+              // Check if set is now empty after removal
+              const remainingCount = await scardAsync(oldHashKey);
+              if (remainingCount === 0) {
+                // Set is empty - purge CDN URL and delete Redis key
+                try {
+                  const oldUrl = generateCdnUrl(mapping.viewName, oldHash);
+                  await purgeCdnUrls([oldUrl]);
+                  await delAsync(oldHashKey);
+                } catch (err) {
+                  // Log error but continue - don't fail the manifest update
+                  console.error(`Error purging CDN URL for removed target: ${mapping.viewName}`, err);
+                }
+              }
+            }
           } catch (err) {
-            // Log error but continue - don't fail the manifest update
-            console.error(`Error generating CDN URL for purge: ${target}`, err);
+            // Log error but continue - non-fatal
+            console.error(`Error processing removed target mapping:`, err);
           }
         }
       }
 
       // Save manifest to Redis
       await hsetAsync(key.metadata(templateID), "cdn", JSON.stringify(manifest));
-
-      // Purge old URLs from Bunny CDN
-      if (urlsToPurge.length > 0) {
-        try {
-          await purgeCdnUrls(urlsToPurge);
-        } catch (err) {
-          // Log error but don't fail the manifest update
-          console.error("Error purging CDN URLs:", err);
-        }
-      }
       
       callback(null, manifest);
     } catch (err) {
