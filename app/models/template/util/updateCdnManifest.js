@@ -232,7 +232,10 @@ module.exports = function updateCdnManifest(templateID, callback) {
             // Clean up old hash if it changed
             const oldHash = oldManifest[target];
             if (oldHash && oldHash !== result && typeof oldHash === 'string') {
-              await cleanupOldHash(target, oldHash);
+              // Run cleanup in background - don't await
+              cleanupOldHash(target, oldHash).catch(err => {
+                // Error already logged in cleanupOldHash, but catch to prevent unhandled rejection
+              });
             }
           }
         } catch (err) {
@@ -243,7 +246,10 @@ module.exports = function updateCdnManifest(templateID, callback) {
       // Clean up rendered outputs for targets that were removed entirely
       for (const target in oldManifest) {
         if (!manifest.hasOwnProperty(target)) {
-          await cleanupOldHash(target, oldManifest[target]);
+          // Run cleanup in background - don't await
+          cleanupOldHash(target, oldManifest[target]).catch(err => {
+            // Error already logged in cleanupOldHash, but catch to prevent unhandled rejection
+          });
         }
       }
 
