@@ -309,6 +309,43 @@ async function processTarget(templateID, ownerID, target, metadata) {
   // Detect if view references blog-specific data
   const hasBlogSpecificRefs = detectBlogSpecificReferences(view.content, partials);
 
+  // Validate SITE templates don't use blog-specific properties
+  if (ownerID === "SITE" && hasBlogSpecificRefs) {
+    // Get list of blog-specific properties referenced
+    const viewParsed = parseTemplate(view.content);
+    const allLocals = new Set(viewParsed.locals || []);
+    
+    // Also check partials
+    if (partials && typeof partials === 'object') {
+      for (const partialName in partials) {
+        const partialContent = partials[partialName];
+        if (typeof partialContent === 'string') {
+          const partialParsed = parseTemplate(partialContent);
+          (partialParsed.locals || []).forEach(local => allLocals.add(local));
+        }
+      }
+    }
+    
+    // Find blog-specific locals
+    const blogSpecificLocals = [];
+    for (const local of allLocals) {
+      const rootLocal = local.split('.')[0];
+      if (BLOG_SPECIFIC_LOCALS.has(rootLocal)) {
+        blogSpecificLocals.push(local);
+      }
+    }
+    
+    const error = new Error(
+      `SITE template "${templateID}" view "${target}" references blog-specific properties: ${blogSpecificLocals.join(', ')}. ` +
+      `SITE templates must not use blog-specific properties as they are shared across all blogs.`
+    );
+    error.code = "SITE_TEMPLATE_BLOG_SPECIFIC_REF";
+    error.templateID = templateID;
+    error.viewName = target;
+    error.blogSpecificLocals = blogSpecificLocals;
+    throw error;
+  }
+
   // Build signature - include ownerID if blog-specific refs detected
   // This ensures blog-specific views get unique hashes per blog
   const blogID = hasBlogSpecificRefs ? ownerID : undefined;
