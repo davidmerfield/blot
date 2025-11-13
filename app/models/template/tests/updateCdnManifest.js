@@ -23,7 +23,7 @@ describe("updateCdnManifest", function () {
     // Create the style.css view that will be referenced
     await setViewAsync(test.template.id, {
       name: "style.css",
-      content: "body { color: red; }",
+      content: "body{color:red}",
     });
 
     // Get metadata to check manifest (setView automatically calls updateCdnManifest)
@@ -38,7 +38,7 @@ describe("updateCdnManifest", function () {
     const renderedOutput = await getAsync(renderedKey);
 
     expect(renderedOutput).toBeDefined();
-    expect(renderedOutput).toBe("body { color: red; }");
+    expect(renderedOutput).toBe("body{color:red}");
   });
 
   it("removes old rendered output from Redis when hash changes", async function () {
@@ -53,7 +53,7 @@ describe("updateCdnManifest", function () {
     // Create the style.css view
     await setViewAsync(test.template.id, {
       name: "style.css",
-      content: "body { color: pink; }",
+      content: "body{color:pink}",
     });
 
     const metadata1 = await getMetadataAsync(test.template.id);
@@ -62,12 +62,12 @@ describe("updateCdnManifest", function () {
 
     // Verify old rendered output exists
     const oldOutput = await getAsync(oldRenderedKey);
-    expect(oldOutput).toBe("body { color: pink; }");
+    expect(oldOutput).toBe("body{color:pink}");
 
     // Update view content to change hash
     await setViewAsync(test.template.id, {
       name: "style.css",
-      content: "body { color: purple; }",
+      content: "body{color:purple}",
     });
 
     const metadata2 = await getMetadataAsync(test.template.id);
@@ -82,6 +82,6 @@ describe("updateCdnManifest", function () {
     // Verify new rendered output exists
     const newRenderedKey = key.renderedOutput(newHash);
     const newOutput = await getAsync(newRenderedKey);
-    expect(newOutput).toBe("body { color: purple; }");
+    expect(newOutput).toBe("body{color:purple}");
   });
 });

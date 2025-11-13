@@ -190,8 +190,10 @@ async function processTarget(templateID, ownerID, target, metadata) {
     return null;
   }
 
-  // Compute hash from templateID + rendered output
-  const hashInput = templateID + ":" + renderedOutput;
+  // Compute hash from templateID + view name + rendered output
+  // We include the template ID and view name to ensure that hashes are unique per site 
+  // and per view because we purge the old hash when this changes. 
+  const hashInput = templateID + ":" + target + ":" + renderedOutput;
   const computedHash = hash(hashInput);
 
   // Store rendered output in Redis with 1 year TTL
