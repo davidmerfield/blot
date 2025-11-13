@@ -587,4 +587,30 @@ describe("cdn template function", function () {
       expect(result).not.toContain("/template/");
     });
   });
+
+  describe("loadTemplate CDN manifest", function () {
+    it("loads CDN manifest into template object", async function () {
+      await this.template({
+        "style.css": "body { color: red; }",
+        "entries.html": "{{#cdn}}/style.css{{/cdn}}",
+      });
+
+      // The template should have CDN manifest loaded
+      // This is tested indirectly by the CDN helper working
+      const html = await this.text("/");
+      expect(html).toContain("/template/");
+      expect(html).toContain(config.cdn.origin);
+    });
+
+    it("handles missing CDN manifest gracefully", async function () {
+      // Create a template without CDN manifest
+      await this.template({
+        "entries.html": "No CDN usage",
+      });
+
+      // Should not error
+      const html = await this.text("/");
+      expect(html).toBe("No CDN usage");
+    });
+  });
 });
