@@ -1,3 +1,8 @@
+
+Enforce size limits on setting tempalte views
+Add integration tests for cdn paths with weird view names, etc.
+Add integration tests for preview subdomain logic (skip for my- not for site)
+
 Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
 
 Replace existing cssURL and scriptURL and css_url and script_url properties in templates with new cdn helper
