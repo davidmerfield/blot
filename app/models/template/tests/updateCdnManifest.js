@@ -56,7 +56,7 @@ describe("updateCdnManifest", function () {
     // Create the style.css view
     await setViewAsync(test.template.id, {
       name: "style.css",
-      content: "body { color: blue; }",
+      content: "body { color: pink; }",
     });
 
     const metadata1 = await getMetadataAsync(test.template.id);
@@ -70,7 +70,7 @@ describe("updateCdnManifest", function () {
     // Update view content to change hash
     await setViewAsync(test.template.id, {
       name: "style.css",
-      content: "body { color: black; }",
+      content: "body { color: purple; }",
     });
 
     const metadata2 = await getMetadataAsync(test.template.id);
