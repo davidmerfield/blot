@@ -23,7 +23,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.32.2/tocbot.css">
     <link rel="alternate" type="application/rss+xml" title="{{title}}" href="{{{blogURL}}}{{{feedURL}}}">
     {{#avatar}}<link rel="icon" href="{{{avatar}}}" type="image/x-icon">{{/avatar}}
-    <link rel="stylesheet" href="{{{cssURL}}}">
+    <link rel="preconnect" href="{{{cdn}}}" />
+    <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
 
     <script type="module" src="/navigation-collapser.js"></script>
 </head>

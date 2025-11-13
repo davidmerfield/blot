@@ -3,5 +3,6 @@
     <title>{{> title}}</title>
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for {{title}}" href="{{{blogURL}}}{{{feedURL}}}">
     <link rel="icon" href="{{{avatar}}}" type="image/x-icon">
-    <link rel="stylesheet" href="{{{cssURL}}}">
+    <link rel="preconnect" href="{{{cdn}}}" />
+    <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
 </head>
