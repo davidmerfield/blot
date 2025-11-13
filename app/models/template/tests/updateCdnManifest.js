@@ -107,4 +107,42 @@ describe("updateCdnManifest", function () {
 
     expect(renderedOutput).toBe("");
   });
+
+  it("ignores invalid CDN targets when rebuilding the manifest", async function () {
+    const test = this;
+
+    await setViewAsync(test.template.id, {
+      name: "entries.html",
+      content: "{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    await setViewAsync(test.template.id, {
+      name: "style.css",
+      content: "body{color:red}",
+    });
+
+    const viewKey = key.view(test.template.id, "entries.html");
+    const invalidRetrieve = {
+      cdn: ["style.css", "../secrets.css", "/absolute.css"],
+    };
+
+    await new Promise((resolve, reject) => {
+      client.hset(viewKey, "retrieve", JSON.stringify(invalidRetrieve), (err) =>
+        err ? reject(err) : resolve()
+      );
+    });
+
+    await new Promise((resolve, reject) => {
+      require("../util/updateCdnManifest")(test.template.id, (err) =>
+        err ? reject(err) : resolve()
+      );
+    });
+
+    const metadata = await getMetadataAsync(test.template.id);
+
+    expect(metadata.cdn["style.css"]).toEqual(jasmine.any(String));
+    expect(metadata.cdn["../secrets.css"]).toBeUndefined();
+    expect(metadata.cdn["/absolute.css"]).toBeUndefined();
+    expect(Object.keys(metadata.cdn)).toEqual(["style.css"]);
+  });
 });
