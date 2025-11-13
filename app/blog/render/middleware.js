@@ -135,6 +135,18 @@ module.exports = function (req, res, _next) {
               req.log("Replaced folder links with CDN links");
             }
 
+            if (viewType === STYLE && !req.preview) {
+              req.log("Minifying CSS");
+              output = minifyCSS(output);
+              req.log("Minified CSS");
+            }
+
+            if (viewType === JS && !req.preview) {
+              req.log("Minifying JavaScript");
+              output = await minifyJS(output);
+              req.log("Minified JavaScript");
+            }
+
             if (callback) {
               return callback(null, output);
             }
@@ -160,18 +172,6 @@ module.exports = function (req, res, _next) {
               (viewType === STYLE || viewType === JS)
             ) {
               res.header(CACHE_CONTROL, cacheDuration);
-            }
-
-            if (viewType === STYLE && !req.preview) {
-              req.log("Minifying CSS");
-              output = minifyCSS(output);
-              req.log("Minified CSS");
-            }
-
-            if (viewType === JS && !req.preview) {
-              req.log("Minifying JavaScript");
-              output = await minifyJS(output);
-              req.log("Minified JavaScript");
             }
 
             try {
