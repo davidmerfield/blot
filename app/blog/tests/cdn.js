@@ -1,6 +1,8 @@
 const config = require("config");
-const { template } = require("lodash");
 const { extname } = require("path");
+
+const cdnRegex = (path) =>
+  new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}/blog_[a-f0-9]+${path}`);
 
 const extractHash = (cdnURL) => {
   const parts = cdnURL.split(".");
@@ -365,6 +367,119 @@ describe("cdn template function", function () {
     expect(secondHash).not.toBe(firstHash);
   });
 
+  it("should replace folder links in CSS served via template CDN route", async function () {
+    await this.write({ path: "/images/test.jpg", content: "fake image data" });
+    await this.template({
+      "style.css": `.test { background-image: url('/images/test.jpg'); }`,
+      "entries.html": "{{#cdn}}/style.css{{/cdn}}",
+    });
+    // Get the CDN URL from the HTML
+    const html = await this.text("/");
+    const cdnUrlMatch = html.match(
+      new RegExp(`${config.cdn.origin}/template/[^"']+`)
+    );
+    expect(cdnUrlMatch).toBeTruthy();
+    const cdnUrl = cdnUrlMatch[0];
+    // Fetch the CSS via CDN route
+    const css = await this.text(cdnUrl);
+    // Verify the URL in CSS was replaced with CDN URL
+    expect(css).toMatch(cdnRegex("/images/test.jpg"));
+    expect(css).not.toContain("url('/images/test.jpg')");
+  });
+
+  it("should handle relative URLs in CSS served via template CDN", async function () {
+    await this.write({ path: "/images/test.jpg", content: "fake image data" });
+    await this.template({
+      "style.css": `.test { background-image: url(./images/test.jpg); }`,
+      "entries.html": "{{#cdn}}/style.css{{/cdn}}",
+    });
+    const html = await this.text("/");
+    const cdnUrlMatch = html.match(
+      new RegExp(`${config.cdn.origin}/template/[^"']+`)
+    );
+    const cdnUrl = cdnUrlMatch[0];
+    const css = await this.text(cdnUrl);
+    expect(css).toMatch(cdnRegex("/images/test.jpg"));
+  });
+
+  it("should not modify external URLs in CSS served via template CDN", async function () {
+    await this.template({
+      "style.css": `.test { background: url(https://example.com/image.jpg); }`,
+      "entries.html": "{{#cdn}}/style.css{{/cdn}}",
+    });
+    const html = await this.text("/");
+    const cdnUrlMatch = html.match(
+      new RegExp(`${config.cdn.origin}/template/[^"']+`)
+    );
+    const cdnUrl = cdnUrlMatch[0];
+    const css = await this.text(cdnUrl);
+    expect(css).toContain("url(https://example.com/image.jpg)");
+  });
+
+  it("should handle multiple URLs in CSS served via template CDN", async function () {
+    await this.write({ path: "/img1.jpg", content: "image1" });
+    await this.write({ path: "/img2.jpg", content: "image2" });
+    await this.template({
+      "style.css": `
+        .test { 
+          background-image: url(/img1.jpg);
+          border-image: url(/img2.jpg);
+        }`,
+      "entries.html": "{{#cdn}}/style.css{{/cdn}}",
+    });
+    const html = await this.text("/");
+    const cdnUrlMatch = html.match(
+      new RegExp(`${config.cdn.origin}/template/[^"']+`)
+    );
+    const cdnUrl = cdnUrlMatch[0];
+    const css = await this.text(cdnUrl);
+    expect(css).toMatch(cdnRegex("/img1.jpg"));
+    expect(css).toMatch(cdnRegex("/img2.jpg"));
+  });
+
+  it("should handle URLs with query strings in CSS served via template CDN", async function () {
+    await this.write({ path: "/image.jpg", content: "image" });
+    await this.template({
+      "style.css": `.test { background: url('/image.jpg?v=1'); }`,
+      "entries.html": "{{#cdn}}/style.css{{/cdn}}",
+    });
+    const html = await this.text("/");
+    const cdnUrlMatch = html.match(
+      new RegExp(`${config.cdn.origin}/template/[^"']+`)
+    );
+    const cdnUrl = cdnUrlMatch[0];
+    const css = await this.text(cdnUrl);
+    expect(css).toMatch(cdnRegex("/image.jpg\\?v=1"));
+  });
+
+  it("resolves folder links in CSS files served via template CDN", async function () {
+    await this.write({ path: "/images/1.jpg", content: "fake image data" });
+
+    // Create template with CSS that references folder file
+    await this.template({
+      "style.css": `.test { background-image: url('/images/1.jpg'); }`,
+      "entries.html": `<link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">`,
+    });
+
+    // Get the CDN URL from the rendered HTML
+    const html = await this.text("/");
+    const cdnUrlMatch = html.match(/href="([^"]+)"/);
+    expect(cdnUrlMatch).toBeTruthy();
+    const cdnUrl = cdnUrlMatch[1];
+
+    // Verify it's a template CDN URL
+    expect(cdnUrl).toContain(config.cdn.origin);
+    expect(cdnUrl).toContain("/template/");
+
+    // Fetch the CSS file from the CDN URL
+    const cssContent = await this.text(cdnUrl);
+
+    // Verify folder link was resolved to CDN URL
+    expect(cssContent).toMatch(cdnRegex("/images/1.jpg"));
+    expect(cssContent).not.toContain("url('/images/1.jpg')");
+    expect(cssContent).not.toContain('url("/images/1.jpg")');
+  });
+
   describe("path traversal security", function () {
     it("rejects path traversal in CDN route view names", async function () {
       await this.template({
@@ -406,7 +521,10 @@ describe("cdn template function", function () {
       // Test null byte (encoded) in view name
       const nullBytePath = "style%00";
       const nullByteCdnPath = `/template/${nullBytePath}.${validHash}.css`;
-      const nullByteCdnURL = new URL(nullByteCdnPath, config.cdn.origin).toString();
+      const nullByteCdnURL = new URL(
+        nullByteCdnPath,
+        config.cdn.origin
+      ).toString();
       const nullByteRes = await this.fetch(nullByteCdnURL);
       expect([400, 403, 404]).toContain(nullByteRes.status);
     });
