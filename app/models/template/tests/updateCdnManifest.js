@@ -4,14 +4,14 @@ const getMetadata = require("../index").getMetadata;
 const key = require("../key");
 const client = require("models/client");
 
-const smembersAsync = promisify(client.smembers).bind(client);
+const getAsync = promisify(client.get).bind(client);
 const getMetadataAsync = promisify(getMetadata).bind(getMetadata);
 const setViewAsync = promisify(setView).bind(setView);
 
 describe("updateCdnManifest", function () {
   require("./setup")({ createTemplate: true });
 
-  it("creates hash mappings in Redis when manifest is updated", async function () {
+  it("stores rendered output in Redis by hash when manifest is updated", async function () {
     const test = this;
 
     // Create a view that uses CDN helper - this will automatically add style.css to retrieve.cdn
@@ -32,19 +32,16 @@ describe("updateCdnManifest", function () {
     expect(metadata.cdn["style.css"]).toBeDefined();
     expect(metadata.cdn["style.css"].length).toBe(32); // MD5 hash length
 
-    // Check Redis hash mapping
+    // Check Redis rendered output storage (stored by hash only)
     const hash = metadata.cdn["style.css"];
-    const hashKey = key.hashMapping(hash);
-    const mappings = await smembersAsync(hashKey);
+    const renderedKey = key.renderedOutput(hash);
+    const renderedOutput = await getAsync(renderedKey);
 
-    expect(mappings.length).toBeGreaterThan(0);
-    const mapping = JSON.parse(mappings[0]);
-    expect(mapping.blogID).toBe(test.blog.id);
-    expect(mapping.templateID).toBe(test.template.id);
-    expect(mapping.viewName).toBe("style.css");
+    expect(renderedOutput).toBeDefined();
+    expect(renderedOutput).toBe("body { color: red; }");
   });
 
-  it("removes old hash mappings from Redis when hash changes", async function () {
+  it("removes old rendered output from Redis when hash changes", async function () {
     const test = this;
 
     // Create initial view that uses CDN helper
@@ -61,11 +58,11 @@ describe("updateCdnManifest", function () {
 
     const metadata1 = await getMetadataAsync(test.template.id);
     const oldHash = metadata1.cdn["style.css"];
-    const oldHashKey = key.hashMapping(oldHash);
+    const oldRenderedKey = key.renderedOutput(oldHash);
 
-    // Verify old mapping exists
-    const oldMappings = await smembersAsync(oldHashKey);
-    expect(oldMappings.length).toBeGreaterThan(0);
+    // Verify old rendered output exists
+    const oldOutput = await getAsync(oldRenderedKey);
+    expect(oldOutput).toBe("body { color: pink; }");
 
     // Update view content to change hash
     await setViewAsync(test.template.id, {
@@ -78,13 +75,13 @@ describe("updateCdnManifest", function () {
 
     expect(newHash).not.toBe(oldHash);
 
-    // Verify old mapping is removed
-    const oldMappingsAfter = await smembersAsync(oldHashKey);
-    expect(oldMappingsAfter.length).toBe(0);
+    // Verify old rendered output is removed
+    const oldOutputAfter = await getAsync(oldRenderedKey);
+    expect(oldOutputAfter).toBeNull();
 
-    // Verify new mapping exists
-    const newHashKey = key.hashMapping(newHash);
-    const newMappings = await smembersAsync(newHashKey);
-    expect(newMappings.length).toBeGreaterThan(0);
+    // Verify new rendered output exists
+    const newRenderedKey = key.renderedOutput(newHash);
+    const newOutput = await getAsync(newRenderedKey);
+    expect(newOutput).toBe("body { color: purple; }");
   });
 });

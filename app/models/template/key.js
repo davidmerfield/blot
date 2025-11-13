@@ -31,11 +31,7 @@ module.exports = {
     return "template:owned_by:" + blogID;
   },
 
-  hashMapping: function hashMapping (hash) {
-    return "cdn:hash:" + hash;
-  },
-
-  renderedOutput: function renderedOutput(templateID, hash) {
-    return "cdn:rendered:" + templateID + ":" + hash;
+  renderedOutput: function renderedOutput(hash) {
+    return "cdn:rendered:" + hash;
   }
 };

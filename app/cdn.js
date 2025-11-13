@@ -2,17 +2,10 @@ const config = require("config");
 const express = require("express");
 const cdn = new express.Router();
 const { promisify } = require("util");
-const Template = require("models/template");
-const Blog = require("models/blog");
-const renderMiddleware = require("./blog/render/middleware");
-const blogDefaults = require("models/blog/defaults");
 const mime = require("mime-types");
 
-const getMetadata = promisify(Template.getMetadata);
-const getBlog = promisify(Blog.get);
 const client = require("models/client");
 const key = require("models/template/key");
-const srandmemberAsync = promisify(client.srandmember).bind(client);
 const getAsync = promisify(client.get).bind(client);
 
 const GLOBAL_STATIC_FILES = config.blot_directory + "/app/blog/static";
@@ -56,8 +49,6 @@ cdn.use("/folder/v-:version", static(config.blog_folder_dir));
 
 // New route format: /template/viewname.digest.extension
 cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
-  let viewName, hash, templateID, blogID;
-
   try {
     // Parse URL format: viewname.digest.extension
     const parsed = parseCdnPath(req.params.encodedViewAndHash);
@@ -65,122 +56,30 @@ cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
       return res.status(400).send("Invalid CDN path format");
     }
 
-    hash = parsed.hash;
-    const parsedViewName = parsed.viewName;
-    const parsedExtension = parsed.extension;
+    const hash = parsed.hash;
+    const viewName = parsed.viewName + parsed.extension;
 
-    // Look up hash mapping in Redis - fetch one random member from set
-    // All members should produce the same result, so any one is sufficient
-    const hashKey = key.hashMapping(hash);
-    const mappingStr = await srandmemberAsync(hashKey);
-
-    if (!mappingStr) {
-      // Hash not found or set is empty - return 404
-      return next();
-    }
-
-    let mapping;
-    try {
-      mapping = JSON.parse(mappingStr);
-    } catch (err) {
-      // Invalid mapping format - return 404
-      return next();
-    }
-
-    // Validate mapping has required fields
-    if (
-      !mapping ||
-      !mapping.blogID ||
-      !mapping.templateID ||
-      !mapping.viewName
-    ) {
-      return res.status(400).send("Invalid hash mapping");
-    }
-
-    blogID = mapping.blogID;
-    templateID = mapping.templateID;
-    viewName = mapping.viewName; // Use the view name from mapping (includes extension)
-
-    // Verify parsed view name matches mapping (safety check)
-    // mapping.viewName is the full path like "style.css"
-    // parsedViewName + parsedExtension should match
-    const expectedViewName = parsedViewName + parsedExtension;
-    if (mapping.viewName !== expectedViewName) {
-      return res.status(400).send("View name mismatch");
-    }
-
-    // Ensure viewName is valid before proceeding
-    if (!viewName || typeof viewName !== "string") {
-      return res.status(400).send("Invalid view name");
-    }
-  } catch (err) {
-    // Invalid path or lookup failed
-    return next();
-  }
-
-  try {
-    // Try to fetch rendered output from Redis cache first
-    const renderedKey = key.renderedOutput(templateID, hash);
+    // Fetch rendered output directly by hash
+    const renderedKey = key.renderedOutput(hash);
     const cachedOutput = await getAsync(renderedKey);
 
-    if (cachedOutput) {
-      // Cache hit - serve from Redis
-      // Determine content type from view name
-      const contentType = getContentType(viewName);
-      
-      // Set cache headers
-      res.set("Cache-Control", "public, max-age=31536000, immutable");
-      res.set("Content-Type", contentType);
-      
-      // Return cached output
-      return res.send(cachedOutput);
-    }
-
-    // Cache miss - fall back to rendering (shouldn't happen if manifest is up to date)
-    console.warn('CDN cache miss for', templateID, viewName, hash);
-
-    const metadata = await getMetadata(templateID);
-    if (!metadata) {
+    if (!cachedOutput) {
+      // Cache miss - return 404 (shouldn't happen if manifest is up to date)
+      console.warn('CDN cache miss for', viewName, hash);
       return next();
     }
 
-    const manifest = metadata.cdn || {};
-
-    // For SITE templates, create a stub blog from defaults
-    // For blog-owned templates, fetch the actual blog
-    let blog;
-    if (blogID === "SITE") {
-      // Create a stub blog from defaults for SITE templates
-      blog = {};
-    } else {
-      blog = await getBlog({ id: blogID });
-      if (!blog) {
-        return next();
-      }
-    }
-
-    req.blog = Blog.extend(blog);
-    req.preview = false;
-    req.log = req.log || console.log;
-    req.template = {
-      locals: metadata.locals || {},
-      id: templateID,
-      cdn: manifest,
-    };
-    res.locals.partials = res.locals.partials || {};
-
-    // Set maximum caching headers for immutable template responses
+    // Determine content type from view name
+    const contentType = getContentType(viewName);
+    
+    // Set cache headers
     res.set("Cache-Control", "public, max-age=31536000, immutable");
-    res.set("Expires", new Date(Date.now() + 31536000000).toUTCString());
-
-    renderMiddleware(req, res, function (err) {
-      if (err) return next(err);
-      // renderView expects (name, next, callback)
-      // next is required, callback is optional
-      res.renderView(viewName, next);
-    });
+    res.set("Content-Type", contentType);
+    
+    // Return cached output
+    return res.send(cachedOutput);
   } catch (err) {
-    next();
+    return next();
   }
 });
 
