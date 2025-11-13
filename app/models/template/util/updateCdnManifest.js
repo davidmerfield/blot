@@ -51,7 +51,13 @@ function isValidTarget(target) {
 /**
  * Render a view for CDN manifest generation
  */
-async function renderViewForCdn(templateID, ownerID, viewName, metadata) {
+async function renderViewForCdn(
+  templateID,
+  ownerID,
+  viewName,
+  metadata,
+  cdnManifest
+) {
   // Lazy require to avoid circular dependency
   const Blog = require("../../../models/blog");
   const blogDefaults = require("../../../models/blog/defaults");
@@ -84,7 +90,7 @@ async function renderViewForCdn(templateID, ownerID, viewName, metadata) {
       template: {
         locals: metadata.locals || {},
         id: templateID,
-        cdn: {}, // empty for CDN target rendering
+        cdn: cdnManifest && typeof cdnManifest === "object" ? cdnManifest : {},
       },
       query: {},
       protocol: "https",
@@ -143,11 +149,17 @@ async function renderViewForCdn(templateID, ownerID, viewName, metadata) {
       });
     });
 
-    if (renderError || !renderedOutput) {
+    if (renderError) {
       return null;
     }
 
-    return renderedOutput;
+    if (renderedOutput === undefined || renderedOutput === null) {
+      return null;
+    }
+
+    return typeof renderedOutput === "string"
+      ? renderedOutput
+      : String(renderedOutput);
   } catch (err) {
     console.error(`Error in renderViewForCdn for ${viewName}:`, err);
     return null;
@@ -157,7 +169,13 @@ async function renderViewForCdn(templateID, ownerID, viewName, metadata) {
 /**
  * Process a single CDN target and build its manifest entry
  */
-async function processTarget(templateID, ownerID, target, metadata) {
+async function processTarget(
+  templateID,
+  ownerID,
+  target,
+  metadata,
+  cdnManifest
+) {
   // Check if view exists
   try {
     const view = await getViewAsync(templateID, target);
@@ -178,28 +196,39 @@ async function processTarget(templateID, ownerID, target, metadata) {
   }
 
   // Render the view to get output
-  const renderedOutput = await renderViewForCdn(templateID, ownerID, target, metadata);
+  const renderedOutput = await renderViewForCdn(
+    templateID,
+    ownerID,
+    target,
+    metadata,
+    cdnManifest
+  );
   
-  if (!renderedOutput) {
+  if (renderedOutput === undefined || renderedOutput === null) {
     return null; // Missing view or render error - skip in manifest
   }
 
+  const renderedOutputString =
+    typeof renderedOutput === "string" ? renderedOutput : String(renderedOutput);
+
   // Validate rendered output size
-  if (renderedOutput.length > MAX_RENDERED_OUTPUT_SIZE) {
-    console.error(`Rendered output for ${target} exceeds maximum size (${renderedOutput.length} bytes > ${MAX_RENDERED_OUTPUT_SIZE} bytes)`);
+  if (renderedOutputString.length > MAX_RENDERED_OUTPUT_SIZE) {
+    console.error(
+      `Rendered output for ${target} exceeds maximum size (${renderedOutputString.length} bytes > ${MAX_RENDERED_OUTPUT_SIZE} bytes)`
+    );
     return null;
   }
 
   // Compute hash from templateID + view name + rendered output
   // We include the template ID and view name to ensure that hashes are unique per site 
   // and per view because we purge the old hash when this changes. 
-  const hashInput = templateID + ":" + target + ":" + renderedOutput;
+  const hashInput = templateID + ":" + target + ":" + renderedOutputString;
   const computedHash = hash(hashInput);
 
   // Store rendered output in Redis with 1 year TTL
   const renderedKey = key.renderedOutput(computedHash);
   try {
-    await setAsync(renderedKey, renderedOutput);
+    await setAsync(renderedKey, renderedOutputString);
   } catch (err) {
     console.error(`Error storing rendered output for ${target}:`, err);
     return null; // Don't create manifest entry if storage fails
@@ -264,14 +293,24 @@ module.exports = function updateCdnManifest(templateID, callback) {
 
       const sortedTargets = Array.from(allTargets).sort();
       const manifest = {};
-      const oldManifest = metadata.cdn || {};
+      const oldManifest =
+        metadata && typeof metadata.cdn === "object" ? metadata.cdn : {};
+      const inProgressManifest = Object.assign({}, oldManifest);
+      metadata.cdn = inProgressManifest;
 
       // Process each target sequentially
       for (const target of sortedTargets) {
         try {
-          const result = await processTarget(templateID, ownerID, target, metadata);
+          const result = await processTarget(
+            templateID,
+            ownerID,
+            target,
+            metadata,
+            inProgressManifest
+          );
           if (result && typeof result === 'string') {
             manifest[target] = result;
+            inProgressManifest[target] = result;
             
             // Clean up old hash if it changed
             const oldHash = oldManifest[target];
@@ -280,6 +319,10 @@ module.exports = function updateCdnManifest(templateID, callback) {
               cleanupOldHash(target, oldHash).catch(err => {
                 // Error already logged in cleanupOldHash, but catch to prevent unhandled rejection
               });
+            }
+          } else {
+            if (Object.prototype.hasOwnProperty.call(inProgressManifest, target)) {
+              delete inProgressManifest[target];
             }
           }
         } catch (err) {

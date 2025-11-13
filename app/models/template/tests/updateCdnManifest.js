@@ -84,4 +84,27 @@ describe("updateCdnManifest", function () {
     const newOutput = await getAsync(newRenderedKey);
     expect(newOutput).toBe("body{color:purple}");
   });
+
+  it("keeps manifest entries for views with empty rendered output", async function () {
+    const test = this;
+
+    await setViewAsync(test.template.id, {
+      name: "entries.html",
+      content: "{{#cdn}}/empty.css{{/cdn}}",
+    });
+
+    await setViewAsync(test.template.id, {
+      name: "empty.css",
+      content: "",
+    });
+
+    const metadata = await getMetadataAsync(test.template.id);
+    expect(metadata.cdn["empty.css"]).toEqual(jasmine.any(String));
+
+    const hash = metadata.cdn["empty.css"];
+    const renderedKey = key.renderedOutput(hash);
+    const renderedOutput = await getAsync(renderedKey);
+
+    expect(renderedOutput).toBe("");
+  });
 });
