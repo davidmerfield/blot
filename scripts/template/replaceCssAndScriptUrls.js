@@ -6,11 +6,13 @@ const Template = require("models/template");
 const Blog = require("models/blog");
 const generateCdnUrl = require("models/template/util/generateCdnUrl");
 const writeToFolder = require("models/template/writeToFolder");
+const getView = require("models/template/getView");
 
 // Promisify callback-based functions
 const setViewAsync = promisify(Template.setView);
 const getMetadataAsync = promisify(Template.getMetadata);
 const writeToFolderAsync = promisify(writeToFolder);
+const getViewAsync = promisify(getView);
 
 // Report structure
 const report = {
@@ -21,8 +23,9 @@ const report = {
 };
 
 // Regex patterns to detect tokens (allow optional whitespace inside braces)
-const CSS_URL_PATTERN = /\{\{\s*\{?\s*cssURL\s*\}\s*\}\}?/g;
-const SCRIPT_URL_PATTERN = /\{\{\s*\{?\s*scriptURL\s*\}\s*\}\}?/g;
+// Support both cssURL/css_url and scriptURL/script_url aliases
+const CSS_URL_PATTERN = /\{\{\s*\{?\s*(?:cssURL|css_url)\s*\}\s*\}\}?/g;
+const SCRIPT_URL_PATTERN = /\{\{\s*\{?\s*(?:scriptURL|script_url)\s*\}\s*\}\}?/g;
 
 /**
  * Resolve a URL against a base URL
@@ -51,6 +54,19 @@ function resolveUrl(baseUrl, targetUrl) {
  */
 function isValidUrl(urlString) {
   if (!urlString || typeof urlString !== "string") return false;
+  
+  // Allow protocol-relative URLs (starting with //)
+  if (urlString.startsWith("//")) {
+    try {
+      // Parse with a dummy protocol to properly extract hostname
+      const parsed = url.parse("http:" + urlString);
+      return !!parsed.hostname;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  // For absolute URLs, require both protocol and hostname
   try {
     const parsed = url.parse(urlString);
     return !!(parsed.protocol && parsed.hostname);
@@ -63,10 +79,14 @@ function isValidUrl(urlString) {
  * Fetch an asset from a URL and return the buffer
  */
 async function fetchAsset(assetUrl) {
+  const controller = new AbortController();
+  const signal = controller.signal;
+  const timer = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
   try {
-    const response = await fetch(assetUrl, {
-      timeout: 10000, // 10 second timeout
-    });
+    const response = await fetch(assetUrl, { signal });
+
+    clearTimeout(timer);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -76,6 +96,10 @@ async function fetchAsset(assetUrl) {
     const arrayBuffer = await response.arrayBuffer();
     return Buffer.from(arrayBuffer);
   } catch (error) {
+    clearTimeout(timer);
+    if (error.name === "AbortError") {
+      throw new Error(`Failed to fetch ${assetUrl}: Request timed out after 10 seconds`);
+    }
     throw new Error(`Failed to fetch ${assetUrl}: ${error.message}`);
   }
 }
@@ -167,9 +191,40 @@ async function processView(user, blog, template, view) {
   workingView.content = modifiedContent;
 
   try {
-    // Fetch original assets before calling setView
-    const originalAssets = {};
+    // Check if target views exist before fetching assets
+    const replacementsToValidate = [];
+    const replacementsToSkip = [];
+    
     for (const replacement of replacements) {
+      try {
+        const targetView = await getViewAsync(template.id, replacement.viewName);
+        if (!targetView) {
+          // View doesn't exist - skip remote validation but proceed with replacement
+          console.log(
+            `View ${replacement.viewName} does not exist in template ${template.id}, skipping remote validation`
+          );
+          replacementsToSkip.push(replacement);
+        } else {
+          // View exists - include in validation
+          replacementsToValidate.push(replacement);
+        }
+      } catch (error) {
+        // If getView fails, assume view doesn't exist and skip validation
+        if (error.message && error.message.includes("No view:")) {
+          console.log(
+            `View ${replacement.viewName} does not exist in template ${template.id}, skipping remote validation`
+          );
+          replacementsToSkip.push(replacement);
+        } else {
+          // Unexpected error - treat as validation failure
+          throw error;
+        }
+      }
+    }
+
+    // Fetch original assets only for replacements that need validation
+    const originalAssets = {};
+    for (const replacement of replacementsToValidate) {
       try {
         originalAssets[replacement.viewName] = await fetchAsset(
           replacement.originalUrl
@@ -223,9 +278,7 @@ async function processView(user, blog, template, view) {
     }
 
     // Verify each replacement
-    let allMatch = true;
-    const cdnUrls = {};
-
+    // First, check that all replacements (both validated and skipped) have hashes in metadata
     for (const replacement of replacements) {
       const hash = metadata.cdn[replacement.viewName];
       if (!hash) {
@@ -256,7 +309,14 @@ async function processView(user, blog, template, view) {
         });
         return;
       }
+    }
 
+    // Now verify only replacements that need validation (byte comparison)
+    let allMatch = true;
+    const cdnUrls = {};
+
+    for (const replacement of replacementsToValidate) {
+      const hash = metadata.cdn[replacement.viewName];
       // Generate CDN URL
       const cdnUrl = generateCdnUrl(replacement.viewName, hash);
       cdnUrls[replacement.viewName] = cdnUrl;
@@ -301,6 +361,13 @@ async function processView(user, blog, template, view) {
         });
         return;
       }
+    }
+
+    // For skipped replacements, just generate CDN URLs for reporting
+    for (const replacement of replacementsToSkip) {
+      const hash = metadata.cdn[replacement.viewName];
+      const cdnUrl = generateCdnUrl(replacement.viewName, hash);
+      cdnUrls[replacement.viewName] = cdnUrl;
     }
 
     // If assets don't match, revert
@@ -349,14 +416,23 @@ async function processView(user, blog, template, view) {
       }
     }
 
+    // Build replacements array with validation status
+    const replacementReports = replacements.map((r) => {
+      const wasSkipped = replacementsToSkip.some(
+        (skipped) => skipped.viewName === r.viewName
+      );
+      return {
+        type: r.type,
+        viewName: r.viewName,
+        skippedValidation: wasSkipped,
+      };
+    });
+
     report.successes.push({
       blogID: blog.id,
       templateID: template.id,
       viewName: view.name,
-      replacements: replacements.map((r) => ({
-        type: r.type,
-        viewName: r.viewName,
-      })),
+      replacements: replacementReports,
     });
   } catch (error) {
     // Revert on any error
@@ -431,8 +507,11 @@ function main(specificBlog, callback) {
             `  - ${item.blogID} / ${item.templateID} / ${item.viewName}`
           );
           item.replacements.forEach((r) => {
+            const skipNote = r.skippedValidation
+              ? " (validation skipped - view does not exist)"
+              : "";
             console.log(
-              `    → Replaced ${r.type}URL with {{#cdn}}/${r.viewName}{{/cdn}}`
+              `    → Replaced ${r.type}URL with {{#cdn}}/${r.viewName}{{/cdn}}${skipNote}`
             );
           });
         });
