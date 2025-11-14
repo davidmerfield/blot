@@ -17,11 +17,12 @@ const report = {
   successes: [],
   mismatches: [],
   fetchErrors: [],
+  revertErrors: [],
 };
 
-// Regex patterns to detect tokens
-const CSS_URL_PATTERN = /\{\{\{?cssURL\}\}?\}/g;
-const SCRIPT_URL_PATTERN = /\{\{\{?scriptURL\}\}?\}/g;
+// Regex patterns to detect tokens (allow optional whitespace inside braces)
+const CSS_URL_PATTERN = /\{\{\s*\{?\s*cssURL\s*\}\s*\}\}?/g;
+const SCRIPT_URL_PATTERN = /\{\{\s*\{?\s*scriptURL\s*\}\s*\}\}?/g;
 
 /**
  * Resolve a URL against a base URL
@@ -36,8 +37,26 @@ function resolveUrl(baseUrl, targetUrl) {
     return targetUrl;
   }
 
+  // Protocol-relative URLs (starting with //) should be returned as-is
+  if (targetUrl.startsWith("//")) {
+    return targetUrl;
+  }
+
   // Otherwise, resolve against base URL
   return url.resolve(baseUrl, targetUrl);
+}
+
+/**
+ * Validate that a URL string is a valid URL format
+ */
+function isValidUrl(urlString) {
+  if (!urlString || typeof urlString !== "string") return false;
+  try {
+    const parsed = url.parse(urlString);
+    return !!(parsed.protocol && parsed.hostname);
+  } catch (e) {
+    return false;
+  }
 }
 
 /**
@@ -98,10 +117,13 @@ async function processView(user, blog, template, view) {
   let modifiedContent = originalContent;
   const replacements = [];
 
+  // Create a working copy of the view to prevent mutation
+  const workingView = Object.assign({}, view);
+
   // Process cssURL tokens
-  if (hasCssUrl && extendedBlog.cssURL) {
-    const resolvedUrl = resolveUrl(baseUrl, extendedBlog.cssURL);
-    if (resolvedUrl) {
+  if (hasCssUrl && extendedBlog.cssURL && extendedBlog.cssURL.trim()) {
+    const resolvedUrl = resolveUrl(baseUrl, extendedBlog.cssURL.trim());
+    if (resolvedUrl && isValidUrl(resolvedUrl)) {
       // Reset regex before replace
       CSS_URL_PATTERN.lastIndex = 0;
       // Replace all occurrences
@@ -118,9 +140,9 @@ async function processView(user, blog, template, view) {
   }
 
   // Process scriptURL tokens
-  if (hasScriptUrl && extendedBlog.scriptURL) {
-    const resolvedUrl = resolveUrl(baseUrl, extendedBlog.scriptURL);
-    if (resolvedUrl) {
+  if (hasScriptUrl && extendedBlog.scriptURL && extendedBlog.scriptURL.trim()) {
+    const resolvedUrl = resolveUrl(baseUrl, extendedBlog.scriptURL.trim());
+    if (resolvedUrl && isValidUrl(resolvedUrl)) {
       // Reset regex before replace
       SCRIPT_URL_PATTERN.lastIndex = 0;
       // Replace all occurrences
@@ -141,8 +163,8 @@ async function processView(user, blog, template, view) {
     return;
   }
 
-  // Update view content
-  view.content = modifiedContent;
+  // Update working view content
+  workingView.content = modifiedContent;
 
   try {
     // Fetch original assets before calling setView
@@ -154,7 +176,7 @@ async function processView(user, blog, template, view) {
         );
       } catch (error) {
         // If we can't fetch the original, we can't verify, so revert and skip
-        view.content = originalContent;
+        workingView.content = originalContent;
         report.fetchErrors.push({
           blogID: blog.id,
           templateID: template.id,
@@ -167,17 +189,30 @@ async function processView(user, blog, template, view) {
     }
 
     // Call setView to update the view and trigger CDN manifest update
-    await setViewAsync(template.id, view);
+    await setViewAsync(template.id, workingView);
 
     // Get updated metadata to retrieve CDN manifest
     const metadata = await getMetadataAsync(template.id);
-    if (!metadata || !metadata.cdn) {
-      view.content = originalContent;
+    if (!metadata || !metadata.cdn || Object.keys(metadata.cdn).length === 0) {
+      workingView.content = originalContent;
       // Revert the view in the database
-      await setViewAsync(template.id, {
-        name: view.name,
-        content: originalContent,
-      });
+      try {
+        await setViewAsync(template.id, {
+          name: view.name,
+          content: originalContent,
+        });
+      } catch (revertError) {
+        report.revertErrors.push({
+          blogID: blog.id,
+          templateID: template.id,
+          viewName: view.name,
+          error: `Failed to revert view: ${revertError.message}`,
+        });
+        console.error(
+          `Warning: Failed to revert view ${view.name} in database:`,
+          revertError.message
+        );
+      }
       report.fetchErrors.push({
         blogID: blog.id,
         templateID: template.id,
@@ -194,12 +229,25 @@ async function processView(user, blog, template, view) {
     for (const replacement of replacements) {
       const hash = metadata.cdn[replacement.viewName];
       if (!hash) {
-        view.content = originalContent;
+        workingView.content = originalContent;
         // Revert the view in the database
-        await setViewAsync(template.id, {
-          name: view.name,
-          content: originalContent,
-        });
+        try {
+          await setViewAsync(template.id, {
+            name: view.name,
+            content: originalContent,
+          });
+        } catch (revertError) {
+          report.revertErrors.push({
+            blogID: blog.id,
+            templateID: template.id,
+            viewName: view.name,
+            error: `Failed to revert view: ${revertError.message}`,
+          });
+          console.error(
+            `Warning: Failed to revert view ${view.name} in database:`,
+            revertError.message
+          );
+        }
         report.fetchErrors.push({
           blogID: blog.id,
           templateID: template.id,
@@ -224,12 +272,25 @@ async function processView(user, blog, template, view) {
           break;
         }
       } catch (error) {
-        view.content = originalContent;
+        workingView.content = originalContent;
         // Revert the view in the database
-        await setViewAsync(template.id, {
-          name: view.name,
-          content: originalContent,
-        });
+        try {
+          await setViewAsync(template.id, {
+            name: view.name,
+            content: originalContent,
+          });
+        } catch (revertError) {
+          report.revertErrors.push({
+            blogID: blog.id,
+            templateID: template.id,
+            viewName: view.name,
+            error: `Failed to revert view: ${revertError.message}`,
+          });
+          console.error(
+            `Warning: Failed to revert view ${view.name} in database:`,
+            revertError.message
+          );
+        }
         report.fetchErrors.push({
           blogID: blog.id,
           templateID: template.id,
@@ -244,12 +305,25 @@ async function processView(user, blog, template, view) {
 
     // If assets don't match, revert
     if (!allMatch) {
-      view.content = originalContent;
+      workingView.content = originalContent;
       // Revert the view in the database
-      await setViewAsync(template.id, {
-        name: view.name,
-        content: originalContent,
-      });
+      try {
+        await setViewAsync(template.id, {
+          name: view.name,
+          content: originalContent,
+        });
+      } catch (revertError) {
+        report.revertErrors.push({
+          blogID: blog.id,
+          templateID: template.id,
+          viewName: view.name,
+          error: `Failed to revert view: ${revertError.message}`,
+        });
+        console.error(
+          `Warning: Failed to revert view ${view.name} in database:`,
+          revertError.message
+        );
+      }
 
       report.mismatches.push({
         blogID: blog.id,
@@ -286,7 +360,7 @@ async function processView(user, blog, template, view) {
     });
   } catch (error) {
     // Revert on any error
-    view.content = originalContent;
+    workingView.content = originalContent;
     // Try to revert in database, but don't fail if it errors
     try {
       await setViewAsync(template.id, {
@@ -294,7 +368,12 @@ async function processView(user, blog, template, view) {
         content: originalContent,
       });
     } catch (revertError) {
-      // Log but don't fail
+      report.revertErrors.push({
+        blogID: blog.id,
+        templateID: template.id,
+        viewName: view.name,
+        error: `Failed to revert view: ${revertError.message}`,
+      });
       console.error(
         `Warning: Failed to revert view ${view.name} in database:`,
         revertError.message
@@ -382,6 +461,17 @@ function main(specificBlog, callback) {
           if (item.originalUrl)
             console.log(`    Original URL: ${item.originalUrl}`);
           if (item.cdnUrl) console.log(`    CDN URL: ${item.cdnUrl}`);
+        });
+      }
+
+      console.log(`\nRevert Errors: ${report.revertErrors.length} views`);
+      if (report.revertErrors.length > 0) {
+        console.log("\nRevert Errors (failed to revert changes):");
+        report.revertErrors.forEach((item) => {
+          console.log(
+            `  - ${item.blogID} / ${item.templateID} / ${item.viewName}`
+          );
+          console.log(`    Error: ${item.error}`);
         });
       }
 
