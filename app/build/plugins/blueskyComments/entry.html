@@ -6,15 +6,4 @@
     {{#entry.metadata.bluesky}}data-uri="{{{entry.metadata.bluesky}}}"{{/entry.metadata.bluesky}}
     {{^entry.metadata.bluesky}}{{#plugins.blueskyComments.options.authorHandle}}data-author="{{plugins.blueskyComments.options.authorHandle}}" data-auto-discover="true"{{/plugins.blueskyComments.options.authorHandle}}{{^plugins.blueskyComments.options.authorHandle}}data-error="no-author"{{/plugins.blueskyComments.options.authorHandle}}{{/entry.metadata.bluesky}}>
     <h2>Comments</h2>
-    {{#entry.metadata.bluesky}}
-    <p>Post a comment <a href="{{{entry.metadata.bluesky}}}" target="_blank">on Bluesky!</p>
-    {{/entry.metadata.bluesky}}
-    {{^entry.metadata.bluesky}}
-    {{#plugins.blueskyComments.options.authorHandle}}
-    <p>Loading comments...</p>
-    {{/plugins.blueskyComments.options.authorHandle}}
-    {{^plugins.blueskyComments.options.authorHandle}}
-    <p>Bluesky comments are not configured. Please set a <code>Bluesky</code> metadata field on this entry, or configure your Bluesky author handle in the plugin settings.</p>
-    {{/plugins.blueskyComments.options.authorHandle}}
-    {{/entry.metadata.bluesky}}
 </div>
