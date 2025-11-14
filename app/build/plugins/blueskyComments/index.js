@@ -1,9 +1,5 @@
 module.exports = {
-  description: "Bluesky comments integration",
+  description: "Bluesky comments",
   category: "external",
   isDefault: false,
-  options: {
-    authorHandle: "",
-    service: "https://public.api.bsky.app",
-  },
 };

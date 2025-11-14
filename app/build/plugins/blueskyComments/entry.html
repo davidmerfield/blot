@@ -1,70 +1,8 @@
 {{#entry.metadata.bluesky}}
-<div
-  id="bluesky-comments"
-  data-bluesky-uri="{{entry.metadata.bluesky}}"
-  data-author-handle="{{plugins.blueskyComments.options.authorHandle}}"
-  data-service="{{plugins.blueskyComments.options.service}}"
-></div>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime"
-  }
-}
-</script>
-<script type="module">
-  import * as CommentsModule from "https://unpkg.com/bluesky-comments@0.8.0/dist/bluesky-comments.es.js";
-
-  const container = document.getElementById("bluesky-comments");
-
-  if (!container) {
-    console.warn("Blot: Bluesky comments container not found");
-  } else {
-    const postUri = container.dataset.blueskyUri;
-    if (!postUri) {
-      console.warn("Blot: Missing Bluesky post URI in entry metadata");
-    } else {
-      const BlueskyComments =
-        CommentsModule.default || CommentsModule.BlueskyComments || CommentsModule;
-
-      if (!BlueskyComments || typeof BlueskyComments.init !== "function") {
-        console.warn("Blot: Bluesky comments library did not load correctly");
-      } else {
-        const config = {
-          element: container,
-          container,
-          thread: postUri,
-          post: postUri,
-          uri: postUri,
-        };
-
-        const service = container.dataset.service;
-        const authorHandle = container.dataset.authorHandle;
-
-        if (service) {
-          config.service = service;
-          config.endpoint = service;
-        }
-
-        if (authorHandle) {
-          config.author = authorHandle;
-          config.handle = authorHandle;
-        }
-
-        Object.keys(config).forEach((key) => {
-          if (!config[key]) delete config[key];
-        });
-
-        try {
-          BlueskyComments.init(config);
-        } catch (error) {
-          console.error("Blot: Failed to initialise Bluesky comments", error);
-        }
-      }
-    }
-  }
-</script>
+<a id="main-post-actions" target="_blank" href="{{{entry.metadata.bluesky}}}"></a>
+</div>
+<div id="comments" data-uri="{{{entry.metadata.bluesky}}}">
+    <h2>Comments</h2>
+    <p>Post a comment <a href="{{{entry.metadata.bluesky}}}" target="_blank">on Bluesky!</p>
+</div>
 {{/entry.metadata.bluesky}}

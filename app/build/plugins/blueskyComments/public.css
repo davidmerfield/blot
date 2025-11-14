@@ -1,1 +1,71 @@
-@import url("https://unpkg.com/bluesky-comments@0.8.0/dist/bluesky-comments.css");
+/* Post Actions */
+.comment-container a, #main-post-actions {
+    text-decoration: none;
+    color: var(--highlight2);
+    
+    .post-actions {
+        display: flex;
+        gap: 1em;
+        
+        div svg, div span {
+            vertical-align: middle;
+            display: inline-block;
+        }
+        
+        div:hover {
+            color: var(--accent);
+            
+            & svg {
+                stroke: var(--accent);
+            }
+        }
+    }
+}
+
+/* Comment Section */
+#comments {
+    .comment {
+        position: relative; /* Needed for pseudo-element positioning */
+        .comment-container {
+            display: flex;
+            margin-bottom: var(--mPad);
+            
+            img {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                margin-right: var(--sPad);
+            }
+            
+            a p {
+                color: var(--accent);
+                margin: .25em 0;
+            }
+        }
+        
+        .replies {
+            padding-left: calc(32px + var(--sPad));
+        }
+    }
+    
+    #see-more {
+        position: absolute;
+        left: 50%;
+        transform: translate(-50%);
+        padding: var(--mPad);
+    }
+}
+
+.comment:has(.replies)::after {
+    content: "";
+    position: absolute;
+    top: calc(32px + .5em);
+    left: 16px;
+    width: 20px;
+    height: calc(100% - 41px - .5em);
+    border: 2px solid var(--highlight);
+    border-top: none;
+    border-right: none;
+    border-radius: 0 0 0 20px;
+}
+
