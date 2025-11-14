@@ -211,7 +211,7 @@ async function processView(user, blog, template, view) {
   // Update working view content
   workingView.content = modifiedContent;
 
-  // Check if template is installed
+  // Check if template is installed (only installed templates need remote verification)
   const isInstalled = template.id === blog.template;
 
   // For non-installed templates, skip validation and just save
@@ -220,18 +220,8 @@ async function processView(user, blog, template, view) {
       // Call setView to update the view and trigger CDN manifest update
       await setViewAsync(template.id, workingView);
 
-      // If template is locally-edited, write to folder
-      if (template.localEditing) {
-        try {
-          await writeToFolderAsync(blog.id, template.id);
-        } catch (error) {
-          // Log error but don't fail the migration
-          console.error(
-            `Warning: Failed to write template ${template.id} to folder:`,
-            error.message
-          );
-        }
-      }
+      // Handle local editing if needed
+      await handleLocalEditing(blog, template);
 
       // Build replacements array
       const replacementReports = replacements.map((r) => ({
@@ -262,236 +252,29 @@ async function processView(user, blog, template, view) {
     return;
   }
 
-  // For installed templates, perform full validation
+  // For installed templates, perform full remote verification
   try {
-    // Check if target views exist before fetching assets
-    const replacementsToValidate = [];
-    const replacementsToSkip = [];
-    
-    for (const replacement of replacements) {
-      try {
-        const targetView = await getViewAsync(template.id, replacement.viewName);
-        if (!targetView) {
-          // View doesn't exist - skip remote validation but proceed with replacement
-          console.log(
-            `View ${replacement.viewName} does not exist in template ${template.id}, skipping remote validation`
-          );
-          replacementsToSkip.push(replacement);
-        } else {
-          // View exists - include in validation
-          replacementsToValidate.push(replacement);
-        }
-      } catch (error) {
-        // If getView fails, assume view doesn't exist and skip validation
-        if (error.message && error.message.includes("No view:")) {
-          console.log(
-            `View ${replacement.viewName} does not exist in template ${template.id}, skipping remote validation`
-          );
-          replacementsToSkip.push(replacement);
-        } else {
-          // Unexpected error - treat as validation failure
-          throw error;
-        }
-      }
-    }
+    const verificationResult = await verifyRemoteAssets(
+      blog,
+      template,
+      view,
+      workingView,
+      originalContent,
+      replacements
+    );
 
-    // Fetch original assets only for replacements that need validation
-    const originalAssets = {};
-    for (const replacement of replacementsToValidate) {
-      try {
-        originalAssets[replacement.viewName] = await fetchAsset(
-          replacement.originalUrl
-        );
-      } catch (error) {
-        // If we can't fetch the original, we can't verify, so revert and skip
-        workingView.content = originalContent;
-        report.fetchErrors.push({
-          blogID: blog.id,
-          templateID: template.id,
-          viewName: view.name,
-          error: `Failed to fetch original ${replacement.type} asset: ${error.message}`,
-          originalUrl: replacement.originalUrl,
-        });
-        return;
-      }
-    }
-
-    // Call setView to update the view and trigger CDN manifest update
-    await setViewAsync(template.id, workingView);
-
-    // Get updated metadata to retrieve CDN manifest
-    const metadata = await getMetadataAsync(template.id);
-    if (!metadata || !metadata.cdn || Object.keys(metadata.cdn).length === 0) {
-      workingView.content = originalContent;
-      // Revert the view in the database
-      try {
-        await setViewAsync(template.id, {
-          name: view.name,
-          content: originalContent,
-        });
-      } catch (revertError) {
-        report.revertErrors.push({
-          blogID: blog.id,
-          templateID: template.id,
-          viewName: view.name,
-          error: `Failed to revert view: ${revertError.message}`,
-        });
-        console.error(
-          `Warning: Failed to revert view ${view.name} in database:`,
-          revertError.message
-        );
-      }
-      report.fetchErrors.push({
-        blogID: blog.id,
-        templateID: template.id,
-        viewName: view.name,
-        error: "Failed to retrieve CDN manifest after setView",
-      });
-      return;
-    }
-
-    // Verify each replacement
-    // First, check that all replacements (both validated and skipped) have hashes in metadata
-    for (const replacement of replacements) {
-      const hash = metadata.cdn[replacement.viewName];
-      if (!hash) {
-        workingView.content = originalContent;
-        // Revert the view in the database
-        try {
-          await setViewAsync(template.id, {
-            name: view.name,
-            content: originalContent,
-          });
-        } catch (revertError) {
-          report.revertErrors.push({
-            blogID: blog.id,
-            templateID: template.id,
-            viewName: view.name,
-            error: `Failed to revert view: ${revertError.message}`,
-          });
-          console.error(
-            `Warning: Failed to revert view ${view.name} in database:`,
-            revertError.message
-          );
-        }
-        report.fetchErrors.push({
-          blogID: blog.id,
-          templateID: template.id,
-          viewName: view.name,
-          error: `CDN manifest missing hash for ${replacement.viewName}`,
-        });
-        return;
-      }
-    }
-
-    // Now verify only replacements that need validation (byte comparison)
-    let allMatch = true;
-    const cdnUrls = {};
-
-    for (const replacement of replacementsToValidate) {
-      const hash = metadata.cdn[replacement.viewName];
-      // Generate CDN URL
-      const cdnUrl = generateCdnUrl(replacement.viewName, hash);
-      cdnUrls[replacement.viewName] = cdnUrl;
-
-      try {
-        // Fetch CDN asset
-        const cdnAsset = await fetchAsset(cdnUrl);
-
-        // Compare byte-for-byte
-        const originalAsset = originalAssets[replacement.viewName];
-        if (Buffer.compare(originalAsset, cdnAsset) !== 0) {
-          allMatch = false;
-          break;
-        }
-      } catch (error) {
-        workingView.content = originalContent;
-        // Revert the view in the database
-        try {
-          await setViewAsync(template.id, {
-            name: view.name,
-            content: originalContent,
-          });
-        } catch (revertError) {
-          report.revertErrors.push({
-            blogID: blog.id,
-            templateID: template.id,
-            viewName: view.name,
-            error: `Failed to revert view: ${revertError.message}`,
-          });
-          console.error(
-            `Warning: Failed to revert view ${view.name} in database:`,
-            revertError.message
-          );
-        }
-        report.fetchErrors.push({
-          blogID: blog.id,
-          templateID: template.id,
-          viewName: view.name,
-          error: `Failed to fetch CDN asset for ${replacement.viewName}: ${error.message}`,
-          originalUrl: replacement.originalUrl,
-          cdnUrl: cdnUrl,
-        });
-        return;
-      }
-    }
-
-    // For skipped replacements, just generate CDN URLs for reporting
-    for (const replacement of replacementsToSkip) {
-      const hash = metadata.cdn[replacement.viewName];
-      const cdnUrl = generateCdnUrl(replacement.viewName, hash);
-      cdnUrls[replacement.viewName] = cdnUrl;
-    }
-
-    // If assets don't match, revert
-    if (!allMatch) {
-      workingView.content = originalContent;
-      // Revert the view in the database
-      try {
-        await setViewAsync(template.id, {
-          name: view.name,
-          content: originalContent,
-        });
-      } catch (revertError) {
-        report.revertErrors.push({
-          blogID: blog.id,
-          templateID: template.id,
-          viewName: view.name,
-          error: `Failed to revert view: ${revertError.message}`,
-        });
-        console.error(
-          `Warning: Failed to revert view ${view.name} in database:`,
-          revertError.message
-        );
-      }
-
-      report.mismatches.push({
-        blogID: blog.id,
-        templateID: template.id,
-        viewName: view.name,
-        originalUrls: replacements.map((r) => r.originalUrl),
-        cdnUrls: Object.values(cdnUrls),
-      });
+    if (!verificationResult.success) {
+      // Verification failed, view was already reverted
       return;
     }
 
     // Success! Assets match
-    // If template is locally-edited, write to folder
-    if (template.localEditing) {
-      try {
-        await writeToFolderAsync(blog.id, template.id);
-      } catch (error) {
-        // Log error but don't fail the migration
-        console.error(
-          `Warning: Failed to write template ${template.id} to folder:`,
-          error.message
-        );
-      }
-    }
+    // Handle local editing if needed
+    await handleLocalEditing(blog, template);
 
     // Build replacements array with validation status
     const replacementReports = replacements.map((r) => {
-      const wasSkipped = replacementsToSkip.some(
+      const wasSkipped = verificationResult.skippedReplacements.some(
         (skipped) => skipped.viewName === r.viewName
       );
       return {
@@ -511,29 +294,215 @@ async function processView(user, blog, template, view) {
     // Revert on any error
     workingView.content = originalContent;
     // Try to revert in database, but don't fail if it errors
-    try {
-      await setViewAsync(template.id, {
-        name: view.name,
-        content: originalContent,
-      });
-    } catch (revertError) {
-      report.revertErrors.push({
-        blogID: blog.id,
-        templateID: template.id,
-        viewName: view.name,
-        error: `Failed to revert view: ${revertError.message}`,
-      });
-      console.error(
-        `Warning: Failed to revert view ${view.name} in database:`,
-        revertError.message
-      );
-    }
+    await revertView(blog, template, view, originalContent);
     report.fetchErrors.push({
       blogID: blog.id,
       templateID: template.id,
       viewName: view.name,
       error: error.message,
     });
+  }
+}
+
+/**
+ * Handle local editing for templates that support it
+ * Consolidated from duplicate code in both installed and non-installed paths
+ */
+async function handleLocalEditing(blog, template) {
+  if (template.localEditing) {
+    try {
+      await writeToFolderAsync(blog.id, template.id);
+    } catch (error) {
+      // Log error but don't fail the migration
+      console.error(
+        `Warning: Failed to write template ${template.id} to folder:`,
+        error.message
+      );
+    }
+  }
+}
+
+/**
+ * Verify remote assets for installed templates only
+ * This function is only called when template.id === blog.template
+ * Returns { success: boolean, skippedReplacements: Array }
+ */
+async function verifyRemoteAssets(
+  blog,
+  template,
+  view,
+  workingView,
+  originalContent,
+  replacements
+) {
+  // Check if target views exist before fetching assets
+  const replacementsToValidate = [];
+  const replacementsToSkip = [];
+  
+  for (const replacement of replacements) {
+    try {
+      const targetView = await getViewAsync(template.id, replacement.viewName);
+      if (!targetView) {
+        // View doesn't exist - skip remote validation but proceed with replacement
+        console.log(
+          `View ${replacement.viewName} does not exist in template ${template.id}, skipping remote validation`
+        );
+        replacementsToSkip.push(replacement);
+      } else {
+        // View exists - include in validation
+        replacementsToValidate.push(replacement);
+      }
+    } catch (error) {
+      // If getView fails, assume view doesn't exist and skip validation
+      if (error.message && error.message.includes("No view:")) {
+        console.log(
+          `View ${replacement.viewName} does not exist in template ${template.id}, skipping remote validation`
+        );
+        replacementsToSkip.push(replacement);
+      } else {
+        // Unexpected error - treat as validation failure
+        throw error;
+      }
+    }
+  }
+
+  // Fetch original assets only for replacements that need validation
+  const originalAssets = {};
+  for (const replacement of replacementsToValidate) {
+    try {
+      originalAssets[replacement.viewName] = await fetchAsset(
+        replacement.originalUrl
+      );
+    } catch (error) {
+      // If we can't fetch the original, we can't verify, so revert and skip
+      workingView.content = originalContent;
+      report.fetchErrors.push({
+        blogID: blog.id,
+        templateID: template.id,
+        viewName: view.name,
+        error: `Failed to fetch original ${replacement.type} asset: ${error.message}`,
+        originalUrl: replacement.originalUrl,
+      });
+      return { success: false, skippedReplacements: [] };
+    }
+  }
+
+  // Call setView to update the view and trigger CDN manifest update
+  await setViewAsync(template.id, workingView);
+
+  // Get updated metadata to retrieve CDN manifest
+  const metadata = await getMetadataAsync(template.id);
+  if (!metadata || !metadata.cdn || Object.keys(metadata.cdn).length === 0) {
+    workingView.content = originalContent;
+    await revertView(blog, template, view, originalContent);
+    report.fetchErrors.push({
+      blogID: blog.id,
+      templateID: template.id,
+      viewName: view.name,
+      error: "Failed to retrieve CDN manifest after setView",
+    });
+    return { success: false, skippedReplacements: [] };
+  }
+
+  // Verify each replacement
+  // First, check that all replacements (both validated and skipped) have hashes in metadata
+  for (const replacement of replacements) {
+    const hash = metadata.cdn[replacement.viewName];
+    if (!hash) {
+      workingView.content = originalContent;
+      await revertView(blog, template, view, originalContent);
+      report.fetchErrors.push({
+        blogID: blog.id,
+        templateID: template.id,
+        viewName: view.name,
+        error: `CDN manifest missing hash for ${replacement.viewName}`,
+      });
+      return { success: false, skippedReplacements: [] };
+    }
+  }
+
+  // Now verify only replacements that need validation (byte comparison)
+  let allMatch = true;
+  const cdnUrls = {};
+
+  for (const replacement of replacementsToValidate) {
+    const hash = metadata.cdn[replacement.viewName];
+    // Generate CDN URL
+    const cdnUrl = generateCdnUrl(replacement.viewName, hash);
+    cdnUrls[replacement.viewName] = cdnUrl;
+
+    try {
+      // Fetch CDN asset
+      const cdnAsset = await fetchAsset(cdnUrl);
+
+      // Compare byte-for-byte
+      const originalAsset = originalAssets[replacement.viewName];
+      if (Buffer.compare(originalAsset, cdnAsset) !== 0) {
+        allMatch = false;
+        break;
+      }
+    } catch (error) {
+      workingView.content = originalContent;
+      await revertView(blog, template, view, originalContent);
+      report.fetchErrors.push({
+        blogID: blog.id,
+        templateID: template.id,
+        viewName: view.name,
+        error: `Failed to fetch CDN asset for ${replacement.viewName}: ${error.message}`,
+        originalUrl: replacement.originalUrl,
+        cdnUrl: cdnUrl,
+      });
+      return { success: false, skippedReplacements: [] };
+    }
+  }
+
+  // For skipped replacements, just generate CDN URLs for reporting
+  for (const replacement of replacementsToSkip) {
+    const hash = metadata.cdn[replacement.viewName];
+    const cdnUrl = generateCdnUrl(replacement.viewName, hash);
+    cdnUrls[replacement.viewName] = cdnUrl;
+  }
+
+  // If assets don't match, revert
+  if (!allMatch) {
+    workingView.content = originalContent;
+    await revertView(blog, template, view, originalContent);
+
+    report.mismatches.push({
+      blogID: blog.id,
+      templateID: template.id,
+      viewName: view.name,
+      originalUrls: replacements.map((r) => r.originalUrl),
+      cdnUrls: Object.values(cdnUrls),
+    });
+    return { success: false, skippedReplacements: [] };
+  }
+
+  // Success! Assets match
+  return { success: true, skippedReplacements: replacementsToSkip };
+}
+
+/**
+ * Revert a view to its original content in the database
+ * Extracted to avoid code duplication
+ */
+async function revertView(blog, template, view, originalContent) {
+  try {
+    await setViewAsync(template.id, {
+      name: view.name,
+      content: originalContent,
+    });
+  } catch (revertError) {
+    report.revertErrors.push({
+      blogID: blog.id,
+      templateID: template.id,
+      viewName: view.name,
+      error: `Failed to revert view: ${revertError.message}`,
+    });
+    console.error(
+      `Warning: Failed to revert view ${view.name} in database:`,
+      revertError.message
+    );
   }
 }
 
