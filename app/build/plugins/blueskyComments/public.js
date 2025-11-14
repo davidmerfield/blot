@@ -18,6 +18,16 @@ const extractHandleFromProfileUrl = (profileUrl) => {
   throw new Error("Invalid Bluesky profile URL format.");
 };
 
+const getRkeyFromUri = (uri) => {
+  return uri.split("/").pop();
+};
+
+const getPostUrl = (authorDid, rkey) => {
+  return `https://bsky.app/profile/${authorDid}/post/${rkey}`;
+};
+
+const sortByLikeCount = (a, b) => (b.post.likeCount || 0) - (a.post.likeCount || 0);
+
 const renderActions = (post) => {
   return `
         <div class="post-actions">
@@ -38,12 +48,9 @@ const renderActions = (post) => {
 };
 
 const renderComment = (post) => {
-    console.log(post);
-
   const author = post.author;
-  const postUrl = `https://bsky.app/profile/${author.did}/post/${post.uri
-    .split("/")
-    .pop()}`;
+  const rkey = getRkeyFromUri(post.uri);
+  const postUrl = getPostUrl(author.did, rkey);
 
   return `
         <div class="comment-container">
@@ -65,7 +72,7 @@ const renderThread = (thread) => {
   // Handle replies: filter, sort, and limit to 3
   const repliesHtml =
     thread.replies
-      .sort((a, b) => (b.post.likeCount || 0) - (a.post.likeCount || 0))
+      .sort(sortByLikeCount)
       .slice(0, 3)
       .map((reply) => renderComment(reply.post))
       .join("") || "";
@@ -76,6 +83,20 @@ const renderThread = (thread) => {
             ${repliesHtml ? `<div class="replies">${repliesHtml}</div>` : ""}
         </div>
     `;
+};
+
+const renderCommentsHeader = (postUrl) => {
+  return `
+    <h2>Comments</h2>
+    <p><a href="${postUrl}" target="_blank">Reply on Bluesky</a></p>
+  `;
+};
+
+const renderErrorMessage = (message) => {
+  return `
+    <h2>Comments</h2>
+    <p>${message} <a href="https://bsky.app" target="_blank">Post on Bluesky</a> to start the discussion!</p>
+  `;
 };
 
 const loadThread = (uri, container, originalUrl) => {
@@ -92,9 +113,7 @@ const loadThread = (uri, container, originalUrl) => {
       if (!response.ok) throw new Error(await response.text());
 
       const { thread } = await response.json();
-      const replies = (thread.replies || []).sort(
-        (a, b) => (b.post.likeCount || 0) - (a.post.likeCount || 0)
-      );
+      const replies = (thread.replies || []).sort(sortByLikeCount);
 
       // Add main post actions if element exists
       const mainPostActions = document.getElementById("main-post-actions");
@@ -109,15 +128,13 @@ const loadThread = (uri, container, originalUrl) => {
       if (replies.length > 25 && !container.querySelector("#see-more")) {
         const postUrl =
           originalUrl ||
-          `https://bsky.app/profile/${thread.post.author.did}/post/${uri
-            .split("/")
-            .pop()}`;
+          getPostUrl(thread.post.author.did, getRkeyFromUri(uri));
         container.innerHTML += `<a href="${postUrl}" target="_blank" id="see-more">See more on Bluesky</a>`;
       }
     })
     .catch((error) => {
       console.error("Error loading thread:", error);
-      container.innerHTML = `<p>Error loading comments. <a href="https://bsky.app" target="_blank">Post on Bluesky</a> to start the discussion!</p>`;
+      container.innerHTML = renderErrorMessage("Error loading comments.");
     });
 };
 
@@ -140,7 +157,7 @@ const init = () => {
   ) {
     // Add loading message
     container.innerHTML += `<p>Loading comments...</p>`;
-    
+
     const authorProfileUrl = container.dataset.author;
     const author = extractHandleFromProfileUrl(authorProfileUrl);
     const fetchPost = async () => {
@@ -156,42 +173,27 @@ const init = () => {
         if (data.posts && data.posts.length > 0) {
           const post = data.posts[0];
           const uri = post.uri;
+          const rkey = getRkeyFromUri(uri);
+          const postUrl = getPostUrl(post.author.did, rkey);
 
           // Update container with comments header
-          container.innerHTML = `
-                    <h2>Comments</h2>
-                    <p><a href="https://bsky.app/profile/${
-                      post.author.did
-                    }/post/${uri
-            .split("/")
-            .pop()}" target="_blank">Reply on Bluesky</a></p>
-                `;
+          container.innerHTML = renderCommentsHeader(postUrl);
 
           // Add main post actions element
-          container.innerHTML += `<a id="main-post-actions" target="_blank" href="https://bsky.app/profile/${
-            post.author.did
-          }/post/${uri.split("/").pop()}"></a>`;
+          container.innerHTML += `<a id="main-post-actions" target="_blank" href="${postUrl}"></a>`;
 
           // Load the thread
-          loadThread(
-            uri,
-            container,
-            `https://bsky.app/profile/${post.author.did}/post/${uri
-              .split("/")
-              .pop()}`
-          );
+          loadThread(uri, container, postUrl);
         } else {
-          container.innerHTML = `
-                    <h2>Comments</h2>
-                    <p>No Bluesky post found for this page. <a href="https://bsky.app" target="_blank">Post on Bluesky</a> to start the discussion!</p>
-                `;
+          container.innerHTML = renderErrorMessage(
+            "No Bluesky post found for this page."
+          );
         }
       } catch (err) {
         console.error("Error fetching post:", err);
-        container.innerHTML = `
-                <h2>Comments</h2>
-                <p>Error searching for Bluesky post. <a href="https://bsky.app" target="_blank">Post on Bluesky</a> to start the discussion!</p>
-            `;
+        container.innerHTML = renderErrorMessage(
+          "Error searching for Bluesky post."
+        );
       }
     };
 
