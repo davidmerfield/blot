@@ -156,31 +156,30 @@ const init = () => {
 
   if (!container) return;
 
-  // Priority 1: Use Bluesky metadata if set
-  if (container.dataset.uri) {
-    const uri = convertToAtUri(container.dataset.uri);
+  const dataUri = container.dataset.uri?.trim();
+  const dataAuthor = container.dataset.author?.trim();
+
+  // Priority 1: Use Bluesky metadata if set (non-empty URL)
+  if (dataUri) {
+    const uri = convertToAtUri(dataUri);
     // Add initial content for metadata case
     const replyLink = document.createElement("p");
     const link = document.createElement("a");
-    link.href = container.dataset.uri;
+    link.href = dataUri;
     link.target = "_blank";
     link.textContent = "Reply on Bluesky";
     replyLink.appendChild(link);
     container.appendChild(replyLink);
-    loadThread(uri, container, container.dataset.uri);
+    loadThread(uri, container, dataUri);
   }
-  // Priority 2: Auto-discover using author search
-  else if (
-    container.dataset.autoDiscover === "true" &&
-    container.dataset.author
-  ) {
+  // Priority 2: Auto-discover using author search (non-empty URL)
+  else if (dataAuthor) {
     // Add loading message
     const loadingMsg = document.createElement("p");
     loadingMsg.textContent = "Loading comments...";
     container.appendChild(loadingMsg);
 
-    const authorProfileUrl = container.dataset.author;
-    const author = extractHandleFromProfileUrl(authorProfileUrl);
+    const author = extractHandleFromProfileUrl(dataAuthor);
     const fetchPost = async () => {
       const currentUrl = window.location.href;
       const apiUrl = `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=*&url=${encodeURIComponent(
@@ -227,8 +226,8 @@ const init = () => {
 
     fetchPost();
   }
-  // Priority 3: Show error message if no author configured
-  else if (container.dataset.error === "no-author") {
+  // Priority 3: Show error message if neither is configured
+  else {
     const errorMsg = document.createElement("p");
     errorMsg.innerHTML = `Bluesky comments are not configured. Please set a <code>Bluesky</code> metadata field on this entry, or configure your Bluesky author handle in the plugin settings.`;
     container.appendChild(errorMsg);

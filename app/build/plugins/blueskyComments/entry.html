@@ -1,10 +1,6 @@
-{{#entry.metadata.bluesky}}
-<a id="main-post-actions" target="_blank" href="{{{entry.metadata.bluesky}}}"></a>
-{{/entry.metadata.bluesky}}
-</div>
 <div id="comments"
-    {{#entry.metadata.bluesky}}data-uri="{{{entry.metadata.bluesky}}}"{{/entry.metadata.bluesky}}
-    {{^entry.metadata.bluesky}}{{#plugins.blueskyComments.options.authorURI}}data-author="{{plugins.blueskyComments.options.authorURI}}" data-auto-discover="true"{{/plugins.blueskyComments.options.authorURI}}{{^plugins.blueskyComments.options.authorURI}}data-error="no-author"{{/plugins.blueskyComments.options.authorURI}}{{/entry.metadata.bluesky}}>
+    data-uri="{{{entry.metadata.bluesky}}}"
+    data-author="{{plugins.blueskyComments.options.authorURI}}">
     <h2>Comments</h2>
 </div>
 
