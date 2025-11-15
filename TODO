@@ -1,11 +1,14 @@
 Blogs have huge numbers of archived templates – modify the tempalte archiver to only 'create' templates for sites using them, otherwise disappear them. work out how to clean up some of the many archived templates added to sites... (remove ones with zero changes?)
 
-Can we store the computed asset on disk rather than in redis... (update purge as well)
-- write script to migrate the keys to files on disk
+Remove the legacy redis hash routing from cdn/index.js
+- also create new script to forcefully migrate the dangling hashes from redis to disk, if they exist
 
 can we speed up setview slightly, it's quite slow?
 - maybe we run multiple asset computations in parallel?
-- can we move minification out of app/blog, then run minification after computing the hash, before storing on disk? should speed up
+
+Can we move minification out of app/blog, then run minification after computing the hash, before storing on disk? should speed up
+
+Fix script to replace cssURL to handle blogs with invalid domains
 
 Replace existing cssURL and scriptURL and css_url and script_url properties in templates with new cdn helper
 - do this by editing the templates

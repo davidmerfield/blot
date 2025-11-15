@@ -5,14 +5,21 @@ const cdnRegex = (path) =>
   new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}/blog_[a-f0-9]+${path}`);
 
 const extractHash = (cdnURL) => {
-  const parts = cdnURL.split(".");
-
-  expect(parts.length).toBeGreaterThanOrEqual(2);
-
-  const hash = parts[parts.length - 2];
-
+  // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
+  // Example: /template/f0/60/a480fb013c56e90af7f0ac1e961c/style.css
+  const templateMatch = cdnURL.match(/\/template\/([a-f0-9]{2})\/([a-f0-9]{2})\/([a-f0-9]+)\//);
+  
+  expect(templateMatch).toBeTruthy(`Invalid CDN URL format: ${cdnURL}`);
+  
+  const dir1 = templateMatch[1];
+  const dir2 = templateMatch[2];
+  const hashRemainder = templateMatch[3];
+  
+  // Reconstruct full hash: first 4 chars from dirs + remainder
+  const hash = dir1 + dir2 + hashRemainder;
+  
   expect(typeof hash).toBe("string", `Wrong CDN hash type: ${cdnURL}`);
-  expect(hash.length).toBe(32, `Wrong CDN hash length: ${cdnURL}`);
+  expect(hash.length).toBe(32, `Wrong CDN hash length: ${cdnURL} (got ${hash.length})`);
 
   return hash;
 };
@@ -21,31 +28,35 @@ const validate = (cdnURL) => {
   // Check CDN origin is present
   expect(cdnURL).toContain(config.cdn.origin, `Missing CDN: ${cdnURL}`);
 
-  // Check /view/ path is present
+  // Check /template/ path is present
   expect(cdnURL).toContain(
     "/template/",
     `Missing "/template/" path: ${cdnURL}`
   );
 
-  // Extract hash and validate structure
+  // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
+  // Validate the structure matches this pattern
+  const urlPattern = new RegExp(
+    `${config.cdn.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/template/[a-f0-9]{2}/[a-f0-9]{2}/[a-f0-9]+/.+`
+  );
+  
+  expect(cdnURL).toMatch(urlPattern, `Wrong CDN URL format: ${cdnURL}`);
+
+  // Extract hash and validate it's 32 characters
   const hash = extractHash(cdnURL);
-  const fileName = cdnURL.split("/").pop();
+  expect(hash.length).toBe(32, `Hash should be 32 characters: ${cdnURL}`);
 
+  // Extract view name (filename) from URL
+  const urlParts = cdnURL.split("/template/");
+  expect(urlParts.length).toBe(2, `Invalid CDN URL structure: ${cdnURL}`);
+  
+  const pathAfterTemplate = urlParts[1];
+  const pathSegments = pathAfterTemplate.split("/");
+  expect(pathSegments.length).toBeGreaterThanOrEqual(4, `Invalid path segments: ${cdnURL}`);
+  
+  // Last segment should be the view name (filename)
+  const fileName = pathSegments[pathSegments.length - 1];
   expect(fileName).toBeTruthy(`Missing CDN filename: ${cdnURL}`);
-
-  const extension = extname(fileName);
-  const fileNameWithoutHashAndExtension = fileName
-    .split(extension)
-    .join("")
-    .split("." + hash)
-    .join("");
-
-  // Build regex pattern for hash and extension
-  // Pattern: /view/template-id/view-name.hash.ext
-  // The view name might be URL encoded, so we check for it flexibly
-  let hashPattern = `/${fileNameWithoutHashAndExtension}\\.${hash}${extension}$`;
-
-  expect(cdnURL).toMatch(new RegExp(hashPattern), `Wrong CDN url: ${cdnURL}`);
 };
 
 describe("cdn template function", function () {
@@ -492,26 +503,28 @@ describe("cdn template function", function () {
       validate(cdnURL);
 
       // Extract hash from the CDN URL
-      // Pattern: https://cdn.origin/template/{viewName}.{hash}.{ext}
-      const hashMatch = cdnURL.match(/\.([a-f0-9]{32})\./);
-      expect(hashMatch).toBeTruthy();
-      const validHash = hashMatch[1];
+      // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
+      const hash = extractHash(cdnURL);
+      const validHash = hash;
+      const hashDir1 = validHash.substring(0, 2);
+      const hashDir2 = validHash.substring(2, 4);
+      const hashRemainder = validHash.substring(4);
 
       // Test various path traversal attempts in view names
-      // The new format is /template/{viewName}.{hash}.{ext}
-      // Path traversal should be rejected by parseCdnPath
+      // The new format is /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
+      // Path traversal should be rejected by the CDN route
       const pathTraversalAttempts = [
-        "../style",
-        "..%2Fstyle",
-        "%2E%2E/style",
-        "subdir/../../style",
-        "..\\style",
+        "../style.css",
+        "..%2Fstyle.css",
+        "%2E%2E/style.css",
+        "subdir/../../style.css",
+        "..\\style.css",
       ];
 
       for (const maliciousPath of pathTraversalAttempts) {
         const encodedPath = encodeURIComponent(maliciousPath);
-        // Use a valid 32-char hash format, but with malicious view name
-        const cdnPath = `/template/${encodedPath}.${validHash}.css`;
+        // Use valid hash format, but with malicious view name
+        const cdnPath = `/template/${hashDir1}/${hashDir2}/${hashRemainder}/${encodedPath}`;
         const fullCdnURL = new URL(cdnPath, config.cdn.origin).toString();
         const res = await this.fetch(fullCdnURL);
         // Should reject with 400 (invalid path), 403 (forbidden), or 404 (not found)
@@ -519,8 +532,8 @@ describe("cdn template function", function () {
       }
 
       // Test null byte (encoded) in view name
-      const nullBytePath = "style%00";
-      const nullByteCdnPath = `/template/${nullBytePath}.${validHash}.css`;
+      const nullBytePath = "style%00.css";
+      const nullByteCdnPath = `/template/${hashDir1}/${hashDir2}/${hashRemainder}/${nullBytePath}`;
       const nullByteCdnURL = new URL(
         nullByteCdnPath,
         config.cdn.origin

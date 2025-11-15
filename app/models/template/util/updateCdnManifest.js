@@ -8,6 +8,9 @@ const getView = require("../getView");
 const getAllViews = require("../getAllViews");
 const generateCdnUrl = require("./generateCdnUrl");
 const purgeCdnUrls = require("helper/purgeCdnUrls");
+const path = require("path");
+const fs = require("fs-extra");
+const config = require("config");
 
 // Promisify callback-based functions
 const getMetadataAsync = promisify(getMetadata);
@@ -20,11 +23,40 @@ const setAsync = promisify(client.set).bind(client);
 // Maximum size for rendered output (2MB)
 const MAX_RENDERED_OUTPUT_SIZE = 2 * 1024 * 1024;
 
-/**
- * Validate target name to prevent path traversal attacks
- * @param {string} target - The target name to validate
- * @returns {boolean} - True if target is valid, false otherwise
- */
+// Base directory for rendered output storage
+const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");
+
+
+function getRenderedOutputPath(hash, viewName) {
+  if (!hash || typeof hash !== "string" || hash.length < 4) {
+    throw new Error("Invalid hash: must be a string with at least 4 characters");
+  }
+  if (!viewName || typeof viewName !== "string") {
+    throw new Error("viewName must be a non-empty string");
+  }
+  // Use basename only for file storage (e.g., "header.html" from "partials/header.html")
+  // The full path is preserved in the URL via generateCdnUrl
+  const viewBaseName = path.basename(viewName);
+  const dir1 = hash.substring(0, 2);
+  const dir2 = hash.substring(2, 4);
+  const hashRemainder = hash.substring(4);
+  return path.join(RENDERED_OUTPUT_BASE_DIR, dir1, dir2, hashRemainder, viewBaseName);
+}
+
+async function writeRenderedOutputToDisk(hash, content, viewName) {
+  const filePath = getRenderedOutputPath(hash, viewName);
+  await fs.ensureDir(path.dirname(filePath));
+  await fs.writeFile(filePath, content, "utf8");
+}
+
+async function deleteRenderedOutputFromDisk(hash, viewName) {
+  const filePath = getRenderedOutputPath(hash, viewName);
+  await fs.remove(filePath).catch((err) => {
+    // Ignore ENOENT errors (file doesn't exist)
+    if (err.code !== "ENOENT") throw err;
+  });
+}
+
 function isValidTarget(target) {
   if (!target || typeof target !== "string") {
     return false;
@@ -102,9 +134,13 @@ async function processTarget(
   const hashInput = templateID + ":" + target + ":" + renderedOutputString;
   const computedHash = hash(hashInput);
 
-  // Store rendered output in Redis with 1 year TTL
+  // Store rendered output on disk and in Redis (for backward compatibility during migration)
   const renderedKey = key.renderedOutput(computedHash);
   try {
+    // Write to disk (primary storage) with original view name
+    await writeRenderedOutputToDisk(computedHash, renderedOutputString, target);
+    
+    // Also write to Redis for backward compatibility during migration period
     await setAsync(renderedKey, renderedOutputString);
   } catch (err) {
     console.error(`Error storing rendered output for ${target}:`, err);
@@ -121,8 +157,14 @@ async function cleanupOldHash(target, oldHash) {
   if (!oldHash || typeof oldHash !== 'string') return;
   
   try {
+    // Delete from disk using original view name
+    await deleteRenderedOutputFromDisk(oldHash, target);
+    
+    // Delete from Redis
     const oldRenderedKey = key.renderedOutput(oldHash);
     await delAsync(oldRenderedKey);
+    
+    // Purge CDN URL
     const oldUrl = generateCdnUrl(target, oldHash);
     await purgeCdnUrls([oldUrl]);
   } catch (err) {

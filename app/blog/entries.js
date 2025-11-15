@@ -18,7 +18,6 @@ module.exports = function (req, res, next) {
     }
 
     req.log("Loaded entries");
-    console.log("JHERE", entries, pagination);
 
     res.locals.entries = entries;
     res.locals.pagination = pagination;
