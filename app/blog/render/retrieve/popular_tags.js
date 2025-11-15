@@ -16,7 +16,7 @@ module.exports = function (req, res, callback) {
       tag: tag.name, // for backward compatibility
       entries: tag.entries,
       total: tag.count,
-      slug: tag.slug
+      slug: encodeURIComponent(tag.slug)
     }));
 
     req.log('Listed popular tags');
