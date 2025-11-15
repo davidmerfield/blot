@@ -27,23 +27,27 @@ const MAX_RENDERED_OUTPUT_SIZE = 2 * 1024 * 1024;
 const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");
 
 
-function getRenderedOutputPath(hash, ext = "") {
+function getRenderedOutputPath(hash, viewName) {
   if (!hash || typeof hash !== "string" || hash.length < 4) {
     throw new Error("Invalid hash: must be a string with at least 4 characters");
   }
+  if (!viewName || typeof viewName !== "string") {
+    throw new Error("viewName must be a non-empty string");
+  }
   const dir1 = hash.substring(0, 2);
   const dir2 = hash.substring(2, 4);
-  return path.join(RENDERED_OUTPUT_BASE_DIR, dir1, dir2, hash + ext);
+  const hashRemainder = hash.substring(4);
+  return path.join(RENDERED_OUTPUT_BASE_DIR, dir1, dir2, hashRemainder, viewName);
 }
 
-async function writeRenderedOutputToDisk(hash, content, ext = "") {
-  const filePath = getRenderedOutputPath(hash, ext);
+async function writeRenderedOutputToDisk(hash, content, viewName) {
+  const filePath = getRenderedOutputPath(hash, viewName);
   await fs.ensureDir(path.dirname(filePath));
   await fs.writeFile(filePath, content, "utf8");
 }
 
-async function deleteRenderedOutputFromDisk(hash, ext = "") {
-  const filePath = getRenderedOutputPath(hash, ext);
+async function deleteRenderedOutputFromDisk(hash, viewName) {
+  const filePath = getRenderedOutputPath(hash, viewName);
   await fs.remove(filePath).catch((err) => {
     // Ignore ENOENT errors (file doesn't exist)
     if (err.code !== "ENOENT") throw err;
@@ -127,14 +131,11 @@ async function processTarget(
   const hashInput = templateID + ":" + target + ":" + renderedOutputString;
   const computedHash = hash(hashInput);
 
-  // Get file extension from target name
-  const ext = path.extname(target) || "";
-
   // Store rendered output on disk and in Redis (for backward compatibility during migration)
   const renderedKey = key.renderedOutput(computedHash);
   try {
-    // Write to disk (primary storage) with extension
-    await writeRenderedOutputToDisk(computedHash, renderedOutputString, ext);
+    // Write to disk (primary storage) with original view name
+    await writeRenderedOutputToDisk(computedHash, renderedOutputString, target);
     
     // Also write to Redis for backward compatibility during migration period
     await setAsync(renderedKey, renderedOutputString);
@@ -153,11 +154,8 @@ async function cleanupOldHash(target, oldHash) {
   if (!oldHash || typeof oldHash !== 'string') return;
   
   try {
-    // Get file extension from target name
-    const ext = path.extname(target) || "";
-    
-    // Delete from disk
-    await deleteRenderedOutputFromDisk(oldHash, ext);
+    // Delete from disk using original view name
+    await deleteRenderedOutputFromDisk(oldHash, target);
     
     // Delete from Redis
     const oldRenderedKey = key.renderedOutput(oldHash);

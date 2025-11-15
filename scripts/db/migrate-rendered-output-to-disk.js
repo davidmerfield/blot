@@ -31,36 +31,40 @@ const getAsync = promisify(client.get).bind(client);
 const delAsync = promisify(client.del).bind(client);
 const blogSetAsync = promisify(Blog.set);
 
-function getRenderedOutputPath(hash, ext = "") {
+function getRenderedOutputPath(hash, viewName) {
   if (!hash || typeof hash !== "string" || hash.length < 4) {
     throw new Error("Invalid hash: must be a string with at least 4 characters");
   }
+  if (!viewName || typeof viewName !== "string") {
+    throw new Error("viewName must be a non-empty string");
+  }
   const dir1 = hash.substring(0, 2);
   const dir2 = hash.substring(2, 4);
-  return path.join(RENDERED_OUTPUT_BASE_DIR, dir1, dir2, hash + ext);
+  const hashRemainder = hash.substring(4);
+  return path.join(RENDERED_OUTPUT_BASE_DIR, dir1, dir2, hashRemainder, viewName);
 }
 
-async function writeRenderedOutputToDisk(hash, content, ext = "") {
-  const filePath = getRenderedOutputPath(hash, ext);
+async function writeRenderedOutputToDisk(hash, content, viewName) {
+  const filePath = getRenderedOutputPath(hash, viewName);
   await fs.ensureDir(path.dirname(filePath));
   await fs.writeFile(filePath, content, "utf8");
 }
 
-async function readRenderedOutputFromDisk(hash, ext = "") {
-  const filePath = getRenderedOutputPath(hash, ext);
+async function readRenderedOutputFromDisk(hash, viewName) {
+  const filePath = getRenderedOutputPath(hash, viewName);
   return await fs.readFile(filePath, "utf8");
 }
 
-async function migrateHash(hash, ext) {
+async function migrateHash(hash, viewName) {
   // Validate hash format (should be 32 hex characters)
   if (!/^[a-f0-9]{32}$/.test(hash)) {
     return false;
   }
 
   const redisKey = key.renderedOutput(hash);
-  const filePath = getRenderedOutputPath(hash, ext);
+  const filePath = getRenderedOutputPath(hash, viewName);
 
-  // Check if already on disk with correct extension
+  // Check if already on disk with correct view name
   if (await fs.pathExists(filePath)) {
     // Verify content matches
     const diskContent = await fs.readFile(filePath, "utf8");
@@ -84,11 +88,11 @@ async function migrateHash(hash, ext) {
     return false; // Not in Redis, skip
   }
 
-  // Write to disk with extension
-  await writeRenderedOutputToDisk(hash, content, ext);
+  // Write to disk with original view name
+  await writeRenderedOutputToDisk(hash, content, viewName);
 
   // Verify write
-  const verifyContent = await readRenderedOutputFromDisk(hash, ext);
+  const verifyContent = await readRenderedOutputFromDisk(hash, viewName);
   if (verifyContent !== content) {
     throw new Error("Content mismatch after write");
   }
@@ -146,11 +150,8 @@ async function migrate() {
             // Track this hash as one we expect to migrate
             expectedHashes.add(hash);
 
-            // Extract extension from view name
-            const ext = path.extname(viewName) || "";
-
             try {
-              const wasMigrated = await migrateHash(hash, ext);
+              const wasMigrated = await migrateHash(hash, viewName);
               if (wasMigrated) {
                 migratedHashes++;
                 templateMigrated = true;
