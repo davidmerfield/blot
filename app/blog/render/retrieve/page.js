@@ -5,7 +5,7 @@ module.exports = function (req, res, callback) {
   const pageNumber = req?.query?.page;
   const pageSize = req?.blog?.pageSize;
 
-  getPage(blogID, pageNumber, pageSize, function (err, entries, pagination) {
+  getPage(blogID, { pageNumber, pageSize }, function (err, entries, pagination) {
     if (err) {
       return callback(err);
     }

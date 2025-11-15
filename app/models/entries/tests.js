@@ -213,7 +213,7 @@ describe("entries", function () {
     let testsRemaining = invalidInputs.length;
 
     invalidInputs.forEach((invalidInput) => {
-      Entries.getPage(blogID, invalidInput, pageSize, function (error, entries, pagination) {
+      Entries.getPage(blogID, { pageNumber: invalidInput, pageSize }, function (error, entries, pagination) {
         expect(error).not.toBeNull();
         expect(error.statusCode).toBe(400);
         expect(error.message).toBe("Invalid page number");
@@ -267,7 +267,7 @@ describe("entries", function () {
     const blogID = this.blog.id;
 
     // get the second page of entries, 2 per page, sorted by date with newest first
-    Entries.getPage(blogID, pageNo, pageSize, function (error, entries, pagination) {
+    Entries.getPage(blogID, { pageNumber: pageNo, pageSize }, function (error, entries, pagination) {
         expect(error).toBeNull();
         expect(entries.map((entry) => entry.id)).toEqual(["/d.txt", "/c.txt"]);
         expect(pagination).toEqual({
@@ -279,11 +279,11 @@ describe("entries", function () {
         });
 
         // get the first page of entries, 2 per page, sorted reverse alphabetically
-        Entries.getPage(blogID, 1, pageSize, function (error, entries, pagination) {
+        Entries.getPage(blogID, { pageNumber: 1, pageSize }, function (error, entries, pagination) {
             expect(error).toBeNull();
             expect(entries.map((entry) => entry.id)).toEqual(["/f.txt", "/e.txt"]);
             // get the first page of entries, 2 per page, sorted alphabetically
-            Entries.getPage(blogID, 1, pageSize, function (error, entries, pagination) {
+            Entries.getPage(blogID, { pageNumber: 1, pageSize }, function (error, entries, pagination) {
                 expect(error).toBeNull();
                 expect(entries.map((entry) => entry.id)).toEqual(["/a.txt", "/b.txt"]);
                 done();

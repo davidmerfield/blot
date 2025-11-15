@@ -373,14 +373,58 @@ module.exports = (function () {
     return parsed;
   }
 
+  /**
+   * Validates and parses the sort by field.
+   * Falls back to a default value if the input is invalid or undefined.
+   *
+   * @param {string|undefined} sortBy - Sort by field from user input.
+   * @returns {string} - A valid sort by field (default: "date").
+   */
+  function validateSortBy(sortBy) {
+    const defaultSortBy = "date";
+
+    // Validate and parse sort by field (user input)
+    if (sortBy === "id") {
+      return sortBy;
+    }
+
+    return defaultSortBy; // Default sort by field
+  }
+
+  /**
+   * Validates and parses the sort order.
+   * Falls back to a default value if the input is invalid or undefined.
+   *
+   * @param {string|undefined} order - Sort order from user input.
+   * @returns {string} - A valid sort order (default: "asc").
+   */
+  function validateSortOrder(order) {
+    const defaultSortOrder = "asc";
+
+    // Validate and parse sort order (user input)
+    if (order === "asc" || order === "desc") {
+      return order;
+    }
+
+    return defaultSortOrder; // Default sort order
+  }
+
   function getPage(
     blogID,
-    pageNoInput = "1",
-    pageSize = 5,
-    callback,
-    options = {}
+    options = {},
+    callback
   ) {
-    ensure(blogID, "string").and(pageSize, "number").and(callback, "function");
+    ensure(blogID, "string").and(callback, "function");
+
+    // Extract and validate options
+    const { 
+      pageNumber: pageNoInput = "1", 
+      pageSize = 5, 
+      sortBy: rawSortBy, 
+      order: rawOrder 
+    } = options;
+
+    ensure(pageSize, "number");
 
     // Validate page number input
     const pageNo = validatePageNumber(pageNoInput);
@@ -391,8 +435,9 @@ module.exports = (function () {
       return callback(error, null, null);
     }
 
-    // Default sorting options
-    const { sortBy = "date", order = "asc" } = options;
+    // Validate and set sorting options
+    const sortBy = validateSortBy(rawSortBy);
+    const order = validateSortOrder(rawOrder);
 
     const zeroIndexedPageNo = pageNo - 1; // zero indexed
 
