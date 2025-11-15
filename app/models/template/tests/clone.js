@@ -2,10 +2,8 @@ describe("template", function () {
   require("./setup")();
 
   const getMetadata = require("../getMetadata");
-  const updateCdnManifest = require("../util/updateCdnManifest");
   const { promisify } = require("util");
   const getMetadataAsync = promisify(getMetadata);
-  const updateCdnManifestAsync = promisify(updateCdnManifest);
   const setView = promisify(require("../setView"));
   const create = promisify(require("../create"));
 
@@ -26,7 +24,7 @@ describe("template", function () {
 
     // Add a view to be retrieved
     const viewName = "style.css";
-    const viewContent = "body { color: red; }";
+    const viewContent = "body{color:red}";
     await setView(sourceTemplate.id, {
       name: viewName,
       content: viewContent,
@@ -38,8 +36,7 @@ describe("template", function () {
       content: "{{#cdn}}/style.css{{/cdn}}",
     });
 
-    // Update CDN manifest for source template
-    await updateCdnManifestAsync(sourceTemplate.id);
+
 
     // Get source template metadata with CDN manifest
     const sourceMetadata = await getMetadataAsync(sourceTemplate.id);
@@ -78,7 +75,7 @@ describe("template", function () {
 
     // Add a view to be retrieved
     const viewName = "style.css";
-    const viewContent = "body { color: red; }";
+    const viewContent = "body{color:red}";
     await setView(sourceTemplate.id, {
       name: viewName,
       content: viewContent,
@@ -90,8 +87,6 @@ describe("template", function () {
       content: "{{#cdn}}/style.css{{/cdn}}",
     });
 
-    // Update CDN manifest for source template
-    await updateCdnManifestAsync(sourceTemplate.id);
     const sourceMetadataBefore = await getMetadataAsync(sourceTemplate.id);
     const sourceHashBefore = sourceMetadataBefore.cdn[viewName];
 
@@ -112,8 +107,7 @@ describe("template", function () {
       content: updatedContent,
     });
     
-    // Update CDN manifest for source template (should change hash)
-    await updateCdnManifestAsync(sourceTemplate.id);
+
     const sourceMetadataAfter = await getMetadataAsync(sourceTemplate.id);
     const sourceHashAfter = sourceMetadataAfter.cdn[viewName];
 
@@ -124,5 +118,287 @@ describe("template", function () {
     const clonedMetadataAfter = await getMetadataAsync(clonedTemplate.id);
     const clonedHashAfter = clonedMetadataAfter.cdn[viewName];
     expect(clonedHashAfter).toBe(clonedHash);
+  });
+
+  it("clones template with multiple CDN targets and generates different hashes for all", async function () {
+    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+
+    // Add multiple views to be retrieved
+    await setView(sourceTemplate.id, { name: "style.css", content: "body{color:red}" });
+    await setView(sourceTemplate.id, { name: "script.js", content: "console.log('test');" });
+
+    // Add views that invoke CDN function
+    await setView(sourceTemplate.id, {
+      name: "head.html",
+      content: "{{#cdn}}/style.css{{/cdn}}",
+    });
+    await setView(sourceTemplate.id, {
+      name: "footer.html",
+      content: "{{#cdn}}/script.js{{/cdn}}",
+    });
+
+    const sourceMetadata = await getMetadataAsync(sourceTemplate.id);
+    const sourceHashes = {
+      "style.css": sourceMetadata.cdn["style.css"],
+      "script.js": sourceMetadata.cdn["script.js"],
+    };
+
+    // Clone the template
+    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+      cloneFrom: sourceTemplate.id,
+    });
+
+    // Get cloned template hashes
+    const clonedMetadata = await getMetadataAsync(clonedTemplate.id);
+    const clonedHashes = {
+      "style.css": clonedMetadata.cdn["style.css"],
+      "script.js": clonedMetadata.cdn["script.js"],
+    };
+
+    // Verify all hashes are different
+    expect(clonedHashes["style.css"]).not.toBe(sourceHashes["style.css"]);
+    expect(clonedHashes["script.js"]).not.toBe(sourceHashes["script.js"]);
+
+    // Verify all hashes are valid 32-character strings
+    Object.values(clonedHashes).forEach((hash) => {
+      expect(typeof hash).toBe("string");
+      expect(hash.length).toBe(32);
+    });
+  });
+
+  it("clones template with nested view paths and generates correct hashes", async function () {
+    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+
+    // Add views with nested paths
+    await setView(sourceTemplate.id, {
+      name: "partials/header.css",
+      content: "header { color: blue; }",
+    });
+    await setView(sourceTemplate.id, {
+      name: "assets/icons.svg",
+      content: "<svg></svg>",
+    });
+
+    // Add views that invoke CDN function
+    await setView(sourceTemplate.id, {
+      name: "head.html",
+      content: "{{#cdn}}/partials/header.css{{/cdn}}",
+    });
+
+    const sourceMetadata = await getMetadataAsync(sourceTemplate.id);
+    const sourceHash = sourceMetadata.cdn["partials/header.css"];
+
+    // Clone the template
+    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+      cloneFrom: sourceTemplate.id,
+    });
+
+    // Get cloned template hash
+    const clonedMetadata = await getMetadataAsync(clonedTemplate.id);
+    const clonedHash = clonedMetadata.cdn["partials/header.css"];
+
+    // Verify hashes are different
+    expect(clonedHash).not.toBe(sourceHash);
+    expect(clonedHash.length).toBe(32);
+
+    // Verify CDN URL uses basename (not full path)
+    const generateCdnUrl = require("../util/generateCdnUrl");
+    const clonedUrl = generateCdnUrl("partials/header.css", clonedHash);
+    expect(clonedUrl).toContain("header.css");
+    expect(clonedUrl).not.toContain("partials/header.css");
+  });
+
+  it("stores cloned template CDN files on disk with correct hashes", async function () {
+    const fs = require("fs-extra");
+    const path = require("path");
+    const config = require("config");
+    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+
+    const viewName = "style.css";
+    const viewContent = "body{color:red}";
+    await setView(sourceTemplate.id, { name: viewName, content: viewContent });
+    await setView(sourceTemplate.id, {
+      name: "head.html",
+      content: "{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    const sourceMetadata = await getMetadataAsync(sourceTemplate.id);
+    const sourceHash = sourceMetadata.cdn[viewName];
+
+    // Clone the template
+    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+      cloneFrom: sourceTemplate.id,
+    });
+
+    const clonedMetadata = await getMetadataAsync(clonedTemplate.id);
+    const clonedHash = clonedMetadata.cdn[viewName];
+
+    // Verify file exists on disk for cloned template
+    const dir1 = clonedHash.substring(0, 2);
+    const dir2 = clonedHash.substring(2, 4);
+    const hashRemainder = clonedHash.substring(4);
+    const viewBaseName = path.basename(viewName);
+    const filePath = path.join(
+      config.data_directory,
+      "cdn",
+      "template",
+      dir1,
+      dir2,
+      hashRemainder,
+      viewBaseName
+    );
+
+    expect(await fs.pathExists(filePath)).toBe(true);
+    const fileContent = await fs.readFile(filePath, "utf8");
+    expect(fileContent).toBe(viewContent);
+
+    // Verify source template file also exists (different hash)
+    const sourceDir1 = sourceHash.substring(0, 2);
+    const sourceDir2 = sourceHash.substring(2, 4);
+    const sourceHashRemainder = sourceHash.substring(4);
+    const sourceFilePath = path.join(
+      config.data_directory,
+      "cdn",
+      "template",
+      sourceDir1,
+      sourceDir2,
+      sourceHashRemainder,
+      viewBaseName
+    );
+    expect(await fs.pathExists(sourceFilePath)).toBe(true);
+  });
+
+  it("preserves metadata except CDN manifest when cloning", async function () {
+    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+      locals: { color: "red", size: "large" },
+    });
+
+    await setView(sourceTemplate.id, { name: "style.css", content: "body{color:red}" });
+    await setView(sourceTemplate.id, {
+      name: "head.html",
+      content: "{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    const sourceMetadata = await getMetadataAsync(sourceTemplate.id);
+
+    // Clone the template
+    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+      cloneFrom: sourceTemplate.id,
+    });
+
+    const clonedMetadata = await getMetadataAsync(clonedTemplate.id);
+
+    // Verify metadata is preserved
+    expect(clonedMetadata.locals).toEqual(sourceMetadata.locals);
+
+    // Verify CDN manifest is regenerated (not copied)
+    expect(clonedMetadata.cdn).toBeDefined();
+    expect(clonedMetadata.cdn["style.css"]).toBeDefined();
+    expect(clonedMetadata.cdn["style.css"]).not.toBe(sourceMetadata.cdn["style.css"]);
+  });
+
+  it("clones template with no CDN usage and creates empty manifest", async function () {
+    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+
+    // Add views without CDN usage
+    await setView(sourceTemplate.id, {
+      name: "entries.html",
+      content: "<h1>Hello</h1>",
+    });
+    await setView(sourceTemplate.id, {
+      name: "style.css",
+      content: "body{color:red}",
+    });
+
+    // Don't call updateCdnManifest - template has no CDN usage
+    const sourceMetadata = await getMetadataAsync(sourceTemplate.id);
+    expect(sourceMetadata.cdn).toEqual({});
+
+    // Clone the template
+    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+      cloneFrom: sourceTemplate.id,
+    });
+
+    const clonedMetadata = await getMetadataAsync(clonedTemplate.id);
+
+    // Verify manifest is empty (not copied from source)
+    expect(clonedMetadata.cdn).toEqual({});
+  });
+
+  it("allows independent modification of cloned template CDN assets", async function () {
+    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+
+    const viewName = "style.css";
+    await setView(sourceTemplate.id, { name: viewName, content: "body{color:red}" });
+    await setView(sourceTemplate.id, {
+      name: "head.html",
+      content: "{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    const sourceMetadataBefore = await getMetadataAsync(sourceTemplate.id);
+    const sourceHashBefore = sourceMetadataBefore.cdn[viewName];
+
+    // Clone the template
+    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+      cloneFrom: sourceTemplate.id,
+    });
+
+    const clonedMetadataBefore = await getMetadataAsync(clonedTemplate.id);
+    const clonedHashBefore = clonedMetadataBefore.cdn[viewName];
+
+    // Modify cloned template's view content
+    await setView(clonedTemplate.id, {
+      name: viewName,
+      content: "body { color: green; }",
+    });
+
+    const clonedMetadataAfter = await getMetadataAsync(clonedTemplate.id);
+    const clonedHashAfter = clonedMetadataAfter.cdn[viewName];
+
+    // Verify cloned template's hash changed
+    expect(clonedHashAfter).not.toBe(clonedHashBefore);
+
+    // Verify source template's hash remains unchanged
+    const sourceMetadataAfter = await getMetadataAsync(sourceTemplate.id);
+    const sourceHashAfter = sourceMetadataAfter.cdn[viewName];
+    expect(sourceHashAfter).toBe(sourceHashBefore);
+  });
+
+  it("generates correct CDN URLs for cloned template using new hashes", async function () {
+    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+
+    const viewName = "style.css";
+    await setView(sourceTemplate.id, { name: viewName, content: "body{color:red}" });
+    await setView(sourceTemplate.id, {
+      name: "head.html",
+      content: "{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    const sourceMetadata = await getMetadataAsync(sourceTemplate.id);
+    const sourceHash = sourceMetadata.cdn[viewName];
+
+    // Clone the template
+    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+      cloneFrom: sourceTemplate.id,
+    });
+
+    const clonedMetadata = await getMetadataAsync(clonedTemplate.id);
+    const clonedHash = clonedMetadata.cdn[viewName];
+
+    // Generate URLs for both
+    const generateCdnUrl = require("../util/generateCdnUrl");
+    const sourceUrl = generateCdnUrl(viewName, sourceHash);
+    const clonedUrl = generateCdnUrl(viewName, clonedHash);
+
+    // Verify URLs are different (different hashes)
+    expect(clonedUrl).not.toBe(sourceUrl);
+
+    // Verify URL format is correct (uses basename, not full path)
+    expect(clonedUrl).toContain("/template/");
+    expect(clonedUrl).toContain(clonedHash.substring(0, 2));
+    expect(clonedUrl).toContain(clonedHash.substring(2, 4));
+    expect(clonedUrl).toContain(clonedHash.substring(4));
+    expect(clonedUrl).toContain("style.css");
+    expect(clonedUrl).not.toContain("/style.css/"); // Should not have extra slashes
   });
 });
