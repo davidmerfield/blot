@@ -38,10 +38,13 @@ function getRenderedOutputPath(hash, viewName) {
   if (!viewName || typeof viewName !== "string") {
     throw new Error("viewName must be a non-empty string");
   }
+  // Use basename only for file storage (e.g., "header.html" from "partials/header.html")
+  // The full path is preserved in the URL via generateCdnUrl
+  const viewBaseName = path.basename(viewName);
   const dir1 = hash.substring(0, 2);
   const dir2 = hash.substring(2, 4);
   const hashRemainder = hash.substring(4);
-  return path.join(RENDERED_OUTPUT_BASE_DIR, dir1, dir2, hashRemainder, viewName);
+  return path.join(RENDERED_OUTPUT_BASE_DIR, dir1, dir2, hashRemainder, viewBaseName);
 }
 
 async function writeRenderedOutputToDisk(hash, content, viewName) {

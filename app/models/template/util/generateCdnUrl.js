@@ -18,10 +18,12 @@ function generateCdnUrl(viewName, hash) {
 
   // URL format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
   // First 4 chars of hash are used in parent directories, remaining chars in third directory
+  // Encode each path segment in viewName to handle special characters (%, #, ?, spaces, etc.)
   const dir1 = hash.substring(0, 2);
   const dir2 = hash.substring(2, 4);
   const hashRemainder = hash.substring(4);
-  return config.cdn.origin + "/template/" + dir1 + "/" + dir2 + "/" + hashRemainder + "/" + viewName;
+  const encodedViewName = encodeViewSegment(viewName);
+  return config.cdn.origin + "/template/" + dir1 + "/" + dir2 + "/" + hashRemainder + "/" + encodedViewName;
 }
 
 /**
