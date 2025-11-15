@@ -1,27 +1,21 @@
-const Entries = require("models/entries");
+const { getPage } = require("models/entries");
 
-/**
- * Handles rendering of the page with entries and pagination.
- */
 module.exports = function (req, res, callback) {
   const blogID = req?.blog?.id;
 
-  // Pass raw values - validation happens in the model
-  const pageSize = req?.template?.locals?.page_size;
-  const pageNumber = req?.params?.page;
-  const sortBy = req?.template?.locals?.sort_by;
-  const order = req?.template?.locals?.sort_order;
+  const options = {
+    sortBy: req?.template?.locals?.sort_by,
+    order: req?.template?.locals?.sort_order,
+    pageNumber: req?.params?.page,
+    pageSize: req?.template?.locals?.page_size,
+  };
 
-  Entries.getPage(
-    blogID,
-    { sortBy, order, pageNumber, pageSize },
-    (err, entries) => {
-      if (err) {
-        return callback(err);
-      }
-
-      callback(null, entries);
+  req.log("Loading page of entries");
+  getPage(blogID, options, (err, entries) => {
+    if (err) {
+      return callback(err);
     }
-  );
-};
 
+    callback(null, entries);
+  });
+};
