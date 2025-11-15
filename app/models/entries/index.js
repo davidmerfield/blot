@@ -324,18 +324,75 @@ module.exports = (function () {
   }
 
   random.MAX_ATTEMPTS = MAX_RANDOM_ATTEMPTS;
-  function getPage(blogID, pageNo, pageSize, callback, options = {}) {
+
+  // Maximum page number to keep (pageNo - 1) * pageSize within Redis integer limits
+  // Redis integers are 64-bit signed, so max safe value is 2^63 - 1
+  // With reasonable page sizes (e.g., 100), we can safely allow up to ~9e15 pages
+  // But for practical purposes, we'll cap at a much lower value
+  const MAX_PAGE_NUMBER = 10000; // 10,000 pages should be more than enough
+
+  /**
+   * Validates and parses a page number from user input.
+   * Returns null if the input is invalid, otherwise returns the validated page number.
+   *
+   * @param {string|number|undefined} pageNumber - The page number from user input.
+   * @returns {number|null} - A valid page number, or null if invalid.
+   */
+  function validatePageNumber(pageNumber) {
+    // Handle undefined/null/empty string
+    if (pageNumber === undefined || pageNumber === null || pageNumber === "") {
+      return null;
+    }
+
+    // Convert to string for validation
+    const pageStr = String(pageNumber).trim();
+
+    // Must be purely digits (no decimals, no negative signs, no letters)
+    if (!/^\d+$/.test(pageStr)) {
+      return null;
+    }
+
+    // Parse as integer
+    const parsed = parseInt(pageStr, 10);
+
+    // Check if parsing was successful and result is a safe integer
+    if (isNaN(parsed) || !Number.isSafeInteger(parsed)) {
+      return null;
+    }
+
+    // Must be positive
+    if (parsed <= 0) {
+      return null;
+    }
+
+    // Must not exceed maximum
+    if (parsed > MAX_PAGE_NUMBER) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  function getPage(blogID, pageNoInput, pageSize, callback, options = {}) {
     ensure(blogID, "string")
-      .and(pageNo, "number")
       .and(pageSize, "number")
       .and(callback, "function");
+
+    // Validate page number input
+    const pageNo = validatePageNumber(pageNoInput);
+    if (pageNo === null) {
+      const error = new Error("Invalid page number");
+      error.statusCode = 400;
+      error.invalidInput = pageNoInput;
+      return callback(error, null, null);
+    }
 
     // Default sorting options
     const { sortBy = "date", order = "asc" } = options;
 
-    pageNo--; // zero indexed
+    const zeroIndexedPageNo = pageNo - 1; // zero indexed
 
-    var start = pageNo * pageSize;
+    var start = zeroIndexedPageNo * pageSize;
     var end = start + (pageSize - 1);
 
     // Determine how to fetch the sorted list
@@ -353,23 +410,24 @@ module.exports = (function () {
       redis.sort(sortOptions, function (error, entryIDs) {
         if (error) {
           console.error(error);
-          return callback([]);
+          return callback(error, [], null);
         }
 
 
         redis.zcard(listKey(blogID, "entries"), function (error, totalEntries) {
           if (error) {
             console.error(error);
-            return callback([]);
+            return callback(error, [], null);
           }
           handlePaginationAndCallback(
             blogID,
             entryIDs,
             totalEntries,
-            pageNo,
+            zeroIndexedPageNo,
             pageSize,
             start,
             end,
+            pageNo,
             callback
           );
         });
@@ -386,24 +444,25 @@ module.exports = (function () {
         function (error, entryIDs) {
           if (error) {
             console.error(error);
-            return callback([]);
+            return callback(error, [], null);
           }
           redis.zcard(
             listKey(blogID, "entries"),
             function (error, totalEntries) {
               if (error) {
                 console.error(error);
-                return callback([]);
+                return callback(error, [], null);
               }
 
               handlePaginationAndCallback(
                 blogID,
                 entryIDs,
                 totalEntries,
-                pageNo,
+                zeroIndexedPageNo,
                 pageSize,
                 start,
                 end,
+                pageNo,
                 callback
               );
             }
@@ -420,10 +479,11 @@ module.exports = (function () {
     blogID,
     entryIDs,
     totalEntries,
-    pageNo,
+    zeroIndexedPageNo,
     pageSize,
     start,
     end,
+    pageNo,
     callback
   ) {
 
@@ -434,13 +494,13 @@ module.exports = (function () {
       totalEntries = parseInt(totalEntries);
 
       pagination.total = Math.ceil(totalEntries / pageSize);
-      pagination.current = pageNo + 1;
+      pagination.current = pageNo;
       pagination.pageSize = pageSize;
 
       // total entries is not 0 indexed, remove 1
-      if (totalEntries - 1 > end) pagination.next = pageNo + 2;
+      if (totalEntries - 1 > end) pagination.next = zeroIndexedPageNo + 2;
 
-      if (pageNo > 0) pagination.previous = pageNo;
+      if (zeroIndexedPageNo > 0) pagination.previous = zeroIndexedPageNo;
 
       if (!pagination.next && !pagination.previous) pagination = false;
 
@@ -454,7 +514,7 @@ module.exports = (function () {
         index--;
       });
 
-      return callback(entries, pagination);
+      return callback(null, entries, pagination);
     });
   }
 

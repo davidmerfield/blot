@@ -6,9 +6,6 @@ const Entries = require("models/entries");
 module.exports = function (req, res, callback) {
   const blog = req.blog;
 
-  // Parse and validate page number (user input)
-  const pageNo = parsePageNumber(req.params?.page);
-
   // Parse and validate page size (user input via template)
   const pageSize = parsePageSize(req.template?.locals?.page_size);
 
@@ -19,36 +16,31 @@ module.exports = function (req, res, callback) {
   const order = parseSortOrder(req.template?.locals?.sort_order);
 
   // Fetch entries and render the view
-  req.log("Loading entries for page", pageNo, "with page size", pageSize);
-  Entries.getPage(blog.id, pageNo, pageSize, (entries, pagination) => {
-    pagination.current = pageNo;
+  // Pass raw page number input - validation happens in the model
+  const rawPageNumber = req.params?.page || '1';
+  req.log("Loading entries for page", rawPageNumber, "with page size", pageSize);
+  
+  Entries.getPage(blog.id, rawPageNumber, pageSize, (error, entries, pagination) => {
+    if (error) {
+      // Validation error from the model
+      if (error.statusCode === 400) {
+        req.log("Invalid page number:", error.invalidInput);
+        return callback(new Error("Invalid page number"));
+      }
+      // Other errors
+      return callback(error);
+    }
 
-
-    if (entries.length > 0) {
-        entries.at(-1).pagination = pagination;
-    } 
+    // Guard against missing pagination object (e.g., if Redis fails)
+    // Note: pagination.current is already set by the model
+    if (pagination && entries && entries.length > 0) {
+      entries.at(-1).pagination = pagination;
+    }
 
     callback(null, entries);
   }, { sortBy, order });
 }
 
-/**
- * Utility function to validate and parse the page number.
- * Falls back to 1 if the input is invalid or undefined.
- *
- * @param {string|undefined} pageNumber - The page number from user input.
- * @returns {number} - A valid page number (default: 1).
- */
-function parsePageNumber(pageNumber) {
-  const parsedPageNumber = parseInt(pageNumber, 10);
-
-  // Ensure the page number is a positive integer; default to 1 if invalid
-  if (!isNaN(parsedPageNumber) && parsedPageNumber > 0) {
-    return parsedPageNumber;
-  }
-
-  return 1; // Default page number
-}
 
 /**
  * Utility function to validate and parse the page size.

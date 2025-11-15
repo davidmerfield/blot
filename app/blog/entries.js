@@ -6,9 +6,6 @@ const Entries = require("models/entries");
 module.exports = function (req, res, next) {
   const blog = req.blog;
 
-  // Parse and validate page number (user input)
-  const pageNo = parsePageNumber(req.params.page_number);
-
   // Parse and validate page size (user input via template)
   const pageSize = parsePageSize(req.template?.locals?.page_size);
 
@@ -19,9 +16,24 @@ module.exports = function (req, res, next) {
   const order = parseSortOrder(req.template?.locals?.sort_order);
 
   // Fetch entries and render the view
-  req.log("Loading entries for page", pageNo, "with page size", pageSize);
-  Entries.getPage(blog.id, pageNo, pageSize, (entries, pagination) => {
-    pagination.current = pageNo;
+  // Pass raw page number input - validation happens in the model
+  const rawPageNumber = req.params.page_number || '1';
+  req.log("Loading entries for page", rawPageNumber, "with page size", pageSize);
+  
+  Entries.getPage(blog.id, rawPageNumber, pageSize, (error, entries, pagination) => {
+    if (error) {
+      // Validation error from the model
+      if (error.statusCode === 400) {
+        req.log("Invalid page number:", error.invalidInput);
+        res.status(400);
+        return res.renderView("entries.html", next);
+      }
+      // Other errors
+      return next(error);
+    }
+
+    // Guard against missing pagination object (e.g., if Redis fails)
+    // Note: pagination.current is already set by the model
 
     res.locals.entries = entries;
     res.locals.pagination = pagination;
@@ -31,23 +43,6 @@ module.exports = function (req, res, next) {
   }, { sortBy, order });
 }
 
-/**
- * Utility function to validate and parse the page number.
- * Falls back to 1 if the input is invalid or undefined.
- *
- * @param {string|undefined} pageNumber - The page number from user input.
- * @returns {number} - A valid page number (default: 1).
- */
-function parsePageNumber(pageNumber) {
-  const parsedPageNumber = parseInt(pageNumber, 10);
-
-  // Ensure the page number is a positive integer; default to 1 if invalid
-  if (!isNaN(parsedPageNumber) && parsedPageNumber > 0) {
-    return parsedPageNumber;
-  }
-
-  return 1; // Default page number
-}
 
 /**
  * Utility function to validate and parse the page size.

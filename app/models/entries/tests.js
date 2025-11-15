@@ -193,6 +193,42 @@ describe("entries", function () {
     });
   });
 
+  it("getPage should reject invalid page numbers", function (done) {
+    const blogID = this.blog.id;
+    const pageSize = 2;
+
+    // Test various invalid inputs
+    const invalidInputs = [
+      undefined,
+      null,
+      "",
+      "abc",
+      "-1",
+      "0",
+      "1.5",
+      "1000001", // exceeds MAX_PAGE_NUMBER
+      "999999999999999999999", // exceeds safe integer
+    ];
+
+    let testsRemaining = invalidInputs.length;
+
+    invalidInputs.forEach((invalidInput) => {
+      Entries.getPage(blogID, invalidInput, pageSize, function (error, entries, pagination) {
+        expect(error).not.toBeNull();
+        expect(error.statusCode).toBe(400);
+        expect(error.message).toBe("Invalid page number");
+        expect(error.invalidInput).toBe(invalidInput);
+        expect(entries).toBeNull();
+        expect(pagination).toBeNull();
+
+        testsRemaining--;
+        if (testsRemaining === 0) {
+          done();
+        }
+      });
+    });
+  });
+
   it("getPage should return a page of entries sorted by date", async function (done) {
     const key = `blog:${this.blog.id}:entries`;
     const now = Date.now();
@@ -231,7 +267,8 @@ describe("entries", function () {
     const blogID = this.blog.id;
 
     // get the second page of entries, 2 per page, sorted by date with newest first
-    Entries.getPage(blogID, pageNo, pageSize, function (entries, pagination) {
+    Entries.getPage(blogID, pageNo, pageSize, function (error, entries, pagination) {
+        expect(error).toBeNull();
         expect(entries.map((entry) => entry.id)).toEqual(["/d.txt", "/c.txt"]);
         expect(pagination).toEqual({
             current: 2,
@@ -242,10 +279,12 @@ describe("entries", function () {
         });
 
         // get the first page of entries, 2 per page, sorted reverse alphabetically
-        Entries.getPage(blogID, 1, pageSize, function (entries, pagination) {
+        Entries.getPage(blogID, 1, pageSize, function (error, entries, pagination) {
+            expect(error).toBeNull();
             expect(entries.map((entry) => entry.id)).toEqual(["/f.txt", "/e.txt"]);
             // get the first page of entries, 2 per page, sorted alphabetically
-            Entries.getPage(blogID, 1, pageSize, function (entries, pagination) {
+            Entries.getPage(blogID, 1, pageSize, function (error, entries, pagination) {
+                expect(error).toBeNull();
                 expect(entries.map((entry) => entry.id)).toEqual(["/a.txt", "/b.txt"]);
                 done();
             }, { sortBy: "id", order: "asc" });
