@@ -1,5 +1,5 @@
 const config = require("config");
-const purgeCdnUrls = require("../util/purgeCdnUrls");
+const purgeCdnUrls = require("../purgeCdnUrls");
 
 describe("purgeCdnUrls", function () {
   const originalEnv = process.env.NODE_ENV;

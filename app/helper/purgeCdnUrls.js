@@ -3,7 +3,7 @@ const fetch = require("node-fetch");
 
 /**
  * Purge URLs from Bunny CDN cache
- * @param {string[]} urls - Array of URLs to purge
+ * @param {string[]} urls - Array of URLs to purge (will be encoded internally)
  * @returns {Promise<void>}
  */
 async function purgeCdnUrls(urls) {

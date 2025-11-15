@@ -7,7 +7,7 @@ const getMetadata = require("../getMetadata");
 const getView = require("../getView");
 const getAllViews = require("../getAllViews");
 const generateCdnUrl = require("./generateCdnUrl");
-const purgeCdnUrls = require("./purgeCdnUrls");
+const purgeCdnUrls = require("helper/purgeCdnUrls");
 
 // Promisify callback-based functions
 const getMetadataAsync = promisify(getMetadata);
@@ -49,133 +49,16 @@ function isValidTarget(target) {
 }
 
 /**
- * Render a view for CDN manifest generation
- */
-async function renderViewForCdn(
-  templateID,
-  ownerID,
-  viewName,
-  metadata,
-  cdnManifest
-) {
-  // Lazy require to avoid circular dependency
-  const Blog = require("../../../models/blog");
-  const blogDefaults = require("../../../models/blog/defaults");
-  const renderMiddleware = require("../../../blog/render/middleware");
-  const { promisify } = require("util");
-  const getBlogAsync = promisify(Blog.get);
-
-  try {
-    // Fetch or create blog object
-    let blogData;
-    if (ownerID === "SITE") {
-      blogData = { id: "SITE" };
-    } else {
-      blogData = await getBlogAsync({ id: ownerID });
-      if (!blogData) {
-        return null; // Missing blog - skip in manifest
-      }
-    }
-
-    const blog = Blog.extend(Object.assign({}, blogDefaults, blogData));
-
-    // Create mock req/res objects compatible with render middleware
-    let renderedOutput = null;
-    let renderError = null;
-
-    const req = {
-      blog: blog,
-      preview: false,
-      log: () => {},
-      template: {
-        locals: metadata.locals || {},
-        id: templateID,
-        cdn: cdnManifest && typeof cdnManifest === "object" ? cdnManifest : {},
-      },
-      query: {},
-      protocol: "https",
-      headers: {},
-    };
-
-    const res = {
-      locals: { partials: {} },
-      header: () => {},
-      set: () => {},
-      send: (output) => {
-        renderedOutput = output;
-      },
-      renderView: null, // Set by render middleware
-    };
-
-    // Call render middleware
-    await new Promise((resolve) => {
-      renderMiddleware(req, res, (err) => {
-        if (err) {
-          renderError = err;
-          return resolve();
-        }
-        resolve();
-      });
-    });
-
-    if (renderError) {
-      console.error(`Error rendering view ${viewName} for CDN:`, renderError);
-      return null;
-    }
-
-    // Render the view - use callback pattern which is simpler
-    await new Promise((resolve) => {
-      res.renderView(viewName, (err) => {
-        // next callback - called on errors
-        if (err) {
-          if (err.code === "NO_VIEW") {
-            // Missing view - skip in manifest (not an error)
-            renderError = null;
-          } else {
-            renderError = err;
-            console.error(`Error rendering view ${viewName} for CDN:`, err);
-          }
-        }
-        resolve();
-      }, (err, output) => {
-        // callback pattern - captures output directly
-        if (err) {
-          renderError = err;
-          console.error(`Error rendering view ${viewName} for CDN:`, err);
-        } else {
-          renderedOutput = output;
-        }
-        resolve();
-      });
-    });
-
-    if (renderError) {
-      return null;
-    }
-
-    if (renderedOutput === undefined || renderedOutput === null) {
-      return null;
-    }
-
-    return typeof renderedOutput === "string"
-      ? renderedOutput
-      : String(renderedOutput);
-  } catch (err) {
-    console.error(`Error in renderViewForCdn for ${viewName}:`, err);
-    return null;
-  }
-}
-
-/**
  * Process a single CDN target and build its manifest entry
  */
 async function processTarget(
   templateID,
-  ownerID,
-  target,
-  metadata,
-  cdnManifest
+  target
 ) {
+
+  // require here becuse of dependency loop
+  const renderView = require("blog/render/view");
+
   // Check if view exists
   try {
     const view = await getViewAsync(templateID, target);
@@ -196,13 +79,7 @@ async function processTarget(
   }
 
   // Render the view to get output
-  const renderedOutput = await renderViewForCdn(
-    templateID,
-    ownerID,
-    target,
-    metadata,
-    cdnManifest
-  );
+  const renderedOutput = await renderView(templateID, target);
   
   if (renderedOutput === undefined || renderedOutput === null) {
     return null; // Missing view or render error - skip in manifest
@@ -274,8 +151,6 @@ module.exports = function updateCdnManifest(templateID, callback) {
         return callback(new Error("Template metadata missing owner"));
       }
 
-      const ownerID = metadata.owner;
-
       // Get all views and collect CDN targets from their retrieve.cdn arrays
       const views = await getAllViewsAsync(templateID);
       const allTargets = new Set();
@@ -303,10 +178,7 @@ module.exports = function updateCdnManifest(templateID, callback) {
         try {
           const result = await processTarget(
             templateID,
-            ownerID,
-            target,
-            metadata,
-            inProgressManifest
+            target
           );
           if (result && typeof result === 'string') {
             manifest[target] = result;
