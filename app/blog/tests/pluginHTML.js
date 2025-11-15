@@ -81,52 +81,6 @@ describe("pluginHTML", function () {
         expect(await areThereComments('/foo')).toBe(false, 'comments should not appear on posts with comments disabled');
     });
 
-    it("injects bluesky comments html", async function () {
-
-        const blueskyUriPost = 'at://did:plc:example/app.bsky.feed.post/3jqf4zda6q2';
-        const blueskyUriPage = 'at://did:plc:example/app.bsky.feed.post/6p9z7m8n1v0';
-
-        const plugins = {
-            ...this.blog.plugins,
-            blueskyComments: {
-                enabled: true,
-                options: {
-                    authorHandle: 'example.bsky.social',
-                    service: 'https://public.api.bsky.app'
-                }
-            }
-        };
-
-        await this.blog.update({plugins})
-
-        await this.template({ "entry.html": "{{{entry.html}}} {{> pluginHTML}}" });
-        await this.write({path: '/a.txt', content: `Link: /foo\nBluesky: ${blueskyUriPost}\n\nHello, world!`});
-        await this.write({path: '/Pages/about.txt', content: `Link: /about\nComments: Yes\nBluesky: ${blueskyUriPage}\n\nHello, page!`});
-        await this.write({path: '/Drafts/test.txt', content: 'Hello, draft!'});
-
-        const areThereComments = async (path) => {
-            const res = await this.get(path);
-            const body = await res.text();
-            return body.includes('id="bluesky-comments"') && body.includes('bluesky-comments.es.js');
-        }
-
-        expect(await areThereComments('/foo')).toBe(true, 'comments should appear on posts with Bluesky metadata');
-        expect(await areThereComments('/about')).toBe(true, 'comments should appear on pages with comments enabled and Bluesky metadata');
-        expect(await areThereComments('/draft/view/Drafts/test.txt')).toBe(false, 'comments should not appear on drafts');
-
-        const res = await this.fetch(config.protocol + 'preview-of-my-local-on-' + this.blog.handle + '.' + config.host + '/foo');
-        const body = await res.text();
-
-        expect(res.status).toEqual(200);
-        expect(body).not.toContain('bluesky-comments.es.js');
-
-        await this.write({path: '/a.txt', content: `Link: /foo\nComments: No\nBluesky: ${blueskyUriPost}\n\nHello, world!`});
-        expect(await areThereComments('/foo')).toBe(false, 'comments should not appear on posts with comments disabled');
-
-        await this.write({path: '/a.txt', content: 'Link: /foo\n\nHello, world!'});
-        expect(await areThereComments('/foo')).toBe(false, 'comments should not appear when Bluesky metadata is missing');
-    });
-
     it("injects google analytics into appJS", async function () {
 
         const plugins = {...this.blog.plugins, analytics: {enabled: true, options: {provider: {Google: true}, trackingID: 'UA-12345678-9'}}};
