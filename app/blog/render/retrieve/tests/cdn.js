@@ -25,14 +25,14 @@ describe("cdn", function () {
   it("returns CDN URL for normal requests with SITE template", function (done) {
     var result;
     var template = "{{#cdn}}/style.css{{/cdn}}";
+    var hash = "abc123def456ghi789jkl012mno345pq";
 
     cdn(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { cdn: lambda });
       expect(result).toContain(config.cdn.origin);
       expect(result).toContain("/template/");
-      expect(result).toContain("style");
-      expect(result).toContain(".css");
-      expect(result).toContain("abc123def456ghi789jkl012mno345pq");
+      // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
+      expect(result).toMatch(new RegExp(`/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`));
       done();
     });
   });
@@ -41,14 +41,14 @@ describe("cdn", function () {
     this.request.template.id = this.blog.id + ":custom";
     var result;
     var template = "{{#cdn}}/style.css{{/cdn}}";
+    var hash = "abc123def456ghi789jkl012mno345pq";
 
     cdn(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { cdn: lambda });
       expect(result).toContain(config.cdn.origin);
       expect(result).toContain("/template/");
-      expect(result).toContain("style");
-      expect(result).toContain(".css");
-      expect(result).toContain("abc123def456ghi789jkl012mno345pq");
+      // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
+      expect(result).toMatch(new RegExp(`/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`));
       done();
     });
   });
@@ -72,14 +72,14 @@ describe("cdn", function () {
     this.request.template.id = "SITE:blog";
     var result;
     var template = "{{#cdn}}/style.css{{/cdn}}";
+    var hash = "abc123def456ghi789jkl012mno345pq";
 
     cdn(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { cdn: lambda });
       expect(result).toContain(config.cdn.origin);
       expect(result).toContain("/template/");
-      expect(result).toContain("style");
-      expect(result).toContain(".css");
-      expect(result).toContain("abc123def456ghi789jkl012mno345pq");
+      // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
+      expect(result).toMatch(new RegExp(`/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`));
       done();
     });
   });
@@ -137,14 +137,14 @@ describe("cdn", function () {
     this.request.template.cdn["style.css"] = "abc123def456ghi789jkl012mno345pq";
     var result;
     var template = "{{#cdn}}style.css{{/cdn}}";
+    var hash = "abc123def456ghi789jkl012mno345pq";
 
     cdn(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { cdn: lambda });
       expect(result).toContain(config.cdn.origin);
       expect(result).toContain("/template/");
-      expect(result).toContain("style");
-      expect(result).toContain(".css");
-      expect(result).toContain("abc123def456ghi789jkl012mno345pq");
+      // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
+      expect(result).toMatch(new RegExp(`/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`));
       done();
     });
   });
