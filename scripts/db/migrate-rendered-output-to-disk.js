@@ -17,6 +17,7 @@ const getMetadata = require("models/template/getMetadata");
 const Blog = require("models/blog");
 const client = require("models/client");
 const key = require("models/template/key");
+const redisKeys = require("../util/redisKeys");
 const { promisify } = require("util");
 const fs = require("fs-extra");
 const path = require("path");
@@ -110,6 +111,7 @@ async function migrate() {
   let failedHashes = 0;
   let blogsFlushed = 0;
   let errors = [];
+  const expectedHashes = new Set(); // Track all hashes we expect to migrate
 
   await new Promise((resolve, reject) => {
     eachTemplate(
@@ -140,6 +142,9 @@ async function migrate() {
             if (!hash || typeof hash !== "string") {
               continue;
             }
+
+            // Track this hash as one we expect to migrate
+            expectedHashes.add(hash);
 
             // Extract extension from view name
             const ext = path.extname(viewName) || "";
@@ -239,6 +244,44 @@ async function migrate() {
     return 1;
   }
 
+  // Sanity check: Verify all expected hashes were migrated from Redis
+  console.log("\n" + "=".repeat(60));
+  console.log("Sanity check: Verifying all hashes were migrated from Redis...");
+  
+  const remainingKeys = [];
+  const unexpectedKeys = [];
+  
+  await redisKeys("cdn:rendered:*", async (redisKey) => {
+    const hash = redisKey.replace("cdn:rendered:", "");
+    
+    if (expectedHashes.has(hash)) {
+      // This hash should have been migrated but is still in Redis
+      remainingKeys.push(hash);
+    } else {
+      // This key wasn't in any template manifest - might be orphaned or legacy
+      unexpectedKeys.push(hash);
+    }
+  });
+
+  if (remainingKeys.length > 0) {
+    console.log(`\n⚠️  WARNING: ${remainingKeys.length} expected hashes still in Redis:`);
+    remainingKeys.slice(0, 10).forEach((hash) => {
+      console.log(`  - ${hash}`);
+    });
+    if (remainingKeys.length > 10) {
+      console.log(`  ... and ${remainingKeys.length - 10} more`);
+    }
+    console.log("\nThese hashes were found in template manifests but were not migrated.");
+    return 1;
+  }
+
+  if (unexpectedKeys.length > 0) {
+    console.log(`\nℹ️  Note: ${unexpectedKeys.length} Redis keys found that were not in any template manifest.`);
+    console.log("These may be orphaned keys or from templates that were deleted.");
+    console.log("They will continue to be served from Redis via the legacy route.");
+  }
+
+  console.log(`\n✅ Sanity check passed: All ${expectedHashes.size} expected hashes were migrated from Redis.`);
   console.log("\n✅ Migration completed successfully!");
   return 0;
 }
