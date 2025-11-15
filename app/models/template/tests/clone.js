@@ -9,18 +9,8 @@ describe("template", function () {
 
   it("generates different CDN hashes for cloned templates", async function () {
     // Create source template with a view that has CDN retrieval
-    const sourceTemplateName = this.fake.random.word().toLowerCase();
-    const sourceTemplate = await new Promise((resolve, reject) => {
-      require("../index").create(
-        this.blog.id,
-        sourceTemplateName,
-        {},
-        function (err, template) {
-          if (err) return reject(err);
-          resolve(template);
-        }
-      );
-    });
+    const sourceTemplateName = "templatename";
+    const sourceTemplate = await create(this.blog.id, sourceTemplateName, {});
 
     // Add a view to be retrieved
     const viewName = "style.css";
@@ -36,8 +26,6 @@ describe("template", function () {
       content: "{{#cdn}}/style.css{{/cdn}}",
     });
 
-
-
     // Get source template metadata with CDN manifest
     const sourceMetadata = await getMetadataAsync(sourceTemplate.id);
     expect(sourceMetadata.cdn).toBeDefined();
@@ -47,7 +35,7 @@ describe("template", function () {
     expect(sourceHash.length).toBe(32);
 
     // Clone the template
-    const clonedTemplateName = this.fake.random.word().toLowerCase();
+    const clonedTemplateName = "templatenamecloned";
     const clonedTemplate = await create(this.blog.id, clonedTemplateName, {
       cloneFrom: sourceTemplate.id,
     });
@@ -91,7 +79,7 @@ describe("template", function () {
     const sourceHashBefore = sourceMetadataBefore.cdn[viewName];
 
     // Clone the template
-    const clonedTemplateName = this.fake.random.word();
+    const clonedTemplateName = "templatenamecloned";
     const clonedTemplate = await create(this.blog.id, clonedTemplateName, {
       cloneFrom: sourceTemplate.id,
     });
@@ -106,7 +94,6 @@ describe("template", function () {
       name: viewName,
       content: updatedContent,
     });
-    
 
     const sourceMetadataAfter = await getMetadataAsync(sourceTemplate.id);
     const sourceHashAfter = sourceMetadataAfter.cdn[viewName];
@@ -121,11 +108,17 @@ describe("template", function () {
   });
 
   it("clones template with multiple CDN targets and generates different hashes for all", async function () {
-    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+    const sourceTemplate = await create(this.blog.id, "templatename", {});
 
     // Add multiple views to be retrieved
-    await setView(sourceTemplate.id, { name: "style.css", content: "body{color:red}" });
-    await setView(sourceTemplate.id, { name: "script.js", content: "console.log('test');" });
+    await setView(sourceTemplate.id, {
+      name: "style.css",
+      content: "body{color:red}",
+    });
+    await setView(sourceTemplate.id, {
+      name: "script.js",
+      content: "console.log('test');",
+    });
 
     // Add views that invoke CDN function
     await setView(sourceTemplate.id, {
@@ -144,7 +137,7 @@ describe("template", function () {
     };
 
     // Clone the template
-    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+    const clonedTemplate = await create(this.blog.id, "templatenamecloned", {
       cloneFrom: sourceTemplate.id,
     });
 
@@ -167,7 +160,7 @@ describe("template", function () {
   });
 
   it("clones template with nested view paths and generates correct hashes", async function () {
-    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+    const sourceTemplate = await create(this.blog.id, "templatename", {});
 
     // Add views with nested paths
     await setView(sourceTemplate.id, {
@@ -189,7 +182,7 @@ describe("template", function () {
     const sourceHash = sourceMetadata.cdn["partials/header.css"];
 
     // Clone the template
-    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+    const clonedTemplate = await create(this.blog.id, "templatenamecloned", {
       cloneFrom: sourceTemplate.id,
     });
 
@@ -212,7 +205,7 @@ describe("template", function () {
     const fs = require("fs-extra");
     const path = require("path");
     const config = require("config");
-    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+    const sourceTemplate = await create(this.blog.id, "templatename", {});
 
     const viewName = "style.css";
     const viewContent = "body{color:red}";
@@ -226,7 +219,7 @@ describe("template", function () {
     const sourceHash = sourceMetadata.cdn[viewName];
 
     // Clone the template
-    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+    const clonedTemplate = await create(this.blog.id, "templatenamecloned", {
       cloneFrom: sourceTemplate.id,
     });
 
@@ -269,11 +262,14 @@ describe("template", function () {
   });
 
   it("preserves metadata except CDN manifest when cloning", async function () {
-    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+    const sourceTemplate = await create(this.blog.id, "templatename", {
       locals: { color: "red", size: "large" },
     });
 
-    await setView(sourceTemplate.id, { name: "style.css", content: "body{color:red}" });
+    await setView(sourceTemplate.id, {
+      name: "style.css",
+      content: "body{color:red}",
+    });
     await setView(sourceTemplate.id, {
       name: "head.html",
       content: "{{#cdn}}/style.css{{/cdn}}",
@@ -282,7 +278,7 @@ describe("template", function () {
     const sourceMetadata = await getMetadataAsync(sourceTemplate.id);
 
     // Clone the template
-    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+    const clonedTemplate = await create(this.blog.id, "templatenamecloned", {
       cloneFrom: sourceTemplate.id,
     });
 
@@ -294,11 +290,13 @@ describe("template", function () {
     // Verify CDN manifest is regenerated (not copied)
     expect(clonedMetadata.cdn).toBeDefined();
     expect(clonedMetadata.cdn["style.css"]).toBeDefined();
-    expect(clonedMetadata.cdn["style.css"]).not.toBe(sourceMetadata.cdn["style.css"]);
+    expect(clonedMetadata.cdn["style.css"]).not.toBe(
+      sourceMetadata.cdn["style.css"]
+    );
   });
 
   it("clones template with no CDN usage and creates empty manifest", async function () {
-    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+    const sourceTemplate = await create(this.blog.id, "templatename", {});
 
     // Add views without CDN usage
     await setView(sourceTemplate.id, {
@@ -315,7 +313,7 @@ describe("template", function () {
     expect(sourceMetadata.cdn).toEqual({});
 
     // Clone the template
-    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+    const clonedTemplate = await create(this.blog.id, "templatenamecloned", {
       cloneFrom: sourceTemplate.id,
     });
 
@@ -326,10 +324,13 @@ describe("template", function () {
   });
 
   it("allows independent modification of cloned template CDN assets", async function () {
-    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+    const sourceTemplate = await create(this.blog.id, "templatename", {});
 
     const viewName = "style.css";
-    await setView(sourceTemplate.id, { name: viewName, content: "body{color:red}" });
+    await setView(sourceTemplate.id, {
+      name: viewName,
+      content: "body{color:red}",
+    });
     await setView(sourceTemplate.id, {
       name: "head.html",
       content: "{{#cdn}}/style.css{{/cdn}}",
@@ -339,7 +340,7 @@ describe("template", function () {
     const sourceHashBefore = sourceMetadataBefore.cdn[viewName];
 
     // Clone the template
-    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+    const clonedTemplate = await create(this.blog.id, "templatenamecloned", {
       cloneFrom: sourceTemplate.id,
     });
 
@@ -365,10 +366,13 @@ describe("template", function () {
   });
 
   it("generates correct CDN URLs for cloned template using new hashes", async function () {
-    const sourceTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {});
+    const sourceTemplate = await create(this.blog.id, "templatename", {});
 
     const viewName = "style.css";
-    await setView(sourceTemplate.id, { name: viewName, content: "body{color:red}" });
+    await setView(sourceTemplate.id, {
+      name: viewName,
+      content: "body{color:red}",
+    });
     await setView(sourceTemplate.id, {
       name: "head.html",
       content: "{{#cdn}}/style.css{{/cdn}}",
@@ -378,7 +382,7 @@ describe("template", function () {
     const sourceHash = sourceMetadata.cdn[viewName];
 
     // Clone the template
-    const clonedTemplate = await create(this.blog.id, this.fake.random.word().toLowerCase(), {
+    const clonedTemplate = await create(this.blog.id, "templatenamecloned", {
       cloneFrom: sourceTemplate.id,
     });
 
