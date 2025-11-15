@@ -1,4 +1,5 @@
 var typeset = require("typeset");
+var parseBoolean = require("helper/parseBoolean");
 
 function prerender(html, callback, options) {
   // would be nice to add options. hyphenate in future
@@ -9,6 +10,15 @@ function prerender(html, callback, options) {
   // Pandoc does a lot of this shit too
 
   var disable = ["ligatures", "hyphenate"];
+
+  options = options || {};
+
+  for (var key in options) {
+    if (Object.prototype.hasOwnProperty.call(options, key)) {
+      var parsed = parseBoolean(options[key]);
+      options[key] = typeof parsed === "boolean" ? parsed : options[key];
+    }
+  }
 
   options.spaces = options.quotes = options.punctuation;
 
