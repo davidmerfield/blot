@@ -176,14 +176,19 @@ module.exports = function updateCdnManifest(templateID, callback) {
       // Process each target sequentially
       for (const target of sortedTargets) {
         try {
+          let manifestChanged = false;
           const result = await processTarget(
             templateID,
             target
           );
           if (result && typeof result === 'string') {
             manifest[target] = result;
+            const previousHash = inProgressManifest[target];
             inProgressManifest[target] = result;
-            
+            if (previousHash !== result) {
+              manifestChanged = true;
+            }
+
             // Clean up old hash if it changed
             const oldHash = oldManifest[target];
             if (oldHash && oldHash !== result && typeof oldHash === 'string') {
@@ -195,7 +200,16 @@ module.exports = function updateCdnManifest(templateID, callback) {
           } else {
             if (Object.prototype.hasOwnProperty.call(inProgressManifest, target)) {
               delete inProgressManifest[target];
+              manifestChanged = true;
             }
+          }
+
+          if (manifestChanged) {
+            await hsetAsync(
+              key.metadata(templateID),
+              "cdn",
+              JSON.stringify(inProgressManifest)
+            );
           }
         } catch (err) {
           console.error(`Error processing CDN target ${target}:`, err);
