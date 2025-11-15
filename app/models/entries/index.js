@@ -374,6 +374,29 @@ module.exports = (function () {
   }
 
   /**
+   * Validates and parses the page size.
+   * Falls back to a default value if the input is invalid or undefined.
+   *
+   * @param {string|number|undefined} pageSize - Page size from user input.
+   * @returns {number} - A valid page size (default: 5).
+   */
+  function validatePageSize(pageSize) {
+    const defaultPageSize = 5;
+
+    // Attempt to parse and validate page size (user input)
+    const parsedPageSize = parseInt(pageSize, 10);
+    if (
+      !isNaN(parsedPageSize) &&
+      parsedPageSize > 0 &&
+      parsedPageSize <= 100
+    ) {
+      return parsedPageSize;
+    }
+
+    return defaultPageSize; // Default page size
+  }
+
+  /**
    * Validates and parses the sort by field.
    * Falls back to a default value if the input is invalid or undefined.
    *
@@ -419,12 +442,10 @@ module.exports = (function () {
     // Extract and validate options
     const { 
       pageNumber: pageNoInput = "1", 
-      pageSize = 5, 
+      pageSize: rawPageSize, 
       sortBy: rawSortBy, 
       order: rawOrder 
     } = options;
-
-    ensure(pageSize, "number");
 
     // Validate page number input
     const pageNo = validatePageNumber(pageNoInput);
@@ -434,6 +455,9 @@ module.exports = (function () {
       error.invalidInput = pageNoInput;
       return callback(error, null, null);
     }
+
+    // Validate and set page size
+    const pageSize = validatePageSize(rawPageSize);
 
     // Validate and set sorting options
     const sortBy = validateSortBy(rawSortBy);
@@ -628,5 +652,6 @@ module.exports = (function () {
     getCreated: getCreated,
     getDeleted: getDeleted,
     random: random,
+    // Note: validatePageSize is NOT exported - it's internal to the model
   };
 })();
