@@ -82,9 +82,8 @@ module.exports = async (req, res, next) => {
 
   const templateDir = join(
     config.blog_static_files_dir,
-    "template_assets",
     req.blog.id,
-    req.params.templateSlug
+    "_template_assets"
   );
 
   const extension = extname(file.originalFilename || file.path).toLowerCase();
