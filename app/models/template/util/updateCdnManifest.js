@@ -298,35 +298,56 @@ module.exports = function updateCdnManifest(templateID, callback) {
       const inProgressManifest = Object.assign({}, oldManifest);
       metadata.cdn = inProgressManifest;
 
-      // Process each target sequentially
-      for (const target of sortedTargets) {
-        try {
-          const result = await processTarget(
-            templateID,
-            ownerID,
-            target,
-            metadata,
-            inProgressManifest
-          );
-          if (result && typeof result === 'string') {
-            manifest[target] = result;
-            inProgressManifest[target] = result;
-            
-            // Clean up old hash if it changed
-            const oldHash = oldManifest[target];
-            if (oldHash && oldHash !== result && typeof oldHash === 'string') {
-              // Run cleanup in background - don't await
-              cleanupOldHash(target, oldHash).catch(err => {
-                // Error already logged in cleanupOldHash, but catch to prevent unhandled rejection
-              });
-            }
-          } else {
-            if (Object.prototype.hasOwnProperty.call(inProgressManifest, target)) {
-              delete inProgressManifest[target];
-            }
+      // Process targets in parallel with concurrency limit of 5
+      const CONCURRENCY_LIMIT = 5;
+      const allResults = [];
+
+      for (let i = 0; i < sortedTargets.length; i += CONCURRENCY_LIMIT) {
+        const batch = sortedTargets.slice(i, i + CONCURRENCY_LIMIT);
+        
+        const targetPromises = batch.map(async (target) => {
+          try {
+            const result = await processTarget(
+              templateID,
+              ownerID,
+              target,
+              metadata,
+              inProgressManifest
+            );
+            return { target, result, oldHash: oldManifest[target] };
+          } catch (err) {
+            console.error(`Error processing CDN target ${target}:`, err);
+            return { target, result: null, oldHash: oldManifest[target] };
           }
-        } catch (err) {
-          console.error(`Error processing CDN target ${target}:`, err);
+        });
+
+        const settledResults = await Promise.allSettled(targetPromises);
+        allResults.push(...settledResults);
+      }
+
+      // Process results and build manifest
+      for (const settled of allResults) {
+        if (settled.status === 'rejected') {
+          console.error('Unexpected error in target processing:', settled.reason);
+          continue;
+        }
+
+        const { target, result, oldHash } = settled.value;
+        
+        if (result && typeof result === 'string') {
+          manifest[target] = result;
+          inProgressManifest[target] = result;
+          
+          // Clean up old hash if it changed
+          if (oldHash && oldHash !== result && typeof oldHash === 'string') {
+            cleanupOldHash(target, oldHash).catch(err => {
+              // Error already logged in cleanupOldHash, but catch to prevent unhandled rejection
+            });
+          }
+        } else {
+          if (Object.prototype.hasOwnProperty.call(inProgressManifest, target)) {
+            delete inProgressManifest[target];
+          }
         }
       }
 
