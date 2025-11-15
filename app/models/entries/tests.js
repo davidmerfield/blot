@@ -193,37 +193,76 @@ describe("entries", function () {
     });
   });
 
+  it("getPage should reject invalid page numbers", function (done) {
+    const blogID = this.blog.id;
+    const pageSize = 2;
+
+    // Test various invalid inputs
+    const invalidInputs = [
+      null,
+      "",
+      "abc",
+      "-1",
+      "0",
+      "1.5",
+      "1000001", // exceeds MAX_PAGE_NUMBER
+      "999999999999999999999", // exceeds safe integer
+    ];
+
+    let testsRemaining = invalidInputs.length;
+
+    invalidInputs.forEach((invalidInput) => {
+      Entries.getPage(
+        blogID,
+        { pageNumber: invalidInput, pageSize },
+        function (error, entries, pagination) {
+          expect(error).not.toBeNull();
+          expect(error.statusCode).toBe(400);
+          expect(error.message).toBe("Invalid page number");
+          expect(error.invalidInput).toBe(invalidInput);
+          expect(entries).toBeNull();
+          expect(pagination).toBeNull();
+
+          testsRemaining--;
+          if (testsRemaining === 0) {
+            done();
+          }
+        }
+      );
+    });
+  });
+
   it("getPage should return a page of entries sorted by date", async function (done) {
     const key = `blog:${this.blog.id}:entries`;
     const now = Date.now();
     // Add 6 mock entries in Redis
     await redis.zadd(
-        key,
-        now,
-        "/a.txt",
-        now + 1000,
-        "/b.txt",
-        now + 2000,
-        "/c.txt",
-        now + 3000,
-        "/d.txt",
-        now + 4000,
-        "/e.txt",
-        now + 5000,
-        "/f.txt"
-    );  
+      key,
+      now,
+      "/a.txt",
+      now + 1000,
+      "/b.txt",
+      now + 2000,
+      "/c.txt",
+      now + 3000,
+      "/d.txt",
+      now + 4000,
+      "/e.txt",
+      now + 5000,
+      "/f.txt"
+    );
 
     // spy on the Entry.get function
     // to return the full fake entry
     spyOn(Entry, "get").and.callFake((blogID, ids, callback) => {
-        // if array, return an array of fake entries
-        if (Array.isArray(ids)) {
-            const entries = ids.map((id) => ({ id }));
-            return callback(entries);
-            // return a single fake entry
-        } else {
-            return callback({ id: ids });
-        }
+      // if array, return an array of fake entries
+      if (Array.isArray(ids)) {
+        const entries = ids.map((id) => ({ id }));
+        return callback(entries);
+        // return a single fake entry
+      } else {
+        return callback({ id: ids });
+      }
     });
 
     const pageNo = 2;
@@ -231,27 +270,52 @@ describe("entries", function () {
     const blogID = this.blog.id;
 
     // get the second page of entries, 2 per page, sorted by date with newest first
-    Entries.getPage(blogID, pageNo, pageSize, function (entries, pagination) {
+    Entries.getPage(
+      blogID,
+      {
+        pageNumber: pageNo,
+        pageSize,
+        sortBy: "date",
+      },
+      function (error, entries, pagination) {
+        expect(error).toBeNull();
         expect(entries.map((entry) => entry.id)).toEqual(["/d.txt", "/c.txt"]);
         expect(pagination).toEqual({
-            current: 2,
-            next: 3,
-            previous: 1,
-            total: 3, // 6 entries / 2 per page
-            pageSize: 2,
+          current: 2,
+          next: 3,
+          previous: 1,
+          total: 3, // 6 entries / 2 per page
+          pageSize: 2,
         });
 
         // get the first page of entries, 2 per page, sorted reverse alphabetically
-        Entries.getPage(blogID, 1, pageSize, function (entries, pagination) {
-            expect(entries.map((entry) => entry.id)).toEqual(["/f.txt", "/e.txt"]);
+        Entries.getPage(
+          blogID,
+          { pageNumber: 1, pageSize, sortBy: "id", order: "desc" },
+          function (error, entries, pagination) {
+            expect(error).toBeNull();
+            expect(entries.map((entry) => entry.id)).toEqual([
+              "/f.txt",
+              "/e.txt",
+            ]);
             // get the first page of entries, 2 per page, sorted alphabetically
-            Entries.getPage(blogID, 1, pageSize, function (entries, pagination) {
-                expect(entries.map((entry) => entry.id)).toEqual(["/a.txt", "/b.txt"]);
+            Entries.getPage(
+              blogID,
+          { pageNumber: 1, pageSize, sortBy: "id", order: "asc" },
+              function (error, entries, pagination) {
+                expect(error).toBeNull();
+                expect(entries.map((entry) => entry.id)).toEqual([
+                  "/a.txt",
+                  "/b.txt",
+                ]);
                 done();
-            }, { sortBy: "id", order: "asc" });
-        }, { sortBy: "id", order: "desc" });
-    });
-});
+              }
+            );
+          }
+        );
+      }
+    );
+  });
 
   it("getRecent should return the most recent entries with their indices", async function (done) {
     const key = `blog:${this.blog.id}:entries`;
@@ -372,7 +436,9 @@ describe("entries", function () {
 
       Entries.random(this.blog.id, function (entry) {
         try {
-          expect(entry).toEqual(jasmine.objectContaining({ id: "valid", url: "/valid" }));
+          expect(entry).toEqual(
+            jasmine.objectContaining({ id: "valid", url: "/valid" })
+          );
           expect(redis.zrandmember.calls.count()).toBe(2);
           expect(Entry.get.calls.count()).toBe(2);
           done();
@@ -412,7 +478,6 @@ describe("entries", function () {
         }
       });
     });
-
   });
 
   describe("resave", function () {

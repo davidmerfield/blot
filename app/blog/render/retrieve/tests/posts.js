@@ -33,4 +33,24 @@ describe("posts", function () {
     const text2 = await res2.text();
     expect(text2.trim()).toEqual("b.txt a.txt");
   });
+
+  describe("rejects invalid page numbers", function () {
+    const cases = [
+      ["zero", "/page/0"],
+      ["negative", "/page/-1"],
+      ["decimal", "/page/1.5"],
+      ["NaN", "/page/NaN"],
+      ["Infinity", "/page/Infinity"],
+      ["beyond MAX_SAFE_INTEGER", "/page/9007199254740999"],
+      ["extreme overflow", "/page/99999999999999999999"],
+      ["alphabetic", "/page/abc"],
+    ];
+
+    for (const [label, path] of cases) {
+      it(`rejects ${label} (${path})`, async function () {
+        const res = await this.get(path);
+        expect(res.status).toEqual(400);
+      });
+    }
+  });
 });

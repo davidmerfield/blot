@@ -13,6 +13,7 @@ var dictionary = {
   "archives": require("./archives"),
   "asset": require("./asset"),
   "avatar_url": require("./avatar_url"),
+  "cdn": require("./cdn"),
   "css_url": require("./css_url"),
   "folder": require("./folder"),
   "encodeJSON": require("./encodeJSON"),

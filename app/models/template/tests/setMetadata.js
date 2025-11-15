@@ -43,4 +43,45 @@ describe("template", function () {
     expect(syntax_highlighter.styles).toContain(".hljs{");
   });
 
+  it("updates the CDN manifest when metadata locals change", async function () {
+
+    await this.setView({
+      name: "style.css",
+      content: "body { color: {{background_color}}; }",
+      locals: { background_color: "#fff" },
+    });
+
+    await this.setView({
+      name: "index.html",
+      content: "{{#cdn}}style.css{{/cdn}}",
+    });
+
+    const templateID = this.template.id;
+
+    const initialMetadata = await getMetadata(templateID);
+    const originalHash = initialMetadata.cdn["style.css"];
+    expect(originalHash).toEqual(jasmine.any(String));
+
+    await this.setView({
+      name: "style.css",
+      content: "body { color: {{background_color}}; }",
+      locals: { background_color: "#000" },
+    });
+
+    const updatedMetadata = await getMetadata(templateID);
+    const updatedHash = updatedMetadata.cdn["style.css"];
+    expect(updatedHash).toEqual(jasmine.any(String));
+    expect(updatedHash).not.toEqual(originalHash);
+
+    await this.setView({
+      name: "style.css",
+      content: "body { color: {{background_color}}; }",
+      locals: { background_color: "#123456" },
+    });
+
+    const nextMetadata = await getMetadata(templateID);
+    expect(nextMetadata.cdn["style.css"]).toEqual(jasmine.any(String));
+    expect(nextMetadata.cdn["style.css"]).not.toEqual(updatedHash);
+  });
+
 });

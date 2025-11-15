@@ -11,6 +11,7 @@ const clfdate = require("helper/clfdate");
 const scheduler = require("./scheduler");
 const flush = require("documentation/tools/flush-cache");
 const configureLocalBlogs = require("./configure-local-blogs");
+const purgeCdnUrls = require("helper/purgeCdnUrls");
 
 const log = (...args) =>
   console.log.apply(null, [clfdate(), "Setup:", ...args]);
@@ -105,16 +106,6 @@ async function runPostListenTasks() {
     });
   }
 
-  if (config.environment !== "production") {
-    log("Skipping CDN purge (not in production)");
-    return;
-  }
-
-  if (!config.bunny.secret) {
-    log("Skipping CDN purge (missing credentials)");
-    return;
-  }
-
   try {
     const cdnURL = require("documentation/tools/cdn-url-helper")({
       cacheID: new Date().getTime(),
@@ -127,24 +118,9 @@ async function runPostListenTasks() {
       "/documentation.min.css",
       "/documentation.min.js",
       "/images/featured.jpg",
-    ]
-      .map((path) => cdnURL(path, (p) => p))
-      .map((p) => encodeURIComponent(p));
+    ].map((path) => cdnURL(path, (p) => p));
 
-    for (const urlToPurge of urls) {
-      const url = `https://api.bunny.net/purge?url=${urlToPurge}&async=false`;
-      const options = {
-        method: "POST",
-        headers: { AccessKey: config.bunny.secret },
-      };
-      console.log("Purging Bunny CDN cache", url);
-      const res = await fetch(url, options);
-      if (res.status !== 200) {
-        console.error("Failed to purge Bunny CDN cache", res.status);
-      } else {
-        console.log("Purged Bunny CDN cache", res.status);
-      }
-    }
+    await purgeCdnUrls(urls);
   } catch (err) {
     logError("Failed to run function to purge Bunny CDN cache", err);
   }

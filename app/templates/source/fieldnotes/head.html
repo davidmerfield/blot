@@ -4,7 +4,8 @@
 	<link rel="profile" href="http://gmpg.org/xfn/11" />
 	<title>{{> title}}</title>
 	<link rel="dns-prefetch" href="//fonts.googleapis.com" />
-	<link rel="stylesheet" href="{{{cssURL}}}" type="text/css" media="all" />
+	<link rel="preconnect" href="{{{cdn}}}" />
+	<link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}" type="text/css" media="all" />
 	<link
 		rel="stylesheet"
 		id="isola-source-sans-pro-css"
@@ -18,5 +19,5 @@
 		title="{{title}} - Feed"
 		href="{{{feedURL}}}"
 	/>
-	<script type="text/javascript" src="{{{scriptURL}}}"></script>
+	<script type="text/javascript" src="{{#cdn}}/script.js{{/cdn}}"></script>
 </head>

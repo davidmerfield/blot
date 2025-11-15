@@ -12,6 +12,7 @@ var getMetadata = require("./getMetadata");
 var Blog = require("models/blog");
 var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
+var updateCdnManifest = require("./util/updateCdnManifest");
 
 module.exports = function setView(templateID, updates, callback) {
   ensure(templateID, "string").and(updates, "object").and(callback, "function");
@@ -118,22 +119,26 @@ module.exports = function setView(templateID, updates, callback) {
           function (infiniteError) {
             if (infiniteError) return callback(infiniteError);
 
-            view.retrieve = parseResult.retrieve || [];
+            view.retrieve = parseResult.retrieve || {};
 
             view = serialize(view, viewModel);
 
             client.hmset(viewKey, view, function (err) {
               if (err) return callback(err);
 
-              if (!changes) return callback();
+              updateCdnManifest(templateID, function (manifestErr) {
+                if (manifestErr) return callback(manifestErr);
 
-              Blog.set(
-                metadata.owner,
-                { cacheID: Date.now() },
-                function (err) {
-                  callback(err);
-                }
-              );
+                if (!changes) return callback();
+
+                Blog.set(
+                  metadata.owner,
+                  { cacheID: Date.now() },
+                  function (err) {
+                    callback(err);
+                  }
+                );
+              });
             });
           }
         );
@@ -142,7 +147,12 @@ module.exports = function setView(templateID, updates, callback) {
   });
 };
 
-function detectInfinitePartialDependency(templateID, view, parseResult, callback) {
+function detectInfinitePartialDependency(
+  templateID,
+  view,
+  parseResult,
+  callback
+) {
   var viewName = view && view.name;
   var viewAlias = null;
   if (type(viewName, "string") && viewName.indexOf(".") > -1) {
@@ -193,9 +203,12 @@ function detectInfinitePartialDependency(templateID, view, parseResult, callback
 
       var deps = node.deps || [];
       var childContext = {};
-      if (type(contextInlinePartials, "object")) extend(childContext).and(contextInlinePartials);
-      if (type(node.inlinePartials, "object")) extend(childContext).and(node.inlinePartials);
-      if (type(rootInlinePartials, "object")) extend(childContext).and(rootInlinePartials);
+      if (type(contextInlinePartials, "object"))
+        extend(childContext).and(contextInlinePartials);
+      if (type(node.inlinePartials, "object"))
+        extend(childContext).and(node.inlinePartials);
+      if (type(rootInlinePartials, "object"))
+        extend(childContext).and(rootInlinePartials);
 
       eachSeries(
         deps,

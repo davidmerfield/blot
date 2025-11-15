@@ -69,15 +69,7 @@
 
     - name: feedURL
       type: string
-      description: Path to your site’s RSS feed
-
-    - name: cssURL
-      type: string
-      description: Path to your site’s stylesheet. It contains a query string for cache-invalidation.
-
-    - name: scriptURL
-      type: string
-      description: Path to your site’s JavaScript file. It contains a query string for cache-invalidation.
+      description: Path to your site's RSS feed
 
     - name: sitemapURL
       type: string
@@ -206,7 +198,7 @@
           description: which has a width and height of 160px.
       example: |
         {{#thumbnail.medium}}
-          <img src="{{#cdn}}{{url}}
+          <img src="{{url}}
                width="{{width}}" 
                height="{{height}}"/>
         {{/thumbnail.medium}}
@@ -440,3 +432,11 @@
       description: Extracts the r, g, and b values for a passed color. Returns these values joined by a comma.
       example: |
         color:rgba({{#rgb}}#FF00FF{{/rgb}},0.5);
+
+    - name: cdn
+      type: function
+      description: |
+        Used to generate CDN URLs for template view files, especially useful for JS and CSS. When used literally e.g. `{{cdn}}` it returns the CDN origin URL. When used as a section helper, e.g. `{{#cdn}}/path/to/file{{/cdn}}` the helper returns the URL to the view file on the CDN.
+      example: |
+        <link rel="preconnect" href="{{{cdn}}}" />
+        <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">

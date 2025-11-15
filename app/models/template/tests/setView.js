@@ -6,6 +6,7 @@ describe("template", function () {
 
   const setView = promisify(require("../index").setView);
   const getView = promisify(require("../index").getView);
+  const getMetadata = promisify(require("../index").getMetadata);
   const Blog = require("models/blog");
   const client = require("models/client");
   const hdel = promisify(client.hdel).bind(client);
@@ -182,5 +183,31 @@ describe("template", function () {
     const view2 = await getView(this.template.id, "index.html");
 
     expect(view2.content).toEqual("456");
+  });
+
+  it("updates the CDN manifest when CDN targets change", async function () {
+    await setView(this.template.id, {
+      name: "style.css",
+      content: "body { color: red; }",
+    });
+
+    await setView(this.template.id, {
+      name: "index.html",
+      content: "{{#cdn}}style.css{{/cdn}}",
+    });
+
+    const firstMetadata = await getMetadata(this.template.id);
+    expect(firstMetadata.cdn["style.css"]).toEqual(jasmine.any(String));
+
+    const originalHash = firstMetadata.cdn["style.css"];
+
+    await setView(this.template.id, {
+      name: "style.css",
+      content: "body { color: blue; }",
+    });
+
+    const secondMetadata = await getMetadata(this.template.id);
+    expect(secondMetadata.cdn["style.css"]).toEqual(jasmine.any(String));
+    expect(secondMetadata.cdn["style.css"]).not.toEqual(originalHash);
   });
 });
