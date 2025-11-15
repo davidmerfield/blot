@@ -21,7 +21,7 @@ const path = require("path");
 const config = require("config");
 
 // Base directory for rendered output storage
-const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "rendered");
+const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");
 
 /**
  * Get the file path for a rendered output hash

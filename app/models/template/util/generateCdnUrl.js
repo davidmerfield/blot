@@ -5,7 +5,7 @@ const path = require("path");
  * Generate a CDN URL for a template view
  * @param {string} viewName - The view name (e.g., "style.css" or "partials/header.html")
  * @param {string} hash - The hash for the view content
- * @returns {string} The CDN URL in format: /rendered/{hash[0:2]}/{hash[2:4]}/{hash}
+ * @returns {string} The CDN URL in format: /template/{hash[0:2]}/{hash[2:4]}/{hash}{ext}
  */
 function generateCdnUrl(viewName, hash) {
   if (!viewName || typeof viewName !== "string") {
@@ -16,12 +16,11 @@ function generateCdnUrl(viewName, hash) {
     throw new Error("hash must be a non-empty string with at least 4 characters");
   }
 
-  // New URL format matches disk structure: /rendered/{hash[0:2]}/{hash[2:4]}/{hash}{ext}
-  // Extension is included in URL for content-type detection, but file on disk has no extension
+  // New URL format matches disk structure: /template/{hash[0:2]}/{hash[2:4]}/{hash}{ext}
   const ext = path.extname(viewName) || "";
   const dir1 = hash.substring(0, 2);
   const dir2 = hash.substring(2, 4);
-  return config.cdn.origin + "/rendered/" + dir1 + "/" + dir2 + "/" + hash + ext;
+  return config.cdn.origin + "/template/" + dir1 + "/" + dir2 + "/" + hash + ext;
 }
 
 /**

@@ -24,7 +24,7 @@ const setAsync = promisify(client.set).bind(client);
 const MAX_RENDERED_OUTPUT_SIZE = 2 * 1024 * 1024;
 
 // Base directory for rendered output storage
-const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "rendered");
+const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");
 
 
 function getRenderedOutputPath(hash, ext = "") {
