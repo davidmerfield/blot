@@ -19,6 +19,10 @@ module.exports = function save(uid, updates, callback) {
     // compare any changes further down
     former = JSON.parse(JSON.stringify(user));
 
+    if (typeof user.created === "undefined") user.created = 0;
+    if (typeof user.welcomeEmailSent === "undefined")
+      user.welcomeEmailSent = true;
+
     validate(user, updates, function (err, user, changes) {
       if (err) return callback(err);
 
