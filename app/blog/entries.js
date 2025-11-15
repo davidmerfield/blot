@@ -4,45 +4,39 @@ const Entries = require("models/entries");
  * Handles rendering of the page with entries and pagination.
  */
 module.exports = function (req, res, next) {
-  const blog = req.blog;
+  const blogID = req?.blog?.id;
 
   // Parse and validate page size (user input via template)
-  const pageSize = parsePageSize(req.template?.locals?.page_size);
+  const pageSize = parsePageSize(req?.template?.locals?.page_size);
 
   // Parse and validate sort order (user input via template)
-  const sortBy = parseSortBy(req.template?.locals?.sort_by);
+  const sortBy = parseSortBy(req?.template?.locals?.sort_by);
 
   // Parse and validate sort order (user input via template)
-  const order = parseSortOrder(req.template?.locals?.sort_order);
+  const order = parseSortOrder(req?.template?.locals?.sort_order);
 
   // Fetch entries and render the view
   // Pass raw page number input - validation happens in the model
-  const rawPageNumber = req.params.page_number || '1';
-  req.log("Loading entries for page", rawPageNumber, "with page size", pageSize);
-  
-  Entries.getPage(blog.id, rawPageNumber, pageSize, (error, entries, pagination) => {
-    if (error) {
-      // Validation error from the model
-      if (error.statusCode === 400) {
-        req.log("Invalid page number:", error.invalidInput);
-        res.status(400);
-        return res.renderView("entries.html", next);
+  const pageNumber = req?.params?.page_number;
+
+  Entries.getPage(
+    blogID,
+    pageNumber,
+    pageSize,
+    (err, entries, pagination) => {
+      if (err) {
+        return next(err);
       }
-      // Other errors
-      return next(error);
-    }
 
-    // Guard against missing pagination object (e.g., if Redis fails)
-    // Note: pagination.current is already set by the model
+      res.locals.entries = entries;
+      res.locals.pagination = pagination;
 
-    res.locals.entries = entries;
-    res.locals.pagination = pagination;
-
-    req.log("Rendering entries");
-    res.renderView("entries.html", next);
-  }, { sortBy, order });
-}
-
+      req.log("Rendering entries");
+      res.renderView("entries.html", next);
+    },
+    { sortBy, order }
+  );
+};
 
 /**
  * Utility function to validate and parse the page size.
@@ -56,13 +50,16 @@ function parsePageSize(templatePageSize) {
 
   // Attempt to parse and validate template page size (user input)
   const parsedTemplatePageSize = parseInt(templatePageSize, 10);
-  if (!isNaN(parsedTemplatePageSize) && parsedTemplatePageSize > 0 && parsedTemplatePageSize <= 100) {
+  if (
+    !isNaN(parsedTemplatePageSize) &&
+    parsedTemplatePageSize > 0 &&
+    parsedTemplatePageSize <= 100
+  ) {
     return parsedTemplatePageSize;
   }
 
   return defaultPageSize; // Default page size
 }
-
 
 /**
  * Utility function to validate and parse the sort by field.
@@ -98,5 +95,4 @@ function parseSortOrder(templateSortOrder) {
   }
 
   return defaultSortOrder; // Default sort order
-} 
-
+}

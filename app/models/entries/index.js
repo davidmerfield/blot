@@ -373,10 +373,14 @@ module.exports = (function () {
     return parsed;
   }
 
-  function getPage(blogID, pageNoInput, pageSize, callback, options = {}) {
-    ensure(blogID, "string")
-      .and(pageSize, "number")
-      .and(callback, "function");
+  function getPage(
+    blogID,
+    pageNoInput = "1",
+    pageSize = 5,
+    callback,
+    options = {}
+  ) {
+    ensure(blogID, "string").and(pageSize, "number").and(callback, "function");
 
     // Validate page number input
     const pageNo = validatePageNumber(pageNoInput);
@@ -413,7 +417,6 @@ module.exports = (function () {
           return callback(error, [], null);
         }
 
-
         redis.zcard(listKey(blogID, "entries"), function (error, totalEntries) {
           if (error) {
             console.error(error);
@@ -434,8 +437,11 @@ module.exports = (function () {
       });
     } else {
       // Default sorting by date (Redis scores)
-      
-      const rangeFn = order === "asc" ? redis.zrevrange.bind(redis) : redis.zrange.bind(redis);
+
+      const rangeFn =
+        order === "asc"
+          ? redis.zrevrange.bind(redis)
+          : redis.zrange.bind(redis);
 
       rangeFn(
         listKey(blogID, "entries"),
@@ -486,9 +492,7 @@ module.exports = (function () {
     pageNo,
     callback
   ) {
-
     Entry.get(blogID, entryIDs, function (entries) {
-        
       var pagination = {};
 
       totalEntries = parseInt(totalEntries);
@@ -514,6 +518,12 @@ module.exports = (function () {
         index--;
       });
 
+      // Guard against missing pagination object (e.g., if Redis fails)
+      // Note: pagination.current is already set by the model
+      if (pagination && entries && entries.length > 0) {
+        entries.at(-1).pagination = pagination;
+      }
+      
       return callback(null, entries, pagination);
     });
   }
