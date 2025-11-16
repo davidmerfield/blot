@@ -16,7 +16,7 @@
   "author": "David Merfield <dmerfield@gmail.com>",
   "dependencies": {
     "download": "^7.1.0",
-    "js-yaml": "^3.13.1",
+    "js-yaml": "^4.1.1",
     "klaw": "^3.0.0"
   },
   "devDependencies": {},
