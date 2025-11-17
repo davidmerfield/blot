@@ -7,7 +7,6 @@ const IGNORED_SYSTEM_FILES = new Set([
   ".spotlight-v100",
   ".trashes",
   ".temporaryitems",
-  ".trash",
   // Windows system files
   "thumbs.db",
   "desktop.ini",
@@ -19,20 +18,6 @@ const IGNORED_SYSTEM_FILES = new Set([
   ".svn",
   // Editor/IDE files
   ".kate-swp",
-  // Development/build directories
-  "node_modules",
-  ".cache",
-  ".pytest_cache",
-  "__pycache__",
-  ".parcel-cache",
-  ".next",
-  ".nuxt",
-  ".vite",
-  ".astro",
-  ".svelte-kit",
-  ".gradle",
-  ".mvn",
-  "dist",
   // Application-specific
   ".tmp.driveupload",
   ".synologyworkingdirectory",
@@ -79,7 +64,7 @@ const shouldIgnoreFile = (inputPath) => {
     // Office temporary files (e.g., ~$document.docx)
     if (component.startsWith("~$")) return true;
 
-    const lowerComponent = component.toLowerCase();
+    const lowerComponent = component.normalize("NFC").toLowerCase();
 
     // Check exact matches (case-insensitive)
     if (IGNORED_SYSTEM_FILES.has(lowerComponent)) return true;
