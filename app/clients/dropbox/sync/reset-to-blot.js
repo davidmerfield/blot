@@ -14,6 +14,7 @@ const {
   hasUnsupportedExtension,
   isDotfileOrDotfolder,
 } = require("../util/constants");
+const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
 
 const set = promisify(require("../database").set);
 const createClient = promisify((blogID, cb) =>
@@ -93,6 +94,18 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
   ]);
 
   for (const { name, path_display } of localContents) {
+    const pathOnBlot = join(dir, name);
+
+    if (shouldIgnoreFile(pathOnBlot)) {
+      publish("Removing ignored", path_display);
+      try {
+        await fs.remove(join(localRoot, dir, name));
+      } catch (e) {
+        publish("Failed to remove ignored", path_display, e.message);
+      }
+      continue;
+    }
+
     const remoteCounterpart = remoteContents.find(
       (remoteItem) => remoteItem.name === name
     );
