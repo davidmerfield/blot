@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const eachBlog = require("../each/blog");
+const eachBlogOrOneBlog = require("../each/eachBlogOrOneBlog");
 const getConfirmation = require("../util/getConfirmation");
 const createClient = require("clients/dropbox/util/createClient");
 const localPath = require("helper/localPath");
@@ -139,6 +139,8 @@ const restoreGitFolder = async (client, blog, gitFolder, files, templateName) =>
 };
 
 const processBlog = async (blog) => {
+  if (!blog || blog.client !== "dropbox") return;
+
   stats.blogsProcessed += 1;
 
   const templates = await readTemplateDirectories(blog.id);
@@ -219,20 +221,16 @@ const processBlog = async (blog) => {
   }
 };
 
-eachBlog(
-  function (user, blog, next) {
-    if (!blog || blog.client !== "dropbox") return next();
-
-    processBlog(blog)
-      .catch((err) => {
-        console.log("Error processing blog", blog.id, err);
-      })
-      .finally(next);
-  },
-  function () {
-    console.log("Processed blogs:", stats.blogsProcessed);
-    console.log("Deleted .git folders found:", stats.gitFoldersFound);
-    console.log("Files restored:", stats.filesRestored);
-    process.exit();
-  }
-);
+if (require.main === module) {
+  eachBlogOrOneBlog(processBlog)
+    .then(() => {
+      console.log("Processed blogs:", stats.blogsProcessed);
+      console.log("Deleted .git folders found:", stats.gitFoldersFound);
+      console.log("Files restored:", stats.filesRestored);
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Script failed:", err);
+      process.exit(1);
+    });
+}

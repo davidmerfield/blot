@@ -1,6 +1,6 @@
 const fs = require("fs").promises;
 const path = require("path");
-const eachBlog = require("../each/blog");
+const eachBlogOrOneBlog = require("../each/eachBlogOrOneBlog");
 const localPath = require("helper/localPath");
 const getConfirmation = require("../util/getConfirmation");
 const createDriveClient = require("clients/google-drive/serviceAccount/createDriveClient");
@@ -106,6 +106,8 @@ const restoreFiles = async (drive, files) => {
 };
 
 const processBlog = async (blog) => {
+  if (blog.client !== "google_drive") return { gitFoldersFound: 0, filesRestored: 0 };
+
   console.log(`Processing blog ${blog.id} (${blog.handle})`);
 
   const account = await database.blog.get(blog.id);
@@ -177,44 +179,28 @@ const processBlog = async (blog) => {
   return { gitFoldersFound, filesRestored };
 };
 
-const main = () => {
+if (require.main === module) {
   let blogsProcessed = 0;
   let totalGitFolders = 0;
   let totalFilesRestored = 0;
 
-  eachBlog(
-    (user, blog, next) => {
-      if (blog.client !== "google_drive") return next();
+  const wrappedProcessBlog = async (blog) => {
+    const result = await processBlog(blog);
+    blogsProcessed += 1;
+    totalGitFolders += result.gitFoldersFound;
+    totalFilesRestored += result.filesRestored;
+  };
 
-      blogsProcessed += 1;
-
-      processBlog(blog)
-        .then(({ gitFoldersFound, filesRestored }) => {
-          totalGitFolders += gitFoldersFound;
-          totalFilesRestored += filesRestored;
-          next();
-        })
-        .catch((err) => {
-          console.error(`Error processing blog ${blog.id}:`, err.message);
-          next();
-        });
-    },
-    (err) => {
-      if (err) {
-        console.error("Script terminated with error:", err);
-      } else {
-        console.log("Processing complete.");
-      }
-
+  eachBlogOrOneBlog(wrappedProcessBlog)
+    .then(() => {
+      console.log("Processing complete.");
       console.log("Blogs processed:", blogsProcessed);
       console.log("Deleted .git folders found:", totalGitFolders);
       console.log("Files restored:", totalFilesRestored);
-
-      process.exit();
-    }
-  );
-};
-
-if (require.main === module) {
-  main();
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Script terminated with error:", err);
+      process.exit(1);
+    });
 }

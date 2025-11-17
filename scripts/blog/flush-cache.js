@@ -9,155 +9,104 @@
 // 2. Calls flushCache directly for each blog
 // 3. Reports progress and completion statistics
 
-const eachBlog = require("../each/blog");
-const getBlog = require("../get/blog");
+const eachBlogOrOneBlog = require("../each/eachBlogOrOneBlog");
 const flushCache = require("models/blog/flushCache");
 const { promisify } = require("util");
 
 const flushCacheAsync = promisify(flushCache);
-const getBlogAsync = (identifier) =>
-  new Promise((resolve, reject) => {
-    getBlog(identifier, (_err, _user, blog) => {
-      if (blog) resolve(blog);
-      reject(new Error(`No blog: ${identifier}`));
-    });
-  });
 
-async function flushSingleBlog(blogID, handle) {
+let totalBlogs = 0;
+let flushedBlogs = 0;
+let failedBlogs = 0;
+const errors = [];
+
+const processBlog = async (blog) => {
+  totalBlogs++;
+
   try {
-    await flushCacheAsync(blogID);
+    await flushCacheAsync(blog.id);
+    flushedBlogs++;
+
+    if (totalBlogs % 100 === 0) {
+      console.log(
+        `Progress: ${totalBlogs} blogs processed, ${flushedBlogs} flushed...`
+      );
+    }
+
     console.log(
-      `✅ Flushed cache for blog ${blogID} (${handle || "no handle"})`
+      `✅ Flushed cache for blog ${blog.id} (${blog.handle || "no handle"})`
     );
-    return { success: true };
   } catch (err) {
     console.error(
-      `❌ Failed to flush cache for blog ${blogID} (${handle || "no handle"}):`,
+      `❌ Failed to flush cache for blog ${blog.id} (${
+        blog.handle || "no handle"
+      }):`,
       err.message
     );
-    return { success: false, error: err.message };
-  }
-}
-
-async function flushAllBlogs() {
-  console.log("Starting cache flush for all blogs...");
-  console.log("Iterating over all blogs in series...\n");
-
-  let totalBlogs = 0;
-  let flushedBlogs = 0;
-  let failedBlogs = 0;
-  const errors = [];
-
-  await new Promise((resolve, reject) => {
-    eachBlog(
-      async (_user, blog, nextBlog) => {
-        totalBlogs++;
-
-        try {
-          await flushCacheAsync(blog.id);
-          flushedBlogs++;
-
-          if (totalBlogs % 100 === 0) {
-            console.log(
-              `Progress: ${totalBlogs} blogs processed, ${flushedBlogs} flushed...`
-            );
-          }
-
-          nextBlog();
-        } catch (err) {
-          console.error(
-            `Failed to flush cache for blog ${blog.id} (${
-              blog.handle || "no handle"
-            }):`,
-            err.message
-          );
-          failedBlogs++;
-          errors.push({
-            blogID: blog.id,
-            handle: blog.handle,
-            error: err.message,
-          });
-          nextBlog();
-        }
-      },
-      (err) => {
-        if (err) return reject(err);
-        resolve();
-      }
-    );
-  });
-
-  console.log(`\n${"=".repeat(60)}`);
-  console.log("Flush complete:");
-  console.log(`  Total blogs processed: ${totalBlogs}`);
-  console.log(`  Blogs flushed: ${flushedBlogs}`);
-  console.log(`  Blogs failed: ${failedBlogs}`);
-
-  if (errors.length > 0) {
-    console.log("\nErrors:");
-    errors.slice(0, 10).forEach((error) => {
-      console.log(
-        `  Blog ${error.blogID} (${error.handle || "no handle"}): ${
-          error.error
-        }`
-      );
+    failedBlogs++;
+    errors.push({
+      blogID: blog.id,
+      handle: blog.handle,
+      error: err.message,
     });
-    if (errors.length > 10) {
-      console.log(`  ... and ${errors.length - 10} more errors`);
-    }
   }
-
-  if (failedBlogs > 0) {
-    console.log("\n⚠️  Some flushes failed. Review errors above.");
-    return 1;
-  }
-
-  console.log("\n✅ All blogs flushed successfully!");
-  return 0;
-}
-
-async function flushCacheForBlog(identifier) {
-  if (identifier) {
-    // Flush a single blog
-    console.log(`Flushing cache for blog: ${identifier}\n`);
-
-    try {
-      const blog = await getBlogAsync(identifier);
-      
-      if (!blog) {
-        console.error(`❌ Blog not found: ${identifier}`);
-        return 1;
-      }
-
-      const result = await flushSingleBlog(blog.id, blog.handle);
-
-      // wait for flush to clear
-      console.log("waiting");
-      await new Promise((resolve) => setTimeout(resolve, 10000));
-      console.log("waited");
-
-      return result.success ? 0 : 1;
-    } catch (err) {
-      console.error(`❌ Error loading blog ${identifier}:`, err.message);
-      return 1;
-    }
-  } else {
-    // Flush all blogs
-    await flushAllBlogs();
-
-    // wait for flush to clear
-    console.log("waiting a few minutes...");
-    await new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000));
-    console.log("waited");
-    return;
-  }
-}
+};
 
 if (require.main === module) {
   const identifier = process.argv[2];
-  flushCacheForBlog(identifier)
-    .then((exitCode) => {
-      process.exit(exitCode);
+
+  if (identifier) {
+    console.log(`Flushing cache for blog: ${identifier}\n`);
+  } else {
+    console.log("Starting cache flush for all blogs...");
+    console.log("Iterating over all blogs in series...\n");
+  }
+
+  eachBlogOrOneBlog(processBlog)
+    .then(() => {
+      if (!identifier) {
+        console.log(`\n${"=".repeat(60)}`);
+        console.log("Flush complete:");
+        console.log(`  Total blogs processed: ${totalBlogs}`);
+        console.log(`  Blogs flushed: ${flushedBlogs}`);
+        console.log(`  Blogs failed: ${failedBlogs}`);
+
+        if (errors.length > 0) {
+          console.log("\nErrors:");
+          errors.slice(0, 10).forEach((error) => {
+            console.log(
+              `  Blog ${error.blogID} (${error.handle || "no handle"}): ${
+                error.error
+              }`
+            );
+          });
+          if (errors.length > 10) {
+            console.log(`  ... and ${errors.length - 10} more errors`);
+          }
+        }
+
+        if (failedBlogs > 0) {
+          console.log("\n⚠️  Some flushes failed. Review errors above.");
+        } else {
+          console.log("\n✅ All blogs flushed successfully!");
+        }
+
+        // wait for flush to clear
+        console.log("waiting a few minutes...");
+        return new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000));
+      } else {
+        // wait for flush to clear
+        console.log("waiting");
+        return new Promise((resolve) => setTimeout(resolve, 10000));
+      }
+    })
+    .then(() => {
+      if (identifier) {
+        console.log("waited");
+      } else {
+        console.log("waited");
+      }
+      process.exit(failedBlogs > 0 ? 1 : 0);
     })
     .catch((err) => {
       console.error("Flush failed:", err);
@@ -165,4 +114,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = flushCacheForBlog;
+module.exports = processBlog;
