@@ -2,6 +2,8 @@ const express = require("express");
 const { raw } = express;
 const { Authorization, maxFileSize } = require("./config");
 const { initialize } = require("./watcher");
+const { initializeBlocker } = require("./screenshot/blocker");
+const { initializeBrowser } = require("./screenshot/browser");
 const notifyServerStarted = require("./httpClient/notifyServerStarted");
 
 const monitorer = require("./monitorer");
@@ -48,6 +50,8 @@ const startServer = async () => {
 
   app.post("/setup", require("./routes/setup"));
 
+  app.post("/screenshot", require("./routes/screenshot"));
+
   app.listen(3000, () => {
     console.log("Macserver is running on port 3000");
   });
@@ -66,6 +70,12 @@ const startServer = async () => {
     }
 
     // Start the local server
+    console.log("Initializing screenshot browser...");
+    await initializeBrowser();
+
+    console.log("Initializing screenshot adblocker...");
+    await initializeBlocker();
+
     console.log("Starting macserver...");
     await startServer();
 
