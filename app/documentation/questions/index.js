@@ -236,6 +236,8 @@ Questions.route("/ask")
         res.send("OK");
       } else {
         const { id } = await create({ author, title, body, tags });
+        const questionURL = config.protocol + config.host + "/questions/" + id;
+        Email.QUESTION_PUBLISHED(author, { title, body, questionURL });
         flush();
         res.redirect("/questions/" + id);
       }
