@@ -3,18 +3,15 @@ const localPath = require("helper/localPath");
 const clfdate = require("helper/clfdate");
 const fs = require("fs-extra");
 const database = require("./database");
-const { basename } = require("path");
 
 module.exports = async function remove(blogID, path, callback) {
   const prefix = () =>
     clfdate() + " Google Drive: Remove:" + blogID + ":" + path + ":";
 
   try {
-    const isDotfile = basename(path).startsWith(".");
-
     const { serviceAccountId, folderId } = await database.blog.get(blogID);
+    const drive = await createDriveClient(serviceAccountId);
     const { getByPath, remove } = database.folder(folderId);
-    const drive = !isDotfile && (await createDriveClient(serviceAccountId));
 
     console.log(prefix(), "Removing from local folder");
     const pathOnBlot = localPath(blogID, path);
@@ -26,12 +23,8 @@ module.exports = async function remove(blogID, path, callback) {
     if (fileId) {
       console.log(prefix(), "Removing fileId from db");
       await remove(fileId);
-      if (!isDotfile) {
-        console.log(prefix(), "Removing fileId from API");
-        await drive.files.delete({ fileId });
-      } else {
-        console.log(prefix(), "Skipping Google Drive deletion for dotfile");
-      }
+      console.log(prefix(), "Removing fileId from API");
+      await drive.files.delete({ fileId });
     } else {
       console.log(prefix(), "WARNING No fileId found in db");
     }
