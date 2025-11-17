@@ -1,55 +1,55 @@
-var get = require("../get/blog");
+var eachBlogOrOneBlog = require("../each/eachBlogOrOneBlog");
 var sync = require("../../app/sync");
 var Entries = require("models/entries");
 
-if (!process.argv[2]) {
-  console.log(
-    "Please pass a blog identifier to this script. Blot will rebuild the blog which exists at that URL."
-  );
-  process.exit();
-}
-
-const main = async (blog, cb) => {
-  if (!blog.plugins.linkScreenshot.enabled) {
+const processBlog = async (blog) => {
+  if (!blog.plugins || !blog.plugins.linkScreenshot || !blog.plugins.linkScreenshot.enabled) {
     console.log("No linkScreenshot plugin enabled for", blog.handle);
-    return cb();
+    return;
   }
 
   console.log("Starting sync for", blog.handle);
-  sync(blog.id, function (err, folder, done) {
-    if (err) return cb(err);
 
-    Entries.each(
-      blog.id,
-      function (entry, nextEntry) {
-        if (!entry.id.endsWith(".webloc")) {
-          console.log("Skipping", entry.id, "not a webloc file");
-          return nextEntry();
-        }
+  return new Promise((resolve, reject) => {
+    sync(blog.id, function (err, folder, done) {
+      if (err) return reject(err);
 
-        if (entry.thumbnail.large) {
-          console.log("Skipping", entry.id, "already has a thumbnail");
-          return nextEntry();
-        }
+      Entries.each(
+        blog.id,
+        function (entry, nextEntry) {
+          if (!entry.id.endsWith(".webloc")) {
+            console.log("Skipping", entry.id, "not a webloc file");
+            return nextEntry();
+          }
 
-        console.log("Rebuilding", entry.id);
-        folder.update(entry.id, function (err) {
-          if (err) console.log(err);
-          nextEntry();
-        });
-      },
-      () => done(null, cb)
-    );
+          if (entry.thumbnail.large) {
+            console.log("Skipping", entry.id, "already has a thumbnail");
+            return nextEntry();
+          }
+
+          console.log("Rebuilding", entry.id);
+          folder.update(entry.id, function (err) {
+            if (err) console.log(err);
+            nextEntry();
+          });
+        },
+        () => done(null, (err) => {
+          if (err) return reject(err);
+          resolve();
+        })
+      );
+    });
   });
 };
 
 if (require.main === module) {
-  get(process.argv[2], function (err, user, blog) {
-    if (err) throw err;
-    main(blog, function (err) {
-      if (err) throw err;
+  eachBlogOrOneBlog(processBlog)
+    .then(() => {
       console.log("Done!");
-      process.exit();
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Error:", err);
+      process.exit(1);
     });
-  });
 }
