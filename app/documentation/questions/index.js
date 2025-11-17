@@ -253,6 +253,11 @@ Questions.route("/:id/new").post(async (req, res) => {
   if (body.trim().length === 0) res.redirect("/questions/" + req.params.id);
   else {
     await create({ author, body, parent: req.params.id });
+    const question = await get(req.params.id);
+    if (question) {
+      const questionURL = config.protocol + config.host + "/questions/" + req.params.id;
+      Email.QUESTION_REPLY_PUBLISHED(null, { title: question.title, body, questionURL });
+    }
     flush();
     res.redirect("/questions/" + req.params.id);
   }
