@@ -67,7 +67,7 @@ module.exports = function setView(templateID, updates, callback) {
             updates.urlPatterns = [updates.url];
           } else {
             return callback(
-              new Error("The provided `url` must be a string or an array"),
+              new Error("The provided `url` must be a string or an array")
             );
           }
 
@@ -91,7 +91,7 @@ module.exports = function setView(templateID, updates, callback) {
           client.hset(
             urlPatternsKey,
             name,
-            JSON.stringify(updates.urlPatterns),
+            JSON.stringify(updates.urlPatterns)
           );
         }
         view.locals = view.locals || {};
@@ -136,11 +136,11 @@ module.exports = function setView(templateID, updates, callback) {
                   { cacheID: Date.now() },
                   function (err) {
                     callback(err);
-                  },
+                  }
                 );
               });
             });
-          },
+          }
         );
       });
     });
@@ -151,7 +151,7 @@ function detectInfinitePartialDependency(
   templateID,
   view,
   parseResult,
-  callback,
+  callback
 ) {
   var viewName = view && view.name;
   var viewAlias = null;
@@ -219,7 +219,7 @@ function detectInfinitePartialDependency(
           stack.pop();
           if (!err && node.cacheable) visited[name] = true;
           done(err);
-        },
+        }
       );
     });
   }

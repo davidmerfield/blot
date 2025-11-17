@@ -11,11 +11,11 @@ const VIEW_DIRECTORY = config.views_directory;
 // the assets into a single file
 const cacheID = Date.now();
 
-const cdnURLHelper = require("documentation/tools/cdn-url-helper");
+const cdnURLHelper = require('documentation/tools/cdn-url-helper');
 
 const site = Express();
 
-site.locals.cdn = cdnURLHelper({ cacheID, viewDirectory: VIEW_DIRECTORY });
+site.locals.cdn = cdnURLHelper({cacheID, viewDirectory: VIEW_DIRECTORY});
 
 // Hide the header added by Express
 site.disable("x-powered-by");
@@ -44,7 +44,7 @@ site.locals.interval = plan.startsWith("monthly") ? "month" : "year";
 site.locals.cacheID = cacheID;
 
 site.locals.cdnURL = config.cdn.origin;
-site.locals.cdn = cdnURLHelper({ cacheID, viewDirectory: VIEW_DIRECTORY });
+site.locals.cdn = cdnURLHelper({cacheID, viewDirectory: VIEW_DIRECTORY});
 
 site.get("/health", (req, res) => {
   res.send("OK");
@@ -53,13 +53,10 @@ site.get("/health", (req, res) => {
 // If the site is in maintenance mode, show the maintenance page
 // rather than render the dashboard or any routes manipulate state
 if (config.maintenance) {
-  site.use(
-    ["/sites", "/clients", "/stripe-webhook", "/paypal-webhook"],
-    (req, res) => {
-      res.status(503);
-      res.send("Down for maintenance");
-    },
-  );
+  site.use(["/sites", "/clients", "/stripe-webhook", "/paypal-webhook"], (req, res) => {
+    res.status(503);
+    res.send("Down for maintenance");
+  });
 }
 
 // The dashboard

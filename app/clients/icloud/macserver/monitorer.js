@@ -27,8 +27,8 @@ async function recursiveList(dirPath, depth = 0) {
     const contents = await ls(dirPath);
 
     if (!contents || contents.trim() === "") {
-      console.warn(`No contents for directory: ${dirPath}`);
-      return;
+        console.warn(`No contents for directory: ${dirPath}`);
+        return;
     }
 
     const dirs = contents
@@ -42,6 +42,7 @@ async function recursiveList(dirPath, depth = 0) {
     for (const subDir of dirs) {
       await recursiveList(subDir, depth + 1);
     }
+    
   } catch (error) {
     console.error("Error processing directory", dirPath, error);
   }
@@ -68,7 +69,7 @@ module.exports = () => {
         recursiveList(`${iCloudDriveDirectory}/${blogId}`, 0).catch((error) => {
           console.error(
             `Failed to recursively list contents of ${blogId}:`,
-            error,
+            error
           );
         });
       }
@@ -81,7 +82,7 @@ module.exports = () => {
     monitorProcess.on("close", (code) => {
       rl.close();
       console.warn(
-        `brctl monitor exited with code ${code}, restarting in 1s...`,
+        `brctl monitor exited with code ${code}, restarting in 1s...`
       );
       setTimeout(startMonitor, 1000);
     });

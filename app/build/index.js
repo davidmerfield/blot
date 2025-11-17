@@ -34,63 +34,66 @@ module.exports = function build(blog, path, callback) {
     if (err) return callback(err);
 
     debug("Blog:", blog.id, path, " attempting to build html");
-    Build(
-      blog,
-      path,
-      function (err, html, metadata, stat, dependencies, extras) {
-        if (err) return callback(err);
+    Build(blog, path, function (
+      err,
+      html,
+      metadata,
+      stat,
+      dependencies,
+      extras,
+    ) {
+      if (err) return callback(err);
 
-        debug("Blog:", blog.id, path, " extracting thumbnail");
-        Thumbnail(blog, path, metadata, html, function (err, thumbnail) {
-          // Could be lots of reasons (404?)
-          if (err || !thumbnail) thumbnail = {};
+      debug("Blog:", blog.id, path, " extracting thumbnail");
+      Thumbnail(blog, path, metadata, html, function (err, thumbnail) {
+        // Could be lots of reasons (404?)
+        if (err || !thumbnail) thumbnail = {};
 
-          var entry;
+        var entry;
 
-          // Given the properties above
-          // that we've extracted from the
-          // local file, compute stuff like
-          // the teaser, isDraft etc..
+        // Given the properties above
+        // that we've extracted from the
+        // local file, compute stuff like
+        // the teaser, isDraft etc..
 
-          try {
-            entry = {
-              html: html,
-              name: basename(path),
-              path: path,
-              id: path,
-              thumbnail: thumbnail,
-              draft: is_draft,
-              metadata: metadata,
-              size: stat.size,
-              dependencies: dependencies,
-              exif: (extras && extras.exif) || {},
-              dateStamp: DateStamp(blog, path, metadata),
-              updated: moment.utc(stat.mtime).valueOf(),
-            };
+        try {
+          entry = {
+            html: html,
+            name: basename(path),
+            path: path,
+            id: path,
+            thumbnail: thumbnail,
+            draft: is_draft,
+            metadata: metadata,
+            size: stat.size,
+            dependencies: dependencies,
+            exif: (extras && extras.exif) || {},
+            dateStamp: DateStamp(blog, path, metadata),
+            updated: moment.utc(stat.mtime).valueOf(),
+          };
 
-            if (entry.dateStamp === undefined) {
-              entry.dateStampWasRemoved = true;
-              delete entry.dateStamp;
-            }
-
-            debug(
-              "Blog:",
-              blog.id,
-              path,
-              " preparing additional properties for",
-              entry.name,
-            );
-            entry = Prepare(entry, {
-              titlecase: blog.plugins.titlecase.enabled,
-            });
-            debug("Blog:", blog.id, path, " additional properties computed.");
-          } catch (e) {
-            return callback(e);
+          if (entry.dateStamp === undefined) {
+            entry.dateStampWasRemoved = true;
+            delete entry.dateStamp;
           }
 
-          callback(null, entry);
-        });
-      },
-    );
+          debug(
+            "Blog:",
+            blog.id,
+            path,
+            " preparing additional properties for",
+            entry.name
+          );
+          entry = Prepare(entry, {
+            titlecase: blog.plugins.titlecase.enabled,
+          });
+          debug("Blog:", blog.id, path, " additional properties computed.");
+        } catch (e) {
+          return callback(e);
+        }
+
+        callback(null, entry);
+      });
+    });
   });
 };

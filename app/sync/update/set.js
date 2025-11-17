@@ -25,7 +25,7 @@ function isPublic(path) {
     // whose name begins with an underscore
     normalizedPath.includes("/_") ||
     // convention to ingore dotfiles or folders
-    normalizedPath.includes("/.") ||
+    normalizedPath.includes("/.") || 
     // textbundle asset files
     normalizedPath.includes(".textbundle/assets/")
   );
@@ -48,7 +48,7 @@ function buildAndSet(blog, path, callback) {
       const syntheticKeys = new Set();
 
       const slugToken = makeSlug(
-        entry.slug || entry.metadata.title || entry.title || "",
+        entry.slug || entry.metadata.title || entry.title || ""
       );
       if (slugToken) {
         syntheticKeys.add(`/__wikilink_slug__/${slugToken}`);
@@ -60,7 +60,7 @@ function buildAndSet(blog, path, callback) {
       }
 
       syntheticKeys.forEach((syntheticKey) =>
-        rebuildDependents(blog.id, syntheticKey, noop),
+        rebuildDependents(blog.id, syntheticKey, noop)
       );
       // This file is a draft, write a preview file
       // to the users Dropbox and continue down

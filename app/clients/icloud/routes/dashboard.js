@@ -63,7 +63,7 @@ dashboard
         // it should look like: https://www.icloud.com/iclouddrive/08d83wAt2lMHc46hEEi0D5zcQ#example
         if (
           !/^https:\/\/www\.icloud\.com\/iclouddrive\/[a-zA-Z0-9_-]+#/.test(
-            sharingLink,
+            sharingLink
           )
         ) {
           return next(new Error("Invalid sharing link format"));
@@ -89,7 +89,7 @@ dashboard
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          `Macserver /setup request failed: ${response.status} - ${errorText}`,
+          `Macserver /setup request failed: ${response.status} - ${errorText}`
         );
         return next(new Error(`Failed to set up folder: ${errorText}`));
       }

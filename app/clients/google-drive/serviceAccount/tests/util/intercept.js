@@ -28,7 +28,7 @@ function intercept(specName, identifier) {
     .reply(async function (uri, requestBody, callback) {
       const fixturePath = path.join(
         FIXTURE_DIR,
-        `${specName}-${identifier}-POST-${uri.replace(/\//g, "_")}.json`,
+        `${specName}-${identifier}-POST-${uri.replace(/\//g, "_")}.json`
       );
 
       if (fs.existsSync(fixturePath)) {
@@ -41,30 +41,13 @@ function intercept(specName, identifier) {
       }
 
       console.log(`Forwarding POST request to ${uri}`);
-      const remoteResponse = await forwardRequest(
-        GOOGLE_API_BASE + uri,
-        "POST",
-        requestBody,
-        this.req.headers,
-      );
+      const remoteResponse = await forwardRequest(GOOGLE_API_BASE + uri, "POST", requestBody, this.req.headers);
 
       // Save the response as a fixture
-      saveFixture(
-        uri,
-        "POST",
-        remoteResponse.status,
-        remoteResponse.body,
-        fixturePath,
-        requestBody,
-        remoteResponse.headers,
-      );
+      saveFixture(uri, "POST", remoteResponse.status, remoteResponse.body, fixturePath, requestBody, remoteResponse.headers);
 
       // Return the response to the caller
-      callback(null, [
-        remoteResponse.status,
-        remoteResponse.body,
-        remoteResponse.headers,
-      ]);
+      callback(null, [remoteResponse.status, remoteResponse.body, remoteResponse.headers]);
     });
 
   // Intercept all GET requests (e.g., /drive/v3/about)
@@ -75,7 +58,7 @@ function intercept(specName, identifier) {
     .reply(async function (uri, requestBody, callback) {
       const fixturePath = path.join(
         FIXTURE_DIR,
-        `${specName}-${identifier}-GET-${uri.replace(/\//g, "_")}.json`,
+        `${specName}-${identifier}-GET-${uri.replace(/\//g, "_")}.json`
       );
 
       if (fs.existsSync(fixturePath)) {
@@ -88,30 +71,13 @@ function intercept(specName, identifier) {
       }
 
       console.log(`Forwarding GET request to ${uri}`);
-      const remoteResponse = await forwardRequest(
-        GOOGLE_API_BASE + uri,
-        "GET",
-        null,
-        this.req.headers,
-      );
+      const remoteResponse = await forwardRequest(GOOGLE_API_BASE + uri, "GET", null, this.req.headers);
 
       // Save the response as a fixture
-      saveFixture(
-        uri,
-        "GET",
-        remoteResponse.status,
-        remoteResponse.body,
-        fixturePath,
-        null,
-        remoteResponse.headers,
-      );
+      saveFixture(uri, "GET", remoteResponse.status, remoteResponse.body, fixturePath, null, remoteResponse.headers);
 
       // Return the response to the caller
-      callback(null, [
-        remoteResponse.status,
-        remoteResponse.body,
-        remoteResponse.headers,
-      ]);
+      callback(null, [remoteResponse.status, remoteResponse.body, remoteResponse.headers]);
     });
 }
 
@@ -163,15 +129,7 @@ async function forwardRequest(url, method, body = null, headers = {}) {
  * @param {object} [requestBody] - The body of the POST request, if applicable.
  * @param {object} [headers] - The response headers.
  */
-function saveFixture(
-  uri,
-  method,
-  status,
-  response,
-  fixturePath,
-  requestBody = null,
-  headers = {},
-) {
+function saveFixture(uri, method, status, response, fixturePath, requestBody = null, headers = {}) {
   const fixture = {
     path: uri,
     method,

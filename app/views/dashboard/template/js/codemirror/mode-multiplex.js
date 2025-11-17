@@ -89,7 +89,7 @@
                 oldContent,
                 curInner.close,
                 stream.pos,
-                curInner.parseDelimiters,
+                curInner.parseDelimiters
               )
             : -1;
           if (found == stream.pos && !curInner.parseDelimiters) {
@@ -121,7 +121,7 @@
         if (!mode.indent) return CodeMirror.Pass;
         return mode.indent(
           state.innerActive ? state.inner : state.outer,
-          textAfter,
+          textAfter
         );
       },
 
@@ -137,7 +137,7 @@
               state.innerActive = other;
               state.inner = CodeMirror.startState(
                 other.mode,
-                mode.indent ? mode.indent(state.outer, "") : 0,
+                mode.indent ? mode.indent(state.outer, "") : 0
               );
             }
           }

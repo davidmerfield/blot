@@ -52,11 +52,7 @@ module.exports = async function (req, res, next) {
     };
 
     hydrated.owner = hydrated.owner || req.blog.id;
-    hydrated.slug =
-      hydrated.id.split(":").slice(1).join(":") ||
-      req.params.templateSlug ||
-      slug ||
-      "";
+    hydrated.slug = hydrated.id.split(':').slice(1).join(':') || req.params.templateSlug || slug || "";
 
     const nameSource = hydrated.slug || req.params.templateSlug || "";
 

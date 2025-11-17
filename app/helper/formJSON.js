@@ -71,7 +71,7 @@ function formJSON(fields, model) {
             console.log(
               "Could not coerce val to desired " +
                 modelDef +
-                " it is currently: ",
+                " it is currently: "
             );
             console.log(val);
             console.log();

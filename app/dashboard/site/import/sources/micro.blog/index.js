@@ -20,14 +20,14 @@ if (fs.existsSync(output_directory)) {
 
 (async () => {
   const paths = walk(input_directory).filter(
-    (path) =>
+    path =>
       fs.statSync(path).isFile() &&
       basename(path)[0] !== "." &&
-      basename(path).toLowerCase().endsWith(".md"),
+      basename(path).toLowerCase().endsWith(".md")
   );
 
   const posts = await Promise.all(
-    paths.map(async (path) => {
+    paths.map(async path => {
       const filename = basename(path);
       let file = (await fs.readFile(path, "utf-8")).trim();
 
@@ -46,7 +46,7 @@ if (fs.existsSync(output_directory)) {
       post.html = marked.parse(body);
       post.slug = meta.url.slice(
         meta.url.lastIndexOf("/") + 1,
-        meta.url.lastIndexOf(".html"),
+        meta.url.lastIndexOf(".html")
       );
       post.id = filename.slice(0, filename.lastIndexOf("."));
 
@@ -72,7 +72,7 @@ if (fs.existsSync(output_directory)) {
             url.path,
             "via",
             url.hostname,
-            e.message,
+            e.message
           );
         }
       });
@@ -80,7 +80,7 @@ if (fs.existsSync(output_directory)) {
       post.html = $.html();
 
       return post;
-    }),
+    })
   );
 
   // throw "here!";
@@ -88,6 +88,6 @@ if (fs.existsSync(output_directory)) {
   // Writes each post in the post array,
   // downloads any images, pdfs
   helper.process(output_directory, posts, {
-    preserve_output_directory: true,
+    preserve_output_directory: true
   });
 })();

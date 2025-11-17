@@ -61,7 +61,7 @@ describe("tags work on sites", function () {
         (err, data) => {
           if (err) return reject(err);
           resolve(data);
-        },
+        }
       );
     });
 
@@ -88,7 +88,7 @@ describe("tags work on sites", function () {
           },
         },
         locals: { page_size: 1 },
-      },
+      }
     );
 
     expect(await this.text(`/`)).toEqual("third");
@@ -216,7 +216,7 @@ describe("tags work on sites", function () {
           (err, lists) => {
             if (err) return reject(err);
             resolve(lists.entries.map((entry) => entry.id));
-          },
+          }
         );
       });
 
@@ -284,7 +284,7 @@ describe("tags work on sites", function () {
             ]
         }`,
       },
-      { locals: { page_size: 2 } },
+      { locals: { page_size: 2 } }
     );
 
     const res = await this.get(`/tagged/paginated`);
@@ -298,7 +298,7 @@ describe("tags work on sites", function () {
         total: 2,
         previous: "",
         next: "2",
-      }),
+      })
     );
     expect(parsed.entries.map((title) => title.toLowerCase())).toEqual([
       "page three",
@@ -317,7 +317,7 @@ describe("tags work on sites", function () {
         total: 2,
         previous: "1",
         next: "",
-      }),
+      })
     );
     expect(parsedPage2.entries.map((title) => title.toLowerCase())).toEqual([
       "page one",
@@ -335,7 +335,7 @@ describe("tags work on sites", function () {
         total: 2,
         previous: "2",
         next: "",
-      }),
+      })
     );
     expect(parsedPage3.entries).toEqual([]);
   });
@@ -360,7 +360,7 @@ describe("tags work on sites", function () {
         "tagged.html":
           "pageSize={{pagination.pageSize}};current={{pagination.current}};entries={{#entries}}{{title}}|{{/entries}}",
       },
-      { locals: { page_size: 1, tagged_page_size: 2 } },
+      { locals: { page_size: 1, tagged_page_size: 2 } }
     );
 
     const indexRes = await this.get(`/`);
@@ -424,7 +424,7 @@ describe("tags work on sites", function () {
         "tagged.html":
           "pageSize={{pagination.pageSize}};current={{pagination.current}};entries={{#entries}}{{title}}|{{/entries}}",
       },
-      { locals: { page_size: 3 } },
+      { locals: { page_size: 3 } }
     );
 
     const res = await this.get(`/tagged/alt`);
@@ -482,7 +482,7 @@ describe("tags work on sites", function () {
         (err, data) => {
           if (err) return reject(err);
           resolve(data);
-        },
+        }
       );
     });
 
@@ -497,7 +497,7 @@ describe("tags work on sites", function () {
         totalEntries: 2,
         previous: null,
         next: 2,
-      }),
+      })
     );
   });
 });

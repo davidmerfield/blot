@@ -63,7 +63,7 @@ module.exports = function (json, outputDirectory, callback) {
       var file = [];
 
       file.push(
-        "Date: " + moment(entry.dateStamp).format("MMMM Do YYYY, h:mm:ss a"),
+        "Date: " + moment(entry.dateStamp).format("MMMM Do YYYY, h:mm:ss a")
       );
 
       for (var i in entry.metadata) file.push(i + ": " + entry.metadata[i]);
@@ -102,9 +102,9 @@ module.exports = function (json, outputDirectory, callback) {
           (slug || "untitled") +
           ".txt",
         file,
-        next,
+        next
       );
     },
-    callback,
+    callback
   );
 };

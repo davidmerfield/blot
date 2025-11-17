@@ -10,7 +10,7 @@ var type = require("helper/type");
 // neccessary to retrieve those at run time...
 
 var modules = require("fs").readdirSync(
-  __dirname + "/../../blog/render/retrieve",
+  __dirname + "/../../blog/render/retrieve"
 );
 
 // Build a list of locals which blot will fetch
@@ -49,7 +49,7 @@ function parseTemplate(template) {
 
     var parts = propertyPath.split(".");
     var current = retrieve[root];
-
+    
     for (var i = 0; i < parts.length - 1; i++) {
       var part = parts[i];
       if (!current[part] || current[part] === true) {
@@ -57,7 +57,7 @@ function parseTemplate(template) {
       }
       current = current[part];
     }
-
+    
     current[parts[parts.length - 1]] = value;
   }
 
@@ -102,8 +102,7 @@ function parseTemplate(template) {
           variable.indexOf(".") > -1 &&
           variable.slice(0, variable.indexOf("."));
         // e.g. length (or subfolder.property for deeper nesting)
-        var propertyPath =
-          variable.indexOf(".") > -1 &&
+        var propertyPath = variable.indexOf(".") > -1 &&
           variable.slice(variable.indexOf(".") + 1);
 
         if (retrieveThese.indexOf(variable) > -1) {
@@ -164,12 +163,8 @@ function parseTemplate(template) {
             }
           }
         }
-
-        if (
-          variableRoot &&
-          retrieveThese.indexOf(variableRoot) === -1 &&
-          variableRoot !== "cdn"
-        ) {
+        
+        if (variableRoot && retrieveThese.indexOf(variableRoot) === -1 && variableRoot !== "cdn") {
           if (!retrieve[variableRoot]) {
             retrieve[variableRoot] = true;
           }
@@ -186,14 +181,12 @@ function parseTemplate(template) {
 
           if ((context + variable).indexOf(approved) > -1) {
             var fix = (context + variable).slice(
-              (context + variable).indexOf(approved),
+              (context + variable).indexOf(approved)
             );
             // For approved variables with dots, build nested structure
-            var fixRoot =
-              fix.indexOf(".") > -1 && fix.slice(0, fix.indexOf("."));
-            var fixProperty =
-              fix.indexOf(".") > -1 && fix.slice(fix.indexOf(".") + 1);
-
+            var fixRoot = fix.indexOf(".") > -1 && fix.slice(0, fix.indexOf("."));
+            var fixProperty = fix.indexOf(".") > -1 && fix.slice(fix.indexOf(".") + 1);
+            
             if (fixRoot && fixProperty && retrieveThese.indexOf(fixRoot) > -1) {
               setNestedProperty(fixRoot, fixProperty, true);
             } else {

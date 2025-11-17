@@ -1,15 +1,9 @@
 /* Fixes a bug with the image zoom plugin on this template */
-p,
-div,
-section {
-  position: static;
-}
+p, div, section {position: static;} 
 
 /* LAYOUT */
 
-.container {
-  position: relative;
-}
+.container {position: relative;}
 
 .margin {
   position: absolute;
@@ -17,9 +11,7 @@ section {
   width: 29.3333%;
 }
 
-.margin p {
-  font-style: italic;
-}
+.margin p {font-style: italic;}
 
 .left.margin {
   left: -29.3333%;
@@ -38,27 +30,12 @@ section {
   overflow: auto; /* collapses internal margins */
 }
 
-.wide.left,
-.wide.right {
-  width: 129.3333333%;
-  float: none;
-}
-.wide.left {
-  margin: 0 0 0 -29.3333333%;
-}
-.wide.right {
-  margin: 0 -29.3333333% 0 0;
-}
+.wide.left, .wide.right {width: 129.3333333%;float: none;}
+.wide.left {margin: 0 0 0 -29.3333333%}
+.wide.right {margin: 0 -29.3333333% 0 0}
 
-.margin p,
-.column p {
-  margin-top: 2px;
-}
-.margin h1,
-.margin h2,
-.margin h3 {
-  margin-top: 0;
-}
+.margin p, .column p {margin-top: 2px}
+.margin h1, .margin h2, .margin h3 {margin-top:0}
 
 .column {
   box-sizing: border-box;
@@ -70,71 +47,36 @@ section {
   padding-right: 12px;
 }
 
-.column.three {
-  width: 33.333333%;
-  padding: 0 16px 0 0;
-}
-.column.three + .column.three {
-  padding: 0 8px;
-}
-.column.three + .column.three + .column.three {
-  padding: 0 0 0 16px;
-}
+.column.three {width: 33.333333%;padding: 0 16px 0 0;}
+.column.three + .column.three {padding: 0 8px}
+.column.three + .column.three + .column.three {padding: 0 0 0 16px}
 
-.column.four {
-  width: 25%;
-  padding-right: 18px;
-}
-.column.four + .column.four {
-  padding: 0 12px 0 6px;
-}
-.column.four + .column.four + .column.four {
-  padding: 0 6px 0 12px;
-}
-.column.four + .column.four + .column.four + .column.four {
-  padding: 0 0 0 18px;
-}
+.column.four {width: 25%;padding-right: 18px;}
+.column.four + .column.four {padding: 0 12px 0 6px;}
+.column.four + .column.four + .column.four {padding: 0 6px 0 12px;}
+.column.four + .column.four + .column.four + .column.four {padding: 0 0 0 18px;}
+
+
 
 .column.two + .column.two {
   padding: 0 0 0 12px;
 }
 
 @media screen and (max-width: 1060px) {
+
   .margin,
   .margin.right,
-  .margin.left {
-    position: relative;
-    display: block;
-    top: auto;
-    left: auto;
-    right: auto;
-    bottom: auto;
-  }
+  .margin.left {position: relative;display: block;top: auto;left: auto;right: auto;bottom: auto;}
 
-  .margin.right {
-    float: right;
-  }
-  .margin.left {
-    text-align: left;
-    float: left;
-  }
+  .margin.right {float: right;}
+  .margin.left {text-align: left;float: left;}
 
-  .wide,
-  .wide.left,
-  .wide.right {
-    width: 100%;
-    margin: 0;
-  }
+  .wide, .wide.left, .wide.right {width: 100%;margin: 0}
 }
 
+
 @media screen and (max-width: 600px) {
-  .margin {
-    width: 40%;
-  }
-  .margin.right {
-    padding-left: 16px;
-  }
-  .margin.left {
-    padding-right: 16px;
-  }
+  .margin {width: 40%;}
+  .margin.right {padding-left: 16px;}
+  .margin.left {padding-right: 16px;}
 }

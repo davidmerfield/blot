@@ -1,129 +1,117 @@
+
 .button-with-icon {
-  font-size: 14px;
-  margin-top: 24px;
-  margin-right: 12px;
-  display: inline-block;
-  border-radius: var(--border-radius);
-  background-color: var(--accent-color);
-  color: var(--background-color);
-  padding: 0.5em 0.75em;
-  font-weight: 600;
-}
+    font-size: 14px;
+    margin-top: 24px;
+    margin-right: 12px;
+    display: inline-block;
+    border-radius: var(--border-radius);
+    background-color: var(--accent-color);
+    color: var(--background-color);
+    padding: 0.5em 0.75em;
+    font-weight: 600;
+  }
+  
+  
+  button.copy {
+    background-color: transparent;
+    border-radius: var(--border-radius);
+    color: var(--accent-color);
+    margin-left: 6px;
+    cursor: pointer;
+    border:none
+  }
+  
+  button.copy:hover {
+    color: var(--accent-color)
+  }
+  
+  /* otherwise, the button icon is not clickable */
+  button.copy span {
+    pointer-events: none;
+  }
+  
+  button.copy.copied {
+    color:darkgreen
+  }
+  
 
-button.copy {
-  background-color: transparent;
-  border-radius: var(--border-radius);
-  color: var(--accent-color);
-  margin-left: 6px;
-  cursor: pointer;
-  border: none;
-}
 
-button.copy:hover {
-  color: var(--accent-color);
-}
-
-/* otherwise, the button icon is not clickable */
-button.copy span {
-  pointer-events: none;
-}
-
-button.copy.copied {
-  color: darkgreen;
-}
-
-a.close-button {
-  color: var(--accent-color);
-  position: absolute;
-  top: 1.85rem;
-  right: 4rem;
-  transform: scale(1);
-  transition: transform 0.2s;
+  a.close-button {
+    color:var(--accent-color);
+    position: absolute;top:1.85rem;right:4rem;
+    transform: scale(1.0);    
+    transition: transform 0.2s;
 }
 
 a.close-button > span {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 40px;
-  height: 40px;
-  text-align: center;
-  background: var(--light-background-color);
-  border-radius: 40px;
-  transition: background-color 0.2s;
+    display: flex;flex-direction: column;
+    justify-content: center;align-items: center;width: 40px;height: 40px;
+    text-align: center;background: var(--light-background-color);
+    border-radius: 40px;
+    transition: background-color 0.2s;
 }
 
 a.close-button > span > svg {
-  fill: currentColor;
+    fill: currentColor
 }
 
 a.close-button:hover {
-  transform: scale(1.1);
+    transform: scale(1.1);
 }
 
 a.close-button:hover > span,
 .template-button:hover {
-  background-color: var(--light-background-color);
+    background-color: var(--light-background-color);
 }
 
 .template-button {
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  display: inline-block;
-  border-radius: var(--border-radius);
-  transition: background-color 0.2s;
-  color: #656e82;
-  padding: 0.333em 0.66em;
-  margin: 0 6px 0;
+    border:none;cursor: pointer; font-size:14px;
+    display:  inline-block;border-radius: var(--border-radius);
+    transition: background-color 0.2s;
+    color:#656e82;padding:0.333em 0.66em;margin:0 6px 0;
 }
 
 .template-button.selected {
-  color: var(--accent-color);
-  font-weight: 600;
-  outline: none;
-  position: relative;
+    color: var(--accent-color);
+    font-weight: 600;
+    outline: none;
+    position: relative;
 }
 
 .template-button.selected:after {
-  border-bottom: 2px solid var(--accent-color);
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -9px;
+      border-bottom: 2px solid var(--accent-color);
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -9px;
 }
 
 .template-button.red {
-  color: red;
+    color: red
 }
 
 .template-button.right-aligned {
-  align-self: flex-end;
+    align-self: flex-end;
 }
 
-.template-button span {
-  font-size: 14px;
-}
+.template-button span {font-size: 14px;}
 
 .template-button svg {
-  fill: currentColor;
-  width: 14px;
-  vertical-align: middle;
-  position: relative;
-  top: -0.1em;
-  margin-right: 4px;
+    fill:currentColor;
+    width: 14px;
+    vertical-align: middle;
+    position:relative;
+    top:-0.1em;
+    margin-right: 4px;
 }
 
 .template-button span {
-  vertical-align: middle;
-  position: relative;
-  top: -0.1em;
+  vertical-align: middle;position:relative;top:-0.1em;
   margin-right: 4px;
 }
 
 .template-button.right-aligned svg {
-  margin-right: 0;
-  margin-left: 4px;
+    margin-right: 0;
+    margin-left: 4px;
 }

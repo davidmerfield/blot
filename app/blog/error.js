@@ -76,7 +76,7 @@ module.exports = function (server) {
       clfdate(),
       req.headers["x-request-id"] && req.headers["x-request-id"],
       "Template error:",
-      err,
+      err
     );
 
     res.locals.error = {

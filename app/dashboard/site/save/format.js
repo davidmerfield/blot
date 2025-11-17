@@ -28,7 +28,7 @@ module.exports = function (req, res, next) {
         !linkURL.startsWith("/") &&
         !linkURL.startsWith("http://") &&
         !linkURL.startsWith("https://") &&
-        linkURL.slice(0, linkURL.indexOf("/")).indexOf(".") > -1
+        linkURL.slice(0, linkURL.indexOf("/")).indexOf('.') > -1        
       ) {
         req.updates.menu[i].url = "https://" + req.updates.menu[i].url;
       }
@@ -40,6 +40,7 @@ module.exports = function (req, res, next) {
       fallback: req.blog && req.blog.imageExif ? req.blog.imageExif : "off",
     });
   }
+
 
   if (req.updates.plugins) {
     // this bullshit below is because I haven't properly declared

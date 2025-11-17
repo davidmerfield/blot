@@ -3,7 +3,7 @@ const UNSUPPORTED_FILE_EXTENSIONS = [".paper"];
 const hasUnsupportedExtension = (filePath = "") => {
   const normalizedPath = String(filePath).toLowerCase();
   return UNSUPPORTED_FILE_EXTENSIONS.some((extension) =>
-    normalizedPath.endsWith(extension),
+    normalizedPath.endsWith(extension)
   );
 };
 

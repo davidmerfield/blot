@@ -18,11 +18,11 @@ const setupLimiter = new Bottleneck({
  */
 const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
   console.log(
-    `Waiting for a new folder to set up blogID: ${blogID} using sharingLink: ${sharingLink}`,
+    `Waiting for a new folder to set up blogID: ${blogID} using sharingLink: ${sharingLink}`
   );
 
   const checkInterval = 100; // Interval (in ms) to check for new directories
-  const timeout = 1000 * 15; // Timeout (in ms) to wait for a new directory: 15 seconds
+  const timeout = 1000 * 15; // Timeout (in ms) to wait for a new directory: 15 seconds 
   const start = Date.now();
 
   // Get the initial state of the top-level directories
@@ -36,7 +36,7 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
   console.log(
     `Initial state of iCloud Drive: ${
       initialDirNames.join(", ") || "No directories"
-    }`,
+    }`
   );
 
   console.log("running the acceptSharingLink script");
@@ -53,7 +53,7 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
 
     // Find any new directories by comparing initial state with the current state
     const newDirs = currentDirNames.filter(
-      (dirName) => !initialDirNames.includes(dirName),
+      (dirName) => !initialDirNames.includes(dirName)
     );
 
     if (newDirs.length > 0) {
@@ -77,7 +77,7 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
   }
 
   console.error(
-    `Timed out waiting for a new folder to set up blogID: ${blogID} after ${timeout}ms`,
+    `Timed out waiting for a new folder to set up blogID: ${blogID} after ${timeout}ms`
   );
   throw new Error("Invalid sharing link");
 });
@@ -156,7 +156,7 @@ async function acceptSharingLink(sharingLink) {
     throw new Error(`Unexpected AppleScript stdout: ${stdout}`);
   }
 
-  // We don't know if the script succeeded or failed because it's hard to
+  // We don't know if the script succeeded or failed because it's hard to 
   // write to stdout or stderr from AppleScript. We check if it worked
   // by determining if the folder was created
   console.log(`AppleScript finished`);
@@ -176,7 +176,7 @@ module.exports = async (req, res) => {
   }
 
   console.log(
-    `Received setup request for blogID: ${blogID}, sharingLink: ${sharingLink}`,
+    `Received setup request for blogID: ${blogID}, sharingLink: ${sharingLink}`
   );
 
   res.sendStatus(200);

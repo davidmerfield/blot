@@ -33,7 +33,7 @@ module.exports = async function (href, callback) {
         "https://www.googleapis.com/youtube/v3/videos?part=player&id=" +
           id +
           "&key=" +
-          config.youtube.secret,
+          config.youtube.secret
       );
 
       const body = await res.json();

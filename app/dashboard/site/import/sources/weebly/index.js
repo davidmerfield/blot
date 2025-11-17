@@ -58,6 +58,6 @@ curl(archives, function (err, res) {
         console.log("Done!");
         process.exit();
       });
-    },
+    }
   );
 });

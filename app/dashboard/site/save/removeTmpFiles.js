@@ -8,6 +8,6 @@ module.exports = function (req, res, next) {
     function (file, nextFile) {
       fs.remove(file.path, nextFile);
     },
-    next,
+    next
   );
 };

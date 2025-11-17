@@ -10,16 +10,15 @@ describe("template", function () {
 
     partials[test.view.name] = "";
 
-    getPartials(
-      test.blog.id,
-      test.template.id,
+    getPartials(test.blog.id, test.template.id, partials, function (
+      err,
       partials,
-      function (err, partials, retrieve) {
-        if (err) return done.fail(err);
-        expect(partials[test.view.name]).toEqual(test.view.content);
-        done();
-      },
-    );
+      retrieve
+    ) {
+      if (err) return done.fail(err);
+      expect(partials[test.view.name]).toEqual(test.view.content);
+      done();
+    });
   });
 
   // If you have a template view 'header.html' which embeds
@@ -44,18 +43,17 @@ describe("template", function () {
 
     setView(test.template.id, parentView, function (err) {
       if (err) return done.fail(err);
-      getPartials(
-        test.blog.id,
-        test.template.id,
+      getPartials(test.blog.id, test.template.id, partials, function (
+        err,
         partials,
-        function (err, partials, retrieve) {
-          if (err) return done.fail(err);
-          expect(partials[test.view.name]).toEqual(test.view.content);
-          expect(partials[parentView.name]).toEqual(parentView.content);
+        retrieve
+      ) {
+        if (err) return done.fail(err);
+        expect(partials[test.view.name]).toEqual(test.view.content);
+        expect(partials[parentView.name]).toEqual(parentView.content);
 
-          done();
-        },
-      );
+        done();
+      });
     });
   });
 });

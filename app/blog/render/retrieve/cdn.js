@@ -10,7 +10,7 @@ module.exports = function (req, res, callback) {
     var renderCdn = function (text, render) {
       try {
         // Skip CDN URLs for preview subdomains on non-SITE templates
-        if (req.preview && templateID && !templateID.startsWith("SITE:")) {
+        if (req.preview && templateID && !templateID.startsWith('SITE:')) {
           return typeof render === "function" ? render(text) : text;
         }
 
@@ -18,15 +18,9 @@ module.exports = function (req, res, callback) {
         if (!rendered || !String(rendered).trim()) return "";
 
         const renderedNormalized = String(rendered).trim().replace(/^\//, "");
-
-        if (
-          templateID &&
-          Object.prototype.hasOwnProperty.call(manifest, renderedNormalized)
-        ) {
-          return generateCdnUrl(
-            renderedNormalized,
-            manifest[renderedNormalized],
-          );
+        
+        if (templateID && Object.prototype.hasOwnProperty.call(manifest, renderedNormalized)) {
+          return generateCdnUrl(renderedNormalized, manifest[renderedNormalized]);
         }
 
         return rendered;

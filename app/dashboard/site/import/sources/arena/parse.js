@@ -68,10 +68,7 @@ async function image(item, outputDirectory) {
 function getPath({ outputDirectory, draft, name, created }) {
   return join(
     outputDirectory,
-    (draft ? "[draft]" : "") +
-      moment(created).format("YYYY-MM-DD") +
-      " " +
-      name,
+    (draft ? "[draft]" : "") + moment(created).format("YYYY-MM-DD") + " " + name
   );
 }
 

@@ -17,17 +17,16 @@
   border-top: 1px solid var(--border-color);
 }
 
-.preview-holder {
-  width: 60px;
-  height: 40px;
-  position: absolute;
-  height: 40px;
-  width: 60px;
-  top: 10px;
-  left: 1.25rem;
-  margin: 4px 0 10px;
-  transform: scale(1);
+.preview-holder{
+  width: 60px;height:40px;    position: absolute;
+			height: 40px;
+			width: 60px;
+			top: 10px;
+			left: 1.25rem;
+			margin: 4px 0 10px;
+      transform: scale(1);
 }
+
 
 a.blog-link {
   display: flex;
@@ -55,20 +54,16 @@ a.blog-link .text-info {
 }
 
 .site:active {
-  background-color: var(--background-color);
+  background-color: var(--background-color)
 }
 
 a.blog-link .title {
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  word-break: break-word;
+  white-space: nowrap; overflow: hidden; word-break: break-word;
 }
 
 a.blog-link .icon-chevron {
-  font-size: 24px;
-  color: var(--border-color);
-  align-self: center;
+  font-size:24px;color:var(--border-color);align-self:center;
   transition: color 0.2s;
 }
 
@@ -82,9 +77,7 @@ a.blog-link .url {
   font-weight: 400;
   height: 1.4em;
   font-size: var(--small-font-size);
-  white-space: nowrap;
-  overflow: hidden;
-  word-break: break-word;
+  white-space: nowrap; overflow: hidden; word-break: break-word;
 }
 
 button.logout {
@@ -96,12 +89,10 @@ button.logout {
   padding: 8px 12px;
   margin: 0 0 24px;
   position: relative;
-  top: 6px;
+  top:6px;
   color: var(--medium-text-color);
   border-radius: var(--border-radius);
-  transition:
-    background-color 0.2s,
-    color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 button.logout:hover {
@@ -126,8 +117,15 @@ form.create-site-button button {
   color: var(--background-color);
   padding: 0.5em 0.75em;
   font-weight: 600;
-  margin: 0;
+  margin:0;
 }
+
+
+
+
+
+
+
 
 span.folder,
 span.file {
@@ -142,31 +140,41 @@ span.file {
   top: 0.3em;
 }
 
+
 span.file {
   background-image: url("/images/file.svg");
 }
 
-.sortable > section {
-}
+.sortable>section {}
 
-.sortable > section.isPage .button {
+.sortable>section.isPage .button {
   display: none;
 }
 
-.sortable > section.isPage input {
+.sortable>section.isPage input {
   display: none;
 }
 
-.sortable > section.isPage label {
+.sortable>section.isPage label {
   border-color: rgba(0, 0, 0, 0);
   margin: 0;
   box-sizing: border-box;
 }
 
-.sortable > section.sortable-ghost {
+.sortable>section.sortable-ghost {
   opacity: 0.15;
   background: #eee;
 }
+
+
+
+
+
+
+
+
+
+
 
 .wrapper {
   margin: 0 auto;
@@ -174,20 +182,21 @@ span.file {
   min-height: calc(100vh - 3em);
 }
 
+
 #menu section,
 #redirects section {
   padding: 0 0;
   border: none;
   margin-bottom: 12px;
-  border: 1px solid #eeeeec;
-  border-radius: var(--border-radius);
+  border:1px solid #eeeeec;border-radius: var(--border-radius);
 }
 
+
 #redirects section:last-child[id^="new_"] {
-  border: 2px solid var(--accent-color);
+  border: 2px solid var(--accent-color)
 }
 #redirects .handle svg {
-  fill: currentColor;
+  fill: currentColor
 }
 
 #redirects .handle {
@@ -207,12 +216,13 @@ span.file {
   cursor: -webkit-grabbing;
 }
 
+
 #redirects .removeLink {
   display: flex;
   padding: 6px 12px;
   align-items: center;
   border-left: 1px solid #eeeeec;
-  color: red;
+  color: red
 }
 
 #redirects .removeLink svg {
@@ -229,16 +239,17 @@ span.file {
   border-right: 1px solid #eeeeec;
 }
 
+
 .pageLink {
-  line-height: 48px;
-  height: 48px;
-  text-decoration: none;
-  overflow: hidden;
-  border: 1px solid;
-  margin-left: -1px;
-  padding: 0 8px;
-  display: block;
-  margin-top: 2px;
+line-height: 48px;
+    height: 48px;
+    text-decoration: none;
+    overflow: hidden;
+    border: 1px solid;
+    margin-left: -1px;
+    padding: 0 8px;
+    display: block;
+    margin-top: 2px;
 }
 
 .lab[type="text"],
@@ -255,42 +266,47 @@ span.file {
 .removeLink:hover,
 .pageLink:hover {
   z-index: 2;
-  border-color: #0079fc;
+  border-color: #0079fc
 }
+
 
 .lab[type="text"] {
   border-radius: 0;
   margin-left: -1px;
-  z-index: 0;
+  z-index: 0
 }
 
 .val[type="text"] {
   border-radius: 0;
   margin-left: -1px;
-  margin-right: -1px;
+  margin-right: -1px
 }
+
 
 .removeLink {
   text-decoration: none;
   font-size: 12px;
   padding: 11px;
-  color: var(--error-text-color);
+  color: var(--error-text-color)
 }
 .removeLink:hover {
   background-color: var(--light-background-color);
 }
 
+
 .folder-box {
   margin: 0 0 0;
 }
+
+
 
 .photo-holder {
   width: 30px;
   height: 30px;
   display: inline-block;
-  margin: 0 16px 0 0;
-  color: #a5a5a5;
+  margin: 0 16px 0 0;color: #a5a5a5
 }
+
 
 .photo-holder.plus {
   border: 1px solid;
@@ -298,8 +314,9 @@ span.file {
   margin: 5px 18px 0 2px;
   height: 19px;
   border-radius: 2px;
-  line-height: 0.98;
+  line-height: 0.98
 }
+
 
 ::-webkit-input-placeholder {
   /* WebKit, Blink, Edge */
@@ -332,6 +349,7 @@ span.file {
   /* Most modern browsers support this now. */
   color: #ccc;
 }
+
 
 /* 
 .status {
@@ -366,42 +384,36 @@ span.file {
   animation: bounce 1.4s infinite ease-in-out both;
 } */
 
+
 @-webkit-keyframes bounce {
-  0%,
-  40%,
-  100% {
+  0%, 40%, 100% { 
     -webkit-transform: scale(0.8);
     transform: scale(0.8);
-  }
-  70% {
+  } 70% { 
     -webkit-transform: scale(0.3);
     transform: scale(0.3);
   }
 }
 
 @keyframes bounce {
-  0%,
-  40%,
-  100% {
+  0%, 40%, 100% { 
     -webkit-transform: scale(0.8);
     transform: scale(0.8);
-  }
-  70% {
+  } 70% { 
     -webkit-transform: scale(0.3);
     transform: scale(0.3);
   }
 }
 
+
 /* Paragraph tag containing form error messages */
-.error,
-.success {
+.error, .success {
   display: block;
   margin-bottom: 2rem;
   padding: 12px 18px;
 }
 
-.error:empty,
-.success:empty {
+.error:empty, .success:empty {
   display: none;
 }
 
@@ -414,3 +426,5 @@ span.file {
   color: var(--success-text-color);
   background: var(--success-background-color);
 }
+
+

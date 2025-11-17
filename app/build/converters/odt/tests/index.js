@@ -4,9 +4,9 @@ const fs = require("fs-extra");
 describe("odt converter", function () {
   global.test.blog();
 
-  const tests = fs.readdirSync(__dirname).filter((i) => i.slice(-4) === ".odt");
+  const tests = fs.readdirSync(__dirname).filter(i => i.slice(-4) === ".odt");
 
-  tests.forEach((name) => {
+  tests.forEach(name => {
     it("converts odt with " + name, function (done) {
       const test = this;
       const path = "/" + name;

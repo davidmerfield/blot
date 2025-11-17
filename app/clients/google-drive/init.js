@@ -42,7 +42,7 @@ const main = async (initial = false) => {
       console.log(prefix(), "Service account is running successfully");
     } catch (e) {
       console.error(
-        "Google Drive client: error with configuration of serviceAccount",
+        "Google Drive client: error with configuration of serviceAccount"
       );
       console.error(e);
     }

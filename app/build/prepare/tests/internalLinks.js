@@ -8,9 +8,9 @@ describe("internalLinks", function () {
         html,
         {
           decodeEntities: false,
-          withDomLvl1: false, // this may cause issues?
+          withDomLvl1: false // this may cause issues?
         },
-        false,
+        false
       );
 
       return internalLinks($);

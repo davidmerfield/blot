@@ -43,24 +43,26 @@ describe("Dashboard account deletion refunds", function () {
 
     const stripeClient = {
       invoices: {
-        list: jasmine.createSpy("list").and.returnValue(
-          Promise.resolve({
-            data: [
-              {
-                id: "in_123",
-                paid: true,
-                charge: "ch_123",
-                created,
-              },
-            ],
-          }),
-        ),
+        list: jasmine
+          .createSpy("list")
+          .and.returnValue(
+            Promise.resolve({
+              data: [
+                {
+                  id: "in_123",
+                  paid: true,
+                  charge: "ch_123",
+                  created,
+                },
+              ],
+            })
+          ),
       },
       refunds: {
         create: jasmine
           .createSpy("create")
           .and.returnValue(
-            Promise.resolve({ id: "re_123", amount: 1200, currency: "usd" }),
+            Promise.resolve({ id: "re_123", amount: 1200, currency: "usd" })
           ),
       },
       customers: {
@@ -95,7 +97,7 @@ describe("Dashboard account deletion refunds", function () {
         amount: 1200,
         currency: "USD",
         amountPretty: prettyPrice(1200),
-      }),
+      })
     );
   });
 
@@ -109,12 +111,7 @@ describe("Dashboard account deletion refunds", function () {
         list: jasmine.createSpy("list").and.returnValue(
           Promise.resolve({
             data: [
-              {
-                id: "in_old",
-                paid: true,
-                charge: "ch_old",
-                created: oldCreated,
-              },
+              { id: "in_old", paid: true, charge: "ch_old", created: oldCreated },
               {
                 id: "in_recent",
                 paid: true,
@@ -122,14 +119,14 @@ describe("Dashboard account deletion refunds", function () {
                 created: recentCreated,
               },
             ],
-          }),
+          })
         ),
       },
       refunds: {
         create: jasmine
           .createSpy("create")
           .and.returnValue(
-            Promise.resolve({ id: "re_recent", amount: 500, currency: "usd" }),
+            Promise.resolve({ id: "re_recent", amount: 500, currency: "usd" })
           ),
       },
       customers: { del: jasmine.createSpy("del") },
@@ -157,7 +154,7 @@ describe("Dashboard account deletion refunds", function () {
         provider: "stripe",
         invoice: "in_recent",
         charge: "ch_recent",
-      }),
+      })
     );
   });
 
@@ -193,9 +190,7 @@ describe("Dashboard account deletion refunds", function () {
   });
 
   it("issues a PayPal refund within the first 30 days", async function () {
-    const startTime = new Date(
-      Date.now() - 5 * 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const startTime = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
     const expectedAuth = `Basic ${Buffer.from("client:secret").toString("base64")}`;
 
     const transactionsData = {
@@ -216,22 +211,20 @@ describe("Dashboard account deletion refunds", function () {
       amount: { value: "12.00", currency_code: "USD" },
     };
 
-    const fetchSpy = jasmine
-      .createSpy("fetch")
-      .and.callFake((url, options = {}) => {
-        if (url.includes("/transactions")) {
-          expect(options.headers.Authorization).toBe(expectedAuth);
-          return Promise.resolve(mockResponse(200, transactionsData));
-        }
+    const fetchSpy = jasmine.createSpy("fetch").and.callFake((url, options = {}) => {
+      if (url.includes("/transactions")) {
+        expect(options.headers.Authorization).toBe(expectedAuth);
+        return Promise.resolve(mockResponse(200, transactionsData));
+      }
 
-        if (url.includes("/refund")) {
-          expect(options.method).toBe("POST");
-          expect(options.headers.Authorization).toBe(expectedAuth);
-          return Promise.resolve(mockResponse(201, refundData));
-        }
+      if (url.includes("/refund")) {
+        expect(options.method).toBe("POST");
+        expect(options.headers.Authorization).toBe(expectedAuth);
+        return Promise.resolve(mockResponse(201, refundData));
+      }
 
-        return Promise.reject(new Error(`Unexpected URL ${url}`));
-      });
+      return Promise.reject(new Error(`Unexpected URL ${url}`));
+    });
 
     global.fetch = fetchSpy;
 
@@ -253,14 +246,12 @@ describe("Dashboard account deletion refunds", function () {
         amount: 1200,
         currency: "USD",
         amountPretty: prettyPrice(1200),
-      }),
+      })
     );
   });
 
   it("skips PayPal refunds outside the first month", async function () {
-    const startTime = new Date(
-      Date.now() - 45 * 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const startTime = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
 
     const fetchSpy = jasmine.createSpy("fetch");
     global.fetch = fetchSpy;
@@ -289,14 +280,16 @@ describe("Dashboard account deletion refunds", function () {
       invoices: {
         list: jasmine.createSpy("list").and.returnValue(
           Promise.resolve({
-            data: [{ id: "in_987", paid: true, charge: "ch_987", created }],
-          }),
+            data: [
+              { id: "in_987", paid: true, charge: "ch_987", created },
+            ],
+          })
         ),
       },
       refunds: {
-        create: jasmine
-          .createSpy("create")
-          .and.returnValue(Promise.reject(stripeError)),
+        create: jasmine.createSpy("create").and.returnValue(
+          Promise.reject(stripeError)
+        ),
       },
       customers: { del: jasmine.createSpy("del") },
     };
@@ -321,7 +314,7 @@ describe("Dashboard account deletion refunds", function () {
         providerPretty: "Stripe",
         skipped: true,
         error: jasmine.stringMatching(/already refunded/i),
-      }),
+      })
     );
   });
 
@@ -333,14 +326,16 @@ describe("Dashboard account deletion refunds", function () {
       invoices: {
         list: jasmine.createSpy("list").and.returnValue(
           Promise.resolve({
-            data: [{ id: "in_777", paid: true, charge: "ch_777", created }],
-          }),
+            data: [
+              { id: "in_777", paid: true, charge: "ch_777", created },
+            ],
+          })
         ),
       },
       refunds: {
-        create: jasmine
-          .createSpy("create")
-          .and.returnValue(Promise.reject(new Error("Stripe outage"))),
+        create: jasmine.createSpy("create").and.returnValue(
+          Promise.reject(new Error("Stripe outage"))
+        ),
       },
       customers: { del: jasmine.createSpy("del") },
     };
@@ -363,14 +358,12 @@ describe("Dashboard account deletion refunds", function () {
         provider: "stripe",
         skipped: true,
         error: jasmine.stringMatching(/stripe outage/i),
-      }),
+      })
     );
   });
 
   it("continues when PayPal reports a refund has already happened", async function () {
-    const startTime = new Date(
-      Date.now() - 2 * 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const startTime = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
     const expectedAuth = `Basic ${Buffer.from("client:secret").toString("base64")}`;
 
     const transactionsData = {
@@ -395,21 +388,19 @@ describe("Dashboard account deletion refunds", function () {
       message: "Refund has already been completed for this capture.",
     };
 
-    const fetchSpy = jasmine
-      .createSpy("fetch")
-      .and.callFake((url, options = {}) => {
-        if (url.includes("/transactions")) {
-          expect(options.headers.Authorization).toBe(expectedAuth);
-          return Promise.resolve(mockResponse(200, transactionsData));
-        }
+    const fetchSpy = jasmine.createSpy("fetch").and.callFake((url, options = {}) => {
+      if (url.includes("/transactions")) {
+        expect(options.headers.Authorization).toBe(expectedAuth);
+        return Promise.resolve(mockResponse(200, transactionsData));
+      }
 
-        if (url.includes("/refund")) {
-          expect(options.method).toBe("POST");
-          return Promise.resolve(mockResponse(422, refundError));
-        }
+      if (url.includes("/refund")) {
+        expect(options.method).toBe("POST");
+        return Promise.resolve(mockResponse(422, refundError));
+      }
 
-        return Promise.reject(new Error(`Unexpected URL ${url}`));
-      });
+      return Promise.reject(new Error(`Unexpected URL ${url}`));
+    });
 
     global.fetch = fetchSpy;
 
@@ -430,14 +421,12 @@ describe("Dashboard account deletion refunds", function () {
         providerPretty: "PayPal",
         skipped: true,
         error: jasmine.stringMatching(/already/i),
-      }),
+      })
     );
   });
 
   it("continues when PayPal refunds fail unexpectedly", async function () {
-    const startTime = new Date(
-      Date.now() - 3 * 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const startTime = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     const expectedAuth = `Basic ${Buffer.from("client:secret").toString("base64")}`;
 
     const transactionsData = {
@@ -455,19 +444,17 @@ describe("Dashboard account deletion refunds", function () {
 
     const refundError = { name: "INTERNAL_SERVER_ERROR", message: "boom" };
 
-    const fetchSpy = jasmine
-      .createSpy("fetch")
-      .and.callFake((url, options = {}) => {
-        if (url.includes("/transactions")) {
-          return Promise.resolve(mockResponse(200, transactionsData));
-        }
+    const fetchSpy = jasmine.createSpy("fetch").and.callFake((url, options = {}) => {
+      if (url.includes("/transactions")) {
+        return Promise.resolve(mockResponse(200, transactionsData));
+      }
 
-        if (url.includes("/refund")) {
-          return Promise.resolve(mockResponse(500, refundError));
-        }
+      if (url.includes("/refund")) {
+        return Promise.resolve(mockResponse(500, refundError));
+      }
 
-        return Promise.reject(new Error(`Unexpected URL ${url}`));
-      });
+      return Promise.reject(new Error(`Unexpected URL ${url}`));
+    });
 
     global.fetch = fetchSpy;
 
@@ -487,7 +474,7 @@ describe("Dashboard account deletion refunds", function () {
         provider: "paypal",
         skipped: true,
         error: jasmine.stringMatching(/boom/i),
-      }),
+      })
     );
   });
 
@@ -500,8 +487,8 @@ describe("Dashboard account deletion refunds", function () {
       currency: "USD",
     };
 
-    spyOn(Email, "ACCOUNT_DELETION_REFUND").and.callFake(
-      (uid, locals, callback) => callback(),
+    spyOn(Email, "ACCOUNT_DELETION_REFUND").and.callFake((uid, locals, callback) =>
+      callback()
     );
     spyOn(Email, "DELETED").and.callFake((uid, locals, callback) => callback());
 
@@ -515,7 +502,7 @@ describe("Dashboard account deletion refunds", function () {
       expect(Email.ACCOUNT_DELETION_REFUND).toHaveBeenCalledWith(
         "",
         jasmine.objectContaining({ refund, email: "user@example.com" }),
-        jasmine.any(Function),
+        jasmine.any(Function)
       );
       expect(Email.DELETED).not.toHaveBeenCalled();
       done();

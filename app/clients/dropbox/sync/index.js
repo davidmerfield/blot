@@ -35,7 +35,7 @@ module.exports = function main(blog, callback) {
           { error_code: err.status || 400 },
           function (err) {
             done(err, callback);
-          },
+          }
         );
       }
 
@@ -60,7 +60,7 @@ module.exports = function main(blog, callback) {
             { error_code: err.status || 400 },
             function (err) {
               done(err, callback);
-            },
+            }
           );
         }
 
@@ -78,7 +78,7 @@ module.exports = function main(blog, callback) {
               { error_code: err.status || 400 },
               function (err) {
                 done(err, callback);
-              },
+              }
             );
           }
           // we have successfully applied this batch of changes
@@ -118,12 +118,15 @@ module.exports = function main(blog, callback) {
                 // file can be computed nicely, along with the display path, which also
                 // has case-preserved, for things like extracting tags from tag folders.
                 folder.log(item.relative_path, "Updating path");
-                folder.update(item.relative_path, function (err) {
-                  // We don't want an error here to block other
-                  // changes from being applied.
-                  if (err) console.log("Dropbox client:", err);
-                  next();
-                });
+                folder.update(
+                  item.relative_path,
+                  function (err) {
+                    // We don't want an error here to block other
+                    // changes from being applied.
+                    if (err) console.log("Dropbox client:", err);
+                    next();
+                  }
+                );
               },
               function () {
                 // If Dropbox says there are more changes
@@ -155,7 +158,7 @@ module.exports = function main(blog, callback) {
 
                 folder.log("Folder in sync with Dropbox");
                 done(null, callback);
-              },
+              }
             );
           });
         });
@@ -239,8 +242,7 @@ function Apply(client, blogFolder, log, status) {
     // relative path to an item, since the root of the
     // Dropbox folder might not be the root of the blog.
     function download(item, callback) {
-      var pathForUnsupportedCheck =
-        item.path_display || item.relative_path || "";
+      var pathForUnsupportedCheck = item.path_display || item.relative_path || "";
 
       if (hasUnsupportedExtension(pathForUnsupportedCheck)) {
         var unsupportedMessage =
@@ -256,13 +258,13 @@ function Apply(client, blogFolder, log, status) {
               log(
                 item.relative_path,
                 "Error creating placeholder for unsupported file",
-                err,
+                err
               );
               status("Error creating placeholder " + item.relative_path);
             }
 
             callback();
-          },
+          }
         );
       }
 
@@ -284,61 +286,61 @@ function Apply(client, blogFolder, log, status) {
               log(
                 item.relative_path,
                 "Error creating placeholder for oversized file",
-                err,
+                err
               );
               status("Error creating placeholder " + item.relative_path);
             }
 
             callback();
-          },
+          }
         );
       }
 
       log(item.relative_path, "Hashing any existing file contents");
       status("Downloading " + item.relative_path);
 
-      hashFile(
-        join(blogFolder, item.relative_path),
-        function (err, content_hash) {
-          if (item.content_hash && item.content_hash === content_hash) {
-            log(item.relative_path, "Hash matches, don't download");
-            return callback();
+      hashFile(join(blogFolder, item.relative_path), function (
+        err,
+        content_hash
+      ) {
+        if (item.content_hash && item.content_hash === content_hash) {
+          log(item.relative_path, "Hash matches, don't download");
+          return callback();
+        }
+
+        log(
+          item.relative_path,
+          "Hash does not match, downloading from Dropbox"
+        );
+        Download(
+          client,
+          item.path_display,
+          join(blogFolder, item.relative_path),
+          function (err) {
+            if (err) {
+              log(item.relative_path, "Error downloading from dropbox", err);
+              status("Error downloading " + item.relative_path);
+            } else {
+              log(item.relative_path, "Downloaded to folder successfully");
+            }
+            // Swallow the error that occur when the user has forbidden content
+            // in their folder. We should surface this eventually. You can test
+            // this error using the file in tests/files/will_flag_restricted_content.png
+            // Warning: this looks like a more generic error!
+            if (
+              err &&
+              err.statusCode === 409 &&
+              err.statusMessage === "Conflict"
+            ) {
+              return callback();
+            }
+
+            // Swallow errors generally so we can proceed to next file
+            // we might want to mark an error somehow
+            callback();
           }
-
-          log(
-            item.relative_path,
-            "Hash does not match, downloading from Dropbox",
-          );
-          Download(
-            client,
-            item.path_display,
-            join(blogFolder, item.relative_path),
-            function (err) {
-              if (err) {
-                log(item.relative_path, "Error downloading from dropbox", err);
-                status("Error downloading " + item.relative_path);
-              } else {
-                log(item.relative_path, "Downloaded to folder successfully");
-              }
-              // Swallow the error that occur when the user has forbidden content
-              // in their folder. We should surface this eventually. You can test
-              // this error using the file in tests/files/will_flag_restricted_content.png
-              // Warning: this looks like a more generic error!
-              if (
-                err &&
-                err.statusCode === 409 &&
-                err.statusMessage === "Conflict"
-              ) {
-                return callback();
-              }
-
-              // Swallow errors generally so we can proceed to next file
-              // we might want to mark an error somehow
-              callback();
-            },
-          );
-        },
-      );
+        );
+      });
     }
 
     debug("Deleted:", deleted);
@@ -351,7 +353,7 @@ function Apply(client, blogFolder, log, status) {
         async.apply(async.eachSeries, folders, mkdir),
         async.apply(async.eachSeries, files, download),
       ],
-      callback,
+      callback
     );
   };
 }

@@ -9,7 +9,7 @@ module.exports = (req, res) => {
     // add the headers to download the file
     res.setHeader(
       "Content-disposition",
-      "attachment; filename=" + encodeURIComponent(filename),
+      "attachment; filename=" + encodeURIComponent(filename)
     );
 
     res.sendFile(local);

@@ -37,7 +37,7 @@ describe("multiple blogs", function () {
             done(null, next);
           });
         },
-        testDone,
+        testDone
       );
     });
   });

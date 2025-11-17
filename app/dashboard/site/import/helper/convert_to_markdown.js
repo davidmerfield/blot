@@ -11,12 +11,12 @@ turndown.escape = function (html) {
   return html;
 };
 
-turndown.keep(["audio", "video", "iframe"]);
+turndown.keep(['audio', 'video', 'iframe']);
 
 module.exports = function (post, callback) {
   if (post.html && post.content === undefined) {
     post.content = turndown.turndown(post.html).trim();
-  }
+  } 
 
   return callback(null, post);
 };

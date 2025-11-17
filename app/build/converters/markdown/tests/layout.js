@@ -40,7 +40,7 @@ describe("layout", function () {
         "A line",
         "{||||} This",
         "{||||} This is dope",
-        "Another line",
+        "Another line"
       );
 
       var ao = m(
@@ -56,7 +56,7 @@ describe("layout", function () {
         "This is dope",
         "</div>",
         '<div class="clear"></div>',
-        "Another line",
+        "Another line"
       );
 
       testLayout(ai, ao);
@@ -68,7 +68,7 @@ describe("layout", function () {
         "A line",
         '<div class="left margin">',
         "This",
-        "</div>",
+        "</div>"
       );
 
       testLayout(bi, bo);
@@ -82,7 +82,7 @@ describe("layout", function () {
         "{<>} Wide shit here!",
         "     more wide shit!",
         "         Indented wide shit that will not be preserved :(",
-        "A final line to ignore.",
+        "A final line to ignore."
       );
 
       var co = m(
@@ -98,7 +98,7 @@ describe("layout", function () {
         "more wide shit!",
         "Indented wide shit that will not be preserved :(",
         "</div>",
-        "A final line to ignore.",
+        "A final line to ignore."
       );
 
       testLayout(ci, co);

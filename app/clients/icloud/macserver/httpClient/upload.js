@@ -24,7 +24,7 @@ module.exports = async (blogID, path) => {
   const filePath = join(iCloudDriveDirectory, blogID, path);
 
   console.log(clfdate(), `Preparing to upload file: ${filePath}`);
-
+  
   // Download and check file
   let stat;
   try {
@@ -55,10 +55,7 @@ module.exports = async (blogID, path) => {
 
   const pathBase64 = Buffer.from(path).toString("base64");
 
-  console.log(
-    clfdate(),
-    `Issuing HTTP /upload request to remote server: ${path}`,
-  );
+  console.log(clfdate(), `Issuing HTTP /upload request to remote server: ${path}`);
 
   const response = await fetch(`${remoteServer}/upload`, {
     // we use a larger timeout for uploads since they involve building a potentially expensive entry
@@ -76,7 +73,9 @@ module.exports = async (blogID, path) => {
   });
 
   if (!response.ok) {
-    throw new Error(`Upload failed: ${response.status}`);
+    throw new Error(
+      `Upload failed: ${response.status}`
+    );
   }
 
   const text = await response.text();

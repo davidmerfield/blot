@@ -32,7 +32,7 @@ function err(variable, expected) {
       '"' + type(variable) + '"',
       "and should be type",
       '"' + expected + '"',
-    ].join(" "),
+    ].join(" ")
   );
 }
 

@@ -44,15 +44,15 @@ function main(string, callback) {
                 next(new Error("No handlers for strings of type: " + type));
               }
             },
-            callback,
+            callback
           );
-        },
+        }
       );
     },
     function (err) {
       if (err) return callback(err);
       callback(null, result);
-    },
+    }
   );
 }
 
@@ -69,7 +69,7 @@ function stringSearch(string, keys, result, callback) {
         next();
       });
     },
-    callback,
+    callback
   );
 }
 
@@ -90,7 +90,7 @@ function listSearch(string, keys, result, callback) {
         next();
       });
     },
-    callback,
+    callback
   );
 }
 
@@ -116,7 +116,7 @@ function hashSearch(string, keys, result, callback) {
         next();
       });
     },
-    callback,
+    callback
   );
 }
 
@@ -136,7 +136,7 @@ function setSearch(string, keys, result, callback) {
         next();
       });
     },
-    callback,
+    callback
   );
 }
 
@@ -156,7 +156,7 @@ function sortedSetSearch(string, keys, result, callback) {
         next();
       });
     },
-    callback,
+    callback
   );
 }
 

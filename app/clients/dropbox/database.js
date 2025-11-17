@@ -42,7 +42,7 @@ function listBlogs(account_id, callback) {
           } else {
             debug(
               id,
-              "does not match an extant blog using the Dropbox client.",
+              "does not match an extant blog using the Dropbox client."
             );
           }
           next();
@@ -50,7 +50,7 @@ function listBlogs(account_id, callback) {
       },
       function (err) {
         callback(err, blogs);
-      },
+      }
     );
   });
 }

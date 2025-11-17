@@ -10,6 +10,6 @@ module.exports = function (user, callback) {
   stripe.customers.update(
     user.subscription.customer,
     { email: user.email },
-    callback,
+    callback
   );
 };

@@ -1,12 +1,12 @@
 const fetch = require("node-fetch");
 const PAGE_SIZE = 100;
 
-module.exports = async function posts({ slug, status }) {
+module.exports = async function posts ({ slug, status }) {
   let page = 0;
   let posts = [];
   let new_posts;
 
-  async function fetchPage(page) {
+  async function fetchPage (page) {
     const url = base(slug, page);
     status(`Fetching page ${page + 1} of channel`);
     const response = await fetch(url);
@@ -30,6 +30,6 @@ module.exports = async function posts({ slug, status }) {
   return posts;
 };
 
-function base(slug, page) {
+function base (slug, page) {
   return `https://api.are.na/v2/channels/${slug}/contents?direction=desc&sort=position&per=${PAGE_SIZE}&channel_slug=${slug}&page=${page}`;
 }

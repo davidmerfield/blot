@@ -31,7 +31,7 @@ module.exports = async (blogID, publish, update) => {
     for (const { name } of localContents) {
       if (
         !remoteContents.find(
-          (item) => item.name.normalize("NFC") === name.normalize("NFC"),
+          (item) => item.name.normalize("NFC") === name.normalize("NFC")
         )
       ) {
         const path = join(dir, name);
@@ -45,7 +45,7 @@ module.exports = async (blogID, publish, update) => {
     for (const { name, size, isDirectory } of remoteContents) {
       const path = join(dir, name);
       const existsLocally = localContents.find(
-        (item) => item.name.normalize("NFC") === name.normalize("NFC"),
+        (item) => item.name.normalize("NFC") === name.normalize("NFC")
       );
 
       if (isDirectory) {

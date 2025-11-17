@@ -33,13 +33,13 @@ module.exports = function (req, res, callback) {
         async.parallel(
           [
             function (done) {
-              fs.stat(
-                localPath(req.blog.id, fullPathToItem),
-                function (err, stat) {
-                  if (err) return done(err);
-                  done(null, { stat });
-                },
-              );
+              fs.stat(localPath(req.blog.id, fullPathToItem), function (
+                err,
+                stat
+              ) {
+                if (err) return done(err);
+                done(null, { stat });
+              });
             },
             function (done) {
               Entry.get(req.blog.id, fullPathToItem, function (entry) {
@@ -58,7 +58,7 @@ module.exports = function (req, res, callback) {
               entry: results[1].entry,
               updated: results[0].stat.mtime,
             });
-          },
+          }
         );
       },
       function (err, contents) {
@@ -68,7 +68,7 @@ module.exports = function (req, res, callback) {
           parent,
           parentURI: encodeURIComponent(parent),
         });
-      },
+      }
     );
   });
 };

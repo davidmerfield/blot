@@ -17,12 +17,12 @@ module.exports = function getStatuses(blogID, options, callback) {
   options.pageSize = options.pageSize === undefined ? 200 : options.pageSize;
 
   const unexpectedOptionParameters = Object.keys(options).filter(
-    (i) => i !== "page" && i !== "pageSize",
+    (i) => i !== "page" && i !== "pageSize"
   );
 
   if (unexpectedOptionParameters.length) {
     throw new TypeError(
-      `Invalid options: ${unexpectedOptionParameters} are not valid`,
+      `Invalid options: ${unexpectedOptionParameters} are not valid`
     );
   }
 
@@ -32,7 +32,7 @@ module.exports = function getStatuses(blogID, options, callback) {
 
   if (!Number.isInteger(options.pageSize) || options.pageSize < 1) {
     throw new TypeError(
-      'Invalid option: "pageSize" must be a positive integer',
+      'Invalid option: "pageSize" must be a positive integer'
     );
   }
 

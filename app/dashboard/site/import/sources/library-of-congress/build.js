@@ -13,7 +13,7 @@ const prepositions = [
   "found",
   "during",
   "from",
-  "where",
+  "where"
 ];
 
 module.exports = async (folder, item) => {
@@ -25,8 +25,8 @@ module.exports = async (folder, item) => {
     .replace(/\)/g, "\\)");
 
   const words = titleWithoutTextInParentheses
-    ? titleWithoutTextInParentheses.split(" ").map((w) => w.replace(/\//g, ""))
-    : item.title.split(" ").map((w) => w.replace(/\//g, ""));
+    ? titleWithoutTextInParentheses.split(" ").map(w => w.replace(/\//g, ""))
+    : item.title.split(" ").map(w => w.replace(/\//g, ""));
 
   // select the words to use in the slug
   // if there is 1 word, use it
@@ -63,11 +63,11 @@ module.exports = async (folder, item) => {
 
   const modifiedFileName = fs
     .readdirSync(`${cache_directory}/${item.id}`)
-    .find((i) => i.startsWith("modified."));
+    .find(i => i.startsWith("modified."));
 
   const masterFileName = fs
     .readdirSync(`${cache_directory}/${item.id}`)
-    .find((i) => i.startsWith("master."));
+    .find(i => i.startsWith("master."));
 
   const path = `${cache_directory}/${item.id}/${
     modifiedFileName || masterFileName
@@ -77,7 +77,7 @@ module.exports = async (folder, item) => {
   await sharp(path)
     .resize(2500, 2500, {
       fit: "inside",
-      withoutEnlargement: true,
+      withoutEnlargement: true
     })
     .toFile(previewPath);
 
@@ -93,6 +93,6 @@ ${item.summary}
 
 Medium: ${item.medium}
 
-Source: ${item.source}`,
+Source: ${item.source}`
   );
 };

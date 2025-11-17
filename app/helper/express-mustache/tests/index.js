@@ -25,7 +25,7 @@ describe("express-mustache", function () {
 
     const addAnchor = ($) => {
       $("h1").each((i, node) =>
-        $(node).html(`<a href="#${$(node).attr("id")}"></a>${$(node).html()}`),
+        $(node).html(`<a href="#${$(node).attr("id")}"></a>${$(node).html()}`)
       );
       return $;
     };
@@ -45,7 +45,7 @@ describe("express-mustache", function () {
     await listen();
 
     expect(await fetch("/")).toEqual(
-      `<h1 id="hello"><a href="#hello" rel="nofollow"></a>Hello</h1>`,
+      `<h1 id="hello"><a href="#hello" rel="nofollow"></a>Hello</h1>`
     );
   });
 

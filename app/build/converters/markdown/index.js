@@ -12,15 +12,17 @@ var yaml = require("yaml");
 var extractBibAndCSL = require("./extractBibAndCSL");
 var linebreaks = require("./linebreaks");
 
-function is(path) {
+function is (path) {
   return (
     [".txt", ".text", ".md", ".markdown"].indexOf(extname(path).toLowerCase()) >
     -1
   );
 }
 
-function read(blog, path, callback) {
-  ensure(blog, "object").and(path, "string").and(callback, "function");
+function read (blog, path, callback) {
+  ensure(blog, "object")
+    .and(path, "string")
+    .and(callback, "function");
 
   var localPath = LocalPath(blog.id, path);
 
@@ -68,14 +70,14 @@ function read(blog, path, callback) {
 
         let options = {
           bib,
-          csl,
+          csl
         };
 
         convert(blog, text, options, function (err, html) {
           if (err) return callback(err);
 
           if (Object.keys(parsed.metadata).length > 0) {
-            html = "---\n" + yaml.stringify(parsed.metadata) + "---\n" + html;
+            html = '---\n' + yaml.stringify(parsed.metadata) + '---\n' + html;
           }
 
           callback(null, html, stat);
@@ -85,4 +87,4 @@ function read(blog, path, callback) {
   });
 }
 
-module.exports = { read: read, is: is, id: "markdown" };
+module.exports = { read: read, is: is, id: "markdown"};

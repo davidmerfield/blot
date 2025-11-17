@@ -65,7 +65,7 @@ module.exports = function main(blogID, options, callback) {
           const directory = join(
             blog_static_files_dir,
             blog.id,
-            "_image_cache",
+            "_image_cache"
           );
           await wipeCache({ blogID: blog.id, label: "image-cache", directory });
         }
@@ -85,7 +85,7 @@ module.exports = function main(blogID, options, callback) {
         () => {
           // todo: don't swallow error here
           callback();
-        },
+        }
       );
     });
   });

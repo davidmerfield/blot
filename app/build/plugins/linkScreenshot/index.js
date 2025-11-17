@@ -21,7 +21,7 @@ function render($, callback, { blogID, path }) {
   const pathToScreenshot = join(blogID, SCREENSHOT_DIR, uuid() + ".png");
   const localPathToScreenshot = join(
     config.blog_static_files_dir,
-    pathToScreenshot,
+    pathToScreenshot
   );
 
   const src = config.cdn.origin + "/" + pathToScreenshot;
@@ -54,12 +54,12 @@ function render($, callback, { blogID, path }) {
           <img width="${SCREENSHOT_WIDTH}" height="${SCREENSHOT_HEIGHT}" src="${src}" title="Screenshot of ${caption}" />
         </a>
         <a class="bookmark" href="${href}">${caption}</a>
-       </p>`,
+       </p>`
       );
 
       console.log(prefix(), "Valid screenshot", href, src);
       return callback();
-    },
+    }
   );
 }
 

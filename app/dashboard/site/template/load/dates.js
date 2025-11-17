@@ -9,7 +9,7 @@ var displays = [
   "MMMM D, Y [at] h:mma",
   "D MMMM Y",
   "Y-MM-DD",
-  "Y-MM-DD HH:mm",
+  "Y-MM-DD HH:mm"
 ];
 
 module.exports = function (req, res, next) {
@@ -25,7 +25,7 @@ module.exports = function (req, res, next) {
       displayFormats.push({
         value: display,
         selected: display === date_display ? "selected" : "",
-        date: now,
+        date: now
       });
     });
 

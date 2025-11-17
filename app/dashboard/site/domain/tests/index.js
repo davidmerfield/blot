@@ -34,7 +34,7 @@ describe("domain verifier", function () {
     spyOn(dns, "Resolver").and.returnValue(resolver);
     spyOn(dns, "resolveNs").and.returnValue(Promise.resolve([]));
     spyOn(dns, "lookup").and.returnValue(
-      Promise.resolve([{ address: "203.0.113.1", family: 4 }]),
+      Promise.resolve([{ address: "203.0.113.1", family: 4 }])
     );
 
     resolver.resolve6.and.returnValue(Promise.resolve([]));
@@ -67,12 +67,12 @@ describe("domain verifier", function () {
     const handle = "example";
 
     resolver.resolveCname.and.returnValue(
-      Promise.reject(new Error("ENOTFOUND")),
+      Promise.reject(new Error("ENOTFOUND"))
     );
     resolver.resolve4.and.returnValue(Promise.resolve([ourIP]));
     resolver.resolve6.and.returnValue(Promise.resolve([]));
     dns.resolveNs.and.returnValue(
-      Promise.resolve(["ns1.correct.com", "ns2.correct.com"]),
+      Promise.resolve(["ns1.correct.com", "ns2.correct.com"])
     );
 
     const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
@@ -84,12 +84,12 @@ describe("domain verifier", function () {
     const handle = "example";
 
     resolver.resolveCname.and.returnValue(
-      Promise.reject(new Error("ENOTFOUND")),
+      Promise.reject(new Error("ENOTFOUND"))
     );
     resolver.resolve4.and.returnValue(Promise.resolve([ourIP, "1.2.3.4"]));
     resolver.resolve6.and.returnValue(Promise.resolve([]));
     dns.resolveNs.and.returnValue(
-      Promise.resolve(["ns1.multiple.com", "ns2.multiple.com"]),
+      Promise.resolve(["ns1.multiple.com", "ns2.multiple.com"])
     );
 
     try {
@@ -107,14 +107,14 @@ describe("domain verifier", function () {
     const handle = "example";
 
     resolver.resolveCname.and.returnValue(
-      Promise.reject(new Error("ENOTFOUND")),
+      Promise.reject(new Error("ENOTFOUND"))
     );
     resolver.resolve4.and.returnValue(Promise.resolve([ourIP]));
     resolver.resolve6.and.returnValue(
-      Promise.resolve(["2001:db8::dead", "2001:db8::beef"]),
+      Promise.resolve(["2001:db8::dead", "2001:db8::beef"])
     );
     dns.resolveNs.and.returnValue(
-      Promise.resolve(["ns1.stray.com", "ns2.stray.com"]),
+      Promise.resolve(["ns1.stray.com", "ns2.stray.com"])
     );
 
     try {
@@ -122,7 +122,10 @@ describe("domain verifier", function () {
       throw new Error("expected an error");
     } catch (e) {
       expect(e.message).toBe("MULTIPLE_ADDRESS_BUT_ONE_IS_CORRECT");
-      expect(e.recordToRemove).toEqual(["2001:db8::dead", "2001:db8::beef"]);
+      expect(e.recordToRemove).toEqual([
+        "2001:db8::dead",
+        "2001:db8::beef",
+      ]);
       expect(e.nameservers).toEqual(["ns1.stray.com", "ns2.stray.com"]);
     }
   });
@@ -132,14 +135,14 @@ describe("domain verifier", function () {
     const handle = "example";
 
     resolver.resolveCname.and.returnValue(
-      Promise.reject(new Error("ENOTFOUND")),
+      Promise.reject(new Error("ENOTFOUND"))
     );
     resolver.resolve4.and.returnValue(Promise.resolve([ourIP, "192.0.2.10"]));
     resolver.resolve6.and.returnValue(
-      Promise.resolve([ourIPv6, "2001:db8::bad"]),
+      Promise.resolve([ourIPv6, "2001:db8::bad"])
     );
     dns.resolveNs.and.returnValue(
-      Promise.resolve(["ns1.mixed.com", "ns2.mixed.com"]),
+      Promise.resolve(["ns1.mixed.com", "ns2.mixed.com"])
     );
 
     try {
@@ -157,12 +160,12 @@ describe("domain verifier", function () {
     const handle = "example";
 
     resolver.resolveCname.and.returnValue(
-      Promise.reject(new Error("ENOTFOUND")),
+      Promise.reject(new Error("ENOTFOUND"))
     );
     resolver.resolve4.and.returnValue(Promise.resolve([]));
     resolver.resolve6.and.returnValue(Promise.resolve([ourIPv6]));
     dns.resolveNs.and.returnValue(
-      Promise.resolve(["ns1.correctv6.com", "ns2.correctv6.com"]),
+      Promise.resolve(["ns1.correctv6.com", "ns2.correctv6.com"])
     );
 
     const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
@@ -174,12 +177,12 @@ describe("domain verifier", function () {
     const handle = "example";
 
     resolver.resolveCname.and.returnValue(
-      Promise.resolve(["incorrect.host.com"]),
+      Promise.resolve(["incorrect.host.com"])
     );
     resolver.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
     resolver.resolve6.and.returnValue(Promise.resolve([]));
     dns.resolveNs.and.returnValue(
-      Promise.resolve(["ns1.incorrect.com", "ns2.incorrect.com"]),
+      Promise.resolve(["ns1.incorrect.com", "ns2.incorrect.com"])
     );
 
     try {
@@ -196,12 +199,12 @@ describe("domain verifier", function () {
     const handle = "example";
 
     resolver.resolveCname.and.returnValue(
-      Promise.reject(new Error("ENOTFOUND")),
+      Promise.reject(new Error("ENOTFOUND"))
     );
     resolver.resolve4.and.returnValue(Promise.resolve(["1.2.3.4"]));
     resolver.resolve6.and.returnValue(Promise.resolve([]));
     dns.resolveNs.and.returnValue(
-      Promise.resolve(["ns1.correct.com", "ns2.correct.com"]),
+      Promise.resolve(["ns1.correct.com", "ns2.correct.com"])
     );
 
     nock(`http://1.2.3.4`)
@@ -217,12 +220,12 @@ describe("domain verifier", function () {
     const handle = "example";
 
     resolver.resolveCname.and.returnValue(
-      Promise.reject(new Error("ENOTFOUND")),
+      Promise.reject(new Error("ENOTFOUND"))
     );
     resolver.resolve4.and.returnValue(Promise.resolve(["1.2.3.4"]));
     resolver.resolve6.and.returnValue(Promise.resolve([]));
     dns.resolveNs.and.returnValue(
-      Promise.resolve(["ns1.incorrect.com", "ns2.incorrect.com"]),
+      Promise.resolve(["ns1.incorrect.com", "ns2.incorrect.com"])
     );
 
     nock(`http://1.2.3.4`)
@@ -245,12 +248,12 @@ describe("domain verifier", function () {
     const handle = "example";
 
     resolver.resolveCname.and.returnValue(
-      Promise.reject(new Error("ENOTFOUND")),
+      Promise.reject(new Error("ENOTFOUND"))
     );
     resolver.resolve4.and.returnValue(Promise.resolve(["1.2.3.4"]));
     resolver.resolve6.and.returnValue(Promise.resolve([]));
     dns.resolveNs.and.returnValue(
-      Promise.resolve(["ns1.request-fails.com", "ns2.request-fails.com"]),
+      Promise.resolve(["ns1.request-fails.com", "ns2.request-fails.com"])
     );
 
     nock(`http://1.2.3.4`)
@@ -270,29 +273,27 @@ describe("domain verifier", function () {
   });
 
   it("should timeout if the verification endpoint hangs", async () => {
-    const abortableFetch = jasmine
-      .createSpy("abortableFetch")
-      .and.callFake((url, options = {}) => {
-        const { signal } = options;
-        return new Promise((resolve, reject) => {
-          if (!signal) {
-            return;
-          }
+    const abortableFetch = jasmine.createSpy("abortableFetch").and.callFake((url, options = {}) => {
+      const { signal } = options;
+      return new Promise((resolve, reject) => {
+        if (!signal) {
+          return;
+        }
 
-          const handleAbort = () => {
-            const abortError = new Error("Aborted");
-            abortError.name = "AbortError";
-            reject(abortError);
-          };
+        const handleAbort = () => {
+          const abortError = new Error("Aborted");
+          abortError.name = "AbortError";
+          reject(abortError);
+        };
 
-          if (signal.aborted) {
-            handleAbort();
-            return;
-          }
+        if (signal.aborted) {
+          handleAbort();
+          return;
+        }
 
-          signal.addEventListener("abort", handleAbort, { once: true });
-        });
+        signal.addEventListener("abort", handleAbort, { once: true });
       });
+    });
 
     require.cache[fetchModulePath].exports = abortableFetch;
     delete require.cache[verifyPath];
@@ -302,12 +303,12 @@ describe("domain verifier", function () {
     const handle = "example";
 
     resolver.resolveCname.and.returnValue(
-      Promise.reject(new Error("ENOTFOUND")),
+      Promise.reject(new Error("ENOTFOUND"))
     );
     resolver.resolve4.and.returnValue(Promise.resolve(["1.2.3.4"]));
     resolver.resolve6.and.returnValue(Promise.resolve([]));
     dns.resolveNs.and.returnValue(
-      Promise.resolve(["ns1.timeout.com", "ns2.timeout.com"]),
+      Promise.resolve(["ns1.timeout.com", "ns2.timeout.com"])
     );
 
     spyOn(global, "setTimeout").and.callFake((fn, delay, ...args) => {
@@ -329,13 +330,13 @@ describe("domain verifier", function () {
     const start = Date.now();
 
     await expectAsync(
-      verify({ hostname, handle, ourIP, ourIPv6, ourHost }),
+      verify({ hostname, handle, ourIP, ourIPv6, ourHost })
     ).toBeRejectedWith(
       jasmine.objectContaining({
         message: "REQUEST_TIMEOUT",
         details: "Verification request timed out after 5 seconds.",
         nameservers: ["ns1.timeout.com", "ns2.timeout.com"],
-      }),
+      })
     );
 
     const elapsed = Date.now() - start;

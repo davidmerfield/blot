@@ -25,178 +25,173 @@
 
 // for every exception after the first, the exception should contain a property 'nameservers' that contains the nameserver addresses of the domain
 
-const dns = require("dns").promises;
-const fetch = require("node-fetch");
-const { parse } = require("tldts");
+const dns = require('dns').promises;
+const fetch = require('node-fetch');
+const { parse } = require('tldts');
 
 const VERIFICATION_TIMEOUT_MS = 5000;
 const VERIFICATION_TIMEOUT_SECONDS = VERIFICATION_TIMEOUT_MS / 1000;
-const VERIFICATION_TIMEOUT_LABEL = Number.isInteger(
-  VERIFICATION_TIMEOUT_SECONDS,
-)
-  ? `${VERIFICATION_TIMEOUT_SECONDS} seconds`
-  : `${VERIFICATION_TIMEOUT_SECONDS.toFixed(2)} seconds`;
+const VERIFICATION_TIMEOUT_LABEL = Number.isInteger(VERIFICATION_TIMEOUT_SECONDS)
+    ? `${VERIFICATION_TIMEOUT_SECONDS} seconds`
+    : `${VERIFICATION_TIMEOUT_SECONDS.toFixed(2)} seconds`;
 
 async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
-  const parsed = parse(hostname);
-  const apexDomain = parsed.domain;
+    
+    const parsed = parse(hostname);
+    const apexDomain = parsed.domain;
 
-  let nameservers = [];
+    let nameservers = [];
 
-  try {
-    nameservers = await dns.resolveNs(apexDomain);
-  } catch (err) {
-    const error = new Error("NO_NAMESERVERS");
-    error.nameservers = nameservers;
-    error.details = err && (err.code || err.message);
-    throw error;
-  }
-
-  if (nameservers.length === 0) {
-    const error = new Error("NO_NAMESERVERS");
-    error.nameservers = nameservers;
-    throw error;
-  }
-
-  const resolver = new dns.Resolver();
-  const fallbackNameservers = ["1.1.1.1", "8.8.8.8"];
-  const nameserverResolutionErrors = [];
-  const nameserverIPs = [];
-
-  for (const ns of nameservers) {
     try {
-      const records = await dns.lookup(ns, { all: true });
-      if (records.length === 0) {
-        nameserverResolutionErrors.push(`${ns}: NO_IP_ADDRESSES`);
-      }
-
-      for (const record of records) {
-        nameserverIPs.push(record.address);
-      }
+        nameservers = await dns.resolveNs(apexDomain);
     } catch (err) {
-      nameserverResolutionErrors.push(`${ns}: ${err.code || err.message}`);
-    }
-  }
-
-  const nameserverDetails = nameserverResolutionErrors.length
-    ? nameserverResolutionErrors.join(", ")
-    : null;
-  const noNameserverIPs = nameserverIPs.length === 0;
-
-  const attachNameserverDetails = (error) => {
-    if (nameserverDetails && !error.details) {
-      error.details = nameserverDetails;
-    } else if (noNameserverIPs && !error.details) {
-      error.details = "NO_NAMESERVER_IP_ADDRESSES";
+        const error = new Error('NO_NAMESERVERS');
+        error.nameservers = nameservers;
+        error.details = err && (err.code || err.message);
+        throw error;
     }
 
-    return error;
-  };
-
-  const resolverNameservers = Array.from(
-    new Set([...nameserverIPs, ...fallbackNameservers]),
-  );
-
-  resolver.setServers(resolverNameservers);
-
-  const [cnameHost, aRecordIPs, aaaaRecordIPs] = await Promise.all([
-    resolver
-      .resolveCname(hostname)
-      .then((cnames) => cnames[0] || null)
-      .catch(() => null),
-    resolver.resolve4(hostname).catch(() => []),
-    resolver.resolve6(hostname).catch(() => []),
-  ]);
-
-  if (cnameHost) {
-    if (cnameHost === ourHost) {
-      // CNAME matches our host, return success
-      return true;
-    } else {
-      const error = new Error("CNAME_RECORD_EXISTS_BUT_DOES_NOT_MATCH");
-      error.nameservers = nameservers;
-      throw attachNameserverDetails(error);
+    if (nameservers.length === 0) {
+        const error = new Error('NO_NAMESERVERS');
+        error.nameservers = nameservers;
+        throw error;
     }
-  }
 
-  const allAddressRecords = [...aRecordIPs, ...aaaaRecordIPs];
-  const correctAddresses = [ourIP, ourIPv6].filter(Boolean);
-  const isCorrectAddress = (value) => correctAddresses.includes(value);
-  const hasCorrectAddress =
-    correctAddresses.length > 0 && allAddressRecords.some(isCorrectAddress);
+    const resolver = new dns.Resolver();
+    const fallbackNameservers = ['1.1.1.1', '8.8.8.8'];
+    const nameserverResolutionErrors = [];
+    const nameserverIPs = [];
 
-  if (hasCorrectAddress) {
-    const incorrectRecords = Array.from(
-      new Set(allAddressRecords.filter((value) => !isCorrectAddress(value))),
+    for (const ns of nameservers) {
+        try {
+            const records = await dns.lookup(ns, { all: true });
+            if (records.length === 0) {
+                nameserverResolutionErrors.push(`${ns}: NO_IP_ADDRESSES`);
+            }
+
+            for (const record of records) {
+                nameserverIPs.push(record.address);
+            }
+        } catch (err) {
+            nameserverResolutionErrors.push(`${ns}: ${err.code || err.message}`);
+        }
+    }
+
+    const nameserverDetails = nameserverResolutionErrors.length
+        ? nameserverResolutionErrors.join(', ')
+        : null;
+    const noNameserverIPs = nameserverIPs.length === 0;
+
+    const attachNameserverDetails = (error) => {
+        if (nameserverDetails && !error.details) {
+            error.details = nameserverDetails;
+        } else if (noNameserverIPs && !error.details) {
+            error.details = 'NO_NAMESERVER_IP_ADDRESSES';
+        }
+
+        return error;
+    };
+
+    const resolverNameservers = Array.from(
+        new Set([...nameserverIPs, ...fallbackNameservers])
     );
 
-    if (incorrectRecords.length === 0) {
-      return true;
+    resolver.setServers(resolverNameservers);
+
+    const [cnameHost, aRecordIPs, aaaaRecordIPs] = await Promise.all([
+        resolver.resolveCname(hostname).then(cnames => cnames[0] || null).catch(() => null),
+        resolver.resolve4(hostname).catch(() => []),
+        resolver.resolve6(hostname).catch(() => [])
+    ]);
+
+    if (cnameHost) {
+        if (cnameHost === ourHost) {
+            // CNAME matches our host, return success
+            return true;
+        } else {
+            const error = new Error('CNAME_RECORD_EXISTS_BUT_DOES_NOT_MATCH');
+            error.nameservers = nameservers;
+            throw attachNameserverDetails(error);
+        }
     }
 
-    const error = new Error("MULTIPLE_ADDRESS_BUT_ONE_IS_CORRECT");
-    error.recordToRemove = incorrectRecords;
-    error.nameservers = nameservers;
-    throw attachNameserverDetails(error);
-  }
+    const allAddressRecords = [...aRecordIPs, ...aaaaRecordIPs];
+    const correctAddresses = [ourIP, ourIPv6].filter(Boolean);
+    const isCorrectAddress = (value) => correctAddresses.includes(value);
+    const hasCorrectAddress =
+        correctAddresses.length > 0 && allAddressRecords.some(isCorrectAddress);
 
-  if (aRecordIPs.length === 0) {
-    const error = new Error("NO_A_RECORD");
-    error.nameservers = nameservers;
-    throw attachNameserverDetails(error);
-  }
+    if (hasCorrectAddress) {
+        const incorrectRecords = Array.from(
+            new Set(allAddressRecords.filter((value) => !isCorrectAddress(value)))
+        );
 
-  let text;
+        if (incorrectRecords.length === 0) {
+            return true;
+        }
 
-  // Proceed with the verification using the resolved A record IP
-  const controller =
-    typeof AbortController !== "undefined" ? new AbortController() : null;
+        const error = new Error('MULTIPLE_ADDRESS_BUT_ONE_IS_CORRECT');
+        error.recordToRemove = incorrectRecords;
+        error.nameservers = nameservers;
+        throw attachNameserverDetails(error);
+    }
 
-  const timeout = controller
-    ? setTimeout(() => controller.abort(), VERIFICATION_TIMEOUT_MS)
-    : null;
+    if (aRecordIPs.length === 0) {
+        const error = new Error('NO_A_RECORD');
+        error.nameservers = nameservers;
+        throw attachNameserverDetails(error);
+    }
 
-  try {
-    const response = await fetch(
-      `http://${aRecordIPs[0]}/verify/domain-setup`,
-      {
-        headers: { Host: hostname },
-        ...(controller
-          ? { signal: controller.signal }
-          : { timeout: VERIFICATION_TIMEOUT_MS }),
-      },
-    );
+    let text;
 
-    text = await response.text();
-  } catch (err) {
-    const error = new Error("HANDLE_VERIFICATION_REQUEST_FAILED");
-    if (err.name === "AbortError" || err.type === "request-timeout") {
-      error.message = "REQUEST_TIMEOUT";
-      error.details = `Verification request timed out after ${VERIFICATION_TIMEOUT_LABEL}.`;
+    // Proceed with the verification using the resolved A record IP
+    const controller = typeof AbortController !== 'undefined'
+        ? new AbortController()
+        : null;
+
+    const timeout = controller
+        ? setTimeout(() => controller.abort(), VERIFICATION_TIMEOUT_MS)
+        : null;
+
+    try {
+        const response = await fetch(`http://${aRecordIPs[0]}/verify/domain-setup`, {
+            headers: { Host: hostname },
+            ...(controller
+                ? { signal: controller.signal }
+                : { timeout: VERIFICATION_TIMEOUT_MS })
+        });
+
+        text = await response.text();
+
+    } catch (err) {
+        const error = new Error('HANDLE_VERIFICATION_REQUEST_FAILED');
+        if (err.name === 'AbortError' || err.type === 'request-timeout') {
+            error.message = 'REQUEST_TIMEOUT';
+            error.details = `Verification request timed out after ${VERIFICATION_TIMEOUT_LABEL}.`;
+        } else {
+            error.message = err.message;
+            if (err.type && !error.details) {
+                error.details = err.type;
+            }
+        }
+        error.nameservers = nameservers;
+        throw attachNameserverDetails(error);
+    } finally {
+        if (timeout) {
+            clearTimeout(timeout);
+        }
+    }
+
+    // Verify the response text matches the handle
+    if (text === handle || text.includes('domain is almost set up')) {
+        return true;
     } else {
-      error.message = err.message;
-      if (err.type && !error.details) {
-        error.details = err.type;
-      }
+        const error = new Error('HANDLE_MISMATCH');
+        error.expected = handle;
+        error.received = text;
+        error.nameservers = nameservers;
+        throw attachNameserverDetails(error);
     }
-    error.nameservers = nameservers;
-    throw attachNameserverDetails(error);
-  } finally {
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-  }
-
-  // Verify the response text matches the handle
-  if (text === handle || text.includes("domain is almost set up")) {
-    return true;
-  } else {
-    const error = new Error("HANDLE_MISMATCH");
-    error.expected = handle;
-    error.received = text;
-    error.nameservers = nameservers;
-    throw attachNameserverDetails(error);
-  }
 }
 
 module.exports = validate;

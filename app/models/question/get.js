@@ -2,7 +2,7 @@ const client = require("models/client");
 const keys = require("./keys");
 const moment = require("moment");
 
-module.exports = (id) => {
+module.exports = id => {
   return new Promise((resolve, reject) => {
     client
       .batch()
@@ -18,7 +18,7 @@ module.exports = (id) => {
 
         const batch = client.batch();
 
-        reply_ids.forEach((reply_id) => {
+        reply_ids.forEach(reply_id => {
           batch.hgetall(keys.item(reply_id));
         });
 

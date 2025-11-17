@@ -2,7 +2,7 @@ var katex = require("katex");
 var OPEN_TAG = "\\(";
 var CLOSE_TAG = "\\)";
 
-module.exports = ($) => {
+module.exports = $ => {
   var hadTex = false;
 
   $(":root").each(function () {
@@ -12,19 +12,19 @@ module.exports = ($) => {
   // Inject stylesheet to render TeX
   if (hadTex) {
     $("head").append(
-      '<link rel="stylesheet" type="text/css" href="/css/tex.css">',
+      '<link rel="stylesheet" type="text/css" href="/css/tex.css">'
     );
   }
 
   // This text does not contain LaTeX
-  function has_TeX(text) {
+  function has_TeX (text) {
     return text.indexOf(OPEN_TAG) !== -1 && text.indexOf(CLOSE_TAG) !== -1;
   }
 
-  function render(text) {
+  function render (text) {
     var TeX = text.slice(
       text.indexOf(OPEN_TAG) + OPEN_TAG.length,
-      text.indexOf(CLOSE_TAG),
+      text.indexOf(CLOSE_TAG)
     );
 
     TeX = katex.renderToString(TeX, { throwOnError: false, strict: false });
@@ -39,7 +39,7 @@ module.exports = ($) => {
     return text;
   }
 
-  function findTextNodes(node) {
+  function findTextNodes (node) {
     // if ($(node).is(ignore)) return false;
 
     $(node)

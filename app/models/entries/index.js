@@ -35,7 +35,7 @@ module.exports = (function () {
           // changes to permalink format take effect.
           Entry.set(blogID, entry.path, changes, nextEntry);
         },
-        callback,
+        callback
       );
     });
   }
@@ -75,7 +75,7 @@ module.exports = (function () {
 
             return callback(next, previous, ++rank);
           });
-        },
+        }
       );
     });
   }
@@ -182,7 +182,7 @@ module.exports = (function () {
             dothis(entry, next);
           });
         },
-        callback,
+        callback
       );
     });
   }
@@ -226,7 +226,7 @@ module.exports = (function () {
           });
         });
       },
-      callback,
+      callback
     );
   }
 
@@ -385,7 +385,11 @@ module.exports = (function () {
 
     // Attempt to parse and validate page size (user input)
     const parsedPageSize = parseInt(pageSize, 10);
-    if (!isNaN(parsedPageSize) && parsedPageSize > 0 && parsedPageSize <= 100) {
+    if (
+      !isNaN(parsedPageSize) &&
+      parsedPageSize > 0 &&
+      parsedPageSize <= 100
+    ) {
       return parsedPageSize;
     }
 
@@ -428,15 +432,19 @@ module.exports = (function () {
     return defaultSortOrder; // Default sort order
   }
 
-  function getPage(blogID, options = {}, callback) {
+  function getPage(
+    blogID,
+    options = {},
+    callback
+  ) {
     ensure(blogID, "string").and(callback, "function");
 
     // Extract and validate options
-    const {
-      pageNumber: pageNoInput = "1",
-      pageSize: rawPageSize,
-      sortBy: rawSortBy,
-      order: rawOrder,
+    const { 
+      pageNumber: pageNoInput = "1", 
+      pageSize: rawPageSize, 
+      sortBy: rawSortBy, 
+      order: rawOrder 
     } = options;
 
     // Validate page number input
@@ -492,7 +500,7 @@ module.exports = (function () {
             start,
             end,
             pageNo,
-            callback,
+            callback
           );
         });
       });
@@ -530,11 +538,11 @@ module.exports = (function () {
                 start,
                 end,
                 pageNo,
-                callback,
+                callback
               );
-            },
+            }
           );
-        },
+        }
       );
     }
   }
@@ -551,7 +559,7 @@ module.exports = (function () {
     start,
     end,
     pageNo,
-    callback,
+    callback
   ) {
     Entry.get(blogID, entryIDs, function (entries) {
       var pagination = {};
@@ -584,7 +592,7 @@ module.exports = (function () {
       if (pagination && entries && entries.length > 0) {
         entries.at(-1).pagination = pagination;
       }
-
+      
       return callback(null, entries, pagination);
     });
   }

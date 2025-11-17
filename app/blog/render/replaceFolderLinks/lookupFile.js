@@ -43,7 +43,7 @@ async function lookupFile(blogID, cacheID, value) {
   // if the value contains url-encoded characters, decode it
   if (value.includes("%")) {
     try {
-      value = decodeURIComponent(value);
+    value = decodeURIComponent(value);
     } catch (err) {
       // e.g. '100% luck.jpg' will throw an error
       // 'Uncaught URIError: malformed URI sequence'
@@ -90,7 +90,7 @@ async function lookupFile(blogID, cacheID, value) {
       const blogFolder = join(config.blog_folder_dir, blogID);
       const { stat, path } = await getStat(
         blogFolder,
-        resolve("/", pathFromValue),
+        resolve("/", pathFromValue)
       );
 
       version = hash(`${stat.mtime}${stat.ctime}${stat.size}`).slice(0, 8);

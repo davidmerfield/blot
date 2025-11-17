@@ -9,7 +9,7 @@ module.exports = function byFilename(
   pathOfPost,
   href,
   isLink,
-  callback,
+  callback
 ) {
   debug("Looking up by filename:", href, "from", pathOfPost);
 
@@ -78,6 +78,7 @@ module.exports = function byFilename(
           join(current, targetName),
           async function (matchErr, matchPath) {
             if (!matchErr && matchPath && matchPath.startsWith(root)) {
+
               // We don't want to match directories, only files
               try {
                 const stat = await fs.stat(matchPath);
@@ -106,9 +107,9 @@ module.exports = function byFilename(
             }
 
             searchNext();
-          },
+          }
         );
-      },
+      }
     );
   }
 

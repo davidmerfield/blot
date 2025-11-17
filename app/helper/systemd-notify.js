@@ -16,7 +16,7 @@ await notify(opts);
 
 const { spawn } = require("child_process");
 
-function generateArgs(opts) {
+function generateArgs (opts) {
   const result = [];
 
   if ("ready" in opts && opts.ready === true) {

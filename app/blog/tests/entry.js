@@ -1,105 +1,111 @@
 describe("entry", function () {
-  require("./util/setup")();
 
-  it("renders an entry", async function () {
-    await this.write({ path: "/a.txt", content: "Link: a\nHello, A!" });
+    require('./util/setup')();
 
-    const res = await this.get("/a", { redirect: "manual" });
-    const body = await res.text();
+    it("renders an entry", async function () {
 
-    expect(res.status).toEqual(200);
-    expect(body).toContain("Hello, A!");
-  });
+        await this.write({path: '/a.txt', content: 'Link: a\nHello, A!'});
 
-  it("if you change an entry's url, the old one will redirect", async function () {
-    await this.write({ path: "/a.txt", content: "Link: a\nHello, A!" });
-    await this.write({ path: "/a.txt", content: "Link: b\nHello, A!" });
+        const res = await this.get('/a', {redirect: 'manual'});
+        const body = await res.text();
 
-    const res = await this.get("/a", { redirect: "manual" });
-    const body = await res.text();
-
-    expect(res.status).toEqual(302);
-    expect(body).toContain("Redirecting to /b");
-
-    // it won't redirect if the old URL is the index page (we don't want to clobber the index page)
-    await this.write({ path: "/index.txt", content: "Link: /\nHello, A!" });
-
-    const res2 = await this.get("/", { redirect: "manual" });
-    expect(res2.status).toEqual(200);
-    expect(await res2.text()).toContain("Hello, A!");
-
-    // change the index page
-    await this.write({ path: "/index.txt", content: "Link: /c\nHello, A!" });
-
-    const res3 = await this.get("/", { redirect: "manual" });
-    expect(res3.status).not.toEqual(302);
-  });
-
-  it("will not render a scheduled entry unless the query string scheduled is set to true", async function () {
-    // 1 year from now
-    const date = new Date();
-    date.setFullYear(date.getFullYear() + 1);
-    const dateString = date.toISOString();
-
-    await this.write({
-      path: "/a.txt",
-      content: "Link: a\nDate: " + dateString + "\n\nHello, A!",
+        expect(res.status).toEqual(200);
+        expect(body).toContain('Hello, A!');
     });
 
-    const res = await this.get("/a");
+    it("if you change an entry's url, the old one will redirect", async function () {
 
-    expect(res.status).toEqual(404);
+        await this.write({path: '/a.txt', content: 'Link: a\nHello, A!'});
+        await this.write({path: '/a.txt', content: 'Link: b\nHello, A!'});
 
-    const res2 = await this.get("/a?scheduled=true");
-    const body = await res2.text();
+        const res = await this.get('/a', {redirect: 'manual'});
+        const body = await res.text();
 
-    expect(res2.status).toEqual(200);
-    expect(body).toContain("Hello, A!");
-  });
+        expect(res.status).toEqual(302);
+        expect(body).toContain('Redirecting to /b');
 
-  it("redirects to the source file for a post with ?source=true", async function () {
-    await this.write({ path: "/a.txt", content: "Link: a\nHello, A!" });
+        // it won't redirect if the old URL is the index page (we don't want to clobber the index page)
+        await this.write({path: '/index.txt', content: 'Link: /\nHello, A!'});
 
-    const res = await this.get("/a?source=true", { redirect: "manual" });
-    const body = await res.text();
+        const res2 = await this.get('/', {redirect: 'manual'});
+        expect(res2.status).toEqual(200);
+        expect(await res2.text()).toContain('Hello, A!');
 
-    expect(res.status).toEqual(302);
-    expect(res.headers.get("location")).toEqual("/a.txt");
-    expect(body).toContain("Redirecting to /a.txt");
-  });
+        // change the index page
+        await this.write({path: '/index.txt', content: 'Link: /c\nHello, A!'});
 
-  it("renders the entry against other urls", async function () {
-    await this.write({ path: "/a.txt", content: "Link: a\nHello, A!" });
 
-    const urls = [
-      "/A", // case insensitive
-      "/a/", // trailing slash
-      "/A/", // case insensitive with trailing slash
-    ];
+        const res3 = await this.get('/', {redirect: 'manual'});
+        expect(res3.status).not.toEqual(302);
+    });
 
-    for (const url of urls) {
-      const res = await this.get(url, { redirect: "manual" });
-      const body = await res.text();
+    it("will not render a scheduled entry unless the query string scheduled is set to true", async function () {
 
-      expect(res.status).toEqual(200);
-      expect(body).toContain("Hello, A!");
-    }
-  });
+        // 1 year from now
+        const date = new Date();
+        date.setFullYear(date.getFullYear() + 1);
+        const dateString = date.toISOString();
 
-  it("does not crash when the URL contains malformed percent-encoding", async function () {
-    await this.write({ path: "/malformed.txt", content: "Hello!" });
+        await this.write({path: '/a.txt', content: 'Link: a\nDate: ' + dateString + '\n\nHello, A!'});
 
-    let error;
-    let res;
+        const res = await this.get('/a');
 
-    try {
-      res = await this.get("/%E0%A4%A", { redirect: "manual" });
-    } catch (err) {
-      error = err;
-    }
+        expect(res.status).toEqual(404);
 
-    if (error) throw error;
+        const res2 = await this.get('/a?scheduled=true');
+        const body = await res2.text();
 
-    expect(res.status).toEqual(400);
-  });
+        expect(res2.status).toEqual(200);
+        expect(body).toContain('Hello, A!');
+    });
+
+    it("redirects to the source file for a post with ?source=true", async function () {
+
+        await this.write({path: '/a.txt', content: 'Link: a\nHello, A!'});
+
+        const res = await this.get('/a?source=true', {redirect: 'manual'});
+        const body = await res.text();
+
+        expect(res.status).toEqual(302);
+        expect(res.headers.get('location')).toEqual('/a.txt');
+        expect(body).toContain('Redirecting to /a.txt');
+    });
+
+    it("renders the entry against other urls", async function () {
+
+        await this.write({path: '/a.txt', content: 'Link: a\nHello, A!'});
+
+        const urls = [
+            '/A', // case insensitive
+            '/a/', // trailing slash
+            '/A/', // case insensitive with trailing slash
+        ];
+
+        for (const url of urls) {
+            const res = await this.get(url, {redirect: 'manual'});
+            const body = await res.text();
+
+            expect(res.status).toEqual(200);
+            expect(body).toContain('Hello, A!');
+        }
+    });
+
+    it("does not crash when the URL contains malformed percent-encoding", async function () {
+
+        await this.write({ path: '/malformed.txt', content: 'Hello!' });
+
+        let error;
+        let res;
+
+        try {
+            res = await this.get('/%E0%A4%A', { redirect: 'manual' });
+        } catch (err) {
+            error = err;
+        }
+
+        if (error) throw error;
+
+        expect(res.status).toEqual(400);
+    });
+
 });

@@ -46,14 +46,15 @@ module.exports = async function ({
 
     // Handle questions
   } else {
+
     tags.forEach((tag) => {
       multi.sadd(keys.all_tags, tag);
-      multi.zadd(keys.by_tag(tag), parseInt(created_at), id);
+      multi.zadd(keys.by_tag(tag),  parseInt(created_at), id);
     });
 
     multi.sadd(keys.all_questions, id);
-    multi.zadd(keys.by_last_reply, parseInt(created_at), id);
-    multi.zadd(keys.by_created, parseInt(created_at), id);
+    multi.zadd(keys.by_last_reply,  parseInt(created_at), id);
+    multi.zadd(keys.by_created,  parseInt(created_at), id);
     multi.zadd(keys.by_number_of_replies, 0, id);
   }
 

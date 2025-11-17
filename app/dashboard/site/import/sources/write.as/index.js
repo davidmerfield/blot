@@ -8,11 +8,11 @@ const output_directory = input_directory + "-output";
 const posts = fs
   .readdirSync(input_directory)
   .filter(
-    (filename) =>
+    filename =>
       fs.statSync(input_directory + "/" + filename).isFile() &&
-      filename[0] !== ".",
+      filename[0] !== "."
   )
-  .map((filename) => {
+  .map(filename => {
     let file = fs
       .readFileSync(input_directory + "/" + filename, "utf-8")
       .trim();

@@ -30,7 +30,7 @@ module.exports = async (path) => {
   console.log(
     `Initial blocks: ${stat.blocks} / ${expectedBlocks} ${
       stat.size === 0 ? " (zero byte file: downloading anyway)" : ""
-    }`,
+    }`
   );
 
   if (isDownloaded) {
@@ -68,7 +68,7 @@ module.exports = async (path) => {
     if (stat.blocks === expectedBlocks) {
       console.log(`Finish brctl download: ${path}`);
       return stat;
-    }
+    } 
   }
 
   throw new Error(`Timeout downloading file: ${path}`);

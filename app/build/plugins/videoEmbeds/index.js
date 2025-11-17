@@ -63,7 +63,7 @@ function render($, callback) {
         insertPlayer(el, template, href, next);
       });
     },
-    callback,
+    callback
   );
 
   // This function takes the HTML code for a particular

@@ -5,7 +5,7 @@ describe("replaceCssUrls", function () {
   const fs = require("fs-extra");
   const cdnRegex = (path) =>
     new RegExp(
-      `${config.cdn.origin}/folder/v-[a-f0-9]{8}/blog_[a-f0-9]+${path}`,
+      `${config.cdn.origin}/folder/v-[a-f0-9]{8}/blog_[a-f0-9]+${path}`
     );
   const globalStaticFileRegex = (path) =>
     new RegExp(`${config.cdn.origin}${path}`);
@@ -52,7 +52,7 @@ describe("replaceCssUrls", function () {
       "style.css": `.test { background-image: url("/image%20with%20space.jpg"); }`,
     });
     expect(await this.text("/style.css")).toMatch(
-      cdnRegex("/image with space.jpg"),
+      cdnRegex("/image with space.jpg")
     );
   });
 
@@ -172,19 +172,19 @@ describe("replaceCssUrls", function () {
 
     const result = await res.text();
     expect(result).toMatch(
-      cdnRegex("/Templates/Fonts/trio.grotesk/triogrotesk-regular.otf"),
+      cdnRegex("/Templates/Fonts/trio.grotesk/triogrotesk-regular.otf")
     );
     expect(result).toMatch(
-      cdnRegex("/Templates/Fonts/trio.grotesk/triogrotesk-italic.otf"),
+      cdnRegex("/Templates/Fonts/trio.grotesk/triogrotesk-italic.otf")
     );
 
     const res2 = await this.get("/style.css");
     const result2 = await res2.text();
     expect(result2).toMatch(
-      cdnRegex("/Templates/Fonts/trio.grotesk/triogrotesk-regular.otf"),
+      cdnRegex("/Templates/Fonts/trio.grotesk/triogrotesk-regular.otf")
     );
     expect(result2).toMatch(
-      cdnRegex("/Templates/Fonts/trio.grotesk/triogrotesk-italic.otf"),
+      cdnRegex("/Templates/Fonts/trio.grotesk/triogrotesk-italic.otf")
     );
   });
 
@@ -284,7 +284,7 @@ describe("replaceCssUrls", function () {
     const result = await res.text();
 
     const matches = result.match(
-      new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`, "g"),
+      new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`, "g")
     );
     expect(matches.length).toEqual(2);
   });
@@ -514,11 +514,11 @@ describe("replaceCssUrls", function () {
       @font-face{font-family:KaTeX_AMS;font-style:normal;font-weight:400;src:url(/plugins/katex/files/KaTeX_AMS-Regular.ttf) format("ttf")}`,
     });
     expect(await this.text("/style.css")).toMatch(
-      cdnRegex("/plugins/katex/files/test.jpg"),
+      cdnRegex("/plugins/katex/files/test.jpg")
     );
 
     expect(await this.text("/style.css")).toMatch(
-      globalStaticFileRegex("/plugins/katex/files/KaTeX_AMS-Regular.ttf"),
+      globalStaticFileRegex("/plugins/katex/files/KaTeX_AMS-Regular.ttf")
     );
   });
 
@@ -529,7 +529,7 @@ describe("replaceCssUrls", function () {
 
     await fs.outputFile(
       config.blot_directory + "/app/blog/static/plugins/katex.woff2",
-      "fake image data",
+      "fake image data"
     );
 
     const origStat = fs.stat;
@@ -542,7 +542,7 @@ describe("replaceCssUrls", function () {
     expect(result1).toMatch(globalStaticFileRegex("/plugins/katex.woff2"));
 
     expect(fs.stat).toHaveBeenCalledWith(
-      config.blot_directory + "/app/blog/static/plugins/katex.woff2",
+      config.blot_directory + "/app/blog/static/plugins/katex.woff2"
     );
     expect(fs.stat.calls.count()).toBe(1);
 
@@ -557,7 +557,7 @@ describe("replaceCssUrls", function () {
     fs.stat = origStat;
 
     await fs.remove(
-      config.blot_directory + "/app/blog/static/plugins/katex.woff2",
+      config.blot_directory + "/app/blog/static/plugins/katex.woff2"
     );
   });
 });

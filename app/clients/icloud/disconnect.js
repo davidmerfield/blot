@@ -24,7 +24,7 @@ module.exports = async (blogID, callback) => {
     }
   } catch (error) {
     console.error(
-      `Error during Macserver /disconnect request: ${error.message}`,
+      `Error during Macserver /disconnect request: ${error.message}`
     );
   }
 

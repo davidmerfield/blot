@@ -29,7 +29,7 @@ const startServer = async () => {
   app.use(raw({ type: "application/octet-stream", limit }));
 
   app.post("/upload", require("./routes/upload"));
-
+  
   app.post("/evict", require("./routes/evict"));
 
   app.post("/delete", require("./routes/delete"));
@@ -56,6 +56,7 @@ const startServer = async () => {
 // Main entry point
 (async () => {
   try {
+
     // Test connectivity with the remote server
     console.log("Pinging remote server...");
     try {
@@ -75,7 +76,7 @@ const startServer = async () => {
     // Start the monitorer to keep iCloud in sync
     console.log("Starting iCloud monitorer...");
     monitorer();
-
+    
     console.log("Macserver started successfully");
   } catch (error) {
     console.error("Error starting macserver:", error);

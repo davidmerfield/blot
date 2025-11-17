@@ -128,7 +128,7 @@ function main(blog, output_directory, callback) {
     },
     function () {
       callback();
-    },
+    }
   );
 }
 
@@ -140,7 +140,7 @@ if (require.main === module) {
     throw new Error("Please pass source file JSON as first argument");
   if (!output_directory)
     throw new Error(
-      "Please pass output directory to write blog to as second argument",
+      "Please pass output directory to write blog to as second argument"
     );
 
   var blog = fs.readJsonSync(source_file);

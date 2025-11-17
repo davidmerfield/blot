@@ -53,14 +53,14 @@ module.exports = function main(blog, callback) {
                 });
               });
             },
-            next,
+            next
           );
         });
       },
       function (err) {
         if (err) return callback(err);
         callback(null, report);
-      },
+      }
     );
   });
 };

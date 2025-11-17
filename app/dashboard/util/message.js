@@ -18,7 +18,7 @@ function middleware(req, res, next) {
         "and currentURL",
         currentURL,
         "message=",
-        req.session.message,
+        req.session.message
       );
     }
 

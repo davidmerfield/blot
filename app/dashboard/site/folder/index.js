@@ -12,8 +12,8 @@ async function middleware(req, res, next) {
     // "ブ".length => 2
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/normalize
 
-    const dir = req.params.path ? "/" + req.params.path.normalize("NFC") : "/";
-
+    const dir = req.params.path ? "/" + req.params.path.normalize('NFC') : '/';
+    
     res.locals.folder = await loadFolder(req.blog, dir);
 
     for (const breadcrumb of res.locals.folder.breadcrumbs) {
@@ -21,22 +21,27 @@ async function middleware(req, res, next) {
     }
 
     if (req.params.path) {
+      
       if (res.locals.folder.directory) {
         res.render("dashboard/folder/directory");
       } else {
         res.render("dashboard/folder/file");
       }
+
     } else {
       next();
     }
+
   } catch (err) {
-    if (err && err.code === "ENOENT" && req.params.path) {
-      res.locals.folder = { directory: true, contents: [] };
+
+    if (err && err.code === 'ENOENT' && req.params.path) {
+      res.locals.folder = {directory: true, contents: []};
       res.render("dashboard/folder");
     } else {
       console.log("HERE", err);
       next(err);
     }
+
   }
 }
 
@@ -45,9 +50,10 @@ async function middleware(req, res, next) {
 const folderCache = {};
 
 const loadFolder = async (blog, dir) => {
-  const cacheKey = blog.id + "_" + blog.cacheID + "_" + dir;
-  const synced = blog.status.message.toLowerCase() === "synced";
 
+  const cacheKey = blog.id + '_' + blog.cacheID + '_' + dir;
+  const synced = blog.status.message.toLowerCase() === 'synced';
+  
   if (synced && folderCache[cacheKey]) {
     // console.log(clfdate(), 'folder cache HIT', cacheKey);
     return folderCache[cacheKey];
@@ -64,7 +70,7 @@ const loadFolder = async (blog, dir) => {
   const stat = await Stat(local, blog.timeZone);
 
   const folder = {
-    root: dir === "/",
+    root: dir === '/',
     directory: stat.directory,
     file: stat.file,
     stat,
@@ -73,28 +79,30 @@ const loadFolder = async (blog, dir) => {
   if (stat.file) {
     const [breadcrumbs, fileStat] = await Promise.all([
       getBreadcrumbs(blog.id, dir, blog.cacheID),
-      getFile(blog, dir),
+      getFile(blog, dir)
     ]);
 
     folder.breadcrumbs = breadcrumbs;
     folder.stat = { ...folder.stat, ...fileStat };
+
   } else if (stat.directory) {
     const [breadcrumbs, contents] = await Promise.all([
       getBreadcrumbs(blog.id, dir, blog.cacheID),
-      getFolder(blog, dir),
+      getFolder(blog, dir)
     ]);
 
     folder.contents = contents;
     folder.breadcrumbs = breadcrumbs;
   }
 
-  if (dir === "/") {
+  if (dir === '/') {
     folderCache[cacheKey] = folder;
   }
 
   // console.log('folder cache is', JSON.stringify(folderCache, null, 2));
 
   return folder;
-};
+}
+
 
 module.exports = middleware;

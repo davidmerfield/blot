@@ -13,8 +13,6 @@ describe("minifier", function () {
 
     const text = await res.text();
 
-    expect(text).toBe(
-      ".inset{--inset:inset}.outset{--inset: }.shadow{box-shadow:var(--inset) 0 2px 2px #0004}",
-    );
+    expect(text).toBe(".inset{--inset:inset}.outset{--inset: }.shadow{box-shadow:var(--inset) 0 2px 2px #0004}");
   });
 });

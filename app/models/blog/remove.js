@@ -30,7 +30,7 @@ function remove(blogID, callback) {
         var tasks = [disconnectClient, updateUser, wipeFolders, deleteKeys].map(
           function (task) {
             return task.bind(null, blog);
-          },
+          }
         );
 
         async.series(tasks, callback);
@@ -51,7 +51,7 @@ function wipeFolders(blog, callback) {
       safelyRemove.bind(null, blogFolder, config.blog_folder_dir),
       safelyRemove.bind(null, staticFolder, config.blog_static_files_dir),
     ],
-    callback,
+    callback
   );
 
   // This could get messy if the blog.id is an empty
@@ -70,7 +70,7 @@ function wipeFolders(blog, callback) {
 
         if (realpathToFolder.indexOf(realpathToRoot + "/") !== 0)
           return callback(
-            new Error("Could not safely remove directory:" + folder),
+            new Error("Could not safely remove directory:" + folder)
           );
 
         fs.remove(realpathToFolder, callback);
@@ -118,7 +118,7 @@ function deleteKeys(blog, callback) {
       multi.del(remove);
       multi.srem(key.ids, blog.id);
       multi.exec(callback);
-    },
+    }
   );
 }
 
@@ -127,10 +127,11 @@ function disconnectClient(blog, callback) {
 
   if (!blog.client || !clients[blog.client]) return callback(null);
 
-  clients[blog.client].disconnect(blog.id, function (err) {
+  clients[blog.client].disconnect(blog.id, function(err){
+
     // we still want to continue even if there is an error
     if (err) {
-      console.error("Error disconnecting client:", err);
+      console.error('Error disconnecting client:', err);
     }
 
     callback(null);

@@ -69,7 +69,7 @@ var MOMENT_TOKENS = [
   "Z",
   "ZZ",
   "X",
-  "x",
+  "x"
 ];
 var normalize = require("helper/urlNormalizer");
 var allow = [
@@ -83,12 +83,12 @@ var allow = [
   "dateStamp",
   "created",
   "updated",
-  "metadata",
+  "metadata"
 ];
 
 // modified from here: https://gist.github.com/mathewbyrne/1280286
 // also using https://help.ivanti.com/res/help/en_US/IA/2021/Admin/Content/35149.htm
-function removeDiacritics(str) {
+function removeDiacritics (str) {
   str = str || "";
   str = decodeURIComponent(str); // lol we shouldnt do this
   str = str.toLowerCase();
@@ -101,7 +101,7 @@ function removeDiacritics(str) {
     { from: "å", to: "aa" },
     { from: "þ", to: "th" },
     { from: "ü", to: "ue" },
-    { from: "ß", to: "ss" },
+    { from: "ß", to: "ss" }
   ];
 
   for (const item of swaps) {
@@ -144,7 +144,7 @@ module.exports = function (timeZone, format, entry) {
     // existing custom formats for folks...
     view["path-without-extension"] = entry.path.slice(
       0,
-      entry.path.lastIndexOf("."),
+      entry.path.lastIndexOf(".")
     );
 
     // stem should be path without extension
@@ -154,7 +154,7 @@ module.exports = function (timeZone, format, entry) {
     // existing custom formats for folks...
     view["name-without-extension"] = view.name.slice(
       0,
-      view.name.lastIndexOf("."),
+      view.name.lastIndexOf(".")
     );
 
     // this needs a better name but make sure to update any

@@ -72,14 +72,14 @@ const internal = {
   "/how/posts/comments": "/how/configure/comments",
   "/formatting": "/how/posts",
   "/redirects": "/how/configure/redirects",
-  "/configuring": "/how/configure",
+  "/configuring": "/how/configure"
 };
 
 const external = {
-  "/typeset": "https://typeset.lllllllllllllllll.com/",
+  "/typeset": "https://typeset.lllllllllllllllll.com/"
 };
 
-Object.keys(internal).forEach((from) => {
+Object.keys(internal).forEach(from => {
   redirector.use(from, function (req, res) {
     let to = internal[from];
     let redirect = req.originalUrl.replace(from, to);
@@ -89,7 +89,7 @@ Object.keys(internal).forEach((from) => {
   });
 });
 
-Object.keys(external).forEach((from) => {
+Object.keys(external).forEach(from => {
   redirector.use(from, function (req, res) {
     // By default, res.redirect returns a 302 status
     // code (temporary) rather than 301 (permanent)

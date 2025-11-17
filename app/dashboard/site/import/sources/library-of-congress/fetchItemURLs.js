@@ -2,18 +2,18 @@ const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const fs = require("fs-extra");
 const cache_directory = __dirname + "/data/cache";
-const hash = (str) =>
+const hash = str =>
   require("crypto").createHash("md5").update(str).digest("hex");
 
 // check if the file exists in the cache
 // if it does, return the contents
 // if it doesn't, fetch the page, save it to the cache, and return the contents
-const getHTML = async (url) => {
+const getHTML = async url => {
   const filename = `${cache_directory}/index-urls/${hash(url)}.html`;
 
   if (!fs.existsSync(filename)) {
     // wait 2 seconds to avoid triggering the rate limit
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const response = await fetch(url);
 
@@ -28,7 +28,7 @@ const getHTML = async (url) => {
   return fs.readFileSync(filename, "utf-8");
 };
 
-module.exports = async (url) => {
+module.exports = async url => {
   const result = [];
 
   // strip the 'sp' parameter from the url to get the base url

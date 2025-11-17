@@ -24,7 +24,9 @@ module.exports = function getPopular(blogID, options, callback) {
   if (options.offset !== undefined) ensure(options.offset, "number");
 
   var limit =
-    options.limit !== undefined ? Math.max(0, Math.floor(options.limit)) : 10;
+    options.limit !== undefined
+      ? Math.max(0, Math.floor(options.limit))
+      : 10;
   var offset =
     options.offset !== undefined ? Math.max(0, Math.floor(options.offset)) : 0;
 
@@ -82,7 +84,7 @@ module.exports = function getPopular(blogID, options, callback) {
 
             const name = details[index] || slug;
             const entries = Array.from({ length: count });
-
+            
             hydrated.push({
               name,
               slug,
@@ -93,7 +95,7 @@ module.exports = function getPopular(blogID, options, callback) {
 
           callback(null, hydrated);
         });
-      },
+      }
     );
   });
 };

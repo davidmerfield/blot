@@ -14,7 +14,7 @@ describe("dropbox client", function () {
   afterEach(function (done) {
     var contents = this.contents;
     expect(
-      fs.readFileSync(this.blogDirectory + this.path).toString("utf-8"),
+      fs.readFileSync(this.blogDirectory + this.path).toString("utf-8")
     ).toEqual(contents);
     this.client
       .filesDownload({ path: this.folder + this.path })

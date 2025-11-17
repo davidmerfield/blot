@@ -5,7 +5,7 @@ xdescribe("remove inline images", function () {
     var html = '<p><img src="x">Hey</p>';
 
     expect(remove_inline_images(html)).toEqual(
-      '<p><img src="x"></p><p>Hey</p>',
+      '<p><img src="x"></p><p>Hey</p>'
     );
   });
 
@@ -13,7 +13,7 @@ xdescribe("remove inline images", function () {
     var html = '<p><a href=""><img src="x"></a>Hey</p>';
 
     expect(remove_inline_images(html)).toEqual(
-      '<p><a href=""><img src="x"></a></p><p>Hey</p>',
+      '<p><a href=""><img src="x"></a></p><p>Hey</p>'
     );
   });
 });

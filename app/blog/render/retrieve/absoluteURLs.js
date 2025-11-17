@@ -20,7 +20,7 @@ Use it like this:
 var cheerio = require("cheerio");
 var debug = require("debug")("blot:render:absoluteURLs");
 
-function absoluteURLs(base, $) {
+function absoluteURLs (base, $) {
   try {
     $("[href], [src]").each(function () {
       var href = $(this).attr("href");

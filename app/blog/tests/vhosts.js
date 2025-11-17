@@ -73,7 +73,7 @@ describe("blog server vhosts", function () {
       assert.equal(extractHandle("david." + config.host), "david");
       assert.equal(
         extractHandle("preview.my.theme.david." + config.host),
-        "david",
+        "david"
       );
       assert.equal(extractHandle("david.merfield." + config.host), "merfield");
       assert.equal(extractHandle("david.merfield.google.com"), "");
@@ -86,24 +86,24 @@ describe("blog server vhosts", function () {
       assert.equal(extractPreviewTemplate("preview." + config.host), false);
       assert.equal(
         extractPreviewTemplate("preview.david." + config.host),
-        false,
+        false
       );
       assert.equal(
         extractPreviewTemplate("preview.this.david.blot.com"),
-        false,
+        false
       );
       assert.equal(
         extractPreviewTemplate("this.preview.my.foo.david." + config.host),
-        false,
+        false
       );
 
       assert.deepEqual(
         extractPreviewTemplate("preview.foo.david." + config.host),
-        "SITE:foo",
+        "SITE:foo"
       );
       assert.deepEqual(
         extractPreviewTemplate("preview.my.foo.david." + config.host),
-        "undefined:foo",
+        "undefined:foo"
       );
     }).not.toThrow();
   });

@@ -29,7 +29,7 @@ function html_parser($) {
       $(el).attr("class").split("file").join("").trim() || extension(text);
 
     $(el).replaceWith(
-      '<nobr><span class="icon ' + type + '"></span> ' + text + "</nobr>",
+      '<nobr><span class="icon ' + type + '"></span> ' + text + "</nobr>"
     );
   });
 

@@ -103,17 +103,10 @@ webhooks.post("/", parser.json(), function (req, res) {
   }
 
   // A customer's subscription was changed, save changed info
-  if (
-    event.type === UPDATED_SUBSCRIPTION ||
-    event.type === DELETED_SUBSCRIPTION
-  ) {
+  if (event.type === UPDATED_SUBSCRIPTION || event.type === DELETED_SUBSCRIPTION) {
     var stripe = getStripeClient();
 
-    if (
-      !stripe ||
-      !stripe.customers ||
-      !stripe.customers.retrieveSubscription
-    ) {
+    if (!stripe || !stripe.customers || !stripe.customers.retrieveSubscription) {
       console.error(NO_STRIPE_CLIENT);
       return res.sendStatus(500);
     }
@@ -131,13 +124,12 @@ webhooks.post("/", parser.json(), function (req, res) {
           event_data.customer,
           subscription,
           function (updateErr) {
-            if (updateErr)
-              console.error("Failed to update subscription", updateErr);
-          },
+            if (updateErr) console.error("Failed to update subscription", updateErr);
+          }
         );
 
         return res.sendStatus(200);
-      },
+      }
     );
   }
 

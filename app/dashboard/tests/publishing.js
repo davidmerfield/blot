@@ -6,7 +6,7 @@ describe("publishing settings", function () {
 
   it("saves image metadata preferences", async function () {
     const publishingPage = await this.text(
-      `/sites/${this.blog.handle}/settings/images`,
+      `/sites/${this.blog.handle}/settings/images`
     );
 
     expect(publishingPage).toMatch("Exif data");
@@ -21,7 +21,7 @@ describe("publishing settings", function () {
     expect(blogAfterOff.isImageExifOff).toBe(true);
 
     const updatedPublishingPage = await this.text(
-      `/sites/${this.blog.handle}/settings/images`,
+      `/sites/${this.blog.handle}/settings/images`
     );
 
     expect(updatedPublishingPage).toMatch("Exif data");

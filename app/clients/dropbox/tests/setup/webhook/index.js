@@ -16,7 +16,7 @@ module.exports = function (secret, baseUrl) {
 
         if (res.statusCode !== 200)
           return callback(
-            new Error("Bad status code at challenge route: " + res.statusCode),
+            new Error("Bad status code at challenge route: " + res.statusCode)
           );
 
         res.setEncoding("utf8");

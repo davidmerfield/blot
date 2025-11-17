@@ -63,15 +63,15 @@ describe("date metadata", function () {
           'parses "' + metadata + '" using date format ' + format,
           function () {
             expect(
-              moment.utc(fromMetadata(metadata, format).created).format(),
+              moment.utc(fromMetadata(metadata, format).created).format()
             ).toEqual(result);
-          },
+          }
         );
       });
 
       it('parses "' + metadata + '" without passing a format', function () {
         expect(moment.utc(fromMetadata(metadata).created).format()).toEqual(
-          result,
+          result
         );
       });
     });
@@ -86,9 +86,9 @@ describe("date metadata", function () {
           'parses "' + metadata + '" using date format ' + format,
           function () {
             expect(
-              moment.utc(fromMetadata(metadata, format).created).format(),
+              moment.utc(fromMetadata(metadata, format).created).format()
             ).toEqual(result);
-          },
+          }
         );
       });
     });

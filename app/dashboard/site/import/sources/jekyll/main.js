@@ -129,7 +129,7 @@ function main(sourceDirectory, outputDirectory, callback) {
 
           console.log("Warnings:", warnings);
           callback();
-        },
+        }
       );
     });
 }

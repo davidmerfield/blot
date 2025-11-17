@@ -51,8 +51,7 @@ async function renderView(templateID, viewName) {
       template: {
         locals: metadata.locals || {},
         id: templateID,
-        cdn:
-          metadata.cdn && typeof metadata.cdn === "object" ? metadata.cdn : {},
+        cdn: metadata.cdn && typeof metadata.cdn === "object" ? metadata.cdn : {},
       },
       query: {},
       protocol: "https",
@@ -87,32 +86,28 @@ async function renderView(templateID, viewName) {
 
     // Render the view - use callback pattern which is simpler
     await new Promise((resolve) => {
-      res.renderView(
-        viewName,
-        (err) => {
-          // next callback - called on errors
-          if (err) {
-            if (err.code === "NO_VIEW") {
-              // Missing view - skip in manifest (not an error)
-              renderError = null;
-            } else {
-              renderError = err;
-              console.error(`Error rendering view ${viewName} for CDN:`, err);
-            }
-          }
-          resolve();
-        },
-        (err, output) => {
-          // callback pattern - captures output directly
-          if (err) {
+      res.renderView(viewName, (err) => {
+        // next callback - called on errors
+        if (err) {
+          if (err.code === "NO_VIEW") {
+            // Missing view - skip in manifest (not an error)
+            renderError = null;
+          } else {
             renderError = err;
             console.error(`Error rendering view ${viewName} for CDN:`, err);
-          } else {
-            renderedOutput = output;
           }
-          resolve();
-        },
-      );
+        }
+        resolve();
+      }, (err, output) => {
+        // callback pattern - captures output directly
+        if (err) {
+          renderError = err;
+          console.error(`Error rendering view ${viewName} for CDN:`, err);
+        } else {
+          renderedOutput = output;
+        }
+        resolve();
+      });
     });
 
     if (renderError) {
@@ -133,3 +128,4 @@ async function renderView(templateID, viewName) {
 }
 
 module.exports = renderView;
+

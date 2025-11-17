@@ -15,7 +15,7 @@ module.exports = function (blogID, entry, callback) {
         "Blog:",
         blogID + ":",
         "Published entry as scheduled!",
-        entry.path,
+        entry.path
       );
     });
   });

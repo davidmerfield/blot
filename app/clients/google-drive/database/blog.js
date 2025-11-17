@@ -46,23 +46,14 @@ const blog = {
 
     // Manage serviceAccountId sets
     const newServiceAccountId = data.serviceAccountId;
-    if (
-      newServiceAccountId &&
-      newServiceAccountId !== currentServiceAccountId
-    ) {
+    if (newServiceAccountId && newServiceAccountId !== currentServiceAccountId) {
       // Remove blog ID from the old serviceAccountId set
       if (currentServiceAccountId) {
-        await sremAsync(
-          this._serviceAccountSetKey(currentServiceAccountId),
-          blogID,
-        );
+        await sremAsync(this._serviceAccountSetKey(currentServiceAccountId), blogID);
       }
       // Add blog ID to the new serviceAccountId set
       if (newServiceAccountId) {
-        await saddAsync(
-          this._serviceAccountSetKey(newServiceAccountId),
-          blogID,
-        );
+        await saddAsync(this._serviceAccountSetKey(newServiceAccountId), blogID);
       }
     }
   },
@@ -102,10 +93,7 @@ const blog = {
 
     // Remove blog ID from the serviceAccountId set if it exists
     if (currentServiceAccountId) {
-      await sremAsync(
-        this._serviceAccountSetKey(currentServiceAccountId),
-        blogID,
-      );
+      await sremAsync(this._serviceAccountSetKey(currentServiceAccountId), blogID);
     }
   },
 
@@ -127,6 +115,7 @@ const blog = {
   async iterateByServiceAccountId(serviceAccountId, callback) {
     const setKey = this._serviceAccountSetKey(serviceAccountId);
     const blogIDs = await smembersAsync(setKey);
+
 
     for (const blogID of blogIDs) {
       const blogData = await this.get(blogID);

@@ -14,7 +14,7 @@ describe("date from file path", function () {
 
         expect(res.created).toEqual(date); // "Incorrect datestamp
         expect(res.fileName).toEqual(fileName); // "Incorrect fileName
-      },
+      }
     );
   }
 

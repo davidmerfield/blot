@@ -38,10 +38,10 @@ module.exports = () => {
       }
 
       stats.disk_available_human = prettySize(
-        stats.disk_bytes_available / 1000,
+        stats.disk_bytes_available / 1000
       );
       stats.icloud_available_human = prettySize(
-        stats.icloud_bytes_available / 1000,
+        stats.icloud_bytes_available / 1000
       );
 
       console.log(clfdate(), "Mac server stats: ", stats);
@@ -82,5 +82,5 @@ module.exports = () => {
         notificationsSent.icloud_server_down = true;
       }
     }
-  }, POLLING_INTERVAL);
+  }, POLLING_INTERVAL); 
 };

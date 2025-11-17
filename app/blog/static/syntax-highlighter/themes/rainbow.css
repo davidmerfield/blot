@@ -9,6 +9,7 @@ Style with support for rainbow parens
   color: #d1d9e1;
 }
 
+
 .hljs-comment,
 .hljs-quote {
   color: #969896;
@@ -47,7 +48,7 @@ Style with support for rainbow parens
 .hljs-selector-id,
 .hljs-title.class_,
 .hljs-class .hljs-title {
-  color: #ffcc66;
+   color: #ffcc66;
 }
 
 .hljs-section,

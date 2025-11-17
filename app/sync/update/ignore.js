@@ -22,6 +22,6 @@ module.exports = function (blogID, path, reason, callback) {
     function (method, next) {
       method(next);
     },
-    callback,
+    callback
   );
 };

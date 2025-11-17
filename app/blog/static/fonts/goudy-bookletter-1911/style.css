@@ -1,31 +1,15 @@
 @font-face {
-  font-family: "Goudy Bookletter 1911";
+  font-family: 'Goudy Bookletter 1911';
   font-style: normal;
   font-weight: 400;
-  src: url("{{{config.cdn.origin}}}/fonts/goudy-bookletter-1911/400.eot?version=ea09cc&extension=.eot");
-  src:
-    url("{{{config.cdn.origin}}}/fonts/goudy-bookletter-1911/400.eot?version=ea09cc&extension=.eot#iefix")
-    format("embedded-opentype"),
-    url("{{{config.cdn.origin}}}/fonts/goudy-bookletter-1911/400.woff?version=f3c8f2&extension=.woff")
-    format("woff"),
-    url("{{{config.cdn.origin}}}/fonts/goudy-bookletter-1911/400.ttf?version=3517b4&extension=.ttf")
-    format("truetype"),
-    url("{{{config.cdn.origin}}}/fonts/goudy-bookletter-1911/400.otf?version=725818&extension=.otf")
-    format("opentype");
+  src: url('{{{config.cdn.origin}}}/fonts/goudy-bookletter-1911/400.eot?version=ea09cc&extension=.eot'); 
+  src: url('{{{config.cdn.origin}}}/fonts/goudy-bookletter-1911/400.eot?version=ea09cc&extension=.eot#iefix') format('embedded-opentype'), 
+       url('{{{config.cdn.origin}}}/fonts/goudy-bookletter-1911/400.woff?version=f3c8f2&extension=.woff') format('woff'),
+       url('{{{config.cdn.origin}}}/fonts/goudy-bookletter-1911/400.ttf?version=3517b4&extension=.ttf') format('truetype'),
+       url('{{{config.cdn.origin}}}/fonts/goudy-bookletter-1911/400.otf?version=725818&extension=.otf') format('opentype');
 }
-.pull-double {
-  margin-left: -0.388671875em;
-}
-.push-double {
-  margin-right: 0.388671875em;
-}
-.pull-single {
-  margin-left: -0.2236328125em;
-}
-.push-single {
-  margin-right: 0.2236328125em;
-}
-.push-double,
-.push-single {
-  display: inline-block;
-}
+.pull-double {margin-left:-0.388671875em}
+.push-double{margin-right:0.388671875em}
+.pull-single{margin-left:-0.2236328125em}
+.push-single{margin-right:0.2236328125em}
+.push-double,.push-single{display:inline-block}

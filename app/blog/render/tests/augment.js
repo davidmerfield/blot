@@ -1,60 +1,56 @@
 describe("augment", function () {
-  require("../../tests/util/setup")();
 
-  it("adds formatDate function to entries", async function () {
-    await this.write({ path: "/first.txt", content: "Foo" });
-    await this.template(
-      {
-        "entry.html": "{{#entry}}{{#formatDate}}YYYY{{/formatDate}}{{/entry}}",
-      },
-      { locals: { name: "David" } },
-    );
+    require('../../tests/util/setup')();
 
-    const res = await this.get("/first");
-    const body = await res.text();
+    it("adds formatDate function to entries", async function () {
+        
+        await this.write({path: "/first.txt", content: "Foo"});
+        await this.template({
+            'entry.html': '{{#entry}}{{#formatDate}}YYYY{{/formatDate}}{{/entry}}'
+        }, { locals: { name: 'David' } });
 
-    expect(res.status).toEqual(200);
-    expect(body.trim()).toEqual(new Date().getFullYear().toString());
-  });
+        const res = await this.get('/first');
+        const body = await res.text();
 
-  it("adds ratio property to thumbnails", async function () {
-    const image = await require("sharp")({
-      create: {
-        width: 100,
-        height: 200,
-        channels: 4,
-        background: { r: 255, g: 255, b: 255, alpha: 1 },
-      },
-    })
-      .png()
-      .toBuffer();
-
-    await this.write({ path: "/_thumbnail.jpg", content: image });
-    await this.write({ path: "/first.txt", content: "![](_thumbnail.jpg)" });
-    await this.template({ "entry.html": "{{entry.thumbnail.large.ratio}}" });
-
-    const res = await this.get("/first");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
-    // this is used to apply a padding-bottom to the thumbnail container to maintain aspect ratio
-    expect(body.trim()).toEqual("200%");
-  });
-
-  it("renders entry backlinks", async function () {
-    await this.write({ path: "/first.txt", content: "Foo" });
-    await this.write({
-      path: "/second.txt",
-      content: "Title: Second\n\n[[first]]",
+        expect(res.status).toEqual(200);
+        expect(body.trim()).toEqual(new Date().getFullYear().toString());
     });
-    await this.template({
-      "entry.html": "{{#entry}}{{#backlinks}}{{title}}{{/backlinks}}{{/entry}}",
+    
+    it("adds ratio property to thumbnails", async function () {
+    
+        const image = await require('sharp')({
+            create: {
+                width: 100,
+                height: 200,
+                channels: 4,
+                background: { r: 255, g: 255, b: 255, alpha: 1 }
+            }
+        }).png().toBuffer();
+
+        await this.write({path: "/_thumbnail.jpg", content: image});
+        await this.write({path: "/first.txt", content: "![](_thumbnail.jpg)"});
+        await this.template({'entry.html': '{{entry.thumbnail.large.ratio}}'});
+
+        const res = await this.get('/first');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        // this is used to apply a padding-bottom to the thumbnail container to maintain aspect ratio
+        expect(body.trim()).toEqual('200%');
     });
 
-    const res = await this.get("/first");
-    const body = await res.text();
+    it("renders entry backlinks", async function () {
+        
+        await this.write({path: "/first.txt", content: "Foo"});
+        await this.write({path: "/second.txt", content: "Title: Second\n\n[[first]]"});
+        await this.template({
+            'entry.html': '{{#entry}}{{#backlinks}}{{title}}{{/backlinks}}{{/entry}}'
+        });
 
-    expect(res.status).toEqual(200);
-    expect(body.trim()).toEqual("Second");
-  });
+        const res = await this.get('/first');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body.trim()).toEqual('Second');
+    });
 });

@@ -50,7 +50,7 @@ function print(obj, indent) {
     console.log(
       str(indent) + '"' + i + '":',
       variable + comma,
-      "(" + type(variable) + ") ",
+      "(" + type(variable) + ") "
     );
   }
 
@@ -80,7 +80,7 @@ function debug(param, is) {
           i +
           '" that is specified in the model with type "' +
           is[i] +
-          '".',
+          '".'
       );
 
       continue;
@@ -92,7 +92,7 @@ function debug(param, is) {
           i +
           '" which should be type "' +
           is[i] +
-          '".',
+          '".'
       );
 
       continue;
@@ -143,7 +143,7 @@ function ensure(param, is, strictly, recursive) {
     }
   } else if (type(param) !== is)
     throw new TypeError(
-      'Param "' + param + '" must be a ' + is + ". Its type is " + type(param),
+      'Param "' + param + '" must be a ' + is + ". Its type is " + type(param)
     );
 
   return { and: ensure };

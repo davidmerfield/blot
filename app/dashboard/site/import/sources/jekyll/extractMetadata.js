@@ -78,6 +78,6 @@ module.exports = function (result, callback) {
       result.metadata = metadata;
       result.missingHandlers = missingHandlers;
       callback(err, result);
-    },
+    }
   );
 };

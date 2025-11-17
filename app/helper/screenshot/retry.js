@@ -19,7 +19,7 @@ const retry = async (fn, retries = 3, delay = 1000) => {
   }
 
   throw new Error(
-    `Failed after ${retries} attempts. Last error: ${lastError.message}`,
+    `Failed after ${retries} attempts. Last error: ${lastError.message}`
   );
 };
 

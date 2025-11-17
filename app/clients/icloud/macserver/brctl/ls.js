@@ -5,33 +5,30 @@ const CONFIG = {
   POLLING_INTERVAL: 200,
   ERROR_MESSAGES: {
     DEADLOCK: "Resource deadlock avoided",
-    NO_FILE: "No such file or directory",
-  },
+    NO_FILE: "No such file or directory"
+  }
 };
 
 const handleExecError = (error, dirPath) => {
   if (!error?.message) return null;
-
+  
   if (error.message.includes(CONFIG.ERROR_MESSAGES.NO_FILE)) {
     console.warn(`Directory does not exist: ${dirPath}`);
     return null;
   }
-
+  
   if (!error.message.includes(CONFIG.ERROR_MESSAGES.DEADLOCK)) {
-    console.error(
-      `Unexpected error listing directory ${dirPath}: ${error.message}`,
-    );
+    console.error(`Unexpected error listing directory ${dirPath}: ${error.message}`);
     return null;
   }
-
-  return error; // Return deadlock error for handling
+  
+  return error;  // Return deadlock error for handling
 };
 
 const listDirectory = async (dirPath) => {
   try {
     const { stdout, stderr } = await exec("ls", ["-la1F", dirPath]);
-    if (stderr)
-      throw new Error(`Error listing directory ${dirPath}: ${stderr}`);
+    if (stderr) throw new Error(`Error listing directory ${dirPath}: ${stderr}`);
     return stdout;
   } catch (error) {
     throw error;
@@ -56,10 +53,8 @@ module.exports = async (dirPath) => {
 
     const start = Date.now();
     while (Date.now() - start < CONFIG.TIMEOUT) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, CONFIG.POLLING_INTERVAL),
-      );
-
+      await new Promise(resolve => setTimeout(resolve, CONFIG.POLLING_INTERVAL));
+      
       try {
         return await listDirectory(dirPath);
       } catch (error) {

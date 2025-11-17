@@ -123,9 +123,10 @@ describe("entry.backlinks", function () {
 
     const entryAfterRestore = await this.get(pathLinked);
 
+
     expect(entry.backlinks).toEqual(["/linker"]);
     expect(entryAfterDrop.deleted).toEqual(true);
     expect(entryAfterRestore.backlinks).toEqual([]);
     done();
-  });
+  });  
 });

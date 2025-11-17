@@ -2,10 +2,10 @@ var download = require("./index");
 var fs = require("fs-extra");
 
 var urls = {
-  bad: "foo",
-  terrible: null,
-  200: "http://i.imgur.com/A5Apd1a.jpg",
-  404: "http://imgur.com/fhsdjkfhsjkdfhkjsadhfjksdahfkjahsdkjfads.jpg",
+  "bad": "foo",
+  "terrible": null,
+  "200": "http://i.imgur.com/A5Apd1a.jpg",
+  "404": "http://imgur.com/fhsdjkfhsjkdfhkjsadhfjksdahfkjahsdkjfads.jpg",
 };
 
 var url = urls["404"];

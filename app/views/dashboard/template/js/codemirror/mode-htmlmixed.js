@@ -8,7 +8,7 @@
       require("./codemirror"),
       require("./mode-xml"),
       require("./mode-javascript"),
-      require("./mode-css"),
+      require("./mode-css")
     );
   else if (typeof define == "function" && define.amd)
     // AMD
@@ -59,7 +59,7 @@
     var regexp = attrRegexpCache[attr];
     if (regexp) return regexp;
     return (attrRegexpCache[attr] = new RegExp(
-      "\\s+" + attr + "\\s*=\\s*('|\")?([^'\"]+)('|\")?\\s*",
+      "\\s+" + attr + "\\s*=\\s*('|\")?([^'\"]+)('|\")?\\s*"
     ));
   }
 
@@ -141,13 +141,13 @@
             return maybeBackup(
               stream,
               endTag,
-              state.localMode.token(stream, state.localState),
+              state.localMode.token(stream, state.localState)
             );
           };
           state.localMode = mode;
           state.localState = CodeMirror.startState(
             mode,
-            htmlMode.indent(state.htmlState, ""),
+            htmlMode.indent(state.htmlState, "")
           );
         } else if (state.inTag) {
           state.inTag += stream.current();
@@ -204,7 +204,7 @@
     },
     "xml",
     "javascript",
-    "css",
+    "css"
   );
 
   CodeMirror.defineMIME("text/html", "htmlmixed");

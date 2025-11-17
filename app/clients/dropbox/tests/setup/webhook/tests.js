@@ -9,7 +9,7 @@ describe("webhook", function () {
   xit("challenges", function (done) {
     var webhook = new Webhook(
       process.env.BLOT_DROPBOX_APP_SECRET,
-      "http://localhost:" + this.server.port + "/clients/dropbox/webhook",
+      "http://localhost:" + this.server.port + "/clients/dropbox/webhook"
     );
 
     webhook.challenge("xyz", function (err) {
@@ -22,7 +22,7 @@ describe("webhook", function () {
   xit("notifies", function (done) {
     var webhook = new Webhook(
       process.env.BLOT_DROPBOX_APP_SECRET,
-      "http://localhost:" + this.server.port + "/clients/dropbox/webhook",
+      "http://localhost:" + this.server.port + "/clients/dropbox/webhook"
     );
 
     webhook.notify(process.env.BLOT_DROPBOX_TEST_ACCOUNT_ID, function (err) {

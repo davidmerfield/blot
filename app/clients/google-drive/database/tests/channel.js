@@ -67,7 +67,7 @@ describe("google drive database.channel", function () {
       fail("Expected an error to be thrown when type is missing");
     } catch (err) {
       expect(err.message).toBe(
-        "type and serviceAccountId are required to associate a channel.",
+        "type and serviceAccountId are required to associate a channel."
       );
     }
 
@@ -84,7 +84,7 @@ describe("google drive database.channel", function () {
       fail("Expected an error to be thrown when serviceAccountId is missing");
     } catch (err) {
       expect(err.message).toBe(
-        "type and serviceAccountId are required to associate a channel.",
+        "type and serviceAccountId are required to associate a channel."
       );
     }
   });
@@ -92,13 +92,13 @@ describe("google drive database.channel", function () {
   it("can iterate over all channels associated with a serviceAccountId and fileId", async function () {
     const serviceAccountId = "service_account_1";
     const fileId = "file_1";
-
+  
     // Create channels associated with the service account and file
     const channelId1 = "channel_" + Date.now().toString();
     const resourceId1 = "resource_" + Date.now().toString();
     const channelId2 = "channel_" + (Date.now() + 1).toString();
     const resourceId2 = "resource_" + (Date.now() + 1).toString();
-
+  
     await channel.store(channelId1, {
       type: "files.watch",
       serviceAccountId,
@@ -113,13 +113,13 @@ describe("google drive database.channel", function () {
       resourceId: resourceId2,
       url: "https://example2.com",
     });
-
+  
     // Iterate over all channels associated with the service account and file
     const result = [];
     await channel.iterateByFile(serviceAccountId, fileId, (data) => {
       result.push(data);
     });
-
+  
     // Expected result
     const expected = [
       {
@@ -137,23 +137,23 @@ describe("google drive database.channel", function () {
         url: "https://example2.com",
       },
     ];
-
+  
     // Sort by resourceId for consistent comparison
     result.sort((a, b) => a.resourceId.localeCompare(b.resourceId));
     expected.sort((a, b) => a.resourceId.localeCompare(b.resourceId));
-
+  
     expect(result).toEqual(expected);
   });
 
   it("can iterate over all channels associated with a serviceAccountId", async function () {
     const serviceAccountId = "service_account_1";
-
+  
     // Create channels associated with the service account
     const channelId1 = "channel_" + Date.now().toString();
     const resourceId1 = "resource_" + Date.now().toString();
     const channelId2 = "channel_" + (Date.now() + 1).toString();
     const resourceId2 = "resource_" + (Date.now() + 1).toString();
-
+  
     await channel.store(channelId1, {
       type: "changes.watch",
       serviceAccountId,
@@ -167,13 +167,13 @@ describe("google drive database.channel", function () {
       resourceId: resourceId2,
       url: "https://example2.com",
     });
-
+  
     // Iterate over all channels associated with the service account
     const result = [];
     await channel.iterateByServiceAccount(serviceAccountId, (data) => {
       result.push(data);
     });
-
+  
     // Expected result
     const expected = [
       {
@@ -190,11 +190,11 @@ describe("google drive database.channel", function () {
         url: "https://example2.com",
       },
     ];
-
+  
     // Sort by resourceId for consistent comparison
     result.sort((a, b) => a.resourceId.localeCompare(b.resourceId));
     expected.sort((a, b) => a.resourceId.localeCompare(b.resourceId));
-
+  
     expect(result).toEqual(expected);
   });
 
@@ -243,25 +243,25 @@ describe("google drive database.channel", function () {
       url: "https://example2.com",
     });
 
-    const serviceAccountChannels =
-      await channel.listByServiceAccount(serviceAccountId);
+    const serviceAccountChannels = await channel.listByServiceAccount(
+      serviceAccountId
+    );
     expect(serviceAccountChannels.sort()).toEqual(
-      [channelId1, channelId2].sort(),
+      [channelId1, channelId2].sort()
     );
   });
 
   it("gracefully handles deletion of a non-existent channel", async function () {
-    const nonExistentChannelId =
-      "non_existent_channel_" + Date.now().toString();
-
+    const nonExistentChannelId = "non_existent_channel_" + Date.now().toString();
+  
     // Attempt to delete a non-existent channel
     await expectAsync(channel.delete(nonExistentChannelId)).toBeResolved();
-
+  
     // Ensure the non-existent channel is not listed globally
     const channelIds = await channel.list();
     expect(channelIds).not.toContain(nonExistentChannelId);
   });
-
+  
   it("can list all channels associated with a serviceAccountId and fileId", async function () {
     const serviceAccountId = "service_account_1";
     const fileId = "file_1";
@@ -316,8 +316,9 @@ describe("google drive database.channel", function () {
     expect(channelIds).not.toContain(channelId);
 
     // Ensure the channel is no longer associated with the service account
-    const serviceAccountChannels =
-      await channel.listByServiceAccount(serviceAccountId);
+    const serviceAccountChannels = await channel.listByServiceAccount(
+      serviceAccountId
+    );
     expect(serviceAccountChannels).not.toContain(channelId);
 
     // Ensure the channel is no longer associated with the file
@@ -367,7 +368,7 @@ describe("google drive database.channel", function () {
       },
     ];
     expected.sort((a, b) =>
-      a.serviceAccountId.localeCompare(b.serviceAccountId),
+      a.serviceAccountId.localeCompare(b.serviceAccountId)
     );
     expect(result).toEqual(expected);
   });

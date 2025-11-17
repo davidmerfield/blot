@@ -11,7 +11,7 @@ describe("entry.search", function () {
     
     Hello, world!`;
 
-    const check = (results) => {
+    const check = results => {
       expect(results.length).toEqual(1);
       expect(results[0].id).toEqual(path);
     };
@@ -55,7 +55,7 @@ describe("entry.search", function () {
     
     Hello, me!`;
 
-    const check = (results) => {
+    const check = results => {
       // sort results by id
       results.sort((a, b) => a.id.localeCompare(b.id));
 
@@ -83,7 +83,7 @@ describe("entry.search", function () {
     
     你好，世界！`;
 
-    const check = (results) => {
+    const check = results => {
       expect(results.length).toEqual(1);
       expect(results[0].id).toEqual(path);
     };
@@ -135,7 +135,7 @@ describe("entry.search", function () {
     
     Hello, world!`;
 
-    const check = (results) => {
+    const check = results => {
       expect(results.length).toEqual(0);
     };
 
@@ -155,7 +155,7 @@ describe("entry.search", function () {
     
     Hello, world!`;
 
-    const check = (results) => {
+    const check = results => {
       expect(results.length).toEqual(1);
       expect(results[0].id).toEqual(path);
     };
@@ -176,7 +176,7 @@ describe("entry.search", function () {
     
     Hello, world!`;
 
-    const check = (results) => {
+    const check = results => {
       expect(results.length).toEqual(1);
       expect(results[0].id).toEqual(path);
     };
@@ -211,46 +211,41 @@ describe("entry.search", function () {
 
   it("returns results within timeout even with large dataset", async function (done) {
     for (let i = 0; i < 1000; i++) {
-      await this.set(
-        `/post${i}.txt`,
-        `Hello, world ${i}! Some more content to search through.`,
-      );
+      await this.set(`/post${i}.txt`, `Hello, world ${i}! Some more content to search through.`);
     }
-
+  
     const startTime = Date.now();
     const results = await this.search("Hello");
     const duration = Date.now() - startTime;
-
+  
     expect(duration).toBeLessThanOrEqual(4100);
     expect(results.length).toEqual(25);
-
+  
     done();
   });
-
+  
   it("handles timeout with extremely large text content", async function (done) {
     let largeContent = "Start ";
     for (let i = 0; i < 100000; i++) {
       largeContent += `word${i} `;
     }
     largeContent += " End";
-
+  
     await this.set("/large.txt", largeContent);
-
+  
     const startTime = Date.now();
     const results = await this.search("word50000");
     const duration = Date.now() - startTime;
-
+  
     expect(duration).toBeLessThanOrEqual(4100);
     expect(results.length).toBeLessThan(2);
-
+  
     done();
   });
-
+  
   it("maintains performance with complex multi-term searches", async function (done) {
     for (let i = 0; i < 100; i++) {
-      await this.set(
-        `/complex${i}.txt`,
-        `
+      await this.set(`/complex${i}.txt`, `
         Title: Complex Post ${i}
         Tags: tag${i}, common1, common2
         Custom: custom${i}
@@ -258,70 +253,63 @@ describe("entry.search", function () {
         This is a complex post with multiple searchable terms.
         It contains various words like specific${i} and common words.
         Some entries will have unique${i} terms while others share terms.
-      `,
-      );
+      `);
     }
-
+  
     const startTime = Date.now();
     const results = await this.search("complex specific50 unique50");
     const duration = Date.now() - startTime;
-
+  
     expect(duration).toBeLessThanOrEqual(4100);
     expect(results.length).toEqual(1);
-
+  
     done();
   });
-
+  
   it("returns partial results if timeout occurs mid-search", async function (done) {
     for (let i = 0; i < 500; i++) {
-      await this.set(
-        `/slow${i}.txt`,
-        `
+      await this.set(`/slow${i}.txt`, `
         Title: Slow Search Test ${i}
-        Tags: ${Array(100).fill(`tag${i}`).join(", ")}
-        Custom: ${Array(100).fill(`custom${i}`).join(" ")}
+        Tags: ${Array(100).fill(`tag${i}`).join(', ')}
+        Custom: ${Array(100).fill(`custom${i}`).join(' ')}
         
-        ${Array(100).fill(`This is entry ${i}`).join(" ")}
-      `,
-      );
+        ${Array(100).fill(`This is entry ${i}`).join(' ')}
+      `);
     }
-
+  
     const startTime = Date.now();
     const results = await this.search("entry");
     const duration = Date.now() - startTime;
-
+  
     expect(duration).toBeLessThanOrEqual(4100);
     expect(results.length).toBeLessThanOrEqual(50);
     expect(results.length).toBeGreaterThan(0);
-
+  
     done();
   });
-
+  
   it("performs well with concurrent searches", async function (done) {
     for (let i = 0; i < 200; i++) {
-      await this.set(
-        `/concurrent${i}.txt`,
-        `Post ${i} with some searchable content`,
-      );
+      await this.set(`/concurrent${i}.txt`, `Post ${i} with some searchable content`);
     }
-
+  
     const startTime = Date.now();
     const searches = [
       this.search("Post"),
       this.search("searchable"),
       this.search("content"),
       this.search("Post searchable"),
-      this.search("nonexistent"),
+      this.search("nonexistent")
     ];
-
+  
     const results = await Promise.all(searches);
     const duration = Date.now() - startTime;
-
+  
     expect(duration).toBeLessThanOrEqual(4100);
-    results.forEach((result) => {
+    results.forEach(result => {
       expect(result.length).toBeLessThanOrEqual(50);
     });
-
+  
     done();
   });
 });

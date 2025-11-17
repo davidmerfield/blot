@@ -49,9 +49,9 @@ function main(callback) {
             }
           });
         },
-        callback,
+        callback
       );
-    },
+    }
   );
 }
 

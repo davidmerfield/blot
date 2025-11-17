@@ -48,9 +48,10 @@ module.exports = function (req, res, next) {
     // Add success message if we're going to the settings page
     // and successful changes were made
     if (changes && changes.length && _.isEmpty(errors)) {
+
       return res.message(
         redirect,
-        dictionary[changes[0]] || "Saved changes to your " + changes[0],
+        dictionary[changes[0]] || "Saved changes to your " + changes[0]
       );
     }
 

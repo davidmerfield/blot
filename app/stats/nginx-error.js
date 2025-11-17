@@ -7,10 +7,10 @@ const MAX_RECOMPUTED = 2; // hours
 
 let reComputed = 0;
 
-function main(logFile) {
+function main (logFile) {
   const logFileName = logFile.split("/").slice(-1)[0];
 
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const handleLine = aggregator({ logFileName });
     lineReader.eachLine(logFile, handleLine).then(() => {
       if (reComputed >= MAX_RECOMPUTED) {
@@ -22,7 +22,7 @@ function main(logFile) {
   });
 }
 
-function aggregator({ logFileName }) {
+function aggregator ({ logFileName }) {
   let currentMinute;
   let currentMinuteData = [];
 
@@ -43,7 +43,7 @@ function aggregator({ logFileName }) {
         requestID,
         requestBytes,
         responseBytes,
-        cache,
+        cache
       } = parse(line);
 
       if (!currentMinute) currentMinute = date.format("YYYY-MM-DD-HH-mm");
@@ -88,7 +88,7 @@ function aggregator({ logFileName }) {
             .map(({ responseTime, url, requestID }) => ({
               responseTime,
               url,
-              requestID,
+              requestID
             })),
 
           slowestResponseTime,
@@ -117,12 +117,12 @@ function aggregator({ logFileName }) {
           popularHosts: Object.keys(requestsByHost)
             .sort((a, b) => requestsByHost[b] - requestsByHost[a])
             .slice(0, 10)
-            .map((host) => ({ host, count: requestsByHost[host] })),
+            .map(host => ({ host, count: requestsByHost[host] })),
 
           popularURLs: Object.keys(requestsByURL)
             .sort((a, b) => requestsByURL[b] - requestsByURL[a])
             .slice(0, 10)
-            .map((url) => ({ url, count: requestsByURL[url] })),
+            .map(url => ({ url, count: requestsByURL[url] })),
 
           percent4XX:
             (currentMinuteData.reduce((acc, { status }) => {
@@ -138,7 +138,7 @@ function aggregator({ logFileName }) {
               return acc;
             }, 0) /
               currentMinuteData.length) *
-            100,
+            100
         });
 
         currentMinuteData = [];
@@ -151,7 +151,7 @@ function aggregator({ logFileName }) {
 
           fs.outputJSONSync(
             STATS_DIRECTORY + "/" + currentHour + ".json",
-            currentHourData,
+            currentHourData
           );
           console.log(logFileName, ": wrote computed hour ", currentHour);
 
@@ -172,7 +172,7 @@ function aggregator({ logFileName }) {
           requestID,
           requestBytes,
           responseBytes,
-          cache,
+          cache
         });
       }
 
@@ -180,7 +180,7 @@ function aggregator({ logFileName }) {
         // write the last hour
         fs.outputJSONSync(
           STATS_DIRECTORY + "/" + currentHour + ".json",
-          currentHourData,
+          currentHourData
         );
       }
     } catch (e) {}
@@ -196,7 +196,7 @@ module.exports = main;
 // and returns an object with the following properties:
 // date, requestID, responseTime, status, url, host, cache, requestBytes, responseBytes
 
-function parse(line) {
+function parse (line) {
   if (!line) throw new Error("Empty line");
 
   if (line.indexOf("[error]") > -1) throw new Error("Error line");
@@ -242,6 +242,6 @@ function parse(line) {
     host,
     cache,
     requestBytes,
-    responseBytes,
+    responseBytes
   };
 }

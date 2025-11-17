@@ -58,7 +58,7 @@ module.exports = function (req, res, _next) {
 
       if (!response) {
         err = new Error(
-          `The view '${name}' does not exist under templateID=${templateID}`,
+          `The view '${name}' does not exist under templateID=${templateID}`
         );
         err.code = "NO_VIEW";
         return next(err);
@@ -170,7 +170,7 @@ module.exports = function (req, res, _next) {
               output = output
                 .split("</body>")
                 .join(
-                  "<script>window.onload = function() {window.top.postMessage('iframe:' +  window.location.pathname, '*');};</script></body>",
+                  "<script>window.onload = function() {window.top.postMessage('iframe:' +  window.location.pathname, '*');};</script></body>"
                 );
             }
 

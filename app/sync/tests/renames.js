@@ -27,7 +27,7 @@ describe("update", function () {
   it("ignores a renamed file if it is empty", function (done) {
     var path = this.fake.path(".txt");
     var newPath = this.fake.path(".txt");
-    var content = "";
+    var content = '';
 
     var ctx = this;
 
@@ -37,18 +37,15 @@ describe("update", function () {
         if (err) return done.fail(err);
         ctx.removeAndSync(path, function (err) {
           if (err) return done.fail(err);
-          ctx.checkEntry({ path, deleted: true }, function (err, entry) {
+          ctx.checkEntry({path, deleted: true}, function(err, entry) {
             if (err) return done.fail(err);
-            ctx.checkEntry(
-              { path: newPath, deleted: false },
-              function (err, newPathEntry) {
-                if (err) return done.fail(err);
+            ctx.checkEntry({path: newPath, deleted: false}, function(err, newPathEntry) {
+              if (err) return done.fail(err);
 
-                expect(newPathEntry.guid).not.toBe(entry.guid);
-                expect(newPathEntry.created).not.toBe(entry.created);
-                done();
-              },
-            );
+              expect(newPathEntry.guid).not.toBe(entry.guid);
+              expect(newPathEntry.created).not.toBe(entry.created);
+              done();
+            });
           });
         });
       });
@@ -56,9 +53,9 @@ describe("update", function () {
   });
 
   it("does not reset the created date for published drafts", function (done) {
-    var path = "/Drafts/Example.txt";
-    var newPath = "/Example.txt";
-    var content = "Hello, world";
+    var path = '/Drafts/Example.txt';
+    var newPath = '/Example.txt';
+    var content = 'Hello, world';
 
     var ctx = this;
 
@@ -68,18 +65,15 @@ describe("update", function () {
         if (err) return done.fail(err);
         ctx.removeAndSync(path, function (err) {
           if (err) return done.fail(err);
-          ctx.checkEntry({ path, deleted: true }, function (err, entry) {
+          ctx.checkEntry({path, deleted: true}, function(err, entry) {
             if (err) return done.fail(err);
-            ctx.checkEntry(
-              { path: newPath, deleted: false },
-              function (err, newPathEntry) {
-                if (err) return done.fail(err);
+            ctx.checkEntry({path: newPath, deleted: false}, function(err, newPathEntry) {
+              if (err) return done.fail(err);
 
-                expect(newPathEntry.guid).not.toBe(entry.guid);
-                expect(newPathEntry.created).not.toBe(entry.created);
-                done();
-              },
-            );
+              expect(newPathEntry.guid).not.toBe(entry.guid);
+              expect(newPathEntry.created).not.toBe(entry.created);
+              done();
+            });
           });
         });
       });
@@ -108,7 +102,7 @@ describe("update", function () {
       items.push({
         oldPath: uniquePath(".txt"),
         newPath: uniquePath(".txt"),
-        content: this.fake.file({ title: i + "-" + Date.now() }),
+        content: this.fake.file({title: i + '-' + Date.now()}),
       });
 
     sync(ctx.blog.id, function (err, folder, done) {
@@ -136,7 +130,7 @@ describe("update", function () {
                 function (item, next) {
                   fs.moveSync(
                     folder.path + item.oldPath,
-                    folder.path + item.newPath,
+                    folder.path + item.newPath
                   );
                   folder.update(item.oldPath, function () {
                     folder.update(item.newPath, next);
@@ -153,14 +147,14 @@ describe("update", function () {
                       function (item, next) {
                         ctx.checkRename(item.oldPath, item.newPath, next);
                       },
-                      testDone,
+                      testDone
                     );
                   });
-                },
+                }
               );
             });
           });
-        },
+        }
       );
     });
   });
@@ -210,7 +204,7 @@ describe("update", function () {
                           if (err) return next(err);
                           ghostEntryID = entry.id;
                           next();
-                        },
+                        }
                       );
                     });
                   },
@@ -220,16 +214,12 @@ describe("update", function () {
 
                       var deletedListKey = "blog:" + blogID + ":deleted";
 
-                      redis.zscore(
-                        deletedListKey,
-                        ghostEntryID,
-                        function (err, score) {
-                          if (err) return next(err);
+                      redis.zscore(deletedListKey, ghostEntryID, function (err, score) {
+                        if (err) return next(err);
 
-                          expect(score).not.toBeNull();
-                          next();
-                        },
-                      );
+                        expect(score).not.toBeNull();
+                        next();
+                      });
                     });
                   },
                 ],
@@ -253,13 +243,13 @@ describe("update", function () {
                             function (err) {
                               if (err) return testDone.fail(err);
                               testDone();
-                            },
+                            }
                           );
-                        },
+                        }
                       );
                     });
                   });
-                },
+                }
               );
             });
           });
@@ -293,7 +283,7 @@ describe("update", function () {
               if (err) return testDone.fail(err);
               checkRename(path, newPath, testDone);
             });
-          },
+          }
         );
       });
     });
@@ -314,25 +304,22 @@ describe("update", function () {
     this.checkEntry = checkEntry;
 
     this.checkRename = function (oldPath, newPath, callback) {
-      checkEntry(
-        { path: oldPath, deleted: true, guid: "" },
-        function (err, entry) {
-          if (err) return callback(err);
+      checkEntry({ path: oldPath, deleted: true, guid: '' }, function (err, entry) {
+        if (err) return callback(err);
 
-          checkEntry(
-            {
-              path: newPath,
-              url: entry.permalink,
-              created: entry.created,
-              deleted: false,
-            },
-            function (err) {
-              if (err) return callback(err);
-              callback();
-            },
-          );
-        },
-      );
+        checkEntry(
+          {
+            path: newPath,
+            url: entry.permalink,
+            created: entry.created,
+            deleted: false,
+          },
+          function (err) {
+            if (err) return callback(err);
+            callback();
+          }
+        );
+      });
     };
 
     this.removeAndSync = function (path, callback) {

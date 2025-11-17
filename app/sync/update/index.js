@@ -120,7 +120,7 @@ function maybeEnableInjectTitle(blog, path, callback) {
         }
         if (err) console.error(clfdate(), blog.id, path, err);
         callback();
-      },
+      }
     );
   } catch (error) {
     console.error(clfdate(), blog.id, path, error);

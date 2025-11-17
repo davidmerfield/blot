@@ -27,8 +27,9 @@ async function main(path, outputDirectory, callback) {
   var input, result;
 
   callback = callOnce(callback);
-  input = sharp(path, { animated: true });
+  input = sharp(path, { animated: true})
   result = {};
+
 
   async.eachOf(
     thumbnails,
@@ -42,7 +43,7 @@ async function main(path, outputDirectory, callback) {
       var extension = extname(path).toLowerCase();
 
       if (extension === ".svg") extension = ".png";
-
+      
       var fileName = name.toLowerCase() + extension;
       var to = outputDirectory + "/" + fileName;
 
@@ -60,7 +61,7 @@ async function main(path, outputDirectory, callback) {
     },
     function (err) {
       callback(err, result);
-    },
+    }
   );
 }
 
@@ -71,26 +72,23 @@ function transform(input, to, options, callback) {
 
   transform.on("error", callback);
 
+  
+  
   if (options.crop) {
     transform.resize(size, size, {
       withoutEnlargement: true,
       fit: "cover",
     });
   } else {
-    transform.resize({
-      withoutEnlargement: true,
-      fit: "inside",
-      width: size,
-      height: size,
-    });
+    transform.resize({ withoutEnlargement: true, fit: "inside", width: size, height: size });
   }
 
-  console.log("HERE", to);
+  console.log('HERE', to);
 
   transform.toFile(to, function done(err, info) {
     if (err) return callback(err);
 
-    console.log("INFO", info);
+    console.log('INFO', info);
 
     callback(err, info.width, info.height);
   });

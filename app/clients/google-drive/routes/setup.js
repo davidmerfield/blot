@@ -37,13 +37,13 @@ async function finishSetup(blog, drive, email, sync) {
       console.log(
         clfdate(),
         "Google Drive Client",
-        "Checking for empty shared folder...",
+        "Checking for empty shared folder..."
       );
       const res = await findEmptySharedFolder(
         blog.id,
         drive,
         email,
-        sync.folder.status,
+        sync.folder.status
       );
 
       // wait 2 seconds before trying again
@@ -112,7 +112,7 @@ async function findEmptySharedFolder(blogID, drive, email, status) {
   const availableFolders = await getAvailableFolders(
     drive,
     email,
-    existingFolderIDs,
+    existingFolderIDs
   );
 
   if (availableFolders.length === 0) {
@@ -133,7 +133,7 @@ async function findEmptySharedFolder(blogID, drive, email, status) {
       drive,
       blogID,
       status,
-      isLastFolder,
+      isLastFolder
     );
     if (result) return result;
   }
@@ -168,7 +168,7 @@ async function getAvailableFolders(drive, email, existingIDs) {
   // by removing folders with parents we avoid syncing to folders
   // that are inside other folders the service account may have access to
   return res.data.files.filter(
-    (file) => !existingIDs.includes(file.id) && !file.parents,
+    (file) => !existingIDs.includes(file.id) && !file.parents
   );
 }
 
@@ -227,14 +227,14 @@ async function checkEditorPermissions(drive, folderId) {
     return permissions.some(
       (perm) =>
         (perm.type === "user" || perm.type === "anyone") &&
-        perm.role === "writer",
+        perm.role === "writer"
     );
   } catch (e) {
     console.error(
       clfdate(),
       "Google Drive Client",
       "Failed to load permissions",
-      e.message,
+      e.message
     );
     return false;
   }
@@ -268,7 +268,7 @@ async function restartSetupProcesses() {
       clfdate(),
       "Google Drive Client",
       "restartSetupProcesses: Failed to load blogs",
-      e,
+      e
     );
     return;
   }
@@ -278,7 +278,7 @@ async function restartSetupProcesses() {
       clfdate(),
       "Google Drive Client",
       "Restarting setup for blog",
-      blogID,
+      blogID
     );
 
     const serviceAccountId = account.serviceAccountId;
@@ -289,7 +289,7 @@ async function restartSetupProcesses() {
         clfdate(),
         "Google Drive Client",
         "Missing serviceAccountId or email",
-        blogID,
+        blogID
       );
       continue;
     }
@@ -307,7 +307,7 @@ async function restartSetupProcesses() {
         clfdate(),
         "Google Drive Client",
         "Failed to load blog or account details",
-        e,
+        e
       );
       continue;
     }
@@ -320,7 +320,7 @@ async function restartSetupProcesses() {
       console.log(
         clfdate(),
         "Google Drive Client",
-        "Failed to create drive client",
+        "Failed to create drive client"
       );
       continue;
     }
@@ -333,7 +333,7 @@ async function restartSetupProcesses() {
       console.log(
         clfdate(),
         "Google Drive Client",
-        "Failed to establish sync lock",
+        "Failed to establish sync lock"
       );
       continue;
     }

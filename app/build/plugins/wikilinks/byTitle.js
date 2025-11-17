@@ -14,20 +14,20 @@ module.exports = function byTitle(blogID, href, done) {
       return done(null, {
         url: perfectMatch.url,
         title: perfectMatch.title,
-        path: perfectMatch.path,
+        path: perfectMatch.path
       });
     }
 
     // Will trim, lowercase, remove punctuation, etc.
     const roughMatch = allEntries.find(
-      (entry) => makeSlug(entry.title) === makeSlug(href),
+      (entry) => makeSlug(entry.title) === makeSlug(href)
     );
 
     if (roughMatch) {
       return done(null, {
         url: roughMatch.url,
         title: roughMatch.title,
-        path: roughMatch.path,
+        path: roughMatch.path
       });
     }
 

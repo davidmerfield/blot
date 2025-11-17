@@ -17,15 +17,12 @@
   -webkit-text-size-adjust: 100%;
   /* create separate layer, to avoid paint on window.onscroll in webkit/blink */
   -webkit-backface-visibility: hidden;
-  outline: none;
-}
-.pswp * {
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
-}
-.pswp img {
-  max-width: none;
-}
+  outline: none; }
+  .pswp * {
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box; }
+  .pswp img {
+    max-width: none; }
 
 /* style is added when JS option showHideOpacity is set to true */
 .pswp--animate_opacity {
@@ -34,33 +31,28 @@
   will-change: opacity;
   /* for open/close transition */
   -webkit-transition: opacity 333ms cubic-bezier(0.4, 0, 0.22, 1);
-  transition: opacity 333ms cubic-bezier(0.4, 0, 0.22, 1);
-}
+          transition: opacity 333ms cubic-bezier(0.4, 0, 0.22, 1); }
 
 .pswp--open {
-  display: block;
-}
+  display: block; }
 
 .pswp--zoom-allowed .pswp__img {
   /* autoprefixer: off */
   cursor: -webkit-zoom-in;
   cursor: -moz-zoom-in;
-  cursor: zoom-in;
-}
+  cursor: zoom-in; }
 
 .pswp--zoomed-in .pswp__img {
   /* autoprefixer: off */
   cursor: -webkit-grab;
   cursor: -moz-grab;
-  cursor: grab;
-}
+  cursor: grab; }
 
 .pswp--dragging .pswp__img {
   /* autoprefixer: off */
   cursor: -webkit-grabbing;
   cursor: -moz-grabbing;
-  cursor: grabbing;
-}
+  cursor: grabbing; }
 
 /*
   Background is added as a separate element.
@@ -75,10 +67,9 @@
   background: #000;
   opacity: 0;
   -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+          transform: translateZ(0);
   -webkit-backface-visibility: hidden;
-  will-change: opacity;
-}
+  will-change: opacity; }
 
 .pswp__scroll-wrap {
   position: absolute;
@@ -86,8 +77,7 @@
   top: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-}
+  overflow: hidden; }
 
 .pswp__container,
 .pswp__zoom-wrap {
@@ -97,8 +87,7 @@
   left: 0;
   right: 0;
   top: 0;
-  bottom: 0;
-}
+  bottom: 0; }
 
 /* Prevent selection and tap highlights */
 .pswp__container,
@@ -106,10 +95,9 @@
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  user-select: none;
+      user-select: none;
   -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-}
+  -webkit-touch-callout: none; }
 
 .pswp__zoom-wrap {
   position: absolute;
@@ -119,26 +107,22 @@
   transform-origin: left top;
   /* for open/close transition */
   -webkit-transition: -webkit-transform 333ms cubic-bezier(0.4, 0, 0.22, 1);
-  transition: transform 333ms cubic-bezier(0.4, 0, 0.22, 1);
-}
+          transition: transform 333ms cubic-bezier(0.4, 0, 0.22, 1); }
 
 .pswp__bg {
   will-change: opacity;
   /* for open/close transition */
   -webkit-transition: opacity 333ms cubic-bezier(0.4, 0, 0.22, 1);
-  transition: opacity 333ms cubic-bezier(0.4, 0, 0.22, 1);
-}
+          transition: opacity 333ms cubic-bezier(0.4, 0, 0.22, 1); }
 
 .pswp--animated-in .pswp__bg,
 .pswp--animated-in .pswp__zoom-wrap {
   -webkit-transition: none;
-  transition: none;
-}
+  transition: none; }
 
 .pswp__container,
 .pswp__zoom-wrap {
-  -webkit-backface-visibility: hidden;
-}
+  -webkit-backface-visibility: hidden; }
 
 .pswp__item {
   position: absolute;
@@ -146,39 +130,34 @@
   right: 0;
   top: 0;
   bottom: 0;
-  overflow: hidden;
-}
+  overflow: hidden; }
 
 .pswp__img {
   position: absolute;
   width: auto;
   height: auto;
   top: 0;
-  left: 0;
-}
+  left: 0; }
 
 /*
   stretched thumbnail or div placeholder element (see below)
   style is added to avoid flickering in webkit/blink when layers overlap
 */
 .pswp__img--placeholder {
-  -webkit-backface-visibility: hidden;
-}
+  -webkit-backface-visibility: hidden; }
 
 /*
   div element that matches size of large image
   large image loads on top of it
 */
 .pswp__img--placeholder--blank {
-  background: #222;
-}
+  background: #222; }
 
 .pswp--ie .pswp__img {
   width: 100% !important;
   height: auto !important;
   left: 0;
-  top: 0;
-}
+  top: 0; }
 
 /*
   Error message appears when image is not loaded
@@ -193,10 +172,8 @@
   font-size: 14px;
   line-height: 16px;
   margin-top: -8px;
-  color: #ccc;
-}
+  color: #CCC; }
 
 .pswp__error-msg a {
-  color: #ccc;
-  text-decoration: underline;
-}
+  color: #CCC;
+  text-decoration: underline; }

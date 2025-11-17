@@ -6,14 +6,14 @@ School Book style from goldblog.com.ua (c) Zaripov Yura <yur4ik7@ukr.net>
 
 .hljs {
   color: #3e5915;
-  background: #f6f5b2;
+  background:#f6f5b2;
 }
 
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-literal {
-  color: #005599;
-  font-weight: bold;
+  color:#005599;
+  font-weight:bold;
 }
 
 .hljs-subst {

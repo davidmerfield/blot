@@ -14,7 +14,7 @@ function isAcronym(word) {
     word.length &&
     word.trim().length > 1 &&
     !onlyNumbers.test(
-      word.replace(/[\.,-\/#!–$%°\^&\*;?:+′|@\[\]{}=\-_`~()]/g, ""),
+      word.replace(/[\.,-\/#!–$%°\^&\*;?:+′|@\[\]{}=\-_`~()]/g, "")
     ) &&
     word.replace(/[\.,-\/#!$%\^&\*;–?:+|@\[\]{}=\-_`~(′°)]/g, "") === word &&
     word.toUpperCase() === word
@@ -62,7 +62,7 @@ function removeCruft(word) {
   return [leading, word, trailing];
 }
 
-module.exports = (text) => {
+module.exports = text => {
   const wordList = text.split(" ");
 
   for (const i in wordList) {

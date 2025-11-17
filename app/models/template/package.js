@@ -73,9 +73,9 @@ module.exports = {
     setMetadata(id, changes, function (err) {
       callback(err, views);
     });
-  },
+  }
 };
 
-function objectWithProperties(obj) {
+function objectWithProperties (obj) {
   return type(obj, "object") && Object.keys(obj).length;
 }

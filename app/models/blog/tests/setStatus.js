@@ -70,7 +70,7 @@ describe("Blog.setStatus", function () {
     await expectAsync(setStatus(this.blog.id, { error: 1 })).toBeRejected();
 
     await expectAsync(
-      setStatus(this.blog.id, { message: null, error: true }),
+      setStatus(this.blog.id, { message: null, error: true })
     ).toBeRejected();
 
     await expectAsync(setStatus(this.blog.id, {})).toBeRejected();
@@ -79,7 +79,7 @@ describe("Blog.setStatus", function () {
         error: false,
         syncing: true,
         message: null,
-      }),
+      })
     ).toBeRejected();
   });
 });

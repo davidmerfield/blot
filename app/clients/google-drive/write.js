@@ -37,13 +37,13 @@ module.exports = async function write(blogID, path, input, callback) {
       " md5Checksum for",
       pathOnBlot,
       "is",
-      md5ChecksumOnBlot,
+      md5ChecksumOnBlot
     );
 
     if (md5ChecksumOnBlot === md5Checksum) {
       console.log(
         prefix(),
-        "md5Checksum matches so no need to make any changes",
+        "md5Checksum matches so no need to make any changes"
       );
       await fs.remove(tempPath);
       return callback(null);
@@ -78,7 +78,7 @@ module.exports = async function write(blogID, path, input, callback) {
           (await establishParentDirectories(
             drive,
             pathParent,
-            account.folderId,
+            account.folderId
           ));
 
         await drive.files.create({

@@ -30,7 +30,7 @@ module.exports = async (id, updates) => {
   if (updates.tags) {
     for (const tag of updates.tags) {
       multi.sadd(keys.all_tags, tag);
-      multi.zadd(keys.by_tag(tag), parseInt(created_at), id);
+      multi.zadd(keys.by_tag(tag),  parseInt(created_at), id);
     }
 
     for (const tag of existing.tags) {

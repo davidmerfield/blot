@@ -34,6 +34,7 @@ function render($, callback, { blogID, path }) {
         return next();
       }
 
+
       const attribute = isLink ? "href" : "src";
       const rawTarget = isLink ? $node.attr(attribute) : mediaSource;
 
@@ -93,14 +94,14 @@ function render($, callback, { blogID, path }) {
           }
 
           if (filenameToken) {
-            syntheticDependencies.push(
-              `/__wikilink_filename__/${filenameToken}`,
-            );
+            syntheticDependencies.push(`/__wikilink_filename__/${filenameToken}`);
           }
 
-          pathsToWatch.concat(syntheticDependencies).forEach((path) => {
-            if (path && !dependencies.includes(path)) dependencies.push(path);
-          });
+          pathsToWatch
+            .concat(syntheticDependencies)
+            .forEach((path) => {
+              if (path && !dependencies.includes(path)) dependencies.push(path);
+            });
 
           debug("Wikilink target not found for", href);
           return next();
@@ -152,7 +153,7 @@ function render($, callback, { blogID, path }) {
     },
     function () {
       callback(null, dependencies);
-    },
+    }
   );
 }
 module.exports = {

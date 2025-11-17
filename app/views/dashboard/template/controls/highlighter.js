@@ -23,7 +23,7 @@ document.querySelectorAll("form.syntax-highlighter").forEach(function (form) {
       }
 
       fetch(withAjax(window.location.href), { method: "post", body }).then(
-        handleAjaxSaveResponse,
+        handleAjaxSaveResponse
       );
 
       if (toggleInput && !shouldStayOpen) {

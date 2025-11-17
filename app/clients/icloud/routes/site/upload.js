@@ -6,7 +6,7 @@ module.exports = async function (req, res) {
   try {
     const blogID = req.header("blogID");
     const filePath = Buffer.from(req.header("pathBase64"), "base64").toString(
-      "utf8",
+      "utf8"
     );
     const modifiedTime = req.header("modifiedTime");
 
@@ -17,7 +17,7 @@ module.exports = async function (req, res) {
     }
 
     console.log(
-      `Uploading binary file for blogID: ${blogID}, path: ${filePath}`,
+      `Uploading binary file for blogID: ${blogID}, path: ${filePath}`
     );
 
     // Establish sync lock to allow safe file operations

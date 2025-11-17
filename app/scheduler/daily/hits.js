@@ -29,7 +29,7 @@ const properties_to_apply_prettyNumber = ["requests"];
 const properties_to_round_integer = ["connected_clients"];
 const properties_to_round_three_decimal_places = [
   "medianResponseTime",
-  "meanResponseTime",
+  "meanResponseTime"
 ];
 
 const properties_to_apply_makePercentage = [
@@ -37,7 +37,7 @@ const properties_to_apply_makePercentage = [
   "cpu",
   "cpu_load",
   "percent4XX",
-  "percent5XX",
+  "percent5XX"
 ];
 const properties_to_apply_prettySize = [
   "bytesSent",
@@ -47,7 +47,7 @@ const properties_to_apply_prettySize = [
   "backup_disk_free",
   "backup_disk_used",
   "system_memory",
-  "used_memory",
+  "used_memory"
 ];
 
 const properties_to_sum = ["requests", "bytesSent", "bytesReceived"];
@@ -62,7 +62,7 @@ const properties_to_average = [
 
   // redis
   "connected_clients",
-  "cpu_load",
+  "cpu_load"
 ];
 
 const properties_to_return_most_recent = [
@@ -71,10 +71,10 @@ const properties_to_return_most_recent = [
   "backup_disk_free",
   "backup_disk_used",
   "system_memory",
-  "used_memory",
+  "used_memory"
 ];
 
-function main(callback) {
+function main (callback) {
   const response = {};
 
   for (let x = 0; x < stats_subdirectories.length; x++) {
@@ -82,7 +82,7 @@ function main(callback) {
     const aggregate = (response[subdirectory] = {});
     const files = fs
       .readdirSync(stats_directory + "/" + subdirectory)
-      .filter((file) => file.endsWith(".json"))
+      .filter(file => file.endsWith(".json"))
       .sort()
       .slice(-24)
       .reverse();
@@ -92,8 +92,8 @@ function main(callback) {
       const stats = JSON.parse(
         fs.readFileSync(
           stats_directory + "/" + subdirectory + "/" + file,
-          "utf8",
-        ),
+          "utf8"
+        )
       ).reverse();
 
       for (let j = 0; j < stats.length; j++) {

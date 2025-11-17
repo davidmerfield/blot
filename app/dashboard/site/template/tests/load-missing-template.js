@@ -40,16 +40,14 @@ describe("template loader", function () {
     expect(req.template).toBeDefined();
     expect(res.locals.template).toBe(req.template);
     expect(req.template.slug).toEqual(expectedSlug);
-    expect(req.template.id).toEqual(
-      Template.makeID(this.blog.id, expectedSlug),
-    );
+    expect(req.template.id).toEqual(Template.makeID(this.blog.id, expectedSlug));
     expect(req.template.locals).toEqual({});
     expect(req.template.partials).toEqual({});
     expect(req.template.previewPath).toEqual("");
     expect(res.locals.preview).toEqual(res.locals.previewOrigin);
     expect(res.locals.breadcrumbs.add).toHaveBeenCalledWith(
       req.template.name,
-      req.template.slug,
+      req.template.slug
     );
   });
 });

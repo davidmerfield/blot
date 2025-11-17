@@ -1,34 +1,31 @@
-const ajax = require("../js/ajax.js");
+const ajax = require('../js/ajax.js');
 const withAjax = ajax.withAjax;
 const handleAjaxSaveResponse = ajax.handleAjaxSaveResponse;
 
 // select inputs
-document
-  .querySelectorAll("form.select:not(.syntax-highlighter)")
-  .forEach(function (form) {
-    form.querySelectorAll("select").forEach(function (node) {
-      node.addEventListener("change", (event) => {
-        // construct the body based on the single input or button that was clicked
-        const body = new URLSearchParams();
+document.querySelectorAll('form.select:not(.syntax-highlighter)').forEach(function(form){
+	form.querySelectorAll('select').forEach(function(node){
+	  node.addEventListener('change',  (event) => {
 
-        body.append(node.name, node.value);
+		// construct the body based on the single input or button that was clicked
+		const body = new URLSearchParams();
 
-        // append the csrf token
-        body.append("_csrf", form.querySelector('input[name="_csrf"]').value);
+		body.append(node.name, node.value);
 
-        fetch(withAjax(window.location.href), { method: "post", body }).then(
-          handleAjaxSaveResponse,
-        );
+		// append the csrf token
+		body.append('_csrf', form.querySelector('input[name="_csrf"]').value)
 
-        // set the class="selected" of the button that was clicked
-        node.parentNode.querySelectorAll("button").forEach(function (button) {
-          button.classList.remove("selected");
-        });
+		fetch(withAjax(window.location.href), { method: "post", body }).then(handleAjaxSaveResponse);
 
-        node.classList.add("selected");
+		// set the class="selected" of the button that was clicked
+		node.parentNode.querySelectorAll('button').forEach(function(button){
+			button.classList.remove('selected');
+		});
 
-        event.preventDefault();
-        return false;
-      });
-    });
-  });
+		node.classList.add('selected');
+
+		event.preventDefault();
+		return false;
+		})
+	})
+  })

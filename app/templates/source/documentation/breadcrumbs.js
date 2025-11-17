@@ -37,7 +37,7 @@ function renderBreadcrumbs() {
     breadcrumbsContainer.innerHTML = breadcrumbs
       .map(
         (breadcrumb, index) =>
-          `<a href="${breadcrumb.url}" class="breadcrumb">${breadcrumb.label}</a>`,
+          `<a href="${breadcrumb.url}" class="breadcrumb">${breadcrumb.label}</a>`
       )
       .join(" ");
   }

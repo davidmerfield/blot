@@ -8,6 +8,7 @@ const bodyParser = require("body-parser");
 
 const maxFileSize = config.webhooks.client_max_body_size;
 
+
 /*
 
 
@@ -33,7 +34,7 @@ server.get("/connect", function (req, res) {
     "X-Accel-Buffering": "no",
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
-    Connection: "keep-alive",
+    "Connection": "keep-alive",
   });
 
   res.write("\n");
@@ -42,17 +43,11 @@ server.get("/connect", function (req, res) {
   const clientId = Date.now() + Math.random();
   subscribers.set(clientId, res);
 
-  console.log(
-    clfdate(),
-    `Client connected: ${clientId}. Total subscribers: ${subscribers.size}`,
-  );
+  console.log(clfdate(), `Client connected: ${clientId}. Total subscribers: ${subscribers.size}`);
 
   req.on("close", function () {
     subscribers.delete(clientId);
-    console.log(
-      clfdate(),
-      `Client disconnected: ${clientId}. Total subscribers: ${subscribers.size}`,
-    );
+    console.log(clfdate(), `Client disconnected: ${clientId}. Total subscribers: ${subscribers.size}`);
   });
 });
 
@@ -119,11 +114,7 @@ server.use(
         subscriber.write("data: " + metadata + "\n\n");
         console.log(clfdate(), "Delivered metadata to client", clientId);
       } catch (err) {
-        console.error(
-          clfdate(),
-          `Error delivering metadata to client ${clientId}:`,
-          err,
-        );
+        console.error(clfdate(), `Error delivering metadata to client ${clientId}:`, err);
         subscribers.delete(clientId);
       }
     }
@@ -146,24 +137,20 @@ server.use(
           try {
             subscriber.write("\n");
             subscriber.write("data: " + chunkMessage + "\n\n");
-            console.log(
-              clfdate(),
-              `Delivered chunk ${i + 1}/${totalChunks} to client`,
-              clientId,
-            );
+            console.log(clfdate(), `Delivered chunk ${i + 1}/${totalChunks} to client`, clientId);
           } catch (err) {
-            console.error(
-              clfdate(),
-              `Error delivering chunk to client ${clientId}:`,
-              err,
-            );
+            console.error(clfdate(), `Error delivering chunk to client ${clientId}:`, err);
             subscribers.delete(clientId);
           }
         }
       }
     }
-  },
+  }
 );
+
+
+
+
 
 /*
 
@@ -173,6 +160,7 @@ Development code
 This section runs locally when I'm developing and testing the webhooks client. It listens for events from the remote server and forwards them to the local server.
 
 */
+
 
 const pendingRequests = new Map();
 
@@ -209,10 +197,7 @@ function listen({ host }) {
       let requestState = pendingRequests.get(requestId);
 
       if (!requestState) {
-        console.error(
-          clfdate(),
-          `No metadata found for requestId: ${requestId}`,
-        );
+        console.error(clfdate(), `No metadata found for requestId: ${requestId}`);
         return;
       }
 
@@ -226,19 +211,14 @@ function listen({ host }) {
 
       console.log(
         clfdate(),
-        `Webhooks received chunk ${parsed.chunkIndex + 1}/${parsed.totalChunks} for requestId: ${requestId}`,
+        `Webhooks received chunk ${parsed.chunkIndex + 1}/${parsed.totalChunks} for requestId: ${requestId}`
       );
 
       // Check if all chunks have been received
-      if (
-        requestState.bodyChunks.filter(Boolean).length === parsed.totalChunks
-      ) {
+      if (requestState.bodyChunks.filter(Boolean).length === parsed.totalChunks) {
         const completeBody = requestState.bodyChunks.join("");
 
-        console.log(
-          clfdate(),
-          `Webhooks received complete body for requestId: ${requestId}`,
-        );
+        console.log(clfdate(), `Webhooks received complete body for requestId: ${requestId}`);
 
         // Remove the request from the map after completion
         pendingRequests.delete(requestId);
@@ -249,25 +229,18 @@ function listen({ host }) {
             ...requestState.metadata,
             body: completeBody,
           },
-          requestState.metadata.headers,
+          requestState.metadata.headers
         );
       }
     } else {
       // Handle metadata
       const requestId = parsed.requestId; // Ensure this is part of the metadata
       if (!requestId) {
-        console.error(
-          clfdate(),
-          "Received metadata without a requestId:",
-          parsed,
-        );
+        console.error(clfdate(), "Received metadata without a requestId:", parsed);
         return;
       }
 
-      console.log(
-        clfdate(),
-        `Webhooks received metadata for requestId: ${requestId}`,
-      );
+      console.log(clfdate(), `Webhooks received metadata for requestId: ${requestId}`);
 
       if (parsed.bodySize === 0) {
         // If there's no body, forward immediately
@@ -278,6 +251,7 @@ function listen({ host }) {
       }
     }
   };
+
 
   async function forwardToLocal(metadata, headers) {
     const path = require("url").parse(metadata.url).path;
@@ -292,11 +266,7 @@ function listen({ host }) {
       options.headers["x-forwarded-host"] = config.host;
       options.headers.host = config.host;
 
-      if (
-        metadata.method !== "HEAD" &&
-        metadata.method !== "GET" &&
-        metadata.body
-      ) {
+      if (metadata.method !== "HEAD" && metadata.method !== "GET" && metadata.body) {
         options.body = Buffer.from(metadata.body, "base64");
       }
 
@@ -311,11 +281,7 @@ function listen({ host }) {
   }
 }
 
-if (
-  config.environment === "development" &&
-  config.webhooks.relay_host &&
-  config.webhooks.secret
-) {
+if (config.environment === "development" && config.webhooks.relay_host && config.webhooks.secret) {
   listen({ host: config.webhooks.relay_host });
 }
 

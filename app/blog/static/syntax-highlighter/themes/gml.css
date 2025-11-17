@@ -6,36 +6,36 @@ GML Theme - Meseta <meseta@gmail.com>
 
 .hljs {
   background: #222222;
-  color: #c0c0c0;
+  color: #C0C0C0;
 }
 
 .hljs-keyword {
-  color: #ffb871;
+  color: #FFB871;
   font-weight: bold;
 }
 
 .hljs-built_in {
-  color: #ffb871;
+  color: #FFB871;
 }
 
 .hljs-literal {
-  color: #ff8080;
+  color: #FF8080;
 }
 
 .hljs-symbol {
-  color: #58e55a;
+  color: #58E55A;
 }
 
 .hljs-comment {
-  color: #5b995b;
+  color: #5B995B;
 }
 
 .hljs-string {
-  color: #ffff00;
+  color: #FFFF00;
 }
 
 .hljs-number {
-  color: #ff8080;
+  color: #FF8080;
 }
 
 .hljs-attribute,
@@ -61,9 +61,10 @@ GML Theme - Meseta <meseta@gmail.com>
 .hljs-section,
 .hljs-function,
 .hljs-meta .hljs-keyword,
+
 .hljs-meta,
 .hljs-subst {
-  color: #c0c0c0;
+  color: #C0C0C0;
 }
 
 .hljs-emphasis {

@@ -1,44 +1,24 @@
-.plugin p {
-  margin: 0;
-}
+.plugin p {margin:0}
 .line.plugins + h2 {
   margin-top: 24px;
 }
-.line.plugins .center {
-  flex-grow: 1;
-}
-.line.plugins {
-  border-bottom: none;
-  padding: 0;
-}
-form.dashboard-form .plugin label {
-  padding-top: 0;
-}
-.plugin {
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 8px;
-  margin-bottom: 8px;
-}
-.plugin:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-  margin-bottom: 0;
-}
-.pluginOptions {
-  display: none;
-}
-.plugin.checked .pluginOptions {
-  display: block;
-}
+.line.plugins .center {flex-grow: 1;}
+.line.plugins {border-bottom: none;padding: 0;}
+form.dashboard-form .plugin label {padding-top:0}
+.plugin {border-bottom: 1px solid var(--border-color);padding-bottom: 8px;margin-bottom:8px}
+.plugin:last-child {border-bottom: none;padding-bottom: 0;margin-bottom:0}
+.pluginOptions {display:none}
+.plugin.checked .pluginOptions {display:block}
+
 
 .plugin {
-  margin: 0;
-  padding: 16px 12px 0;
-}
+    margin:0;
+    padding:16px 12px 0;
+  }
 
-.plugin:hover {
-  background-color: #fafafa;
-}
+  .plugin:hover {
+    background-color: #fafafa;
+  }
 .plugin p {
   font-size: 16px;
   color: var(--text-color);
@@ -46,9 +26,8 @@ form.dashboard-form .plugin label {
 .plugin {
   border-bottom: 1px solid #eeeeec;
 }
-form.dashboard-form label {
-  margin: 0;
-  padding: 0;
+form.dashboard-form label{
+  margin:0;padding:0
 }
 
 .plugin label {
@@ -56,16 +35,16 @@ form.dashboard-form label {
 }
 
 form.dashboard-form .plugin input[type="checkbox"] {
-  -webkit-appearance: none;
+-webkit-appearance: none;
   appearance: none;
   margin: 0 1em 0 0;
   font: inherit;
-  font-size: inherit;
+    font-size: inherit;
   width: 3.3em;
   height: 2em;
   border: none;
   border-radius: 2em;
-  transform: translateY(-0.075em);
+  transform: translateY(-.075em);
   display: grid;
   cursor: pointer;
   place-content: center;
@@ -74,17 +53,14 @@ form.dashboard-form .plugin input[type="checkbox"] {
 }
 
 form.dashboard-form .plugin input[type="checkbox"]::before {
-  content: "";
+content: "";
   width: 1.7em;
   height: 1.7em;
   border-radius: 1.7em;
   position: absolute;
-  top: 0.15em;
+  top: .15em;
   right: 1.45em;
-  transition:
-    width 120ms ease-in-out,
-    transform 120ms ease-in-out,
-    right 120ms ease-in-out;
+  transition: width 120ms ease-in-out,transform 120ms ease-in-out,right 120ms ease-in-out;
   box-shadow: inset 1em 1em var(--form-control-color);
   background-color: #fff;
 }
@@ -98,12 +74,12 @@ form.dashboard-form .plugin input[type="checkbox"]:checked::before {
   right: 0.15em;
 }
 
-form.dashboard-form .plugin input[type="checkbox"]:focus {
+form.dashboard-form .plugin  input[type="checkbox"]:focus {
   outline: none;
 }
 
 form.dashboard-form .plugin input[type="checkbox"]:active::before {
-  width: 1.8em;
+  width:1.8em;
   right: 1.1em;
 }
 

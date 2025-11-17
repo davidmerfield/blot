@@ -15,7 +15,7 @@ module.exports = async function setupUser() {
       FOLDER_ACCOUNT_EMAIL,
       config.session.secret || "",
       {},
-      {},
+      {}
     );
   }
 

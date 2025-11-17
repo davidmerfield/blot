@@ -4,14 +4,14 @@ const API_KEY = process.env.BLOT_TUMBLR_KEY;
 const URL_TEMPLATE =
   "http://api.tumblr.com/v2/blog/{{url}}/{{resource}}?api_key={{API_KEY}}";
 
-function tidy_source_url(source_url) {
+function tidy_source_url (source_url) {
   return source_url
     .replace(/https?:\/\//, "")
     .split("/")
     .join("");
 }
 
-async function main(source_url) {
+async function main (source_url) {
   source_url = tidy_source_url(source_url);
 
   const info = await get_info(source_url);
@@ -20,13 +20,13 @@ async function main(source_url) {
   const blog = {
     title: info.title,
     posts: posts,
-    host: new URL(info.url).host,
+    host: new URL(info.url).host
   };
 
   return blog;
 }
 
-async function get_posts(source_url, total_posts) {
+async function get_posts (source_url, total_posts) {
   let posts = [];
   const limit = 20;
 
@@ -47,7 +47,7 @@ async function get_posts(source_url, total_posts) {
   return posts;
 }
 
-async function get_info(source_url) {
+async function get_info (source_url) {
   const url = URL_TEMPLATE.replace("{{url}}", source_url)
     .replace("{{API_KEY}}", API_KEY)
     .replace("{{resource}}", "info");
@@ -66,9 +66,9 @@ if (require.main === module) {
     throw new Error("Please pass filename to write blog to as second argument");
 
   main(source_url)
-    .then((blog) => fs.outputJson(output_file, blog, { spaces: 2 }))
+    .then(blog => fs.outputJson(output_file, blog, { spaces: 2 }))
     .then(() => process.exit())
-    .catch((err) => {
+    .catch(err => {
       throw err;
     });
 }

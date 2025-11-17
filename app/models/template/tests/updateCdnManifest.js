@@ -127,17 +127,14 @@ describe("updateCdnManifest", function () {
     };
 
     await new Promise((resolve, reject) => {
-      client.hset(
-        viewKey,
-        "retrieve",
-        JSON.stringify(invalidRetrieve),
-        (err) => (err ? reject(err) : resolve()),
+      client.hset(viewKey, "retrieve", JSON.stringify(invalidRetrieve), (err) =>
+        err ? reject(err) : resolve()
       );
     });
 
     await new Promise((resolve, reject) => {
       require("../util/updateCdnManifest")(test.template.id, (err) =>
-        err ? reject(err) : resolve(),
+        err ? reject(err) : resolve()
       );
     });
 
@@ -203,10 +200,8 @@ describe("updateCdnManifest", function () {
       setViewAsync(test.template.id, {
         name: "a.css",
         content: "{{> style.css}}",
-      }),
-    ).toBeRejectedWith(
-      new Error("Your template has infinitely nested partials"),
-    );
+      })
+    ).toBeRejectedWith(new Error("Your template has infinitely nested partials"));
   });
 
   it("rejects rendered output that exceeds maximum size", async function () {

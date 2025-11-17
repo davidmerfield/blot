@@ -32,7 +32,7 @@ xdescribe("scheduled posts", function () {
           });
         }, MINUTE);
         fs.outputFileSync(this.blogDirectory + path, contents, "utf-8");
-        folder.update(path, (err) => {
+        folder.update(path, err => {
           if (err) return callback(err);
           finish(null, () => {
             request(this.origin, { strictSSL: false }, (err, res, body) => {
@@ -42,7 +42,7 @@ xdescribe("scheduled posts", function () {
         });
       });
     },
-    MINUTE * 2,
+    MINUTE * 2
   );
 
   beforeEach(function (done) {
@@ -50,21 +50,21 @@ xdescribe("scheduled posts", function () {
 
     const view = {
       name: "entries.html",
-      content: `<html><head></head><body>{{#entries}}{{{html}}}{{/entries}}</body></html>`,
+      content: `<html><head></head><body>{{#entries}}{{{html}}}{{/entries}}</body></html>`
     };
 
-    Template.create(this.blog.id, templateName, {}, (err) => {
+    Template.create(this.blog.id, templateName, {}, err => {
       if (err) return done(err);
       Template.getTemplateList(this.blog.id, (err, templates) => {
         let templateId = templates.filter(
-          ({ name }) => name === templateName,
+          ({ name }) => name === templateName
         )[0].id;
-        Template.setView(templateId, view, (err) => {
+        Template.setView(templateId, view, err => {
           if (err) return done(err);
           Blog.set(
             this.blog.id,
             { forceSSL: false, template: templateId },
-            done,
+            done
           );
         });
       });
@@ -76,7 +76,7 @@ xdescribe("scheduled posts", function () {
     this.server = Express()
       .use((req, res, next) => {
         const _get = req.get;
-        req.get = (arg) => {
+        req.get = arg => {
           if (arg === "host") {
             return `${this.blog.handle}.${config.host}`;
           } else return _get(arg);

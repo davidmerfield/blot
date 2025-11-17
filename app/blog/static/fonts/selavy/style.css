@@ -1,31 +1,15 @@
 @font-face {
-  font-family: "Selavy";
+  font-family: 'Selavy';
   font-style: normal;
   font-weight: 400;
-  src: url("{{{config.cdn.origin}}}/fonts/selavy/400.eot?version=ad9150&extension=.eot");
-  src:
-    url("{{{config.cdn.origin}}}/fonts/selavy/400.eot?version=ad9150&extension=.eot#iefix")
-    format("embedded-opentype"),
-    url("{{{config.cdn.origin}}}/fonts/selavy/400.woff?version=125856&extension=.woff")
-    format("woff"),
-    url("{{{config.cdn.origin}}}/fonts/selavy/400.ttf?version=c97c34&extension=.ttf")
-    format("truetype"),
-    url("{{{config.cdn.origin}}}/fonts/selavy/400.otf?version=a1bebf&extension=.otf")
-    format("opentype");
+  src: url('{{{config.cdn.origin}}}/fonts/selavy/400.eot?version=ad9150&extension=.eot'); 
+  src: url('{{{config.cdn.origin}}}/fonts/selavy/400.eot?version=ad9150&extension=.eot#iefix') format('embedded-opentype'), 
+       url('{{{config.cdn.origin}}}/fonts/selavy/400.woff?version=125856&extension=.woff') format('woff'),
+       url('{{{config.cdn.origin}}}/fonts/selavy/400.ttf?version=c97c34&extension=.ttf') format('truetype'),
+       url('{{{config.cdn.origin}}}/fonts/selavy/400.otf?version=a1bebf&extension=.otf') format('opentype');
 }
-.pull-double {
-  margin-left: -0.325em;
-}
-.push-double {
-  margin-right: 0.325em;
-}
-.pull-single {
-  margin-left: -0.208em;
-}
-.push-single {
-  margin-right: 0.208em;
-}
-.push-double,
-.push-single {
-  display: inline-block;
-}
+.pull-double {margin-left:-0.325em}
+.push-double{margin-right:0.325em}
+.pull-single{margin-left:-0.208em}
+.push-single{margin-right:0.208em}
+.push-double,.push-single{display:inline-block}

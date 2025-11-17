@@ -19,7 +19,7 @@ module.exports = async (...args) => {
   console.log(`Issuing external mkdir for blogID: ${blogID}, path: ${path}`);
 
   const pathBase64 = Buffer.from(path).toString("base64");
-
+  
   await fetch(`${remoteServer}/mkdir`, {
     method: "POST",
     headers: {

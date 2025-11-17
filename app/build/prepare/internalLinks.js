@@ -4,18 +4,18 @@ var debug = require("debug")("blot:build:prepare:internalLinks");
 // a given blog post and work out if any of the links
 // inside refer to other pages on the site.
 function internalLinks($) {
-  var result = [];
+	var result = [];
 
-  $("[href]").each(function () {
-    let value = $(this).attr("href");
+	$("[href]").each(function () {
+		let value = $(this).attr("href");
 
-    if (value.indexOf("/") !== 0 || result.indexOf(value) > -1) return;
+		if (value.indexOf("/") !== 0 || result.indexOf(value) > -1) return;
 
-    result.push(value);
-  });
+		result.push(value);
+	});
 
-  debug(result);
-  return result;
+	debug(result);
+	return result;
 }
 
 module.exports = internalLinks;

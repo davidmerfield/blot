@@ -1,4 +1,4 @@
-function main(callback) {
+function main (callback) {
   var redis = require("models/redis");
   var client = new redis();
   client.smembers("newsletter:list", function (err, subscribers) {

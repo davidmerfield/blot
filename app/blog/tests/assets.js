@@ -94,7 +94,7 @@ describe("asset middleware", function () {
       contents[path] = content;
       await fs.outputFile(
         config.blog_static_files_dir + "/" + this.blog.id + path,
-        content,
+        content
       );
     }
 
@@ -110,14 +110,14 @@ describe("asset middleware", function () {
     const response = await this.text("/layout.css");
     const expected = await fs.readFile(
       __dirname + "/../static/layout.css",
-      "utf-8",
+      "utf-8"
     );
     expect(response).toEqual(expected);
 
     const response1 = await this.text("/html2canvas.min.js");
     const expected1 = await fs.readFile(
       __dirname + "/../static/html2canvas.min.js",
-      "utf-8",
+      "utf-8"
     );
 
     expect(response1).toEqual(expected1);
@@ -158,8 +158,8 @@ describe("asset middleware", function () {
     await this.write({ path: "/folder/file.txt", content: "Content" });
     expect(
       await this.text(
-        `https://${this.blog.handle}.${config.host}//folder//file.txt`,
-      ),
+        `https://${this.blog.handle}.${config.host}//folder//file.txt`
+      )
     ).toEqual("Content");
   });
 
@@ -214,7 +214,7 @@ describe("asset middleware", function () {
     const specialChars = "∑ß♪♥☺";
     await this.write({ path: `/${specialChars}.txt`, content: "Special" });
     expect(await this.text(`/${encodeURIComponent(specialChars)}.txt`)).toEqual(
-      "Special",
+      "Special"
     );
   });
 
@@ -261,7 +261,7 @@ describe("asset middleware", function () {
     await this.write({ path: "/original.txt", content: "Original" });
     await fs.symlink(
       config.blog_folder_dir + "/" + this.blog.id + "/original.txt",
-      config.blog_folder_dir + "/" + this.blog.id + "/link.txt",
+      config.blog_folder_dir + "/" + this.blog.id + "/link.txt"
     );
     expect(await this.text("/link.txt")).toEqual("Original");
   });
@@ -315,7 +315,7 @@ describe("asset middleware", function () {
     await this.write({ path: "/readonly.txt", content: "Protected" });
     await fs.chmod(
       config.blog_folder_dir + "/" + this.blog.id + "/readonly.txt",
-      0o444,
+      0o444
     );
     expect(await this.text("/readonly.txt")).toEqual("Protected");
   });

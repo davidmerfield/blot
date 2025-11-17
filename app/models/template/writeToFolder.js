@@ -9,7 +9,7 @@ var fs = require("fs-extra");
 var generatePackage = require("./package").generate;
 var PACKAGE = "package.json";
 
-function writeToFolder(blogID, templateID, callback) {
+function writeToFolder (blogID, templateID, callback) {
   isOwner(blogID, templateID, function (err, owner) {
     if (err) return callback(err);
 
@@ -50,7 +50,7 @@ function writeToFolder(blogID, templateID, callback) {
                 compare: shouldCompareWrites,
                 existingFiles: existingFiles,
               },
-              callback,
+              callback
             );
           });
         });
@@ -74,12 +74,9 @@ function determineTemplateFolder(blogID, callback) {
       return name && name[0] !== ".";
     });
 
-    if (
-      visible.length &&
-      visible.every(function (name) {
-        return name === name.toLowerCase();
-      })
-    ) {
+    if (visible.length && visible.every(function (name) {
+      return name === name.toLowerCase();
+    })) {
       return callback(null, "templates");
     }
 
@@ -87,12 +84,12 @@ function determineTemplateFolder(blogID, callback) {
   });
 }
 
-function writePackage(blogID, client, dir, metadata, views, compare, callback) {
+function writePackage (blogID, client, dir, metadata, views, compare, callback) {
   var Package = generatePackage(blogID, metadata, views);
   writeFile(blogID, client, joinpath(dir, PACKAGE), Package, compare, callback);
 }
 
-function makeClient(blogID, callback) {
+function makeClient (blogID, callback) {
   require("models/blog").get({ id: blogID }, function (err, blog) {
     var client = require("clients")[blog.client];
 
@@ -105,7 +102,7 @@ function makeClient(blogID, callback) {
         },
         write: function (blogID, path, content, callback) {
           fs.outputFile(localPath(blogID, path), content, callback);
-        },
+        }
       });
     }
 
@@ -113,7 +110,7 @@ function makeClient(blogID, callback) {
   });
 }
 
-function write(blogID, client, dir, view, compare, callback) {
+function write (blogID, client, dir, view, compare, callback) {
   callback = callOnce(callback);
 
   var path = joinpath(dir, view.name);
@@ -151,7 +148,7 @@ function writeTemplateContents(
   metadata,
   views,
   options,
-  callback,
+  callback
 ) {
   options = options || {};
 
@@ -186,12 +183,12 @@ function writeTemplateContents(
             dir,
             existingFiles,
             written,
-            callback,
+            callback
           );
         } else {
           callback();
         }
-      },
+      }
     );
   });
 }
@@ -201,8 +198,7 @@ function listLocalFiles(blogID, dir, callback) {
 
   fs.readdir(root, function (err, entries) {
     if (err) {
-      if (err.code === "ENOENT" || err.code === "ENOTDIR")
-        return callback(null, []);
+      if (err.code === "ENOENT" || err.code === "ENOTDIR") return callback(null, []);
       return callback(err);
     }
 
@@ -216,7 +212,7 @@ function listLocalFiles(blogID, dir, callback) {
       function (err) {
         if (err) return callback(err);
         callback(null, files.map(normalizePath));
-      },
+      }
     );
 
     function walk(fullPath, relativePath, next) {
@@ -238,13 +234,9 @@ function listLocalFiles(blogID, dir, callback) {
             async.each(
               children,
               function (child, childNext) {
-                walk(
-                  joinpath(fullPath, child),
-                  joinpath(relativePath, child),
-                  childNext,
-                );
+                walk(joinpath(fullPath, child), joinpath(relativePath, child), childNext);
               },
-              next,
+              next
             );
           });
         } else {
@@ -256,14 +248,7 @@ function listLocalFiles(blogID, dir, callback) {
   });
 }
 
-function removeOrphanedFiles(
-  blogID,
-  client,
-  dir,
-  existingFiles,
-  written,
-  callback,
-) {
+function removeOrphanedFiles(blogID, client, dir, existingFiles, written, callback) {
   var toRemove = existingFiles.filter(function (file) {
     return !written.has(normalizePath(file));
   });
@@ -283,7 +268,7 @@ function removeOrphanedFiles(
         });
       });
     },
-    callback,
+    callback
   );
 }
 
@@ -291,11 +276,11 @@ function normalizePath(path) {
   return typeof path === "string" ? path.split(sep).join("/") : path;
 }
 
-function badPermission(blogID, templateID) {
+function badPermission (blogID, templateID) {
   return new Error("No permission for " + blogID + " to write " + templateID);
 }
 
-function noTemplate(blogID, templateID) {
+function noTemplate (blogID, templateID) {
   return new Error("No template for " + blogID + " and " + templateID);
 }
 

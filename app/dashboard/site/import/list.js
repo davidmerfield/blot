@@ -23,8 +23,8 @@ module.exports = async function (req, res, next) {
           size = prettySize(
             Math.round(
               fs.statSync(join(tempDir, "import", req.blog.id, i, "result.zip"))
-                .size / 1000,
-            ),
+                .size / 1000
+            )
           );
         } catch (e) {}
 
@@ -36,28 +36,28 @@ module.exports = async function (req, res, next) {
         try {
           cancelled = fs.readFileSync(
             join(tempDir, "import", req.blog.id, i, "cancelled.txt"),
-            "utf-8",
+            "utf-8"
           );
         } catch (e) {}
 
         try {
           identifier = fs.readFileSync(
             join(tempDir, "import", req.blog.id, i, "identifier.txt"),
-            "utf-8",
+            "utf-8"
           );
         } catch (e) {}
 
         try {
           error = fs.readFileSync(
             join(tempDir, "import", req.blog.id, i, "error.txt"),
-            "utf-8",
+            "utf-8"
           );
         } catch (e) {}
 
         try {
           lastStatus = fs.readFileSync(
             join(tempDir, "import", req.blog.id, i, "status.txt"),
-            "utf-8",
+            "utf-8"
           );
         } catch (e) {}
 

@@ -33,7 +33,7 @@ Importer.route("/wordpress")
     fs.outputFileSync(
       join(importDirectory, "identifier.txt"),
       identifier,
-      "utf-8",
+      "utf-8"
     );
 
     wordpress(inputXML, outputDirectory, status, {}, async function (err) {

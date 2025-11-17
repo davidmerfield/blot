@@ -10,34 +10,47 @@ const { getMetadata } = require("models/template");
 // If the template name needs to be mapped to a different name
 // than first letter capitalized, add it here
 const NAME_MAP = {
-  cv: "CV",
+  'cv': 'CV',
 };
 
 const categories = [
   {
     name: "Blogging",
     slug: "blogging",
-    templates: ["blog", "magazine", "fieldnotes", "index"],
+    templates: [
+      "blog",
+      "magazine",
+      "fieldnotes",
+      "index",
+    ]
   },
   {
     name: "Photography",
     slug: "photography",
-    templates: ["portfolio", "album"],
+    templates: [
+      "portfolio",
+      "album"
+    ]
   },
   {
     name: "Personal & CV",
     slug: "personal",
-    templates: ["cv"],
+    templates: [
+      "cv",
+    ]
   },
   {
     name: "Organizations",
     slug: "organizations",
-    templates: ["event", "documentation"],
-  },
+    templates: [
+      "event",
+      "documentation",
+    ]
+  }
 ];
 
 // Helper function to get template metadata
-const getTemplate = async (slug) => {
+const getTemplate = async slug => {
   try {
     return await new Promise((resolve, reject) => {
       getMetadata("SITE:" + slug, (err, template) => {
@@ -50,32 +63,29 @@ const getTemplate = async (slug) => {
   }
 };
 
+
 // Load templates
 const loadTemplates = async () => {
   const latestTemplateFiles = await fs.readdir(templatesDirectory);
-  const templateFiles = latestTemplateFiles.filter(
-    (i) => !i.startsWith(".") && !i.endsWith(".js") && !i.endsWith(".md"),
-  );
+  const templateFiles = latestTemplateFiles
+    .filter(i => !i.startsWith(".") && !i.endsWith(".js") && !i.endsWith(".md"));
 
-  const templates = await Promise.all(
-    templateFiles.map(async (i) => {
-      const template = await getTemplate(i);
-      if (!template) return null;
-      const demo_folder = template.locals.demo_folder || "david";
-      return {
-        name: NAME_MAP[i] || i[0].toUpperCase() + i.slice(1),
-        slug: i,
-        demo_folder,
-        source: `https://github.com/davidmerfield/Blot/tree/master/app/templates/source/${i}`,
-      };
-    }),
-  );
+  const templates = await Promise.all(templateFiles.map(async i => {
+    const template = await getTemplate(i);
+    if (!template) return null;
+    const demo_folder = template.locals.demo_folder || "david";
+    return {
+      name: NAME_MAP[i] || i[0].toUpperCase() + i.slice(1),
+      slug: i,
+      demo_folder,
+      source: `https://github.com/davidmerfield/Blot/tree/master/app/templates/source/${i}`,
 
-  const all = templates
-    .filter((i) => i)
-    .sort((a, b) => {
-      return a.slug - b.slug;
-    });
+    };
+  }));
+
+  const all = templates.filter(i => i).sort((a,b)=>{
+    return a.slug - b.slug;
+  })
 
   return all;
 };
@@ -83,8 +93,8 @@ const loadTemplates = async () => {
 // Middleware function
 module.exports = async (req, res, next) => {
   try {
-    res.locals.categories = categories.slice(0).map((category) => {
-      category.selected = category.slug === req.params.type ? "selected" : "";
+    res.locals.categories = categories.slice(0).map(category => {
+      category.selected = category.slug === req.params.type ? 'selected' : '';
       return category;
     });
 
@@ -92,25 +102,23 @@ module.exports = async (req, res, next) => {
 
     if (req.params.type) {
       res.locals.category = req.params.type;
-      res.locals.allTemplates = res.locals.allTemplates.filter((t) =>
-        categories
-          .find((c) => c.slug === req.params.type)
-          .templates.includes(t.slug),
+      res.locals.allTemplates = res.locals.allTemplates.filter(
+        t => categories.find(c => c.slug === req.params.type).templates.includes(t.slug)
       );
-    }
+    } 
 
     if (req.params.template) {
       const template = res.locals.allTemplates.find(
-        (t) => t.slug === req.params.template,
+        t => t.slug === req.params.template
       );
 
       if (template) {
         res.locals.template = { ...template };
 
-        const preview_host =
-          template.demo_folder === req.params.template
-            ? `${template.demo_folder}.${config.host}`
-            : `preview-of-${req.params.template}-on-${template.demo_folder}.${config.host}`;
+        const preview_host = template.demo_folder === req.params.template ?
+        `${template.demo_folder}.${config.host}`
+         : 
+          `preview-of-${req.params.template}-on-${template.demo_folder}.${config.host}`;
         res.locals.template.preview = `${config.protocol}${preview_host}`;
         res.locals.template.preview_host = preview_host;
 
@@ -123,22 +131,19 @@ module.exports = async (req, res, next) => {
           res.locals.template.zip_name = zip_name;
           res.locals.template.zip_size = prettySize(
             (await fs.stat(pathToZip)).size / 1000,
-            1,
+            1
           );
 
-          const readmePath = path.join(
-            templatesDirectory,
-            req.params.template,
-            "README",
-          );
+          const readmePath = path.join(templatesDirectory, req.params.template, "README");
           if (await fs.pathExists(readmePath)) {
             res.locals.template.README = marked.parse(
-              await fs.readFile(readmePath, "utf8"),
+              await fs.readFile(readmePath, "utf8")
             );
           }
         }
       }
     }
+
 
     next();
   } catch (error) {

@@ -14,16 +14,16 @@ function main(source_file, source_domain, callback) {
 
   if (!source_file)
     return callback(
-      new Error("Please pass a source file as a second argument"),
+      new Error("Please pass a source file as a second argument")
     );
 
   if (!source_domain)
     return callback(
-      new Error("Please pass a source domain as a fourth argument"),
+      new Error("Please pass a source domain as a fourth argument")
     );
 
-  const output_directory = source_file.slice(0, source_file.lastIndexOf("."));
-
+  const output_directory = source_file.slice(0, source_file.lastIndexOf('.'));
+  
   load(source_file, function (err, blog) {
     if (err) return callback(err);
 

@@ -42,11 +42,12 @@ describe("update", function () {
           function (err) {
             if (err) testDone.fail(err);
             done(null, testDone);
-          },
+          }
         );
       });
     });
   });
+
 
   it("creates an entry from a new file", function (testDone) {
     var path = this.fake.path(".txt");

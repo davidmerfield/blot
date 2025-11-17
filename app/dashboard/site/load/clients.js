@@ -17,7 +17,7 @@ list.sort(function (a, b) {
 });
 
 module.exports = function (req, res, next) {
-  res.locals.clients = list.slice();
+  res.locals.clients = list.slice()
 
   if (req.blog.client) {
     res.locals.clients = res.locals.clients.map(function (client) {

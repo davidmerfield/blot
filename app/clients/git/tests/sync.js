@@ -35,7 +35,7 @@ describe("git client sync", function () {
               "State of git repos (HEAD):",
               "- user's machine: " + (userHead && userHead.trim()),
               "- bare data repo: " + (bareHead && bareHead.trim()),
-              "- blog directory: " + (blotHead && blotHead.trim()),
+              "- blog directory: " + (blotHead && blotHead.trim())
             ].join("\n");
 
             done(new Error(message));
@@ -55,10 +55,10 @@ describe("git client sync", function () {
           protocol: "http",
           hostname: "127.0.0.1",
           port: ctx.server.port,
-          pathname: "/clients/git/syncs-finished/" + ctx.blog.id,
+          pathname: "/clients/git/syncs-finished/" + ctx.blog.id
         });
 
-        http.get(url, function check(res) {
+        http.get(url, function check (res) {
           var response = "";
           res.setEncoding("utf8");
           res.on("data", function (chunk) {
@@ -121,7 +121,7 @@ describe("git client sync", function () {
       this.repoDirectory,
       this.blogDirectory,
       {
-        excludeFilter: ".git",
+        excludeFilter: ".git"
       },
       function (err) {
         if (!err) return done();
@@ -136,7 +136,7 @@ describe("git client sync", function () {
 
           done(new Error(message));
         });
-      },
+      }
     );
   });
 
@@ -248,7 +248,7 @@ describe("git client sync", function () {
 
           done();
         });
-      },
+      }
     );
   });
 
@@ -332,7 +332,7 @@ describe("git client sync", function () {
               { "--set-upstream": true },
               function (err) {
                 expect(err).toContain(
-                  "Updates were rejected because the remote contains work",
+                  "Updates were rejected because the remote contains work"
                 );
 
                 // Spanner in the works! I was worried about this line
@@ -356,11 +356,11 @@ describe("git client sync", function () {
                         if (err) return done.fail(new Error(err));
 
                         done();
-                      },
+                      }
                     );
-                  },
+                  }
                 );
-              },
+              }
             );
           });
         });

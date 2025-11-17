@@ -19,7 +19,7 @@ module.exports = ({ blogID, label }) => {
     return new Promise(async (resolve, reject) => {
       const archive = archiver("zip");
       const resultWS = fs.createWriteStream(
-        join(importDirectory, "result.zip"),
+        join(importDirectory, "result.zip")
       );
 
       let identifier;
@@ -27,7 +27,7 @@ module.exports = ({ blogID, label }) => {
       try {
         identifier = await fs.readFile(
           join(importDirectory, "identifier.txt"),
-          "utf-8",
+          "utf-8"
         );
       } catch (e) {
         identifier = importID;
@@ -49,7 +49,7 @@ module.exports = ({ blogID, label }) => {
     // should write to disk somehow
     client.publish(
       "import:status:" + blogID,
-      JSON.stringify({ status: message, importID }),
+      JSON.stringify({ status: message, importID })
     );
     fs.outputFile(lastStatus, message);
   }

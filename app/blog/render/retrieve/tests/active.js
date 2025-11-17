@@ -12,13 +12,13 @@ describe("active property", function () {
     const res = await this.get(`/1`);
 
     expect((await res.text()).trim().toLowerCase()).toEqual(
-      "2.txt:,1.txt:active,",
+      "2.txt:,1.txt:active,"
     );
 
     const res2 = await this.get(`/2`);
 
     expect((await res2.text()).trim().toLowerCase()).toEqual(
-      "2.txt:active,1.txt:,",
+      "2.txt:active,1.txt:,"
     );
   });
 
@@ -34,7 +34,7 @@ describe("active property", function () {
             { label: "2", url: "/2" },
           ],
         },
-      },
+      }
     );
 
     const res = await this.get(`/foo.html`);
@@ -60,13 +60,13 @@ describe("active property", function () {
             url: "/archives",
           },
         },
-      },
+      }
     );
 
     const res = await this.get(`/archives`);
 
     expect((await res.text()).trim().toLowerCase()).toEqual(
-      "archives:active,feed:,",
+      "archives:active,feed:,"
     );
   });
 });

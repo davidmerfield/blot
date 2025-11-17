@@ -7,7 +7,7 @@ const YOUTUBE_HOSTS = [
   "www.youtube-nocookie.com",
   "youtube-nocookie.com",
   "m.youtube.com",
-  "youtu.be",
+  "youtu.be"
 ];
 
 module.exports = function (metadata, html) {

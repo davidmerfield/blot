@@ -62,7 +62,7 @@ describe("gdoc converter", function () {
       // -> src="http://localhost:7391/image.jpg"
       input = input.replace(
         /https:\/\/lh[0-9]+-rt\.googleusercontent\.com\/docsz\/[A-Za-z0-9_\-]+(\?key=[A-Za-z0-9_\-]+)/g,
-        "http://localhost:7391/image.jpg",
+        "http://localhost:7391/image.jpg"
       );
 
       fs.writeFileSync(test.blogDirectory + path, input, "utf8");
@@ -82,7 +82,7 @@ describe("gdoc converter", function () {
     const path = `/${name}`;
     const expected = await fs.readFile(
       `${__dirname + path}.google_docs_preserve_linebreaks.html`,
-      "utf8",
+      "utf8"
     );
 
     // set the flag to 'false'
@@ -108,7 +108,7 @@ describe("gdoc converter", function () {
     const input = await fs.readFile(__dirname + path, "utf8");
 
     const originalSrc = input.match(
-      /https:\/\/lh[0-9]+-rt\.googleusercontent\.com\/docsz\/[A-Za-z0-9_\-]+\?[^"']+/i,
+      /https:\/\/lh[0-9]+-rt\.googleusercontent\.com\/docsz\/[A-Za-z0-9_\-]+\?[^"']+/i
     )[0];
 
     const remoteUrl = new URL(originalSrc);

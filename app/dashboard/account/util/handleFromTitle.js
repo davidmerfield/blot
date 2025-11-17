@@ -1,15 +1,16 @@
-const randomChars = require("./randomChars");
+const randomChars = require('./randomChars');
 
-function handleFromTitle(title) {
-  var handle = "";
-
-  handle = title.toLowerCase().replace(/\W/g, "");
-
-  if (handle.length < 4) {
-    handle += randomChars(4 - handle.length);
+function handleFromTitle (title) {
+    var handle = "";
+  
+    handle = title.toLowerCase().replace(/\W/g, "");
+  
+    if (handle.length < 4) {
+      handle += randomChars(4 - handle.length);
+    }
+  
+    return handle;
   }
-
-  return handle;
-}
+  
 
 module.exports = handleFromTitle;

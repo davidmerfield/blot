@@ -6,7 +6,7 @@ module.exports = async function (req, res) {
   try {
     const blogID = req.header("blogID");
     const filePath = Buffer.from(req.header("pathBase64"), "base64").toString(
-      "utf8",
+      "utf8"
     );
 
     // Validate required headers

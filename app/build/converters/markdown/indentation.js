@@ -24,7 +24,7 @@
 var cheerio = require("cheerio");
 var $ = cheerio.load("", null, false);
 
-function indentation(text) {
+function indentation (text) {
   // Ensure the text contains the ingredients
   // needed for a complete HTML tag! (<,>,/)
   if (!/<|>|\//.test(text)) return text;
@@ -78,7 +78,7 @@ function indentation(text) {
 
 // ensure the only thing that has changed
 // is whitespace...
-function verify(before, after) {
+function verify (before, after) {
   before = before.replace(/\s/g, "");
   after = after.replace("/s/g", "");
 
@@ -87,24 +87,24 @@ function verify(before, after) {
   return after;
 }
 
-function hasPreTag(line) {
+function hasPreTag (line) {
   return line.indexOf("```") > -1;
 }
 
-function hasClosingTag(line, name) {
+function hasClosingTag (line, name) {
   return line.indexOf("</" + name + ">") > -1;
 }
 
-function firstTag(str) {
+function firstTag (str) {
   str = str.trim();
   return str[0] === "<" && str.indexOf(">") > 0 && $(str)[0].name;
 }
 
-function leadingWhitespace(str) {
+function leadingWhitespace (str) {
   return /^\s/.test(str);
 }
 
-function trimLeading(str) {
+function trimLeading (str) {
   return str.slice(str.indexOf(str.trim()));
 }
 

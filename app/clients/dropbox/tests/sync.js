@@ -39,10 +39,10 @@ describe("dropbox client", function () {
                 if (err) return done.fail(err);
 
                 expect(
-                  fs.readFileSync(blogDirectory + path).toString("utf-8"),
+                  fs.readFileSync(blogDirectory + path).toString("utf-8")
                 ).toEqual(contents);
                 expect(
-                  fs.readFileSync(blogDirectory + secondPath).toString("utf-8"),
+                  fs.readFileSync(blogDirectory + secondPath).toString("utf-8")
                 ).toEqual(secondContents);
 
                 done();

@@ -15,6 +15,6 @@ module.exports = function (server) {
 
         response.renderView("tagged.html", next);
       });
-    },
+    }
   );
 };

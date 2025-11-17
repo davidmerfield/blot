@@ -1,3 +1,4 @@
+
 .buttons {
   display: flex;
   margin: 2em 0 1em;
@@ -14,20 +15,14 @@
   position: relative;
   display: flex;
   box-sizing: border-box;
-  width: auto !important;
+  width: auto!important;
 }
 
 .buttons > *:hover {
   cursor: pointer;
 }
-.buttons > * > span {
-  position: relative;
-  top: 13px;
-  margin-right: 12px;
-}
-.buttons > * > span.icon-small-chevron-right {
-  transform: rotate(180deg);
-}
+.buttons > * > span {position: relative;top:13px;margin-right:12px}
+.buttons > * > span.icon-small-chevron-right {transform: rotate(180deg);}
 
 .buttons > *:focus,
 .buttons > *:active {
@@ -47,6 +42,7 @@
   background-color: var(--dark-accent-color);
   font-weight: 600;
 }
+
 
 .buttons .red {
   background: red;
@@ -70,6 +66,7 @@
   background-color: #ececec;
   line-height: 39px;
 }
+
 
 .buttons .working {
   background-color: #d5d5d5;

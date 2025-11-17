@@ -1,57 +1,51 @@
 describe("render", function () {
-  require("./util/setup")();
 
-  it("exposes template locals to individual views", async function () {
-    await this.template(
-      {
-        "entries.html": "Hello, {{name}}!",
-      },
-      { locals: { name: "David" } },
-    );
+    require('./util/setup')();
 
-    const res = await this.get("/");
-    const body = await res.text();
+    it("exposes template locals to individual views", async function () {
+        
+        await this.template({
+            'entries.html': 'Hello, {{name}}!'
+        }, { locals: { name: 'David' } });
 
-    expect(res.status).toEqual(200);
-    expect(body.trim()).toEqual("Hello, David!");
-  });
+        const res = await this.get('/');
+        const body = await res.text();
 
-  it("overrides view-specific locals with template locals", async function () {
-    await this.template(
-      {
-        "entries.html": "Hello, {{name}}!",
-      },
-      {
-        locals: { name: "David" },
-        views: {
-          "entries.html": {
-            locals: { name: "John" },
-          },
-        },
-      },
-    );
+        expect(res.status).toEqual(200);
+        expect(body.trim()).toEqual('Hello, David!');
+    });
 
-    const res = await this.get("/");
-    const body = await res.text();
+    it("overrides view-specific locals with template locals", async function () {
+        
+        await this.template({
+            'entries.html': 'Hello, {{name}}!'
+        }, { 
+            locals: { name: 'David' },
+            views: { 'entries.html': {
+                locals: { name: 'John' }
+            } }
+        });
 
-    expect(res.status).toEqual(200);
-    expect(body.trim()).toEqual("Hello, John!");
-  });
+        const res = await this.get('/');
+        const body = await res.text();
 
-  it("exposes partials to views, including partials in partials", async function () {
-    await this.template(
-      {
-        "entries.html": "{{> name}}{{> footer}}",
-        "name.html": "{{> greeting}} David",
-        "greeting.html": "Hello",
-      },
-      { views: { "entries.html": { partials: { footer: " FOOTER" } } } },
-    );
+        expect(res.status).toEqual(200);
+        expect(body.trim()).toEqual('Hello, John!');
+    });
 
-    const res = await this.get("/");
-    const body = await res.text();
+    it("exposes partials to views, including partials in partials", async function () {
+        
+        await this.template({
+            'entries.html': '{{> name}}{{> footer}}',
+            'name.html': '{{> greeting}} David',
+            'greeting.html': 'Hello',
+        }, { views: { 'entries.html': { partials: { footer: ' FOOTER' } } } });
 
-    expect(res.status).toEqual(200);
-    expect(body.trim()).toEqual("Hello David FOOTER");
-  });
+        const res = await this.get('/');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body.trim()).toEqual('Hello David FOOTER');
+    });
+
 });

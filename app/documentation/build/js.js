@@ -36,9 +36,7 @@ module.exports =
     console.log(clfdate(), "built template-editor.min.js");
 
     await build({
-      entryPoints: [
-        join(source, "dashboard/template/js/source-code-editor.js"),
-      ],
+      entryPoints: [join(source, "dashboard/template/js/source-code-editor.js")],
       bundle: true,
       minify: true,
       target: ["chrome58", "firefox57", "safari11", "edge16"],

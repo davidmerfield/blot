@@ -15,13 +15,15 @@ describe("template engine", function () {
             url: "/archives",
           },
         },
-      },
+      }
     );
 
     const res = await this.get(`/archives`);
 
     expect((await res.text()).trim().toLowerCase()).toEqual(
-      "<p><a href='/first'>first</a></p>",
+      "<p><a href='/first'>first</a></p>"
     );
   });
+
+
 });

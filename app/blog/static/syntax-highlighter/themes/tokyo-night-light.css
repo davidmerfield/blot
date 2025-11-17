@@ -40,9 +40,10 @@
   color: #965027;
 }
 
+
 /*  Yellow */
 /* INFO:  	Function parameters, Regex character sets, Terminal Yellow */
-.hljs-built_in,
+.hljs-built_in, 
 .hljs-attribute {
   color: #8f5e15;
 }
@@ -55,20 +56,17 @@
 /* light blue */
 /* INFO: Object properties, Regex quantifiers and flags, Markdown headings, Terminal Cyan, Markdown code, Import/export keywords */
 .hljs-keyword,
-.hljs-title.function_,
+  .hljs-title.function_,
 .hljs-title,
 .hljs-title.class_,
 .hljs-title.class_.inherited__,
 .hljs-subst,
-.hljs-property {
-  color: #0f4b6e;
-}
+.hljs-property {color: #0f4b6e;}
 
 /*Green*/
 /* INFO: Object literal keys, Markdown links, Terminal Green */
-.hljs-selector-tag {
-  color: #33635c;
-}
+.hljs-selector-tag { color: #33635c;}
+
 
 /*Green(er) */
 /* INFO: Strings, CSS class names */
@@ -88,6 +86,8 @@
   color: #34548a;
 }
 
+
+
 /* Magenta */
 /*INFO: Control Keywords, Storage Types, Regex symbols and operators, HTML Attributes, Terminal Magenta */
 .hljs-name,
@@ -101,9 +101,7 @@
 
 /* white*/
 /* INFO: Variables, Class names, Terminal White */
-.hljs-punctuation {
-  color: #343b58;
-}
+.hljs-punctuation {color: #343b58}
 
 .hljs {
   background: #d5d6db;
@@ -117,3 +115,4 @@
 .hljs-strong {
   font-weight: bold;
 }
+

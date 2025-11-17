@@ -1,6 +1,6 @@
 const linkFormat = require("express").Router();
-const { resave: resaveEntries } = require("models/entries");
-const updateBlog = require("dashboard/util/update-blog");
+const { resave: resaveEntries } = require('models/entries');
+const updateBlog = require('dashboard/util/update-blog');
 
 var permalink = require("build/prepare/permalink");
 
@@ -22,24 +22,22 @@ var SAMPLE = function () {
   };
 };
 
-linkFormat.get(
-  "/",
-  function (req, res, next) {
+linkFormat.get("/", function (req, res, next) {
     var sample, formats;
-
+  
     req.trace("Permalink formats: creating sample post");
-
+  
     sample = new SAMPLE();
     sample.dateStamp = moment.utc();
-
+  
     formats = FORMATS.slice();
-
+  
     req.trace("Permalink formats: creating list");
-
+  
     formats = formats.map(function (arr) {
       var checked = "";
       var example;
-
+  
       if (req.blog.permalink.isCustom && arr[0] === "Custom format") {
         checked = "checked";
       } else if (
@@ -48,11 +46,11 @@ linkFormat.get(
       ) {
         checked = "checked";
       }
-
+  
       req.trace("Permalink formats: Rendering", arr[1]);
       example = permalink(req.blog.timeZone, arr[1], sample);
       req.trace("Permalink formats: Rendered", arr[1]);
-
+  
       return {
         name: arr[0],
         value: arr[1],
@@ -61,45 +59,46 @@ linkFormat.get(
         example: example,
       };
     });
-
+  
     formats[formats.length - 1].last = true;
     res.locals.permalinkFormats = formats;
-
+  
     req.trace("Permalink formats: finished generating list");
     next();
-  },
-  (req, res, next) => {
+  },  (req, res, next) => {
     res.locals.edit = !!req.query.edit;
     res.locals.breadcrumbs.add("Settings", "settings");
     res.render("dashboard/site/settings/links");
-  },
-);
-
+  });
+  
 linkFormat.post("/", async (req, res) => {
-  const format = req.body.format || "";
-  const custom = req.body.custom || "";
-  const isCustom = !format && !!custom;
 
-  try {
-    console.log("saving changes", { format, custom, isCustom });
+    const format = req.body.format || '';
+    const custom = req.body.custom || '';
+    const isCustom = !format && !!custom;
 
-    const changes = await updateBlog(req.blog.id, {
-      permalink: {
-        format,
-        custom,
-        isCustom,
-      },
-    });
+    try {
 
-    if (changes && changes.includes("permalink")) {
-      console.log("resaving entries");
-      await resaveEntries(req.blog.id, () => {});
+        console.log('saving changes', {format, custom, isCustom});
+
+        const changes = await updateBlog(req.blog.id, {
+            permalink: {
+                format,
+                custom,
+                isCustom
+            }
+        });
+
+        
+        if (changes && changes.includes('permalink')) {
+            console.log('resaving entries');
+            await resaveEntries(req.blog.id, ()=>{});
+        }
+
+        res.message(req.baseUrl, 'Saved changes to link format');
+    } catch (e) {
+        res.message(req.baseUrl, e);
     }
-
-    res.message(req.baseUrl, "Saved changes to link format");
-  } catch (e) {
-    res.message(req.baseUrl, e);
-  }
 });
 
 module.exports = linkFormat;

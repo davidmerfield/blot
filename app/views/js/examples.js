@@ -11,7 +11,7 @@ const renderFeatured = () => {
   const sites = featured.getElementsByTagName("li");
   const sitesArray = Array.prototype.slice.call(sites);
   const previousHrefs = JSON.parse(
-    localStorage.getItem("previousHrefs") || "[]",
+    localStorage.getItem("previousHrefs") || "[]"
   );
 
   let topOfListCandidates = [...sitesArray];
@@ -27,9 +27,7 @@ const renderFeatured = () => {
   if (maxFilterable > 0) {
     // remove any sites that were in the previous top of list until we have enough
     topOfListCandidates = topOfListCandidates.filter(function (site) {
-      const wouldLikeToKeep = !previousHrefs.includes(
-        site.querySelector("a").href,
-      );
+      const wouldLikeToKeep = !previousHrefs.includes(site.querySelector("a").href);
 
       if (wouldLikeToKeep) {
         console.log("Keeping", site);

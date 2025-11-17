@@ -109,7 +109,7 @@ function Transformer(blogID, name) {
         function (err, fullLocalPath) {
           if (err) return next(err);
           fromPath(fullLocalPath, transform, next);
-        },
+        }
       );
     });
 
@@ -118,7 +118,7 @@ function Transformer(blogID, name) {
       tasks.push(function (next) {
         debug(
           "attempting to resolve URI-decoded path case-insensitively",
-          decodedURI,
+          decodedURI
         );
         caseSensitivePath(
           localPath(blogID, "/"),
@@ -126,7 +126,7 @@ function Transformer(blogID, name) {
           function (err, fullLocalPath) {
             if (err) return next(err);
             fromPath(fullLocalPath, transform, next);
-          },
+          }
         );
       });
 
@@ -152,7 +152,7 @@ function Transformer(blogID, name) {
           function (err, fullLocalPath) {
             if (err) return next(err);
             fromPath(fullLocalPath, transform, next);
-          },
+          }
         );
       });
 
@@ -162,7 +162,7 @@ function Transformer(blogID, name) {
           var backslashPath = decodedURI.split("\\").join("/");
           debug(
             "attempting backslash URI-decoded path case-insensitively",
-            backslashPath,
+            backslashPath
           );
           caseSensitivePath(
             localPath(blogID, "/"),
@@ -170,7 +170,7 @@ function Transformer(blogID, name) {
             function (err, fullLocalPath) {
               if (err) return next(err);
               fromPath(fullLocalPath, transform, next);
-            },
+            }
           );
         });
     }
@@ -341,7 +341,7 @@ function Transformer(blogID, name) {
         urlHeadersKey,
         stringifiedHeaders,
         contentKey,
-        stringifiedResult,
+        stringifiedResult
       )
       .exec(callback);
   }

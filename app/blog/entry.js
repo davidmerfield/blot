@@ -4,8 +4,9 @@ var plugins = require("build/plugins");
 var Entries = require("models/entries");
 
 module.exports = function (request, response, next) {
+  
   request.log("Loading entry");
-
+  
   var scheduled = !!request.query.scheduled;
   var blog = request.blog;
 
@@ -41,12 +42,7 @@ module.exports = function (request, response, next) {
 
     // Redirect this entry to the file from which it was generated
     // I use this when debugging user blogs.
-    if (
-      entry.path &&
-      request.query &&
-      request.query.source &&
-      request.query.source === "true"
-    )
+    if (entry.path && request.query && request.query.source && request.query.source === "true")
       return response.redirect(entry.path);
 
     if (entry.scheduled && !scheduled) return next();
@@ -59,44 +55,44 @@ module.exports = function (request, response, next) {
     // any of the template views but will do that in future.
     if (normalize(entry.url) !== normalize(url) && url === "/") return next();
 
-    Entries.adjacentTo(
-      blog.id,
-      entry.id,
-      function (nextEntry, previousEntry, index) {
-        entry.next = nextEntry;
-        entry.previous = previousEntry;
-        entry.adjacent = !!(nextEntry || previousEntry);
-        entry.index = index;
+    Entries.adjacentTo(blog.id, entry.id, function (
+      nextEntry,
+      previousEntry,
+      index
+    ) {
+      entry.next = nextEntry;
+      entry.previous = previousEntry;
+      entry.adjacent = !!(nextEntry || previousEntry);
+      entry.index = index;
 
-        // Ensure the user is always viewing
-        // the entry at its latest and greatest URL
-        // 301 passes link juice for SEO?
-        if (entry.url && normalize(entry.url) !== normalize(url)) {
-          // Res.direct expects a URL, we shouldnt need
-          // to do this now but OK. I feel like we're decoding
-          // then recoding then decoding. I should just store
-          // valid URI and skip the decoding.
-          var redirect = encodeURI(entry.url);
+      // Ensure the user is always viewing
+      // the entry at its latest and greatest URL
+      // 301 passes link juice for SEO?
+      if (entry.url && normalize(entry.url) !== normalize(url)) {
+        // Res.direct expects a URL, we shouldnt need
+        // to do this now but OK. I feel like we're decoding
+        // then recoding then decoding. I should just store
+        // valid URI and skip the decoding.
+        var redirect = encodeURI(entry.url);
 
-          return response.status(301).redirect(redirect);
+        return response.status(301).redirect(redirect);
+      }
+
+      plugins.load("entryHTML", blog.plugins, function (err, pluginHTML) {
+        // Dont show plugin HTML on a draft.
+        // Don't show plugin HTML on a preview subdomain.
+        // This is to prevent Disqus getting stuck on one URL.
+        if (entry.draft || request.preview) {
+          pluginHTML = "";
         }
 
-        plugins.load("entryHTML", blog.plugins, function (err, pluginHTML) {
-          // Dont show plugin HTML on a draft.
-          // Don't show plugin HTML on a preview subdomain.
-          // This is to prevent Disqus getting stuck on one URL.
-          if (entry.draft || request.preview) {
-            pluginHTML = "";
-          }
+        response.locals.partials.pluginHTML = pluginHTML;
 
-          response.locals.partials.pluginHTML = pluginHTML;
+        response.locals.entry = entry;
 
-          response.locals.entry = entry;
-
-          request.log("Loaded entry");
-          response.renderView("entry.html", next);
-        });
-      },
-    );
+        request.log("Loaded entry");
+        response.renderView("entry.html", next);
+      });
+    });
   });
-};
+}

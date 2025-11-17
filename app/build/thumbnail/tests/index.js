@@ -21,7 +21,7 @@ describe("thumbnail", function () {
 
     fs.copyFileSync(
       __dirname + "/images/" + imagePath,
-      localPath(this.blog.id, imagePath),
+      localPath(this.blog.id, imagePath)
     );
 
     thumbnail(this.blog, path, metadata, html, function (err, result) {
@@ -42,7 +42,7 @@ describe("thumbnail", function () {
 
     fs.copyFileSync(
       __dirname + "/images/" + imagePath,
-      localPath(this.blog.id, imagePath),
+      localPath(this.blog.id, imagePath)
     );
 
     thumbnail(this.blog, path, metadata, html, function (err, result) {
@@ -63,7 +63,7 @@ describe("thumbnail", function () {
 
     fs.copyFileSync(
       __dirname + "/images/" + imagePath,
-      localPath(this.blog.id, imagePath),
+      localPath(this.blog.id, imagePath)
     );
 
     thumbnail(this.blog, path, metadata, html, function (err, result) {
@@ -84,7 +84,7 @@ describe("thumbnail", function () {
 
     fs.copyFileSync(
       __dirname + "/images/portrait.jpg",
-      localPath(this.blog.id, imagePath),
+      localPath(this.blog.id, imagePath)
     );
 
     thumbnail(this.blog, path, metadata, html, function (err, result) {
@@ -110,7 +110,8 @@ describe("thumbnail", function () {
     });
   });
 
-  it("should preserve the P3 ICC profile of the input image", function (done) {
+  it('should preserve the P3 ICC profile of the input image', function (done) {
+
     var thumbnail = require("../index");
     var metadata = {};
     var imagePath = "/p3.jpg";
@@ -119,7 +120,7 @@ describe("thumbnail", function () {
 
     fs.copyFileSync(
       __dirname + "/images/p3.jpg",
-      localPath(this.blog.id, imagePath),
+      localPath(this.blog.id, imagePath)
     );
 
     thumbnail(this.blog, path, metadata, html, async (err, result) => {
@@ -127,16 +128,11 @@ describe("thumbnail", function () {
       expect(result).toEqual(jasmine.any(Object));
       expect(result.small).toEqual(jasmine.any(Object));
 
-      const outputPath =
-        config.blog_static_files_dir +
-        "/" +
-        this.blog.id +
-        "/" +
-        result.large.path;
+      const outputPath = config.blog_static_files_dir + "/" + this.blog.id + '/' + result.large.path;
       const outputMetadata = await sharp(outputPath).metadata();
 
       expect(outputMetadata.icc).toBeDefined();
-      expect(outputMetadata.icc).toContain("P3"); // Ensure it is preserved
+      expect(outputMetadata.icc).toContain('P3'); // Ensure it is preserved
 
       done();
     });

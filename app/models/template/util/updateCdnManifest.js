@@ -24,17 +24,12 @@ const setAsync = promisify(client.set).bind(client);
 const MAX_RENDERED_OUTPUT_SIZE = 2 * 1024 * 1024;
 
 // Base directory for rendered output storage
-const RENDERED_OUTPUT_BASE_DIR = path.join(
-  config.data_directory,
-  "cdn",
-  "template",
-);
+const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");
+
 
 function getRenderedOutputPath(hash, viewName) {
   if (!hash || typeof hash !== "string" || hash.length < 4) {
-    throw new Error(
-      "Invalid hash: must be a string with at least 4 characters",
-    );
+    throw new Error("Invalid hash: must be a string with at least 4 characters");
   }
   if (!viewName || typeof viewName !== "string") {
     throw new Error("viewName must be a non-empty string");
@@ -45,13 +40,7 @@ function getRenderedOutputPath(hash, viewName) {
   const dir1 = hash.substring(0, 2);
   const dir2 = hash.substring(2, 4);
   const hashRemainder = hash.substring(4);
-  return path.join(
-    RENDERED_OUTPUT_BASE_DIR,
-    dir1,
-    dir2,
-    hashRemainder,
-    viewBaseName,
-  );
+  return path.join(RENDERED_OUTPUT_BASE_DIR, dir1, dir2, hashRemainder, viewBaseName);
 }
 
 async function writeRenderedOutputToDisk(hash, content, viewName) {
@@ -94,7 +83,11 @@ function isValidTarget(target) {
 /**
  * Process a single CDN target and build its manifest entry
  */
-async function processTarget(templateID, target) {
+async function processTarget(
+  templateID,
+  target
+) {
+
   // require here becuse of dependency loop
   const renderView = require("blog/render/view");
 
@@ -109,37 +102,35 @@ async function processTarget(templateID, target) {
     const isNonFatalError =
       err.code === "ENOENT" ||
       (err.message && err.message.includes("No view:"));
-
+    
     if (isNonFatalError) {
       return null;
     }
-
+    
     throw err;
   }
 
   // Render the view to get output
   const renderedOutput = await renderView(templateID, target);
-
+  
   if (renderedOutput === undefined || renderedOutput === null) {
     return null; // Missing view or render error - skip in manifest
   }
 
   const renderedOutputString =
-    typeof renderedOutput === "string"
-      ? renderedOutput
-      : String(renderedOutput);
+    typeof renderedOutput === "string" ? renderedOutput : String(renderedOutput);
 
   // Validate rendered output size
   if (renderedOutputString.length > MAX_RENDERED_OUTPUT_SIZE) {
     console.error(
-      `Rendered output for ${target} exceeds maximum size (${renderedOutputString.length} bytes > ${MAX_RENDERED_OUTPUT_SIZE} bytes)`,
+      `Rendered output for ${target} exceeds maximum size (${renderedOutputString.length} bytes > ${MAX_RENDERED_OUTPUT_SIZE} bytes)`
     );
     return null;
   }
 
   // Compute hash from templateID + view name + rendered output
-  // We include the template ID and view name to ensure that hashes are unique per site
-  // and per view because we purge the old hash when this changes.
+  // We include the template ID and view name to ensure that hashes are unique per site 
+  // and per view because we purge the old hash when this changes. 
   const hashInput = templateID + ":" + target + ":" + renderedOutputString;
   const computedHash = hash(hashInput);
 
@@ -148,7 +139,7 @@ async function processTarget(templateID, target) {
   try {
     // Write to disk (primary storage) with original view name
     await writeRenderedOutputToDisk(computedHash, renderedOutputString, target);
-
+    
     // Also write to Redis for backward compatibility during migration period
     await setAsync(renderedKey, renderedOutputString);
   } catch (err) {
@@ -163,16 +154,16 @@ async function processTarget(templateID, target) {
  * Clean up old rendered output and purge CDN URL
  */
 async function cleanupOldHash(target, oldHash) {
-  if (!oldHash || typeof oldHash !== "string") return;
-
+  if (!oldHash || typeof oldHash !== 'string') return;
+  
   try {
     // Delete from disk using original view name
     await deleteRenderedOutputFromDisk(oldHash, target);
-
+    
     // Delete from Redis
     const oldRenderedKey = key.renderedOutput(oldHash);
     await delAsync(oldRenderedKey);
-
+    
     // Purge CDN URL
     const oldUrl = generateCdnUrl(target, oldHash);
     await purgeCdnUrls([oldUrl]);
@@ -193,11 +184,11 @@ module.exports = function updateCdnManifest(templateID, callback) {
 
     try {
       const metadata = await getMetadataAsync(templateID);
-
+      
       if (!metadata) {
         return callback(new Error("Template metadata not found"));
       }
-
+      
       if (!metadata.owner) {
         return callback(new Error("Template metadata missing owner"));
       }
@@ -205,16 +196,12 @@ module.exports = function updateCdnManifest(templateID, callback) {
       // Get all views and collect CDN targets from their retrieve.cdn arrays
       const views = await getAllViewsAsync(templateID);
       const allTargets = new Set();
-
+      
       for (const viewName in views) {
         const view = views[viewName];
         if (view?.retrieve?.cdn && Array.isArray(view.retrieve.cdn)) {
           view.retrieve.cdn.forEach((target) => {
-            if (
-              typeof target === "string" &&
-              target.trim() &&
-              isValidTarget(target.trim())
-            ) {
+            if (typeof target === "string" && target.trim() && isValidTarget(target.trim())) {
               allTargets.add(target.trim());
             }
           });
@@ -232,8 +219,11 @@ module.exports = function updateCdnManifest(templateID, callback) {
       for (const target of sortedTargets) {
         try {
           let manifestChanged = false;
-          const result = await processTarget(templateID, target);
-          if (result && typeof result === "string") {
+          const result = await processTarget(
+            templateID,
+            target
+          );
+          if (result && typeof result === 'string') {
             manifest[target] = result;
             const previousHash = inProgressManifest[target];
             inProgressManifest[target] = result;
@@ -243,16 +233,14 @@ module.exports = function updateCdnManifest(templateID, callback) {
 
             // Clean up old hash if it changed
             const oldHash = oldManifest[target];
-            if (oldHash && oldHash !== result && typeof oldHash === "string") {
+            if (oldHash && oldHash !== result && typeof oldHash === 'string') {
               // Run cleanup in background - don't await
-              cleanupOldHash(target, oldHash).catch((err) => {
+              cleanupOldHash(target, oldHash).catch(err => {
                 // Error already logged in cleanupOldHash, but catch to prevent unhandled rejection
               });
             }
           } else {
-            if (
-              Object.prototype.hasOwnProperty.call(inProgressManifest, target)
-            ) {
+            if (Object.prototype.hasOwnProperty.call(inProgressManifest, target)) {
               delete inProgressManifest[target];
               manifestChanged = true;
             }
@@ -262,7 +250,7 @@ module.exports = function updateCdnManifest(templateID, callback) {
             await hsetAsync(
               key.metadata(templateID),
               "cdn",
-              JSON.stringify(inProgressManifest),
+              JSON.stringify(inProgressManifest)
             );
           }
         } catch (err) {
@@ -274,22 +262,20 @@ module.exports = function updateCdnManifest(templateID, callback) {
       for (const target in oldManifest) {
         if (!manifest.hasOwnProperty(target)) {
           // Run cleanup in background - don't await
-          cleanupOldHash(target, oldManifest[target]).catch((err) => {
+          cleanupOldHash(target, oldManifest[target]).catch(err => {
             // Error already logged in cleanupOldHash, but catch to prevent unhandled rejection
           });
         }
       }
 
       // Save manifest to Redis
-      await hsetAsync(
-        key.metadata(templateID),
-        "cdn",
-        JSON.stringify(manifest),
-      );
-
+      await hsetAsync(key.metadata(templateID), "cdn", JSON.stringify(manifest));
+      
       callback(null, manifest);
     } catch (err) {
       callback(err);
     }
   })();
 };
+
+

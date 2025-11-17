@@ -13,12 +13,12 @@ var breakPoints = [
   "<<more>>",
   "<!-- more -->",
   "<!- more ->",
-  "<!— more —>",
+  "<!— more —>"
 ];
 var charMap = {
   "<": "&lt;",
   ">": "&gt;",
-  "-": "&#x2014;",
+  "-": "&#x2014;"
 };
 
 for (var x in breakPoints) {
@@ -32,7 +32,7 @@ for (var x in breakPoints) {
   }
 }
 
-function removeNextSiblings(node, $) {
+function removeNextSiblings (node, $) {
   if (!node) return;
 
   // Remove this node's siblings...
@@ -47,15 +47,15 @@ function removeNextSiblings(node, $) {
   $(node).nextAll().remove();
 }
 
-function makeTeaser(html) {
+function makeTeaser (html) {
   debug("loading HTML");
 
   var $ = cheerio.load(
     html,
     {
-      decodeEntities: false,
+      decodeEntities: false
     },
-    false,
+    false
   );
 
   debug("loaded HTML");
@@ -75,7 +75,7 @@ function makeTeaser(html) {
   var foundABreakPoint;
 
   debug("looking for breakpoints...");
-  root.contents().each(function doLook(i, node) {
+  root.contents().each(function doLook (i, node) {
     // WE NEED TO IGNORE CERTAIN NODES NOW
     // E.G. CODE, PRE, STYLE
     if ($(this).parents().filter("code, head, pre, script, style").length) {
@@ -159,7 +159,7 @@ function makeTeaser(html) {
   return teaserHTML;
 }
 
-function isBreakPoint(node) {
+function isBreakPoint (node) {
   var content;
 
   if (node.children && node.children[0] && node.children[0].data) {
@@ -182,7 +182,7 @@ function isBreakPoint(node) {
   if (node.type === "text" && breakPoints.indexOf(content) > -1) return true;
 }
 
-function containsBreakPoint(node) {
+function containsBreakPoint (node) {
   if (node.data === undefined || node.type !== "text") return false;
 
   var content = node.data.trim().toLowerCase();
@@ -193,7 +193,7 @@ function containsBreakPoint(node) {
     if (content.indexOf(breakPoints[i]) > -1) return true;
 }
 
-function stripOtherText(node) {
+function stripOtherText (node) {
   var content = node.data.trim().toLowerCase(),
     data = node.data,
     dataWithoutBreakPoint,

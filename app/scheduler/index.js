@@ -42,16 +42,16 @@ module.exports = function () {
         clfdate(),
         "[STATS]",
         "Available disk space",
-        disks.map((disk) => disk.label + "=" + disk.available_human).join(", "),
+        disks.map(disk => disk.label + "=" + disk.available_human).join(", ")
       );
 
-      if (disks.some((disk) => disk.available_k < MINIMUM_DISK_SPACE_IN_K)) {
+      if (disks.some(disk => disk.available_k < MINIMUM_DISK_SPACE_IN_K)) {
         shouldNotify = true;
       }
 
       if (
-        disks.find((disk) => disk.label === "data") &&
-        disks.find((disk) => disk.label === "data").available_k <
+        disks.find(disk => disk.label === "data") &&
+        disks.find(disk => disk.label === "data").available_k <
           DATA_DISK_MINIMUM_DISK_SPACE_IN_K
       ) {
         shouldNotify = true;
@@ -77,7 +77,7 @@ module.exports = function () {
           console.log(clfdate(), "[STATS]", "top");
           console.log(stdout);
         }
-      },
+      }
     );
 
     // Print cpu and memory information
@@ -90,9 +90,9 @@ module.exports = function () {
       contents
         .trim()
         .split("\n")
-        .forEach((line) => {
+        .forEach(line => {
           stats[line.split(":")[0].trim()] = parseInt(
-            line.split(":")[1].trim(),
+            line.split(":")[1].trim()
           );
         });
 
@@ -100,7 +100,7 @@ module.exports = function () {
       let totalCPUs = os.cpus().length;
       let totalmem = stats.MemTotal;
       let freemem = stats.MemAvailable;
-      let pretty = (num) => (100 * num).toFixed(3) + "%";
+      let pretty = num => (100 * num).toFixed(3) + "%";
 
       console.log(
         clfdate(),
@@ -108,7 +108,7 @@ module.exports = function () {
         "cpuuse=" + pretty(loadavg / totalCPUs),
         "totalmem=" + stats.MemTotal,
         "totalcpus=" + totalCPUs,
-        "memuse=" + pretty((totalmem - freemem) / totalmem),
+        "memuse=" + pretty((totalmem - freemem) / totalmem)
       );
     });
   });
@@ -147,7 +147,7 @@ module.exports = function () {
           "Scheduler: Disk usage check passed! Usage:",
           usage,
           "Space available:",
-          available,
+          available
         );
         return;
       }
@@ -157,7 +157,7 @@ module.exports = function () {
         "Scheduler: Disk usage check failed! Usage:",
         usage,
         "Space available:",
-        available,
+        available
       );
     });
   });
@@ -178,12 +178,13 @@ module.exports = function () {
   //   });
   // });
 
+
   console.log(clfdate(), "Scheduled daily check of suspected fraudulent users");
   scheduler.scheduleJob({ hour: 11, minute: 0 }, async function () {
     console.log(clfdate(), "Checking for potential fraudulent users");
 
     let customers;
-
+    
     try {
       customers = await checkCardTesters();
     } catch (err) {

@@ -21,7 +21,7 @@ describe("posts", function () {
         locals: {
           page_size: 3,
         },
-      },
+      }
     );
 
     const res = await this.get("/foo");

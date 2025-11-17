@@ -26,7 +26,7 @@ module.exports = function (blog, text, callback) {
     // we use our own highlighint library (hljs) later
     "--no-highlight",
 
-    "--email-obfuscation=none",
+    "--email-obfuscation=none"
   ];
 
   var startTime = Date.now();
@@ -72,9 +72,9 @@ module.exports = function (blog, text, callback) {
       result,
       {
         decodeEntities: false,
-        xmlMode: true,
+        xmlMode: true
       },
-      false,
+      false
     );
 
     // if there is a pre tag with class="yaml"

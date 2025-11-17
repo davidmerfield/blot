@@ -11,7 +11,7 @@ var hosts = process.argv.slice(4);
 
 if (!input_directory)
   throw new Error(
-    "Please pass source directory containing output of export script as first argument",
+    "Please pass source directory containing output of export script as first argument"
   );
 
 if (!static_directory)
@@ -19,7 +19,7 @@ if (!static_directory)
 
 if (!hosts.length)
   throw new Error(
-    "Please pass hostname(s) to check against as third argument(s)",
+    "Please pass hostname(s) to check against as third argument(s)"
   );
 
 console.log("Source:", input_directory);
@@ -109,7 +109,7 @@ function fix_text_file(path) {
     urls.push({ url: url, filename: filename });
     fs.copySync(
       static_directory + pathToImage,
-      folderWithAssets + "/" + filename,
+      folderWithAssets + "/" + filename
     );
   });
 

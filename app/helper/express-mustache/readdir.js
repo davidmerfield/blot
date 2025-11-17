@@ -4,8 +4,8 @@ module.exports = async function recursiveReaddir(dir, allFiles = []) {
   await Promise.all(
     files.map(
       async (f) =>
-        (await fs.stat(f)).isDirectory() && recursiveReaddir(f, allFiles),
-    ),
+        (await fs.stat(f)).isDirectory() && recursiveReaddir(f, allFiles)
+    )
   );
   return allFiles;
 };

@@ -1,3 +1,4 @@
+
 .line,
 .line a {
   text-decoration: none;
@@ -13,12 +14,13 @@
   transition: background-color 0.2s;
 }
 
+
 a.line:hover {
   background: var(--light-background-color);
 }
 
 a.line:active {
-  background: var(--medium-background-color);
+  background: var(--medium-background-color)
 }
 
 a:hover .link,
@@ -42,6 +44,7 @@ a.line:hover .right {
   padding-left: 12px;
 }
 
+
 .label {
   color: var(--medium-text-color);
   display: inline-block;
@@ -49,28 +52,26 @@ a.line:hover .right {
   font-size: 14px;
   box-sizing: border-box;
   flex-shrink: 0;
-  position: relative;
-  top: 2px;
+  position: relative;  
+  top: 2px
 }
 
 .collapse-on-small-screens .label {
-  flex-basis: 100%;
+flex-basis: 100%;
 }
 
 .center,
-div.line a.link {
-}
+div.line a.link {}
 
 .center {
   flex-grow: 0;
 }
 
-div.center {
-}
+div.center {}
 
 .center b {
   color: var(--text-color);
-  font-weight: 500;
+  font-weight: 500
 }
 
 .center {
@@ -86,6 +87,7 @@ div.center {
   font-size: 16px;
 }
 
-.tablet:empty {
-  display: none;
-}
+.tablet:empty {display: none;}
+
+
+

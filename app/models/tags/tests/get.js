@@ -121,7 +121,7 @@ describe("tags.get", function () {
           expect(tag).toEqual("Tag Two");
 
           done();
-        },
+        }
       );
     });
   });

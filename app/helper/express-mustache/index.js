@@ -47,8 +47,8 @@ const render = async function (filePath, options, callback) {
 
     const transformers = [
       ...(options.settings.transformers || []),
-      ...(options.transformers || []),
-    ].filter((i) => typeof i === "function");
+      ...(options.transformers || [])
+    ].filter(i => typeof i === "function");
 
     if (transformers.length) {
       const $ = cheerio.load(result, { decodeEntities: false }, false);
@@ -69,7 +69,7 @@ const render = async function (filePath, options, callback) {
       "Error rendering " +
         filePath.slice(options.settings.views.length) +
         ": " +
-        err.message,
+        err.message
     );
     return callback(error);
   }

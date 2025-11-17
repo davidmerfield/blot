@@ -17,13 +17,13 @@ blog.use(require("./vhosts"));
 // Load in the rendering engine
 blog.use(renderView);
 
-blog.use(require("./loadTemplate"));
+blog.use(require('./loadTemplate'));
 
 // The order of these routes is important
 require("./draft")(blog);
 require("./tagged")(blog);
 
-blog.get("/search", require("./search"));
+blog.get('/search', require('./search'));
 
 require("./robots")(blog);
 blog.use(require("./view"));
@@ -33,7 +33,7 @@ blog.get("/page/:page", require("./entries"));
 blog.get("/", require("./entries"));
 
 blog.use(require("./assets"));
-blog.use("/random", require("./random"));
+blog.use('/random', require('./random'));
 require("./error")(blog);
 
 module.exports = blog;

@@ -1,113 +1,105 @@
 ol.path {
-  margin: 1rem 0 2.8rem;
-  padding: 0;
-}
+    margin: 1rem 0 2.8rem;
+    padding: 0;
+  }
 
-ol.path > li {
-  position: relative;
-  border-left: 1px solid var(--border-color);
-  line-height: 1.5;
-  padding: 4px 0 4px 1em;
-  margin: 0;
-}
+  ol.path > li {
+    position: relative;
+    border-left: 1px solid var(--border-color);
+    line-height: 1.5;
+    padding: 4px 0 4px 1em;
+    margin: 0;
+  }
 
-ol.path > li:last-child:before,
-ol.path > li:first-child:before {
-  content: "";
-  width: 1px;
-  position: absolute;
-  left: -1px;
-  background: var(--background-color);
-}
+  ol.path > li:last-child:before,
+  ol.path > li:first-child:before {
+    content: "";
+    width: 1px;
+    position: absolute;
+    left: -1px;
+    background: var(--background-color);
+  }
 
-ol.path > li:first-child:before {
-  top: 0;
-  height: 14px;
-}
+  ol.path > li:first-child:before {
+    top: 0;
+    height: 14px;
+  }
 
-ol.path > li:last-child:before {
-  top: 16px;
-  bottom: 0;
-}
+  ol.path > li:last-child:before {
+    top: 16px;
+    bottom: 0;
+  }
 
-ol.path > li:after {
-  content: "";
-  width: 7px;
-  height: 7px;
-  position: absolute;
-  top: 15px;
-  left: -5px;
-  background: var(--background-color);
-  border: 1px solid var(--border-color);
-  border-radius: 100%;
-  font-size: 0.5em;
-}
 
-ol.path > li.selected:after {
-  content: "";
-  width: 4px;
-  position: absolute;
-  top: 13px;
-  left: -5px;
-  height: 4px;
-  background: var(--background-color);
-  border: 3px solid var(--light-text-color);
-  border-radius: 100%;
-  font-size: 0.5em;
-}
+  ol.path > li:after {
+    content: "";
+    width: 7px;
+    height: 7px;
+    position: absolute;
+    top: 15px;
+    left: -5px;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 100%;
+    font-size: 0.5em;
+  }
 
-ol.path ul {
-  padding: 0;
-  list-style: none;
-  display: none;
-}
+  ol.path > li.selected:after {
+    content: "";
+    width: 4px;
+    position: absolute;
+    top: 13px;
+    left: -5px;
+    height: 4px;
+    background: var(--background-color);
+    border: 3px solid var(--light-text-color);
+    border-radius: 100%;
+    font-size: 0.5em;
+  }
 
-ol.path > li.selected ul {
-  display: block;
-}
+  ol.path ul {
+    padding: 0;
+    list-style: none;
+    display: none;
+  }
 
-ol.path ul li {
-  position: relative;
-  font-size: 14px;
-  padding-left: 1.5em;
-}
+  ol.path > li.selected  ul {
+    display: block;
+  }
 
-ol.path ul li:before {
-  display: none;
-}
+    ol.path ul li {
+        position: relative;
+        font-size: 14px;
+        padding-left: 1.5em;
+    }
 
-ol.path ul li.selected:before {
-  border-color: var(--text-color);
-  background: var(--text-color);
-}
+  ol.path ul li:before {
+    display: none;
+  }
 
-ol.path li.no-lab {
-  display: block;
-  font-size: 12px;
-  opacity: 0.5;
-  padding-bottom: 24px;
-  padding-left: 17px;
-  padding-top: 0;
-}
+  ol.path ul li.selected:before {
+    border-color: var(--text-color);
+    background: var(--text-color);
+  }
+   
+  ol.path li.no-lab {
+    display: block;font-size: 12px;opacity: 0.5;padding-bottom: 24px;padding-left: 17px;
+    padding-top: 0;
+  }
 
-ol.path li.no-lab:before,
-ol.path li.no-lab:after {
-  display: none;
-}
-.doc-nav a {
-  text-decoration: none;
-  font-size: 14px;
-  color: var(--light-text-color);
-}
-.doc-nav a:hover {
-  text-decoration: none;
-  color: var(--accent-color);
-}
-ol.path.doc-nav > .selected:after {
-  border-color: var(--accent-color);
-}
+  ol.path li.no-lab:before,
+  ol.path li.no-lab:after
+   {
+    display: none;
+  }
+  .doc-nav  a {text-decoration: none;font-size: 14px;color:var(--light-text-color)}
+  .doc-nav  a:hover {text-decoration: none;color:var(--accent-color)
+  }
+  ol.path.doc-nav > .selected:after {
+    border-color: var(--accent-color);
+  }
 
-.doc-nav .selected > a {
-  text-decoration: none;
-  color: var(--accent-color);
-}
+  .doc-nav .selected > a {
+    text-decoration: none;
+    color: var(--accent-color);
+  }

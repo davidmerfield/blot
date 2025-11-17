@@ -20,6 +20,6 @@ module.exports = function (req, res, callback) {
         entries,
         pagination,
       });
-    },
+    }
   );
 };

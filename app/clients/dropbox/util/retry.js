@@ -33,7 +33,7 @@ function retry(fn, options) {
         console.log("dropbox:retry attempting");
         fn.apply(null, args.concat(done));
       },
-      callback,
+      callback
     );
   };
 }

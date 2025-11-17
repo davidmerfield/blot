@@ -93,8 +93,8 @@ class Tail extends events.EventEmitter {
         new RegExp(
           `(?:[^\r\n]*[\r]{0,1}\n){${
             tokens.length - this.nLines - dropLastToken
-          }}`,
-        ),
+          }}`
+        )
       );
       startingCursor =
         match && match.length
@@ -193,7 +193,7 @@ class Tail extends events.EventEmitter {
         this.fsWatchOptions,
         (e, filename) => {
           this.watchEvent(e, filename);
-        },
+        }
       );
     } else {
       this.logger.info(`watch strategy: watchFile`);
@@ -221,18 +221,18 @@ class Tail extends events.EventEmitter {
             this.watch(this.currentCursorPos);
           } catch (ex) {
             this.logger.error(
-              `'rename' event for ${this.filename}. File not available anymore.`,
+              `'rename' event for ${this.filename}. File not available anymore.`
             );
             this.emit("error", ex);
           }
         }, 1000);
       } else {
         this.logger.error(
-          `'rename' event for ${this.filename}. File not available anymore.`,
+          `'rename' event for ${this.filename}. File not available anymore.`
         );
         this.emit(
           "error",
-          `'rename' event for ${this.filename}. File not available anymore.`,
+          `'rename' event for ${this.filename}. File not available anymore.`
         );
       }
     } else {

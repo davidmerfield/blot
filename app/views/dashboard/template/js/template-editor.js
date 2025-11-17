@@ -47,7 +47,7 @@ if (template_list) {
           var baseUrl = cleanTemplateBase(dataset);
           return baseUrl ? baseUrl + "/rename" : null;
         },
-        delete: function (dataset) {
+        "delete": function (dataset) {
           var baseUrl = cleanTemplateBase(dataset);
           return baseUrl ? baseUrl + "/delete" : null;
         },
@@ -63,7 +63,7 @@ if (template_list) {
   window.addEventListener("DOMContentLoaded", function () {
     // whenever the <form action="{{{base}}}/install" is submitted, remove the scroll offset
     var install_form = document.querySelector(
-      'form[action="{{{base}}}/install"]',
+      'form[action="{{{base}}}/install"]'
     );
     if (install_form) {
       install_form.addEventListener("submit", function () {

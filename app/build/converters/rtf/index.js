@@ -8,12 +8,14 @@ var cheerio = require("cheerio");
 var extend = require("helper/extend");
 var convert = require("./convert");
 
-function is(path) {
+function is (path) {
   return [".rtf"].indexOf(extname(path).toLowerCase()) > -1;
 }
 
-function read(blog, path, callback) {
-  ensure(blog, "object").and(path, "string").and(callback, "function");
+function read (blog, path, callback) {
+  ensure(blog, "object")
+    .and(path, "string")
+    .and(callback, "function");
 
   var localPath = LocalPath(blog.id, path);
 
@@ -80,4 +82,4 @@ function read(blog, path, callback) {
   });
 }
 
-module.exports = { read: read, is: is, id: "rtf" };
+module.exports = { read: read, is: is, id: "rtf"};

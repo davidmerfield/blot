@@ -2,7 +2,8 @@
   "name": "Studio",
   "locals": {
     "page_size": 36,
-    "demo_folder": "thoughtforms"
+        "demo_folder": "thoughtforms"
+
   },
   "isPublic": false,
   "views": {

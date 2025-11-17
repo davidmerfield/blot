@@ -9,6 +9,7 @@ module.exports = function (output_directory) {
         require("../../helper/download_pdfs"),
         require("../../helper/download_images"),
         function (post, callback) {
+
           // consider using 'to-markdown' like hexo:
           // https://github.com/hexojs/hexo-migrator-blogger/blob/master/migrate.js
           var Turndown = require("turndown");
@@ -36,7 +37,7 @@ module.exports = function (output_directory) {
       function (err) {
         if (err) console.error(err);
         next(null);
-      },
+      }
     );
   };
 };

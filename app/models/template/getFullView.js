@@ -22,29 +22,28 @@ module.exports = function getFullView(blogID, templateID, viewName, callback) {
     //                     which need to be fetched.
     // - partials (object) partials in view
 
-    getPartials(
-      blogID,
-      templateID,
-      view.partials,
-      function (err, allPartials, retrieveFromPartials) {
-        if (err) return callback(err);
+    getPartials(blogID, templateID, view.partials, function (
+      err,
+      allPartials,
+      retrieveFromPartials
+    ) {
+      if (err) return callback(err);
 
-        // allPartials (object) viewname : viewcontent
+      // allPartials (object) viewname : viewcontent
 
-        // Now we've fetched the partials we need to
-        // append the missing locals in the partials...
-        extend(view.retrieve).and(retrieveFromPartials);
+      // Now we've fetched the partials we need to
+      // append the missing locals in the partials...
+      extend(view.retrieve).and(retrieveFromPartials);
 
-        var response = [
-          view.locals,
-          allPartials,
-          view.retrieve,
-          view.type || mime.lookup(view.name) || "text/html",
-          view.content,
-        ];
+      var response = [
+        view.locals,
+        allPartials,
+        view.retrieve,
+        view.type || mime.lookup(view.name) || "text/html",
+        view.content,
+      ];
 
-        return callback(null, response);
-      },
-    );
+      return callback(null, response);
+    });
   });
 };

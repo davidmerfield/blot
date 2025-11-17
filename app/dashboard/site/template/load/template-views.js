@@ -14,7 +14,9 @@ module.exports = function (req, res, next) {
       if (!view || !view.name) return true;
       var lower = String(view.name).toLowerCase();
       return (
-        lower !== "readme" && lower !== "readme.md" && lower !== "readme.txt"
+        lower !== "readme" &&
+        lower !== "readme.md" &&
+        lower !== "readme.txt"
       );
     });
 
@@ -24,7 +26,7 @@ module.exports = function (req, res, next) {
       if (req.params.viewSlug && view.name === req.params.viewSlug)
         view.selected = "selected";
       view.extension = {};
-      view.extension[view.name.split(".").pop()] = true;
+      view.extension[view.name.split('.').pop()] = true;
       view.isPackageJSON = view.name === "package.json";
     });
 

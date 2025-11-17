@@ -18,7 +18,7 @@ const fetchItemURLs = require("./fetchItemURLs");
 const fetchItem = require("./fetchItem");
 const build = require("./build");
 
-const main = async (label) => {
+const main = async label => {
   if (!label) {
     console.log("No label provided");
     process.exit(1);
@@ -53,13 +53,13 @@ const main = async (label) => {
 
   const ids = Array.from(
     new Set(
-      itemURLs.map((url) => {
+      itemURLs.map(url => {
         const id = url.match(/\/item\/(\d+)/)[1];
         console.log(id, url);
 
         return id;
-      }),
-    ),
+      })
+    )
   ).sort();
 
   console.log(`Found ${ids.length} unique items`);

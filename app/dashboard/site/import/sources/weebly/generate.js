@@ -51,20 +51,20 @@ async.eachSeries(
         fs.outputFileSync(outputFolder + "/post.txt", entry.content);
         console.log("Wrote:", outputFolder + "/post.txt");
         next();
-      },
+      }
     );
   },
   function (err) {
     if (err) throw err;
     console.log("Done!");
     process.exit();
-  },
+  }
 );
 
 function download(uri, filename, callback) {
   console.log("Downloading", uri, "to", filename);
   require("child_process").exec(
     'curl -L -o "' + filename + '" "' + uri + '"',
-    callback,
+    callback
   );
 }

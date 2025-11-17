@@ -7,6 +7,7 @@ const dirname = require("path").dirname;
 const caseSensitivePath = require("helper/caseSensitivePath");
 
 module.exports = function (blog, path, metadata, callback) {
+
   let paths = {
     bib: metadata.bibliography,
     csl: metadata.csl,
@@ -36,6 +37,6 @@ module.exports = function (blog, path, metadata, callback) {
     },
     function (err) {
       callback(null, paths.bib, paths.csl);
-    },
+    }
   );
 };

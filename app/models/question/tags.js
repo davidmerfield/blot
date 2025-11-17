@@ -28,7 +28,7 @@ module.exports = ({ page = 1 } = {}) => {
 
         const pageOfTags = sortedTags.slice(
           (page - 1) * PAGE_SIZE,
-          page * PAGE_SIZE,
+          page * PAGE_SIZE
         );
 
         resolve({

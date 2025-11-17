@@ -23,7 +23,7 @@ const localreaddir = async (dir) => {
         size: isDirectory ? undefined : size,
         modifiedTime: isDirectory ? undefined : modifiedTime,
       };
-    }),
+    })
   );
 
   return result;

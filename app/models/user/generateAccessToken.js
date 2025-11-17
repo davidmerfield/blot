@@ -4,7 +4,7 @@ var key = require("./key");
 
 var TOKEN_LENGTH = 16; // characters long
 
-// We can store anything against the generated access
+// We can store anything against the generated access 
 // token – in the case we want to use this token
 // to authenticate the log in of an existing user, we
 // might store that user's UID. In the case we want to use

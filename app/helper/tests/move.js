@@ -113,7 +113,7 @@ describe("move ", function () {
         { from: "/bar", to: "/bat", result: "/bat copy" },
         { from: "/baz", to: "/bat", result: "/bat copy 2" },
       ],
-      { folders: ["/bat", "/bat copy", "/bat copy 2"] },
+      { folders: ["/bat", "/bat copy", "/bat copy 2"] }
     );
   });
 
@@ -133,7 +133,7 @@ describe("move ", function () {
           "/foo",
           "/foo/bar",
         ],
-      },
+      }
     );
   });
 
@@ -207,13 +207,13 @@ describe("move ", function () {
         items
           .filter(({ from }) => from.includes("."))
           .map(({ to, result }) => result || to)
-          .sort(),
+          .sort()
       );
 
       expect(fileList).toEqual(
         Object.values(results)
           .filter((result) => result.includes("."))
-          .sort(),
+          .sort()
       );
 
       items.forEach(({ to, from }) => {

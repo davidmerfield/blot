@@ -28,7 +28,7 @@ describe("template", function () {
         expect(
           templates.filter(function (template) {
             return template.name === name;
-          }).length,
+          }).length
         ).toEqual(1);
 
         done();
@@ -56,12 +56,12 @@ describe("template", function () {
           expect(
             templates.filter(function (template) {
               return templateNames.indexOf(template.name) > -1;
-            }).length,
+            }).length
           ).toEqual(1000);
 
           done();
         });
-      },
+      }
     );
   });
 
@@ -97,28 +97,25 @@ describe("template", function () {
             return template.name === original;
           })[0];
 
-          create(
-            blogID,
-            cloned,
-            { cloneFrom: originalTemplate.id },
-            function (err) {
+          create(blogID, cloned, { cloneFrom: originalTemplate.id }, function (
+            err
+          ) {
+            if (err) return done.fail(err);
+
+            getTemplateList(test.blog.id, function (err, templates) {
               if (err) return done.fail(err);
 
-              getTemplateList(test.blog.id, function (err, templates) {
-                if (err) return done.fail(err);
+              clonedTemplate = templates.filter(function (template) {
+                return template.name === cloned;
+              })[0];
 
-                clonedTemplate = templates.filter(function (template) {
-                  return template.name === cloned;
-                })[0];
+              expect(originalTemplate.locals).toEqual(clonedTemplate.locals);
 
-                expect(originalTemplate.locals).toEqual(clonedTemplate.locals);
-
-                done();
-              });
-            },
-          );
+              done();
+            });
+          });
         });
-      },
+      }
     );
   });
 
@@ -136,7 +133,7 @@ describe("template", function () {
         console.log(err);
         expect(err instanceof Error).toBe(true);
         done();
-      },
+      }
     );
   });
 });

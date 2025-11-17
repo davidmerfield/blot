@@ -11,7 +11,7 @@ setup(async (err) => {
   console.log(clfdate(), "Finished setting up server");
 
   // Open the server to handle requests
-  server.listen(config.port, () => {
+  server.listen(config.port, function () {
     console.log(clfdate(), `Server listening`);
 
     // Run non-blocking setup tasks after the port is bound so startup isn't delayed.
@@ -23,8 +23,8 @@ setup(async (err) => {
             clfdate(),
             "Setup:",
             "Post-listen tasks encountered an error",
-            err,
-          ),
+            err
+          )
         );
     }
 

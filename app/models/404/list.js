@@ -16,39 +16,36 @@ module.exports = function (blogID, callback) {
 
     ensure(ignoreThese, "array");
 
-    client.ZREVRANGE(
-      everythingKey,
-      0,
-      -1,
-      "WITHSCORES",
-      function (err, response) {
-        if (err) throw err;
+    client.ZREVRANGE(everythingKey, 0, -1, "WITHSCORES", function (
+      err,
+      response
+    ) {
+      if (err) throw err;
 
-        ensure(response, "array");
+      ensure(response, "array");
 
-        var list = [];
-        var ignored = [];
+      var list = [];
+      var ignored = [];
 
-        for (var i in response) {
-          if (i % 2) continue;
+      for (var i in response) {
+        if (i % 2) continue;
 
-          var url = response[i];
-          var timeStamp = parseInt(response[++i]);
+        var url = response[i];
+        var timeStamp = parseInt(response[++i]);
 
-          var item = {
-            url: url,
-            time: moment.utc(timeStamp).fromNow(),
-          };
+        var item = {
+          url: url,
+          time: moment.utc(timeStamp).fromNow(),
+        };
 
-          if (ignoreThese.indexOf(url) > -1) {
-            ignored.push(item);
-          } else {
-            list.push(item);
-          }
+        if (ignoreThese.indexOf(url) > -1) {
+          ignored.push(item);
+        } else {
+          list.push(item);
         }
+      }
 
-        return callback(null, list, ignored);
-      },
-    );
+      return callback(null, list, ignored);
+    });
   });
 };

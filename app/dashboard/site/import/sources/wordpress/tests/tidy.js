@@ -11,12 +11,12 @@ xdescribe("wordpress", function () {
     it("should " + label, function (done) {
       var html = fs.readFileSync(
         testsFolder + "/" + label + "/input.txt",
-        "utf-8",
+        "utf-8"
       );
 
       var expectedResult = fs.readFileSync(
         testsFolder + "/" + label + "/result.txt",
-        "utf-8",
+        "utf-8"
       );
 
       tidy({ html: html }, function (err, entry) {

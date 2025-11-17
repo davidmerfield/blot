@@ -10,7 +10,7 @@ const saddAsync = promisify(client.sadd).bind(client);
 const sremAsync = promisify(client.srem).bind(client);
 const smembersAsync = promisify(client.smembers).bind(client);
 
-const PREFIX = "blot:clients:icloud-drive:";
+const PREFIX = 'blot:clients:icloud-drive:'
 
 module.exports = {
   _key(blogID) {

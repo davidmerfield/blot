@@ -1,24 +1,22 @@
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: https://codemirror.net/LICENSE
 
-(function (mod) {
-  if (typeof exports == "object" && typeof module == "object")
-    // CommonJS
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
     mod(require("./codemirror"));
-  else if (typeof define == "function" && define.amd)
-    // AMD
+  else if (typeof define == "function" && define.amd) // AMD
     define(["./codemirror"], mod);
-  // Plain browser env
-  else mod(CodeMirror);
-})(function (CodeMirror) {
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
   "use strict";
   var WRAP_CLASS = "CodeMirror-activeline";
   var BACK_CLASS = "CodeMirror-activeline-background";
   var GUTT_CLASS = "CodeMirror-activeline-gutter";
 
-  CodeMirror.defineOption("styleActiveLine", false, function (cm, val, old) {
+  CodeMirror.defineOption("styleActiveLine", false, function(cm, val, old) {
     var prev = old == CodeMirror.Init ? false : old;
-    if (val == prev) return;
+    if (val == prev) return
     if (prev) {
       cm.off("beforeSelectionChange", selectionChange);
       clearActiveLines(cm);
@@ -41,7 +39,8 @@
 
   function sameArray(a, b) {
     if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) if (a[i] != b[i]) return false;
+    for (var i = 0; i < a.length; i++)
+      if (a[i] != b[i]) return false;
     return true;
   }
 
@@ -50,17 +49,13 @@
     for (var i = 0; i < ranges.length; i++) {
       var range = ranges[i];
       var option = cm.getOption("styleActiveLine");
-      if (
-        typeof option == "object" && option.nonEmpty
-          ? range.anchor.line != range.head.line
-          : !range.empty()
-      )
-        continue;
+      if (typeof option == "object" && option.nonEmpty ? range.anchor.line != range.head.line : !range.empty())
+        continue
       var line = cm.getLineHandleVisualStart(range.head.line);
       if (active[active.length - 1] != line) active.push(line);
     }
     if (sameArray(cm.state.activeLines, active)) return;
-    cm.operation(function () {
+    cm.operation(function() {
       clearActiveLines(cm);
       for (var i = 0; i < active.length; i++) {
         cm.addLineClass(active[i], "wrap", WRAP_CLASS);

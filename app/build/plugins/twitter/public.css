@@ -18,13 +18,11 @@ blockquote.twitter-tweet {
   box-sizing: border-box;
   margin: 1em 0;
   border-radius: 5px;
-  border: 1px solid #e1e8ed;
+  border: 1px solid #E1E8ED;
   padding: 32px 16px 32px;
   background: #fff;
   color: #aaa;
-  font:
-    normal 12px / 1.33 "Helvetica Neue",
-    sans-serif;
+  font: normal 12px / 1.33 "Helvetica Neue", sans-serif;
 }
 
 blockquote.twitter-tweet p {

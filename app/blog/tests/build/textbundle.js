@@ -24,14 +24,14 @@ describe("textbundle", function () {
 
     expect(result).toContain('<h1 id="title">Title</h1>');
     expect(result).toContain(
-      '<a href="https://example.com" title="Link">link</a>',
+      '<a href="https://example.com" title="Link">link</a>'
     );
     expect(result).toContain("<em>text</em>");
     expect(result).toContain("<table>");
     expect(result).toContain('<p><span class="katex">');
     // Blot resolved the image correctly
     expect(result).toContain(
-      `<img src="https://cdn.localhost/${this.blog.id}/_image_cache/`,
+      `<img src="https://cdn.localhost/${this.blog.id}/_image_cache/`
     );
     expect(result).toContain('<section id="footnotes"');
   });

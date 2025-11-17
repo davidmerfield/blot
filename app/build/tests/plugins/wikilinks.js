@@ -111,7 +111,8 @@ Heading Here
     const contents =
       '<h3><a id="h.abc123"></a>Heading From Docs</h3>\n\nSee [[#Heading From Docs]].';
     const path = "/hello.txt";
-    const html = `<h3>
+    const html =
+      `<h3>
 <a id="h.abc123"></a>Heading From Docs
 </h3>
 <p>See <a href="#h.abc123" title="wikilink">Heading From Docs</a>.</p>`;
@@ -136,7 +137,7 @@ Heading Here
 
     const files = [
       { path: "/Target’s.md", content: "Link: target\n# Hey" },
-      { path, content: "[[Target’s]]" },
+      { path, content: "[[Target’s]]" }
     ];
 
     const entry = { path, html };
@@ -149,12 +150,12 @@ Heading Here
 
     const files = [
       { path: "/target.md", content: "Link: target\n# Title" },
-      { path, content: "[[title]]" },
+      { path, content: "[[title]]" }
     ];
 
     const entry = {
       path,
-      html: '<p><a href="/target" title="wikilink">Title</a></p>',
+      html: '<p><a href="/target" title="wikilink">Title</a></p>'
     };
 
     this.syncAndCheck(files, entry, done);
@@ -163,19 +164,19 @@ Heading Here
   it("will support media embedding", async function (done) {
     await this.blog.write({
       path: "/_Image.png",
-      content: await global.test.fake.pngBuffer(),
+      content: await global.test.fake.pngBuffer()
     });
 
     await this.blog.write({
       path: "/Post.txt",
-      content: "![[_Image|An example image]]",
+      content: "![[_Image|An example image]]"
     });
 
     await this.blog.rebuild();
 
     const entry = await this.blog.check({ path: "/Post.txt" });
 
-    expect(entry.html).toContain("<img");
+    expect(entry.html).toContain('<img');
     expect(entry.html).toContain('src="');
 
     expect(entry.html).toContain('title="wikilink"');
@@ -187,22 +188,22 @@ Heading Here
   it("will support media embedding with spaces in filenames", async function (done) {
     await this.blog.write({
       path: "/Pasted image 2024-01-01.png",
-      content: await global.test.fake.pngBuffer(),
+      content: await global.test.fake.pngBuffer()
     });
 
     await this.blog.write({
       path: "/SpacesPost.txt",
-      content: "![[Pasted image 2024-01-01.png]]",
+      content: "![[Pasted image 2024-01-01.png]]"
     });
 
     await this.blog.rebuild();
 
     const entry = await this.blog.check({ path: "/SpacesPost.txt" });
 
-    expect(entry.html).toContain("<img");
+    expect(entry.html).toContain('<img');
     expect(entry.html).toContain('src="');
 
-    expect(entry.html).toContain("/_image_cache/");
+    expect(entry.html).toContain('/_image_cache/');
     expect(entry.html).toContain('alt="Pasted image 2024-01-01.png"');
 
     done();
@@ -211,23 +212,23 @@ Heading Here
   it("will support media embedding from nested folders", async function (done) {
     await this.blog.write({
       path: "/Assets/image.png",
-      content: await global.test.fake.pngBuffer(),
+      content: await global.test.fake.pngBuffer()
     });
 
     await this.blog.write({
       path: "/NestedPost.txt",
-      content: "![[Assets/image.png]]",
+      content: "![[Assets/image.png]]"
     });
 
     await this.blog.rebuild();
 
     const entry = await this.blog.check({ path: "/NestedPost.txt" });
 
-    expect(entry.html).toContain("<img");
+    expect(entry.html).toContain('<img');
     expect(entry.html).toContain('src="');
 
     expect(entry.html).toContain('alt="Assets/image.png"');
-    expect(entry.html).toContain("/_image_cache/");
+    expect(entry.html).toContain('/_image_cache/');
 
     done();
   });
@@ -235,20 +236,20 @@ Heading Here
   it("will process embedded media through the image cache", async function (done) {
     await this.blog.write({
       path: "/Assets/photo.png",
-      content: await global.test.fake.pngBuffer(),
+      content: await global.test.fake.pngBuffer()
     });
 
     await this.blog.write({
       path: "/CachedMediaPost.txt",
-      content: "![[Assets/photo.png]]",
+      content: "![[Assets/photo.png]]"
     });
 
     await this.blog.rebuild();
 
     const entry = await this.blog.check({ path: "/CachedMediaPost.txt" });
 
-    expect(entry.html).toContain("<img");
-    expect(entry.html).toContain("/_image_cache/");
+    expect(entry.html).toContain('<img');
+    expect(entry.html).toContain('/_image_cache/');
 
     done();
   });
@@ -256,12 +257,12 @@ Heading Here
   it("will support video embedding with piped alt text", async function (done) {
     await this.blog.write({
       path: "/Assets/video.mp4",
-      content: Buffer.from("fake video content"),
+      content: Buffer.from("fake video content")
     });
 
     await this.blog.write({
       path: "/PipedAltPost.txt",
-      content: "![[Assets/video.mp4|Demo video]]",
+      content: "![[Assets/video.mp4|Demo video]]"
     });
 
     await this.blog.rebuild();
@@ -269,9 +270,9 @@ Heading Here
     const entry = await this.blog.check({ path: "/PipedAltPost.txt" });
 
     expect(entry.html).toContain('src="');
-    expect(entry.html).toContain("video.mp4");
+    expect(entry.html).toContain('video.mp4');
     expect(entry.html).toContain('title="wikilink"');
-    expect(entry.html).toContain("Demo video");
+    expect(entry.html).toContain('Demo video');
 
     done();
   });
@@ -279,12 +280,12 @@ Heading Here
   it("will support audio embedding via wikilinks", async function (done) {
     await this.blog.write({
       path: "/Assets/audio.mp3",
-      content: Buffer.from("fake audio content"),
+      content: Buffer.from("fake audio content")
     });
 
     await this.blog.write({
       path: "/AudioPost.txt",
-      content: "![[Assets/audio.mp3|Sample audio]]",
+      content: "![[Assets/audio.mp3|Sample audio]]"
     });
 
     await this.blog.rebuild();
@@ -292,9 +293,9 @@ Heading Here
     const entry = await this.blog.check({ path: "/AudioPost.txt" });
 
     expect(entry.html).toContain('src="');
-    expect(entry.html).toContain("audio.mp3");
+    expect(entry.html).toContain('audio.mp3');
     expect(entry.html).toContain('title="wikilink"');
-    expect(entry.html).toContain("Sample audio");
+    expect(entry.html).toContain('Sample audio');
 
     done();
   });
@@ -302,12 +303,12 @@ Heading Here
   it("will support document embedding via wikilinks", async function (done) {
     await this.blog.write({
       path: "/Assets/document.pdf",
-      content: Buffer.from("%PDF-1.4 fake pdf content"),
+      content: Buffer.from("%PDF-1.4 fake pdf content")
     });
 
     await this.blog.write({
       path: "/DocumentPost.txt",
-      content: "![[Assets/document.pdf|Reference PDF]]",
+      content: "![[Assets/document.pdf|Reference PDF]]"
     });
 
     await this.blog.rebuild();
@@ -325,12 +326,12 @@ Heading Here
 
     const files = [
       { path: "/target.md", content: "Link: target\n# Title" },
-      { path, content: "[[Target]]" },
+      { path, content: "[[Target]]" }
     ];
 
     const entry = {
       path,
-      html: '<p><a href="/target" title="wikilink">Title</a></p>',
+      html: '<p><a href="/target" title="wikilink">Title</a></p>'
     };
 
     this.syncAndCheck(files, entry, done);
@@ -346,7 +347,7 @@ Heading Here
       "[[/Subdirectory/tArget!file]]",
       "[[/Subdirectory/Target_file]]",
       "[[/Subdirectory/Target file]]",
-      "[[/Subdirectory/Target-file]]",
+      "[[/Subdirectory/Target-file]]"
     ];
     const content = tests.join("\n");
 
@@ -358,13 +359,13 @@ Heading Here
     const html =
       "<p>" +
       Array.from(Array(tests.length))
-        .map((i) => '<a href="/target" title="wikilink">Target</a>')
+        .map(i => '<a href="/target" title="wikilink">Target</a>')
         .join(" ") +
       "</p>";
 
     const files = [
       { path: linkPath, content: linkContent },
-      { path, content },
+      { path, content }
     ];
 
     const entry = { path, html };
@@ -380,7 +381,7 @@ Heading Here
 
     const files = [
       { path: "/Target's.md", content: "Link: target\n# Hey" },
-      { path, content: "[[Target's]]" },
+      { path, content: "[[Target's]]" }
     ];
 
     const entry = { path, html };
@@ -411,7 +412,7 @@ Heading Here
 
     const files = [
       { path: linkPath, content: linkContent },
-      { path, content },
+      { path, content }
     ];
 
     const entry = { path, html };
@@ -433,7 +434,7 @@ Heading Here
 
     const files = [
       { path, content },
-      { path: linkPath, content: linkContent },
+      { path: linkPath, content: linkContent }
     ];
 
     const entry = { path, html };
@@ -463,7 +464,7 @@ Heading Here
       // Absolute path with bad case and extension and without leading slash
       "[[sUb/child/taRget.txt]]",
       // Absolute path with extra slashes and without leading slash
-      "[[Sub//child//Target.txt/]]",
+      "[[Sub//child//Target.txt/]]"
     ];
 
     const content = tests.join("\n");
@@ -476,13 +477,13 @@ Heading Here
     const html =
       "<p>" +
       Array.from(Array(tests.length))
-        .map((i) => '<a href="/not-target" title="wikilink">Not Target</a>')
+        .map(i => '<a href="/not-target" title="wikilink">Not Target</a>')
         .join(" ") +
       "</p>";
 
     const files = [
       { path: linkPath, content: linkContent },
-      { path, content },
+      { path, content }
     ];
 
     const entry = { path, html };
@@ -508,7 +509,7 @@ Heading Here
       // Relative path without bad case and dot-slash
       "[[Child/target]]",
       // Relative path without bad case and dot-slash but extension
-      "[[Child/target.md]]",
+      "[[Child/target.md]]"
     ];
     const content = tests.join("\n");
 
@@ -520,13 +521,13 @@ Heading Here
     const html =
       "<p>" +
       Array.from(Array(tests.length))
-        .map((i) => '<a href="/target" title="wikilink">Target</a>')
+        .map(i => '<a href="/target" title="wikilink">Target</a>')
         .join(" ") +
       "</p>";
 
     const files = [
       { path: linkPath, content: linkContent },
-      { path, content },
+      { path, content }
     ];
 
     const entry = { path, html };
@@ -552,7 +553,7 @@ Heading Here
       // Relative path with bad case and without dot-slash
       "[[target]]",
       // Relative path without bad case and dot-slash but extension
-      "[[target.md]]",
+      "[[target.md]]"
     ];
     const content = tests.join("\n");
 
@@ -564,13 +565,13 @@ Heading Here
     const html =
       "<p>" +
       Array.from(Array(tests.length))
-        .map((i) => '<a href="/target" title="wikilink">Target</a>')
+        .map(i => '<a href="/target" title="wikilink">Target</a>')
         .join(" ") +
       "</p>";
 
     const files = [
       { path: linkPath, content: linkContent },
-      { path, content },
+      { path, content }
     ];
 
     const entry = { path, html };
@@ -596,7 +597,7 @@ Heading Here
       // Relative path with bad case and without dot-slash
       "[[../../Sub/target]]",
       // Relative path without bad case and dot-slash but extension
-      "[[../../Sub/target.md]]",
+      "[[../../Sub/target.md]]"
     ];
     const content = tests.join("\n");
 
@@ -608,13 +609,13 @@ Heading Here
     const html =
       "<p>" +
       Array.from(Array(tests.length))
-        .map((i) => '<a href="/target" title="wikilink">Target</a>')
+        .map(i => '<a href="/target" title="wikilink">Target</a>')
         .join(" ") +
       "</p>";
 
     const files = [
       { path: linkPath, content: linkContent },
-      { path, content },
+      { path, content }
     ];
 
     const entry = { path, html };
@@ -638,7 +639,7 @@ Heading Here
 
     const files = [
       { path, content },
-      { path: linkPath, content: linkContent },
+      { path: linkPath, content: linkContent }
     ];
 
     const entry = { path, html, dependencies: ["/target-of-link.md"] };
@@ -654,24 +655,19 @@ Heading Here
     const imagePath = "/_Images/Image.jpg";
     const imageContent = "BinaryImageContent";
 
-    const html =
-      '<p><img src="/_Images/Image.jpg" title="Image.jpg" alt="Image.jpg"><span class="caption">Image.jpg</span></p>';
+    const html = '<p><img src="/_Images/Image.jpg" title="Image.jpg" alt="Image.jpg"><span class="caption">Image.jpg</span></p>';
 
     const files = [
       { path: imagePath, content: imageContent },
       { path, content },
     ];
 
-    const entry = {
-      path,
-      html,
-      dependencies: ["/Image.jpg", "/_Images/Image.jpg"],
-    };
+    const entry = { path, html, dependencies: ["/Image.jpg", "/_Images/Image.jpg"] };
 
     this.syncAndCheck(files, entry, done);
   });
 
-  // You can embed images by wikilink using only the filename
+    // You can embed images by wikilink using only the filename
   it("turns wikilinks into embedded images using the filename and respects the caption", function (done) {
     const path = "/contains-image.md";
     const content = "![[pic.png|Caption text]]";
@@ -679,8 +675,7 @@ Heading Here
     const imagePath = "/Files/Pic.png";
     const imageContent = "BinaryImageContent";
 
-    const html =
-      '<p><img src="/Files/Pic.png" title="Caption text" alt="Caption text"><span class="caption">Caption text</span></p>';
+    const html = '<p><img src="/Files/Pic.png" title="Caption text" alt="Caption text"><span class="caption">Caption text</span></p>';
 
     const files = [
       { path: imagePath, content: imageContent },

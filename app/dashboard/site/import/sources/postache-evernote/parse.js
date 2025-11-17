@@ -69,61 +69,60 @@ module.exports = function ($, output_directory, callback) {
 
         html = extract_html(extract("content"), files);
 
-        replace_images(
+        replace_images(html, files, path_without_extension, function (
+          err,
           html,
-          files,
-          path_without_extension,
-          function (err, html, has_images) {
+          has_images
+        ) {
+          if (err) return callback(err);
+
+          if (has_images) {
+            path = path_without_extension + "/post.txt";
+          } else {
+            path = path_without_extension + ".txt";
+          }
+
+          if (err) return callback(err);
+
+          // Add the new post to the list of posts!
+          post = {
+            draft: draft,
+            page: page,
+
+            // We don't know any of these properties
+            // as far as I can tell.
+            name: "",
+            permalink: "",
+            summary: "",
+
+            title: extract("title"),
+
+            dateStamp: dateStamp,
+            created: created,
+            updated: updated,
+            tags: tags,
+            metadata: metadata,
+
+            // Clean up the contents of the <content>
+            // tag. Evernote has quite a lot of cruft.
+            // Then convert into Markdown!
+            content: to_markdown(html),
+          };
+
+          post = determine_path(post);
+
+          post = insert_metadata(post);
+
+          fs.outputFile(post.path, post.content, function (err) {
             if (err) return callback(err);
 
-            if (has_images) {
-              path = path_without_extension + "/post.txt";
-            } else {
-              path = path_without_extension + ".txt";
-            }
-
-            if (err) return callback(err);
-
-            // Add the new post to the list of posts!
-            post = {
-              draft: draft,
-              page: page,
-
-              // We don't know any of these properties
-              // as far as I can tell.
-              name: "",
-              permalink: "",
-              summary: "",
-
-              title: extract("title"),
-
-              dateStamp: dateStamp,
-              created: created,
-              updated: updated,
-              tags: tags,
-              metadata: metadata,
-
-              // Clean up the contents of the <content>
-              // tag. Evernote has quite a lot of cruft.
-              // Then convert into Markdown!
-              content: to_markdown(html),
-            };
-
-            post = determine_path(post);
-
-            post = insert_metadata(post);
-
-            fs.outputFile(post.path, post.content, function (err) {
-              if (err) return callback(err);
-
-              next();
-            });
-          },
-        );
+            next();
+          });
+        });
         // When all the notes have been processed,
         // send them back with the rest of the blog!
       },
-      callback.bind(this, null, blog),
+      callback.bind(this, null, blog)
     );
   });
 };

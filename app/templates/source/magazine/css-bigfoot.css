@@ -36,7 +36,7 @@
 }
 
 .bigfoot-footnote__button:after {
-  content: "";
+  content: '';
   display: table;
   clear: both;
 }
@@ -73,12 +73,12 @@
   opacity: 0;
   border-radius: 5px;
   background-color: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-bottom-color: rgba(0, 0, 0, 0.25);
-  border-top-color: rgba(0, 0, 0, 0.15);
-  -webkit-box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.15);
-  -moz-box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.15);
-  box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.15);
+	border: 1px solid rgba(0,0,0,.2);
+    border-bottom-color: rgba(0,0,0,.25);
+    border-top-color: rgba(0,0,0,.15);
+  -webkit-box-shadow: 0 0 15px 0 rgba(0,0,0,.15);
+  -moz-box-shadow: 0 0 15px 0 rgba(0,0,0,.15);
+  box-shadow: 0 0 15px 0 rgba(0,0,0,.15);
   line-height: 0;
   -webkit-transition-property: opacity, -webkit-transform;
   transition-property: opacity, transform;
@@ -148,7 +148,7 @@
 }
 
 .bigfoot-footnote.is-scrollable:after {
-  content: "";
+  content: '';
   position: absolute;
   bottom: 0.3375em;
   left: 0.3375em;
@@ -169,7 +169,7 @@
 
 .bigfoot-footnote.is-scrollable .bigfoot-footnote__wrapper:before,
 .bigfoot-footnote.is-scrollable .bigfoot-footnote__wrapper:after {
-  content: "";
+  content: '';
   position: absolute;
   width: 100%;
   z-index: 12;
@@ -180,46 +180,18 @@
   top: -1px;
   height: 1.1em;
   border-radius: 0.5em 0.5em 0 0;
-  background-image: -webkit-gradient(
-    linear,
-    left top,
-    left bottom,
-    from(#fafafa),
-    to(rgba(250, 250, 250, 0))
-  );
-  background-image: -webkit-linear-gradient(
-    top,
-    #fafafa 50%,
-    rgba(250, 250, 250, 0) 100%
-  );
-  background-image: linear-gradient(
-    to bottom,
-    #fafafa 50%,
-    rgba(250, 250, 250, 0) 100%
-  );
+  background-image: -webkit-gradient(linear, left top, left bottom, from(#fafafa), to(rgba(250, 250, 250, 0)));
+  background-image: -webkit-linear-gradient(top, #fafafa 50%, rgba(250, 250, 250, 0) 100%);
+  background-image: linear-gradient(to bottom, #fafafa 50%, rgba(250, 250, 250, 0) 100%);
 }
 
 .bigfoot-footnote.is-scrollable .bigfoot-footnote__wrapper:after {
   bottom: -1px;
   height: 1.2em;
   border-radius: 0 0 0.5em 0.5em;
-  background-image: -webkit-gradient(
-    linear,
-    left bottom,
-    left top,
-    from(#fafafa),
-    to(rgba(250, 250, 250, 0))
-  );
-  background-image: -webkit-linear-gradient(
-    bottom,
-    #fafafa 50%,
-    rgba(250, 250, 250, 0) 100%
-  );
-  background-image: linear-gradient(
-    to top,
-    #fafafa 50%,
-    rgba(250, 250, 250, 0) 100%
-  );
+  background-image: -webkit-gradient(linear, left bottom, left top, from(#fafafa), to(rgba(250, 250, 250, 0)));
+  background-image: -webkit-linear-gradient(bottom, #fafafa 50%, rgba(250, 250, 250, 0) 100%);
+  background-image: linear-gradient(to top, #fafafa 50%, rgba(250, 250, 250, 0) 100%);
 }
 
 .bigfoot-footnote.is-scrollable ::-webkit-scrollbar {
@@ -260,7 +232,7 @@
   -webkit-overflow-scrolling: touch;
   border-radius: 5px;
   background: #fff;
-  line-height: 1.5;
+  line-height:1.5;
 }
 
 .bigfoot-footnote__content img {
@@ -287,13 +259,13 @@
   -webkit-transform: rotate(45deg);
   -ms-transform: rotate(45deg);
   transform: rotate(45deg);
-  background-color: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-bottom-color: rgba(0, 0, 0, 0.25);
-  border-top-color: rgba(0, 0, 0, 0.15);
-  -webkit-box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.15);
-  -moz-box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.15);
-  box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.15);
+    background-color: #fff;
+	border: 1px solid rgba(0,0,0,.2);
+    border-bottom-color: rgba(0,0,0,.25);
+    border-top-color: rgba(0,0,0,.15);
+  -webkit-box-shadow: 0 0 15px 0 rgba(0,0,0,.15);
+  -moz-box-shadow: 0 0 15px 0 rgba(0,0,0,.15);
+  box-shadow: 0 0 15px 0 rgba(0,0,0,.15);
   border-top-left-radius: 0;
 }
 
@@ -323,7 +295,7 @@
   display: block;
   font-size: 0.7em;
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.5);
+  color: rgba(0,0,0,0.5);
   -webkit-transition: color 0.25s ease;
   transition: color 0.25s ease;
 }
@@ -336,6 +308,8 @@
 .bigfoot-footnote__button__circle {
   display: none;
 }
+
+
 
 @media not print {
   .footnote-print-only {

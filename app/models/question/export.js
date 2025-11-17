@@ -1,6 +1,6 @@
 const client = require("models/client");
 const keys = require("./keys");
-const fs = require("fs-extra");
+const fs = require('fs-extra');
 
 function smembersAsync(key) {
   return new Promise((resolve, reject) => {
@@ -38,6 +38,7 @@ async function exportQuestions() {
 
     // map tags to an array
     question.tags = JSON.parse(question.tags);
+
 
     const replies = await zrangeAsync(keys.children(id), 0, -1);
 

@@ -3,7 +3,7 @@ const Sync = require("sync");
 const Fix = require("sync/fix");
 const async = require("async");
 
-function main(callback) {
+function main (callback) {
   const finalReport = [];
   Blog.getAllIDs(function (err, blogIDs) {
     if (err || !blogIDs) return callback(err || new Error("No blog IDs"));
@@ -35,7 +35,7 @@ function main(callback) {
       },
       function (err) {
         callback(err, finalReport);
-      },
+      }
     );
   });
 }

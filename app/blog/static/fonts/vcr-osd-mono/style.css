@@ -1,31 +1,15 @@
 @font-face {
-  font-family: "VCR OSD Mono";
+  font-family: 'VCR OSD Mono';
   font-style: normal;
   font-weight: 400;
-  src: url("{{{config.cdn.origin}}}/fonts/vcr-osd-mono/400.eot?version=38ea1d&extension=.eot");
-  src:
-    url("{{{config.cdn.origin}}}/fonts/vcr-osd-mono/400.eot?version=38ea1d&extension=.eot#iefix")
-    format("embedded-opentype"),
-    url("{{{config.cdn.origin}}}/fonts/vcr-osd-mono/400.woff?version=33b234&extension=.woff")
-    format("woff"),
-    url("{{{config.cdn.origin}}}/fonts/vcr-osd-mono/400.ttf?version=5fcd6c&extension=.ttf")
-    format("truetype"),
-    url("{{{config.cdn.origin}}}/fonts/vcr-osd-mono/400.otf?version=f626aa&extension=.otf")
-    format("opentype");
+  src: url('{{{config.cdn.origin}}}/fonts/vcr-osd-mono/400.eot?version=38ea1d&extension=.eot'); 
+  src: url('{{{config.cdn.origin}}}/fonts/vcr-osd-mono/400.eot?version=38ea1d&extension=.eot#iefix') format('embedded-opentype'), 
+       url('{{{config.cdn.origin}}}/fonts/vcr-osd-mono/400.woff?version=33b234&extension=.woff') format('woff'),
+       url('{{{config.cdn.origin}}}/fonts/vcr-osd-mono/400.ttf?version=5fcd6c&extension=.ttf') format('truetype'),
+       url('{{{config.cdn.origin}}}/fonts/vcr-osd-mono/400.otf?version=f626aa&extension=.otf') format('opentype');
 }
-.pull-double {
-  margin-left: -0.5859375em;
-}
-.push-double {
-  margin-right: 0.5859375em;
-}
-.pull-single {
-  margin-left: -0.5859375em;
-}
-.push-single {
-  margin-right: 0.5859375em;
-}
-.push-double,
-.push-single {
-  display: inline-block;
-}
+.pull-double {margin-left:-0.5859375em}
+.push-double{margin-right:0.5859375em}
+.pull-single{margin-left:-0.5859375em}
+.push-single{margin-right:0.5859375em}
+.push-double,.push-single{display:inline-block}

@@ -28,10 +28,10 @@ var overwrite = [
   "slug",
   "summary",
   "teaser",
-  "teaserBody",
+  "teaserBody"
 ];
 
-function canOverwrite(key) {
+function canOverwrite (key) {
   return overwrite.indexOf(key) > -1;
 }
 
@@ -40,7 +40,7 @@ function canOverwrite(key) {
 // url: 'string', // this is handled by set
 // scheduled: scheduled, // this is handled by set
 
-function Prepare(entry, options = {}) {
+function Prepare (entry, options = {}) {
   ensure(entry, "object")
     .and(entry.path, "string")
     .and(entry.size, "number")
@@ -57,9 +57,9 @@ function Prepare(entry, options = {}) {
     entry.html,
     {
       decodeEntities: false,
-      withDomLvl1: false, // this may cause issues?
+      withDomLvl1: false // this may cause issues?
     },
-    false,
+    false
   );
   debug(entry.path, "Generated  cheerio");
 
@@ -85,7 +85,7 @@ function Prepare(entry, options = {}) {
 
   debug(entry.path, "Generating title from", pathWithCaseSensitiveName);
   var parsedTitle = Title($, pathWithCaseSensitiveName, {
-    titlecase: options.titlecase,
+    titlecase: options.titlecase
   });
   entry.title = parsedTitle.title;
   entry.titleTag = parsedTitle.tag;
@@ -119,8 +119,8 @@ function Prepare(entry, options = {}) {
 
   if (entry.metadata.tags) {
     if (Array.isArray(entry.metadata.tags)) {
-      tags = entry.metadata.tags.map((tag) => String(tag));
-    } else if (typeof entry.metadata.tags === "string") {
+      tags = entry.metadata.tags.map(tag => String(tag));
+    } else if (typeof entry.metadata.tags === 'string') {
       tags = entry.metadata.tags.split(",");
     }
   }
@@ -174,18 +174,18 @@ function Prepare(entry, options = {}) {
   let permalinkCandidates = [
     entry.metadata.permalink,
     entry.metadata.link,
-    entry.metadata.url,
+    entry.metadata.url
   ];
 
   permalinkCandidates = permalinkCandidates
     .filter(
-      (candidate) =>
+      candidate =>
         candidate &&
         type(candidate, "string") &&
-        candidate.indexOf("://") === -1,
+        candidate.indexOf("://") === -1
     )
     .map(normalize)
-    .filter((candidate) => candidate !== "");
+    .filter(candidate => candidate !== "");
 
   entry.permalink = permalinkCandidates.shift() || "";
   debug(entry.path, "Generated  permalink");
@@ -207,11 +207,11 @@ function Prepare(entry, options = {}) {
   return entry;
 }
 
-function truthy(str) {
+function truthy (str) {
   return !falsy(str);
 }
 
-function isPage(path) {
+function isPage (path) {
   return (
     pathNormalizer(path).toLowerCase().startsWith("/page/") ||
     pathNormalizer(path).toLowerCase().startsWith("/pages/")

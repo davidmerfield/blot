@@ -1,61 +1,35 @@
 @font-face {
-  font-family: "ET Book";
+  font-family: 'ET Book';
   font-style: normal;
   font-weight: 400;
-  src: url("{{{config.cdn.origin}}}/fonts/et-book/400.eot?version=cf5c9d&extension=.eot");
-  src:
-    url("{{{config.cdn.origin}}}/fonts/et-book/400.eot?version=cf5c9d&extension=.eot#iefix")
-    format("embedded-opentype"),
-    url("{{{config.cdn.origin}}}/fonts/et-book/400.woff?version=a4c61d&extension=.woff")
-    format("woff"),
-    url("{{{config.cdn.origin}}}/fonts/et-book/400.ttf?version=638c7c&extension=.ttf")
-    format("truetype"),
-    url("{{{config.cdn.origin}}}/fonts/et-book/400.otf?version=9d2579&extension=.otf")
-    format("opentype");
+  src: url('{{{config.cdn.origin}}}/fonts/et-book/400.eot?version=cf5c9d&extension=.eot'); 
+  src: url('{{{config.cdn.origin}}}/fonts/et-book/400.eot?version=cf5c9d&extension=.eot#iefix') format('embedded-opentype'), 
+       url('{{{config.cdn.origin}}}/fonts/et-book/400.woff?version=a4c61d&extension=.woff') format('woff'),
+       url('{{{config.cdn.origin}}}/fonts/et-book/400.ttf?version=638c7c&extension=.ttf') format('truetype'),
+       url('{{{config.cdn.origin}}}/fonts/et-book/400.otf?version=9d2579&extension=.otf') format('opentype');
 }
 @font-face {
-  font-family: "ET Book";
+  font-family: 'ET Book';
   font-style: italic;
   font-weight: 400;
-  src: url("{{{config.cdn.origin}}}/fonts/et-book/400-italic.eot?version=2a97db&extension=.eot");
-  src:
-    url("{{{config.cdn.origin}}}/fonts/et-book/400-italic.eot?version=2a97db&extension=.eot#iefix")
-    format("embedded-opentype"),
-    url("{{{config.cdn.origin}}}/fonts/et-book/400-italic.woff?version=6fe1f9&extension=.woff")
-    format("woff"),
-    url("{{{config.cdn.origin}}}/fonts/et-book/400-italic.ttf?version=d6175a&extension=.ttf")
-    format("truetype"),
-    url("{{{config.cdn.origin}}}/fonts/et-book/400-italic.otf?version=51308f&extension=.otf")
-    format("opentype");
+  src: url('{{{config.cdn.origin}}}/fonts/et-book/400-italic.eot?version=2a97db&extension=.eot'); 
+  src: url('{{{config.cdn.origin}}}/fonts/et-book/400-italic.eot?version=2a97db&extension=.eot#iefix') format('embedded-opentype'), 
+       url('{{{config.cdn.origin}}}/fonts/et-book/400-italic.woff?version=6fe1f9&extension=.woff') format('woff'),
+       url('{{{config.cdn.origin}}}/fonts/et-book/400-italic.ttf?version=d6175a&extension=.ttf') format('truetype'),
+       url('{{{config.cdn.origin}}}/fonts/et-book/400-italic.otf?version=51308f&extension=.otf') format('opentype');
 }
 @font-face {
-  font-family: "ET Book";
+  font-family: 'ET Book';
   font-style: normal;
   font-weight: 600;
-  src: url("{{{config.cdn.origin}}}/fonts/et-book/600.eot?version=5e7f47&extension=.eot");
-  src:
-    url("{{{config.cdn.origin}}}/fonts/et-book/600.eot?version=5e7f47&extension=.eot#iefix")
-    format("embedded-opentype"),
-    url("{{{config.cdn.origin}}}/fonts/et-book/600.woff?version=0cc761&extension=.woff")
-    format("woff"),
-    url("{{{config.cdn.origin}}}/fonts/et-book/600.ttf?version=ec3ca6&extension=.ttf")
-    format("truetype"),
-    url("{{{config.cdn.origin}}}/fonts/et-book/600.otf?version=1ed97c&extension=.otf")
-    format("opentype");
+  src: url('{{{config.cdn.origin}}}/fonts/et-book/600.eot?version=5e7f47&extension=.eot'); 
+  src: url('{{{config.cdn.origin}}}/fonts/et-book/600.eot?version=5e7f47&extension=.eot#iefix') format('embedded-opentype'), 
+       url('{{{config.cdn.origin}}}/fonts/et-book/600.woff?version=0cc761&extension=.woff') format('woff'),
+       url('{{{config.cdn.origin}}}/fonts/et-book/600.ttf?version=ec3ca6&extension=.ttf') format('truetype'),
+       url('{{{config.cdn.origin}}}/fonts/et-book/600.otf?version=1ed97c&extension=.otf') format('opentype');
 }
-.pull-double {
-  margin-left: -0.4248046875em;
-}
-.push-double {
-  margin-right: 0.4248046875em;
-}
-.pull-single {
-  margin-left: -0.1845703125em;
-}
-.push-single {
-  margin-right: 0.1845703125em;
-}
-.push-double,
-.push-single {
-  display: inline-block;
-}
+.pull-double {margin-left:-0.4248046875em}
+.push-double{margin-right:0.4248046875em}
+.pull-single{margin-left:-0.1845703125em}
+.push-single{margin-right:0.1845703125em}
+.push-double,.push-single{display:inline-block}

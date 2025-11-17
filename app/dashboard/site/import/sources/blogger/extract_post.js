@@ -5,11 +5,10 @@ module.exports = function (post) {
     var created, updated, metadata, permalink;
     var title, dateStamp, tags, draft, page, html;
 
-    // console.log(Object.keys(post));
+// console.log(Object.keys(post));
     title = post.title[0]._;
 
-    if (!post.content || !post.content[0]._)
-      return callback(new Error("No content"));
+    if (!post.content || !post.content[0]._) return callback(new Error("No content"));
 
     // console.log("id", post.id);
     // console.log("published", post.published, new Date(post.published[0]));
@@ -23,12 +22,12 @@ module.exports = function (post) {
     // if (extract_author(post, blog))
     //   metadata.author = extract_author(post, blog);
 
-    let link = "";
+    let link = '';
 
     try {
       link = require("url").parse(
-        post.link.filter((item) => item.$.TYPE === "text/html")[0].$.HREF,
-      ).pathname;
+      post.link.filter((item) => item.$.TYPE === "text/html")[0].$.HREF
+    ).pathname
     } catch (e) {
       console.log(e);
       console.log(post.link);

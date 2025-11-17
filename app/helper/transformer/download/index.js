@@ -42,19 +42,19 @@ module.exports = function (url, headers, callback) {
       "User-Agent": "node-fetch",
       ...(headers.etag && { [IF_NONE_MATCH]: headers.etag }),
       ...(headers[LAST_MODIFIED] && {
-        [IF_MODIFIED_SINCE]: headers[LAST_MODIFIED],
-      }),
+        [IF_MODIFIED_SINCE]: headers[LAST_MODIFIED]
+      })
     },
     redirect: "follow",
     follow: MAX_REDIRECTS,
-    timeout: TIMEOUT,
+    timeout: TIMEOUT
   };
 
   debug("Downloading", url, "to", path, "with fetch headers:");
   debug(print(options.headers));
 
   fetch(url, options)
-    .then((res) => {
+    .then(res => {
       debug("Received response:");
 
       const cacheControl = res.headers.get(CACHE_CONTROL);
@@ -90,7 +90,7 @@ module.exports = function (url, headers, callback) {
         file.on("error", reject);
       });
     })
-    .then((result) => {
+    .then(result => {
       if (!result) return;
 
       if (result.status === 304) {
@@ -105,7 +105,7 @@ module.exports = function (url, headers, callback) {
       debug(print(result.headers));
       callback(null, result.path, result.headers);
     })
-    .catch((err) => {
+    .catch(err => {
       debug("Download error:", err);
       file.close();
       fs.unlink(path).catch(() => {});
@@ -113,7 +113,7 @@ module.exports = function (url, headers, callback) {
     });
 };
 
-function isFresh(existing) {
+function isFresh (existing) {
   return (
     existing &&
     existing.url &&
@@ -122,7 +122,7 @@ function isFresh(existing) {
   );
 }
 
-function print(obj) {
+function print (obj) {
   return Object.entries(obj)
     .map(([key, value]) => `  ${key}: "${value}"`)
     .join("\n");

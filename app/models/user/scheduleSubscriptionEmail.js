@@ -71,7 +71,7 @@ module.exports = function (uid, callback) {
           debug(
             user.uid,
             user.email,
-            "Sending email about a subscription expiry...",
+            "Sending email about a subscription expiry..."
           );
           return email.UPCOMING_EXPIRY(uid);
         }
@@ -80,7 +80,7 @@ module.exports = function (uid, callback) {
           debug(
             user.uid,
             user.email,
-            "Sending email about a subscription renewal...",
+            "Sending email about a subscription renewal..."
           );
           return email.UPCOMING_RENEWAL(uid);
         }
@@ -88,7 +88,7 @@ module.exports = function (uid, callback) {
         console.error(
           user.uid,
           user.email,
-          "Not sure how to notify this user about their renewal!",
+          "Not sure how to notify this user about their renewal!"
         );
       });
     });
@@ -111,7 +111,7 @@ module.exports = function (uid, callback) {
       "Scheduled subscription email on",
       notificationDate,
       "for",
-      user.email,
+      user.email
     );
     callback();
   });

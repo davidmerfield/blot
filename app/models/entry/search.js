@@ -4,7 +4,7 @@ const { promisify } = require("util");
 const get = promisify((blogID, entryIDs, callback) =>
   require("./get")(blogID, entryIDs, function (entries) {
     callback(null, entries);
-  }),
+  })
 );
 
 const zscan = promisify(client.zscan).bind(client);
@@ -19,16 +19,13 @@ function buildSearchText(entry) {
     entry.tags.join(" "),
     entry.path,
     entry.html,
-    Object.values(entry.metadata).join(" "),
-  ]
-    .join(" ")
-    .toLowerCase();
+    Object.values(entry.metadata).join(" ")
+  ].join(" ").toLowerCase();
 }
 
 function isSearchable(entry) {
   if (entry.deleted || entry.draft) return false;
-  if (entry.page && (!entry.metadata.search || isFalsy(entry.metadata.search)))
-    return false;
+  if (entry.page && (!entry.metadata.search || isFalsy(entry.metadata.search))) return false;
   if (entry.metadata.search && isFalsy(entry.metadata.search)) return false;
   return true;
 }
@@ -41,9 +38,8 @@ function isFalsy(value) {
 module.exports = async function (blogID, query, callback) {
   ensure(blogID, "string").and(query, "string").and(callback, "function");
 
-  const terms = query
-    .split(/\s+/)
-    .map((term) => term.trim().toLowerCase())
+  const terms = query.split(/\s+/)
+    .map(term => term.trim().toLowerCase())
     .filter(Boolean);
 
   if (!terms.length) {
@@ -52,7 +48,7 @@ module.exports = async function (blogID, query, callback) {
 
   const startTime = Date.now();
   const results = [];
-  let cursor = "0";
+  let cursor = '0';
 
   try {
     do {
@@ -62,14 +58,9 @@ module.exports = async function (blogID, query, callback) {
 
       // we use the entries list rather than the 'all' list to skip deleted entries
       // this can badly affect performance if there are a lot of deleted entries
-      const [nextCursor, reply] = await zscan(
-        "blog:" + blogID + ":entries",
-        cursor,
-        "COUNT",
-        CHUNK_SIZE,
-      );
+      const [nextCursor, reply] = await zscan("blog:" + blogID + ":entries", cursor, 'COUNT', CHUNK_SIZE);
       cursor = nextCursor;
-
+      
       const ids = reply.filter((_, i) => i % 2 === 0);
       if (!ids.length) continue;
 
@@ -79,11 +70,10 @@ module.exports = async function (blogID, query, callback) {
         if (!isSearchable(entry)) continue;
 
         const text = buildSearchText(entry);
-
-        const matches =
-          terms.length === 1
-            ? text.includes(terms[0])
-            : terms.every((term) => text.includes(term));
+        
+        const matches = terms.length === 1 
+          ? text.includes(terms[0])
+          : terms.every(term => text.includes(term));
 
         if (matches) {
           results.push(entry);
@@ -96,7 +86,8 @@ module.exports = async function (blogID, query, callback) {
           return callback(null, results);
         }
       }
-    } while (cursor !== "0");
+    } while (cursor !== '0');
+
 
     // now  we check the 'pages' list for any pages which might be searchable
     do {
@@ -104,14 +95,9 @@ module.exports = async function (blogID, query, callback) {
         return callback(null, results);
       }
 
-      const [nextCursor, reply] = await zscan(
-        "blog:" + blogID + ":pages",
-        cursor,
-        "COUNT",
-        CHUNK_SIZE,
-      );
+      const [nextCursor, reply] = await zscan("blog:" + blogID + ":pages", cursor, 'COUNT', CHUNK_SIZE);
       cursor = nextCursor;
-
+      
       const ids = reply.filter((_, i) => i % 2 === 0);
       if (!ids.length) continue;
 
@@ -121,11 +107,10 @@ module.exports = async function (blogID, query, callback) {
         if (!isSearchable(entry)) continue;
 
         const text = buildSearchText(entry);
-
-        const matches =
-          terms.length === 1
-            ? text.includes(terms[0])
-            : terms.every((term) => text.includes(term));
+        
+        const matches = terms.length === 1 
+          ? text.includes(terms[0])
+          : terms.every(term => text.includes(term));
 
         if (matches) {
           results.push(entry);
@@ -138,7 +123,7 @@ module.exports = async function (blogID, query, callback) {
           return callback(null, results);
         }
       }
-    } while (cursor !== "0");
+    } while (cursor !== '0');
 
     return callback(null, results);
   } catch (error) {

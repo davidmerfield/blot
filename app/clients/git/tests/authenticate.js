@@ -4,7 +4,7 @@ describe("git client authenticate", function () {
   // a test server with the git client's routes exposed, then
   // cleans everything up when each test has finished.
   require("./setup")({
-    clone: false, // dont clone repo into tmp dir
+    clone: false // dont clone repo into tmp dir
   });
 
   var fs = require("fs-extra");
@@ -78,7 +78,7 @@ describe("git client authenticate", function () {
             expect(fs.readdirSync(tmp)).toEqual([]);
             done();
           });
-      },
+      }
     );
   });
 });

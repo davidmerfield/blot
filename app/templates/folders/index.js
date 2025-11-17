@@ -146,7 +146,7 @@ async function main(options = {}) {
 
   const { user, url } = await setupUser();
   console.log(
-    "Established user " + user.email + " to manage demonstration blogs",
+    "Established user " + user.email + " to manage demonstration blogs"
   );
 
   const blogs = await setupBlogs(user, folders);
@@ -181,14 +181,12 @@ if (require.main === module) {
     options.filter = (path) => path.includes(process.argv[2]);
   }
 
-  main(options)
-    .catch((err) => {
-      console.error(err);
-      process.exit(1);
-    })
-    .then(() => {
-      process.exit(0);
-    });
+  main(options).catch((err) => {
+    console.error(err);
+    process.exit(1);
+  }).then(() => {
+    process.exit(0);
+  });
 }
 
 module.exports = main;

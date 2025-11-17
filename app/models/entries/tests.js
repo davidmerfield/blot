@@ -227,7 +227,7 @@ describe("entries", function () {
           if (testsRemaining === 0) {
             done();
           }
-        },
+        }
       );
     });
   });
@@ -249,7 +249,7 @@ describe("entries", function () {
       now + 4000,
       "/e.txt",
       now + 5000,
-      "/f.txt",
+      "/f.txt"
     );
 
     // spy on the Entry.get function
@@ -301,7 +301,7 @@ describe("entries", function () {
             // get the first page of entries, 2 per page, sorted alphabetically
             Entries.getPage(
               blogID,
-              { pageNumber: 1, pageSize, sortBy: "id", order: "asc" },
+          { pageNumber: 1, pageSize, sortBy: "id", order: "asc" },
               function (error, entries, pagination) {
                 expect(error).toBeNull();
                 expect(entries.map((entry) => entry.id)).toEqual([
@@ -309,11 +309,11 @@ describe("entries", function () {
                   "/b.txt",
                 ]);
                 done();
-              },
+              }
             );
-          },
+          }
         );
-      },
+      }
     );
   });
 
@@ -437,7 +437,7 @@ describe("entries", function () {
       Entries.random(this.blog.id, function (entry) {
         try {
           expect(entry).toEqual(
-            jasmine.objectContaining({ id: "valid", url: "/valid" }),
+            jasmine.objectContaining({ id: "valid", url: "/valid" })
           );
           expect(redis.zrandmember.calls.count()).toBe(2);
           expect(Entry.get.calls.count()).toBe(2);

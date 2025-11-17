@@ -29,13 +29,13 @@ describe("localPath", function () {
 
   it("resolves a local path with dots inside the blog folder", function () {
     expect(localPath(BLOG_ID, "/foo/bar/../baz")).toEqual(
-      `${BLOG_DIR}/${BLOG_ID}/foo/baz`,
+      `${BLOG_DIR}/${BLOG_ID}/foo/baz`
     );
   });
 
   it("will not resolves a local path with dots outside the blog folder", function () {
     expect(localPath(BLOG_ID, "/foo/bar/../baz/../../../")).toEqual(
-      `${BLOG_DIR}/${BLOG_ID}/`,
+      `${BLOG_DIR}/${BLOG_ID}/`
     );
   });
 
@@ -45,7 +45,7 @@ describe("localPath", function () {
 
   it("will not resolves a local path outside the blog folder", function () {
     expect(localPath(BLOG_ID, "/Users/David/Projects/blot/blogs")).toEqual(
-      `${BLOG_DIR}/${BLOG_ID}/Users/David/Projects/blot/blogs`,
+      `${BLOG_DIR}/${BLOG_ID}/Users/David/Projects/blot/blogs`
     );
   });
 });

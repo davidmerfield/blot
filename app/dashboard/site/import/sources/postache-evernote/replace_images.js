@@ -31,18 +31,16 @@ module.exports = function (html, files, path_without_extension, callback) {
       $(el).after(contents);
       $(el).replaceWith($('<img src="' + file.name + '"></img>'));
 
-      fs.copy(
-        file.path,
-        path_without_extension + "/" + file.name,
-        function (err) {
-          if (err) return callback(err);
+      fs.copy(file.path, path_without_extension + "/" + file.name, function (
+        err
+      ) {
+        if (err) return callback(err);
 
-          next();
-        },
-      );
+        next();
+      });
     },
     function () {
       callback(null, $.html(), has_images);
-    },
+    }
   );
 };

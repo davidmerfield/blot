@@ -33,7 +33,7 @@ module.exports = function (req, res, next) {
     // https://clicky.com/help/customization#tracking_code
     if (!fixedTrackingID.match(/^\d{9}$/g)) {
       return next(
-        new Error("The tracking ID you entered is invalid. Please try again."),
+        new Error("The tracking ID you entered is invalid. Please try again.")
       );
     }
 

@@ -67,7 +67,7 @@ module.exports = function (blog, path, callback) {
     },
     function (err) {
       callback(err || cannotConvert(path));
-    },
+    }
   );
 };
 

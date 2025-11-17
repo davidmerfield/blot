@@ -45,11 +45,11 @@ describe("template", function () {
         expect(fs.readFileSync(targetPath, "utf-8")).toEqual(view.content);
         if (targetPath === upperPath) {
           expect(fs.existsSync(test.blogDirectory + "/templates")).toEqual(
-            false,
+            false
           );
         } else {
           expect(fs.existsSync(test.blogDirectory + "/Templates")).toEqual(
-            false,
+            false
           );
         }
         done();
@@ -108,7 +108,7 @@ describe("template", function () {
           "/package.json";
         var targetPath = fs.existsSync(upperPath) ? upperPath : lowerPath;
         expect(fs.readJsonSync(targetPath).views[view.name].locals).toEqual(
-          view.locals,
+          view.locals
         );
         done();
       });
@@ -167,7 +167,7 @@ describe("template", function () {
         try {
           expect(fs.readFileSync(lowercasePath, "utf-8")).toEqual(view.content);
           expect(fs.existsSync(test.blogDirectory + "/Templates")).toEqual(
-            false,
+            false
           );
         } catch (assertErr) {
           fs.removeSync(posts);
@@ -231,7 +231,7 @@ describe("template", function () {
 
           expect(fs.existsSync(orphanPath)).toEqual(false);
           expect(
-            fs.readFileSync(join(templateDir, view.name), "utf-8"),
+            fs.readFileSync(join(templateDir, view.name), "utf-8")
           ).toEqual(view.content);
           done();
         });
@@ -319,7 +319,7 @@ describe("template", function () {
           try {
             expect(fs.existsSync(orphanPath)).toEqual(false);
             expect(
-              fs.readFileSync(join(templateDir, view.name), "utf-8"),
+              fs.readFileSync(join(templateDir, view.name), "utf-8")
             ).toEqual(view.content);
 
             var linkStat = fs.lstatSync(loopPath);

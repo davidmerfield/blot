@@ -27,7 +27,7 @@ module.exports = async function replaceCssUrls(blog, css, log = () => {}) {
 
     // Create regex patterns for each host
     const hostPatterns = hosts.map(
-      (host) => new RegExp(`^(?:https?:)?//${host}`),
+      (host) => new RegExp(`^(?:https?:)?//${host}`)
     );
 
     const processedUrls = new Map();
@@ -51,7 +51,7 @@ module.exports = async function replaceCssUrls(blog, css, log = () => {}) {
 
         // Check if URL matches any of our host patterns
         const matchingHostPattern = hostPatterns.find((pattern) =>
-          pattern.test(url),
+          pattern.test(url)
         );
         if (matchingHostPattern) {
           // Strip the host part if it matches
@@ -74,7 +74,7 @@ module.exports = async function replaceCssUrls(blog, css, log = () => {}) {
         } else {
           log(`No file found in folder: ${url}`);
         }
-      }),
+      })
     );
 
     // Skip if no URLs were processed

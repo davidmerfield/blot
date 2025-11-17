@@ -1,23 +1,26 @@
-var fs = require("fs-extra");
-var DataURI = require("datauri");
-var CleanCSS = require("clean-css");
+var fs = require('fs-extra');
+var DataURI = require('datauri');
+var CleanCSS = require('clean-css');
 
 module.exports = function () {
-  var images = fs.readdirSync(__dirname + "/images");
-  var styles = fs.readdirSync(__dirname + "/css");
-  var fonts = fs.readdirSync(__dirname + "/fonts");
-  var css = "";
 
-  styles.forEach(function (name) {
-    if (name.indexOf(".css") == -1) return;
+  var images = fs.readdirSync(__dirname + '/images');
+  var styles = fs.readdirSync(__dirname + '/css');
+  var fonts = fs.readdirSync(__dirname + '/fonts');
+  var css = '';
 
-    css += fs.readFileSync(__dirname + "/css/" + name, "utf-8");
+  styles.forEach(function(name){
+    
+    if (name.indexOf('.css') == -1) return;
+
+    css += fs.readFileSync(__dirname + '/css/' + name, 'utf-8');
   });
 
-  images.forEach(function (name) {
+  images.forEach(function(name){
+    
     if (css.indexOf(name) === -1) return;
 
-    var datauri = new DataURI(__dirname + "/images/" + name);
+    var datauri = new DataURI(__dirname + '/images/' + name);
 
     css = css.split(name).join(datauri.content);
   });
@@ -28,5 +31,5 @@ module.exports = function () {
 };
 
 if (require.main === module) {
-  fs.outputFileSync(__dirname + "/build.css", module.exports());
+  fs.outputFileSync(__dirname + '/build.css', module.exports());
 }

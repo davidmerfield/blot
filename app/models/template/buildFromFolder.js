@@ -11,7 +11,7 @@ module.exports = function (blogID, callback) {
 
   var templateDirs = [
     localPath(blogID, "/templates"),
-    localPath(blogID, "/Templates"),
+    localPath(blogID, "/Templates")
   ];
 
   const templatesInFolder = [];
@@ -30,32 +30,27 @@ module.exports = function (blogID, callback) {
 
             var dir = templateDir + "/" + template;
 
-            console.log("Blog:", blogID, "Reading template from folder:", dir);
+            console.log('Blog:', blogID, 'Reading template from folder:', dir);
             readFromFolder(blogID, dir, function (err) {
               if (err) {
                 // we need to expose this error
                 // on the design page!
-                console.log(
-                  "Blog:",
-                  blogID,
-                  "Failed to read template from folder:",
-                  dir,
-                  err,
-                );
+                console.log('Blog:', blogID, 'Failed to read template from folder:', dir, err);
               }
 
               templatesInFolder.push(template);
               next();
             });
           },
-          next,
+          next
         );
       });
     },
     function (err) {
-      console.log("Blog:", blogID, "Templates in folder:", templatesInFolder);
-      console.log("Blog:", blogID, "Removing local templates not in folder");
+      console.log('Blog:', blogID, 'Templates in folder:', templatesInFolder);
+      console.log('Blog:', blogID, 'Removing local templates not in folder');
       getTemplateList(blogID, function (err, templates) {
+
         if (err) {
           return callback();
         }
@@ -63,12 +58,12 @@ module.exports = function (blogID, callback) {
         if (!templates) {
           return callback();
         }
-
+        
         const localTemplatesToRemove = templates.filter(
-          (template) =>
+          template =>
             template.localEditing === true &&
             template.owner === blogID &&
-            !templatesInFolder.includes(template.slug),
+            !templatesInFolder.includes(template.slug)
         );
 
         async.eachSeries(
@@ -84,9 +79,9 @@ module.exports = function (blogID, callback) {
           function (err) {
             if (err) return callback(err);
             callback(null);
-          },
+          }
         );
       });
-    },
+    }
   );
 };

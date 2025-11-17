@@ -353,7 +353,7 @@
           state.context = new Context(
             state,
             tagName,
-            tagStart == state.indented,
+            tagStart == state.indented
           );
         }
         return baseState;

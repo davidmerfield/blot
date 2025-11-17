@@ -11,7 +11,7 @@ module.exports = async (
   blogID,
   drive,
   path,
-  { id, md5Checksum, mimeType, modifiedTime },
+  { id, md5Checksum, mimeType, modifiedTime }
 ) => {
   return new Promise(async function (resolve, reject) {
     let pathOnBlot = localPath(blogID, path);
@@ -47,7 +47,7 @@ module.exports = async (
         }
         debug(
           "SKIP download of file because it is a Google App file type",
-          mimeType,
+          mimeType
         );
         debug("   created empty file at:", colors.green(pathOnBlot));
         return resolve(false);
@@ -80,14 +80,14 @@ module.exports = async (
           },
           {
             responseType: "stream",
-          },
+          }
         );
 
         data = res.data;
       } else {
         const res = await drive.files.get(
           { fileId: id, alt: "media" },
-          { responseType: "stream" },
+          { responseType: "stream" }
         );
         data = res.data;
       }

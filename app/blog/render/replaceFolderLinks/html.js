@@ -10,10 +10,7 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
   try {
     const blogID = blog.id;
     const cacheID = blog.cacheID;
-    const hosts = [
-      blog.handle + "." + config.host,
-      "www." + blog.handle + "." + config.host,
-    ];
+    const hosts = [blog.handle + "." + config.host, 'www.' + blog.handle + "." + config.host];
 
     if (blog.domain) {
       hosts.push(blog.domain);
@@ -25,9 +22,7 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
     }
 
     // Create regex patterns for each host
-    const hostPatterns = hosts.map(
-      (host) => new RegExp(`^(?:https?:)?//${host}`),
-    );
+    const hostPatterns = hosts.map(host => new RegExp(`^(?:https?:)?//${host}`));
 
     const document = parse5.parse(html);
     const elements = [];
@@ -45,10 +40,8 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
           if (attr.name === "href" || attr.name === "src") {
             // Check if URL is relative or matches any of the host patterns
             const isRelative = attr.value.indexOf("://") === -1;
-            const matchesHost = hostPatterns.some((pattern) =>
-              pattern.test(attr.value),
-            );
-
+            const matchesHost = hostPatterns.some(pattern => pattern.test(attr.value));
+            
             if (isRelative || matchesHost) {
               hasMatchingAttr = true;
               break;
@@ -67,10 +60,10 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
       for (const attr of node.attrs) {
         if (attr.name === "href" || attr.name === "src") {
           let value = attr.value;
-
+          
           // Remove host if it matches any of the patterns
-          hostPatterns.forEach((pattern) => {
-            value = value.replace(pattern, "");
+          hostPatterns.forEach(pattern => {
+            value = value.replace(pattern, '');
           });
 
           // Only process if it's not an HTML file and has a file extension
@@ -87,7 +80,7 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
                 log(`Replacing ${attr.value} with ${result}`);
                 attr.value = result;
                 changes++;
-              })(),
+              })()
             );
           }
         }
