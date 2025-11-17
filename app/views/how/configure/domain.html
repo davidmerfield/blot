@@ -18,7 +18,8 @@
     <p>
       Go to your domain&apos;s DNS page. This is usually where you bought the
       domain. Create a <code>CNAME</code> record for the subdomain you&apos;d
-      like to use and set its value to <code>blot.im</code>.
+      like to use and set its value to <code>{{host}}</code>{{#secondary_host}}
+      or <code>{{secondary_host}}</code>{{/secondary_host}}.
     </p>
   </li>
   <li>
@@ -36,7 +37,8 @@
     <p>
       Go to your domain&apos;s DNS page. This is usually where you bought the
       domain. Create an <code>ALIAS</code> record which points to
-      <code>blot.im</code>.
+      <code>{{host}}</code>{{#secondary_host}} or
+      <code>{{secondary_host}}</code>{{/secondary_host}}.
     </p>
   </li>
   <li>
@@ -77,12 +79,18 @@
     <tr>
       <td>CNAME</td>
       <td>www</td>
-      <td>blot.im</td>
+      <td>
+        {{host}}
+        {{#secondary_host}}or {{secondary_host}}{{/secondary_host}}
+      </td>
     </tr>
     <tr>
       <td>ALIAS</td>
       <td>@</td>
-      <td>blot.im</td>
+      <td>
+        {{host}}
+        {{#secondary_host}}or {{secondary_host}}{{/secondary_host}}
+      </td>
     </tr>
     <tr>
       <td>A</td>
@@ -106,7 +114,9 @@
     Are the domain's name servers pointing to the registrar's DNS service?
   </li>
   <li>
-    Are the host (e.g. <code>www</code>) and value (e.g. <code>blot.im</code>)
+    Are the host (e.g. <code>www</code>) and value (e.g.
+    <code>{{host}}</code>{{#secondary_host}} or
+    <code>{{secondary_host}}</code>{{/secondary_host}})
     fields in the DNS record reversed?
   </li>
 </ul>

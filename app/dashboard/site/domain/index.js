@@ -11,6 +11,7 @@ const Domain = express.Router();
 const ip = config.ip;
 const ipv6 = config.ipv6;
 const host = config.host;
+const hosts = config.hosts;
 
 Domain.use((req, res, next) => {
     res.locals.breadcrumbs.add('Domain', '/domain');
@@ -25,6 +26,7 @@ Domain.use((req, res, next) => {
     res.locals.apexDomain = domain;
     res.locals.customDomain = customDomain;
     res.locals.host = host;
+    res.locals.hosts = hosts;
     res.locals.ip = ip;
     res.locals.ipv6 = ipv6;
         
@@ -83,7 +85,7 @@ Domain.route('/')
         }
 
         try {
-            const isValid = await verify({ hostname, handle: req.blog.handle, ourIP: ip, ourIPv6: ipv6, ourHost: host });
+            const isValid = await verify({ hostname, handle: req.blog.handle, ourIP: ip, ourIPv6: ipv6, ourHost: host, ourHosts: hosts });
 
             if (isValid) {
                 // Clear the blog session

@@ -8,6 +8,7 @@ const BLOT_DIRECTORY =
 const BLOT_DATA_DIRECTORY =
   process.env.BLOT_DATA_DIRECTORY || BLOT_DIRECTORY + "/data";
 const BLOT_HOST = process.env.BLOT_HOST || "localhost";
+const BLOT_SECONDARY_HOST = process.env.BLOT_SECONDARY_HOST || null;
 const BLOT_PORT = process.env.BLOT_PORT || "8080";
 const BLOT_PROTOCOL = process.env.BLOT_PROTOCOL || "https";
 const BLOT_IPV6 = process.env.BLOT_IPV6 || null;
@@ -26,6 +27,8 @@ module.exports = {
   // codebase expects either 'production' or 'development'
   environment,
   host: BLOT_HOST,
+  secondary_host: BLOT_SECONDARY_HOST,
+  hosts: [BLOT_HOST, BLOT_SECONDARY_HOST].filter(Boolean),
   reverse_proxies,
   protocol: BLOT_PROTOCOL + "://",
   master: process.env.CONTAINER_NAME === "blot-container-green",

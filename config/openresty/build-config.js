@@ -83,7 +83,8 @@ const webhooks_client_max_body_size = `${
 }M`;
 
 const locals = {
-  host: "blot.im",
+  host: config.host,
+  secondary_host: config.secondary_host,
   blot_directory: config.blot_directory,
   disable_http2: process.env.DISABLE_HTTP2,
   node_ip: NODE_SERVER_IP,

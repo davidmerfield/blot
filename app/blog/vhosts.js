@@ -7,6 +7,7 @@ module.exports = function (req, res, next) {
 
   var identifier, handle, redirect, previewTemplate, err;
   var host = req.get("host");
+  var hostname = host && host.split(":").shift();
 
   // We have a special case for Cloudflare
   // because some of their SSL settings insist on fetching
@@ -29,15 +30,14 @@ module.exports = function (req, res, next) {
   // this should be req.locals.originalHost
   req.originalHost = host;
 
-  handle = extractHandle(host);
+  handle = extractHandle(hostname);
 
   if (handle) {
     identifier = { handle: handle };
   } else {
     // strip port if present, this is required by test suite
     // and is a good idea in general
-    const domain = host.indexOf(":") > -1 ? host.split(":")[0] : host;
-    identifier = { domain };
+    identifier = { domain: hostname };
   }
 
   Blog.get(identifier, function (err, blog) {
@@ -51,7 +51,7 @@ module.exports = function (req, res, next) {
       return next(err);
     }
 
-    previewTemplate = extractPreviewTemplate(host, blog.id);
+    previewTemplate = extractPreviewTemplate(hostname, blog.id);
 
     // Probably a www -> apex redirect
     if (identifier.domain && blog.domain !== identifier.domain)
@@ -133,18 +133,21 @@ module.exports = function (req, res, next) {
   });
 };
 
-function isSubdomain (host) {
-  return (
-    host.slice(-config.host.length) === config.host &&
-    host.slice(0, -config.host.length).length > 1
-  );
+function matchingBaseHost(host) {
+  if (!host) return false;
+
+  return config.hosts.find((baseHost) => {
+    if (!baseHost) return false;
+    return host === baseHost || host.endsWith("." + baseHost);
+  });
 }
 
 function extractHandle (host) {
-  if (!isSubdomain(host, config.host)) return false;
+  const baseHost = matchingBaseHost(host);
+  if (!baseHost || host === baseHost) return false;
 
   let handle = host
-    .slice(0, -config.host.length - 1)
+    .slice(0, -baseHost.length - 1)
     .split(".")
     .pop();
 
@@ -157,9 +160,10 @@ function extractHandle (host) {
 }
 
 function extractPreviewTemplate (host, blogID) {
-  if (!isSubdomain(host, config.host)) return false;
+  const baseHost = matchingBaseHost(host);
+  if (!baseHost || host === baseHost) return false;
 
-  var subdomains = host.slice(0, -config.host.length - 1).split(".");
+  var subdomains = host.slice(0, -baseHost.length - 1).split(".");
   var handle = subdomains.pop();
   var prefix = subdomains.shift();
 
@@ -189,7 +193,7 @@ function extractPreviewTemplate (host, blogID) {
   var name = subdomains.pop();
   var isBlots = !subdomains.pop();
 
-  if (host === handle + "." + config.host) return false;
+  if (host === handle + "." + baseHost) return false;
 
   var owner = isBlots ? "SITE" : blogID;
 

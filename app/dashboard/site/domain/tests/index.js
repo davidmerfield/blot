@@ -11,6 +11,7 @@ let verify;
 describe("domain verifier", function () {
   const ourIP = config.ip;
   const ourHost = config.host;
+  const ourHosts = config.hosts;
   const ourIPv6 = config.ipv6 || "2001:db8::1";
 
   if (!config.ipv6) {
@@ -54,7 +55,7 @@ describe("domain verifier", function () {
     dns.resolveNs.and.returnValue(Promise.resolve([]));
 
     try {
-      await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+      await verify({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts });
       throw new Error("expected an error");
     } catch (e) {
       expect(e.message).toBe("NO_NAMESERVERS");
@@ -75,7 +76,7 @@ describe("domain verifier", function () {
       Promise.resolve(["ns1.correct.com", "ns2.correct.com"])
     );
 
-    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts });
     expect(result).toBe(true);
   });
 
@@ -93,7 +94,7 @@ describe("domain verifier", function () {
     );
 
     try {
-      await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+      await verify({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts });
       throw new Error("expected an error");
     } catch (e) {
       expect(e.message).toBe("MULTIPLE_ADDRESS_BUT_ONE_IS_CORRECT");
@@ -118,7 +119,7 @@ describe("domain verifier", function () {
     );
 
     try {
-      await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+      await verify({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts });
       throw new Error("expected an error");
     } catch (e) {
       expect(e.message).toBe("MULTIPLE_ADDRESS_BUT_ONE_IS_CORRECT");
@@ -146,7 +147,7 @@ describe("domain verifier", function () {
     );
 
     try {
-      await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+      await verify({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts });
       throw new Error("expected an error");
     } catch (e) {
       expect(e.message).toBe("MULTIPLE_ADDRESS_BUT_ONE_IS_CORRECT");
@@ -168,7 +169,7 @@ describe("domain verifier", function () {
       Promise.resolve(["ns1.correctv6.com", "ns2.correctv6.com"])
     );
 
-    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts });
     expect(result).toBe(true);
   });
 
@@ -186,12 +187,36 @@ describe("domain verifier", function () {
     );
 
     try {
-      await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+      await verify({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts });
       throw new Error("expected an error");
     } catch (e) {
       expect(e.message).toBe("CNAME_RECORD_EXISTS_BUT_DOES_NOT_MATCH");
       expect(e.nameservers).toEqual(["ns1.incorrect.com", "ns2.incorrect.com"]);
     }
+  });
+
+  it("should accept CNAME records pointing to a secondary host", async () => {
+    const hostname = "secondary-cname-record.com";
+    const handle = "example";
+    const secondaryHost = "blot.site";
+
+    resolver.resolveCname.and.returnValue(Promise.resolve([secondaryHost]));
+    resolver.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+    resolver.resolve6.and.returnValue(Promise.resolve([]));
+    dns.resolveNs.and.returnValue(
+      Promise.resolve(["ns1.secondary.com", "ns2.secondary.com"])
+    );
+
+    const result = await verify({
+      hostname,
+      handle,
+      ourIP,
+      ourIPv6,
+      ourHost,
+      ourHosts: [ourHost, secondaryHost],
+    });
+
+    expect(result).toBe(true);
   });
 
   it("should return true for hostnames with correct handle verification", async () => {
@@ -211,7 +236,7 @@ describe("domain verifier", function () {
       .get(`/verify/domain-setup`)
       .reply(200, handle, { "Content-Type": "text/plain" });
 
-    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts });
     expect(result).toBe(true);
   });
 
@@ -233,7 +258,7 @@ describe("domain verifier", function () {
       .reply(200, "wrong-handle", { "Content-Type": "text/plain" });
 
     try {
-      await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+      await verify({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts });
       throw new Error("expected an error");
     } catch (e) {
       expect(e.message).toBe("HANDLE_MISMATCH");
@@ -261,7 +286,7 @@ describe("domain verifier", function () {
       .replyWithError("Network Error");
 
     try {
-      await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+      await verify({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts });
       throw new Error("expected an error");
     } catch (e) {
       expect(e.message).toContain("Network Error");
@@ -330,7 +355,7 @@ describe("domain verifier", function () {
     const start = Date.now();
 
     await expectAsync(
-      verify({ hostname, handle, ourIP, ourIPv6, ourHost })
+      verify({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts })
     ).toBeRejectedWith(
       jasmine.objectContaining({
         message: "REQUEST_TIMEOUT",
