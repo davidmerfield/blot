@@ -15,7 +15,8 @@ const readdir = async (drive, dirId) => {
     nextPageToken = res.data.nextPageToken;
   } while (nextPageToken);
 
-  return items;
+  // Filter out dotfiles and dotfolders - they won't be synced to Blot
+  return items.filter((item) => !item.name.startsWith("."));
 };
 
 module.exports = readdir;
