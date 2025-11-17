@@ -21,12 +21,6 @@ module.exports = async function write(blogID, path, input, callback) {
   try {
     if (path[0] !== "/") path = "/" + path;
 
-    const base = basename(path);
-    if (base.startsWith(".")) {
-      console.log(prefix(), "Skipping write of dotfile:", path);
-      return callback(null);
-    }
-
     console.log(prefix(), "writing input to tmp");
     const tempPath = await writeToTmp(input);
 
