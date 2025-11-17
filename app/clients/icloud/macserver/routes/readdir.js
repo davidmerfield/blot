@@ -2,6 +2,7 @@ const fs = require("fs-extra");
 const { join } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { ls } = require("../brctl");
+const shouldIgnoreFile = require("../../../util/shouldIgnoreFile");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
@@ -28,8 +29,8 @@ module.exports = async (req, res) => {
   // now that we are sure the directory is in sync, we can read it
   const files = await fs.readdir(dirPath, { withFileTypes: true });
 
-  // Ignore dotfiles and directories
-  const filteredFiles = files.filter((file) => !file.name.startsWith("."));
+  // Ignore system files and directories we don't want to sync
+  const filteredFiles = files.filter((file) => !shouldIgnoreFile(file.name));
 
   const result = [];
 

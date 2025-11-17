@@ -3,6 +3,7 @@ const readline = require("readline");
 const { ls } = require("./brctl");
 const { iCloudDriveDirectory } = require("./config");
 const { spawn } = require("child_process");
+const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
 
 const MAX_DEPTH = 1000;
 
@@ -35,14 +36,14 @@ async function recursiveList(dirPath, depth = 0) {
       .split("\n")
       .filter((line) => line.endsWith("/")) // Only dirs end with /
       .map((line) => line.slice(0, -1)) // Remove trailing /
-      .filter((name) => !name.startsWith(".")) // Skip anything starting with . (e.g. . and .. and .Trash)
+      .filter((name) => !shouldIgnoreFile(name)) // Skip ignored entries
       .map((name) => path.join(dirPath, name)); // Full path
 
     // Recurse into subdirectories in series
     for (const subDir of dirs) {
       await recursiveList(subDir, depth + 1);
     }
-    
+
   } catch (error) {
     console.error("Error processing directory", dirPath, error);
   }

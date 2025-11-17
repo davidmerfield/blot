@@ -6,6 +6,7 @@ const localPath = require("helper/localPath");
 const dataDir = require("./dataDir");
 const clfdate = require("helper/clfdate");
 const sync = require("sync");
+const shouldIgnoreFile = require("../util/shouldIgnoreFile");
 
 module.exports = function create(blog, callback) {
   var bareRepo;
@@ -117,9 +118,7 @@ module.exports = function create(blog, callback) {
 async function addFolder(folder, liveRepo) {
   async function walk(dir) {
     const files = (await fs.readdir(dir))
-      .filter((file) => file !== ".DS_Store") // filter out .DS_Store files
-      .filter((file) => file !== "Thumbs.db") // filter out Thumbs.db files
-      .filter((file) => !file.startsWith(".git")) // filter out .git files
+      .filter((file) => !shouldIgnoreFile(file))
       .sort();
 
     if (!files.length && dir === folder.path) {
