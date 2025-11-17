@@ -85,7 +85,11 @@ const listDeletedGitFiles = async (client, gitPath) => {
     include_deleted: true,
   });
 
-  return entries.filter((entry) => entry[".tag"] === "file");
+  return entries.filter(
+    (entry) =>
+      entry.path_lower !== gitPath &&
+      (entry[".tag"] === "file" || entry[".tag"] === "deleted")
+  );
 };
 
 const getLatestRevision = async (client, filePath) => {
