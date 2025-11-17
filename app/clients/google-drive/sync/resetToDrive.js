@@ -33,29 +33,19 @@ module.exports = async (blogID, publish) => {
       localReaddir(localPath(blogID, dir)),
     ]);
 
-    // Filter out dotfiles and dotfolders - they won't be synced to Google Drive
-    const filteredLocalContents = localContents.filter(
-      (item) => !item.name.startsWith(".")
-    );
-
     // Since we reset the database of file ids
     // we need to restore this now
     set(dirId, dir, { isDirectory: true });
 
     for (const { name, id } of remoteContents) {
-      if (!filteredLocalContents.find((item) => item.name === name)) {
+      if (!localContents.find((item) => item.name === name)) {
         await checkWeCanContinue();
         publish("Removing", join(dir, name));
         await drive.files.delete({ fileId: id });
       }
     }
 
-    for (const {
-      name,
-      isDirectory,
-      modifiedTime,
-      size,
-    } of filteredLocalContents) {
+    for (const { name, isDirectory, modifiedTime, size } of localContents) {
       const path = join(dir, name);
       const existsOnRemote = remoteContents.find((f) => f.name === name);
 
