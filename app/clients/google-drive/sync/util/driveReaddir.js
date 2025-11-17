@@ -1,4 +1,4 @@
-const shouldIgnoreFile = require("../../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const readdir = async (drive, dirId) => {
   let res;

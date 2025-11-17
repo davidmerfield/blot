@@ -3,7 +3,7 @@ var localPath = require("helper/localPath");
 var Git = require("simple-git");
 var debug = require("debug")("blot:clients:git:write");
 var checkGitRepoExists = require("./checkGitRepoExists");
-const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 // Used to write a file to the user's blog folder
 // contents can be anything supported by fs-extra.outputFile

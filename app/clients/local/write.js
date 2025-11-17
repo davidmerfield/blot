@@ -1,7 +1,7 @@
 const fs = require("fs-extra");
 const debug = require("debug")("blot:clients:local:write");
 const localPath = require("helper/localPath");
-const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 // Writes a file or folder from at a given path inside
 // the blog's source folder. Needed to write preview files

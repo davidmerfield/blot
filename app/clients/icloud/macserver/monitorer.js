@@ -3,7 +3,7 @@ const readline = require("readline");
 const { ls } = require("./brctl");
 const { iCloudDriveDirectory } = require("./config");
 const { spawn } = require("child_process");
-const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const MAX_DEPTH = 1000;
 

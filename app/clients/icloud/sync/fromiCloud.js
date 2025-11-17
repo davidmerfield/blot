@@ -6,7 +6,7 @@ const download = require("./util/download");
 const CheckWeCanContinue = require("./util/checkWeCanContinue");
 const localReaddir = require("./util/localReaddir");
 const remoteReaddir = require("./util/remoteReaddir");
-const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const config = require("config");
 const maxFileSize = config.icloud.maxFileSize; // Maximum file size for iCloud uploads in bytes

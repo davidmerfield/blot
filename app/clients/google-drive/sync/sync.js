@@ -5,7 +5,7 @@ const database = require("../database");
 const download = require("../util/download");
 const createDriveClient = require("../serviceAccount/createDriveClient");
 const CheckWeCanContinue = require("../util/checkWeCanContinue");
-const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const driveReaddir = require("./util/driveReaddir");
 const localReaddir = require("./util/localReaddir");

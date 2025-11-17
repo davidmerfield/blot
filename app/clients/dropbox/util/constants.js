@@ -1,4 +1,4 @@
-const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const UNSUPPORTED_FILE_EXTENSIONS = [".paper"];
 

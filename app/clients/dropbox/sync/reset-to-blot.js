@@ -14,7 +14,7 @@ const {
   hasUnsupportedExtension,
   isDotfileOrDotfolder,
 } = require("../util/constants");
-const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const set = promisify(require("../database").set);
 const createClient = promisify((blogID, cb) =>

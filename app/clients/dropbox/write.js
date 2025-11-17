@@ -6,7 +6,7 @@ var localPath = require("helper/localPath");
 var retry = require("./util/retry");
 const { promisify } = require("util");
 const upload = promisify(require("clients/dropbox/util/upload"));
-const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 // Write should only ever be called inside the function returned
 // from Sync for a given blog, since it modifies the blog folder.

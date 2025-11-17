@@ -9,7 +9,7 @@ const TMP = require("helper/tempDir")();
 const guid = require("helper/guid");
 const { Readable } = require("stream");
 const database = require("./database");
-const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 // We can make this much more efficient by thoughtfully using
 // streams in pipelines rather than wastefully

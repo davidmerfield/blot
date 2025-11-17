@@ -1,6 +1,6 @@
 const fs = require("fs-extra");
 const { join } = require("path");
-const shouldIgnoreFile = require("../../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const localreaddir = async (dir) => {
   const contents = await fs.readdir(dir);

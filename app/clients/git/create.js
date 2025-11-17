@@ -6,7 +6,7 @@ const localPath = require("helper/localPath");
 const dataDir = require("./dataDir");
 const clfdate = require("helper/clfdate");
 const sync = require("sync");
-const shouldIgnoreFile = require("../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 module.exports = function create(blog, callback) {
   var bareRepo;
