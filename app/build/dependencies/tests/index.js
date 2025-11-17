@@ -58,13 +58,11 @@ describe("dependencies", function () {
 
   // Lots of items
   should_get_dependencies({
-    html:
-      '<script type="text/javascript" src="javascript.js"></script><img src="../image.jpg"><link rel="stylesheet" type="text/css" href="/theme.css">',
+    html: '<script type="text/javascript" src="javascript.js"></script><img src="../image.jpg"><link rel="stylesheet" type="text/css" href="/theme.css">',
     path: "/sub/folder/post.txt",
     metadata: {},
     result: {
-      html:
-        '<script type="text/javascript" src="/sub/folder/javascript.js"></script><img src="/sub/image.jpg"><link rel="stylesheet" type="text/css" href="/theme.css">',
+      html: '<script type="text/javascript" src="/sub/folder/javascript.js"></script><img src="/sub/image.jpg"><link rel="stylesheet" type="text/css" href="/theme.css">',
       metadata: {},
       dependencies: [
         "/sub/folder/javascript.js",

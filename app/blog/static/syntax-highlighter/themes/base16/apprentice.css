@@ -45,26 +45,25 @@ code.hljs {
 }
 
 .hljs {
-  color: #BCBCBC;
+  color: #bcbcbc;
   background: #262626;
 }
 
 .hljs::selection,
 .hljs ::selection {
   background-color: #333333;
-  color: #BCBCBC;
+  color: #bcbcbc;
 }
-
 
 /* purposely do not highlight these things */
 .hljs-formula,
 .hljs-params,
-.hljs-property
-{}
+.hljs-property {
+}
 
 /* base03 - #6C6C6C -  Comments, Invisibles, Line Highlighting */
 .hljs-comment {
-  color: #6C6C6C;
+  color: #6c6c6c;
 }
 
 /* base04 - #787878 -  Dark Foreground (Used for status bars) */
@@ -76,7 +75,7 @@ code.hljs {
 .hljs-subst,
 .hljs-punctuation,
 .hljs-operator {
-  color: #BCBCBC;
+  color: #bcbcbc;
 }
 
 .hljs-operator {
@@ -90,7 +89,7 @@ code.hljs {
 .hljs-selector-tag,
 .hljs-name,
 .hljs-deletion {
-  color: #5F8787;
+  color: #5f8787;
 }
 
 /* base09 - Integers, Boolean, Constants, XML Attributes, Markup Link Url */
@@ -100,20 +99,19 @@ code.hljs {
 .hljs-attr,
 .hljs-variable.constant_,
 .hljs-literal {
-  color: #FF8700;
+  color: #ff8700;
 }
 
 /* base0A - Classes, Markup Bold, Search Text Background */
 .hljs-title,
 .hljs-class .hljs-title,
-.hljs-title.class_
-{
-  color: #5F8787;
+.hljs-title.class_ {
+  color: #5f8787;
 }
 
 .hljs-strong {
-  font-weight:bold;
-  color: #5F8787;
+  font-weight: bold;
+  color: #5f8787;
 }
 
 /* base0B - Strings, Inherited Class, Markup Code, Diff Inserted */
@@ -121,16 +119,16 @@ code.hljs {
 .hljs-addition,
 .hljs-title.class_.inherited__,
 .hljs-string {
-  color: #87AF87;
+  color: #87af87;
 }
 
 /* base0C - Support, Regular Expressions, Escape Characters, Markup Quotes */
 .hljs-built_in,
-.hljs-doctag, /* guessing */
+.hljs-doctag /* guessing */,
 .hljs-quote,
 .hljs-keyword.hljs-atrule,
 .hljs-regexp {
-  color: #5F875F;
+  color: #5f875f;
 }
 
 /* base0D - Functions, Methods, Attribute IDs, Headings */
@@ -139,22 +137,22 @@ code.hljs {
 .ruby .hljs-property,
 .hljs-title.function_,
 .hljs-section {
-  color: #FFFFAF;
+  color: #ffffaf;
 }
 
 /* base0E - Keywords, Storage, Selector, Markup Italic, Diff Changed */
 .hljs-type,
 /* .hljs-selector-id, */
-/* .hljs-selector-class, */
-/* .hljs-selector-attr, */
-/* .hljs-selector-pseudo, */
-.hljs-template-tag,
+  /* .hljs-selector-class, */
+  /* .hljs-selector-attr, */
+  /* .hljs-selector-pseudo, */
+  .hljs-template-tag,
 .diff .hljs-meta,
 .hljs-keyword {
-  color: #87AFD7;
+  color: #87afd7;
 }
 .hljs-emphasis {
-  color: #87AFD7;
+  color: #87afd7;
   font-style: italic;
 }
 
@@ -165,13 +163,12 @@ code.hljs {
   from leaking into meta by accident
 */
 .hljs-meta .hljs-keyword,
-.hljs-meta .hljs-string
-{
-  color: #5F87AF;
+.hljs-meta .hljs-string {
+  color: #5f87af;
 }
 
 .hljs-meta .hljs-keyword,
 /* for v10 compatible themes */
-.hljs-meta-keyword {
+  .hljs-meta-keyword {
   font-weight: bold;
 }

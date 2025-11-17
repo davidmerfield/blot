@@ -9,7 +9,7 @@ var _ReconnectingEventSource;
         class n extends Error {
           constructor() {
             super(
-              "EventSource not available.\nConsider loading an EventSource polyfill and making it available globally as EventSource, or passing one in as eventSourceClass to the ReconnectingEventSource constructor."
+              "EventSource not available.\nConsider loading an EventSource polyfill and making it available globally as EventSource, or passing one in as eventSourceClass to the ReconnectingEventSource constructor.",
             );
           }
         }
@@ -61,7 +61,7 @@ var _ReconnectingEventSource;
                 (e += "lastEventId=" + encodeURIComponent(this._lastEventId))),
                 (this._eventSource = new this.eventSourceClass(
                   e,
-                  this._configuration
+                  this._configuration,
                 )),
                 (this._eventSource.onopen = (e) => {
                   this._onopen(e);
@@ -125,7 +125,7 @@ var _ReconnectingEventSource;
                   null != this._eventSource &&
                     this._eventSource.removeEventListener(
                       e,
-                      this._onevent_wrapped
+                      this._onevent_wrapped,
                     ));
               }
             }
@@ -156,4 +156,3 @@ var _ReconnectingEventSource;
 // used like this:
 // var ReconnectingEventSource = require("./recconnecting-event-source");
 // var evtSource = new ReconnectingEventSource(syncStatusURL);
-

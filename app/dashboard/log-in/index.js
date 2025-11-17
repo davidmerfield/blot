@@ -17,7 +17,7 @@ var DASHBOARD_PAGE_DESCRIPTION = {
   "/settings/urls/redirects": "set up redirects on your dashboard",
   "/settings/404s": "view 404s on your dashboard",
   "/settings/permalinks": "set the link format on your dashboard",
-  "/settings/links": "edit the links on your dashboard"
+  "/settings/links": "edit the links on your dashboard",
 };
 
 form.use(function (req, res, next) {

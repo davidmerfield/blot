@@ -19,5 +19,5 @@ module.exports = {
 
   paypal: function (subscriptionId) {
     return "paypal:" + subscriptionId;
-  }
+  },
 };

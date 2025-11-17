@@ -5,7 +5,7 @@ const fs = require("fs-extra");
 const remoteServer = process.env.REMOTE_SERVER;
 const iCloudDriveDirectory = process.env.ICLOUD_DRIVE_DIRECTORY;
 const Authorization = process.env.BLOT_ICLOUD_SERVER_SECRET; // Use the correct environment variable
-const maxFileSize = require('../../../config').icloud.maxFileSize; // Maximum file size for iCloud uploads
+const maxFileSize = require("../../../config").icloud.maxFileSize; // Maximum file size for iCloud uploads
 
 if (!remoteServer) {
   throw new Error("REMOTE_SERVER is not set");
@@ -22,7 +22,7 @@ if (!Authorization) {
 // verify we can read, write and delete files
 fs.access(
   iCloudDriveDirectory,
-  fs.constants.R_OK | fs.constants.W_OK | fs.constants.X_OK
+  fs.constants.R_OK | fs.constants.W_OK | fs.constants.X_OK,
 )
   .then(() => console.log(`Directory ${iCloudDriveDirectory} is accessible`))
   .catch((err) => {

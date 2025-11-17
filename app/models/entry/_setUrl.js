@@ -49,11 +49,13 @@ var UID_PERMUTATIONS = 500;
 //   path: '/a.jpg'
 // }));
 
-function Candidates (blog, entry) {
+function Candidates(blog, entry) {
   var candidates = [];
 
-  var format = blog.permalink.isCustom ? blog.permalink.custom : blog.permalink.format;
-  
+  var format = blog.permalink.isCustom
+    ? blog.permalink.custom
+    : blog.permalink.format;
+
   // Don't use the permalink format for pages
   // or posts with user specified permalinks.
   if (
@@ -86,7 +88,7 @@ function Candidates (blog, entry) {
 
   if (entry.path)
     candidates.push(
-      makeSlug(withoutExtension(entry.path.split("/").join("-")))
+      makeSlug(withoutExtension(entry.path.split("/").join("-"))),
     );
 
   if (entry.summary) {
@@ -146,7 +148,7 @@ function Candidates (blog, entry) {
   return candidates;
 }
 
-function check (blogID, candidate, entryID, callback) {
+function check(blogID, candidate, entryID, callback) {
   var key = Key(blogID, candidate);
 
   redis.get(key, function (err, existingID) {
@@ -193,7 +195,12 @@ module.exports = function (blogID, entry, callback) {
   }
 
   if (entry.metadata === undefined) {
-    console.log('Error: Blog:', blogID, 'Entry.setURL: Entry metadata is unexpectedly undefined', entry);
+    console.log(
+      "Error: Blog:",
+      blogID,
+      "Entry.setURL: Entry metadata is unexpectedly undefined",
+      entry,
+    );
     return callback(null, "");
   }
 
@@ -232,7 +239,7 @@ module.exports = function (blogID, entry, callback) {
         // just return an error for now... TODO in future, just keep
         // generating UIDS... but whatever for now.
         callback(new Error("Could not find a permalink for " + entry.path));
-      }
+      },
     );
   });
 };

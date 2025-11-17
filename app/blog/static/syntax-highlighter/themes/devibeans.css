@@ -39,13 +39,12 @@
 
 .hljs-meta,
 .hljs-meta .hljs-keyword {
-
   color: #0087ff;
 }
 
 /* opt-out */
 .hljs-operator,
-.hljs-punctuation{
+.hljs-punctuation {
 }
 
 .hljs-selector-class,

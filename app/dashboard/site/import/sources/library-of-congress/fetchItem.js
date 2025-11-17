@@ -3,13 +3,13 @@ const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const cache_directory = __dirname + "/data/cache";
 
-module.exports = async id => {
+module.exports = async (id) => {
   const pageHTML = `${cache_directory}/${id}/page.html`;
   const pageURL = `https://www.loc.gov/pictures/item/${id}/`;
 
   if (!fs.existsSync(pageHTML)) {
     // wait 1 second to avoid triggering the rate limit
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const page = await fetch(pageURL);
 
@@ -31,7 +31,7 @@ module.exports = async id => {
   if (
     !fs
       .readdirSync(`${cache_directory}/${id}`)
-      .find(i => i.startsWith("master."))
+      .find((i) => i.startsWith("master."))
   ) {
     console.log("Downloading master image...");
 
@@ -50,8 +50,8 @@ module.exports = async id => {
   let title = json["242"]
     ? json["242"][0][0].text
     : json["245"]
-    ? json["245"][0][0].text
-    : "";
+      ? json["245"][0][0].text
+      : "";
 
   if (!title) {
     console.log(pageURL);
@@ -65,22 +65,22 @@ module.exports = async id => {
 
   const summary = json["520"] ? json["520"][0][0].text : "";
   const medium = json["300"][0]
-    .map(i => i.text.replace(/[:;]/g, "").trim())
+    .map((i) => i.text.replace(/[:;]/g, "").trim())
     .join("; ");
   const collection = json["985"][0][0].text.split("/")[1];
   let date = json["260"][0]
-    .find(i => i.code === "c")
+    .find((i) => i.code === "c")
     .text.replace(/[^0-9 ]/g, "");
 
   // if there are multiple years in the date, use the first one
   if (
     date.includes(" ") &&
-    date.split(" ").filter(i => i.length === 4).length > 1
+    date.split(" ").filter((i) => i.length === 4).length > 1
   ) {
-    date = date.split(" ").filter(i => i.length === 4)[0];
+    date = date.split(" ").filter((i) => i.length === 4)[0];
   }
 
-  const tags = json["650"].map(i => i[0].text.replace(/[$.]/g, ""));
+  const tags = json["650"].map((i) => i[0].text.replace(/[$.]/g, ""));
 
   const item = {
     id,
@@ -91,20 +91,20 @@ module.exports = async id => {
     masterURL,
     collection,
     source: pageURL,
-    date
+    date,
   };
 
   return item;
 };
 
-const getMarcRecord = async id => {
+const getMarcRecord = async (id) => {
   const marcHTML = `${cache_directory}/${id}/marc.html`;
 
   if (!fs.existsSync(marcHTML)) {
     const marcURL = `https://www.loc.gov/pictures/item/${id}/marc/`;
 
     // wait 1 second to avoid triggering the rate limit
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const marcPage = await fetch(marcURL);
 
@@ -143,14 +143,14 @@ const getMarcRecord = async id => {
         children: [
           {
             code,
-            text
-          }
-        ]
+            text,
+          },
+        ],
       };
     } else {
       item.children.push({
         code,
-        text
+        text,
       });
     }
   });

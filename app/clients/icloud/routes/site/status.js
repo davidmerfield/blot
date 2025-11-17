@@ -13,8 +13,8 @@ module.exports = async function (req, res) {
     // run when the macserver has successfully recieved the sharing link
     // and created the folder
     if (status.acceptedSharingLink) {
-        console.log("Initial transfer started");
-        initialTransfer(blogID);
+      console.log("Initial transfer started");
+      initialTransfer(blogID);
     } else {
       folder.status("Sync update from iCloud");
       console.log("Sync update from iCloud", status);

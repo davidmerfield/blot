@@ -46,7 +46,7 @@ module.exports = () => {
         },
         function (err) {
           console.log(prefix(), "Checked all blogs");
-        }
+        },
       );
     });
   }, 5 * 1000); // 5s

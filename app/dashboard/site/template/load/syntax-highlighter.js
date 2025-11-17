@@ -9,18 +9,18 @@ module.exports = function (req, res, next) {
     key: "syntax_highlighter",
     value: {
       ...(Themes.find(
-        ({ id }) => id === req.template.locals.syntax_highlighter.id
+        ({ id }) => id === req.template.locals.syntax_highlighter.id,
       ) || {}),
-      ...req.template.locals.syntax_highlighter
+      ...req.template.locals.syntax_highlighter,
     },
     font: req.template.locals.syntax_highlighter_font
       ? font(
           "syntax_highlighter_font",
-          req.template.locals.syntax_highlighter_font
+          req.template.locals.syntax_highlighter_font,
         )
       : null,
     label: "Syntax Highlighter",
-    options: Themes.map(option => {
+    options: Themes.map((option) => {
       return {
         selected:
           req.template.locals.syntax_highlighter.id &&
@@ -29,16 +29,16 @@ module.exports = function (req, res, next) {
             : "",
         background: option.background,
         color: option.colors[0],
-        colors: option.colors.slice(1).map(i => {
+        colors: option.colors.slice(1).map((i) => {
           return { color: i };
         }),
-        tags: option.tags.map(tag => {
+        tags: option.tags.map((tag) => {
           return { tag };
         }),
         name: option.name,
-        id: option.id
+        id: option.id,
       };
-    })
+    }),
   };
   next();
 };

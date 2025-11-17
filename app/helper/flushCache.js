@@ -33,7 +33,7 @@ module.exports = ({
 
       if (timeSinceLastRequest < minimumGap) {
         await new Promise((resolve) =>
-          setTimeout(resolve, minimumGap - timeSinceLastRequest)
+          setTimeout(resolve, minimumGap - timeSinceLastRequest),
         );
       }
 
@@ -76,7 +76,7 @@ module.exports = ({
 
         if (!res.ok) {
           throw new Error(
-            `Failed to flush proxy ${reverse_proxy_url}: ${res.status} ${res.statusText}`
+            `Failed to flush proxy ${reverse_proxy_url}: ${res.status} ${res.statusText}`,
           );
         }
 

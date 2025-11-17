@@ -26,12 +26,11 @@ client_routes
   .route("/switch")
 
   .get(load.clients, function (req, res) {
-    
     // filter current client from list of clients
-    res.locals.clients = JSON.parse(
-      JSON.stringify(res.locals.clients)).filter((client) => {
+    res.locals.clients = JSON.parse(JSON.stringify(res.locals.clients)).filter(
+      (client) => {
         return client.name !== req.blog.client;
-      }
+      },
     );
 
     res.locals.breadcrumbs.add("Switch", "switch");
@@ -81,7 +80,7 @@ client_routes.route("/activity").get(load.clients, async function (req, res) {
       messages: value
         .map((item) => {
           const matchedVerb = Object.keys(verbs).find((i) =>
-            item.message.startsWith(i + " /")
+            item.message.startsWith(i + " /"),
           );
 
           if (matchedVerb) {
@@ -91,7 +90,7 @@ client_routes.route("/activity").get(load.clients, async function (req, res) {
             item.url = Path.join(
               res.locals.base,
               "folder",
-              encodeURIComponent(path.slice(1))
+              encodeURIComponent(path.slice(1)),
             );
           }
 
@@ -128,13 +127,13 @@ client_routes.post("/reset/rebuild", function (req, res) {
     if (err) {
       return res.message(
         res.locals.base + "/client/reset",
-        new Error("Failed to rebuild folder since it is syncing")
+        new Error("Failed to rebuild folder since it is syncing"),
       );
     }
 
     res.message(
       res.locals.base + "/client/reset",
-      "Begin rebuild of your site"
+      "Begin rebuild of your site",
     );
 
     folder.status("Rebuilding your site");
@@ -164,7 +163,7 @@ client_routes.post("/reset/resync", load.client, function (req, res, next) {
     if (err) {
       return res.message(
         res.locals.base + "/client/reset",
-        new Error("Failed to resync folder since it is syncing")
+        new Error("Failed to resync folder since it is syncing"),
       );
     }
 
@@ -174,7 +173,7 @@ client_routes.post("/reset/resync", load.client, function (req, res, next) {
       await res.locals.client.resync(
         req.blog.id,
         folder.status,
-        promisify(folder.update)
+        promisify(folder.update),
       );
     } catch (err) {
       console.log("ERROR:", err);

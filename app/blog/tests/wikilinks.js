@@ -1,7 +1,7 @@
 describe("wikilinks", function () {
   require("./util/setup")();
 
-  global.test.timeout(10 * 1000);// 10 second timeout
+  global.test.timeout(10 * 1000); // 10 second timeout
 
   async function enableWikilinks() {
     const plugins = {
@@ -40,7 +40,7 @@ describe("wikilinks", function () {
     const body = await res.text();
 
     expect(res.status).toEqual(200);
-    expect(body).toContain('/_image_cache/');
+    expect(body).toContain("/_image_cache/");
     expect(body).not.toContain('"/Image.jpg"');
   });
 
@@ -67,34 +67,21 @@ describe("wikilinks", function () {
   it("resolves wikilinks by path for relative, absolute, and parent lookups", async function () {
     await this.write({
       path: "/Fruits/Apple.md",
-      content: [
-        "Title: Apple",
-        "Link: fruits/apple",
-        "",
-        "# Apple",
-      ].join("\n"),
+      content: ["Title: Apple", "Link: fruits/apple", "", "# Apple"].join("\n"),
     });
     await this.blog.rebuild();
 
     await this.write({
       path: "/Fruits/Pear.txt",
-      content: [
-        "Title: Pear",
-        "Link: fruits/pear",
-        "",
-        "# Pear",
-      ].join("\n"),
+      content: ["Title: Pear", "Link: fruits/pear", "", "# Pear"].join("\n"),
     });
     await this.blog.rebuild();
 
     await this.write({
       path: "/Fruits/Tasty/Mango.md",
-      content: [
-        "Title: Mango",
-        "Link: fruits/tasty/mango",
-        "",
-        "# Mango",
-      ].join("\n"),
+      content: ["Title: Mango", "Link: fruits/tasty/mango", "", "# Mango"].join(
+        "\n",
+      ),
     });
     await this.blog.rebuild();
 
@@ -146,23 +133,17 @@ describe("wikilinks", function () {
   it("resolves filename-only wikilinks by traversing sibling directories", async function () {
     await this.write({
       path: "/Fruits/Tasty/Mango.md",
-      content: [
-        "Title: Mango",
-        "Link: fruits/tasty/mango",
-        "",
-        "# Mango",
-      ].join("\n"),
+      content: ["Title: Mango", "Link: fruits/tasty/mango", "", "# Mango"].join(
+        "\n",
+      ),
     });
     await this.blog.rebuild();
 
     await this.write({
       path: "/Fruits/Apple.md",
-      content: [
-        "Title: Apple",
-        "Link: fruits/apple",
-        "",
-        "[[Mango]]",
-      ].join("\n"),
+      content: ["Title: Apple", "Link: fruits/apple", "", "[[Mango]]"].join(
+        "\n",
+      ),
     });
     await this.blog.rebuild();
 
@@ -205,8 +186,7 @@ describe("wikilinks", function () {
     expect(body).toContain(">Project Plan<");
   });
 
-
-  // todo: work out why this test fails for '[[Heading Demo]]' and '[[#Heading Demo]]' but 
+  // todo: work out why this test fails for '[[Heading Demo]]' and '[[#Heading Demo]]' but
   // passes for '[[custom-heading]]' and '[[#custom-heading]]'
   xit("links to same-page headings for all supported anchor syntaxes", async function () {
     await this.write({
@@ -233,7 +213,6 @@ describe("wikilinks", function () {
     expect(body).toMatch(/>Heading Demo<.*>Heading Demo</s); // heading text reused for both forms
     expect(body).toMatch(/>Custom Heading<.*>Custom Heading</s);
   });
-
 
   // todo: work out why this test fails
   xit("prefers entry matches over same-page headings unless explicitly anchored", async function () {
@@ -395,16 +374,11 @@ describe("wikilinks", function () {
   });
 
   it("does not match folders when resolving by filename", async function () {
-    
     await this.write({
       path: "/Hello.md",
-      content: [
-        "Link: hello",
-        "",
-        "[[Corsi|...more]]",
-      ].join("\n"),
+      content: ["Link: hello", "", "[[Corsi|...more]]"].join("\n"),
     });
-    
+
     await this.write({
       path: "/Corsi/Index.md",
       content: [
@@ -417,8 +391,8 @@ describe("wikilinks", function () {
 
     await this.blog.rebuild();
 
-    expect(await this.text("/hello")).toContain('<a href="/resolved"') // match by post title
-    expect(await this.text("/hello")).not.toContain('<a href="/Corsi"') // match for folder name (incorrect)
+    expect(await this.text("/hello")).toContain('<a href="/resolved"'); // match by post title
+    expect(await this.text("/hello")).not.toContain('<a href="/Corsi"'); // match for folder name (incorrect)
   });
 
   // todo: implement a test spec which verifies filename lookup works *without* file extension

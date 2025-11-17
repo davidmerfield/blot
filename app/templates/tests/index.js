@@ -18,7 +18,7 @@ describe("Templates", function () {
           "-on-" +
           this.blog.handle +
           "." +
-          config.host
+          config.host,
       );
     });
   });

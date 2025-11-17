@@ -55,12 +55,11 @@ code.hljs {
   color: #c5c8c6;
 }
 
-
 /* purposely do not highlight these things */
 .hljs-formula,
 .hljs-params,
-.hljs-property
-{}
+.hljs-property {
+}
 
 /* base03 - #969896 -  Comments, Invisibles, Line Highlighting */
 .hljs-comment {
@@ -90,7 +89,7 @@ code.hljs {
 .hljs-selector-tag,
 .hljs-name,
 .hljs-deletion {
-  color: #CC342B;
+  color: #cc342b;
 }
 
 /* base09 - Integers, Boolean, Constants, XML Attributes, Markup Link Url */
@@ -100,20 +99,19 @@ code.hljs {
 .hljs-attr,
 .hljs-variable.constant_,
 .hljs-literal {
-  color: #F96A38;
+  color: #f96a38;
 }
 
 /* base0A - Classes, Markup Bold, Search Text Background */
 .hljs-title,
 .hljs-class .hljs-title,
-.hljs-title.class_
-{
-  color: #FBA922;
+.hljs-title.class_ {
+  color: #fba922;
 }
 
 .hljs-strong {
-  font-weight:bold;
-  color: #FBA922;
+  font-weight: bold;
+  color: #fba922;
 }
 
 /* base0B - Strings, Inherited Class, Markup Code, Diff Inserted */
@@ -126,11 +124,11 @@ code.hljs {
 
 /* base0C - Support, Regular Expressions, Escape Characters, Markup Quotes */
 .hljs-built_in,
-.hljs-doctag, /* guessing */
+.hljs-doctag /* guessing */,
 .hljs-quote,
 .hljs-keyword.hljs-atrule,
 .hljs-regexp {
-  color: #3971ED;
+  color: #3971ed;
 }
 
 /* base0D - Functions, Methods, Attribute IDs, Headings */
@@ -139,22 +137,22 @@ code.hljs {
 .ruby .hljs-property,
 .hljs-title.function_,
 .hljs-section {
-  color: #3971ED;
+  color: #3971ed;
 }
 
 /* base0E - Keywords, Storage, Selector, Markup Italic, Diff Changed */
 .hljs-type,
 /* .hljs-selector-id, */
-/* .hljs-selector-class, */
-/* .hljs-selector-attr, */
-/* .hljs-selector-pseudo, */
-.hljs-template-tag,
+  /* .hljs-selector-class, */
+  /* .hljs-selector-attr, */
+  /* .hljs-selector-pseudo, */
+  .hljs-template-tag,
 .diff .hljs-meta,
 .hljs-keyword {
-  color: #A36AC7;
+  color: #a36ac7;
 }
 .hljs-emphasis {
-  color: #A36AC7;
+  color: #a36ac7;
   font-style: italic;
 }
 
@@ -165,13 +163,12 @@ code.hljs {
   from leaking into meta by accident
 */
 .hljs-meta .hljs-keyword,
-.hljs-meta .hljs-string
-{
-  color: #3971ED;
+.hljs-meta .hljs-string {
+  color: #3971ed;
 }
 
 .hljs-meta .hljs-keyword,
 /* for v10 compatible themes */
-.hljs-meta-keyword {
+  .hljs-meta-keyword {
   font-weight: bold;
 }

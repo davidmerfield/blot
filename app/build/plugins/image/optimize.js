@@ -24,7 +24,7 @@ module.exports = function (blogID) {
       config.blog_static_files_dir,
       blogID,
       cache_folder_name,
-      name
+      name,
     );
 
     var src =
@@ -42,7 +42,7 @@ module.exports = function (blogID) {
 
     if (EXTENSION_WHITELIST.indexOf(extension) === -1)
       return callback(
-        new Error("Image does not have an extension we can cache.")
+        new Error("Image does not have an extension we can cache."),
       );
 
     debug("Copying", path, "to", finalPath);

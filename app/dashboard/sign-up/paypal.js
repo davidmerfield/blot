@@ -22,11 +22,11 @@ paypal.get("/", async (req, res, next) => {
         headers: {
           "Content-Type": "application/json",
           "Accept-Language": "en_US",
-          "Authorization": `Basic ${Buffer.from(
-            `${config.paypal.client_id}:${config.paypal.secret}`
-          ).toString("base64")}`
-        }
-      }
+          Authorization: `Basic ${Buffer.from(
+            `${config.paypal.client_id}:${config.paypal.secret}`,
+          ).toString("base64")}`,
+        },
+      },
     );
 
     const json = await response.json();

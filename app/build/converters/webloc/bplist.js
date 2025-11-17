@@ -101,7 +101,7 @@ var parseBuffer = (exports.parseBuffer = function (buffer) {
   for (var i = 0; i < numObjects; i++) {
     var offsetBytes = buffer.slice(
       offsetTableOffset + i * offsetSize,
-      offsetTableOffset + (i + 1) * offsetSize
+      offsetTableOffset + (i + 1) * offsetSize,
     );
     offsetTable[i] = readUInt(offsetBytes, 0);
     if (debug) {
@@ -112,7 +112,7 @@ var parseBuffer = (exports.parseBuffer = function (buffer) {
           offsetTable[i] +
           " [" +
           offsetTable[i].toString(16) +
-          "]"
+          "]",
       );
     }
   }
@@ -197,7 +197,7 @@ var parseBuffer = (exports.parseBuffer = function (buffer) {
             length +
             " bytes, but only " +
             exports.maxObjectSize +
-            " are available."
+            " are available.",
         );
       }
     }
@@ -212,7 +212,7 @@ var parseBuffer = (exports.parseBuffer = function (buffer) {
             length +
             " bytes, but only " +
             exports.maxObjectSize +
-            " are available."
+            " are available.",
         );
       }
     }
@@ -232,7 +232,7 @@ var parseBuffer = (exports.parseBuffer = function (buffer) {
             length +
             " bytes, but only " +
             exports.maxObjectSize +
-            " are available."
+            " are available.",
         );
       }
     }
@@ -271,7 +271,7 @@ var parseBuffer = (exports.parseBuffer = function (buffer) {
             length +
             " bytes, but only " +
             exports.maxObjectSize +
-            " are available."
+            " are available.",
         );
       }
     }
@@ -300,7 +300,7 @@ var parseBuffer = (exports.parseBuffer = function (buffer) {
       length *= isUtf16 + 1;
       if (length < exports.maxObjectSize) {
         var plistString = new Buffer(
-          buffer.slice(offset + stroffset, offset + stroffset + length)
+          buffer.slice(offset + stroffset, offset + stroffset + length),
         );
         if (isUtf16) {
           plistString = swapBytes(plistString);
@@ -313,7 +313,7 @@ var parseBuffer = (exports.parseBuffer = function (buffer) {
             length +
             " bytes, but only " +
             exports.maxObjectSize +
-            " are available."
+            " are available.",
         );
       }
     }
@@ -344,8 +344,8 @@ var parseBuffer = (exports.parseBuffer = function (buffer) {
         var objRef = readUInt(
           buffer.slice(
             offset + arrayoffset + i * objectRefSize,
-            offset + arrayoffset + (i + 1) * objectRefSize
-          )
+            offset + arrayoffset + (i + 1) * objectRefSize,
+          ),
         );
         array[i] = parseObject(objRef);
       }
@@ -381,8 +381,8 @@ var parseBuffer = (exports.parseBuffer = function (buffer) {
         var keyRef = readUInt(
           buffer.slice(
             offset + dictoffset + i * objectRefSize,
-            offset + dictoffset + (i + 1) * objectRefSize
-          )
+            offset + dictoffset + (i + 1) * objectRefSize,
+          ),
         );
         var valRef = readUInt(
           buffer.slice(
@@ -390,14 +390,14 @@ var parseBuffer = (exports.parseBuffer = function (buffer) {
             offset +
               dictoffset +
               length * objectRefSize +
-              (i + 1) * objectRefSize
-          )
+              (i + 1) * objectRefSize,
+          ),
         );
         var key = parseObject(keyRef);
         var val = parseObject(valRef);
         if (debug) {
           console.log(
-            "  DICT #" + tableOffset + ": Mapped " + key + " to " + val
+            "  DICT #" + tableOffset + ": Mapped " + key + " to " + val,
           );
         }
         dict[key] = val;

@@ -3,12 +3,12 @@ var async = require("async");
 var clfdate = require("helper/clfdate");
 var callOnce = require("helper/callOnce");
 
-function main (callback) {
+function main(callback) {
   var view = {};
 
   view.date = require("moment")().format("LL");
 
-  function log (msg) {
+  function log(msg) {
     return function (cb) {
       console.log(clfdate(), "Daily update:", msg);
       cb(null, {});
@@ -26,19 +26,19 @@ function main (callback) {
       // require("./entries"),
       log("Checking number of newsletter subscribers"),
       require("./newsletter-subscribers"),
-      log("Finished daily update")
+      log("Finished daily update"),
     ],
     function (fn, next) {
       fn(
         callOnce(function (err, res) {
           if (res) for (var i in res) view[i] = res[i];
           next();
-        })
+        }),
       );
     },
     function () {
       Email.DAILY_UPDATE("", view, callback);
-    }
+    },
   );
 }
 

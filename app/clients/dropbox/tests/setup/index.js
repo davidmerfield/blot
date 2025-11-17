@@ -7,7 +7,7 @@ module.exports = function setup(options) {
   var createClient = require("clients/dropbox/util/createClient");
 
   // Increase individual spec timeout to 60 seconds
-  global.test.timeout(60 * 1000); 
+  global.test.timeout(60 * 1000);
 
   global.test.blog();
 
@@ -113,7 +113,7 @@ module.exports = function setup(options) {
     var accountID = process.env.BLOT_DROPBOX_TEST_ACCOUNT_ID;
     var webhook = new Webhook(
       process.env.BLOT_DROPBOX_APP_SECRET,
-      this.server.baseUrl + "/webhook"
+      this.server.baseUrl + "/webhook",
     );
 
     this.webhook = function (callback) {

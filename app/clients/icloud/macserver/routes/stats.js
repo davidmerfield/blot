@@ -15,9 +15,9 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const stats = await statfs('/');
+    const stats = await statfs("/");
     // get disk free space in bytes
-    result.disk_bytes_available = stats.bavail * stats.bsize
+    result.disk_bytes_available = stats.bavail * stats.bsize;
   } catch (error) {
     console.error(`Error getting disk free space: ${error}`);
   }

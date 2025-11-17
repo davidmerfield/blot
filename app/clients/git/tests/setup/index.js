@@ -32,7 +32,7 @@ module.exports = function setup(options) {
   global.test.tmp();
 
   // Increase individual spec timeout to 60 seconds
-  global.test.timeout(60 * 1000); 
+  global.test.timeout(60 * 1000);
 
   // Set up a clean server for each test
   beforeEach(server.start);
@@ -62,15 +62,17 @@ module.exports = function setup(options) {
     beforeEach(function (done) {
       var context = this;
 
-      setClientToGit(this.user, this.blog, this.server.port, function (
-        err,
-        repoUrl
-      ) {
-        if (err) return done(err);
+      setClientToGit(
+        this.user,
+        this.blog,
+        this.server.port,
+        function (err, repoUrl) {
+          if (err) return done(err);
 
-        context.repoUrl = repoUrl;
-        done();
-      });
+          context.repoUrl = repoUrl;
+          done();
+        },
+      );
     });
 
   if (options.clone !== false)
@@ -83,13 +85,13 @@ module.exports = function setup(options) {
           if (err) return done(new Error(err));
           context.repoDirectory = context.tmp + "/" + context.blog.handle;
           context.git = require("simple-git")(context.repoDirectory).silent(
-            true
+            true,
           );
           context.gitBare = require("simple-git")(
-            dataDir + "/" + context.blog.handle + ".git"
+            dataDir + "/" + context.blog.handle + ".git",
           ).silent(true);
           context.gitBlot = require("simple-git")(context.blogDirectory).silent(
-            true
+            true,
           );
           done(null);
         });

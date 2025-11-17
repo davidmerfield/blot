@@ -57,7 +57,7 @@ module.exports = function (req, res, entry, callback) {
         req.originalHost,
         req.url,
         "has format date?",
-        type(entry.formatDate, "function")
+        type(entry.formatDate, "function"),
       );
       console.log(tag);
       continue;
@@ -129,13 +129,13 @@ module.exports = function (req, res, entry, callback) {
           // we don't want to show unpublished entries
           !backlinkedEntry.scheduled &&
           // we don't want to show the same entry
-          backlinkedEntry.path !== entry.path
+          backlinkedEntry.path !== entry.path,
       );
       entry.backlinks = _.uniqBy(entry.backlinks, "path");
       debug(entry.path, "final backlinks", entry.backlinks);
 
       callback();
-    }
+    },
   );
 };
 

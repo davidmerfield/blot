@@ -17,7 +17,7 @@ function sync(blogID, callback) {
 
   if (typeof callback !== "function") {
     throw new TypeError(
-      "Expected callback with type:Function as second argument"
+      "Expected callback with type:Function as second argument",
     );
   }
 

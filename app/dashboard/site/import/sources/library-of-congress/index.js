@@ -10,8 +10,7 @@ const makeSlug = require("helper/makeSlug");
 const fetchItem = require("./fetchItem");
 // https://www.loc.gov/pictures/search/?q=California&fa=displayed%3Aanywhere&sp=1&co=pga
 
-
-const buildItem = async item => {
+const buildItem = async (item) => {
   // create a folder for the collection
   const folder = `./data/${collection}`;
   fs.ensureDirSync(folder);
@@ -28,21 +27,21 @@ const buildItem = async item => {
   console.log("Creating preview...");
   const modifiedFileName = fs
     .readdirSync(itemFolder)
-    .find(i => i.startsWith("modified."));
+    .find((i) => i.startsWith("modified."));
 
   const masterFileName = fs
     .readdirSync(itemFolder)
-    .find(i => i.startsWith("master."));
+    .find((i) => i.startsWith("master."));
 
   const path = `${itemFolder}/${modifiedFileName || masterFileName}`;
 
   // ensure the input image is no larger than 2500px in any dimension
   await sharp(path)
     .resize(2500, 2500, {
-      fit: "inside"
+      fit: "inside",
     })
     .jpeg({
-      mozjpeg: true
+      mozjpeg: true,
     })
     .toFile(previewPath);
 
@@ -58,7 +57,7 @@ const buildItem = async item => {
     ![${title}](image.jpg)
     
     ${summary}
-    `
+    `,
   );
 };
 
@@ -67,7 +66,7 @@ const buildItem = async item => {
 // and then wait 2 seconds before fetching the next url
 // if getItem throws an error, re-attempt it twice before giving up
 // and proceed to the next url after logging the error
-const fetchURLs = async urls => {
+const fetchURLs = async (urls) => {
   for (let i = 0; i < urls.length; i++) {
     console.log(`Fetching ${i + 1} of ${urls.length}`);
     // the url path will somewhere contain the substring "/item/${itemID}"

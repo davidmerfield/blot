@@ -89,7 +89,7 @@ describe("template", function () {
             if (err) return done.fail(err);
             expect(isMember).toEqual(0);
             done();
-          }
+          },
         );
       });
     });

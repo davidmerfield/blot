@@ -5,7 +5,7 @@ describe("replaceFolderLinks", function () {
   const fs = require("fs-extra");
   const cdnRegex = (path) =>
     new RegExp(
-      `${config.cdn.origin}/folder/v-[a-f0-9]{8}/blog_[a-f0-9]+${path}`
+      `${config.cdn.origin}/folder/v-[a-f0-9]{8}/blog_[a-f0-9]+${path}`,
     );
 
   it("should replace src attributes with versioned CDN URLs", async function () {
@@ -19,8 +19,8 @@ describe("replaceFolderLinks", function () {
 
     expect(result).toMatch(
       new RegExp(
-        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`
-      )
+        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`,
+      ),
     );
   });
 
@@ -35,8 +35,8 @@ describe("replaceFolderLinks", function () {
 
     expect(result).toMatch(
       new RegExp(
-        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/Images/Test.jpg">`
-      )
+        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/Images/Test.jpg">`,
+      ),
     );
   });
 
@@ -81,7 +81,7 @@ describe("replaceFolderLinks", function () {
 
     expect(result).not.toContain(config.cdn.origin);
     expect(result).toContain(
-      '<span class="hljs-string">"/docs/test.pdf"</span>'
+      '<span class="hljs-string">"/docs/test.pdf"</span>',
     );
   });
 
@@ -101,8 +101,8 @@ describe("replaceFolderLinks", function () {
 
     expect(result).toMatch(
       new RegExp(
-        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`
-      )
+        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`,
+      ),
     );
 
     // handle www subdomain
@@ -114,8 +114,8 @@ describe("replaceFolderLinks", function () {
 
     expect(await res2.text()).toMatch(
       new RegExp(
-        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`
-      )
+        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`,
+      ),
     );
   });
 
@@ -135,8 +135,8 @@ describe("replaceFolderLinks", function () {
 
     expect(result).toMatch(
       new RegExp(
-        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`
-      )
+        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`,
+      ),
     );
 
     await this.template({
@@ -153,11 +153,10 @@ describe("replaceFolderLinks", function () {
 
     expect(result2).toMatch(
       new RegExp(
-        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`
-      )
+        `<img src="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/test.jpg">`,
+      ),
     );
   });
-
 
   it("should replace href attributes with versioned CDN URLs", async function () {
     await this.write({ path: "/docs/test.pdf", content: "fake pdf data" });
@@ -170,8 +169,8 @@ describe("replaceFolderLinks", function () {
 
     expect(result).toMatch(
       new RegExp(
-        `<a href="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/docs/test.pdf">Download</a>`
-      )
+        `<a href="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/docs/test.pdf">Download</a>`,
+      ),
     );
   });
 
@@ -197,11 +196,11 @@ describe("replaceFolderLinks", function () {
     const result = await res.text();
 
     expect(result).toMatch(
-      new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`)
+      new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`),
     );
     expect(
       result.match(new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`, "g"))
-        .length
+        .length,
     ).toEqual(2);
   });
 
@@ -225,7 +224,7 @@ describe("replaceFolderLinks", function () {
     expect(result).toMatch(/<head>/);
     expect(result).toMatch(/<body>/);
     expect(result).toMatch(
-      new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`)
+      new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`),
     );
   });
 
@@ -257,7 +256,7 @@ describe("replaceFolderLinks", function () {
     const result = await res.text();
 
     expect(result).toEqual(
-      '<img src="http://example.com/a.jpg"><a href="https://example.com/b.jpg">'
+      '<img src="http://example.com/a.jpg"><a href="https://example.com/b.jpg">',
     );
   });
 
@@ -270,7 +269,7 @@ describe("replaceFolderLinks", function () {
     const result = await res.text();
 
     expect(result).toEqual(
-      '<img src="../../../../a.jpg"><a href="../../../../etc/passwd">'
+      '<img src="../../../../a.jpg"><a href="../../../../etc/passwd">',
     );
   });
 
@@ -420,7 +419,7 @@ describe("replaceFolderLinks", function () {
     const result = await res.text();
 
     const matches = result.match(
-      new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`, "g")
+      new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`, "g"),
     );
     expect(matches.length).toEqual(1); // Should only replace src, not data-src
   });
@@ -443,7 +442,7 @@ describe("replaceFolderLinks", function () {
     const result = await res.text();
 
     expect(result).toMatch(
-      new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`)
+      new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`),
     );
     expect(result).toMatch(/\/deep\/nested\/test.jpg/);
   });

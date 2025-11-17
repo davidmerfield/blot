@@ -14,13 +14,13 @@ developers.get(["/reference"], function (req, res, next) {
   res.locals.docs = require("yaml").parse(
     require("fs-extra").readFileSync(
       __dirname + "/../views/developers/reference.yml",
-      "utf-8"
-    )
+      "utf-8",
+    ),
   );
 
   // Render the descriptions as markdown
-  res.locals.docs.forEach(section => {
-    section.keys.forEach(property => {
+  res.locals.docs.forEach((section) => {
+    section.keys.forEach((property) => {
       const { description, properties } = property;
 
       if (description) {
@@ -28,7 +28,7 @@ developers.get(["/reference"], function (req, res, next) {
       }
 
       if (properties) {
-        property.properties = properties.map(property => {
+        property.properties = properties.map((property) => {
           property.description = marked.parse(property.description);
           return property;
         });
@@ -36,7 +36,7 @@ developers.get(["/reference"], function (req, res, next) {
     });
   });
 
-  res.locals.headers = res.locals.docs.map(item => {
+  res.locals.headers = res.locals.docs.map((item) => {
     return { text: item.name, id: makeSlug(item.name) };
   });
 

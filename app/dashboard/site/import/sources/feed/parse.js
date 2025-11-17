@@ -82,6 +82,6 @@ module.exports = function ($, output_directory, callback) {
     },
     function () {
       callback(null, blog);
-    }
+    },
   );
 };

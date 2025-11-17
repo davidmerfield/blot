@@ -17,7 +17,7 @@ document.querySelectorAll("#dateSettings").forEach(function (form) {
       if (csrfInput) body.append(csrfInput.name, csrfInput.value);
 
       fetch(withAjax(window.location.href), { method: "post", body }).then(
-        handleAjaxSaveResponse
+        handleAjaxSaveResponse,
       );
       event.preventDefault();
       return false;

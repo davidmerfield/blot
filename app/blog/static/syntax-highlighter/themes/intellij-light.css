@@ -16,18 +16,18 @@ Intellij-light style (c) Pegasis <me@pegasis.site>
 }
 
 .hljs-title.function_ {
-  color: #7A7A43;
+  color: #7a7a43;
 }
 
 .hljs-code,
 .hljs-comment,
 .hljs-quote {
-  color: #8C8C8C;
+  color: #8c8c8c;
   font-style: italic;
 }
 
 .hljs-meta {
-  color: #9E880D;
+  color: #9e880d;
 }
 
 .hljs-section {
@@ -48,7 +48,7 @@ Intellij-light style (c) Pegasis <me@pegasis.site>
 .hljs-name,
 .hljs-built_in,
 .hljs-type {
-  color: #0033B3;
+  color: #0033b3;
 }
 
 .hljs-property,
@@ -57,29 +57,29 @@ Intellij-light style (c) Pegasis <me@pegasis.site>
 }
 
 .hljs-attribute {
-  color: #174AD4;
+  color: #174ad4;
 }
 
 .hljs-number {
-  color: #1750EB;
+  color: #1750eb;
 }
 
 .hljs-regexp {
-  color: #264EFF;
+  color: #264eff;
 }
 
 .hljs-link {
   text-decoration: underline;
-  color: #006DCC;
+  color: #006dcc;
 }
 
 .hljs-meta .hljs-string,
 .hljs-string {
-  color: #067D17;
+  color: #067d17;
 }
 
 .hljs-char.escape_ {
-  color: #0037A6;
+  color: #0037a6;
 }
 
 .hljs-doctag {
@@ -87,15 +87,15 @@ Intellij-light style (c) Pegasis <me@pegasis.site>
 }
 
 .hljs-template-variable {
-  color: #248F8F;
+  color: #248f8f;
 }
 
 .hljs-addition {
-  background: #BEE6BE;
+  background: #bee6be;
 }
 
 .hljs-deletion {
-  background: #D6D6D6;
+  background: #d6d6d6;
 }
 
 .hljs-emphasis {

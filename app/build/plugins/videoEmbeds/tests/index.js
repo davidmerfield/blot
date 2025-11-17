@@ -11,7 +11,7 @@ describe("video-embed plugin", function () {
         <a href="https://foo.com/87952436">https://foo.com/87952436</a>
       `,
       { decodeEntities: false },
-      false
+      false,
     );
     videoEmbed.render($, function (err) {
       expect(err).toEqual(null);

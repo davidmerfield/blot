@@ -154,10 +154,7 @@ function addFile() {
 
           if (
             res.entries.some(function (entry) {
-              return (
-                entry.relative_path === path &&
-                entry[".tag"] === "file"
-              );
+              return entry.relative_path === path && entry[".tag"] === "file";
             })
           )
             return callback(null, path);
@@ -186,8 +183,7 @@ function removeFile() {
             if (
               res.entries.some(function (entry) {
                 return (
-                  entry.relative_path === path &&
-                  entry[".tag"] === "deleted"
+                  entry.relative_path === path && entry[".tag"] === "deleted"
                 );
               })
             )

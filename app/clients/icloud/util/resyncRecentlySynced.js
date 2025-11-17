@@ -25,12 +25,11 @@ module.exports = async () => {
   console.log(clfdate(), "Resyncing recently synced blogs");
 
   await database.iterate(async (blogID, account) => {
-  
     if (!account.setupComplete) {
       console.log(
         clfdate(),
         "Account setup not complete, skipping resync: ",
-        blogID
+        blogID,
       );
       return;
     }
@@ -59,7 +58,7 @@ module.exports = async () => {
         clfdate(),
         "Skipping resync of blog which last synced",
         minutesAgo,
-        "minutes ago"
+        "minutes ago",
       );
     }
   });

@@ -8,11 +8,10 @@ const hscanAsync = promisify(client.hscan).bind(client);
 const PREFIX = require("./prefix");
 
 function folder(folderId) {
-
   if (!folderId) {
     throw new Error("Folder ID is required");
   }
-  
+
   // Redis keys
   this.key = `${PREFIX}${folderId}:folder`; // ID ↔ Path mapping
   this.reverseKey = `${PREFIX}${folderId}:path`; // Path ↔ ID mapping
@@ -150,8 +149,8 @@ function folder(folderId) {
   // Remove a file or folder and its children
   this.remove = async (id) => {
     const from = await this.get(id);
-    
-    if (!from) { 
+
+    if (!from) {
       console.log("Warning: No file or folder found for ID: ", id);
       return [];
     }

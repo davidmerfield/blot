@@ -14,35 +14,35 @@ describe("teaser parser", function () {
     "<p>A</p><p>B</p><p>&lt;!- more -&gt;</p>",
     "<p>A</p><p>B</p>",
     "<p>A</p><p>B</p>",
-    false
+    false,
   );
 
   test(
     "<p>A</p><p>&lt;!&#x2014; more &#x2014;&gt;</p><p>C</p>",
     "<p>A</p>",
     "<p>A</p><p>C</p>",
-    true
+    true,
   );
 
   test(
     "<p>A<!-- more -->BCD<i>a</i></p><p>D</p>",
     "<p>A</p>",
     "<p>ABCD<i>a</i></p><p>D</p>",
-    true
+    true,
   );
 
   test(
     "<p>A</p><p>B</p><p>Goodbye &lt;!- more -&gt; Hello</p>",
     "<p>A</p><p>B</p><p>Goodbye </p>",
     "<p>A</p><p>B</p><p>Goodbye  Hello</p>",
-    true
+    true,
   );
 
   test(
     "<p>A</p><p>B</p><p>C</p><!-- more --><p>D</p>",
     "<p>A</p><p>B</p><p>C</p>",
     "<p>A</p><p>B</p><p>C</p><p>D</p>",
-    true
+    true,
   );
 
   test("<p>A<!-- more -->BCD</p>", "<p>A</p>", "<p>ABCD</p>", true);
@@ -51,34 +51,34 @@ describe("teaser parser", function () {
     "<p>A<!-- more -->BCD</p><p>D</p>",
     "<p>A</p>",
     "<p>ABCD</p><p>D</p>",
-    true
+    true,
   );
 
   test(
     "Hello {{more}} there {{more}} is...",
     "Hello ",
     "Hello  there {{more}} is...",
-    true
+    true,
   );
 
   test(
     "Hello {{more}} there is more to come...",
     "Hello ",
     "Hello  there is more to come...",
-    true
+    true,
   );
 
   test(
     "<script>var a;</script><h1>A</h1><p>B</p><p>C</p><p>D</p><p>E</p><p>F</p><p>G</p>",
     "<script>var a;</script><h1>A</h1><p>B</p><p>C</p><p>D</p><p>E</p>",
     "<script>var a;</script><h1>A</h1><p>B</p><p>C</p><p>D</p><p>E</p><p>F</p><p>G</p>",
-    true
+    true,
   );
 
   test(
     "<h1>A</h1><p>B</p><p>C</p>",
     "<h1>A</h1><p>B</p><p>C</p>",
     "<h1>A</h1><p>B</p><p>C</p>",
-    false
+    false,
   );
 });

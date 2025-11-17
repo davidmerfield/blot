@@ -45,7 +45,7 @@
 
   #breadcrumbs a,
   #breadcrumbs span {
-    display: none!important;
+    display: none !important;
   }
 
   #breadcrumbs a:nth-last-of-type(2) {
@@ -62,7 +62,7 @@
     position: absolute;
     left: 0;
     top: 50%;
-    margin-left:0;
+    margin-left: 0;
     transform: translateY(-45%) rotate(180deg);
     color: var(--medium-text-color);
   }

@@ -37,7 +37,7 @@
     } else {
       var line = this.buffer.substr(
         separatorPos + this.separator.length,
-        this.buffer.length
+        this.buffer.length,
       );
       this.buffer = this.buffer.substr(0, separatorPos);
       savedBuffer = this.savedBuffer;

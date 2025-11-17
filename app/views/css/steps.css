@@ -1,49 +1,49 @@
 ol.steps {
-    margin-top:6px;
-    padding: 0 0 0 1.2rem;
-    counter-reset: my-counter-name;
+  margin-top: 6px;
+  padding: 0 0 0 1.2rem;
+  counter-reset: my-counter-name;
 }
 
 ol.steps li {
-    padding: 6px 1rem;
-    position: relative;
-    counter-increment: my-counter-name;
+  padding: 6px 1rem;
+  position: relative;
+  counter-increment: my-counter-name;
 }
 
 ol.steps li::marker {
-    font-size: 13px;
-    color: var(--light-text-color);
-    content: counter(my-counter-name);
+  font-size: 13px;
+  color: var(--light-text-color);
+  content: counter(my-counter-name);
 }
 
 ol.steps li::before {
-    content: "";
-    position: absolute;
-    top: 0.4em;
-    font-size: 20px;
-    z-index: -1;
-    left: -0.68em;
-    width: 1em;
-    height: 1em;
-    border-radius: 100%;
-    background: var(--light-background-color);
+  content: "";
+  position: absolute;
+  top: 0.4em;
+  font-size: 20px;
+  z-index: -1;
+  left: -0.68em;
+  width: 1em;
+  height: 1em;
+  border-radius: 100%;
+  background: var(--light-background-color);
 }
 
 ol.steps li:first-child::after {
-    top: 0.55em;
+  top: 0.55em;
 }
 
 ol.steps li:last-child::after {
-    bottom: 0.55em;
+  bottom: 0.55em;
 }
 
 ol.steps li::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    z-index: -1;
-    width: 1px;
-    left: -0.26em;
-    bottom: 0;
-    background: var(--light-background-color);
+  content: "";
+  position: absolute;
+  top: 0;
+  z-index: -1;
+  width: 1px;
+  left: -0.26em;
+  bottom: 0;
+  background: var(--light-background-color);
 }

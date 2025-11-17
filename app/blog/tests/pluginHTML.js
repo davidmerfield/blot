@@ -1,222 +1,340 @@
 describe("pluginHTML", function () {
+  require("./util/setup")();
+  const config = require("config");
 
-    require('./util/setup')();
-    const config = require('config');
-    
-    it("injects commento html", async function () {
+  it("injects commento html", async function () {
+    // enable the commento plugin
+    const plugins = {
+      ...this.blog.plugins,
+      commento: { enabled: true, options: {} },
+    };
+    await this.blog.update({ plugins });
 
-        // enable the commento plugin
-        const plugins = {...this.blog.plugins, commento: {enabled: true, options: {}}};
-        await this.blog.update({plugins})
+    await this.template({ "entry.html": "{{{entry.html}}} {{> pluginHTML}}" });
+    await this.write({
+      path: "/a.txt",
+      content: "Link: /foo\n\nHello, world!",
+    });
+    await this.write({
+      path: "/Pages/about.txt",
+      content: "Link: /about\n\nHello, page!",
+    });
+    await this.write({ path: "/Drafts/test.txt", content: "Hello, draft!" });
 
-        await this.template({ "entry.html": "{{{entry.html}}} {{> pluginHTML}}" });
-        await this.write({path: '/a.txt', content: 'Link: /foo\n\nHello, world!'});        
-        await this.write({path: '/Pages/about.txt', content: 'Link: /about\n\nHello, page!'});        
-        await this.write({path: '/Drafts/test.txt', content: 'Hello, draft!'});        
+    const areThereComments = async (path) => {
+      const res = await this.get(path);
+      const body = await res.text();
+      return (
+        body.includes("<script defer") &&
+        body.includes('src="https://cdn.commento.io/js/commento.js"')
+      );
+    };
 
-        const areThereComments = async (path) => {
-            const res = await this.get(path);
-            const body = await res.text();
-            return body.includes('<script defer') && body.includes('src="https://cdn.commento.io/js/commento.js"');
-        }
+    expect(await areThereComments("/foo")).toBe(
+      true,
+      "comments should appear on posts",
+    );
 
-        expect(await areThereComments('/foo')).toBe(true, 'comments should appear on posts');
+    // but not on the preview subdomain
+    const res = await this.fetch(
+      config.protocol +
+        "preview-of-my-local-on-" +
+        this.blog.handle +
+        "." +
+        config.host +
+        "/foo",
+    );
+    const body = await res.text();
 
-        // but not on the preview subdomain
-        const res = await this.fetch(config.protocol + 'preview-of-my-local-on-' + this.blog.handle + '.' + config.host + '/foo');
-        const body = await res.text();
+    expect(res.status).toEqual(200);
+    expect(body).not.toContain('src="https://cdn.commento.io/js/commento.js"');
 
-        expect(res.status).toEqual(200);
-        expect(body).not.toContain('src="https://cdn.commento.io/js/commento.js"');
+    expect(await areThereComments("/about")).toBe(
+      false,
+      "comments should not appear on pages",
+    );
+    expect(await areThereComments("/draft/view/Drafts/test.txt")).toBe(
+      false,
+      "comments should not appear on drafts",
+    );
 
-        expect(await areThereComments('/about')).toBe(false, 'comments should not appear on pages');
-        expect(await areThereComments('/draft/view/Drafts/test.txt')).toBe(false, 'comments should not appear on drafts');
-
-        // disable comments for the post
-        await this.write({path: '/a.txt', content: 'Link: /foo\nComments: No\n\nHello, world!'});
-        // enable comments for the page
-        await this.write({path: '/Pages/about.txt', content: 'Link: /about\nComments: Yes\n\nHello, world!'});
-
-        expect(await areThereComments('/about')).toBe(true, 'comments should appear on a pages with comments enabled');
-
-        expect(await areThereComments('/foo')).toBe(false, 'comments should not appear on posts with comments disabled');
+    // disable comments for the post
+    await this.write({
+      path: "/a.txt",
+      content: "Link: /foo\nComments: No\n\nHello, world!",
+    });
+    // enable comments for the page
+    await this.write({
+      path: "/Pages/about.txt",
+      content: "Link: /about\nComments: Yes\n\nHello, world!",
     });
 
-    it("injects disqus html", async function () {
+    expect(await areThereComments("/about")).toBe(
+      true,
+      "comments should appear on a pages with comments enabled",
+    );
 
-        // enable the disqus plugin
-        const shortname = 'test';
-        const plugins = {...this.blog.plugins, disqus: {enabled: true, options: {shortname}}};
-        await this.blog.update({plugins})
+    expect(await areThereComments("/foo")).toBe(
+      false,
+      "comments should not appear on posts with comments disabled",
+    );
+  });
 
-        await this.template({ "entry.html": "{{{entry.html}}} {{> pluginHTML}}" });
-        await this.write({path: '/a.txt', content: 'Link: /foo\n\nHello, world!'});        
-        await this.write({path: '/Pages/about.txt', content: 'Link: /about\n\nHello, world!'});        
-        await this.write({path: '/Drafts/test.txt', content: 'Hello, draft!'});
+  it("injects disqus html", async function () {
+    // enable the disqus plugin
+    const shortname = "test";
+    const plugins = {
+      ...this.blog.plugins,
+      disqus: { enabled: true, options: { shortname } },
+    };
+    await this.blog.update({ plugins });
 
-        const areThereComments = async (path) => {
-            const res = await this.get(path);
-            const body = await res.text();
-            return body.includes('<div id="disqus_thread"></div>') && body.includes('disqus.com/embed.js');
-        }
+    await this.template({ "entry.html": "{{{entry.html}}} {{> pluginHTML}}" });
+    await this.write({
+      path: "/a.txt",
+      content: "Link: /foo\n\nHello, world!",
+    });
+    await this.write({
+      path: "/Pages/about.txt",
+      content: "Link: /about\n\nHello, world!",
+    });
+    await this.write({ path: "/Drafts/test.txt", content: "Hello, draft!" });
 
-        expect(await areThereComments('/foo')).toBe(true, 'comments should appear on posts');
-        expect(await areThereComments('/about')).toBe(false, 'comments should not appear on pages');
-        expect(await areThereComments('/draft/view/Drafts/test.txt')).toBe(false, 'comments should not appear on drafts');  
+    const areThereComments = async (path) => {
+      const res = await this.get(path);
+      const body = await res.text();
+      return (
+        body.includes('<div id="disqus_thread"></div>') &&
+        body.includes("disqus.com/embed.js")
+      );
+    };
 
-        // but not on the preview subdomain
-        const res = await this.fetch(config.protocol + 'preview-of-my-local-on-' + this.blog.handle + '.' + config.host + '/foo');
-        const body = await res.text();
+    expect(await areThereComments("/foo")).toBe(
+      true,
+      "comments should appear on posts",
+    );
+    expect(await areThereComments("/about")).toBe(
+      false,
+      "comments should not appear on pages",
+    );
+    expect(await areThereComments("/draft/view/Drafts/test.txt")).toBe(
+      false,
+      "comments should not appear on drafts",
+    );
 
-        expect(res.status).toEqual(200);
-        expect(body).not.toContain('disqus.com/embed.js');
-        
-        // disable comments for the post
-        await this.write({path: '/a.txt', content: 'Link: /foo\nComments: No\n\nHello, world!'});
-        // enable comments for the page
-        await this.write({path: '/Pages/about.txt', content: 'Link: /about\nComments: Yes\n\nHello, world!'});
+    // but not on the preview subdomain
+    const res = await this.fetch(
+      config.protocol +
+        "preview-of-my-local-on-" +
+        this.blog.handle +
+        "." +
+        config.host +
+        "/foo",
+    );
+    const body = await res.text();
 
-        expect(await areThereComments('/about')).toBe(true, 'comments should appear on a pages with comments enabled');
+    expect(res.status).toEqual(200);
+    expect(body).not.toContain("disqus.com/embed.js");
 
-        expect(await areThereComments('/foo')).toBe(false, 'comments should not appear on posts with comments disabled');
+    // disable comments for the post
+    await this.write({
+      path: "/a.txt",
+      content: "Link: /foo\nComments: No\n\nHello, world!",
+    });
+    // enable comments for the page
+    await this.write({
+      path: "/Pages/about.txt",
+      content: "Link: /about\nComments: Yes\n\nHello, world!",
     });
 
-    it("injects google analytics into appJS", async function () {
+    expect(await areThereComments("/about")).toBe(
+      true,
+      "comments should appear on a pages with comments enabled",
+    );
 
-        const plugins = {...this.blog.plugins, analytics: {enabled: true, options: {provider: {Google: true}, trackingID: 'UA-12345678-9'}}};
-        await this.blog.update({plugins})
+    expect(await areThereComments("/foo")).toBe(
+      false,
+      "comments should not appear on posts with comments disabled",
+    );
+  });
 
-        await this.template({ "script.js": "{{{appJS}}}" });
+  it("injects google analytics into appJS", async function () {
+    const plugins = {
+      ...this.blog.plugins,
+      analytics: {
+        enabled: true,
+        options: { provider: { Google: true }, trackingID: "UA-12345678-9" },
+      },
+    };
+    await this.blog.update({ plugins });
 
-        const res = await this.get('/script.js');
-        const body = await res.text();
+    await this.template({ "script.js": "{{{appJS}}}" });
 
-        expect(res.status).toEqual(200);
-        expect(body).toContain('www.google-analytics.com/analytics.js');
-        expect(body).toContain(`var GAID="${plugins.analytics.options.trackingID}"`);
+    const res = await this.get("/script.js");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("www.google-analytics.com/analytics.js");
+    expect(body).toContain(
+      `var GAID="${plugins.analytics.options.trackingID}"`,
+    );
+  });
+
+  it("injects clicky analytics into appJS", async function () {
+    const plugins = {
+      ...this.blog.plugins,
+      analytics: {
+        enabled: true,
+        options: { provider: { Clicky: true }, trackingID: "123456789" },
+      },
+    };
+    await this.blog.update({ plugins });
+
+    await this.template({ "script.js": "{{{appJS}}}" });
+
+    const res = await this.get("/script.js");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("http://in.getclicky.com");
+    expect(body).toContain(
+      `clicky.init(${plugins.analytics.options.trackingID})`,
+    );
+  });
+
+  it("injects heap analytics into appJS", async function () {
+    const plugins = {
+      ...this.blog.plugins,
+      analytics: {
+        enabled: true,
+        options: { provider: { Heap: true }, trackingID: "123456789" },
+      },
+    };
+    await this.blog.update({ plugins });
+
+    await this.template({ "script.js": "{{{appJS}}}" });
+
+    const res = await this.get("/script.js");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("heapanalytics.com");
+    expect(body).toContain(
+      `heap.load("${plugins.analytics.options.trackingID}")`,
+    );
+  });
+
+  it("injects simple analytics into appJS", async function () {
+    const plugins = {
+      ...this.blog.plugins,
+      analytics: {
+        enabled: true,
+        options: { provider: { SimpleAnalytics: true } },
+      },
+    };
+    await this.blog.update({ plugins });
+
+    await this.template({ "script.js": "{{{appJS}}}" });
+
+    const res = await this.get("/script.js");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("simpleanalyticscdn.com");
+  });
+
+  it("injects plausible analytics into appJS", async function () {
+    const plugins = {
+      ...this.blog.plugins,
+      analytics: { enabled: true, options: { provider: { Plausible: true } } },
+    };
+    await this.blog.update({ plugins });
+
+    await this.template({ "script.js": "{{{appJS}}}" });
+
+    const res = await this.get("/script.js");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("plausible.io/js/plausible.js");
+  });
+
+  it("injects fathom analytics into appJS", async function () {
+    const plugins = {
+      ...this.blog.plugins,
+      analytics: {
+        enabled: true,
+        options: { provider: { Fathom: true }, trackingID: "123456789" },
+      },
+    };
+    await this.blog.update({ plugins });
+
+    await this.template({ "script.js": "{{{appJS}}}" });
+
+    const res = await this.get("/script.js");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("cdn.usefathom.com");
+    expect(body).toContain(
+      `fathom("set","siteId","${plugins.analytics.options.trackingID}")`,
+    );
+  });
+
+  it("injects cloudflare analytics into appJS", async function () {
+    const plugins = {
+      ...this.blog.plugins,
+      analytics: {
+        enabled: true,
+        options: { provider: { Cloudflare: true }, trackingID: "123456789" },
+      },
+    };
+    await this.blog.update({ plugins });
+
+    await this.template({ "script.js": "{{{appJS}}}" });
+
+    const res = await this.get("/script.js");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("cloudflareinsights.com");
+    expect(body).toContain(
+      `"{'token': '${plugins.analytics.options.trackingID}'}`,
+    );
+  });
+
+  it("injects KaTeX CSS into appCSS", async function () {
+    const plugins = { ...this.blog.plugins, katex: { enabled: true } };
+    await this.blog.update({ plugins });
+
+    await this.template({ "style.css": "{{{appCSS}}}" });
+
+    const res = await this.get("/style.css");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain(".katex");
+  });
+
+  it("injects image zoom CSS and JS into appCSS and appJS", async function () {
+    const plugins = { ...this.blog.plugins, zoom: { enabled: true } };
+    await this.blog.update({ plugins });
+
+    await this.template({
+      "style.css": "{{{appCSS}}}",
+      "script.js": "{{{appJS}}}",
     });
 
-    it("injects clicky analytics into appJS", async function () {
-        
-        const plugins = {...this.blog.plugins, analytics: {enabled: true, options: {provider: {Clicky: true}, trackingID: '123456789'}}};
-        await this.blog.update({plugins})
+    const resCSS = await this.get("/style.css");
+    const bodyCSS = await resCSS.text();
 
-        await this.template({ "script.js": "{{{appJS}}}" });
+    expect(resCSS.status).toEqual(200);
+    expect(bodyCSS).toContain(".zoom-img");
 
-        const res = await this.get('/script.js');
-        const body = await res.text();
+    const resJS = await this.get("/script.js");
+    const bodyJS = await resJS.text();
 
-        expect(res.status).toEqual(200);
-        expect(body).toContain('http://in.getclicky.com');
-        expect(body).toContain(`clicky.init(${plugins.analytics.options.trackingID})`);
-    });
-
-    it("injects heap analytics into appJS", async function () {
-        
-        const plugins = {...this.blog.plugins, analytics: {enabled: true, options: {provider: {Heap: true}, trackingID: '123456789'}}}; 
-        await this.blog.update({plugins})
-
-        await this.template({ "script.js": "{{{appJS}}}" });
-
-        const res = await this.get('/script.js');
-        const body = await res.text();
-
-        expect(res.status).toEqual(200);
-        expect(body).toContain('heapanalytics.com');
-        expect(body).toContain(`heap.load("${plugins.analytics.options.trackingID}")`);
-    });
-
-    it("injects simple analytics into appJS", async function () {
-        
-        const plugins = {...this.blog.plugins, analytics: {enabled: true, options: {provider: {SimpleAnalytics: true}}}}; 
-        await this.blog.update({plugins})
-
-        await this.template({ "script.js": "{{{appJS}}}" });
-
-        const res = await this.get('/script.js');
-        const body = await res.text();
-
-        expect(res.status).toEqual(200);
-        expect(body).toContain('simpleanalyticscdn.com');
-    });
-
-    it("injects plausible analytics into appJS", async function () {
-        
-        const plugins = {...this.blog.plugins, analytics: {enabled: true, options: {provider: {Plausible: true}}}}; 
-        await this.blog.update({plugins})
-
-        await this.template({ "script.js": "{{{appJS}}}" });
-
-        const res = await this.get('/script.js');
-        const body = await res.text();
-
-        expect(res.status).toEqual(200);
-        expect(body).toContain('plausible.io/js/plausible.js');
-    });
-
-    it("injects fathom analytics into appJS", async function () {
-        
-        const plugins = {...this.blog.plugins, analytics: {enabled: true, options: {provider: {Fathom: true}, trackingID: '123456789'}}}; 
-        await this.blog.update({plugins})
-
-        await this.template({ "script.js": "{{{appJS}}}" });
-
-        const res = await this.get('/script.js');
-        const body = await res.text();
-
-        expect(res.status).toEqual(200);
-        expect(body).toContain('cdn.usefathom.com');
-        expect(body).toContain(`fathom("set","siteId","${plugins.analytics.options.trackingID}")`);
-    });
-
-    it("injects cloudflare analytics into appJS", async function () {
-        
-        const plugins = {...this.blog.plugins, analytics: {enabled: true, options: {provider: {Cloudflare: true}, trackingID: '123456789'}}};
-        await this.blog.update({plugins})
-        
-        await this.template({ "script.js": "{{{appJS}}}" });
-
-        const res = await this.get('/script.js');
-        const body = await res.text();
-
-        expect(res.status).toEqual(200);
-        expect(body).toContain('cloudflareinsights.com');
-        expect(body).toContain(`"{'token': '${plugins.analytics.options.trackingID}'}`);
-
-    }); 
-
-    it("injects KaTeX CSS into appCSS", async function () {
-        
-        const plugins = {...this.blog.plugins, katex: {enabled: true}};
-        await this.blog.update({plugins})
-
-        await this.template({ "style.css": "{{{appCSS}}}" });
-
-        const res = await this.get('/style.css');
-        const body = await res.text();
-
-        expect(res.status).toEqual(200);
-        expect(body).toContain('.katex');
-    });
-
-    it("injects image zoom CSS and JS into appCSS and appJS", async function () {
-        
-        const plugins = {...this.blog.plugins, zoom: {enabled: true}};
-        await this.blog.update({plugins})
-
-        await this.template({ "style.css": "{{{appCSS}}}", "script.js": "{{{appJS}}}" });
-
-        const resCSS = await this.get('/style.css');
-        const bodyCSS = await resCSS.text();
-
-        expect(resCSS.status).toEqual(200);
-        expect(bodyCSS).toContain('.zoom-img');
-
-        const resJS = await this.get('/script.js');
-        const bodyJS = await resJS.text();
-
-        expect(resJS.status).toEqual(200);
-        expect(bodyJS).toContain('zoom-overlay');
-    });
-
+    expect(resJS.status).toEqual(200);
+    expect(bodyJS).toContain("zoom-overlay");
+  });
 });

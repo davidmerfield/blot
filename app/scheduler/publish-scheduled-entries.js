@@ -3,7 +3,7 @@ const Entry = require("models/entry");
 const Blog = require("models/blog");
 const async = require("async");
 
-function publishScheduledEntries (callback = function () {}) {
+function publishScheduledEntries(callback = function () {}) {
   Blog.getAllIDs(function (err, blogIDs) {
     if (err) return callback(err);
     async.each(
@@ -19,11 +19,11 @@ function publishScheduledEntries (callback = function () {}) {
               // time to publish the entry.
               Entry.set(blogID, futureEntry.path, {}, nextEntry);
             },
-            nextBlog
+            nextBlog,
           );
         });
       },
-      callback
+      callback,
     );
   });
 }

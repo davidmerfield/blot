@@ -238,7 +238,7 @@ describe("template", function () {
       dir1,
       dir2,
       hashRemainder,
-      viewBaseName
+      viewBaseName,
     );
 
     expect(await fs.pathExists(filePath)).toBe(true);
@@ -256,7 +256,7 @@ describe("template", function () {
       sourceDir1,
       sourceDir2,
       sourceHashRemainder,
-      viewBaseName
+      viewBaseName,
     );
     expect(await fs.pathExists(sourceFilePath)).toBe(true);
   });
@@ -291,7 +291,7 @@ describe("template", function () {
     expect(clonedMetadata.cdn).toBeDefined();
     expect(clonedMetadata.cdn["style.css"]).toBeDefined();
     expect(clonedMetadata.cdn["style.css"]).not.toBe(
-      sourceMetadata.cdn["style.css"]
+      sourceMetadata.cdn["style.css"],
     );
   });
 

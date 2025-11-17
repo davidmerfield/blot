@@ -6,24 +6,16 @@ module.exports = (text, node, $) => {
   // this only works if replace does not modify the length
   // of the string it is passed. therefore the
   if (
-    $(node)
-      .parent()
-      .is("p, blockquote") &&
-    $(node)
-      .parent()
-      .text() !== text
+    $(node).parent().is("p, blockquote") &&
+    $(node).parent().text() !== text
   ) {
-    const parentText = replace(
-      $(node)
-        .parent()
-        .text()
-    );
+    const parentText = replace($(node).parent().text());
     let start = 0;
 
     $(node)
       .parent()
       .contents()
-      .each(function() {
+      .each(function () {
         if (this === node) return false;
 
         start += $(this).text().length;
@@ -48,11 +40,11 @@ function replace(text) {
     .replace(/((\u2018[^']*)|[a-z])'([^0-9]|$)/gi, "$1\u2019$3") // ending '
     .replace(
       /(\u2018)([0-9]{2}[^\u2019]*)(\u2018([^0-9]|$)|$|\u2019[a-z])/gi,
-      "\u2019$2$3"
+      "\u2019$2$3",
     ) // abbrev. years like '93
     .replace(
       /(\B|^)\u2018(?=([^\u2019]*\u2019\b)*([^\u2019\u2018]*\W[\u2019\u2018]\b|[^\u2019\u2018]*$))/gi,
-      "$1\u2019"
+      "$1\u2019",
     ) // backwards apostrophe
     .replace(/'''/g, "\u2034") // triple prime
     .replace(/("|'')/g, "\u2033") // double prime

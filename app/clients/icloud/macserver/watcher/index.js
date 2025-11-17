@@ -73,7 +73,7 @@ const handleFileEvent = async (event, blogID, filePath) => {
     }
 
     console.log(
-      `Event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory}`
+      `Event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory}`,
     );
 
     // Get the limiter for this specific blogID
@@ -178,7 +178,7 @@ const watch = async (blogID) => {
       console.log(`Initial scan complete for blog folder: ${blogID}`);
       initialScanComplete = true; // Mark the initial scan as complete
     })
-    .on('error', (error) => console.error(`Watcher error: ${error}`));
+    .on("error", (error) => console.error(`Watcher error: ${error}`));
 
   blogWatchers.set(blogID, watcher);
 };

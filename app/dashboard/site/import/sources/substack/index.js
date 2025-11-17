@@ -13,16 +13,17 @@ const posts = csv(input_directory + "/posts.csv").map((post) => {
 
   post.html = fs.readFileSync(
     `${input_directory}/posts/${post.post_id}.html`,
-    "utf-8"
+    "utf-8",
   );
 
   if (post.type === "podcast")
     post.html = `<audio src="${post.podcast_url}"></audio>\n\n` + post.html;
 
   if (post.post_date)
-    post.dateStamp = post.created = post.updated = moment(
-      post.post_date
-    ).valueOf();
+    post.dateStamp =
+      post.created =
+      post.updated =
+        moment(post.post_date).valueOf();
 
   return post;
 });

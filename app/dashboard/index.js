@@ -2,7 +2,7 @@ const trace = require("helper/trace");
 const config = require("config");
 const express = require("express");
 const message = require("dashboard/util/message");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 
 const dashboard = express.Router();
 const logout = require("dashboard/account/util/logout");
@@ -19,17 +19,17 @@ const maxFilesSize = 30 * 1024 * 1024; // 30mb
 
 var FORM_OPTIONS = {
   uploadDir: tempDir,
-  maxFilesSize
+  maxFilesSize,
 };
 
 // Middleware to parse multipart forms and regular forms
 const parse = (req, res, next) => {
-  if (!req.is('multipart/form-data')) {
+  if (!req.is("multipart/form-data")) {
     return next();
   }
 
   const form = new multiparty.Form(FORM_OPTIONS);
-  
+
   form.parse(req, (err, fields, files) => {
     if (err) {
       if (err.code === "ETOOBIG") {
@@ -72,9 +72,9 @@ dashboard.get("/deleted", logout, (req, res) => {
 });
 
 // Everything afterwards should be authenticated
-dashboard.use(require('dashboard/util/require-authentication'));
+dashboard.use(require("dashboard/util/require-authentication"));
 
-dashboard.use((req, res, next)=>{
+dashboard.use((req, res, next) => {
   res.locals.selected = { dashboard: "selected" };
   next();
 });
@@ -99,7 +99,7 @@ dashboard.use("/account", require("./account"));
 dashboard.use(
   "/share-template",
   require("dashboard/util/load-blogs"),
-  require("./site/template/share-template")
+  require("./site/template/share-template"),
 );
 
 dashboard.get("/", require("dashboard/util/load-blogs"), async (req, res) => {
@@ -136,7 +136,7 @@ dashboard.use(function (err, req, res, next) {
 
     res.clearCookie("signed_into_blot", { domain: "", path: "/" });
     return res.redirect(
-      "/log-in?then=" + req.originalUrl + (from ? "&from=" + from : "")
+      "/log-in?then=" + req.originalUrl + (from ? "&from=" + from : ""),
     );
   }
 
@@ -144,7 +144,7 @@ dashboard.use(function (err, req, res, next) {
 
   if (config.environment === "development") {
     res.locals.error = {
-      stack: err.stack
+      stack: err.stack,
     };
   }
 

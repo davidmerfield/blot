@@ -5,7 +5,7 @@ const fetch = require("node-fetch");
 
 module.exports = async (blogID, path) => {
   const pathBase64 = Buffer.from(path).toString("base64");
-  
+
   const res = await fetch(MAC_SERVER_ADDRESS + "/delete", {
     method: "POST",
     headers: { Authorization: MACSERVER_AUTH, blogID, pathBase64 },
@@ -14,6 +14,6 @@ module.exports = async (blogID, path) => {
   if (!res.ok) {
     throw new Error(`Failed to delete ${path}`);
   }
-  
+
   return res.ok;
 };

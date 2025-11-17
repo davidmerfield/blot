@@ -3,7 +3,7 @@
 const fs = require("fs-extra");
 const DATA_DIR = __dirname + "/data";
 
-const main = async label => {
+const main = async (label) => {
   if (!label) {
     console.log("No label provided");
     process.exit(1);

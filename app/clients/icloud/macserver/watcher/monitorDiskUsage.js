@@ -12,7 +12,7 @@ const blogUpdateTimes = new Map(); // Tracks the last update time for each blog
 
 // We don't use ../exec because it can't tolerate stderr or non-zero exit codes
 // which happens when there is a file in someone's folder with a name that's too
-// long and produces du:  File name too long 
+// long and produces du:  File name too long
 const getDiskUsage = () => {
   return new Promise((resolve, reject) => {
     // Run du -sk <dir> with stderr redirected to /dev/null
@@ -35,7 +35,7 @@ const getDiskUsage = () => {
         } catch (parseError) {
           reject(new Error(`Error parsing du output: ${parseError.message}`));
         }
-      }
+      },
     );
   });
 };
@@ -87,7 +87,7 @@ const addFile = async (blogID, filePath) => {
 
   // Update the blog's last update time
   const lastUpdateTime = Math.max(
-    ...files.map((file) => Math.max(file.ctimeMs, file.mtimeMs))
+    ...files.map((file) => Math.max(file.ctimeMs, file.mtimeMs)),
   );
 
   blogUpdateTimes.set(blogID, lastUpdateTime);
@@ -106,7 +106,7 @@ const removeFile = (blogID, filePath) => {
   // Update the blog's last update time
   if (files.length > 0) {
     const lastUpdateTime = Math.max(
-      ...files.map((file) => Math.max(file.ctimeMs, file.mtimeMs))
+      ...files.map((file) => Math.max(file.ctimeMs, file.mtimeMs)),
     );
     blogUpdateTimes.set(blogID, lastUpdateTime);
   } else {
@@ -128,7 +128,7 @@ const check = async (evictFiles) => {
 
   if (diskUsage < MAX_DISK_USAGE_BYTES) {
     console.log(
-      `Disk usage is below threshold: ${diskUsage} bytes of ${MAX_DISK_USAGE_BYTES} bytes`
+      `Disk usage is below threshold: ${diskUsage} bytes of ${MAX_DISK_USAGE_BYTES} bytes`,
     );
     return;
   }
@@ -136,7 +136,7 @@ const check = async (evictFiles) => {
   let bytesToEvict = diskUsage - MAX_DISK_USAGE_BYTES;
 
   console.log(
-    `Disk usage is above threshold: ${diskUsage} bytes, need to evict ${bytesToEvict} bytes`
+    `Disk usage is above threshold: ${diskUsage} bytes, need to evict ${bytesToEvict} bytes`,
   );
 
   // Get blogs sorted by least recent update time
@@ -145,7 +145,7 @@ const check = async (evictFiles) => {
   for (const blogID of sortedBlogs) {
     const lastUpdated = (Date.now() - blogUpdateTimes.get(blogID)) / 1000;
     console.log(
-      `Checking blogID ${blogID} for files to evict, blog was last updated: ${lastUpdated} seconds ago`
+      `Checking blogID ${blogID} for files to evict, blog was last updated: ${lastUpdated} seconds ago`,
     );
 
     const files = largestFilesMap.get(blogID);
@@ -191,7 +191,7 @@ const check = async (evictFiles) => {
 
     if (diskUsage < MAX_DISK_USAGE_BYTES) {
       console.log(
-        `Disk usage is now below threshold: ${diskUsage} bytes of ${MAX_DISK_USAGE_BYTES} bytes`
+        `Disk usage is now below threshold: ${diskUsage} bytes of ${MAX_DISK_USAGE_BYTES} bytes`,
       );
       return;
     }

@@ -26,7 +26,7 @@ module.exports = function (blog, callback) {
           if (err) return next(err);
           if (report && report.length) finalReport[fn.name] = report;
           next();
-        })
+        }),
       );
     },
     function (err) {
@@ -40,6 +40,6 @@ module.exports = function (blog, callback) {
       Blog.set(blog.id, { cacheID }, function (err) {
         callback(err, finalReport);
       });
-    }
+    },
   );
 };

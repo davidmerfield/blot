@@ -7,8 +7,7 @@
 const fs = require("fs-extra");
 const config = require("config");
 
-const modify = i => {
-
+const modify = (i) => {
   // remove leading 'is a' or 'is an'
   i = i.replace(/^is a(n)? /, "");
 
@@ -16,14 +15,14 @@ const modify = i => {
   i = i[0].toUpperCase() + i.slice(1);
 
   return i;
-}
+};
 
 const loadFeatured = async () => {
   const featuredPath = config.data_directory + "/featured/featured.json";
 
   // if the JSON file doesn't exist, attempt to create it by copying the seed data
   if (!fs.existsSync(featuredPath)) {
-    await fs.copy(__dirname + '/featured.json', featuredPath);
+    await fs.copy(__dirname + "/featured.json", featuredPath);
   }
 
   try {
@@ -32,18 +31,18 @@ const loadFeatured = async () => {
 
     return {
       ...parsed,
-      sites: parsed.sites.map(i => {
+      sites: parsed.sites.map((i) => {
         return {
           ...i,
           bio: modify(i.bio),
-          host_without_www: i.host.replace(/^www\./, "")
+          host_without_www: i.host.replace(/^www\./, ""),
         };
-      })
+      }),
     };
   } catch (e) {
     console.error(e);
   }
-}
+};
 
 module.exports = async function (req, res, next) {
   res.locals.featured = await loadFeatured();

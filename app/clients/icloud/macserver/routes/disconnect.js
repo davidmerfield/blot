@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
 
   // remove the blogid folder and the limiter
   removeLimiterForBlogID(blogID);
-  
+
   await fs.remove(join(iCloudDriveDirectory, blogID));
 
   console.log(`Disconnected blogID: ${blogID}`);

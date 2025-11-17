@@ -22,7 +22,7 @@ const main = () => {
           return fs.copy(
             cache[folder],
             VIEW_DIRECTORY + "/" + folder + ".zip",
-            next
+            next,
           );
         }
 
@@ -33,12 +33,12 @@ const main = () => {
             console.log(
               clfdate(),
               folder,
-              "Copying cached ZIP since we are in development environment"
+              "Copying cached ZIP since we are in development environment",
             );
             return fs.copy(
               tmpPath,
               VIEW_DIRECTORY + "/" + folder + ".zip",
-              next
+              next,
             );
           }
         }
@@ -83,7 +83,7 @@ const main = () => {
         archive.directory(FOLDER_DIRECTORY + "/" + folder + "/", false);
         archive.finalize();
       },
-      resolve
+      resolve,
     );
   });
 };

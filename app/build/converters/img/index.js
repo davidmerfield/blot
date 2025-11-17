@@ -88,13 +88,13 @@ async function read(blog, path, callback) {
       const conversion = await lookupWithTransformer(
         transformer,
         path,
-        convertImage
+        convertImage,
       );
 
       const conversionRelativePath =
         conversion?.relativePath || convertedRelativePath;
       const conversionAbsolutePath = absoluteFromRelative(
-        conversionRelativePath
+        conversionRelativePath,
       );
 
       if (!(await fs.pathExists(conversionAbsolutePath))) {
@@ -105,7 +105,7 @@ async function read(blog, path, callback) {
     }
 
     const contents = `<img src="${encodeURI(
-      outputPath
+      outputPath,
     )}" title="${title}" alt="${title}" ${isRetina}/>`;
 
     callback(null, contents, stat, extras);
@@ -126,7 +126,7 @@ function lookupWithTransformer(transformer, src, transform) {
       (err, result) => {
         if (err) return reject(err);
         resolve(result);
-      }
+      },
     );
   });
 }

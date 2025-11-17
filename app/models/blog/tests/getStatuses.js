@@ -67,10 +67,10 @@ describe("Blog.getStatuses", function () {
     // Invalid options
     await expectAsync(getStatuses(this.blog.id, { foo: "bar" })).toBeRejected();
     await expectAsync(
-      getStatuses(this.blog.id, { pageSize: null, page: 1 })
+      getStatuses(this.blog.id, { pageSize: null, page: 1 }),
     ).toBeRejected();
     await expectAsync(
-      getStatuses(this.blog.id, { pageSize: 1, page: () => {} })
+      getStatuses(this.blog.id, { pageSize: 1, page: () => {} }),
     ).toBeRejected();
 
     // Sanity check

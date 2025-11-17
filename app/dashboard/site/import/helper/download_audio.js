@@ -41,7 +41,7 @@ module.exports = function download_pdfs(post, callback) {
     function () {
       post.html = $.html();
       callback(null, post);
-    }
+    },
   );
 };
 

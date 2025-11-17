@@ -3,7 +3,7 @@
   "isPublic": false,
   "locals": {
     "page_size": 12,
-    "banner_image_url":""
+    "banner_image_url": ""
   },
   "views": {
     "public": {

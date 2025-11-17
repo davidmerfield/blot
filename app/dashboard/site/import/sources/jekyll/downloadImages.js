@@ -45,6 +45,6 @@ module.exports = function (result, callback) {
     },
     function () {
       callback(null, result);
-    }
+    },
   );
 };

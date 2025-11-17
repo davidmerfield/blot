@@ -6,7 +6,8 @@ function initSidebarActionMenu(options) {
   var container = options.container;
   var menuElement = options.menuElement;
   var rowSelector = options.rowSelector || ".template-row";
-  var triggerSelector = options.triggerSelector || ".template-row__menu-trigger";
+  var triggerSelector =
+    options.triggerSelector || ".template-row__menu-trigger";
   var linkMap = options.linkMap || {};
   var initialFocusKey = options.initialFocusKey;
 
@@ -78,7 +79,8 @@ function initSidebarActionMenu(options) {
 
     linkEntries.forEach(function (entry) {
       var resolver = linkMap[entry.key];
-      var value = typeof resolver === "function" ? resolver(dataset, trigger) : resolver;
+      var value =
+        typeof resolver === "function" ? resolver(dataset, trigger) : resolver;
       var href = null;
       var disabled = false;
 

@@ -1,7 +1,7 @@
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 
-module.exports = async function load (feed_url) {
+module.exports = async function load(feed_url) {
   if (!feed_url) throw new Error("Please pass a URL to an RSS feed");
 
   const response = await fetch(feed_url);
@@ -12,7 +12,7 @@ module.exports = async function load (feed_url) {
 
   const $ = cheerio.load(body, {
     decodeEntities: false,
-    xmlMode: true
+    xmlMode: true,
   });
 
   return $;

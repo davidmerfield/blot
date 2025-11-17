@@ -7,15 +7,11 @@
     mod(
       require("./codemirror"),
       require("./mode-simple"),
-      require("./mode-multiplex")
+      require("./mode-multiplex"),
     );
   else if (typeof define == "function" && define.amd)
     // AMD
-    define([
-      "./codemirror",
-      "./mode-simple",
-      "./mode-multiplex",
-    ], mod);
+    define(["./codemirror", "./mode-simple", "./mode-multiplex"], mod);
   // Plain browser env
   else mod(CodeMirror);
 })(function (CodeMirror) {
@@ -82,7 +78,7 @@
     return CodeMirror.multiplexingMode(
       base,
       { open: "{{{", close: "}}}", mode: inner, parseDelimiters: true }, // triple first
-      { open: "{{", close: "}}", mode: inner, parseDelimiters: true }
+      { open: "{{", close: "}}", mode: inner, parseDelimiters: true },
     );
   });
 

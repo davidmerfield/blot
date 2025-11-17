@@ -9,7 +9,7 @@ var transactionsData = {
   title: "NGINX",
   style: { line: "red" },
   x: [],
-  y: []
+  y: [],
 };
 
 access.on("line", function (data) {

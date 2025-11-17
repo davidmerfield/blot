@@ -15,7 +15,7 @@ var dropView = require("./dropView");
 const Blog = require("models/blog");
 const create = require("./create");
 
-async function createLocalTemplate (blogID, dir) {
+async function createLocalTemplate(blogID, dir) {
   return new Promise(async function (resolve, reject) {
     create(blogID, dir, { slug: dir }, function (err, template) {
       if (err) return reject(err);
@@ -24,7 +24,7 @@ async function createLocalTemplate (blogID, dir) {
   });
 }
 
-module.exports = function readFromFolder (blogID, dir, callback) {
+module.exports = function readFromFolder(blogID, dir, callback) {
   // check the directory exists
   fs.readdir(dir, function (err, contents) {
     if (err) return callback(err);
@@ -88,7 +88,7 @@ module.exports = function readFromFolder (blogID, dir, callback) {
                       if (err) {
                         errors[view.name] = improveMustacheErrorMessage(
                           err,
-                          content
+                          content,
                         );
                       }
 
@@ -114,7 +114,7 @@ module.exports = function readFromFolder (blogID, dir, callback) {
                   });
                 }
               });
-            }
+            },
           );
         });
       });
@@ -122,7 +122,7 @@ module.exports = function readFromFolder (blogID, dir, callback) {
   });
 };
 
-function loadPackage (id, dir, callback) {
+function loadPackage(id, dir, callback) {
   fs.readFile(dir + "/" + PACKAGE, "utf-8", function (err, contents) {
     // Package.json is optional
     if (err && err.code === "ENOENT") {
@@ -146,13 +146,13 @@ function loadPackage (id, dir, callback) {
   });
 }
 
-function removeDeletedViews (templateID, contents, callback) {
+function removeDeletedViews(templateID, contents, callback) {
   const viewsToRemove = [];
 
   client.smembers(key.allViews(templateID), function (err, viewNames) {
     if (err) return callback(err);
     for (const viewName of viewNames) {
-      let found = contents.find(fileName => fileName.startsWith(viewName));
+      let found = contents.find((fileName) => fileName.startsWith(viewName));
       if (!found) viewsToRemove.push(viewName);
     }
 
@@ -161,13 +161,13 @@ function removeDeletedViews (templateID, contents, callback) {
       function (viewName, next) {
         dropView(templateID, viewName, next);
       },
-      callback
+      callback,
     );
   });
 }
 
 // Maps 'at position 505' to
-function improveJSONErrorMessage (err, contents) {
+function improveJSONErrorMessage(err, contents) {
   try {
     const regex = /at position (\d+)$/gm;
     const found = [...err.message.matchAll(regex)][0];
@@ -184,7 +184,7 @@ function improveJSONErrorMessage (err, contents) {
 
 // Maps 'Unclosed section "entriess" at 1446' to
 // `Unclosed section "entriess" on line 12`
-function improveMustacheErrorMessage (err, contents) {
+function improveMustacheErrorMessage(err, contents) {
   try {
     const regex = /at (\d+)$/gm;
     const found = [...err.message.matchAll(regex)][0];
@@ -199,6 +199,6 @@ function improveMustacheErrorMessage (err, contents) {
   }
 }
 
-function badPermission (blogID, templateID) {
+function badPermission(blogID, templateID) {
   return new Error("No permission for " + blogID + " to write " + templateID);
 }

@@ -125,7 +125,7 @@ describe("folder", function () {
         const link = findElementByText(".directory-list a", component, $);
         if (!link) {
           throw new Error(
-            `Link not found for "${component}" in path "${path}"`
+            `Link not found for "${component}" in path "${path}"`,
           );
         }
 

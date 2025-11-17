@@ -11,7 +11,7 @@ const { Dropbox } = require("dropbox");
 const views = __dirname + "/../views/";
 const client = require("models/client");
 
-dashboard.use(function loadDropboxAccount (req, res, next) {
+dashboard.use(function loadDropboxAccount(req, res, next) {
   Database.get(req.blog.id, function (err, account) {
     if (err) return next(err);
 
@@ -56,7 +56,7 @@ dashboard.get("/", function (req, res) {
     ) {
       res.locals.blog.status = {
         message: "Setting up your folder on Dropbox",
-        state: "syncing"
+        state: "syncing",
       };
     }
   }
@@ -115,7 +115,7 @@ dashboard.get("/redirect", function (req, res) {
     secure: true,
     httpOnly: true,
     maxAge: 15 * 60 * 1000, // 15 minutes
-    sameSite: "Lax"
+    sameSite: "Lax",
   });
 
   if (req.query.full_access) {
@@ -130,7 +130,7 @@ dashboard.get("/redirect", function (req, res) {
   const dbconfig = {
     fetch,
     clientId: key,
-    clientSecret: secret
+    clientSecret: secret,
   };
 
   const dbx = new Dropbox(dbconfig);
@@ -144,9 +144,9 @@ dashboard.get("/redirect", function (req, res) {
       "offline",
       null,
       "none",
-      false
+      false,
     )
-    .then(authUrl => {
+    .then((authUrl) => {
       res.writeHead(302, { Location: authUrl });
       res.end();
     });
@@ -189,7 +189,7 @@ dashboard.get("/authenticate", function (req, res) {
     redirectUri,
     full_access: full_access === "true",
     preparing: true,
-    blog: req.blog
+    blog: req.blog,
   };
 
   // this the first time the user has visited this page
@@ -211,7 +211,7 @@ dashboard.get("/disconnect", function (req, res) {
 dashboard.post("/disconnect", function (req, res, next) {
   client.publish(
     "sync:status:" + req.blog.id,
-    "Attempting to disconnect from Dropbox"
+    "Attempting to disconnect from Dropbox",
   );
   delete req.session.dropbox;
   disconnect(req.blog.id, next);

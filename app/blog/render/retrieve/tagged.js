@@ -101,8 +101,8 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
           prettyTags: [],
           slugs: [],
         },
-        pg
-      )
+        pg,
+      ),
     );
   }
 
@@ -122,8 +122,8 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
               prettyTags: [prettyTag],
               slugs: normalized,
             },
-            pg
-          )
+            pg,
+          ),
         );
       })
       .catch(callback);
@@ -150,8 +150,8 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
               prettyTags,
               slugs: normalized,
             },
-            pg
-          )
+            pg,
+          ),
         );
       }
 

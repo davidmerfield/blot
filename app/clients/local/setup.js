@@ -29,7 +29,6 @@ function watch(blogID) {
   // events from the file system.
   const queue = async.queue(function (path, callback) {
     Blog.get({ id: blogID }, function (err, blog) {
-      
       if (err || !blog) {
         if (watchers[blogID]) {
           watchers[blogID].close();
@@ -37,7 +36,7 @@ function watch(blogID) {
         }
         return callback();
       }
-      
+
       if (blog.client !== "local") {
         if (watchers[blogID]) {
           watchers[blogID].close();

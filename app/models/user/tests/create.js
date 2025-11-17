@@ -20,7 +20,7 @@ describe("user", function () {
           expect(err).toBe(null);
           done();
         });
-      }
+      },
     );
   });
 });

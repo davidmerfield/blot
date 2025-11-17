@@ -10,7 +10,7 @@ var testsDirectory = require("path").resolve(__dirname + "/../tests/tidy");
 
 if (!sourceFile || !filter)
   throw new Error(
-    "Please pass source export file as first argument and filter for <item> as second argument"
+    "Please pass source export file as first argument and filter for <item> as second argument",
   );
 
 parseXML(fs.readFileSync(sourceFile, "utf-8"), function (err, result) {
@@ -28,7 +28,7 @@ parseXML(fs.readFileSync(sourceFile, "utf-8"), function (err, result) {
     console.log(
       'Multiple item titles matched "' +
         filter +
-        '". Please select one of the following:'
+        '". Please select one of the following:',
     );
 
     candidates.forEach(function (item, i) {
@@ -38,7 +38,7 @@ parseXML(fs.readFileSync(sourceFile, "utf-8"), function (err, result) {
         "node scripts/generate-test.js " +
           process.argv[2] +
           " " +
-          digest(item.title[0])
+          digest(item.title[0]),
       );
     });
 

@@ -93,7 +93,7 @@ module.exports = async function sync(blogID, publish, update) {
         console.log(
           "Removing",
           join(dir, name),
-          "which does not exist remotely"
+          "which does not exist remotely",
         );
         await fs.remove(localPath(blogID, path));
         await update(path);
@@ -121,7 +121,7 @@ module.exports = async function sync(blogID, publish, update) {
         // These do not have a md5Checksum so we fall
         // back to using the modifiedTime
         const isGoogleAppFile = mimeType.startsWith(
-          "application/vnd.google-apps."
+          "application/vnd.google-apps.",
         );
 
         const identical = isGoogleAppFile
@@ -137,7 +137,7 @@ module.exports = async function sync(blogID, publish, update) {
             console.log("Updating out-of-sync:", path);
             console.log(
               "identical=false localSize=" + existsLocally.size,
-              "remoteSize=" + size
+              "remoteSize=" + size,
             );
           } else {
             console.log("Downloading missing:", path);

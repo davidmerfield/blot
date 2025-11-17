@@ -7,14 +7,12 @@ var Metadata = require("build/metadata");
 var convert = require("./convert");
 const { lte } = require("lodash");
 
-function is (path) {
+function is(path) {
   return [".org"].indexOf(extname(path).toLowerCase()) > -1;
 }
 
-function read (blog, path, callback) {
-  ensure(blog, "object")
-    .and(path, "string")
-    .and(callback, "function");
+function read(blog, path, callback) {
+  ensure(blog, "object").and(path, "string").and(callback, "function");
 
   var localPath = LocalPath(blog.id, path);
 
@@ -52,4 +50,4 @@ function read (blog, path, callback) {
   });
 }
 
-module.exports = { read: read, is: is, id: "org"};
+module.exports = { read: read, is: is, id: "org" };

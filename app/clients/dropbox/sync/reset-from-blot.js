@@ -12,7 +12,9 @@ const hashFile = promisify((path, cb) => {
 const upload = promisify(require("../util/upload"));
 const set = promisify(require("../database").set);
 const createClient = promisify((blogID, cb) =>
-  require("../util/createClient")(blogID, (err, ...results) => cb(err, results))
+  require("../util/createClient")(blogID, (err, ...results) =>
+    cb(err, results),
+  ),
 );
 
 const ABORT_ERROR_MESSAGE = "Dropbox reset aborted";
@@ -57,7 +59,7 @@ async function resetFromBlot(blogID, publish, signal) {
     });
 
     abortIfRequested(signal);
-    const {  path_display } = result;
+    const { path_display } = result;
     if (path_display) {
       dropboxRoot = path_display;
       abortIfRequested(signal);
@@ -120,7 +122,7 @@ async function resetFromBlot(blogID, publish, signal) {
 
       const path = join(dir, localItem.name);
       const remoteCounterpart = remoteContents.find(
-        (remoteItem) => remoteItem.name === localItem.name
+        (remoteItem) => remoteItem.name === localItem.name,
       );
 
       if (localItem.is_directory) {
@@ -163,7 +165,7 @@ async function resetFromBlot(blogID, publish, signal) {
             await upload(
               client,
               join(localRoot, localItem.path_display),
-              join(dropboxRoot, path)
+              join(dropboxRoot, path),
             );
             abortIfRequested(signal);
           } catch (e) {
@@ -176,7 +178,7 @@ async function resetFromBlot(blogID, publish, signal) {
             await upload(
               client,
               join(localRoot, localItem.path_display),
-              join(dropboxRoot, path)
+              join(dropboxRoot, path),
             );
             abortIfRequested(signal);
           } catch (e) {
@@ -271,7 +273,7 @@ const localReaddir = async (blogID, localRoot, dir, signal) => {
         is_directory: stat.isDirectory(),
         content_hash,
       };
-    })
+    }),
   );
 };
 
@@ -300,7 +302,7 @@ const remoteReaddir = async (client, dir, signal) => {
       result.entries.map((i) => {
         i.is_directory = i[".tag"] === "folder";
         return i;
-      })
+      }),
     );
   } while (has_more);
 

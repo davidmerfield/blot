@@ -37,7 +37,7 @@ assets.use((req, res, next) => {
     BLOCKED_PATTERNS.some(
       (pattern) =>
         req.path.includes(pattern) ||
-        decodeURIComponent(req.path).includes(pattern)
+        decodeURIComponent(req.path).includes(pattern),
     )
   ) {
     return next(new Error("Not Found"));
@@ -80,7 +80,11 @@ assets.get("/layout.css", async (req, res, next) => {
 assets.use(BLOG_STATIC_PATHS, async (req, res, next) => {
   try {
     const filePath =
-      config.blog_static_files_dir + "/" + req.blog.id + req.baseUrl + decodeURIComponent(req.path);
+      config.blog_static_files_dir +
+      "/" +
+      req.blog.id +
+      req.baseUrl +
+      decodeURIComponent(req.path);
     await sendFile(filePath, {
       req,
       res,
@@ -110,7 +114,7 @@ assets.use(async (req, res, next) => {
   try {
     const pathWithCorrectCase = await caseSensitivePath(
       blogFolder,
-      decodedPath
+      decodedPath,
     );
 
     const stat = await fs.stat(pathWithCorrectCase);
@@ -124,7 +128,7 @@ assets.use(async (req, res, next) => {
   try {
     await sendFile(
       join(blogFolder, withoutTrailingSlash(decodedPath) + "/index.html"),
-      { req, res }
+      { req, res },
     );
     return;
   } catch (e) {}
@@ -132,7 +136,7 @@ assets.use(async (req, res, next) => {
   try {
     await sendFile(
       join(blogFolder, withoutTrailingSlash(decodedPath) + "/_index.html"),
-      { req, res }
+      { req, res },
     );
     return;
   } catch (e) {}
@@ -140,7 +144,7 @@ assets.use(async (req, res, next) => {
   try {
     await sendFile(
       join(blogFolder, withoutTrailingSlash(decodedPath) + ".html"),
-      { req, res }
+      { req, res },
     );
     return;
   } catch (e) {}
@@ -148,7 +152,7 @@ assets.use(async (req, res, next) => {
   try {
     await sendFile(
       join(blogFolder, addLeadingUnderscore(decodedPath) + ".html"),
-      { req, res }
+      { req, res },
     );
     return;
   } catch (e) {}

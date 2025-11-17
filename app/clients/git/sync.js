@@ -6,16 +6,17 @@ var checkGitRepoExists = require("./checkGitRepoExists");
 var dataDir = require("./dataDir");
 var Blog = require("models/blog");
 
-module.exports = function sync (blogID, gitHandle, callback) {
-
+module.exports = function sync(blogID, gitHandle, callback) {
   // if the blog ID is not a string, return the callback with an error
-  if (typeof blogID !== "string") return callback(new Error("Blog ID must be a string"));
+  if (typeof blogID !== "string")
+    return callback(new Error("Blog ID must be a string"));
 
   // if the git handle is not a non-empty string, return the callback with an error
-  if (typeof gitHandle !== "string" || !gitHandle) return callback(new Error("Git handle must be a non-empty string"));
+  if (typeof gitHandle !== "string" || !gitHandle)
+    return callback(new Error("Git handle must be a non-empty string"));
 
   // Attempt to acquire a lock on the blog's folder
-  // to apply updates to it... 
+  // to apply updates to it...
   Sync(blogID, function (err, folder, done) {
     // Typically, this error means were unable to acquire a lock
     // on the folder, perhaps another process is syncing it...
@@ -56,7 +57,6 @@ module.exports = function sync (blogID, gitHandle, callback) {
         // Update the remote to ensure it's in sync
         var bareRepoDirectory = dataDir + "/" + gitHandle + ".git";
         git.remote(["set-url", "origin", bareRepoDirectory], function (err) {
-
           if (err) {
             folder.log("Error adding remote: " + err.message);
             debug(err);
@@ -101,7 +101,9 @@ module.exports = function sync (blogID, gitHandle, callback) {
                   folder.log("No changes to repo");
                   return done(null, callback);
                 } else {
-                  folder.log(`Comparing ${headBeforePull} with ${headAfterPull}`);
+                  folder.log(
+                    `Comparing ${headBeforePull} with ${headAfterPull}`,
+                  );
                 }
 
                 git.raw(
@@ -114,7 +116,7 @@ module.exports = function sync (blogID, gitHandle, callback) {
                     // Without this flag, files with foreign
                     // characters are not synced to Blot.
                     "-z",
-                    headBeforePull + ".." + headAfterPull
+                    headBeforePull + ".." + headAfterPull,
                   ],
                   function (err, res) {
                     if (err) return done(new Error(err), callback);
@@ -156,9 +158,9 @@ module.exports = function sync (blogID, gitHandle, callback) {
                       function (err) {
                         folder.log(`Processed ${modified.length} changes`);
                         done(null, callback);
-                      }
+                      },
                     );
-                  }
+                  },
                 );
               });
             });

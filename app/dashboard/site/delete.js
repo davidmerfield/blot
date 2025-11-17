@@ -46,11 +46,11 @@ Delete.route("/")
       if (req.user.paypal.status && req.user.blogs.length > 0) {
         return res.message(
           "/account/delete-blog-paypal",
-          "Deleted " + req.blog.title
+          "Deleted " + req.blog.title,
         );
       }
       res.message("/sites", "Deleted " + req.blog.title);
-    }
+    },
   );
 
 function calculateSubscriptionChange(req, res, next) {
@@ -76,7 +76,7 @@ function calculateSubscriptionChange(req, res, next) {
   if (newQuantity >= currentQuantity) return next();
 
   res.locals.reduction = pretty(
-    (currentQuantity - newQuantity) * req.user.subscription.plan.amount
+    (currentQuantity - newQuantity) * req.user.subscription.plan.amount,
   );
   req.newQuantity = newQuantity;
 
@@ -104,7 +104,7 @@ function decreaseSubscription(req, res, next) {
         Email.SUBSCRIPTION_DECREASE(req.user.uid);
         next();
       });
-    }
+    },
   );
 }
 

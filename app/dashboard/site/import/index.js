@@ -4,7 +4,9 @@ const { join } = require("path");
 const tempDir = require("helper/tempDir")();
 const fs = require("fs-extra");
 const list = require("./list");
-const sse = require("helper/sse")({ channel: (req) => `import:status:${req.blog.id}` });
+const sse = require("helper/sse")({
+  channel: (req) => `import:status:${req.blog.id}`,
+});
 
 Import.use((req, res, next) => {
   res.locals.importBase = res.locals.base + "/import";
@@ -14,11 +16,11 @@ Import.use((req, res, next) => {
 
 Import.param("importID", async (req, res, next) => {
   const blogImportDirectory = await fs.realpath(
-    join(tempDir, "import", req.blog.id)
+    join(tempDir, "import", req.blog.id),
   );
 
   const userSuppliedImportDirectory = await fs.realpath(
-    join(tempDir, "import", req.blog.id, req.params.importID)
+    join(tempDir, "import", req.blog.id, req.params.importID),
   );
 
   if (!userSuppliedImportDirectory.startsWith(blogImportDirectory)) {
@@ -44,7 +46,7 @@ Import.get("/download/:importID", async function (req, res, next) {
     try {
       identifier = await fs.readFile(
         join(req.importDirectory, "identifier.txt"),
-        "utf-8"
+        "utf-8",
       );
     } catch (e) {}
 

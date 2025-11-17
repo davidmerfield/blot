@@ -55,16 +55,15 @@ code.hljs {
   color: #cdcdcd;
 }
 
-
 /* purposely do not highlight these things */
 .hljs-formula,
 .hljs-params,
-.hljs-property
-{}
+.hljs-property {
+}
 
 /* base03 - #4A4A4A -  Comments, Invisibles, Line Highlighting */
 .hljs-comment {
-  color: #4A4A4A;
+  color: #4a4a4a;
 }
 
 /* base04 - #707070 -  Dark Foreground (Used for status bars) */
@@ -106,13 +105,12 @@ code.hljs {
 /* base0A - Classes, Markup Bold, Search Text Background */
 .hljs-title,
 .hljs-class .hljs-title,
-.hljs-title.class_
-{
+.hljs-title.class_ {
   color: #e6db74;
 }
 
 .hljs-strong {
-  font-weight:bold;
+  font-weight: bold;
   color: #e6db74;
 }
 
@@ -126,7 +124,7 @@ code.hljs {
 
 /* base0C - Support, Regular Expressions, Escape Characters, Markup Quotes */
 .hljs-built_in,
-.hljs-doctag, /* guessing */
+.hljs-doctag /* guessing */,
 .hljs-quote,
 .hljs-keyword.hljs-atrule,
 .hljs-regexp {
@@ -145,10 +143,10 @@ code.hljs {
 /* base0E - Keywords, Storage, Selector, Markup Italic, Diff Changed */
 .hljs-type,
 /* .hljs-selector-id, */
-/* .hljs-selector-class, */
-/* .hljs-selector-attr, */
-/* .hljs-selector-pseudo, */
-.hljs-template-tag,
+  /* .hljs-selector-class, */
+  /* .hljs-selector-attr, */
+  /* .hljs-selector-pseudo, */
+  .hljs-template-tag,
 .diff .hljs-meta,
 .hljs-keyword {
   color: #9e6ffe;
@@ -165,13 +163,12 @@ code.hljs {
   from leaking into meta by accident
 */
 .hljs-meta .hljs-keyword,
-.hljs-meta .hljs-string
-{
+.hljs-meta .hljs-string {
   color: #e8b882;
 }
 
 .hljs-meta .hljs-keyword,
 /* for v10 compatible themes */
-.hljs-meta-keyword {
+  .hljs-meta-keyword {
   font-weight: bold;
 }

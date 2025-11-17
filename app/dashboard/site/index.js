@@ -21,7 +21,7 @@ site.post(
   trace("saved avatar"),
   save.removeTmpFiles,
   trace("removed any tmp files"),
-  save.finish
+  save.finish,
 );
 
 site.get("/", require("./load/scheduled"));
@@ -61,11 +61,11 @@ site.use("/settings", (req, res, next) => {
   next();
 });
 
-site.get("/settings", load.plugins,  (req, res) => {
+site.get("/settings", load.plugins, (req, res) => {
   res.render("dashboard/site/settings");
 });
 
-site.get("/settings/images", load.plugins,  (req, res) => {
+site.get("/settings/images", load.plugins, (req, res) => {
   res.render("dashboard/site/settings/images");
 });
 

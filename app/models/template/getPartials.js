@@ -17,9 +17,11 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
   var Entry = require("../entry");
   var allPartials = {};
   var retrieve = {};
-  var getEntry = promisify((blogID, partial, cb) => Entry.get(blogID, partial, function(entry){
-    cb(null, entry);
-  }));
+  var getEntry = promisify((blogID, partial, cb) =>
+    Entry.get(blogID, partial, function (entry) {
+      cb(null, entry);
+    }),
+  );
 
   for (var i in partials) if (partials[i]) allPartials[i] = partials[i];
 
@@ -80,7 +82,7 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
           });
         }
       },
-      done
+      done,
     );
   }
 };

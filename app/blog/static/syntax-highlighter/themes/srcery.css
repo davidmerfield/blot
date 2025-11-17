@@ -8,27 +8,27 @@ Date: 2021-04-13
 */
 
 .hljs {
-  background: #1C1B19; /* Black */
-  color: #FCE8C3; /* Bright White */
+  background: #1c1b19; /* Black */
+  color: #fce8c3; /* Bright White */
 }
 
 /* Bright White */
 .hljs-subst,
 .hljs-quote,
 .hljs-literal {
-  color: #FCE8C3;
+  color: #fce8c3;
 }
 
 /* Bright Blue */
 .hljs-type,
 .hljs-symbol {
-  color: #68A8E4;
+  color: #68a8e4;
 }
 
 /* Red */
 .hljs-keyword,
 .hljs-deletion {
-  color: #EF2F27;
+  color: #ef2f27;
 }
 
 /* Yellow */
@@ -41,7 +41,7 @@ Date: 2021-04-13
 .hljs-selector-pseudo,
 .hljs-section,
 .hljs-title {
-  color: #FBB829;
+  color: #fbb829;
 }
 
 /* Cyan */
@@ -50,7 +50,7 @@ Date: 2021-04-13
 .hljs-property,
 .hljs-template-variable,
 .hljs-class {
-  color: #0AAEB3;
+  color: #0aaeb3;
 }
 
 /* Bright Green */
@@ -58,19 +58,19 @@ Date: 2021-04-13
 .hljs-regexp,
 .hljs-bullet,
 .hljs-addition {
-  color: #98BC37;
+  color: #98bc37;
 }
 
 /* Bright Magenta */
 .hljs-built_in,
 .hljs-params {
-  color: #FF5C8F;
+  color: #ff5c8f;
 }
 
 /* Blue */
 .hljs-template-tag,
 .hljs-selector-tag {
-  color: #2C78BF;
+  color: #2c78bf;
 }
 
 /* Bright Black */

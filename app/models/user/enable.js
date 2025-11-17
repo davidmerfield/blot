@@ -28,7 +28,7 @@ module.exports = function enable(user, updates, callback) {
       function (blogID, next) {
         setBlog(blogID, { isDisabled: false }, next);
       },
-      callback
+      callback,
     );
   });
 };

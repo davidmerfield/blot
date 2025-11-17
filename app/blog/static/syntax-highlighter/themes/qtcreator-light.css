@@ -2,7 +2,6 @@
 Qt Creator light color scheme
 */
 
-
 .hljs {
   color: #000000;
   background: #ffffff;
@@ -21,8 +20,7 @@ Qt Creator light color scheme
   color: #000080;
 }
 
-.hljs-code
-.hljs-selector-class {
+.hljs-code .hljs-selector-class {
   color: #800080;
 }
 
@@ -55,7 +53,7 @@ Qt Creator light color scheme
 .hljs-params,
 .hljs-title.class_,
 .hljs-class .hljs-title {
-  color: #0055AF;
+  color: #0055af;
 }
 
 .hljs-string,

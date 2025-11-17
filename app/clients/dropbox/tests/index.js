@@ -31,9 +31,7 @@ describe("dropbox client", function () {
                   afterSync(function (err) {
                     if (err) return done.fail(err);
 
-                    expect(
-                      fs.existsSync(blogDirectory + path)
-                    ).toEqual(false);
+                    expect(fs.existsSync(blogDirectory + path)).toEqual(false);
                     done();
                   });
                 });
@@ -69,10 +67,7 @@ describe("dropbox client", function () {
             if (err) return done.fail(err);
 
             try {
-              otherContents = fs.readFileSync(
-                blogDirectory + path,
-                "utf-8"
-              );
+              otherContents = fs.readFileSync(blogDirectory + path, "utf-8");
             } catch (e) {
               return done.fail(e);
             }

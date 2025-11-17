@@ -3,7 +3,7 @@ const fs = require("fs-extra");
 const STATS_DIRECTORY = require("./statsDirectory") + "/redis";
 const client = require("models/client");
 
-async function main () {
+async function main() {
   console.log("computing redis stats");
   const stats = await getAllStats();
 
@@ -25,7 +25,7 @@ async function main () {
       root_disk_used: parseInt(stat.root_disk_used),
       system_memory: parseInt(stat.system_memory),
       used_memory: parseInt(stat.used_memory),
-      date: moment(minute, "YYYY-MM-DD-HH-mm").valueOf()
+      date: moment(minute, "YYYY-MM-DD-HH-mm").valueOf(),
     };
 
     // initialize the current minute and hour
@@ -47,7 +47,7 @@ async function main () {
         "existingHourLength",
         existingHourLength,
         "hourData.length",
-        hourData.length
+        hourData.length,
       );
 
       if (hourData.length > existingHourLength) {
@@ -63,7 +63,7 @@ async function main () {
   console.log("done computing redis stats");
 }
 
-async function getAllStats () {
+async function getAllStats() {
   return new Promise((resolve, reject) => {
     const key = "blot:stats";
     client.lrange(key, 0, -1, (err, data) => {
@@ -76,7 +76,7 @@ async function getAllStats () {
             if (a.timestamp > b.timestamp) return 1;
             return 0;
           })
-          .reverse()
+          .reverse(),
       );
     });
   });

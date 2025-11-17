@@ -44,7 +44,6 @@ describe("template", function () {
   });
 
   it("updates the CDN manifest when metadata locals change", async function () {
-
     await this.setView({
       name: "style.css",
       content: "body { color: {{background_color}}; }",
@@ -83,5 +82,4 @@ describe("template", function () {
     expect(nextMetadata.cdn["style.css"]).toEqual(jasmine.any(String));
     expect(nextMetadata.cdn["style.css"]).not.toEqual(updatedHash);
   });
-
 });

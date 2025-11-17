@@ -61,7 +61,10 @@ function listUnpaidInvoices(req, res, next) {
     });
 
     if (!res.locals.amountDue) {
-      return res.message("/sites", "Thank you, your account is in good standing!");
+      return res.message(
+        "/sites",
+        "Thank you, your account is in good standing!",
+      );
     }
 
     res.locals.amountDue = prettyPrice(res.locals.amountDue);
@@ -74,7 +77,10 @@ function formatStripeError(err, fallbackMessage) {
   if (!err) return err;
 
   var message =
-    (err.raw && err.raw.message) || err.message || fallbackMessage || "Stripe error";
+    (err.raw && err.raw.message) ||
+    err.message ||
+    fallbackMessage ||
+    "Stripe error";
 
   var declineCode =
     (err.raw && err.raw.decline_code) || err.decline_code || err.code;
@@ -110,7 +116,7 @@ function updateCard(req, res, next) {
   function handleCustomerUpdate(err, customer) {
     if (err)
       return next(
-        formatStripeError(err, "Unable to update your payment method.")
+        formatStripeError(err, "Unable to update your payment method."),
       );
 
     storeCustomerOnRequest(req, customer);
@@ -122,7 +128,7 @@ function updateCard(req, res, next) {
   if (stripeToken.indexOf("pm_") === 0) {
     if (!stripe.paymentMethods || !stripe.paymentMethods.attach) {
       return next(
-        new Error("Stripe payment methods are not supported on this server.")
+        new Error("Stripe payment methods are not supported on this server."),
       );
     }
 
@@ -132,7 +138,7 @@ function updateCard(req, res, next) {
       function (err) {
         if (err)
           return next(
-            formatStripeError(err, "Unable to attach your payment method.")
+            formatStripeError(err, "Unable to attach your payment method."),
           );
 
         stripe.customers.update(
@@ -140,9 +146,9 @@ function updateCard(req, res, next) {
           {
             invoice_settings: { default_payment_method: stripeToken },
           },
-          handleCustomerUpdate
+          handleCustomerUpdate,
         );
-      }
+      },
     );
 
     return;
@@ -151,7 +157,7 @@ function updateCard(req, res, next) {
   stripe.customers.update(
     req.customer,
     { card: stripeToken },
-    handleCustomerUpdate
+    handleCustomerUpdate,
   );
 }
 
@@ -176,18 +182,18 @@ function payUnpaidInvoices(req, res, next) {
         if (Object.keys(options).length) {
           stripe.invoices.pay(invoice.id, options, function (err) {
             nextInvoice(
-              formatStripeError(err, "Unable to pay outstanding invoices.")
+              formatStripeError(err, "Unable to pay outstanding invoices."),
             );
           });
         } else {
           stripe.invoices.pay(invoice.id, function (err) {
             nextInvoice(
-              formatStripeError(err, "Unable to pay outstanding invoices.")
+              formatStripeError(err, "Unable to pay outstanding invoices."),
             );
           });
         }
       },
-      next
+      next,
     );
   });
 }
@@ -206,7 +212,7 @@ function updateSubscription(req, res, next) {
 
         next();
       });
-    }
+    },
   );
 }
 

@@ -1,15 +1,31 @@
 @font-face {
-  font-family: 'Michroma';
+  font-family: "Michroma";
   font-style: normal;
   font-weight: 400;
-  src: url('{{{config.cdn.origin}}}/fonts/michroma/400.eot?version=ec40c3&extension=.eot'); 
-  src: url('{{{config.cdn.origin}}}/fonts/michroma/400.eot?version=ec40c3&extension=.eot#iefix') format('embedded-opentype'), 
-       url('{{{config.cdn.origin}}}/fonts/michroma/400.woff?version=322af5&extension=.woff') format('woff'),
-       url('{{{config.cdn.origin}}}/fonts/michroma/400.ttf?version=11e1ac&extension=.ttf') format('truetype'),
-       url('{{{config.cdn.origin}}}/fonts/michroma/400.otf?version=8ce1b9&extension=.otf') format('opentype');
+  src: url("{{{config.cdn.origin}}}/fonts/michroma/400.eot?version=ec40c3&extension=.eot");
+  src:
+    url("{{{config.cdn.origin}}}/fonts/michroma/400.eot?version=ec40c3&extension=.eot#iefix")
+    format("embedded-opentype"),
+    url("{{{config.cdn.origin}}}/fonts/michroma/400.woff?version=322af5&extension=.woff")
+    format("woff"),
+    url("{{{config.cdn.origin}}}/fonts/michroma/400.ttf?version=11e1ac&extension=.ttf")
+    format("truetype"),
+    url("{{{config.cdn.origin}}}/fonts/michroma/400.otf?version=8ce1b9&extension=.otf")
+    format("opentype");
 }
-.pull-double {margin-left:-0.375em}
-.push-double{margin-right:0.375em}
-.pull-single{margin-left:-0.21875em}
-.push-single{margin-right:0.21875em}
-.push-double,.push-single{display:inline-block}
+.pull-double {
+  margin-left: -0.375em;
+}
+.push-double {
+  margin-right: 0.375em;
+}
+.pull-single {
+  margin-left: -0.21875em;
+}
+.push-single {
+  margin-right: 0.21875em;
+}
+.push-double,
+.push-single {
+  display: inline-block;
+}

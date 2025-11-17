@@ -44,6 +44,6 @@ module.exports = function (blog, path, metadata, html, callback) {
       debug(blog.id, "final thumbnails", thumbnails);
 
       callback(null, thumbnails);
-    }
+    },
   );
 };

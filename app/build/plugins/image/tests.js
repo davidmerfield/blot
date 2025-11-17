@@ -57,7 +57,7 @@ describe("image", function () {
         if (err) return done.fail(err);
 
         expect(metadata.icc).toBeDefined();
-        expect(metadata.icc).toContain('P3'); // Ensure it is preserved
+        expect(metadata.icc).toContain("P3"); // Ensure it is preserved
 
         done();
       });
@@ -140,7 +140,7 @@ describe("image", function () {
 
           // Ensure cached image is same aspect ratio as original
           expect(Math.floor(cachedInfo.height / cachedInfo.width)).toEqual(
-            Math.floor(originalInfo.height / originalInfo.width)
+            Math.floor(originalInfo.height / originalInfo.width),
           );
 
           test.result = result;
@@ -180,7 +180,7 @@ describe("image", function () {
     });
   });
 
-  function extractCachedImagePaths (blog, html) {
+  function extractCachedImagePaths(blog, html) {
     var paths = [];
     var $ = cheerio.load(html, null, false);
 
@@ -201,7 +201,7 @@ describe("image", function () {
     return paths;
   }
 
-  function verifyCachedImagesExist (imagePaths) {
+  function verifyCachedImagesExist(imagePaths) {
     imagePaths.forEach(function (path) {
       try {
         // Does the cached image exist on disk?
@@ -214,7 +214,7 @@ describe("image", function () {
   }
 
   // Wrapper around dumb API for this plugin
-  function render (blog, html, callback) {
+  function render(blog, html, callback) {
     var options = { blogID: blog.id };
     var $ = cheerio.load(html, null, false);
 
@@ -223,7 +223,7 @@ describe("image", function () {
       function () {
         callback(null, $.html());
       },
-      options
+      options,
     );
   }
 });

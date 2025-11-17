@@ -1,8 +1,8 @@
 var TYPES = {
-    "undefined": "undefined",
-    "number": "number",
-    "boolean": "boolean",
-    "string": "string",
+    undefined: "undefined",
+    number: "number",
+    boolean: "boolean",
+    string: "string",
     "[object Function]": "function",
     "[object RegExp]": "regexp",
     "[object Array]": "array",
@@ -67,7 +67,7 @@ function seriesItem(list, doThis, callback) {
       }
 
       setImmediate(nextItem);
-    })
+    }),
   );
 }
 
@@ -86,7 +86,7 @@ function seriesPair(list, doThis, callback) {
       }
 
       setImmediate(nextItem);
-    })
+    }),
   );
 }
 
@@ -196,20 +196,20 @@ function doNothing() {}
 
 function badDoThis(doThis) {
   return new TypeError(
-    "ForEach must be invoked a function. Do this is:" + doThis
+    "ForEach must be invoked a function. Do this is:" + doThis,
   );
 }
 
 function badCallback(callback) {
   return new TypeError(
     "ForEach must be passed a callback which is a function. callback is:" +
-      callback
+      callback,
   );
 }
 
 function badItems(items) {
   return new TypeError(
-    "ForEach must be passed a list of object. It was " + items
+    "ForEach must be passed a list of object. It was " + items,
   );
 }
 
@@ -249,10 +249,10 @@ function massiveParallelList(cb) {
         list,
         longList(100000).map(function (n) {
           return n * 10;
-        })
+        }),
       );
       cb();
-    }
+    },
   );
 }
 
@@ -275,10 +275,10 @@ function massiveSeriesList(cb) {
         list,
         longList(100000).map(function (n) {
           return n * 2;
-        })
+        }),
       );
       cb();
-    }
+    },
   );
 }
 
@@ -300,7 +300,7 @@ function delayedSeriesList(cb) {
     function () {
       console.log("All done!");
       cb();
-    }
+    },
   );
 }
 
@@ -322,7 +322,7 @@ function delayedParallelList(cb) {
     function () {
       console.log("All done!");
       cb();
-    }
+    },
   );
 }
 
@@ -344,7 +344,7 @@ function multiList(cb) {
     function () {
       console.log("All done!");
       cb();
-    }
+    },
   );
 }
 
@@ -390,7 +390,7 @@ function seriesMassiveObject(cb) {
       console.log("All done!");
       assert.deepEqual(obj, _obj);
       cb();
-    }
+    },
   );
 }
 
@@ -423,7 +423,7 @@ function parallelMassiveObject(cb) {
       console.log("All done!");
       assert.deepEqual(obj, _obj);
       cb();
-    }
+    },
   );
 }
 
@@ -445,7 +445,7 @@ function delayedSeriesObject(cb) {
     function () {
       console.log("All done!");
       cb();
-    }
+    },
   );
 }
 
@@ -467,7 +467,7 @@ function delayedParallelObject(cb) {
     function () {
       console.log("All done!");
       cb();
-    }
+    },
   );
 }
 
@@ -489,7 +489,7 @@ function multiObject(cb) {
     function () {
       console.log("All done!");
       cb();
-    }
+    },
   );
 }
 

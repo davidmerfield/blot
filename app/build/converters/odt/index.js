@@ -12,18 +12,16 @@ var config = require("config");
 var Pandoc = config.pandoc.bin;
 var tempDir = require("helper/tempDir");
 
-function is (path) {
+function is(path) {
   return [".odt"].indexOf(extname(path).toLowerCase()) > -1;
 }
 
-function TempDir () {
+function TempDir() {
   return tempDir() + makeUid(20);
 }
 
-function read (blog, path, callback) {
-  ensure(blog, "object")
-    .and(path, "string")
-    .and(callback, "function");
+function read(blog, path, callback) {
+  ensure(blog, "object").and(path, "string").and(callback, "function");
 
   var localPath = LocalPath(blog.id, path);
 
@@ -54,7 +52,7 @@ function read (blog, path, callback) {
         // memory in corner cases
         "+RTS",
         "-M" + config.pandoc.maxmemory,
-        " -RTS"
+        " -RTS",
       ].join(" ");
 
       var startTime = Date.now();
@@ -72,8 +70,8 @@ function read (blog, path, callback) {
                   "ms) with: " +
                   err +
                   " and message " +
-                  stderr
-              )
+                  stderr,
+              ),
             );
           }
 
@@ -81,7 +79,7 @@ function read (blog, path, callback) {
             // remove everything between '<!--[if lt IE 9]>' and '<![endif]-->' including those comments
             html = html.replace(
               /<!--\[if lt IE 9\]>[\s\S]*<!\[endif\]-->/g,
-              ""
+              "",
             );
 
             var $ = cheerio.load(html, { decodeEntities: false }, false);
@@ -200,10 +198,10 @@ function read (blog, path, callback) {
             callback(null, html, stat);
             fs.remove(outPath, function (err) {});
           });
-        }
+        },
       );
     });
   });
 }
 
-module.exports = { read: read, is: is, id: "odt"};
+module.exports = { read: read, is: is, id: "odt" };

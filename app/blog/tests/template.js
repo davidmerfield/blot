@@ -15,7 +15,7 @@ describe("template engine", function () {
     const res = await this.get(`/`);
 
     expect((await res.text()).trim().toLowerCase()).toEqual(
-      "<p><a href='/second'>second</a></p><p><a href='/first'>first</a></p>"
+      "<p><a href='/second'>second</a></p><p><a href='/first'>first</a></p>",
     );
   });
 
@@ -31,7 +31,7 @@ describe("template engine", function () {
     const res = await this.get(`/tagged/foo`);
 
     expect((await res.text()).trim().toLowerCase()).toEqual(
-      "<p><a href='/second'>second</a></p><p><a href='/first'>first</a></p>"
+      "<p><a href='/second'>second</a></p><p><a href='/first'>first</a></p>",
     );
   });
 
@@ -72,7 +72,7 @@ describe("template engine", function () {
     const res = await this.get(`/`);
 
     expect((await res.text()).trim().toLowerCase()).toEqual(
-      "<p>foo</p><p>foo</p>"
+      "<p>foo</p><p>foo</p>",
     );
   });
 
@@ -111,7 +111,7 @@ describe("template engine", function () {
             },
           },
         },
-      }
+      },
     );
 
     const res = await this.get(`/`);
@@ -132,12 +132,12 @@ describe("template engine", function () {
     await this.template({
       "header.html": "{{> entries.html}}",
     });
-    
+
     const res = await this.fetch(`/`);
     const text = await res.text();
 
     expect(res.status).toBe(400);
-    expect(text).toContain('Error with your template')
+    expect(text).toContain("Error with your template");
   });
 
   it("does not render the contents of an thumbnail block for posts without thumbnails", async function () {
@@ -172,8 +172,8 @@ describe("template engine", function () {
       content: fs.readFileSync(
         require("path").join(
           __dirname,
-          "/../../build/converters/img/tests/gps.jpg"
-        )
+          "/../../build/converters/img/tests/gps.jpg",
+        ),
       ),
     });
 
@@ -185,7 +185,7 @@ describe("template engine", function () {
     const res = await this.get(`/`);
 
     expect((await res.text()).trim()).toEqual(
-      "NIKON COOLPIX P6000 1&#x2F;178 4.5 64 Off, Did not fire 6"
+      "NIKON COOLPIX P6000 1&#x2F;178 4.5 64 Off, Did not fire 6",
     );
   });
 

@@ -26,7 +26,7 @@ module.exports = function delta(client, folderID) {
           path: folderID,
           include_deleted: true,
           recursive: true,
-        })
+        }),
       );
     }
 
@@ -61,7 +61,7 @@ module.exports = function delta(client, folderID) {
             })
             .map(function (entry) {
               entry.relative_path = entry.path_display.slice(
-                result.path_display.length
+                result.path_display.length,
               );
               return entry;
             });

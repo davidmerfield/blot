@@ -13,7 +13,7 @@ var is_path = require("./is_path");
 // then determine the list of dependencies. This modifies
 // the HTML passed to it.
 
-function dependencies (path, html, metadata) {
+function dependencies(path, html, metadata) {
   // In future it would be nice NOT to reparse the HTML
   // Multiple times. The plugins features also do this.
   var $ = cheerio.load(html, { decodeEntities: false }, false);

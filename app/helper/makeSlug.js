@@ -58,7 +58,7 @@ module.exports = function makeSlug(string) {
 
     // maps they've
     .replace(/y['’]v/g, "yv")
-    
+
     // maps apple's to apples
     .replace(/['’]s/g, "s")
 
@@ -67,7 +67,7 @@ module.exports = function makeSlug(string) {
     .replace(/\./g, "-")
     .replace(
       /[\«\»\“\”\‘\–\’\`\~\!\@\#\$\%\^\&\*\(\)\+\=\\\|\]\}\{\[\'\"\;\:\?>\.<\,]/g,
-      "-"
+      "-",
     )
     .replace(/[^[:alnum:]0-9_-\s]/g, "") // remove invalid chars
     .replace(/\s+/g, "-") // collapse whitespace and replace by -

@@ -12,14 +12,14 @@ module.exports = function (req, res, next) {
     Blog.set(req.blog.id, { template: templateID }, function () {
       res.message(
         "/sites/" + req.blog.handle + "/template",
-        "Installed template <b>" + template.name + "</b>"
+        "Installed template <b>" + template.name + "</b>",
       );
 
-      res.locals.templatesInYourFolder.forEach(async t => {
+      res.locals.templatesInYourFolder.forEach(async (t) => {
         // read the package.json file
         const pathsToPackage = [
           `/templates/${t.slug}/package.json`,
-          `/Templates/${t.slug}/package.json`
+          `/Templates/${t.slug}/package.json`,
         ];
 
         let pathToPackageJson;
@@ -35,7 +35,7 @@ module.exports = function (req, res, next) {
         if (!pathToPackageJson) return;
 
         const packageJson = await fs.readJson(
-          localPath(req.blog.id, pathToPackageJson)
+          localPath(req.blog.id, pathToPackageJson),
         );
 
         if (t.id === templateID && packageJson.enabled === true) return;
@@ -45,7 +45,7 @@ module.exports = function (req, res, next) {
         const updatedPackageJSON = JSON.stringify(
           { ...packageJson, enabled: t.id === templateID },
           null,
-          2
+          2,
         );
 
         const client = require("clients")[req.blog.client];
@@ -56,7 +56,7 @@ module.exports = function (req, res, next) {
           fs.outputFile(
             localPath(pathToPackageJson),
             updatedPackageJSON,
-            callback
+            callback,
           );
         } else {
           client.write(
@@ -65,7 +65,7 @@ module.exports = function (req, res, next) {
             updatedPackageJSON,
             function (err) {
               if (err) console.log(err);
-            }
+            },
           );
         }
       });

@@ -57,7 +57,7 @@ module.exports = function ($, output_directory, callback) {
           encoding,
           mime_type,
           size,
-          file_name
+          file_name,
         );
 
         files[hash_id || file_name] = { name: file_name, path: file_path };
@@ -68,6 +68,6 @@ module.exports = function ($, output_directory, callback) {
     function () {
       console.log("here!");
       callback(null, files);
-    }
+    },
   );
 };

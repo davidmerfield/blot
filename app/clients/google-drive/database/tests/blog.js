@@ -258,13 +258,15 @@ describe("google drive database.blog", function () {
       serviceAccountId,
       (blogID, blogData) => {
         result.push({ blogID, blogData });
-      }
+      },
     );
 
-    expect(result.sort((a, b) => a.blogID.localeCompare(b.blogID))).toEqual([
-      { blogID: blogID1, blogData: { foo: "bar", serviceAccountId } },
-      { blogID: blogID2, blogData: { baz: "bat", serviceAccountId } },
-    ].sort((a, b) => a.blogID.localeCompare(b.blogID)));
+    expect(result.sort((a, b) => a.blogID.localeCompare(b.blogID))).toEqual(
+      [
+        { blogID: blogID1, blogData: { foo: "bar", serviceAccountId } },
+        { blogID: blogID2, blogData: { baz: "bat", serviceAccountId } },
+      ].sort((a, b) => a.blogID.localeCompare(b.blogID)),
+    );
   });
 
   it("should remove a blog from the old serviceAccountId set when the serviceAccountId changes", async function () {
@@ -386,7 +388,7 @@ describe("google drive database.blog", function () {
       serviceAccountId,
       (blogID, blogData) => {
         result.push({ blogID, blogData });
-      }
+      },
     );
 
     expect(result).toEqual([]);
@@ -422,7 +424,7 @@ describe("google drive database.blog", function () {
     const blogIDs = [];
 
     await database.blog.iterateByServiceAccountId(serviceAccountId, (id) => {
-        blogIDs.push(id);
+      blogIDs.push(id);
     });
 
     expect(blogIDs).toContain(blogID);
@@ -432,10 +434,9 @@ describe("google drive database.blog", function () {
     const updatedBlogIDs = [];
 
     await database.blog.iterateByServiceAccountId(serviceAccountId, (id) => {
-        updatedBlogIDs.push(id);
+      updatedBlogIDs.push(id);
     });
 
     expect(updatedBlogIDs).toContain(blogID);
   });
-
 });

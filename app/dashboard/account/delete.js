@@ -43,7 +43,7 @@ Delete.route("/")
     logout,
     function (req, res) {
       res.redirect("/sites/deleted");
-    }
+    },
   );
 
 function emailUser(req, res, next) {
@@ -51,7 +51,7 @@ function emailUser(req, res, next) {
     return Email.ACCOUNT_DELETION_REFUND(
       "",
       Object.assign({}, req.user, { refund: req.refund }),
-      next
+      next,
     );
   }
 
@@ -81,7 +81,7 @@ async function deleteSubscription(req, res, next) {
           body: JSON.stringify({
             reason: "Customer deleted account",
           }),
-        }
+        },
       );
 
       if (response.status !== 204) {
@@ -97,7 +97,7 @@ async function deleteSubscription(req, res, next) {
       }
 
       const deleted = await client.customers.del(
-        req.user.subscription.customer
+        req.user.subscription.customer,
       );
 
       if (!deleted || deleted.deleted !== true) {
@@ -141,13 +141,13 @@ async function ensureIssueDeletionRefund(req) {
     const stripeEligible = Boolean(
       req.user.subscription?.customer &&
         stripeCreatedMs &&
-        now - stripeCreatedMs <= THIRTY_DAYS_MS
+        now - stripeCreatedMs <= THIRTY_DAYS_MS,
     );
 
     const paypalEligible = Boolean(
       req.user.paypal?.id &&
         paypalStartMs &&
-        now - paypalStartMs <= THIRTY_DAYS_MS
+        now - paypalStartMs <= THIRTY_DAYS_MS,
     );
 
     if (!stripeEligible && !paypalEligible) return;
@@ -193,7 +193,7 @@ async function issueStripeRefund(req, now) {
     .map((invoice) => ({ invoice, createdMs: toMs(invoice.created) }))
     .filter(
       ({ createdMs }) =>
-        typeof createdMs === "number" && now - createdMs <= THIRTY_DAYS_MS
+        typeof createdMs === "number" && now - createdMs <= THIRTY_DAYS_MS,
     );
 
   if (!eligibleInvoices.length) return false;
@@ -214,9 +214,7 @@ async function issueStripeRefund(req, now) {
 
   if (!refund) return false;
 
-  const currency = refund.currency
-    ? refund.currency.toUpperCase()
-    : undefined;
+  const currency = refund.currency ? refund.currency.toUpperCase() : undefined;
   const amount = refund.amount;
 
   req.refund = {
@@ -260,7 +258,10 @@ async function issuePaypalRefund(req, now, startMs) {
   if (!capture) return false;
 
   const captureId =
-    capture.capture_id || capture.id || capture.transaction_id || capture.resource_id;
+    capture.capture_id ||
+    capture.id ||
+    capture.transaction_id ||
+    capture.resource_id;
 
   if (!captureId) return false;
 
@@ -273,7 +274,7 @@ async function issuePaypalRefund(req, now, startMs) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({}),
-    }
+    },
   );
 
   if (!refundResponse.ok) {
@@ -295,7 +296,10 @@ async function issuePaypalRefund(req, now, startMs) {
     req.user.paypal?.currency;
   const currency = rawCurrency ? rawCurrency.toUpperCase() : undefined;
   const amountValue =
-    amountInfo?.value ?? amountInfo?.total ?? amountInfo?.amount ?? amountInfo?.gross;
+    amountInfo?.value ??
+    amountInfo?.total ??
+    amountInfo?.amount ??
+    amountInfo?.gross;
 
   const amountCents = toCents(amountValue);
 
@@ -324,7 +328,9 @@ function selectMostRecentCapture(transactions) {
       return typeof status === "string" && status.toUpperCase() === "COMPLETED";
     })
     .reduce((latest, transaction) => {
-      const transactionTime = toMs(transaction.time || transaction.transaction_time);
+      const transactionTime = toMs(
+        transaction.time || transaction.transaction_time,
+      );
       const latestTime = toMs(latest?.time || latest?.transaction_time) || 0;
 
       if (!latest) return transaction;
@@ -394,7 +400,7 @@ function toCents(value) {
 
 function buildPaypalAuthHeader() {
   return `Basic ${Buffer.from(
-    `${config.paypal.client_id}:${config.paypal.secret}`
+    `${config.paypal.client_id}:${config.paypal.secret}`,
   ).toString("base64")}`;
 }
 
@@ -498,7 +504,7 @@ if (Delete.exports !== undefined)
   throw new Error(
     "Delete.exports is defined (typeof=" +
       typeof Delete.exports +
-      ") Would clobber Delete.exports"
+      ") Would clobber Delete.exports",
   );
 
 Delete.exports = {

@@ -7,8 +7,7 @@
   width: 100%;
 }
 
-
-.call-to-action  {
+.call-to-action {
   display: flex;
   justify-content: space-between;
   padding: 12px 0;
@@ -40,13 +39,11 @@
   background-color: var(--light-background-color);
 }
 
-
-
 .header label {
   display: none;
   margin: 0;
   cursor: pointer;
-  color: var(--accent-color)
+  color: var(--accent-color);
 }
 
 .header a:hover {

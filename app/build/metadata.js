@@ -4,7 +4,7 @@ const YAML = require("yaml");
 
 const alphaNumericRegEx = /^([a-zA-Z0-9\-_ ]+)$/;
 
-function Metadata (html) {
+function Metadata(html) {
   ensure(html, "string");
 
   // We try and normalize all the different ways to end a line
@@ -41,7 +41,7 @@ function Metadata (html) {
 
       // Map { Permalink } to { permalink }
       // Blot uses lowercase metadata keys
-      Object.keys(mixedCaseMetadata).forEach(mixedCaseKey => {
+      Object.keys(mixedCaseMetadata).forEach((mixedCaseKey) => {
         let key = mixedCaseKey.toLowerCase();
         let value = mixedCaseMetadata[mixedCaseKey];
 
@@ -173,7 +173,7 @@ function Metadata (html) {
 
   return {
     html: html,
-    metadata: metadata
+    metadata: metadata,
   };
 }
 

@@ -133,7 +133,7 @@ module.exports = function download_images(post, callback) {
         post.html = $.html();
 
         callback(null, post);
-      }
+      },
     );
   });
 };

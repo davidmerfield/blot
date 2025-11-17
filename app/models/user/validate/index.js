@@ -55,6 +55,6 @@ module.exports = function validate(user, updates, callback) {
       }
 
       return callback(null, user, changes);
-    }
+    },
   );
 };

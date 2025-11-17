@@ -4,7 +4,7 @@ const async = require("async");
 const prettyPrice = require("helper/prettyPrice");
 const prettyNumber = require("helper/prettyNumber");
 
-function main (callback) {
+function main(callback) {
   var annual_recurring_revenue = 0;
   var paypal_annual_recurring_revenue = 0;
   var revenue_billed_monthly = 0;
@@ -56,13 +56,13 @@ function main (callback) {
             100
           ).toFixed(1) + "%",
         annual_recurring_revenue: prettyPrice(
-          Math.floor(annual_recurring_revenue / 100) * 100
+          Math.floor(annual_recurring_revenue / 100) * 100,
         ),
         monthly_recurring_revenue: prettyPrice(
-          Math.floor(Math.floor(annual_recurring_revenue / 12) / 100) * 100
+          Math.floor(Math.floor(annual_recurring_revenue / 12) / 100) * 100,
         ),
         total_customers,
-        total_active_blogs: prettyNumber(total_active_blogs)
+        total_active_blogs: prettyNumber(total_active_blogs),
       });
     });
   });

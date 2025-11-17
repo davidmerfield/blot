@@ -36,13 +36,13 @@ describe("build", function () {
     this.syncAndCheck(
       [
         { path: "/Templates/foo.txt", content: this.fake.file() },
-        { path: "/templates/bar.txt", content: this.fake.file() }
+        { path: "/templates/bar.txt", content: this.fake.file() },
       ],
       [
         { path: "/Templates/foo.txt", ignored: true },
-        { path: "/templates/bar.txt", ignored: true }
+        { path: "/templates/bar.txt", ignored: true },
       ],
-      done
+      done,
     );
   });
 
@@ -51,14 +51,14 @@ describe("build", function () {
       [
         { path: "/Posts/_foo.txt", content: this.fake.file() },
         { path: "/_Pages/bar.txt", content: this.fake.file() },
-        { path: "/Mean/_bar/Ba/t.txt", content: this.fake.file() }
+        { path: "/Mean/_bar/Ba/t.txt", content: this.fake.file() },
       ],
       [
         { path: "/Posts/_foo.txt", ignored: true },
         { path: "/_Pages/bar.txt", ignored: true },
-        { path: "/Mean/_bar/Ba/t.txt", ignored: true }
+        { path: "/Mean/_bar/Ba/t.txt", ignored: true },
       ],
-      done
+      done,
     );
   });
 
@@ -67,14 +67,14 @@ describe("build", function () {
       [
         { path: "/.foo.txt", content: this.fake.file() },
         { path: "/.pages/bar.txt", content: this.fake.file() },
-        { path: "/mean/.bar/Ba/t.txt", content: this.fake.file() }
+        { path: "/mean/.bar/Ba/t.txt", content: this.fake.file() },
       ],
       [
         { path: "/.foo.txt", ignored: true },
         { path: "/.pages/bar.txt", ignored: true },
-        { path: "/mean/.bar/Ba/t.txt", ignored: true }
+        { path: "/mean/.bar/Ba/t.txt", ignored: true },
       ],
-      done
+      done,
     );
   });
 
@@ -101,7 +101,7 @@ describe("build", function () {
         const entry = { path, url: "/post/foo" };
 
         ctx.syncAndCheck(file, entry, done);
-      }
+      },
     );
   });
 
@@ -154,13 +154,13 @@ describe("build", function () {
 
     const files = [
       { path, content },
-      { path: imagePath, content: imageContent }
+      { path: imagePath, content: imageContent },
     ];
 
     const entry = {
       path,
-      html: result =>
-        result.indexOf("cdn.") > -1 && result.indexOf(this.blog.id) > -1
+      html: (result) =>
+        result.indexOf("cdn.") > -1 && result.indexOf(this.blog.id) > -1,
     };
 
     this.syncAndCheck(files, entry, done);

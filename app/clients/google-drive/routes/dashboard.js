@@ -18,7 +18,7 @@ dashboard.use(async function (req, res, next) {
 
   if (res.locals.account && res.locals.account.serviceAccountId) {
     res.locals.serviceAccount = await database.serviceAccount.get(
-      res.locals.account.serviceAccountId
+      res.locals.account.serviceAccountId,
     );
   }
 
@@ -54,7 +54,7 @@ dashboard.route("/setup").get(async function (req, res) {
 
     const otherBlogIDs = req.user.blogs.filter((id) => id !== req.blog.id);
     const otherDriveAccounts = await Promise.all(
-      otherBlogIDs.map((id) => database.blog.get(id))
+      otherBlogIDs.map((id) => database.blog.get(id)),
     );
 
     otherDriveAccounts.forEach((account) => {
@@ -76,7 +76,11 @@ dashboard
     const existingAccount = await database.blog.get(req.blog.id);
 
     if (req.body.cancel) {
-      if (existingAccount && existingAccount.folderId && !existingAccount.error) {
+      if (
+        existingAccount &&
+        existingAccount.folderId &&
+        !existingAccount.error
+      ) {
         return res.redirect(req.baseUrl);
       } else {
         return disconnect(req.blog.id, next);
@@ -87,7 +91,11 @@ dashboard
       return res.message(req.baseUrl, "Please enter your email address");
     }
 
-    if (existingAccount && existingAccount.email === req.body.email && !existingAccount.error) {
+    if (
+      existingAccount &&
+      existingAccount.email === req.body.email &&
+      !existingAccount.error
+    ) {
       return res.redirect(req.baseUrl);
     }
 
@@ -123,7 +131,7 @@ dashboard
     } catch (e) {
       return res.message(
         req.baseUrl,
-        "Failed to connect to Google Drive. Please try again later."
+        "Failed to connect to Google Drive. Please try again later.",
       );
     }
 
@@ -134,7 +142,7 @@ dashboard
     } catch (e) {
       return res.message(
         req.baseUrl,
-        "Your folder is busy. Please try again later."
+        "Your folder is busy. Please try again later.",
       );
     }
 

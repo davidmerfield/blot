@@ -25,7 +25,7 @@ const set = promisify(database.set);
 // 2. then remove one
 // 3. then re-connect another
 async function createFolder(account) {
-  const { client, full_access } = account;  
+  const { client, full_access } = account;
   const { blogToMove, blogsInAppFolder } = await checkAppFolder(account);
   const shouldCreateFolder = full_access || blogToMove || blogsInAppFolder;
 

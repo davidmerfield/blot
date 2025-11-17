@@ -30,7 +30,7 @@ function summary($, title) {
   // will be exluded
   // ```
   $(
-    "pre, .katex, script, object, iframe, style, h1, h2, h3, h4, h5, h6, img + .caption"
+    "pre, .katex, script, object, iframe, style, h1, h2, h3, h4, h5, h6, img + .caption",
   ).remove();
 
   // add a space before the end of
@@ -41,7 +41,7 @@ function summary($, title) {
 
   title = normalize(title);
   summary = normalize($(":root").text());
-  
+
   if (summary.length > MAX_LENGTH) {
     summary = summary.slice(0, MAX_LENGTH);
     summary = summary.trim();

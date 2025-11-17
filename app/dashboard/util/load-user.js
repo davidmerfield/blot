@@ -32,7 +32,12 @@ module.exports = function (req, res, next) {
     req.user = User.extend(user);
     res.locals.user = user;
 
-    if (user.needsToPay && req.originalUrl !== PAY && req.originalUrl !== DELETE && req.originalUrl !== LOGOUT) {
+    if (
+      user.needsToPay &&
+      req.originalUrl !== PAY &&
+      req.originalUrl !== DELETE &&
+      req.originalUrl !== LOGOUT
+    ) {
       return res.redirect(PAY);
     }
 

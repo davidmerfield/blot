@@ -4,7 +4,10 @@ const clfdate = require("helper/clfdate");
 const prefix = () => `${clfdate()} Google Drive client:`;
 
 const config = require("config");
-const WEBHOOK_HOST = config.environment === "development" ? config.webhooks.relay_host : config.host;
+const WEBHOOK_HOST =
+  config.environment === "development"
+    ? config.webhooks.relay_host
+    : config.host;
 const CHANNEL_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 module.exports = async function watchChanges(serviceAccountId, drive) {
@@ -14,10 +17,14 @@ module.exports = async function watchChanges(serviceAccountId, drive) {
 
   const now = Date.now();
 
-  console.log(prefix(), `Service account client_id=${serviceAccountId} Ensuring service account is watching for changes`);
+  console.log(
+    prefix(),
+    `Service account client_id=${serviceAccountId} Ensuring service account is watching for changes`,
+  );
 
   // Step 1: Check for existing valid channels
-  const existingChannels = await database.channel.listByServiceAccount(serviceAccountId);
+  const existingChannels =
+    await database.channel.listByServiceAccount(serviceAccountId);
   if (existingChannels && existingChannels.length > 0) {
     for (const channelId of existingChannels) {
       const channelData = await database.channel.get(channelId);
@@ -32,14 +39,17 @@ module.exports = async function watchChanges(serviceAccountId, drive) {
           prefix(),
           `Service account client_id=${serviceAccountId} Existing channel ${channelId} is valid and will expire in ${
             (Number(channelData.expiration) - now) / 1000 / 60
-          } minutes`
+          } minutes`,
         );
         return;
       }
     }
   }
 
-  console.log(prefix(), `Service account client_id=${serviceAccountId} Setting up new changes.watch channel`);
+  console.log(
+    prefix(),
+    `Service account client_id=${serviceAccountId} Setting up new changes.watch channel`,
+  );
 
   // Step 2: Set up a new channel
   const channelId = guid();
@@ -47,7 +57,8 @@ module.exports = async function watchChanges(serviceAccountId, drive) {
 
   let startPageToken;
   try {
-    startPageToken = (await drive.changes.getStartPageToken()).data.startPageToken;
+    startPageToken = (await drive.changes.getStartPageToken()).data
+      .startPageToken;
   } catch (err) {
     throw new Error(`Failed to fetch startPageToken: ${err.message}`);
   }
@@ -65,7 +76,11 @@ module.exports = async function watchChanges(serviceAccountId, drive) {
       pageToken: startPageToken,
       requestBody: watchRequest,
     });
-    if (!response.data.id || !response.data.resourceId || !response.data.expiration) {
+    if (
+      !response.data.id ||
+      !response.data.resourceId ||
+      !response.data.expiration
+    ) {
       throw new Error("Invalid response from changes.watch API");
     }
   } catch (err) {
@@ -74,7 +89,7 @@ module.exports = async function watchChanges(serviceAccountId, drive) {
 
   console.log(
     prefix(),
-    `Service account client_id=${serviceAccountId} New changes.watch channel created: channelId=${response.data.id}, expiration=${response.data.expiration}`
+    `Service account client_id=${serviceAccountId} New changes.watch channel created: channelId=${response.data.id}, expiration=${response.data.expiration}`,
   );
 
   const newChannel = {
@@ -102,12 +117,12 @@ module.exports = async function watchChanges(serviceAccountId, drive) {
           } catch (err) {
             console.error(
               prefix(),
-              `Failed to stop old changes.watch channel for serviceAccountId=${serviceAccountId}, channelId=${oldChannelData.channelId}: ${err.message}`
+              `Failed to stop old changes.watch channel for serviceAccountId=${serviceAccountId}, channelId=${oldChannelData.channelId}: ${err.message}`,
             );
           }
           await database.channel.delete(oldChannelId);
         }
-      })
+      }),
     );
   }
 };

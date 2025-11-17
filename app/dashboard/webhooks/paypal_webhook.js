@@ -12,7 +12,7 @@ const SUBSCRIPTION_EVENTS = [
   "BILLING.SUBSCRIPTION.ACTIVATED",
   "BILLING.SUBSCRIPTION.RE-ACTIVATED",
   "BILLING.SUBSCRIPTION.UPDATED",
-  "BILLING.SUBSCRIPTION.CREATED"
+  "BILLING.SUBSCRIPTION.CREATED",
 ];
 
 const prefix = () => `${clfdate()} PayPal Webhook:`;
@@ -38,14 +38,16 @@ paypal.post("/", parser.json(), async (req, res) => {
   res.status(200).send("OK");
 });
 
-const updateSubscription = async subscriptionID => {
+const updateSubscription = async (subscriptionID) => {
   return new Promise((resolve, reject) => {
     User.getByPayPalSubscriptionId(subscriptionID, async (err, user) => {
       if (err) return reject(err);
 
       if (!user)
         return reject(
-          new Error("No user associated with subscription ID " + subscriptionID)
+          new Error(
+            "No user associated with subscription ID " + subscriptionID,
+          ),
         );
 
       const response = await fetch(
@@ -54,16 +56,16 @@ const updateSubscription = async subscriptionID => {
           headers: {
             "Content-Type": "application/json",
             "Accept-Language": "en_US",
-            "Authorization": `Basic ${Buffer.from(
-              `${config.paypal.client_id}:${config.paypal.secret}`
-            ).toString("base64")}`
-          }
-        }
+            Authorization: `Basic ${Buffer.from(
+              `${config.paypal.client_id}:${config.paypal.secret}`,
+            ).toString("base64")}`,
+          },
+        },
       );
 
       const paypal = await response.json();
 
-      User.set(user.uid, { paypal }, err => {
+      User.set(user.uid, { paypal }, (err) => {
         if (err) return reject(err);
         resolve();
       });

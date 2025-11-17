@@ -23,7 +23,7 @@ describe("titlecase", () => {
     const title = "for step-by-step directions visit http://www.google.com";
     const result = titlecase(title);
     expect(result).toBe(
-      "For Step-by-Step Directions Visit http://www.google.com"
+      "For Step-by-Step Directions Visit http://www.google.com",
     );
   });
 

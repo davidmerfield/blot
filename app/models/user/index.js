@@ -18,5 +18,5 @@ module.exports = {
   set: require("./set"),
   disable: require("./disable"),
   enable: require("./enable"),
-  validate: require("./validate")
+  validate: require("./validate"),
 };

@@ -28,9 +28,8 @@ async function runPostListenTasks() {
     log("Building templates after listen");
     try {
       await new Promise((resolve, reject) => {
-        templates(
-          { watch: config.environment === "development" },
-          (err) => (err ? reject(err) : resolve())
+        templates({ watch: config.environment === "development" }, (err) =>
+          err ? reject(err) : resolve(),
         );
       });
       templatesBuilt = true;
@@ -59,7 +58,7 @@ async function runPostListenTasks() {
           console.log(
             clfdate(),
             display_name + " client:",
-            "Initializing asynchronously"
+            "Initializing asynchronously",
           );
           try {
             init();
@@ -164,14 +163,14 @@ function main(callback) {
               console.error(
                 "Unable to set domain flag for host" +
                   config.host +
-                  ". SSL may not work on site."
+                  ". SSL may not work on site.",
               );
               console.error(err);
             }
 
             log("Created SSL key for redis");
             callback();
-          }
+          },
         );
       },
 
@@ -189,9 +188,8 @@ function main(callback) {
         if (config.environment !== "development") return;
         await documentation({ watch: true });
       },
-
     ],
-    callback
+    callback,
   );
 }
 

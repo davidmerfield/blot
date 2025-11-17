@@ -28,7 +28,7 @@ function main(sourceFiles, outputDirectory, callback) {
 
       parse(json, outputDirectory, next);
     },
-    callback
+    callback,
   );
 }
 

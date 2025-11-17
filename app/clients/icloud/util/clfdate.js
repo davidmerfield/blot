@@ -1,5 +1,4 @@
-
-const CONTAINER_NAME = 'macserver';
+const CONTAINER_NAME = "macserver";
 
 var CLF_MONTH = [
   "Jan",
@@ -55,7 +54,7 @@ module.exports = function clfdate() {
     pad2(secs) +
     " " +
     offset +
-    "]" + 
+    "]" +
     (CONTAINER_NAME ? " [" + CONTAINER_NAME + "]" : "")
   );
 };

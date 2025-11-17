@@ -23,7 +23,7 @@ module.exports = async function (href, callback) {
 
     const width = Number($('meta[property="og:video:width"]').attr("content"));
     const height = Number(
-      $('meta[property="og:video:height"]').attr("content")
+      $('meta[property="og:video:height"]').attr("content"),
     );
 
     let src = $('meta[property="og:video"]').attr("content");

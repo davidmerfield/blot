@@ -17,10 +17,10 @@ describe("org converter", function () {
           if (err) return done.fail(err);
 
           let expected;
-          
+
           try {
             expected = fs.readFileSync(dir + path + ".html", "utf8");
-          } catch (e) { }
+          } catch (e) {}
 
           if (html !== expected)
             fs.outputFileSync(dir + path + ".expected.html", html);

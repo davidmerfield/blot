@@ -9,7 +9,7 @@ module.exports = async function (href, callback) {
       throw new Error("Invalid Vimeo URL");
 
     const res = await fetch(
-      "https://vimeo.com/api/oembed.json?url=" + encodeURIComponent(href)
+      "https://vimeo.com/api/oembed.json?url=" + encodeURIComponent(href),
     );
 
     if (!res.ok) throw new Error("Could not retrieve API response from Vimeo");

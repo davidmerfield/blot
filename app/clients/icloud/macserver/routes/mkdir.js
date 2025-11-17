@@ -17,7 +17,11 @@ module.exports = async (req, res) => {
 
   // Check if the resolved path is inside the allowed directory
   if (!dirPath.startsWith(basePath)) {
-    console.log(`Invalid path: attempted to access parent directory`, basePath, dirPath);
+    console.log(
+      `Invalid path: attempted to access parent directory`,
+      basePath,
+      dirPath,
+    );
     return res
       .status(400)
       .send("Invalid path: attempted to access parent directory");
@@ -51,7 +55,7 @@ module.exports = async (req, res) => {
       if (i < 4) {
         // Only wait if we're going to retry
         await new Promise((resolve) =>
-          setTimeout(resolve, 1000 * Math.pow(2, i))
+          setTimeout(resolve, 1000 * Math.pow(2, i)),
         ); // True exponential backoff
       }
     }

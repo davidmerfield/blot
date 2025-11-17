@@ -13,7 +13,9 @@ const { MAX_FILE_SIZE, hasUnsupportedExtension } = require("../util/constants");
 
 const set = promisify(require("../database").set);
 const createClient = promisify((blogID, cb) =>
-  require("../util/createClient")(blogID, (err, ...results) => cb(err, results))
+  require("../util/createClient")(blogID, (err, ...results) =>
+    cb(err, results),
+  ),
 );
 
 // const upload = promisify(require("clients/dropbox/util/upload"));
@@ -90,7 +92,7 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
 
   for (const { name, path_display } of localContents) {
     const remoteCounterpart = remoteContents.find(
-      (remoteItem) => remoteItem.name === name
+      (remoteItem) => remoteItem.name === name,
     );
 
     if (!remoteCounterpart) {
@@ -105,7 +107,7 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
 
   for (const remoteItem of remoteContents) {
     const localCounterpart = localContents.find(
-      (localItem) => localItem.name === remoteItem.name
+      (localItem) => localItem.name === remoteItem.name,
     );
 
     const { path_display, name } = remoteItem;
@@ -142,7 +144,7 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
       ) {
         publish(
           "Skipping oversized file",
-          `${pathOnBlot} (${remoteItem.size} bytes > ${MAX_FILE_SIZE} byte limit)`
+          `${pathOnBlot} (${remoteItem.size} bytes > ${MAX_FILE_SIZE} byte limit)`,
         );
         try {
           await fs.outputFile(pathOnDisk, "");
@@ -192,7 +194,7 @@ const localReaddir = async (blogID, localRoot, dir) => {
         is_directory: stat.isDirectory(),
         content_hash,
       };
-    })
+    }),
   );
 };
 
@@ -214,7 +216,7 @@ const remoteReaddir = async (client, dir) => {
       result.entries.map((i) => {
         i.is_directory = i[".tag"] === "folder";
         return i;
-      })
+      }),
     );
   } while (has_more);
 

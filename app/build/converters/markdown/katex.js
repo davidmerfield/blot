@@ -30,7 +30,7 @@ module.exports = function (text) {
   return text;
 };
 
-function renderTex (str) {
+function renderTex(str) {
   // Cache the original string
   // in case of rendering error
   var _str = str;

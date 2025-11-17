@@ -6,7 +6,6 @@ var extract_tags = require("./extract_tags");
 
 module.exports = function (blog, post, source_domain) {
   return function (callback) {
-    
     var created, updated, metadata, permalink;
     var title, dateStamp, tags, draft, page, html;
 
@@ -28,7 +27,7 @@ module.exports = function (blog, post, source_domain) {
     created = moment(post.created_at).valueOf();
     updated = moment(post.updated_at || post.created_at).valueOf();
     dateStamp = moment(
-      post.published_at || post.created_at || post.updated_at
+      post.published_at || post.created_at || post.updated_at,
     ).valueOf();
 
     html = post.html;
@@ -36,7 +35,7 @@ module.exports = function (blog, post, source_domain) {
     if (post.feature_image) {
       metadata.thumbnail = require("url").resolve(
         source_domain,
-        post.feature_image
+        post.feature_image,
       );
     }
 

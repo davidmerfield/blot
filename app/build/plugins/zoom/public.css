@@ -9,13 +9,24 @@ The CSS below adds a special cursor.
 
 */
 
-p, div, section {position: relative;overflow: visible;} /* Ensure the code works for nested images */
-.image {overflow: visible!important} /* Overwrite previously superfluous code */
+p,
+div,
+section {
+  position: relative;
+  overflow: visible;
+} /* Ensure the code works for nested images */
+.image {
+  overflow: visible !important;
+} /* Overwrite previously superfluous code */
 /*.left, .right, .column {position: relative;z-index: 667}*/
-.wide {overflow: visible!important}
+.wide {
+  overflow: visible !important;
+}
 
 .zoom-overlay-open .left,
-.zoom-overlay-open .right {z-index: auto}
+.zoom-overlay-open .right {
+  z-index: auto;
+}
 
 img[data-action="zoom"] {
   cursor: pointer;
@@ -28,8 +39,8 @@ img[data-action="zoom"] {
   position: relative;
   z-index: 666;
   -webkit-transition: all 300ms;
-       -o-transition: all 300ms;
-          transition: all 300ms;
+  -o-transition: all 300ms;
+  transition: all 300ms;
 }
 
 img.zoom-img {
@@ -49,9 +60,9 @@ img.zoom-img {
   pointer-events: none;
   filter: "alpha(opacity=0)";
   opacity: 0;
-  -webkit-transition:      opacity 300ms;
-       -o-transition:      opacity 300ms;
-          transition:      opacity 300ms;
+  -webkit-transition: opacity 300ms;
+  -o-transition: opacity 300ms;
+  transition: opacity 300ms;
 }
 
 .zoom-overlay-open .zoom-overlay {

@@ -38,8 +38,8 @@ module.exports = function create(blog, callback) {
           if (stats.uid !== process.getuid()) {
             return callback(
               new Error(
-                "The live repository directory is not owned by the current user."
-              )
+                "The live repository directory is not owned by the current user.",
+              ),
             );
           }
           callback();
@@ -48,7 +48,7 @@ module.exports = function create(blog, callback) {
     ];
 
     console.log(
-      clfdate() + " Git: create: making bareRepoDirectory and creating token"
+      clfdate() + " Git: create: making bareRepoDirectory and creating token",
     );
 
     async.parallel(queue, function (err) {
@@ -60,7 +60,7 @@ module.exports = function create(blog, callback) {
         liveRepo = Git(liveRepoDirectory);
       } catch (err) {
         return cleanupAndCallback(
-          new Error("Failed to initialize Git repositories: " + err.message)
+          new Error("Failed to initialize Git repositories: " + err.message),
         );
       }
 
@@ -82,7 +82,7 @@ module.exports = function create(blog, callback) {
             if (err) return cleanupAndCallback(new Error(err));
 
             console.log(
-              clfdate() + " Git: create: adding existing folder to liveRepo"
+              clfdate() + " Git: create: adding existing folder to liveRepo",
             );
 
             folder.status("Adding existing folder to live repository");
@@ -91,8 +91,8 @@ module.exports = function create(blog, callback) {
             } catch (err) {
               return cleanupAndCallback(
                 new Error(
-                  "Failed to add folder to live repository: " + err.message
-                )
+                  "Failed to add folder to live repository: " + err.message,
+                ),
               );
             }
             database.setStatus(blog.owner, "createComplete", function (err) {
@@ -124,7 +124,7 @@ async function addFolder(folder, liveRepo) {
 
     if (!files.length && dir === folder.path) {
       console.log(
-        clfdate() + " Git: addFolder: folder is empty, creating initial commit"
+        clfdate() + " Git: addFolder: folder is empty, creating initial commit",
       );
       // If the folder is empty, create an initial commit
       return handleEmptyFolder(folder, liveRepo);
@@ -161,7 +161,7 @@ async function handleEmptyFolder(folder, liveRepo) {
           folder.status("Created initial commit in empty repository");
           resolve();
         });
-      }
+      },
     );
   });
 }

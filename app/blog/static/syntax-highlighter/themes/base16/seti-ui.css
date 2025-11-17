@@ -51,20 +51,19 @@ code.hljs {
 
 .hljs::selection,
 .hljs ::selection {
-  background-color: #3B758C;
+  background-color: #3b758c;
   color: #d6d6d6;
 }
-
 
 /* purposely do not highlight these things */
 .hljs-formula,
 .hljs-params,
-.hljs-property
-{}
+.hljs-property {
+}
 
 /* base03 - #41535B -  Comments, Invisibles, Line Highlighting */
 .hljs-comment {
-  color: #41535B;
+  color: #41535b;
 }
 
 /* base04 - #43a5d5 -  Dark Foreground (Used for status bars) */
@@ -90,7 +89,7 @@ code.hljs {
 .hljs-selector-tag,
 .hljs-name,
 .hljs-deletion {
-  color: #Cd3f45;
+  color: #cd3f45;
 }
 
 /* base09 - Integers, Boolean, Constants, XML Attributes, Markup Link Url */
@@ -106,13 +105,12 @@ code.hljs {
 /* base0A - Classes, Markup Bold, Search Text Background */
 .hljs-title,
 .hljs-class .hljs-title,
-.hljs-title.class_
-{
+.hljs-title.class_ {
   color: #e6cd69;
 }
 
 .hljs-strong {
-  font-weight:bold;
+  font-weight: bold;
   color: #e6cd69;
 }
 
@@ -126,7 +124,7 @@ code.hljs {
 
 /* base0C - Support, Regular Expressions, Escape Characters, Markup Quotes */
 .hljs-built_in,
-.hljs-doctag, /* guessing */
+.hljs-doctag /* guessing */,
 .hljs-quote,
 .hljs-keyword.hljs-atrule,
 .hljs-regexp {
@@ -145,10 +143,10 @@ code.hljs {
 /* base0E - Keywords, Storage, Selector, Markup Italic, Diff Changed */
 .hljs-type,
 /* .hljs-selector-id, */
-/* .hljs-selector-class, */
-/* .hljs-selector-attr, */
-/* .hljs-selector-pseudo, */
-.hljs-template-tag,
+  /* .hljs-selector-class, */
+  /* .hljs-selector-attr, */
+  /* .hljs-selector-pseudo, */
+  .hljs-template-tag,
 .diff .hljs-meta,
 .hljs-keyword {
   color: #a074c4;
@@ -165,13 +163,12 @@ code.hljs {
   from leaking into meta by accident
 */
 .hljs-meta .hljs-keyword,
-.hljs-meta .hljs-string
-{
+.hljs-meta .hljs-string {
   color: #8a553f;
 }
 
 .hljs-meta .hljs-keyword,
 /* for v10 compatible themes */
-.hljs-meta-keyword {
+  .hljs-meta-keyword {
   font-weight: bold;
 }

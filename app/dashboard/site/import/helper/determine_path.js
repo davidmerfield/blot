@@ -9,7 +9,7 @@ module.exports = function (output_directory) {
       entry.slug ||
         entry.title ||
         (entry.dateStamp && entry.dateStamp.toString()) ||
-        "untitled"
+        "untitled",
     );
 
     var name = slug || entry.name;
@@ -28,7 +28,7 @@ module.exports = function (output_directory) {
           "-" +
           moment(entry.dateStamp).format("DD") +
           "-" +
-          name
+          name,
       );
     } else {
       relative_path_without_extension = join("Undated", name);

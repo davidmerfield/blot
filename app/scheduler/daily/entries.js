@@ -4,7 +4,7 @@ var async = require("async");
 var config = require("config");
 var prettyNumber = require("helper/prettyNumber");
 
-function main (callback) {
+function main(callback) {
   var blogs_with_new_entries = [];
   var total_entries = 0;
   var now = Date.now();
@@ -36,8 +36,8 @@ function main (callback) {
                         blog.handle +
                         "." +
                         config.host +
-                        entry.url
-                    )
+                        entry.url,
+                    ),
                   });
                   newest_entry_created =
                     entry.created > newest_entry_created
@@ -50,10 +50,10 @@ function main (callback) {
                 blogs_with_new_entries.push({
                   label: blog.title || blog.handle,
                   url: encodeURI(
-                    config.protocol + blog.handle + "." + config.host
+                    config.protocol + blog.handle + "." + config.host,
                   ),
                   newest_entry_created,
-                  entries: new_entries_for_blog
+                  entries: new_entries_for_blog,
                 });
 
                 total_new_entries += new_entries_for_blog.length;
@@ -73,9 +73,9 @@ function main (callback) {
         callback(err, {
           blogs_with_new_entries,
           total_new_entries,
-          total_entries: prettyNumber(total_entries)
+          total_entries: prettyNumber(total_entries),
         });
-      }
+      },
     );
   });
 }

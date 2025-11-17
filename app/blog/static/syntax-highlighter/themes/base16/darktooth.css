@@ -45,26 +45,25 @@ code.hljs {
 }
 
 .hljs {
-  color: #A89984;
-  background: #1D2021;
+  color: #a89984;
+  background: #1d2021;
 }
 
 .hljs::selection,
 .hljs ::selection {
   background-color: #504945;
-  color: #A89984;
+  color: #a89984;
 }
-
 
 /* purposely do not highlight these things */
 .hljs-formula,
 .hljs-params,
-.hljs-property
-{}
+.hljs-property {
+}
 
 /* base03 - #665C54 -  Comments, Invisibles, Line Highlighting */
 .hljs-comment {
-  color: #665C54;
+  color: #665c54;
 }
 
 /* base04 - #928374 -  Dark Foreground (Used for status bars) */
@@ -76,7 +75,7 @@ code.hljs {
 .hljs-subst,
 .hljs-punctuation,
 .hljs-operator {
-  color: #A89984;
+  color: #a89984;
 }
 
 .hljs-operator {
@@ -90,7 +89,7 @@ code.hljs {
 .hljs-selector-tag,
 .hljs-name,
 .hljs-deletion {
-  color: #FB543F;
+  color: #fb543f;
 }
 
 /* base09 - Integers, Boolean, Constants, XML Attributes, Markup Link Url */
@@ -100,20 +99,19 @@ code.hljs {
 .hljs-attr,
 .hljs-variable.constant_,
 .hljs-literal {
-  color: #FE8625;
+  color: #fe8625;
 }
 
 /* base0A - Classes, Markup Bold, Search Text Background */
 .hljs-title,
 .hljs-class .hljs-title,
-.hljs-title.class_
-{
-  color: #FAC03B;
+.hljs-title.class_ {
+  color: #fac03b;
 }
 
 .hljs-strong {
-  font-weight:bold;
-  color: #FAC03B;
+  font-weight: bold;
+  color: #fac03b;
 }
 
 /* base0B - Strings, Inherited Class, Markup Code, Diff Inserted */
@@ -121,16 +119,16 @@ code.hljs {
 .hljs-addition,
 .hljs-title.class_.inherited__,
 .hljs-string {
-  color: #95C085;
+  color: #95c085;
 }
 
 /* base0C - Support, Regular Expressions, Escape Characters, Markup Quotes */
 .hljs-built_in,
-.hljs-doctag, /* guessing */
+.hljs-doctag /* guessing */,
 .hljs-quote,
 .hljs-keyword.hljs-atrule,
 .hljs-regexp {
-  color: #8BA59B;
+  color: #8ba59b;
 }
 
 /* base0D - Functions, Methods, Attribute IDs, Headings */
@@ -139,22 +137,22 @@ code.hljs {
 .ruby .hljs-property,
 .hljs-title.function_,
 .hljs-section {
-  color: #0D6678;
+  color: #0d6678;
 }
 
 /* base0E - Keywords, Storage, Selector, Markup Italic, Diff Changed */
 .hljs-type,
 /* .hljs-selector-id, */
-/* .hljs-selector-class, */
-/* .hljs-selector-attr, */
-/* .hljs-selector-pseudo, */
-.hljs-template-tag,
+  /* .hljs-selector-class, */
+  /* .hljs-selector-attr, */
+  /* .hljs-selector-pseudo, */
+  .hljs-template-tag,
 .diff .hljs-meta,
 .hljs-keyword {
-  color: #8F4673;
+  color: #8f4673;
 }
 .hljs-emphasis {
-  color: #8F4673;
+  color: #8f4673;
   font-style: italic;
 }
 
@@ -165,13 +163,12 @@ code.hljs {
   from leaking into meta by accident
 */
 .hljs-meta .hljs-keyword,
-.hljs-meta .hljs-string
-{
-  color: #A87322;
+.hljs-meta .hljs-string {
+  color: #a87322;
 }
 
 .hljs-meta .hljs-keyword,
 /* for v10 compatible themes */
-.hljs-meta-keyword {
+  .hljs-meta-keyword {
   font-weight: bold;
 }

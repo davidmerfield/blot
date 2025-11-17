@@ -55,7 +55,7 @@
         if (state.localState)
           s.localState = CodeMirror.copyState(
             state.local.mode,
-            state.localState
+            state.localState,
           );
         if (state.stack) s.stack = state.stack.slice(0);
         for (var pers = state.persistentStates; pers; pers = pers.next)
@@ -179,7 +179,7 @@
                   token: rule.token[j - 1],
                 });
             stream.backUp(
-              matches[0].length - (matches[1] ? matches[1].length : 0)
+              matches[0].length - (matches[1] ? matches[1].length : 0),
             );
             return token[0];
           } else if (token && token.join) {

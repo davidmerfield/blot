@@ -29,7 +29,7 @@ Importer.route("/are.na")
       fs.outputFileSync(
         join(importDirectory, "identifier.txt"),
         sanitize(title),
-        "utf-8"
+        "utf-8",
       );
       res.message(req.baseUrl, "Began import");
 

@@ -14,7 +14,7 @@ describe("questions.update", function () {
 
   it("should throw an error if you update a question that does not exist", async function () {
     await expectAsync(
-      update("123", { title: "How?", body: "No" })
+      update("123", { title: "How?", body: "No" }),
     ).toBeRejectedWith(new Error("Question with ID 123 does not exist"));
   });
 

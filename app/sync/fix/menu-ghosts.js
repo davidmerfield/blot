@@ -56,7 +56,7 @@ function main(blog, callback) {
           callback(null, report);
         });
       }
-    }
+    },
   );
 }
 

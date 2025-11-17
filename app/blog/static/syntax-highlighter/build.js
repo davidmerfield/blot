@@ -13,7 +13,7 @@ fs.outputJsonSync(
     .concat(
       fs.readdirSync(directory + "/base16").map((name) => {
         return { name, path: directory + "/base16/" + name };
-      })
+      }),
     )
     .filter((i) => i.name.endsWith(".css"))
     .sort(function (a, b) {
@@ -79,8 +79,8 @@ code.hljs, .hljs {padding: 0;margin:0}
                     "hue",
                     "saturation",
                     "fg",
-                  ].includes(i.toLowerCase())
-              )
+                  ].includes(i.toLowerCase()),
+              ),
           ),
         ];
       } catch (e) {}
@@ -96,7 +96,7 @@ code.hljs, .hljs {padding: 0;margin:0}
         colors,
       };
     }),
-  { spaces: 2 }
+  { spaces: 2 },
 );
 
 function lightOrDark(color) {
@@ -105,7 +105,7 @@ function lightOrDark(color) {
   if (color.match(/^rgb/)) {
     // If HEX --> store the red, green, blue values in separate variables
     color = color.match(
-      /^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/
+      /^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/,
     );
 
     r = color[1];

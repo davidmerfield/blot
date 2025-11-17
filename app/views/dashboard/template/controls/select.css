@@ -1,28 +1,35 @@
 form.select {
-  padding:8px 16px;font-size: 14px;display:flex;align-items: center;
+  padding: 8px 16px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
   border-bottom: 1px solid var(--light-border-color);
   position: relative;
-}  
-  form.select:hover {background: #fff;}
-form.select:last-of-type {border-bottom: none;}
+}
+form.select:hover {
+  background: #fff;
+}
+form.select:last-of-type {
+  border-bottom: none;
+}
 
 form.select select,
 #date_display {
   -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background: none;
-    border:none;
-    cursor: pointer;
-    text-align: right;
-    padding-right: 18px;
-    font-size: 14px;
-    color: var(--text-color)
+  -moz-appearance: none;
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: right;
+  padding-right: 18px;
+  font-size: 14px;
+  color: var(--text-color);
 }
 
 #date_display {
   text-align: left;
-  margin:0;
+  margin: 0;
   padding: 11px 16px;
   flex-grow: 1;
   border-bottom: 1px solid var(--light-border-color);

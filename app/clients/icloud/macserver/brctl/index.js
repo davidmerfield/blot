@@ -1,6 +1,6 @@
 module.exports = {
-    download: require("./download"),
-    evict: require("./evict"),
-    quota: require("./quota"),
-    ls: require("./ls"),
-}
+  download: require("./download"),
+  evict: require("./evict"),
+  quota: require("./quota"),
+  ls: require("./ls"),
+};

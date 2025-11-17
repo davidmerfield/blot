@@ -114,43 +114,43 @@ const handle =
       if (path.includes("images/examples") && path.endsWith(".png")) {
         await fs.copy(
           join(SOURCE_DIRECTORY, path),
-          join(DESTINATION_DIRECTORY, path)
+          join(DESTINATION_DIRECTORY, path),
         );
         await generateThumbnail(
           join(SOURCE_DIRECTORY, path),
           join(
             DESTINATION_DIRECTORY,
             dirname(path),
-            basename(path, extname(path)) + "-thumb.png"
-          )
-        );
-        await generateThumbnail(
-          join(SOURCE_DIRECTORY, path),
-          join(
-            DESTINATION_DIRECTORY,
-            dirname(path),
-            basename(path, extname(path)) + "-icon.png"
+            basename(path, extname(path)) + "-thumb.png",
           ),
-          { width: 48 }
+        );
+        await generateThumbnail(
+          join(SOURCE_DIRECTORY, path),
+          join(
+            DESTINATION_DIRECTORY,
+            dirname(path),
+            basename(path, extname(path)) + "-icon.png",
+          ),
+          { width: 48 },
         );
       } else if (path.endsWith(".html") && !path.includes("dashboard/")) {
         await buildHTML(path);
       } else if (path.endsWith(".css") && !initial) {
         await fs.copy(
           join(SOURCE_DIRECTORY, path),
-          join(DESTINATION_DIRECTORY, path)
+          join(DESTINATION_DIRECTORY, path),
         );
         await buildCSS();
       } else if (path.endsWith(".js") && !initial) {
         await fs.copy(
           join(SOURCE_DIRECTORY, path),
-          join(DESTINATION_DIRECTORY, path)
+          join(DESTINATION_DIRECTORY, path),
         );
         await buildJS();
       } else {
         await fs.copy(
           join(SOURCE_DIRECTORY, path),
-          join(DESTINATION_DIRECTORY, path)
+          join(DESTINATION_DIRECTORY, path),
         );
       }
 
@@ -175,7 +175,7 @@ module.exports = async ({ watch = false, skipZip = false } = {}) => {
 
   // Cache logic (development only)
   let hash = null;
-  
+
   if (config.environment === "development") {
     hash = await computeViewsHash();
     const cacheRoot = join(config.tmp_directory, "documentation-cache");
@@ -198,11 +198,11 @@ module.exports = async ({ watch = false, skipZip = false } = {}) => {
 
     await favicon(
       join(SOURCE_DIRECTORY, "images/logo.svg"),
-      join(DESTINATION_DIRECTORY, "favicon.ico")
+      join(DESTINATION_DIRECTORY, "favicon.ico"),
     );
 
     const paths = recursiveReadDir(SOURCE_DIRECTORY).map((path) =>
-      path.slice(SOURCE_DIRECTORY.length + 1)
+      path.slice(SOURCE_DIRECTORY.length + 1),
     );
 
     const initialHandler = handle(true, cacheDir);
@@ -218,16 +218,16 @@ module.exports = async ({ watch = false, skipZip = false } = {}) => {
     try {
       console.log(
         clfdate(),
-        "Generating list of recent activity for the news page"
+        "Generating list of recent activity for the news page",
       );
       await gitCommits();
       console.log(
         clfdate(),
-        "Generated list of recent activity for the news page"
+        "Generated list of recent activity for the news page",
       );
     } catch (e) {
       console.error(
-        "Failed to generate list of recent activity for the news page"
+        "Failed to generate list of recent activity for the news page",
       );
       console.error(e);
     }
@@ -244,7 +244,7 @@ module.exports = async ({ watch = false, skipZip = false } = {}) => {
     clfdate(),
     "Build completed in",
     (Date.now() - now) / 1000,
-    "seconds"
+    "seconds",
   );
 
   if (watch) {

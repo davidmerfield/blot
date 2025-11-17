@@ -15,13 +15,13 @@ describe("routing", function () {
             url: ["/eg/page/:page", "/e g", "/ë"],
           },
         },
-      }
+      },
     );
 
     // Test with params
     const res = await this.get(`/eg/page/1`);
     const body = await res.text();
-    
+
     expect(body).toContain("Success 1");
 
     // Test without params

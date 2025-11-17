@@ -15,9 +15,7 @@ describe("Stripe subscription webhooks", function () {
   global.test.blog();
 
   beforeEach(async function () {
-    const uniqueSuffix = `${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2)}`;
+    const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
     this.customerId = `cus_${uniqueSuffix}`;
     this.subscriptionId = `sub_${uniqueSuffix}`;
 
@@ -46,7 +44,7 @@ describe("Stripe subscription webhooks", function () {
               plan: { amount: 700, interval: "month" },
               quantity: 2,
               cancel_at_period_end: false,
-            })
+            }),
           ),
       },
     };
@@ -80,10 +78,12 @@ describe("Stripe subscription webhooks", function () {
     });
 
     expect(response.status).toBe(200);
-    expect(this.stripeClient.customers.retrieveSubscription).toHaveBeenCalledWith(
+    expect(
+      this.stripeClient.customers.retrieveSubscription,
+    ).toHaveBeenCalledWith(
       this.customerId,
       this.subscriptionId,
-      jasmine.any(Function)
+      jasmine.any(Function),
     );
 
     await delay(100);
@@ -108,7 +108,7 @@ describe("Stripe subscription webhooks", function () {
           plan: { amount: 500, interval: "month" },
           quantity: 1,
           cancel_at_period_end: false,
-        })
+        }),
     );
 
     const event = {
@@ -132,10 +132,12 @@ describe("Stripe subscription webhooks", function () {
     });
 
     expect(response.status).toBe(200);
-    expect(this.stripeClient.customers.retrieveSubscription).toHaveBeenCalledWith(
+    expect(
+      this.stripeClient.customers.retrieveSubscription,
+    ).toHaveBeenCalledWith(
       this.customerId,
       this.subscriptionId,
-      jasmine.any(Function)
+      jasmine.any(Function),
     );
 
     await delay(100);
@@ -196,8 +198,8 @@ describe("Stripe subscription webhooks", function () {
   });
 
   it("returns 400 when verification fails", async function () {
-    this.stripeClient.customers.retrieveSubscription.and.callFake((_, __, callback) =>
-      callback(new Error("nope"))
+    this.stripeClient.customers.retrieveSubscription.and.callFake(
+      (_, __, callback) => callback(new Error("nope")),
     );
 
     const event = {
@@ -250,7 +252,9 @@ describe("Stripe subscription webhooks", function () {
     });
 
     expect(response.status).toBe(400);
-    expect(this.stripeClient.customers.retrieveSubscription).not.toHaveBeenCalled();
+    expect(
+      this.stripeClient.customers.retrieveSubscription,
+    ).not.toHaveBeenCalled();
 
     await delay(100);
 

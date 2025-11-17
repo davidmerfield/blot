@@ -21,7 +21,7 @@ var assignToLists = require("./_assign");
 // properties in the updates param and then overwrites those.
 // Also updates entry properties which affect data stored
 // elsewhere such as created date, permalink etc..
-module.exports = function set (blogID, path, updates, callback) {
+module.exports = function set(blogID, path, updates, callback) {
   ensure(blogID, "string")
     .and(path, "string")
     .and(updates, "object")
@@ -71,7 +71,8 @@ module.exports = function set (blogID, path, updates, callback) {
     if (entry.dependencies === undefined) entry.dependencies = [];
     if (entry.backlinks === undefined) entry.backlinks = [];
     if (entry.internalLinks === undefined) entry.internalLinks = [];
-    if (!entry.metadata || typeof entry.metadata !== "object") entry.metadata = {};
+    if (!entry.metadata || typeof entry.metadata !== "object")
+      entry.metadata = {};
     if (!entry.exif || typeof entry.exif !== "object") entry.exif = {};
 
     entry.scheduled = entry.dateStamp > Date.now();
@@ -121,7 +122,7 @@ module.exports = function set (blogID, path, updates, callback) {
                 if (err) return next(err);
                 if (!result)
                   return next(
-                    new Error("Failed to set expiration for deleted entry")
+                    new Error("Failed to set expiration for deleted entry"),
                   );
                 next();
               });
@@ -137,15 +138,20 @@ module.exports = function set (blogID, path, updates, callback) {
           if (err) return callback(err);
 
           queue = [
-          updateTagList.bind(this, blogID, entry),
-          assignToLists.bind(this, blogID, entry),
-          rebuildDependencyGraph.bind(this, blogID, entry, previousDependencies)
-        ];
+            updateTagList.bind(this, blogID, entry),
+            assignToLists.bind(this, blogID, entry),
+            rebuildDependencyGraph.bind(
+              this,
+              blogID,
+              entry,
+              previousDependencies,
+            ),
+          ];
 
-        if (entry.scheduled)
-          queue.push(addToSchedule.bind(this, blogID, entry));
+          if (entry.scheduled)
+            queue.push(addToSchedule.bind(this, blogID, entry));
 
-        if (entry.draft) queue.push(notifyDrafts.bind(this, blogID, entry));
+          if (entry.draft) queue.push(notifyDrafts.bind(this, blogID, entry));
 
           async.parallel(queue, function (err) {
             if (err) return callback(err);
@@ -162,7 +168,7 @@ module.exports = function set (blogID, path, updates, callback) {
                     clfdate(),
                     blogID.slice(0, 12),
                     "updating backlinks:",
-                    path
+                    path,
                   );
                 async.eachOf(
                   changes,
@@ -171,7 +177,7 @@ module.exports = function set (blogID, path, updates, callback) {
                       clfdate(),
                       blogID.slice(0, 12),
                       "    - linked entry:",
-                      linkedEntryPath
+                      linkedEntryPath,
                     );
                     set(blogID, linkedEntryPath, { backlinks }, function (err) {
                       if (err) {
@@ -179,7 +185,7 @@ module.exports = function set (blogID, path, updates, callback) {
                           clfdate(),
                           blogID.slice(0, 12),
                           "    - error updating linked entry:",
-                          linkedEntryPath
+                          linkedEntryPath,
                         );
                         console.log(err);
                       }
@@ -189,14 +195,24 @@ module.exports = function set (blogID, path, updates, callback) {
                   function (err) {
                     if (err) return callback(err);
                     if (entry.deleted) {
-                      console.log(clfdate(), blogID.slice(0, 12), "delete", path);
+                      console.log(
+                        clfdate(),
+                        blogID.slice(0, 12),
+                        "delete",
+                        path,
+                      );
                     } else {
-                      console.log(clfdate(), blogID.slice(0, 12), "update", path);
+                      console.log(
+                        clfdate(),
+                        blogID.slice(0, 12),
+                        "update",
+                        path,
+                      );
                     }
                     callback();
-                  }
+                  },
                 );
-              }
+              },
             );
           });
         });

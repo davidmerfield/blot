@@ -1,5 +1,5 @@
-var insert_video_embeds = require("dashboard/site/import/helper")
-  .insert_video_embeds;
+var insert_video_embeds =
+  require("dashboard/site/import/helper").insert_video_embeds;
 var debug = require("debug")("blot:importer:wordpress:tidy");
 var remove_inline_images = require("./remove_inline_images.js");
 
@@ -60,11 +60,11 @@ function fix_missing_p_tags(html) {
   if (has_p_tag || doesnt_have_double_line_break) {
     if (has_p_tag)
       debug(
-        "Not interserting missing <p> tags into HTML because it already has p tags"
+        "Not interserting missing <p> tags into HTML because it already has p tags",
       );
     if (doesnt_have_double_line_break)
       debug(
-        "Not interserting missing <p> tags into HTML because it does not have double line breaks"
+        "Not interserting missing <p> tags into HTML because it does not have double line breaks",
       );
 
     debug(JSON.stringify(html));

@@ -72,7 +72,7 @@ module.exports = async (req, res, next) => {
       await updateTemplate(
         req.blog.id,
         req.params.templateSlug,
-        req.template.locals
+        req.template.locals,
       );
     } catch (err) {
       return next(err);
@@ -111,7 +111,7 @@ module.exports = async (req, res, next) => {
     await updateTemplate(
       req.blog.id,
       req.params.templateSlug,
-      req.template.locals
+      req.template.locals,
     );
   } catch (err) {
     await fs.remove(finalPath).catch(() => {});

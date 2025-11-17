@@ -36,7 +36,7 @@ describe("dates", function () {
       },
       {
         locals: { date_display: "M/D/YYYY" },
-      }
+      },
     );
 
     expect(await this.text("/")).toBe("1/3/2025");
@@ -65,7 +65,7 @@ describe("dates", function () {
       },
       {
         locals: { hide_dates: true },
-      }
+      },
     );
 
     expect(await this.text("/")).toBe("");
@@ -92,7 +92,7 @@ describe("dates", function () {
     });
 
     expect(await this.text("/")).toBe(
-      new Array(4).fill("February 4, 2025").join("")
+      new Array(4).fill("February 4, 2025").join(""),
     );
   });
 

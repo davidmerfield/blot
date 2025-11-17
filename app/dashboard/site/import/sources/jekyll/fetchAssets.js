@@ -42,7 +42,7 @@ module.exports = function (result, callback) {
     try {
       fs.copySync(
         result.sourceDirectory + src,
-        result.assetDirectory + "/" + newName
+        result.assetDirectory + "/" + newName,
       );
     } catch (e) {
       console.log(e);

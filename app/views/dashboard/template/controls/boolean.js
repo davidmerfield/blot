@@ -16,7 +16,7 @@ document.querySelectorAll("form.boolean").forEach(function (form) {
       body.append("_csrf", form.querySelector('input[name="_csrf"]').value);
 
       fetch(withAjax(window.location.href), { method: "post", body }).then(
-        handleAjaxSaveResponse
+        handleAjaxSaveResponse,
       );
 
       event.preventDefault();

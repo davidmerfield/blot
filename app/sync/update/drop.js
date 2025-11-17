@@ -24,7 +24,7 @@ module.exports = function (blogID, path, callback) {
       function (method, next) {
         method(next);
       },
-      callback
+      callback,
     );
   });
 };

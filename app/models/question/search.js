@@ -94,7 +94,7 @@ const load = (ids) => {
               result &&
               !result.parent &&
               hasNonEmptyBody(result.body) &&
-              hasNonEmptyTitle(result.title)
+              hasNonEmptyTitle(result.title),
           )
           .map((result) => {
             result.replies = results
@@ -102,7 +102,7 @@ const load = (ids) => {
                 (reply) =>
                   reply &&
                   reply.parent === result.id &&
-                  hasNonEmptyBody(reply.body)
+                  hasNonEmptyBody(reply.body),
               )
               .map((reply) => {
                 return { body: reply.body };

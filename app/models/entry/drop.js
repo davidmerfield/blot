@@ -6,7 +6,8 @@ var get = require("./get");
 function sanitize(entry) {
   var now = Date.now();
   var created = typeof entry.created === "number" ? entry.created : now;
-  var dateStamp = typeof entry.dateStamp === "number" ? entry.dateStamp : created;
+  var dateStamp =
+    typeof entry.dateStamp === "number" ? entry.dateStamp : created;
   var updated = typeof entry.updated === "number" ? entry.updated : created;
 
   return {

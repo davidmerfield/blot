@@ -14,7 +14,7 @@ describe("makeSlug", function () {
     is("H", "h");
     is(
       "HelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHello",
-      "hellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohello"
+      "hellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohello",
     );
     is("100% luck 15% skill", "100-percent-luck-15-percent-skill");
     is("Hello", "hello");
@@ -35,34 +35,37 @@ describe("makeSlug", function () {
 
     is(
       "remove object replacement character: ￼",
-      "remove-object-replacement-character"
+      "remove-object-replacement-character",
     );
 
     is(
       "Review of “The Development of William Butler Yeats” by V. K. Narayana Menon",
-      "review-of-the-development-of-william-butler-yeats-by-v-k-narayana-menon"
+      "review-of-the-development-of-william-butler-yeats-by-v-k-narayana-menon",
     );
     is(
       "Review of The Development of William Butler Yeats by V. K. Narayana Menon Review of The Development offff William Butler Yeats by V. K. Narayana Menon",
-      "review-of-the-development-of-william-butler-yeats-by-v-k-narayana-menon-review-of-the-development"
+      "review-of-the-development-of-william-butler-yeats-by-v-k-narayana-menon-review-of-the-development",
     );
     is(
       "AppleScript/Automator Folder Action to Convert Excel to CSV",
-      "applescript/automator-folder-action-to-convert-excel-to-csv"
+      "applescript/automator-folder-action-to-convert-excel-to-csv",
     );
 
     is(
       "Peter Gregson – Bach recomposed: 6.6 Gigue",
-      "peter-gregson-bach-recomposed-6-6-gigue"
+      "peter-gregson-bach-recomposed-6-6-gigue",
     );
     is(
       "Apple's Striking Short Film Ahead of International Day of People with Disabilities",
-      "apples-striking-short-film-ahead-of-international-day-of-people-with-disabilities"
+      "apples-striking-short-film-ahead-of-international-day-of-people-with-disabilities",
     );
     is("'xsb' command line error.", "xsb-command-line-error");
     is("Foo & bar", "foo-bar");
     is("Foo's bar", "foos-bar");
-    is("Foo's Shouldn't Couldn't Wouldn't Don't", "foos-shouldnt-couldnt-wouldnt-dont");
+    is(
+      "Foo's Shouldn't Couldn't Wouldn't Don't",
+      "foos-shouldnt-couldnt-wouldnt-dont",
+    );
     is("''s bar", "s-bar");
     is("'so' bar", "so-bar");
     is("Foo &amp; bar", "foo-and-bar");
@@ -73,7 +76,7 @@ describe("makeSlug", function () {
 
     is(
       "«&nbsp;French Tech Communauté&nbsp;»&nbsp;: quelle opportunité pour l’État&nbsp;?",
-      "french-tech-communaut%C3%A9-quelle-opportunit%C3%A9-pour-l-%C3%A9tat"
+      "french-tech-communaut%C3%A9-quelle-opportunit%C3%A9-pour-l-%C3%A9tat",
     );
   });
 });

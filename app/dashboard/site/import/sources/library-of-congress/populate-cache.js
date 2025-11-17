@@ -4,15 +4,15 @@ const cache_dir = __dirname + "/data/cache";
 const populateCache = async () => {
   const collections = fs
     .readdirSync(__dirname + "/data")
-    .filter(i => !i.startsWith("."))
-    .filter(i => i !== "cache");
+    .filter((i) => !i.startsWith("."))
+    .filter((i) => i !== "cache");
 
   for (const collection of collections) {
     console.log("Collection: " + collection);
     const items = fs
       .readdirSync(__dirname + "/data/" + collection)
-      .filter(i =>
-        fs.statSync(__dirname + "/data/" + collection + "/" + i).isDirectory()
+      .filter((i) =>
+        fs.statSync(__dirname + "/data/" + collection + "/" + i).isDirectory(),
       );
     for (const item of items) {
       console.log("Item: " + item);

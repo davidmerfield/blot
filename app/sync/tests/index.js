@@ -16,18 +16,22 @@ describe("sync", function () {
     });
   });
 
-  it("will only allow one sync at once", function (testDone) {
-    var blog = this.blog;
+  it(
+    "will only allow one sync at once",
+    function (testDone) {
+      var blog = this.blog;
 
-    sync(blog.id, function (err, folder, done) {
-      if (err) return testDone.fail(err);
+      sync(blog.id, function (err, folder, done) {
+        if (err) return testDone.fail(err);
 
-      sync(blog.id, function (err) {
-        expect(err.message).toContain("Failed to acquire folder lock");
-        done(null, testDone);
+        sync(blog.id, function (err) {
+          expect(err.message).toContain("Failed to acquire folder lock");
+          done(null, testDone);
+        });
       });
-    });
-  }, 15 * 1000);
+    },
+    15 * 1000,
+  );
 
   it(
     "will release a lock when the process dies due to an uncaught exception",
@@ -51,7 +55,7 @@ describe("sync", function () {
       console.log("Sending a message to child");
       child.send(blog.id);
     },
-    10 * 1000
+    10 * 1000,
   );
 
   it("will release a lock when the process is killed", function (testDone) {

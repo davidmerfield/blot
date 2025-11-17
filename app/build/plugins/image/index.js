@@ -72,7 +72,7 @@ function render($, callback, options) {
     function () {
       debug("Invoking callback now!");
       callback();
-    }
+    },
   );
 }
 

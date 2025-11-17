@@ -20,7 +20,7 @@ console.log(
   "Starting server on port",
   config.port,
   "host",
-  config.host
+  config.host,
 );
 
 // Trusts secure requests terminated by NGINX, as far as I know
@@ -77,7 +77,7 @@ server.use(function (req, res, next) {
 // Log response time in development mode
 server.use(trace.init);
 
-server.use(require('./request-logger'));
+server.use(require("./request-logger"));
 
 // Blot is composed of two sub applications.
 

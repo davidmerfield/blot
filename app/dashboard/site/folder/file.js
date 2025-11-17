@@ -26,25 +26,27 @@ module.exports = async function (blog, path) {
       }),
     ])
       .then(([ignoredReason, entry]) => {
-        
         let ignored = {};
 
         if (!entry) {
-
-          if (ignoredReason && ignoredReason === 'WRONG_TYPE') {
+          if (ignoredReason && ignoredReason === "WRONG_TYPE") {
             ignored.wrongType = true;
           } else if (path.toLowerCase().indexOf("/templates/") === 0) {
             ignored.templateFile = true;
           } else if (
-            path.split("/").slice(0,-1).filter(function (n) {
-              return n[0] === "_";
-            }).length) {
+            path
+              .split("/")
+              .slice(0, -1)
+              .filter(function (n) {
+                return n[0] === "_";
+              }).length
+          ) {
             ignored.underscorePath = true;
           } else if (basename(path)[0] === "_") {
             ignored.underscoreName = true;
-          } else if (ignoredReason && ignoredReason === 'TOO_LARGE') {
+          } else if (ignoredReason && ignoredReason === "TOO_LARGE") {
             ignored.tooLarge = true;
-          } else  {
+          } else {
             ignored.syncing = true;
           }
         }
@@ -53,13 +55,13 @@ module.exports = async function (blog, path) {
 
         file.kind = kind(path);
         file.path = path;
-        file.url = path.split('/').map(encodeURIComponent).join('/');
+        file.url = path.split("/").map(encodeURIComponent).join("/");
         file.name = basename(path);
 
         // a dictionary we use to display conditionally in the UI
         file.extension = {};
-        file.extension = normalizeExtension(path)
-        
+        file.extension = normalizeExtension(path);
+
         file.entry = entry;
         file.ignored = ignored;
 
@@ -68,13 +70,15 @@ module.exports = async function (blog, path) {
           entry.name = file.name;
 
           entry.converter = {};
-          entry.converter[converters.find((converter) => {
-            return converter.is(path);
-          }).id] = true;
-          
-          entry.type = entry.draft ? 'draft' : entry.page ? 'page' :  'post';
+          entry.converter[
+            converters.find((converter) => {
+              return converter.is(path);
+            }).id
+          ] = true;
+
+          entry.type = entry.draft ? "draft" : entry.page ? "page" : "post";
           entry.Type = entry.type.charAt(0).toUpperCase() + entry.type.slice(1);
-          
+
           entry.tags = entry.tags.map((tag, i, arr) => {
             return { tag, first: i === 0, last: i === arr.length - 1 };
           });
@@ -89,14 +93,14 @@ module.exports = async function (blog, path) {
           }
 
           entry.backlinks = entry.backlinks.map((backlink) => {
-            return  { backlink};
+            return { backlink };
           });
 
           entry.dependencies = entry.dependencies.map((dependency) => {
             return { dependency };
-           });
+          });
 
-           entry.internalLinks = entry.internalLinks.map((internalLink) => {
+          entry.internalLinks = entry.internalLinks.map((internalLink) => {
             return { internalLink };
           });
 
@@ -118,7 +122,7 @@ module.exports = async function (blog, path) {
             entry.toNow = moment.utc(entry.dateStamp).fromNow();
           }
         }
-        
+
         resolve(file);
       })
       .catch((err) => {
@@ -126,8 +130,6 @@ module.exports = async function (blog, path) {
       });
   });
 };
-
-
 
 // https://fileinfo.com/filetypes/common
 
@@ -146,12 +148,12 @@ const KIND = {
 };
 
 const CATEGORIES = {
-  "image": ["jpg", "jpeg", "png", "gif", "bmp", "tiff"],
-  "audio": ["mp3", "wav", "wma", "ogg", "flac", "aac"],
-  "video": ["mp4", "avi", "mkv", "mov", "flv", "wmv"],
+  image: ["jpg", "jpeg", "png", "gif", "bmp", "tiff"],
+  audio: ["mp3", "wav", "wma", "ogg", "flac", "aac"],
+  video: ["mp4", "avi", "mkv", "mov", "flv", "wmv"],
 };
 
-function kind (path) {
+function kind(path) {
   let kind = "File";
   let extension;
 
@@ -162,21 +164,22 @@ function kind (path) {
   return kind;
 }
 
-
 // should return a lowercase, trimmed extension
 // with common equivalents normalized e,g. jpeg -> jpg
-function normalizeExtension (path) {
+function normalizeExtension(path) {
   let extension = extname(path).toLowerCase().slice(1);
 
   if (extension === "jpeg") {
     extension = "jpg";
-  } 
+  }
 
-  let res = {category: {}};
+  let res = { category: {} };
 
-  res.category[Object.keys(CATEGORIES).find((category) => {
-    return CATEGORIES[category].indexOf(extension) > -1;
-  })] = true;
+  res.category[
+    Object.keys(CATEGORIES).find((category) => {
+      return CATEGORIES[category].indexOf(extension) > -1;
+    })
+  ] = true;
 
   res[extension] = true;
 

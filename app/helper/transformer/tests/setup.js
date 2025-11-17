@@ -35,13 +35,12 @@ module.exports = function setup(options) {
     var config = sequenceQueue.shift() || {};
     var status = config.status === undefined ? 200 : config.status;
     var body = config.body === undefined ? responseBody : config.body;
-    var etagValue =
-      config.etag === undefined ? etag : config.etag;
+    var etagValue = config.etag === undefined ? etag : config.etag;
     var lastModifiedValue =
       config.lastModified === undefined ? lastModified : config.lastModified;
     var headers = Object.assign(
       { "Cache-Control": "max-age=0, must-revalidate" },
-      config.headers || {}
+      config.headers || {},
     );
 
     if (etagValue) headers.ETag = etagValue;

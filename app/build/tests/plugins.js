@@ -61,16 +61,16 @@ describe("build", function () {
       if (err) return done.fail(err);
 
       expect(entry.html).toContain(
-        '<audio controls="" src="/audio/example.mp3" preload="metadata">'
+        '<audio controls="" src="/audio/example.mp3" preload="metadata">',
       );
       expect(entry.html).toContain(
-        '<video controls="" src="/video/example.mp4" preload="metadata">'
+        '<video controls="" src="/video/example.mp4" preload="metadata">',
       );
       expect(entry.html).toContain(
-        '<audio controls="" preload="none" src="/audio/custom.mp3">'
+        '<audio controls="" preload="none" src="/audio/custom.mp3">',
       );
       expect(entry.html).toContain(
-        '<video controls="" preload="auto" src="/video/custom.mp4">'
+        '<video controls="" preload="auto" src="/video/custom.mp4">',
       );
 
       done();

@@ -2,7 +2,6 @@ const initCopyButtons = function () {
   const copyButtons = document.querySelectorAll("button.copy");
 
   copyButtons.forEach(function (button) {
-
     // check that the attribute 'data-copy-init' is unset
     if (button.getAttribute("data-copy-init") === "true") {
       return; // already initialized
@@ -10,7 +9,7 @@ const initCopyButtons = function () {
 
     // set the attribute 'data-copy-init' to true
     button.setAttribute("data-copy-init", "true");
-    
+
     button.addEventListener("click", function (event) {
       // ensure all other copy buttons are reset
       copyButtons.forEach(function (button) {

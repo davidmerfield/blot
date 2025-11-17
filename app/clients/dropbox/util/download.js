@@ -31,7 +31,9 @@ async function download(client, source, destination, callback) {
   });
 
   try {
-    const { result: metadata } = await client.filesGetMetadata({ path: source });
+    const { result: metadata } = await client.filesGetMetadata({
+      path: source,
+    });
     if (timedOut) return;
 
     const metadataPath = metadata.path_display || source;
@@ -40,7 +42,7 @@ async function download(client, source, destination, callback) {
       console.log(
         prefix(),
         "skipping download because file extension is unsupported",
-        metadataPath
+        metadataPath,
       );
       await fs.outputFile(destination, "");
       if (timedOut) return;
@@ -57,7 +59,7 @@ async function download(client, source, destination, callback) {
         "skipping download because file exceeds size limit",
         metadata.size,
         ">",
-        MAX_FILE_SIZE
+        MAX_FILE_SIZE,
       );
       await fs.outputFile(destination, "");
       if (timedOut) return;

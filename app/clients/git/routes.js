@@ -30,8 +30,8 @@ dashboard.get("/", function (req, res) {
       res.render(__dirname + "/views/index.html", {
         title: "Git",
         token: token,
-        createFailed: status === 'createFailed',
-        createInProgress: status === 'createInProgress',
+        createFailed: status === "createFailed",
+        createInProgress: status === "createInProgress",
         host,
       });
     });
@@ -46,7 +46,6 @@ dashboard.get("/create", function (req, res) {
 });
 
 dashboard.post("/create", function (req, res, next) {
-  
   if (req.body.cancel) {
     console.log(clfdate() + " Git: User cancelled creation of repo");
     return disconnect(req.blog.id, next);

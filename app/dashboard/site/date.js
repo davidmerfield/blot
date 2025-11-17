@@ -58,7 +58,7 @@ date.get("/", (req, res, next) => {
 
   // Sort time zones
   timeZones.sort(
-    (a, b) => b.offset - a.offset || a.value.localeCompare(b.value)
+    (a, b) => b.offset - a.offset || a.value.localeCompare(b.value),
   );
 
   res.locals.breadcrumbs.add("Settings", "settings");

@@ -9,7 +9,7 @@ module.exports = (key, locals, map) => {
       key,
       label,
       value: locals[key],
-      isBoolean: true
+      isBoolean: true,
     };
   }
 
@@ -25,7 +25,7 @@ module.exports = (key, locals, map) => {
       value: locals[key],
       isRange: true,
       min,
-      max
+      max,
     };
   }
 
@@ -33,11 +33,11 @@ module.exports = (key, locals, map) => {
     locals[key + "_options"] !== undefined &&
     locals[key + "_options"].constructor === Array
   ) {
-    const options = locals[key + "_options"].map(option => {
+    const options = locals[key + "_options"].map((option) => {
       return {
         label: desnake(option),
         selected: locals[key] === option ? "selected" : "",
-        value: option
+        value: option,
       };
     });
 
@@ -46,7 +46,7 @@ module.exports = (key, locals, map) => {
       label,
       value: locals[key],
       isSelect: true,
-      options
+      options,
     };
   }
 };

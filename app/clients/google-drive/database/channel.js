@@ -33,7 +33,9 @@ const channel = {
     const { type, serviceAccountId, fileId } = data;
 
     if (!type || !serviceAccountId) {
-      throw new Error("type and serviceAccountId are required to associate a channel.");
+      throw new Error(
+        "type and serviceAccountId are required to associate a channel.",
+      );
     }
 
     const key = this._key(channelId);
@@ -131,7 +133,10 @@ const channel = {
     const serviceAccountKey = this._serviceAccountKey(serviceAccountId);
     let cursor = "0";
     do {
-      const [nextCursor, channelIds] = await sscanAsync(serviceAccountKey, cursor);
+      const [nextCursor, channelIds] = await sscanAsync(
+        serviceAccountKey,
+        cursor,
+      );
       for (const channelId of channelIds) {
         const data = await this.get(channelId);
         if (data) {

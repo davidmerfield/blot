@@ -24,7 +24,7 @@ module.exports = function (req, res, next) {
       var mySubDomain = template.isMine ? "my-" : "";
 
       // remap the slug to be everything after the first colon in the ID
-      template.slug = template.id.split(':').slice(1).join(':');
+      template.slug = template.id.split(":").slice(1).join(":");
 
       template.selected =
         req.path.split("/")[1] === template.slug ? "selected" : "";
@@ -78,9 +78,15 @@ module.exports = function (req, res, next) {
     templates = templates.reduce(function (acc, template) {
       // ensure that the template owned by the blog id is in the list
       // rather than the template owned by 'SITE' if there are two templates
-      const targetTemplate = acc.some((t) => t.slug === template.slug && t.name === template.name);
+      const targetTemplate = acc.some(
+        (t) => t.slug === template.slug && t.name === template.name,
+      );
 
-      if (targetTemplate && !targetTemplate.localEditing && !template.localEditing) {
+      if (
+        targetTemplate &&
+        !targetTemplate.localEditing &&
+        !template.localEditing
+      ) {
         // if the template is owned by the blog id, replace the template owned by 'SITE'
         // with the template owned by the blog id and also set the property
         if (template.owner === blogID && !template.localEditing) {
@@ -114,23 +120,19 @@ module.exports = function (req, res, next) {
     });
 
     res.locals.yourTemplates = templates.filter(
-      (template) =>
-        template.isMine && !template.localEditing
+      (template) => template.isMine && !template.localEditing,
     );
 
     res.locals.templatesInYourFolder = templates.filter(
-      (template) =>
-        template.isMine && template.localEditing === true
+      (template) => template.isMine && template.localEditing === true,
     );
 
-    res.locals.blotTemplates = templates.filter(
-      (template) => !template.isMine 
-    );
+    res.locals.blotTemplates = templates.filter((template) => !template.isMine);
 
     res.locals.currentTemplate = templates.filter(
-      (template) => template.id === currentTemplate
+      (template) => template.id === currentTemplate,
     )[0];
-    
+
     next();
   });
 };

@@ -19,12 +19,12 @@ module.exports = function (req, res, callback) {
       years[year] = years[year] || {
         year: year,
         total: 0,
-        months: {}
+        months: {},
       };
 
       years[year].months[month] = years[year].months[month] || {
         month: month,
-        entries: []
+        entries: [],
       };
 
       years[year].months[month].entries.push(entry);

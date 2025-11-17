@@ -16,7 +16,7 @@ describe("img converter", function () {
       const relativePath = "/" + name;
       const expected = fs.readFileSync(
         __dirname + relativePath + ".html",
-        "utf8"
+        "utf8",
       );
 
       fs.copySync(__dirname + relativePath, test.blogDirectory + relativePath);
@@ -138,7 +138,7 @@ describe("img converter", function () {
         test.blog.id,
         "_assets",
         hash(relativePath),
-        path.basename(relativePath) + ".png"
+        path.basename(relativePath) + ".png",
       );
 
       const firstStat = fs.statSync(assetPath);
@@ -171,7 +171,7 @@ describe("img converter", function () {
         test.blog.id,
         "_assets",
         hash(firstPath),
-        path.basename(firstPath) + ".png"
+        path.basename(firstPath) + ".png",
       );
 
       expect(fs.existsSync(cachedAssetPath)).toBe(true);
@@ -183,7 +183,7 @@ describe("img converter", function () {
         test.blog.id,
         "_assets",
         hash(secondPath),
-        path.basename(secondPath) + ".png"
+        path.basename(secondPath) + ".png",
       );
 
       if (fs.existsSync(fallbackAssetPath)) {
@@ -196,7 +196,7 @@ describe("img converter", function () {
         if (err) return done.fail(err);
 
         const expectedSrc = encodeURI(
-          `/_assets/${hash(firstPath)}/${path.basename(firstPath)}.png`
+          `/_assets/${hash(firstPath)}/${path.basename(firstPath)}.png`,
         );
 
         expect(result).toContain(`src="${expectedSrc}"`);

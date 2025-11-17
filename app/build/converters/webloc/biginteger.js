@@ -367,7 +367,7 @@ var bigInt = (function (undefined) {
 
     var product = addAny(
       addAny(ac, shiftLeft(subtract(subtract(abcd, ac), bd), n)),
-      shiftLeft(bd, 2 * n)
+      shiftLeft(bd, 2 * n),
     );
     trim(product);
     return product;
@@ -418,7 +418,7 @@ var bigInt = (function (undefined) {
     return multiplySmallAndArray(
       Math.abs(a.value),
       smallToArray(Math.abs(this.value)),
-      this.sign !== a.sign
+      this.sign !== a.sign,
     );
   };
   BigInteger.prototype._multiplyBySmall = function (a) {
@@ -428,7 +428,7 @@ var bigInt = (function (undefined) {
     return multiplySmallAndArray(
       Math.abs(a.value),
       this.value,
-      this.sign !== a.sign
+      this.sign !== a.sign,
     );
   };
   SmallInteger.prototype.multiply = function (v) {
@@ -495,7 +495,7 @@ var bigInt = (function (undefined) {
       if (remainder[shift + b_l] !== divisorMostSignificantDigit) {
         quotientDigit = Math.floor(
           (remainder[shift + b_l] * base + remainder[shift + b_l - 1]) /
-            divisorMostSignificantDigit
+            divisorMostSignificantDigit,
         );
       }
       // quotientDigit <= base - 1
@@ -662,14 +662,18 @@ var bigInt = (function (undefined) {
   BigInteger.prototype.divide = function (v) {
     return divModAny(this, v)[0];
   };
-  SmallInteger.prototype.over = SmallInteger.prototype.divide = BigInteger.prototype.over =
-    BigInteger.prototype.divide;
+  SmallInteger.prototype.over =
+    SmallInteger.prototype.divide =
+    BigInteger.prototype.over =
+      BigInteger.prototype.divide;
 
   BigInteger.prototype.mod = function (v) {
     return divModAny(this, v)[1];
   };
-  SmallInteger.prototype.remainder = SmallInteger.prototype.mod = BigInteger.prototype.remainder =
-    BigInteger.prototype.mod;
+  SmallInteger.prototype.remainder =
+    SmallInteger.prototype.mod =
+    BigInteger.prototype.remainder =
+      BigInteger.prototype.mod;
 
   BigInteger.prototype.pow = function (v) {
     var n = parseValue(v),
@@ -797,38 +801,50 @@ var bigInt = (function (undefined) {
   BigInteger.prototype.equals = function (v) {
     return this.compare(v) === 0;
   };
-  SmallInteger.prototype.eq = SmallInteger.prototype.equals = BigInteger.prototype.eq =
-    BigInteger.prototype.equals;
+  SmallInteger.prototype.eq =
+    SmallInteger.prototype.equals =
+    BigInteger.prototype.eq =
+      BigInteger.prototype.equals;
 
   BigInteger.prototype.notEquals = function (v) {
     return this.compare(v) !== 0;
   };
-  SmallInteger.prototype.neq = SmallInteger.prototype.notEquals = BigInteger.prototype.neq =
-    BigInteger.prototype.notEquals;
+  SmallInteger.prototype.neq =
+    SmallInteger.prototype.notEquals =
+    BigInteger.prototype.neq =
+      BigInteger.prototype.notEquals;
 
   BigInteger.prototype.greater = function (v) {
     return this.compare(v) > 0;
   };
-  SmallInteger.prototype.gt = SmallInteger.prototype.greater = BigInteger.prototype.gt =
-    BigInteger.prototype.greater;
+  SmallInteger.prototype.gt =
+    SmallInteger.prototype.greater =
+    BigInteger.prototype.gt =
+      BigInteger.prototype.greater;
 
   BigInteger.prototype.lesser = function (v) {
     return this.compare(v) < 0;
   };
-  SmallInteger.prototype.lt = SmallInteger.prototype.lesser = BigInteger.prototype.lt =
-    BigInteger.prototype.lesser;
+  SmallInteger.prototype.lt =
+    SmallInteger.prototype.lesser =
+    BigInteger.prototype.lt =
+      BigInteger.prototype.lesser;
 
   BigInteger.prototype.greaterOrEquals = function (v) {
     return this.compare(v) >= 0;
   };
-  SmallInteger.prototype.geq = SmallInteger.prototype.greaterOrEquals = BigInteger.prototype.geq =
-    BigInteger.prototype.greaterOrEquals;
+  SmallInteger.prototype.geq =
+    SmallInteger.prototype.greaterOrEquals =
+    BigInteger.prototype.geq =
+      BigInteger.prototype.greaterOrEquals;
 
   BigInteger.prototype.lesserOrEquals = function (v) {
     return this.compare(v) <= 0;
   };
-  SmallInteger.prototype.leq = SmallInteger.prototype.lesserOrEquals = BigInteger.prototype.leq =
-    BigInteger.prototype.lesserOrEquals;
+  SmallInteger.prototype.leq =
+    SmallInteger.prototype.lesserOrEquals =
+    BigInteger.prototype.leq =
+      BigInteger.prototype.lesserOrEquals;
 
   BigInteger.prototype.isEven = function () {
     return (this.value[0] & 1) === 0;
@@ -948,7 +964,7 @@ var bigInt = (function (undefined) {
     }
     if (!r.equals(1))
       throw new Error(
-        this.toString() + " and " + n.toString() + " are not co-prime"
+        this.toString() + " and " + n.toString() + " are not co-prime",
       );
     if (t.compare(0) === -1) {
       t = t.add(n);
@@ -1174,7 +1190,7 @@ var bigInt = (function (undefined) {
     return low.add(
       typeof result === "number"
         ? new SmallInteger(result)
-        : new BigInteger(result, false)
+        : new BigInteger(result, false),
     );
   }
   var parseBase = function (text, base) {
@@ -1305,7 +1321,7 @@ var bigInt = (function (undefined) {
       exp = +exp;
       if (exp !== truncate(exp) || !isPrecise(exp))
         throw new Error(
-          "Invalid integer: " + exp + " is not a valid exponent."
+          "Invalid integer: " + exp + " is not a valid exponent.",
         );
       var text = split[0];
       var decimalPlace = text.indexOf(".");

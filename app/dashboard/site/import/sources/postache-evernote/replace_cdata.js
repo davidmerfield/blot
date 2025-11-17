@@ -10,7 +10,7 @@ module.exports = function ($) {
         console.log(
           "CDATA NODE WITH CHILDREN",
           el.children.length,
-          el.children[0].data.slice(0, 100)
+          el.children[0].data.slice(0, 100),
         );
 
         // var new_html = el.children.map(function(el){return el.data;}).join(' ');

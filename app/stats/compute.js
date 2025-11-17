@@ -3,7 +3,7 @@ const { log_directory } = require("config");
 
 const redis_stats = require("./redis");
 
-async function handle ({ logFileName, aggregator }) {
+async function handle({ logFileName, aggregator }) {
   // the most recent logfile is stored
   // in /var/instance-ssd/logs/app.log"
   // previous logfiles are stored in directories with the format
@@ -17,11 +17,11 @@ async function handle ({ logFileName, aggregator }) {
   const logFiles = [log_directory + "/" + logFileName].concat(
     fs
       .readdirSync(log_directory)
-      .filter(file => file.indexOf("archive-") > -1)
+      .filter((file) => file.indexOf("archive-") > -1)
       .sort()
       .reverse()
-      .map(file => log_directory + "/" + file + "/" + logFileName)
-      .filter(file => fs.existsSync(file))
+      .map((file) => log_directory + "/" + file + "/" + logFileName)
+      .filter((file) => fs.existsSync(file)),
   );
 
   for (let i = 0; i < logFiles.length; i++) {
@@ -31,7 +31,7 @@ async function handle ({ logFileName, aggregator }) {
       console.log(
         logFileName,
         logFiles[i],
-        "computed up to already-computed data"
+        "computed up to already-computed data",
       );
       break;
     } else {
@@ -42,7 +42,7 @@ async function handle ({ logFileName, aggregator }) {
   console.log(logFileName, "done");
 }
 
-async function main ({ reset = false }) {
+async function main({ reset = false }) {
   if (reset) {
     console.log("resetting stats");
     await fs.emptyDir();
@@ -55,8 +55,8 @@ async function main ({ reset = false }) {
     handle({ logFileName: "app.log", aggregator: require("./node") }),
     handle({
       logFileName: "access.log",
-      aggregator: require("./nginx-access")
-    })
+      aggregator: require("./nginx-access"),
+    }),
   ]);
 }
 

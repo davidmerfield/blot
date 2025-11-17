@@ -8,9 +8,7 @@ function is(path) {
 }
 
 function read(blog, path, callback) {
-  ensure(blog, "object")
-    .and(path, "string")
-    .and(callback, "function");
+  ensure(blog, "object").and(path, "string").and(callback, "function");
 
   var localPath = LocalPath(blog.id, path);
 

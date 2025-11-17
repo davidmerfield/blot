@@ -39,6 +39,7 @@
     "express-rate-limit": "5.1.3",
     "express-session": "1.16.2",
     "fontkit": "1.8.1",
+    "form-data": "^4.0.0",
     "fs-extra": "11.1.0",
     "googleapis": "144.0.0",
     "he": "1.1.0",
@@ -47,7 +48,6 @@
     "http-auth": "3.2.3",
     "katex": "0.16.21",
     "lodash": "4.17.21",
-    "form-data": "^4.0.0",
     "mailgun.js": "11.0.0",
     "marked": "12.0.1",
     "mime-types": "3.0.1",
@@ -56,8 +56,8 @@
     "multiparty": "4.2.3",
     "mustache": "4.2.0",
     "node-addon-api": "7.0.0",
-    "node-gyp": "11.4.2",
     "node-fetch": "2.6.7",
+    "node-gyp": "11.4.2",
     "node-schedule": "2.1.1",
     "parse5": "7.2.1",
     "path-to-regexp": "8.2.0",
@@ -81,6 +81,7 @@
     "yaml": "2.7.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.3.5",
     "blessed": "0.1.81",
     "depcheck": "1.4.7",
     "dir-compare": "4.0.0",

@@ -16,11 +16,11 @@ module.exports = {
 
     callback(null, html, stat);
   },
-  is: function is (path) {
+  is: function is(path) {
     return (
       [".txt", ".text", ".md", ".markdown"].indexOf(
-        extname(path).toLowerCase()
+        extname(path).toLowerCase(),
       ) > -1
     );
-  }
+  },
 };

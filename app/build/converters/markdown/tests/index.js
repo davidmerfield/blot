@@ -22,18 +22,18 @@ describe("markdown converter", function () {
           try {
             html = html.replace(
               /"#?footnote-[A-Z\d]{1,6}"/gm,
-              '"#footnote-ID_REMOVED"'
+              '"#footnote-ID_REMOVED"',
             );
             html = html.replace(/"#?ref-[A-Z\d]{1,6}"/gm, '"#ref-ID_REMOVED"');
 
             expected = fs.readFileSync(dir + path + ".html", "utf8");
             expected = expected.replace(
               /"#?footnote-[A-Z\d]{1,6}"/gm,
-              '"#footnote-ID_REMOVED"'
+              '"#footnote-ID_REMOVED"',
             );
             expected = expected.replace(
               /"#?ref-[A-Z\d]{1,6}"/gm,
-              '"#ref-ID_REMOVED"'
+              '"#ref-ID_REMOVED"',
             );
           } catch (e) {
             console.log(e);

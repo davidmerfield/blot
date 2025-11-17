@@ -17,6 +17,6 @@ module.exports = function ($, tag, doThis, callback) {
 
       doThis(el, next);
     },
-    callback
+    callback,
   );
 };

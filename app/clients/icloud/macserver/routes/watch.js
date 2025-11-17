@@ -2,7 +2,7 @@ const { watch } = require("../watcher");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
-  
+
   // watch the blog
   await watch(blogID);
 

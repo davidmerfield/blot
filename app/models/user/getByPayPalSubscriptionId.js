@@ -3,7 +3,7 @@ var client = require("models/client");
 var key = require("./key");
 var getById = require("./getById");
 
-module.exports = function getByPayPalSubscriptionId (subscriptionId, callback) {
+module.exports = function getByPayPalSubscriptionId(subscriptionId, callback) {
   ensure(subscriptionId, "string").and(callback, "function");
 
   client.get(key.paypal(subscriptionId), function (err, uid) {

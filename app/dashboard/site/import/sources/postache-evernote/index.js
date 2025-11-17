@@ -14,12 +14,12 @@ function main(source_file, output_directory, callback) {
 
   if (!source_file)
     return callback(
-      new Error("Please pass a source file as a second argument")
+      new Error("Please pass a source file as a second argument"),
     );
 
   if (!output_directory)
     return callback(
-      new Error("Please pass an output directory as a third argument")
+      new Error("Please pass an output directory as a third argument"),
     );
 
   load(source_file, function (err, $) {

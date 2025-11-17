@@ -15,7 +15,7 @@ describe("updated", function () {
         locals: {
           date_display: "YYYY MMM DD [at] HH:mm",
         },
-      }
+      },
     );
 
     const cacheID = parseInt(await this.text("/cacheid.html"));

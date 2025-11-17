@@ -29,7 +29,7 @@ module.exports = {
   readFromFolder: require("./readFromFolder"),
   writeToFolder: require("./writeToFolder"),
   removeFromFolder: require("./removeFromFolder"),
-  
+
   package: require("./package"),
   viewModel: require("./viewModel"),
   metadataModel: require("./metadataModel"),

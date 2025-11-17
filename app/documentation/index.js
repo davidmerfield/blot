@@ -3,7 +3,7 @@ const Express = require("express");
 const redirector = require("./redirector");
 const Email = require("helper/email");
 const { join } = require("path");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 
 const documentation = Express.Router();
 
@@ -28,7 +28,7 @@ for (const path of files) {
       maxAge: "1y", // cache long-term
       acceptRanges: false, // do not allow ranged requests
       immutable: true, // the file will not change
-    })
+    }),
   );
 }
 
@@ -39,7 +39,7 @@ documentation.use(
     redirect: false, // Without 'redirect: false' this will redirect URLs to existent directories
     maxAge: "1y", // cache long-term
     immutable: true,
-  })
+  }),
 );
 
 const directories = ["/fonts", "/css", "/images", "/js", "/videos"];
@@ -51,7 +51,7 @@ for (const path of directories) {
       index: false, // Without 'index: false' this will server the index.html files inside
       redirect: false, // Without 'redirect: false' this will redirect URLs to existent directories
       maxAge: 86400000, // cache forever
-    })
+    }),
   );
 }
 
@@ -67,7 +67,7 @@ documentation.get(
   (req, res, next) => {
     res.locals["hide-on-this-page"] = true;
     next();
-  }
+  },
 );
 
 documentation.use(require("./selected"));
@@ -81,7 +81,10 @@ documentation.get("/", require("./templates.js"), function (req, res, next) {
 });
 
 // Inject the CSRF token into the form
-documentation.get(['/support', '/contact', '/feedback'], require("dashboard/util/csrf"));
+documentation.get(
+  ["/support", "/contact", "/feedback"],
+  require("dashboard/util/csrf"),
+);
 
 documentation.post(
   ["/support", "/contact", "/feedback"],
@@ -98,9 +101,13 @@ documentation.post(
 
     if (!contact_e879) return res.status(400).send("Message is required");
 
-    Email.SUPPORT(null, { email: contact_7d45, message: contact_e879, replyTo: contact_7d45 });
+    Email.SUPPORT(null, {
+      email: contact_7d45,
+      message: contact_e879,
+      replyTo: contact_7d45,
+    });
     res.send("OK");
-  }
+  },
 );
 
 documentation.get("/examples", require("./featured"));
@@ -118,7 +125,7 @@ documentation.get(
   (req, res, next) => {
     res.locals.hidebreadcrumbs = true;
     res.render("templates");
-  }
+  },
 );
 
 documentation.get(
@@ -128,7 +135,7 @@ documentation.get(
     if (!res.locals.template) return next();
     res.locals.layout = "partials/layout-full-screen";
     res.render("templates/template");
-  }
+  },
 );
 
 documentation.use("/templates/fonts", require("./fonts"));

@@ -29,10 +29,7 @@ site.get("/authenticate", cookieParser(), function (req, res, next) {
     return next(new Error("No blog to authenticate"));
   }
   let redirect =
-    "/sites/" +
-    handle +
-    "/client/dropbox/authenticate?code=" +
-    req.query.code;
+    "/sites/" + handle + "/client/dropbox/authenticate?code=" + req.query.code;
   if (req.query.full_access) redirect += "&full_access=true";
 
   res.clearCookie("blogToAuthenticate");
@@ -55,16 +52,16 @@ site.get("/authenticate", cookieParser(), function (req, res, next) {
 // accepted a push but before we've sent the response.
 var activeSyncs = {};
 
-function started (blogID) {
+function started(blogID) {
   if (activeSyncs[blogID] === undefined) activeSyncs[blogID] = 0;
   activeSyncs[blogID]++;
 }
 
-function finished (blogID) {
+function finished(blogID) {
   activeSyncs[blogID]--;
 }
 
-function finishedAllSyncs (blogID) {
+function finishedAllSyncs(blogID) {
   return activeSyncs[blogID] === 0;
 }
 
@@ -134,8 +131,10 @@ site.post("/webhook", function (req, res) {
           debug("Syncing", blogs.length, "blogs");
 
           // Filter out blogs that are currently syncing
-          const blogsToSync = blogs.filter(blog => !ongoingSyncs.has(blog.id));
-          
+          const blogsToSync = blogs.filter(
+            (blog) => !ongoingSyncs.has(blog.id),
+          );
+
           blogsToSync.forEach(function (blog) {
             // Used for testing purposes only
             started(blog.id);
@@ -158,7 +157,7 @@ site.post("/webhook", function (req, res) {
                 debug("Finish sync for", blog.id);
                 finished(blog.id);
               });
-            }
+            },
           );
         });
 
@@ -166,7 +165,7 @@ site.post("/webhook", function (req, res) {
 
         // Do nothing when all the accounts have synced.
       },
-      function () {}
+      function () {},
     );
   });
 });

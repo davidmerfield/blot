@@ -150,21 +150,21 @@ function build(directory, callback) {
   if (template.locals.body_font !== undefined) {
     template.locals.body_font = _.merge(
       _.cloneDeep(DEFAULT_FONT),
-      template.locals.body_font
+      template.locals.body_font,
     );
   }
 
   if (template.locals.font !== undefined) {
     template.locals.font = _.merge(
       _.cloneDeep(DEFAULT_FONT),
-      template.locals.font
+      template.locals.font,
     );
   }
 
   if (template.locals.navigation_font !== undefined) {
     template.locals.navigation_font = _.merge(
       _.cloneDeep(DEFAULT_FONT),
-      template.locals.navigation_font
+      template.locals.navigation_font,
     );
   }
 
@@ -173,7 +173,7 @@ function build(directory, callback) {
       ...HIGHLIGHTER_THEMES.find(
         ({ id }) =>
           id ===
-          (template.locals.syntax_highlighter.id || "stackoverflow-light")
+          (template.locals.syntax_highlighter.id || "stackoverflow-light"),
       ),
     };
   }
@@ -181,21 +181,21 @@ function build(directory, callback) {
   if (template.locals.coding_font !== undefined) {
     template.locals.coding_font = _.merge(
       _.cloneDeep(DEFAULT_MONO_FONT),
-      template.locals.coding_font
+      template.locals.coding_font,
     );
   }
 
   if (template.locals.syntax_highlighter_font !== undefined) {
     template.locals.syntax_highlighter_font = _.merge(
       _.cloneDeep(DEFAULT_MONO_FONT),
-      template.locals.syntax_highlighter_font
+      template.locals.syntax_highlighter_font,
     );
   }
 
   snapshot = assembleTemplateSnapshot(
     directory,
     templatePackage,
-    template.locals
+    template.locals,
   );
 
   Template.getMetadata(id, function (metadataErr, storedMetadata) {
@@ -281,7 +281,7 @@ function buildViews(id, definitions, callback) {
         next();
       });
     },
-    callback
+    callback,
   );
 }
 
@@ -425,7 +425,7 @@ function checkForExtinctTemplates(directory, callback) {
     if (templates.length) {
       debug(
         templates.length +
-          " templates no longer exist. Please run these scripts to safely remove them from the database:"
+          " templates no longer exist. Please run these scripts to safely remove them from the database:",
       );
     }
 
@@ -511,13 +511,13 @@ function emptyCacheForBlogsUsing(templateID, callback) {
               "..",
               templateID,
               "flushed for",
-              blog.handle + " (" + blog.id + ")"
+              blog.handle + " (" + blog.id + ")",
             );
             next();
           });
         });
       },
-      callback
+      callback,
     );
   });
 }
@@ -549,7 +549,7 @@ function removeOldVersionFromTestBlogs(templateID, callback) {
 
             console.log(
               "Removing old version of development template",
-              TemplateToRemove.id
+              TemplateToRemove.id,
             );
             Template.drop(blogID, TemplateToRemove.slug, function (err) {
               if (err) return next(err);
@@ -562,7 +562,7 @@ function removeOldVersionFromTestBlogs(templateID, callback) {
                     if (err) return next(err);
                     console.log("Removed template from", blogID);
                     next();
-                  }
+                  },
                 );
               } else {
                 next();
@@ -571,7 +571,7 @@ function removeOldVersionFromTestBlogs(templateID, callback) {
           });
         });
       },
-      callback
+      callback,
     );
   });
 }

@@ -45,22 +45,21 @@ code.hljs {
 }
 
 .hljs {
-  color: #D0D0D0;
+  color: #d0d0d0;
   background: #151515;
 }
 
 .hljs::selection,
 .hljs ::selection {
   background-color: #303030;
-  color: #D0D0D0;
+  color: #d0d0d0;
 }
-
 
 /* purposely do not highlight these things */
 .hljs-formula,
 .hljs-params,
-.hljs-property
-{}
+.hljs-property {
+}
 
 /* base03 - #505050 -  Comments, Invisibles, Line Highlighting */
 .hljs-comment {
@@ -69,14 +68,14 @@ code.hljs {
 
 /* base04 - #B0B0B0 -  Dark Foreground (Used for status bars) */
 .hljs-tag {
-  color: #B0B0B0;
+  color: #b0b0b0;
 }
 
 /* base05 - #D0D0D0 -  Default Foreground, Caret, Delimiters, Operators */
 .hljs-subst,
 .hljs-punctuation,
 .hljs-operator {
-  color: #D0D0D0;
+  color: #d0d0d0;
 }
 
 .hljs-operator {
@@ -90,7 +89,7 @@ code.hljs {
 .hljs-selector-tag,
 .hljs-name,
 .hljs-deletion {
-  color: #FF0086;
+  color: #ff0086;
 }
 
 /* base09 - Integers, Boolean, Constants, XML Attributes, Markup Link Url */
@@ -100,20 +99,19 @@ code.hljs {
 .hljs-attr,
 .hljs-variable.constant_,
 .hljs-literal {
-  color: #FD8900;
+  color: #fd8900;
 }
 
 /* base0A - Classes, Markup Bold, Search Text Background */
 .hljs-title,
 .hljs-class .hljs-title,
-.hljs-title.class_
-{
-  color: #ABA800;
+.hljs-title.class_ {
+  color: #aba800;
 }
 
 .hljs-strong {
-  font-weight:bold;
-  color: #ABA800;
+  font-weight: bold;
+  color: #aba800;
 }
 
 /* base0B - Strings, Inherited Class, Markup Code, Diff Inserted */
@@ -121,16 +119,16 @@ code.hljs {
 .hljs-addition,
 .hljs-title.class_.inherited__,
 .hljs-string {
-  color: #00C918;
+  color: #00c918;
 }
 
 /* base0C - Support, Regular Expressions, Escape Characters, Markup Quotes */
 .hljs-built_in,
-.hljs-doctag, /* guessing */
+.hljs-doctag /* guessing */,
 .hljs-quote,
 .hljs-keyword.hljs-atrule,
 .hljs-regexp {
-  color: #1FAAAA;
+  color: #1faaaa;
 }
 
 /* base0D - Functions, Methods, Attribute IDs, Headings */
@@ -139,22 +137,22 @@ code.hljs {
 .ruby .hljs-property,
 .hljs-title.function_,
 .hljs-section {
-  color: #3777E6;
+  color: #3777e6;
 }
 
 /* base0E - Keywords, Storage, Selector, Markup Italic, Diff Changed */
 .hljs-type,
 /* .hljs-selector-id, */
-/* .hljs-selector-class, */
-/* .hljs-selector-attr, */
-/* .hljs-selector-pseudo, */
-.hljs-template-tag,
+  /* .hljs-selector-class, */
+  /* .hljs-selector-attr, */
+  /* .hljs-selector-pseudo, */
+  .hljs-template-tag,
 .diff .hljs-meta,
 .hljs-keyword {
-  color: #AD00A1;
+  color: #ad00a1;
 }
 .hljs-emphasis {
-  color: #AD00A1;
+  color: #ad00a1;
   font-style: italic;
 }
 
@@ -165,13 +163,12 @@ code.hljs {
   from leaking into meta by accident
 */
 .hljs-meta .hljs-keyword,
-.hljs-meta .hljs-string
-{
-  color: #CC6633;
+.hljs-meta .hljs-string {
+  color: #cc6633;
 }
 
 .hljs-meta .hljs-keyword,
 /* for v10 compatible themes */
-.hljs-meta-keyword {
+  .hljs-meta-keyword {
   font-weight: bold;
 }

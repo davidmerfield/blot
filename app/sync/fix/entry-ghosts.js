@@ -4,7 +4,7 @@ const Entry = require("models/entry");
 const localPath = require("helper/localPath");
 const async = require("async");
 
-function resolvePath (blogID, path, callback) {
+function resolvePath(blogID, path, callback) {
   var candidates = [];
 
   candidates.push(path);
@@ -39,13 +39,13 @@ function resolvePath (blogID, path, callback) {
         return callback(err || new Error("ENOENT: " + path));
       }
       callback(null, match);
-    }
+    },
   );
 }
 // The purpose of this script was to resolve an issue with entries having
 // path properties that were not equal to the location of the file on disk
 // if the file system is case sensitive.
-function main (blog, callback) {
+function main(blog, callback) {
   var missing = [];
   var edit = [];
   var report = [];
@@ -53,9 +53,8 @@ function main (blog, callback) {
   Entries.each(
     blog.id,
     function (_entry, next) {
-
       if (!_entry) return next();
-      
+
       if (_entry.deleted) return next();
 
       resolvePath(blog.id, _entry.path, function (err, path) {
@@ -77,14 +76,14 @@ function main (blog, callback) {
       if (missing.length) {
         report.push(
           missing.length +
-            " files are missing from the disk for entries which are not deleted"
+            " files are missing from the disk for entries which are not deleted",
         );
         report.push(missing);
       }
 
       if (edit.length) {
         report.push(
-          edit.length + "files exists on disk with a different case.."
+          edit.length + "files exists on disk with a different case..",
         );
         report.push(edit);
       }
@@ -105,11 +104,11 @@ function main (blog, callback) {
             function (err) {
               if (err) return callback(err);
               callback(null, report);
-            }
+            },
           );
-        }
+        },
       );
-    }
+    },
   );
 }
 

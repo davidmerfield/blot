@@ -32,7 +32,7 @@ describe("screenshot plugin", function () {
     app.get("/", (req, res) => {
       console.log("sending response");
       res.send(
-        "<html><head><style>body{background:white}</style></head><body><h1>Hello, world!</h1></body></html>"
+        "<html><head><style>body{background:white}</style></head><body><h1>Hello, world!</h1></body></html>",
       );
     });
 
@@ -60,7 +60,7 @@ describe("screenshot plugin", function () {
 
     if (hash !== expectedHash) {
       throw new Error(
-        `Screenshot does not match expected hash, please check ./data/screenshot.png`
+        `Screenshot does not match expected hash, please check ./data/screenshot.png`,
       );
     }
 
@@ -71,7 +71,7 @@ describe("screenshot plugin", function () {
     const requests = 10; // Reduced number of requests for stability
     const paths = Array.from(
       { length: requests },
-      (_, i) => `${__dirname}/data/screenshot_${i}.png`
+      (_, i) => `${__dirname}/data/screenshot_${i}.png`,
     );
 
     console.log(`Starting restart with ${requests} requests`);
@@ -93,7 +93,7 @@ describe("screenshot plugin", function () {
         const hash = await hashFile(p);
         if (hash !== expectedHash) {
           throw new Error(
-            `Screenshot at ${p} does not match expected hash, please check the file.`
+            `Screenshot at ${p} does not match expected hash, please check the file.`,
           );
         }
         fs.unlinkSync(p);
@@ -105,7 +105,7 @@ describe("screenshot plugin", function () {
     const requests = 10;
     const paths = Array.from(
       { length: requests },
-      (_, i) => `${__dirname}/data/screenshot_${i}.png`
+      (_, i) => `${__dirname}/data/screenshot_${i}.png`,
     );
 
     console.log(`Starting rate limiting test with ${requests} requests`);
@@ -116,7 +116,7 @@ describe("screenshot plugin", function () {
 
     // Log the requests and their corresponding times
     console.log(
-      requestTimes.map((t, i) => `Request ${i + 1}: ${t}`).join("\n")
+      requestTimes.map((t, i) => `Request ${i + 1}: ${t}`).join("\n"),
     );
 
     // Check time differences between requests
@@ -129,7 +129,7 @@ describe("screenshot plugin", function () {
     console.log(
       timeDiffs
         .map((diff, i) => `Diff between req ${i + 1} and ${i + 2}: ${diff}ms`)
-        .join("\n")
+        .join("\n"),
     );
 
     // calculate the average time difference
@@ -145,7 +145,7 @@ describe("screenshot plugin", function () {
         const hash = await hashFile(p);
         if (hash !== expectedHash) {
           throw new Error(
-            `Screenshot at ${p} does not match expected hash, please check the file.`
+            `Screenshot at ${p} does not match expected hash, please check the file.`,
           );
         }
         fs.unlinkSync(p);

@@ -11,7 +11,6 @@ $(document).ready(function () {
     return false;
   });
 
-
   if ($(".sortable")[0]) {
     Sortable.create($(".sortable")[0], {
       handle: ".handle",
@@ -41,6 +40,4 @@ $(document).ready(function () {
       },
     });
   }
-
-  
 });

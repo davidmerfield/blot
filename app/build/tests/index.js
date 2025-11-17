@@ -51,7 +51,7 @@ describe("build", function () {
       expect(entry.thumbnail.small).toEqual(
         jasmine.objectContaining({
           name: "small.jpg",
-        })
+        }),
       );
       done();
     });
@@ -155,7 +155,7 @@ describe("build", function () {
       expect(entry.thumbnail.small).toEqual(
         jasmine.objectContaining({
           name: "small.jpg",
-        })
+        }),
       );
 
       done();
@@ -167,7 +167,7 @@ describe("build", function () {
 
     fs.copySync(
       require("path").join(__dirname, "../converters/img/tests/gps.jpg"),
-      this.blogDirectory + path
+      this.blogDirectory + path,
     );
 
     build(this.blog, path, function (err, entry) {
@@ -206,7 +206,7 @@ describe("build", function () {
       expect(entry.thumbnail.small).toEqual(
         jasmine.objectContaining({
           name: "small.jpg",
-        })
+        }),
       );
 
       done();
@@ -294,7 +294,7 @@ describe("build", function () {
       expect(entry.thumbnail.small).toEqual(
         jasmine.objectContaining({
           name: "small.jpg",
-        })
+        }),
       );
 
       done();

@@ -41,7 +41,7 @@ module.exports = function (blogDirectory, callback) {
           blogDirectory +
           " exists? " +
           fs.existsSync(blogDirectory),
-        "Match? " + pathToGitRepository === blogDirectory
+        "Match? " + pathToGitRepository === blogDirectory,
       ];
 
       return callback(new Error(message.join("\n")));

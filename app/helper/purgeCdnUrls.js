@@ -39,4 +39,3 @@ async function purgeCdnUrls(urls) {
 }
 
 module.exports = purgeCdnUrls;
-

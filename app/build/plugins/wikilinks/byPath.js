@@ -104,7 +104,7 @@ module.exports = function byPath(blogID, pathOfPost, href, isLink, callback) {
         if (perfectMatch) return done(null, join(correctDir, perfectMatch));
 
         const roughMatch = contents.find((item) =>
-          normalize(item).startsWith(normalize(base))
+          normalize(item).startsWith(normalize(base)),
         );
 
         if (roughMatch) return done(null, join(correctDir, roughMatch));

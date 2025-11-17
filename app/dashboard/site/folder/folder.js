@@ -18,7 +18,8 @@ async function getContents(blog, dir) {
     new Promise((resolve) => {
       // Remove 'reject' parameter since it is not being used
       const keys = filtered.map(
-        (item) => `blog:${blog.id}:entry:${pathNormalize(path.join(dir, item))}`
+        (item) =>
+          `blog:${blog.id}:entry:${pathNormalize(path.join(dir, item))}`,
       );
       const batch = client.batch();
       keys.forEach((key) => {
@@ -36,12 +37,12 @@ async function getContents(blog, dir) {
 
         stat.path = path.join(dir, item);
         // we don't want to turn '/' into '%2F' so we split on '/' and encode each part separately
-        stat.url = stat.path.split('/').map(encodeURIComponent).join('/');
+        stat.url = stat.path.split("/").map(encodeURIComponent).join("/");
         stat.fullPath = fullPath;
         stat.name = item;
 
         return stat;
-      })
+      }),
     ),
   ]);
 
@@ -50,7 +51,7 @@ async function getContents(blog, dir) {
       stat.entry = entries.includes(stat.name);
       return stat;
     }),
-    { property: "name" }
+    { property: "name" },
   );
 
   return result;

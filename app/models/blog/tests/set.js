@@ -68,32 +68,32 @@ describe("Blog.set", function () {
       set(test.blog.id, { domain: customDomain }, function (err) {
         if (err) return done.fail(err);
 
-        client.mget([oldHostKey, customDomainKey], function (
-          err,
-          valuesBefore
-        ) {
-          if (err) return done.fail(err);
-
-          expect(valuesBefore[0]).toBe(test.blog.id);
-          expect(valuesBefore[1]).toBe(test.blog.id);
-
-          set(test.blog.id, { handle: newHandle }, function (err) {
+        client.mget(
+          [oldHostKey, customDomainKey],
+          function (err, valuesBefore) {
             if (err) return done.fail(err);
 
-            client.mget(
-              [oldHostKey, preservedKey, newHostKey, customDomainKey],
-              function (err, values) {
-                if (err) return done.fail(err);
+            expect(valuesBefore[0]).toBe(test.blog.id);
+            expect(valuesBefore[1]).toBe(test.blog.id);
 
-                expect(values[0]).toBe(null);
-                expect(values[1]).toBe("keep");
-                expect(values[2]).toBe(test.blog.id);
-                expect(values[3]).toBe(test.blog.id);
-                done();
-              }
-            );
-          });
-        });
+            set(test.blog.id, { handle: newHandle }, function (err) {
+              if (err) return done.fail(err);
+
+              client.mget(
+                [oldHostKey, preservedKey, newHostKey, customDomainKey],
+                function (err, values) {
+                  if (err) return done.fail(err);
+
+                  expect(values[0]).toBe(null);
+                  expect(values[1]).toBe("keep");
+                  expect(values[2]).toBe(test.blog.id);
+                  expect(values[3]).toBe(test.blog.id);
+                  done();
+                },
+              );
+            });
+          },
+        );
       });
     });
   });

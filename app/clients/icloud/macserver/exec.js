@@ -32,8 +32,8 @@ const exec = (command, args = [], options = {}) => {
       } else {
         reject(
           new Error(
-            `Command failed with exit code ${code}\nStderr: ${stderr.trim()}`
-          )
+            `Command failed with exit code ${code}\nStderr: ${stderr.trim()}`,
+          ),
         );
       }
     });

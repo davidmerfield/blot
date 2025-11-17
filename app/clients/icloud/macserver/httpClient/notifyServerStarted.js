@@ -5,7 +5,7 @@ module.exports = async (...args) => {
   if (args.length !== 0) {
     throw new Error("Invalid number of arguments: expected 0");
   }
-  
+
   console.log(`Notifying server that the client has started`);
 
   await fetch(remoteServer + "/started", {

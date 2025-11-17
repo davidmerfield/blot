@@ -2,7 +2,6 @@ var Blog = require("models/blog");
 var config = require("config");
 
 module.exports = function (req, res, next) {
-
   req.log("Loading blog");
 
   var identifier, handle, redirect, previewTemplate, err;
@@ -15,8 +14,8 @@ module.exports = function (req, res, next) {
   // to HTTPS. This is a workaround.
   var fromCloudflare =
     Object.keys(req.headers || {})
-      .map(key => key.trim().toLowerCase())
-      .find(key => key.startsWith("cf-")) !== undefined;
+      .map((key) => key.trim().toLowerCase())
+      .find((key) => key.startsWith("cf-")) !== undefined;
 
   // The request is missing a host header
   if (!host) {
@@ -133,14 +132,14 @@ module.exports = function (req, res, next) {
   });
 };
 
-function isSubdomain (host) {
+function isSubdomain(host) {
   return (
     host.slice(-config.host.length) === config.host &&
     host.slice(0, -config.host.length).length > 1
   );
 }
 
-function extractHandle (host) {
+function extractHandle(host) {
   if (!isSubdomain(host, config.host)) return false;
 
   let handle = host
@@ -156,7 +155,7 @@ function extractHandle (host) {
   return handle;
 }
 
-function extractPreviewTemplate (host, blogID) {
+function extractPreviewTemplate(host, blogID) {
   if (!isSubdomain(host, config.host)) return false;
 
   var subdomains = host.slice(0, -config.host.length - 1).split(".");

@@ -37,11 +37,11 @@ const limiter = new Bottleneck({
 
 function validateOptions(options) {
   const validatedOptions = { ...options };
-  if (options.width && typeof options.width !== 'number') {
-    throw new Error('Width must be a number');
+  if (options.width && typeof options.width !== "number") {
+    throw new Error("Width must be a number");
   }
-  if (options.height && typeof options.height !== 'number') {
-    throw new Error('Height must be a number');
+  if (options.height && typeof options.height !== "number") {
+    throw new Error("Height must be a number");
   }
   return validatedOptions;
 }
@@ -101,7 +101,9 @@ async function cleanup() {
   if (browser) {
     try {
       const pages = await browser.pages();
-      await Promise.all(pages.map(page => closePageWithTimeout(page).catch(() => {})));
+      await Promise.all(
+        pages.map((page) => closePageWithTimeout(page).catch(() => {})),
+      );
       await browser.close().catch(() => {});
     } catch (error) {
       console.error(prefix(), "Error during cleanup:", error);
@@ -117,9 +119,10 @@ async function closePageWithTimeout(page) {
       page.close(),
       new Promise((_, reject) =>
         setTimeout(
-          () => reject(new Error("Timeout calling page.close() after 2 seconds")),
-          CLOSE_PAGE_TIMEOUT
-        )
+          () =>
+            reject(new Error("Timeout calling page.close() after 2 seconds")),
+          CLOSE_PAGE_TIMEOUT,
+        ),
       ),
     ]);
   } catch (error) {
@@ -144,9 +147,12 @@ async function screenshotWithTimeout(page, path) {
       }),
       new Promise((_, reject) =>
         setTimeout(
-          () => reject(new Error("Timeout calling page.screenshot() after 2 seconds")),
-          SCREENSHOT_TIMEOUT
-        )
+          () =>
+            reject(
+              new Error("Timeout calling page.screenshot() after 2 seconds"),
+            ),
+          SCREENSHOT_TIMEOUT,
+        ),
       ),
     ]);
   } catch (error) {
@@ -186,7 +192,6 @@ async function takeScreenshot(site, path, options = {}) {
 
     console.log(prefix(), "Taking screenshot of", site, "to", path);
     await screenshotWithTimeout(page, path);
-
   } catch (error) {
     console.error(prefix(), "Error during screenshot:", error);
     await restart();
@@ -214,7 +219,7 @@ async function shutdown() {
 const screenshot = async (site, path, options = {}) => {
   try {
     return await retry(() =>
-      limiter.schedule(() => takeScreenshot(site, path, options))
+      limiter.schedule(() => takeScreenshot(site, path, options)),
     );
   } catch (error) {
     console.error(prefix(), "Screenshot failed after retries:", error);

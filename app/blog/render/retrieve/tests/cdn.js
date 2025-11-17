@@ -32,7 +32,11 @@ describe("cdn", function () {
       expect(result).toContain(config.cdn.origin);
       expect(result).toContain("/template/");
       // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
-      expect(result).toMatch(new RegExp(`/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`));
+      expect(result).toMatch(
+        new RegExp(
+          `/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`,
+        ),
+      );
       done();
     });
   });
@@ -48,7 +52,11 @@ describe("cdn", function () {
       expect(result).toContain(config.cdn.origin);
       expect(result).toContain("/template/");
       // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
-      expect(result).toMatch(new RegExp(`/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`));
+      expect(result).toMatch(
+        new RegExp(
+          `/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`,
+        ),
+      );
       done();
     });
   });
@@ -79,7 +87,11 @@ describe("cdn", function () {
       expect(result).toContain(config.cdn.origin);
       expect(result).toContain("/template/");
       // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
-      expect(result).toMatch(new RegExp(`/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`));
+      expect(result).toMatch(
+        new RegExp(
+          `/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`,
+        ),
+      );
       done();
     });
   });
@@ -144,9 +156,12 @@ describe("cdn", function () {
       expect(result).toContain(config.cdn.origin);
       expect(result).toContain("/template/");
       // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
-      expect(result).toMatch(new RegExp(`/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`));
+      expect(result).toMatch(
+        new RegExp(
+          `/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`,
+        ),
+      );
       done();
     });
   });
 });
-

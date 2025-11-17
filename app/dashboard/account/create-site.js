@@ -53,19 +53,22 @@ CreateBlog.route("/inform-paypal")
 
   .get(function (req, res) {
     res.locals.breadcrumbs = res.locals.breadcrumbs.slice(0, -1);
-    res.locals.breadcrumbs[res.locals.breadcrumbs.length - 1] = {label: 'Create site', last: true};
-    
+    res.locals.breadcrumbs[res.locals.breadcrumbs.length - 1] = {
+      label: "Create site",
+      last: true,
+    };
+
     res.render("dashboard/account/create-site-paypal", {
       title: "Create a site",
       not_paid: true,
       breadcrumb: "Create site",
       paypal_client_id: config.paypal.client_id,
-      new_quantity: req.user.blogs.length + 1
+      new_quantity: req.user.blogs.length + 1,
     });
   })
 
   .post(saveBlog, (req, res) => {
-    res.message('/sites/' + req.blog.handle, 'Created site');
+    res.message("/sites/" + req.blog.handle, "Created site");
   });
 
 CreateBlog.route("/")
@@ -85,7 +88,6 @@ CreateBlog.route("/")
       first_site,
     });
   })
-
 
   .post(validateSubscription)
 
@@ -116,27 +118,25 @@ CreateBlog.route("/")
     if (req.body.consent === "true") {
       return next();
     } else {
-        
       if (req.user.paypal && req.user.paypal.status) {
         res.redirect(req.baseUrl + "/inform-paypal");
       } else {
         res.redirect(req.baseUrl);
-      } 
-  }
+      }
+    }
   })
 
   .post(chargeForRemaining, updateSubscription, saveBlog, (req, res) => {
-
     // For the first site, we immediately redirect to the client
     // setup page so they can sync their folder
     if (req.user.blogs.length === 0) {
-      res.redirect('/sites/' + req.blog.handle + '/client');
+      res.redirect("/sites/" + req.blog.handle + "/client");
     } else {
-      res.message('/sites/' + req.blog.handle, 'Created site');
+      res.message("/sites/" + req.blog.handle, "Created site");
     }
   });
 
-function calculateFee (req, res, next) {
+function calculateFee(req, res, next) {
   // We dont need to do this for free users
   if (canSkip(req.user)) return next();
 
@@ -180,7 +180,7 @@ function calculateFee (req, res, next) {
   next();
 }
 
-function validateSubscription (req, res, next) {
+function validateSubscription(req, res, next) {
   if (canSkip(req.user)) return next();
 
   if (req.user.paypal && req.user.paypal.status === "ACTIVE") {
@@ -193,13 +193,11 @@ function validateSubscription (req, res, next) {
 
   res.message(
     "/sites/account/subscription/create",
-    new Error("You need an active subscription to create a new blog")
+    new Error("You need an active subscription to create a new blog"),
   );
 }
 
-
-
-function saveBlog (req, res, next) {
+function saveBlog(req, res, next) {
   var title, handle;
 
   if (req.body.no_title) {
@@ -215,10 +213,10 @@ function saveBlog (req, res, next) {
   var newBlog = {
     title: title,
     handle: handle,
-    timeZone: req.body.timeZone
+    timeZone: req.body.timeZone,
   };
 
-  Blog.create(req.user.uid, newBlog, function onCreate (err, blog) {
+  Blog.create(req.user.uid, newBlog, function onCreate(err, blog) {
     if (
       err &&
       err.handle &&
@@ -250,13 +248,13 @@ function saveBlog (req, res, next) {
   });
 }
 
-function canSkip (user) {
+function canSkip(user) {
   return (
     !user.subscription.status && !user.paypal.status && user.blogs.length === 0
   );
 }
 
-function updateSubscription (req, res, next) {
+function updateSubscription(req, res, next) {
   // We dont need to do this for free users
   if (canSkip(req.user)) {
     return next();
@@ -275,7 +273,7 @@ function updateSubscription (req, res, next) {
     req.user.subscription.id,
     {
       quantity: req.user.blogs.length + 1,
-      prorate: false
+      prorate: false,
     },
     function (err, subscription) {
       if (err) return next(err);
@@ -287,12 +285,11 @@ function updateSubscription (req, res, next) {
 
         next();
       });
-    }
+    },
   );
 }
 
-function chargeForRemaining (req, res, next) {
-  
+function chargeForRemaining(req, res, next) {
   // We dont need to do this for free users
   if (!req.user.subscription.status) {
     return next();
@@ -316,7 +313,7 @@ function chargeForRemaining (req, res, next) {
       amount: req.amount_due_now,
       currency: "usd",
       customer: req.user.subscription.customer,
-      description: "Charge for the remaining billing period"
+      description: "Charge for the remaining billing period",
     },
     function (err, charge) {
       if (err) return next(err);
@@ -324,7 +321,7 @@ function chargeForRemaining (req, res, next) {
       if (!charge) return next(new Error(BAD_CHARGE));
 
       next();
-    }
+    },
   );
 }
 

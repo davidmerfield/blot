@@ -28,7 +28,7 @@ Stats.get("/stats.json", async (req, res) => {
     const files = await fs.readdir(stats_directory);
 
     let most_recent_files = files
-      .filter(file => file.indexOf(".json") > -1)
+      .filter((file) => file.indexOf(".json") > -1)
       .sort();
 
     if (files.length < number_of_files) {
@@ -39,7 +39,9 @@ Stats.get("/stats.json", async (req, res) => {
 
     // Read the files
     const data = await Promise.all(
-      most_recent_files.map(file => fs.readJson(stats_directory + "/" + file))
+      most_recent_files.map((file) =>
+        fs.readJson(stats_directory + "/" + file),
+      ),
     );
 
     console.log("fetching files", most_recent_files);

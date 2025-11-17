@@ -55,7 +55,7 @@ module.exports = async function getViewByURLPattern(templateID, url, callback) {
                 "with normalized URL:",
                 normalizedPathname,
                 "in view:",
-                viewName
+                viewName,
               );
               return callback(null, viewName, matchResult.params, query);
             }
@@ -107,12 +107,12 @@ function normalizePathname(pathname) {
  * @returns {Array} - An array of [viewName, urlPatterns].
  */
 function parseViewPatterns(viewPatternStrings) {
-  return Object.entries(viewPatternStrings).map(([viewName, patterns]) => [
-    viewName,
-    JSON.parse(patterns), // Patterns are stored as JSON strings
-  ]).sort(([viewNameA], [viewNameB]) =>
-    viewNameA.localeCompare(viewNameB)
-  );
+  return Object.entries(viewPatternStrings)
+    .map(([viewName, patterns]) => [
+      viewName,
+      JSON.parse(patterns), // Patterns are stored as JSON strings
+    ])
+    .sort(([viewNameA], [viewNameB]) => viewNameA.localeCompare(viewNameB));
 }
 
 /**

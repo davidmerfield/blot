@@ -27,7 +27,7 @@ module.exports = function (blogID, entry, previous_dependencies, callback) {
     new_dependencies = _.difference(entry.dependencies, previous_dependencies);
     removed_dependencies = _.difference(
       previous_dependencies,
-      entry.dependencies
+      entry.dependencies,
     );
   }
 

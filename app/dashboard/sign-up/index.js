@@ -49,7 +49,7 @@ alreadyPaid.post(validateEmail, function (req, res, next) {
   User.checkAccessToken(req.params.token, function (err) {
     if (err) {
       return next(
-        new Error("Your sign up link is not valid. Please ask for another.")
+        new Error("Your sign up link is not valid. Please ask for another."),
       );
     }
 
@@ -59,7 +59,7 @@ alreadyPaid.post(validateEmail, function (req, res, next) {
   });
 });
 
-function validateEmail (req, res, next) {
+function validateEmail(req, res, next) {
   var email = req.body && req.body.email;
 
   // Normalize the email here before storing it
@@ -88,7 +88,7 @@ paymentForm.get(function (req, res, next) {
 
   if (!config.stripe.key) {
     console.error("Warning: Stripe key is not set");
-    return res.redirect('/');
+    return res.redirect("/");
   }
 
   res.locals.title = "Sign up";
@@ -110,7 +110,7 @@ paymentForm.post(validateEmail, function (req, res, next) {
     card,
     email,
     plan: config.stripe.plan,
-    description: "Blot subscription"
+    description: "Blot subscription",
   };
 
   stripe.customers.create(info, function (err, customer) {
@@ -143,7 +143,6 @@ passwordForm.all(function (req, res, next) {
     (!req.session.subscription && !req.session.paypal)
   )
     return res.redirect(req.baseUrl + paymentForm.path);
-
 
   next();
 });
@@ -191,7 +190,7 @@ passwordForm.post(function (req, res, next) {
             function () {
               // TODO: handle this error but it's not
               // all that important
-            }
+            },
           );
         }
 
@@ -206,14 +205,14 @@ passwordForm.post(function (req, res, next) {
           secure: true,
           httpOnly: false,
           maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-          sameSite: "Lax"
+          sameSite: "Lax",
         });
 
         Email.WELCOME(user.uid);
 
-        req.session.uid = user.uid;        
+        req.session.uid = user.uid;
         res.redirect("/sites/account/create-site");
-      }
+      },
     );
   });
 });
@@ -223,11 +222,10 @@ passwordForm.post(function (req, res, next) {
 signup.use(function (err, req, res, next) {
   if (err && err.message)
     return res.redirect(
-      req.baseUrl + req.path + "?error=" + encodeURIComponent(err.message)
+      req.baseUrl + req.path + "?error=" + encodeURIComponent(err.message),
     );
 
   next();
 });
-
 
 module.exports = signup;

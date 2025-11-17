@@ -19,13 +19,13 @@ module.exports = (output_directory, posts, options = {}) => {
           require("./insert_metadata"),
           require("./write"),
         ],
-        next
+        next,
       );
     },
     (err) => {
       if (err) throw err;
       console.log("Done!");
       process.exit();
-    }
+    },
   );
 };

@@ -18,7 +18,7 @@ describe("Blot configuration", function () {
 
   beforeAll(function (done) {
     server = require("child_process").fork(__dirname + "/../../../app", {
-      silent: true
+      silent: true,
     });
 
     // App should not emit anything on standard error

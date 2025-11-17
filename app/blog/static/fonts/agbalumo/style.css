@@ -1,15 +1,31 @@
 @font-face {
-  font-family: 'Agbalumo';
+  font-family: "Agbalumo";
   font-style: normal;
   font-weight: 400;
-  src: url('{{{config.cdn.origin}}}/fonts/agbalumo/400.eot?version=a24efa&extension=.eot'); 
-  src: url('{{{config.cdn.origin}}}/fonts/agbalumo/400.eot?version=a24efa&extension=.eot#iefix') format('embedded-opentype'), 
-       url('{{{config.cdn.origin}}}/fonts/agbalumo/400.woff?version=6234bf&extension=.woff') format('woff'),
-       url('{{{config.cdn.origin}}}/fonts/agbalumo/400.ttf?version=27cd17&extension=.ttf') format('truetype'),
-       url('{{{config.cdn.origin}}}/fonts/agbalumo/400.otf?version=f1fea9&extension=.otf') format('opentype');
+  src: url("{{{config.cdn.origin}}}/fonts/agbalumo/400.eot?version=a24efa&extension=.eot");
+  src:
+    url("{{{config.cdn.origin}}}/fonts/agbalumo/400.eot?version=a24efa&extension=.eot#iefix")
+    format("embedded-opentype"),
+    url("{{{config.cdn.origin}}}/fonts/agbalumo/400.woff?version=6234bf&extension=.woff")
+    format("woff"),
+    url("{{{config.cdn.origin}}}/fonts/agbalumo/400.ttf?version=27cd17&extension=.ttf")
+    format("truetype"),
+    url("{{{config.cdn.origin}}}/fonts/agbalumo/400.otf?version=f1fea9&extension=.otf")
+    format("opentype");
 }
-.pull-double {margin-left:-0.529em}
-.push-double{margin-right:0.529em}
-.pull-single{margin-left:-0.312em}
-.push-single{margin-right:0.312em}
-.push-double,.push-single{display:inline-block}
+.pull-double {
+  margin-left: -0.529em;
+}
+.push-double {
+  margin-right: 0.529em;
+}
+.pull-single {
+  margin-left: -0.312em;
+}
+.push-single {
+  margin-right: 0.312em;
+}
+.push-double,
+.push-single {
+  display: inline-block;
+}

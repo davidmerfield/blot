@@ -20,7 +20,7 @@ describe("questions.create", function () {
     expect(question.title).toEqual("How?");
     expect(question.body).toEqual("");
     expect(question.tags).toEqual([]);
-  });  
+  });
 
   it("respects the ID you supply it as long as it is not new", async function () {
     const question = await create({
@@ -55,7 +55,6 @@ describe("questions.create", function () {
   });
 
   it("will throw an error if you trigger an issue with redis multi.exec", async function () {
-
     const client = require("models/client");
 
     spyOn(client, "multi").and.returnValue({
@@ -73,14 +72,14 @@ describe("questions.create", function () {
     } catch (e) {
       expect(e.message).toEqual("Oh no!");
     }
-
   });
 
   it("will throw an error if you trigger an issue with redis exists", async function () {
-    
     const client = require("models/client");
 
-    spyOn(client, "exists").and.callFake((id, cb) => cb(new Error("REDIS EXISTS ISSUE")));
+    spyOn(client, "exists").and.callFake((id, cb) =>
+      cb(new Error("REDIS EXISTS ISSUE")),
+    );
 
     try {
       await create({ title: "How?", id: "1" });
@@ -90,12 +89,12 @@ describe("questions.create", function () {
     }
   });
 
-
   it("will throw an error if you trigger an issue with redis incr", async function () {
-    
     const client = require("models/client");
 
-    spyOn(client, "incr").and.callFake((id, cb) => cb(new Error("REDIS INCR ISSUE")));
+    spyOn(client, "incr").and.callFake((id, cb) =>
+      cb(new Error("REDIS INCR ISSUE")),
+    );
 
     try {
       await create({ title: "How?", body: "Yes" });
@@ -104,7 +103,6 @@ describe("questions.create", function () {
       expect(e.message).toEqual("REDIS INCR ISSUE");
     }
   });
-
 
   it("saves tags if you supply them", async function () {
     const question = await create({

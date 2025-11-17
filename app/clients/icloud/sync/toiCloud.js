@@ -21,7 +21,7 @@ async function retry(fn, ...args) {
     } catch (e) {
       if (i === 2) throw e;
       const delay = Math.min(1000 * Math.pow(2, i), 10000);
-      console.log("Attempt", i ,"failed, retrying in", delay, "ms", e);
+      console.log("Attempt", i, "failed, retrying in", delay, "ms", e);
       await new Promise((r) => setTimeout(r, delay));
     }
   }
@@ -41,7 +41,7 @@ module.exports = async (blogID, publish, update) => {
 
     for (const { name } of remoteContents) {
       const localItem = localContents.find(
-        (item) => item.name.normalize("NFC") === name.normalize("NFC")
+        (item) => item.name.normalize("NFC") === name.normalize("NFC"),
       );
 
       if (!localItem) {
@@ -60,7 +60,7 @@ module.exports = async (blogID, publish, update) => {
     for (const { name, size, isDirectory } of localContents) {
       const path = join(dir, name);
       const remoteItem = remoteContents.find(
-        (item) => item.name.normalize("NFC") === name.normalize("NFC")
+        (item) => item.name.normalize("NFC") === name.normalize("NFC"),
       );
 
       if (isDirectory) {

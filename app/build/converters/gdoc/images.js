@@ -54,7 +54,7 @@ async function processImages(blogID, docPath, $) {
 
       buffer = Buffer.from(
         isBase64 ? dataPart : decodeURIComponent(dataPart),
-        isBase64 ? "base64" : "utf8"
+        isBase64 ? "base64" : "utf8",
       );
 
       if (mimeType) {
@@ -81,14 +81,10 @@ async function processImages(blogID, docPath, $) {
     const filenameBase = hash(src);
 
     try {
-
       const cachedFilename = await findCachedAsset(assetDir, filenameBase);
 
       if (cachedFilename) {
-        $(elem).attr(
-          "src",
-          "/_assets/" + docHash + "/" + cachedFilename
-        );
+        $(elem).attr("src", "/_assets/" + docHash + "/" + cachedFilename);
         continue;
       }
 
@@ -112,7 +108,7 @@ async function processImages(blogID, docPath, $) {
       const { output } = await lookupWithTransformer(
         transformer,
         src,
-        fetchImage
+        fetchImage,
       );
 
       $(elem).attr("src", output);
@@ -122,10 +118,7 @@ async function processImages(blogID, docPath, $) {
       const fallbackFilename = await findCachedAsset(assetDir, filenameBase);
 
       if (fallbackFilename) {
-        $(elem).attr(
-          "src",
-          "/_assets/" + docHash + "/" + fallbackFilename
-        );
+        $(elem).attr("src", "/_assets/" + docHash + "/" + fallbackFilename);
       }
     }
   }

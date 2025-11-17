@@ -16,10 +16,13 @@ async function upload(client, source, destination, callback) {
 
   console.log(prefix(), source);
 
-  const timeout = setTimeout(function () {
-    console.log(prefix(), "reached timeout for upload");
-    cleanup(new Error("Timeout reached for upload"));
-  }, 4 * 60 * 1000); // 4 minutes
+  const timeout = setTimeout(
+    function () {
+      console.log(prefix(), "reached timeout for upload");
+      cleanup(new Error("Timeout reached for upload"));
+    },
+    4 * 60 * 1000,
+  ); // 4 minutes
 
   const cleanup = callOnce(function (err) {
     clearTimeout(timeout);

@@ -27,6 +27,6 @@ module.exports = function (item, output_directory, callback) {
     function (err, result) {
       if (err) console.error(err);
       callback(null);
-    }
+    },
   );
 };

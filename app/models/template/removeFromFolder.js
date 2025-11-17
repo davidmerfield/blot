@@ -4,17 +4,17 @@ var localPath = require("helper/localPath");
 var fs = require("fs-extra");
 var getAllViews = require("./getAllViews");
 
-function removeFromFolder (blogID, templateID, callback) {
+function removeFromFolder(blogID, templateID, callback) {
   isOwner(blogID, templateID, function (err, owner) {
     if (err) return callback(err);
 
     if (!owner) return callback(null);
 
     getAllViews(templateID, function (err, views, metadata) {
-        if (err) return callback(err);
-  
-        if (!views || !metadata || !metadata.localEditing) return callback(null);
-  
+      if (err) return callback(err);
+
+      if (!views || !metadata || !metadata.localEditing) return callback(null);
+
       makeClient(blogID, function (err, client) {
         if (err) {
           return callback(err);
@@ -26,12 +26,12 @@ function removeFromFolder (blogID, templateID, callback) {
           }
 
           var dir = joinpath(folderName, metadata.slug);
-          
+
           client.remove(blogID, dir, callback);
         });
       });
     });
-});
+  });
 }
 
 function determineTemplateFolder(blogID, callback) {
@@ -49,9 +49,12 @@ function determineTemplateFolder(blogID, callback) {
       return name && name[0] !== ".";
     });
 
-    if (visible.length && visible.every(function (name) {
-      return name === name.toLowerCase();
-    })) {
+    if (
+      visible.length &&
+      visible.every(function (name) {
+        return name === name.toLowerCase();
+      })
+    ) {
       return callback(null, "templates");
     }
 
@@ -59,7 +62,7 @@ function determineTemplateFolder(blogID, callback) {
   });
 }
 
-function makeClient (blogID, callback) {
+function makeClient(blogID, callback) {
   require("models/blog").get({ id: blogID }, function (err, blog) {
     var client = require("clients")[blog.client];
 
@@ -72,7 +75,7 @@ function makeClient (blogID, callback) {
         },
         write: function (blogID, path, content, callback) {
           fs.outputFile(localPath(blogID, path), content, callback);
-        }
+        },
       });
     }
 

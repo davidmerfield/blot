@@ -1,15 +1,15 @@
-require('./relativeDate.js');
-require('./truncate.js');
-require('./sync_status.js');
-require('./instant.page.js');
-require('./contact-form.js');
-require('./tagify.js');
-require('./examples.js');
+require("./relativeDate.js");
+require("./truncate.js");
+require("./sync_status.js");
+require("./instant.page.js");
+require("./contact-form.js");
+require("./tagify.js");
+require("./examples.js");
 
 // must come before copy-buttons.js so that the copy buttons are generated
-require('./multi-lingual-code.js');
+require("./multi-lingual-code.js");
 
-require('./copy-buttons.js');
+require("./copy-buttons.js");
 
 const isSignedIn = document.cookie.includes("signed_into_blot");
 
@@ -17,8 +17,8 @@ document.documentElement.dataset.auth = isSignedIn ? "in" : "out";
 
 const authStyle = document.createElement("style");
 authStyle.textContent =
-  "html[data-auth=\"out\"] .signed-in { display: none !important; }" +
-  "html[data-auth=\"in\"] .signed-out { display: none !important; }";
+  'html[data-auth="out"] .signed-in { display: none !important; }' +
+  'html[data-auth="in"] .signed-out { display: none !important; }';
 document.head.appendChild(authStyle);
 
 function applyVisibility(node) {
@@ -33,16 +33,17 @@ function applyVisibility(node) {
   }
 }
 
-document
-  .querySelectorAll(".signed-in, .signed-out")
-  .forEach(function (node) {
-    applyVisibility(node);
-  });
+document.querySelectorAll(".signed-in, .signed-out").forEach(function (node) {
+  applyVisibility(node);
+});
 
 const observer = new MutationObserver(function (mutations) {
   mutations.forEach(function (mutation) {
     mutation.addedNodes.forEach(function (node) {
-      if (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) {
+      if (
+        node.nodeType !== Node.ELEMENT_NODE &&
+        node.nodeType !== Node.DOCUMENT_FRAGMENT_NODE
+      ) {
         return;
       }
 

@@ -20,7 +20,7 @@ SourceCode.route("/")
   .get(function (req, res) {
     if (res.locals.views[0] && res.locals.views[0].name) {
       return res.redirect(
-        res.locals.base + "/source-code/" + res.locals.views[0].name + "/edit"
+        res.locals.base + "/source-code/" + res.locals.views[0].name + "/edit",
       );
     }
 
@@ -114,9 +114,9 @@ SourceCode.route("/:viewSlug/edit")
                 }
                 res.send("Saved changes!");
               });
-            }
+            },
           );
-        }
+        },
       );
     } else {
       Template.setView(req.template.id, view, function (err) {
@@ -136,7 +136,7 @@ SourceCode.route("/:viewSlug/configure")
   .get(function (req, res) {
     if (req.params.viewSlug === "package.json") {
       return res.redirect(
-        res.locals.base + "/source-code/" + req.view.name + "/edit"
+        res.locals.base + "/source-code/" + req.view.name + "/edit",
       );
     }
 
@@ -211,24 +211,22 @@ SourceCode.route("/:viewSlug/configure")
       }
       // Validate that all elements are strings (urlNormalizer will throw otherwise)
       const invalidTypeIndex = configuration.url.findIndex(
-        (item) => typeof item !== "string"
+        (item) => typeof item !== "string",
       );
       if (invalidTypeIndex !== -1) {
         return next(
           new Error(
-            `The provided \`url\` array must contain only strings, but found ${typeof configuration.url[invalidTypeIndex]} at index ${invalidTypeIndex}`
-          )
+            `The provided \`url\` array must contain only strings, but found ${typeof configuration.url[invalidTypeIndex]} at index ${invalidTypeIndex}`,
+          ),
         );
       }
       // Validate that all elements are non-empty (empty strings normalize to "" and make views unreachable)
-      const emptyIndex = configuration.url.findIndex(
-        (item) => !item.trim()
-      );
+      const emptyIndex = configuration.url.findIndex((item) => !item.trim());
       if (emptyIndex !== -1) {
         return next(
           new Error(
-            `The provided \`url\` array must not contain empty or whitespace-only strings, but found empty string at index ${emptyIndex}`
-          )
+            `The provided \`url\` array must not contain empty or whitespace-only strings, but found empty string at index ${emptyIndex}`,
+          ),
         );
       }
       updates.url = configuration.url;
@@ -317,7 +315,7 @@ SourceCode.route("/:viewSlug/rename")
 
           res.message(
             res.locals.base + "/source-code/" + newName + "/edit",
-            "Saved changes!"
+            "Saved changes!",
           );
         });
       });

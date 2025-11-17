@@ -17,7 +17,7 @@ describe("express-mustache parse", function () {
       {
         partials: ["header", "footer"],
         locals: ["name", "first", "last"],
-      }
+      },
     );
   });
 });

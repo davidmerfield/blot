@@ -15,7 +15,7 @@ describe("candidates", function () {
       "/first-image.jpg",
       "https://i.ytimg.com/vi/YaT_5KoGh1Q/maxresdefault.jpg",
       "http://img.youtube.com/vi/YaT_5KoGh1Q/mqdefault.jpg",
-      "/second-image.jpg"
+      "/second-image.jpg",
     ]);
   });
 

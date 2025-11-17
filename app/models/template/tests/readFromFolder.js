@@ -20,7 +20,7 @@ describe("template", function () {
 
   it("reads template properties from package.json", function (done) {
     fs.outputJsonSync(this.tmp + "/package.json", {
-      locals: { foo: "bar" }
+      locals: { foo: "bar" },
     });
 
     readFromFolder(this.blog.id, this.tmp, function (err, template) {
@@ -35,7 +35,7 @@ describe("template", function () {
     // 3mb of random data should exceed the limit of 2.5mb
     fs.writeFileSync(
       this.tmp + "/style.css",
-      require("crypto").randomBytes(3 * 1000 * 1000)
+      require("crypto").randomBytes(3 * 1000 * 1000),
     );
 
     readFromFolder(this.blog.id, this.tmp, function (err, template) {
@@ -54,7 +54,7 @@ describe("template", function () {
     fs.outputFileSync(this.tmp + "/style.css", "body {color:pink}");
     fs.outputJsonSync(this.tmp + "/package.json", {
       locals: { foo: "bar" },
-      views: { "style.css": { url: "/test", locals: { baz: "bat" } } }
+      views: { "style.css": { url: "/test", locals: { baz: "bat" } } },
     });
 
     readFromFolder(this.blog.id, this.tmp, function (err, template) {

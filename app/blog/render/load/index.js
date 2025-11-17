@@ -22,6 +22,6 @@ module.exports = function (req, res, callback) {
     },
     function (err) {
       callback(err, req, res);
-    }
+    },
   );
 };

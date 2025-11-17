@@ -1,6 +1,6 @@
 const Express = require("express");
 const Email = require("helper/email");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 
 const lookup = (tag) =>
   map[tag] || (tag[0].toUpperCase() + tag.slice(1)).replace(/-/g, " ");
@@ -23,7 +23,7 @@ Questions.use(
   require("dashboard/util/session"),
   require("dashboard/util/parse"),
   cookieParser(),
-  require("dashboard/util/csrf")
+  require("dashboard/util/csrf"),
 );
 
 Questions.get("/search", async (req, res) => {
@@ -74,13 +74,13 @@ Questions.get("/feed.rss", async function (req, res) {
     topic.url = res.locals.url + "/questions/" + topic.id;
     topic.author = "Anonymous";
     topic.date = moment(new Date(parseInt(topic.created_at))).format(
-      "ddd, DD MMM YYYY HH:mm:ss ZZ"
+      "ddd, DD MMM YYYY HH:mm:ss ZZ",
     );
   });
 
   const template = await require("fs-extra").readFile(
     req.app.get("views") + "/questions/_feed.rss",
-    "utf-8"
+    "utf-8",
   );
   const result = require("mustache").render(template, res.locals);
 
@@ -122,7 +122,7 @@ Questions.get(["/", "/page-:page"], async function (req, res, next) {
     page,
     stats.page_size,
     stats.total,
-    "/questions"
+    "/questions",
   );
 
   res.render("questions");
@@ -165,36 +165,34 @@ Questions.get(
       page,
       stats.page_size,
       stats.total,
-      "/questions/replies"
+      "/questions/replies",
     );
 
     res.render("questions");
-  }
+  },
 );
 
-Questions.route(["/tags", "/tags/page-:page"]).get(async function (
-  req,
-  res,
-  next
-) {
-  const page = req.params.page ? parseInt(req.params.page) : 1;
+Questions.route(["/tags", "/tags/page-:page"]).get(
+  async function (req, res, next) {
+    const page = req.params.page ? parseInt(req.params.page) : 1;
 
-  if (page && !Number.isInteger(page)) {
-    return next();
-  }
+    if (page && !Number.isInteger(page)) {
+      return next();
+    }
 
-  const result = await tags({ page });
+    const result = await tags({ page });
 
-  res.locals.title = page > 1 ? `Page ${page} - Tags` : "Tags";
-  res.locals.tags = result.tags;
-  res.locals.paginator = Paginator(
-    page,
-    result.stats.page_size,
-    result.stats.total,
-    "/questions/tags"
-  );
-  res.render("questions/tags");
-});
+    res.locals.title = page > 1 ? `Page ${page} - Tags` : "Tags";
+    res.locals.tags = result.tags;
+    res.locals.paginator = Paginator(
+      page,
+      result.stats.page_size,
+      result.stats.total,
+      "/questions/tags",
+    );
+    res.render("questions/tags");
+  },
+);
 
 // Handle topic viewing and creation
 Questions.route("/ask")
@@ -224,7 +222,7 @@ Questions.route("/ask")
             "/questions/ask?title=" +
               encodeURIComponent(title) +
               "&body=" +
-              encodeURIComponent(body)
+              encodeURIComponent(body),
           );
         Email.QUESTION(null, {
           title,
@@ -366,10 +364,10 @@ Questions.get(
       page,
       stats.page_size,
       stats.total,
-      "/questions/tagged/" + tag
+      "/questions/tagged/" + tag,
     );
     res.render("questions");
-  }
+  },
 );
 
 module.exports = Questions;

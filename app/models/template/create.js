@@ -9,7 +9,7 @@ var setMetadata = require("./setMetadata");
 
 // Associates a theme with a UID owner
 // and an existing theme to clone if possible
-module.exports = function create (owner, name, metadata, callback) {
+module.exports = function create(owner, name, metadata, callback) {
   // Owner represents the id of a blog
   // who controls the template
   // or the string 'SITE' which represents
@@ -65,7 +65,7 @@ module.exports = function create (owner, name, metadata, callback) {
         client.srem(key.publicTemplates(), id, then);
       }
 
-      function then (err) {
+      function then(err) {
         if (err) throw err;
 
         setMetadata(id, metadata, function (err) {

@@ -29,7 +29,7 @@ module.exports = function setMetadata(id, updates, callback) {
 
     if (!metadata.owner)
       return callback(
-        new Error("No owner: please specify an owner for this template")
+        new Error("No owner: please specify an owner for this template"),
       );
 
     try {

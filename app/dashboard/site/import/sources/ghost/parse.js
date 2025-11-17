@@ -39,9 +39,9 @@ module.exports = function (blog, output_directory, source_domain, callback) {
         function (err) {
           if (err) console.error(err);
           next(null);
-        }
+        },
       );
     },
-    callback.bind(this, null, blog)
+    callback.bind(this, null, blog),
   );
 };

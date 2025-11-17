@@ -30,7 +30,7 @@ if (require.main === module) {
 
 async function build(callback) {
   const avatars = (await fs.readdir(avatarDirectory)).filter(
-    (i) => !i.startsWith(".")
+    (i) => !i.startsWith("."),
   );
 
   let sites = (await fs.readFile(__dirname + "/sites.txt", "utf-8"))
@@ -41,7 +41,7 @@ async function build(callback) {
       var link = "https://" + words[1];
       var name = words.slice(2).join(" ").split(",")[0];
       var bio = tidy(
-        words.slice(2).join(" ").split(",").slice(1).join(",").trim()
+        words.slice(2).join(" ").split(",").slice(1).join(",").trim(),
       );
       var host = toUnicode(parse(link).host);
 
@@ -55,7 +55,7 @@ async function build(callback) {
         bio,
         avatar: join(
           avatarDirectory,
-          avatars.find((i) => i.startsWith(host))
+          avatars.find((i) => i.startsWith(host)),
         ),
       };
     });
@@ -63,9 +63,8 @@ async function build(callback) {
   // if there are some avatars without a corresponding site
   // log them and remove them from the list
   const missingAvatars = avatars.filter(
-    (avatar) => !sites.find((site) => avatar.startsWith(site.host))
+    (avatar) => !sites.find((site) => avatar.startsWith(site.host)),
   );
-
 
   // remove the avatars without a corresponding site
   for (let avatar of missingAvatars) {
@@ -77,7 +76,7 @@ async function build(callback) {
     sites.map(async (site) => {
       const isOnline = await verifySiteIsOnline(site.host);
       return isOnline ? site : null;
-    })
+    }),
   ).then((sites) => sites.filter((i) => i));
 
   const result = await generateImages(sites);
@@ -109,8 +108,9 @@ async function generateImages(sites) {
   await fs.ensureDir(outputDirectory);
 
   const existingImages = new Set(
-    (await fs.readdir(outputDirectory).catch(() => []))
-      .filter((file) => file.endsWith(".jpg"))
+    (await fs.readdir(outputDirectory).catch(() => [])).filter((file) =>
+      file.endsWith(".jpg"),
+    ),
   );
   const generatedImages = new Set();
 
@@ -130,38 +130,36 @@ async function generateImages(sites) {
       })
       .toFile(path);
 
-    site.image = '/images/featured/' + filename;
+    site.image = "/images/featured/" + filename;
     generatedImages.add(filename);
     delete site.avatar;
   }
 
-  const obsolete = [...existingImages].filter((file) => !generatedImages.has(file));
+  const obsolete = [...existingImages].filter(
+    (file) => !generatedImages.has(file),
+  );
   for (const file of obsolete) {
     await fs.remove(join(outputDirectory, file));
   }
 
   await fs.outputFile(
     __dirname + "/sites.filtered.txt",
-    (
-      await fs.readFile(__dirname + "/sites.txt", "utf-8")
-    )
+    (await fs.readFile(__dirname + "/sites.txt", "utf-8"))
       .split("\n")
       .filter((i) => i)
       .filter((line) => sites.find((site) => line.includes(site.host)))
       .join("\n"),
-    "utf-8"
+    "utf-8",
   );
 
   await fs.outputFile(
     __dirname + "/sites.missing.txt",
-    (
-      await fs.readFile(__dirname + "/sites.txt", "utf-8")
-    )
+    (await fs.readFile(__dirname + "/sites.txt", "utf-8"))
       .split("\n")
       .filter((i) => i)
       .filter((line) => !sites.find((site) => line.includes(site.host)))
       .join("\n"),
-    "utf-8"
+    "utf-8",
   );
 
   return {

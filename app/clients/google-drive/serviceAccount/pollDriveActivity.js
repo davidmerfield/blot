@@ -61,7 +61,7 @@ module.exports = async (serviceAccountId, driveactivity) => {
       } else {
         // console.log(prefix(), "no new activity");
       }
-    }
+    },
   );
 
   while (true) {
@@ -74,12 +74,12 @@ module.exports = async (serviceAccountId, driveactivity) => {
             await checkDriveActivity(
               blogID,
               folderId,
-              latestDriveActivityTimestamp
+              latestDriveActivityTimestamp,
             );
           } catch (err) {
             console.error(prefix(), "checkDriveActivity error:", err);
           }
-        }
+        },
       );
     } catch (err) {
       console.error("Error during iterateByServiceAccountId:", err);

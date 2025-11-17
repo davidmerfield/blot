@@ -25,13 +25,11 @@ ISBL Editor style dark color scheme (c) Dmitriy Tarasov <dimatar@gmail.com>
 .hljs-attribute,
 .hljs-selector-tag,
 .hljs-meta .hljs-keyword,
-
 .hljs-doctag,
 .hljs-name {
   color: #f0f0f0;
   font-weight: bold;
 }
-
 
 /* User color: hue: 0 */
 
@@ -73,7 +71,7 @@ ISBL Editor style dark color scheme (c) Dmitriy Tarasov <dimatar@gmail.com>
   color: #397300;
 }
 
-.hljs-class  {
+.hljs-class {
   color: #ce9d4d;
   font-weight: bold;
 }
@@ -83,7 +81,7 @@ ISBL Editor style dark color scheme (c) Dmitriy Tarasov <dimatar@gmail.com>
   color: #df471e;
 }
 
-.hljs-title>.hljs-built_in {
+.hljs-title > .hljs-built_in {
   color: #81bce9;
   font-weight: normal;
 }
@@ -97,7 +95,6 @@ ISBL Editor style dark color scheme (c) Dmitriy Tarasov <dimatar@gmail.com>
 .hljs-meta .hljs-string {
   color: #4d99bf;
 }
-
 
 /* Misc effects */
 
