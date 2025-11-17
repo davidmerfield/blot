@@ -1,4 +1,7 @@
 {
+  "files": {
+    "includes": ["**", "!dist", "!**/dist", "!views-built", "!public.js"]
+  },
   "formatter": {
     "enabled": true,
     "formatWithErrors": false,
