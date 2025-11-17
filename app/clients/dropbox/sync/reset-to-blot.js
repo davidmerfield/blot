@@ -9,7 +9,11 @@ const hashFile = promisify((path, cb) => {
   });
 });
 const download = promisify(require("../util/download"));
-const { MAX_FILE_SIZE, hasUnsupportedExtension } = require("../util/constants");
+const {
+  MAX_FILE_SIZE,
+  hasUnsupportedExtension,
+  isDotfileOrDotfolder,
+} = require("../util/constants");
 
 const set = promisify(require("../database").set);
 const createClient = promisify((blogID, cb) =>
@@ -112,6 +116,8 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
     const pathOnDropbox = path_display;
     const pathOnBlot = join(dir, name);
     const pathOnDisk = join(localRoot, dir, name);
+
+    if (isDotfileOrDotfolder(pathOnBlot)) continue;
 
     if (remoteItem.is_directory) {
       if (localCounterpart && !localCounterpart.is_directory) {
