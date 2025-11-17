@@ -7,6 +7,7 @@ const getMetadata = require("../getMetadata");
 const getView = require("../getView");
 const getAllViews = require("../getAllViews");
 const generateCdnUrl = require("./generateCdnUrl");
+const { minifyCSS, minifyJS } = require("helper/minify");
 const purgeCdnUrls = require("helper/purgeCdnUrls");
 const path = require("path");
 const fs = require("fs-extra");
@@ -129,19 +130,33 @@ async function processTarget(
   }
 
   // Compute hash from templateID + view name + rendered output
-  // We include the template ID and view name to ensure that hashes are unique per site 
-  // and per view because we purge the old hash when this changes. 
+  // We include the template ID and view name to ensure that hashes are unique per site
+  // and per view because we purge the old hash when this changes.
   const hashInput = templateID + ":" + target + ":" + renderedOutputString;
   const computedHash = hash(hashInput);
+
+  const ext = path.extname(target).toLowerCase();
+  let contentToWrite = renderedOutputString;
+
+  try {
+    if (ext === ".css") {
+      contentToWrite = minifyCSS(renderedOutputString);
+    } else if (ext === ".js") {
+      contentToWrite = await minifyJS(renderedOutputString);
+    }
+  } catch (err) {
+    console.error(`Error minifying rendered output for ${target}:`, err);
+    contentToWrite = renderedOutputString;
+  }
 
   // Store rendered output on disk and in Redis (for backward compatibility during migration)
   const renderedKey = key.renderedOutput(computedHash);
   try {
     // Write to disk (primary storage) with original view name
-    await writeRenderedOutputToDisk(computedHash, renderedOutputString, target);
-    
+    await writeRenderedOutputToDisk(computedHash, contentToWrite, target);
+
     // Also write to Redis for backward compatibility during migration period
-    await setAsync(renderedKey, renderedOutputString);
+    await setAsync(renderedKey, contentToWrite);
   } catch (err) {
     console.error(`Error storing rendered output for ${target}:`, err);
     return null; // Don't create manifest entry if storage fails
