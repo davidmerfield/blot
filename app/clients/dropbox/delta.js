@@ -1,6 +1,7 @@
 var debug = require("debug")("blot:clients:dropbox:delta");
 var retry = require("./util/retry");
 var waitForErrorTimeout = require("./util/waitForErrorTimeout");
+var isDotfileOrDotfolder = require("./util/constants").isDotfileOrDotfolder;
 
 // The goal of this function is to retrieve a list of changes made
 // to the blog folder inside a user's Dropbox folder. We add a new
@@ -64,12 +65,19 @@ module.exports = function delta(client, folderID) {
                 result.path_display.length
               );
               return entry;
+            })
+            .filter(function (entry) {
+              return !isDotfileOrDotfolder(entry.relative_path);
             });
         } else {
-          result.entries = result.entries.map(function (entry) {
-            entry.relative_path = entry.path_display;
-            return entry;
-          });
+          result.entries = result.entries
+            .map(function (entry) {
+              entry.relative_path = entry.path_display;
+              return entry;
+            })
+            .filter(function (entry) {
+              return !isDotfileOrDotfolder(entry.relative_path);
+            });
         }
 
         callback(null, result);

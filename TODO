@@ -1,3 +1,5 @@
+Fix bug with iCloud sync where revisions to file content in subfolders don't sync and tell Fede and [JP](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlDfdPkKKQjHSPwcJDWTnbCW) and [S](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqtXvHvwdwsVcHWFZBmJFTTFC)
+
 Blogs have huge numbers of archived templates – modify the tempalte archiver to only 'create' templates for sites using them, otherwise disappear them. work out how to clean up some of the many archived templates added to sites... (remove ones with zero changes?)
 
 Template delete should purge the cdn hashes
@@ -38,8 +40,6 @@ Modify nginx config to serve as many CDN static files as possible
 - eventually these files will be on s3 but for now, use nginx with try files where possible then pass on to upstream
 
 Resolve inconsistency: 'Create site' vs New template vs Create file
-
-Fix bug with iCloud sync where revisions to file content in subfolders don't sync and tell Fede and [JP](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlDfdPkKKQjHSPwcJDWTnbCW)
 
 ---
 
