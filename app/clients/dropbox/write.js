@@ -6,7 +6,6 @@ var localPath = require("helper/localPath");
 var retry = require("./util/retry");
 const { promisify } = require("util");
 const upload = promisify(require("clients/dropbox/util/upload"));
-const { isDotfileOrDotfolder } = require("./util/constants");
 
 // Write should only ever be called inside the function returned
 // from Sync for a given blog, since it modifies the blog folder.
@@ -14,11 +13,6 @@ function write(blogID, path, contents, callback) {
   var pathInDropbox, pathOnBlot;
 
   debug("Blog:", blogID, "Writing", path);
-
-  if (isDotfileOrDotfolder(path)) {
-    debug("Blog:", blogID, "Skipping write for dotfile/dotfolder:", path);
-    return callback(null);
-  }
 
   createClient(blogID, async function (err, client, account) {
     if (err || !account) return callback(err || new Error("No account"));
