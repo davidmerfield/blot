@@ -79,17 +79,19 @@ const findDeletedGitFolders = async (client, templatePath) => {
 };
 
 const listDeletedGitFiles = async (client, gitPath) => {
+  const parentPath = posixJoin(gitPath, "..", "");
   const entries = await listAllEntries(client, {
-    path: gitPath,
+    path: parentPath,
     recursive: true,
     include_deleted: true,
   });
 
-  return entries.filter(
-    (entry) =>
-      entry.path_lower !== gitPath &&
-      (entry[".tag"] === "file" || entry[".tag"] === "deleted")
-  );
+  return entries.filter((entry) => {
+    if (!entry.path_lower.startsWith(gitPath + "/")) return false;
+    if (entry.path_lower === gitPath) return false;
+
+    return entry[".tag"] === "file" || entry[".tag"] === "deleted";
+  });
 };
 
 const getLatestRevision = async (client, filePath) => {
