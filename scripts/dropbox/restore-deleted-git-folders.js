@@ -121,7 +121,7 @@ const listDeletedGitFiles = async (client, gitPath) => {
     if (entry.path_lower === gitPathLower) return false;
     if (!entry.path_lower.startsWith(gitPathLower + "/")) return false;
 
-    return entry[".tag"] === "deleted" && entry?.metadata?.[".tag"] === "file";
+    return entry[".tag"] === "deleted" || entry?.metadata?.[".tag"] === "file";
   });
 };
 
