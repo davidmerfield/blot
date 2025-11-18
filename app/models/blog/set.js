@@ -10,6 +10,9 @@ var config = require("config");
 var BackupDomain = require("./util/backupDomain");
 var flushCache = require("./flushCache");
 var normalizeImageExif = require("./util/imageExif").normalize;
+var updateCdnManifest = require("../template/util/updateCdnManifest");
+var promisify = require("util").promisify;
+var updateCdnManifestAsync = promisify(updateCdnManifest);
 
 function Changes(latest, former) {
   var changes = {};
@@ -127,6 +130,28 @@ module.exports = function (blogID, blog, callback) {
         changes.cacheID = true;
         changes.cssURL = true;
         changes.scriptURL = true;
+      }
+
+      if (changes.template) {
+        if (latest.template) {
+          updateCdnManifestAsync(latest.template).catch(function (err) {
+            console.error(
+              "Error updating CDN manifest for new template",
+              latest.template,
+              err
+            );
+          });
+        }
+
+        if (former.template) {
+          updateCdnManifestAsync(former.template).catch(function (err) {
+            console.error(
+              "Error updating CDN manifest for former template",
+              former.template,
+              err
+            );
+          });
+        }
       }
 
       // Verify that all the new info matches
