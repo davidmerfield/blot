@@ -97,6 +97,11 @@ paymentForm.get(function (req, res, next) {
   res.locals.stripe_key = config.stripe.key;
   res.locals.paypal_plan = config.paypal.plan;
   res.locals.paypal_client_id = config.paypal.client_id;
+  var planParts = String(config.stripe.plan || "").split("_");
+  var planAmount = parseInt(planParts[planParts.length - 1], 10);
+  var priceAmount = isNaN(planAmount) ? 0 : planAmount;
+  res.locals.price_amount_cents = priceAmount * 100;
+  res.locals.price_currency = "usd";
   res.render("dashboard/sign-up");
 });
 

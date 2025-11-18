@@ -95,6 +95,8 @@
           <input type="text" class="email" name="email" autofocus />
         </p>
 
+        <div id="payment-request-button" style="margin: 10px 0;"></div>
+
         <div>
         <label for="card">
           Your card
@@ -202,6 +204,60 @@
   var card = elements.create('card', {style: style});
 
   card.mount('#card');
+
+  var paymentRequest = stripe.paymentRequest({
+    country: 'US',
+    currency: '{{price_currency}}',
+    total: {
+      label: 'Blot subscription',
+      amount: {{price_amount_cents}}
+    },
+    requestPayerName: true,
+    requestPayerEmail: true
+  });
+
+  var paymentRequestButton = elements.create('paymentRequestButton', {
+    paymentRequest: paymentRequest,
+    style: {
+      paymentRequestButton: {
+        theme: 'dark',
+        height: '44px'
+      }
+    }
+  });
+
+  paymentRequest.canMakePayment().then(function (result) {
+    var paymentRequestButtonContainer = document.getElementById('payment-request-button');
+
+    if (result) {
+      paymentRequestButton.mount('#payment-request-button');
+    } else {
+      paymentRequestButtonContainer.style.display = 'none';
+    }
+  });
+
+  paymentRequest.on('paymentmethod', function (ev) {
+    var emailInput = document.querySelector('.email');
+    var email = (ev.payerEmail || emailInput.value || '').trim();
+
+    if (!email) {
+      renderError('Please enter a valid email address');
+      ev.complete('fail');
+      return;
+    }
+
+    emailInput.value = email;
+
+    stripe.createToken(ev.paymentMethod).then(function (result) {
+      if (result.error) {
+        renderError(result.error.message);
+        ev.complete('fail');
+      } else {
+        ev.complete('success');
+        stripeTokenHandler(result.token);
+      }
+    });
+  });
 
   function setFocusColor(elementId) {
     document.getElementById(elementId).style.borderColor = 'var(--accent-color)';
