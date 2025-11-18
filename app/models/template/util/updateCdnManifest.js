@@ -208,7 +208,7 @@ module.exports = function updateCdnManifest(templateID, callback) {
         const Blog = require("models/blog");
         const getBlogAsync = promisify(Blog.get);
 
-        const blog = await getBlogAsync(metadata.owner);
+        const blog = await getBlogAsync({ id: metadata.owner });
         const templateInstalled = blog && blog.template === templateID;
 
         if (!templateInstalled) {
