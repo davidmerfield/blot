@@ -236,7 +236,7 @@
     }
   });
 
-  paymentRequest.on('paymentmethod', function (ev) {
+  paymentRequest.on('token', function (ev) {
     var emailInput = document.querySelector('.email');
     var email = (ev.payerEmail || emailInput.value || '').trim();
 
@@ -248,15 +248,9 @@
 
     emailInput.value = email;
 
-    stripe.createToken(ev.paymentMethod).then(function (result) {
-      if (result.error) {
-        renderError(result.error.message);
-        ev.complete('fail');
-      } else {
-        ev.complete('success');
-        stripeTokenHandler(result.token);
-      }
-    });
+    // ev.token is already a token object, no need to call createToken
+    ev.complete('success');
+    stripeTokenHandler(ev.token);
   });
 
   function setFocusColor(elementId) {
