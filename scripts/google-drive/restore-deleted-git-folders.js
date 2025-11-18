@@ -84,18 +84,26 @@ const listTrashedChildren = async (drive, parentId) => {
     let pageToken;
 
     do {
+      // Query for ALL children (both trashed and non-trashed)
+      // so we can explore non-trashed folders that may contain trashed files
       const res = await drive.files.list({
-        q: `'${currentParent}' in parents and trashed = true`,
+        q: `'${currentParent}' in parents`,
         supportsAllDrives: true,
         includeItemsFromAllDrives: true,
-        fields: "nextPageToken, files(id, name, mimeType, parents)",
+        fields: "nextPageToken, files(id, name, mimeType, parents, trashed)",
         pageToken,
       });
 
       const files = res.data.files || [];
 
       for (const file of files) {
-        trashed.push(file);
+        // Add trashed items to the result
+        if (file.trashed) {
+          trashed.push(file);
+        }
+        
+        // Push ALL folders onto the stack (trashed or not) so we can explore them
+        // This allows us to find trashed files inside non-trashed subfolders
         if (file.mimeType === FOLDER_MIME_TYPE) {
           stack.push(file.id);
         }
