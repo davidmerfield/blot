@@ -145,31 +145,41 @@ module.exports = function (blogID, blog, callback) {
 
       multi.hmset(key.info(blogID), serial(latest));
 
-      multi.exec(function (err) {
+      multi.exec(async function (err) {
         // We didn't manage to apply any changes
         // to this blog, so empty the list of changes
         if (err) return callback(err, []);
 
+        // Wait for any required CDN manifest updates to complete
         if (changes.template) {
+          const updatePromises = [];
+          
           if (latest.template) {
-            updateCdnManifestAsync(latest.template).catch(function (err) {
-              console.error(
-                "Error updating CDN manifest for new template",
-                latest.template,
-                err
-              );
-            });
+            updatePromises.push(
+              updateCdnManifestAsync(latest.template).catch(function (err) {
+                console.error(
+                  "Error updating CDN manifest for new template",
+                  latest.template,
+                  err
+                );
+              })
+            );
           }
 
           if (former.template) {
-            updateCdnManifestAsync(former.template).catch(function (err) {
-              console.error(
-                "Error updating CDN manifest for former template",
-                former.template,
-                err
-              );
-            });
+            updatePromises.push(
+              updateCdnManifestAsync(former.template).catch(function (err) {
+                console.error(
+                  "Error updating CDN manifest for former template",
+                  former.template,
+                  err
+                );
+              })
+            );
           }
+
+          // Wait for all CDN manifest updates to complete before proceeding
+          await Promise.all(updatePromises);
         }
         
         flushCache(blogID, former, function (err) {
