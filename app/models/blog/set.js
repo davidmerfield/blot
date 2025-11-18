@@ -132,28 +132,6 @@ module.exports = function (blogID, blog, callback) {
         changes.scriptURL = true;
       }
 
-      if (changes.template) {
-        if (latest.template) {
-          updateCdnManifestAsync(latest.template).catch(function (err) {
-            console.error(
-              "Error updating CDN manifest for new template",
-              latest.template,
-              err
-            );
-          });
-        }
-
-        if (former.template) {
-          updateCdnManifestAsync(former.template).catch(function (err) {
-            console.error(
-              "Error updating CDN manifest for former template",
-              former.template,
-              err
-            );
-          });
-        }
-      }
-
       // Verify that all the new info matches
       // strictly the type specification
       ensure(latest, TYPE);
@@ -172,6 +150,28 @@ module.exports = function (blogID, blog, callback) {
         // to this blog, so empty the list of changes
         if (err) return callback(err, []);
 
+        if (changes.template) {
+          if (latest.template) {
+            updateCdnManifestAsync(latest.template).catch(function (err) {
+              console.error(
+                "Error updating CDN manifest for new template",
+                latest.template,
+                err
+              );
+            });
+          }
+
+          if (former.template) {
+            updateCdnManifestAsync(former.template).catch(function (err) {
+              console.error(
+                "Error updating CDN manifest for former template",
+                former.template,
+                err
+              );
+            });
+          }
+        }
+        
         flushCache(blogID, former, function (err) {
           callback(err, changesList);
         });
