@@ -490,4 +490,216 @@ describe("updateCdnManifest", function () {
     expect(metadata2.cdn["style.css"]).toBeDefined();
     expect(metadata2.cdn["style.css"].length).toBe(32); // MD5 hash length
   });
+
+
+  it("minifies javascript", async function () {
+        
+    const template = await createTemplateAsync(this.blog.id, 'testtemplate', {});
+    const viewName = "script.js";
+    const content =  `var body = document.body;
+
+                Element.prototype.addClass = function (classToAdd) {
+                var classes = this.className.split(' ')
+                if (classes.indexOf(classToAdd) === -1) classes.push(classToAdd)
+                this.className = classes.join(' ')
+                }
+
+                Element.prototype.removeClass = function (classToRemove) {
+                var classes = this.className.split(' ')
+                var idx =classes.indexOf(classToRemove)
+                if (idx !== -1) classes.splice(idx,1)
+                this.className = classes.join(' ')
+                }
+
+                document.getElementById('open-nav').onclick = function (e){
+                body.addClass('nav-is-open');
+                e.preventDefault();
+                return false;
+                };
+
+                document.getElementById('close-nav').onclick = function (e){
+                body.removeClass('nav-is-open');
+                e.preventDefault();
+                return false;
+                };
+
+
+                var scrollpos = window.scrollY;
+                var top_button = document.getElementById('top_button');
+
+                function add_class_on_scroll(el){ el.classList.add("show")}
+                function remove_class_on_scroll (el){ el.classList.remove("show")}
+                `;
+    const minifiedContent = 'var body=document.body;Element.prototype.addClass=function(e){var s=this.className.split(" ");s.indexOf(e)===-1&&s.push(e),this.className=s.join(" ")},Element.prototype.removeClass=function(e){var s=this.className.split(" "),n=s.indexOf(e);n!==-1&&s.splice(n,1),this.className=s.join(" ")},document.getElementById("open-nav").onclick=function(e){return body.addClass("nav-is-open"),e.preventDefault(),!1},document.getElementById("close-nav").onclick=function(e){return body.removeClass("nav-is-open"),e.preventDefault(),!1};var scrollpos=window.scrollY,top_button=document.getElementById("top_button");function add_class_on_scroll(e){e.classList.add("show")}function remove_class_on_scroll(e){e.classList.remove("show")}';
+
+    // Install it to ensure CDN hashes are generated
+    await this.blog.update({ template: template.id });
+
+    // Create views with CDN targets (manifest gets computed)
+    await setViewAsync(template.id, {
+      name: "head.html",
+      content: "{{#cdn}}/" + viewName + "{{/cdn}}",
+    });
+
+    await setViewAsync(template.id, {
+      name:viewName,
+      content,
+    });
+
+    // Get the hash that was created
+    const metadata = await getMetadataAsync(template.id);
+    const filePath = getRenderedOutputPath(metadata.cdn[viewName], viewName);
+
+        expect((await fs.readFile(filePath, 'utf-8')).trim()).toEqual(minifiedContent);
+    });
+
+    it("leaves invalid javascript alone", async function () {
+          
+        const template = await createTemplateAsync(this.blog.id, 'testtemplate', {});
+      const viewName = "script.js";
+      const content =  'function foo() {\n\nconsole.log("foo");\n\n';
+      const minifiedContent = content;
+
+      // Install it to ensure CDN hashes are generated
+      await this.blog.update({ template: template.id });
+
+      // Create views with CDN targets (manifest gets computed)
+      await setViewAsync(template.id, {
+        name: "head.html",
+        content: "{{#cdn}}/" + viewName + "{{/cdn}}",
+      });
+
+      await setViewAsync(template.id, {
+        name:viewName,
+        content,
+      });
+      
+    // Get the hash that was created
+    const metadata = await getMetadataAsync(template.id);
+    const filePath = getRenderedOutputPath(metadata.cdn[viewName], viewName);
+
+      expect((await fs.readFile(filePath, 'utf-8')).trim()).toEqual(minifiedContent.trim());
+
+    });
+    
+    it("leaves empty javascript as-is", async function () {
+        
+       
+        const template = await createTemplateAsync(this.blog.id, 'testtemplate', {});
+      const viewName = "script.js";
+      const content =  '';
+      const minifiedContent = content;
+
+      // Install it to ensure CDN hashes are generated
+      await this.blog.update({ template: template.id });
+
+      // Create views with CDN targets (manifest gets computed)
+      await setViewAsync(template.id, {
+        name: "head.html",
+        content: "{{#cdn}}/" + viewName + "{{/cdn}}",
+      });
+
+      await setViewAsync(template.id, {
+        name:viewName,
+        content,
+      });
+      
+    // Get the hash that was created
+    const metadata = await getMetadataAsync(template.id);
+    const filePath = getRenderedOutputPath(metadata.cdn[viewName], viewName);
+
+      expect((await fs.readFile(filePath, 'utf-8')).trim()).toEqual(minifiedContent);
+    });    
+
+    it("minifies css", async function () {
+        
+      const template = await createTemplateAsync(this.blog.id, 'testtemplate', {});
+      const viewName = "style.css";
+      const content =  `body {
+                background-color: lightblue;
+                }
+
+                h1 {
+                color: white;
+                text-align: center;
+                }`;
+      const minifiedContent = 'body{background-color:#add8e6}h1{color:#fff;text-align:center}';
+
+      // Install it to ensure CDN hashes are generated
+      await this.blog.update({ template: template.id });
+
+      // Create views with CDN targets (manifest gets computed)
+      await setViewAsync(template.id, {
+        name: "head.html",
+        content: "{{#cdn}}/" + viewName + "{{/cdn}}",
+      });
+
+      await setViewAsync(template.id, {
+        name:viewName,
+        content,
+      });
+      
+
+    // Get the hash that was created
+    const metadata = await getMetadataAsync(template.id);
+    const filePath = getRenderedOutputPath(metadata.cdn[viewName], viewName);
+
+      expect((await fs.readFile(filePath, 'utf-8')).trim()).toEqual(minifiedContent);
+    });
+
+    it("leaves invalid css alone", async function () {
+        
+       const template = await createTemplateAsync(this.blog.id, 'testtemplate', {});
+      const viewName = "style.css";
+      const content =  'body {  ^^**&* background-color: ! lightblue;';
+      const minifiedContent = content;
+
+      // Install it to ensure CDN hashes are generated
+      await this.blog.update({ template: template.id });
+
+      // Create views with CDN targets (manifest gets computed)
+      await setViewAsync(template.id, {
+        name: "head.html",
+        content: "{{#cdn}}/" + viewName + "{{/cdn}}",
+      });
+
+      await setViewAsync(template.id, {
+        name:viewName,
+        content,
+      });
+      
+    // Get the hash that was created
+    const metadata = await getMetadataAsync(template.id);
+    const filePath = getRenderedOutputPath(metadata.cdn[viewName], viewName);
+
+      expect((await fs.readFile(filePath, 'utf-8')).trim()).toEqual(minifiedContent);
+    });
+
+    it("leaves empty css as-is", async function () {
+        
+       const template = await createTemplateAsync(this.blog.id, 'testtemplate', {});
+      const viewName = "style.css";
+      const content =  '';
+      const minifiedContent = content;
+
+      // Install it to ensure CDN hashes are generated
+      await this.blog.update({ template: template.id });
+
+      // Create views with CDN targets (manifest gets computed)
+      await setViewAsync(template.id, {
+        name: "head.html",
+        content: "{{#cdn}}/" + viewName + "{{/cdn}}",
+      });
+
+      await setViewAsync(template.id, {
+        name:viewName,
+        content,
+      });
+      
+    // Get the hash that was created
+    const metadata = await getMetadataAsync(template.id);
+    const filePath = getRenderedOutputPath(metadata.cdn[viewName], viewName);
+
+      expect((await fs.readFile(filePath, 'utf-8')).trim()).toEqual(minifiedContent);
+    });
 });
