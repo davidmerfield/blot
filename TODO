@@ -1,4 +1,20 @@
+We should get notifcations when stripe recovers an overdue subscription, as opposed to the user entering the form
+
+invalid package.json causes crazy error on template editor (missing colon)
+
 Fix bug with iCloud sync where revisions to file content in subfolders don't sync and tell Fede and [JP](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlDfdPkKKQjHSPwcJDWTnbCW) and [S](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqtXvHvwdwsVcHWFZBmJFTTFC)
+
+Make entries.js support query.page as well as params.page and [make Ian's feed work](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqtXwDpcLsVnJDXQHcLnhMsnG)
+
+Run rebuild templates after verify-cdn-hash (purge of old incorrect hashes)
+- Add true async flushcache function which waits for queue to drain
+
+Skip calculating CDN manifest unless template is installed 
+
+Run scripts to restore missing git subfolder files
+- Tell [Paul](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlKRdTJhChKdmSPmTzFzhsvV)
+
+Speed up global template build by not even invoke the setView function if there are no changes... (this avoids running updateCDNManifest when SITE template has no changes)
 
 Blogs have huge numbers of archived templates – modify the tempalte archiver to only 'create' templates for sites using them, otherwise disappear them. work out how to clean up some of the many archived templates added to sites... (remove ones with zero changes?)
 
@@ -40,6 +56,9 @@ Modify nginx config to serve as many CDN static files as possible
 - eventually these files will be on s3 but for now, use nginx with try files where possible then pass on to upstream
 
 Resolve inconsistency: 'Create site' vs New template vs Create file
+
+Fix bug with huge archives page 
+- `https://deoxy.blot.im/archives`
 
 ---
 
