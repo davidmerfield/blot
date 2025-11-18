@@ -7,6 +7,9 @@ var getViewByURL = require("models/template/index").getViewByURL;
 module.exports = function setup(options) {
   options = options || {};
 
+  // Build the templates into Redis
+  global.test.templates();
+
   // Create test blog before each test and remove it after
   global.test.blog();
 
