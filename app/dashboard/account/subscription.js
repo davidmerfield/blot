@@ -30,8 +30,14 @@ Subscription.route("/payment-method")
   })
 
   .get(function (req, res) {
+    // Extract subscription amount (already in cents) and currency for Payment Request Button
+    var subscriptionAmount = req.user.subscription.plan.amount;
+    var subscriptionCurrency = "usd"; // Default to USD
+
     res.render("dashboard/account/payment-method", {
       stripe_key: config.stripe.key,
+      subscription_amount_cents: subscriptionAmount,
+      subscription_currency: subscriptionCurrency,
       breadcrumb: "Edit payment method",
       title: "Edit payment information"
     });
@@ -46,12 +52,62 @@ Subscription.route("/payment-method")
       return next(new Error("No Stripe token"));
     }
 
+    var stripeToken = req.body.stripeToken;
+
+    // Handle modern payment methods (pm_...) separately
+    if (stripeToken.indexOf("pm_") === 0) {
+      if (!stripe.paymentMethods || !stripe.paymentMethods.attach) {
+        return next(
+          new Error("Stripe payment methods are not supported on this server.")
+        );
+      }
+
+      // Attach the payment method to the customer
+      stripe.paymentMethods.attach(
+        stripeToken,
+        { customer: req.user.subscription.customer },
+        function (err) {
+          if (err) return next(err);
+
+          // Set as default payment method for the customer
+          stripe.customers.update(
+            req.user.subscription.customer,
+            {
+              invoice_settings: { default_payment_method: stripeToken }
+            },
+            function (err) {
+              if (err) return next(err);
+
+              // Update subscription to use the payment method
+              stripe.subscriptions.update(
+                req.user.subscription.id,
+                {
+                  default_payment_method: stripeToken,
+                  quantity: req.user.subscription.quantity
+                },
+                function (err, subscription) {
+                  if (err) return next(err);
+
+                  if (subscription) req.latestSubscription = subscription;
+
+                  next();
+                }
+              );
+            }
+          );
+        }
+      );
+
+      return;
+    }
+
+    // Legacy token-based flow (backward compatibility)
     // We now store the new card token against the existing
     // subscription information for this customer
     stripe.customers.updateSubscription(
       req.user.subscription.customer,
       req.user.subscription.id,
-      { card: req.body.stripeToken, quantity: req.user.subscription.quantity },
+      { card: stripeToken, quantity: req.user.subscription.quantity },
       function (err, subscription) {
         if (err) return next(err);
 
@@ -74,6 +130,78 @@ Subscription.route("/payment-method")
       return next(err);
     }
 
+    var stripeToken = req.body.stripeToken;
+
+    // Handle Payment Methods when recreating customer
+    if (stripeToken.indexOf("pm_") === 0) {
+      if (!stripe.paymentMethods || !stripe.paymentMethods.attach) {
+        return next(
+          new Error("Stripe payment methods are not supported on this server.")
+        );
+      }
+
+      // Create customer first, then attach payment method
+      stripe.customers.create(
+        {
+          email: req.user.email,
+          description: "Blot subscription"
+        },
+        function (err, customer) {
+          if (err) return next(err);
+
+          // Attach the payment method to the new customer
+          stripe.paymentMethods.attach(
+            stripeToken,
+            { customer: customer.id },
+            function (err) {
+              if (err) return next(err);
+
+              // Set as default payment method
+              stripe.customers.update(
+                customer.id,
+                {
+                  invoice_settings: { default_payment_method: stripeToken }
+                },
+                function (err) {
+                  if (err) return next(err);
+
+                  // Create subscription with payment method
+                  stripe.customers.createSubscription(
+                    customer.id,
+                    {
+                      plan: req.user.subscription.plan.id,
+                      quantity: 0,
+                      default_payment_method: stripeToken
+                    },
+                    function (err, subscription) {
+                      if (err) return next(err);
+
+                      // Update quantity without charging
+                      stripe.customers.updateSubscription(
+                        customer.id,
+                        subscription.id,
+                        { quantity: req.user.blogs.length || 1, prorate: false },
+                        function (err, updatedSubscription) {
+                          if (err) return next(err);
+
+                          if (updatedSubscription) req.latestSubscription = updatedSubscription;
+
+                          next();
+                        }
+                      );
+                    }
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
+
+      return;
+    }
+
+    // Legacy token-based flow
     // Make sure we use the user's old suscription
     // plan, in case Blot's price for new customers
     // has changed since they signed up.
@@ -81,7 +209,7 @@ Subscription.route("/payment-method")
     // customer is not charged right now.
     stripe.customers.create(
       {
-        card: req.body.stripeToken,
+        card: stripeToken,
         email: req.user.email,
         plan: req.user.subscription.plan.id,
         quantity: 0,
