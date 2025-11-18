@@ -1,14 +1,5 @@
-Add script to identify users with subfolders in template directories:
-- if not many, email manually?
-
-Create example sites with missing git folders, multiple subfolders, redudundant examples
-- Dropbox: https://img.blot.im/ /Templates/portfolio-copy 
-
-Run scripts to restore missing git subfolder files
-- MULTIPLe missing git folders for one site?
-Fix missing git files in:
-- Dropbox backup: 
-- Google Drive: 
+Finish scripts to restore missing git subfolder files
+- Write script to checkout old commit, turn on local template editing, git init, writeToFolder
 - Tell [Paul](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlKRdTJhChKdmSPmTzFzhsvV)
 
 Run rebuild templates after verify-cdn-hash (purge of old incorrect hashes)

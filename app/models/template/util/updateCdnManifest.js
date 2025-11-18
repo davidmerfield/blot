@@ -179,9 +179,11 @@ async function cleanupOldHash(target, oldHash) {
     const oldRenderedKey = key.renderedOutput(oldHash);
     await delAsync(oldRenderedKey);
     
-    // Purge CDN URL
+    // Background purge CDN URL from Bunny in background (not important)
+    // if it fails, worst case we pay to store a stale file. the url used
+    // on the site changes over to the new version so no worries.
     const oldUrl = generateCdnUrl(target, oldHash);
-    await purgeCdnUrls([oldUrl]);
+    purgeCdnUrls([oldUrl]);
   } catch (err) {
     console.error(`Error cleaning up old hash for ${target}:`, err);
   }
