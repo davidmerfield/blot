@@ -44,6 +44,8 @@ describe("template", function () {
   });
 
   it("updates the CDN manifest when metadata locals change", async function () {
+    // Install the template so the CDN manifest is generated
+    await this.blog.update({template: this.template.id});
 
     await this.setView({
       name: "style.css",

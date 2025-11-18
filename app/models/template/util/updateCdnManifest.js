@@ -7,6 +7,7 @@ const getMetadata = require("../getMetadata");
 const getView = require("../getView");
 const getAllViews = require("../getAllViews");
 const generateCdnUrl = require("./generateCdnUrl");
+const { minifyCSS, minifyJS } = require("helper/minify");
 const purgeCdnUrls = require("helper/purgeCdnUrls");
 const path = require("path");
 const fs = require("fs-extra");
@@ -129,19 +130,33 @@ async function processTarget(
   }
 
   // Compute hash from templateID + view name + rendered output
-  // We include the template ID and view name to ensure that hashes are unique per site 
-  // and per view because we purge the old hash when this changes. 
+  // We include the template ID and view name to ensure that hashes are unique per site
+  // and per view because we purge the old hash when this changes.
   const hashInput = templateID + ":" + target + ":" + renderedOutputString;
   const computedHash = hash(hashInput);
+
+  const ext = path.extname(target).toLowerCase();
+  let contentToWrite = renderedOutputString;
+
+  try {
+    if (ext === ".css") {
+      contentToWrite = minifyCSS(renderedOutputString);
+    } else if (ext === ".js") {
+      contentToWrite = await minifyJS(renderedOutputString);
+    }
+  } catch (err) {
+    console.error(`Error minifying rendered output for ${target}:`, err);
+    contentToWrite = renderedOutputString;
+  }
 
   // Store rendered output on disk and in Redis (for backward compatibility during migration)
   const renderedKey = key.renderedOutput(computedHash);
   try {
     // Write to disk (primary storage) with original view name
-    await writeRenderedOutputToDisk(computedHash, renderedOutputString, target);
-    
+    await writeRenderedOutputToDisk(computedHash, contentToWrite, target);
+
     // Also write to Redis for backward compatibility during migration period
-    await setAsync(renderedKey, renderedOutputString);
+    await setAsync(renderedKey, contentToWrite);
   } catch (err) {
     console.error(`Error storing rendered output for ${target}:`, err);
     return null; // Don't create manifest entry if storage fails
@@ -184,13 +199,43 @@ module.exports = function updateCdnManifest(templateID, callback) {
 
     try {
       const metadata = await getMetadataAsync(templateID);
-      
+
       if (!metadata) {
         return callback(new Error("Template metadata not found"));
       }
-      
+
       if (!metadata.owner) {
         return callback(new Error("Template metadata missing owner"));
+      }
+
+      const oldManifest =
+        metadata && typeof metadata.cdn === "object" ? metadata.cdn : {};
+
+      // Skip CDN manifest computation when the template is not installed on the owner blog.
+      //
+      // Safety: Templates are siloed per blog and preview subdomains do not use CDN manifests
+      // for non-SITE templates (see app/blog/render/retrieve/cdn.js lines 12-15). There is no
+      // other way to view a template that isn't installed on a blog, so the manifest would go
+      // unused. SITE templates are the exception because they can be previewed on any blog and
+      // still rely on CDN URLs in preview mode, so they always require manifest computation.
+      if (metadata.owner !== "SITE") {
+        // Require Blog.get here to avoid dependency loops
+        const Blog = require("models/blog");
+        const getBlogAsync = promisify(Blog.get);
+
+        const blog = await getBlogAsync({ id: metadata.owner });
+        const templateInstalled = blog && blog.template === templateID;
+
+        if (!templateInstalled) {
+          metadata.cdn = {};
+          await hsetAsync(key.metadata(templateID), "cdn", JSON.stringify({}));
+
+          for (const target in oldManifest) {
+            await cleanupOldHash(target, oldManifest[target]);
+          }
+
+          return callback(null, {});
+        }
       }
 
       // Get all views and collect CDN targets from their retrieve.cdn arrays
@@ -210,8 +255,6 @@ module.exports = function updateCdnManifest(templateID, callback) {
 
       const sortedTargets = Array.from(allTargets).sort();
       const manifest = {};
-      const oldManifest =
-        metadata && typeof metadata.cdn === "object" ? metadata.cdn : {};
       const inProgressManifest = Object.assign({}, oldManifest);
       metadata.cdn = inProgressManifest;
 

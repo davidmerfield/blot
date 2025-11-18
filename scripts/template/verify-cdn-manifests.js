@@ -1,5 +1,9 @@
 const { promisify } = require("util");
 const eachTemplate = require("../each/template");
+const flushCache = promisify(
+  require("models/blog/set")
+);
+
 const updateCdnManifest = promisify(
   require("models/template/util/updateCdnManifest")
 );
@@ -110,6 +114,7 @@ async function processTemplate(user, blog, template, next) {
           : `https://${blog.handle}.${config.host}`;
         console.log(`Template ${template.id} is installed on: ${blogURL}`);
         console.log();
+        await flushCache(blog.id, {cacheID: Date.now()});
       }
     }
   } catch (err) {

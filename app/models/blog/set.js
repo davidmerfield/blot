@@ -10,6 +10,9 @@ var config = require("config");
 var BackupDomain = require("./util/backupDomain");
 var flushCache = require("./flushCache");
 var normalizeImageExif = require("./util/imageExif").normalize;
+var updateCdnManifest = require("../template/util/updateCdnManifest");
+var promisify = require("util").promisify;
+var updateCdnManifestAsync = promisify(updateCdnManifest);
 
 function Changes(latest, former) {
   var changes = {};
@@ -142,11 +145,43 @@ module.exports = function (blogID, blog, callback) {
 
       multi.hmset(key.info(blogID), serial(latest));
 
-      multi.exec(function (err) {
+      multi.exec(async function (err) {
         // We didn't manage to apply any changes
         // to this blog, so empty the list of changes
         if (err) return callback(err, []);
 
+        // Wait for any required CDN manifest updates to complete
+        if (changes.template) {
+          const updatePromises = [];
+          
+          if (latest.template) {
+            updatePromises.push(
+              updateCdnManifestAsync(latest.template).catch(function (err) {
+                console.error(
+                  "Error updating CDN manifest for new template",
+                  latest.template,
+                  err
+                );
+              })
+            );
+          }
+
+          if (former.template) {
+            updatePromises.push(
+              updateCdnManifestAsync(former.template).catch(function (err) {
+                console.error(
+                  "Error updating CDN manifest for former template",
+                  former.template,
+                  err
+                );
+              })
+            );
+          }
+
+          // Wait for all CDN manifest updates to complete before proceeding
+          await Promise.all(updatePromises);
+        }
+        
         flushCache(blogID, former, function (err) {
           callback(err, changesList);
         });
