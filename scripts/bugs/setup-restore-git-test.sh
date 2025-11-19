@@ -19,23 +19,54 @@ OLD_COMMIT="3243b31b214ee637a68d2ce5799e9900d2ee9292^"  # One commit before the 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Get current branch and commit early (needed for cleanup)
+cd "$REPO_ROOT"
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+CURRENT_COMMIT=$(git rev-parse HEAD)
+
+# Track if we've modified app/ directory so we can restore it on exit
+APP_DIRECTORY_MODIFIED=false
+
+# Cleanup function to restore app/ directory
+cleanup() {
+  if [ "$APP_DIRECTORY_MODIFIED" = true ]; then
+    echo ""
+    echo "Cleaning up: Restoring app/ directory to current branch..."
+    cd "$REPO_ROOT" 2>/dev/null || return
+    if [ -n "${CURRENT_BRANCH:-}" ] && git checkout "$CURRENT_BRANCH" -- app/ 2>/dev/null; then
+      echo "App directory restored to current branch: $CURRENT_BRANCH"
+    elif git checkout main -- app/ 2>/dev/null || git checkout master -- app/ 2>/dev/null; then
+      echo "App directory restored to main/master branch"
+    else
+      echo "Warning: Failed to restore app/ directory. You may need to restore it manually:"
+      if [ -n "${CURRENT_BRANCH:-}" ]; then
+        echo "  git checkout $CURRENT_BRANCH -- app/"
+      else
+        echo "  git checkout <your-branch> -- app/"
+      fi
+    fi
+  fi
+}
+
+# Set up trap handlers for cleanup on exit, interrupt, or error
+trap cleanup EXIT INT TERM ERR
+
 echo "Setting up test environment for blog handle: $BLOG_HANDLE"
 echo "=========================================="
 
 # Step 1: Checkout old commit for app/ directory only (to get buggy code)
 echo ""
 echo "Step 1: Checking out old commit for app/ directory (before fix)..."
-cd "$REPO_ROOT"
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-CURRENT_COMMIT=$(git rev-parse HEAD)
 echo "Current branch: $CURRENT_BRANCH"
 echo "Current commit: $CURRENT_COMMIT"
 echo "Checking out app/ directory from old commit: $OLD_COMMIT"
-git checkout "$OLD_COMMIT" -- app/ || {
+if git checkout "$OLD_COMMIT" -- app/; then
+  APP_DIRECTORY_MODIFIED=true
+  echo "App directory now has buggy code from old commit (scripts remain from current branch)"
+else
   echo "Error: Failed to checkout old commit for app/ directory. Make sure the commit exists."
   exit 1
-}
-echo "App directory now has buggy code from old commit (scripts remain from current branch)"
+fi
 
 # Check if Docker container is running
 if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
@@ -162,8 +193,14 @@ docker exec "$CONTAINER_NAME" node "/usr/src/app/scripts/bugs/trigger-write-to-f
 echo ""
 echo "Step 5: Restoring app/ directory to latest code..."
 cd "$REPO_ROOT"
-git checkout "$CURRENT_BRANCH" -- app/ || git checkout main -- app/ || git checkout master -- app/
-echo "App directory restored to latest code"
+if git checkout "$CURRENT_BRANCH" -- app/ 2>/dev/null || \
+   git checkout main -- app/ 2>/dev/null || \
+   git checkout master -- app/ 2>/dev/null; then
+  APP_DIRECTORY_MODIFIED=false  # Mark as restored so cleanup doesn't run
+  echo "App directory restored to latest code"
+else
+  echo "Warning: Failed to restore app/ directory. Cleanup will attempt to restore it."
+fi
 
 echo ""
 echo "=========================================="
