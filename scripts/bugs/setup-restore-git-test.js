@@ -67,6 +67,7 @@ async function setup(blogHandle) {
     console.log("Template Directory:", templateDir);
     console.log("");
     console.log("Output for shell script:");
+    console.log("BLOG_ID=" + blog.id);
     console.log("BLOG_CLIENT=" + blog.client);
     console.log("TEMPLATE_ID=" + template.id);
     console.log("TEMPLATE_SLUG=" + template.slug);

@@ -6,6 +6,13 @@
 
 set -euo pipefail
 
+if [ -z "${1:-}" ]; then
+  echo "Error: Blog handle is required"
+  echo "Usage: ./setup-restore-git-test.sh <blog-handle>"
+  echo "Example: ./setup-restore-git-test.sh dropbox"
+  exit 1
+fi
+
 BLOG_HANDLE="$1"
 CONTAINER_NAME="blot-node-app-1"
 OLD_COMMIT="3243b31b214ee637a68d2ce5799e9900d2ee9292^"  # One commit before the fix
@@ -34,19 +41,21 @@ echo "Step 2: Running setup script in Docker container..."
 OUTPUT=$(docker exec "$CONTAINER_NAME" node "/usr/src/app/scripts/bugs/setup-restore-git-test.js" "$BLOG_HANDLE" 2>&1)
 echo "$OUTPUT"
 
-# Extract blog client, template ID, template slug, and template base from output
+# Extract blog ID, blog client, template ID, template slug, and template base from output
+BLOG_ID=$(echo "$OUTPUT" | grep "^BLOG_ID=" | cut -d'=' -f2)
 BLOG_CLIENT=$(echo "$OUTPUT" | grep "^BLOG_CLIENT=" | cut -d'=' -f2)
 TEMPLATE_ID=$(echo "$OUTPUT" | grep "^TEMPLATE_ID=" | cut -d'=' -f2)
 TEMPLATE_SLUG=$(echo "$OUTPUT" | grep "^TEMPLATE_SLUG=" | cut -d'=' -f2)
 TEMPLATE_BASE=$(echo "$OUTPUT" | grep "^TEMPLATE_BASE=" | cut -d'=' -f2)
 
-if [ -z "$BLOG_CLIENT" ] || [ -z "$TEMPLATE_ID" ] || [ -z "$TEMPLATE_SLUG" ] || [ -z "$TEMPLATE_BASE" ]; then
+if [ -z "$BLOG_ID" ] || [ -z "$BLOG_CLIENT" ] || [ -z "$TEMPLATE_ID" ] || [ -z "$TEMPLATE_SLUG" ] || [ -z "$TEMPLATE_BASE" ]; then
   echo "Error: Failed to extract required values from output"
   exit 1
 fi
 
 echo ""
 echo "Extracted values:"
+echo "  Blog ID: $BLOG_ID"
 echo "  Blog Client: $BLOG_CLIENT"
 echo "  Template ID: $TEMPLATE_ID"
 echo "  Template Slug: $TEMPLATE_SLUG"
@@ -111,9 +120,28 @@ echo "This should be deleted" > .git/test-file.txt
 echo "Git repository initialized with 2 commits"
 echo "Created test file in .git directory"
 
-# Step 4: Trigger writeToFolder to cause the bug
+# Step 4: Wait for git changes to sync, then trigger writeToFolder to cause the bug
 echo ""
-echo "Step 4: Triggering writeToFolder to cause bug..."
+echo "Step 4: Waiting for git changes to sync from cloud storage..."
+SYNC_FILE="$REPO_ROOT/data/blogs/$BLOG_ID/$TEMPLATE_BASE/$TEMPLATE_SLUG/.git/test-file.txt"
+echo "Waiting for file to appear: $SYNC_FILE"
+
+TIMEOUT=60
+ELAPSED=0
+while [ ! -f "$SYNC_FILE" ]; do
+  if [ $ELAPSED -ge $TIMEOUT ]; then
+    echo "Error: Timeout after ${TIMEOUT} seconds. File did not sync: $SYNC_FILE"
+    exit 1
+  fi
+  sleep 1
+  ELAPSED=$((ELAPSED + 1))
+  if [ $((ELAPSED % 5)) -eq 0 ]; then
+    echo "  Still waiting... (${ELAPSED}s/${TIMEOUT}s)"
+  fi
+done
+
+echo "File synced successfully after ${ELAPSED} seconds"
+echo "Triggering writeToFolder to cause bug..."
 docker exec "$CONTAINER_NAME" node "/usr/src/app/scripts/bugs/trigger-write-to-folder.js" "$BLOG_HANDLE" "$TEMPLATE_ID"
 
 # Step 5: Checkout latest code
