@@ -6,6 +6,7 @@ const download = require("./util/download");
 const CheckWeCanContinue = require("./util/checkWeCanContinue");
 const localReaddir = require("./util/localReaddir");
 const remoteReaddir = require("./util/remoteReaddir");
+const remoteRecursiveList = require("./util/remoteRecursiveList");
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const config = require("config");
@@ -20,6 +21,14 @@ module.exports = async (blogID, publish, update) => {
   if (!update) update = () => {};
 
   const checkWeCanContinue = CheckWeCanContinue(blogID);
+
+  try {
+    publish("Syncing folder tree");
+    await remoteRecursiveList(blogID, "/");
+  } catch (error) {
+    console.error("Failed to sync folder tree", error);
+    publish("Failed to sync folder tree", error.message);
+  }
 
   const walk = async (dir) => {
     publish("Checking", dir);
