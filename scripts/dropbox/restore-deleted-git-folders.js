@@ -120,8 +120,7 @@ const listDeletedGitFiles = async (client, gitPath) => {
   return entries.filter((entry) => {
     if (entry.path_lower === gitPathLower) return false;
     if (!entry.path_lower.startsWith(gitPathLower + "/")) return false;
-
-    return entry[".tag"] === "deleted" || entry?.metadata?.[".tag"] === "file";
+    return entry[".tag"] === "deleted";
   });
 };
 
@@ -187,6 +186,7 @@ const restoreGitFolder = async (client, blog, gitPath, files, templateName) => {
         continue;
       }
 
+      console.log("Restoring", file.path_display, "in", templateName);
       await restoreFileWithRetry(client, file.path_lower, revision.rev);
       restored += 1;
       console.log("Restored", file.path_display, "in", templateName);
