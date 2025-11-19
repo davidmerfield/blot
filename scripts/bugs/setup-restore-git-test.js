@@ -39,7 +39,11 @@ async function setup(blogHandle) {
     await new Promise((resolve, reject) => {
       Template.setMetadata(template.id, { localEditing: true }, (err) => {
         if (err) return reject(err);
-        resolve();
+        console.log("Writing to folder...");
+        Template.writeToFolder(blog.id, template.id, function (err) {
+          if (err) return reject(err);
+          resolve(); 
+          });        
       });
     });
 
