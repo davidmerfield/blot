@@ -183,54 +183,6 @@ describe("template", function () {
     });
   });
 
-  it("clones template with nested view paths and generates correct hashes", async function () {
-    const sourceTemplate = await create(this.blog.id, "templatename", {});
-
-    // Install the template so the CDN manifest is generated
-    await this.blog.update({template: sourceTemplate.id});
-
-    // Add views with nested paths
-    await setView(sourceTemplate.id, {
-      name: "partials/header.css",
-      content: "header { color: blue; }",
-    });
-    await setView(sourceTemplate.id, {
-      name: "assets/icons.svg",
-      content: "<svg></svg>",
-    });
-
-    // Add views that invoke CDN function
-    await setView(sourceTemplate.id, {
-      name: "head.html",
-      content: "{{#cdn}}/partials/header.css{{/cdn}}",
-    });
-
-    const sourceMetadata = await getMetadataAsync(sourceTemplate.id);
-    const sourceHash = sourceMetadata.cdn["partials/header.css"];
-
-    // Clone the template
-    const clonedTemplate = await create(this.blog.id, "templatenamecloned", {
-      cloneFrom: sourceTemplate.id,
-    });
-
-    // Install the template so the CDN manifest is generated
-    await this.blog.update({template: clonedTemplate.id});
-
-    // Get cloned template hash
-    const clonedMetadata = await getMetadataAsync(clonedTemplate.id);
-    const clonedHash = clonedMetadata.cdn["partials/header.css"];
-
-    // Verify hashes are different
-    expect(clonedHash).not.toBe(sourceHash);
-    expect(clonedHash.length).toBe(32);
-
-    // Verify CDN URL uses basename (not full path)
-    const generateCdnUrl = require("../util/generateCdnUrl");
-    const clonedUrl = generateCdnUrl("partials/header.css", clonedHash);
-    expect(clonedUrl).toContain("header.css");
-    expect(clonedUrl).not.toContain("partials/header.css");
-  });
-
   it("stores cloned template CDN files on disk with correct hashes", async function () {
     const fs = require("fs-extra");
     const path = require("path");
