@@ -79,12 +79,14 @@ fi
 echo ""
 echo "Step 2: Running setup script in Docker container..."
 echo "Command: docker exec $CONTAINER_NAME node /usr/src/app/scripts/bugs/setup-restore-git-test.js $BLOG_HANDLE"
-TEMP_OUTPUT=$(mktemp)
-trap "rm -f $TEMP_OUTPUT" EXIT
 
 # Run the command, showing output in real-time and capturing it
 # Use timeout to prevent indefinite hanging (5 minutes should be plenty)
-if ! docker exec "$CONTAINER_NAME" node "/usr/src/app/scripts/bugs/setup-restore-git-test.js" "$BLOG_HANDLE" 2>&1 | tee "$TEMP_OUTPUT"; then
+TEMP_OUTPUT=$(mktemp)
+trap "rm -f $TEMP_OUTPUT" EXIT
+
+# Run with timeout and capture output
+if ! timeout 300 docker exec "$CONTAINER_NAME" node "/usr/src/app/scripts/bugs/setup-restore-git-test.js" "$BLOG_HANDLE" 2>&1 | tee "$TEMP_OUTPUT"; then
   EXIT_CODE=$?
   echo ""
   if [ $EXIT_CODE -eq 124 ]; then

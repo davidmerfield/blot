@@ -84,7 +84,15 @@ if (require.main === module) {
     console.error("Usage: node setup-restore-git-test.js <blog-handle>");
     process.exit(1);
   }
-  setup(blogHandle);
+  setup(blogHandle)
+    .then(() => {
+      // Force exit to ensure clean shutdown
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Error:", err);
+      process.exit(1);
+    });
 }
 
 module.exports = setup;
