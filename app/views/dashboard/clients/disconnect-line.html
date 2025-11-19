@@ -6,6 +6,13 @@
   </span>
 </a>
 
+{{#isDevelopment}}
+<a class="line" href="{{{dashboardBase}}}/client/open">
+  <span class="label">Folder</span>
+  <span class="center"><span class="link">Open folder</span></span>
+</a>
+{{/isDevelopment}}
+
 <a class="line" href="{{{dashboardBase}}}/client/reset">
     <span class="label">Reset</span>
     <span class="link">Resync from {{client.display_name}}</span>

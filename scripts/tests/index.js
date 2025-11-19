@@ -5,6 +5,7 @@ var client = require("models/client");
 var clfdate = require("helper/clfdate");
 var seedrandom = require("seedrandom");
 var async = require("async");
+const { before } = require("lodash");
 var seed;
 var config = {
   spec_dir: "",
@@ -111,6 +112,8 @@ global.test = {
   server: require("./util/server"),
 
   site: require("./util/site"),
+
+  templates: require("./util/templates"),
 
   timeout: function (ms) {
     // Store original value

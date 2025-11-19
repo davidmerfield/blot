@@ -1,0 +1,170 @@
+<h2>Files that are not synced</h2>
+
+<p>Blot automatically filters system files, temporary files, and other items that shouldn't be synced to keep your site clean. This includes hidden files and folders, version control directories, editor backup files, and operating system artifacts.</p>
+
+<details>
+  <summary>View complete list of files and patterns that are not synced</summary>
+  
+  <table style="table-layout: auto;">
+    <thead>
+      <tr>
+        <th style="white-space: nowrap;">Pattern/Name</th>
+        <th>Category</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="white-space: nowrap;"><code>.ds_store</code></td>
+        <td>macOS system</td>
+        <td>Finder metadata file</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.fseventsd</code></td>
+        <td>macOS system</td>
+        <td>File system events directory</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.spotlight-v100</code></td>
+        <td>macOS system</td>
+        <td>Spotlight search index</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.trashes</code></td>
+        <td>macOS system</td>
+        <td>Trash folder metadata</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.temporaryitems</code></td>
+        <td>macOS system</td>
+        <td>Temporary items folder</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>thumbs.db</code></td>
+        <td>Windows system</td>
+        <td>Thumbnail cache file</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>desktop.ini</code></td>
+        <td>Windows system</td>
+        <td>Folder customization file</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>$recycle.bin</code></td>
+        <td>Windows system</td>
+        <td>Recycle bin folder</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.trash</code></td>
+        <td>Linux system</td>
+        <td>Trash folder</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.git</code></td>
+        <td>Version control</td>
+        <td>Git repository directory</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.svn</code></td>
+        <td>Version control</td>
+        <td>Subversion repository directory</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.kate-swp</code></td>
+        <td>Editor/IDE</td>
+        <td>Kate editor swap file</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.swp</code></td>
+        <td>Editor/IDE</td>
+        <td>Vim swap file (suffix)</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.swo</code></td>
+        <td>Editor/IDE</td>
+        <td>Vim swap file (suffix)</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.dropbox</code></td>
+        <td>Cloud sync</td>
+        <td>Dropbox metadata folder</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.dropbox.attr</code></td>
+        <td>Cloud sync</td>
+        <td>Dropbox attributes file</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.dropbox.cache</code></td>
+        <td>Cloud sync</td>
+        <td>Dropbox cache folder</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.sync</code></td>
+        <td>Cloud sync</td>
+        <td>Sync service folder</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.syncignore</code></td>
+        <td>Cloud sync</td>
+        <td>Sync ignore configuration</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.tmp.driveupload</code></td>
+        <td>Cloud sync</td>
+        <td>Google Drive upload temp file</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.synologyworkingdirectory</code></td>
+        <td>Cloud sync</td>
+        <td>Synology sync folder</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.tmp</code></td>
+        <td>File suffix</td>
+        <td>Any file ending with .tmp</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>~</code></td>
+        <td>File suffix</td>
+        <td>Any file ending with ~ (backup files)</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.orig</code></td>
+        <td>File suffix</td>
+        <td>Any file ending with .orig (backup files)</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.rej</code></td>
+        <td>File suffix</td>
+        <td>Any file ending with .rej (rejected patch files)</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>~$</code></td>
+        <td>File prefix</td>
+        <td>Any file starting with ~$ (Office temporary files)</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.#</code></td>
+        <td>File prefix</td>
+        <td>Any file starting with .# (Emacs lockfiles)</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>._</code></td>
+        <td>File prefix</td>
+        <td>Any file starting with ._ (AppleDouble files)</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>.trash-</code></td>
+        <td>File prefix</td>
+        <td>Any file starting with .trash- (macOS trash variants)</td>
+      </tr>
+      <tr>
+        <td style="white-space: nowrap;"><code>Icon\r</code></td>
+        <td>Special case</td>
+        <td>Files named Icon\r or starting with Icon\r (macOS Icon files with carriage return)</td>
+      </tr>
+    </tbody>
+  </table>
+</details>
+

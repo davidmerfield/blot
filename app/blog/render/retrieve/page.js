@@ -1,17 +1,25 @@
-var Entries = require("models/entries");
+const { getPage } = require("models/entries");
 
 module.exports = function (req, res, callback) {
-  var blog = req.blog,
-    pageNo = parseInt(req.query.page) || 1,
-    pageSize = req.blog.pageSize || 5;
+  const blogID = req?.blog?.id;
+  const pageNumber = req?.query?.page;
+  const pageSize = req?.blog?.pageSize;
+  req.log("Loading page of entries");
 
-  Entries.getPage(blog.id, pageNo, pageSize, function (entries, pagination) {
+  getPage(
+    blogID,
+    { pageNumber, pageSize },
+    function (err, entries, pagination) {
+      if (err) {
+        req.log("Error loading page of entries");
+        return callback(err);
+      }
+      req.log("Loaded page of entries");
 
-    pagination.current = pageNo;
-
-    return callback(null, {
-      entries: entries,
-      pagination: pagination,
-    });
-  });
+      return callback(null, {
+        entries,
+        pagination,
+      });
+    }
+  );
 };

@@ -7,7 +7,11 @@ const getMetadata = require("../getMetadata");
 const getView = require("../getView");
 const getAllViews = require("../getAllViews");
 const generateCdnUrl = require("./generateCdnUrl");
-const purgeCdnUrls = require("./purgeCdnUrls");
+const { minifyCSS, minifyJS } = require("helper/minify");
+const purgeCdnUrls = require("helper/purgeCdnUrls");
+const path = require("path");
+const fs = require("fs-extra");
+const config = require("config");
 
 // Promisify callback-based functions
 const getMetadataAsync = promisify(getMetadata);
@@ -20,11 +24,40 @@ const setAsync = promisify(client.set).bind(client);
 // Maximum size for rendered output (2MB)
 const MAX_RENDERED_OUTPUT_SIZE = 2 * 1024 * 1024;
 
-/**
- * Validate target name to prevent path traversal attacks
- * @param {string} target - The target name to validate
- * @returns {boolean} - True if target is valid, false otherwise
- */
+// Base directory for rendered output storage
+const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");
+
+
+function getRenderedOutputPath(hash, viewName) {
+  if (!hash || typeof hash !== "string" || hash.length < 4) {
+    throw new Error("Invalid hash: must be a string with at least 4 characters");
+  }
+  if (!viewName || typeof viewName !== "string") {
+    throw new Error("viewName must be a non-empty string");
+  }
+  // Use basename only for file storage (e.g., "header.html" from "partials/header.html")
+  // The full path is preserved in the URL via generateCdnUrl
+  const viewBaseName = path.basename(viewName);
+  const dir1 = hash.substring(0, 2);
+  const dir2 = hash.substring(2, 4);
+  const hashRemainder = hash.substring(4);
+  return path.join(RENDERED_OUTPUT_BASE_DIR, dir1, dir2, hashRemainder, viewBaseName);
+}
+
+async function writeRenderedOutputToDisk(hash, content, viewName) {
+  const filePath = getRenderedOutputPath(hash, viewName);
+  await fs.ensureDir(path.dirname(filePath));
+  await fs.writeFile(filePath, content, "utf8");
+}
+
+async function deleteRenderedOutputFromDisk(hash, viewName) {
+  const filePath = getRenderedOutputPath(hash, viewName);
+  await fs.remove(filePath).catch((err) => {
+    // Ignore ENOENT errors (file doesn't exist)
+    if (err.code !== "ENOENT") throw err;
+  });
+}
+
 function isValidTarget(target) {
   if (!target || typeof target !== "string") {
     return false;
@@ -49,133 +82,16 @@ function isValidTarget(target) {
 }
 
 /**
- * Render a view for CDN manifest generation
- */
-async function renderViewForCdn(
-  templateID,
-  ownerID,
-  viewName,
-  metadata,
-  cdnManifest
-) {
-  // Lazy require to avoid circular dependency
-  const Blog = require("../../../models/blog");
-  const blogDefaults = require("../../../models/blog/defaults");
-  const renderMiddleware = require("../../../blog/render/middleware");
-  const { promisify } = require("util");
-  const getBlogAsync = promisify(Blog.get);
-
-  try {
-    // Fetch or create blog object
-    let blogData;
-    if (ownerID === "SITE") {
-      blogData = { id: "SITE" };
-    } else {
-      blogData = await getBlogAsync({ id: ownerID });
-      if (!blogData) {
-        return null; // Missing blog - skip in manifest
-      }
-    }
-
-    const blog = Blog.extend(Object.assign({}, blogDefaults, blogData));
-
-    // Create mock req/res objects compatible with render middleware
-    let renderedOutput = null;
-    let renderError = null;
-
-    const req = {
-      blog: blog,
-      preview: false,
-      log: () => {},
-      template: {
-        locals: metadata.locals || {},
-        id: templateID,
-        cdn: cdnManifest && typeof cdnManifest === "object" ? cdnManifest : {},
-      },
-      query: {},
-      protocol: "https",
-      headers: {},
-    };
-
-    const res = {
-      locals: { partials: {} },
-      header: () => {},
-      set: () => {},
-      send: (output) => {
-        renderedOutput = output;
-      },
-      renderView: null, // Set by render middleware
-    };
-
-    // Call render middleware
-    await new Promise((resolve) => {
-      renderMiddleware(req, res, (err) => {
-        if (err) {
-          renderError = err;
-          return resolve();
-        }
-        resolve();
-      });
-    });
-
-    if (renderError) {
-      console.error(`Error rendering view ${viewName} for CDN:`, renderError);
-      return null;
-    }
-
-    // Render the view - use callback pattern which is simpler
-    await new Promise((resolve) => {
-      res.renderView(viewName, (err) => {
-        // next callback - called on errors
-        if (err) {
-          if (err.code === "NO_VIEW") {
-            // Missing view - skip in manifest (not an error)
-            renderError = null;
-          } else {
-            renderError = err;
-            console.error(`Error rendering view ${viewName} for CDN:`, err);
-          }
-        }
-        resolve();
-      }, (err, output) => {
-        // callback pattern - captures output directly
-        if (err) {
-          renderError = err;
-          console.error(`Error rendering view ${viewName} for CDN:`, err);
-        } else {
-          renderedOutput = output;
-        }
-        resolve();
-      });
-    });
-
-    if (renderError) {
-      return null;
-    }
-
-    if (renderedOutput === undefined || renderedOutput === null) {
-      return null;
-    }
-
-    return typeof renderedOutput === "string"
-      ? renderedOutput
-      : String(renderedOutput);
-  } catch (err) {
-    console.error(`Error in renderViewForCdn for ${viewName}:`, err);
-    return null;
-  }
-}
-
-/**
  * Process a single CDN target and build its manifest entry
  */
 async function processTarget(
   templateID,
-  ownerID,
-  target,
-  metadata,
-  cdnManifest
+  target
 ) {
+
+  // require here becuse of dependency loop
+  const renderView = require("blog/render/view");
+
   // Check if view exists
   try {
     const view = await getViewAsync(templateID, target);
@@ -196,13 +112,7 @@ async function processTarget(
   }
 
   // Render the view to get output
-  const renderedOutput = await renderViewForCdn(
-    templateID,
-    ownerID,
-    target,
-    metadata,
-    cdnManifest
-  );
+  const renderedOutput = await renderView(templateID, target);
   
   if (renderedOutput === undefined || renderedOutput === null) {
     return null; // Missing view or render error - skip in manifest
@@ -220,15 +130,33 @@ async function processTarget(
   }
 
   // Compute hash from templateID + view name + rendered output
-  // We include the template ID and view name to ensure that hashes are unique per site 
-  // and per view because we purge the old hash when this changes. 
+  // We include the template ID and view name to ensure that hashes are unique per site
+  // and per view because we purge the old hash when this changes.
   const hashInput = templateID + ":" + target + ":" + renderedOutputString;
   const computedHash = hash(hashInput);
 
-  // Store rendered output in Redis with 1 year TTL
+  const ext = path.extname(target).toLowerCase();
+  let contentToWrite = renderedOutputString;
+
+  try {
+    if (ext === ".css") {
+      contentToWrite = minifyCSS(renderedOutputString);
+    } else if (ext === ".js") {
+      contentToWrite = await minifyJS(renderedOutputString);
+    }
+  } catch (err) {
+    console.error(`Error minifying rendered output for ${target}:`, err);
+    contentToWrite = renderedOutputString;
+  }
+
+  // Store rendered output on disk and in Redis (for backward compatibility during migration)
   const renderedKey = key.renderedOutput(computedHash);
   try {
-    await setAsync(renderedKey, renderedOutputString);
+    // Write to disk (primary storage) with original view name
+    await writeRenderedOutputToDisk(computedHash, contentToWrite, target);
+
+    // Also write to Redis for backward compatibility during migration period
+    await setAsync(renderedKey, contentToWrite);
   } catch (err) {
     console.error(`Error storing rendered output for ${target}:`, err);
     return null; // Don't create manifest entry if storage fails
@@ -244,10 +172,18 @@ async function cleanupOldHash(target, oldHash) {
   if (!oldHash || typeof oldHash !== 'string') return;
   
   try {
+    // Delete from disk using original view name
+    await deleteRenderedOutputFromDisk(oldHash, target);
+    
+    // Delete from Redis
     const oldRenderedKey = key.renderedOutput(oldHash);
     await delAsync(oldRenderedKey);
+    
+    // Background purge CDN URL from Bunny in background (not important)
+    // if it fails, worst case we pay to store a stale file. the url used
+    // on the site changes over to the new version so no worries.
     const oldUrl = generateCdnUrl(target, oldHash);
-    await purgeCdnUrls([oldUrl]);
+    purgeCdnUrls([oldUrl]);
   } catch (err) {
     console.error(`Error cleaning up old hash for ${target}:`, err);
   }
@@ -265,16 +201,44 @@ module.exports = function updateCdnManifest(templateID, callback) {
 
     try {
       const metadata = await getMetadataAsync(templateID);
-      
+
       if (!metadata) {
         return callback(new Error("Template metadata not found"));
       }
-      
+
       if (!metadata.owner) {
         return callback(new Error("Template metadata missing owner"));
       }
 
-      const ownerID = metadata.owner;
+      const oldManifest =
+        metadata && typeof metadata.cdn === "object" ? metadata.cdn : {};
+
+      // Skip CDN manifest computation when the template is not installed on the owner blog.
+      //
+      // Safety: Templates are siloed per blog and preview subdomains do not use CDN manifests
+      // for non-SITE templates (see app/blog/render/retrieve/cdn.js lines 12-15). There is no
+      // other way to view a template that isn't installed on a blog, so the manifest would go
+      // unused. SITE templates are the exception because they can be previewed on any blog and
+      // still rely on CDN URLs in preview mode, so they always require manifest computation.
+      if (metadata.owner !== "SITE") {
+        // Require Blog.get here to avoid dependency loops
+        const Blog = require("models/blog");
+        const getBlogAsync = promisify(Blog.get);
+
+        const blog = await getBlogAsync({ id: metadata.owner });
+        const templateInstalled = blog && blog.template === templateID;
+
+        if (!templateInstalled) {
+          metadata.cdn = {};
+          await hsetAsync(key.metadata(templateID), "cdn", JSON.stringify({}));
+
+          for (const target in oldManifest) {
+            await cleanupOldHash(target, oldManifest[target]);
+          }
+
+          return callback(null, {});
+        }
+      }
 
       // Get all views and collect CDN targets from their retrieve.cdn arrays
       const views = await getAllViewsAsync(templateID);
@@ -293,25 +257,25 @@ module.exports = function updateCdnManifest(templateID, callback) {
 
       const sortedTargets = Array.from(allTargets).sort();
       const manifest = {};
-      const oldManifest =
-        metadata && typeof metadata.cdn === "object" ? metadata.cdn : {};
       const inProgressManifest = Object.assign({}, oldManifest);
       metadata.cdn = inProgressManifest;
 
       // Process each target sequentially
       for (const target of sortedTargets) {
         try {
+          let manifestChanged = false;
           const result = await processTarget(
             templateID,
-            ownerID,
-            target,
-            metadata,
-            inProgressManifest
+            target
           );
           if (result && typeof result === 'string') {
             manifest[target] = result;
+            const previousHash = inProgressManifest[target];
             inProgressManifest[target] = result;
-            
+            if (previousHash !== result) {
+              manifestChanged = true;
+            }
+
             // Clean up old hash if it changed
             const oldHash = oldManifest[target];
             if (oldHash && oldHash !== result && typeof oldHash === 'string') {
@@ -323,7 +287,16 @@ module.exports = function updateCdnManifest(templateID, callback) {
           } else {
             if (Object.prototype.hasOwnProperty.call(inProgressManifest, target)) {
               delete inProgressManifest[target];
+              manifestChanged = true;
             }
+          }
+
+          if (manifestChanged) {
+            await hsetAsync(
+              key.metadata(templateID),
+              "cdn",
+              JSON.stringify(inProgressManifest)
+            );
           }
         } catch (err) {
           console.error(`Error processing CDN target ${target}:`, err);

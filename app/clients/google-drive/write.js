@@ -9,6 +9,7 @@ const TMP = require("helper/tempDir")();
 const guid = require("helper/guid");
 const { Readable } = require("stream");
 const database = require("./database");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 // We can make this much more efficient by thoughtfully using
 // streams in pipelines rather than wastefully
@@ -20,6 +21,10 @@ module.exports = async function write(blogID, path, input, callback) {
 
   try {
     if (path[0] !== "/") path = "/" + path;
+
+    if (shouldIgnoreFile(path)) {
+      return callback(new Error(`Cannot write ignored file: ${path}`));
+    }
 
     console.log(prefix(), "writing input to tmp");
     const tempPath = await writeToTmp(input);

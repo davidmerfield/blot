@@ -45,11 +45,14 @@ module.exports = async (req, res, next) => {
     return res.status(400).json({ error: "Invalid upload key" });
   }
 
-  if (!req.template.locals || !Object.prototype.hasOwnProperty.call(req.template.locals, key)) {
+  if (
+    !req.template.locals ||
+    !Object.prototype.hasOwnProperty.call(req.template.locals, key)
+  ) {
     await cleanupFiles(files);
     return res.status(400).json({ error: "Unknown template field" });
   }
-  
+
   if (!req.body._url || req.body._url !== key) {
     await cleanupFiles(files);
     return res.status(400).json({ error: "Mismatched upload key" });
@@ -66,7 +69,11 @@ module.exports = async (req, res, next) => {
     req.template.locals[key] = "";
 
     try {
-      await updateTemplate(req.blog.id, req.params.templateSlug, req.template.locals);
+      await updateTemplate(
+        req.blog.id,
+        req.params.templateSlug,
+        req.template.locals
+      );
     } catch (err) {
       return next(err);
     }
@@ -80,13 +87,8 @@ module.exports = async (req, res, next) => {
     return res.message(redirect, "Removed file");
   }
 
-  const templateDir = join(
-    config.blog_static_files_dir,
-    "template_assets",
-    req.blog.id,
-    req.params.templateSlug
-  );
-
+  const subdir = req.blog.id + "/_template_assets";
+  const templateDir = join(config.blog_static_files_dir, subdir);
   const extension = extname(file.originalFilename || file.path).toLowerCase();
   const filename = `${uuid()}${extension}`;
   const finalPath = join(templateDir, filename);
@@ -101,13 +103,16 @@ module.exports = async (req, res, next) => {
   }
 
   const cdnUrl =
-    `${config.cdn.origin}/template_assets/${req.blog.id}/${req.params.templateSlug}/` +
-    encodeURIComponent(filename);
+    `${config.cdn.origin}/${subdir}/` + encodeURIComponent(filename);
 
   req.template.locals[key] = cdnUrl;
 
   try {
-    await updateTemplate(req.blog.id, req.params.templateSlug, req.template.locals);
+    await updateTemplate(
+      req.blog.id,
+      req.params.templateSlug,
+      req.template.locals
+    );
   } catch (err) {
     await fs.remove(finalPath).catch(() => {});
     return next(err);

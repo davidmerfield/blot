@@ -27,7 +27,7 @@ module.exports = function () {
   // Build the templates
   beforeAll(function (done) {
     templates({ watch: false }, done);
-  });
+  }, 10 * 1000); // longer timeout
 
   beforeEach(function () {
     this.write = async ({ path, content }) => {

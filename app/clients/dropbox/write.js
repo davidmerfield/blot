@@ -6,6 +6,7 @@ var localPath = require("helper/localPath");
 var retry = require("./util/retry");
 const { promisify } = require("util");
 const upload = promisify(require("clients/dropbox/util/upload"));
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 // Write should only ever be called inside the function returned
 // from Sync for a given blog, since it modifies the blog folder.
@@ -13,6 +14,10 @@ function write(blogID, path, contents, callback) {
   var pathInDropbox, pathOnBlot;
 
   debug("Blog:", blogID, "Writing", path);
+
+  if (shouldIgnoreFile(path)) {
+    return callback(new Error(`Cannot write ignored file: ${path}`));
+  }
 
   createClient(blogID, async function (err, client, account) {
     if (err || !account) return callback(err || new Error("No account"));

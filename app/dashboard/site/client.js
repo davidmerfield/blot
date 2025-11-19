@@ -9,6 +9,8 @@ const load = require("./load");
 const Sync = require("sync");
 const Fix = require("sync/fix");
 const Rebuild = require("sync/rebuild");
+const config = require("config");
+const fetch = require("node-fetch");
 
 const { promisify } = require("util");
 const getStatuses = promisify(Blog.getStatuses);
@@ -190,6 +192,37 @@ client_routes.post("/reset/resync", load.client, function (req, res, next) {
     });
   });
 });
+
+// Generic open folder route for all clients (development only)
+if (config.environment === "development") {
+  const DEFAULT_OPEN_FOLDER_ORIGIN =
+    process.env.LOCAL_OPEN_FOLDER_ORIGIN ||
+    (process.env.CONTAINER_NAME
+      ? "http://host.docker.internal:3020"
+      : "http://localhost:3020");
+
+  client_routes.get("/open", async function (req, res, next) {
+    try {
+      const openUrl = new URL(`${DEFAULT_OPEN_FOLDER_ORIGIN}/open-folder`);
+      openUrl.searchParams.set("blogID", req.blog.id);
+
+      // Include client type if available
+      if (req.blog.client) {
+        openUrl.searchParams.set("client", req.blog.client);
+      }
+
+      const response = await fetch(openUrl.href);
+
+      if (!response.ok) {
+        throw new Error("Request failed");
+      }
+
+      res.redirect(res.locals.base + "/client" + (req.blog.client ? "/" + req.blog.client : ""));
+    } catch (error) {
+      next(new Error("Could not open folder on your computer"));
+    }
+  });
+}
 
 client_routes
   .route("/")

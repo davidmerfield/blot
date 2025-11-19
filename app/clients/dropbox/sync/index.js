@@ -4,6 +4,7 @@ var Download = require("../util/download");
 var _require = require("../util/constants");
 var MAX_FILE_SIZE = _require.MAX_FILE_SIZE;
 var hasUnsupportedExtension = _require.hasUnsupportedExtension;
+var isDotfileOrDotfolder = _require.isDotfileOrDotfolder;
 var hashFile = require("helper/hashFile");
 var Database = require("../database");
 var join = require("path").join;
@@ -171,17 +172,29 @@ function Apply(client, blogFolder, log, status) {
   return function apply(changes, callback) {
     debug("Retrieved changes", changes);
 
-    var deleted = changes.filter(function (item) {
-      return item[".tag"] === "deleted";
-    });
+    var deleted = changes
+      .filter(function (item) {
+        return item[".tag"] === "deleted";
+      })
+      .filter(function (item) {
+        return !isDotfileOrDotfolder(item.relative_path);
+      });
 
-    var folders = changes.filter(function (item) {
-      return item[".tag"] === "folder";
-    });
+    var folders = changes
+      .filter(function (item) {
+        return item[".tag"] === "folder";
+      })
+      .filter(function (item) {
+        return !isDotfileOrDotfolder(item.relative_path);
+      });
 
-    var files = changes.filter(function (item) {
-      return item[".tag"] === "file";
-    });
+    var files = changes
+      .filter(function (item) {
+        return item[".tag"] === "file";
+      })
+      .filter(function (item) {
+        return !isDotfileOrDotfolder(item.relative_path);
+      });
 
     function remove(item, callback) {
       log(item.relative_path, "Removing from folder");

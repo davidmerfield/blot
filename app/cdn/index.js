@@ -7,6 +7,7 @@ const mime = require("mime-types");
 const client = require("models/client");
 const key = require("models/template/key");
 const getAsync = promisify(client.get).bind(client);
+const path = require("path");
 
 const GLOBAL_STATIC_FILES = config.blot_directory + "/app/blog/static";
 
@@ -47,7 +48,20 @@ cdn.use("/documentation/v-:version", static(config.views_directory));
 // /folder/blog_1234/favicon.ico
 cdn.use("/folder/v-:version", static(config.blog_folder_dir));
 
-// New route format: /template/viewname.digest.extension
+// New route format: /template/{hash[0:2]}/{hash[2:4]}/{hash}{ext}
+// Serves rendered output directly from disk using Express static middleware
+// This route must come before the legacy route to match the new format first
+// fallthrough: true allows requests to continue to legacy route if file not found
+cdn.use("/template", express.static(path.join(config.data_directory, "cdn", "template"), {
+  maxAge: "1y",
+  immutable: true,
+  fallthrough: true,
+  setHeaders: (res) => {
+    res.set("Cache-Control", "public, max-age=31536000, immutable");
+  },
+}));
+
+// Legacy route format: /template/viewname.digest.extension (backward compatibility)
 cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
   try {
     // Parse URL format: viewname.digest.extension
