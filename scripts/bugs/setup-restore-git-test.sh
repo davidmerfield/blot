@@ -145,13 +145,24 @@ fi
 
 TEMPLATE_PATH="$BASE_PATH/$TEMPLATE_BASE/$TEMPLATE_SLUG"
 
-if [ ! -d "$TEMPLATE_PATH" ]; then
-  echo "Error: Template folder not found at: $TEMPLATE_PATH"
-  echo "Please ensure the folder exists and is synced to your local machine"
-  exit 1
-fi
+# Wait for template folder to sync from cloud storage
+echo "Waiting for template folder to sync: $TEMPLATE_PATH"
+TIMEOUT=30
+ELAPSED=0
+while [ ! -d "$TEMPLATE_PATH" ]; do
+  if [ $ELAPSED -ge $TIMEOUT ]; then
+    echo "Error: Timeout after ${TIMEOUT} seconds. Template folder did not sync: $TEMPLATE_PATH"
+    echo "Please ensure the folder exists and is synced to your local machine"
+    exit 1
+  fi
+  sleep 1
+  ELAPSED=$((ELAPSED + 1))
+  if [ $((ELAPSED % 5)) -eq 0 ]; then
+    echo "  Still waiting... (${ELAPSED}s/${TIMEOUT}s)"
+  fi
+done
 
-echo "Template folder found at: $TEMPLATE_PATH"
+echo "Template folder found after ${ELAPSED} seconds: $TEMPLATE_PATH"
 
 # Initialize git repository on operator machine
 echo ""
