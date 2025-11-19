@@ -42,8 +42,9 @@ async function setup(blogHandle) {
         console.log("Writing to folder...");
         Template.writeToFolder(blog.id, template.id, function (err) {
           if (err) return reject(err);
+          console.log("Written to folder...");
           resolve(); 
-          });        
+        });        
       });
     });
 
