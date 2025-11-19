@@ -1,6 +1,6 @@
 const path = require("path");
 const { ls } = require("../brctl");
-const shouldIgnoreFile = require("../../util/shouldIgnoreFile");
+const shouldIgnoreFile = require("../../../util/shouldIgnoreFile");
 
 const MAX_DEPTH = 1000;
 
