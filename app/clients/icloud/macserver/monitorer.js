@@ -36,6 +36,7 @@ async function recursiveList(dirPath, depth = 0) {
       .split("\n")
       .filter((line) => line.endsWith("/")) // Only dirs end with /
       .map((line) => line.slice(0, -1)) // Remove trailing /
+      .filter((name) => name !== "." && name !== "..") // Explicitly filter out . and ..
       .filter((name) => !shouldIgnoreFile(name)) // Skip ignored entries
       .map((name) => path.join(dirPath, name)); // Full path
 
