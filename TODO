@@ -1,19 +1,39 @@
+Todo, fix borked templates - how? we need to force write...
+
+Finish scripts to restore missing git subfolder files
+- Write script to checkout old commit, turn on local template editing, git init, writeToFolder while I debug
+- Tell [Paul](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlKRdTJhChKdmSPmTzFzhsvV) once scripts are run
+
+FIX dangerous writeToFolder file removal behaviour, esp. nested files
+- Respect ignoreFile function
+- Ignore subfolders
+
+---
+
 Fix bug with iCloud sync where revisions to file content in subfolders don't sync and tell Fede and [JP](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlDfdPkKKQjHSPwcJDWTnbCW) and [S](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqtXvHvwdwsVcHWFZBmJFTTFC)
 
-Blogs have huge numbers of archived templates – modify the tempalte archiver to only 'create' templates for sites using them, otherwise disappear them. work out how to clean up some of the many archived templates added to sites... (remove ones with zero changes?)
+---
 
-Template delete should purge the cdn hashes
+Maybe we mix cacheID into query string for {{#cdn}} on preview subdomains with caching headers for improved template editor performance without expensive hash computation?
 
-Don't update the blog cacheID when editing a template which is not installed (e.g. set view, etc.)
-- can we safely skip the CDN manifest generation too....? these templates are only available on preview subdomains...
+Template delete should purge the cdn hashes / URLs
+
+Handle 429s in purgeCDNUrls? Group multiple into single request?
 
 Remove the legacy redis hash routing from cdn/index.js and key definition
 - also create new script to forcefully migrate the dangling hashes from redis to disk, if they exist
 
-Can we move minification out of app/blog, then run minification after computing the hash, before storing on disk? should speed up
+We should get notifcations when stripe recovers an overdue subscription, as opposed to the user entering the form
 
-can we speed up setview slightly, it's quite slow?
-- maybe we run multiple asset computations in parallel?
+invalid package.json causes crazy error on template editor (missing colon)
+
+Resync all Dropbox/Drive blogs to apply new ignored files logic
+
+Make entries.js support query.page as well as params.page and [make Ian's feed work](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqtXwDpcLsVnJDXQHcLnhMsnG)
+
+Speed up global template build by not even invoke the setView function if there are no changes... (this avoids running updateCDNManifest when SITE template has no changes)
+
+Blogs have huge numbers of archived templates – modify the tempalte archiver to only 'create' templates for sites using them, otherwise disappear them. work out how to clean up some of the many archived templates added to sites... (remove ones with zero changes?)
 
 Fix script to replace cssURL to handle blogs with invalid domains (it's breaking the migration)
 
@@ -40,6 +60,12 @@ Modify nginx config to serve as many CDN static files as possible
 - eventually these files will be on s3 but for now, use nginx with try files where possible then pass on to upstream
 
 Resolve inconsistency: 'Create site' vs New template vs Create file
+
+'Preview' link on template editor should become 'Visit site' for installed template
+- or maybe add a new button 'visit site'?
+
+Fix bug with huge archives page 
+- `https://deoxy.blot.im/archives`
 
 ---
 

@@ -12,6 +12,7 @@
     "deploy-macserver": "./scripts/macserver/deploy.sh",
     "deploy-localmacserver": "./scripts/macserver/local-deploy.sh",
     "deploy-openresty": ". /etc/blot/openresty-deploy-environment.sh && ./config/openresty/deploy-config.sh",
+    "client": "docker exec -it blot-redis-1 redis-cli",
     "login": "docker exec -it blot-node-app-1 /bin/sh",
     "featured": "docker exec blot-node-app-1 node app/documentation/featured/build",
     "folder": "docker exec blot-node-app-1 npx nodemon app/templates/folders --ext '*' --watch /usr/src/app/app/templates/folders",

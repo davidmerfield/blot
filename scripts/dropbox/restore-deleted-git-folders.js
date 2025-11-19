@@ -7,6 +7,48 @@ const localPath = require("helper/localPath");
 
 const posixJoin = path.posix.join;
 
+const walkLocalGitFolder = async (blogID, templateFolder, templateName) => {
+  const gitPath = localPath(blogID, path.join("/", templateFolder, templateName, ".git"));
+
+  try {
+    const stats = await fs.promises.stat(gitPath);
+    if (!stats.isDirectory()) return null;
+  } catch (err) {
+    if (err.code === "ENOENT") return null;
+    throw err;
+  }
+
+  const files = [];
+
+  const walk = async (currentPath, relativePath = "") => {
+    const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const absoluteChild = path.join(currentPath, entry.name);
+      const relativeChild = relativePath
+        ? path.posix.join(relativePath, entry.name)
+        : entry.name;
+
+      if (entry.isDirectory()) {
+        await walk(absoluteChild, relativeChild);
+      } else {
+        files.push(relativeChild);
+      }
+    }
+  };
+
+  await walk(gitPath);
+
+  return files;
+};
+
+const isGitFolderCorrupted = async (blogID, templateFolder, templateName) => {
+  const files = await walkLocalGitFolder(blogID, templateFolder, templateName);
+  if (files === null) return false;
+
+  return files.length === 0;
+};
+
 const stats = {
   blogsProcessed: 0,
   gitFoldersFound: 0,
@@ -66,31 +108,20 @@ const listAllEntries = async (client, params) => {
   return entries;
 };
 
-const findDeletedGitFolders = async (client, templatePath) => {
-  const entries = await listAllEntries(client, {
-    path: templatePath,
-    recursive: true,
-    include_deleted: true,
-  });
-
-  return entries.filter(
-    (entry) => entry[".tag"] === "deleted" && entry.name === ".git"
-  );
-};
-
 const listDeletedGitFiles = async (client, gitPath) => {
-  const parentPath = posixJoin(gitPath, "..", "");
   const entries = await listAllEntries(client, {
-    path: parentPath,
+    path: gitPath,
     recursive: true,
     include_deleted: true,
   });
+
+  const gitPathLower = gitPath.toLowerCase();
 
   return entries.filter((entry) => {
-    if (!entry.path_lower.startsWith(gitPath + "/")) return false;
-    if (entry.path_lower === gitPath) return false;
+    if (entry.path_lower === gitPathLower) return false;
+    if (!entry.path_lower.startsWith(gitPathLower + "/")) return false;
 
-    return entry[".tag"] === "file" || entry[".tag"] === "deleted";
+    return entry[".tag"] === "deleted" || entry?.metadata?.[".tag"] === "file";
   });
 };
 
@@ -107,13 +138,13 @@ const restoreFile = (client, filePath, rev) => {
   return client.filesRestore({ path: filePath, rev });
 };
 
-const restoreGitFolder = async (client, blog, gitFolder, files, templateName) => {
-  const message = `Restore .git folder at ${gitFolder.path_display} containing ${files.length} files for blog ${blog.id} (${blog.handle})?`;
+const restoreGitFolder = async (client, blog, gitPath, files, templateName) => {
+  const message = `Restore deleted .git files at ${gitPath} containing ${files.length} files for blog ${blog.id} (${blog.handle})?`;
 
   const confirmed = await getConfirmation(message);
 
   if (!confirmed) {
-    console.log("Skipped", gitFolder.path_display);
+    console.log("Skipped", gitPath);
     return 0;
   }
 
@@ -173,50 +204,47 @@ const processBlog = async (blog) => {
       blog.handle
     );
 
-    let gitFolders;
+    const corrupted = await isGitFolderCorrupted(
+      blog.id,
+      template.folder,
+      template.name
+    );
 
-    try {
-      gitFolders = await findDeletedGitFolders(client, templatePath);
-    } catch (err) {
-      console.log("Error listing template", templatePath, err);
+    if (!corrupted) {
+      console.log(
+        `Local .git for ${template.folder}/${template.name} is healthy or missing; skipping.`
+      );
       continue;
     }
 
-    if (!gitFolders.length) continue;
+    const gitPath = posixJoin(templatePath, ".git");
+    let files;
 
-    stats.gitFoldersFound += gitFolders.length;
+    try {
+      files = await listDeletedGitFiles(client, gitPath);
+    } catch (err) {
+      console.log("Error listing deleted files for", gitPath, err);
+      continue;
+    }
 
-    for (const gitFolder of gitFolders) {
-      let files;
+    if (!files.length) {
+      console.log("No deleted files found in", gitPath);
+      continue;
+    }
 
-      try {
-        files = await listDeletedGitFiles(client, gitFolder.path_lower);
-      } catch (err) {
-        console.log("Error listing deleted files for", gitFolder.path_display, err);
-        continue;
-      }
+    stats.gitFoldersFound += 1;
 
-      if (!files.length) {
-        console.log("No deleted files found in", gitFolder.path_display);
-        continue;
-      }
-
-      try {
-        const restored = await restoreGitFolder(
-          client,
-          blog,
-          gitFolder,
-          files,
-          template.name
-        );
-        stats.filesRestored += restored;
-      } catch (err) {
-        console.log(
-          "Error during restoration for",
-          gitFolder.path_display,
-          err
-        );
-      }
+    try {
+      const restored = await restoreGitFolder(
+        client,
+        blog,
+        gitPath,
+        files,
+        template.name
+      );
+      stats.filesRestored += restored;
+    } catch (err) {
+      console.log("Error during restoration for", gitPath, err);
     }
   }
 };

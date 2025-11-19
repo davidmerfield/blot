@@ -186,6 +186,9 @@ describe("template", function () {
   });
 
   it("updates the CDN manifest when CDN targets change", async function () {
+    // Install the template so the CDN manifest is generated
+    await this.blog.update({template: this.template.id});
+
     await setView(this.template.id, {
       name: "style.css",
       content: "body { color: red; }",

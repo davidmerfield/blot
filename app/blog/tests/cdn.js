@@ -242,7 +242,7 @@ describe("cdn template function", function () {
     });
 
     expect(hash).not.toBe(extractHash(await this.text("/")));
-    expect(await this.text("/style.css")).toBe("a{color:#00f}body{color:red}");
+    expect(await this.text("/style.css")).toBe("a {color: blue} body { color: red; }");
   });
 
   it("changes when a deeply nested referenced view changes", async function () {

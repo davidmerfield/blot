@@ -16,7 +16,6 @@ var CACHE = config.cache;
 var CONTENT_TYPE = "Content-Type";
 var CACHE_CONTROL = "Cache-Control";
 
-const { minifyJS, minifyCSS } = require("./minify");
 const replaceFolderLinks = require("./replaceFolderLinks/html");
 const replaceFolderLinksCSS = require("./replaceFolderLinks/css");
 
@@ -133,28 +132,6 @@ module.exports = function (req, res, _next) {
               req.log("Replacing folder links with CDN links");
               output = await replaceFolderLinksCSS(blog, output, req.log);
               req.log("Replaced folder links with CDN links");
-            }
-
-            if (viewType === STYLE) {
-              req.log("Minifying CSS");
-              try {
-                output = minifyCSS(output);
-                req.log("Minified CSS");
-              } catch (e) {
-                req.log("Failed to minify CSS");
-                console.log(e);
-              }
-            }
-
-            if (viewType === JS) {
-              req.log("Minifying JavaScript");
-              try {
-                output = await minifyJS(output);
-                req.log("Minified JavaScript");
-              } catch (e) {
-                req.log("Failed to minify JS");
-                console.log(e);
-              }
             }
 
             if (callback) {
