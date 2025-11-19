@@ -30,7 +30,7 @@ jobs:
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          ssh-private-key: ${{ secrets.BLOT_DEPLOY_SSH_KEY }}
 
       - name: Configure SSH alias
         run: |
