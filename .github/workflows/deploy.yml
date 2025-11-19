@@ -49,7 +49,7 @@ jobs:
         run: ssh blot "echo 'SSH connection successful'"
 
       - name: Deploy via npm script
-        run: npm run deploy-node ${{ github.sha }}
+        run: npm run deploy-node -- ${{ github.sha }}
         env:
           # Skip branch check since we're in CI and may be checking out a specific commit
           SKIP_BRANCH_CHECK: true
