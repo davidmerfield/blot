@@ -82,37 +82,6 @@ else
     chown "${DEPLOY_USER}:${DEPLOY_USER}" "${SSH_DIR}/authorized_keys"
 fi
 
-# Create deploy wrapper script (optional - not used if command restrictions are removed)
-log "Creating deploy wrapper script (for reference only)..."
-cat > "${WRAPPER_SCRIPT}" <<'WRAPPER_EOF'
-#!/bin/bash
-#
-# Deploy wrapper script - executes commands without restrictions
-# This script is not used by default when command restrictions are removed
-#
-
-set -euo pipefail
-
-# Log all commands
-LOG_FILE="/var/log/deploy-commands.log"
-TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-echo "[${TIMESTAMP}] User: ${USER}, Command: ${SSH_ORIGINAL_COMMAND:-none}" >> "${LOG_FILE}"
-
-# Get the original command
-ORIGINAL_CMD="${SSH_ORIGINAL_COMMAND:-}"
-
-if [ -z "${ORIGINAL_CMD}" ]; then
-    echo "No command provided"
-    exit 1
-fi
-
-# Execute command without restrictions
-exec ${ORIGINAL_CMD}
-WRAPPER_EOF
-
-chmod +x "${WRAPPER_SCRIPT}"
-chown root:root "${WRAPPER_SCRIPT}"
-
 # Add deploy user to docker group (so it can run docker without sudo)
 log "Adding ${DEPLOY_USER} to docker group..."
 if getent group docker > /dev/null 2>&1; then
