@@ -6,7 +6,7 @@ module.exports = function (req, res, callback) {
   const options = {
     sortBy: req?.template?.locals?.sort_by,
     order: req?.template?.locals?.sort_order,
-    pageNumber: req?.params?.page,
+    pageNumber: req?.params?.page ?? req?.query?.page,
     pageSize: req?.template?.locals?.page_size,
   };
 
