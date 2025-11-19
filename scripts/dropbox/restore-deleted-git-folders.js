@@ -109,6 +109,9 @@ const listAllEntries = async (client, params) => {
 };
 
 const listDeletedGitFiles = async (client, gitPath) => {
+
+  console.log('Listing deleted git files');
+
   const entries = await listAllEntries(client, {
     path: gitPath,
     recursive: true,
