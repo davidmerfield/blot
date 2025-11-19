@@ -122,7 +122,9 @@ function write (blogID, client, dir, view, compare, callback) {
 
 function writeFile(blogID, client, path, content, compare, callback) {
   if (shouldIgnoreFile(path)) {
-    return callback(new Error("Cannot write ignored file: " + path));
+    // Silently skip ignored files to avoid breaking legacy templates
+    // that may have ignored files in their stored views
+    return callback();
   }
 
   if (typeof compare === "function") {
