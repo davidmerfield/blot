@@ -137,7 +137,10 @@ module.exports = function () {
     async.each(
       uids,
       function (uid, next) {
-        User.scheduleWelcomeEmail(uid, next);
+        User.scheduleWelcomeEmail(uid, function (err) {
+          if (err) console.error("Error scheduling welcome email for", uid, err);
+          next();
+        });
       },
       function (err) {
         if (err) {
