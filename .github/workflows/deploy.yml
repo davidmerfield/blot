@@ -1,0 +1,250 @@
+name: Deploy to EC2
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Commit SHA to deploy (leave empty for latest commit)'
+        required: false
+        type: string
+      skip_health_check:
+        description: 'Skip health checks (use with caution)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY_URL: ghcr.io/davidmerfield/blot
+  EC2_HOST: ${{ secrets.EC2_HOST }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine commit SHA
+        id: commit
+        run: |
+          if [ -z "${{ inputs.commit_sha }}" ]; then
+            echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "Using current commit: ${{ github.sha }}"
+          else
+            # Validate commit SHA format
+            if [[ ! "${{ inputs.commit_sha }}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "Error: Invalid commit SHA format"
+              exit 1
+            fi
+            echo "sha=${{ inputs.commit_sha }}" >> $GITHUB_OUTPUT
+            echo "Using specified commit: ${{ inputs.commit_sha }}"
+          fi
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Verify SSH connection
+        run: |
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
+            deploy@${EC2_HOST} "echo 'SSH connection successful'" || {
+            echo "Error: Failed to connect to EC2 instance"
+            exit 1
+          }
+
+      - name: Detect platform
+        id: platform
+        run: |
+          PLATFORM_ARCH=$(ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+            "docker info --format '{{.Architecture}}'")
+          
+          if [ "$PLATFORM_ARCH" = "aarch64" ]; then
+            PLATFORM_ARCH="arm64"
+          fi
+          
+          echo "arch=${PLATFORM_ARCH}" >> $GITHUB_OUTPUT
+          echo "os=linux" >> $GITHUB_OUTPUT
+          echo "Detected platform: linux/${PLATFORM_ARCH}"
+
+      - name: Verify image exists
+        run: |
+          echo "Verifying image exists for commit ${{ steps.commit.outputs.sha }}..."
+          ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+            "docker manifest inspect ${REGISTRY_URL}:${{ steps.commit.outputs.sha }}" || {
+            echo "Error: Image ${REGISTRY_URL}:${{ steps.commit.outputs.sha }} not found"
+            echo "Make sure the build workflow has completed successfully"
+            exit 1
+          }
+          echo "Image verified successfully"
+
+      - name: Deploy containers
+        env:
+          COMMIT_SHA: ${{ steps.commit.outputs.sha }}
+          PLATFORM_ARCH: ${{ steps.platform.outputs.arch }}
+          PLATFORM_OS: ${{ steps.platform.outputs.os }}
+          SKIP_HEALTH: ${{ inputs.skip_health_check }}
+        run: |
+          set -euo pipefail
+          
+          # Function to deploy a single container
+          deploy_container() {
+            local CONTAINER_NAME=$1
+            local PORT=$2
+            local CPUS=$3
+            local MEMORY=$4
+            local MAX_OLD_SPACE=$5
+            
+            echo ""
+            echo "=========================================="
+            echo "Deploying ${CONTAINER_NAME}"
+            echo "=========================================="
+            
+            # Get current image hash for rollback
+            ROLLBACK_HASH=$(ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+              "docker inspect --format='{{.Config.Image}}' ${CONTAINER_NAME} 2>/dev/null | sed 's/.*://' || echo ''")
+            
+            if [ -n "${ROLLBACK_HASH}" ] && [ "${ROLLBACK_HASH}" = "${COMMIT_SHA}" ]; then
+              echo "Container ${CONTAINER_NAME} is already running commit ${COMMIT_SHA}. Skipping..."
+              return 0
+            fi
+            
+            if [ -n "${ROLLBACK_HASH}" ]; then
+              echo "Current image: ${ROLLBACK_HASH}"
+              echo "Rollback available to: ${ROLLBACK_HASH}"
+            else
+              echo "No previous container found (first deployment)"
+            fi
+            
+            # Archive logs before removing container
+            echo "Archiving container logs..."
+            TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%S.%3NZ")
+            LOG_DIR="/tmp/blot-deploy-logs/${CONTAINER_NAME}"
+            ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+              "mkdir -p ${LOG_DIR} && \
+               (docker logs ${CONTAINER_NAME} > ${LOG_DIR}/${CONTAINER_NAME}-deploy-${TIMESTAMP}.log 2>&1 || true) && \
+               cd ${LOG_DIR} && ls -1t | tail -n +4 | xargs -r rm -f || true"
+            
+            # Pull new image
+            echo "Pulling new image ${REGISTRY_URL}:${COMMIT_SHA}..."
+            ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+              "docker pull ${REGISTRY_URL}:${COMMIT_SHA}"
+            
+            # Remove old container
+            echo "Removing old container..."
+            ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+              "docker rm -f ${CONTAINER_NAME} || true"
+            
+            # Start new container
+            echo "Starting new container..."
+            DOCKER_CMD="docker run -d \
+              --restart unless-stopped \
+              --name ${CONTAINER_NAME} \
+              --platform ${PLATFORM_OS}/${PLATFORM_ARCH} \
+              --log-driver json-file \
+              --log-opt max-size=512m \
+              --log-opt max-file=1 \
+              -p ${PORT}:8080 \
+              --env-file /etc/blot/secrets.env \
+              -e CONTAINER_NAME=${CONTAINER_NAME} \
+              -e NODE_OPTIONS='--max-old-space-size=${MAX_OLD_SPACE}' \
+              -v /var/www/blot/data:/usr/src/app/data \
+              --memory=${MEMORY} \
+              --cpus=${CPUS} \
+              ${REGISTRY_URL}:${COMMIT_SHA}"
+            
+            echo "Running: ${DOCKER_CMD}"
+            ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} "${DOCKER_CMD}"
+            
+            # Health check
+            if [ "${SKIP_HEALTH}" != "true" ]; then
+              echo "Waiting for health check (max 3 minutes)..."
+              HEALTH_CHECK_PASSED=false
+              
+              for i in {1..12}; do
+                HEALTH=$(ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+                  "docker inspect --format='{{.State.Health.Status}}' ${CONTAINER_NAME} 2>/dev/null || echo 'starting'")
+                
+                if [ "${HEALTH}" = "healthy" ]; then
+                  # Additional HTTP health check
+                  if ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+                    "curl --fail --max-time 10 http://localhost:${PORT}/health >/dev/null 2>&1"; then
+                    echo "✓ ${CONTAINER_NAME} is healthy"
+                    HEALTH_CHECK_PASSED=true
+                    break
+                  fi
+                elif [ "${HEALTH}" = "unhealthy" ]; then
+                  echo "✗ Health check failed for ${CONTAINER_NAME}"
+                  echo "Container logs:"
+                  ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+                    "docker logs --tail 50 ${CONTAINER_NAME}" || true
+                  
+                  # Attempt rollback if we have a previous hash
+                  if [ -n "${ROLLBACK_HASH}" ] && [ "${ROLLBACK_HASH}" != "${COMMIT_SHA}" ]; then
+                    echo ""
+                    echo "Attempting rollback to ${ROLLBACK_HASH}..."
+                    ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+                      "docker rm -f ${CONTAINER_NAME} || true"
+                    ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} "${DOCKER_CMD//${COMMIT_SHA}/${ROLLBACK_HASH}}"
+                    echo "Rollback completed. Please investigate the issue."
+                  else
+                    echo "No rollback available."
+                  fi
+                  
+                  exit 1
+                else
+                  echo "  Health status: ${HEALTH} (attempt ${i}/12)"
+                  sleep 15
+                fi
+              done
+              
+              if [ "${HEALTH_CHECK_PASSED}" != "true" ]; then
+                echo "✗ Health check timeout for ${CONTAINER_NAME}"
+                echo "Container logs:"
+                ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+                  "docker logs --tail 50 ${CONTAINER_NAME}" || true
+                exit 1
+              fi
+            else
+              echo "⚠ Health check skipped (as requested)"
+            fi
+            
+            echo "✓ ${CONTAINER_NAME} deployed successfully"
+          }
+          
+          # Deploy all containers
+          deploy_container "blot-container-blue" 8088 2 "1.5g" 750
+          deploy_container "blot-container-green" 8089 2 "1.5g" 750
+          deploy_container "blot-container-yellow" 8090 2 "2g" 1500
+          
+          echo ""
+          echo "=========================================="
+          echo "All containers deployed successfully!"
+          echo "=========================================="
+
+      - name: Prune old images
+        run: |
+          echo "Pruning old Docker images..."
+          ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+            "docker image prune -af" || echo "Image prune completed (some images may be in use)"
+
+      - name: Deployment summary
+        if: success()
+        run: |
+          echo ""
+          echo "=========================================="
+          echo "Deployment Summary"
+          echo "=========================================="
+          echo "Commit SHA: ${{ steps.commit.outputs.sha }}"
+          echo "Platform: ${{ steps.platform.outputs.os }}/${{ steps.platform.outputs.arch }}"
+          echo "Containers deployed:"
+          ssh -o StrictHostKeyChecking=no deploy@${EC2_HOST} \
+            "docker ps --filter 'name=blot-container-' --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'"
+          echo ""
+          echo "Deployment completed successfully! 🚀"
+
