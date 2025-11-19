@@ -33,6 +33,7 @@ module.exports = function setView(templateID, updates, callback) {
     return callback(new Error("View names cannot start with '.'"));
   }
 
+  // We don't support subdirectories in templates at the moment
   if (name.includes('/') || name.includes('\\')) {
     return callback(new Error("View names cannot contain slashes"));
   }
