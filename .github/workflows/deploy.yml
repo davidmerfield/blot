@@ -66,6 +66,8 @@ jobs:
           
           if [ "$PLATFORM_ARCH" = "aarch64" ]; then
             PLATFORM_ARCH="arm64"
+          elif [ "$PLATFORM_ARCH" = "x86_64" ]; then
+            PLATFORM_ARCH="amd64"
           fi
           
           echo "arch=${PLATFORM_ARCH}" >> $GITHUB_OUTPUT
