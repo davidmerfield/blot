@@ -8,7 +8,7 @@ permissions:
 
 env:
   REGISTRY_URL: ghcr.io/davidmerfield/blot
-  EC2_HOST: ${{ secrets.EC2_HOST }}
+  EC2_HOST: ${{ secrets.BLOT_EC2_HOST }}
 
 jobs:
   deploy:
