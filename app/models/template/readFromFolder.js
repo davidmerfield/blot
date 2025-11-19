@@ -54,8 +54,8 @@ module.exports = function readFromFolder (blogID, dir, callback) {
           async.eachSeries(
             contents,
             function (name, next) {
-              // Skip ignored files or Package.json
-              if (name === PACKAGE || shouldIgnoreFile(name)) return next();
+              // Skip ignored files or Package.json or dotfiles
+              if (name === PACKAGE || shouldIgnoreFile(name) || name.startsWith('.')) return next();
 
               fs.stat(dir + "/" + name, function (err, stat) {
                 // Skip folders, or files which are too large

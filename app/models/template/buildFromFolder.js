@@ -26,7 +26,7 @@ module.exports = function (blogID, callback) {
         async.eachSeries(
           templates,
           function (template, next) {
-            if (shouldIgnoreFile(template)) return next();
+            if (template.startsWith('.') || shouldIgnoreFile(template)) return next();
 
             var dir = templateDir + "/" + template;
 
