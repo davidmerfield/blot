@@ -22,23 +22,37 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 echo "Setting up test environment for blog handle: $BLOG_HANDLE"
 echo "=========================================="
 
-# Step 1: Checkout old commit
+# Step 1: Checkout old commit for app/ directory only (to get buggy code)
 echo ""
-echo "Step 1: Checking out old commit (before fix)..."
+echo "Step 1: Checking out old commit for app/ directory (before fix)..."
 cd "$REPO_ROOT"
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 CURRENT_COMMIT=$(git rev-parse HEAD)
 echo "Current branch: $CURRENT_BRANCH"
 echo "Current commit: $CURRENT_COMMIT"
-git checkout "$OLD_COMMIT" || {
-  echo "Error: Failed to checkout old commit. Make sure the commit exists."
+echo "Checking out app/ directory from old commit: $OLD_COMMIT"
+git checkout "$OLD_COMMIT" -- app/ || {
+  echo "Error: Failed to checkout old commit for app/ directory. Make sure the commit exists."
   exit 1
 }
+echo "App directory now has buggy code from old commit (scripts remain from current branch)"
+
+# Check if Docker container is running
+if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+  echo "Error: Docker container '$CONTAINER_NAME' is not running"
+  echo "Please start the container first"
+  exit 1
+fi
 
 # Step 2: Run JS script in Docker to setup template
 echo ""
 echo "Step 2: Running setup script in Docker container..."
-OUTPUT=$(docker exec "$CONTAINER_NAME" node "/usr/src/app/scripts/bugs/setup-restore-git-test.js" "$BLOG_HANDLE" 2>&1)
+if ! OUTPUT=$(docker exec "$CONTAINER_NAME" node "/usr/src/app/scripts/bugs/setup-restore-git-test.js" "$BLOG_HANDLE" 2>&1); then
+  echo "Error: Docker command failed"
+  echo "Output:"
+  echo "$OUTPUT"
+  exit 1
+fi
 echo "$OUTPUT"
 
 # Extract blog ID, blog client, template ID, template slug, and template base from output
@@ -144,11 +158,12 @@ echo "File synced successfully after ${ELAPSED} seconds"
 echo "Triggering writeToFolder to cause bug..."
 docker exec "$CONTAINER_NAME" node "/usr/src/app/scripts/bugs/trigger-write-to-folder.js" "$BLOG_HANDLE" "$TEMPLATE_ID"
 
-# Step 5: Checkout latest code
+# Step 5: Restore app/ directory to latest code
 echo ""
-echo "Step 5: Checking out latest code..."
+echo "Step 5: Restoring app/ directory to latest code..."
 cd "$REPO_ROOT"
-git checkout "$CURRENT_BRANCH" || git checkout main || git checkout master
+git checkout "$CURRENT_BRANCH" -- app/ || git checkout main -- app/ || git checkout master -- app/
+echo "App directory restored to latest code"
 
 echo ""
 echo "=========================================="
