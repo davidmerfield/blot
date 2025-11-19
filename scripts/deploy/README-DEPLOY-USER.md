@@ -86,9 +86,7 @@ Add the following secrets to your GitHub repository:
 
 1. Go to your GitHub repository
 2. Navigate to Actions → Deploy to EC2
-3. Click "Run workflow"
-4. Optionally specify a commit SHA (leave empty for latest)
-5. Click "Run workflow"
+3. Click "Run workflow" to deploy the current commit
 
 ## Allowed Commands
 

@@ -113,37 +113,32 @@ if echo "${ORIGINAL_CMD}" | grep -qE '[;&|`$<>]|&&|\|\|'; then
     # 3. mkdir/cd/ls/tail/xargs/rm chains (for log cleanup)
     # 4. || true patterns (for error handling)
     # 5. 2>/dev/null redirects (for suppressing errors)
+    # 6. curl with || exit 1 (for health checks)
     
     # Check if it's one of our allowed patterns
     ALLOWED_PATTERN=false
     
     # Pattern 1: docker inspect with sed pipe (for rollback hash extraction)
-    # Format: docker inspect --format='{{.Config.Image}}' container 2>/dev/null | sed 's/.*://' || echo ''
-    if echo "${ORIGINAL_CMD}" | grep -qE "^docker inspect --format='\{\{.Config.Image\}\}' blot-container-(blue|green|yellow) 2>/dev/null \| sed 's/.*://' \|\| echo ''$"; then
+    # Format: docker inspect --format='{{.Config.Image}}' container 2>/dev/null | sed 's/.*://'
+    if echo "${ORIGINAL_CMD}" | grep -qE "^docker inspect --format='\{\{.Config.Image\}\}' blot-container-(blue|green|yellow) 2>/dev/null \| sed 's/.*://'$"; then
         ALLOWED_PATTERN=true
     fi
     
     # Pattern 2: docker inspect with echo fallback (for health checks)
-    # Format: docker inspect --format='{{.State.Health.Status}}' container 2>/dev/null || echo 'starting'
-    if echo "${ORIGINAL_CMD}" | grep -qE "^docker inspect --format='\{\{.State.Health.Status\}\}' blot-container-(blue|green|yellow) 2>/dev/null \|\| echo 'starting'$"; then
+    # Format: docker inspect --format='{{.State.Health.Status}}' container [2>/dev/null] || echo 'unhealthy'
+    if echo "${ORIGINAL_CMD}" | grep -qE "^docker inspect --format='\{\{.State.Health.Status\}\}' blot-container-(blue|green|yellow)( 2>/dev/null)? \|\| echo '(unhealthy|starting)'$"; then
         ALLOWED_PATTERN=true
     fi
     
-    # Pattern 3: Log archiving chain (mkdir && docker logs > file && cd && ls | tail | xargs rm)
-    # Format: mkdir -p /tmp/blot-deploy-logs/container && (docker logs container > file.log 2>&1 || true) && cd dir && ls -1t | tail -n +N | xargs -r rm -f || true
-    # Timestamp format: YYYY-MM-DDTHH-MM-SS.mmmZ (e.g., 2025-01-20T14-26-10.078Z)
-    if echo "${ORIGINAL_CMD}" | grep -qE "^mkdir -p /tmp/blot-deploy-logs/blot-container-(blue|green|yellow) && \(docker logs blot-container-(blue|green|yellow) > /tmp/blot-deploy-logs/blot-container-(blue|green|yellow)/blot-container-(blue|green|yellow)-deploy-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\.[0-9]{1,3}Z\.log 2>&1 \|\| true\) && cd /tmp/blot-deploy-logs/blot-container-(blue|green|yellow) && ls -1t \| tail -n \+[0-9]+ \| xargs -r rm -f \|\| true$"; then
+    # Pattern 3: cd && ls | awk chain (for log cleanup)
+    # Format: cd '/tmp/blot-deploy-logs/container' && ls -1t | awk 'NR>N'
+    if echo "${ORIGINAL_CMD}" | grep -qE "^cd ['\"]?/tmp/blot-deploy-logs/blot-container-(blue|green|yellow)['\"]? && ls -1t \| awk 'NR>[0-9]+'$"; then
         ALLOWED_PATTERN=true
     fi
     
-    # Pattern 4: docker rm with || true
-    if echo "${ORIGINAL_CMD}" | grep -qE "^docker rm -f blot-container-(blue|green|yellow) \|\| true$"; then
-        ALLOWED_PATTERN=true
-    fi
-    
-    # Pattern 5: curl with redirects (health checks)
-    # Format: curl --fail --max-time N http://localhost:PORT/health >/dev/null 2>&1
-    if echo "${ORIGINAL_CMD}" | grep -qE "^curl --fail --max-time [0-9]+ http://localhost:(8088|8089|8090)/health >/dev/null 2>&1$"; then
+    # Pattern 4: curl with || exit 1 (health checks)
+    # Format: curl --fail --max-time N http://localhost:PORT/health || exit 1
+    if echo "${ORIGINAL_CMD}" | grep -qE "^curl --fail --max-time [0-9]+ http://localhost:(8088|8089|8090)/health \|\| exit 1$"; then
         ALLOWED_PATTERN=true
     fi
     
@@ -242,14 +237,14 @@ case "${CMD_ARGS[0]:-}" in
                     exit 1
                 fi
                 # For commands with pipes/redirects, validate the full pattern
-                if echo "${ORIGINAL_CMD}" | grep -qE "2>/dev/null.*sed.*\|\|.*echo"; then
+                if echo "${ORIGINAL_CMD}" | grep -qE "2>/dev/null \| sed 's/.*://'$"; then
                     # This is the rollback hash extraction pattern - already validated above
                     exec ${ORIGINAL_CMD}
-                elif echo "${ORIGINAL_CMD}" | grep -qE "2>/dev/null.*\|\|.*echo.*starting"; then
+                elif echo "${ORIGINAL_CMD}" | grep -qE "( 2>/dev/null)? \|\| echo '(unhealthy|starting)'$"; then
                     # This is the health check pattern - already validated above
                     exec ${ORIGINAL_CMD}
                 elif echo "${ORIGINAL_CMD}" | grep -qE "^docker inspect --format="; then
-                    # Simple inspect without pipes
+                    # Simple inspect without pipes or redirects
                     exec ${ORIGINAL_CMD}
                 else
                     echo "Error: docker inspect command format not allowed"
@@ -344,8 +339,8 @@ case "${CMD_ARGS[0]:-}" in
         ;;
     
     "curl")
-        # curl --fail --max-time N http://localhost:PORT/health >/dev/null 2>&1
-        # Already validated above if it contains redirects
+        # curl --fail --max-time N http://localhost:PORT/health [>/dev/null 2>&1] [|| exit 1]
+        # Already validated above if it contains redirects or || exit 1
         if echo "${ORIGINAL_CMD}" | grep -qE "^curl --fail --max-time [0-9]+ http://localhost:(8088|8089|8090)/health"; then
             exec ${ORIGINAL_CMD}
         else
@@ -354,26 +349,74 @@ case "${CMD_ARGS[0]:-}" in
         fi
         ;;
     
-    "mkdir")
-        # mkdir -p /tmp/blot-deploy-logs/container (part of log archiving chain)
-        # Only allow as part of validated chain above
-        if echo "${ORIGINAL_CMD}" | grep -qE "^mkdir -p /tmp/blot-deploy-logs/blot-container-(blue|green|yellow)"; then
-            # This should only be executed as part of the full log archiving chain
-            # If it's standalone, it's suspicious
-            if ! echo "${ORIGINAL_CMD}" | grep -q "&&"; then
-                echo "Error: mkdir must be part of log archiving chain"
-                exit 1
+    "test")
+        # test -d /path or test -f /path (for validation)
+        if [ "${#CMD_ARGS[@]}" -eq 3 ] && [[ "${CMD_ARGS[1]}" =~ ^-[df]$ ]]; then
+            if [[ "${CMD_ARGS[2]}" =~ ^(/var/www/blot/data|/etc/blot/secrets.env|/tmp) ]]; then
+                exec test "${CMD_ARGS[1]}" "${CMD_ARGS[2]}"
             fi
-            exec ${ORIGINAL_CMD}
-        else
-            echo "Error: mkdir only allowed for log directories"
-            exit 1
         fi
+        echo "Error: test command not allowed for this path"
+        exit 1
+        ;;
+    
+    "mkdir")
+        # mkdir -p /tmp/blot-deploy-logs/container (standalone or in chain)
+        if [ "${#CMD_ARGS[@]}" -eq 3 ] && [ "${CMD_ARGS[1]}" = "-p" ]; then
+            if [[ "${CMD_ARGS[2]}" =~ ^/tmp/blot-deploy-logs/blot-container-(blue|green|yellow)(/.*)?$ ]]; then
+                exec mkdir -p "${CMD_ARGS[2]}"
+            fi
+        fi
+        echo "Error: mkdir only allowed for log directories"
+        exit 1
+        ;;
+    
+    "mv")
+        # mv -f /tmp/path /tmp/path (for log archiving)
+        if [ "${#CMD_ARGS[@]}" -eq 3 ] && [ "${CMD_ARGS[1]}" = "-f" ]; then
+            if [[ "${CMD_ARGS[2]}" =~ ^/tmp/blot-deploy-logs/ ]] && [[ "${CMD_ARGS[3]}" =~ ^/tmp/blot-deploy-logs/ ]]; then
+                exec mv -f "${CMD_ARGS[2]}" "${CMD_ARGS[3]}"
+            fi
+        fi
+        echo "Error: mv only allowed for log files"
+        exit 1
+        ;;
+    
+    "cd")
+        # cd /tmp/blot-deploy-logs/container && ls -1t | awk ... (for log cleanup)
+        # Only allow as part of validated log cleanup chain
+        # Pattern: cd '/tmp/blot-deploy-logs/container' && ls -1t | awk 'NR>N'
+        if echo "${ORIGINAL_CMD}" | grep -qE "^cd ['\"]?/tmp/blot-deploy-logs/blot-container-(blue|green|yellow)['\"]? && ls -1t \| awk 'NR>[0-9]+'$"; then
+            exec ${ORIGINAL_CMD}
+        fi
+        echo "Error: cd only allowed as part of log cleanup chain"
+        exit 1
+        ;;
+    
+    "ls")
+        # ls -1t | awk ... (for log cleanup, only in chain with cd)
+        # This should only be reached if cd validation passed
+        if echo "${ORIGINAL_CMD}" | grep -qE "^ls -1t \| awk 'NR>[0-9]+'$"; then
+            exec ${ORIGINAL_CMD}
+        fi
+        echo "Error: ls only allowed as part of log cleanup chain"
+        exit 1
+        ;;
+    
+    "rm")
+        # rm -f -- /tmp/path (for log cleanup)
+        if [ "${#CMD_ARGS[@]}" -ge 3 ] && [ "${CMD_ARGS[1]}" = "-f" ] && [ "${CMD_ARGS[2]}" = "--" ]; then
+            if [[ "${CMD_ARGS[3]}" =~ ^/tmp/blot-deploy-logs/blot-container-(blue|green|yellow)/ ]]; then
+                exec rm -f -- "${CMD_ARGS[3]}"
+            fi
+        fi
+        echo "Error: rm only allowed for log files"
+        exit 1
         ;;
     
     "echo")
-        # echo 'SSH connection successful' or echo 'starting' (fallback in health check)
-        if [ "${#CMD_ARGS[@]}" -eq 2 ] && [[ "${CMD_ARGS[1]}" =~ ^('SSH connection successful'|'starting'|'')$ ]]; then
+        # echo 'SSH connection successful' or echo 'unhealthy' or echo 'starting' (fallback in health check)
+        if [ "${#CMD_ARGS[@]}" -eq 2 ] && [[ "${CMD_ARGS[1]}" =~ ^('SSH connection successful'|'unhealthy'|'starting'|'yes'|'no'|'')$ ]]; then
             exec echo "${CMD_ARGS[1]}"
         else
             echo "Error: echo only allowed for specific messages"
