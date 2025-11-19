@@ -373,7 +373,7 @@ case "${CMD_ARGS[0]:-}" in
     
     "mv")
         # mv -f /tmp/path /tmp/path (for log archiving)
-        if [ "${#CMD_ARGS[@]}" -eq 3 ] && [ "${CMD_ARGS[1]}" = "-f" ]; then
+        if [ "${#CMD_ARGS[@]}" -eq 4 ] && [ "${CMD_ARGS[1]}" = "-f" ]; then
             if [[ "${CMD_ARGS[2]}" =~ ^/tmp/blot-deploy-logs/ ]] && [[ "${CMD_ARGS[3]}" =~ ^/tmp/blot-deploy-logs/ ]]; then
                 exec mv -f "${CMD_ARGS[2]}" "${CMD_ARGS[3]}"
             fi
