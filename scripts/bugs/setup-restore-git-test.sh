@@ -201,24 +201,65 @@ echo "Created test file in .git directory"
 # Step 4: Wait for git changes to sync, then trigger writeToFolder to cause the bug
 echo ""
 echo "Step 4: Waiting for git changes to sync from cloud storage..."
-SYNC_FILE="$REPO_ROOT/data/blogs/$BLOG_ID/$TEMPLATE_BASE/$TEMPLATE_SLUG/.git/test-file.txt"
-echo "Waiting for file to appear: $SYNC_FILE"
+LOCAL_GIT_DIR="$TEMPLATE_PATH/.git"
+SERVER_GIT_DIR="$REPO_ROOT/data/blogs/$BLOG_ID/$TEMPLATE_BASE/$TEMPLATE_SLUG/.git"
+
+echo "Comparing .git directories:"
+echo "  Local:  $LOCAL_GIT_DIR"
+echo "  Server: $SERVER_GIT_DIR"
 
 TIMEOUT=60
 ELAPSED=0
-while [ ! -f "$SYNC_FILE" ]; do
+
+while true; do
+  # Check if both directories exist
+  if [ ! -d "$LOCAL_GIT_DIR" ] || [ ! -d "$SERVER_GIT_DIR" ]; then
+    if [ $ELAPSED -ge $TIMEOUT ]; then
+      echo "Error: Timeout after ${TIMEOUT} seconds. .git directories not found."
+      echo "  Local exists:  $([ -d "$LOCAL_GIT_DIR" ] && echo "yes" || echo "no")"
+      echo "  Server exists: $([ -d "$SERVER_GIT_DIR" ] && echo "yes" || echo "no")"
+      exit 1
+    fi
+    sleep 1
+    ELAPSED=$((ELAPSED + 1))
+    continue
+  fi
+  
+  # Get sorted file lists from both directories (relative paths)
+  LOCAL_FILES=$(find "$LOCAL_GIT_DIR" -type f | sed "s|^$LOCAL_GIT_DIR/||" | sort)
+  SERVER_FILES=$(find "$SERVER_GIT_DIR" -type f | sed "s|^$SERVER_GIT_DIR/||" | sort)
+  
+  # Compare the lists
+  if [ "$LOCAL_FILES" = "$SERVER_FILES" ]; then
+    FILE_COUNT=$(echo "$LOCAL_FILES" | grep -c . || echo "0")
+    echo "✓ .git directories are in sync (${FILE_COUNT} files)"
+    break
+  fi
+  
   if [ $ELAPSED -ge $TIMEOUT ]; then
-    echo "Error: Timeout after ${TIMEOUT} seconds. File did not sync: $SYNC_FILE"
+    echo ""
+    echo "Error: Timeout after ${TIMEOUT} seconds. .git directories did not sync."
+    echo ""
+    echo "Local files:"
+    echo "$LOCAL_FILES" | head -10
+    [ "$(echo "$LOCAL_FILES" | wc -l)" -gt 10 ] && echo "... ($(echo "$LOCAL_FILES" | wc -l) total)"
+    echo ""
+    echo "Server files:"
+    echo "$SERVER_FILES" | head -10
+    [ "$(echo "$SERVER_FILES" | wc -l)" -gt 10 ] && echo "... ($(echo "$SERVER_FILES" | wc -l) total)"
     exit 1
   fi
+  
   sleep 1
   ELAPSED=$((ELAPSED + 1))
   if [ $((ELAPSED % 5)) -eq 0 ]; then
-    echo "  Still waiting... (${ELAPSED}s/${TIMEOUT}s)"
+    LOCAL_COUNT=$(echo "$LOCAL_FILES" | grep -c . || echo "0")
+    SERVER_COUNT=$(echo "$SERVER_FILES" | grep -c . || echo "0")
+    echo "  Still syncing... (${ELAPSED}s/${TIMEOUT}s) - Local: ${LOCAL_COUNT} files, Server: ${SERVER_COUNT} files"
   fi
 done
 
-echo "File synced successfully after ${ELAPSED} seconds"
+echo "Sync verified after ${ELAPSED} seconds"
 echo "Triggering writeToFolder to cause bug..."
 docker exec "$CONTAINER_NAME" node "/usr/src/app/scripts/bugs/trigger-write-to-folder.js" "$BLOG_HANDLE" "$TEMPLATE_ID"
 
