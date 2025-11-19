@@ -15,7 +15,7 @@ fi
 
 BLOG_HANDLE="$1"
 CONTAINER_NAME="blot-node-app-1"
-OLD_COMMIT="3243b31b214ee637a68d2ce5799e9900d2ee9292^"  # One commit before the fix
+OLD_COMMIT="cd80f975fba8de7e832ddcd36615c9022c746878^"  # One commit before the fix
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
