@@ -1,0 +1,66 @@
+name: Deploy to EC2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY_URL: ghcr.io/davidmerfield/blot
+  EC2_HOST: ${{ secrets.EC2_HOST }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Configure SSH alias
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          cat >> ~/.ssh/config << EOF
+          Host blot
+            HostName ${EC2_HOST}
+            User deploy
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Verify SSH connection
+        run: ssh blot "echo 'SSH connection successful'"
+
+      - name: Deploy via npm script
+        run: npm run deploy-node ${{ github.sha }}
+        env:
+          # Skip branch check since we're in CI and may be checking out a specific commit
+          SKIP_BRANCH_CHECK: true
+
+      - name: Deployment summary
+        if: success()
+        run: |
+          echo ""
+          echo "=========================================="
+          echo "Deployment Summary"
+          echo "=========================================="
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Deployment completed successfully! 🚀"
+
