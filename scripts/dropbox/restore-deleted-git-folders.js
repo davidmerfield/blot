@@ -109,6 +109,9 @@ const listAllEntries = async (client, params) => {
 };
 
 const listDeletedGitFiles = async (client, gitPath) => {
+
+  console.log('Listing deleted git files');
+
   const entries = await listAllEntries(client, {
     path: gitPath,
     recursive: true,
@@ -120,8 +123,7 @@ const listDeletedGitFiles = async (client, gitPath) => {
   return entries.filter((entry) => {
     if (entry.path_lower === gitPathLower) return false;
     if (!entry.path_lower.startsWith(gitPathLower + "/")) return false;
-
-    return entry[".tag"] === "deleted" || entry?.metadata?.[".tag"] === "file";
+    return entry[".tag"] === "deleted";
   });
 };
 
@@ -136,6 +138,35 @@ const getLatestRevision = async (client, filePath) => {
 
 const restoreFile = (client, filePath, rev) => {
   return client.filesRestore({ path: filePath, rev });
+};
+
+// Add retry wrapper for restoreFile
+const restoreFileWithRetry = async (client, filePath, rev, maxRetries = 3) => {
+  let lastError;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await restoreFile(client, filePath, rev);
+    } catch (err) {
+      lastError = err;
+      
+      // Only retry on timeout errors
+      if (err.code === 'ETIMEDOUT' || err.errno === 'ETIMEDOUT' || err.type === 'system') {
+        if (attempt < maxRetries - 1) {
+          // Exponential backoff: 1s, 2s, 4s
+          const delay = Math.pow(2, attempt) * 1000;
+          console.log(`Retry attempt ${attempt + 1}/${maxRetries} for ${filePath} after ${delay}ms`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+      }
+      
+      // For non-timeout errors or final attempt, throw immediately
+      throw err;
+    }
+  }
+  
+  throw lastError;
 };
 
 const restoreGitFolder = async (client, blog, gitPath, files, templateName) => {
@@ -158,11 +189,12 @@ const restoreGitFolder = async (client, blog, gitPath, files, templateName) => {
         continue;
       }
 
-      await restoreFile(client, file.path_lower, revision.rev);
+      console.log("Restoring", file.path_display, "in", templateName);
+      await restoreFileWithRetry(client, file.path_lower, revision.rev);
       restored += 1;
       console.log("Restored", file.path_display, "in", templateName);
     } catch (err) {
-      console.log("Error restoring", file.path_display, err);
+      console.log("Error restoring", file.path_display, err.message || err);
     }
   }
 

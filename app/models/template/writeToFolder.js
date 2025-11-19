@@ -8,6 +8,7 @@ var localPath = require("helper/localPath");
 var fs = require("fs-extra");
 var generatePackage = require("./package").generate;
 var PACKAGE = "package.json";
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 function writeToFolder (blogID, templateID, callback) {
   isOwner(blogID, templateID, function (err, owner) {
@@ -120,6 +121,12 @@ function write (blogID, client, dir, view, compare, callback) {
 }
 
 function writeFile(blogID, client, path, content, compare, callback) {
+  if (shouldIgnoreFile(path)) {
+    // Silently skip ignored files to avoid breaking legacy templates
+    // that may have ignored files in their stored views
+    return callback();
+  }
+
   if (typeof compare === "function") {
     callback = compare;
     compare = true;
@@ -205,7 +212,9 @@ function listLocalFiles(blogID, dir, callback) {
     var files = [];
 
     async.each(
-      entries,
+      entries.filter(function (entry) {
+        return !shouldIgnoreFile(entry);
+      }),
       function (entry, next) {
         walk(joinpath(root, entry), entry, next);
       },
@@ -216,6 +225,8 @@ function listLocalFiles(blogID, dir, callback) {
     );
 
     function walk(fullPath, relativePath, next) {
+      if (shouldIgnoreFile(relativePath)) return next();
+
       fs.lstat(fullPath, function (err, stat) {
         if (err) {
           if (err.code === "ENOENT") return next();
@@ -232,7 +243,9 @@ function listLocalFiles(blogID, dir, callback) {
             }
 
             async.each(
-              children,
+              children.filter(function (child) {
+                return !shouldIgnoreFile(joinpath(relativePath, child));
+              }),
               function (child, childNext) {
                 walk(joinpath(fullPath, child), joinpath(relativePath, child), childNext);
               },
@@ -240,6 +253,8 @@ function listLocalFiles(blogID, dir, callback) {
             );
           });
         } else {
+          if (/[\\/]/.test(relativePath)) return next();
+          if (shouldIgnoreFile(relativePath)) return next();
           files.push(relativePath);
           next();
         }

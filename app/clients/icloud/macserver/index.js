@@ -41,6 +41,7 @@ const startServer = async () => {
   app.post("/disconnect", require("./routes/disconnect"));
 
   app.get("/readdir", require("./routes/readdir"));
+  app.post("/recursiveList", require("./routes/recursiveList"));
 
   app.get("/download", require("./routes/download"));
 

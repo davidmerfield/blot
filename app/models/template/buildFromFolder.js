@@ -5,6 +5,7 @@ var readFromFolder = require("./readFromFolder");
 var async = require("async");
 var getTemplateList = require("./getTemplateList");
 var drop = require("./drop");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 module.exports = function (blogID, callback) {
   ensure(blogID, "string").and(callback, "function");
@@ -25,8 +26,7 @@ module.exports = function (blogID, callback) {
         async.eachSeries(
           templates,
           function (template, next) {
-            // Dotfile
-            if (template.charAt(0) === ".") return next();
+            if (template.startsWith('.') || shouldIgnoreFile(template)) return next();
 
             var dir = templateDir + "/" + template;
 

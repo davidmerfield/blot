@@ -1,6 +1,6 @@
 var from = process.argv[2];
-var newSubscriptionID = process.argv[3];
-var newCustomerID = process.argv[4];
+var newSubscriptionID = process.argv[4];
+var newCustomerID = process.argv[3];
 var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
 

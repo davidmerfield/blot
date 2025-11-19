@@ -10,7 +10,6 @@ var Express = require("express");
 var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
 var User = require("models/user");
-var Email = require("helper/email");
 var signup = Express.Router();
 
 signup.use(function (req, res, next) {
@@ -209,7 +208,9 @@ passwordForm.post(function (req, res, next) {
           sameSite: "Lax"
         });
 
-        Email.WELCOME(user.uid);
+        User.scheduleWelcomeEmail(user.uid, function (err) {
+          if (err) console.log(err);
+        });
 
         req.session.uid = user.uid;        
         res.redirect("/sites/account/create-site");

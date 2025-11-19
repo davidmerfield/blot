@@ -28,6 +28,16 @@ module.exports = function setView(templateID, updates, callback) {
     return callback(new Error("The view's name is invalid"));
   }
 
+  // Validate that the name doesn't start with '.' or contain a slash
+  if (name.startsWith('.')) {
+    return callback(new Error("View names cannot start with '.'"));
+  }
+
+  // We don't support subdirectories in templates at the moment
+  if (name.includes('/') || name.includes('\\')) {
+    return callback(new Error("View names cannot contain slashes"));
+  }
+
   if (updates.content !== undefined) {
     try {
       Mustache.render(updates.content, {});

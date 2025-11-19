@@ -207,7 +207,9 @@ if (config.environment === "development") {
       openUrl.searchParams.set("blogID", req.blog.id);
 
       // Include client type if available
-      if (req.blog.client) {
+      if (req.query.local) { 
+        openUrl.searchParams.set("client", 'local');
+      } else if (req.blog.client) {
         openUrl.searchParams.set("client", req.blog.client);
       }
 

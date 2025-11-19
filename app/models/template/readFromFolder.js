@@ -6,6 +6,7 @@ var getView = require("./getView");
 var async = require("async");
 var makeID = require("./util/makeID");
 var setView = require("./setView");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 var MAX_SIZE = 2.5 * 1000 * 1000; // 2.5mb
 var PACKAGE = "package.json";
 var savePackage = require("./package").save;
@@ -53,8 +54,8 @@ module.exports = function readFromFolder (blogID, dir, callback) {
           async.eachSeries(
             contents,
             function (name, next) {
-              // Skip Dotfile or Package.json
-              if (name[0] === "." || name === PACKAGE) return next();
+              // Skip ignored files or Package.json or dotfiles
+              if (name === PACKAGE || shouldIgnoreFile(name) || name.startsWith('.')) return next();
 
               fs.stat(dir + "/" + name, function (err, stat) {
                 // Skip folders, or files which are too large

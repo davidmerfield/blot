@@ -107,10 +107,16 @@ async function deleteSubscription(req, res, next) {
       console.log("Stripe customer deleted");
     }
 
-    next();
+    if (typeof next === 'function') {
+      next();
+    }
   } catch (error) {
     console.error("Error in deleting subscription:", error);
-    next(error);
+    if (typeof next === 'function') {
+      next(error);
+    } else {
+      throw error;
+    }
   }
 }
 
@@ -122,7 +128,9 @@ async function issueDeletionRefund(req, res, next) {
     recordRefundError(req, undefined, error);
   }
 
-  next();
+  if (typeof next === 'function') {
+    next();
+  }
 }
 
 async function ensureIssueDeletionRefund(req) {

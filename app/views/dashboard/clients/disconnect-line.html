@@ -8,8 +8,12 @@
 
 {{#isDevelopment}}
 <a class="line" href="{{{dashboardBase}}}/client/open">
-  <span class="label">Folder</span>
-  <span class="center"><span class="link">Open folder</span></span>
+  <span class="label">{{client.display_name}} folder</span>
+  <span class="center"><span class="link">Open folder in {{client.display_name}}</span></span>
+</a>
+<a class="line" href="{{{dashboardBase}}}/client/open?local=true">
+  <span class="label">Blot folder</span>
+  <span class="center"><span class="link">Open folder on Blot</span></span>
 </a>
 {{/isDevelopment}}
 

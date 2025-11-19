@@ -254,13 +254,6 @@
       "image": "/images/featured/oliviaastawood.com.jpg"
     },
     {
-      "link": "https://nowaykohei.com",
-      "host": "nowaykohei.com",
-      "name": "Kohei Foss",
-      "bio": "is a project manager",
-      "image": "/images/featured/nowaykohei.com.jpg"
-    },
-    {
       "link": "https://www.nitinpai.in",
       "host": "www.nitinpai.in",
       "name": "Nitin Pai",
@@ -511,6 +504,13 @@
       "name": "Chuck Pearson",
       "bio": "is a designer",
       "image": "/images/featured/chuckpearson.blog.jpg"
+    },
+    {
+      "link": "https://garywebbracing.com",
+      "host": "garywebbracing.com",
+      "name": "Gary Webb",
+      "bio": "is a racing driver",
+      "image": "/images/featured/garywebbracing.com.jpg"
     }
   ]
 }

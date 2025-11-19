@@ -1,18 +1,24 @@
-Todo, fix borked templates - how? we need to force write...
-
-Finish scripts to restore missing git subfolder files
-- Write script to checkout old commit, turn on local template editing, git init, writeToFolder while I debug
-- Tell [Paul](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlKRdTJhChKdmSPmTzFzhsvV) once scripts are run
-
-FIX dangerous writeToFolder file removal behaviour, esp. nested files
-- Respect ignoreFile function
-- Ignore subfolders
+Add github deploy button and setup coding and deployment from phone
 
 ---
 
-Fix bug with iCloud sync where revisions to file content in subfolders don't sync and tell Fede and [JP](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlDfdPkKKQjHSPwcJDWTnbCW) and [S](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqtXvHvwdwsVcHWFZBmJFTTFC)
+Resync all Dropbox/Drive blogs to apply new ignored files logic
 
 ---
+
+Make entries.js support query.page as well as params.page and [make Ian's feed work](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqtXwDpcLsVnJDXQHcLnhMsnG)
+
+Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
+
+Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
+
+Transfer theme for [Fede](https://wordpress.org/themes/kanso/)
+- Set up vanilla zoom
+- Use as [reference](https://fsanchez.io)
+
+---
+
+Bug: CDN replaceFolder not working with relative path to CSS file on wall.blot.im
 
 Maybe we mix cacheID into query string for {{#cdn}} on preview subdomains with caching headers for improved template editor performance without expensive hash computation?
 
@@ -27,11 +33,9 @@ We should get notifcations when stripe recovers an overdue subscription, as oppo
 
 invalid package.json causes crazy error on template editor (missing colon)
 
-Resync all Dropbox/Drive blogs to apply new ignored files logic
-
-Make entries.js support query.page as well as params.page and [make Ian's feed work](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqtXwDpcLsVnJDXQHcLnhMsnG)
-
 Speed up global template build by not even invoke the setView function if there are no changes... (this avoids running updateCDNManifest when SITE template has no changes)
+
+Dashboard file upload feature (_url) needs to generate image dimensions too.. maybe it needs MORE power
 
 Blogs have huge numbers of archived templates – modify the tempalte archiver to only 'create' templates for sites using them, otherwise disappear them. work out how to clean up some of the many archived templates added to sites... (remove ones with zero changes?)
 
@@ -48,7 +52,6 @@ Enforce size limits on setting tempalte views
 Add integration tests for cdn paths with weird view names, etc.
 Add integration tests for preview subdomain logic (skip for my- not for site)
 
-Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
 
 Can we optimize renderView in some way?
 - use lru cache or moize libraries? back against cacheID property of blog?
@@ -68,14 +71,6 @@ Fix bug with huge archives page
 - `https://deoxy.blot.im/archives`
 
 ---
-
-Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
-
-Transfer theme for [Fede](https://wordpress.org/themes/kanso/)
-- Set up vanilla zoom
-- Use as [reference](https://fsanchez.io)
-
-Dropbox and Google Drive clients should not sync dotfiles and dotfolders. [David](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqlFngBJwZTVJdgpnlLMvwRXt)
 
 Turn andrew's template into a seperate 'Hypertext' template
 

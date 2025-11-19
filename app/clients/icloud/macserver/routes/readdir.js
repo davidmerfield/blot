@@ -2,7 +2,7 @@ const fs = require("fs-extra");
 const { join } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { ls } = require("../brctl");
-const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
+const shouldIgnoreFile = require('../../../util/shouldIgnoreFile');
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
