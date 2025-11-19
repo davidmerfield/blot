@@ -39,7 +39,15 @@ if (require.main === module) {
     process.exit(1);
   }
   
-  triggerWriteToFolder(blogHandle, templateID);
+  triggerWriteToFolder(blogHandle, templateID)
+    .then(() => {
+      // Force exit to ensure clean shutdown
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Error:", err);
+      process.exit(1);
+    });
 }
 
 module.exports = triggerWriteToFolder;
