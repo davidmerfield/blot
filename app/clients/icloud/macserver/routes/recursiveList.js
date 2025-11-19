@@ -12,8 +12,10 @@ module.exports = async (req, res) => {
   if (!blogID) {
     return res.status(400).send("Missing blogID header");
   }
-
-  const dirPath = join(iCloudDriveDirectory, blogID, path);
+  
+  // Remove leading slash if present, or ensure it's relative
+  const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+  const dirPath = join(iCloudDriveDirectory, blogID, normalizedPath);
 
   console.log(
     `Received recursiveList request for blogID: ${blogID}, path: ${path}`
