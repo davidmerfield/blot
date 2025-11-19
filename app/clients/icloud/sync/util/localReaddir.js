@@ -1,15 +1,11 @@
 const fs = require("fs-extra");
 const { join } = require("path");
-const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const localreaddir = async (dir) => {
   const contents = await fs.readdir(dir);
 
-  // Ignore system files and directories we don't want to sync
-  const filteredContents = contents.filter((name) => !shouldIgnoreFile(name));
-
   const result = await Promise.all(
-    filteredContents.map(async (name) => {
+    contents.map(async (name) => {
       const path = join(dir, name);
       const stat = await fs.stat(path);
 
