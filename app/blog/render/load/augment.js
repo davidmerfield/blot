@@ -143,7 +143,7 @@ function FormatDate(dateStamp, zone) {
   return function () {
     return function (text, render) {
       try {
-        text = text.trim();
+        text = render(text).trim();
         text = moment.utc(dateStamp).tz(zone).format(text);
       } catch (e) {
         text = "";
