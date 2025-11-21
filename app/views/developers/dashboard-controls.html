@@ -5,7 +5,7 @@
 <h2>Color pickers</h2>
 <p>Any local ending with <code>_color</code> becomes a color input. The template editor collects these keys and supplies labels based on the key name.</p>
 
-<pre><code class="json">{
+<pre style="border:1px solid var(--border-color);max-width:600px;padding:12px;margin:12px 0;border-radius: var(--border-radius);"><code>{
   "locals": {
     "background_color": "#ffffff",
     "link_color": "#3366ff"
@@ -15,7 +15,7 @@
 <h2>Font selectors</h2>
 <p>Keys named <code>font</code> or ending with <code>_font</code> (except <code>syntax_highlighter_font</code>) are exposed through the font picker in the template editor. The helper builds picker options and labels automatically.</p>
 
-<pre><code class="json">{
+<pre style="border:1px solid var(--border-color);max-width:600px;padding:12px;margin:12px 0;border-radius: var(--border-radius);"><code>{
   "locals": {
     "font": {
       "family": "Inter",
@@ -31,7 +31,7 @@
 <h2>Uploads</h2>
 <p>Locals ending with <code>_url</code> become upload controls. The loader uses the key name minus the suffix for the dashboard label.</p>
 
-<pre><code class="json">{
+<pre style="border:1px solid var(--border-color);max-width:600px;padding:12px;margin:12px 0;border-radius: var(--border-radius);"><code>{
   "locals": {
     "logo_url": "",
     "favicon_url": ""
@@ -41,7 +41,7 @@
 <h2>Navigation options</h2>
 <p>Keys containing <code>navigation_</code> or <code>_navigation</code> are grouped together. Custom labels are defined for common navigation fields.</p>
 
-<pre><code class="json">{
+<pre style="border:1px solid var(--border-color);max-width:600px;padding:12px;margin:12px 0;border-radius: var(--border-radius);"><code>{
   "locals": {
     "navigation_alignment": "left",
     "sticky_navigation": false,
@@ -52,7 +52,7 @@
 <h2>Date controls</h2>
 <p>If you define <code>date_display</code>, the template editor renders a selector of example formats using the blog&rsquo;s timezone. Adding <code>hide_dates</code> (a boolean) shows or hides the dates toggle alongside the format dropdown.</p>
 
-<pre><code class="json">{
+<pre style="border:1px solid var(--border-color);max-width:600px;padding:12px;margin:12px 0;border-radius: var(--border-radius);"><code>{
   "locals": {
     "date_display": "MMMM D, Y",
     "hide_dates": false
@@ -62,7 +62,7 @@
 <h2>Syntax highlighting</h2>
 <p>Including a <code>syntax_highlighter</code> object enables theme selection. The same loader optionally reads <code>syntax_highlighter_font</code> to let authors choose a typeface for code blocks.</p>
 
-<pre><code class="json">{
+<pre style="border:1px solid var(--border-color);max-width:600px;padding:12px;margin:12px 0;border-radius: var(--border-radius);"><code>{
   "locals": {
     "syntax_highlighter": {
       "id": "monokai"
@@ -84,7 +84,7 @@
   <li>Navigation keys (<code>navigation_*</code> or <code>*_navigation</code>) are excluded here because they are grouped by the navigation loader.</li>
 </ul>
 
-<pre><code class="json">{
+<pre style="border:1px solid var(--border-color);max-width:600px;padding:12px;margin:12px 0;border-radius: var(--border-radius);"><code>{
   "locals": {
     "show_author": true,
     "spacing": 12,
