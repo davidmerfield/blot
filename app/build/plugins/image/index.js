@@ -7,12 +7,16 @@ var url = require("url");
 function render($, callback, options) {
   var blogID = options.blogID;
   var cache = new Transformer(blogID, "image-cache");
+  var largeImageThreshold = options.largeImageThreshold || 1200;
+  var imageIndex = 0;
+  var largeImageCount = 0;
 
   // Process 5 images concurrently
   eachEl(
     $,
     "img",
     function (el, next) {
+      var currentIndex = imageIndex++;
       var src = $(el).attr("src");
       var width, height, parsedSrc;
 
@@ -56,6 +60,10 @@ function render($, callback, options) {
         width = info.width;
         height = info.height;
 
+        var isLargeImage =
+          (width && width >= largeImageThreshold) ||
+          (height && height >= largeImageThreshold);
+
         // This is a retina image so halve its dimensions
         if ($(el).attr("data-2x") || isRetina(src)) {
           debug(src, "retinafying the dimensions");
@@ -64,6 +72,22 @@ function render($, callback, options) {
         }
 
         $(el).attr("width", width).attr("height", height);
+
+        if (isLargeImage) {
+          if (!$(el).attr("loading") && largeImageCount > 0) {
+            $(el).attr("loading", "lazy");
+          }
+
+          debug(
+            src,
+            "image",
+            currentIndex,
+            "is large, large index",
+            largeImageCount
+          );
+
+          largeImageCount++;
+        }
 
         debug(src, "complete!");
         next();
