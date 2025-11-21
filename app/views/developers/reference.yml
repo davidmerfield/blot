@@ -446,6 +446,4 @@
       description: |
         Provides access to the public CSS or JavaScript for specific plugins so you can load only what you need. The helper respects your blog's plugin settings and returns nothing for missing or disabled plugins.
       example: |
-        {{#blog.plugins.katex.enabled}}
         <style>{{{plugin.katex.css}}}</style>
-        {{/blog.plugins.katex.enabled}}
