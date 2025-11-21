@@ -27,6 +27,7 @@ var dictionary = {
   "posts": require("./posts"),
   "plugin_css": require("./plugin_css"),
   "plugin_js": require("./plugin_js"),
+  "plugin": require("./plugin"),
   "popular_tags": require("./popular_tags"),
   "public": require("./public"),
   "recentEntries": require("./recentEntries"),
@@ -46,6 +47,8 @@ module.exports = function (req, res, retrieve, callback) {
   ensure(req, "object").and(retrieve, "object").and(callback, "function");
 
   var locals = {};
+
+  req.retrieve = retrieve;
 
   async.each(
     _.keys(retrieve),

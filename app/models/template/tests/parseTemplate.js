@@ -60,6 +60,15 @@ describe("parseTemplate", function () {
     });
   });
 
+  it("tracks nested plugin assets", function () {
+    var template = `{{{plugin.katex.css}}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { plugin: { katex: { css: true } } },
+    });
+  });
+
   it("records static CDN targets", function () {
     var template = `{{#cdn}}style.css{{/cdn}}`;
     var result = parseTemplate(template);
