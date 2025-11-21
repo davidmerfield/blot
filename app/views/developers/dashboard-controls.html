@@ -1,0 +1,99 @@
+<h1>Dashboard controls</h1>
+
+<p>Blot turns certain <code>locals</code> in your template&rsquo;s <code>package.json</code> into configurable controls on the dashboard. Naming conventions determine which loader populates a control and how it is rendered.</p>
+
+<h2>Color pickers</h2>
+<p>Any local ending with <code>_color</code> becomes a color input. The loader at <code>app/dashboard/site/template/load/color-inputs.js</code> collects these keys and supplies labels based on the key name.</p>
+
+<pre><code class="json">{
+  "locals": {
+    "background_color": "#ffffff",
+    "link_color": "#3366ff"
+  }
+}</code></pre>
+
+<h2>Font selectors</h2>
+<p>Keys named <code>font</code> or ending with <code>_font</code> (except <code>syntax_highlighter_font</code>) are exposed through the font picker in <code>app/dashboard/site/template/load/font-inputs.js</code>. The helper builds picker options and labels automatically.</p>
+
+<pre><code class="json">{
+  "locals": {
+    "font": {
+      "family": "Inter",
+      "weight": 400
+    },
+    "heading_font": {
+      "family": "Source Serif Pro",
+      "weight": 600
+    }
+  }
+}</code></pre>
+
+<h2>Uploads</h2>
+<p>Locals ending with <code>_url</code> become upload controls via <code>app/dashboard/site/template/load/url-inputs.js</code>. The loader uses the key name minus the suffix for the dashboard label.</p>
+
+<pre><code class="json">{
+  "locals": {
+    "logo_url": "",
+    "favicon_url": ""
+  }
+}</code></pre>
+
+<h2>Navigation options</h2>
+<p>Keys containing <code>navigation_</code> or <code>_navigation</code> are grouped together by <code>app/dashboard/site/template/load/navigation-inputs.js</code>. Custom labels are defined in that loader for common navigation fields.</p>
+
+<pre><code class="json">{
+  "locals": {
+    "navigation_alignment": "left",
+    "sticky_navigation": false,
+    "footer_navigation": true
+  }
+}</code></pre>
+
+<h2>Date controls</h2>
+<p>If you define <code>date_display</code>, <code>app/dashboard/site/template/load/dates.js</code> renders a selector of example formats using the blog&rsquo;s timezone. Adding <code>hide_dates</code> (a boolean) shows or hides the dates toggle alongside the format dropdown.</p>
+
+<pre><code class="json">{
+  "locals": {
+    "date_display": "MMMM D, Y",
+    "hide_dates": false
+  }
+}</code></pre>
+
+<h2>Syntax highlighting</h2>
+<p>Including a <code>syntax_highlighter</code> object enables theme selection through <code>app/dashboard/site/template/load/syntax-highlighter.js</code>. The same loader optionally reads <code>syntax_highlighter_font</code> to let authors choose a typeface for code blocks.</p>
+
+<pre><code class="json">{
+  "locals": {
+    "syntax_highlighter": {
+      "id": "monokai"
+    },
+    "syntax_highlighter_font": {
+      "family": "Fira Code",
+      "weight": 400
+    }
+  }
+}</code></pre>
+
+<h2>Booleans, ranges, and selects</h2>
+<p>The generic control builder at <code>app/dashboard/site/template/load/index-inputs.js</code> and its helper <code>util/determine-input.js</code> convert remaining locals into switches, sliders, and select menus:</p>
+<ul>
+  <li>Boolean values become toggles, except <code>hide_dates</code> which is handled by the date loader.</li>
+  <li>When a key has a matching <code>key_range</code> array, it renders as a range input with optional <code>min</code>/<code>max</code> defaults.</li>
+  <li>When a key has a matching <code>key_options</code> array, it renders as a select menu.</li>
+  <li><code>page_size</code> is always treated as a range input unless the template also defines <code>thumbnails_per_row</code>, in which case the loader hides <code>page_size</code> to avoid conflicting pagination controls.</li>
+  <li>Navigation keys (<code>navigation_*</code> or <code>*_navigation</code>) are excluded here because they are grouped by the navigation loader.</li>
+</ul>
+
+<pre><code class="json">{
+  "locals": {
+    "show_author": true,
+    "spacing": 12,
+    "spacing_range": [8, 32],
+    "theme": "serif",
+    "theme_options": ["serif", "sans"],
+    "page_size": 10,
+    "thumbnails_per_row": 4
+  }
+}</code></pre>
+
+<p>Using these conventions keeps your template settings predictable and automatically renders dashboard controls without extra code.</p>
