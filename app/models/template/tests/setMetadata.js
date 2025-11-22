@@ -7,7 +7,7 @@ describe("template", function () {
   const getBlog = promisify(require("models/blog").get);
 
   it("sets a template's metadata", async function () {
-    var updates = { description: this.fake.random.word() };
+    var updates = { description: "A test template description" };
     await setMetadata(this.template.id, updates);
     const template = await getMetadata(this.template.id);
     expect(template.description).toEqual(updates.description);
@@ -15,7 +15,7 @@ describe("template", function () {
 
   it("updates the cache ID of the blog which owns a template after updating", async function () {
     var initialCacheID = this.blog.cacheID;
-    var updates = { description: this.fake.random.word() };
+    var updates = { description: "Updated template description" };
     await setMetadata(this.template.id, updates);
     const blog = await getBlog({ id: this.template.owner });
     expect(blog.cacheID).not.toEqual(initialCacheID);

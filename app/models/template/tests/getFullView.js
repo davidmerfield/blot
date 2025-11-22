@@ -10,13 +10,13 @@ describe("template", function () {
 
     var header = {
       name: "header.html",
-      content: test.fake.random.word(),
+      content: "<header>Header content</header>",
     };
 
     var view = {
       name: "page.html",
-      locals: { words: test.fake.random.word() },
-      content: test.fake.random.word() + " {{> " + header.name + "}}",
+      locals: { words: "test words" },
+      content: "Page content {{> " + header.name + "}}",
     };
 
     var views = [view, header];

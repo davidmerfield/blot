@@ -16,7 +16,7 @@ describe("template", function () {
     const test = this;
     const view = {
       name: "post.txt",
-      content: test.fake.random.word(),
+      content: "Post content here",
     };
 
     await setView(test.template.id, view);
@@ -30,7 +30,7 @@ describe("template", function () {
     const test = this;
     const view = {
       name: "article.txt",
-      content: test.fake.random.word(),
+      content: "Original article content",
     };
 
     await setView(test.template.id, view);
@@ -39,7 +39,7 @@ describe("template", function () {
     expect(savedView.name).toEqual(view.name);
     expect(savedView.content).toEqual(view.content);
 
-    view.content = test.fake.random.word();
+    view.content = "Updated article content";
     await setView(test.template.id, view);
 
     savedView = await getView(test.template.id, view.name);
@@ -110,7 +110,7 @@ describe("template", function () {
     const view = { name: "missing.html" };
 
     try {
-      await setView(test.fake.random.word(), view);
+      await setView("nonexistent:template", view);
     } catch (err) {
       expect(err instanceof Error).toBe(true);
     }

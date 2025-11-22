@@ -66,7 +66,7 @@ describe("template", function () {
 
   it("cloned template CDN manifest is independent from source", async function () {
     // Create source template
-    const sourceTemplateName = this.fake.random.word();
+    const sourceTemplateName = "template";
     const sourceTemplate = await create(this.blog.id, sourceTemplateName, {});
 
     // Add a view to be retrieved

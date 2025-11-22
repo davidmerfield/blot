@@ -22,12 +22,12 @@ module.exports = function setup(options) {
   if (options.createTemplate) {
     beforeEach(function (done) {
       var test = this;
-      var name = test.fake.random.word();
+      var name = "template";
       create(test.blog.id, name, {}, function (err) {
         if (err) return done(err);
         getTemplateList(test.blog.id, function (err, templates) {
           test.template = templates.filter(function (template) {
-            return template.name === name;
+            return template.name === name && template.owner === test.blog.id;
           })[0];
           done();
         });
@@ -84,7 +84,7 @@ module.exports = function setup(options) {
       var view = {
         name: "index.html",
         url: "/index",
-        content: test.fake.random.word(),
+        content: "<h1>Index page</h1>",
       };
       setView(test.template.id, view, function (err) {
         if (err) return done(err);

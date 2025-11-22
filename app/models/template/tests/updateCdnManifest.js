@@ -264,7 +264,7 @@ describe("updateCdnManifest", function () {
     const updateCdnManifest = require("../util/updateCdnManifest");
 
     // Create a new template that is NOT installed on the blog
-    const templateName = test.fake.random.word();
+    const templateName = "template-cdn-skip";
     await createTemplateAsync(test.blog.id, templateName, {});
     
     // Get the template ID
@@ -304,12 +304,12 @@ describe("updateCdnManifest", function () {
     const updateCdnManifest = require("../util/updateCdnManifest");
 
     // Create a new template
-    const templateName = test.fake.random.word();
+    const templateName = "template-cdn-compute";
     await createTemplateAsync(test.blog.id, templateName, {});
     
     const getTemplateList = promisify(require("../index").getTemplateList).bind(require("../index"));
     const templates = await getTemplateList(test.blog.id);
-    const newTemplate = templates.find(t => t.name === templateName);
+    const newTemplate = templates.find(t => t.name === templateName && t.owner === test.blog.id);
 
     // Install it on the blog
     await blogSetAsync(test.blog.id, { template: newTemplate.id });
@@ -344,12 +344,12 @@ describe("updateCdnManifest", function () {
     const updateCdnManifest = require("../util/updateCdnManifest");
 
     // Create a SITE template (not installed on any blog)
-    const templateName = test.fake.random.word();
+    const templateName = "template-site-cdn";
     await createTemplateAsync("SITE", templateName, {});
     
     const getTemplateList = promisify(require("../index").getTemplateList).bind(require("../index"));
     const siteTemplates = await getTemplateList("SITE");
-    const siteTemplate = siteTemplates.find(t => t.name === templateName);
+    const siteTemplate = siteTemplates.find(t => t.name === templateName && t.owner === "SITE");
 
     // Create views with CDN targets
     await setViewAsync(siteTemplate.id, {
@@ -381,7 +381,7 @@ describe("updateCdnManifest", function () {
     const updateCdnManifest = require("../util/updateCdnManifest");
 
     // Create a template and install it
-    const templateName = test.fake.random.word();
+    const templateName = "template-cdn-cleanup";
     await createTemplateAsync(test.blog.id, templateName, {});
     
     const getTemplateList = promisify(require("../index").getTemplateList).bind(require("../index"));
@@ -445,7 +445,7 @@ describe("updateCdnManifest", function () {
     const updateCdnManifest = require("../util/updateCdnManifest");
 
     // Create a template (not installed)
-    const templateName = test.fake.random.word();
+    const templateName = "template-cdn";
     await createTemplateAsync(test.blog.id, templateName, {});
     
     const getTemplateList = promisify(require("../index").getTemplateList).bind(require("../index"));

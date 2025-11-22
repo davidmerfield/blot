@@ -12,7 +12,7 @@ describe("template", function () {
   });
 
   it("exposes an isOwner method which checks who owns a template", function (done) {
-    isOwner(this.blog.id, this.fake.random.word(), function (err, res) {
+    isOwner(this.blog.id, "nonexistent:template", function (err, res) {
       if (err) return done.fail(err);
       expect(res).toBeFalsy();
       done();

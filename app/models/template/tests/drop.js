@@ -31,7 +31,7 @@ describe("template", function () {
     var test = this;
     var view = {
       name: "notes.txt",
-      content: test.fake.random.word(),
+      content: "Notes content",
       url: "/notes",
     };
 
@@ -97,7 +97,7 @@ describe("template", function () {
 
   it("drop resolves without an error when the template does not exist", function (done) {
     var test = this;
-    drop(test.blog.id, test.fake.random.word(), function (err, message) {
+    drop(test.blog.id, "nonexistent-template", function (err, message) {
       if (err) return done.fail(err);
       expect(typeof message).toBe("string");
       done();

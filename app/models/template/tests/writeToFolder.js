@@ -21,7 +21,7 @@ describe("template", function () {
     var test = this;
     var view = {
       name: "post.html",
-      content: test.fake.random.word(),
+      content: "<h1>Post content</h1>",
     };
 
     setView(this.template.id, view, function (err) {
@@ -87,7 +87,7 @@ describe("template", function () {
     var test = this;
     var view = {
       name: "about.html",
-      content: test.fake.random.word(),
+      content: "<h1>About page</h1>",
       locals: { foo: "bar" },
     };
 
@@ -119,7 +119,7 @@ describe("template", function () {
     var test = this;
     var view = {
       name: "welcome.html",
-      content: test.fake.random.word(),
+      content: "<h1>Welcome</h1>",
     };
     var lowercaseBase = test.blogDirectory + "/templates";
     var expectedPath =
@@ -144,7 +144,7 @@ describe("template", function () {
     var test = this;
     var view = {
       name: "lowercase.html",
-      content: test.fake.random.word(),
+      content: "<h1>Lowercase template</h1>",
     };
     var posts = test.blogDirectory + "/posts";
     var drafts = test.blogDirectory + "/drafts";
@@ -186,7 +186,7 @@ describe("template", function () {
     var test = this;
     var view = {
       name: "static.html",
-      content: test.fake.random.word(),
+      content: "<h1>Static content</h1>",
     };
 
     setView(this.template.id, view, function (err) {
@@ -213,7 +213,7 @@ describe("template", function () {
     var test = this;
     var view = {
       name: "clean.html",
-      content: test.fake.random.word(),
+      content: "<h1>Clean template</h1>",
     };
 
     setView(this.template.id, view, function (err) {
@@ -243,7 +243,7 @@ describe("template", function () {
     var test = this;
     var view = {
       name: "local.html",
-      content: test.fake.random.word(),
+      content: "<h1>Local template</h1>",
     };
 
     this.blog
@@ -284,7 +284,7 @@ describe("template", function () {
     var test = this;
     var view = {
       name: "linked.html",
-      content: test.fake.random.word(),
+      content: "<h1>Linked template</h1>",
     };
 
     setView(this.template.id, view, function (err) {
