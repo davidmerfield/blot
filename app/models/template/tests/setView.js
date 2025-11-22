@@ -15,7 +15,7 @@ describe("template", function () {
   it("sets a view", async function () {
     const test = this;
     const view = {
-      name: test.fake.random.word() + ".txt",
+      name: "post.txt",
       content: test.fake.random.word(),
     };
 
@@ -29,7 +29,7 @@ describe("template", function () {
   it("sets changes to an existing view", async function () {
     const test = this;
     const view = {
-      name: test.fake.random.word(),
+      name: "article.txt",
       content: test.fake.random.word(),
     };
 
@@ -50,7 +50,7 @@ describe("template", function () {
   it("won't set a view with invalid mustache content", async function () {
     const test = this;
     const view = {
-      name: test.fake.random.word(),
+      name: "invalid.html",
       content: "{{#x}}", // without the closing {{/x}} mustache will err.
     };
 
@@ -64,7 +64,7 @@ describe("template", function () {
   it("won't set a view with infinitely nested partials", async function () {
     const test = this;
     const view = {
-      name: test.fake.random.word(),
+      name: "loop.html",
       content: "{{> first}}",
       partials: {
         first: "{{> second}}",
@@ -83,7 +83,7 @@ describe("template", function () {
 
   it("won't set views that reference each other infinitely", async function () {
     const test = this;
-    const baseName = test.fake.random.word();
+    const baseName = "looping";
     const headerName = `${baseName}-header.html`;
     const entriesName = `${baseName}-entries.html`;
 
@@ -107,7 +107,7 @@ describe("template", function () {
 
   it("won't set a view against a template that does not exist", async function () {
     const test = this;
-    const view = { name: test.fake.random.word() };
+    const view = { name: "missing.html" };
 
     try {
       await setView(test.fake.random.word(), view);
@@ -130,7 +130,7 @@ describe("template", function () {
   it("updates the cache ID of the blog which owns a template after setting a view", async function () {
     const test = this;
     const initialCacheID = test.blog.cacheID;
-    const view = { name: test.fake.random.word() };
+    const view = { name: "cache-test.html" };
 
     await setView(test.template.id, view);
     const blog = await promisify(Blog.get)({ id: test.template.owner });

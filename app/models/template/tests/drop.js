@@ -30,9 +30,9 @@ describe("template", function () {
   it("drop removes the URL key for a view in the template", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".txt",
+      name: "notes.txt",
       content: test.fake.random.word(),
-      url: "/" + test.fake.random.word(),
+      url: "/notes",
     };
 
     require("../index").setView(test.template.id, view, function (err) {

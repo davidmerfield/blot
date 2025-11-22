@@ -82,8 +82,8 @@ module.exports = function setup(options) {
     beforeEach(function (done) {
       var test = this;
       var view = {
-        name: test.fake.random.word(),
-        url: "/" + test.fake.random.word(),
+        name: "index.html",
+        url: "/index",
         content: test.fake.random.word(),
       };
       setView(test.template.id, view, function (err) {

@@ -9,12 +9,12 @@ describe("template", function () {
     var test = this;
 
     var header = {
-      name: "header " + test.fake.random.word(),
+      name: "header.html",
       content: test.fake.random.word(),
     };
 
     var view = {
-      name: "main view " + test.fake.random.word(),
+      name: "page.html",
       locals: { words: test.fake.random.word() },
       content: test.fake.random.word() + " {{> " + header.name + "}}",
     };

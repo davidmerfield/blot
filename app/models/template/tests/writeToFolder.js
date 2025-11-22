@@ -20,7 +20,7 @@ describe("template", function () {
   it("writes a template to a folder", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
+      name: "post.html",
       content: test.fake.random.word(),
     };
 
@@ -86,7 +86,7 @@ describe("template", function () {
   it("writes view metadata to package.json to a folder", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
+      name: "about.html",
       content: test.fake.random.word(),
       locals: { foo: "bar" },
     };
@@ -118,7 +118,7 @@ describe("template", function () {
   it("reuses an existing lowercase templates directory", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
+      name: "welcome.html",
       content: test.fake.random.word(),
     };
     var lowercaseBase = test.blogDirectory + "/templates";
@@ -143,7 +143,7 @@ describe("template", function () {
   it("creates lowercase templates when root entries are lowercase", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
+      name: "lowercase.html",
       content: test.fake.random.word(),
     };
     var posts = test.blogDirectory + "/posts";
@@ -185,7 +185,7 @@ describe("template", function () {
   it("skips rewriting files when contents have not changed", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
+      name: "static.html",
       content: test.fake.random.word(),
     };
 
@@ -212,7 +212,7 @@ describe("template", function () {
   it("removes orphaned files left in the template directory", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
+      name: "clean.html",
       content: test.fake.random.word(),
     };
 
@@ -242,7 +242,7 @@ describe("template", function () {
   it("removes orphans while preserving existing files with the local client", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
+      name: "local.html",
       content: test.fake.random.word(),
     };
 
@@ -283,7 +283,7 @@ describe("template", function () {
   it("ignores symbolic links when scanning template files", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
+      name: "linked.html",
       content: test.fake.random.word(),
     };
 
