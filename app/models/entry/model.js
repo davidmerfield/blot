@@ -6,6 +6,7 @@ module.exports = {
   title: "string",
   titleTag: "string", // The HTML tag containing the title text
   body: "string", // html excluding the HTML tag for its title
+  toc: "string", // HTML fragment of the table of contents
   summary: "string", // plain text summary of article
   teaser: "string", // stuff before <!-- more -->, used before read more linkss..
   teaserBody: "string", // teaser excluding titleTag

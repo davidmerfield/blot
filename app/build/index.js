@@ -59,6 +59,7 @@ module.exports = function build(blog, path, callback) {
         try {
           entry = {
             html: html,
+            toc: (extras && extras.toc) || "",
             name: basename(path),
             path: path,
             id: path,

@@ -11,6 +11,7 @@ var extractMetadata = require("build/metadata");
 var yaml = require("yaml");
 var extractBibAndCSL = require("./extractBibAndCSL");
 var linebreaks = require("./linebreaks");
+var falsy = require("helper/falsy");
 
 function is (path) {
   return (
@@ -70,17 +71,25 @@ function read (blog, path, callback) {
 
         let options = {
           bib,
-          csl
+          csl,
+          toc:
+            parsed.metadata.toc !== undefined
+              ? !falsy(parsed.metadata.toc)
+              : blog.flags && blog.flags.toc,
         };
 
-        convert(blog, text, options, function (err, html) {
+        convert(blog, text, options, function (err, html, toc) {
           if (err) return callback(err);
 
           if (Object.keys(parsed.metadata).length > 0) {
             html = '---\n' + yaml.stringify(parsed.metadata) + '---\n' + html;
           }
 
-          callback(null, html, stat);
+          const extras = {};
+
+          if (toc) extras.toc = toc;
+
+          callback(null, html, stat, Object.keys(extras).length ? extras : undefined);
         });
       });
     });

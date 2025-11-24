@@ -47,6 +47,8 @@ module.exports = function set (blogID, path, updates, callback) {
       ? entry.dependencies.slice()
       : [];
 
+    if (entry.toc === undefined) entry.toc = "";
+
     // Overwrite any updates to the entry
     for (var i in updates) entry[i] = updates[i];
 

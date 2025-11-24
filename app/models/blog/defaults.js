@@ -32,5 +32,6 @@ module.exports = {
   flags: {
     google_drive_beta: false,
     deleted_entries_sanitized: false,
+    toc: false,
   },
 };
