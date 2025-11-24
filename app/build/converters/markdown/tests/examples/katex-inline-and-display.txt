@@ -1,0 +1,17 @@
+Inline math $a^2 + b^2$ appears here.
+
+Escaped dollars \$100 stay literal and \$\$ keep their shape.
+
+Currency values like $5.00 or 10$ should not become math.
+
+`$inline code$ should be ignored.`
+
+```
+$no$ math in fences
+$$either$$
+```
+
+Display math should still work:
+$$
+c = \\sqrt{a^2 + b^2}
+$$
