@@ -19,6 +19,7 @@ var dictionary = {
   "encodeJSON": require("./encodeJSON"),
   "encodeURIComponent": require("./encodeURIComponent"),
   "encodeXML": require("./encodeXML"),
+  "entries": require("./entries"),
   "feed_url": require("./feed_url"),
   "isActive": require("./isActive"),
   "is": require("./is"),
