@@ -83,7 +83,9 @@ function findClosingDelimiter (text, delimiter, startIndex, inline) {
           continue;
         }
 
-        if (isDigit(text.charAt(index - 1)) || isDigit(text.charAt(index + delimiter.length))) {
+        // Skip inline delimiters immediately followed by a digit to reduce
+        // collisions with currency values like $5.00
+        if (isDigit(text.charAt(index + delimiter.length))) {
           index += delimiter.length;
           continue;
         }
