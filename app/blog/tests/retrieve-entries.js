@@ -16,15 +16,18 @@ describe("retrieve entries", function () {
       log: function () {},
     };
 
-    retrieveEntries(req, {}, function (err, locals) {
+    const res = { locals: {} };
+
+    retrieveEntries(req, res, function (err, locals) {
       expect(err).toBeFalsy();
       expect(getPageSpy).toHaveBeenCalledWith(
         "blog-id",
         { sortBy: "date", order: "asc", pageNumber: 3, pageSize: 10 },
         jasmine.any(Function)
       );
-      expect(locals.entries).toEqual(["first", "second"]);
-      expect(locals.pagination).toEqual({ current: 3 });
+      expect(locals).toEqual(["first", "second"]);
+      expect(res.locals.entries).toEqual(["first", "second"]);
+      expect(res.locals.pagination).toEqual({ current: 3 });
       done();
     });
   });
@@ -43,14 +46,18 @@ describe("retrieve entries", function () {
       log: function () {},
     };
 
-    retrieveEntries(req, {}, function (err, locals) {
+    const res = { locals: {} };
+
+    retrieveEntries(req, res, function (err, locals) {
       expect(err).toBeFalsy();
       expect(getPageSpy).toHaveBeenCalledWith(
         "blog-id",
         { sortBy: undefined, order: undefined, pageNumber: 7, pageSize: undefined },
         jasmine.any(Function)
       );
-      expect(locals.pagination).toEqual({ current: 7 });
+      expect(locals).toEqual([]);
+      expect(res.locals.entries).toEqual([]);
+      expect(res.locals.pagination).toEqual({ current: 7 });
       done();
     });
   });

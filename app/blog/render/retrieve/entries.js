@@ -19,6 +19,10 @@ module.exports = function (req, res, callback) {
 
     req.log("Loaded entries");
 
-    callback(null, { entries, pagination });
+    res.locals = res.locals || {};
+    res.locals.entries = entries;
+    res.locals.pagination = pagination;
+
+    callback(null, entries);
   });
 };
