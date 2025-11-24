@@ -10,8 +10,12 @@ Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u
 
 Secure deploy ssh on GitHub
 
-Set up AWS cost anomaly detection 
+Set up AWS cost anomaly detection
 - add daily aws cost to email update
+
+Bug reports:
+- The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
+- The website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 
 Fix bug with repeat resyncs of specific sites via Google Drive:
 - To identify, run node scripts/google-drive/resync.js multiple times, some sites continually resync the same files...
