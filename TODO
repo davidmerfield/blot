@@ -54,6 +54,11 @@ Enforce size limits on setting tempalte views
 Add integration tests for cdn paths with weird view names, etc.
 Add integration tests for preview subdomain logic (skip for my- not for site)
 
+Add more options to site settings beyond title, such as description and reply email, and tell Omar
+Allow text entry fields in template settings from the dashboard for template locals, and tell Omar
+Add multiple date format selectors on the theme dashboard for different contexts, and tell Omar
+Introduce collapsible sections or a separately scrollable div on the template dashboard settings, and tell Omar
+
 
 Can we optimize renderView in some way?
 - use lru cache or moize libraries? back against cacheID property of blog?
