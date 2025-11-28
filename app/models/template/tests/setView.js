@@ -7,6 +7,11 @@ describe("template", function () {
   const setView = promisify(require("../index").setView);
   const getView = promisify(require("../index").getView);
   const getMetadata = promisify(require("../index").getMetadata);
+  const {
+    MAX_VIEW_CONTENT_BYTES,
+    VIEW_TOO_LARGE_ERROR_CODE,
+    VIEW_TOO_LARGE_MESSAGE,
+  } = require("../setView");
   const Blog = require("models/blog");
   const client = require("models/client");
   const hdel = promisify(client.hdel).bind(client);
@@ -183,6 +188,36 @@ describe("template", function () {
     const view2 = await getView(this.template.id, "index.html");
 
     expect(view2.content).toEqual("456");
+  });
+
+  it("prevents saving view content larger than the limit", async function () {
+    const view = {
+      name: "too-large.html",
+      content: "a".repeat(MAX_VIEW_CONTENT_BYTES + 1),
+    };
+
+    try {
+      await setView(this.template.id, view);
+      throw new Error("Expected setView to fail for oversized content");
+    } catch (err) {
+      expect(err instanceof Error).toBe(true);
+      expect(err.code).toEqual(VIEW_TOO_LARGE_ERROR_CODE);
+      expect(err.message).toEqual(VIEW_TOO_LARGE_MESSAGE);
+    }
+  });
+
+  it("allows saving view content up to the size limit", async function () {
+    const view = {
+      name: "at-limit.html",
+      content: "a".repeat(MAX_VIEW_CONTENT_BYTES),
+    };
+
+    await setView(this.template.id, view);
+    const savedView = await getView(this.template.id, view.name);
+
+    expect(Buffer.byteLength(savedView.content, "utf8")).toEqual(
+      MAX_VIEW_CONTENT_BYTES
+    );
   });
 
   it("updates the CDN manifest when CDN targets change", async function () {

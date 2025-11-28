@@ -14,6 +14,12 @@ var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
 var updateCdnManifest = require("./util/updateCdnManifest");
 
+const MAX_VIEW_CONTENT_BYTES = 512 * 1024; // 512 KB
+const VIEW_TOO_LARGE_ERROR_CODE = "VIEW_TOO_LARGE";
+const VIEW_TOO_LARGE_MESSAGE = `This template file is too large to save. Please keep it under ${Math.floor(
+  MAX_VIEW_CONTENT_BYTES / 1024
+)} KB.`;
+
 module.exports = function setView(templateID, updates, callback) {
   ensure(templateID, "string").and(updates, "object").and(callback, "function");
 
@@ -39,6 +45,15 @@ module.exports = function setView(templateID, updates, callback) {
   }
 
   if (updates.content !== undefined) {
+    const contentByteLength = Buffer.byteLength(String(updates.content), "utf8");
+
+    if (contentByteLength > MAX_VIEW_CONTENT_BYTES) {
+      const err = new Error(VIEW_TOO_LARGE_MESSAGE);
+      err.code = VIEW_TOO_LARGE_ERROR_CODE;
+      err.statusCode = 400;
+      return callback(err);
+    }
+
     try {
       Mustache.render(updates.content, {});
     } catch (e) {
@@ -156,6 +171,10 @@ module.exports = function setView(templateID, updates, callback) {
     });
   });
 };
+
+module.exports.MAX_VIEW_CONTENT_BYTES = MAX_VIEW_CONTENT_BYTES;
+module.exports.VIEW_TOO_LARGE_ERROR_CODE = VIEW_TOO_LARGE_ERROR_CODE;
+module.exports.VIEW_TOO_LARGE_MESSAGE = VIEW_TOO_LARGE_MESSAGE;
 
 function detectInfinitePartialDependency(
   templateID,

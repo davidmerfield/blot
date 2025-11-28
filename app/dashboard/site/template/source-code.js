@@ -89,9 +89,14 @@ SourceCode.route("/:viewSlug/edit")
         req.template.id,
         JSON.parse(view.content),
         function (err, views) {
+          if (err) {
+            if (!respondToViewError(err, res, next)) return next(err);
+            return;
+          }
+
           async.eachSeries(
             Object.keys(views),
-            function (name, next) {
+            function (name, iterateNext) {
               Template.getView(req.template.id, name, function (err, view) {
                 // getView returns an error if the view does not exist
                 // We want to be able to create new views using local editing
@@ -102,11 +107,20 @@ SourceCode.route("/:viewSlug/edit")
 
                 view.url = view.url || "/" + view.name;
 
-                Template.setView(req.template.id, view, next);
+                Template.setView(req.template.id, view, function (setErr) {
+                  if (setErr) {
+                    const handled = respondToViewError(setErr, res, next);
+                    return iterateNext(handled ? null : setErr);
+                  }
+                  iterateNext();
+                });
               });
             },
             function (err) {
-              if (err) return next(err);
+              if (err) {
+                if (!res.headersSent) return next(err);
+                return;
+              }
               writeChangeToFolder(req.blog, req.template, view, function (err) {
                 if (err) return next(err);
                 if (res.locals.templateForked) {
@@ -120,7 +134,10 @@ SourceCode.route("/:viewSlug/edit")
       );
     } else {
       Template.setView(req.template.id, view, function (err) {
-        if (err) return next(err);
+        if (err) {
+          if (!respondToViewError(err, res, next)) return next(err);
+          return;
+        }
         writeChangeToFolder(req.blog, req.template, view, function (err) {
           if (err) return next(err);
           if (res.locals.templateForked) {
@@ -267,7 +284,10 @@ SourceCode.route("/:viewSlug/configure")
     updates.partials = partialsValue;
 
     Template.setView(req.template.id, updates, function (err) {
-      if (err) return next(err);
+      if (err) {
+        if (!respondToViewError(err, res, next)) return next(err);
+        return;
+      }
 
       writeChangeToFolder(req.blog, req.template, updates, function (err) {
         if (err) return next(err);
@@ -341,4 +361,13 @@ module.exports = SourceCode;
 
 function isPlainObject(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function respondToViewError(err, res, next) {
+  if (err && err.code === Template.VIEW_TOO_LARGE_ERROR_CODE) {
+    res.status(err.statusCode || 400).send(err.message);
+    return true;
+  }
+
+  return false;
 }

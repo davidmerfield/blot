@@ -1,5 +1,6 @@
 const CodeMirror = require("./codemirror/codemirror.js");
 const initSidebarActionMenu = require("./sidebar-action-menu");
+const { showError, hideError } = require("./error-display");
 
 require("./codemirror/active-line.js");
 require("./codemirror/mode-css.js");
@@ -65,20 +66,6 @@ function initializeSourceEditor() {
     saveButton.classList.toggle("disabled", !!disabledClass);
   }
 
-  function showError(msg) {
-    var el = document.querySelector(".error");
-    if (!el) return;
-    el.textContent = msg || "An error occurred";
-    el.style.display = "block";
-    el.style.opacity = "1";
-  }
-
-  function hideError() {
-    var el = document.querySelector(".error");
-    if (!el) return;
-    el.style.display = "none";
-  }
-
   function fadeOutSuccessAfter(ms) {
     var el = document.querySelector(".success");
     if (!el) return;
@@ -115,7 +102,7 @@ function initializeSourceEditor() {
     var contentInput = form.querySelector('input[name="content"]');
     if (contentInput) contentInput.value = editor.getValue();
 
-    hideError();
+    hideError(document);
 
     try {
       const body = serializeForm(form);
@@ -144,7 +131,7 @@ function initializeSourceEditor() {
           working: false,
           disabledClass: false,
         });
-        showError(text);
+        showError(document, text);
         return false;
       }
 
@@ -156,7 +143,7 @@ function initializeSourceEditor() {
         disabledClass: true,
       });
 
-      hideError();
+      hideError(document);
       fadeOutSuccessAfter(3000);
     } catch (err) {
       setButtonState({
@@ -166,7 +153,10 @@ function initializeSourceEditor() {
         working: false,
         disabledClass: false,
       });
-      showError(String(err && err.message ? err.message : err));
+      showError(
+        document,
+        String(err && err.message ? err.message : err)
+      );
     }
 
     return false;
