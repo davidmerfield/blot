@@ -5,18 +5,18 @@
   <div style="padding:1.3rem 2rem">
     {{#query}}
     <h1>Search results for {{query}}</h1>
-    {{^entries.length}}
+    {{^posts.length}}
     <p>Nothing found.</p>
-    {{/entries.length}}
-    {{#entries.length}}
-    <small>{{entries.length}} entries found 
+    {{/posts.length}}
+    {{#posts.length}}
+    <small>{{posts.length}} entries found 
 </small>
-    {{/entries.length}}
+    {{/posts.length}}
     {{/query}}
 
     <div class="posts">
 
-      {{#entries}}
+      {{#posts}}
 
       <a class="post {{^thumbnail.medium}}no-thumbnail{{/thumbnail.medium}}" href="{{{url}}}">
 
@@ -40,7 +40,7 @@
   {{/thumbnail.medium}}
 </a>
 
-      {{/entries}}
+      {{/posts}}
 
     </div>
   </div>

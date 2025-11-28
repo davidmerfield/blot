@@ -6,11 +6,11 @@
   <p class="fw5 pt2 mv0 pb4 black-80 bb b--black-10">Search</p>
 </div>
 
-  {{#entries.length}}
+  {{#posts.length}}
   <p class="w-third fl mt0 black-50"></p>
-  <p class="mt0   w-two-thirds fr black-50 ">Found {{entries.length}} results</p>
+  <p class="mt0   w-two-thirds fr black-50 ">Found {{posts.length}} results</p>
 <div class="cf"></div>
-  {{/entries.length}}
+  {{/posts.length}}
 
 <!--
 {{> tag_list}}
@@ -19,13 +19,13 @@
 -->
 
 {{#query}}
-  {{^entries}}
+  {{^posts}}
   <p class="black-50">No results for “{{query}}”</p>
-  {{/entries}}
+  {{/posts}}
 {{/query}}
 
-{{#entries}}
+{{#posts}}
   {{> entry_line}}
-{{/entries}}
+{{/posts}}
 
 {{> footer}}

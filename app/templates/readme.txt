@@ -316,11 +316,11 @@ remaining_entries:
 
 {{> header}}
 
-{{#entries}}
+{{#posts}}
 
   {{{html}}}
 
-{{/entries}}
+{{/posts}}
 
 {{#pagination}}
 

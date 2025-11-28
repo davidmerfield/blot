@@ -15,7 +15,7 @@
       {{^pagination.previous}}
       <div class="row remove-site-content-margin">
 
-        {{#entries}}
+        {{#posts}}
         <!-- latest post -->
         {{#first}}
         <div class="col-md-6">
@@ -49,11 +49,11 @@
         </div>
         {{/first}}
 
-        {{/entries}}
+        {{/posts}}
      
         <div class="col-md-6 clip-3">
 
-          {{#entries}}
+          {{#posts}}
           {{^first}}
           <div class="mb-3 d-flex align-items-center">
 
@@ -83,7 +83,7 @@
             </div>
           </div>
           {{/first}}
-          {{/entries}}
+          {{/posts}}
 
         </div>
 
@@ -91,7 +91,7 @@
 
       <!-- Highlight (your own choice of highlighting a link, no post here) -->
       <div class="jumbotron jumbotron-fluid jumbotron-home pt-0 pb-0 mb-2rem bg-lightblue position-relative show-5">
-        {{#entries}}
+        {{#posts}}
         <div class="pl-4 pr-0 h-100 tofront ">
           <div class="row justify-content-between ">
             <div class="col-md-6 pt-6 pb-6 align-self-center">
@@ -104,7 +104,7 @@
             <div class="col-md-6 d-none d-md-block pr-0" style="background-size:cover;background-image:url({{{thumbnail.large.url}}});"> </div>
           </div>
         </div>
-        {{/entries}}
+        {{/posts}}
       </div>
       {{/pagination.previous}}
 
@@ -118,7 +118,7 @@
 
           <h4 class="font-weight-bold spanborder"><span>All Stories</span></h4>
 
-          {{#entries}}
+          {{#posts}}
           <div class="mb-5 d-flex justify-content-between main-loop-card">
             <div class="pr-3">
               <h2 class="mb-1 h4 font-weight-bold">
@@ -145,7 +145,7 @@
   </a>
             </div>
           </div>
-          {{/entries}}
+          {{/posts}}
 
           <div class="mt-5">
             <!-- Pagination links -->

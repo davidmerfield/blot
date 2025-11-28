@@ -10,12 +10,12 @@
     {{#archives}}
       {{#months}}
       <hr>
-      <h3 class="archive">{{month}} {{year}}&nbsp;&nbsp;<small>{{entries.length}} post{{s}}</small></h3>
+      <h3 class="archive">{{month}} {{year}}&nbsp;&nbsp;<small>{{posts.length}} post{{s}}</small></h3>
 
       <small>
-      {{#entries}}
+      {{#posts}}
       <a class="archive" href="{{{url}}}">{{title}}</a>{{^last}}&nbsp;&nbsp;·&nbsp;{{/last}}
-      {{/entries}}
+      {{/posts}}
       </small>
 
       <br>

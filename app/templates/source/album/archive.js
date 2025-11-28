@@ -2,14 +2,14 @@
   var articles = [
     {{#archives}}
     {{#months}}
-    {{#entries}}
+    {{#posts}}
     { 
       "title": "{{title}}",
       "url": "{{{url}}}",
       "thumbnail": "{{{thumbnail.small.url}}}",
       "date": "{{date}}"
     },
-    {{/entries}}
+    {{/posts}}
     {{/months}}
     {{/archives}}
   ];
