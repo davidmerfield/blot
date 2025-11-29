@@ -18,7 +18,7 @@ TO DO:
   --text-color: {{text_color}};
   --light-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.5);
   --border-color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.2);
-  --base-font-size: {{{font_size}}}px;
+  --base-font-size: {{#font}}{{{font_size}}}{{/font}}px;
 }
 
 html, body {
