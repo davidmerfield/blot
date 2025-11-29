@@ -37,6 +37,12 @@ function setup(account, session, callback) {
       }
     };
 
+    const handleAbort = () => {
+      if (!signal.aborted) return false;
+      finish(new Error("Dropbox setup aborted"));
+      return true;
+    };
+
     const finish = (err) => {
       if (finished) return;
       finished = true;
@@ -50,18 +56,18 @@ function setup(account, session, callback) {
       if (message !== "Attempting to disconnect from Dropbox") return;
       signal.aborted = true;
       abortHandled = true;
-      finish(new Error("Dropbox setup aborted"));
+      handleAbort();
     });
 
     try {
       folder.status("Loading Dropbox account");
       account = await getAccount(account);
-      if (signal.aborted) return;
+      if (handleAbort()) return;
       session.save();
 
       folder.status("Creating folder in Dropbox");
       account = await createFolder(account, signal);
-      if (signal.aborted) return;
+      if (handleAbort()) return;
       session.save();
 
       await set(account.blog.id, {
@@ -78,19 +84,19 @@ function setup(account, session, callback) {
       });
 
       folder.status("Syncing your folder to Dropbox");
-      if (signal.aborted) return;
+      if (handleAbort()) return;
 
       // upload folder contents to dropbox
       // todo: pass in signal
       await resetFromBlot(account.blog.id, folder.status, signal);
 
-      if (signal.aborted) return;
+      if (handleAbort()) return;
     } catch (err) {
       if (err && err.name === "AbortError") {
         folder.status("Dropbox setup aborted");
         if (abortHandled) return;
-        cleanup();
-        return done(err, callback);
+        signal.aborted = true;
+        return handleAbort();
       }
 
       folder.status("Error: " + err.message);
