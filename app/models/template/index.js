@@ -1,5 +1,7 @@
 var siteOwner = "SITE";
 
+const setView = require("./setView");
+
 module.exports = {
   create: require("./create"),
   update: require("./update"),
@@ -9,7 +11,7 @@ module.exports = {
   getFullView: require("./getFullView"),
   getView: require("./getView"),
   getViewByURL: require("./getViewByURL"),
-  setView: require("./setView"),
+  setView,
   dropView: require("./dropView"),
   getPartials: require("./getPartials"),
   getAllViews: require("./getAllViews"),
@@ -33,4 +35,7 @@ module.exports = {
   package: require("./package"),
   viewModel: require("./viewModel"),
   metadataModel: require("./metadataModel"),
+  MAX_VIEW_CONTENT_BYTES: setView.MAX_VIEW_CONTENT_BYTES,
+  VIEW_TOO_LARGE_ERROR_CODE: setView.VIEW_TOO_LARGE_ERROR_CODE,
+  VIEW_TOO_LARGE_MESSAGE: setView.VIEW_TOO_LARGE_MESSAGE,
 };
