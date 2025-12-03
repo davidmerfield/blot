@@ -88,6 +88,25 @@ module.exports = function setView(templateID, updates, callback) {
           }
         }
 
+        // SHORT-CIRCUIT: Check if content and other critical fields are unchanged
+        // This avoids expensive operations (parsing, dependency detection, Redis writes, CDN updates)
+        var contentUnchanged = updates.content === undefined || updates.content === view.content;
+        var urlUnchanged = !updates.url || updates.url === view.url;
+        var urlPatternsUnchanged = !updates.urlPatterns || 
+          JSON.stringify(updates.urlPatterns) === JSON.stringify(view.urlPatterns);
+        var localsUnchanged = !updates.locals || 
+          JSON.stringify(updates.locals || {}) === JSON.stringify(view.locals || {});
+        var partialsUnchanged = !updates.partials || 
+          JSON.stringify(updates.partials || {}) === JSON.stringify(view.partials || {});
+        var retrieveUnchanged = !updates.retrieve || 
+          JSON.stringify(updates.retrieve || {}) === JSON.stringify(view.retrieve || {});
+
+        if (contentUnchanged && urlUnchanged && urlPatternsUnchanged && 
+            localsUnchanged && partialsUnchanged && retrieveUnchanged) {
+          // Nothing has changed, skip all expensive operations
+          return callback();
+        }
+
         for (var i in updates) {
           if (updates[i] !== view[i]) changes = true;
           view[i] = updates[i];
