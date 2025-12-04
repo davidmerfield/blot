@@ -50,17 +50,17 @@ module.exports = function setView(templateID, updates, callback) {
 	var allViews = key.allViews(templateID);
 	var viewKey = key.view(templateID, name);
 
-	getMetadata(templateID, function (err, metadata) {
+	getMetadata(templateID, (err, metadata) => {
 		if (err) return callback(err);
 
 		if (!metadata)
 			return callback(new Error("There is no template called " + templateID));
 
-		client.sadd(allViews, name, function (err) {
+		client.sadd(allViews, name, (err) => {
 			if (err) return callback(err);
 
 			// Look up previous state of view if applicable
-			getView(templateID, name, function (err, view) {
+			getView(templateID, name, (err, view) => {
 				view = view || {};
 
 				// Normalize legacy views' urlPatterns for short-circuit comparison
@@ -72,31 +72,44 @@ module.exports = function setView(templateID, updates, callback) {
 				var changes;
 
 				// Handle `url` logic
-                                if (updates.url !== undefined) {
-                                        if (type(updates.url, "array")) {
-                                                if (updates.url.length === 0) {
-                                                        delete updates.url;
-                                                        delete updates.urlPatterns;
-                                                } else {
-                                                // If `url` is an array, use the first item as `url` and the array as `urlPatterns`
-                                                const normalizedUrls = updates.url.map(urlNormalizer);
-                                                updates.url = normalizedUrls[0];
-                                                updates.urlPatterns = normalizedUrls;
-                                                }
-                                        } else if (type(updates.url, "string")) {
-                                                // If `url` is a string, normalize it and use `[url]` as `urlPatterns`
-                                                updates.url = urlNormalizer(updates.url);
-                                                updates.urlPatterns = [updates.url];
-                                        } else {
+				var shouldRemoveUrl = false;
+				var shouldRemoveUrlPatterns = false;
+
+				if (updates.url !== undefined) {
+					if (type(updates.url, "array")) {
+						if (updates.url.length === 0) {
+							delete updates.url;
+							delete updates.urlPatterns;
+							shouldRemoveUrl = true;
+							shouldRemoveUrlPatterns = true;
+						} else {
+							// If `url` is an array, use the first item as `url` and the array as `urlPatterns`
+							const normalizedUrls = updates.url.map(urlNormalizer);
+							updates.url = normalizedUrls[0];
+							updates.urlPatterns = normalizedUrls;
+						}
+					} else if (type(updates.url, "string")) {
+						// If `url` is a string, normalize it and use `[url]` as `urlPatterns`
+						updates.url = urlNormalizer(updates.url);
+						updates.urlPatterns = [updates.url];
+					} else {
 						return callback(
 							new Error("The provided `url` must be a string or an array"),
 						);
 					}
 
-					client.set(key.url(templateID, updates.url), name);
+					// Only update Redis if url is still defined (not deleted due to empty array)
+					if (updates.url !== undefined) {
+						client.set(key.url(templateID, updates.url), name);
 
-					if (updates.url !== view.url) {
-						client.del(key.url(templateID, view.url));
+						if (updates.url !== view.url) {
+							client.del(key.url(templateID, view.url));
+						}
+					} else {
+						// If url was deleted (empty array), remove the old URL mapping
+						if (view.url) {
+							client.del(key.url(templateID, view.url));
+						}
 					}
 				}
 
@@ -104,11 +117,23 @@ module.exports = function setView(templateID, updates, callback) {
 				// This avoids expensive operations (parsing, dependency detection, Redis writes, CDN updates)
 				var contentUnchanged =
 					updates.content === undefined || updates.content === view.content;
-				var urlUnchanged = !updates.url || updates.url === view.url;
-				var urlPatternsUnchanged =
-					!updates.urlPatterns ||
-					JSON.stringify(updates.urlPatterns) ===
-						JSON.stringify(view.urlPatterns);
+				var urlUnchanged;
+				if (shouldRemoveUrl) {
+					// If we're removing url, check if view currently has one
+					urlUnchanged = !view.url;
+				} else {
+					urlUnchanged = !updates.url || updates.url === view.url;
+				}
+				var urlPatternsUnchanged;
+				if (shouldRemoveUrlPatterns) {
+					// If we're removing urlPatterns, check if view currently has one
+					urlPatternsUnchanged = !view.urlPatterns;
+				} else {
+					urlPatternsUnchanged =
+						!updates.urlPatterns ||
+						JSON.stringify(updates.urlPatterns) ===
+							JSON.stringify(view.urlPatterns);
+				}
 				var localsUnchanged =
 					!updates.locals ||
 					JSON.stringify(updates.locals || {}) ===
@@ -128,10 +153,17 @@ module.exports = function setView(templateID, updates, callback) {
 							extend(expectedPartials).and(updates.partials);
 						}
 						// Merge with parsed partials (same as what happens in line 185)
-						if (type(parseResultForComparison && parseResultForComparison.partials, "object")) {
+						if (
+							type(
+								parseResultForComparison && parseResultForComparison.partials,
+								"object",
+							)
+						) {
 							extend(expectedPartials).and(parseResultForComparison.partials);
 						}
-						partialsUnchanged = JSON.stringify(expectedPartials) === JSON.stringify(view.partials || {});
+						partialsUnchanged =
+							JSON.stringify(expectedPartials) ===
+							JSON.stringify(view.partials || {});
 					} else {
 						// Content changed, so we can't short-circuit anyway - partials will be recomputed
 						partialsUnchanged = false;
@@ -180,6 +212,16 @@ module.exports = function setView(templateID, updates, callback) {
 					view[i] = updates[i];
 				}
 
+				// Explicitly remove url and urlPatterns if they were deleted (empty array case)
+				if (shouldRemoveUrl) {
+					delete view.url;
+					changes = true;
+				}
+				if (shouldRemoveUrlPatterns) {
+					delete view.urlPatterns;
+					changes = true;
+				}
+
 				ensure(view, viewModel);
 
 				if (updates.urlPatterns) {
@@ -190,6 +232,10 @@ module.exports = function setView(templateID, updates, callback) {
 						name,
 						JSON.stringify(updates.urlPatterns),
 					);
+				} else if (shouldRemoveUrlPatterns) {
+					// Delete urlPatterns from Redis if it was removed
+					const urlPatternsKey = key.urlPatterns(templateID);
+					client.hdel(urlPatternsKey, name);
 				}
 				view.locals = view.locals || {};
 				view.retrieve = view.retrieve || {};
@@ -213,28 +259,37 @@ module.exports = function setView(templateID, updates, callback) {
 					templateID,
 					view,
 					parseResult,
-					function (infiniteError) {
+					(infiniteError) => {
 						if (infiniteError) return callback(infiniteError);
 
 						view.retrieve = parseResult.retrieve || {};
 
 						view = serialize(view, viewModel);
 
-						client.hmset(viewKey, view, function (err) {
+						// Delete url and urlPatterns from Redis hash if they were removed
+						var multi = client.multi();
+						multi.hmset(viewKey, view);
+
+						if (shouldRemoveUrl) {
+							console.log("removing hdel", viewKey, "url");
+							multi.hdel(viewKey, "url");
+						}
+						if (shouldRemoveUrlPatterns) {
+							console.log("removing hdel", viewKey, "urlPatterns");
+							multi.hdel(viewKey, "urlPatterns");
+						}
+
+						multi.exec((err) => {
 							if (err) return callback(err);
 
-							updateCdnManifest(templateID, function (manifestErr) {
+							updateCdnManifest(templateID, (manifestErr) => {
 								if (manifestErr) return callback(manifestErr);
 
 								if (!changes) return callback();
 
-								Blog.set(
-									metadata.owner,
-									{ cacheID: Date.now() },
-									function (err) {
-										callback(err);
-									},
-								);
+								Blog.set(metadata.owner, { cacheID: Date.now() }, (err) => {
+									callback(err);
+								});
 							});
 						});
 					},

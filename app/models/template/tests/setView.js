@@ -1,216 +1,305 @@
 const exp = require("constants");
 const { promisify } = require("util");
 
-describe("template", function () {
-  require("./setup")({ createTemplate: true });
+describe("template", () => {
+	require("./setup")({ createTemplate: true });
 
-  const setView = promisify(require("../index").setView);
-  const getView = promisify(require("../index").getView);
-  const getMetadata = promisify(require("../index").getMetadata);
-  const Blog = require("models/blog");
-  const client = require("models/client");
-  const hdel = promisify(client.hdel).bind(client);
-  const key = require("../key");
+	const setView = promisify(require("../index").setView);
+	const getView = promisify(require("../index").getView);
+	const getMetadata = promisify(require("../index").getMetadata);
+	const Blog = require("models/blog");
+	const client = require("models/client");
+	const hdel = promisify(client.hdel).bind(client);
+	const get = promisify(client.get).bind(client);
+	const key = require("../key");
 
-  it("sets a view", async function () {
-    const test = this;
-    const view = {
-      name: "post.txt",
-      content: "Post content here",
-    };
+	it("sets a view", async function () {
+		const test = this;
+		const view = {
+			name: "post.txt",
+			content: "Post content here",
+		};
 
-    await setView(test.template.id, view);
-    const savedView = await getView(test.template.id, view.name);
+		await setView(test.template.id, view);
+		const savedView = await getView(test.template.id, view.name);
 
-    expect(savedView.name).toEqual(view.name);
-    expect(savedView.content).toEqual(view.content);
-  });
+		expect(savedView.name).toEqual(view.name);
+		expect(savedView.content).toEqual(view.content);
+	});
 
-  it("sets changes to an existing view", async function () {
-    const test = this;
-    const view = {
-      name: "article.txt",
-      content: "Original article content",
-    };
+	it("sets changes to an existing view", async function () {
+		const test = this;
+		const view = {
+			name: "article.txt",
+			content: "Original article content",
+		};
 
-    await setView(test.template.id, view);
-    let savedView = await getView(test.template.id, view.name);
+		await setView(test.template.id, view);
+		let savedView = await getView(test.template.id, view.name);
 
-    expect(savedView.name).toEqual(view.name);
-    expect(savedView.content).toEqual(view.content);
+		expect(savedView.name).toEqual(view.name);
+		expect(savedView.content).toEqual(view.content);
 
-    view.content = "Updated article content";
-    await setView(test.template.id, view);
+		view.content = "Updated article content";
+		await setView(test.template.id, view);
 
-    savedView = await getView(test.template.id, view.name);
+		savedView = await getView(test.template.id, view.name);
 
-    expect(savedView.content).toEqual(view.content);
-  });
+		expect(savedView.content).toEqual(view.content);
+	});
 
-  it("won't set a view with invalid mustache content", async function () {
-    const test = this;
-    const view = {
-      name: "invalid.html",
-      content: "{{#x}}", // without the closing {{/x}} mustache will err.
-    };
+	it("won't set a view with invalid mustache content", async function () {
+		const test = this;
+		const view = {
+			name: "invalid.html",
+			content: "{{#x}}", // without the closing {{/x}} mustache will err.
+		};
 
-    try {
-      await setView(test.template.id, view);
-    } catch (err) {
-      expect(err instanceof Error).toBe(true);
-    }
-  });
+		try {
+			await setView(test.template.id, view);
+		} catch (err) {
+			expect(err instanceof Error).toBe(true);
+		}
+	});
 
-  it("won't set a view with infinitely nested partials", async function () {
-    const test = this;
-    const view = {
-      name: "loop.html",
-      content: "{{> first}}",
-      partials: {
-        first: "{{> second}}",
-        second: "{{> first}}",
-      },
-    };
+	it("won't set a view with infinitely nested partials", async function () {
+		const test = this;
+		const view = {
+			name: "loop.html",
+			content: "{{> first}}",
+			partials: {
+				first: "{{> second}}",
+				second: "{{> first}}",
+			},
+		};
 
-    try {
-      await setView(test.template.id, view);
-      throw new Error("Expected setView to fail");
-    } catch (err) {
-      expect(err instanceof Error).toBe(true);
-      expect(err.message).toContain("infinitely nested partials");
-    }
-  });
+		try {
+			await setView(test.template.id, view);
+			throw new Error("Expected setView to fail");
+		} catch (err) {
+			expect(err instanceof Error).toBe(true);
+			expect(err.message).toContain("infinitely nested partials");
+		}
+	});
 
-  it("won't set views that reference each other infinitely", async function () {
-    const test = this;
-    const baseName = "looping";
-    const headerName = `${baseName}-header.html`;
-    const entriesName = `${baseName}-entries.html`;
+	it("won't set views that reference each other infinitely", async function () {
+		const test = this;
+		const baseName = "looping";
+		const headerName = `${baseName}-header.html`;
+		const entriesName = `${baseName}-entries.html`;
 
-    await setView(test.template.id, {
-      name: headerName,
-      content: `{{> ${entriesName}}}`,
-    });
+		await setView(test.template.id, {
+			name: headerName,
+			content: `{{> ${entriesName}}}`,
+		});
 
-    try {
-      await setView(test.template.id, {
-        name: entriesName,
-        content: `{{> ${headerName}}}`,
-      });
+		try {
+			await setView(test.template.id, {
+				name: entriesName,
+				content: `{{> ${headerName}}}`,
+			});
 
-      throw new Error("Expected setView to fail");
-    } catch (err) {
-      expect(err instanceof Error).toBe(true);
-      expect(err.message).toContain("infinitely nested partials");
-    }
-  });
+			throw new Error("Expected setView to fail");
+		} catch (err) {
+			expect(err instanceof Error).toBe(true);
+			expect(err.message).toContain("infinitely nested partials");
+		}
+	});
 
-  it("won't set a view against a template that does not exist", async function () {
-    const test = this;
-    const view = { name: "missing.html" };
+	it("won't set a view against a template that does not exist", async function () {
+		const test = this;
+		const view = { name: "missing.html" };
 
-    try {
-      await setView("nonexistent:template", view);
-    } catch (err) {
-      expect(err instanceof Error).toBe(true);
-    }
-  });
+		try {
+			await setView("nonexistent:template", view);
+		} catch (err) {
+			expect(err instanceof Error).toBe(true);
+		}
+	});
 
-  // In future this should return an error to the callback, lol
-  it("won't set a view with a name that is not a string", async function () {
-    const test = this;
+	// In future this should return an error to the callback, lol
+	it("won't set a view with a name that is not a string", async function () {
+		const test = this;
 
-    try {
-      await setView(test.template.id, { name: null });
-    } catch (err) {
-      expect(err instanceof Error).toBe(true);
-    }
-  });
+		try {
+			await setView(test.template.id, { name: null });
+		} catch (err) {
+			expect(err instanceof Error).toBe(true);
+		}
+	});
 
-  it("updates the cache ID of the blog which owns a template after setting a view", async function () {
-    const test = this;
-    const initialCacheID = test.blog.cacheID;
-    const view = { name: "cache-test.html" };
+	it("updates the cache ID of the blog which owns a template after setting a view", async function () {
+		const test = this;
+		const initialCacheID = test.blog.cacheID;
+		const view = { name: "cache-test.html" };
 
-    await setView(test.template.id, view);
-    const blog = await promisify(Blog.get)({ id: test.template.owner });
+		await setView(test.template.id, view);
+		const blog = await promisify(Blog.get)({ id: test.template.owner });
 
-    expect(blog.cacheID).not.toEqual(initialCacheID);
-  });
+		expect(blog.cacheID).not.toEqual(initialCacheID);
+	});
 
-  it("will save a view with a url array", async function () {
-    await setView(this.template.id, {
-      name: "index.html",
-      url: ["/a", "/b"],
-    });
+	it("will save a view with a url array", async function () {
+		await setView(this.template.id, {
+			name: "index.html",
+			url: ["/a", "/b"],
+		});
 
-    const view1 = await getView(this.template.id, "index.html");
+		const view1 = await getView(this.template.id, "index.html");
 
-    expect(view1.urlPatterns).toEqual(["/a", "/b"]);
-    expect(view1.url).toEqual("/a");
+		expect(view1.urlPatterns).toEqual(["/a", "/b"]);
+		expect(view1.url).toEqual("/a");
 
-    await setView(this.template.id, {
-      name: "index.html",
-      url: "/a",
-    });
+		await setView(this.template.id, {
+			name: "index.html",
+			url: "/a",
+		});
 
-    const view2 = await getView(this.template.id, "index.html");
+		const view2 = await getView(this.template.id, "index.html");
 
-    expect(view2.urlPatterns).toEqual(["/a"]);
-    expect(view2.url).toEqual("/a");
-  });
+		expect(view2.urlPatterns).toEqual(["/a"]);
+		expect(view2.url).toEqual("/a");
+	});
 
-  it("will get and set a view with or without the internal urlPatterns array", async function () {
-    await setView(this.template.id, {
-      name: "index.html",
-      content: "123",
-      url: "/a",
-    });
+	it("will get and set a view with or without the internal urlPatterns array", async function () {
+		await setView(this.template.id, {
+			name: "index.html",
+			content: "123",
+			url: "/a",
+		});
 
-    const view1 = await getView(this.template.id, "index.html");
+		const view1 = await getView(this.template.id, "index.html");
 
-    expect(view1.content).toEqual("123");
+		expect(view1.content).toEqual("123");
 
-    const res = await hdel(key.urlPatterns(this.template.id), "index.html");
+		const res = await hdel(key.urlPatterns(this.template.id), "index.html");
 
-    expect(res).toEqual(1);
+		expect(res).toEqual(1);
 
-    await setView(this.template.id, {
-      name: "index.html",
-      content: "456",
-    });
+		await setView(this.template.id, {
+			name: "index.html",
+			content: "456",
+		});
 
-    const view2 = await getView(this.template.id, "index.html");
+		const view2 = await getView(this.template.id, "index.html");
 
-    expect(view2.content).toEqual("456");
-  });
+		expect(view2.content).toEqual("456");
+	});
 
-  it("updates the CDN manifest when CDN targets change", async function () {
-    // Install the template so the CDN manifest is generated
-    await this.blog.update({template: this.template.id});
+	it("updates the CDN manifest when CDN targets change", async function () {
+		// Install the template so the CDN manifest is generated
+		await this.blog.update({ template: this.template.id });
 
-    await setView(this.template.id, {
-      name: "style.css",
-      content: "body { color: red; }",
-    });
+		await setView(this.template.id, {
+			name: "style.css",
+			content: "body { color: red; }",
+		});
 
-    await setView(this.template.id, {
-      name: "index.html",
-      content: "{{#cdn}}style.css{{/cdn}}",
-    });
+		await setView(this.template.id, {
+			name: "index.html",
+			content: "{{#cdn}}style.css{{/cdn}}",
+		});
 
-    const firstMetadata = await getMetadata(this.template.id);
-    expect(firstMetadata.cdn["style.css"]).toEqual(jasmine.any(String));
+		const firstMetadata = await getMetadata(this.template.id);
+		expect(firstMetadata.cdn["style.css"]).toEqual(jasmine.any(String));
 
-    const originalHash = firstMetadata.cdn["style.css"];
+		const originalHash = firstMetadata.cdn["style.css"];
 
-    await setView(this.template.id, {
-      name: "style.css",
-      content: "body { color: blue; }",
-    });
+		await setView(this.template.id, {
+			name: "style.css",
+			content: "body { color: blue; }",
+		});
 
-    const secondMetadata = await getMetadata(this.template.id);
-    expect(secondMetadata.cdn["style.css"]).toEqual(jasmine.any(String));
-    expect(secondMetadata.cdn["style.css"]).not.toEqual(originalHash);
-  });
+		const secondMetadata = await getMetadata(this.template.id);
+		expect(secondMetadata.cdn["style.css"]).toEqual(jasmine.any(String));
+		expect(secondMetadata.cdn["style.css"]).not.toEqual(originalHash);
+	});
+
+	describe("empty url array handling", () => {
+		it("should not create a Redis key with 'undefined' when an empty array is passed", async function () {
+			// First, set a view with a valid URL
+			await setView(this.template.id, {
+				name: "test.html",
+				content: "Test content",
+				url: "/test",
+			});
+
+			// Verify the URL key exists
+			const urlKey = key.url(this.template.id, "/test");
+			const viewNameBefore = await get(urlKey);
+			expect(viewNameBefore).toEqual("test.html");
+
+			// Now set the view with an empty array - this should remove the URL
+			await setView(this.template.id, {
+				name: "test.html",
+				content: "Test content",
+				url: [],
+			});
+
+			// BUG DEMONSTRATION: When updates.url is deleted (becomes undefined),
+			// line 96 in setView.js still executes: client.set(key.url(templateID, updates.url), name)
+			// This creates a Redis key like "template:xxx:url:undefined" with value "test.html"
+			const undefinedUrlKey = key.url(this.template.id, undefined);
+			const undefinedKeyValue = await get(undefinedUrlKey);
+
+			// This demonstrates the bug: a key with "undefined" should NOT exist
+			// With the bug, this key exists and contains "test.html"
+			// After the fix, this should be null
+			expect(undefinedKeyValue).toBeNull();
+
+			// The original URL key should be deleted
+			const viewNameAfter = await get(urlKey);
+			expect(viewNameAfter).toBeNull();
+		});
+
+		it("should remove url and urlPatterns from view when empty array is passed", async function () {
+			// First, set a view with a valid URL
+			await setView(this.template.id, {
+				name: "remove-test.html",
+				content: "Test content",
+				url: "/remove-test",
+			});
+
+			let view = await getView(this.template.id, "remove-test.html");
+			expect(view.url).toEqual("/remove-test");
+			expect(view.urlPatterns).toEqual(["/remove-test"]);
+
+			// Now set the view with an empty array
+			await setView(this.template.id, {
+				name: "remove-test.html",
+				content: "Test content",
+				url: [],
+			});
+
+			view = await getView(this.template.id, "remove-test.html");
+			// After passing empty array, url and urlPatterns should be removed
+			expect(view.url).toBeUndefined();
+			expect(view.urlPatterns).toBeUndefined();
+		});
+
+		it("should clean up old URL mapping when empty array is passed", async function () {
+			// Set a view with a URL
+			await setView(this.template.id, {
+				name: "cleanup-test.html",
+				content: "Test content",
+				url: "/old-url",
+			});
+
+			// Verify the URL key exists
+			const oldUrlKey = key.url(this.template.id, "/old-url");
+			const viewNameBefore = await get(oldUrlKey);
+			expect(viewNameBefore).toEqual("cleanup-test.html");
+
+			// Set with empty array to remove the URL
+			await setView(this.template.id, {
+				name: "cleanup-test.html",
+				content: "Test content",
+				url: [],
+			});
+
+			// The old URL key should be deleted
+			const viewNameAfter = await get(oldUrlKey);
+			expect(viewNameAfter).toBeNull();
+		});
+	});
 });
