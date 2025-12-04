@@ -72,17 +72,22 @@ module.exports = function setView(templateID, updates, callback) {
 				var changes;
 
 				// Handle `url` logic
-				if (updates.url) {
-					if (type(updates.url, "array")) {
-						// If `url` is an array, use the first item as `url` and the array as `urlPatterns`
-						const normalizedUrls = updates.url.map(urlNormalizer);
-						updates.url = normalizedUrls[0];
-						updates.urlPatterns = normalizedUrls;
-					} else if (type(updates.url, "string")) {
-						// If `url` is a string, normalize it and use `[url]` as `urlPatterns`
-						updates.url = urlNormalizer(updates.url);
-						updates.urlPatterns = [updates.url];
-					} else {
+                                if (updates.url !== undefined) {
+                                        if (type(updates.url, "array")) {
+                                                if (updates.url.length === 0) {
+                                                        delete updates.url;
+                                                        delete updates.urlPatterns;
+                                                } else {
+                                                // If `url` is an array, use the first item as `url` and the array as `urlPatterns`
+                                                const normalizedUrls = updates.url.map(urlNormalizer);
+                                                updates.url = normalizedUrls[0];
+                                                updates.urlPatterns = normalizedUrls;
+                                                }
+                                        } else if (type(updates.url, "string")) {
+                                                // If `url` is a string, normalize it and use `[url]` as `urlPatterns`
+                                                updates.url = urlNormalizer(updates.url);
+                                                updates.urlPatterns = [updates.url];
+                                        } else {
 						return callback(
 							new Error("The provided `url` must be a string or an array"),
 						);
