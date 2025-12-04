@@ -3,6 +3,7 @@ var async = require("async");
 var stripe = require("stripe")(config.stripe.secret);
 var User = require("models/user");
 var prettyPrice = require("helper/prettyPrice");
+var email = require("helper/email");
 var Express = require("express");
 var PaySubscription = new Express.Router();
 
@@ -201,8 +202,20 @@ function updateSubscription(req, res, next) {
 
       if (!subscription) return next(new Error("No subscription"));
 
+      // Store previous subscription status before updating
+      var previousSubscription = req.user.subscription || {};
+      var previousStatus = previousSubscription.status;
+
       User.set(req.user.uid, { subscription: subscription }, function (err) {
         if (err) return next(err);
+
+        // Send recovery email if subscription was recovered
+        if (
+          subscription.status === "active" &&
+          (previousStatus === "past_due" || previousStatus === "unpaid")
+        ) {
+          email.RECOVERED(req.user.uid);
+        }
 
         next();
       });
