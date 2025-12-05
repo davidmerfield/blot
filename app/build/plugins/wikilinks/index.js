@@ -9,9 +9,9 @@ const byHeadingAnchor = require("./byHeadingAnchor");
 const { decode } = require("he");
 const makeSlug = require("helper/makeSlug");
 const debug = require("debug")("blot:entry:build:plugins:wikilinks");
-const Entry = require("models/entry");
 
 const basename = (path.posix || path).basename;
+
 
 // Helper function to check if a path is a markdown/text file
 function isMarkdownFile(path) {
@@ -126,9 +126,10 @@ function render($, callback, { blogID, path }) {
           }
         } else {
           if (isMarkdownFile(linkedPath)) {
-            return Entry.get(blogID, linkedPath, function (err, entry) {
-              if (err) {
-                debug("Error fetching entry for embedded markdown", err);
+            const { get } = require("models/entry");
+
+            return get(blogID, linkedPath, function (entry) {
+              if (!entry) {
                 return next();
               }
 
