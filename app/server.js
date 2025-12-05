@@ -89,6 +89,10 @@ server.use(require('./request-logger'));
 // only ever be served for request to the host
 server.use(vhost(config.host, site));
 
+if (config.secondary_host) {
+  server.use(vhost(config.secondary_host, site));
+}
+
 // The Webhook forwarder
 // -------------
 // Forwards webhooks to development environment

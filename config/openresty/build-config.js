@@ -83,7 +83,8 @@ const webhooks_client_max_body_size = `${
 }M`;
 
 const locals = {
-  host: "blot.im",
+  host: config.host,
+  secondary_host: config.secondary_host,
   blot_directory: config.blot_directory,
   blog_static_files_dir: config.blog_static_files_dir,
   global_static_files_dir: config.blot_directory + "/app/blog/static",

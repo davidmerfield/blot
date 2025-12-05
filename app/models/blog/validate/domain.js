@@ -35,7 +35,11 @@ module.exports = function (blogID, domain, callback) {
     return callback(INVALID);
   }
 
-  if (domain.endsWith(config.host)) {
+  const blotHost = config.hosts.some(function (host) {
+    return domain === host || domain.endsWith("." + host);
+  });
+
+  if (blotHost) {
     return callback(SUBDOMAIN);
   }
 
