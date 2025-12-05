@@ -89,9 +89,16 @@ SourceCode.route("/:viewSlug/edit")
         req.template.id,
         JSON.parse(view.content),
         function (err, views) {
-          async.eachSeries(
-            Object.keys(views),
-            function (name, next) {
+          if (err) return next(err);
+
+          Template.getMetadata(req.template.id, function (err, metadata) {
+            if (err) return next(err);
+
+            const templateForSync = metadata || req.template;
+
+            async.eachSeries(
+              Object.keys(views),
+              function (name, next) {
               Template.getView(req.template.id, name, function (err, view) {
                 // getView returns an error if the view does not exist
                 // We want to be able to create new views using local editing
@@ -105,17 +112,23 @@ SourceCode.route("/:viewSlug/edit")
                 Template.setView(req.template.id, view, next);
               });
             },
-            function (err) {
-              if (err) return next(err);
-              writeChangeToFolder(req.blog, req.template, view, function (err) {
+              function (err) {
                 if (err) return next(err);
-                if (res.locals.templateForked) {
-                  res.set("X-Template-Forked", "1");
-                }
-                res.send("Saved changes!");
-              });
-            }
-          );
+                writeChangeToFolder(
+                  req.blog,
+                  templateForSync,
+                  view,
+                  function (err) {
+                    if (err) return next(err);
+                    if (res.locals.templateForked) {
+                      res.set("X-Template-Forked", "1");
+                    }
+                    res.send("Saved changes!");
+                  }
+                );
+              }
+            );
+          });
         }
       );
     } else {

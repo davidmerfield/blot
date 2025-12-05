@@ -3,10 +3,12 @@ var join = require("path").join;
 var clients = require("clients");
 
 describe("template", function () {
-  var writeToFolder = require("../index").writeToFolder;
-  var setView = require("../index").setView;
-  var dropView = require("../index").dropView;
-  var setMetadata = require("../index").setMetadata;
+var writeToFolder = require("../index").writeToFolder;
+var setView = require("../index").setView;
+var dropView = require("../index").dropView;
+var setMetadata = require("../index").setMetadata;
+var packageAPI = require("../index").package;
+var writeChangeToFolder = require("../../../dashboard/site/template/save/writeChangeToFolder");
 
   require("./setup")({ createTemplate: true });
 
@@ -80,6 +82,29 @@ describe("template", function () {
         expect(fs.readJsonSync(targetPath).locals).toEqual(metadata.locals);
         done();
       });
+    });
+  });
+
+  it("regenerates package.json in the local folder when local editing is enabled via package save", function (done) {
+    var test = this;
+    var packageMetadata = { localEditing: true, name: "Local Package" };
+    var staleTemplate = Object.assign({}, this.template, { localEditing: false });
+
+    packageAPI.save(this.template.id, packageMetadata, function (err) {
+      if (err) return done.fail(err);
+
+      writeChangeToFolder(
+        test.blog,
+        staleTemplate,
+        { name: "package.json" },
+        function (err) {
+          if (err) return done.fail(err);
+
+          var packagePath = getTemplatePath(test, "package.json");
+          expect(fs.readJsonSync(packagePath).name).toEqual(packageMetadata.name);
+          done();
+        }
+      );
     });
   });
 
