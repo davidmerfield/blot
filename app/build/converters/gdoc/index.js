@@ -25,8 +25,8 @@ async function read(blog, path, callback) {
     const stat = await fs.stat(localPath);
 
     // Don't try and turn HTML exported from a google doc into posts
-    // if it's over 5MB in size
-    if (stat && stat.size > 5 * 1000 * 1000)
+    // if it's over 10MB in size
+    if (stat && stat.size > 10 * 1000 * 1000)
       return callback(new Error("Google Doc export HTML too big"));
 
     const contents = await fs.readFile(localPath, "utf-8");

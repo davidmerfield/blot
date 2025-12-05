@@ -1,24 +1,39 @@
-Fix R's tag pages
-
-Fix sync issue with customer
-
----
-
 Transfer theme for [Fede](https://wordpress.org/themes/kanso/)
 - Set up vanilla zoom
 - Use as [reference](https://fsanchez.io)
 
 Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
 
-Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
+---
+
+Switch domain to blot.site
+- update macserver remote url
+- think about cdn (and existing URLs in posts)
+- set up mail
+- switch from mailgun to SES over new domain
 
 ---
 
+Release new website
+
+---
+
+Work on templates
+- Turn andrew's template into a seperate 'Hypertext' template
+
+---
+
+Record new video
+
+---
+
+Send out winter newsletter
+
+---
+
+Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
+
 Fix bug with Elizabeth's Google Docs (export 403 file exceeds...)
-
-Update question on what to do to import posts from wordpress or squarespace: instead of contact me, reference the importer. 
-
-Make it possible to configure the export file format (e.g. instead of markdown, word documents) on the importer
 
 Secure deploy ssh on GitHub
 
@@ -30,6 +45,8 @@ Bug reports:
 - The website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 - Migrate base templates from entries to {{#posts}} and tell Omar
 - Document the special routing features for entries.html and tell Omar
+
+Make it clearer in the UI that creating a second site increases the subscription at the next billing cycle, probably with a one-time notice.
 
 Fix bug with repeat resyncs of specific sites via Google Drive:
 - To identify, run node scripts/google-drive/resync.js multiple times, some sites continually resync the same files...
@@ -73,7 +90,6 @@ Allow text entry fields in template settings from the dashboard for template loc
 Add multiple date format selectors on the theme dashboard for different contexts, and tell Omar
 Introduce collapsible sections or a separately scrollable div on the template dashboard settings, and tell Omar
 
-
 Can we optimize renderView in some way?
 - use lru cache or moize libraries? back against cacheID property of blog?
 - Memoize load template / load full view / load blog... others?
@@ -93,7 +109,14 @@ Fix bug with huge archives page
 
 ---
 
-Turn andrew's template into a seperate 'Hypertext' template
+Update obsidian tools pages (improve)
+
+Follow up with Bunny about bug with spaces in file names served from folder
+- or write code to workaround
+
+Update question on what to do to import posts from wordpress or squarespace: instead of contact me, reference the importer. 
+
+Make it possible to configure the export file format (e.g. instead of markdown, word documents) on the importer
 
 Investigate replybox for comments
 
@@ -186,11 +209,6 @@ Fix bugs with custom domain setup
 - Validate the domain is pointing to Blot before allowing resty-auto-ssl to request a cert. we seem to get into a DNS mismatch where a client thinks a domain points to Blot, and triggers a cert request through resty-auto-ssl but whatever DNS server Blot's server points to has the stale record (pointing elsewhere)
 - Disable redirect to HTTPS for blogs by default (to ensure old browsers without SNI work) but ensure all prominent links to the blog on dashboard use HTTPS
 - cache domain validity and display checkmark on dashboard
-
-Fix bug where changes to documentation CSS do not make it into production:
-- stale servers serve the old CSS 
-- purge bunny after deployment complete?
-- can servers share the tmp dir views directory?
 
 Fix bug with Documentation template and the setting 'Adds zoom to large images' and [tell customer](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgJMGTSPcnwTNxVJVPZZnrhJB)
 
@@ -371,6 +389,8 @@ Improve tools/bear
 
 Improve tools/ulysses
 - Reach out to Ulysses to let them know about textbundle support
+
+Look into figma make
 
 Improve server performance by 1. Create `app/build/plugins/folderAssets/index.js` that exports a `render` handler; reuse the logic from `app/blog/render/replaceFolderLinks/html.js` and `lookupFile` so it asynchronously rewrites `<a href>`/`<img src>` etc. during build-time processing to CDN urls, resolving the correct case where needed.
 - 2. Register the plugin in `app/build/plugins/index.js` so it runs for HTML entries (respecting `options.isHTML`) and make it default-enabled for blogs.
@@ -1055,11 +1075,6 @@ Improvements to website:
 
 ---
 
-Consider switching domain to blot.site
-- add support for different user subdomain in dev?
-- set up mail
-- switch from mailgun to SES over new domain
-
 Add aws cost usage and forecast to daily update email
 - https://docs.aws.amazon.com/cli/latest/reference/ce/get-cost-and-usage.html
 
@@ -1194,7 +1209,6 @@ Add support for paying with crypto, BTC ETH
 Improve Are.na importer so it handles descriptions + also other file types (e.g. PDF, text) and tell [Marco](https://mail.google.com/mail/u/0/#inbox/QgrcJHsBvDqvbgfkRJfBlwLBwlDHDncxVnl)
 
 Improvements to server
-- [ ] move development cdn onto its own host to better simular cross-domain issues
 - [ ] test maintenance and redirector on dashboard
 - [ ] restrict post to /dashboard route so we can tune nginx logic?
 - [ ] tune performance of express-mustache in production and development
@@ -1276,6 +1290,18 @@ Add way to set the slug-part of a URL for a post and tell [George](https://mail.
 
 
 ---
+
+Investigate migrating from Redis to SQLite per-blog database
+- Evaluate feasibility of storing one SQLite database per blog in data/blogs/{blogID}/blog.db
+- Assess performance implications (memory usage, query speed, connection management)
+- Design hybrid approach: SQLite per-blog for blog-scoped data + small Redis/master DB for global lookups (handle/domain mappings, blog IDs set)
+- Identify all global queries that span multiple blogs (getHosts, handle/domain resolution) and plan migration strategy
+- Estimate memory savings vs current Redis approach (SQLite uses OS page cache vs Redis keeping everything in RAM)
+- Consider connection pooling/lazy opening strategy for managing many SQLite connections
+- Evaluate concurrent write patterns and SQLite locking behavior
+- Create proof-of-concept migration for entry storage (currently blog:{id}:entry:{path} in Redis)
+- Benchmark query performance comparison (Redis sorted sets vs SQLite queries)
+- Document migration path and breaking changes required
 
 Can Blot blogs be federated? Respond to [Nigel](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrbRWfcBdwKdRZxsBKjKDwrkTp) once I do some research on this
 
