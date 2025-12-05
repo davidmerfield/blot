@@ -106,11 +106,8 @@ function persistTemplateUpdate(req, res, next) {
     { locals: req.locals, partials: req.partials },
     function (err) {
       if (err) return next(err);
-      writeChangeToFolder(
-          req.blog,
-          req.template,
-          {},
-          function(err){
+      writeChangeToFolder(req.blog, req.template, {}, function (err) {
+        if (err) return next(err);
 
         if (isAjaxRequest(req)) {
           const ajaxOptions = {};
@@ -122,7 +119,7 @@ function persistTemplateUpdate(req, res, next) {
 
         res.message(req.baseUrl + req.url, "Success!");
       });
-    }
+    },
   );
 }
 
