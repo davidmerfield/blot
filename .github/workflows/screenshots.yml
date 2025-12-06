@@ -1,12 +1,7 @@
 name: Screenshots
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - ".github/workflows/screenshots.yml"
-      - "app/templates/**"
+  workflow_dispatch:
 
 jobs:
   test:
@@ -21,6 +16,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -115,11 +113,14 @@ jobs:
           echo "Taking screenshots"
           node app/templates/screenshots.js
 
-      - name: Commit changes and create pull request
-        uses: peter-evans/create-pull-request@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: Updates screenshots of templates
-          title: Update screenshots
-          body: This pull request updates the screenshots of the folders and templates
-          branch: update-screenshots
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Updates screenshots of templates"
+            git push
+          fi
