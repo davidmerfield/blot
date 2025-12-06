@@ -2,8 +2,6 @@ name: Screenshots
 
 on:
   push:
-    branches:
-      - master
     paths:
       - ".github/workflows/screenshots.yml"
       - "app/templates/**"
