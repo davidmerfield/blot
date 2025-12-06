@@ -99,14 +99,9 @@ jobs:
 
       - name: Take screenshots
         env:
-          BLOT_CACHE: false
-          BLOT_DEBUG: false
-          BLOT_MAINTENANCE: false
-          BLOT_PRODUCTION: true
           BLOT_PROTOCOL: http
           BLOT_ENVIRONMENT: development
           BLOT_HOST: blot.development
-          BLOT_REDIS_HOST: 127.0.0.1
         run: |
           export BLOT_DIRECTORY=$(pwd)
           export NODE_PATH=$(pwd)/app
