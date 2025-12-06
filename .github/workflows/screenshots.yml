@@ -25,7 +25,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-
+          cache-dependency-path: ./package.json
+          
       - name: Cache Pandoc
         id: cache-pandoc
         uses: actions/cache@v4
