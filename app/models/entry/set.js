@@ -120,7 +120,9 @@ module.exports = function set (blogID, path, updates, callback) {
 
         var firstCandidateList = Candidates(blog, entry);
         var firstCandidate = firstCandidateList && firstCandidateList[0];
-        var baseDependencies = entry.dependencies.slice();
+        var baseDependencies = Array.isArray(updates.dependencies)
+          ? updates.dependencies.slice()
+          : [];
 
         var deduplicated =
           !!conflictingEntryPath &&
