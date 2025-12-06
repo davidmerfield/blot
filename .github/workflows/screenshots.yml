@@ -26,7 +26,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: ./package.json
-          
+
       - name: Cache Pandoc
         id: cache-pandoc
         uses: actions/cache@v4
@@ -98,9 +98,19 @@ jobs:
         run: npm install
 
       - name: Take screenshots
+        env:
+          BLOT_CACHE: false
+          BLOT_DEBUG: false
+          BLOT_MAINTENANCE: false
+          BLOT_PRODUCTION: true
+          BLOT_PROTOCOL: http
+          BLOT_ENVIRONMENT: development
+          BLOT_HOST: blot.development
+          BLOT_REDIS_HOST: 127.0.0.1
         run: |
           export BLOT_DIRECTORY=$(pwd)
           export NODE_PATH=$(pwd)/app
+          export BLOT_CACHE_DIRECTORY=$(pwd)/cache          
           node app/templates/index.js --no-watch
           node app/index.js &
           echo "Building folders"
