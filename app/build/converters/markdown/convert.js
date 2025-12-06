@@ -1,4 +1,5 @@
 var spawn = require("child_process").spawn;
+var cheerio = require("cheerio");
 var indentation = require("./indentation");
 var footnotes = require("./footnotes");
 var time = require("helper/time");
@@ -10,6 +11,8 @@ var debug = require("debug")("blot:converters:markdown");
 // '+hard_line_breaks' +
 
 module.exports = function (blog, text, options, callback) {
+  options = options || {};
+
   var extensions =
 
     // handles highlights ==e.g.==
@@ -89,6 +92,10 @@ module.exports = function (blog, text, options, callback) {
     args.push("--citeproc");
   }
 
+  if (options.toc) {
+    args.push("--toc");
+  }
+
   var startTime = Date.now();
   var pandoc = spawn(Pandoc, args);
 
@@ -133,8 +140,23 @@ module.exports = function (blog, text, options, callback) {
     result = safely(footnotes, result);
     time.end("footnotes");
 
+    var toc;
+
+    if (options.toc) {
+      const $ = cheerio.load(result, { decodeEntities: false }, false);
+      const tocElement = $("#TOC");
+
+      if (tocElement.length) {
+        toc = $.html(tocElement);
+        tocElement.remove();
+
+        const body = $("body");
+        result = body.length ? body.html() : $.root().html();
+      }
+    }
+
     debug("Final:", result);
-    callback(null, result);
+    callback(null, result, toc);
   });
 
   // Pandoc is very strict and treats indents inside

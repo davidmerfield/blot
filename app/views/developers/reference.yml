@@ -261,6 +261,10 @@
       type: string
       description: The HTML of the blog post, excluding the [titleTag](#entry.titleTag). This property is useful if you want to manipulate the HTML of the titles of your blog posts.
 
+    - name: toc
+      type: string
+      description: The HTML for a generated table of contents. Render this unescaped with triple braces, for example `{{{entry.toc}}}`.
+
     - name: teaser
       type: string
       description: The HTML of the title and the ﬁrst few items in the entry. You can specify the end of the teaser by inserting the special tag {{more}} into your blog post's ﬁle. Everything before more will be included in the teaser.
