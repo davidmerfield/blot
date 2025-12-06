@@ -18,8 +18,6 @@ jobs:
         pandoc-version: [3.1.1]
         redis-version: [6.2.6]
 
-    environment: Tests
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -80,27 +78,9 @@ jobs:
         run: npm install
 
       - name: Take screenshots
-        env:
-          BLOT_CACHE: false
-          BLOT_DEBUG: false
-          BLOT_MAINTENANCE: false
-          BLOT_PRODUCTION: true
-          BLOT_PROTOCOL: http
-          BLOT_ENVIRONMENT: development
-          BLOT_HOST: blot.development
-          BLOT_ADMIN_EMAIL: ${{ secrets.BLOT_ADMIN_EMAIL }}
-          BLOT_DROPBOX_APP_SECRET: ${{ secrets.BLOT_DROPBOX_APP_SECRET }}
-          BLOT_DROPBOX_FULL_SECRET: ${{ secrets.BLOT_DROPBOX_FULL_SECRET }}
-          BLOT_DROPBOX_TEST_ACCOUNT_APP_TOKEN: ${{ secrets.BLOT_DROPBOX_TEST_ACCOUNT_APP_TOKEN }}
-          BLOT_DROPBOX_TEST_ACCOUNT_FULL_TOKEN: ${{ secrets.BLOT_DROPBOX_TEST_ACCOUNT_FULL_TOKEN }}
-          BLOT_DROPBOX_TEST_ACCOUNT_ID: ${{ secrets.BLOT_DROPBOX_TEST_ACCOUNT_ID }}
-          BLOT_MAILGUN_KEY: ${{ secrets.BLOT_MAILGUN_KEY }}
-          BLOT_SESSION_SECRET: ${{ secrets.BLOT_SESSION_SECRET }}
-          BLOT_REDIS_HOST: 127.0.0.1
         run: |
           export BLOT_DIRECTORY=$(pwd)
           export NODE_PATH=$(pwd)/app
-          export BLOT_CACHE_DIRECTORY=$(pwd)/cache
           node app/templates/index.js --no-watch
           node app/index.js &
           echo "Building folders"
