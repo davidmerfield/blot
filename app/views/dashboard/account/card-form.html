@@ -15,6 +15,8 @@
 <label for="card">
   Your card
 </label>
+<!-- Payment Request Button container for Apple Pay/Google Pay -->
+<div id="payment-request-button" style="margin-bottom: 1em;"></div>
 <div id="card" class="field"></div>
 
 
@@ -40,6 +42,63 @@ var stripe = Stripe('{{stripe_key}}');  // Use your actual publishable key
   var card = elements.create('card', {style: style});
 
   card.mount('#card');
+
+  // Add Payment Request Button for Apple Pay/Google Pay
+  // Only show if subscription amount is available (payment-method route)
+  var subscriptionAmount = {{#subscription_amount_cents}}{{subscription_amount_cents}}{{/subscription_amount_cents}}{{^subscription_amount_cents}}0{{/subscription_amount_cents}};
+  var subscriptionCurrency = '{{#subscription_currency}}{{subscription_currency}}{{/subscription_currency}}{{^subscription_currency}}usd{{/subscription_currency}}';
+
+  if (subscriptionAmount > 0) {
+    var paymentRequest = stripe.paymentRequest({
+      country: 'US',
+      currency: subscriptionCurrency,
+      total: {
+        label: 'Blot subscription',
+        amount: subscriptionAmount,
+      },
+      requestPayerEmail: false, // User is already logged in
+    });
+
+    var paymentRequestButton = elements.create('paymentRequestButton', {
+      paymentRequest: paymentRequest,
+      style: {
+        paymentRequestButton: {
+          theme: 'dark',
+          height: '48px',
+        },
+      },
+    });
+
+    // Check if Payment Request is available (Apple Pay, Google Pay, etc.)
+    paymentRequest.canMakePayment().then(function(result) {
+      if (result) {
+        // Show the Payment Request Button
+        paymentRequestButton.mount('#payment-request-button');
+      } else {
+        // Hide the container if Payment Request is not available
+        document.getElementById('payment-request-button').style.display = 'none';
+      }
+    });
+
+    // Handle payment method from Payment Request Button
+    paymentRequest.on('paymentmethod', function(ev) {
+      // The payment method is already created by the Payment Request API
+      // We can use ev.paymentMethod.id directly (starts with 'pm_')
+      // This is better for recurring payments than tokens
+      if (!ev.paymentMethod || !ev.paymentMethod.id) {
+        ev.complete('fail');
+        renderError('Unable to process payment method');
+        return;
+      }
+
+      ev.complete('success');
+      // Submit the form with the Payment Method ID
+      stripeTokenHandler({ id: ev.paymentMethod.id });
+    });
+  } else {
+    // Hide the container if subscription amount is not available
+    document.getElementById('payment-request-button').style.display = 'none';
+  }
 
   function setFocusColor(elementId) {
     document.getElementById(elementId).style.borderColor = 'var(--accent-color)';
@@ -91,10 +150,12 @@ var stripe = Stripe('{{stripe_key}}');  // Use your actual publishable key
   });
 
 
-  function stripeTokenHandler(token) {
+  function stripeTokenHandler(tokenOrPaymentMethod) {
+    // Accept either a token object (from card input) or Payment Method ID (from Apple Pay/Google Pay)
+    // Both have an 'id' property - tokens start with 'tok_' and Payment Methods start with 'pm_'
     var form = document.getElementById('payment-form');
     var hiddenInput = document.querySelector('input.stripeToken');
-    hiddenInput.setAttribute('value', token.id);
+    hiddenInput.setAttribute('value', tokenOrPaymentMethod.id);
     form.submit();
   }
 
