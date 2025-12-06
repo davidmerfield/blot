@@ -11,16 +11,16 @@
       <br>
 
       {{#query}}
-        {{^entries}}
+        {{^posts}}
         <p>Sorry, no results for “{{query}}”</p>
-        {{/entries}}
+        {{/posts}}
       {{/query}}
 
-      {{#entries}}
+      {{#posts}}
         <a href="{{{url}}}">{{title}}</a>
         <span class="small">{{date}}</span>
         <br>
-      {{/entries}}
+      {{/posts}}
     </div>
     {{> footer}}
     <script type="text/javascript">document.getElementById('search').focus();</script>

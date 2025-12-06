@@ -12,14 +12,14 @@
     <br>
 
     {{#query}}
-    {{^entries}}
+    {{^posts}}
     <p>Sorry, nothing found for “{{query}}”</p>
-    {{/entries}}
+    {{/posts}}
     {{/query}}
 
-    {{#entries}}
+    {{#posts}}
     <a href="{{{url}}}" class="row"><b>{{title}}</b> {{#date}}&nbsp;·&nbsp; <span style="white-space: nowrap;">{{date}}</span>{{/date}}</a>
-    {{/entries}}
+    {{/posts}}
 
     {{> footer}}
 
