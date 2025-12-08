@@ -120,9 +120,10 @@ module.exports = function set (blogID, path, updates, callback) {
 
         var firstCandidateList = Candidates(blog, entry);
         var firstCandidate = firstCandidateList && firstCandidateList[0];
-        var baseDependencies = Array.isArray(updates.dependencies)
+        var dependenciesProvided = Array.isArray(updates.dependencies);
+        var baseDependencies = dependenciesProvided
           ? updates.dependencies.slice()
-          : [];
+          : previousDependencies.slice();
 
         var deduplicated =
           !!conflictingEntryPath &&
@@ -146,6 +147,10 @@ module.exports = function set (blogID, path, updates, callback) {
           entry.dependencies = entry.dependencies.filter(function (dependency) {
             var wasPrevious = previousDependencies.indexOf(dependency) > -1;
             var inBase = baseDependencies.indexOf(dependency) > -1;
+
+            if (!dependenciesProvided) {
+              return !(previousUrlWasDeduped && dependency === conflictingEntryPath);
+            }
 
             return !(wasPrevious && !inBase);
           });
