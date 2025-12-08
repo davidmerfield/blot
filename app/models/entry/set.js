@@ -118,42 +118,46 @@ module.exports = function set (blogID, path, updates, callback) {
         if (err) return callback(err);
         if (!blog) return callback(new Error("Blog not found"));
 
-        var firstCandidateList = Candidates(blog, entry);
-        var firstCandidate = firstCandidateList && firstCandidateList[0];
-        var dependenciesProvided = Array.isArray(updates.dependencies);
-        var baseDependencies = dependenciesProvided
-          ? updates.dependencies.slice()
-          : previousDependencies.slice();
+        // Skip dependency tracking for deleted entries
+        // to preserve entry.permalink for backlink removal
+        if (!entry.deleted) {
+          var firstCandidateList = Candidates(blog, entry);
+          var firstCandidate = firstCandidateList && firstCandidateList[0];
+          var dependenciesProvided = Array.isArray(updates.dependencies);
+          var baseDependencies = dependenciesProvided
+            ? updates.dependencies.slice()
+            : previousDependencies.slice();
 
-        var deduplicated =
-          !!conflictingEntryPath &&
-          !!firstCandidate &&
-          url &&
-          url !== firstCandidate;
+          var deduplicated =
+            !!conflictingEntryPath &&
+            !!firstCandidate &&
+            url &&
+            url !== firstCandidate;
 
-        if (deduplicated) {
-          if (entry.dependencies.indexOf(conflictingEntryPath) === -1) {
-            entry.dependencies.push(conflictingEntryPath);
-          }
-        }
-
-        var previousUrlWasDeduped = previousUrl && /-\d+$/.test(previousUrl);
-        var reclamation =
-          !!firstCandidate &&
-          !!previousUrlWasDeduped &&
-          url === firstCandidate;
-
-        if (reclamation) {
-          entry.dependencies = entry.dependencies.filter(function (dependency) {
-            var wasPrevious = previousDependencies.indexOf(dependency) > -1;
-            var inBase = baseDependencies.indexOf(dependency) > -1;
-
-            if (!dependenciesProvided) {
-              return !(previousUrlWasDeduped && dependency === conflictingEntryPath);
+          if (deduplicated) {
+            if (entry.dependencies.indexOf(conflictingEntryPath) === -1) {
+              entry.dependencies.push(conflictingEntryPath);
             }
+          }
 
-            return !(wasPrevious && !inBase);
-          });
+          var previousUrlWasDeduped = previousUrl && /-\d+$/.test(previousUrl);
+          var reclamation =
+            !!firstCandidate &&
+            !!previousUrlWasDeduped &&
+            url === firstCandidate;
+
+          if (reclamation) {
+            entry.dependencies = entry.dependencies.filter(function (dependency) {
+              var wasPrevious = previousDependencies.indexOf(dependency) > -1;
+              var inBase = baseDependencies.indexOf(dependency) > -1;
+
+              if (!dependenciesProvided) {
+                return !(previousUrlWasDeduped && dependency === conflictingEntryPath);
+              }
+
+              return !(wasPrevious && !inBase);
+            });
+          }
         }
 
         // Ensures entry has all the
