@@ -73,12 +73,14 @@ function buildDebugCommand() {
   return cmd;
 }
 
-// Log DEBUG command at start
-console.log(
-  clfdate(),
-  "To run with debug logs:",
-  colors.cyan(buildDebugCommand())
-);
+// Log DEBUG command at start (only if DEBUG is not already set)
+if (!process.env.DEBUG) {
+  console.log(
+    clfdate(),
+    "To run with debug logs:",
+    colors.cyan(buildDebugCommand())
+  );
+}
 
 jasmine.addReporter({
   specStarted: function (result) {
@@ -109,8 +111,8 @@ jasmine.addReporter({
       .slice(0, 10)
       .forEach((line) => console.log(line));
     
-    // If tests failed, show how to re-run with DEBUG
-    if (result.overallStatus === "failed") {
+    // If tests failed, show how to re-run with DEBUG (only if DEBUG is not already set)
+    if (result.overallStatus === "failed" && !process.env.DEBUG) {
       console.log();
       console.log("Re-run with debug logs:");
       console.log(colors.cyan(buildDebugCommand()));
