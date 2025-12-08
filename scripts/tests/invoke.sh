@@ -51,6 +51,7 @@ docker run --rm \
   --env-file "$TEST_ENV_FILE" \
   -e TEST_PATH="$TEST_PATH" \
   -e TEST_SEED="$TEST_SEED" \
+  -e DEBUG="$DEBUG" \
   -e BLOT_REDIS_HOST="redis" \
   -e BLOT_HOST="localhost" \
   -v "$APP_DIR:/usr/src/app/app" \
