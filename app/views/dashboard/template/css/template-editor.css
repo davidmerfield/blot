@@ -370,7 +370,7 @@ form.upload-control:last-of-type {
     width: 100%;
     position: relative;
     height: calc(100vh - 148px);
-    overflow: hidden;
+    overflow: auto;
     padding: 1px;
     box-sizing: border-box;
     border-radius: var(--border-radius);

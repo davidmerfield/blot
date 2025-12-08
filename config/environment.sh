@@ -90,12 +90,6 @@ export AWS_SECRET_ACCESS_KEY=
 # Mailgun for sending emails to customers
 export BLOT_MAILGUN_KEY=
 
-# Twitter for fetching embed codes
-export BLOT_TWITTER_CONSUMER_KEY=
-export BLOT_TWITTER_CONSUMER_SECRET=
-export BLOT_TWITTER_ACCESS_TOKEN_KEY=
-export BLOT_TWITTER_ACCESS_TOKEN_SECRET=
-
 # Google Drive client for folder syncing
 export BLOT_GOOGLEDRIVE_ID=
 export BLOT_GOOGLEDRIVE_SECRET=

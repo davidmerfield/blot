@@ -77,7 +77,6 @@ function configureBlogs(user) {
           });
 
           console.log("Local server capabilities:");
-          console.log("- twitter embeds " + !!config.twitter.consumer_secret);
           console.log("- markdown with pandoc  " + !!config.pandoc.bin);
           console.log("- .docx conversion  " + !!config.pandoc.bin);
           console.log("- .odt conversion  " + !!config.pandoc.bin);

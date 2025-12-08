@@ -12,6 +12,9 @@ var debug = require("debug")("blot:converters:markdown");
 module.exports = function (blog, text, options, callback) {
   var extensions =
 
+    // handles highlights ==e.g.==
+    '+mark' +
+    
     // resolves issue with html tags in markdown
     // producing extra <p> tags (see ./tests/examples/mix-of-html-and-markdown.txt)
     "-native_divs" +

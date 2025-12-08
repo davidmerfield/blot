@@ -8,7 +8,7 @@ permissions:
 
 env:
   REGISTRY_URL: ghcr.io/davidmerfield/blot
-  BLOT_EC2_HOST: ${{ secrets.BLOT_EC2_HOST }}
+  BLOT_DEPLOY_SSH_HOST: ${{ secrets.BLOT_DEPLOY_SSH_HOST }}
 
 jobs:
   wait-for-build:
@@ -50,7 +50,7 @@ jobs:
     needs: wait-for-build
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: Tests
+    environment: deploy
     
     steps:
       - name: Checkout
@@ -67,7 +67,7 @@ jobs:
           chmod 700 ~/.ssh
           cat >> ~/.ssh/config << EOF
           Host blot
-            HostName ${BLOT_EC2_HOST}
+            HostName ${BLOT_DEPLOY_SSH_HOST}
             User deploy
             StrictHostKeyChecking no
             UserKnownHostsFile /dev/null

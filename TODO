@@ -628,8 +628,6 @@ Move folder lock location to instance ssd for improved reliability and performan
 
 Write about mustache technique for {{#updated}} and {{updated}} to work at the same time (toString)
 
-Pandoc doesn't support autolinking for Chrome's copy link to highlight feature – should we make this work? e.g. `https://stackoverflow.com/questions/71806679/how-to-copy-link-to-highlight-using-chrome-api#:~:text=How%20to%20copy%20link%20to%20highlight`
-
 Run dropbox reset as ec2-user not root
 - run chown on all data files...
 
@@ -1548,11 +1546,6 @@ Add password protection for blogs then tell [Ed](https://mail.google.com/mail/u/
 - creating a password form view common to all sites, or able to be overwritten (password.html in a template perhaps).
 
 Add raw-link -> open graph cards/embed function, which would fetch the title, description and thumbnail for a link using <meta> tags. Tell [Robert](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlksJFbBlWtzMHgcxcdBRBhQSJ)
-
----
-
-Improve the markdown converter:
-- Extend the Markdown converted to add support for Ulysses highlighting and iAWriter highlighting syntax, using the [example files provided by Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsKFQGTxDTnxNddZQxjsLZJGb). Tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsKFQGTxDTnxNddZQxjsLZJGb)
 
 ---
 

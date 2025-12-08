@@ -6,6 +6,7 @@ const Blog = require("models/blog");
 const archiver = require("archiver");
 const duplicateTemplate = require("./save/duplicate-template");
 const { isAjaxRequest, sendAjaxResponse } = require("./save/ajax-response");
+const writeChangeToFolder = require('./save/writeChangeToFolder');
 
 TemplateEditor.param("viewSlug", require("./load/template-views"));
 
@@ -105,16 +106,20 @@ function persistTemplateUpdate(req, res, next) {
     { locals: req.locals, partials: req.partials },
     function (err) {
       if (err) return next(err);
-      if (isAjaxRequest(req)) {
-        const ajaxOptions = {};
-        if (res.locals.templateForked) {
-          ajaxOptions.headers = { "X-Template-Forked": "1" };
-        }
-        return sendAjaxResponse(res, ajaxOptions);
-      }
+      writeChangeToFolder(req.blog, req.template, {}, function (err) {
+        if (err) return next(err);
 
-      res.message(req.baseUrl + req.url, "Success!");
-    }
+        if (isAjaxRequest(req)) {
+          const ajaxOptions = {};
+          if (res.locals.templateForked) {
+            ajaxOptions.headers = { "X-Template-Forked": "1" };
+          }
+          return sendAjaxResponse(res, ajaxOptions);
+        }
+
+        res.message(req.baseUrl + req.url, "Success!");
+      });
+    },
   );
 }
 

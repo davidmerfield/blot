@@ -47,6 +47,19 @@ run_with_timeout() {
 echo "[start] Running setup"
 bash "$SETUP" "$BLOT_HOST"
 
+# Kill any existing process listening on port 3020
+echo "[start] Checking for existing process on port 3020"
+if lsof -ti:3020 >/dev/null 2>&1; then
+  echo "[start] Killing existing process on port 3020"
+  lsof -ti:3020 | xargs kill -9 2>/dev/null || true
+fi
+
+# Create .env if it doesn't exist
+if [ ! -f "$DIR/.env" ]; then
+  echo "[start] Creating .env file"
+  touch "$DIR/.env"
+fi
+
 echo "[start] Launching local folder opener"
 node "$FOLDER_SERVER" &
 FOLDER_PID=$!
