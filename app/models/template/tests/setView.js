@@ -215,7 +215,7 @@ describe("template", () => {
 		expect(secondMetadata.cdn["style.css"]).not.toEqual(originalHash);
 	});
 
-	describe("empty url array handling", () => {
+        describe("empty url array handling", () => {
 		it("should not create a Redis key with 'undefined' when an empty array is passed", async function () {
 			// First, set a view with a valid URL
 			await setView(this.template.id, {
@@ -298,8 +298,68 @@ describe("template", () => {
 			});
 
 			// The old URL key should be deleted
-			const viewNameAfter = await get(oldUrlKey);
-			expect(viewNameAfter).toBeNull();
-		});
-	});
+                        const viewNameAfter = await get(oldUrlKey);
+                        expect(viewNameAfter).toBeNull();
+                });
+        });
+
+        describe("view payload size limits", () => {
+                const MAX_VIEW_PAYLOAD_SIZE = 2 * 1024 * 1024;
+
+                const createUpdatesWithPayloadSize = (name, targetSize) => {
+                        const base = { name, content: "" };
+                        const baseSize = Buffer.byteLength(JSON.stringify(base));
+                        const fillerLength = targetSize - baseSize;
+
+                        if (fillerLength < 0) {
+                                throw new Error("Target size is smaller than the base payload size");
+                        }
+
+                        return {
+                                ...base,
+                                content: "a".repeat(fillerLength),
+                        };
+                };
+
+                const getPayloadSize = (updates) => Buffer.byteLength(JSON.stringify(updates));
+
+                it("allows payloads just under the maximum", async function () {
+                        const targetSize = MAX_VIEW_PAYLOAD_SIZE - 1;
+                        const updates = createUpdatesWithPayloadSize("payload-under.html", targetSize);
+
+                        expect(getPayloadSize(updates)).toEqual(targetSize);
+
+                        await setView(this.template.id, updates);
+                        const savedView = await getView(this.template.id, updates.name);
+
+                        expect(savedView.name).toEqual(updates.name);
+                });
+
+                it("allows payloads at the maximum", async function () {
+                        const targetSize = MAX_VIEW_PAYLOAD_SIZE;
+                        const updates = createUpdatesWithPayloadSize("payload-at.html", targetSize);
+
+                        expect(getPayloadSize(updates)).toEqual(targetSize);
+
+                        await setView(this.template.id, updates);
+                        const savedView = await getView(this.template.id, updates.name);
+
+                        expect(savedView.name).toEqual(updates.name);
+                });
+
+                it("rejects payloads over the maximum", async function () {
+                        const targetSize = MAX_VIEW_PAYLOAD_SIZE + 1;
+                        const updates = createUpdatesWithPayloadSize("payload-over.html", targetSize);
+
+                        expect(getPayloadSize(updates)).toEqual(targetSize);
+
+                        try {
+                                await setView(this.template.id, updates);
+                                throw new Error("Expected payload to exceed limit");
+                        } catch (err) {
+                                expect(err instanceof Error).toBe(true);
+                                expect(err.message).toBe("View payload exceeds maximum size of 2 MB");
+                        }
+                });
+        });
 });
