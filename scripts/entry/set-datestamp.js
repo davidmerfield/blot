@@ -45,6 +45,28 @@ get(url, async function (err, user, blog, entry) {
     `(${new Date(entry.dateStamp).toUTCString()})`
   );
 
+  const timestamps = [];
+
+  if (typeof entry.created === "number") timestamps.push(entry.created);
+  if (typeof entry.updated === "number") timestamps.push(entry.updated);
+
+  if (timestamps.length) {
+    const earliest = Math.min.apply(null, timestamps);
+    const sourceTimeLabel =
+      earliest === entry.created ? "Creation time" : "Last modified time";
+
+    console.log(
+      `Earliest source file timestamp (${sourceTimeLabel}):`,
+      earliest,
+      `(${new Date(earliest).toUTCString()})`
+    );
+  }
+
+  console.log(
+    "Example input: 2024-01-31 15:04 (YYYY-MM-DD HH:mm).",
+    "Other formats like 'Jan 31 2024' also work."
+  );
+
   const input = await promptForDate("Enter a new date (e.g. 2024-01-31 15:04): ");
 
   if (!input) {
