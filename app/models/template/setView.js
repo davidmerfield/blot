@@ -40,7 +40,8 @@ module.exports = function setView(templateID, updates, callback) {
                 return callback(new Error("View names cannot contain slashes"));
         }
 
-        var payloadSize = JSON.stringify(updates).length;
+        const serializedUpdates = JSON.stringify(updates);
+        const payloadSize = Buffer.byteLength(serializedUpdates);
 
         if (payloadSize > MAX_VIEW_PAYLOAD_SIZE) {
                 return callback(new Error("View payload exceeds maximum size of 2 MB"));
