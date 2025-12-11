@@ -246,7 +246,7 @@ describe("updateCdnManifest", function () {
         name: "large.html",
         content: largeContent,
       })
-    ).toBeRejectedWithError("View payload exceeds maximum size of 2 MB");
+    ).toBeRejectedWith(new Error("View payload exceeds maximum size of 2 MB"));
 
     // Update manifest - should skip the large file since it was never stored
     await new Promise((resolve, reject) => {
