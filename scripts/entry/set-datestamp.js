@@ -41,8 +41,8 @@ get(url, async function (err, user, blog, entry) {
 
   console.log(
     "Current dateStamp:",
-    entry.dateStamp,
-    `(${new Date(entry.dateStamp).toUTCString()})`
+    entry.dateStamp ?? "not set",
+    entry.dateStamp ? `(${new Date(entry.dateStamp).toUTCString()})` : ""
   );
 
   const timestamps = [];
@@ -51,7 +51,7 @@ get(url, async function (err, user, blog, entry) {
   if (typeof entry.updated === "number") timestamps.push(entry.updated);
 
   if (timestamps.length) {
-    const earliest = Math.min.apply(null, timestamps);
+    const earliest = Math.min(...timestamps);
     const sourceTimeLabel =
       earliest === entry.created ? "Creation time" : "Last modified time";
 
@@ -74,7 +74,7 @@ get(url, async function (err, user, blog, entry) {
     process.exit(1);
   }
 
-  const parsed = moment(input);
+  const parsed = moment.utc(input);
 
   if (!parsed.isValid()) {
     console.error(
