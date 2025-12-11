@@ -14,11 +14,12 @@ var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
 var updateCdnManifest = require("./util/updateCdnManifest");
 var clfdate = require("helper/clfdate");
+const MAX_VIEW_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
 module.exports = function setView(templateID, updates, callback) {
-	ensure(templateID, "string").and(updates, "object").and(callback, "function");
+        ensure(templateID, "string").and(updates, "object").and(callback, "function");
 
-	if (updates.partials !== undefined && type(updates.partials) !== "object") {
+        if (updates.partials !== undefined && type(updates.partials) !== "object") {
 		updates.partials = {};
 		console.log(templateID, updates, "Partials are wrong type");
 	}
@@ -35,15 +36,21 @@ module.exports = function setView(templateID, updates, callback) {
 	}
 
 	// We don't support subdirectories in templates at the moment
-	if (name.includes("/") || name.includes("\\")) {
-		return callback(new Error("View names cannot contain slashes"));
-	}
+        if (name.includes("/") || name.includes("\\")) {
+                return callback(new Error("View names cannot contain slashes"));
+        }
 
-	if (updates.content !== undefined) {
-		try {
-			Mustache.render(updates.content, {});
-		} catch (e) {
-			return callback(e);
+        var payloadSize = JSON.stringify(updates).length;
+
+        if (payloadSize > MAX_VIEW_PAYLOAD_SIZE) {
+                return callback(new Error("View payload exceeds maximum size of 2 MB"));
+        }
+
+        if (updates.content !== undefined) {
+                try {
+                        Mustache.render(updates.content, {});
+                } catch (e) {
+                        return callback(e);
 		}
 	}
 
