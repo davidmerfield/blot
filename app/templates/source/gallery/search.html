@@ -12,16 +12,16 @@
         <br><br><br>
         <div class="results" style="max-width:600px;text-align:center;margin:0 auto">
           {{#query}}
-            {{^entries}}
+            {{^posts}}
             <p>Sorry, nothing found for “{{query}}”</p>
-            {{/entries}}
+            {{/posts}}
           {{/query}}
 
-          {{#entries}}
+          {{#posts}}
             <a href="{{{url}}}">{{title}}</a>
             <span class="small">{{date}}</span>
             <br>
-          {{/entries}}
+          {{/posts}}
         </div>
     </div>
   </body>
