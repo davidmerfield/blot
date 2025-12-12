@@ -156,7 +156,6 @@ module.exports = function (blogID, blog, callback) {
 
         if (changes.template) {
           if (latest.template) templatesToUpdate.add(latest.template);
-          if (former.template) templatesToUpdate.add(former.template);
         }
 
         // Also update CDN manifest when plugin settings change, since
