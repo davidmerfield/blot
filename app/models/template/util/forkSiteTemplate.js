@@ -1,10 +1,6 @@
 var { promisify } = require("util");
-var Template = require("models/template");
 var makeSlug = require("helper/makeSlug");
 var { MAX_DEDUPLICATION_ATTEMPTS } = require("../../../dashboard/site/template/save/constants");
-
-var getMetadataAsync = promisify(Template.getMetadata);
-var createAsync = promisify(Template.create);
 
 function buildSlug(baseSlug, attempt) {
   if (attempt === 1) return baseSlug;
@@ -19,6 +15,10 @@ function buildSlug(baseSlug, attempt) {
 // existing fork if one is already present. Returns the forked template ID
 // or the original template ID if no forking was required.
 module.exports = async function forkSiteTemplate(blogID, templateID) {
+
+  var getMetadataAsync = promisify(require('../getMetadata'));
+  var createAsync = promisify(require('../create'));
+
   if (!templateID || templateID.indexOf("SITE:") !== 0) return templateID;
 
   var siteTemplate = await getMetadataAsync(templateID);
