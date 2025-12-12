@@ -45,6 +45,9 @@ site.locals.cacheID = cacheID;
 
 site.locals.cdnURL = config.cdn.origin;
 site.locals.cdn = cdnURLHelper({cacheID, viewDirectory: VIEW_DIRECTORY});
+site.locals.host = config.host;
+site.locals.secondary_host = config.secondary_host;
+site.locals.hosts = config.hosts;
 
 site.get("/health", (req, res) => {
   res.send("OK");

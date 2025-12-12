@@ -35,7 +35,7 @@ const VERIFICATION_TIMEOUT_LABEL = Number.isInteger(VERIFICATION_TIMEOUT_SECONDS
     ? `${VERIFICATION_TIMEOUT_SECONDS} seconds`
     : `${VERIFICATION_TIMEOUT_SECONDS.toFixed(2)} seconds`;
 
-async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
+async function validate({ hostname, handle, ourIP, ourIPv6, ourHost, ourHosts }) {
     
     const parsed = parse(hostname);
     const apexDomain = parsed.domain;
@@ -98,6 +98,11 @@ async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
 
     resolver.setServers(resolverNameservers);
 
+    const validHosts = (Array.isArray(ourHosts) && ourHosts.length
+        ? ourHosts
+        : [ourHost]
+    ).filter(Boolean);
+
     const [cnameHost, aRecordIPs, aaaaRecordIPs] = await Promise.all([
         resolver.resolveCname(hostname).then(cnames => cnames[0] || null).catch(() => null),
         resolver.resolve4(hostname).catch(() => []),
@@ -105,7 +110,7 @@ async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
     ]);
 
     if (cnameHost) {
-        if (cnameHost === ourHost) {
+        if (validHosts.includes(cnameHost)) {
             // CNAME matches our host, return success
             return true;
         } else {
