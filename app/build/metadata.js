@@ -4,6 +4,13 @@ const YAML = require("yaml");
 
 const alphaNumericRegEx = /^([a-zA-Z0-9\-_ ]+)$/;
 
+function finalize(html, metadata) {
+  return {
+    html,
+    metadata
+  };
+}
+
 function Metadata (html) {
   ensure(html, "string");
 
@@ -39,10 +46,9 @@ function Metadata (html) {
         mixedCaseMetadata = {};
       }
 
-      // Map { Permalink } to { permalink }
-      // Blot uses lowercase metadata keys
+      const parsedMetadata = {};
+
       Object.keys(mixedCaseMetadata).forEach(mixedCaseKey => {
-        let key = mixedCaseKey.toLowerCase();
         let value = mixedCaseMetadata[mixedCaseKey];
 
         // map 'null' values to empty strings
@@ -50,16 +56,16 @@ function Metadata (html) {
         // that are the string 'null' instead of simply empty
         if (value === null) value = "";
 
-        metadata[key] = value;
+        parsedMetadata[mixedCaseKey] = value;
       });
 
       // Remove the metadata from the returned HTML
       html = html.trim().split("---").slice(2).join("---");
 
-      return { html, metadata };
+      return finalize(html, parsedMetadata);
     } catch (e) {
       // we need to surface this error with the YAML
-      return { html, metadata };
+      return finalize(html, metadata);
     }
   }
 
@@ -71,7 +77,7 @@ function Metadata (html) {
   // THIS SHOULD ALSO WORK FOR HTML:
   // i.e. <p>Page: yes</p>
   for (let i = 0; i < lines.length; i++) {
-    let line, key, value, firstColon, firstCharacter;
+    let line, value, firstColon, firstCharacter;
 
     line = lines[i];
 
@@ -114,14 +120,14 @@ function Metadata (html) {
       break;
     }
 
-    // The key is lowercased and trimmed
-    key = line.slice(0, firstColon).trim().toLowerCase();
+    let key = line.slice(0, firstColon).trim();
+    let normalizedKey = key.toLowerCase();
 
     // The key contains non-alphanumeric characters, so reject it
-    if (alphaNumericRegEx.test(key) === false) break;
+    if (alphaNumericRegEx.test(normalizedKey) === false) break;
 
     // The key contains more than two spaces, so reject it
-    if (key.split(" ").length > 2) break;
+    if (normalizedKey.split(" ").length > 2) break;
 
     value = line.slice(firstColon + 1).trim();
 
@@ -132,6 +138,7 @@ function Metadata (html) {
 
     if (key.slice(0, 4) === "<!--") {
       key = key.slice(4).trim();
+      normalizedKey = key.toLowerCase();
     }
 
     if (value.slice(-3) === "-->") {
@@ -171,10 +178,7 @@ function Metadata (html) {
 
   html = lines.join("\n");
 
-  return {
-    html: html,
-    metadata: metadata
-  };
+  return finalize(html, metadata);
 }
 
 module.exports = Metadata;
