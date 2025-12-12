@@ -11,6 +11,7 @@ module.exports = {
   teaserBody: "string", // teaser excluding titleTag
   more: "boolean", // whether teaser differs from HTML
   html: "string",
+  toc: "string",
   slug: "string",
   name: "string",
   path: "string",

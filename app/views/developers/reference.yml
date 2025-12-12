@@ -93,6 +93,10 @@
       type: string
       description: The full HTML of the blog post.
 
+    - name: toc
+      type: string
+      description: The generated table of contents for the entry, if available.
+
     - name: path
       type: string
       description: The file’s path, with the blog’s folder as root.

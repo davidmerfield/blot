@@ -14,7 +14,7 @@ module.exports = function (blog, path, callback) {
     function (converter, next) {
       if (!converter.is(path)) return next();
 
-      converter.read(blog, path, function (err, html, stat, extras) {
+      converter.read(blog, path, function (err, html, stat, converterExtras) {
         if (err) {
           debug("Blog:", blog.id, path, "conversion error", err);
           return callback(err);
@@ -53,13 +53,21 @@ module.exports = function (blog, path, callback) {
 
         // We pass the contents to the plugins for
         // this blog. The resulting HTML is now ready.
-        Plugins(blog, path, html, function (err, html, newDependencies) {
+        Plugins(blog, path, html, function (err, html, newDependencies, pluginExtras) {
           debug("Blog:", blog.id, path, "finished plugins");
 
           if (err) return callback(err);
 
           html = fixMustache(html);
-          dependencies = dependencies.concat(newDependencies);
+          dependencies = dependencies.concat(newDependencies || []);
+
+          const mergedExtras = Object.assign(
+            {},
+            converterExtras || {},
+            pluginExtras || {}
+          );
+
+          const extras = Object.keys(mergedExtras).length ? mergedExtras : undefined;
 
           return callback(null, html, metadata, stat, dependencies, extras);
         });

@@ -34,6 +34,7 @@ var loaded = loadPlugins({
   linebreaks: require("./linebreaks"),
   mediaPreload: require("./mediaPreload"),
   linkScreenshot: require("./linkScreenshot"),
+  toc: require("./toc"),
   titlecase: require("./titlecase"),
   twitter: require("./twitter"),
   typeset: require("./typeset"),
@@ -56,6 +57,7 @@ function convert (blog, path, contents, callback) {
 
   var enabled = Enabled(blog.plugins);
   var dependencies = [];
+  var extras;
 
   // This is passed to all plugins
   // I need to change this when we move
@@ -149,9 +151,15 @@ function convert (blog, path, contents, callback) {
               time.end(id);
 
               const res = Array.isArray(result) ? { newDependencies: result } : result || {};
+              const { newDependencies, toc } = res;
 
-              if (res.newDependencies) {
-                dependencies = dependencies.concat(res.newDependencies);
+              if (newDependencies) {
+                dependencies = dependencies.concat(newDependencies);
+              }
+
+              if (toc) {
+                extras = extras || {};
+                extras.toc = toc;
               }
 
               clearTimeout(timeout);
@@ -163,7 +171,7 @@ function convert (blog, path, contents, callback) {
         function () {
           // Return the entry's completed HTML
           // pass the HTML so it can be rendered totally tast
-          callback(null, $.html(), dependencies);
+          callback(null, $.html(), dependencies, extras);
         }
       );
     }
