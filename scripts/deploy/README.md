@@ -182,7 +182,7 @@ Before using the GitHub Actions deployment workflow, ensure you have:
 
 1. **GitHub Secrets configured:**
    - `BLOT_DEPLOY_SSH_KEY`: The private SSH key for the `deploy` user on your EC2 instance
-   - `BLOT_EC2_HOST`: The hostname or IP address of your EC2 instance
+   - `BLOT_DEPLOY_SSH_HOST`: The hostname or IP address of your EC2 instance
 
 2. **SSH Access:** The SSH key must allow the `deploy` user to:
    - Connect to the EC2 instance

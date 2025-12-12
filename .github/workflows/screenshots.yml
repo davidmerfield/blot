@@ -1,12 +1,7 @@
 name: Screenshots
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - ".github/workflows/screenshots.yml"
-      - "app/templates/**"
+  workflow_dispatch:
 
 jobs:
   test:
@@ -18,22 +13,50 @@ jobs:
         pandoc-version: [3.1.1]
         redis-version: [6.2.6]
 
-    environment: Tests
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: ./package.json
+
+      - name: Cache Pandoc
+        id: cache-pandoc
+        uses: actions/cache@v4
+        with:
+          path: data/pandoc
+          key: pandoc-${{ matrix.pandoc-version }}-macos
 
       - name: Set up Pandoc on macos
         run: |
-          mkdir -p data/pandoc
-          cd data/pandoc
-          wget https://github.com/jgm/pandoc/releases/download/${{ matrix.pandoc-version }}/pandoc-${{ matrix.pandoc-version }}-macOS.zip -O pandoc.zip
-          unzip pandoc.zip
-          export BLOT_PANDOC_PATH=$(pwd)/pandoc-3.1.1/bin/pandoc
-          echo "BLOT_PANDOC_PATH=$(pwd)/pandoc-3.1.1/bin/pandoc" >> $GITHUB_ENV
+          if [ ! -f "data/pandoc/pandoc-${{ matrix.pandoc-version }}/bin/pandoc" ]; then
+            mkdir -p data/pandoc
+            cd data/pandoc
+            wget https://github.com/jgm/pandoc/releases/download/${{ matrix.pandoc-version }}/pandoc-${{ matrix.pandoc-version }}-macOS.zip -O pandoc.zip
+            unzip pandoc.zip
+            cd ../..
+          fi
+          export BLOT_PANDOC_PATH=$(pwd)/data/pandoc/pandoc-${{ matrix.pandoc-version }}/bin/pandoc
+          echo "BLOT_PANDOC_PATH=$(pwd)/data/pandoc/pandoc-${{ matrix.pandoc-version }}/bin/pandoc" >> $GITHUB_ENV
           $BLOT_PANDOC_PATH --version
-          cd ../..
+
+      - name: Cache Homebrew packages
+        id: cache-homebrew
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /opt/homebrew/var/homebrew/locks
+          key: homebrew-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            homebrew-${{ runner.os }}-
 
       - name: Use dnsmasq to resolve blot.development
         run: |
@@ -47,11 +70,6 @@ jobs:
           sudo brew services restart dnsmasq
           sudo killall -HUP mDNSResponder
           scutil --dns
-
-      - name: Set up Node
-        uses: actions/setup-node@v2
-        with:
-          node-version: ${{ matrix.node-version }}
 
       - name: Set up Redis
         run: |
@@ -81,30 +99,13 @@ jobs:
 
       - name: Take screenshots
         env:
-          BLOT_CACHE: false
-          BLOT_DEBUG: false
-          BLOT_MAINTENANCE: false
-          BLOT_PRODUCTION: true
           BLOT_PROTOCOL: http
           BLOT_ENVIRONMENT: development
           BLOT_HOST: blot.development
-          BLOT_ADMIN_EMAIL: ${{ secrets.BLOT_ADMIN_EMAIL }}
-          BLOT_DROPBOX_APP_SECRET: ${{ secrets.BLOT_DROPBOX_APP_SECRET }}
-          BLOT_DROPBOX_FULL_SECRET: ${{ secrets.BLOT_DROPBOX_FULL_SECRET }}
-          BLOT_DROPBOX_TEST_ACCOUNT_APP_TOKEN: ${{ secrets.BLOT_DROPBOX_TEST_ACCOUNT_APP_TOKEN }}
-          BLOT_DROPBOX_TEST_ACCOUNT_FULL_TOKEN: ${{ secrets.BLOT_DROPBOX_TEST_ACCOUNT_FULL_TOKEN }}
-          BLOT_DROPBOX_TEST_ACCOUNT_ID: ${{ secrets.BLOT_DROPBOX_TEST_ACCOUNT_ID }}
-          BLOT_MAILGUN_KEY: ${{ secrets.BLOT_MAILGUN_KEY }}
-          BLOT_SESSION_SECRET: ${{ secrets.BLOT_SESSION_SECRET }}
-          BLOT_TWITTER_ACCESS_TOKEN_KEY: ${{ secrets.BLOT_TWITTER_ACCESS_TOKEN_KEY }}
-          BLOT_TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.BLOT_TWITTER_ACCESS_TOKEN_SECRET }}
-          BLOT_TWITTER_CONSUMER_KEY: ${{ secrets.BLOT_TWITTER_CONSUMER_KEY}}
-          BLOT_TWITTER_CONSUMER_SECRET: ${{ secrets.BLOT_TWITTER_CONSUMER_SECRET}}
-          BLOT_REDIS_HOST: 127.0.0.1
         run: |
           export BLOT_DIRECTORY=$(pwd)
           export NODE_PATH=$(pwd)/app
-          export BLOT_CACHE_DIRECTORY=$(pwd)/cache
+          export BLOT_CACHE_DIRECTORY=$(pwd)/cache          
           node app/templates/index.js --no-watch
           node app/index.js &
           echo "Building folders"
@@ -112,11 +113,14 @@ jobs:
           echo "Taking screenshots"
           node app/templates/screenshots.js
 
-      - name: Commit changes and create pull request
-        uses: peter-evans/create-pull-request@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: Updates screenshots of templates
-          title: Update screenshots
-          body: This pull request updates the screenshots of the folders and templates
-          branch: update-screenshots
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Updates screenshots of templates"
+            git push
+          fi

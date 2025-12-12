@@ -1,52 +1,58 @@
 {
-  "name": "Documentation",
-  "locals": {
-    "title": "Documentation",
-    "page_size": 100,
-    "sort_by": "id",
-    "spacing": 1,
-    "dark_slides_background": true,
-    "background_color": "#fff",
-    "text_color": "#000",
-    "link_color": "#007bff",
-    "green_color": "rgb(22, 140, 64)",
-    "red_color": "#ff3e00",
-    "yellow_color": "#ffbb26",
-    "dark_background_color": "#111",
-    "dark_text_color": "#eee",
-    "dark_link_color": "#eee",
-    "hide_dates": false,
-    "date_display": "MMM D",
-    "syntax_highlighter": {
-      "id": "solarized-light"
-    },
-    "dark_syntax_highlighter": {
-      "id": "solarized-dark"
-    },
-    "syntax_highlighter_font": {
-      "id": "plex-mono"
-    },
-    "body_font": {
-      "id": "system-sans"
-    },
-    "demo_folder": "documentation"
-  },
-  "enabled": true,
-  "views": {
-    "error.html": {
-      "partials": {
-        "title": "{{{error.title}}} - {{{title}}}"
-      }
-    },
-    "entry.html": {
-      "partials": {
-        "title": "{{{entry.title}}}"
-      }
-    },
-    "entries.html": {
-      "partials": {
-        "title": "{{{title}}}"
-      }
-    }
-  }
+	"name": "Documentation",
+	"locals": {
+		"title": "Documentation",
+		"page_size": 100,
+		"sort_by": "id",
+		"spacing": 1,
+		"dark_slides_background": true,
+		"background_color": "#fff",
+		"text_color": "#000",
+		"link_color": "#007bff",
+		"green_color": "rgb(22, 140, 64)",
+		"red_color": "#ff3e00",
+		"yellow_color": "#ffbb26",
+		"dark_background_color": "#111",
+		"dark_text_color": "#eee",
+		"dark_link_color": "#eee",
+		"hide_dates": false,
+		"date_display": "MMM D",
+		"syntax_highlighter": {
+			"id": "solarized-light"
+		},
+		"dark_syntax_highlighter": {
+			"id": "solarized-dark"
+		},
+		"syntax_highlighter_font": {
+			"id": "plex-mono"
+		},
+		"body_font": {
+			"id": "system-sans"
+		},
+		"demo_folder": "documentation"
+	},
+	"enabled": true,
+	"views": {
+		"error.html": {
+			"partials": {
+				"title": "{{{error.title}}} - {{{title}}}"
+			}
+		},
+		"entry.html": {
+			"partials": {
+				"title": "{{{entry.title}}}"
+			}
+		},
+		"entries.html": {
+			"partials": {
+				"title": "{{{title}}}"
+			}
+		},
+		"archives.html": {
+			"url": "/archives",
+			"partials": {
+				"title": "Archives - {{{title}}}"
+			}
+		}
+	}
 }

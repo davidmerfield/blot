@@ -241,12 +241,14 @@ describe("updateCdnManifest", function () {
     const MAX_SIZE = 2 * 1024 * 1024; // 2MB
     const largeContent = "x".repeat(MAX_SIZE + 1); // Exceeds limit
 
-    await setViewAsync(test.template.id, {
-      name: "large.html",
-      content: largeContent,
-    });
+    await expectAsync(
+      setViewAsync(test.template.id, {
+        name: "large.html",
+        content: largeContent,
+      })
+    ).toBeRejectedWith(new Error("View payload exceeds maximum size of 2 MB"));
 
-    // Update manifest - should skip the large file
+    // Update manifest - should skip the large file since it was never stored
     await new Promise((resolve, reject) => {
       updateCdnManifest(test.template.id, (err) => {
         if (err) return reject(err);

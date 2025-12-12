@@ -18,12 +18,13 @@ TO DO:
   --text-color: {{text_color}};
   --light-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.5);
   --border-color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.2);
+  --base-font-size: {{#font}}{{{font_size}}}{{/font}}px;
 }
 
 html, body {
   {{#font}}
   font-family: {{{stack}}};
-  font-size: {{{font_size}}}px;
+  font-size: var(--base-font-size);
   line-height: {{{line_height}}};
   {{/font}}
 }
@@ -31,15 +32,15 @@ html, body {
 body {
   word-wrap: break-word; /* for long words & urls */
   position: relative;
-  width: 425px;
+  width: calc(var(--base-font-size) * 38.636);
   margin: 7em auto;
-  padding: 0 74px 0 222px;
+  padding: 0 calc(var(--base-font-size) * 6.727) 0 calc(var(--base-font-size) * 20.182);
   color: var(--text-color);
   background-color: var(--background-color);
 }
 
 .sidebar {
-  width:160px;
+  width: calc(var(--base-font-size) * 14.545);
   position:absolute;
   left:0;
   text-align:right;
@@ -63,14 +64,14 @@ h1 + .light:empty {display: none;}
 }
 
 .sidebar, h1 a, h2, h3, h4, h5, h6 {
-  font-size: 12px;
+  font-size: calc(var(--base-font-size) * 1.091);
   text-transform: uppercase;
-  letter-spacing: 1.7325px;
+  letter-spacing: calc(var(--base-font-size) * 0.1575);
 }
 
 .sidebar a {display: block;}
 
-h1 a {font-size: 13px;position:relative}
+h1 a {font-size: calc(var(--base-font-size) * 1.182);position:relative}
 
 h1 a:after {
   content: "→";
@@ -83,9 +84,9 @@ h1 a:after {
 .adjacent {
   font-size: .91em;
   display: inline-block;
-  width: 91px;
+  width: calc(var(--base-font-size) * 8.273);
   text-align: right;
-  margin-right: 11px;
+  margin-right: var(--base-font-size);
   letter-spacing: .2em;
   text-transform: uppercase;
 }
@@ -100,7 +101,7 @@ h1 {
 
 h2, h3, h4, h5, h6 {
   margin-top: 2em;
-  font-size: 11px;
+  font-size: var(--base-font-size);
   font-weight: 600;
 }
 
@@ -108,7 +109,7 @@ a {color: inherit;text-decoration: none;}
 
 
 hr {
-  width: 142px;
+  width: calc(var(--base-font-size) * 12.909);
   margin: 2.55em auto;
   border: none;
   border-top: 1px solid var(--border-color);
@@ -207,7 +208,7 @@ th, td {box-sizing: border-box;border: 1px solid var(--border-color);padding: 5p
 input[type="text"],
 input[type="submit"] {
   font:inherit;
-  font-size:12px;
+  font-size: calc(var(--base-font-size) * 1.091);
   padding: 3px 6px;
   margin: 1em 0;
   border: 1px solid var(--border-color);
@@ -216,7 +217,7 @@ input[type="submit"] {
 input[type="text"] {
   background: none;
   max-width: 100%;
-  min-width: 200px;
+  min-width: calc(var(--base-font-size) * 18.182);
   box-shadow: inset 0 1px 2px 0 rgba(0,0,0,.075);
 }
 

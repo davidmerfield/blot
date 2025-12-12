@@ -47,16 +47,19 @@
 {{#imports}} 
 <tr class="i" id="{{id}}">
 
-  <td class="{{^complete}}{{^error}}working{{/error}}{{/complete}}{{#error}}error{{/error}} status">{{name}}</td> 
+  <td class="{{^complete}}{{^error}}working{{/error}}{{/complete}} status">{{name}}</td> 
 
+  <td style="width:100%;color:rgba(0,0,0,0.5)">{{identifier}}</td> 
 
-  
 
   {{#complete}}
-  <td style="width:100%;color:rgba(0,0,0,0.5)">{{identifier}}</td> 
 
   {{^error}}
   <td style="padding-right:0"><a href="{{{importBase}}}/download/{{id}}" target="_blank" class="s no-underline" style="display:block;border-radius:4px;white-space: nowrap;padding:4px 11px;text-decoration:none;font-weight: 600;flex-shrink:0;color:#0070e8;border: 1px solid rgba(0,0,0,0.1)">Download result ({{size}} zip)  ↓</a></td>
+  {{/error}}
+  
+  {{#error}}
+  <td><span class="error" style="padding:6px 12px;line-height: 1;">{{error}}</span></td>
   {{/error}}
 
   <td><form  method="post" action="{{{importBase}}}/delete/{{id}}">
@@ -64,6 +67,8 @@
     <button type="submit" style="display:block;border-radius:4px;white-space: nowrap;padding:6px 11px;text-decoration:none;font-weight: 600;flex-shrink:0;color: #ff3e00;border: 1px solid rgba(0,0,0,0.1);cursor:pointer;background:none;line-height: 1.275;">Remove</button>
   </form></td>
 {{/complete}}
+
+
 
 {{^complete}}
 
