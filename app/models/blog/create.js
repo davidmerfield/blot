@@ -9,6 +9,9 @@ var localPath = require("helper/localPath");
 var User = require("../user");
 var validate = require("./validate");
 var generateID = require("./generateID");
+var forkSiteTemplate = require("../template/util/forkSiteTemplate");
+var { promisify } = require("util");
+var setAsync = promisify(set);
 
 var UID_PLACEHOLDER = "";
 
@@ -65,11 +68,27 @@ module.exports = function create(uid, info, callback) {
           set(blogID, blog, function (err) {
             if (err) return callback(err);
 
-            fs.emptyDir(localPath(blogID, "/"), function (err) {
-              if (err) return callback(err);
+            (async function () {
+              try {
+                var forkedTemplateID = await forkSiteTemplate(
+                  blogID,
+                  blog.template
+                );
 
-              return callback(err, blog);
-            });
+                if (forkedTemplateID && forkedTemplateID !== blog.template) {
+                  blog.template = forkedTemplateID;
+                  await setAsync(blogID, { template: forkedTemplateID });
+                }
+              } catch (forkError) {
+                return callback(forkError);
+              }
+
+              fs.emptyDir(localPath(blogID, "/"), function (err) {
+                if (err) return callback(err);
+
+                return callback(err, blog);
+              });
+            })();
           });
         });
       });
