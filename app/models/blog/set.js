@@ -151,37 +151,38 @@ module.exports = function (blogID, blog, callback) {
         if (err) return callback(err, []);
 
         // Wait for any required CDN manifest updates to complete
+        const updatePromises = [];
+        const templatesToUpdate = new Set();
+
         if (changes.template) {
-          const updatePromises = [];
-          
-          if (latest.template) {
-            updatePromises.push(
-              updateCdnManifestAsync(latest.template).catch(function (err) {
-                console.error(
-                  "Error updating CDN manifest for new template",
-                  latest.template,
-                  err
-                );
-              })
-            );
-          }
+          if (latest.template) templatesToUpdate.add(latest.template);
+          if (former.template) templatesToUpdate.add(former.template);
+        }
 
-          if (former.template) {
-            updatePromises.push(
-              updateCdnManifestAsync(former.template).catch(function (err) {
-                console.error(
-                  "Error updating CDN manifest for former template",
-                  former.template,
-                  err
-                );
-              })
-            );
-          }
+        // Also update CDN manifest when plugin settings change, since
+        // plugin changes (especially analytics) affect the rendered output
+        // of views like script.js that use {{{appJS}}}
+        if (changes.plugins && latest.template) {
+          templatesToUpdate.add(latest.template);
+        }
 
-          // Wait for all CDN manifest updates to complete before proceeding
+        templatesToUpdate.forEach(function (template) {
+          updatePromises.push(
+            updateCdnManifestAsync(template).catch(function (err) {
+              console.error(
+                "Error updating CDN manifest for template",
+                template,
+                err
+              );
+            })
+          );
+        });
+
+        // Wait for all CDN manifest updates to complete before proceeding
+        if (updatePromises.length > 0) {
           await Promise.all(updatePromises);
         }
-        
+
         flushCache(blogID, former, function (err) {
           callback(err, changesList);
         });
