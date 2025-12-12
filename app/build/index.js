@@ -68,6 +68,7 @@ module.exports = function build(blog, path, callback) {
             size: stat.size,
             dependencies: dependencies,
             exif: (extras && extras.exif) || {},
+            toc: (extras && extras.toc) || "",
             dateStamp: DateStamp(blog, path, metadata),
             updated: moment.utc(stat.mtime).valueOf(),
           };

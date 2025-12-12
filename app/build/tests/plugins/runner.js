@@ -13,9 +13,9 @@ describe("plugin runner", function () {
         { ...blogBase, plugins },
         "/post.html",
         contents,
-        function (err, html, dependencies) {
+        function (err, html, dependencies, extras) {
           if (err) return reject(err);
-          resolve({ html, dependencies });
+          resolve({ html, dependencies, extras });
         }
       );
     });

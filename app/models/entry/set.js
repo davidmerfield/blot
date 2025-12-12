@@ -75,6 +75,7 @@ module.exports = function set (blogID, path, updates, callback) {
     if (entry.dependencies === undefined) entry.dependencies = [];
     if (entry.backlinks === undefined) entry.backlinks = [];
     if (entry.internalLinks === undefined) entry.internalLinks = [];
+    if (entry.toc === undefined) entry.toc = "";
     if (!entry.metadata || typeof entry.metadata !== "object") entry.metadata = {};
     if (!entry.exif || typeof entry.exif !== "object") entry.exif = {};
 
