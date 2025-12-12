@@ -4,6 +4,7 @@ var client = require("models/client");
 var key = require("./key");
 var makeID = require("./util/makeID");
 var Blog = require("models/blog");
+var cleanupCdnManifest = require("./util/cleanupCdnManifest");
 
 module.exports = function drop(owner, templateName, callback) {
   var templateID = makeID(owner, templateName);
@@ -18,6 +19,8 @@ module.exports = function drop(owner, templateName, callback) {
       metadata = null;
       views = {};
     }
+
+    const cdnManifest = metadata && metadata.cdn ? { ...metadata.cdn } : {};
 
     views = views || {};
 
@@ -39,9 +42,16 @@ module.exports = function drop(owner, templateName, callback) {
     multi.exec(function (err) {
       const ownerID = metadata && metadata.owner ? metadata.owner : owner;
 
-      Blog.set(ownerID, { cacheID: Date.now() }, function (err) {
-        callback(err, "Deleted " + templateID);
-      });
+      cleanupCdnManifest(cdnManifest)
+        .catch((cleanupErr) => {
+          console.error(`Error cleaning CDN manifest for ${templateID}:`, cleanupErr);
+          return cleanupErr;
+        })
+        .then((cleanupErr) => {
+          Blog.set(ownerID, { cacheID: Date.now() }, function (blogErr) {
+            callback(blogErr || cleanupErr, "Deleted " + templateID);
+          });
+        });
     });
   });
 };
