@@ -67,7 +67,8 @@ module.exports = function (blogID, blog, callback) {
             changes.template = forkedTemplateID;
           }
         } catch (forkError) {
-          return callback(forkError);
+          // for now, do nothing
+          console.log('Blog.set', blogID, 'Error forking template', forkError);
         }
       }
 
