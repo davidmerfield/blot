@@ -423,4 +423,88 @@ describe("wikilinks", function () {
 
   // todo: implement a test spec which verifies filename lookup works *without* file extension
   // which is currently not implemented
+
+  it("embeds markdown/text files inline when using embed syntax", async function () {
+    await this.write({
+      path: "/Notes/Checklist.md",
+      content: [
+        "Title: Daily Checklist",
+        "Link: notes/checklist",
+        "",
+        "- [ ] Morning routine",
+        "- [ ] Review tasks",
+        "- [ ] Evening reflection",
+      ].join("\n"),
+    });
+    await this.blog.rebuild();
+
+    await this.write({
+      path: "/Daily/Plan.txt",
+      content: [
+        "Title: Daily Plan",
+        "Link: daily/plan",
+        "",
+        "Here's my checklist:",
+        "",
+        "![[Notes/Checklist]]",
+      ].join("\n"),
+    });
+    await this.blog.rebuild();
+
+    const res = await this.get("/daily/plan");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain('class="embedded-markdown"');
+    expect(body).toContain("Morning routine");
+    expect(body).toContain("Review tasks");
+    expect(body).toContain("Evening reflection");
+    expect(body).not.toContain('href="/notes/checklist"'); // Should be embedded, not linked
+  });
+
+  it("embeds text files with different extensions (.txt, .text, .markdown)", async function () {
+    await this.write({
+      path: "/Reference/Notes.txt",
+      content: "Important reference information here."
+    });
+    await this.write({
+      path: "/Main/Post.md",
+      content: [
+        "Title: Main Post",
+        "Link: main/post",
+        "",
+        "See reference: ![[Reference/Notes]]",
+      ].join("\n"),
+    });
+
+    const body = await this.text("/main/post");
+
+    expect(body).toContain('class="embedded-markdown"');
+    expect(body).toContain("Important reference information here");
+  });
+
+  it("tracks dependencies for embedded markdown files", async function () {
+    await this.write({
+      path: "/Snippets/Template.md",
+      content: "Original content"
+    });
+
+    await this.write({
+      path: "/Pages/Guide.md",
+      content: [
+        "Title: Guide",
+        "Link: pages/guide",
+        "",
+        "Template: ![[Snippets/Template]]",
+      ].join("\n"),
+    });
+    expect(await this.text("/pages/guide")).toContain("Original content");
+
+    await this.write({
+      path: "/Snippets/Template.md",
+      content: "Updated content"
+    });
+
+    expect(await this.text("/pages/guide")).toContain("Updated content");
+  });
 });
