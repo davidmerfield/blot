@@ -11,6 +11,7 @@ var BackupDomain = require("./util/backupDomain");
 var flushCache = require("./flushCache");
 var normalizeImageExif = require("./util/imageExif").normalize;
 var updateCdnManifest = require("../template/util/updateCdnManifest");
+var forkSiteTemplate = require("../template/util/forkSiteTemplate");
 var promisify = require("util").promisify;
 var updateCdnManifestAsync = promisify(updateCdnManifest);
 
@@ -34,7 +35,7 @@ module.exports = function (blogID, blog, callback) {
   validate(blogID, blog, function (errors, latest) {
     if (errors) return callback(errors);
 
-    get({ id: blogID }, function (err, former) {
+    get({ id: blogID }, async function (err, former) {
       former = former || {};
 
       if (err) return callback(err);
@@ -52,6 +53,24 @@ module.exports = function (blogID, blog, callback) {
       }
 
       changes = Changes(latest, former);
+
+      if (
+        changes.template &&
+        latest.template &&
+        latest.template.indexOf("SITE:") === 0
+      ) {
+        try {
+          var forkedTemplateID = await forkSiteTemplate(blogID, latest.template);
+
+          if (forkedTemplateID && forkedTemplateID !== latest.template) {
+            latest.template = forkedTemplateID;
+            changes.template = forkedTemplateID;
+          }
+        } catch (forkError) {
+          // for now, do nothing
+          console.log('Blog.set', blogID, 'Error forking template', forkError);
+        }
+      }
 
       // Blot stores the rendered output of requests in a
       // cache directory, files inside which are served before
