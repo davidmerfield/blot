@@ -1,24 +1,6 @@
 const config = require("config");
 
-const extractHash = (cdnURL) => {
-  // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
-  // Example: /template/f0/60/a480fb013c56e90af7f0ac1e961c/style.css
-  const templateMatch = cdnURL.match(/\/template\/([a-f0-9]{2})\/([a-f0-9]{2})\/([a-f0-9]+)\//);
-  
-  expect(templateMatch).toBeTruthy(`Invalid CDN URL format: ${cdnURL}`);
-  
-  const dir1 = templateMatch[1];
-  const dir2 = templateMatch[2];
-  const hashRemainder = templateMatch[3];
-  
-  // Reconstruct full hash: first 4 chars from dirs + remainder
-  const hash = dir1 + dir2 + hashRemainder;
-  
-  expect(typeof hash).toBe("string", `Wrong CDN hash type: ${cdnURL}`);
-  expect(hash.length).toBe(32, `Wrong CDN hash length: ${cdnURL} (got ${hash.length})`);
-
-  return hash;
-};
+const { extractHash, validate } = require('./util/cdn');
 
 describe("plugin CDN manifest updates", function () {
   require("./util/setup")();
@@ -33,22 +15,17 @@ describe("plugin CDN manifest updates", function () {
     });
 
     // Get the initial CDN URL for script.js from the rendered HTML
-    const initialHtml = await this.text("/");
-    const initialCdnUrlMatch = initialHtml.match(
-      new RegExp(`${config.cdn.origin}/template/[^"']+`)
-    );
-    expect(initialCdnUrlMatch).toBeTruthy();
-    const initialCdnUrl = initialCdnUrlMatch[0];
-    
-    expect(initialCdnUrl).toContain("/script.js");
-    const initialHash = extractHash(initialCdnUrl);
+    const initialCDNUrl = await this.text("/");
+    const initialHash = extractHash(initialCDNUrl);
+
+    validate(initialCDNUrl);
 
     // Verify initial state has no analytics
-    const initialScriptContent = await this.text(initialCdnUrl);
+    const initialScriptContent = await this.text(initialCDNUrl);
     expect(initialScriptContent).not.toContain("www.google-analytics.com");
 
     // Update analytics plugin - this should trigger CDN manifest update
-    const plugins = {
+    await this.blog.update({ plugins: {
       ...this.blog.plugins,
       analytics: {
         enabled: true,
@@ -57,29 +34,20 @@ describe("plugin CDN manifest updates", function () {
           trackingID: "UA-12345678-9",
         },
       },
-    };
-    await this.blog.update({ plugins });
-
-    // Wait for the CDN manifest update to complete and propagate
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    } });
 
     // Get the new CDN URL for script.js
-    const updatedHtml = await this.text("/");
-    const updatedCdnUrlMatch = updatedHtml.match(
-      new RegExp(`${config.cdn.origin}/template/[^"']+`)
-    );
-    expect(updatedCdnUrlMatch).toBeTruthy();
-    const updatedCdnUrl = updatedCdnUrlMatch[0];
-    
-    expect(updatedCdnUrl).toContain("/script.js");
-    const updatedHash = extractHash(updatedCdnUrl);
+    const updatedCDNUrl = await this.text("/");
+    const updatedHash = extractHash(updatedCDNUrl);
+
+    validate(updatedCDNUrl);
 
     // The hash should have changed because the rendered output of script.js
     // now includes analytics code, which changes the hash
     expect(updatedHash).not.toBe(initialHash);
 
     // Verify the CDN URL actually serves the updated content with analytics
-    const scriptContent = await this.text(updatedCdnUrl);
+    const scriptContent = await this.text(updatedCDNUrl);
     expect(scriptContent).toContain("www.google-analytics.com/analytics.js");
     expect(scriptContent).toContain("UA-12345678-9");
   });
@@ -103,16 +71,10 @@ describe("plugin CDN manifest updates", function () {
       "entries.html": "{{#cdn}}/script.js{{/cdn}}",
     });
 
-    // Wait for initial manifest update
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    const initialHtml = await this.text("/");
-    const initialCdnUrlMatch = initialHtml.match(
-      new RegExp(`${config.cdn.origin}/template/[^"']+`)
-    );
-    expect(initialCdnUrlMatch).toBeTruthy();
-    const initialCdnUrl = initialCdnUrlMatch[0];
+    const initialCdnUrl = await this.text("/");
     const initialHash = extractHash(initialCdnUrl);
+
+    validate(initialCdnUrl);
 
     // Verify analytics is present
     const initialScriptContent = await this.text(initialCdnUrl);
@@ -127,15 +89,7 @@ describe("plugin CDN manifest updates", function () {
     };
     await this.blog.update({ plugins: pluginsWithoutAnalytics });
 
-    // Wait for CDN manifest update to complete and propagate
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    const updatedHtml = await this.text("/");
-    const updatedCdnUrlMatch = updatedHtml.match(
-      new RegExp(`${config.cdn.origin}/template/[^"']+`)
-    );
-    expect(updatedCdnUrlMatch).toBeTruthy();
-    const updatedCdnUrl = updatedCdnUrlMatch[0];
+    const updatedCdnUrl = await this.text("/");
     const updatedHash = extractHash(updatedCdnUrl);
 
     // The hash should have changed because analytics is no longer in the output
@@ -165,16 +119,10 @@ describe("plugin CDN manifest updates", function () {
     };
     await this.blog.update({ plugins: pluginsGoogle });
 
-    // Wait for initial manifest update
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    const initialHtml = await this.text("/");
-    const initialCdnUrlMatch = initialHtml.match(
-      new RegExp(`${config.cdn.origin}/template/[^"']+`)
-    );
-    expect(initialCdnUrlMatch).toBeTruthy();
-    const initialCdnUrl = initialCdnUrlMatch[0];
+    const initialCdnUrl = await this.text("/");
     const initialHash = extractHash(initialCdnUrl);
+
+    validate(initialCdnUrl);
 
     // Switch to Plausible Analytics
     const pluginsPlausible = {
@@ -188,15 +136,7 @@ describe("plugin CDN manifest updates", function () {
     };
     await this.blog.update({ plugins: pluginsPlausible });
 
-    // Wait for CDN manifest update to complete and propagate
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    const updatedHtml = await this.text("/");
-    const updatedCdnUrlMatch = updatedHtml.match(
-      new RegExp(`${config.cdn.origin}/template/[^"']+`)
-    );
-    expect(updatedCdnUrlMatch).toBeTruthy();
-    const updatedCdnUrl = updatedCdnUrlMatch[0];
+    const updatedCdnUrl = await this.text("/");
     const updatedHash = extractHash(updatedCdnUrl);
 
     // The hash should have changed because the analytics code changed
