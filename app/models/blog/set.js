@@ -31,7 +31,7 @@ module.exports = function (blogID, blog, callback) {
   var multi = client.multi();
   var formerBackupDomain, changes, backupDomain;
   var changesList = [];
-  
+
   validate(blogID, blog, function (errors, latest) {
     if (errors) return callback(errors);
 
@@ -169,37 +169,20 @@ module.exports = function (blogID, blog, callback) {
         // to this blog, so empty the list of changes
         if (err) return callback(err, []);
 
-        // Wait for any required CDN manifest updates to complete
-        const updatePromises = [];
-        const templatesToUpdate = new Set();
         const template = latest.template || former.template;
-
-        if (changes.template) {
-            templatesToUpdate.add(template);
-        }
 
         // Also update CDN manifest when plugin settings change, since
         // plugin changes (especially analytics) affect the rendered output
         // of views like script.js that use {{{appJS}}}
-        if (changes.plugins) {
-          templatesToUpdate.add(template);
-        }
+        const shouldUpdateManifest = changes.template || changes.plugins;
 
-        for (const template of templatesToUpdate) {
-          updatePromises.push(
-            updateCdnManifestAsync(template).catch(function (err) {
-              console.error(
-                'Error updating CDN manifest for template',
-                template,
-                err
-              );
-            })
-          );
-        }
-
-        // Wait for all CDN manifest updates to complete before proceeding
-        if (updatePromises.length > 0) {
-          await Promise.all(updatePromises);
+        if (template && shouldUpdateManifest) {
+          try {
+            await updateCdnManifestAsync(template);
+          } catch (updateError) {
+            // for now, do nothing
+            console.log('Blog.set', blogID, 'Error updating template CDN manifest', updateError);
+          }
         }
 
         flushCache(blogID, former, function (err) {

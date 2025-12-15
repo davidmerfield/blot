@@ -1,5 +1,3 @@
-const config = require("config");
-
 const { extractHash, validate } = require('./util/cdn');
 
 describe("plugin CDN manifest updates", function () {
