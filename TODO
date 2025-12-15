@@ -84,6 +84,8 @@ Allow text entry fields in template settings from the dashboard for template loc
 Add multiple date format selectors on the theme dashboard for different contexts, and tell Omar
 Introduce collapsible sections or a separately scrollable div on the template dashboard settings, and tell Omar
 
+Search results pages should be no-indexed by search engines
+
 Can we optimize renderView in some way?
 - use lru cache or moize libraries? back against cacheID property of blog?
 - Memoize load template / load full view / load blog... others?
