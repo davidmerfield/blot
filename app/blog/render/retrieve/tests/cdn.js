@@ -67,19 +67,15 @@ describe("cdn", function () {
     });
   });
 
-  it("still uses CDN URL for preview subdomains on SITE templates", function (done) {
+  it("does not use CDN URL for preview subdomains on SITE templates", function (done) {
     this.request.preview = true;
     this.request.template.id = "SITE:blog";
     var result;
     var template = "{{#cdn}}/style.css{{/cdn}}";
-    var hash = "abc123def456ghi789jkl012mno345pq";
 
     cdn(this.request, {}, function (err, lambda) {
       result = mustache.render(template, { cdn: lambda });
-      expect(result).toContain(config.cdn.origin);
-      expect(result).toContain("/template/");
-      // New format: /template/{hash[0:2]}/{hash[2:4]}/{hash[4:]}/{viewName}
-      expect(result).toMatch(new RegExp(`/template/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash.substring(4)}/style\\.css`));
+      expect(result).toBe('/style.css')
       done();
     });
   });
