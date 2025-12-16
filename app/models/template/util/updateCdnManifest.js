@@ -210,6 +210,11 @@ module.exports = function updateCdnManifest(templateID, callback) {
         return callback(new Error("Template metadata missing owner"));
       }
 
+      // Immediately exit without changes if the template is owned by SITE
+      if (metadata.owner === "SITE") {
+        return callback(null, metadata.cdn || {});
+      }
+
       const oldManifest =
         metadata && typeof metadata.cdn === "object" ? metadata.cdn : {};
 
@@ -218,26 +223,23 @@ module.exports = function updateCdnManifest(templateID, callback) {
       // Safety: Templates are siloed per blog and preview subdomains do not use CDN manifests
       // for non-SITE templates (see app/blog/render/retrieve/cdn.js lines 12-15). There is no
       // other way to view a template that isn't installed on a blog, so the manifest would go
-      // unused. SITE templates are the exception because they can be previewed on any blog and
-      // still rely on CDN URLs in preview mode, so they always require manifest computation.
-      if (metadata.owner !== "SITE") {
-        // Require Blog.get here to avoid dependency loops
-        const Blog = require("models/blog");
-        const getBlogAsync = promisify(Blog.get);
+      // unused.
+      // Require Blog.get here to avoid dependency loops
+      const Blog = require("models/blog");
+      const getBlogAsync = promisify(Blog.get);
 
-        const blog = await getBlogAsync({ id: metadata.owner });
-        const templateInstalled = blog && blog.template === templateID;
+      const blog = await getBlogAsync({ id: metadata.owner });
+      const templateInstalled = blog && blog.template === templateID;
 
-        if (!templateInstalled) {
-          metadata.cdn = {};
-          await hsetAsync(key.metadata(templateID), "cdn", JSON.stringify({}));
+      if (!templateInstalled) {
+        metadata.cdn = {};
+        await hsetAsync(key.metadata(templateID), "cdn", JSON.stringify({}));
 
-          for (const target in oldManifest) {
-            await cleanupOldHash(target, oldManifest[target]);
-          }
-
-          return callback(null, {});
+        for (const target in oldManifest) {
+          await cleanupOldHash(target, oldManifest[target]);
         }
+
+        return callback(null, {});
       }
 
       // Get all views and collect CDN targets from their retrieve.cdn arrays
