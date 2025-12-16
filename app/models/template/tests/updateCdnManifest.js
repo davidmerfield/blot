@@ -373,7 +373,7 @@ describe("updateCdnManifest", function () {
     });
 
     const metadata = await getMetadataAsync(siteTemplate.id);
-    expect(metadata.cdn).toBe({});
+    expect(metadata.cdn).toEqual({});
   });
 
   it("cleans up old hashes when skipping uninstalled template", async function () {
