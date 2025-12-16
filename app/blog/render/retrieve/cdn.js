@@ -9,8 +9,8 @@ module.exports = function (req, res, callback) {
     // Section: {{#cdn}}/path/to/file{{/cdn}}
     var renderCdn = function (text, render) {
       try {
-        // Skip CDN URLs for preview subdomains on non-SITE templates
-        if (req.preview && templateID && !templateID.startsWith('SITE:')) {
+        // Skip CDN URLs for preview subdomains
+        if (req.preview) {
           return typeof render === "function" ? render(text) : text;
         }
 

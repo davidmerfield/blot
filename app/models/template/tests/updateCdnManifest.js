@@ -341,7 +341,7 @@ describe("updateCdnManifest", function () {
     expect(metadata.cdn["style.css"].length).toBe(32); // MD5 hash length
   });
 
-  it("always computes manifest for SITE templates regardless of installation", async function () {
+  it("never computes manifest for SITE templates", async function () {
     const test = this;
     const updateCdnManifest = require("../util/updateCdnManifest");
 
@@ -372,10 +372,8 @@ describe("updateCdnManifest", function () {
       });
     });
 
-    // Verify manifest is populated (SITE templates should always compute)
     const metadata = await getMetadataAsync(siteTemplate.id);
-    expect(metadata.cdn["style.css"]).toBeDefined();
-    expect(metadata.cdn["style.css"].length).toBe(32); // MD5 hash length
+    expect(metadata.cdn).toBe({});
   });
 
   it("cleans up old hashes when skipping uninstalled template", async function () {
