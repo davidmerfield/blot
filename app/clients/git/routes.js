@@ -124,6 +124,16 @@ site.get("/syncs-finished/:blogID", function (req, res) {
 });
 
 repos.on("push", function (push) {
+  if (push) {
+    push.on("error", function (err) {
+      if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+        return debug("Git push error", err.message || err);
+      }
+
+      debug("Git push unexpected error", err);
+    });
+  }
+
   if (push && push.request) {
     push.request.on("error", function (err) {
       if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
