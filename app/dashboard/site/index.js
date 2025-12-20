@@ -82,7 +82,7 @@ site.get("/settings/redirects", load.redirects, (req, res) => {
   res.render("dashboard/site/settings/redirects");
 });
 site.get("/settings/flags", flags.get);
-site.post("/settings/flags", flags.post);
+site.post("/settings/flags", save.flags, save.finish);
 
 site
   .route("/settings/redirects/404s")

@@ -1,4 +1,3 @@
-const Blog = require("models/blog");
 const blogScheme = require("models/blog/scheme");
 const blogDefaults = require("models/blog/defaults");
 
@@ -10,14 +9,6 @@ const labelize = (key) =>
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
-
-const normalizeBoolean = (value) => {
-  if (value === true || value === "true" || value === "on" || value === "1") {
-    return true;
-  }
-
-  return false;
-};
 
 exports.get = (req, res) => {
   const currentFlags = {
@@ -33,35 +24,9 @@ exports.get = (req, res) => {
   }));
 
   res.locals.breadcrumbs.add("Flags", "flags");
-  res.locals.formAction = `${res.locals.base}/settings/flags`;
 
   res.render("dashboard/site/settings/flags", {
     title: "Flags",
     flags,
-  });
-};
-
-exports.post = (req, res, next) => {
-  const submitted = req.body || {};
-  const updates = {};
-
-  flagKeys.forEach((key) => {
-    updates[key] = normalizeBoolean(submitted[key]);
-  });
-
-  const mergedFlags = {
-    ...(req.blog.flags || {}),
-    ...updates,
-  };
-
-  Blog.set(req.blog.id, { flags: mergedFlags }, (error) => {
-    if (error) {
-      return res.message(
-        `${res.locals.base}/settings/flags`,
-        error
-      );
-    }
-
-    res.message(`${res.locals.base}/settings/flags`, "Updated flags");
   });
 };
