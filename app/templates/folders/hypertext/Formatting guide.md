@@ -12,10 +12,6 @@ Heading bravo
 
 Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam ipsa ducimus laudantium, ab numquam optio cumque perspiciatis voluptatum quis accusantium, atque excepturi, laboriosam similique! Laboriosam sed dignissimos quasi non animi!
 
-![A graph showing the number of college degrees granted in various fields of study between the years 2000 and 2017. The number of degrees granted in health professions and related programs and business has increased steadily, wile the number in the social sciences and history has increased before beginning to drop.](https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/50_North_American_Metros_by_proportion_of_density_level.png/1280px-50_North_American_Metros_by_proportion_of_density_level.png)
-
-What a figure!
-
 <details>
 <summary>
 An expandable section
@@ -144,6 +140,14 @@ Julia example
     
     (string(:hello) == "hello" ? 5 : 6) |> sqrt
     
+
+Figures
+====
+
+![A graph showing the number of college degrees granted in various fields of study between the years 2000 and 2017. The number of degrees granted in health professions and related programs and business has increased steadily, wile the number in the social sciences and history has increased before beginning to drop.](https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/50_North_American_Metros_by_proportion_of_density_level.png/1280px-50_North_American_Metros_by_proportion_of_density_level.png)
+
+What a figure!
+
 
 Math
 ====

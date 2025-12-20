@@ -14,7 +14,6 @@ class SidebarNavigation {
   // ------- cache -------
   _loadCache() {
     try {
-      console.log("getting", this.cacheKey);
       return localStorage.getItem(this.cacheKey);
     } catch {
       return null;
@@ -22,13 +21,11 @@ class SidebarNavigation {
   }
   _saveCache() {
     try {
-      console.log("setting", this.cacheKey);
       localStorage.setItem(this.cacheKey, this.root.innerHTML);
     } catch {}
   }
   _clearCache() {
     try {
-      console.log("clearing", this.cacheKey);
       localStorage.removeItem(this.cacheKey);
     } catch {}
   }

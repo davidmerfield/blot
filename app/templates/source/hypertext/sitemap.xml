@@ -13,6 +13,7 @@
   {{#allEntries}}  
   <url>
     <loc>{{blogURL}}{{url}}/</loc> 
-    <lastmod>{{#formatUpdated}}YYYY-MM-DD{{/formatUpdated}}</lastmod>  </url>
+    <lastmod>{{#formatUpdated}}YYYY-MM-DD{{/formatUpdated}}</lastmod>
+  </url>
   {{/allEntries}}  
 </urlset>
