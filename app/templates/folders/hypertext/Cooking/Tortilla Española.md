@@ -1,6 +1,4 @@
-# Tortilla Española
-
-The Spanish omelette. Best served warm or at room temperature with a green salad.
+# Tortilla de patatas
 
 **Ingredients**
 - 500 g potatoes, peeled and thinly sliced

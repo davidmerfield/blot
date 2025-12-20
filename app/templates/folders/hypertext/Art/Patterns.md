@@ -1,1 +1,0 @@
-https://www.marimekko.com/eu_en/maripedia/patterns

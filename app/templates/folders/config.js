@@ -39,7 +39,21 @@ module.exports = {
     template: "SITE:studio",
   },
   hypertext: {
-    title: "Hypertext",
+    title: "Richard Waller",
     template: "SITE:hypertext",
+    plugins: {
+      injectTitle: {
+        enabled: true,
+        options: {}
+      },
+      linebreaks: {
+        enabled: true,
+        options: {}
+      },
+      zoom: {
+        enabled: true,
+        options: {}
+      }
+    }
   },
 };
