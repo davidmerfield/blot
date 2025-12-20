@@ -17,10 +17,12 @@ Winter newsletter
 - The template editor received numerous improvements including better file handling, improved UI, and more reliable editing.
 - Documentation improvements including guides for common tasks.
 - The template editor now includes a mobile preview feature and improved controls for customizing templates.
+- The urls for images cached through Blot's CDN now includes the source image file name
 
 **Bug fixes**
 - [Dropbox](https://blot.im/how/sync/dropbox) now syncs large files reliably.
 - [Wikilinks](https://blot.im/how/formatting/wikilinks) that reference deleted entries are handled correctly.
+- [Git client] now handles larger and longer pushes without crashing
 - The search page and question search work as expected.
 - Scheduled posts publish at the correct time.
 - The template editor is more reliable, with fixes for Firefox compatibility, submenu behavior, and template duplication.

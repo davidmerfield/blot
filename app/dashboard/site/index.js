@@ -3,6 +3,7 @@ var site = express.Router();
 var load = require("./load");
 var save = require("./save");
 var trace = require("helper/trace");
+var flags = require("./flags");
 const sse = require("helper/sse")({
   channel: (req) => `sync:status:${req.blog.id}`,
 });
@@ -80,6 +81,8 @@ site.get("/settings/services", load.plugins, (req, res) => {
 site.get("/settings/redirects", load.redirects, (req, res) => {
   res.render("dashboard/site/settings/redirects");
 });
+site.get("/settings/flags", flags.get);
+site.post("/settings/flags", save.flags, save.finish);
 
 site
   .route("/settings/redirects/404s")
