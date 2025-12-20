@@ -38,4 +38,8 @@ module.exports = {
     title: "Thought-forms",
     template: "SITE:studio",
   },
+  hypertext: {
+    title: "Hypertext",
+    template: "SITE:hypertext",
+  },
 };
