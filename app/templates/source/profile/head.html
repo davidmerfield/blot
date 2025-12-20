@@ -1,0 +1,15 @@
+<head>
+  <meta charset="utf-8">
+  <title>{{> title}}</title>
+  <meta name="description" content="{{> description}}">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Preconnect to the CDN which serves this template's assets -->
+  <link rel="preconnect" href="{{{cdn}}}" />
+  <!-- Load the compiled stylesheet for this template -->
+  <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
+  <!-- RSS feed -->
+  <link rel="alternate" type="application/rss+xml" title="RSS feed for {{title}}" href="{{{feedURL}}}">
+  {{#avatar}}
+  <link rel="icon" href="{{{avatar}}}" type="image/x-icon">
+  {{/avatar}}
+</head>
