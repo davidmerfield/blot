@@ -121,6 +121,11 @@ module.exports = function () {
 
   // Warn users about impending subscriptions
   User.getAllIds(function (err, uids) {
+    if (err) {
+      console.error("Error fetching user ids for scheduling:", err);
+      return;
+    }
+
     async.each(uids, User.scheduleSubscriptionEmail, function (err) {
       if (err) {
         console.error("Error scheduling subscription emails:", err);
@@ -128,6 +133,23 @@ module.exports = function () {
         console.log(clfdate(), "Scheduled emails for renewals and expiries!");
       }
     });
+
+    async.each(
+      uids,
+      function (uid, next) {
+        User.scheduleWelcomeEmail(uid, function (err) {
+          if (err) console.error("Error scheduling welcome email for", uid, err);
+          next();
+        });
+      },
+      function (err) {
+        if (err) {
+          console.error("Error scheduling welcome emails:", err);
+        } else {
+          console.log(clfdate(), "Scheduled welcome emails where needed!");
+        }
+      }
+    );
   });
 
   console.log(clfdate(), "Scheduled daily check of storage disk usage");

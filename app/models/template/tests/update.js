@@ -6,7 +6,7 @@ describe("template", function () {
 
   it("updates a template", function (done) {
     var test = this;
-    var updates = { description: test.fake.random.word() };
+    var updates = { description: "Updated template description" };
     update(test.blog.id, test.template.name, updates, function (err) {
       if (err) return done.fail(err);
       getMetadata(test.template.id, function (err, template) {
@@ -21,7 +21,7 @@ describe("template", function () {
   // should be used for new templates. This might break uses of the
   // api internally so be carefull.
   xit("throws an error if you update a template which does not exist", function (done) {
-    update(this.blog.owner, this.fake.random.word(), {}, function (err) {
+    update(this.blog.owner, "nonexistent-template", {}, function (err) {
       expect(err instanceof Error).toEqual(true);
       done();
     });

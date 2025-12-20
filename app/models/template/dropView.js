@@ -3,6 +3,7 @@ const client = require("models/client");
 const Blog = require("models/blog");
 const getMetadata = require("./getMetadata");
 const getView = require("./getView");
+const updateCdnManifest = require("./util/updateCdnManifest");
 
 module.exports = function dropView(templateID, viewName, callback) {
   const multi = client.multi();
@@ -25,8 +26,13 @@ module.exports = function dropView(templateID, viewName, callback) {
 
       multi.exec(function (err) {
         if (err) return callback(err);
-        Blog.set(metadata.owner, { cacheID: Date.now() }, function (err) {
-          callback(err, "Deleted " + templateID);
+
+        updateCdnManifest(templateID, function (manifestErr) {
+          if (manifestErr) return callback(manifestErr);
+
+          Blog.set(metadata.owner, { cacheID: Date.now() }, function (err) {
+            callback(err, "Deleted " + templateID);
+          });
         });
       });
     });

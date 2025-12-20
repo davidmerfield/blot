@@ -4,6 +4,7 @@
     <meta name="description" content="{{> description}}">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed for {{title}}" href="{{{blogURL}}}{{{feedURL}}}">
     {{#avatar}}<link rel="icon" href="{{{avatar}}}" type="image/x-icon">{{/avatar}}
-    <link rel="stylesheet" href="{{{cssURL}}}">
+    <link rel="preconnect" href="{{{cdn}}}" />
+    <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>

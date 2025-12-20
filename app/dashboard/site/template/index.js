@@ -6,6 +6,7 @@ const Blog = require("models/blog");
 const archiver = require("archiver");
 const duplicateTemplate = require("./save/duplicate-template");
 const { isAjaxRequest, sendAjaxResponse } = require("./save/ajax-response");
+const writeChangeToFolder = require('./save/writeChangeToFolder');
 
 TemplateEditor.param("viewSlug", require("./load/template-views"));
 
@@ -105,16 +106,20 @@ function persistTemplateUpdate(req, res, next) {
     { locals: req.locals, partials: req.partials },
     function (err) {
       if (err) return next(err);
-      if (isAjaxRequest(req)) {
-        const ajaxOptions = {};
-        if (res.locals.templateForked) {
-          ajaxOptions.headers = { "X-Template-Forked": "1" };
-        }
-        return sendAjaxResponse(res, ajaxOptions);
-      }
+      writeChangeToFolder(req.blog, req.template, {}, function (err) {
+        if (err) return next(err);
 
-      res.message(req.baseUrl + req.url, "Success!");
-    }
+        if (isAjaxRequest(req)) {
+          const ajaxOptions = {};
+          if (res.locals.templateForked) {
+            ajaxOptions.headers = { "X-Template-Forked": "1" };
+          }
+          return sendAjaxResponse(res, ajaxOptions);
+        }
+
+        res.message(req.baseUrl + req.url, "Success!");
+      });
+    },
   );
 }
 
@@ -122,6 +127,7 @@ TemplateEditor.route("/:templateSlug")
   .all(require("./load/font-inputs"))
   .all(require("./load/syntax-highlighter"))
   .all(require("./load/color-inputs"))
+  .all(require("./load/url-inputs"))
   .all(require("./load/index-inputs"))
   .all(require("./load/navigation-inputs"))
   .all(require("./load/dates"))
@@ -135,6 +141,22 @@ TemplateEditor.route("/:templateSlug")
     res.locals.selected = { ...res.locals.selected, settings: "selected" };
     res.render("dashboard/template/settings");
   });
+
+TemplateEditor.route("/:templateSlug/uploads/:key")
+  .get(require("./load/url-inputs"), function (req, res, next) {
+    res.locals.upload = res.locals.uploads.find((i) => i.key === req.params.key);
+    if (!res.locals.upload) return next();
+    res.locals.title = `${res.locals.upload.label} - ${req.template.name}`;
+    res.locals.selected = { ...res.locals.selected, settings: "selected" };
+    res.render("dashboard/template/controls/upload-form");
+  })
+  .post(require("./save/fork-if-needed"), require("./save/upload-local"));
+
+// Catch-all for /uploads/ without a key - redirect to template settings
+// This must come AFTER the specific route above
+TemplateEditor.get("/:templateSlug/uploads", function (req, res) {
+  res.redirect(res.locals.base || `${req.baseUrl}/${req.params.templateSlug}`);
+});
 
 TemplateEditor.route("/:templateSlug/syntax-highlighter")
   .all(require("./load/font-inputs"))

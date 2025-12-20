@@ -1,6 +1,7 @@
 var getView = require("./getView");
 var async = require("async");
 var ensure = require("helper/ensure");
+var extend = require("helper/extend");
 var promisify = require("util").promisify;
 
 module.exports = function getPartials(blogID, templateID, partials, callback) {
@@ -68,7 +69,8 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
             if (view) {
               allPartials[partial] = view.content;
 
-              for (var i in view.retrieve) retrieve[i] = view.retrieve[i];
+              // Merge retrieve from partial (extend handles array merging)
+              extend(retrieve).and(view.retrieve);
 
               fetchList(view.partials, next);
             } else {

@@ -5,6 +5,7 @@ var client = require("models/client");
 var clfdate = require("helper/clfdate");
 var seedrandom = require("seedrandom");
 var async = require("async");
+const { before } = require("lodash");
 var seed;
 var config = {
   spec_dir: "",
@@ -18,38 +19,68 @@ var config = {
   stopSpecOnExpectationFailure: false,
   random: true,
 };
+// Collect only the user-passed args.
+// If "--" is present, only consider args after it.
+const rawArgs = process.argv.slice(2);
+const dashdash = rawArgs.indexOf("--");
+const args = dashdash >= 0 ? rawArgs.slice(dashdash + 1) : rawArgs;
 
 // Pass in a custom test glob for running only specific tests
-if (process.argv[2]) {
-  console.log(clfdate(), "Running specs in", colors.cyan(process.argv[2]));
+if (args[0]) {
+  console.log(clfdate(), "Running specs in", colors.cyan(args[0]));
 
-  // We have passed specific file to run
-  if (process.argv[2].slice(-3) === ".js") {
-    config.spec_files = [process.argv[2]];
-
-    // We have passed directory of tests to run
+  // Specific file
+  if (args[0].endsWith(".js")) {
+    config.spec_files = [args[0]];
   } else {
-    config.spec_dir = process.argv[2];
+    // Directory
+    config.spec_dir = args[0];
   }
 } else {
-  console.log(clfdate(), 
+  console.log(
+    clfdate(),
     "If you want to run tests from a subdirectory:",
-    colors.cyan("npm test {path_to_specs}")
+    colors.cyan("npm test app/models"),
+    "or",
+    colors.cyan("npm test -- app/models")
   );
 }
 
-if (process.argv[3]) {
-  seed = process.argv[3];
+// Seed: 2nd positional arg, or env, or random
+if (args[1]) {
+  seed = args[1];
 } else {
-  seed = process.env.BLOT_TESTS_SEED || Math.floor(Math.random() * 100000) + "";
-  console.log(clfdate(), 
-    'If you want your own seed run "npm test {path_to_specs} {seed}"'
+  seed =
+    process.env.BLOT_TESTS_SEED || String(Math.floor(Math.random() * 100000));
+  console.log(
+    clfdate(),
+    "If you want your own seed run:",
+    colors.cyan("npm test app/models/test.js SEED"),
+    "or",
+    colors.cyan("npm test -- app/models/test.js SEED")
   );
 }
 
 seedrandom(seed, { global: true });
 jasmine.seed(seed);
 jasmine.loadConfig(config);
+
+// Build command for re-running with DEBUG
+function buildDebugCommand() {
+  var cmd = "DEBUG=blot* npm test";
+  if (args[0]) cmd += " " + args[0];
+  if (args[1]) cmd += " " + args[1];
+  return cmd;
+}
+
+// Log DEBUG command at start (only if DEBUG is not already set)
+if (!process.env.DEBUG) {
+  console.log(
+    clfdate(),
+    "To run with debug logs:",
+    colors.cyan(buildDebugCommand())
+  );
+}
 
 jasmine.addReporter({
   specStarted: function (result) {
@@ -70,7 +101,7 @@ jasmine.addReporter({
   specDone: function (result) {
     durations[result.fullName] = Date.now() - startTimes[result.fullName];
   },
-  jasmineDone: function () {
+  jasmineDone: function (result) {
     console.log(clfdate(), "Slowest specs:");
     Object.keys(durations)
       .sort(function (a, b) {
@@ -79,6 +110,14 @@ jasmine.addReporter({
       .map((fullName) => durations[fullName] + "ms " + colors.dim(fullName))
       .slice(0, 10)
       .forEach((line) => console.log(line));
+    
+    // If tests failed, show how to re-run with DEBUG (only if DEBUG is not already set)
+    if (result.overallStatus === "failed" && !process.env.DEBUG) {
+      console.log();
+      console.log("Re-run with debug logs:");
+      console.log(colors.cyan(buildDebugCommand()));
+      console.log();
+    }
   },
 });
 
@@ -98,6 +137,8 @@ global.test = {
   server: require("./util/server"),
 
   site: require("./util/site"),
+
+  templates: require("./util/templates"),
 
   timeout: function (ms) {
     // Store original value

@@ -1,0 +1,103 @@
+name: Deploy to EC2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY_URL: ghcr.io/davidmerfield/blot
+  BLOT_DEPLOY_SSH_HOST: ${{ secrets.BLOT_DEPLOY_SSH_HOST }}
+
+jobs:
+  wait-for-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for build image to be available
+        run: |
+          echo "Waiting for build image to be available..."
+          
+          IMAGE="${{ env.REGISTRY_URL }}:${{ github.sha }}"
+          MAX_WAIT_MINUTES=30
+          WAIT_INTERVAL=10
+          MAX_ITERATIONS=$((MAX_WAIT_MINUTES * 60 / WAIT_INTERVAL))
+          ITERATION=0
+          
+          while [ $ITERATION -lt $MAX_ITERATIONS ]; do
+            if docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
+              echo "✅ Build image found: $IMAGE"
+              exit 0
+            fi
+            
+            echo "Image not found yet. Waiting ${WAIT_INTERVAL} seconds... (attempt $((ITERATION + 1))/$MAX_ITERATIONS)"
+            sleep $WAIT_INTERVAL
+            ITERATION=$((ITERATION + 1))
+          done
+          
+          echo "❌ Timeout: Build image not found after ${MAX_WAIT_MINUTES} minutes: $IMAGE"
+          exit 1
+
+  deploy:
+    needs: wait-for-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: deploy
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.BLOT_DEPLOY_SSH_KEY }}
+
+      - name: Configure SSH alias
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          cat >> ~/.ssh/config << EOF
+          Host blot
+            HostName ${BLOT_DEPLOY_SSH_HOST}
+            User deploy
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Verify SSH connection
+        run: ssh blot "echo 'SSH connection successful'"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Deploy via npm script
+        run: npm run deploy-node -- ${{ github.sha }}
+        env:
+          # Skip branch check since we're in CI and may be checking out a specific commit
+          SKIP_BRANCH_CHECK: true
+
+      - name: Deployment summary
+        if: success()
+        run: |
+          echo ""
+          echo "=========================================="
+          echo "Deployment Summary"
+          echo "=========================================="
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Deployment completed successfully! 🚀"
+

@@ -10,6 +10,7 @@ const hashFile = promisify((path, cb) => {
   });
 });
 const upload = promisify(require("../util/upload"));
+const { isDotfileOrDotfolder } = require("../util/constants");
 const set = promisify(require("../database").set);
 const createClient = promisify((blogID, cb) =>
   require("../util/createClient")(blogID, (err, ...results) => cb(err, results))
@@ -122,6 +123,8 @@ async function resetFromBlot(blogID, publish, signal) {
       const remoteCounterpart = remoteContents.find(
         (remoteItem) => remoteItem.name === localItem.name
       );
+
+      if (isDotfileOrDotfolder(path)) continue;
 
       if (localItem.is_directory) {
         abortIfRequested(signal);

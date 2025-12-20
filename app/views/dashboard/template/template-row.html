@@ -8,6 +8,7 @@
       {{^localEditing}}
       <img
         src="{{#cdn}}/images/examples/{{thumbnailSlug}}/0-icon.png{{/cdn}}"
+        width="48" height="35"
       />
       {{/localEditing}} {{#localEditing}}
       <span
@@ -50,6 +51,8 @@
     type="button"
     data-editurl="{{{editURL}}}"
     data-previewurl="{{{previewMenuURL}}}"
+    aria-haspopup="true"
+    aria-expanded="false"
   >
     <span class="icon-dots"></span>
   </button>

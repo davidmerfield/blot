@@ -109,4 +109,31 @@ describe("blog handles renames", function () {
     expect(renamedMap["renamed-delayed-entry"]).toEqual(originalDatestamp);
     expect(renamedMap["other-entry"]).toEqual(otherDatestamp);
   });
+
+  it("updates a deduplicated url when a rename causes both files to exist at once", async function () {
+    await this.template({
+      "entry.html": "{{{entry.title}}}",
+    });
+
+    await this.write({
+      path: "/entry.txt",
+      content: "Link: /entry\nTitle: Original\n\nContent",
+    });
+
+    expect(await this.text(`/entry`)).toBe('Original');
+
+    await this.write({
+      path: "/entryrenamed.txt",
+      content: "Link: /entry\nTitle: Renamed\n\nContent",
+    });
+
+    expect(await this.text(`/entry`)).toBe('Original');
+    expect(await this.text(`/entry-2`)).toBe('Renamed');
+
+    await this.remove("/entry.txt");
+
+    expect(await this.text(`/entry`)).toBe('Renamed');
+    expect(await this.text(`/entry-2`)).toBe('Renamed');
+
+  });
 });

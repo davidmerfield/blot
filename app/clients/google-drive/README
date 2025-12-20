@@ -8,6 +8,10 @@ After inserting their email address, the user is asked to create a new folder in
 
 Google Drive service accounts automatically accept sharing requests sent to them, which is handy.
 
+## Dotfiles and dotfolders
+
+Blot ignores files and folders whose names begin with a dot when syncing with Google Drive. Dotfiles remain in the user's Google Drive folder but are not downloaded to Blot's local filesystem or uploaded during reset operations.
+
 How is storage usage affected by 'service accounts'?
 - it seems like each service account gets its own storage quota of 15GB
 

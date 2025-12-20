@@ -7,7 +7,7 @@ describe("template", function () {
   const getBlog = promisify(require("models/blog").get);
 
   it("sets a template's metadata", async function () {
-    var updates = { description: this.fake.random.word() };
+    var updates = { description: "A test template description" };
     await setMetadata(this.template.id, updates);
     const template = await getMetadata(this.template.id);
     expect(template.description).toEqual(updates.description);
@@ -15,7 +15,7 @@ describe("template", function () {
 
   it("updates the cache ID of the blog which owns a template after updating", async function () {
     var initialCacheID = this.blog.cacheID;
-    var updates = { description: this.fake.random.word() };
+    var updates = { description: "Updated template description" };
     await setMetadata(this.template.id, updates);
     const blog = await getBlog({ id: this.template.owner });
     expect(blog.cacheID).not.toEqual(initialCacheID);
@@ -41,6 +41,49 @@ describe("template", function () {
     const { syntax_highlighter } = locals;
     expect(syntax_highlighter.id).toEqual("agate");
     expect(syntax_highlighter.styles).toContain(".hljs{");
+  });
+
+  it("updates the CDN manifest when metadata locals change", async function () {
+    // Install the template so the CDN manifest is generated
+    await this.blog.update({template: this.template.id});
+
+    await this.setView({
+      name: "style.css",
+      content: "body { color: {{background_color}}; }",
+      locals: { background_color: "#fff" },
+    });
+
+    await this.setView({
+      name: "index.html",
+      content: "{{#cdn}}style.css{{/cdn}}",
+    });
+
+    const templateID = this.template.id;
+
+    const initialMetadata = await getMetadata(templateID);
+    const originalHash = initialMetadata.cdn["style.css"];
+    expect(originalHash).toEqual(jasmine.any(String));
+
+    await this.setView({
+      name: "style.css",
+      content: "body { color: {{background_color}}; }",
+      locals: { background_color: "#000" },
+    });
+
+    const updatedMetadata = await getMetadata(templateID);
+    const updatedHash = updatedMetadata.cdn["style.css"];
+    expect(updatedHash).toEqual(jasmine.any(String));
+    expect(updatedHash).not.toEqual(originalHash);
+
+    await this.setView({
+      name: "style.css",
+      content: "body { color: {{background_color}}; }",
+      locals: { background_color: "#123456" },
+    });
+
+    const nextMetadata = await getMetadata(templateID);
+    expect(nextMetadata.cdn["style.css"]).toEqual(jasmine.any(String));
+    expect(nextMetadata.cdn["style.css"]).not.toEqual(updatedHash);
   });
 
 });

@@ -1,25 +1,48 @@
 Winter newsletter
 
-*You received this email because you subscribed to [Blot’s newsletter](https://blot.im/about/news). You can [unsubscribe](https://blot.im/about/news/cancel) if you like. Please reply directly to this email if you have any thoughts or questions.*
+*You received this email because you subscribed to [Blot's newsletter](https://blot.im/news). You can [unsubscribe](https://blot.im/news/cancel) at any time. Please reply directly to this email if you have any thoughts or questions.*
 
 **New features**
-- Plugin which injects titles into markdown posts without them. This makes using Obsidian much easier. 
-- added pagination to tagged template pages
-- Added support for TextBundle files.
+- Blot now supports the [TextBundle format](https://blot.im/how/files/markdown#textbundle), which lets you embed images in Markdown files when using apps like [Ulysses](https://blot.im/tools/ulysses) and [Bear](https://blot.im/tools/bear).
+- You can now use [markdown highlighting](https://blot.im/how/files/markdown#highlighting) by surrounding text with double equals signs.
+- Date format strings in templates are now rendered before formatting, allowing for more dynamic date displays.
+- A plugin automatically injects titles into markdown posts without them, making it easier to use Obsidian.
 
 **Changes**
-- added file size limit to dropbox client
+- The CDN infrastructure was improved with better manifest handling and moved from Redis to disk storage for improved reliability.
+- Tagged template pages now support pagination using query parameters.
+- The Dropbox file size limit was increased to 100MB.
+- New Geist fonts were added to the template editor.
+- Templates are now automatically forked per blog when using site templates, preventing conflicts between sites.
+- The template editor received numerous improvements including better file handling, improved UI, and more reliable editing.
+- Documentation improvements including guides for common tasks.
+- The template editor now includes a mobile preview feature and improved controls for customizing templates.
 
-**Bugs fixed**
-- fixed bug with issue syncing large files via dropbox
-- fixed bug with wikilinks referencing deleted entries
+**Bug fixes**
+- [Dropbox](https://blot.im/how/sync/dropbox) now syncs large files reliably.
+- [Wikilinks](https://blot.im/how/formatting/wikilinks) that reference deleted entries are handled correctly.
+- The search page and question search work as expected.
+- Scheduled posts publish at the correct time.
+- The template editor is more reliable, with fixes for Firefox compatibility, submenu behavior, and template duplication.
+- Pagination handles large page numbers correctly.
+- Domain verification now uses authoritative DNS resolvers for more reliable setup.
+- Various template rendering issues have been resolved across different templates.
 
 **Questions**
+- [Sync a github-based theme to a local folder?](https://blot.im/questions/3299)
+- [Image folder for Obsidian?](https://blot.im/questions/3305)
+- [Show posts from Substack on the start page?](https://blot.im/questions/3282)
+- [Hosting a PWA on Blot?](https://blot.im/questions/3284)
 
 **Mistakes**
 
-**Plans for this season**
+The last period was [without a single downtime incident](https://status.blot.im) and I have dramatically improved the server stability and average response time after implementing some bot blocking measures.
 
-If you have any thoughts or questions about any of this, please don’t hesitate to reply directly to this email.
+**Plans for the spring**
+- Continue improving the templates, template-editor and developer documentation.
+- Blot continues to grow and this involves scaling both the infrastructure and modifying the application code to handle this scale. I intend to adjust the data structure of the post storage. Right now, posts are stored as a JSON blob in Redis, which means they must be retrieved in full. I plan to migrate carefully to redis hashes, which will mean I can retrieve a subset of entry properties (e.g. just titles and urls for the archives page).
+- Migrate more of the data from disk-storage to object-storage. One of Blot's big failure points is 'the disk has run out of space' and I hope to avoid this with an infinitely scalable object storage api (e.g. S3). 
+
+If you have any thoughts or questions, please don't hesitate to reply directly to this email.
 
 Sincerely, David

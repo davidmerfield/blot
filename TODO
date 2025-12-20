@@ -1,16 +1,112 @@
-Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
+Release new brochure site
 
-Transfer theme for [Fede](https://wordpress.org/themes/kanso/)
-- Set up vanilla zoom
-- Use as [reference](https://fsanchez.io)
+---
 
-Add `{{cdn}}` template helper
-- add route to cdn.js which lets you render abritrary views from the site, e.g. /blog_id/template/style.css
-- determine which views are referenced by {{#cdn}} at template save time
-- compute hash of views which are referenced inside {{#cdn}}, including partials, whenever a referenced view is saved.
-- Make it possible to serve abritrary template views efficiently through the CDN... JS CSS etc. and remove usage of cssURL, jsURL?
+Work on templates
+- Transfer theme for [Fede](https://wordpress.org/themes/kanso/)
+  - Release as profile template
+- Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
+- Turn Andrew's template into a seperate 'Hypertext' template
 
-Turn andrew's template into a seperate 'Hypertext' template
+---
+
+Record new video
+
+---
+
+Send out winter newsletter
+
+---
+
+Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
+
+Investigate issues with image heavy obsidian vaults
+
+Investigate obsidian and ia writer wikilink resolution issues
+
+Fix bug with Elizabeth's Google Docs (export 403 file exceeds...)
+
+Bug reports:
+- The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
+- The website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
+- Migrate base templates from entries to {{#posts}} and tell Omar
+- Document the special routing features for entries.html and tell Omar
+
+Make it clearer in the UI that creating a second site increases the subscription at the next billing cycle, probably with a one-time notice.
+
+Fix bug with repeat resyncs of specific sites via Google Drive:
+- To identify, run node scripts/google-drive/resync.js multiple times, some sites continually resync the same files...
+
+Bug: CDN replaceFolder not working with relative path to CSS file on wall.blot.im
+
+Maybe we mix cacheID into query string for {{#cdn}} on preview subdomains with caching headers for improved template editor performance without expensive hash computation?
+
+Template delete should purge the cdn hashes / URLs
+
+Handle 429s in purgeCDNUrls? Group multiple into single request?
+
+Remove the legacy redis hash routing from cdn/index.js and key definition
+- also create new script to forcefully migrate the dangling hashes from redis to disk, if they exist
+
+We should get notifcations when stripe recovers an overdue subscription, as opposed to the user entering the form
+
+invalid package.json causes crazy error on template editor (missing colon)
+
+Speed up global template build by not even invoke the setView function if there are no changes... (this avoids running updateCDNManifest when SITE template has no changes)
+
+Dashboard file upload feature (_url) needs to generate image dimensions too.. maybe it needs MORE power
+
+Blogs have huge numbers of archived templates – modify the tempalte archiver to only 'create' templates for sites using them, otherwise disappear them. work out how to clean up some of the many archived templates added to sites... (remove ones with zero changes?)
+
+Fix script to replace cssURL to handle blogs with invalid domains (it's breaking the migration)
+
+Replace existing cssURL and scriptURL and css_url and script_url properties in templates with new cdn helper
+- do this by editing the templates
+- once confirmed all templates are fixed, remove the code and documentation for these variables
+
+Replace existing asset helper properties in templates with new cdn helper
+- Check it's only used for CSS/JS...
+
+Enforce size limits on setting tempalte views
+Add integration tests for cdn paths with weird view names, etc.
+Add integration tests for preview subdomain logic (skip for my- not for site)
+
+Add more options to site settings beyond title, such as description and reply email, and tell Omar
+Allow text entry fields in template settings from the dashboard for template locals, and tell Omar
+Add multiple date format selectors on the theme dashboard for different contexts, and tell Omar
+Introduce collapsible sections or a separately scrollable div on the template dashboard settings, and tell Omar
+
+Search results pages should be no-indexed by search engines
+
+Can we optimize renderView in some way?
+- use lru cache or moize libraries? back against cacheID property of blog?
+- Memoize load template / load full view / load blog... others?
+- use a proper library, cap memory, etc.
+- should majorly improve performance on popular sites
+
+verify that nginx config serves as many CDN static files as possible
+- eventually these files will be on s3 but for now, use nginx with try files where possible then pass on to upstream
+
+Resolve inconsistency: 'Create site' vs New template vs Create file
+
+'Preview' link on template editor should become 'Visit site' for installed template
+- or maybe add a new button 'visit site'?
+
+Fix bug with huge archives page 
+- `https://deoxy.blot.im/archives`
+
+---
+
+Update obsidian tools pages (improve)
+
+Follow up with Bunny about bug with spaces in file names served from folder
+- or write code to workaround
+
+Update question on what to do to import posts from wordpress or squarespace: instead of contact me, reference the importer. 
+
+Make it possible to configure the export file format (e.g. instead of markdown, word documents) on the importer
+
+Investigate replybox for comments
 
 Apply improvements from andrew's template into documentation template
 
@@ -30,6 +126,15 @@ Adjust color settings into a simple 'presets' picker, then an option to dive int
 Add lang selector (map english -> en) to template editor
 
 Create a new template local '{{{system-css}}}' which merges `{{{appCSS}}}, {{{font.styles}}}, {{{title_font.styles}}}`
+
+Secure deploy ssh on GitHub
+
+Add GitHub deploy button for macserver
+
+Add GitHub deploy button for openresty 
+
+Set up AWS cost anomaly detection
+- add daily aws cost to email update
 
 ---
 
@@ -80,6 +185,8 @@ Fix bug with 'failed to update folder lock' that throws an error – is the issu
 Fix bug with iCloud client which doesn't surface / handle removed folder
 - to reproduce, connect to icloud then delete the folder
 
+Move image zoom to template settings
+
 Fix bug with cancelled subscriptions that keeps the account around
 - finish script to identify long-expired customers with blogs to safely delete and free up space. 
 - Sort by date expired
@@ -101,11 +208,6 @@ Fix bugs with custom domain setup
 - Validate the domain is pointing to Blot before allowing resty-auto-ssl to request a cert. we seem to get into a DNS mismatch where a client thinks a domain points to Blot, and triggers a cert request through resty-auto-ssl but whatever DNS server Blot's server points to has the stale record (pointing elsewhere)
 - Disable redirect to HTTPS for blogs by default (to ensure old browsers without SNI work) but ensure all prominent links to the blog on dashboard use HTTPS
 - cache domain validity and display checkmark on dashboard
-
-Fix bug where changes to documentation CSS do not make it into production:
-- stale servers serve the old CSS 
-- purge bunny after deployment complete?
-- can servers share the tmp dir views directory?
 
 Fix bug with Documentation template and the setting 'Adds zoom to large images' and [tell customer](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgJMGTSPcnwTNxVJVPZZnrhJB)
 
@@ -179,10 +281,6 @@ Fix bug with handling of queries and tell [this person](https://mail.google.com/
 Fix bug with Work out why Pandoc cannot handle 'linked' images (instead of conventionally embedded images). For instructiosn on reproducing bug, see [SG's email](https://mail.google.com/mail/u/0/#inbox/FMfcgxvzLhcqMVrZbNlKTcVmxVHwRmJC) and follow up when resolved.
 
 Fix bug with tags that contain slashes and tell [Jack](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpFgzpsCkCMGqnClfqMkWZqNNz)
-
-Fix bug which prevents the CDN url replacer working for drafts
-- Refactor so the draft route relies more on the middleware function
-- At the moment, drafts bypass a lot of the code – many template features won't work
 
 Fix bug with git client which occurs when you change your username with the git client
 
@@ -263,6 +361,8 @@ Build out simple discover page with links to publish in daily email
 
 Add photo/pictures/pics/images grid to tagged page of blog template and photos subfolder to default folder.
 
+Add plugin to generate anchor links next to headings automatically and tell [Peter](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTzTSGBNGZrJghtTNGNKvdzlg)
+
 Refactor front end domain page to have radio button to seelct between custom domain and blot subdomain
 Inbox
 - don't delete custom domain, though (maybe add property redirectDomain ?)
@@ -291,6 +391,8 @@ Improve tools/bear
 Improve tools/ulysses
 - Reach out to Ulysses to let them know about textbundle support
 
+Look into figma make
+
 Improve server performance by 1. Create `app/build/plugins/folderAssets/index.js` that exports a `render` handler; reuse the logic from `app/blog/render/replaceFolderLinks/html.js` and `lookupFile` so it asynchronously rewrites `<a href>`/`<img src>` etc. during build-time processing to CDN urls, resolving the correct case where needed.
 - 2. Register the plugin in `app/build/plugins/index.js` so it runs for HTML entries (respecting `options.isHTML`) and make it default-enabled for blogs.
 - 3. Add new tests under `app/build/plugins/folderAssets/tests` to confirm the plugin emits CDN URLs and leaves untouched cases alone.
@@ -314,6 +416,8 @@ Migrate JSON blob entry into a redis hash:
 Improve performance rendering sitemaps by using sitemap indexes, and sharding the sitemap.
 - requires adding pagination for listing pages
 - requires using the url / param feature, e.g. [sitemap.xml, sitemap.posts.:page.xml, sitemap.pages.:page.xml]
+
+Leverage bunny tag based caching to perform full blogID based purges: https://bunny.net/blog/introducing-tag-based-cdn-cache-purging/
 
 Add [preload=none](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/audio#preload) to all audio and video tags without it defined or maybe preload="metadata"? 
 
@@ -518,16 +622,12 @@ Set long-timeout for git client requests on reverse proxy
 
 Add tests for webp thumbnails
 
-Add deploy button to GitHub so I can deploy code while away
-
 Improve the camera make and model names extracted by exiftool using a third-party library, e.g. SONY ILCE-7M3 -> Sony α7 III
 - [ ] Tell [Chuck](https://mail.google.com/mail/u/0/#inbox/QgrcJHrhvXLmnzQkFJsDwTvsrSbqBFVgtxV)
 
 Move folder lock location to instance ssd for improved reliability and performance (non-networked drive...) – could be inside the cache
 
 Write about mustache technique for {{#updated}} and {{updated}} to work at the same time (toString)
-
-Pandoc doesn't support autolinking for Chrome's copy link to highlight feature – should we make this work? e.g. `https://stackoverflow.com/questions/71806679/how-to-copy-link-to-highlight-using-chrome-api#:~:text=How%20to%20copy%20link%20to%20highlight`
 
 Run dropbox reset as ec2-user not root
 - run chown on all data files...
@@ -561,9 +661,6 @@ Make iCloud site routes blocking so the mac server waits for the main server to 
 Think about how to purge the old versions of files cached by bunny's permacache
 
 Can we avoid changing cache id for a site after a sync with no changes?
-
-How can we serve template files over CDN?
-- do we have to remap references to other files in stylesheets since we're doing a switcheroo
 
 Image cacher should work for webp, tiff, etc. as well as JPG
 
@@ -977,11 +1074,6 @@ Improvements to website:
 
 ---
 
-Consider switching domain to blot.site
-- add support for different user subdomain in dev?
-- set up mail
-- switch from mailgun to SES over new domain
-
 Add aws cost usage and forecast to daily update email
 - https://docs.aws.amazon.com/cli/latest/reference/ce/get-cost-and-usage.html
 
@@ -992,7 +1084,9 @@ Improve webloc converter:
 
 Ensure that overdue PayPal subscription webhooks map to notification emails
 
-Purge old docs CSS and JS from CDN storage cache
+Clean up CDN permanent storage:
+- Purge old docs CSS and JS from CDN storage cache
+- Purge old {{#cdn}} helper responses from /template/ route for blogs
 
 Make sure main server can hard restart without issue
 
@@ -1114,7 +1208,6 @@ Add support for paying with crypto, BTC ETH
 Improve Are.na importer so it handles descriptions + also other file types (e.g. PDF, text) and tell [Marco](https://mail.google.com/mail/u/0/#inbox/QgrcJHsBvDqvbgfkRJfBlwLBwlDHDncxVnl)
 
 Improvements to server
-- [ ] move development cdn onto its own host to better simular cross-domain issues
 - [ ] test maintenance and redirector on dashboard
 - [ ] restrict post to /dashboard route so we can tune nginx logic?
 - [ ] tune performance of express-mustache in production and development
@@ -1196,6 +1289,18 @@ Add way to set the slug-part of a URL for a post and tell [George](https://mail.
 
 
 ---
+
+Investigate migrating from Redis to SQLite per-blog database
+- Evaluate feasibility of storing one SQLite database per blog in data/blogs/{blogID}/blog.db
+- Assess performance implications (memory usage, query speed, connection management)
+- Design hybrid approach: SQLite per-blog for blog-scoped data + small Redis/master DB for global lookups (handle/domain mappings, blog IDs set)
+- Identify all global queries that span multiple blogs (getHosts, handle/domain resolution) and plan migration strategy
+- Estimate memory savings vs current Redis approach (SQLite uses OS page cache vs Redis keeping everything in RAM)
+- Consider connection pooling/lazy opening strategy for managing many SQLite connections
+- Evaluate concurrent write patterns and SQLite locking behavior
+- Create proof-of-concept migration for entry storage (currently blog:{id}:entry:{path} in Redis)
+- Benchmark query performance comparison (Redis sorted sets vs SQLite queries)
+- Document migration path and breaking changes required
 
 Can Blot blogs be federated? Respond to [Nigel](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrbRWfcBdwKdRZxsBKjKDwrkTp) once I do some research on this
 
@@ -1442,11 +1547,6 @@ Add password protection for blogs then tell [Ed](https://mail.google.com/mail/u/
 - creating a password form view common to all sites, or able to be overwritten (password.html in a template perhaps).
 
 Add raw-link -> open graph cards/embed function, which would fetch the title, description and thumbnail for a link using <meta> tags. Tell [Robert](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlksJFbBlWtzMHgcxcdBRBhQSJ)
-
----
-
-Improve the markdown converter:
-- Extend the Markdown converted to add support for Ulysses highlighting and iAWriter highlighting syntax, using the [example files provided by Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsKFQGTxDTnxNddZQxjsLZJGb). Tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsKFQGTxDTnxNddZQxjsLZJGb)
 
 ---
 

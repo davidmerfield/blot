@@ -8,6 +8,7 @@ module.exports = function (req, res, next) {
     req.view = res.locals.view = {
       content: Template.package.generate(req.blog.id, template, views),
       name: "package.json",
+      isPackageJSON: true,
       editorMode: editorMode("package.json"),
     };
 
@@ -18,8 +19,8 @@ module.exports = function (req, res, next) {
     if (err || !view) return next(new Error("No view"));
 
     view.editorMode = editorMode(view.name);
+    view.isPackageJSON = false;
     req.view = res.locals.view = view;
-
     next();
   });
 };

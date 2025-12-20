@@ -1,4 +1,5 @@
 const CodeMirror = require("./codemirror/codemirror.js");
+const initSidebarActionMenu = require("./sidebar-action-menu");
 
 require("./codemirror/active-line.js");
 require("./codemirror/mode-css.js");
@@ -178,4 +179,52 @@ function initializeSourceEditor() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", initializeSourceEditor);
+function initializeSourceSidebarMenu() {
+  if (typeof window === "undefined" || !window.document) return;
+
+  var list = document.getElementById("source-file-list");
+  var menu = document.getElementById("source-file-action-menu");
+
+  if (!list || !menu) return;
+
+  var cleanBase = function (dataset) {
+    var baseUrl = dataset.baseurl || "";
+    if (baseUrl) baseUrl = baseUrl.replace(/\/+$/, "");
+    return baseUrl;
+  };
+
+  initSidebarActionMenu({
+    container: list,
+    menuElement: menu,
+    rowSelector: ".template-row",
+    triggerSelector: ".template-row__menu-trigger",
+    initialFocusKey: "edit",
+    linkMap: {
+      edit: function (dataset) {
+        var baseUrl = cleanBase(dataset);
+        return baseUrl ? baseUrl + "/edit" : null;
+      },
+      rename: function (dataset) {
+        var baseUrl = cleanBase(dataset);
+        var disabled = dataset.disableRename === "true";
+        return {
+          href: baseUrl ? baseUrl + "/rename" : null,
+          disabled: disabled || !baseUrl,
+        };
+      },
+      "delete": function (dataset) {
+        var baseUrl = cleanBase(dataset);
+        var disabled = dataset.disableDelete === "true";
+        return {
+          href: baseUrl ? baseUrl + "/delete" : null,
+          disabled: disabled || !baseUrl,
+        };
+      },
+    },
+  });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  initializeSourceEditor();
+  initializeSourceSidebarMenu();
+});

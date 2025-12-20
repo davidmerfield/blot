@@ -201,6 +201,19 @@ describe("dates", function () {
     expect(await this.text("/")).toBe("25 Jan 3rd");
   });
 
+  it("supports the formatDate helper with a variable", async function () {
+    await this.write({ path: "/a.txt", content: "Date: 2025-01-03\n\nFoo" });
+
+    await this.template({
+      "entries.html": `{{#entries}}{{#formatDate}}{{date_format}}{{/formatDate}}{{/entries}}`,
+    }, {
+      locals: { date_format: "YY MMM, Do" },
+    });
+
+    expect(await this.text("/")).toBe("25 Jan, 3rd");
+  });
+
+
   it("supports the formatUpdated helper", async function () {
     const before = Date.now();
     await this.write({ path: "/a.txt", content: "Foo" });

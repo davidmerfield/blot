@@ -5,6 +5,7 @@ const database = require("../database");
 const download = require("../util/download");
 const createDriveClient = require("../serviceAccount/createDriveClient");
 const CheckWeCanContinue = require("../util/checkWeCanContinue");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const driveReaddir = require("./util/driveReaddir");
 const localReaddir = require("./util/localReaddir");
@@ -86,8 +87,19 @@ module.exports = async function sync(blogID, publish, update) {
     const remoteContents = transformDriveItems(driveItems);
 
     for (const { name } of localContents) {
+      const path = join(dir, name);
+
+      if (shouldIgnoreFile(path)) {
+        await checkWeCanContinue();
+        publish("Removing ignored", path);
+        await fs.remove(localPath(blogID, path));
+        await update(path);
+        const id = await getByPath(path);
+        if (id) await remove(id);
+        continue;
+      }
+
       if (!remoteContents.find((item) => item.name === name)) {
-        const path = join(dir, name);
         await checkWeCanContinue();
         publish("Removing", join(dir, name));
         console.log(

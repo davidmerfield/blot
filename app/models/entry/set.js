@@ -8,6 +8,8 @@ var debug = require("debug")("blot:entry:set");
 var get = require("./get");
 var key = require("./key");
 var setUrl = require("./_setUrl");
+var Candidates = setUrl.Candidates;
+var Blog = require("models/blog");
 
 // Queue items
 var rebuildDependencyGraph = require("./_rebuildDependencyGraph");
@@ -46,6 +48,8 @@ module.exports = function set (blogID, path, updates, callback) {
     var previousDependencies = entry.dependencies
       ? entry.dependencies.slice()
       : [];
+
+    var previousUrl = entry.url;
 
     // Overwrite any updates to the entry
     for (var i in updates) entry[i] = updates[i];
@@ -97,9 +101,12 @@ module.exports = function set (blogID, path, updates, callback) {
 
     debug("set", blogID, path, "calling setUrl");
 
-    setUrl(blogID, entry, function (err, url) {
+    setUrl(blogID, entry, function (err, result) {
       // Should be pretty serious (i.e. issue with DB)
       if (err) return callback(err);
+
+      var url = result.url;
+      var conflictingEntryPath = result.conflictingEntryPath;
 
       debug("set", blogID, path, "setUrl returned", url);
 
@@ -107,97 +114,144 @@ module.exports = function set (blogID, path, updates, callback) {
       // drafts, scheduled entries and deleted entries
       entry.url = url;
 
-      // Ensures entry has all the
-      // keys it should have and no more
-      ensure(entry, model, true);
-
-      // Store the entry
-      redis.set(entryKey, JSON.stringify(entry), function (err) {
+      Blog.get({ id: blogID }, function (err, blog) {
         if (err) return callback(err);
+        if (!blog) return callback(new Error("Blog not found"));
 
-        var ttlAction = entry.deleted
-          ? function (next) {
-              redis.expire(entryKey, 24 * 60 * 60, function (err, result) {
-                if (err) return next(err);
-                if (!result)
-                  return next(
-                    new Error("Failed to set expiration for deleted entry")
-                  );
-                next();
-              });
+        // Skip dependency tracking for deleted entries
+        // to preserve entry.permalink for backlink removal
+        if (!entry.deleted) {
+          var firstCandidateList = Candidates(blog, entry);
+          var firstCandidate = firstCandidateList && firstCandidateList[0];
+          var dependenciesProvided = Array.isArray(updates.dependencies);
+          var baseDependencies = dependenciesProvided
+            ? updates.dependencies.slice()
+            : previousDependencies.slice();
+
+          var deduplicated =
+            !!conflictingEntryPath &&
+            !!firstCandidate &&
+            url &&
+            url !== firstCandidate;
+
+          if (deduplicated) {
+            if (entry.dependencies.indexOf(conflictingEntryPath) === -1) {
+              entry.dependencies.push(conflictingEntryPath);
             }
-          : function (next) {
-              redis.persist(entryKey, function (err) {
-                if (err) return next(err);
-                next();
-              });
-            };
+          }
 
-        ttlAction(function (err) {
+          var previousUrlWasDeduped = previousUrl && /-\d+$/.test(previousUrl);
+          var reclamation =
+            !!firstCandidate &&
+            !!previousUrlWasDeduped &&
+            url === firstCandidate;
+
+          if (reclamation) {
+            entry.dependencies = entry.dependencies.filter(function (dependency) {
+              var wasPrevious = previousDependencies.indexOf(dependency) > -1;
+              var inBase = baseDependencies.indexOf(dependency) > -1;
+
+              if (!dependenciesProvided) {
+                return !(previousUrlWasDeduped && dependency === conflictingEntryPath);
+              }
+
+              return !(wasPrevious && !inBase);
+            });
+          }
+        }
+
+        // Ensures entry has all the
+        // keys it should have and no more
+        ensure(entry, model, true);
+
+        // Store the entry
+        redis.set(entryKey, JSON.stringify(entry), function (err) {
           if (err) return callback(err);
 
-          queue = [
-          updateTagList.bind(this, blogID, entry),
-          assignToLists.bind(this, blogID, entry),
-          rebuildDependencyGraph.bind(this, blogID, entry, previousDependencies)
-        ];
+          var ttlAction = entry.deleted
+            ? function (next) {
+                redis.expire(entryKey, 24 * 60 * 60, function (err, result) {
+                  if (err) return next(err);
+                  if (!result)
+                    return next(
+                      new Error("Failed to set expiration for deleted entry")
+                    );
+                  next();
+                });
+              }
+            : function (next) {
+                redis.persist(entryKey, function (err) {
+                  if (err) return next(err);
+                  next();
+                });
+              };
 
-        if (entry.scheduled)
-          queue.push(addToSchedule.bind(this, blogID, entry));
-
-        if (entry.draft) queue.push(notifyDrafts.bind(this, blogID, entry));
-
-          async.parallel(queue, function (err) {
+          ttlAction(function (err) {
             if (err) return callback(err);
-            backlinksToUpdate(
-              blogID,
-              entry,
-              previousInternalLinks,
-              previousPermalink,
-              function (err, changes) {
-                if (err) return callback(err);
 
-                if (changes.length)
-                  console.log(
-                    clfdate(),
-                    blogID.slice(0, 12),
-                    "updating backlinks:",
-                    path
-                  );
-                async.eachOf(
-                  changes,
-                  function (backlinks, linkedEntryPath, next) {
+            queue = [
+              updateTagList.bind(this, blogID, entry),
+              assignToLists.bind(this, blogID, entry),
+              rebuildDependencyGraph.bind(this, blogID, entry, previousDependencies),
+            ];
+
+            if (entry.scheduled)
+              queue.push(addToSchedule.bind(this, blogID, entry));
+
+            if (entry.draft) queue.push(notifyDrafts.bind(this, blogID, entry));
+
+            async.parallel(queue, function (err) {
+              if (err) return callback(err);
+              backlinksToUpdate(
+                blogID,
+                entry,
+                previousInternalLinks,
+                previousPermalink,
+                function (err, changes) {
+                  if (err) return callback(err);
+
+                  if (changes.length)
                     console.log(
                       clfdate(),
                       blogID.slice(0, 12),
-                      "    - linked entry:",
-                      linkedEntryPath
+                      "updating backlinks:",
+                      path
                     );
-                    set(blogID, linkedEntryPath, { backlinks }, function (err) {
-                      if (err) {
-                        console.log(
-                          clfdate(),
-                          blogID.slice(0, 12),
-                          "    - error updating linked entry:",
-                          linkedEntryPath
-                        );
-                        console.log(err);
+                  async.eachOf(
+                    changes,
+                    function (backlinks, linkedEntryPath, next) {
+                      console.log(
+                        clfdate(),
+                        blogID.slice(0, 12),
+                        "    - linked entry:",
+                        linkedEntryPath
+                      );
+                      set(blogID, linkedEntryPath, { backlinks }, function (err) {
+                        if (err) {
+                          console.log(
+                            clfdate(),
+                            blogID.slice(0, 12),
+                            "    - error updating linked entry:",
+                            linkedEntryPath
+                          );
+                          console.log(err);
+                        }
+                        next();
+                      });
+                    },
+                    function (err) {
+                      if (err) return callback(err);
+                      if (entry.deleted) {
+                        console.log(clfdate(), blogID.slice(0, 12), "delete", path);
+                      } else {
+                        console.log(clfdate(), blogID.slice(0, 12), "update", path);
                       }
-                      next();
-                    });
-                  },
-                  function (err) {
-                    if (err) return callback(err);
-                    if (entry.deleted) {
-                      console.log(clfdate(), blogID.slice(0, 12), "delete", path);
-                    } else {
-                      console.log(clfdate(), blogID.slice(0, 12), "update", path);
+                      callback();
                     }
-                    callback();
-                  }
-                );
-              }
-            );
+                  );
+                }
+              );
+            });
           });
         });
       });

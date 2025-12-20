@@ -11,6 +11,8 @@ module.exports = function extend (user) {
   // view renderer
   delete user.credentials;
   delete user.passwordHash;
+  delete user.created;
+  delete user.welcomeEmailSent;
 
   user.pretty = {};
 

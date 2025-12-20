@@ -4,6 +4,7 @@ var getAllViews = require("./getAllViews");
 var setMultipleViews = require("./setMultipleViews");
 var getMetadata = require("./getMetadata");
 var setMetadata = require("./setMetadata");
+var updateCdnManifest = require("./util/updateCdnManifest");
 
 module.exports = function clone(fromID, toID, metadata, callback) {
   ensure(fromID, "string")
@@ -30,7 +31,18 @@ module.exports = function clone(fromID, toID, metadata, callback) {
         // source of the clone, if its not set
         extend(metadata).and(existingMetadata);
 
-        setMetadata(toID, metadata, callback);
+        // Don't copy the CDN manifest - it will be regenerated with new hashes
+        // based on the new template ID to ensure hashes reflect the new template
+        // and files are stored on disk with the correct hash
+        delete metadata.cdn;
+
+        setMetadata(toID, metadata, function (err) {
+          if (err) return callback(err);
+
+          // Regenerate CDN manifest with new template ID to ensure
+          // hashes reflect the new template and files are stored on disk
+          updateCdnManifest(toID, callback);
+        });
       });
     });
   });

@@ -6,6 +6,8 @@ const download = require("./util/download");
 const CheckWeCanContinue = require("./util/checkWeCanContinue");
 const localReaddir = require("./util/localReaddir");
 const remoteReaddir = require("./util/remoteReaddir");
+const remoteRecursiveList = require("./util/remoteRecursiveList");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const config = require("config");
 const maxFileSize = config.icloud.maxFileSize; // Maximum file size for iCloud uploads in bytes
@@ -20,6 +22,14 @@ module.exports = async (blogID, publish, update) => {
 
   const checkWeCanContinue = CheckWeCanContinue(blogID);
 
+  try {
+    publish("Syncing folder tree");
+    await remoteRecursiveList(blogID, "/");
+  } catch (error) {
+    console.error("Failed to sync folder tree", error);
+    publish("Failed to sync folder tree", error.message);
+  }
+
   const walk = async (dir) => {
     publish("Checking", dir);
 
@@ -29,12 +39,21 @@ module.exports = async (blogID, publish, update) => {
     ]);
 
     for (const { name } of localContents) {
+      const path = join(dir, name);
+
+      if (shouldIgnoreFile(path)) {
+        await checkWeCanContinue();
+        publish("Removing local ignored item", path);
+        await fs.remove(localPath(blogID, path));
+        await update(path);
+        continue;
+      }
+
       if (
         !remoteContents.find(
           (item) => item.name.normalize("NFC") === name.normalize("NFC")
         )
       ) {
-        const path = join(dir, name);
         await checkWeCanContinue();
         publish("Removing local item", join(dir, name));
         await fs.remove(localPath(blogID, path));

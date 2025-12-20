@@ -3,10 +3,12 @@ var join = require("path").join;
 var clients = require("clients");
 
 describe("template", function () {
-  var writeToFolder = require("../index").writeToFolder;
-  var setView = require("../index").setView;
-  var dropView = require("../index").dropView;
-  var setMetadata = require("../index").setMetadata;
+var writeToFolder = require("../index").writeToFolder;
+var setView = require("../index").setView;
+var dropView = require("../index").dropView;
+var setMetadata = require("../index").setMetadata;
+var packageAPI = require("../index").package;
+var writeChangeToFolder = require("../../../dashboard/site/template/save/writeChangeToFolder");
 
   require("./setup")({ createTemplate: true });
 
@@ -20,8 +22,8 @@ describe("template", function () {
   it("writes a template to a folder", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
-      content: test.fake.random.word(),
+      name: "post.html",
+      content: "<h1>Post content</h1>",
     };
 
     setView(this.template.id, view, function (err) {
@@ -83,11 +85,34 @@ describe("template", function () {
     });
   });
 
+  it("regenerates package.json in the local folder when local editing is enabled via package save", function (done) {
+    var test = this;
+    var packageMetadata = { localEditing: true, name: "Local Package" };
+    var staleTemplate = Object.assign({}, this.template, { localEditing: false });
+
+    packageAPI.save(this.template.id, packageMetadata, function (err) {
+      if (err) return done.fail(err);
+
+      writeChangeToFolder(
+        test.blog,
+        staleTemplate,
+        { name: "package.json" },
+        function (err) {
+          if (err) return done.fail(err);
+
+          var packagePath = getTemplatePath(test, "package.json");
+          expect(fs.readJsonSync(packagePath).name).toEqual(packageMetadata.name);
+          done();
+        }
+      );
+    });
+  });
+
   it("writes view metadata to package.json to a folder", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
-      content: test.fake.random.word(),
+      name: "about.html",
+      content: "<h1>About page</h1>",
       locals: { foo: "bar" },
     };
 
@@ -118,8 +143,8 @@ describe("template", function () {
   it("reuses an existing lowercase templates directory", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
-      content: test.fake.random.word(),
+      name: "welcome.html",
+      content: "<h1>Welcome</h1>",
     };
     var lowercaseBase = test.blogDirectory + "/templates";
     var expectedPath =
@@ -143,8 +168,8 @@ describe("template", function () {
   it("creates lowercase templates when root entries are lowercase", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
-      content: test.fake.random.word(),
+      name: "lowercase.html",
+      content: "<h1>Lowercase template</h1>",
     };
     var posts = test.blogDirectory + "/posts";
     var drafts = test.blogDirectory + "/drafts";
@@ -185,8 +210,8 @@ describe("template", function () {
   it("skips rewriting files when contents have not changed", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
-      content: test.fake.random.word(),
+      name: "static.html",
+      content: "<h1>Static content</h1>",
     };
 
     setView(this.template.id, view, function (err) {
@@ -212,8 +237,8 @@ describe("template", function () {
   it("removes orphaned files left in the template directory", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
-      content: test.fake.random.word(),
+      name: "clean.html",
+      content: "<h1>Clean template</h1>",
     };
 
     setView(this.template.id, view, function (err) {
@@ -242,8 +267,8 @@ describe("template", function () {
   it("removes orphans while preserving existing files with the local client", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
-      content: test.fake.random.word(),
+      name: "local.html",
+      content: "<h1>Local template</h1>",
     };
 
     this.blog
@@ -283,8 +308,8 @@ describe("template", function () {
   it("ignores symbolic links when scanning template files", function (done) {
     var test = this;
     var view = {
-      name: test.fake.random.word() + ".html",
-      content: test.fake.random.word(),
+      name: "linked.html",
+      content: "<h1>Linked template</h1>",
     };
 
     setView(this.template.id, view, function (err) {

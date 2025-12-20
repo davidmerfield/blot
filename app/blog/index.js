@@ -29,7 +29,7 @@ require("./robots")(blog);
 blog.use(require("./view"));
 blog.use(require("./entry"));
 
-blog.get("/page/:page_number", require("./entries"));
+blog.get("/page/:page", require("./entries"));
 blog.get("/", require("./entries"));
 
 blog.use(require("./assets"));

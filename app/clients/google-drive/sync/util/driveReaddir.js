@@ -1,3 +1,5 @@
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
+
 const readdir = async (drive, dirId) => {
   let res;
   let items = [];
@@ -15,7 +17,8 @@ const readdir = async (drive, dirId) => {
     nextPageToken = res.data.nextPageToken;
   } while (nextPageToken);
 
-  return items;
+  // Filter out system files that shouldn't be synced to Blot
+  return items.filter((item) => !shouldIgnoreFile(item.name));
 };
 
 module.exports = readdir;

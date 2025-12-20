@@ -34,7 +34,6 @@
 #c40002 sidenote.ridwansanusi.com Ridwan Sanusi, is a designer
 #6e44b3 max.engineer Max Chernyak, is a software engineer
 #f1bd00 oliviaastawood.com Olivia Wood, is a writer
-#387db9 nowaykohei.com Kohei Foss, is a project manager 
 #21732d www.nitinpai.in Nitin Pai, is a think-tank director
 #000000 jeankapsa.com Jean Kapsa, is a pianist
 #000000 www.declad.com Lewis Martin, is an architect
@@ -71,3 +70,4 @@
 #000000 kristinemorgan.com Kristine Morgan, is a writer
 #000000 maggiewangphotography.com Maggie Wang, is an academic
 #000000 chuckpearson.blog Chuck Pearson, is a designer
+#000000 garywebbracing.com Gary Webb, is a racing driver

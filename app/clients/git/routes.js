@@ -5,11 +5,18 @@ var disconnect = require("./disconnect");
 var pushover = require("pushover");
 var sync = require("./sync");
 var dataDir = require("./dataDir");
+var debug = require("debug")("blot:clients:git:routes");
 var repos = pushover(dataDir, { autoCreate: true });
+repos.on("error", function (err) {
+  if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+    return debug("Git repos connection error", err.message || err);
+  }
+
+  debug("Git repos error", err);
+});
 var Express = require("express");
 var dashboard = Express.Router();
 var site = Express.Router();
-var debug = require("debug")("blot:clients:git:routes");
 var clfdate = require("helper/clfdate");
 var host = require("config").host;
 
@@ -117,6 +124,40 @@ site.get("/syncs-finished/:blogID", function (req, res) {
 });
 
 repos.on("push", function (push) {
+  if (push) {
+    push.on("error", function (err) {
+      if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+        return debug("Git push error", err.message || err);
+      }
+
+      debug("Git push unexpected error", err);
+    });
+  }
+
+  if (push && push.request) {
+    push.request.on("error", function (err) {
+      if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+        return debug("Git push request connection error", err.message || err);
+      }
+
+      debug("Git push request error", err);
+    });
+
+    push.request.on("aborted", function () {
+      debug("Git push request aborted");
+    });
+  }
+
+  if (push && push.response) {
+    push.response.on("error", function (err) {
+      if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+        return debug("Git push response connection error", err.message || err);
+      }
+
+      debug("Git push response error", err);
+    });
+  }
+
   push.accept();
 
   // This might cause an interesting race condition. It happened for me during
@@ -158,6 +199,39 @@ repos.on("push", function (push) {
 // site.use("/end/:gitHandle.git", function(req, res) {
 // I would feel more comfortable if I could.
 site.use("/end", function (req, res) {
+  function endResponse() {
+    if (res && !res.headersSent && !res.finished && !res.writableEnded) {
+      try {
+        res.end();
+      } catch (err) {
+        debug("Error ending git response", err);
+      }
+    }
+  }
+
+  req.on("error", function (err) {
+    if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+      debug("Git request connection error", err.message || err);
+    } else {
+      debug("Git request error", err);
+    }
+
+    endResponse();
+  });
+
+  req.on("aborted", function () {
+    debug("Git request aborted");
+    endResponse();
+  });
+
+  res.on("error", function (err) {
+    if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+      return debug("Git response connection error", err.message || err);
+    }
+
+    debug("Git response error", err);
+  });
+
   req.pause();
   repos.handle(req, res);
   req.resume();

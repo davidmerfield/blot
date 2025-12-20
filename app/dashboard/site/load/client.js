@@ -1,4 +1,5 @@
 var clients = require("clients");
+const config = require("config");
 
 module.exports = function (req, res, next) {
   const client = clients[req.blog.client];
@@ -9,6 +10,7 @@ module.exports = function (req, res, next) {
   const canResync = client && !!client.resync;
 
   res.locals.client = { ...client, canResync };
+  res.locals.isDevelopment = config.environment === "development";
 
   next();
 };

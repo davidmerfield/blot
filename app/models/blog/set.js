@@ -10,6 +10,10 @@ var config = require("config");
 var BackupDomain = require("./util/backupDomain");
 var flushCache = require("./flushCache");
 var normalizeImageExif = require("./util/imageExif").normalize;
+var updateCdnManifest = require("../template/util/updateCdnManifest");
+var forkSiteTemplate = require("../template/util/forkSiteTemplate");
+var promisify = require("util").promisify;
+var updateCdnManifestAsync = promisify(updateCdnManifest);
 
 function Changes(latest, former) {
   var changes = {};
@@ -31,7 +35,7 @@ module.exports = function (blogID, blog, callback) {
   validate(blogID, blog, function (errors, latest) {
     if (errors) return callback(errors);
 
-    get({ id: blogID }, function (err, former) {
+    get({ id: blogID }, async function (err, former) {
       former = former || {};
 
       if (err) return callback(err);
@@ -49,6 +53,24 @@ module.exports = function (blogID, blog, callback) {
       }
 
       changes = Changes(latest, former);
+
+      if (
+        changes.template &&
+        latest.template &&
+        latest.template.indexOf("SITE:") === 0
+      ) {
+        try {
+          var forkedTemplateID = await forkSiteTemplate(blogID, latest.template);
+
+          if (forkedTemplateID && forkedTemplateID !== latest.template) {
+            latest.template = forkedTemplateID;
+            changes.template = forkedTemplateID;
+          }
+        } catch (forkError) {
+          // for now, do nothing
+          console.log('Blog.set', blogID, 'Error forking template', forkError);
+        }
+      }
 
       // Blot stores the rendered output of requests in a
       // cache directory, files inside which are served before
@@ -142,10 +164,26 @@ module.exports = function (blogID, blog, callback) {
 
       multi.hmset(key.info(blogID), serial(latest));
 
-      multi.exec(function (err) {
+      multi.exec(async function (err) {
         // We didn't manage to apply any changes
         // to this blog, so empty the list of changes
         if (err) return callback(err, []);
+
+        const template = latest.template || former.template;
+
+        // Also update CDN manifest when plugin settings change, since
+        // plugin changes (especially analytics) affect the rendered output
+        // of views like script.js that use {{{appJS}}}
+        const shouldUpdateManifest = changes.template || changes.plugins;
+
+        if (template && shouldUpdateManifest) {
+          try {
+            await updateCdnManifestAsync(template);
+          } catch (updateError) {
+            // for now, do nothing
+            console.log('Blog.set', blogID, 'Error updating template CDN manifest', updateError);
+          }
+        }
 
         flushCache(blogID, former, function (err) {
           callback(err, changesList);
