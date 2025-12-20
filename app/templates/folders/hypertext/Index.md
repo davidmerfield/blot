@@ -1,20 +1,23 @@
-I’m a technologist and software engineer. I’m interested in databases, security, and climate change.
+Link: /
 
+![Circle](./_Web_Color_Cube.png)
 
-# Professional
+Ita fac, mi Lucili: vindica te tibi, et tempus quod adhuc aut auferebatur aut subripiebatur aut excidebat collige et serva.[^1] Persuade tibi hoc sic esse ut scribo: quaedam tempora eripiuntur nobis, quaedam subducuntur, quaedam effluunt. 
 
-I’m currently working as an engineer on performance at [Airtable](https://airtable.com/).
+$$
+\theta ;\ \mapsto \; \frac{1}{N} \sum_{i=1}^N \left| y_i - \mu_{\theta}(x_i) \right|^2 + \log[ \,  \sigma^2_{\theta}(x_i) \, ].
+$$
 
-I started my career as a product manager at Google where I contributed to Now, Maps, and OAuth 2.0. After that, I was CTO of [Welkin Health](https://www.welkinhealth.com/), a healthcare CRM. I also spent a pandemic sabbatical year building [[aft]], an indie backend-as-a-service.
+Turpissima tamen est [[Hello|iactura quae]] per neglegentiam fit.[^2] Et si volueris attendere, magna pars vitae elabitur male agentibus, maxima nihil agentibus, tota vita aliud agentibus. 
 
-I have special expertise in building secure, performant, highly flexible systems like CRMs, or databases. I’m also experienced in [[Startup Security]].
+```python
+def fib(n):
+    a, b = 0, 1
+    for i in range(n):
+        a, b = b, a + b
+    return a
+```
 
-If you’re interested in learning more, or just want to say hello, please email me [here](mailto:andrew.wansley@gmail.com).
+[^1]: Quem mihi dabis qui aliquod pretium tempori ponat, qui diem aestimet, qui intellegat se cotidie mori? In hoc enim fallimur, quod mortem prospicimus: magna pars eius iam praeterit; quidquid aetatis retro est mors tenet. 
 
-# Personal
-
-I live in San Francisco. I try to enjoy the beautiful nature all around the Bay Area, whether hiking, on my bike, or just keeping my eyes open.
-
-This is my [[Personal Website]], where I keep a few essays, links to some projects I've done, and some other notes.
-
-I facilitate a Bay Area [[Men's Group]]. I’m an advocate for a strong sense of ethics at technology companies, as well as making them accessible and welcoming to as many people as possible. I have a certain [[Perspective]] on life.
+[^2]: Fac ergo, mi Lucili, quod facere te scribis, omnes horas complectere; sic fiet ut minus ex crastino pendeas, si hodierno manum inieceris. 
