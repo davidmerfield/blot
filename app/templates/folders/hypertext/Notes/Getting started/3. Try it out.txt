@@ -44,7 +44,7 @@ print("User data:", user)
 ```
 
 ::: error
-If you receive a "Framework not initialized" error, ensure that you have called `app.start()` before making API requests. For more details, check the [Introduction](/).
+If you receive a "Framework not initialized" error, ensure that you have called `app.start()` before making API requests. For more details, check the [Introduction](/introduction).
 :::
 
 ## Handling Errors

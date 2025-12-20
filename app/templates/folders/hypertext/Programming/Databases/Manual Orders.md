@@ -1,3 +1,0 @@
-- [Fractional Indexing](https://madebyevan.com/algos/crdt-fractional-indexing/)
-- Position Strings - https://www.npmjs.com/package/position-strings
-- Jira's "LexoRank"

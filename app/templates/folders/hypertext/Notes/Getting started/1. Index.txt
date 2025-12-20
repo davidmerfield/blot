@@ -1,6 +1,6 @@
 # Introduction 
 
-This guide will help you install and set up the framework for your project. If you haven't already, check out the [Introduction](/) to get an overview of the framework.  
+This guide will help you install and set up the framework for your project. If you haven't already, check out the Introduction to get an overview of the framework.  
 
 ## Installation  
 

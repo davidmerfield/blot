@@ -1,6 +1,6 @@
 # Möbius strip
 
-{>} ![A parametric plot of a Möbius strip](_pic.png)
+{>} ![A parametric plot of a Möbius strip](_Mobius strip.png)
 
 The Möbius strip or Möbius band is a surface with only one side and only one boundary. The Möbius strip has the mathematical property of being non-orientable. It can be realized as a ruled surface. It was discovered independently by the German mathematicians [August Ferdinand Möbius](https://en.wikipedia.org/wiki/August_Ferdinand_M%C3%B6bius) and [Johann Benedict Listing](https://en.wikipedia.org/wiki/Johann_Benedict_Listing) in 1858. 
 

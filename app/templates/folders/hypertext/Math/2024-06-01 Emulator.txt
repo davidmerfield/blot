@@ -21,8 +21,6 @@ data Expr
 
 This allowed me to define the core building blocks of Scheme expressions in a single, elegant type. In Python, I might have achieved something similar with classes and inheritance, but it would likely have been bulkier and less clear.
 
-![](/Images/_4.jpg)
-
 `case` Expressions
 ------------------
 

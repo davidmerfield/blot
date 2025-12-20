@@ -1,28 +1,8 @@
 Link: /
 Title: Home
 
-![ Line colour theory by Andrew Conway-Hyde](./_Before_the_calm.jpg)
+![Focused red (644 nm), green (532 nm) and blue (488 nm) lasers visualised using graphite powder. The intersection of all the beams appears white due to additive colour mixing](https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Additive_colour_mixing_of_focused_light.jpg/1280px-Additive_colour_mixing_of_focused_light.jpg)
 
-Ita fac, mi Lucili: vindica te tibi, et tempus quod adhuc aut auferebatur aut subripiebatur aut excidebat collige et serva.[^1] Persuade tibi hoc sic esse ut scribo: quaedam tempora eripiuntur nobis, quaedam subducuntur, quaedam effluunt. 
+Richard Waller is a programmer and physicist whose work centers on the formal and computational treatment of color. Trained in mathematical physics and software engineering, he approaches color as a problem spanning measurement, representation, and perception, with particular attention to the limits imposed by devices, encodings, and human vision. His technical practice integrates numerical methods, signal processing, and systems design.
 
-$$
-\theta ;\ \mapsto \; \frac{1}{N} \sum_{i=1}^N \left| y_i - \mu_{\theta}(x_i) \right|^2 + \log[ \,  \sigma^2_{\theta}(x_i) \, ].
-$$
-
-Turpissima tamen est [[Hello|iactura quae]] per neglegentiam fit.[^2] Et si volueris attendere, magna pars vitae elabitur male agentibus, maxima nihil agentibus, tota vita aliud agentibus. 
-
-Quem mihi dabis qui aliquod pretium tempori ponat, qui diem aestimet, qui intellegat se cotidie mori? In hoc enim fallimur, quod mortem prospicimus: magna pars eius iam praeterit; quidquid aetatis retro est mors tenet. 
-
-Fac ergo, mi Lucili, quod facere te scribis, omnes horas complectere; sic fiet ut minus ex crastino pendeas, si hodierno manum inieceris. 
-
-```python
-def fib(n):
-    a, b = 0, 1
-    for i in range(n):
-        a, b = b, a + b
-    return a
-```
-
-[^1]: Quem mihi dabis qui aliquod pretium tempori ponat, qui diem aestimet, qui intellegat se cotidie mori? In hoc enim fallimur, quod mortem prospicimus: magna pars eius iam praeterit; quidquid aetatis retro est mors tenet. 
-
-[^2]: Fac ergo, mi Lucili, quod facere te scribis, omnes horas complectere; sic fiet ut minus ex crastino pendeas, si hodierno manum inieceris. 
+His research interests include color spaces, spectral models, and the translation between physical, perceptual, and digital descriptions of color. He is especially concerned with precision, reproducibility, and the epistemic assumptions embedded in color technologies. Across both theory and practice, his work treats color not as an aesthetic accessory but as a rigorously constrained object of scientific and computational inquiry.
