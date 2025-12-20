@@ -4,9 +4,9 @@
     "page_size": 100,
     "lang": "en",
     "sort_by": "id",
-    "background_color": "#1e1e1e",
-    "text_color": "rgb(220, 221, 222)",
-    "link_color": "rgb(68 144 225)",
+    "background_color": "#fff",
+    "text_color": "rgb(0, 0, 0)",
+    "link_color": "rgb(48, 84, 235)",
     "syntax_highlighter": {
       "id": "solarized-light"
     },
