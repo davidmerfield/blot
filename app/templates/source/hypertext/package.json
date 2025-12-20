@@ -19,6 +19,12 @@
     "demo_folder": "hypertext"
   },
   "views": {
+    "archives.html": {
+      "url": "/archives"
+    },
+    "search.html": {
+      "url": "/search"
+    },
     "pagination.html": {
       "url": "/pagination/:page"
     },
