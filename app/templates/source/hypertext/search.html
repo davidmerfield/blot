@@ -4,7 +4,20 @@
 <body>
     {{> navigation}}
     <main>
-       <h1>Archives</h1>
+       
+        {{> search-form}}
+
+        {{#query}}
+        <div class="archives-grid">
+        {{#entries}}
+        <div class="archive-item">
+           <a href="{{{url}}}" class="archive-title">{{title}}</a>
+           <span class="archive-date">{{#formatDate}}MMM D, YYYY{{/formatDate}}</span>
+         </div>
+        {{/entries}}
+        </div>
+        {{/query}}
+
     </main>
     {{> footer}}
 </body>

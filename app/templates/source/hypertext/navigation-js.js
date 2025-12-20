@@ -80,6 +80,33 @@ class SidebarNavigation {
     const menuItems = allLis.filter((li) => li.hasAttribute("data-menu"));
     const postItems = allLis.filter((li) => !li.hasAttribute("data-menu"));
 
+    // collect hrefs from menu items (normalize to handle trailing slash variations)
+    const normalizeHref = (href) => {
+      if (!href) return "";
+      // remove trailing slash for comparison (except for root "/")
+      return href === "/" ? "/" : href.replace(/\/$/, "");
+    };
+
+    const getHref = (li) => {
+      const a = li.querySelector(":scope > a");
+      return a ? (a.getAttribute("href") || a.href) : null;
+    };
+
+    const menuHrefs = new Set();
+    menuItems.forEach((li) => {
+      const href = getHref(li);
+      if (href) menuHrefs.add(normalizeHref(href));
+    });
+
+    // filter out post items that match menu hrefs, removing them from DOM
+    const filteredPostItems = postItems.filter((li) => {
+      const href = getHref(li);
+      if (!href) return true;
+      const shouldKeep = !menuHrefs.has(normalizeHref(href));
+      if (!shouldKeep) li.remove();
+      return shouldKeep;
+    });
+    
     const byPath = new Map();
     byPath.set("", { el: this.root, submenu: this.root });
 
@@ -116,7 +143,7 @@ class SidebarNavigation {
     };
 
     // build nested tree for post items only
-    postItems.forEach((li) => {
+    filteredPostItems.forEach((li) => {
       const path = li.getAttribute("data-path") || "";
       const parts = path.split("/").filter(Boolean);
       const folderParts = parts.slice(0, -1);

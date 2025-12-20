@@ -5,6 +5,14 @@
     {{> navigation}}
     <main>
        <h1>Archives</h1>
+       <div class="archives-grid">
+         {{#allEntries}}
+         <div class="archive-item">
+           <a href="{{{url}}}" class="archive-title">{{title}}</a>
+           <span class="archive-date">{{#formatDate}}MMM D, YYYY{{/formatDate}}</span>
+         </div>
+         {{/allEntries}}
+       </div>
     </main>
     {{> footer}}
 </body>
