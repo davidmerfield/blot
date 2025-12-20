@@ -8,6 +8,7 @@ var extname = require("path").extname;
 var basename = require("path").basename;
 var debug = require("debug")("blot:entry:build:plugins:image");
 var makeSlug = require("helper/makeSlug");
+var removeDiacritics = require("helper/removeDiacritics");
 var Url = require("url");
 
 // Only cache images with the following file extensions
@@ -35,6 +36,7 @@ module.exports = function (blogID, originalSrc) {
           var baseName = ext ? filename.slice(0, -ext.length) : filename;
           // Apply makeSlug to the base name
           originalFilename = makeSlug(baseName);
+          originalFilename = removeDiacritics(originalFilename);
         }
       } catch (e) {
         debug("Failed to extract filename from originalSrc:", e);
