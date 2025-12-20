@@ -1,0 +1,8 @@
+{{#all_tags.length}}
+<div class="tag-cloud">
+<a class="tag-cloud-link tag-{{slug}}" href="/posts">All</a>
+{{#all_tags}}
+<a class="tag-cloud-link tag-{{slug}}" href="/posts/{{slug}}">{{tag}}</a>
+{{/all_tags}}
+</div>
+{{/all_tags.length}}

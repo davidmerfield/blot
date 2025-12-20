@@ -1,0 +1,19 @@
+<header class="site-header">
+  {{#avatar}}
+  <a href="/">
+  <img src="{{{avatar}}}" alt="{{title}}" class="site-avatar">
+  </a>
+  {{/avatar}}
+  
+  {{^avatar}}
+  <div class="site-branding">
+    <h1><a href="/">{{title}}</a></h1>
+  </div>
+  {{/avatar}}
+  
+  <nav class="site-nav">
+    {{#menu}}
+    <a href="{{{url}}}" class="{{#active}}active{{/active}}">{{label}}</a>
+    {{/menu}}
+  </nav>
+</header>
