@@ -24,24 +24,24 @@
     </form>
 
     {{#query}}
-    {{^entries.length}}
+    {{^posts.length}}
     <center>
       <p><small>Nothing found.</small></p>
     </center>
-    {{/entries.length}}
-    {{#entries.length}}
+    {{/posts.length}}
+    {{#posts.length}}
     <center>
-      <p><small>{{entries.length}} entries found </small></p>
+      <p><small>{{posts.length}} entries found </small></p>
     </center>
 
-    {{/entries.length}}
-    {{/query}} {{#entries}}
+    {{/posts.length}}
+    {{/query}} {{#posts}}
     <p class="h-entry">
       <a href="{{{url}}}" class="u-url"><span class="dt-published" datetime="{{date}}">{{date}}</span></a>:
       <span class="p-name"><b></b></span>
       <span class="p-summary">{{title}}</span>
     </p>
-    {{/entries}}
+    {{/posts}}
   </section>
 
   <footer id="footer">

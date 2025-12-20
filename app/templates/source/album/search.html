@@ -40,7 +40,7 @@ input[type=radio] {display: none;}
 
 
     <div id="hyperlist" class="container">
-        {{#entries}}
+        {{#posts}}
         <a href="{{{url}}}">
             <span class="thumbnail">
           <img src="{{{thumbnail.small.url}}}" class="pre-loaded" onload="this.className+=' loaded';" />
@@ -51,7 +51,7 @@ input[type=radio] {display: none;}
       <span class="title">{{title}}</span>
       <span class="date">{{date}}</span>
         </a>
-        {{/entries}}
+        {{/posts}}
         </div>
 
 {{> footer}}

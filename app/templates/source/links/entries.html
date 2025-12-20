@@ -4,18 +4,18 @@
 {{> toolbar}}
 {{/pagination}}
 
-{{^entries.length}}
+{{^posts.length}}
 <div class="centered">
   <p>No posts yet.</p>
 </div>
-{{/entries.length}}
+{{/posts.length}}
 
-{{#entries.length}}
+{{#posts.length}}
 <div class="posts">
-  {{#entries}}
+  {{#posts}}
   {{> post}}
-  {{/entries}}
+  {{/posts}}
 </div>
-{{/entries.length}}
+{{/posts.length}}
 
 {{> footer}}

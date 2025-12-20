@@ -27,14 +27,14 @@
 
 
         {{#query}}
-          {{^entries}}
+          {{^posts}}
           <p>Sorry, no results for “{{query}}”</p>
-          {{/entries}}
+          {{/posts}}
         {{/query}}
 
-        {{#entries}}
+        {{#posts}}
           <a href="{{{url}}}">{{title}}</a> {{date}}<br>
-        {{/entries}}
+        {{/posts}}
       </p>
 
 

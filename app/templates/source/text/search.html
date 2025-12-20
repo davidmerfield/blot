@@ -11,30 +11,30 @@
       </form>
       <div>
 
-        {{#entries.length}}
+        {{#posts.length}}
         <p>Found
-          {{#entries}}
+          {{#posts}}
           {{#first}}
           {{#last}}
-          {{entries.length}} result
+          {{posts.length}} result
           {{/last}}
           {{^last}}
-          {{entries.length}} results
+          {{posts.length}} results
           {{/last}}
           {{/first}}
-          {{/entries}}
+          {{/posts}}
         </p>
-        {{/entries.length}}
-        {{^entries}}
+        {{/posts.length}}
+        {{^posts}}
         {{#query}}
         <p>No results</p>
         {{/query}}
-        {{/entries}}
+        {{/posts}}
 
         <p>
-          {{#entries}}
+          {{#posts}}
           <a class="full-line" href="{{{url}}}"><em>{{title}}</em> &nbsp;<span class="small">{{date}}</span></a>
-          {{/entries}}
+          {{/posts}}
         </p>
 
 

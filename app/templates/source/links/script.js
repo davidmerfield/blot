@@ -200,11 +200,11 @@ function loadResults() {
     res = JSON.parse(res);
 
     // limit number of results to 15
-    res.entries = res.entries.slice(0, 15);
+    res.posts = res.posts.slice(0, 15);
 
     var result, html;
     html = "";
-    res.entries.forEach(function(entry) {
+    res.posts.forEach(function(entry) {
       result = "";
 
       result += '<a class="result" href="' + entry.url + '">';
