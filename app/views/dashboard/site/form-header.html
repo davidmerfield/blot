@@ -1,6 +1,6 @@
 {{> message}}
 
 
-<form method='post' class="dashboard-form" action='{{{base}}}' enctype='multipart/form-data' style="max-width: 540px;padding:0;margin:0">
+<form method='post' class="dashboard-form" action='{{#formAction}}{{{formAction}}}{{/formAction}}{{^formAction}}{{{base}}}{{/formAction}}' enctype='multipart/form-data' style="max-width: 540px;padding:0;margin:0">
 
     <input type="hidden" name="_csrf" value="{{csrftoken}}" />
