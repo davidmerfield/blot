@@ -12,6 +12,7 @@ var flushCache = require("./flushCache");
 var normalizeImageExif = require("./util/imageExif").normalize;
 var updateCdnManifest = require("../template/util/updateCdnManifest");
 var forkSiteTemplate = require("../template/util/forkSiteTemplate");
+var renameGitRepo = require("clients/git/renameRepo");
 var promisify = require("util").promisify;
 var updateCdnManifestAsync = promisify(updateCdnManifest);
 
@@ -95,6 +96,18 @@ module.exports = function (blogID, blog, callback) {
         // whilst leaving it free for other users to claim.
         if (former.handle) {
           multi.del(key.domain(former.handle + "." + config.host));
+        }
+
+        if (former.handle && latest.handle) {
+          var usesGit = former.client === "git" || latest.client === "git";
+
+          if (usesGit) {
+            try {
+              await renameGitRepo(former.handle, latest.handle);
+            } catch (renameError) {
+              return callback(renameError);
+            }
+          }
         }
       }
 
