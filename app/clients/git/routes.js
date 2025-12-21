@@ -158,6 +158,13 @@ repos.on("push", function (push) {
     });
   }
 
+  if (push && push.branch && push.branch !== "master") {
+    return push.reject(
+      400,
+      "Push rejected: only the master branch is allowed. Please push to master or open a PR."
+    );
+  }
+
   push.accept();
 
   // This might cause an interesting race condition. It happened for me during
