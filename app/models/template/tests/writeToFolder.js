@@ -85,6 +85,39 @@ var writeChangeToFolder = require("../../../dashboard/site/template/save/writeCh
     });
   });
 
+  it("disables enabled sibling templates in the local folder", function (done) {
+    var test = this;
+    var templatesRoot = join(test.blogDirectory, "Templates");
+    var activeDir = join(templatesRoot, test.template.slug);
+    var siblingDir = join(templatesRoot, "other-template");
+    var activePackage = JSON.stringify({ name: "Active", enabled: true }, null, 2);
+    var siblingPackage = JSON.stringify(
+      { name: "Sibling", enabled: true },
+      null,
+      2
+    );
+
+    test.blog
+      .update({ template: test.template.id })
+      .then(function () {
+        fs.ensureDirSync(activeDir);
+        fs.ensureDirSync(siblingDir);
+        fs.outputFileSync(join(activeDir, "package.json"), activePackage);
+        fs.outputFileSync(join(siblingDir, "package.json"), siblingPackage);
+
+        writeToFolder(test.blog.id, test.template.id, function (err) {
+          if (err) return done.fail(err);
+          expect(
+            fs.readJsonSync(join(siblingDir, "package.json")).enabled
+          ).toEqual(false);
+          done();
+        });
+      })
+      .catch(function (err) {
+        done.fail(err);
+      });
+  });
+
   it("regenerates package.json in the local folder when local editing is enabled via package save", function (done) {
     var test = this;
     var packageMetadata = { localEditing: true, name: "Local Package" };
