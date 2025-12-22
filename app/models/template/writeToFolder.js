@@ -7,6 +7,8 @@ var getAllViews = require("./getAllViews");
 var localPath = require("helper/localPath");
 var fs = require("fs-extra");
 var generatePackage = require("./package").generate;
+var determineTemplateFolder = require("./determineTemplateFolder");
+var disableLocalTemplates = require("./disableLocalTemplates");
 var PACKAGE = "package.json";
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
@@ -36,10 +38,9 @@ function writeToFolder (blogID, templateID, callback) {
 
           metadata.enabled = blogTemplate === templateID;
 
-          disableSiblingTemplates(
+          disableLocalTemplates(
             blogID,
-            folderName,
-            metadata.slug,
+            { folderName: folderName, activeSlug: metadata.slug },
             function (disableErr) {
               if (disableErr) {
                 console.warn(
@@ -72,109 +73,6 @@ function writeToFolder (blogID, templateID, callback) {
         });
       });
     });
-  });
-}
-
-function determineTemplateFolder(blogID, callback) {
-  var root = localPath(blogID, "/");
-
-  fs.readdir(root, function (err, entries) {
-    if (err || !Array.isArray(entries)) {
-      return callback(null, "Templates");
-    }
-
-    if (entries.indexOf("Templates") > -1) return callback(null, "Templates");
-    if (entries.indexOf("templates") > -1) return callback(null, "templates");
-
-    var visible = entries.filter(function (name) {
-      return name && name[0] !== ".";
-    });
-
-    if (visible.length && visible.every(function (name) {
-      return name === name.toLowerCase();
-    })) {
-      return callback(null, "templates");
-    }
-
-    callback(null, "Templates");
-  });
-}
-
-function disableSiblingTemplates(blogID, folderName, activeSlug, callback) {
-  var root = localPath(blogID, folderName);
-
-  fs.readdir(root, function (err, entries) {
-    if (err) {
-      if (err.code === "ENOENT" || err.code === "ENOTDIR") return callback();
-      return callback(err);
-    }
-
-    var errors = [];
-
-    async.eachSeries(
-      entries,
-      function (entry, next) {
-        if (!entry || entry[0] === "." || shouldIgnoreFile(entry)) {
-          return next();
-        }
-
-        if (entry === activeSlug) return next();
-
-        var entryPath = joinpath(root, entry);
-
-        fs.lstat(entryPath, function (err, stat) {
-          if (err) {
-            if (err.code === "ENOENT") return next();
-            errors.push(err);
-            return next();
-          }
-
-          if (stat.isSymbolicLink() || !stat.isDirectory()) return next();
-
-          var packagePath = joinpath(folderName, entry, PACKAGE);
-          var packageAbsolute = localPath(blogID, packagePath);
-
-          fs.readFile(packageAbsolute, "utf-8", function (err, contents) {
-            if (err) {
-              if (err.code === "ENOENT") return next();
-              errors.push(err);
-              return next();
-            }
-
-            var data;
-
-            try {
-              data = JSON.parse(contents);
-            } catch (parseErr) {
-              errors.push(parseErr);
-              return next();
-            }
-
-            if (!data || data.enabled !== true) return next();
-
-            data.enabled = false;
-            var updated = JSON.stringify(data, null, 2);
-
-            fs.outputFile(packageAbsolute, updated, function (err) {
-              if (err) errors.push(err);
-              next();
-            });
-          });
-        });
-      },
-      function (err) {
-        if (err) errors.push(err);
-        if (errors.length) {
-          var aggregate = new Error(
-            "Failed to update one or more sibling template packages."
-          );
-          aggregate.errors = errors;
-          return callback(aggregate);
-        }
-
-        callback();
-      }
-    );
   });
 }
 

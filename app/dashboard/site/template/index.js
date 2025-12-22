@@ -62,10 +62,20 @@ TemplateEditor.route("/:templateSlug/install")
     var updates = { template: templateID };
     Blog.set(req.blog.id, updates, function (err) {
       if (err) return next(err);
-      res.message(
-        "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
-        "Installed template"
-      );
+      Template.disableLocalTemplates(req.blog.id, function (disableErr) {
+        if (disableErr) {
+          console.warn(
+            "Failed to disable local templates after install",
+            req.blog.id,
+            disableErr
+          );
+        }
+
+        res.message(
+          "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
+          "Installed template"
+        );
+      });
     });
   });
 
