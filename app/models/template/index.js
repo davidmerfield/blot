@@ -29,6 +29,7 @@ module.exports = {
   readFromFolder: require("./readFromFolder"),
   writeToFolder: require("./writeToFolder"),
   removeFromFolder: require("./removeFromFolder"),
+  disableLocalTemplates: require("./disableLocalTemplates"),
   
   package: require("./package"),
   viewModel: require("./viewModel"),
