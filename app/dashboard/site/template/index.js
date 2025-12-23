@@ -62,7 +62,11 @@ TemplateEditor.route("/:templateSlug/install")
     var updates = { template: templateID };
     Blog.set(req.blog.id, updates, function (err) {
       if (err) return next(err);
-      Template.disableLocalTemplates(req.blog.id, function (disableErr) {
+      const disableOptions = req.template.localEditing
+        ? { activeSlug: req.template.slug }
+        : undefined;
+
+      Template.disableLocalTemplates(req.blog.id, disableOptions, function (disableErr) {
         if (disableErr) {
           console.warn(
             "Failed to disable local templates after install",
