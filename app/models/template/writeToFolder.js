@@ -38,6 +38,31 @@ function writeToFolder (blogID, templateID, callback) {
 
           metadata.enabled = blogTemplate === templateID;
 
+          function proceedAfterDisable() {
+            listLocalFiles(blogID, dir, function (err, existingFiles) {
+              if (err) {
+                return callback(err);
+              }
+
+              writeTemplateContents(
+                blogID,
+                client,
+                dir,
+                metadata,
+                views,
+                {
+                  compare: shouldCompareWrites,
+                  existingFiles: existingFiles,
+                },
+                callback
+              );
+            });
+          }
+
+          if (!metadata.enabled) {
+            return proceedAfterDisable();
+          }
+
           disableLocalTemplates(
             blogID,
             { folderName: folderName, activeSlug: metadata.slug },
@@ -50,24 +75,7 @@ function writeToFolder (blogID, templateID, callback) {
                 );
               }
 
-              listLocalFiles(blogID, dir, function (err, existingFiles) {
-                if (err) {
-                  return callback(err);
-                }
-
-                writeTemplateContents(
-                  blogID,
-                  client,
-                  dir,
-                  metadata,
-                  views,
-                  {
-                    compare: shouldCompareWrites,
-                    existingFiles: existingFiles,
-                  },
-                  callback
-                );
-              });
+              proceedAfterDisable();
             }
           );
         });
