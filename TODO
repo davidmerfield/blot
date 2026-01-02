@@ -1,3 +1,14 @@
+Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
+
+Improve sync stability of iCloud client
+- Especially for folder renames, many file moves
+- Tell Todd
+- Tell Fede
+
+Focus on reliability and bugfixes
+
+---
+
 Release new brochure site
 
 Record new video
@@ -94,6 +105,10 @@ Fix bug with huge archives page
 - `https://deoxy.blot.im/archives`
 
 ---
+
+Implement TOC Plugin
+- Create a plugin-based TOC system that works for all file types. The plugin will generate TOC HTML from headings and return it via the result object mechanism from task 1.
+- Tell Omar
 
 Update obsidian tools pages (improve)
 
@@ -399,6 +414,8 @@ Can we use lightningcss to replace the existing css minifier for performance?
 
 Transformer should short-circuit network lookups to {{config.host}} or {{cdn}} urls and pull the files directly
 - and have limits on resource size and time
+
+Add support for Apple Pay and Google Pay by upgrading Stripe API version we're using
 
 Migrate JSON blob entry into a redis hash:
 - Use hash to store entries rather than a JSON string:
