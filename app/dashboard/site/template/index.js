@@ -65,7 +65,7 @@ TemplateEditor.route("/:templateSlug/install")
 
       Template.removeEnabledFromAllTemplates(
         req.blog.id,
-        function (removeErr, modifiedSlugs) {
+        function (removeErr) {
           if (removeErr) {
             console.warn(
               "Failed to remove enabled from local templates after install",
@@ -73,32 +73,10 @@ TemplateEditor.route("/:templateSlug/install")
               removeErr
             );
           }
-
-          // Write the installed template if it's locally-edited
-          Template.getMetadata(templateID, function (err, installedTemplate) {
-            if (err || !installedTemplate || !installedTemplate.localEditing) {
-              return res.message(
-                "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
-                "Installed template"
-              );
-            }
-
-            Template.writeToFolder(req.blog.id, templateID, function (writeErr) {
-              if (writeErr) {
-                console.warn(
-                  "Failed to write installed template to folder",
-                  req.blog.id,
-                  templateID,
-                  writeErr
-                );
-              }
-
-              res.message(
-                "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
-                "Installed template"
-              );
-            });
-          });
+          res.message(
+            "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
+            "Installed template"
+          );
         }
       );
     });
