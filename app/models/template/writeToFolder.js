@@ -35,8 +35,6 @@ function writeToFolder (blogID, templateID, callback) {
           var dir = joinpath(folderName, metadata.slug);
           var shouldCompareWrites = true;
 
-          metadata.enabled = blogTemplate === templateID;
-
           listLocalFiles(blogID, dir, function (err, existingFiles) {
             if (err) {
               return callback(err);
