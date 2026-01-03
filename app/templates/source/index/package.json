@@ -36,12 +36,6 @@
         "description": "{{{entry.summary}}}"
       }
     },
-    "public.html": {
-      "partials": {
-        "title": "Index of {{{path}}}",
-        "description": "All the files and folders inside {{{path}}}"
-      }
-    },
     "search.html": {
       "partials": {
         "title": "Search - {{{title}}}",

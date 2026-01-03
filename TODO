@@ -1,3 +1,14 @@
+Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
+
+Improve sync stability of iCloud client
+- Especially for folder renames, many file moves
+- Tell Todd
+- Tell Fede
+
+Focus on reliability and bugfixes
+
+---
+
 Release new brochure site
 
 Record new video
@@ -21,6 +32,8 @@ Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxT
 Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
 
 ---
+
+Improve hypertext template to support listing pages as well as posts in the sidebar
 
 Bug reports:
 - The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
@@ -92,6 +105,10 @@ Fix bug with huge archives page
 - `https://deoxy.blot.im/archives`
 
 ---
+
+Implement TOC Plugin
+- Create a plugin-based TOC system that works for all file types. The plugin will generate TOC HTML from headings and return it via the result object mechanism from task 1.
+- Tell Omar
 
 Update obsidian tools pages (improve)
 
@@ -398,6 +415,8 @@ Can we use lightningcss to replace the existing css minifier for performance?
 Transformer should short-circuit network lookups to {{config.host}} or {{cdn}} urls and pull the files directly
 - and have limits on resource size and time
 
+Add support for Apple Pay and Google Pay by upgrading Stripe API version we're using
+
 Migrate JSON blob entry into a redis hash:
 - Use hash to store entries rather than a JSON string:
 - app/models/entry/get.js
@@ -437,6 +456,7 @@ Improvements to template engine
   - basically, we need to modify the template engine to save the properties of each entry requested, then use this in entry.get, then update entry to use a hash rather than a json blob.
 - why is the feed so huge? are we compressing feeds? so slow for nginx?
 - we need to modify the template engine to extract which properties of the entry are used, then pass this into entry.get to reduce memory usage significantly for large sites.
+- finish function to render files in the user's folder dynamically and follow up with [questioner](https://blot.im/questions/3344)
 - maybe write tool to check before/after for lots of test sites? real life sites on blot? error if diff, or offer chance to test?
 - Add a related entry list and tell [David](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrPGTsMcvgWpNsNtmrkWRzDz) and [Thomas](https://mail.google.com/mail/u/0/#inbox/156dbe97153fab61) and [questioner](https://blot.im/questions/1484) and [questioner](https://blot.im/questions/3123)
 - Consider adding support for nested page structure - generate nested menu items from nested folders in /pages

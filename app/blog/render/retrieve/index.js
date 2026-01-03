@@ -29,7 +29,6 @@ var dictionary = {
   "plugin_js": require("./plugin_js"),
   "plugin": require("./plugin"),
   "popular_tags": require("./popular_tags"),
-  "public": require("./public"),
   "recentEntries": require("./recentEntries"),
   "recent_entries": require("./recent_entries"),
   "rgb": require("./rgb"),
