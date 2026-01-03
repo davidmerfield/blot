@@ -8,6 +8,7 @@ var setView = require("../index").setView;
 var dropView = require("../index").dropView;
 var setMetadata = require("../index").setMetadata;
 var packageAPI = require("../index").package;
+var removeEnabledFromAllTemplates = require("../index").removeEnabledFromAllTemplates;
 var writeChangeToFolder = require("../../../dashboard/site/template/save/writeChangeToFolder");
 
   require("./setup")({ createTemplate: true });
@@ -85,42 +86,47 @@ var writeChangeToFolder = require("../../../dashboard/site/template/save/writeCh
     });
   });
 
-  it("removes enabled from all templates, then writes the active template with enabled: true", function (done) {
+  it("removeEnabledFromAllTemplates disables all templates with enabled: true", function (done) {
     var test = this;
     var templatesRoot = join(test.blogDirectory, "Templates");
-    var activeDir = join(templatesRoot, test.template.slug);
-    var siblingDir = join(templatesRoot, "other-template");
-    var activePackage = JSON.stringify({ name: "Active", enabled: true }, null, 2);
-    var siblingPackage = JSON.stringify(
-      { name: "Sibling", enabled: true },
-      null,
-      2
-    );
+    var template1Dir = join(templatesRoot, "template-1");
+    var template2Dir = join(templatesRoot, "template-2");
+    var template3Dir = join(templatesRoot, "template-3");
+    var package1 = JSON.stringify({ name: "Template 1", enabled: true }, null, 2);
+    var package2 = JSON.stringify({ name: "Template 2", enabled: true }, null, 2);
+    var package3 = JSON.stringify({ name: "Template 3", enabled: false }, null, 2);
 
-    test.blog
-      .update({ template: test.template.id })
-      .then(function () {
-        fs.ensureDirSync(activeDir);
-        fs.ensureDirSync(siblingDir);
-        fs.outputFileSync(join(activeDir, "package.json"), activePackage);
-        fs.outputFileSync(join(siblingDir, "package.json"), siblingPackage);
+    fs.ensureDirSync(template1Dir);
+    fs.ensureDirSync(template2Dir);
+    fs.ensureDirSync(template3Dir);
+    fs.outputFileSync(join(template1Dir, "package.json"), package1);
+    fs.outputFileSync(join(template2Dir, "package.json"), package2);
+    fs.outputFileSync(join(template3Dir, "package.json"), package3);
 
-        writeToFolder(test.blog.id, test.template.id, function (err) {
-          if (err) return done.fail(err);
-          // The sibling template should be disabled
-          expect(
-            fs.readJsonSync(join(siblingDir, "package.json")).enabled
-          ).toEqual(false);
-          // The active template should be enabled (because writeToFolder writes it)
-          expect(
-            fs.readJsonSync(join(activeDir, "package.json")).enabled
-          ).toEqual(true);
-          done();
-        });
-      })
-      .catch(function (err) {
-        done.fail(err);
-      });
+    removeEnabledFromAllTemplates(test.blog.id, function (err, modifiedSlugs) {
+      if (err) return done.fail(err);
+      
+      // Templates with enabled: true should be disabled
+      expect(
+        fs.readJsonSync(join(template1Dir, "package.json")).enabled
+      ).toEqual(false);
+      expect(
+        fs.readJsonSync(join(template2Dir, "package.json")).enabled
+      ).toEqual(false);
+      
+      // Templates with enabled: false should remain unchanged
+      expect(
+        fs.readJsonSync(join(template3Dir, "package.json")).enabled
+      ).toEqual(false);
+      
+      // Should return the slugs of modified templates
+      expect(Array.isArray(modifiedSlugs)).toBe(true);
+      expect(modifiedSlugs.length).toBe(2);
+      expect(modifiedSlugs).toContain("template-1");
+      expect(modifiedSlugs).toContain("template-2");
+      
+      done();
+    });
   });
 
   it("regenerates package.json in the local folder when local editing is enabled via package save", function (done) {
