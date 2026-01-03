@@ -8,7 +8,6 @@ var localPath = require("helper/localPath");
 var fs = require("fs-extra");
 var generatePackage = require("./package").generate;
 var determineTemplateFolder = require("./determineTemplateFolder");
-var removeEnabledFromAllTemplates = require("./removeEnabledFromAllTemplates");
 var PACKAGE = "package.json";
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
@@ -38,45 +37,24 @@ function writeToFolder (blogID, templateID, callback) {
 
           metadata.enabled = blogTemplate === templateID;
 
-          function proceedAfterDisable() {
-            listLocalFiles(blogID, dir, function (err, existingFiles) {
-              if (err) {
-                return callback(err);
-              }
-
-              writeTemplateContents(
-                blogID,
-                client,
-                dir,
-                metadata,
-                views,
-                {
-                  compare: shouldCompareWrites,
-                  existingFiles: existingFiles,
-                },
-                callback
-              );
-            });
-          }
-
-          if (!metadata.enabled) {
-            return proceedAfterDisable();
-          }
-
-          removeEnabledFromAllTemplates(
-            blogID,
-            function (disableErr, modifiedSlugs) {
-              if (disableErr) {
-                console.warn(
-                  "Failed to update sibling templates for",
-                  blogID,
-                  disableErr
-                );
-              }
-
-              proceedAfterDisable();
+          listLocalFiles(blogID, dir, function (err, existingFiles) {
+            if (err) {
+              return callback(err);
             }
-          );
+
+            writeTemplateContents(
+              blogID,
+              client,
+              dir,
+              metadata,
+              views,
+              {
+                compare: shouldCompareWrites,
+                existingFiles: existingFiles,
+              },
+              callback
+            );
+          });
         });
       });
     });
