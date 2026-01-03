@@ -103,7 +103,7 @@ function makeClient (blogID, callback) {
         write: function (blogID, path, content, callback) {
           fs.outputFile(localPath(blogID, path), content, callback);
         }
-      });
+      }, blog.template);
     }
 
     return callback(null, client, blog.template);
