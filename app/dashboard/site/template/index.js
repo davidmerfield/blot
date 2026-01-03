@@ -4,7 +4,6 @@ const formJSON = require("helper/formJSON");
 const Template = require("models/template");
 const Blog = require("models/blog");
 const archiver = require("archiver");
-const async = require("async");
 const duplicateTemplate = require("./save/duplicate-template");
 const { isAjaxRequest, sendAjaxResponse } = require("./save/ajax-response");
 const writeChangeToFolder = require('./save/writeChangeToFolder');
@@ -64,69 +63,44 @@ TemplateEditor.route("/:templateSlug/install")
     Blog.set(req.blog.id, updates, function (err) {
       if (err) return next(err);
 
-      Template.removeEnabledFromAllTemplates(req.blog.id, function (removeErr, modifiedSlugs) {
-        if (removeErr) {
-          console.warn(
-            "Failed to remove enabled from local templates after install",
-            req.blog.id,
-            removeErr
-          );
-        }
-
-        modifiedSlugs = modifiedSlugs || [];
-
-        // Write any modified locally-edited templates back to the folder
-        async.eachSeries(
-          modifiedSlugs,
-          function (slug, next) {
-            var templateID = Template.makeID(req.blog.id, slug);
-            Template.getMetadata(templateID, function (err, metadata) {
-              if (err || !metadata || !metadata.localEditing) {
-                return next();
-              }
-
-              Template.writeToFolder(req.blog.id, templateID, function (writeErr) {
-                if (writeErr) {
-                  console.warn(
-                    "Failed to write modified template to folder",
-                    req.blog.id,
-                    templateID,
-                    writeErr
-                  );
-                }
-                next();
-              });
-            });
-          },
-          function () {
-            // After processing modified templates, write the installed template if it's locally-edited
-            Template.getMetadata(templateID, function (err, installedTemplate) {
-              if (err || !installedTemplate || !installedTemplate.localEditing) {
-                return res.message(
-                  "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
-                  "Installed template"
-                );
-              }
-
-              Template.writeToFolder(req.blog.id, templateID, function (writeErr) {
-                if (writeErr) {
-                  console.warn(
-                    "Failed to write installed template to folder",
-                    req.blog.id,
-                    templateID,
-                    writeErr
-                  );
-                }
-
-                res.message(
-                  "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
-                  "Installed template"
-                );
-              });
-            });
+      Template.removeEnabledFromAllTemplates(
+        req.blog.id,
+        function (removeErr, modifiedSlugs) {
+          if (removeErr) {
+            console.warn(
+              "Failed to remove enabled from local templates after install",
+              req.blog.id,
+              removeErr
+            );
           }
-        );
-      });
+
+          // Write the installed template if it's locally-edited
+          Template.getMetadata(templateID, function (err, installedTemplate) {
+            if (err || !installedTemplate || !installedTemplate.localEditing) {
+              return res.message(
+                "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
+                "Installed template"
+              );
+            }
+
+            Template.writeToFolder(req.blog.id, templateID, function (writeErr) {
+              if (writeErr) {
+                console.warn(
+                  "Failed to write installed template to folder",
+                  req.blog.id,
+                  templateID,
+                  writeErr
+                );
+              }
+
+              res.message(
+                "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
+                "Installed template"
+              );
+            });
+          });
+        }
+      );
     });
   });
 

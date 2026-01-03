@@ -65,7 +65,6 @@ function writeToFolder (blogID, templateID, callback) {
 
           removeEnabledFromAllTemplates(
             blogID,
-            { folderName: folderName },
             function (disableErr, modifiedSlugs) {
               if (disableErr) {
                 console.warn(
