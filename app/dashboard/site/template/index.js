@@ -62,9 +62,22 @@ TemplateEditor.route("/:templateSlug/install")
     var updates = { template: templateID };
     Blog.set(req.blog.id, updates, function (err) {
       if (err) return next(err);
-      res.message(
-        "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
-        "Installed template"
+
+      Template.removeEnabledFromAllTemplates(
+        req.blog.id,
+        function (removeErr) {
+          if (removeErr) {
+            console.warn(
+              "Failed to remove enabled from local templates after install",
+              req.blog.id,
+              removeErr
+            );
+          }
+          res.message(
+            "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
+            "Installed template"
+          );
+        }
       );
     });
   });

@@ -7,6 +7,7 @@ var getAllViews = require("./getAllViews");
 var localPath = require("helper/localPath");
 var fs = require("fs-extra");
 var generatePackage = require("./package").generate;
+var determineTemplateFolder = require("./determineTemplateFolder");
 var PACKAGE = "package.json";
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
@@ -34,8 +35,6 @@ function writeToFolder (blogID, templateID, callback) {
           var dir = joinpath(folderName, metadata.slug);
           var shouldCompareWrites = true;
 
-          metadata.enabled = blogTemplate === templateID;
-
           listLocalFiles(blogID, dir, function (err, existingFiles) {
             if (err) {
               return callback(err);
@@ -57,31 +56,6 @@ function writeToFolder (blogID, templateID, callback) {
         });
       });
     });
-  });
-}
-
-function determineTemplateFolder(blogID, callback) {
-  var root = localPath(blogID, "/");
-
-  fs.readdir(root, function (err, entries) {
-    if (err || !Array.isArray(entries)) {
-      return callback(null, "Templates");
-    }
-
-    if (entries.indexOf("Templates") > -1) return callback(null, "Templates");
-    if (entries.indexOf("templates") > -1) return callback(null, "templates");
-
-    var visible = entries.filter(function (name) {
-      return name && name[0] !== ".";
-    });
-
-    if (visible.length && visible.every(function (name) {
-      return name === name.toLowerCase();
-    })) {
-      return callback(null, "templates");
-    }
-
-    callback(null, "Templates");
   });
 }
 
