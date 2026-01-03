@@ -8,7 +8,7 @@ var localPath = require("helper/localPath");
 var fs = require("fs-extra");
 var generatePackage = require("./package").generate;
 var determineTemplateFolder = require("./determineTemplateFolder");
-var disableLocalTemplates = require("./disableLocalTemplates");
+var removeEnabledFromAllTemplates = require("./removeEnabledFromAllTemplates");
 var PACKAGE = "package.json";
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
@@ -63,10 +63,10 @@ function writeToFolder (blogID, templateID, callback) {
             return proceedAfterDisable();
           }
 
-          disableLocalTemplates(
+          removeEnabledFromAllTemplates(
             blogID,
-            { folderName: folderName, activeSlug: metadata.slug },
-            function (disableErr) {
+            { folderName: folderName },
+            function (disableErr, modifiedSlugs) {
               if (disableErr) {
                 console.warn(
                   "Failed to update sibling templates for",

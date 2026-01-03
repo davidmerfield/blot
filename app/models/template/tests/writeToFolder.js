@@ -85,7 +85,7 @@ var writeChangeToFolder = require("../../../dashboard/site/template/save/writeCh
     });
   });
 
-  it("disables enabled sibling templates in the local folder", function (done) {
+  it("removes enabled from all templates, then writes the active template with enabled: true", function (done) {
     var test = this;
     var templatesRoot = join(test.blogDirectory, "Templates");
     var activeDir = join(templatesRoot, test.template.slug);
@@ -107,9 +107,14 @@ var writeChangeToFolder = require("../../../dashboard/site/template/save/writeCh
 
         writeToFolder(test.blog.id, test.template.id, function (err) {
           if (err) return done.fail(err);
+          // The sibling template should be disabled
           expect(
             fs.readJsonSync(join(siblingDir, "package.json")).enabled
           ).toEqual(false);
+          // The active template should be enabled (because writeToFolder writes it)
+          expect(
+            fs.readJsonSync(join(activeDir, "package.json")).enabled
+          ).toEqual(true);
           done();
         });
       })

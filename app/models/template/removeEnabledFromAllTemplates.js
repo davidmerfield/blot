@@ -7,7 +7,7 @@ var shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 var PACKAGE = "package.json";
 
-function disableLocalTemplates(blogID, options, callback) {
+function removeEnabledFromAllTemplates(blogID, options, callback) {
   if (typeof options === "function") {
     callback = options;
     options = {};
@@ -16,30 +16,30 @@ function disableLocalTemplates(blogID, options, callback) {
   options = options || {};
 
   if (options.folderName) {
-    return disableLocalTemplatesInFolder(
+    return removeEnabledFromAllTemplatesInFolder(
       blogID,
       options.folderName,
-      options.activeSlug,
       callback
     );
   }
 
   determineTemplateFolder(blogID, function (err, folderName) {
     if (err) return callback(err);
-    disableLocalTemplatesInFolder(blogID, folderName, options.activeSlug, callback);
+    removeEnabledFromAllTemplatesInFolder(blogID, folderName, callback);
   });
 }
 
-function disableLocalTemplatesInFolder(blogID, folderName, activeSlug, callback) {
+function removeEnabledFromAllTemplatesInFolder(blogID, folderName, callback) {
   var root = localPath(blogID, folderName);
 
   fs.readdir(root, function (err, entries) {
     if (err) {
-      if (err.code === "ENOENT" || err.code === "ENOTDIR") return callback();
+      if (err.code === "ENOENT" || err.code === "ENOTDIR") return callback(null, []);
       return callback(err);
     }
 
     var errors = [];
+    var modifiedSlugs = [];
 
     async.eachSeries(
       entries,
@@ -47,8 +47,6 @@ function disableLocalTemplatesInFolder(blogID, folderName, activeSlug, callback)
         if (!entry || entry[0] === "." || shouldIgnoreFile(entry)) {
           return next();
         }
-
-        if (activeSlug && entry === activeSlug) return next();
 
         var entryPath = joinpath(root, entry);
 
@@ -86,7 +84,11 @@ function disableLocalTemplatesInFolder(blogID, folderName, activeSlug, callback)
             var updated = JSON.stringify(data, null, 2);
 
             fs.outputFile(packageAbsolute, updated, function (err) {
-              if (err) errors.push(err);
+              if (err) {
+                errors.push(err);
+              } else {
+                modifiedSlugs.push(entry);
+              }
               next();
             });
           });
@@ -96,16 +98,17 @@ function disableLocalTemplatesInFolder(blogID, folderName, activeSlug, callback)
         if (err) errors.push(err);
         if (errors.length) {
           var aggregate = new Error(
-            "Failed to update one or more sibling template packages."
+            "Failed to update one or more template packages."
           );
           aggregate.errors = errors;
-          return callback(aggregate);
+          return callback(aggregate, modifiedSlugs);
         }
 
-        callback();
+        callback(null, modifiedSlugs);
       }
     );
   });
 }
 
-module.exports = disableLocalTemplates;
+module.exports = removeEnabledFromAllTemplates;
+
