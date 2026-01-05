@@ -15,7 +15,7 @@ async function download(client, source, destination, callback) {
     clfdate() + " clients:dropbox:download:" + id.slice(0, 6);
   let timedOut = false;
 
-  console.log(prefix(), source);
+  console.log(prefix(), source, "->", destination);
 
   const timeout = setTimeout(function () {
     timedOut = true;
