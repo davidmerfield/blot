@@ -1,9 +1,9 @@
 Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
 
 Fix bug with mixed case path in Dropbox client
+- have confirmed the issue is mixed case information in response from dropbox api
 - can't yet reproduce but try creating a folder, changing its case, then adding files inside...
 - could we leverage app/helper/caseSensitivePath.js to improve dropbox/download.js? i.e. resolve the parent directory for the file to download first locally? then download the file? this might handle issues with the path_display being incorrect?
-- first confirm issue is mixed case information in response from dropbox api
 
 Improve sync stability of iCloud client
 - Especially for folder renames, many file moves
