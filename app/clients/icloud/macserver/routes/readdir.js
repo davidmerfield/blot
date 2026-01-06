@@ -26,8 +26,25 @@ module.exports = async (req, res) => {
     console.error("Error listing directory:", dirPath, error);
   }
 
-  // now that we are sure the directory is in sync, we can read it
-  const files = await fs.readdir(dirPath, { withFileTypes: true });
+  let files;
+
+  try {
+    // now that we are sure the directory is in sync, we can read it
+    files = await fs.readdir(dirPath, { withFileTypes: true });
+  } catch (error) {
+    console.error("Error reading directory:", dirPath, error);
+
+    if (error.code === "ENOENT") {
+      return res
+        .status(404)
+        .json({ error: "Requested folder does not exist", path });
+    }
+
+    return res.status(500).json({
+      error: "Failed to read directory",
+      details: error.message,
+    });
+  }
 
   // Ignore system files and directories we don't want to sync
   const filteredFiles = files.filter((file) => !shouldIgnoreFile(file.name));

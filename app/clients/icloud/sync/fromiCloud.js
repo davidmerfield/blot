@@ -28,6 +28,7 @@ module.exports = async (blogID, publish, update) => {
   } catch (error) {
     console.error("Failed to sync folder tree", error);
     publish("Failed to sync folder tree", error.message);
+    throw error;
   }
 
   const walk = async (dir) => {
@@ -111,6 +112,6 @@ module.exports = async (blogID, publish, update) => {
     await walk("/");
   } catch (err) {
     publish("Sync failed", err.message);
-    // Possibly rethrow or handle
+    throw err;
   }
 };

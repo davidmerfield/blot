@@ -9,6 +9,7 @@ const load = require("./load");
 const Sync = require("sync");
 const Fix = require("sync/fix");
 const Rebuild = require("sync/rebuild");
+const database = require("clients/icloud/database");
 const config = require("config");
 const fetch = require("node-fetch");
 
@@ -172,6 +173,8 @@ client_routes.post("/reset/resync", load.client, function (req, res, next) {
 
     res.message(res.locals.base + "/client/reset", "Begin resync of your site");
 
+    let syncError;
+
     try {
       await res.locals.client.resync(
         req.blog.id,
@@ -180,6 +183,23 @@ client_routes.post("/reset/resync", load.client, function (req, res, next) {
       );
     } catch (err) {
       console.log("ERROR:", err);
+
+      const missingFolder = err?.message && /does not exist/i.test(err.message);
+      const userMessage = missingFolder
+        ? "We couldn't find your iCloud folder on the Mac server. Please reconnect your sharing link and try again."
+        : err?.message || "An unexpected error occurred while resyncing your iCloud folder.";
+
+      syncError = err;
+      await database.store(req.blog.id, { error: userMessage });
+      folder.status("Sync failed");
+    }
+
+    if (syncError) {
+      done(syncError, function (releaseErr) {
+        if (releaseErr) console.log("Error releasing sync: ", releaseErr);
+        res.redirect(res.locals.base + "/client");
+      });
+      return;
     }
 
     folder.status("Checking your site for issues");
