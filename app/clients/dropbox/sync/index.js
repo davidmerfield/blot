@@ -42,7 +42,7 @@ module.exports = function main(blog, callback) {
 
       folder.log("Constructing methods to sync changes");
 
-      var delta = new Delta(client, account.folder_id);
+      var delta = new Delta(client, account.folder_id, blog.id);
       var apply = new Apply(client, folder.path, folder.log, folder.status);
 
       var checksWithoutResults = 0;

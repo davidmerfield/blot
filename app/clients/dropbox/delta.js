@@ -2,12 +2,19 @@ var debug = require("debug")("blot:clients:dropbox:delta");
 var retry = require("./util/retry");
 var waitForErrorTimeout = require("./util/waitForErrorTimeout");
 var isDotfileOrDotfolder = require("./util/constants").isDotfileOrDotfolder;
+var Path = require("path");
+var localPath = require("helper/localPath");
+var caseSensitivePath = require("util").promisify(
+  require("helper/caseSensitivePath")
+);
 
 // The goal of this function is to retrieve a list of changes made
 // to the blog folder inside a user's Dropbox folder. We add a new
 // property relative_path to each change. This property refers to
 // the path the change relative to the folder for this blog.
-module.exports = function delta(client, folderID) {
+module.exports = function delta(client, folderID, blogID) {
+  var blogFolder = blogID ? localPath(blogID, "/") : null;
+
   function get(cursor, callback) {
     var requests = [];
     var result = {};
@@ -80,7 +87,12 @@ module.exports = function delta(client, folderID) {
             });
         }
 
-        callback(null, result);
+        return resolveCaseSensitivePaths(result.entries, blogFolder)
+          .then(function (entries) {
+            result.entries = entries;
+            callback(null, result);
+          })
+          .catch(callback);
       })
 
       // Handle 429 Errors from Dropbox which ask us
@@ -121,3 +133,30 @@ module.exports = function delta(client, folderID) {
   // Removed the timeout since it
   return retry(get);
 };
+
+function resolveCaseSensitivePaths(entries, blogFolder) {
+  if (!entries || !entries.length || !blogFolder) return Promise.resolve(entries);
+
+  return Promise.all(
+    entries.map(function (entry) {
+      var parentDir = Path.dirname(entry.relative_path);
+      var filename = Path.basename(entry.relative_path);
+
+      if (!blogFolder || parentDir === "/" || parentDir === ".") {
+        return entry;
+      }
+
+      return caseSensitivePath(blogFolder, parentDir)
+        .then(function (resolvedParent) {
+          var relativeParent = Path.relative(blogFolder, resolvedParent);
+
+          entry.relative_path = Path.join("/", relativeParent, filename);
+
+          return entry;
+        })
+        .catch(function () {
+          return entry;
+        });
+    })
+  );
+}
