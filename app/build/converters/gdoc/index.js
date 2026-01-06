@@ -11,6 +11,7 @@ const blockquotes = require("./blockquotes");
 const footnotes = require("./footnotes");
 const linebreaks = require("./linebreaks");
 const processImages = require("./images");
+const cleanupSpans = require("./cleanup-spans");
 
 function is(path) {
   return [".gdoc"].indexOf(extname(path).toLowerCase()) > -1;
@@ -117,6 +118,8 @@ async function read(blog, path, callback) {
 
     // remove all inline style attributes
     $("[style]").removeAttr("style");
+
+    cleanupSpans($);
 
     // handle line breaks
     if (blog.flags.google_docs_preserve_linebreaks !== false) {
