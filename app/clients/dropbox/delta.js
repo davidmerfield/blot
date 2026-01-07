@@ -257,8 +257,12 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
         entries.splice(index + 1, 0, ...descendantDeletes);
         index += descendantDeletes.length;
       }
+      // Skip past the original entry (which is now at index + 1 after parent delete insertion)
+      index++;
+      continue;
     }
 
+    // For non-folder case, skip past the original entry (which is now at index + 1 after parent delete insertion)
     index++;
   }
 
