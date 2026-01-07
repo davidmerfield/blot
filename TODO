@@ -1,4 +1,5 @@
 Thorough QA on dropbox client
+- renaming a folder (case only change) causes duplicate posts (not files)
 - app folder single site
   - renames
   - deletes
