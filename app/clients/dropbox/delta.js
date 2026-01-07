@@ -12,6 +12,32 @@ const clfdate = require("helper/clfdate");
 
 const prefix = () => clfdate() + ' Dropbox: Delta: ';
 
+async function listDescendantPaths(rootPath) {
+  const results = [];
+
+  async function walk(currentPath) {
+    let entries;
+
+    try {
+      entries = await fs.readdir(currentPath, { withFileTypes: true });
+    } catch (err) {
+      return;
+    }
+
+    for (const entry of entries) {
+      const fullPath = Path.join(currentPath, entry.name);
+      results.push(fullPath);
+
+      if (entry.isDirectory()) {
+        await walk(fullPath);
+      }
+    }
+  }
+
+  await walk(rootPath);
+  return results;
+}
+
 function listDropboxFolderEntries(client, path) {
   return client
     .filesListFolder({
@@ -144,16 +170,18 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
       oldRelativePath = Path.posix.join(relativeParent, existingName);
     }
 
-    const deleteExists = entries.some(function (item) {
-      return (
-        item &&
-        item[".tag"] === "deleted" &&
-        item.relative_path &&
-        item.relative_path.toLowerCase() === oldRelativePath.toLowerCase()
-      );
-    });
+    const deleteExists = function (relativePath) {
+      return entries.some(function (item) {
+        return (
+          item &&
+          item[".tag"] === "deleted" &&
+          item.relative_path &&
+          item.relative_path.toLowerCase() === relativePath.toLowerCase()
+        );
+      });
+    };
 
-    if (deleteExists) {
+    if (deleteExists(oldRelativePath)) {
       console.log(prefix(), "Delete entry for case-only rename already exists");
       continue;
     }
@@ -173,6 +201,53 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
       path_display: oldPathDisplay,
       relative_path: oldRelativePath,
     });
+
+    if (entry[".tag"] === "folder") {
+      let oldFolderPath;
+      let blogRootPath;
+
+      try {
+        oldFolderPath = localPath(blogID, oldRelativePath);
+        blogRootPath = localPath(blogID, "/");
+      } catch (err) {
+        index++;
+        continue;
+      }
+
+      const descendantPaths = await listDescendantPaths(oldFolderPath);
+      const descendantDeletes = [];
+
+      for (const descendantPath of descendantPaths) {
+        const relativeDiskPath = Path.relative(blogRootPath, descendantPath);
+
+        if (!relativeDiskPath || relativeDiskPath.startsWith("..")) {
+          continue;
+        }
+
+        const relativePath = relativeDiskPath
+          .split(Path.sep)
+          .join(Path.posix.sep);
+
+        if (deleteExists(relativePath)) {
+          continue;
+        }
+
+        const pathDisplay = dropboxParent
+          ? Path.posix.join(dropboxParent, relativePath)
+          : "/" + relativePath;
+
+        descendantDeletes.push({
+          ".tag": "deleted",
+          path_display: pathDisplay,
+          relative_path: relativePath,
+        });
+      }
+
+      if (descendantDeletes.length) {
+        entries.splice(index + 1, 0, ...descendantDeletes);
+        index += descendantDeletes.length;
+      }
+    }
 
     index++;
   }
