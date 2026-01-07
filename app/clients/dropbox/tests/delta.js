@@ -115,7 +115,7 @@ function setupDelta(done) {
 
   var context = this;
   var account = this.account;
-  var delta = new Delta(account.access_token, account.folder_id);
+  var delta = new Delta(account.access_token, account.folder_id, context.blog.id);
 
   context.delta = function (callback) {
     delta(context.account.cursor, function (err, res) {
