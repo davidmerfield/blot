@@ -12,6 +12,32 @@ const clfdate = require("helper/clfdate");
 
 const prefix = () => clfdate() + ' Dropbox: Delta: ';
 
+async function listDescendantPaths(rootPath) {
+  const results = [];
+
+  async function walk(currentPath) {
+    let entries;
+
+    try {
+      entries = await fs.readdir(currentPath, { withFileTypes: true });
+    } catch (err) {
+      return;
+    }
+
+    for (const entry of entries) {
+      const fullPath = Path.join(currentPath, entry.name);
+      results.push(fullPath);
+
+      if (entry.isDirectory()) {
+        await walk(fullPath);
+      }
+    }
+  }
+
+  await walk(rootPath);
+  return results;
+}
+
 function listDropboxFolderEntries(client, path) {
   return client
     .filesListFolder({
@@ -43,6 +69,10 @@ function listDropboxFolderEntries(client, path) {
 async function injectCaseOnlyDeletes(entries, blogID, client) {
 
   console.log(prefix(), "Checking for case-only renames in", entries.length, "entries" );
+
+  const normalizeRelativePathForComparison = function (relativePath) {
+    return (relativePath || "").replace(/^\/+/, "").toLowerCase();
+  };
 
   for (let index = 0; index < entries.length; index++) {
     const entry = entries[index];
@@ -144,16 +174,19 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
       oldRelativePath = Path.posix.join(relativeParent, existingName);
     }
 
-    const deleteExists = entries.some(function (item) {
-      return (
-        item &&
-        item[".tag"] === "deleted" &&
-        item.relative_path &&
-        item.relative_path.toLowerCase() === oldRelativePath.toLowerCase()
-      );
-    });
+    const deleteExists = function (relativePath) {
+      const normalized = normalizeRelativePathForComparison(relativePath);
+      return entries.some(function (item) {
+        return (
+          item &&
+          item[".tag"] === "deleted" &&
+          item.relative_path &&
+          normalizeRelativePathForComparison(item.relative_path) === normalized
+        );
+      });
+    };
 
-    if (deleteExists) {
+    if (deleteExists(oldRelativePath)) {
       console.log(prefix(), "Delete entry for case-only rename already exists");
       continue;
     }
@@ -174,6 +207,62 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
       relative_path: oldRelativePath,
     });
 
+    if (entry[".tag"] === "folder") {
+      const shouldPrefixSlash = entry.relative_path[0] === "/";
+      let oldFolderPath;
+      let blogRootPath;
+
+      try {
+        oldFolderPath = localPath(blogID, oldRelativePath);
+        blogRootPath = localPath(blogID, "/");
+      } catch (err) {
+        index++;
+        continue;
+      }
+
+      const descendantPaths = await listDescendantPaths(oldFolderPath);
+      const descendantDeletes = [];
+
+      for (const descendantPath of descendantPaths) {
+        const relativeDiskPath = Path.relative(blogRootPath, descendantPath);
+
+        if (!relativeDiskPath || relativeDiskPath.startsWith("..")) {
+          continue;
+        }
+
+        const relativePathNoLeadingSlash = relativeDiskPath
+          .split(Path.sep)
+          .join(Path.posix.sep);
+
+        const relativePath = shouldPrefixSlash
+          ? "/" + relativePathNoLeadingSlash
+          : relativePathNoLeadingSlash;
+
+        if (deleteExists(relativePath)) {
+          continue;
+        }
+
+        const pathDisplay = dropboxParent
+          ? Path.posix.join(dropboxParent, relativePathNoLeadingSlash)
+          : "/" + relativePathNoLeadingSlash;
+
+        descendantDeletes.push({
+          ".tag": "deleted",
+          path_display: pathDisplay,
+          relative_path: relativePath,
+        });
+      }
+
+      if (descendantDeletes.length) {
+        entries.splice(index + 1, 0, ...descendantDeletes);
+        index += descendantDeletes.length;
+      }
+      // Skip past the original entry (which is now at index + 1 after parent delete insertion)
+      index++;
+      continue;
+    }
+
+    // For non-folder case, skip past the original entry (which is now at index + 1 after parent delete insertion)
     index++;
   }
 
