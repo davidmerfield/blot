@@ -7,11 +7,13 @@ var hasUnsupportedExtension = _require.hasUnsupportedExtension;
 var isDotfileOrDotfolder = _require.isDotfileOrDotfolder;
 var hashFile = require("helper/hashFile");
 var Database = require("../database");
-var join = require("path").join;
+var Path = require("path");
+var join = Path.join;
 var Delta = require("../delta");
 var fs = require("fs-extra");
 var async = require("async");
 var Sync = require("sync");
+var caseSensitivePath = require("helper/caseSensitivePath");
 
 var MAX_CHECKS_WITHOUT_RESULTS = 5;
 
@@ -118,9 +120,12 @@ module.exports = function main(blog, callback) {
                 // to update, so things like automatic title generation based on the
                 // file can be computed nicely, along with the display path, which also
                 // has case-preserved, for things like extracting tags from tag folders.
-                folder.log(item.relative_path, "Updating path");
+                // Use resolved_relative_path if available (set by determinePathOnDisk),
+                // otherwise fall back to relative_path
+                const pathToUpdate = item.resolved_relative_path || item.relative_path;
+                folder.log(pathToUpdate, "Updating path");
                 folder.update(
-                  item.relative_path,
+                  pathToUpdate,
                   function (err) {
                     // We don't want an error here to block other
                     // changes from being applied.
@@ -197,57 +202,73 @@ function Apply(client, blogFolder, log, status) {
       });
 
     function remove(item, callback) {
-      log(item.relative_path, "Removing from folder");
-      status("Removing " + item.relative_path);
-      fs.remove(join(blogFolder, item.relative_path), function (err) {
+      determinePathOnDisk(blogFolder, item, function (err) {
+
         if (err) {
-          log(item.relative_path, "Error removing from folder", err);
-          status("Error removing " + item.relative_path);
-        } else {
-          log(item.relative_path, "Removed from folder successfully");
+          log(item.relative_path, "Error determining path on disk for removal");
+          return callback();
         }
 
-        // This error happens if you try to remove a non-existent file
-        // inside a non-existent folder whose name happens to be the same
-        // as an existent file. For example, create a file 'hello.txt' then
-        // try to remove hello.txt/bar.txt, you will get this error.
-        // Since we don't care, we suppress it.
-        if (err && err.code === "ENOTDIR") return callback();
+        log(item.resolved_relative_path, "Removing from folder");
+        status("Removing " + item.resolved_relative_path);
+        fs.remove(item.path_on_disk, function (err) {
+          if (err) {
+            log(item.resolved_relative_path, "Error removing from folder", err);
+            status("Error removing " + item.resolved_relative_path);
+          } else {
+            log(item.resolved_relative_path, "Removed from folder successfully");
+          }
 
-        // We should probably handle this somehow. Without this
-        // we end up being unable to sync blogs with a single
-        // file that has a long name
-        if (err && err.code === "ENAMETOOLONG") return callback();
+          // This error happens if you try to remove a non-existent file
+          // inside a non-existent folder whose name happens to be the same
+          // as an existent file. For example, create a file 'hello.txt' then
+          // try to remove hello.txt/bar.txt, you will get this error.
+          // Since we don't care, we suppress it.
+          if (err && err.code === "ENOTDIR") return callback();
 
-        // Swallow errors generally so we can proceed to next file
-        // we might want to mark an error somehow
-        callback();
+          // We should probably handle this somehow. Without this
+          // we end up being unable to sync blogs with a single
+          // file that has a long name
+          if (err && err.code === "ENAMETOOLONG") return callback();
+
+          // Swallow errors generally so we can proceed to next file
+          // we might want to mark an error somehow
+          callback();
+        });
       });
     }
 
     function mkdir(item, callback) {
-      log(item.relative_path, "Making directory in folder");
-      status("Creating directory " + item.relative_path);
-      fs.ensureDir(join(blogFolder, item.relative_path), function (err) {
-        // we have run into an EEXIST error here when a file exists
-        // where a new folder needs to be. I decided against
-        // just removing the file and replacing it with a folder
-        // since this would reflect something badly out of sync with
-        // dropbox (they would send the deletion before the creation?)
-        // How could a file named for a folder have gotten here? could
-        // blot have done it or is it just the user?
+      determinePathOnDisk(blogFolder, item, function (err) {
 
         if (err) {
-          log(item.relative_path, "Error making directory in folder", err);
-          status("Error making directory " + item.relative_path);
-        } else {
-          log(item.relative_path, "Made directory in folder successfully");
+          log(item.relative_path, "Error determining path on disk for mkdir");
+          return callback();
         }
 
-        // Swallow errors generally so we can proceed to next file
-        // we might want to mark an error somehow
-        callback();
-      });
+        log(item.resolved_relative_path, "Making directory in folder");
+        status("Creating directory " + item.resolved_relative_path);
+        fs.ensureDir(item.path_on_disk, function (err) {
+          // we have run into an EEXIST error here when a file exists
+          // where a new folder needs to be. I decided against
+          // just removing the file and replacing it with a folder
+          // since this would reflect something badly out of sync with
+          // dropbox (they would send the deletion before the creation?)
+          // How could a file named for a folder have gotten here? could
+          // blot have done it or is it just the user?
+
+          if (err) {
+            log(item.resolved_relative_path, "Error making directory in folder", err);
+            status("Error making directory " + item.resolved_relative_path);
+          } else {
+            log(item.resolved_relative_path, "Made directory in folder successfully");
+          }
+
+          // Swallow errors generally so we can proceed to next file
+          // we might want to mark an error somehow
+          callback();
+        });
+      }); 
     }
 
     // Item.path_display is the full path to the item
@@ -255,104 +276,115 @@ function Apply(client, blogFolder, log, status) {
     // relative path to an item, since the root of the
     // Dropbox folder might not be the root of the blog.
     function download(item, callback) {
-      var pathForUnsupportedCheck = item.path_display || item.relative_path || "";
 
-      if (hasUnsupportedExtension(pathForUnsupportedCheck)) {
-        var unsupportedMessage =
-          "Skipping download because file extension is unsupported";
-        log(item.relative_path, unsupportedMessage);
-        status("Skipping unsupported file " + item.relative_path);
+      determinePathOnDisk(blogFolder, item, function (err) {
 
-        return fs.outputFile(
-          join(blogFolder, item.relative_path),
-          "",
-          function (err) {
-            if (err) {
-              log(
-                item.relative_path,
-                "Error creating placeholder for unsupported file",
-                err
-              );
-              status("Error creating placeholder " + item.relative_path);
-            }
-
-            callback();
-          }
-        );
-      }
-
-      if (typeof item.size === "number" && item.size > MAX_FILE_SIZE) {
-        var message =
-          "Skipping download because file exceeds size limit (" +
-          item.size +
-          " > " +
-          MAX_FILE_SIZE +
-          ")";
-        log(item.relative_path, message);
-        status("Skipping oversized file " + item.relative_path);
-
-        return fs.outputFile(
-          join(blogFolder, item.relative_path),
-          "",
-          function (err) {
-            if (err) {
-              log(
-                item.relative_path,
-                "Error creating placeholder for oversized file",
-                err
-              );
-              status("Error creating placeholder " + item.relative_path);
-            }
-
-            callback();
-          }
-        );
-      }
-
-      log(item.relative_path, "Hashing any existing file contents");
-      status("Downloading " + item.relative_path);
-
-      hashFile(join(blogFolder, item.relative_path), function (
-        err,
-        content_hash
-      ) {
-        if (item.content_hash && item.content_hash === content_hash) {
-          log(item.relative_path, "Hash matches, don't download");
+        if (err) {
+          log(item.relative_path, "Error determining path on disk for download");
           return callback();
         }
 
-        log(
-          item.relative_path,
-          "Hash does not match, downloading from Dropbox"
-        );
-        Download(
-          client,
-          item.path_display,
-          join(blogFolder, item.relative_path),
-          function (err) {
-            if (err) {
-              log(item.relative_path, "Error downloading from dropbox", err);
-              status("Error downloading " + item.relative_path);
-            } else {
-              log(item.relative_path, "Downloaded to folder successfully");
-            }
-            // Swallow the error that occur when the user has forbidden content
-            // in their folder. We should surface this eventually. You can test
-            // this error using the file in tests/files/will_flag_restricted_content.png
-            // Warning: this looks like a more generic error!
-            if (
-              err &&
-              err.statusCode === 409 &&
-              err.statusMessage === "Conflict"
-            ) {
-              return callback();
-            }
+        var pathForUnsupportedCheck = item.path_display || item.resolved_relative_path || "";
 
-            // Swallow errors generally so we can proceed to next file
-            // we might want to mark an error somehow
-            callback();
+        if (hasUnsupportedExtension(pathForUnsupportedCheck)) {
+          var unsupportedMessage =
+            "Skipping download because file extension is unsupported";
+          log(item.resolved_relative_path, unsupportedMessage);
+          status("Skipping unsupported file " + item.resolved_relative_path);
+
+          return fs.outputFile(
+            item.path_on_disk,
+            "",
+            function (err) {
+              if (err) {
+                log(
+                  item.resolved_relative_path,
+                  "Error creating placeholder for unsupported file",
+                  err
+                );
+                status("Error creating placeholder " + item.resolved_relative_path);
+              }
+
+              callback();
+            }
+          );
+        }
+
+        if (typeof item.size === "number" && item.size > MAX_FILE_SIZE) {
+          var message =
+            "Skipping download because file exceeds size limit (" +
+            item.size +
+            " > " +
+            MAX_FILE_SIZE +
+            ")";
+          log(item.resolved_relative_path, message);
+          status("Skipping oversized file " + item.resolved_relative_path);
+
+          return fs.outputFile(
+            item.path_on_disk,
+            "",
+            function (err) {
+              if (err) {
+                log(
+                  item.resolved_relative_path,
+                  "Error creating placeholder for oversized file",
+                  err
+                );
+                status("Error creating placeholder " + item.resolved_relative_path);
+              }
+
+              callback();
+            }
+          );
+        }
+
+        status("Downloading " + item.resolved_relative_path);
+
+        
+        log(item.resolved_relative_path, "Hashing any existing file contents");
+
+        hashFile(item.path_on_disk, function (
+          err,
+          content_hash
+        ) {
+          if (item.content_hash && content_hash && item.content_hash === content_hash) {
+            log(item.resolved_relative_path, "Hash matches, don't download");
+            return callback();
           }
-        );
+
+          log(
+            item.resolved_relative_path,
+            "Hash does not match, downloading from Dropbox"
+          );
+          Download(
+            client,
+            item.path_display,
+            item.path_on_disk,
+            function (err) {
+              if (err) {
+                log(item.resolved_relative_path, "Error downloading from dropbox", err);
+                status("Error downloading " + item.resolved_relative_path);
+              } else {
+                log(item.resolved_relative_path, "Downloaded to folder successfully");
+              }
+              // Swallow the error that occur when the user has forbidden content
+              // in their folder. We should surface this eventually. You can test
+              // this error using the file in tests/files/will_flag_restricted_content.png
+              // Warning: this looks like a more generic error!
+              if (
+                err &&
+                err.statusCode === 409 &&
+                err.statusMessage === "Conflict"
+              ) {
+                return callback();
+              }
+
+              // Swallow errors generally so we can proceed to next file
+              // we might want to mark an error somehow
+              callback();
+            }
+          );
+        });
       });
     }
 
@@ -370,3 +402,43 @@ function Apply(client, blogFolder, log, status) {
     );
   };
 }
+
+function determinePathOnDisk(blogFolder, item, callback) {
+  const parentDir = Path.dirname(item.relative_path);
+  const filename = Path.basename(item.relative_path);
+
+  caseSensitivePath(blogFolder, parentDir, function (err, resolvedParent) {
+
+    // We don't want to fail the download just because
+    // we couldn't resolve the case sensitive path – just log it and proceed.
+    if (err) {
+      item.resolved_relative_path = item.relative_path;
+      item.path_on_disk = join(blogFolder, item.relative_path);
+      return callback(null); // resolvedParent will be undefined, fallback logic will handle it
+    }
+
+    // Use resolved parent directory if available and not root
+    // parentDir === '.' means the file is at the root level
+    // caseSensitivePath returns an absolute path, so we need to make it relative
+    let resolvedRelativePath = item.relative_path;
+
+    if (parentDir !== '.' && resolvedParent) {
+      // Convert absolute path to relative path using Path.relative for robustness
+      const resolvedRelativeParent = Path.relative(blogFolder, resolvedParent);
+      
+      // Safety check: ensure resolvedParent is actually inside blogFolder
+      // Path.relative returns paths with '../' if the target is outside the base
+      // Also handle empty string case (when paths are the same)
+      if (resolvedRelativeParent && resolvedRelativeParent !== '' && !resolvedRelativeParent.startsWith('..')) {
+        resolvedRelativePath = join(resolvedRelativeParent, filename);
+      }
+      // If resolvedParent is outside blogFolder or empty, fall back to item.relative_path
+    }
+
+    item.resolved_relative_path = resolvedRelativePath;
+    item.path_on_disk = join(blogFolder, resolvedRelativePath);
+
+    callback(null);
+  });
+}
+
