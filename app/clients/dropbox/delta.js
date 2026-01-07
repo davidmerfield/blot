@@ -1,10 +1,16 @@
-var debug = require("debug")("blot:clients:dropbox:delta");
-var retry = require("./util/retry");
-var waitForErrorTimeout = require("./util/waitForErrorTimeout");
-var isDotfileOrDotfolder = require("./util/constants").isDotfileOrDotfolder;
-var localPath = require("helper/localPath");
-var fs = require("fs-extra");
-var Path = require("path");
+const debug = require("debug")("blot:clients:dropbox:delta");
+const retry = require("./util/retry");
+const waitForErrorTimeout = require("./util/waitForErrorTimeout");
+const isDotfileOrDotfolder = require("./util/constants").isDotfileOrDotfolder;
+const localPath = require("helper/localPath");
+const caseSensitivePath = require("util").promisify(
+  require("helper/caseSensitivePath")
+);
+const fs = require("fs-extra");
+const Path = require("path");
+const clfdate = require("helper/clfdate");
+
+const prefix = () => clfdate() + ' Dropbox: Delta: ';
 
 function listDropboxFolderEntries(client, path) {
   return client
@@ -35,8 +41,13 @@ function listDropboxFolderEntries(client, path) {
 }
 
 async function injectCaseOnlyDeletes(entries, blogID, client) {
+
+  console.log(prefix(), "Checking for case-only renames in", entries.length, "entries" );
+
   for (let index = 0; index < entries.length; index++) {
     const entry = entries[index];
+
+    console.log(prefix(), "Examining entry", index + 1, "of", entries.length, ":", entry);
 
     if (!entry || (entry[".tag"] !== "file" && entry[".tag"] !== "folder")) {
       continue;
@@ -47,6 +58,7 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
     }
 
     let absolutePath;
+
     try {
       absolutePath = localPath(blogID, entry.relative_path);
     } catch (err) {
@@ -58,10 +70,26 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
     const targetLower = targetName.toLowerCase();
 
     let localEntries;
+
     try {
       localEntries = await fs.readdir(parentDir);
     } catch (err) {
-      continue;
+      // Sometimes the case returned in path_display / relative_path
+      // is inconsistent with the true path on Dropbox. So we
+      // use case-sensitive path to find the parent directory.
+      if (err.code === "ENOENT") {
+        try {
+          console.log("Parent directory does not exist, trying case-sensitive path");
+          const resolvedPath = await caseSensitivePath(localPath(blogID, '/'), Path.dirname(entry.relative_path));
+          localEntries = await fs.readdir(resolvedPath);
+        } catch (err2) {
+          console.log(prefix(), "Error reading local directory with case-sensitive path:", err2);
+          continue;
+        }
+      } else {
+        console.log(prefix(), "Error reading local directory:", err);
+        continue;
+      }
     }
 
     const existingName = localEntries.find(function (name) {
@@ -69,6 +97,7 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
     });
 
     if (!existingName) {
+      console.log(prefix(), "No case-only rename detected for entry");
       continue;
     }
 
@@ -78,6 +107,7 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
     }
 
     let dropboxEntries;
+
     try {
       dropboxEntries = await listDropboxFolderEntries(client, dropboxParent);
     } catch (err) {
@@ -94,10 +124,12 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
     });
 
     if (!newEntry || oldEntry) {
+      console.log(prefix(), "Could not find new or old entry in Dropbox folder");
       continue;
     }
 
     if (newEntry[".tag"] !== entry[".tag"]) {
+      console.log(prefix(), "New entry type does not match original entry type");
       continue;
     }
 
@@ -122,6 +154,7 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
     });
 
     if (deleteExists) {
+      console.log(prefix(), "Delete entry for case-only rename already exists");
       continue;
     }
 
@@ -129,6 +162,12 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
       ? Path.posix.join(dropboxParent, existingName)
       : "/" + existingName;
 
+    console.log(prefix(), 
+      "Injecting case-only delete for",
+      oldRelativePath,
+      "alongside",
+      entry.relative_path
+    );
     entries.splice(index, 0, {
       ".tag": "deleted",
       path_display: oldPathDisplay,
