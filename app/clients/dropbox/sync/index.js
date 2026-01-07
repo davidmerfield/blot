@@ -404,18 +404,45 @@ function Apply(client, blogFolder, log, status) {
 }
 
 function determinePathOnDisk(blogFolder, item, callback) {
+  console.log('[determinePathOnDisk] START', {
+    blogFolder,
+    relative_path: item.relative_path,
+    path_display: item.path_display,
+    tag: item[".tag"]
+  });
+
   const parentDir = Path.dirname(item.relative_path);
   const filename = Path.basename(item.relative_path);
+  
+  console.log('[determinePathOnDisk] Parsed path', {
+    parentDir,
+    filename
+  });
 
   caseSensitivePath(blogFolder, parentDir, function (err, resolvedParent) {
 
     // We don't want to fail the download just because
     // we couldn't resolve the case sensitive path – just log it and proceed.
     if (err) {
+      console.log('[determinePathOnDisk] ERROR from caseSensitivePath', {
+        relative_path: item.relative_path,
+        parentDir,
+        error: err.message || err,
+        stack: err.stack
+      });
       item.resolved_relative_path = item.relative_path;
       item.path_on_disk = join(blogFolder, item.relative_path);
+      console.log('[determinePathOnDisk] Using fallback paths', {
+        resolved_relative_path: item.resolved_relative_path,
+        path_on_disk: item.path_on_disk
+      });
       return callback(null); // resolvedParent will be undefined, fallback logic will handle it
     }
+
+    console.log('[determinePathOnDisk] caseSensitivePath resolved', {
+      parentDir,
+      resolvedParent
+    });
 
     // Use resolved parent directory if available and not root
     // parentDir === '.' means the file is at the root level
@@ -426,17 +453,45 @@ function determinePathOnDisk(blogFolder, item, callback) {
       // Convert absolute path to relative path using Path.relative for robustness
       const resolvedRelativeParent = Path.relative(blogFolder, resolvedParent);
       
+      console.log('[determinePathOnDisk] Computed relative parent', {
+        blogFolder,
+        resolvedParent,
+        resolvedRelativeParent
+      });
+      
       // Safety check: ensure resolvedParent is actually inside blogFolder
       // Path.relative returns paths with '../' if the target is outside the base
       // Also handle empty string case (when paths are the same)
       if (resolvedRelativeParent && resolvedRelativeParent !== '' && !resolvedRelativeParent.startsWith('..')) {
         resolvedRelativePath = join(resolvedRelativeParent, filename);
+        console.log('[determinePathOnDisk] Using resolved parent path', {
+          resolvedRelativeParent,
+          filename,
+          resolvedRelativePath
+        });
+      } else {
+        console.log('[determinePathOnDisk] Skipping resolved parent (outside blogFolder or empty)', {
+          resolvedRelativeParent,
+          using_fallback: item.relative_path
+        });
       }
       // If resolvedParent is outside blogFolder or empty, fall back to item.relative_path
+    } else {
+      console.log('[determinePathOnDisk] Root level or no resolvedParent', {
+        parentDir,
+        resolvedParent,
+        using_fallback: item.relative_path
+      });
     }
 
     item.resolved_relative_path = resolvedRelativePath;
     item.path_on_disk = join(blogFolder, resolvedRelativePath);
+
+    console.log('[determinePathOnDisk] FINAL RESULT', {
+      relative_path: item.relative_path,
+      resolved_relative_path: item.resolved_relative_path,
+      path_on_disk: item.path_on_disk
+    });
 
     callback(null);
   });
