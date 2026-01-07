@@ -70,6 +70,10 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
 
   console.log(prefix(), "Checking for case-only renames in", entries.length, "entries" );
 
+  const normalizeRelativePathForComparison = function (relativePath) {
+    return (relativePath || "").replace(/^\/+/, "").toLowerCase();
+  };
+
   for (let index = 0; index < entries.length; index++) {
     const entry = entries[index];
 
@@ -171,12 +175,13 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
     }
 
     const deleteExists = function (relativePath) {
+      const normalized = normalizeRelativePathForComparison(relativePath);
       return entries.some(function (item) {
         return (
           item &&
           item[".tag"] === "deleted" &&
           item.relative_path &&
-          item.relative_path.toLowerCase() === relativePath.toLowerCase()
+          normalizeRelativePathForComparison(item.relative_path) === normalized
         );
       });
     };
@@ -203,6 +208,7 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
     });
 
     if (entry[".tag"] === "folder") {
+      const shouldPrefixSlash = entry.relative_path[0] === "/";
       let oldFolderPath;
       let blogRootPath;
 
@@ -224,17 +230,21 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
           continue;
         }
 
-        const relativePath = relativeDiskPath
+        const relativePathNoLeadingSlash = relativeDiskPath
           .split(Path.sep)
           .join(Path.posix.sep);
+
+        const relativePath = shouldPrefixSlash
+          ? "/" + relativePathNoLeadingSlash
+          : relativePathNoLeadingSlash;
 
         if (deleteExists(relativePath)) {
           continue;
         }
 
         const pathDisplay = dropboxParent
-          ? Path.posix.join(dropboxParent, relativePath)
-          : "/" + relativePath;
+          ? Path.posix.join(dropboxParent, relativePathNoLeadingSlash)
+          : "/" + relativePathNoLeadingSlash;
 
         descendantDeletes.push({
           ".tag": "deleted",
