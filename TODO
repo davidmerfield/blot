@@ -1,3 +1,20 @@
+Thorough QA on dropbox client
+- app folder single site
+  - renames
+  - deletes
+  - creates
+  - updates
+- app folder multiple sites
+  - renames
+  - deletes
+  - creates
+  - updates
+- full folder
+  - renames
+  - deletes
+  - creates
+  - updates
+
 Does iCloud client bug out when file with #Introduction.md# exists?
 
 Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
