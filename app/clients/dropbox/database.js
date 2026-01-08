@@ -146,6 +146,9 @@ Model = {
   // Date stamp of the last successful sync
   last_sync: "number",
 
+  // Date stamp of the last webhook received
+  last_webhook: "number",
+
   // true if Blot has full access to the user's
   // Dropbox folder, false if we only have
   // access to a folder in their Apps folder

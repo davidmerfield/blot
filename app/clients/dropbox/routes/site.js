@@ -137,6 +137,7 @@ site.post("/webhook", function (req, res) {
           const blogsToSync = blogs.filter(blog => !ongoingSyncs.has(blog.id));
           
           blogsToSync.forEach(function (blog) {
+            Database.set(blog.id, { account_id, last_webhook: Date.now() }, function () {});
             // Used for testing purposes only
             started(blog.id);
             // Mark sync as started
