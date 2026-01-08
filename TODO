@@ -57,6 +57,8 @@ iCloud client:
 - Why are there unrenamed folders in the mac server icloud drive?
   - partial incomplete setup? sharing a non-empty folder? 
 - Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
+- Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
+
 
 Bug reports:
 - The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
@@ -163,6 +165,10 @@ Fix bug with the typeset settings do not actually affect anything (you can only 
 Fix bug where one bad page can take down upstream repeatedly 
 – perhaps we need to cache in proxy cache timeouts? or somehow detect if a request causes upstream to crash?
 
+Fix template partial embeddings which no longer work because of switch from lowercase to true case:
+- e.g. {{> /pages/home.txt}} when pages is really Pages
+- we should resolve the case-insensitive path to file when saving a template and parsing its partials
+
 Fix bugs with templates:
 - Fix bug with videos on Reference template and [Tell Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGslbPSKMXkRbvrHKFTWhbJbPlg)
 - Fix post navigation on Portfolio template and tell [Questioner](https://blot.im/questions/1894)
@@ -175,6 +181,8 @@ Fix bug with [header position on the blog template](https://blot.im/questions/22
 - Make 'close' button on entry permalink page of reference template work like the photo template and tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsmNSSSRKHnlgCBllnqJCcPhxD)
 
 Fix bug with [many twitter embeds and tell Nash](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllMNfjvRBthVncQtPJQpmrksx)
+
+Fix bug with filtering paginated list of entries and tell [Roy](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVgrQJWNPHHvdxnMtWCGJkZdM) and [Josh](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVzrFNFzLzbWrssWzbrSvtpTm) and [Logan](https://twitter.com/LoganGreer)
 
 Fix bug with template tags in blog post and tell [Shibel](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgCJQhBZwgzQVLkKHnwPKVkFC)
 
@@ -360,9 +368,6 @@ Implement TOC Plugin
 - Tell Omar
 
 Update obsidian tools pages (improve)
-
-Follow up with Bunny about bug with spaces in file names served from folder
-- or write code to workaround
 
 Update question on what to do to import posts from wordpress or squarespace: instead of contact me, reference the importer. 
 
@@ -550,7 +555,6 @@ com/mail/u/0/#inbox/1588e3df7489b554)
 - Re-do url redirector to use route-parser and properly support regular expressions
 - Add support for paginated list of entries on other pages and [Dan](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcrtWVPZdQnHxXtmFsxDtWVrV) tell [Kevin](https://mail.google.com/mail/u/0/#inbox/FMfcgxvzLhlvZxhQwWfJmKhnXgkPnmJC) and [Eli](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVDJhGpffNsZDjCszcstGVsGh) and [Sven](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJhhfPCqLCXWxtnJsxNfWKdM) and [Nikhil](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDrvCRFcMTRcgMJdcCkxSNChXq) and [Adam](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMsQczfjJBHpBSlxTmgxXMQKr) and [Madino](https://mail.google.com/mail/u/0/#inbox/FMfcgxwJXflPbzPWJQdgCxxrSWbzRDWT) and [Ryan](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsdFCmRCKzvxTgchlZJzdhwQd)
 - Add dynamic querying of entry list and tell [Naoki](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMjtCWmHCBZWsVPTCftbQCZTn)
-- Fix bug with filtering paginated list of entries and tell [Roy](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVgrQJWNPHHvdxnMtWCGJkZdM) and [Josh](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVzrFNFzLzbWrssWzbrSvtpTm) and [Logan](https://twitter.com/LoganGreer)
 - Add a popular entry list
 - Add way to auto-refresh page during template development on preview subdomains. Tell [Ryan](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVDHXWxBGqwNlmsmgZjbnHXvg)
 - Add way to list files at a path and tell [Matt](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqxRmLMrTjjpjftkSwddPJkTm) and [Daisy](https://mail.google.com/mail/u/0/#inbox/FMfcgzQXJkVbjxQbLgTRTJrhGtjBblCP)
@@ -638,8 +642,6 @@ Improve iCloud client
     ## 1. Harden sync pipeline
     - [ ] Add integration tests covering end-to-end sync flows via `sync/toiCloud.js` and `sync/fromiCloud.js`, including handling of deletions, renames, and empty files.
     - [ ] Implement retry and backoff logic around mac server HTTP uploads (`macserver/httpClient/upload.js`) and downloads (`macserver/brctl/download.js`) to recover from transient iCloud errors.
-    - [ ] Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
-
     ## 2. Improve failure detection and reporting
     - [ ] Expand monitoring in `util/monitorMacServerStats.js` to include latency/health metrics for the mac server watcher (`macserver/monitorer.js`).
     - [ ] Emit structured logs for sync actions with correlation identifiers to aid debugging across the mac server and main server.
@@ -701,15 +703,10 @@ arbritrary paths and keep clean URLS (no underscores). Sitewide .blotignore file
 - does rebuild update ignored files list too?
 - handle new pathNormalizer behaviour
 - 'ignoredFilesKey'
-- why are ignored files not added to ignored list?
 - add 'ignored ghosts' check to sync/fix
 - Add `Ignore: yes` metadata to trigger the ignored file behaviour
 
 Are there any missing templates because of the switch from lowercase to true case?
-
-Fix template partial embeddings which no longer work because of switch from lowercase to true case:
-- e.g. {{> /pages/home.txt}} when pages is really Pages
-- we should resolve the case-insensitive path to file when saving a template and parsing its partials
 
 How to fix menu links with incorrect case IDs?
 - Write script to catch these and patch
