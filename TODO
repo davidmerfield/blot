@@ -89,6 +89,8 @@ Dropbox: when you switch from app folder to full folder, there should be a notif
 
 Fix bug issue with switching from Dropbox client to Git client, in production which affected Nat
 
+Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset).
+
 Dropbox: There was a bug when switching from one connected site in Dropbox app folder to two sites (See code which moves existing files into subfolder)
 
 Modify app/clients/icloud/util/monitorMacServerStats.js to send a recovery notification when stats are back online
