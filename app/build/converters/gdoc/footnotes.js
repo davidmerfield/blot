@@ -48,10 +48,8 @@ module.exports = function footnotes($) {
 
     let html = clone.html() || "";
 
-    html = html
-      .replace(/&nbsp;/gi, " ")
-      .replace(/<span>\s*<\/span>/gi, "")
-      .trim();
+    // Note: empty spans are already cleaned up by cleanupSpans()
+    html = html.replace(/&nbsp;/gi, " ").trim();
 
     footnoteDefs.push({
       number,
