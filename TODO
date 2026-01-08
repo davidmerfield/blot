@@ -1,142 +1,62 @@
-Improvements to Dropbox client
-- Handle file renames using Dropbox IDs to avoid the 'new entry' bug when you rename a file
-- Add integration test with a dropbox Webhook call. I want to not push some code which would prevent syncing customer folders.
-- Does client.remove support the removal of folders? If not, make it so and add a test
-- Add a step to authentication flow which says: 'there is already a folder called 'Your blog title' in your Dropbox, would you like to use that?' then overwrite the files inside. This prevents the proliferation of confusing 'Your blog title (1)' when you re-authenticate.
-- Add a progress bar to the dashboard when writing existing files to Dropbox. It takes a while and confuses people. Perhaps leverage existing status message system with prefix of "(1/247)" to be parsed on front-end and turned into progress bar
-- Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
-- Extend sync lock during long syncs
-- Write test to simulate process dying and restarting mid-pull. Does the client recover?
-- Write tests for a series of random dropbox client operations (pull, add, push, move, reset, delete) that can be seeded and reliably re-run in the case of failure.
-- Gracefuly retry wrapper around Dropbox
-- Can we write to a folder_id instead of a path? It would be nice to be able to move the blog's folder even when writing the initial files to it, for example...
-- This should be simple once we copy the exisiting state of the blog folder across. But right now it doesn't really do much. It resets the local server folder. Then resyncs.
-- Update to latest version of Dropbox client.
-- Make the folder in Dropbox rename automatically when the customer changes the username for one of their multiple blogs?
-    
-    ## 1. Harden sync lifecycle
-    - [ ] Add a watchdog for long-running sync jobs that restarts or alerts when a job exceeds an expected duration.
-    - [ ] Ensure incomplete setup/sync jobs resume automatically after process restarts by persisting in-progress state and re-queueing tasks on boot.
-    - [ ] Capture and retry transient Dropbox API errors with exponential backoff while surfacing hard failures for manual intervention.
+Dropbox client
+- Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
+- Bug: Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
+  - Bug: handle a sync lock failure on second blog when migrating an app folder
+- Bug: retry transient Dropbox API errors with exponential backoff while surfacing hard failures for manual intervention.
+- Bug: Switch uploads >150 MB to the Dropbox upload session API with chunked transfer and resumable checkpoints
+- Bug: run reset-to-blot when sync fails / errors
+- Bug: ensure you can move the folder in full-folder permission mode
+- Bug: reconnecting with the same account and same permissions should not create a new folder for `full_access=true`
+- Bug: add a check for folder storage before doing mass upload
+- Bug: handle folder full error appropriately
+- Bug: dropbox reset TO BLOT should handle removed folder
+- Bug: dropbox reset FROM BLOT should handle removed folder
+- Bug: dropbox reset TO BLOT should handle revoked token
+- Bug: dropbox reset FROM BLOT should handle revoked token
+- Bug: add sync lock process to dropbox connection when writing folder contents
+- Bug: ensure the app permission access_token is destroyed when switching to full-folder and vice versa
+- Testing:
+  - Write proper tests
+  - Add integration test with a dropbox Webhook call. I want to not push some code which would prevent syncing customer folders.
+  - Write test to simulate process dying and restarting mid-pull. Does the client recover?
+  - Write tests for a series of random dropbox client operations (pull, add, push, move, reset, delete) that can be seeded and reliably re-run in the case of failure.
+  - Does client.remove support the removal of folders? If not, make it so and add a test
+  - Thorough QA on dropbox client
+    - app folder single site
+      - renames
+      - deletes
+      - creates
+      - updates
+    - app folder multiple sites
+      - renames
+      - deletes
+      - creates
+      - updates
+    - full folder
+      - renames
+      - deletes
+      - creates
+      - updates
 
-    ## 2. Improve large file handling
-    - [ ] Switch uploads >150 MB to the Dropbox upload session API with chunked transfer and resumable checkpoints.
-    - [ ] Stream downloads to disk instead of buffering entirely in memory to prevent crashes when fetching large assets.
-    - [ ] Provide user-facing warnings when a file exceeds configured limits or fails checksum validation.
-
-    ## 3. Strengthen rename and conflict detection
-    - [ ] Maintain a cache of Dropbox file IDs to correctly map renames without duplicate entries.
-    - [ ] Detect folder-level moves and apply them atomically to avoid partial state during sync.
-    - [ ] Validate content hashes after sync to catch divergence between Dropbox and Blot storage.
-
-    ## 4. Expand observability and support tooling
-    - [ ] Emit structured logs for setup, sync, and error paths so incidents can be correlated across services.
-    - [ ] Surface active sync issues and recovery steps within the dashboard homepage to prompt user action.
-    - [ ] Add automated email/notification templates for rate limit, low storage, and revoked token scenarios.
-
-
-Improvements to Dropbox client:
-- [ ] Write proper tests
-- [ ] Determine if we can hack our way to determining the file upload date on Dropbox using their API?
-- [ ] Parallelize build/download a little more, so posts appear when many files are dropped into folder?
-- [ ] Efficiently handle Dropbox file renames with internal hash of fileIDs
-- [ ] surface errors during setup on dashboard
-   - [ ] surface sync issues with Dropbox client on the homepage of dashboard
-   - [ ] How do we make errors sticky? To make sure users click through to clients page to re-connect to Dropbox, etc...
-- [ ] run reset-to-blot when sync fails / errors
-- [ ] ensure that when a process dies, any blogs syncing will be reset-to-blot
-- [ ] ensure that when a process dies, any blogs setting up db client will be re-attempted
-- [ ] reconnecting with the same account and same permissions should not create a new folder for `full_access=true`
-- [ ] make full_folder use the old app folder directory – is there a way to disconnect it from the Blot app? otherwise add a big warning to prevent confusion about where the new folder is when transitioning permissions
-- [ ] handle the download of large files gracefully too
-- [ ] consider adding back in download/upload stream, but add a check to see if the download is stuck then fall back to other method?
-- [ ] add a check for folder storage before doing mass upload
-- [ ] handle folder full error appropriately
-- [ ] handle a sync lock failure on second blog when migrating an app folder
-- [ ] check content hash for upload possible
-- [ ] dropbox reset TO BLOT should handle removed folder
-- [ ] dropbox reset FROM BLOT should handle removed folder
-- [ ] dropbox reset TO BLOT should handle revoked token
-- [ ] dropbox reset FROM BLOT should handle revoked token
-- [ ] make dropbox reset FROM abortable
-- [ ] make dropbox reset TO abortable
-  - add a change button next to the dropbox folder selected on the dropbox client where possible
-  - add blocking process to dropbox connection when writing folder contents
-  - ensure the app permission access_token is destroyed when switching to full-folder and vice versa
-  - add a folder chooser during full-folder setup
-  - ensure you can move the folder in full-folder permission mode
-
-Thorough QA on dropbox client
-- app folder single site
-  - renames
-  - deletes
-  - creates
-  - updates
-- app folder multiple sites
-  - renames
-  - deletes
-  - creates
-  - updates
-- full folder
-  - renames
-  - deletes
-  - creates
-  - updates
-  
-Dropbox: when you switch from app folder to full folder, there should be a notification indicating that your folder location has changed
-
-Fix bug issue with switching from Dropbox client to Git client, in production which affected Nat
-
-Does a file called '#Introduction.md#' trigger a bug with the iCloud client initial transfer if it exists in your blog folder before setup?
-
-Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset).
-
-Dropbox: There was a bug when switching from one connected site in Dropbox app folder to two sites (See code which moves existing files into subfolder)
-
-Modify app/clients/icloud/util/monitorMacServerStats.js to send a recovery notification when stats are back online
-
-iCloud: when you change the case of a folder, the files (and posts) inside duplicate and are stored twice
-
-Does iCloud client bug out when file with #Introduction.md# exists?
-
-Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
-
-Fix bug with initial transfer error (make sure sync lock doesn't hang indefinitely)
-
-Improve sync stability of iCloud client
-- Especially for folder renames, many file moves
-- Tell Todd
-- Tell Fede
-
-Focus on reliability and bugfixes
-
----
-
-Release new brochure site
-
-Record new video
-
----
-
-Make it possible to disable processing of image files into individual posts and tell [Brendan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQdzvsdKBgDQqPRcBzTJKVPqNfr)
-
-Investigate issues with image heavy obsidian vaults
-
-Investigate obsidian and ia writer wikilink resolution issues
-
-Release [Fede](https://wordpress.org/themes/kanso/)'s theme as profile template
-
-Fix bug with Elizabeth's Google Docs (export 403 file exceeds...)
-
----
-
-Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
-
-Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
-
----
-
-Improve hypertext template to support listing pages as well as posts in the sidebar
+iCloud client:
+- Does a file called '#Introduction.md#' trigger a bug with the iCloud client initial transfer if it exists in your blog folder before setup?
+- Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset).
+- Modify app/clients/icloud/util/monitorMacServerStats.js to send a recovery notification when stats are back online
+- iCloud: when you change the case of a folder, the files (and posts) inside duplicate and are stored twice
+- Does iCloud client bug out when file with #Introduction.md# exists?
+- Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
+- Fix bug with initial transfer error (make sure sync lock doesn't hang indefinitely)
+- Improve sync stability of iCloud client
+  - Especially for folder renames, many file moves
+  - Tell Todd
+  - Tell Fede
+- Work out issue with iCloud disconnect / setup with [Florian's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTzSJsxwwRTMNxWTMrGCQXTlh)
+- It seems we ran into an issue where icloud was not syncing *updates* to an existing file. When we perform a full sync, can we force brctl download for each folder? is that enough? or do we need to brctl download each file too? 
+- Investigate the 500 timeout errors – are these caused by pending syncs / folder locks?
+  - tail -n 1000000 /var/instance-ssd/logs/access.log | grep " 500 " | grep "/clients/icloud"
+- Why are there unrenamed folders in the mac server icloud drive?
+  - partial incomplete setup? sharing a non-empty folder? 
+- Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
 
 Bug reports:
 - The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
@@ -144,115 +64,15 @@ Bug reports:
 - Migrate base templates from entries to {{#posts}} and tell Omar
 - Document the special routing features for entries.html and tell Omar
 
-Make it clearer in the UI that creating a second site increases the subscription at the next billing cycle, probably with a one-time notice.
-
 Fix bug with repeat resyncs of specific sites via Google Drive:
 - To identify, run node scripts/google-drive/resync.js multiple times, some sites continually resync the same files...
 
 Bug: CDN replaceFolder not working with relative path to CSS file on wall.blot.im
 
-Maybe we mix cacheID into query string for {{#cdn}} on preview subdomains with caching headers for improved template editor performance without expensive hash computation?
-
-Template delete should purge the cdn hashes / URLs
-
-Handle 429s in purgeCDNUrls? Group multiple into single request?
-
-Remove the legacy redis hash routing from cdn/index.js and key definition
-- also create new script to forcefully migrate the dangling hashes from redis to disk, if they exist
-
-We should get notifcations when stripe recovers an overdue subscription, as opposed to the user entering the form
-
 invalid package.json causes crazy error on template editor (missing colon)
-
-Speed up global template build by not even invoke the setView function if there are no changes... (this avoids running updateCDNManifest when SITE template has no changes)
-
-Dashboard file upload feature (_url) needs to generate image dimensions too.. maybe it needs MORE power
-
-Blogs have huge numbers of archived templates – modify the tempalte archiver to only 'create' templates for sites using them, otherwise disappear them. work out how to clean up some of the many archived templates added to sites... (remove ones with zero changes?)
-
-Fix script to replace cssURL to handle blogs with invalid domains (it's breaking the migration)
-
-Replace existing cssURL and scriptURL and css_url and script_url properties in templates with new cdn helper
-- do this by editing the templates
-- once confirmed all templates are fixed, remove the code and documentation for these variables
-
-Replace existing asset helper properties in templates with new cdn helper
-- Check it's only used for CSS/JS...
-
-Enforce size limits on setting tempalte views
-Add integration tests for cdn paths with weird view names, etc.
-Add integration tests for preview subdomain logic (skip for my- not for site)
-
-Add more options to site settings beyond title, such as description and reply email, and tell Omar
-Allow text entry fields in template settings from the dashboard for template locals, and tell Omar
-Add multiple date format selectors on the theme dashboard for different contexts, and tell Omar
-Introduce collapsible sections or a separately scrollable div on the template dashboard settings, and tell Omar
-
-Search results pages should be no-indexed by search engines
-
-Can we optimize renderView in some way?
-- use lru cache or moize libraries? back against cacheID property of blog?
-- Memoize load template / load full view / load blog... others?
-- use a proper library, cap memory, etc.
-- should majorly improve performance on popular sites
-
-verify that nginx config serves as many CDN static files as possible
-- eventually these files will be on s3 but for now, use nginx with try files where possible then pass on to upstream
-
-Resolve inconsistency: 'Create site' vs New template vs Create file
-
-'Preview' link on template editor should become 'Visit site' for installed template
-- or maybe add a new button 'visit site'?
 
 Fix bug with huge archives page 
 - `https://deoxy.blot.im/archives`
-
----
-
-Implement TOC Plugin
-- Create a plugin-based TOC system that works for all file types. The plugin will generate TOC HTML from headings and return it via the result object mechanism from task 1.
-- Tell Omar
-
-Update obsidian tools pages (improve)
-
-Follow up with Bunny about bug with spaces in file names served from folder
-- or write code to workaround
-
-Update question on what to do to import posts from wordpress or squarespace: instead of contact me, reference the importer. 
-
-Make it possible to configure the export file format (e.g. instead of markdown, word documents) on the importer
-
-Investigate replybox for comments
-
-Apply improvements from andrew's template into documentation template
-
-Turn francesco's template into a seperate 'Restaurant' template
-
-Work on template editor
-
-Build image upload feature into template editor. Support default banner images and image avatars, with default images set, maybe some kind of global library feature across templates...
-
-Build markdown description feature into template editor. Support default site description.
-
-Build favicon generator into template editor. Make it distinct from avatar.
-
-Adjust color settings into a simple 'presets' picker, then an option to dive into specific altertions on seperate view.
-- make it possible to conenct two colors, e.g. navigation background color -> same as background color
-
-Add lang selector (map english -> en) to template editor
-
-Create a new template local '{{{system-css}}}' which merges `{{{appCSS}}}, {{{font.styles}}}, {{{title_font.styles}}}`
-
-Secure deploy ssh on GitHub
-
-Add GitHub deploy button for macserver
-
-Add GitHub deploy button for openresty 
-
-Set up AWS cost anomaly detection
-- add daily aws cost to email update
-
----
 
 Fix bug with camelCase custom metadata and tell [questioner](https://blot.im/questions/2294)
 
@@ -266,16 +86,9 @@ Fix bug linking to relative pdf in subfolders, e.g. Pages/File.md '[](./file.pdf
 
 Fix bugs with documentation template and tell [Ray](https://blot.im/questions/3233)
 
-Fix iCloud bugs
-- Work out issue with iCloud disconnect / setup with [Florian's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTzSJsxwwRTMNxWTMrGCQXTlh)
-- It seems we ran into an issue where icloud was not syncing *updates* to an existing file. When we perform a full sync, can we force brctl download for each folder? is that enough? or do we need to brctl download each file too? 
-- Investigate the 500 timeout errors – are these caused by pending syncs / folder locks?
-  - tail -n 1000000 /var/instance-ssd/logs/access.log | grep " 500 " | grep "/clients/icloud"
-- Why are there unrenamed folders in the mac server icloud drive?
-  - partial incomplete setup? sharing a non-empty folder? 
-- Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
-
 Fix possible bug with changing folder name in Google Drive from uppercase to lowercase (what happens to file inside?). Is this related to entry lookup for deleted files? How was the missing ghost file undeleteable? the case of one variant was deleted but the other was not. The case of the ID mismatched. The folder lock was stuck.
+
+Fix bug with Elizabeth's Google Docs (export 403 file exceeds...)
 
 Fix bug with crash loop for page rendering issue
 - cache 502 responses in proxy cache for X mins?
@@ -446,6 +259,144 @@ Fix bug with Bruce's local template, [possibly related to Ryan's issue](https://
 Fix bug accessibility issue with menu links reordering and tell [Grace](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfBpBkKCLVRWBGxzDDDkhSXfl)
 
 Fix bug with accessibility issues with scrolling and code blocks and tell [Eli](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwqJjjrrGHDWjLPzfxGpnkZTh) if I make any changes
+
+---
+
+Make it possible to disable processing of image files into individual posts and tell [Brendan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQdzvsdKBgDQqPRcBzTJKVPqNfr)
+
+Investigate issues with image heavy obsidian vaults
+
+Investigate obsidian and ia writer wikilink resolution issues
+
+Release [Fede](https://wordpress.org/themes/kanso/)'s theme as profile template
+
+---
+
+Release new brochure site
+
+Record new video
+
+---
+
+Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
+
+Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
+
+---
+
+Improve hypertext template to support listing pages as well as posts in the sidebar
+
+Make it clearer in the UI that creating a second site increases the subscription at the next billing cycle, probably with a one-time notice.
+
+Maybe we mix cacheID into query string for {{#cdn}} on preview subdomains with caching headers for improved template editor performance without expensive hash computation?
+
+Template delete should purge the cdn hashes / URLs
+
+Handle 429s in purgeCDNUrls? Group multiple into single request?
+
+Remove the legacy redis hash routing from cdn/index.js and key definition
+- also create new script to forcefully migrate the dangling hashes from redis to disk, if they exist
+
+We should get notifcations when stripe recovers an overdue subscription, as opposed to the user entering the form
+
+Speed up global template build by not even invoke the setView function if there are no changes... (this avoids running updateCDNManifest when SITE template has no changes)
+
+Dashboard file upload feature (_url) needs to generate image dimensions too.. maybe it needs MORE power
+
+Blogs have huge numbers of archived templates – modify the tempalte archiver to only 'create' templates for sites using them, otherwise disappear them. work out how to clean up some of the many archived templates added to sites... (remove ones with zero changes?)
+
+Fix script to replace cssURL to handle blogs with invalid domains (it's breaking the migration)
+
+Replace existing cssURL and scriptURL and css_url and script_url properties in templates with new cdn helper
+- do this by editing the templates
+- once confirmed all templates are fixed, remove the code and documentation for these variables
+
+Replace existing asset helper properties in templates with new cdn helper
+- Check it's only used for CSS/JS...
+
+Enforce size limits on setting tempalte views
+Add integration tests for cdn paths with weird view names, etc.
+Add integration tests for preview subdomain logic (skip for my- not for site)
+
+Add more options to site settings beyond title, such as description and reply email, and tell Omar
+Allow text entry fields in template settings from the dashboard for template locals, and tell Omar
+Add multiple date format selectors on the theme dashboard for different contexts, and tell Omar
+Introduce collapsible sections or a separately scrollable div on the template dashboard settings, and tell Omar
+
+Search results pages should be no-indexed by search engines
+
+Can we optimize renderView in some way?
+- use lru cache or moize libraries? back against cacheID property of blog?
+- Memoize load template / load full view / load blog... others?
+- use a proper library, cap memory, etc.
+- should majorly improve performance on popular sites
+
+verify that nginx config serves as many CDN static files as possible
+- eventually these files will be on s3 but for now, use nginx with try files where possible then pass on to upstream
+
+Resolve inconsistency: 'Create site' vs New template vs Create file
+
+'Preview' link on template editor should become 'Visit site' for installed template
+- or maybe add a new button 'visit site'?
+
+---
+
+Improve Dropbox client
+  - Adjust full_folder to add a big warning to prevent confusion about where the new folder is when transitioning permissions
+  - Add a step to authentication flow which says: 'there is already a folder called 'Your blog title' in your Dropbox, would you like to use that?' then overwrite the files inside. This prevents the proliferation of confusing 'Your blog title (1)' when you re-authenticate.
+  - Add a progress bar to the dashboard when writing existing files to Dropbox. It takes a while and confuses people. Perhaps leverage existing status message system with prefix of "(1/247)" to be parsed on front-end and turned into progress bar
+  - Make the folder in Dropbox rename automatically when the customer changes the username for one of their multiple blogs?
+  - When you switch from app folder to full folder, there should be a notification indicating that your folder location has changed
+  - Check content hash for upload possible
+  - Make dropbox reset FROM abortable
+  - Make dropbox reset TO abortable
+  - Surface errors during setup on dashboard
+   - Surface sync issues with Dropbox client on the homepage of dashboard
+   - How do we make errors sticky? To make sure users click through to clients page to re-connect to Dropbox, etc...
+
+
+Implement TOC Plugin
+- Create a plugin-based TOC system that works for all file types. The plugin will generate TOC HTML from headings and return it via the result object mechanism from task 1.
+- Tell Omar
+
+Update obsidian tools pages (improve)
+
+Follow up with Bunny about bug with spaces in file names served from folder
+- or write code to workaround
+
+Update question on what to do to import posts from wordpress or squarespace: instead of contact me, reference the importer. 
+
+Make it possible to configure the export file format (e.g. instead of markdown, word documents) on the importer
+
+Investigate replybox for comments
+
+Apply improvements from andrew's template into documentation template
+
+Turn francesco's template into a seperate 'Restaurant' template
+
+Work on template editor
+
+Build image upload feature into template editor. Support default banner images and image avatars, with default images set, maybe some kind of global library feature across templates...
+
+Build markdown description feature into template editor. Support default site description.
+
+Build favicon generator into template editor. Make it distinct from avatar.
+
+Adjust color settings into a simple 'presets' picker, then an option to dive into specific altertions on seperate view.
+- make it possible to conenct two colors, e.g. navigation background color -> same as background color
+
+Add lang selector (map english -> en) to template editor
+
+Create a new template local '{{{system-css}}}' which merges `{{{appCSS}}}, {{{font.styles}}}, {{{title_font.styles}}}`
+
+Secure deploy ssh on GitHub
+
+Add GitHub deploy button for macserver
+
+Add GitHub deploy button for openresty 
+
+Set up AWS cost anomaly detection
+- add daily aws cost to email update
 
 ---
 
