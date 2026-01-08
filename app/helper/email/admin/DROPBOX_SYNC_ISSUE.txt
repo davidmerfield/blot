@@ -1,0 +1,8 @@
+Dropbox sync issues detected
+
+The daily Dropbox sync validation detected changes for the following blogs:
+
+{{#blogs}}
+- {{id}}{{#handle}} ({{handle}}){{/handle}} — {{changeCount}} change{{#changeCountPlural}}s{{/changeCountPlural}}
+  `logs blue | grep "{{truncatedId}} sync_"`
+{{/blogs}}
