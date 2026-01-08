@@ -421,6 +421,15 @@ function determinePathOnDisk(blogFolder, item, callback) {
     tag: item[".tag"]
   });
 
+  const normalizedRelativePath = (item.relative_path || "").replace(/^\/+/, "");
+  if (normalizedRelativePath !== item.relative_path) {
+    console.log('[determinePathOnDisk] Normalized relative_path', {
+      from: item.relative_path,
+      to: normalizedRelativePath
+    });
+    item.relative_path = normalizedRelativePath;
+  }
+
   const parentDir = Path.dirname(item.relative_path);
   const filename = Path.basename(item.relative_path);
   
