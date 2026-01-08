@@ -1,13 +1,10 @@
 Improvements to Dropbox client
 - Handle file renames using Dropbox IDs to avoid the 'new entry' bug when you rename a file
-- Build posts incrementally while big syncs are taking place 
-- Revert lowercase for all files when disconnecting the client
-- add support for Dropbox Paper files using paperDocsDownload and tell [Emad](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMZJvMswZZXKvLfBRBVqfzksw)
 - Add integration test with a dropbox Webhook call. I want to not push some code which would prevent syncing customer folders.
 - Does client.remove support the removal of folders? If not, make it so and add a test
 - Add a step to authentication flow which says: 'there is already a folder called 'Your blog title' in your Dropbox, would you like to use that?' then overwrite the files inside. This prevents the proliferation of confusing 'Your blog title (1)' when you re-authenticate.
-- Add a progress bar to the dashboard when writing existing files to Dropbox. It takes a while and confuses people.
-- Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. I guess we need to acquire a lock on ALL blogs interacting with that dropbox account.
+- Add a progress bar to the dashboard when writing existing files to Dropbox. It takes a while and confuses people. Perhaps leverage existing status message system with prefix of "(1/247)" to be parsed on front-end and turned into progress bar
+- Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
 - Extend sync lock during long syncs
 - Write test to simulate process dying and restarting mid-pull. Does the client recover?
 - Write tests for a series of random dropbox client operations (pull, add, push, move, reset, delete) that can be seeded and reliably re-run in the case of failure.
@@ -16,6 +13,7 @@ Improvements to Dropbox client
 - This should be simple once we copy the exisiting state of the blog folder across. But right now it doesn't really do much. It resets the local server folder. Then resyncs.
 - Update to latest version of Dropbox client.
 - Make the folder in Dropbox rename automatically when the customer changes the username for one of their multiple blogs?
+    
     ## 1. Harden sync lifecycle
     - [ ] Add a watchdog for long-running sync jobs that restarts or alerts when a job exceeds an expected duration.
     - [ ] Ensure incomplete setup/sync jobs resume automatically after process restarts by persisting in-progress state and re-queueing tasks on boot.
