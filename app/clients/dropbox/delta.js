@@ -12,6 +12,10 @@ const clfdate = require("helper/clfdate");
 
 const prefix = () => clfdate() + ' Dropbox: Delta: ';
 
+function normalizeRelativePath(path) {
+  return (path || "").replace(/^\/+/, "");
+}
+
 async function listDescendantPaths(rootPath) {
   const results = [];
 
@@ -327,14 +331,14 @@ module.exports = function delta(client, folderID, blogID) {
               );
             })
             .map(function (entry) {
-              entry.relative_path = entry.path_display.slice(
-                result.path_display.length
+              entry.relative_path = normalizeRelativePath(
+                entry.path_display.slice(result.path_display.length)
               );
               return entry;
             });
         } else {
           result.entries = result.entries.map(function (entry) {
-            entry.relative_path = entry.path_display;
+            entry.relative_path = normalizeRelativePath(entry.path_display);
             return entry;
           });
         }
