@@ -86,7 +86,6 @@ async function resetToBlot(blogID, publish) {
 
   await set(blogID, {
     error_code: 0,
-    last_sync: Date.now(),
   });
 
   publish("Finished processing folder");
