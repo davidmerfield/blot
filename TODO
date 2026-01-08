@@ -1,5 +1,15 @@
 Dropbox: when you switch from app folder to full folder, there should be a notification indicating that your folder location has changed
 
+Dropbox: investigate potential bug:
+  Findings
+
+      Potential empty batch move triggers Dropbox API error during migration.
+      When moveExistingFiles creates the new subfolder for the first blog and then lists the root of the app folder, it filters out the newly-created folder. If the app folder was empty (or only contained that new folder), entries becomes an empty array, but the code still calls filesMoveBatch. Dropbox rejects empty batches, which would surface as a setup failure when switching from one site to two.
+
+  Suggested taskSkip Dropbox batch move when there are no entries to move
+
+Modify app/clients/icloud/util/monitorMacServerStats.js to send a recovery notification when stats are back online
+
 Dropbox: There was a bug when switching from one connected site in Dropbox app folder to two sites (See code which moves existing files into subfolder)
 
 iCloud: when you change the case of a folder, the files (and posts) inside duplicate and are stored twice
