@@ -1,13 +1,279 @@
-var debug = require("debug")("blot:clients:dropbox:delta");
-var retry = require("./util/retry");
-var waitForErrorTimeout = require("./util/waitForErrorTimeout");
-var isDotfileOrDotfolder = require("./util/constants").isDotfileOrDotfolder;
+const debug = require("debug")("blot:clients:dropbox:delta");
+const retry = require("./util/retry");
+const waitForErrorTimeout = require("./util/waitForErrorTimeout");
+const isDotfileOrDotfolder = require("./util/constants").isDotfileOrDotfolder;
+const localPath = require("helper/localPath");
+const caseSensitivePath = require("util").promisify(
+  require("helper/caseSensitivePath")
+);
+const fs = require("fs-extra");
+const Path = require("path");
+const clfdate = require("helper/clfdate");
+
+const prefix = () => clfdate() + ' Dropbox: Delta: ';
+
+async function listDescendantPaths(rootPath) {
+  const results = [];
+
+  async function walk(currentPath) {
+    let entries;
+
+    try {
+      entries = await fs.readdir(currentPath, { withFileTypes: true });
+    } catch (err) {
+      return;
+    }
+
+    for (const entry of entries) {
+      const fullPath = Path.join(currentPath, entry.name);
+      results.push(fullPath);
+
+      if (entry.isDirectory()) {
+        await walk(fullPath);
+      }
+    }
+  }
+
+  await walk(rootPath);
+  return results;
+}
+
+function listDropboxFolderEntries(client, path) {
+  return client
+    .filesListFolder({
+      path: path,
+      include_deleted: false,
+      recursive: false,
+    })
+    .then(function (response) {
+      var entries = response.result.entries || [];
+      var cursor = response.result.cursor;
+      var hasMore = response.result.has_more;
+
+      function next() {
+        if (!hasMore) return Promise.resolve(entries);
+        return client
+          .filesListFolderContinue({ cursor: cursor })
+          .then(function (nextResponse) {
+            entries = entries.concat(nextResponse.result.entries || []);
+            cursor = nextResponse.result.cursor;
+            hasMore = nextResponse.result.has_more;
+            return next();
+          });
+      }
+
+      return next();
+    });
+}
+
+async function injectCaseOnlyDeletes(entries, blogID, client) {
+
+  console.log(prefix(), "Checking for case-only renames in", entries.length, "entries" );
+
+  const normalizeRelativePathForComparison = function (relativePath) {
+    return (relativePath || "").replace(/^\/+/, "").toLowerCase();
+  };
+
+  for (let index = 0; index < entries.length; index++) {
+    const entry = entries[index];
+
+    console.log(prefix(), "Examining entry", index + 1, "of", entries.length, ":", entry);
+
+    if (!entry || (entry[".tag"] !== "file" && entry[".tag"] !== "folder")) {
+      continue;
+    }
+
+    if (!entry.relative_path || !entry.path_display) {
+      continue;
+    }
+
+    let absolutePath;
+
+    try {
+      absolutePath = localPath(blogID, entry.relative_path);
+    } catch (err) {
+      continue;
+    }
+
+    const parentDir = Path.dirname(absolutePath);
+    const targetName = Path.basename(absolutePath);
+    const targetLower = targetName.toLowerCase();
+
+    let localEntries;
+
+    try {
+      localEntries = await fs.readdir(parentDir);
+    } catch (err) {
+      // Sometimes the case returned in path_display / relative_path
+      // is inconsistent with the true path on Dropbox. So we
+      // use case-sensitive path to find the parent directory.
+      if (err.code === "ENOENT") {
+        try {
+          console.log("Parent directory does not exist, trying case-sensitive path");
+          const resolvedPath = await caseSensitivePath(localPath(blogID, '/'), Path.dirname(entry.relative_path));
+          localEntries = await fs.readdir(resolvedPath);
+        } catch (err2) {
+          console.log(prefix(), "Error reading local directory with case-sensitive path:", err2);
+          continue;
+        }
+      } else {
+        console.log(prefix(), "Error reading local directory:", err);
+        continue;
+      }
+    }
+
+    const existingName = localEntries.find(function (name) {
+      return name.toLowerCase() === targetLower && name !== targetName;
+    });
+
+    if (!existingName) {
+      console.log(prefix(), "No case-only rename detected for entry");
+      continue;
+    }
+
+    let dropboxParent = Path.posix.dirname(entry.path_display);
+    if (dropboxParent === "/" || dropboxParent === ".") {
+      dropboxParent = "";
+    }
+
+    let dropboxEntries;
+
+    try {
+      dropboxEntries = await listDropboxFolderEntries(client, dropboxParent);
+    } catch (err) {
+      debug("Error listing Dropbox folder for case-only rename", err);
+      continue;
+    }
+
+    const newName = entry.name || Path.posix.basename(entry.path_display);
+    const newEntry = dropboxEntries.find(function (item) {
+      return item.name === newName;
+    });
+    const oldEntry = dropboxEntries.find(function (item) {
+      return item.name === existingName;
+    });
+
+    if (!newEntry || oldEntry) {
+      console.log(prefix(), "Could not find new or old entry in Dropbox folder");
+      continue;
+    }
+
+    if (newEntry[".tag"] !== entry[".tag"]) {
+      console.log(prefix(), "New entry type does not match original entry type");
+      continue;
+    }
+
+    const relativeParent = Path.posix.dirname(entry.relative_path);
+    let oldRelativePath;
+
+    if (relativeParent === ".") {
+      oldRelativePath = existingName;
+    } else if (relativeParent === "/") {
+      oldRelativePath = "/" + existingName;
+    } else {
+      oldRelativePath = Path.posix.join(relativeParent, existingName);
+    }
+
+    const deleteExists = function (relativePath) {
+      const normalized = normalizeRelativePathForComparison(relativePath);
+      return entries.some(function (item) {
+        return (
+          item &&
+          item[".tag"] === "deleted" &&
+          item.relative_path &&
+          normalizeRelativePathForComparison(item.relative_path) === normalized
+        );
+      });
+    };
+
+    if (deleteExists(oldRelativePath)) {
+      console.log(prefix(), "Delete entry for case-only rename already exists");
+      continue;
+    }
+
+    const oldPathDisplay = dropboxParent
+      ? Path.posix.join(dropboxParent, existingName)
+      : "/" + existingName;
+
+    console.log(prefix(), 
+      "Injecting case-only delete for",
+      oldRelativePath,
+      "alongside",
+      entry.relative_path
+    );
+    entries.splice(index, 0, {
+      ".tag": "deleted",
+      path_display: oldPathDisplay,
+      relative_path: oldRelativePath,
+    });
+
+    if (entry[".tag"] === "folder") {
+      const shouldPrefixSlash = entry.relative_path[0] === "/";
+      let oldFolderPath;
+      let blogRootPath;
+
+      try {
+        oldFolderPath = localPath(blogID, oldRelativePath);
+        blogRootPath = localPath(blogID, "/");
+      } catch (err) {
+        index++;
+        continue;
+      }
+
+      const descendantPaths = await listDescendantPaths(oldFolderPath);
+      const descendantDeletes = [];
+
+      for (const descendantPath of descendantPaths) {
+        const relativeDiskPath = Path.relative(blogRootPath, descendantPath);
+
+        if (!relativeDiskPath || relativeDiskPath.startsWith("..")) {
+          continue;
+        }
+
+        const relativePathNoLeadingSlash = relativeDiskPath
+          .split(Path.sep)
+          .join(Path.posix.sep);
+
+        const relativePath = shouldPrefixSlash
+          ? "/" + relativePathNoLeadingSlash
+          : relativePathNoLeadingSlash;
+
+        if (deleteExists(relativePath)) {
+          continue;
+        }
+
+        const pathDisplay = dropboxParent
+          ? Path.posix.join(dropboxParent, relativePathNoLeadingSlash)
+          : "/" + relativePathNoLeadingSlash;
+
+        descendantDeletes.push({
+          ".tag": "deleted",
+          path_display: pathDisplay,
+          relative_path: relativePath,
+        });
+      }
+
+      if (descendantDeletes.length) {
+        entries.splice(index + 1, 0, ...descendantDeletes);
+        index += descendantDeletes.length;
+      }
+      // Skip past the original entry (which is now at index + 1 after parent delete insertion)
+      index++;
+      continue;
+    }
+
+    // For non-folder case, skip past the original entry (which is now at index + 1 after parent delete insertion)
+    index++;
+  }
+
+  return entries;
+}
 
 // The goal of this function is to retrieve a list of changes made
 // to the blog folder inside a user's Dropbox folder. We add a new
 // property relative_path to each change. This property refers to
 // the path the change relative to the folder for this blog.
-module.exports = function delta(client, folderID) {
+module.exports = function delta(client, folderID, blogID) {
   function get(cursor, callback) {
     var requests = [];
     var result = {};
@@ -42,7 +308,7 @@ module.exports = function delta(client, folderID) {
     }
 
     Promise.all(requests)
-      .then(function (results) {
+      .then(async function (results) {
         result = results[0].result;
 
         if (results[1]) {
@@ -65,20 +331,27 @@ module.exports = function delta(client, folderID) {
                 result.path_display.length
               );
               return entry;
-            })
-            .filter(function (entry) {
-              return !isDotfileOrDotfolder(entry.relative_path);
             });
         } else {
-          result.entries = result.entries
-            .map(function (entry) {
-              entry.relative_path = entry.path_display;
-              return entry;
-            })
-            .filter(function (entry) {
-              return !isDotfileOrDotfolder(entry.relative_path);
-            });
+          result.entries = result.entries.map(function (entry) {
+            entry.relative_path = entry.path_display;
+            return entry;
+          });
         }
+
+        try {
+          result.entries = await injectCaseOnlyDeletes(
+            result.entries,
+            blogID,
+            client
+          );
+        } catch (err) {
+          debug("Error checking for case-only renames", err);
+        }
+
+        result.entries = result.entries.filter(function (entry) {
+          return !isDotfileOrDotfolder(entry.relative_path);
+        });
 
         callback(null, result);
       })
