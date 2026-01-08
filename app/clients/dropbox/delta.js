@@ -323,16 +323,19 @@ module.exports = function delta(client, folderID, blogID) {
         // to the blog folder and compute the relative
         // path of each change inside the blog folder.
         if (result.path_display) {
+          const blogPath = result.path_display.replace(/\/+$/, "");
+          const blogPrefix = blogPath + "/";
+
           result.entries = result.entries
             .filter(function (entry) {
               return (
-                entry.path_display.indexOf(result.path_display) === 0 &&
-                entry.path_display !== result.path_display
+                entry.path_display.startsWith(blogPrefix) &&
+                entry.path_display !== blogPath
               );
             })
             .map(function (entry) {
               entry.relative_path = normalizeRelativePath(
-                entry.path_display.slice(result.path_display.length)
+                entry.path_display.slice(blogPath.length)
               );
               return entry;
             });

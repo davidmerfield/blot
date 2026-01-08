@@ -26,6 +26,16 @@ module.exports = function main(blog, callback) {
   Sync(blog.id, function (err, folder, done) {
     if (err) return callback(err);
 
+    Database.set(
+      blog.id,
+      { last_sync: Date.now() },
+      function (lastSyncErr) {
+        if (lastSyncErr) {
+          folder.log("Error setting pre-sync timestamp", lastSyncErr);
+        }
+      }
+    );
+
     folder.log("Creating Dropbox client");
     // We need to look up the Dropbox account for this blog
     // to retrieve the access token used to create a new Dropbox
