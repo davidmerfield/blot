@@ -57,7 +57,6 @@
     "mustache": "4.2.0",
     "node-addon-api": "7.0.0",
     "node-fetch": "2.6.7",
-    "node-gyp": "11.4.2",
     "node-schedule": "2.1.1",
     "parse5": "7.2.1",
     "path-to-regexp": "8.2.0",
