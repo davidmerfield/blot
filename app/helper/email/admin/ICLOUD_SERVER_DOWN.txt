@@ -1,3 +1,5 @@
-iCloud Server down
+iCloud server down
 
-The mac server is not responding or not responding correctly to the main servers request for its statistics. Please log in and check it is running.
+The mac server did not respond to a request for its statistics:
+
+logs green | grep -i "mac server"
