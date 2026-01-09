@@ -26,7 +26,6 @@
 #b97371 bnjmnmddn.com Benjamin Madden, is an academic
 #517c80 www.jsoliday.com J. Soliday, is a musician
 #d0a66f tellyou.today Neale Stokes, is a librarian
-#7a9951 brainsister.com Jessica Doyle, is a writer
 #945830 poetry.bencallahan.com Ben Callahan, is a poet
 #6b98d2 www.maxkeith.co Max Keith, is a runner
 #99abc4 spittingdog.net Dave Haysom, is a translator
@@ -48,7 +47,6 @@
 #000000 erinkissane.com Erin Kissane, is a writer
 #000000 nonaneva.com ノナネヷ, is an artist
 #000000 ilovewasting.ink Peter Orosz, is a writer
-#000000 blog.vesikar.com Yash Vesikar, is a computer scientist
 #000000 words.studiopallister.com James Pallister, is a writer
 #000000 www.gillianrosselli.com Gillian Rosselli, is an artist
 #000000 www.caitlinmrivers.com Caitlin Rivers, is an epidemiologist
@@ -71,3 +69,4 @@
 #000000 maggiewangphotography.com Maggie Wang, is an academic
 #000000 chuckpearson.blog Chuck Pearson, is a designer
 #000000 garywebbracing.com Gary Webb, is a racing driver
+#000000 vichhika.com Vichhika Tep, is a designer

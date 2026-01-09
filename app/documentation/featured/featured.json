@@ -198,13 +198,6 @@
       "image": "/images/featured/tellyou.today.jpg"
     },
     {
-      "link": "https://brainsister.com",
-      "host": "brainsister.com",
-      "name": "Jessica Doyle",
-      "bio": "is a writer",
-      "image": "/images/featured/brainsister.com.jpg"
-    },
-    {
       "link": "https://poetry.bencallahan.com",
       "host": "poetry.bencallahan.com",
       "name": "Ben Callahan",
@@ -350,13 +343,6 @@
       "name": "Peter Orosz",
       "bio": "is a writer",
       "image": "/images/featured/ilovewasting.ink.jpg"
-    },
-    {
-      "link": "https://blog.vesikar.com",
-      "host": "blog.vesikar.com",
-      "name": "Yash Vesikar",
-      "bio": "is a computer scientist",
-      "image": "/images/featured/blog.vesikar.com.jpg"
     },
     {
       "link": "https://words.studiopallister.com",
@@ -511,6 +497,13 @@
       "name": "Gary Webb",
       "bio": "is a racing driver",
       "image": "/images/featured/garywebbracing.com.jpg"
+    },
+    {
+      "link": "https://vichhika.com",
+      "host": "vichhika.com",
+      "name": "Vichhika Tep",
+      "bio": "is a designer",
+      "image": "/images/featured/vichhika.com.jpg"
     }
   ]
 }
