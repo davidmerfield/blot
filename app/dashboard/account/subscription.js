@@ -147,7 +147,8 @@ Subscription.route("/cancel")
       const now = Date.now();
       const subscriptionStartMs =
         toMs(req.user.subscription?.created) ||
-        toMs(req.user.subscription?.current_period_start);
+        toMs(req.user.subscription?.current_period_start) ||
+        toMs(req.user.paypal?.start_time);
       const isFirstPeriod = Boolean(
         subscriptionStartMs && now - subscriptionStartMs <= THIRTY_DAYS_MS
       );
