@@ -38,6 +38,17 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
         for (let i = 0; i < node.attrs.length; i++) {
           const attr = node.attrs[i];
           if (attr.name === "href" || attr.name === "src") {
+
+            // Ensure attr.value is a string
+            if (typeof attr.value !== "string") {
+              continue;
+            }
+
+            // Skip data URLs
+            if (attr.value.startsWith("data:")) {
+              continue;
+            }
+
             // Check if URL is relative or matches any of the host patterns
             const isRelative = attr.value.indexOf("://") === -1;
             const matchesHost = hostPatterns.some(pattern => pattern.test(attr.value));
@@ -60,7 +71,7 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
       for (const attr of node.attrs) {
         if (attr.name === "href" || attr.name === "src") {
           let value = attr.value;
-          
+            
           // Remove host if it matches any of the patterns
           hostPatterns.forEach(pattern => {
             value = value.replace(pattern, '');
