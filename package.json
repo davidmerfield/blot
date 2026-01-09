@@ -55,7 +55,6 @@
     "moment-timezone": "0.5.35",
     "multiparty": "4.2.3",
     "mustache": "4.2.0",
-    "node-addon-api": "7.0.0",
     "node-fetch": "2.6.7",
     "node-gyp": "11.4.2",
     "node-schedule": "2.1.1",
