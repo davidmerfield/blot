@@ -77,7 +77,6 @@
     "typeset": "0.2.9",
     "uuid": "3.2.1",
     "vhost": "3.0.2",
-    "xml2js": "0.5.0",
     "yaml": "2.7.0"
   },
   "devDependencies": {
