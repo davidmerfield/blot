@@ -1,6 +1,7 @@
 var readability = require("node-readability");
 var moment = require("moment");
 var fs = require("fs-extra");
+var async = require("async");
 
 var helper = require("dashboard/importer/helper");
 
@@ -12,19 +13,22 @@ var download_images = helper.download_images;
 var insert_metadata = helper.insert_metadata;
 var to_markdown = helper.to_markdown;
 
-module.exports = function ($, output_directory, callback) {
+module.exports = function ($, output_directory, status, callback) {
   var blog = {
     title: $("title").first().text(),
     host: $("link").first().text(),
     posts: [],
   };
+  var items = $("item").toArray();
+  var totalItems = items.length;
 
-  each_el(
-    $,
-    "item",
-    function (el, next) {
+  async.eachOfSeries(
+    items,
+    function (el, index, next) {
       var extract, created, updated, content;
       var title, dateStamp, tags, draft, page, post;
+
+      status("Processing " + (index + 1) + " of " + totalItems + " …");
 
       extract = Extract($, el);
       title = extract("title");
@@ -80,7 +84,9 @@ module.exports = function ($, output_directory, callback) {
         });
       });
     },
-    function () {
+    function (err) {
+      if (err) return callback(err);
+
       callback(null, blog);
     }
   );

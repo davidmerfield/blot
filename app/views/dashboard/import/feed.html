@@ -1,0 +1,28 @@
+{{> close-button}}
+
+<div style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
+        <h1>Feed import</h1>
+  <p style="max-width: 600px;">
+    The importer can turn an RSS or Atom feed into an archive (.zip) containing
+    markdown files. The importer downloads images and stores them with the
+    markdown files.
+  </p>
+  <br />
+
+  <form method="POST" action="{{{importBase}}}/feed">
+    <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+
+    <label>Feed URL:</label>
+    <input
+      type="text"
+      name="feedUrl"
+      placeholder="https://example.com/feed.xml"
+    />
+
+    <div class="buttons">
+      <button type="submit">Start import</button>
+      <a href="{{{importBase}}}">Cancel</a>
+    </div>
+  </form>
+
+</div>

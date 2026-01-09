@@ -81,6 +81,7 @@ Import.post("/delete/:importID", async function (req, res) {
 });
 
 Import.use(require("./sources/arena/router"));
+Import.use(require("./sources/feed/router"));
 Import.use(require("./sources/wordpress/router"));
 
 module.exports = Import;
