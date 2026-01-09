@@ -1,6 +1,8 @@
 Investigate transient EHOSTUNREACH error when fetching stats from macserver.
 - switching from node-fetch to native fetch did not resolve the issue
 
+implement similar feature to dropbox client resync on restart and once per day for all other clientd
+
 Dropbox client
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
 - Bug: Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
