@@ -156,7 +156,7 @@ const resyncRecentSyncsOnStartup = async () => {
 
 module.exports = async function init() {
   console.log(clfdate(), "Dropbox: Scheduling daily sync validation");
-  scheduler.scheduleJob({ hour: 2, minute: 0 }, runValidation);
+  scheduler.scheduleJob({ hour: 7, minute: 0 }, runValidation);
   resyncRecentSyncsOnStartup().catch(function (err) {
     console.error(clfdate(), "Dropbox: Startup resync failed", err);
   });
