@@ -1,6 +1,6 @@
-Dropbox sync issues detected
+Dropbox sync issue
 
-The daily Dropbox sync validation detected changes for the following blogs:
+The daily sync validation check detected previously unsynced changes from Dropbox for the following sites:
 
 {{#blogs}}
 - {{id}}{{#handle}} ({{handle}}){{/handle}} — {{changeCount}} change{{#changeCountPlural}}s{{/changeCountPlural}}
