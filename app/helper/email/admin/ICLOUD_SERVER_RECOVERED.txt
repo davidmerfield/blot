@@ -1,0 +1,3 @@
+iCloud server recovered
+
+The mac server is responding again after a failed stats request.

@@ -49,6 +49,14 @@ module.exports = () => {
 
       console.log(clfdate(), "Mac server stats: ", stats);
 
+      if (notificationsSent.icloud_server_down) {
+        if (!notificationsSent.icloud_server_recovered) {
+          email.ICLOUD_SERVER_RECOVERED();
+          notificationsSent.icloud_server_recovered = true;
+        }
+        notificationsSent.icloud_server_down = false;
+      }
+
       if (stats.disk_bytes_available < DISK_SPACE_LIMIT) {
         console.log(clfdate(), "Disk space is low");
         if (!notificationsSent.disk_space_low) {
@@ -84,6 +92,7 @@ module.exports = () => {
         email.ICLOUD_SERVER_DOWN();
         notificationsSent.icloud_server_down = true;
       }
+      notificationsSent.icloud_server_recovered = false;
     }
   }, POLLING_INTERVAL); 
 };
