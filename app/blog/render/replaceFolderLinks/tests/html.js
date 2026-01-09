@@ -447,4 +447,29 @@ describe("replaceFolderLinks", function () {
     );
     expect(result).toMatch(/\/deep\/nested\/test.jpg/);
   });
+
+  it("should skip large base64 data URIs without locking up", async function () {
+    // Generate a 2MB base64-encoded string
+    const twoMB = 2 * 1024 * 1024; // 2MB in bytes
+    const randomData = Buffer.alloc(twoMB, "A"); // Fill with 'A' characters
+    const base64Data = randomData.toString("base64");
+    const dataUri = `data:image/png;base64,${base64Data}`;
+
+    await this.write({ path: "/test.html", content: `<img src="${dataUri}">` });
+    await this.template({
+      "entries.html": `{{#entries}}{{{html}}}{{/entries}}`,
+    });
+
+    const startTime = Date.now();
+    const res = await this.get("/");
+    const result = await res.text();
+    const duration = Date.now() - startTime;
+
+    // Should complete quickly (within 5 seconds) - if it tried to process the data URI,
+    // it would lock up and take much longer
+    expect(duration).toBeLessThan(5000);
+
+    // Data URI should be left unchanged 
+    expect(result).toContain(dataUri);
+  });
 });

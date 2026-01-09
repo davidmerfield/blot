@@ -61,6 +61,10 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
         if (attr.name === "href" || attr.name === "src") {
           let value = attr.value;
           
+          if (value.startsWith("data:")) {
+            continue;
+          }
+          
           // Remove host if it matches any of the patterns
           hostPatterns.forEach(pattern => {
             value = value.replace(pattern, '');
