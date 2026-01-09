@@ -1,6 +1,6 @@
 <style>
     
-  .imports {border-top:1px solid var(--border-color);margin-top: 24px;padding-top: 24px;display: flex;flex-wrap: wrap;list-style: none;padding: 24px 0 0 0;gap: 1em;max-width: 800px;}
+  .imports {padding: 24px 0;display: flex;flex-wrap: wrap;list-style: none;gap: 1em;max-width: 800px;}
   .imports li {flex-basis: 33%;}
   .imports li a {
     padding:11px 20px;
@@ -89,13 +89,13 @@
 </div>
 {{/imports.length}}
 
-<p style="max-width: 500px">Import data from other apps into Blot.</p>
 
 <ul class="imports">
   <li><a href="{{{importBase}}}/wordpress"><img width="100" height="100" src="/images/configure/wordpress.png"> <span class="a">Wordpress</span></a></li>
   <li><a href="{{{importBase}}}/are.na"><img width="250" height="149" src="/images/configure/are.na.png">  <span class="a">Are.na</span></a></li>
 </ul>
 
+<p style="max-width: 500px">Need an importer for another source? <a href="/contact">Request a new importer</a>.</p>
 
 <script type="text/javascript">
   // https://www.npmjs.com/package/reconnecting-eventsource
