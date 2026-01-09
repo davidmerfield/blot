@@ -5,7 +5,7 @@
   "license": "AGPL-3.0",
   "main": "app/index.js",
   "scripts": {
-    "download-folder": "read -p 'Enter blog identifier: ' BLOGID && ssh blot \"docker exec blot-container-blue node /usr/src/app/scripts/info \\\"$BLOGID\\\"\" | grep 'blog_' | head -n1 | cut -d ' ' -f 2 | xargs -I {} bash -c 'rsync -avz blot:/var/www/blot/data/blogs/{} ~/Downloads/ && open ~/Downloads/{}'",
+    "download-folder": "./scripts/development/download-folder.sh",
     "test": "./scripts/tests/invoke.sh",
     "start": "./scripts/development/start.sh",
     "deploy-node": "node scripts/deploy",
@@ -15,8 +15,8 @@
     "client": "docker exec -it blot-redis-1 redis-cli",
     "login": "docker exec -it blot-node-app-1 /bin/sh",
     "featured": "docker exec blot-node-app-1 node app/documentation/featured/build",
-    "folder": "docker exec blot-node-app-1 npx nodemon app/templates/folders --ext '*' --watch /usr/src/app/app/templates/folders",
-    "preview-newsletter": "open $(docker exec -e PREVIEW_NEWSLETTER=true $(docker ps | grep blot-node | cut -d ' ' -f 1) node scripts/email/newsletter $(ls -1 app/helper/email/newsletters | tail -n 3 | head -n 1) | grep 'preview' | grep '.html' | awk -F\"'\" '{gsub(\"/usr/src/app/\", \"./\", $2); print $2}')"
+    "folder": "./scripts/development/folder.sh",
+    "preview-newsletter": "./scripts/development/preview-newsletter.sh"
   },
   "version": "0.0.0",
   "dependencies": {
