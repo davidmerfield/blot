@@ -145,6 +145,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Find unused dependencies
+        # node-addon-api,node-gyp are required to build sharp
         run: npx depcheck --ignores=node-addon-api,node-gyp,depcheck,nyc,nodemon,blessed-contrib,fontkit,text-to-svg --skip-missing
 
   detect-unused-files:
