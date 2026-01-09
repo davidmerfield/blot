@@ -3,6 +3,7 @@ Dropbox sync issue
 The daily sync validation check detected previously unsynced changes from Dropbox for the following sites:
 
 {{#blogs}}
-- {{id}}{{#handle}} ({{handle}}){{/handle}} — {{changeCount}} change{{#changeCountPlural}}s{{/changeCountPlural}}
+- {{id}} {{handle}} — {{changeCount}} change{{#changeCountPlural}}s{{/changeCountPlural}}
   `logs blue | grep "{{truncatedId}} sync_"`
+  `access {{handle}}`
 {{/blogs}}
