@@ -1,4 +1,4 @@
-const { join } = require("path");
+const { join, resolve, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const recursiveList = require("../util/recursiveList");
 
@@ -13,9 +13,21 @@ module.exports = async (req, res) => {
     return res.status(400).send("Missing blogID header");
   }
   
-  // Remove leading slash if present, or ensure it's relative
-  const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
-  const dirPath = join(iCloudDriveDirectory, blogID, normalizedPath);
+  // Validate path
+  const basePath = resolve(join(iCloudDriveDirectory, blogID));
+  const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+  const dirPath = resolve(join(basePath, normalizedPath));
+
+  if (dirPath !== basePath && !dirPath.startsWith(basePath + sep)) {
+    console.log(
+      `Invalid path: attempted to access parent directory`,
+      basePath,
+      dirPath
+    );
+    return res
+      .status(400)
+      .send("Invalid path: attempted to access parent directory");
+  }
 
   console.log(
     `Received recursiveList request for blogID: ${blogID}, path: ${path}`
