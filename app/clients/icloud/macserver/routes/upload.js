@@ -1,13 +1,15 @@
 const fs = require("fs-extra");
-const { join, resolve, sep, isAbsolute } = require("path");
+const { join, resolve, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { watch, unwatch } = require("../watcher");
 const clfdate = require("../util/clfdate");
+const normalizeMacserverPath = require("./normalizeMacserverPath");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
   const path = Buffer.from(req.header("pathBase64"), "base64").toString("utf8");
   const modifiedTime = req.header("modifiedTime"); // fs.stat.mtimeMs
+  const normalizedPath = normalizeMacserverPath(path);
 
   if (!blogID || !path || !modifiedTime) {
     return res.status(400).send("Missing blogID, path, or modifiedTime header");
@@ -15,12 +17,8 @@ module.exports = async (req, res) => {
 
   console.log(clfdate(), `Received upload request for blogID: ${blogID}, path: ${path}`);
 
-  if (isAbsolute(path)) {
-    return res.status(400).send("Invalid path: absolute paths are not allowed");
-  }
-
   const basePath = resolve(join(iCloudDriveDirectory, blogID));
-  const filePath = resolve(join(basePath, path));
+  const filePath = resolve(join(basePath, normalizedPath));
 
   if (filePath !== basePath && !filePath.startsWith(`${basePath}${sep}`)) {
     console.log(clfdate(), 
