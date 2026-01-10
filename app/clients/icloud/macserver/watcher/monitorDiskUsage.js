@@ -203,7 +203,9 @@ const check = async (evictFiles) => {
 const checkDiskSpace = (evictFiles) => {
   console.log(`Starting disk space monitoring...`);
   setInterval(() => {
-    check(evictFiles);
+    check(evictFiles).catch((error) => {
+      console.error(`Disk space check failed: ${error}`);
+    });
   }, POLL_INTERVAL);
 };
 
