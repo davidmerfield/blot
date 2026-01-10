@@ -6,6 +6,9 @@ const notifyServerStarted = require("./httpClient/notifyServerStarted");
 
 const monitorer = require("./monitorer");
 
+const asyncHandler = (handler) => (req, res, next) =>
+  Promise.resolve(handler(req, res, next)).catch(next);
+
 // maxFileSize is in bytes but limit must be in the format '5mb'
 const limit = `${maxFileSize / 1000000}mb`;
 
@@ -28,26 +31,31 @@ const startServer = async () => {
 
   app.use(raw({ type: "application/octet-stream", limit }));
 
-  app.post("/upload", require("./routes/upload"));
-  
-  app.post("/evict", require("./routes/evict"));
+  app.post("/upload", asyncHandler(require("./routes/upload")));
 
-  app.post("/delete", require("./routes/delete"));
+  app.post("/evict", asyncHandler(require("./routes/evict")));
 
-  app.post("/mkdir", require("./routes/mkdir"));
+  app.post("/delete", asyncHandler(require("./routes/delete")));
 
-  app.post("/watch", require("./routes/watch"));
+  app.post("/mkdir", asyncHandler(require("./routes/mkdir")));
 
-  app.post("/disconnect", require("./routes/disconnect"));
+  app.post("/watch", asyncHandler(require("./routes/watch")));
 
-  app.get("/readdir", require("./routes/readdir"));
-  app.post("/recursiveList", require("./routes/recursiveList"));
+  app.post("/disconnect", asyncHandler(require("./routes/disconnect")));
 
-  app.get("/download", require("./routes/download"));
+  app.get("/readdir", asyncHandler(require("./routes/readdir")));
+  app.post("/recursiveList", asyncHandler(require("./routes/recursiveList")));
 
-  app.get("/stats", require("./routes/stats"));
+  app.get("/download", asyncHandler(require("./routes/download")));
 
-  app.post("/setup", require("./routes/setup"));
+  app.get("/stats", asyncHandler(require("./routes/stats")));
+
+  app.post("/setup", asyncHandler(require("./routes/setup")));
+
+  app.use((err, req, res, next) => {
+    console.error("Macserver error:", err);
+    res.status(500).send("Internal Server Error");
+  });
 
   app.listen(3000, () => {
     console.log("Macserver is running on port 3000");
