@@ -1,5 +1,5 @@
 const fs = require("fs-extra");
-const { join } = require("path");
+const { join, resolve, sep, isAbsolute } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 
 const { watch, unwatch } = require("../watcher");
@@ -15,7 +15,23 @@ module.exports = async (req, res) => {
 
   console.log(`Received delete request for blogID: ${blogID}, path: ${path}`);
 
-  const filePath = join(iCloudDriveDirectory, blogID, path);
+  if (isAbsolute(path)) {
+    return res.status(400).send("Invalid path: absolute paths are not allowed");
+  }
+
+  const basePath = resolve(join(iCloudDriveDirectory, blogID));
+  const filePath = resolve(join(basePath, path));
+
+  if (filePath !== basePath && !filePath.startsWith(`${basePath}${sep}`)) {
+    console.log(
+      "Invalid path: attempted to access parent directory",
+      basePath,
+      filePath
+    );
+    return res
+      .status(400)
+      .send("Invalid path: attempted to access parent directory");
+  }
 
   // first unwatch the blogID to prevent further events from being triggered
   await unwatch(blogID);

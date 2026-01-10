@@ -1,4 +1,4 @@
-const { join } = require("path");
+const { join, resolve, sep, isAbsolute } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const brctl = require('../brctl');
 
@@ -13,7 +13,25 @@ module.exports = async (req, res) => {
   console.log(`Received download request for blogID: ${blogID}, path: ${path}`);
 
   try {
-    const filePath = join(iCloudDriveDirectory, blogID, path);
+    if (isAbsolute(path)) {
+      return res
+        .status(400)
+        .send("Invalid path: absolute paths are not allowed");
+    }
+
+    const basePath = resolve(join(iCloudDriveDirectory, blogID));
+    const filePath = resolve(join(basePath, path));
+
+    if (filePath !== basePath && !filePath.startsWith(`${basePath}${sep}`)) {
+      console.log(
+        "Invalid path: attempted to access parent directory",
+        basePath,
+        filePath
+      );
+      return res
+        .status(400)
+        .send("Invalid path: attempted to access parent directory");
+    }
 
     // first download the file to make sure it's present on the local machine
     const stat = await brctl.download(filePath);
