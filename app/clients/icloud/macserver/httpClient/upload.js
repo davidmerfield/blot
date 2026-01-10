@@ -72,12 +72,6 @@ module.exports = async (blogID, path) => {
     body: fileBuffer,
   });
 
-  if (!response.ok) {
-    throw new Error(
-      `Upload failed: ${response.status}`
-    );
-  }
-
   const text = await response.text();
 
   console.log(clfdate(), "Upload successful:", text);
