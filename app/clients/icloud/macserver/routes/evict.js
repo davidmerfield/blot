@@ -17,6 +17,11 @@ module.exports = async (req, res) => {
 
   // Validate required headers
   if (!blogID || !pathBase64 || !path) {
+    console.error(
+      clfdate(),
+      "Missing required headers for evict request",
+      { blogID, pathBase64, path }
+    );
     return res
       .status(400)
       .send("Missing required headers: blogID or path");
@@ -28,19 +33,37 @@ module.exports = async (req, res) => {
   const filePath = resolve(basePath, normalizedPath);
 
   if (filePath !== basePath && !filePath.startsWith(basePath + sep)) {
+    console.error(
+      clfdate(),
+      "Invalid path: attempted to access parent directory",
+      basePath,
+      filePath
+    );
     return res.status(400).send("Path escapes blog directory");
   }
 
   // first unwatch the blogID to prevent further events from being triggered
-  await unwatch(blogID);
+  try {
+    await unwatch(blogID);
+  } catch (error) {
+    console.error(clfdate(), `Failed to unwatch blogID (${blogID}):`, error);
+    return res.status(500).send("Failed to unwatch blog folder");
+  }
 
   try {
     await brctl.evict(filePath);
 
     console.log(clfdate(), `Handled file eviction: ${filePath}`);
+  } catch (error) {
+    console.error(clfdate(), `Failed to evict file (${filePath}):`, error);
+    return res.status(500).send("Failed to evict file");
   } finally {
     // re-watch the blogID
-    await watch(blogID);
+    try {
+      await watch(blogID);
+    } catch (error) {
+      console.error(clfdate(), `Failed to rewatch blogID (${blogID}):`, error);
+    }
   }
 
   res.sendStatus(200);

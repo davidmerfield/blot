@@ -11,6 +11,7 @@ module.exports = async (req, res) => {
     : "/";
 
   if (!blogID) {
+    console.error(clfdate(), "Missing blogID header for recursiveList request");
     return res.status(400).send("Missing blogID header");
   }
   
@@ -20,7 +21,7 @@ module.exports = async (req, res) => {
   const dirPath = resolve(join(basePath, normalizedPath));
 
   if (dirPath !== basePath && !dirPath.startsWith(basePath + sep)) {
-    console.log(clfdate(), 
+    console.error(clfdate(), 
       `Invalid path: attempted to access parent directory`,
       basePath,
       dirPath
