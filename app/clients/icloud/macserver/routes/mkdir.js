@@ -1,5 +1,5 @@
 const fs = require("fs-extra");
-const { resolve, join } = require("path");
+const { resolve, join, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { watch, unwatch } = require("../watcher");
 
@@ -16,7 +16,7 @@ module.exports = async (req, res) => {
   const dirPath = resolve(join(basePath, path));
 
   // Check if the resolved path is inside the allowed directory
-  if (!dirPath.startsWith(basePath)) {
+  if (!(dirPath === basePath || dirPath.startsWith(basePath + sep))) {
     console.log(`Invalid path: attempted to access parent directory`, basePath, dirPath);
     return res
       .status(400)
