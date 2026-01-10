@@ -4,6 +4,8 @@ const clfdate = require("helper/clfdate");
 
 const database = require("../database");
 const resync = require("../sync/fromiCloud");
+const syncToiCloud = require("../sync/toiCloud");
+const establishSyncLock = require("./establishSyncLock");
 const Blog = require("models/blog");
 
 const getLastSyncDateStamp = (blogID) => {
@@ -48,11 +50,15 @@ module.exports = async () => {
     // because we might have missed some events
     if (Date.now() - lastSync < RESYNC_WINDOW) {
       console.log(clfdate(), "Resyncing blog: ", blogID);
+      const { folder, done } = await establishSyncLock(blogID);
       try {
-        await resync(blogID);
+        await syncToiCloud(blogID, folder.status, folder.update);
+        await resync(blogID, folder.status, folder.update);
         console.log(clfdate(), "Finished resyncing blog: ", blogID);
       } catch (error) {
         console.error(clfdate(), "Error resyncing blog: ", blogID, error);
+      } finally {
+        await done();
       }
     } else {
       console.log(
