@@ -1,8 +1,3 @@
-Investigate transient EHOSTUNREACH error when fetching stats from macserver.
-- switching from node-fetch to native fetch did not resolve the issue
-
-implement similar feature to dropbox client resync on restart and once per day for all other clientd
-
 Dropbox client
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
 - Bug: Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
@@ -44,6 +39,7 @@ Dropbox client
       - updates
 
 iCloud client:
+- Implement similar feature to dropbox client resync on restart and once per day
 - Does a file called '#Introduction.md#' trigger a bug with the iCloud client initial transfer if it exists in your blog folder before setup?
 - Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset).
 - Modify app/clients/icloud/util/monitorMacServerStats.js to send a recovery notification when stats are back online
@@ -63,7 +59,6 @@ iCloud client:
   - partial incomplete setup? sharing a non-empty folder? 
 - Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
 - Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
-
 
 Bug reports:
 - The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
@@ -776,6 +771,8 @@ Clamp length of password and email address in log in and sign up and reset forms
 - return an error if these are too long
 
 Improve git client
+- Implement similar feature to dropbox client resync on restart and once per day
+
     1. **Harden sync against transient Git failures**  
       * Add structured error handling and exponential backoff to the fetch and reset steps in [`sync.js`](./sync.js) so transient network or repository errors do not abort the entire sync.  
       * Surface actionable messages to `folder.log` when retries are exhausted to aid diagnostics.
@@ -796,6 +793,7 @@ Improve git client
       * Backfill tests that stub the metrics emitter to ensure the instrumentation does not break the sync flow.
       
 Improve google drive client
+- Implement similar feature to dropbox client resync on restart and once per day
     ## 1. Harden service-account webhook lifecycle
     - **Problem**: Changes and files webhooks can expire silently, causing the sync queue to stall until manual intervention. Logs in `serviceAccount/watchChanges.js` and the reset scripts indicate we rely on cron-style resets rather than active monitoring.
     - **Tasks**:
