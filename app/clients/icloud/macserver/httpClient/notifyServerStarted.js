@@ -1,6 +1,6 @@
 const { remoteServer, Authorization } = require("../config");
 const fetch = require("./rateLimitedFetchWithRetriesAndTimeout");
-const clfdate = require("helper/clfdate");
+const clfdate = require("../util/clfdate");
 
 module.exports = async (...args) => {
   if (args.length !== 0) {

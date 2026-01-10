@@ -1,6 +1,6 @@
 const { iCloudDriveDirectory } = require("../config");
 const exec = require("../exec");
-const clfdate = require("helper/clfdate");
+const clfdate = require("../util/clfdate");
 
 const CONFIG = {
   TIMEOUT: 5 * 1000,

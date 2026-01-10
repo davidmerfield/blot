@@ -1,7 +1,7 @@
 const fs = require("fs-extra");
 const { join, resolve, sep, isAbsolute } = require("path");
 const { iCloudDriveDirectory } = require("../config");
-const clfdate = require("helper/clfdate");
+const clfdate = require("../util/clfdate");
 
 const { watch, unwatch } = require("../watcher");
 

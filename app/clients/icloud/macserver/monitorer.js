@@ -2,7 +2,7 @@ const readline = require("readline");
 const { iCloudDriveDirectory } = require("./config");
 const { spawn } = require("child_process");
 const recursiveList = require("./util/recursiveList");
-const clfdate = require("helper/clfdate");
+const clfdate = require("./util/clfdate");
 
 // The purpose of this module is to keep iCloud Drive in sync
 // and it achieves this by running `brctl monitor` to detect blog

@@ -1,5 +1,5 @@
 const Bottleneck = require("bottleneck");
-const clfdate = require("helper/clfdate");
+const clfdate = require("./util/clfdate");
 
 // Create a map of limiters, one per blogID
 const limiters = new Map();

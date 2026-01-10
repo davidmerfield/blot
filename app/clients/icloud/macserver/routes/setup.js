@@ -4,7 +4,7 @@ const fs = require("fs-extra");
 const Bottleneck = require("bottleneck");
 const status = require("../httpClient/status");
 const { iCloudDriveDirectory } = require("../config");
-const clfdate = require("helper/clfdate");
+const clfdate = require("../util/clfdate");
 
 // Only one setup can run at a time otherwise the apple script
 // might not work correctly or accept the wrong sharing link

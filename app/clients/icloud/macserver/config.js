@@ -1,5 +1,5 @@
 require("dotenv").config();
-const clfdate = require("helper/clfdate");
+const clfdate = require("./util/clfdate");
 
 const fs = require("fs-extra");
 

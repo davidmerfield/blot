@@ -1,7 +1,7 @@
 const fs = require("fs-extra");
 const { execFile } = require("child_process");
 const { iCloudDriveDirectory } = require("../config");
-const clfdate = require("helper/clfdate");
+const clfdate = require("../util/clfdate");
 
 const POLL_INTERVAL = 15 * 1000; // Check every 15 seconds
 const MAX_NUMBER_OF_FILES_TRACKED_PER_BLOG = 150;

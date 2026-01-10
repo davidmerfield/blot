@@ -3,7 +3,7 @@ const { promisify } = require("util");
 const fs = require("fs-extra");
 const statfs = promisify(require("fs").statfs);
 const { iCloudDriveDirectory } = require("../config");
-const clfdate = require("helper/clfdate");
+const clfdate = require("../util/clfdate");
 
 module.exports = async (req, res) => {
   const result = {};

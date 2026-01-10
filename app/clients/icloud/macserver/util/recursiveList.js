@@ -1,7 +1,7 @@
 const path = require("path");
 const { ls } = require("../brctl");
 const shouldIgnoreFile = require("../../../util/shouldIgnoreFile");
-const clfdate = require("helper/clfdate");
+const clfdate = require("./clfdate");
 
 const MAX_DEPTH = 1000;
 

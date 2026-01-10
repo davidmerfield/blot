@@ -3,7 +3,7 @@ const { join, resolve, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { ls } = require("../brctl");
 const shouldIgnoreFile = require('../../../util/shouldIgnoreFile');
-const clfdate = require("helper/clfdate");
+const clfdate = require("../util/clfdate");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");

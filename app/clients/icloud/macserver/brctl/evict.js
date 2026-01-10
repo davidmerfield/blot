@@ -3,7 +3,7 @@ const fs = require("fs-extra");
 const exec = require("../exec");
 const TIMEOUT = 10 * 1000; // 10 seconds
 const POLLING_INTERVAL = 200; // 200 ms
-const clfdate = require("helper/clfdate");
+const clfdate = require("../util/clfdate");
 
 module.exports = async (path) => {
   console.log(clfdate(), `Evicting: ${path}`);

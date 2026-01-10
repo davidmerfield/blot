@@ -1,6 +1,6 @@
 const { join, resolve, isAbsolute, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
-const clfdate = require("helper/clfdate");
+const clfdate = require("../util/clfdate");
 
 const brctl = require("../brctl");
 

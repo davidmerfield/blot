@@ -3,7 +3,7 @@ const fs = require("fs-extra");
 const exec = require("../exec");
 const TIMEOUT = 15 * 1000; // 15 seconds
 const POLLING_INTERVAL = 200; // 200ms
-const clfdate = require("helper/clfdate");
+const clfdate = require("../util/clfdate");
 
 const BLOCK_SIZE = 512;
 
