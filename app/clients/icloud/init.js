@@ -4,15 +4,16 @@ const Blog = require("models/blog");
 const clfdate = require("helper/clfdate");
 const email = require("helper/email");
 const monitorMacServerStats = require("./util/monitorMacServerStats");
-const resync = require("./util/resyncRecentlySynced");
 const establishSyncLock = require("./util/establishSyncLock");
 const initialTransfer = require("./sync/initialTransfer");
 const database = require("./database");
 const syncFromiCloud = require("./sync/fromiCloud");
+const syncToiCloud = require("./sync/toiCloud");
 
 const getBlog = promisify(Blog.get);
 
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
+const RESYNC_WINDOW = 1000 * 60 * 10; // 10 minutes
 
 const countChanges = (summary = {}) => {
   return (
@@ -35,6 +36,68 @@ const getLastSyncDateStamp = (blogID) => {
       resolve(statuses[0].datestamp);
     });
   });
+};
+
+const resyncRecentlySynced = async (options = {}) => {
+  const windowMs =
+    typeof options.windowMs === "number" ? options.windowMs : RESYNC_WINDOW;
+  const notify = options.notify !== undefined ? options.notify : false;
+  const resyncContext = notify ? "hourly validation" : "startup resync";
+
+  console.log(
+    clfdate(),
+    "Resyncing recently synced blogs",
+    `(${resyncContext})`
+  );
+
+  await database.iterate(async (blogID, account) => {
+    if (!account.setupComplete) {
+      console.log(
+        clfdate(),
+        "Account setup not complete, skipping resync: ",
+        blogID
+      );
+      return;
+    }
+
+    const lastSync = await getLastSyncDateStamp(blogID);
+
+    if (!lastSync) {
+      console.log(clfdate(), "No last sync date found for blogID: ", blogID);
+      return;
+    }
+
+    const minutesAgo = Math.floor((Date.now() - lastSync) / 1000 / 60);
+
+    // if the blog last synced within the last 10 minutes, we want to resync
+    // because we might have missed some events
+    if (Date.now() - lastSync < windowMs) {
+      console.log(clfdate(), "Resyncing blog: ", blogID);
+      const { folder, done } = await establishSyncLock(blogID);
+      try {
+        await syncToiCloud(blogID, folder.status, folder.update);
+        await syncFromiCloud(blogID, folder.status, folder.update);
+        console.log(clfdate(), "Finished resyncing blog: ", blogID);
+      } catch (error) {
+        console.error(clfdate(), "Error resyncing blog: ", blogID, error);
+      } finally {
+        await done();
+      }
+    } else {
+      console.log(
+        clfdate(),
+        "Skipping resync of blog which last synced",
+        minutesAgo,
+        "minutes ago"
+      );
+    }
+  });
+
+  console.log(
+    clfdate(),
+    "Finished resyncing recently synced blogs",
+    `(${resyncContext})`
+  );
 };
 
 const hasRecentSync = async (blogID) => {
@@ -118,7 +181,7 @@ const runValidation = async ({ notify = true } = {}) => {
   });
 };
 
-module.exports = async () => {
+const init = async () => {
 
   await database.iterate(async (blogID, account) => {
     if (!account.transferringToiCloud) {
@@ -136,7 +199,11 @@ module.exports = async () => {
   console.log(clfdate(), "iCloud: Scheduling hourly sync validation");
   scheduler.scheduleJob("0 * * * *", () => runValidation({ notify: true }));
 
-  resync({ notify: false });
+  resyncRecentlySynced({ notify: false });
 
   monitorMacServerStats();
 };
+
+init.resyncRecentlySynced = resyncRecentlySynced;
+
+module.exports = init;
