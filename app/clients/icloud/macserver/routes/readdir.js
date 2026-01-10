@@ -1,5 +1,5 @@
 const fs = require("fs-extra");
-const { join } = require("path");
+const { join, resolve, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { ls } = require("../brctl");
 const shouldIgnoreFile = require('../../../util/shouldIgnoreFile');
@@ -14,7 +14,19 @@ module.exports = async (req, res) => {
 
   console.log(`Received readdir request for blogID: ${blogID}, path: ${path}`);
 
-  const dirPath = join(iCloudDriveDirectory, blogID, path);
+  const basePath = resolve(join(iCloudDriveDirectory, blogID));
+  const dirPath = resolve(join(basePath, path));
+
+  if (dirPath !== basePath && !dirPath.startsWith(`${basePath}${sep}`)) {
+    console.log(
+      "Invalid path: attempted to access parent directory",
+      basePath,
+      dirPath
+    );
+    return res
+      .status(400)
+      .send("Invalid path: attempted to access parent directory");
+  }
 
   // first we issue a request to ls to ensure the directory is downloaded
   // otherwise, files or subdirectories may be missing. if this stops working
