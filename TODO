@@ -41,7 +41,6 @@ Dropbox client
 
 iCloud client:
 - Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
-  - Bug: handle case-sensitive vs. case-insentive conflicts when setting up iCloud client with initial transfer, e.g. with git client create 'FILE.txt' and 'file.txt' then switch to iCloud client...
 - Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
 - Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
 - Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset). 
