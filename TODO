@@ -1,6 +1,3 @@
-Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
-- test case conflict code fix with similar folder structure to michaels
-
 Dropbox client
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
 - Bug: Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
@@ -45,6 +42,7 @@ Dropbox client
 iCloud client:
 - Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset). 
   - can we solve by running reset to blot after running reset from blot? perhaps to be safe we run reset to blot without 'delete' powers?
+- Bug: ensure that the hourly sync check absolutely is gated by the sync lock to prevent a scenario during a long initial setup where the state is nuked back from iCloud (files not yet transferred would be removed on Blot)
 - iCloud: when you change the case of a folder, the files (and posts) inside duplicate and are stored twice
 - Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
 - Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
