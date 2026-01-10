@@ -4,7 +4,7 @@ const MACSERVER_AUTH = config.icloud.secret; // The Macserver Authorization secr
 const database = require("../database");
 const syncToiCloud = require("./toiCloud");
 const establishSyncLock = require("../util/establishSyncLock");
-const fetch = require("node-fetch");
+const fetch = require("../util/rateLimitedFetchWithRetriesAndTimeout");
 
 module.exports = async function initialTransfer(blogID) {
   // establish sync lock

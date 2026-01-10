@@ -14,6 +14,8 @@ const ICLOUD_SPACE_LIMIT = config.icloud.iCloudSpaceLimit;
 
 const POLLING_INTERVAL = 60 * 1000; // 1 minute
 
+const fetch = require("./rateLimitedFetchWithRetriesAndTimeout");
+
 // map to keep track of which notifications have been sent
 const notificationsSent = {};
 
@@ -25,10 +27,6 @@ module.exports = () => {
       const res = await fetch(MAC_SERVER_ADDRESS + "/stats", {
         headers: { Authorization },
       });
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! Status: ${res.status}`);
-      }
 
       const stats = await res.json();
 

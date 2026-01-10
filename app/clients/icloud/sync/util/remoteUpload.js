@@ -3,7 +3,7 @@ const MAC_SERVER_ADDRESS = config.icloud.server_address;
 const Authorization = config.icloud.secret; // The Macserver Authorization secret from config
 const localPath = require("helper/localPath");
 const fs = require("fs-extra");
-const fetch = require("node-fetch");
+const fetch = require("../../util/rateLimitedFetchWithRetriesAndTimeout");
 
 module.exports = async (blogID, path) => {
   const pathOnDisk = localPath(blogID, path);
@@ -24,10 +24,6 @@ module.exports = async (blogID, path) => {
     },
     body,
   });
-
-  if (!res.ok) {
-    throw new Error(`Failed to upload ${path}`);
-  }
 
   return res.ok;
 };

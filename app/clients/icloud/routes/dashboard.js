@@ -2,7 +2,7 @@ const clfdate = require("helper/clfdate");
 const database = require("../database");
 const disconnect = require("../disconnect");
 const express = require("express");
-const fetch = require("node-fetch"); // For making HTTP requests
+const fetch = require("../util/rateLimitedFetchWithRetriesAndTimeout");
 const dashboard = new express.Router();
 const parseBody = require("body-parser").urlencoded({ extended: false });
 const config = require("config"); // For accessing configuration values
@@ -76,7 +76,7 @@ dashboard
 
       // Make the request to the Macserver /setup endpoint
       console.log(`Sending setup request to Macserver for blogID: ${blogID}`);
-      const response = await fetch(`${MACSERVER_URL}/setup`, {
+      await fetch(`${MACSERVER_URL}/setup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -85,14 +85,6 @@ dashboard
           sharingLink: sharingLink || "", // Include the sharingLink header, even if empty
         },
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `Macserver /setup request failed: ${response.status} - ${errorText}`
-        );
-        return next(new Error(`Failed to set up folder: ${errorText}`));
-      }
 
       console.log(`Macserver /setup request succeeded for blogID: ${blogID}`);
       const { folder, done } = await establishSyncLock(blogID);
