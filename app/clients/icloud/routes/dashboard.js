@@ -123,10 +123,14 @@ dashboard
     }
   });
 
-dashboard.post("/cancel", async function (req, res) {
-  await database.blog.delete(req.blog.id);
+dashboard.post("/cancel", async function (req, res, next) {
+  try {
+    await database.delete(req.blog.id);
 
-  res.message(req.baseUrl, "Cancelled the creation of your new folder");
+    res.message(req.baseUrl, "Cancelled the creation of your new folder");
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = dashboard;
