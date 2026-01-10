@@ -11,7 +11,11 @@ module.exports = async (req, res) => {
     // get iCloud Drive free space in bytes
     result.icloud_bytes_available = await brctl.quota();
   } catch (error) {
-    console.error(`Error getting iCloud Drive quota: ${error}`);
+    if (error?.name === "QuotaParseError") {
+      console.error(`Error getting iCloud Drive quota (quota parse failure): ${error.message}`);
+    } else {
+      console.error(`Error getting iCloud Drive quota: ${error}`);
+    }
     result.icloud_bytes_available = null;
   }
 
