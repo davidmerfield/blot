@@ -40,19 +40,15 @@ Dropbox client
 
 iCloud client:
 - Implement similar feature to dropbox client resync on restart and once per day
-- Does a file called '#Introduction.md#' trigger a bug with the iCloud client initial transfer if it exists in your blog folder before setup?
 - Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset).
-- Modify app/clients/icloud/util/monitorMacServerStats.js to send a recovery notification when stats are back online
 - iCloud: when you change the case of a folder, the files (and posts) inside duplicate and are stored twice
-- Does iCloud client bug out when file with #Introduction.md# exists?
+- Work out issue with iCloud disconnect / setup with [Florian's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTzSJsxwwRTMNxWTMrGCQXTlh)
 - Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
 - Fix bug with initial transfer error (make sure sync lock doesn't hang indefinitely)
 - Improve sync stability of iCloud client
   - Especially for folder renames, many file moves
   - Tell Todd
   - Tell Fede
-- Work out issue with iCloud disconnect / setup with [Florian's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTzSJsxwwRTMNxWTMrGCQXTlh)
-- It seems we ran into an issue where icloud was not syncing *updates* to an existing file. When we perform a full sync, can we force brctl download for each folder? is that enough? or do we need to brctl download each file too? 
 - Investigate the 500 timeout errors – are these caused by pending syncs / folder locks?
   - tail -n 1000000 /var/instance-ssd/logs/access.log | grep " 500 " | grep "/clients/icloud"
 - Why are there unrenamed folders in the mac server icloud drive?
