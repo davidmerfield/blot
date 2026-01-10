@@ -5,10 +5,36 @@ const { spawn } = require("child_process");
 // about shell injection attacks.
 const exec = (command, args = [], options = {}) => {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, options);
+    const { timeout, ...spawnOptions } = options;
+    const child = spawn(command, args, spawnOptions);
 
     let stdout = "";
     let stderr = "";
+    let finished = false;
+    let timeoutId = null;
+
+    const finalize = (fn) => {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      fn();
+    };
+
+    if (typeof timeout === "number" && timeout > 0) {
+      timeoutId = setTimeout(() => {
+        if (finished) {
+          return;
+        }
+        child.kill("SIGTERM");
+        finalize(() => {
+          reject(new Error(`Command timed out after ${timeout}ms`));
+        });
+      }, timeout);
+    }
 
     if (child.stdout) {
       child.stdout.on("data", (data) => {
@@ -23,19 +49,23 @@ const exec = (command, args = [], options = {}) => {
     }
 
     child.on("error", (error) => {
-      reject(error); // If spawn fails, reject the promise
+      finalize(() => {
+        reject(error); // If spawn fails, reject the promise
+      });
     });
 
     child.on("close", (code) => {
-      if (code === 0) {
-        resolve({ stdout, stderr });
-      } else {
-        reject(
-          new Error(
-            `Command failed with exit code ${code}\nStderr: ${stderr.trim()}`
-          )
-        );
-      }
+      finalize(() => {
+        if (code === 0) {
+          resolve({ stdout, stderr });
+        } else {
+          reject(
+            new Error(
+              `Command failed with exit code ${code}\nStderr: ${stderr.trim()}`
+            )
+          );
+        }
+      });
     });
   });
 };

@@ -146,7 +146,7 @@ async function acceptSharingLink(sharingLink) {
   const { stdout, stderr } = await exec("osascript", [
     "-e",
     appleScript(sharingLink),
-  ]);
+  ], { timeout: 15000 });
 
   if (stderr && stderr.trim()) {
     throw new Error(`Unexpected AppleScript stderr: ${stderr}`);
