@@ -13,20 +13,6 @@ const maxFileSize = config.icloud.maxFileSize; // Maximum file size for iCloud u
 
 const prefix = () => `${clfdate()} iCloud Sync to iCloud:`;
 
-// Retry failed operations with exponential backoff
-async function retry(fn, ...args) {
-  for (let i = 0; i < 3; i++) {
-    try {
-      return await fn(...args);
-    } catch (e) {
-      if (i === 2) throw e;
-      const delay = Math.min(1000 * Math.pow(2, i), 10000);
-      console.log("Attempt", i ,"failed, retrying in", delay, "ms", e);
-      await new Promise((r) => setTimeout(r, delay));
-    }
-  }
-}
-
 module.exports = async (blogID, publish, update) => {
   publish = publish || function () {};
   update = update || function () {};
@@ -49,7 +35,7 @@ module.exports = async (blogID, publish, update) => {
         await checkWeCanContinue();
         publish("Removing from iCloud", join(dir, name));
         try {
-          await retry(remoteDelete, blogID, path);
+          await remoteDelete(blogID, path);
         } catch (e) {
           publish("Failed to remove", path);
           console.log(prefix(), "Failed to remove", path, e);
@@ -68,7 +54,7 @@ module.exports = async (blogID, publish, update) => {
           await checkWeCanContinue();
           publish("Creating directory in iCloud", path);
           try {
-            await retry(remoteMkdir, blogID, path);
+            await remoteMkdir(blogID, path);
           } catch (e) {
             publish("Failed to create directory", path);
             console.log(prefix(), "Failed to create directory", path, e);
@@ -89,7 +75,7 @@ module.exports = async (blogID, publish, update) => {
           }
           publish("Transferring to iCloud", path);
           try {
-            await retry(remoteUpload, blogID, path);
+            await remoteUpload(blogID, path);
           } catch (e) {
             publish("Failed to upload", path, e);
           }
