@@ -21,15 +21,22 @@ const maxNotifications = 2;
 site.get("/started", async function (req, res) {
   res.sendStatus(200);
 
-  if (totalNotificationsSent < maxNotifications) {
-    email.ICLOUD_SERVER_STARTED();
-    totalNotificationsSent++;
-    await resyncRecentlySynced();
-  } else if (!panicNotificationsSent) {
-    panicNotificationsSent = true;
-    email.ICLOUD_SERVER_PANIC();
-  } else {
-    console.log("iCloud server restart: not sending any more notifications");
+  try {
+    if (totalNotificationsSent < maxNotifications) {
+      email.ICLOUD_SERVER_STARTED();
+      totalNotificationsSent++;
+      await resyncRecentlySynced();
+    } else if (!panicNotificationsSent) {
+      panicNotificationsSent = true;
+      email.ICLOUD_SERVER_PANIC();
+    } else {
+      console.log("iCloud server restart: not sending any more notifications");
+    }
+  } catch (error) {
+    console.error("Error handling /started notification:", error);
+    if (!res.headersSent) {
+      res.status(500).send("Failed to process /started notification");
+    }
   }
 });
 

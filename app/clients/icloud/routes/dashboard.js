@@ -14,8 +14,12 @@ const MACSERVER_URL = config.icloud.server_address; // The Macserver base URL fr
 const MACSERVER_AUTH = config.icloud.secret; // The Macserver Authorization secret from config
 
 dashboard.use(async function (req, res, next) {
-  res.locals.account = await database.get(req.blog.id);
-  next();
+  try {
+    res.locals.account = await database.get(req.blog.id);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 dashboard.get("/", function (req, res) {
