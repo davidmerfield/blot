@@ -1,3 +1,4 @@
+const { iCloudDriveDirectory } = require("../config");
 const exec = require("../exec");
 
 const CONFIG = {
@@ -45,7 +46,10 @@ module.exports = async (dirPath) => {
     // Handle deadlock by downloading
     try {
       console.log(`Directory not downloaded, downloading: ${dirPath}`);
-      await exec("brctl", ["download", dirPath]);
+      const pathInDrive = dirPath.replace(iCloudDriveDirectory, "").slice(1);
+      await exec("brctl", ["download", pathInDrive], {
+        cwd: iCloudDriveDirectory,
+      });
     } catch (error) {
       console.error(`Error downloading directory ${dirPath}: ${error.message}`);
       return null;
