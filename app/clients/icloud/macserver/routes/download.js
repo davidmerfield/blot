@@ -1,6 +1,7 @@
 const { join, resolve, sep, isAbsolute } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const brctl = require('../brctl');
+const clfdate = require("helper/clfdate");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
@@ -10,7 +11,7 @@ module.exports = async (req, res) => {
     return res.status(400).send("Missing blogID or path header");
   }
 
-  console.log(`Received download request for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Received download request for blogID: ${blogID}, path: ${path}`);
 
   try {
     if (isAbsolute(path)) {
@@ -23,7 +24,7 @@ module.exports = async (req, res) => {
     const filePath = resolve(join(basePath, path));
 
     if (filePath !== basePath && !filePath.startsWith(`${basePath}${sep}`)) {
-      console.log(
+      console.log(clfdate(), 
         "Invalid path: attempted to access parent directory",
         basePath,
         filePath
@@ -44,11 +45,11 @@ module.exports = async (req, res) => {
   } catch (err) {
     // handle ENOENT error
     if (err.code === "ENOENT") {
-      console.error("File not found:", err);
+      console.error(clfdate(), "File not found:", err);
       return res.status(404).send("File not found");
     }
 
-    console.error("Failed to download file:", path, err);
+    console.error(clfdate(), "Failed to download file:", path, err);
     res.status(500).send("Failed to download file " + path);
   }
 };

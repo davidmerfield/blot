@@ -1,5 +1,6 @@
 const { iCloudDriveDirectory } = require("../config");
 const exec = require("../exec");
+const clfdate = require("helper/clfdate");
 
 const CONFIG = {
   TIMEOUT: 5 * 1000,
@@ -14,12 +15,12 @@ const handleExecError = (error, dirPath) => {
   if (!error?.message) return null;
   
   if (error.message.includes(CONFIG.ERROR_MESSAGES.NO_FILE)) {
-    console.warn(`Directory does not exist: ${dirPath}`);
+    console.warn(clfdate(), `Directory does not exist: ${dirPath}`);
     return null;
   }
   
   if (!error.message.includes(CONFIG.ERROR_MESSAGES.DEADLOCK)) {
-    console.error(`Unexpected error listing directory ${dirPath}: ${error.message}`);
+    console.error(clfdate(), `Unexpected error listing directory ${dirPath}: ${error.message}`);
     return null;
   }
   
@@ -45,13 +46,13 @@ module.exports = async (dirPath) => {
 
     // Handle deadlock by downloading
     try {
-      console.log(`Directory not downloaded, downloading: ${dirPath}`);
+      console.log(clfdate(), `Directory not downloaded, downloading: ${dirPath}`);
       const pathInDrive = dirPath.replace(iCloudDriveDirectory, "").slice(1);
       await exec("brctl", ["download", pathInDrive], {
         cwd: iCloudDriveDirectory,
       });
     } catch (error) {
-      console.error(`Error downloading directory ${dirPath}: ${error.message}`);
+      console.error(clfdate(), `Error downloading directory ${dirPath}: ${error.message}`);
       return null;
     }
 
@@ -68,7 +69,7 @@ module.exports = async (dirPath) => {
       }
     }
 
-    console.error(`Timeout listing directory ${dirPath}`);
+    console.error(clfdate(), `Timeout listing directory ${dirPath}`);
     return null;
   }
 };

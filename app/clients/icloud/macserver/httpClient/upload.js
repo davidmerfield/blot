@@ -4,12 +4,12 @@ const {
   iCloudDriveDirectory,
   maxFileSize,
 } = require("../config");
+const clfdate = require("helper/clfdate");
 
 const fs = require("fs-extra");
 const brctl = require("../brctl");
 const fetch = require("./rateLimitedFetchWithRetriesAndTimeout");
 const { join } = require("path");
-const clfdate = require("../../util/clfdate");
 
 module.exports = async (blogID, path) => {
   // Input validation

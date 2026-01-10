@@ -1,5 +1,6 @@
 const { remoteServer, Authorization } = require("../config");
 const fetch = require("./rateLimitedFetchWithRetriesAndTimeout");
+const clfdate = require("helper/clfdate");
 
 module.exports = async (...args) => {
   const [blogID, path] = args;
@@ -16,7 +17,7 @@ module.exports = async (...args) => {
     throw new Error("Invalid number of arguments: expected 2");
   }
 
-  console.log(`Issuing external mkdir for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Issuing external mkdir for blogID: ${blogID}, path: ${path}`);
 
   const pathBase64 = Buffer.from(path).toString("base64");
   
@@ -29,5 +30,5 @@ module.exports = async (...args) => {
     },
   });
 
-  console.log(`Issuing external mkdir successful`);
+  console.log(clfdate(), `Issuing external mkdir successful`);
 };

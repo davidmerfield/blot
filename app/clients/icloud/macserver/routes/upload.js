@@ -2,6 +2,7 @@ const fs = require("fs-extra");
 const { join, resolve, sep, isAbsolute } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { watch, unwatch } = require("../watcher");
+const clfdate = require("helper/clfdate");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
@@ -12,7 +13,7 @@ module.exports = async (req, res) => {
     return res.status(400).send("Missing blogID, path, or modifiedTime header");
   }
 
-  console.log(`Received upload request for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Received upload request for blogID: ${blogID}, path: ${path}`);
 
   if (isAbsolute(path)) {
     return res.status(400).send("Invalid path: absolute paths are not allowed");
@@ -22,7 +23,7 @@ module.exports = async (req, res) => {
   const filePath = resolve(join(basePath, path));
 
   if (filePath !== basePath && !filePath.startsWith(`${basePath}${sep}`)) {
-    console.log(
+    console.log(clfdate(), 
       "Invalid path: attempted to access parent directory",
       basePath,
       filePath
@@ -42,14 +43,14 @@ module.exports = async (req, res) => {
       try {
         await fs.outputFile(filePath, req.body);
         success = true;
-        console.log(`Wrote file: ${filePath}`);
+        console.log(clfdate(), `Wrote file: ${filePath}`);
         const modifiedTimeDate = new Date(parseInt(modifiedTime, 10));
         await fs.utimes(filePath, modifiedTimeDate, modifiedTimeDate);
-        console.log(`Set modified time for file: ${filePath}`);
+        console.log(clfdate(), `Set modified time for file: ${filePath}`);
         break;
       } catch (error) {
         success = false;
-        console.error(`Failed to write file (${filePath}):`, error);
+        console.error(clfdate(), `Failed to write file (${filePath}):`, error);
         await new Promise((resolve) => setTimeout(resolve, 1000 * i)); // Exponential backoff
       }
     }
@@ -58,7 +59,7 @@ module.exports = async (req, res) => {
       return res.status(500).send("Failed to write file after retries");
     }
 
-    console.log(`Recieved upload of file: ${filePath}`);
+    console.log(clfdate(), `Recieved upload of file: ${filePath}`);
     return res.sendStatus(200);
   } finally {
     // re-watch the blogID

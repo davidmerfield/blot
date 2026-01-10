@@ -1,6 +1,7 @@
 const fs = require("fs-extra");
 const { join, resolve, sep, isAbsolute } = require("path");
 const { iCloudDriveDirectory } = require("../config");
+const clfdate = require("helper/clfdate");
 
 const { watch, unwatch } = require("../watcher");
 
@@ -13,7 +14,7 @@ module.exports = async (req, res) => {
     return res.status(400).send("Missing required headers: blogID or path");
   }
 
-  console.log(`Received delete request for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Received delete request for blogID: ${blogID}, path: ${path}`);
 
   if (isAbsolute(path)) {
     return res.status(400).send("Invalid path: absolute paths are not allowed");
@@ -23,7 +24,7 @@ module.exports = async (req, res) => {
   const filePath = resolve(join(basePath, path));
 
   if (filePath !== basePath && !filePath.startsWith(`${basePath}${sep}`)) {
-    console.log(
+    console.log(clfdate(), 
       "Invalid path: attempted to access parent directory",
       basePath,
       filePath
@@ -43,16 +44,16 @@ module.exports = async (req, res) => {
       try {
         await fs.remove(filePath);
         success = true;
-        console.log(`Deleted file: ${filePath}`);
+        console.log(clfdate(), `Deleted file: ${filePath}`);
         break;
       } catch (error) {
         success = false;
-        console.error(`Failed to delete file (${filePath}):`, error);
+        console.error(clfdate(), `Failed to delete file (${filePath}):`, error);
         await new Promise((resolve) => setTimeout(resolve, 1000 * i)); // Exponential backoff
       }
     }
 
-    console.log(`Handled file deletion: ${filePath}`);
+    console.log(clfdate(), `Handled file deletion: ${filePath}`);
 
     if (!success) {
       return res.status(500).send("Failed to delete file after retries");

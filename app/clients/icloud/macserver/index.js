@@ -3,6 +3,7 @@ const { raw } = express;
 const { Authorization, maxFileSize } = require("./config");
 const { initialize } = require("./watcher");
 const notifyServerStarted = require("./httpClient/notifyServerStarted");
+const clfdate = require("helper/clfdate");
 
 const monitorer = require("./monitorer");
 
@@ -16,7 +17,7 @@ const startServer = async () => {
   const app = express();
 
   app.use((req, res, next) => {
-    console.log(`Request: ${req.method} ${req.url}`);
+    console.log(clfdate(), `Request: ${req.method} ${req.url}`);
 
     const authorization = req.header("Authorization"); // New header for the Authorization secret
 
@@ -53,12 +54,12 @@ const startServer = async () => {
   app.post("/setup", asyncHandler(require("./routes/setup")));
 
   app.use((err, req, res, next) => {
-    console.error("Macserver error:", err);
+    console.error(clfdate(), "Macserver error:", err);
     res.status(500).send("Internal Server Error");
   });
 
   app.listen(3000, () => {
-    console.log("Macserver is running on port 3000");
+    console.log(clfdate(), "Macserver is running on port 3000");
   });
 };
 
@@ -67,28 +68,28 @@ const startServer = async () => {
   try {
 
     // Test connectivity with the remote server
-    console.log("Pinging remote server...");
+    console.log(clfdate(), "Pinging remote server...");
     try {
       await notifyServerStarted();
     } catch (error) {
-      console.error("Failed to ping remote server:", error);
+      console.error(clfdate(), "Failed to ping remote server:", error);
     }
 
     // Start the local server
-    console.log("Starting macserver...");
+    console.log(clfdate(), "Starting macserver...");
     await startServer();
 
     // Initialize the file watcher
-    console.log("Initializing file watchers for existing folders...");
+    console.log(clfdate(), "Initializing file watchers for existing folders...");
     await initialize();
 
     // Start the monitorer to keep iCloud in sync
-    console.log("Starting iCloud monitorer...");
+    console.log(clfdate(), "Starting iCloud monitorer...");
     monitorer();
     
-    console.log("Macserver started successfully");
+    console.log(clfdate(), "Macserver started successfully");
   } catch (error) {
-    console.error("Error starting macserver:", error);
+    console.error(clfdate(), "Error starting macserver:", error);
     process.exit(1);
   }
 })();

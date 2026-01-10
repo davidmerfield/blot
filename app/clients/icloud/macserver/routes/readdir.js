@@ -3,6 +3,7 @@ const { join, resolve, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { ls } = require("../brctl");
 const shouldIgnoreFile = require('../../../util/shouldIgnoreFile');
+const clfdate = require("helper/clfdate");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
@@ -12,13 +13,13 @@ module.exports = async (req, res) => {
     return res.status(400).send("Missing blogID or path header");
   }
 
-  console.log(`Received readdir request for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Received readdir request for blogID: ${blogID}, path: ${path}`);
 
   const basePath = resolve(join(iCloudDriveDirectory, blogID));
   const dirPath = resolve(join(basePath, path));
 
   if (dirPath !== basePath && !dirPath.startsWith(`${basePath}${sep}`)) {
-    console.log(
+    console.log(clfdate(), 
       "Invalid path: attempted to access parent directory",
       basePath,
       dirPath
@@ -35,7 +36,7 @@ module.exports = async (req, res) => {
   try {
     await ls(dirPath);
   } catch (error) {
-    console.error("Error listing directory:", dirPath, error);
+    console.error(clfdate(), "Error listing directory:", dirPath, error);
   }
 
   // now that we are sure the directory is in sync, we can read it
@@ -62,7 +63,7 @@ module.exports = async (req, res) => {
     });
   }
 
-  console.log(`Readdir complete for blogID: ${blogID}, path: ${path}`);
-  console.log(result);
+  console.log(clfdate(), `Readdir complete for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), result);
   res.json(result);
 };
