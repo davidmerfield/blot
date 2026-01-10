@@ -3,6 +3,7 @@ const MACSERVER_URL = config.icloud.server_address; // The Macserver base URL fr
 const MACSERVER_AUTH = config.icloud.secret; // The Macserver Authorization secret from config
 const database = require("../database");
 const syncToiCloud = require("./toiCloud");
+const resolveCaseConflicts = require("./resolveCaseConflicts");
 const establishSyncLock = require("../util/establishSyncLock");
 const fetch = require("../util/rateLimitedFetchWithRetriesAndTimeout");
 
@@ -13,6 +14,8 @@ module.exports = async function initialTransfer(blogID) {
   try {
     folder.status("Setting up iCloud sync");
     await database.store(blogID, { transferringToiCloud: true, error: null });
+    folder.status("Resolving case conflicts");
+    await resolveCaseConflicts(blogID, folder.status, folder.update);
     await syncToiCloud(blogID, folder.status, folder.update);
 
     // Now that the transfer is complete, notify the Macserver to begin watching the iCloud folder
