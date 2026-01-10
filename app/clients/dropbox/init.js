@@ -10,7 +10,7 @@ const getAllIDs = promisify(Blog.getAllIDs);
 const getBlog = promisify(Blog.get);
 const getDropboxAccount = promisify(getAccount);
 
-const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
+const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000;
 
 const countChanges = (summary = {}) => {
@@ -23,11 +23,11 @@ const countChanges = (summary = {}) => {
 
 const hasRecentSync = (account) => {
   if (!account || typeof account.last_sync !== "number") return false;
-  return Date.now() - account.last_sync <= ONE_DAY_IN_MS;
+  return Date.now() - account.last_sync <= ONE_HOUR_IN_MS;
 };
 
 const runValidation = async () => {
-  console.log(clfdate(), "Dropbox: Running daily sync validation");
+  console.log(clfdate(), "Dropbox: Running hourly sync validation");
 
   let blogIDs = [];
 
@@ -155,8 +155,8 @@ const resyncRecentSyncsOnStartup = async () => {
 };
 
 module.exports = async function init() {
-  console.log(clfdate(), "Dropbox: Scheduling daily sync validation");
-  scheduler.scheduleJob({ hour: 7, minute: 0 }, runValidation);
+  console.log(clfdate(), "Dropbox: Scheduling hourly sync validation");
+  scheduler.scheduleJob("0 * * * *", runValidation);
   resyncRecentSyncsOnStartup().catch(function (err) {
     console.error(clfdate(), "Dropbox: Startup resync failed", err);
   });
