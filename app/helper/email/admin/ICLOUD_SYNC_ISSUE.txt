@@ -1,0 +1,10 @@
+iCloud sync issue
+
+The hourly sync validation check detected previously unsynced changes from iCloud for the following sites:
+
+{{#blogs}}
+- {{id}} {{handle}} — {{changeCount}} change{{#changeCountPlural}}s{{/changeCountPlural}}
+  (downloaded: {{downloaded}}, removed: {{removed}}, created dirs: {{createdDirs}})
+  `logs blue | grep "{{truncatedId}} sync_"`
+  `access {{handle}}`
+{{/blogs}}

@@ -23,8 +23,17 @@ const getLastSyncDateStamp = (blogID) => {
   });
 };
 
-module.exports = async () => {
-  console.log(clfdate(), "Resyncing recently synced blogs");
+module.exports = async (options = {}) => {
+  const windowMs =
+    typeof options.windowMs === "number" ? options.windowMs : RESYNC_WINDOW;
+  const notify = options.notify !== undefined ? options.notify : false;
+  const resyncContext = notify ? "hourly validation" : "startup resync";
+
+  console.log(
+    clfdate(),
+    "Resyncing recently synced blogs",
+    `(${resyncContext})`
+  );
 
   await database.iterate(async (blogID, account) => {
   
@@ -48,7 +57,7 @@ module.exports = async () => {
 
     // if the blog last synced within the last 10 minutes, we want to resync
     // because we might have missed some events
-    if (Date.now() - lastSync < RESYNC_WINDOW) {
+    if (Date.now() - lastSync < windowMs) {
       console.log(clfdate(), "Resyncing blog: ", blogID);
       const { folder, done } = await establishSyncLock(blogID);
       try {
@@ -70,5 +79,9 @@ module.exports = async () => {
     }
   });
 
-  console.log(clfdate(), "Finished resyncing recently synced blogs");
+  console.log(
+    clfdate(),
+    "Finished resyncing recently synced blogs",
+    `(${resyncContext})`
+  );
 };
