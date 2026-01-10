@@ -10,26 +10,34 @@ module.exports = async function initialTransfer(blogID) {
   // establish sync lock
   const { folder, done } = await establishSyncLock(blogID);
 
-  folder.status("Setting up iCloud sync");
-  await database.store(blogID, { transferringToiCloud: true, error: null });
-  await syncToiCloud(blogID, folder.status, folder.update);
-  await database.store(blogID, { transferringToiCloud: false, error: null });
+  try {
+    folder.status("Setting up iCloud sync");
+    await database.store(blogID, { transferringToiCloud: true, error: null });
+    await syncToiCloud(blogID, folder.status, folder.update);
 
-  // Now that the transfer is complete, notify the Macserver to begin watching the iCloud folder
-  // for changes. This will let us know when the user has changed their folder on iCloud.
-  await fetch(`${MACSERVER_URL}/watch`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: MACSERVER_AUTH,
-      blogID: blogID,
-    },
-  });
-  folder.status("Setup complete");
-  await database.store(blogID, {
-    setupComplete: true,
-    transferringToiCloud: false,
-    error: null,
-  });
-  await done();
+    // Now that the transfer is complete, notify the Macserver to begin watching the iCloud folder
+    // for changes. This will let us know when the user has changed their folder on iCloud.
+    await fetch(`${MACSERVER_URL}/watch`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: MACSERVER_AUTH,
+        blogID: blogID,
+      },
+    });
+    folder.status("Setup complete");
+    await database.store(blogID, {
+      setupComplete: true,
+      transferringToiCloud: false,
+      error: null,
+    });
+  } catch (error) {
+    await database.store(blogID, {
+      transferringToiCloud: false,
+      error: error?.message || String(error),
+    });
+    throw error;
+  } finally {
+    await done();
+  }
 };
