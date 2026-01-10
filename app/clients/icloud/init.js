@@ -9,6 +9,7 @@ const initialTransfer = require("./sync/initialTransfer");
 const database = require("./database");
 const syncFromiCloud = require("./sync/fromiCloud");
 const syncToiCloud = require("./sync/toiCloud");
+const Fix = require("sync/fix");
 
 const getBlog = promisify(Blog.get);
 
@@ -149,6 +150,20 @@ const runValidation = async ({ notify = true } = {}) => {
             createdDirs: summary.createdDirs || 0
           });
         }
+
+        await new Promise((resolve) => {
+          Fix(blog, (fixError) => {
+            if (fixError) {
+              console.error(
+                clfdate(),
+                "iCloud: Fix error for blog",
+                blogID,
+                fixError
+              );
+            }
+            resolve();
+          });
+        });
       } catch (error) {
         console.error(
           clfdate(),

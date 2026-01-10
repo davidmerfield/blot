@@ -5,6 +5,7 @@ const clfdate = require("helper/clfdate");
 const email = require("helper/email");
 const resetToBlot = require("./sync/reset-to-blot");
 const { get: getAccount } = require("./database");
+const Fix = require("sync/fix");
 
 const getAllIDs = promisify(Blog.getAllIDs);
 const getBlog = promisify(Blog.get);
@@ -67,6 +68,20 @@ const runValidation = async () => {
           changeCountPlural: changeCount !== 1,
         });
       }
+
+      await new Promise((resolve) => {
+        Fix(blog, (fixError) => {
+          if (fixError) {
+            console.error(
+              clfdate(),
+              "Dropbox: Fix error for blog",
+              blogID,
+              fixError
+            );
+          }
+          resolve();
+        });
+      });
     } catch (err) {
       console.error(
         clfdate(),
