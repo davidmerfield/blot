@@ -5,6 +5,7 @@ const clfdate = require("helper/clfdate");
 const email = require("helper/email");
 const monitorMacServerStats = require("./util/monitorMacServerStats");
 const resync = require("./util/resyncRecentlySynced");
+const establishSyncLock = require("./util/establishSyncLock");
 const initialTransfer = require("./sync/initialTransfer");
 const database = require("./database");
 const syncFromiCloud = require("./sync/fromiCloud");
@@ -62,7 +63,15 @@ const runValidation = async ({ notify = true } = {}) => {
           console.log(clfdate(), "iCloud:", blogID, ...args);
         };
 
-        const summary = await syncFromiCloud(blogID, publish);
+        const { folder, done } = await establishSyncLock(blogID);
+        let summary;
+
+        try {
+          summary = await syncFromiCloud(blogID, publish, folder.update);
+        } finally {
+          await done();
+        }
+
         const changeCount = countChanges(summary);
 
         if (changeCount > 0) {
