@@ -21,9 +21,25 @@ const countChanges = (summary = {}) => {
   );
 };
 
-const hasRecentSync = (account) => {
-  if (!account || typeof account.last_sync !== "number") return false;
-  return Date.now() - account.last_sync <= ONE_HOUR_IN_MS;
+const getLastSyncDateStamp = (blogID) => {
+  return new Promise((resolve, reject) => {
+    Blog.getStatuses(blogID, { pageSize: 1 }, (err, res) => {
+      if (err) return reject(err);
+
+      const statuses = res.statuses;
+
+      if (!statuses || statuses.length === 0) {
+        return resolve(null);
+      }
+      resolve(statuses[0].datestamp);
+    });
+  });
+};
+
+const hasRecentSync = async (blogID) => {
+  const lastSync = await getLastSyncDateStamp(blogID);
+  if (!lastSync) return false;
+  return Date.now() - lastSync <= ONE_HOUR_IN_MS;
 };
 
 const runValidation = async ({ notify = true } = {}) => {
@@ -38,7 +54,7 @@ const runValidation = async ({ notify = true } = {}) => {
         const blog = await getBlog({ id: blogID });
         if (!blog || blog.client !== "icloud") return;
 
-        if (!hasRecentSync(account)) return;
+        if (!(await hasRecentSync(blogID))) return;
 
         checkedBlogs += 1;
 
