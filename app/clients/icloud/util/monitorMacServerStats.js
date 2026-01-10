@@ -85,6 +85,7 @@ module.exports = () => {
         });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       const stats = await res.json();
 
       if (
@@ -115,6 +116,8 @@ module.exports = () => {
 >>>>>>> master
         }
 
+=======
+>>>>>>> cc437ae5221662a2515a0e3123b1585c4ddc6741
         const stats = await res.json();
 
         if (
