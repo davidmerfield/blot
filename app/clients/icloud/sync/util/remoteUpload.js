@@ -6,30 +6,23 @@ const fs = require("fs-extra");
 const fetch = require("../../util/rateLimitedFetchWithRetriesAndTimeout");
 
 module.exports = async (blogID, path) => {
-  try {
-    const pathOnDisk = localPath(blogID, path);
-    const stat = await fs.stat(pathOnDisk);
-    const modifiedTime = stat.mtimeMs;
-    const pathBase64 = Buffer.from(path).toString("base64");
+  const pathOnDisk = localPath(blogID, path);
+  const stat = await fs.stat(pathOnDisk);
+  const modifiedTime = stat.mtimeMs;
+  const pathBase64 = Buffer.from(path).toString("base64");
 
-    const body = await fs.readFile(pathOnDisk);
+  const body = await fs.readFile(pathOnDisk);
 
-    // rateLimitedFetchWithRetriesAndTimeout throws on non-OK responses,
-    // so if we reach here, the request was successful
-    await fetch(`${MAC_SERVER_ADDRESS}/upload`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/octet-stream",
-        Authorization, // Use the Authorization header
-        blogID,
-        pathBase64,
-        modifiedTime,
-      },
-      body,
-    });
-
-    return true;
-  } catch (error) {
-    return false;
-  }
+  // rateLimitedFetchWithRetriesAndTimeout throws on non-OK responses
+  await fetch(`${MAC_SERVER_ADDRESS}/upload`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/octet-stream",
+      Authorization, // Use the Authorization header
+      blogID,
+      pathBase64,
+      modifiedTime,
+    },
+    body,
+  });
 };
