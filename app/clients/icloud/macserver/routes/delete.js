@@ -20,21 +20,31 @@ module.exports = async (req, res) => {
   // first unwatch the blogID to prevent further events from being triggered
   await unwatch(blogID);
 
-  for (let i = 0; i < 10; i++) {
-    try {
-      await fs.remove(filePath);
-      console.log(`Deleted file: ${filePath}`);
-      break;
-    } catch (error) {
-      console.error(`Failed to delete file (${filePath}):`, error);
-      await new Promise((resolve) => setTimeout(resolve, 1000 * i)); // Exponential backoff
+  let success = false;
+
+  try {
+    for (let i = 0; i < 10; i++) {
+      try {
+        await fs.remove(filePath);
+        success = true;
+        console.log(`Deleted file: ${filePath}`);
+        break;
+      } catch (error) {
+        success = false;
+        console.error(`Failed to delete file (${filePath}):`, error);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * i)); // Exponential backoff
+      }
     }
+
+    console.log(`Handled file deletion: ${filePath}`);
+
+    if (!success) {
+      return res.status(500).send("Failed to delete file after retries");
+    }
+
+    return res.sendStatus(200);
+  } finally {
+    // re-watch the blogID
+    await watch(blogID);
   }
-
-  console.log(`Handled file deletion: ${filePath}`);
-
-  // re-watch the blogID
-  await watch(blogID);
-
-  res.sendStatus(200);
 };
