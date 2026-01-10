@@ -16,6 +16,33 @@ const upload = require("../httpClient/upload");
 const mkdir = require("../httpClient/mkdir");
 const remove = require("../httpClient/remove");
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const withRetries = async (label, operation, options = {}) => {
+  const { attempts = 4, baseDelayMs = 200 } = options;
+
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) {
+        break;
+      }
+      const delayMs = baseDelayMs * 2 ** (attempt - 1);
+      console.warn(
+        `${label} failed on attempt ${attempt}/${attempts}, retrying in ${delayMs}ms:`,
+        error
+      );
+      await sleep(delayMs);
+    }
+  }
+
+  console.error(`${label} failed after ${attempts} attempts:`, lastError);
+  throw lastError;
+};
+
 const extractBlogID = (filePath) => {
   if (!filePath.startsWith(iCloudDriveDirectory)) {
     return null;
@@ -93,11 +120,20 @@ const handleFileEvent = async (event, blogID, filePath) => {
     // Schedule the event handler to run within the limiter
     await limiter.schedule(async () => {
       if (event === "add" || event === "change") {
-        await upload(blogID, pathInBlogDirectory);
+        await withRetries(
+          `upload ${blogID}/${pathInBlogDirectory}`,
+          () => upload(blogID, pathInBlogDirectory)
+        );
       } else if (event === "unlink" || event === "unlinkDir") {
-        await remove(blogID, pathInBlogDirectory);
+        await withRetries(
+          `remove ${blogID}/${pathInBlogDirectory}`,
+          () => remove(blogID, pathInBlogDirectory)
+        );
       } else if (event === "addDir") {
-        await mkdir(blogID, pathInBlogDirectory);
+        await withRetries(
+          `mkdir ${blogID}/${pathInBlogDirectory}`,
+          () => mkdir(blogID, pathInBlogDirectory)
+        );
       }
     });
   } catch (error) {
