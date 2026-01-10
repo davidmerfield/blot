@@ -34,11 +34,10 @@ module.exports = async (blogID, publish, update) => {
         const path = join(dir, name);
         await checkWeCanContinue();
         publish("Removing from iCloud", join(dir, name));
-        try {
-          await remoteDelete(blogID, path);
-        } catch (e) {
+        const deleted = await remoteDelete(blogID, path);
+        if (!deleted) {
           publish("Failed to remove", path);
-          console.log(prefix(), "Failed to remove", path, e);
+          console.log(prefix(), "Failed to remove", path);
         }
       }
     }
@@ -53,11 +52,10 @@ module.exports = async (blogID, publish, update) => {
         if (!remoteItem || (remoteItem && !remoteItem.isDirectory)) {
           await checkWeCanContinue();
           publish("Creating directory in iCloud", path);
-          try {
-            await remoteMkdir(blogID, path);
-          } catch (e) {
+          const created = await remoteMkdir(blogID, path);
+          if (!created) {
             publish("Failed to create directory", path);
-            console.log(prefix(), "Failed to create directory", path, e);
+            console.log(prefix(), "Failed to create directory", path);
             continue;
           }
         }
@@ -74,10 +72,9 @@ module.exports = async (blogID, publish, update) => {
             continue;
           }
           publish("Transferring to iCloud", path);
-          try {
-            await remoteUpload(blogID, path);
-          } catch (e) {
-            publish("Failed to upload", path, e);
+          const uploaded = await remoteUpload(blogID, path);
+          if (!uploaded) {
+            publish("Failed to upload", path);
           }
         }
       }

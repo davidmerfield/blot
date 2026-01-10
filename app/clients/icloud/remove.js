@@ -7,7 +7,12 @@ module.exports = async (blogID, path, callback) => {
 
   try {
     await fs.remove(pathOnBlot);
-    await remoteDelete(blogID, path);
+    const deleted = await remoteDelete(blogID, path);
+    if (!deleted) {
+      const error = new Error(`Failed to delete ${path} from remote`);
+      console.error(`Error removing ${pathOnBlot}:`, error);
+      return callback(error);
+    }
   } catch (error) {
     console.error(`Error removing ${pathOnBlot}:`, error);
     return callback(error);

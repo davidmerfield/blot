@@ -12,7 +12,12 @@ module.exports = async (blogID, path, contents, callback) => {
 
   try {
     await fs.outputFile(pathOnBlot, contents);
-    await remoteUpload(blogID, path);
+    const uploaded = await remoteUpload(blogID, path);
+    if (!uploaded) {
+      const error = new Error(`Failed to upload ${path} to remote`);
+      console.error(`Error writing to ${pathOnBlot}:`, error);
+      return callback(error);
+    }
   } catch (error) {
     console.error(`Error writing to ${pathOnBlot}:`, error);
     return callback(error);
