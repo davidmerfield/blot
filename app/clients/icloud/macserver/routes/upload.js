@@ -12,6 +12,11 @@ module.exports = async (req, res) => {
   const normalizedPath = normalizeMacserverPath(path);
 
   if (!blogID || !path || !modifiedTime) {
+    console.error(
+      clfdate(),
+      "Missing blogID, path, or modifiedTime header for upload request",
+      { blogID, path, modifiedTime }
+    );
     return res.status(400).send("Missing blogID, path, or modifiedTime header");
   }
 
@@ -21,7 +26,7 @@ module.exports = async (req, res) => {
   const filePath = resolve(join(basePath, normalizedPath));
 
   if (filePath !== basePath && !filePath.startsWith(`${basePath}${sep}`)) {
-    console.log(clfdate(), 
+    console.error(clfdate(), 
       "Invalid path: attempted to access parent directory",
       basePath,
       filePath
@@ -32,7 +37,12 @@ module.exports = async (req, res) => {
   }
 
   // first unwatch the blogID to prevent further events from being triggered
-  await unwatch(blogID);
+  try {
+    await unwatch(blogID);
+  } catch (error) {
+    console.error(clfdate(), `Failed to unwatch blogID (${blogID}):`, error);
+    return res.status(500).send("Failed to unwatch blog folder");
+  }
 
   let success = false;
 
@@ -61,6 +71,10 @@ module.exports = async (req, res) => {
     return res.sendStatus(200);
   } finally {
     // re-watch the blogID
-    await watch(blogID);
+    try {
+      await watch(blogID);
+    } catch (error) {
+      console.error(clfdate(), `Failed to rewatch blogID (${blogID}):`, error);
+    }
   }
 };

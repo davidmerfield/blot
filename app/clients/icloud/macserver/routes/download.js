@@ -10,6 +10,11 @@ module.exports = async (req, res) => {
   const normalizedPath = normalizeMacserverPath(path);
 
   if (!blogID || !path) {
+    console.error(
+      clfdate(),
+      "Missing blogID or path header for download request",
+      { blogID, path }
+    );
     return res.status(400).send("Missing blogID or path header");
   }
 
@@ -20,7 +25,7 @@ module.exports = async (req, res) => {
     const filePath = resolve(join(basePath, normalizedPath));
 
     if (filePath !== basePath && !filePath.startsWith(`${basePath}${sep}`)) {
-      console.log(clfdate(), 
+      console.error(clfdate(), 
         "Invalid path: attempted to access parent directory",
         basePath,
         filePath

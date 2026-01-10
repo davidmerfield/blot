@@ -9,6 +9,11 @@ module.exports = async (req, res) => {
   const path = Buffer.from(req.header("pathBase64"), "base64").toString("utf8");
 
   if (!blogID || !path) {
+    console.error(
+      clfdate(),
+      "Missing blogID or path header for mkdir request",
+      { blogID, path }
+    );
     return res.status(400).send("Missing blogID or path header");
   }
 
@@ -18,7 +23,12 @@ module.exports = async (req, res) => {
 
   // Check if the resolved path is inside the allowed directory
   if (!(dirPath === basePath || dirPath.startsWith(basePath + sep))) {
-    console.log(clfdate(), `Invalid path: attempted to access parent directory`, basePath, dirPath);
+    console.error(
+      clfdate(),
+      "Invalid path: attempted to access parent directory",
+      basePath,
+      dirPath
+    );
     return res
       .status(400)
       .send("Invalid path: attempted to access parent directory");
@@ -32,13 +42,23 @@ module.exports = async (req, res) => {
     console.log(clfdate(), `Directory already exists: ${dirPath}`);
     return res.sendStatus(200);
   } else if (stat) {
-    await fs.remove(dirPath);
+    try {
+      await fs.remove(dirPath);
+    } catch (error) {
+      console.error(clfdate(), `Failed to remove existing path (${dirPath}):`, error);
+      return res.status(500).send("Failed to remove existing path");
+    }
   }
 
   console.log(clfdate(), `Received mkdir request for blogID: ${blogID}, path: ${path}`);
 
   // first unwatch the blogID to prevent further events from being triggered
-  await unwatch(blogID);
+  try {
+    await unwatch(blogID);
+  } catch (error) {
+    console.error(clfdate(), `Failed to unwatch blogID (${blogID}):`, error);
+    return res.status(500).send("Failed to unwatch blog folder");
+  }
 
   let success = false;
   for (let i = 0; i < 5; i++) {
@@ -59,7 +79,12 @@ module.exports = async (req, res) => {
   }
 
   // re-watch the blogID
-  await watch(blogID);
+  try {
+    await watch(blogID);
+  } catch (error) {
+    console.error(clfdate(), `Failed to rewatch blogID (${blogID}):`, error);
+    return res.status(500).send("Failed to rewatch blog folder");
+  }
 
   if (!success) {
     return res

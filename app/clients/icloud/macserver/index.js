@@ -22,6 +22,11 @@ const startServer = async () => {
     const authorization = req.header("Authorization"); // New header for the Authorization secret
 
     if (authorization !== Authorization) {
+      console.error(clfdate(), "Unauthorized request", {
+        method: req.method,
+        url: req.url,
+        hasAuthorization: Boolean(authorization),
+      });
       return res.status(403).send("Unauthorized");
     }
 

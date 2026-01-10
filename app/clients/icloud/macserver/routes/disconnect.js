@@ -9,12 +9,14 @@ module.exports = async (req, res) => {
   const blogID = req.header("blogID");
 
   if (!blogID) {
+    console.error(clfdate(), "Missing blogID header for disconnect request");
     return res.status(400).send("Missing blogID header");
   }
 
   // ensure the blogID doesn't container any characters other than
   // letters, numbers and underscores
   if (!/^[a-zA-Z0-9_]+$/.test(blogID)) {
+    console.error(clfdate(), `Invalid blogID for disconnect request: ${blogID}`);
     return res.status(400).send("Invalid blogID");
   }
 

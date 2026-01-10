@@ -151,11 +151,22 @@ async function acceptSharingLink(sharingLink) {
   console.log(clfdate(), `Running AppleScript to accept sharing link: ${sharingLink}`);
   const escapedSharingLink = escapeAppleScriptString(sharingLink);
 
-  const { stdout, stderr } = await exec(
-    "osascript",
-    ["-e", appleScript(escapedSharingLink)],
-    { timeout: 15000 }
-  );
+  let stdout;
+  let stderr;
+  try {
+    ({ stdout, stderr } = await exec(
+      "osascript",
+      ["-e", appleScript(escapedSharingLink)],
+      { timeout: 15000 }
+    ));
+  } catch (error) {
+    console.error(
+      clfdate(),
+      `AppleScript execution failed for sharing link: ${sharingLink}`,
+      error
+    );
+    throw error;
+  }
 
   if (stderr && stderr.trim()) {
     throw new Error(`Unexpected AppleScript stderr: ${stderr}`);
@@ -177,10 +188,14 @@ module.exports = async (req, res) => {
   const sharingLink = req.header("sharingLink"); // New header for the sharing link
 
   if (!blogID) {
+    console.error(clfdate(), "Missing blogID header for setup request");
     return res.status(400).send("Missing blogID header");
   }
 
   if (!sharingLink) {
+    console.error(clfdate(), "Missing sharingLink header for setup request", {
+      blogID,
+    });
     return res.status(400).send("Missing sharingLink header");
   }
 
