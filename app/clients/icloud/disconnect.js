@@ -25,15 +25,15 @@ module.exports = async (blogID, callback) => {
     console.error(
       `Error during Macserver /disconnect request: ${error.message}`
     );
-    // If the server request fails, we still want to clean up local state
-    // to prevent the blog from being stuck in a connected state
-    try {
-      await database.delete(blogID);
-    } catch (dbError) {
-      console.error(
-        `Error deleting from database after disconnect failure: ${dbError.message}`
-      );
-    }
+    // If the server request fails, we need to decide whether to clean up local state.
+    // To avoid inconsistent state (local DB deleted but server still thinks connected),
+    // we do NOT delete from database on server notification failure.
+    // The blog will remain in a connected state, allowing retry of the disconnect operation.
+    // This is a fail-secure approach that maintains state consistency.
+    console.warn(
+      `Disconnect failed for blogID ${blogID}: server notification failed. ` +
+      `Local state preserved to maintain consistency. Disconnect can be retried.`
+    );
   }
 
   Blog.set(blogID, { client: "" }, async function (err) {

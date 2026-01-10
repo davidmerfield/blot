@@ -7,12 +7,14 @@ module.exports = async (blogID, path) => {
   try {
     const pathBase64 = Buffer.from(path).toString("base64");
 
-    const res = await fetch(MAC_SERVER_ADDRESS + "/mkdir", {
+    // rateLimitedFetchWithRetriesAndTimeout throws on non-OK responses,
+    // so if we reach here, the request was successful
+    await fetch(MAC_SERVER_ADDRESS + "/mkdir", {
       method: "POST",
       headers: { Authorization: MACSERVER_AUTH, blogID, pathBase64 },
     });
 
-    return res.ok;
+    return true;
   } catch (error) {
     return false;
   }

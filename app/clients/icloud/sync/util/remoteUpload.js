@@ -14,7 +14,9 @@ module.exports = async (blogID, path) => {
 
     const body = await fs.readFile(pathOnDisk);
 
-    const res = await fetch(`${MAC_SERVER_ADDRESS}/upload`, {
+    // rateLimitedFetchWithRetriesAndTimeout throws on non-OK responses,
+    // so if we reach here, the request was successful
+    await fetch(`${MAC_SERVER_ADDRESS}/upload`, {
       method: "POST",
       headers: {
         "Content-Type": "application/octet-stream",
@@ -26,7 +28,7 @@ module.exports = async (blogID, path) => {
       body,
     });
 
-    return res.ok;
+    return true;
   } catch (error) {
     return false;
   }
