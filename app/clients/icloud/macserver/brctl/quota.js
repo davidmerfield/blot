@@ -10,5 +10,10 @@ module.exports = async () => {
     throw new Error("Failed to get iCloud Drive quota");
   }
 
-  return parseInt(stdout.match(/(\d+) bytes of quota remaining/)[1]);
+  const match = stdout.match(/(\d+) bytes of quota remaining/);
+  if (!match || !match[1]) {
+    throw new Error(`Unexpected iCloud Drive quota output: ${stdout}`);
+  }
+
+  return parseInt(match[1], 10);
 };

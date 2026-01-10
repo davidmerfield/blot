@@ -12,6 +12,7 @@ module.exports = async (req, res) => {
     result.icloud_bytes_available = await brctl.quota();
   } catch (error) {
     console.error(`Error getting iCloud Drive quota: ${error}`);
+    result.icloud_bytes_available = null;
   }
 
   try {
