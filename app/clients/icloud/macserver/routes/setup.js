@@ -179,14 +179,14 @@ module.exports = async (req, res) => {
     `Received setup request for blogID: ${blogID}, sharingLink: ${sharingLink}`
   );
 
-  res.sendStatus(200);
-
   try {
     await setupBlog(blogID, sharingLink);
     console.log(`Setup complete for blogID: ${blogID}`);
     await status(blogID, { acceptedSharingLink: true, error: null });
+    return res.sendStatus(200);
   } catch (error) {
     console.error(`Setup failed for blogID (${blogID}):`, error);
     await status(blogID, { acceptedSharingLink: false, error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
