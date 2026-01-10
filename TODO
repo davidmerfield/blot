@@ -1,3 +1,6 @@
+Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
+- test case conflict code fix with similar folder structure to michaels
+
 Dropbox client
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
 - Bug: Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
@@ -40,12 +43,11 @@ Dropbox client
       - updates
 
 iCloud client:
-- Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
-- Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
-- Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
 - Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset). 
   - can we solve by running reset to blot after running reset from blot? perhaps to be safe we run reset to blot without 'delete' powers?
 - iCloud: when you change the case of a folder, the files (and posts) inside duplicate and are stored twice
+- Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
+- Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
 - Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
 - Investigate the 500 timeout errors – are these caused by pending syncs / folder locks?
   - tail -n 1000000 /var/instance-ssd/logs/access.log | grep " 500 " | grep "/clients/icloud"

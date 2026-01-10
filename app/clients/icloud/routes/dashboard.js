@@ -78,6 +78,10 @@ dashboard
         return next(new Error("Paste the sharing link into the box"));
       }
 
+      const { folder, done } = await establishSyncLock(blogID);
+      folder.status("Waiting for folder setup to complete...");
+      await done();
+
       // Make the request to the Macserver /setup endpoint
       console.log(`Sending setup request to Macserver for blogID: ${blogID}`);
       try {
@@ -111,9 +115,6 @@ dashboard
       }
 
       console.log(`Macserver /setup request succeeded for blogID: ${blogID}`);
-      const { folder, done } = await establishSyncLock(blogID);
-      folder.status("Waiting for folder setup to complete...");
-      await done();
 
       // Redirect back to the dashboard
       res.redirect(req.baseUrl);
