@@ -12,7 +12,7 @@ module.exports = async (blogID, path, contents, callback) => {
     const pathOnBlot = localPath(blogID, path);
     await fs.outputFile(pathOnBlot, contents);
   } catch (error) {
-    console.error(`Error writing to ${pathOnBlot}:`, error);
+    console.error(`Blog: ${blogID} Error writing to ${path}:`, error);
     return callback(error);
   }
 
