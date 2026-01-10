@@ -81,6 +81,12 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
   );
   throw new Error("Invalid sharing link");
 });
+const escapeAppleScriptString = (value) =>
+  String(value)
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, "\\\"")
+    .replace(/\r\n|\r|\n/g, "\\n");
+
 // Used the accessibility inspector to find the UI elements to interact with
 const appleScript = (sharingLink) => `
 -- Open the specified sharing link in Finder
@@ -142,10 +148,11 @@ end try
 
 async function acceptSharingLink(sharingLink) {
   console.log(`Running AppleScript to accept sharing link: ${sharingLink}`);
+  const escapedSharingLink = escapeAppleScriptString(sharingLink);
 
   const { stdout, stderr } = await exec("osascript", [
     "-e",
-    appleScript(sharingLink),
+    appleScript(escapedSharingLink),
   ]);
 
   if (stderr && stderr.trim()) {
