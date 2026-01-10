@@ -6,6 +6,13 @@ const config = require("config");
 const MACSERVER_URL = config.icloud.server_address; // The Macserver base URL from config
 const MACSERVER_AUTH = config.icloud.secret; // The Macserver Authorization secret from config
 
+const removeClientFromBlog = (blogID) => new Promise((resolve, reject) => {
+  Blog.set(blogID, { client: "" }, function (err) {
+    if (err) return reject(err);
+    resolve();
+  });
+});
+
 module.exports = async (blogID, callback) => {
   try {
     // First, notify the Mac server to disconnect
@@ -21,6 +28,10 @@ module.exports = async (blogID, callback) => {
 
     // Only delete from database after successful server notification
     await database.delete(blogID);
+
+    await removeClientFromBlog(blogID);
+
+    callback();
   } catch (error) {
     console.error(
       `Error during Macserver /disconnect request: ${error.message}`
@@ -34,9 +45,7 @@ module.exports = async (blogID, callback) => {
       `Disconnect failed for blogID ${blogID}: server notification failed. ` +
       `Local state preserved to maintain consistency. Disconnect can be retried.`
     );
-  }
 
-  Blog.set(blogID, { client: "" }, async function (err) {
-    callback();
-  });
+    callback(error);
+  }
 };
