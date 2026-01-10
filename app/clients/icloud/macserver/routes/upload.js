@@ -19,23 +19,33 @@ module.exports = async (req, res) => {
   // first unwatch the blogID to prevent further events from being triggered
   await unwatch(blogID);
 
-  for (let i = 0; i < 10; i++) {
-    try {
-      await fs.outputFile(filePath, req.body);
-      console.log(`Wrote file: ${filePath}`);
-      const modifiedTimeDate = new Date(parseInt(modifiedTime, 10));
-      await fs.utimes(filePath, modifiedTimeDate, modifiedTimeDate);
-      console.log(`Set modified time for file: ${filePath}`);
-      break;
-    } catch (error) {
-      console.error(`Failed to write file (${filePath}):`, error);
-      await new Promise((resolve) => setTimeout(resolve, 1000 * i)); // Exponential backoff
+  let success = false;
+
+  try {
+    for (let i = 0; i < 10; i++) {
+      try {
+        await fs.outputFile(filePath, req.body);
+        success = true;
+        console.log(`Wrote file: ${filePath}`);
+        const modifiedTimeDate = new Date(parseInt(modifiedTime, 10));
+        await fs.utimes(filePath, modifiedTimeDate, modifiedTimeDate);
+        console.log(`Set modified time for file: ${filePath}`);
+        break;
+      } catch (error) {
+        success = false;
+        console.error(`Failed to write file (${filePath}):`, error);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * i)); // Exponential backoff
+      }
     }
+
+    if (!success) {
+      return res.status(500).send("Failed to write file after retries");
+    }
+
+    console.log(`Recieved upload of file: ${filePath}`);
+    return res.sendStatus(200);
+  } finally {
+    // re-watch the blogID
+    await watch(blogID);
   }
-
-  // re-watch the blogID
-  await watch(blogID);
-
-  console.log(`Recieved upload of file: ${filePath}`);
-  res.sendStatus(200);
 };
