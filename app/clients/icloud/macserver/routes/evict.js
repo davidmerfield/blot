@@ -22,12 +22,14 @@ module.exports = async (req, res) => {
   // first unwatch the blogID to prevent further events from being triggered
   await unwatch(blogID);
 
-  await brctl.evict(filePath);
+  try {
+    await brctl.evict(filePath);
 
-  console.log(`Handled file eviction: ${filePath}`);
-
-  // re-watch the blogID
-  await watch(blogID);
+    console.log(`Handled file eviction: ${filePath}`);
+  } finally {
+    // re-watch the blogID
+    await watch(blogID);
+  }
 
   res.sendStatus(200);
 };
