@@ -1,6 +1,7 @@
 const { join, resolve, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const recursiveList = require("../util/recursiveList");
+const clfdate = require("helper/clfdate");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
@@ -19,7 +20,7 @@ module.exports = async (req, res) => {
   const dirPath = resolve(join(basePath, normalizedPath));
 
   if (dirPath !== basePath && !dirPath.startsWith(basePath + sep)) {
-    console.log(
+    console.log(clfdate(), 
       `Invalid path: attempted to access parent directory`,
       basePath,
       dirPath
@@ -29,7 +30,7 @@ module.exports = async (req, res) => {
       .send("Invalid path: attempted to access parent directory");
   }
 
-  console.log(
+  console.log(clfdate(), 
     `Received recursiveList request for blogID: ${blogID}, path: ${path}`
   );
 
@@ -37,7 +38,7 @@ module.exports = async (req, res) => {
     await recursiveList(dirPath, 0);
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Error performing recursive list", { dirPath, error });
+    console.error(clfdate(), "Error performing recursive list", { dirPath, error });
     res.status(500).json({ success: false, error: error.message });
   }
 };

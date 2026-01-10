@@ -1,4 +1,5 @@
 const { watch } = require("../watcher");
+const clfdate = require("helper/clfdate");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
@@ -6,6 +7,6 @@ module.exports = async (req, res) => {
   // watch the blog
   await watch(blogID);
 
-  console.log(`Recieved watch request for: ${blogID}`);
+  console.log(clfdate(), `Recieved watch request for: ${blogID}`);
   res.sendStatus(200);
 };

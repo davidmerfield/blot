@@ -3,6 +3,7 @@ const { promisify } = require("util");
 const fs = require("fs-extra");
 const statfs = promisify(require("fs").statfs);
 const { iCloudDriveDirectory } = require("../config");
+const clfdate = require("helper/clfdate");
 
 module.exports = async (req, res) => {
   const result = {};
@@ -11,7 +12,7 @@ module.exports = async (req, res) => {
     // get iCloud Drive free space in bytes
     result.icloud_bytes_available = await brctl.quota();
   } catch (error) {
-    console.error(`Error getting iCloud Drive quota: ${error}`);
+    console.error(clfdate(), `Error getting iCloud Drive quota: ${error}`);
     result.icloud_bytes_available = null;
   }
 
@@ -20,7 +21,7 @@ module.exports = async (req, res) => {
     // get disk free space in bytes
     result.disk_bytes_available = stats.bavail * stats.bsize
   } catch (error) {
-    console.error(`Error getting disk free space: ${error}`);
+    console.error(clfdate(), `Error getting disk free space: ${error}`);
   }
 
   try {
@@ -31,9 +32,9 @@ module.exports = async (req, res) => {
 
     result.blogs_connected = blogs.filter((blog) => blog.isDirectory()).length;
   } catch (error) {
-    console.error(`Error getting number of blogs connected: ${error}`);
+    console.error(clfdate(), `Error getting number of blogs connected: ${error}`);
   }
 
-  console.log("Sending stats:", result);
+  console.log(clfdate(), "Sending stats:", result);
   res.json(result);
 };

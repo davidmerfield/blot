@@ -1,4 +1,5 @@
 require("dotenv").config();
+const clfdate = require("helper/clfdate");
 
 const fs = require("fs-extra");
 
@@ -24,9 +25,9 @@ fs.access(
   iCloudDriveDirectory,
   fs.constants.R_OK | fs.constants.W_OK | fs.constants.X_OK
 )
-  .then(() => console.log(`Directory ${iCloudDriveDirectory} is accessible`))
+  .then(() => console.log(clfdate(), `Directory ${iCloudDriveDirectory} is accessible`))
   .catch((err) => {
-    console.error(`Directory ${iCloudDriveDirectory} is not accessible:`, err);
+    console.error(clfdate(), `Directory ${iCloudDriveDirectory} is not accessible:`, err);
     process.exit(1);
   });
 

@@ -1,5 +1,6 @@
 const { join, resolve, isAbsolute, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
+const clfdate = require("helper/clfdate");
 
 const brctl = require("../brctl");
 
@@ -23,7 +24,7 @@ module.exports = async (req, res) => {
     return res.status(400).send("Absolute paths are not allowed");
   }
 
-  console.log(`Received evict request for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Received evict request for blogID: ${blogID}, path: ${path}`);
 
   const basePath = resolve(join(iCloudDriveDirectory, blogID));
   const filePath = resolve(basePath, path);
@@ -38,7 +39,7 @@ module.exports = async (req, res) => {
   try {
     await brctl.evict(filePath);
 
-    console.log(`Handled file eviction: ${filePath}`);
+    console.log(clfdate(), `Handled file eviction: ${filePath}`);
   } finally {
     // re-watch the blogID
     await watch(blogID);

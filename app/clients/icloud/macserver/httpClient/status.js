@@ -1,5 +1,6 @@
 const { remoteServer, Authorization } = require("../config");
 const fetch = require("./rateLimitedFetchWithRetriesAndTimeout");
+const clfdate = require("helper/clfdate");
 
 module.exports = async (...args) => {
   const [blogID, status] = args;
@@ -16,7 +17,7 @@ module.exports = async (...args) => {
     throw new Error("Invalid number of arguments: expected 2");
   }
 
-  console.log(`Sending status for blogID: ${blogID}`, status);
+  console.log(clfdate(), `Sending status for blogID: ${blogID}`, status);
 
   await fetch(`${remoteServer}/status`, {
     method: "POST",
@@ -28,5 +29,5 @@ module.exports = async (...args) => {
     body: JSON.stringify(status),
   });
 
-  console.log(`Status sent for blogID: ${blogID}`);
+  console.log(clfdate(), `Status sent for blogID: ${blogID}`);
 };

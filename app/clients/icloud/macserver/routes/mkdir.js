@@ -2,6 +2,7 @@ const fs = require("fs-extra");
 const { resolve, join, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { watch, unwatch } = require("../watcher");
+const clfdate = require("helper/clfdate");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
@@ -17,24 +18,24 @@ module.exports = async (req, res) => {
 
   // Check if the resolved path is inside the allowed directory
   if (!(dirPath === basePath || dirPath.startsWith(basePath + sep))) {
-    console.log(`Invalid path: attempted to access parent directory`, basePath, dirPath);
+    console.log(clfdate(), `Invalid path: attempted to access parent directory`, basePath, dirPath);
     return res
       .status(400)
       .send("Invalid path: attempted to access parent directory");
   }
 
-  console.log(`Received mkdir request for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Received mkdir request for blogID: ${blogID}, path: ${path}`);
 
   const stat = await fs.stat(dirPath).catch(() => null);
 
   if (stat && stat.isDirectory()) {
-    console.log(`Directory already exists: ${dirPath}`);
+    console.log(clfdate(), `Directory already exists: ${dirPath}`);
     return res.sendStatus(200);
   } else if (stat) {
     await fs.remove(dirPath);
   }
 
-  console.log(`Received mkdir request for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Received mkdir request for blogID: ${blogID}, path: ${path}`);
 
   // first unwatch the blogID to prevent further events from being triggered
   await unwatch(blogID);
@@ -43,11 +44,11 @@ module.exports = async (req, res) => {
   for (let i = 0; i < 5; i++) {
     try {
       await fs.ensureDir(dirPath);
-      console.log(`Created directory: ${dirPath}`);
+      console.log(clfdate(), `Created directory: ${dirPath}`);
       success = true;
       break;
     } catch (error) {
-      console.error(`Failed to create directory (${dirPath}):`, error);
+      console.error(clfdate(), `Failed to create directory (${dirPath}):`, error);
       if (i < 4) {
         // Only wait if we're going to retry
         await new Promise((resolve) =>

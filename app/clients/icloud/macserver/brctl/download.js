@@ -3,11 +3,12 @@ const fs = require("fs-extra");
 const exec = require("../exec");
 const TIMEOUT = 15 * 1000; // 15 seconds
 const POLLING_INTERVAL = 200; // 200ms
+const clfdate = require("helper/clfdate");
 
 const BLOCK_SIZE = 512;
 
 module.exports = async (path) => {
-  console.log(`Downloading file from iCloud: ${path}`);
+  console.log(clfdate(), `Downloading file from iCloud: ${path}`);
 
   const stat = await fs.stat(path);
   const start = Date.now();
@@ -27,20 +28,20 @@ module.exports = async (path) => {
   // file we get the -11 error code. So we attempt to download the file if it is zero bytes
   const isDownloaded = stat.blocks === expectedBlocks && stat.size !== 0;
 
-  console.log(
+  console.log(clfdate(), 
     `Initial blocks: ${stat.blocks} / ${expectedBlocks} ${
       stat.size === 0 ? " (zero byte file: downloading anyway)" : ""
     }`
   );
 
   if (isDownloaded) {
-    console.log(`File already downloaded: ${path}`);
+    console.log(clfdate(), `File already downloaded: ${path}`);
     return stat;
   }
 
   const pathInDrive = path.replace(iCloudDriveDirectory, "").slice(1);
 
-  console.log(`Issuing brctl download for path: ${pathInDrive}`);
+  console.log(clfdate(), `Issuing brctl download for path: ${pathInDrive}`);
 
   const { stdout, stderr } = await exec("brctl", ["download", pathInDrive], {
     cwd: iCloudDriveDirectory,
@@ -63,10 +64,10 @@ module.exports = async (path) => {
     // we re-calculate the expected blocks in case the file size has changed
     const expectedBlocks = roundUpBy8(Math.ceil(stat.size / BLOCK_SIZE));
 
-    console.log(`Latest blocks: ${stat.blocks} / ${expectedBlocks}`);
+    console.log(clfdate(), `Latest blocks: ${stat.blocks} / ${expectedBlocks}`);
 
     if (stat.blocks === expectedBlocks) {
-      console.log(`Finish brctl download: ${path}`);
+      console.log(clfdate(), `Finish brctl download: ${path}`);
       return stat;
     } 
   }

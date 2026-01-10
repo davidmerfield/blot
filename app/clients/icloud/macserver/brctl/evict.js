@@ -3,9 +3,10 @@ const fs = require("fs-extra");
 const exec = require("../exec");
 const TIMEOUT = 10 * 1000; // 10 seconds
 const POLLING_INTERVAL = 200; // 200 ms
+const clfdate = require("helper/clfdate");
 
 module.exports = async (path) => {
-  console.log(`Evicting: ${path}`);
+  console.log(clfdate(), `Evicting: ${path}`);
 
   const stat = await fs.stat(path);
   const start = Date.now();
@@ -17,16 +18,16 @@ module.exports = async (path) => {
   const expectedBlocks = 0;
   const isEvicted = stat.blocks === expectedBlocks;
 
-  console.log(`Blocks: ${stat.blocks} / ${expectedBlocks}`);
+  console.log(clfdate(), `Blocks: ${stat.blocks} / ${expectedBlocks}`);
 
   if (isEvicted) {
-    console.log(`File already evicted: ${path}`);
+    console.log(clfdate(), `File already evicted: ${path}`);
     return stat;
   }
 
   const pathInDrive = path.replace(iCloudDriveDirectory, "").slice(1);
 
-  console.log(`Issuing brctl evict for path: ${pathInDrive}`);
+  console.log(clfdate(), `Issuing brctl evict for path: ${pathInDrive}`);
 
   const { stdout, stderr } = await exec("brctl", ["evict", pathInDrive], {
     cwd: iCloudDriveDirectory,
@@ -41,13 +42,13 @@ module.exports = async (path) => {
   }
 
   while (Date.now() - start < TIMEOUT) {
-    console.log(`Checking evict status: ${path}`);
+    console.log(clfdate(), `Checking evict status: ${path}`);
     const stat = await fs.stat(path);
 
-    console.log(`Blocks: ${stat.blocks} / ${expectedBlocks}`);
+    console.log(clfdate(), `Blocks: ${stat.blocks} / ${expectedBlocks}`);
 
     if (stat.blocks === expectedBlocks) {
-      console.log(`Eviction complete: ${path}`);
+      console.log(clfdate(), `Eviction complete: ${path}`);
       return stat;
     } else {
       await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL));
