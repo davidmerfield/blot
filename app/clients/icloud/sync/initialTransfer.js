@@ -16,6 +16,7 @@ module.exports = async function initialTransfer(blogID) {
     await database.store(blogID, { transferringToiCloud: true, error: null });
     folder.status("Resolving case conflicts");
     await resolveCaseConflicts(blogID, folder.status, folder.update);
+    folder.status("Syncing to iCloud");
     await syncToiCloud(blogID, folder.status, folder.update);
 
     // Now that the transfer is complete, notify the Macserver to begin watching the iCloud folder
