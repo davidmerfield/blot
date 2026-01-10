@@ -76,15 +76,35 @@ dashboard
 
       // Make the request to the Macserver /setup endpoint
       console.log(`Sending setup request to Macserver for blogID: ${blogID}`);
-      await fetch(`${MACSERVER_URL}/setup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: MACSERVER_AUTH, // Use the Macserver Authorization header
-          blogID: blogID,
-          sharingLink: sharingLink || "", // Include the sharingLink header, even if empty
-        },
-      });
+      try {
+        await fetch(`${MACSERVER_URL}/setup`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: MACSERVER_AUTH, // Use the Macserver Authorization header
+            blogID: blogID,
+            sharingLink: sharingLink || "", // Include the sharingLink header, even if empty
+          },
+        });
+      } catch (error) {
+        console.error(
+          `Macserver /setup request failed for blogID: ${blogID}`,
+          error
+        );
+        // Clean up the database entry if setup failed
+        try {
+          await database.delete(blogID);
+        } catch (dbError) {
+          console.error(
+            `Error cleaning up database after setup failure: ${dbError.message}`
+          );
+        }
+        return next(
+          new Error(
+            `Failed to set up folder: ${error.message || "Unknown error"}`
+          )
+        );
+      }
 
       console.log(`Macserver /setup request succeeded for blogID: ${blogID}`);
       const { folder, done } = await establishSyncLock(blogID);
