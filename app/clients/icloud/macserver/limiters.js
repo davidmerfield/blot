@@ -29,7 +29,10 @@ const removeLimiterForBlogID = (blogID) => {
   limiters.delete(blogID);
 };
 
+const getLimiterCount = () => limiters.size;
+
 module.exports = {
   getLimiterForBlogID,
   removeLimiterForBlogID,
+  getLimiterCount,
 };

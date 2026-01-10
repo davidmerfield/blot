@@ -1,6 +1,10 @@
 const chokidar = require("chokidar");
 const fs = require("fs-extra");
-const { getLimiterForBlogID } = require("../limiters");
+const {
+  getLimiterForBlogID,
+  removeLimiterForBlogID,
+  getLimiterCount,
+} = require("../limiters");
 const { iCloudDriveDirectory } = require("../config");
 const { constants } = require("fs");
 const { join } = require("path");
@@ -53,6 +57,13 @@ const handleFileEvent = async (event, blogID, filePath) => {
     // Handle the deletion of the entire blog directory
     if (event === "unlinkDir" && pathInBlogDirectory === "") {
       console.warn(`Blog directory deleted: ${blogID}`);
+      const limiterCountBefore = getLimiterCount();
+      removeLimiterForBlogID(blogID);
+      const limiterCountAfter = getLimiterCount();
+      console.assert(
+        limiterCountAfter < limiterCountBefore,
+        `Expected limiter map size to decrease after deleting ${blogID}. Before: ${limiterCountBefore}, After: ${limiterCountAfter}`
+      );
       await status(blogID, { error: "Blog directory deleted" });
       await unwatch(blogID); // Stop watching this blog folder
       removeBlog(blogID); // Remove from largest files map
