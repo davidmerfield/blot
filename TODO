@@ -1,3 +1,6 @@
+Make iCloud sync issue and Dropbox sync issue emails more useful
+- script to create log for a single site
+
 CLIENT SETUP FLOW:
 - RESET FROM BLOT (NON DESTRUCTIVE, deduplicate on conflict)
 - RESET TO BLOT (TWICE?) then sync/FIX then begin ordinary syncing
