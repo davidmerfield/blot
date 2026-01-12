@@ -1,6 +1,6 @@
 const database = require("../../database");
 const initialTransfer = require("../../sync/initialTransfer");
-const establishSyncLock = require("../../util/establishSyncLock");
+const establishSyncLock = require("../../../sync/establishSyncLock");
 module.exports = async function (req, res) {
   const blogID = req.header("blogID");
   const status = req.body;

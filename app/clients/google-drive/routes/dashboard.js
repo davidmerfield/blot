@@ -1,7 +1,7 @@
 const clfdate = require("helper/clfdate");
 const database = require("../database");
 const disconnect = require("../disconnect");
-const establishSyncLock = require("../util/establishSyncLock");
+const establishSyncLock = require("../../sync/establishSyncLock");
 const createDriveClient = require("../serviceAccount/createDriveClient");
 const requestServiceAccount = require("clients/google-drive/serviceAccount/request");
 const parseBody = require("body-parser").urlencoded({ extended: false });
