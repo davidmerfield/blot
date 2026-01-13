@@ -1,5 +1,39 @@
 describe("vimeo embeds", function () {
   const vimeo = require("../vimeo");
+  const nock = require("nock");
+
+  beforeEach(function () {
+    nock.disableNetConnect();
+
+    nock("https://vimeo.com")
+      .get("/api/oembed.json")
+      .query(true)
+      .reply(function (uri) {
+        const requestUrl = new URL(`https://vimeo.com${uri}`).searchParams.get(
+          "url"
+        );
+
+        if (requestUrl && requestUrl.startsWith("https://vimeo.com/87952436")) {
+          return [
+            200,
+            {
+              video_id: 87952436,
+              width: 16,
+              height: 9,
+              thumbnail_url:
+                "https://i.vimeocdn.com/video/466717816-33ad450eea4c71be9149dbe2e0d18673874917cadd5f1af29de3731e4d22a77f-d_295x166?region=us",
+            },
+          ];
+        }
+
+        return [404, {}];
+      });
+  });
+
+  afterEach(function () {
+    nock.cleanAll();
+    nock.enableNetConnect();
+  });
   it("handles an empty href", function (done) {
     const href = "";
     vimeo(href, (err, template) => {
