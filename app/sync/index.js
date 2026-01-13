@@ -50,29 +50,50 @@ function sync(blogID, callback) {
         stale: LOCK_STALE_TIMEOUT_MS,
         update: LOCK_UPDATE_INTERVAL_MS,
         retries,
-        onCompromised: async err => {
-          const diagnostics = await gatherLockDiagnostics({
+        onCompromised: (err) => {
+          // gatherLockDiagnostics returns a promise, handle via then/catch.
+          gatherLockDiagnostics({
             blogID,
             lockPath,
             lockAcquiredAt
+          })
+          .then(diagnostics => {
+            console.error(clfdate(), "[LOCK COMPROMISED]", {
+              blogID,
+              lockPath,
+              error: {
+                message: err.message,
+                code: err.code,
+                stack: err.stack
+              },
+              lockConfig: {
+                stale: LOCK_STALE_TIMEOUT_MS,
+                update: LOCK_UPDATE_INTERVAL_MS
+              },
+              diagnostics
+            });
+          })
+          .catch(diagErr => {
+            // If diagnostics gathering fails, still log compromise
+            console.error(clfdate(), "[LOCK COMPROMISED] (diagnostics error)", {
+              blogID,
+              lockPath,
+              error: {
+                message: err.message,
+                code: err.code,
+                stack: err.stack
+              },
+              lockConfig: {
+                stale: LOCK_STALE_TIMEOUT_MS,
+                update: LOCK_UPDATE_INTERVAL_MS
+              },
+              diagnosticsError: diagErr
+            });
+          })
+          .finally(() => {
+            // Ensure the error is always thrown synchronously
+            throw err;
           });
-
-          console.error(clfdate(), "[LOCK COMPROMISED]", {
-            blogID,
-            lockPath,
-            error: {
-              message: err.message,
-              code: err.code,
-              stack: err.stack
-            },
-            lockConfig: {
-              stale: LOCK_STALE_TIMEOUT_MS,
-              update: LOCK_UPDATE_INTERVAL_MS
-            },
-            diagnostics
-          });
-
-          throw err;
         }
       });
       lockAcquiredAt = Date.now();
