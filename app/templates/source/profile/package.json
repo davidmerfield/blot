@@ -1,71 +1,71 @@
 {
-  "name": "Profile",
-  "isPublic": false,
-  "locals": {
-    "author": "Your Name",
-    "description": "A short description.",
-    "email": "email@site.url",
-    "microblog_user": "enter-username",
-    "page_size": 20
-  },
-  "views": {
-    "tagged": {
-      "partials": {
-        "title": "Entries tagged {{{tag}}} from {{{title}}}",
-        "description": "All of the entries posted on {{{title}}} tagged {{{tag}}}"
-      }
-    },
-    "error": {
-      "partials": {
-        "title": "{{{error.title}}} - {{{title}}}",
-        "description": "Error on {{{title}}}"
-      }
-    },
-    "public": {
-      "partials": {
-        "title": "Index of {{{path}}}",
-        "description": "All the files and folders inside {{{path}}}"
-      }
-    },
-    "script": {
-      "url": "/script.js"
-    },
-    "sitemap": {
-      "url": "/sitemap.xml"
-    },
-    "robots": {
-      "url": "/robots.txt"
-    },
-    "archives.html": {
-      "url": "/archives",
-      "partials": {
-        "title": "Archives - {{{title}}}",
-        "description": "All the entries posted on {{{title}}}"
-      }
-    },
-    "entries.html": {
-      "locals": {
-        "landing_layout": true
-      },
-      "partials": {
-        "title": "{{{title}}}",
-        "description": "The latest entries posted on {{{title}}}"
-      }
-    },
-    "entry.html": {
-      "partials": {
-        "title": "{{{entry.title}}} - {{{title}}}",
-        "description": "{{{entry.summary}}}"
-      }
-    },
-    "search.html": {
-      "locals": {
-        "hide_footer_search": true
-      },
-      "partials": {
-        "title": "Search - {{{title}}}",
-        "description": "Search all the entries posted on {{{title}}}"
-      }
-    }
-  }
+	"name": "Profile",
+	"locals": {
+		"title_text": "Hi, I’m John Smith",
+		"subtitle_text": "Multidisciplinary designer specializing in the intersection of product, design and engineering. Working at Play.",
+		"page_size": 10,
+		"main_content_width": 440,
+		"main_content_width_range": [
+			100,
+			800
+		],
+		"text_color": "#111111",
+		"background_color": "#ffffff",
+		"link_color": "#0070f3",
+		"font": {
+			"id": "geist-mono",
+			"font_size": 14.8,
+			"line_height": 1.8
+		}
+	},
+	"enabled": true,
+	"views": {
+		"archive.html": {
+			"url": "/archive",
+			"partials": {
+				"title": "Archive – {{{title}}}",
+				"description": "A list of all posts published on {{{title}}}"
+			}
+		},
+		"posts.html": {
+			"url": [
+				"/posts",
+				"/posts/page/:page",
+				"/posts/:tag",
+				"/posts/:tag/page/:page"
+			],
+			"partials": {
+				"title": "{{{title}}}",
+				"description": "Latest entries from {{{title}}}"
+			}
+		},
+		"index.html": {
+			"url": [
+				"/", "/page/:page"
+			],
+			"partials": {
+				"title": "{{{title}}}",
+				"description": "Latest entries from {{{title}}}"
+			}
+		},
+		"entry.html": {
+			"partials": {
+				"title": "{{{entry.title}}} – {{{title}}}",
+				"description": "{{{entry.summary}}}"
+			}
+		},
+		"error.html": {
+			"partials": {
+				"title": "{{{error.title}}} – {{{title}}}",
+				"description": "{{{error.message}}}"
+			}
+		},
+		"search.html": {
+			"url": "/search",
+			"partials": {
+				"title": "Search – {{{title}}}",
+				"description": "Search posts on {{{title}}}"
+			}
+		}
+	}
 }

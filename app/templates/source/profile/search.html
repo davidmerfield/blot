@@ -1,53 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+    <main class="content">
+      <h2 class="section-title">Archive</h2>
+      {{> search-form}}
+      <div class="archive-list">
+        {{#query}}
+        {{^entries}}
+        <p>No results found for "{{query}}".</p>
+        {{/entries}}
+        {{/query}}
+        {{#entries}}
+        <div class="archive-item">
+          <a class="archive-title" href="{{{url}}}">{{title}}</a>
+          <span class="archive-date">{{#formatDate}}MMM YYYY{{/formatDate}}</span>
+        </div>
+        {{/entries}}
+      </div>
 
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta content="{{author}}" name="author">
-  <meta content="{{description}}" name="description">
-  <title>{{> title}}</title>
-  <link rel="preconnect" href="{{{cdn}}}" />
-  <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
-  <link href="{{{avatar}}}" rel="icon">
-  <link href="/feed.rss" title="{{title}}" type="application/rss+xml" rel="alternate">
-</head>
-
-<body>
-  {{> navigation}}
-
-  <section id="wrapper">
-    <form method="get" id="search" action="/search">
-      <input style="display:block;margin:0 auto" class="field" type="text" name="q" autofocus value="{{query}}" maxlength="255" placeholder="To search, type and hit Enter&hellip;" />
-      <input type="submit" value="Search" style="display: none;" />
-    </form>
-
-    {{#query}}
-    {{^entries.length}}
-    <center>
-      <p><small>Nothing found.</small></p>
-    </center>
-    {{/entries.length}}
-    {{#entries.length}}
-    <center>
-      <p><small>{{entries.length}} entries found </small></p>
-    </center>
-
-    {{/entries.length}}
-    {{/query}} {{#entries}}
-    <p class="h-entry">
-      <a href="{{{url}}}" class="u-url"><span class="dt-published" datetime="{{date}}">{{date}}</span></a>:
-      <span class="p-name"><b></b></span>
-      <span class="p-summary">{{title}}</span>
-    </p>
-    {{/entries}}
-  </section>
-
-  <footer id="footer">
+    </main>
     {{> footer}}
-  </footer>
-
-</body>
-
+  </body>
 </html>

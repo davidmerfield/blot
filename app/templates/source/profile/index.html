@@ -4,27 +4,31 @@
   <body>
     {{> header}}
     <main class="content">
-      {{#entry}}
-      <article class="entry-content">
-        <h1>{{title}}</h1>
+        
+      {{#posts}}
+      <article>
+        <h3><a href="{{{url}}}">{{title}}</a></h3>
         {{#date}}
         <div class="meta">{{date}}</div>
         {{/date}}
         {{{body}}}
       </article>
-      {{#adjacent}}
+      <hr>
+
+    {{#pagination}}
       <nav class="pagination">
         {{#previous}}
-        <a href="{{{url}}}">&larr; {{title}}</a>
+        <a href="/page/{{previous}}">&larr;</a>
         {{/previous}}
-        <span></span>
+        <span>{{current}} of {{total}}</span>
         {{#next}}
-        <a href="{{{url}}}">{{title}} &rarr;</a>
+        <a href="/page/{{next}}">&rarr;</a>
         {{/next}}
       </nav>
-      {{/adjacent}}
-      {{> pluginHTML}}
-      {{/entry}}
+      {{/pagination}}      
+      {{/posts}}
+
+      
     </main>
     {{> footer}}
   </body>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+    <main class="content">
+
+      <h2 class="section-title">Posts</h2>
+
+      {{> all-tags}}
+
+      {{#entries}}
+      <article class="card">
+        <h3><a href="{{{url}}}">{{title}}</a></h3>
+        {{#date}}
+        <div class="meta">{{date}}</div>
+        {{/date}}
+        {{{body}}}
+      </article>
+      {{/entries}}
+
+      {{#pagination}}
+      <nav class="pagination">
+        {{#previous}}
+        <a href="/page/{{previous}}">&larr; Newer</a>
+        {{/previous}}
+        <span>Page {{current}} of {{total}}</span>
+        {{#next}}
+        <a href="/page/{{next}}">Older &rarr;</a>
+        {{/next}}
+      </nav>
+      {{/pagination}}
+    </main>
+    {{> footer}}
+  </body>
+</html>
