@@ -482,6 +482,14 @@ body.position-top label[for="toggle"] {
   margin: 1.3em 0
 }
 
+.entry p,
+.entry li,
+.entry blockquote,
+.entry figcaption {
+  orphans: 2;
+  widows: 2;
+}
+
 
 
 .entry .videoContainer {

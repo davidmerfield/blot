@@ -345,6 +345,14 @@ p {
 margin-block-start: 16px
 }
 
+p,
+li,
+blockquote,
+figcaption {
+  orphans: 2;
+  widows: 2;
+}
+
 .entry h1, .entry h2, .entry h3 {
   font-size: 17.6px;
   padding-bottom: 4px;

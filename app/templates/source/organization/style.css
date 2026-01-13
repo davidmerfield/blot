@@ -114,6 +114,14 @@ p {
   margin-bottom: 1rem;
 }
 
+p,
+li,
+blockquote,
+figcaption {
+  orphans: 2;
+  widows: 2;
+}
+
 abbr[title],
 abbr[data-original-title] {
   text-decoration: underline;

@@ -491,6 +491,8 @@ nav.main-nav a.cta:hover {
 
 p, li {
   line-height: 1.7;
+  orphans: 2;
+  widows: 2;
 }
 
 h1, h2, h3 {

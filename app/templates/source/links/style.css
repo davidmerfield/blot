@@ -395,6 +395,14 @@ form input:focus,
 
 .entry pre {white-space: pre-wrap;}
 
+.entry p,
+.entry li,
+.entry blockquote,
+.entry figcaption {
+  orphans: 2;
+  widows: 2;
+}
+
 .entry blockquote {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -875,4 +883,3 @@ input#toggle {
         display: none;
       }
     }
-
