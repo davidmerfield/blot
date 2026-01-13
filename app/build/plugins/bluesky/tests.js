@@ -1,8 +1,29 @@
 describe("bluesky plugin", function () {
   const replaceURLsWithEmbeds = require("./index.js").render;
   const cheerio = require("cheerio");
+  const nock = require("nock");
 
   global.test.timeout(10000); // 10 seconds
+
+  beforeEach(function () {
+    nock.disableNetConnect();
+
+    const html =
+      "<blockquote class=\"bluesky-embed\" data-bluesky-uri=\"at://example.test/post/123\">" +
+      "<p lang=\"en\">Example Bluesky post</p>" +
+      "</blockquote>";
+
+    nock("https://embed.bsky.app")
+      .persist()
+      .get("/oembed")
+      .query(true)
+      .reply(200, { html });
+  });
+
+  afterEach(function () {
+    nock.cleanAll();
+    nock.enableNetConnect();
+  });
   
   it("works", function (done) {
     // html bare link to a post on bluesky
