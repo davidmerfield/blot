@@ -106,6 +106,9 @@ async function read(blog, path, callback) {
       $(this).remove();
     });
 
+    // remove all empty spans
+    $('span:empty').remove();
+
     // replace italic inlines with em
     $('span[style*="font-style:italic"]').each(function (i, elem) {
       $(this).replaceWith("<em>" + $(this).html() + "</em>");
@@ -128,6 +131,10 @@ async function read(blog, path, callback) {
 
     // replace underline inlines with u
     $('span[style*="text-decoration:underline"]').each(function (i, elem) {
+      // if this contains a link, skip
+      if ($(this).find('a').length > 0) {
+        return;
+      }
       $(this).replaceWith("<u>" + $(this).html() + "</u>");
     });
 
