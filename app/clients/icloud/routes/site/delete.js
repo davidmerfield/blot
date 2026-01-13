@@ -1,5 +1,5 @@
 const localPath = require("helper/localPath");
-const establishSyncLock = require("../../util/establishSyncLock");
+const establishSyncLock = require("sync/establishSyncLock");
 const fs = require("fs-extra");
 
 module.exports = async function (req, res) {
