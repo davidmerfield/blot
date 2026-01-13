@@ -51,11 +51,16 @@ const processBlog = async (blog) => {
     `INFO: Starting Dropbox resync for ${blog.id} (${blog.handle || "no handle"})`
   );
 
+  let folder;
+  let done;
+
   try {
-    const { done, folder } = await establishSyncLock(blog.id);
+    const syncLock = await establishSyncLock(blog.id);
+    folder = syncLock.folder;
+    done = syncLock.done;
 
     try {
-      folder.status("Resyncing");
+      folder.status("Dropbox resyncing");
 
       await resetToBlot(blog.id, publish);
       try {

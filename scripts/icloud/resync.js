@@ -41,7 +41,8 @@ const processBlog = async (blog) => {
     `INFO: Starting iCloud resync for ${blog.id} (${blog.handle || "no handle"})`
   );
 
-  let syncLock;
+  let folder;
+  let done;
 
   try {
     const account = await database.get(blog.id);
@@ -53,7 +54,9 @@ const processBlog = async (blog) => {
 
     totalIcloudBlogs++;
 
-    const { folder, done } = await establishSyncLock(blog.id);
+    const syncLock = await establishSyncLock(blog.id);
+    folder = syncLock.folder;
+    done = syncLock.done;
 
     await fromiCloud(blog.id, folder.status, folder.update);
 
