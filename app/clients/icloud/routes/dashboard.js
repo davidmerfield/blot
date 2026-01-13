@@ -6,7 +6,7 @@ const fetch = require("../util/rateLimitedFetchWithRetriesAndTimeout");
 const dashboard = new express.Router();
 const parseBody = require("body-parser").urlencoded({ extended: false });
 const config = require("config"); // For accessing configuration values
-const establishSyncLock = require("../util/establishSyncLock");
+const establishSyncLock = require("sync/establishSyncLock");
 
 const VIEWS = require("path").resolve(__dirname + "/../views") + "/";
 

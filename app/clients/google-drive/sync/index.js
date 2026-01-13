@@ -1,6 +1,6 @@
 const clfdate = require("helper/clfdate");
 const { promisify } = require("util");
-const establishSyncLock = require("../util/establishSyncLock");
+const establishSyncLock = require("sync/establishSyncLock");
 const getBlog = promisify(require("models/blog").get);
 const fix = promisify(require("sync/fix"));
 const sync = require("./sync");
