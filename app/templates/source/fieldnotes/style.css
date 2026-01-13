@@ -357,6 +357,14 @@ p {
 	margin-bottom: 24px;
 }
 
+p,
+li,
+blockquote,
+figcaption {
+	orphans: 2;
+	widows: 2;
+}
+
 ul, ol {
 	margin: 0 0 24px 36px;
 }

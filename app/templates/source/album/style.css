@@ -413,6 +413,14 @@ font-feature-settings: 'tnum';
   margin: 1.4em 0
 }
 
+.body p,
+.body li,
+.body blockquote,
+.body figcaption {
+  orphans: 2;
+  widows: 2;
+}
+
 .body h2 {margin: 2.8em 0 1.4em; font-size: inherit;font-weight: 600}
 
 .entry.page .body {

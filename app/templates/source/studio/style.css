@@ -9,6 +9,14 @@ body {
   word-wrap: break-word; /* for long words & urls */
 }
 
+p,
+li,
+blockquote,
+figcaption {
+  orphans: 2;
+  widows: 2;
+}
+
 .container {
   max-width: 960px;
   min-width: 320px;

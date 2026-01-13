@@ -563,6 +563,8 @@ border-radius: 4px;padding:0.75em 1.25em;font-size:0.9em}
 p, li {
   position: relative;
   margin: 1.666em 0;
+  orphans: 2;
+  widows: 2;
 }
 
 h1 {font-size: 1.5625em;line-height: 36px;font-weight: bold;margin-bottom: 24px;text-wrap:balance}
