@@ -48,7 +48,7 @@ Delete.route("/")
 
 function emailUser(req, res, next) {
   if (req.refund?.issued) {
-    return Email.ACCOUNT_DELETION_REFUND(
+    return Email.DELETED_FIRST_PERIOD(
       "",
       Object.assign({}, req.user, { refund: req.refund }),
       next

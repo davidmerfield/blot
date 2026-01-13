@@ -487,7 +487,7 @@ describe("Dashboard account deletion refunds", function () {
       currency: "USD",
     };
 
-    spyOn(Email, "ACCOUNT_DELETION_REFUND").and.callFake((uid, locals, callback) =>
+    spyOn(Email, "DELETED_FIRST_PERIOD").and.callFake((uid, locals, callback) =>
       callback()
     );
     spyOn(Email, "DELETED").and.callFake((uid, locals, callback) => callback());
@@ -499,7 +499,7 @@ describe("Dashboard account deletion refunds", function () {
 
     Delete.exports.email(req, {}, function (err) {
       expect(err).toBeUndefined();
-      expect(Email.ACCOUNT_DELETION_REFUND).toHaveBeenCalledWith(
+      expect(Email.DELETED_FIRST_PERIOD).toHaveBeenCalledWith(
         "",
         jasmine.objectContaining({ refund, email: "user@example.com" }),
         jasmine.any(Function)
