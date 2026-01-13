@@ -4,7 +4,7 @@
 const { promisify } = require("util");
 const eachBlogOrOneBlog = require("../each/eachBlogOrOneBlog");
 const resetToBlot = require("clients/dropbox/sync/reset-to-blot");
-const sync = promisify(require("sync"));
+const establishSyncLock = require("sync/establishSyncLock");
 const fix = promisify(require("sync/fix"));
 
 const PROGRESS_INTERVAL_MS = 30000;
@@ -36,23 +36,6 @@ const stopProgress = () => {
   if (progressInterval) clearInterval(progressInterval);
 };
 
-const releaseSyncLock = async (done, blog) => {
-  if (typeof done !== "function") return;
-  try {
-    await new Promise((resolve, reject) => {
-      done(null, (err) => {
-        if (err) return reject(err);
-        resolve();
-      });
-    });
-  } catch (err) {
-    console.error(
-      `WARN: Dropbox resync failed to release sync lock for ${blog.id}: ${formatError(
-        err
-      )}`
-    );
-  }
-};
 
 const processBlog = async (blog) => {
   if (!blog || blog.isDisabled) return;
@@ -68,44 +51,53 @@ const processBlog = async (blog) => {
     `INFO: Starting Dropbox resync for ${blog.id} (${blog.handle || "no handle"})`
   );
 
-  let done;
-
   try {
-    const result = await sync(blog.id);
-    const folder = Array.isArray(result) ? result[0] : result;
-    done = Array.isArray(result) ? result[1] : null;
+    const { done, folder } = await establishSyncLock(blog.id);
 
-    if (folder && folder.status) {
-      folder.status("Resyncing");
-    }
-
-    await resetToBlot(blog.id, publish);
     try {
-      await fix(blog);
-    } catch (err) {
-      console.error(
-        `WARN: Dropbox resync fix failed for ${blog.id}: ${formatError(err)}`
+      folder.status("Resyncing");
+
+      await resetToBlot(blog.id, publish);
+      try {
+        await fix(blog);
+      } catch (err) {
+        console.error(
+          `WARN: Dropbox resync fix failed for ${blog.id}: ${formatError(err)}`
+        );
+      }
+      successfulResyncs++;
+      console.log(
+        `SUCCESS: Completed Dropbox resync for ${blog.id} (${blog.handle || "no handle"})`
       );
+    } catch (err) {
+      failedResyncs++;
+      const message = formatError(err);
+      console.error(
+        `ERROR: Dropbox resync failed for ${blog.id} (${blog.handle || "no handle"}):`,
+        message
+      );
+      errors.push({
+        blogID: blog.id,
+        handle: blog.handle,
+        error: message,
+        step: "resync",
+      });
+    } finally {
+      await done();
     }
-    successfulResyncs++;
-    console.log(
-      `SUCCESS: Completed Dropbox resync for ${blog.id} (${blog.handle || "no handle"})`
-    );
   } catch (err) {
     failedResyncs++;
     const message = formatError(err);
     console.error(
-      `ERROR: Dropbox resync failed for ${blog.id} (${blog.handle || "no handle"}):`,
+      `ERROR: Dropbox resync failed to acquire lock for ${blog.id} (${blog.handle || "no handle"}):`,
       message
     );
     errors.push({
       blogID: blog.id,
       handle: blog.handle,
       error: message,
-      step: "resync",
+      step: "acquire lock",
     });
-  } finally {
-    await releaseSyncLock(done, blog);
   }
 };
 

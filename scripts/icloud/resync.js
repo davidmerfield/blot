@@ -1,7 +1,7 @@
 const { promisify } = require("util");
 const eachBlogOrOneBlog = require("../each/eachBlogOrOneBlog");
 const fromiCloud = require("clients/icloud/sync/fromiCloud");
-const establishSyncLock = require("clients/icloud/util/establishSyncLock");
+const establishSyncLock = require("sync/establishSyncLock");
 const database = require("clients/icloud/database");
 const fix = promisify(require("sync/fix"));
 
