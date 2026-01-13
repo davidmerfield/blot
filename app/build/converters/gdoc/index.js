@@ -143,6 +143,11 @@ async function read(blog, path, callback) {
       $(this).replaceWith("<strike>" + $(this).html() + "</strike>");
     });
 
+    // wrap contents of li with strike in <strike> tag
+    $('li[style*="text-decoration:line-through"]').each(function (i, elem) {
+      $(this).wrapInner("<strike>" + $(this).html() + "</strike>");
+    });
+    
     // remove all inline style attributes
     $("[style]").removeAttr("style");
 

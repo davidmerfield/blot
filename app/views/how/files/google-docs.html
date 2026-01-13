@@ -2,27 +2,47 @@
 
 <p>Supports files created by <a href="https://en.wikipedia.org/wiki/Google_Docs">Google Docs</a>. You must sync your folder with <a href="/how/sync/google-drive">Google Drive</a> in order to publish Google Docs.</p>
 
-<h2>Add metadata and front matter</h2>
+<h2>Metadata</h2>
 
-<p>Blot reads <a href="/how/files/google-docs">metadata</a> at the very top of your Google Doc. For example:</p>
+<p>Blot reads <a href="/how/metadata">metadata</a> at the very top of your Google Doc. For example:</p>
 
 <pre>Title: October Newsletter
 Tags: announcements, fall
-Summary: A quick update on what shipped in October.
 
 The rest of your post goes here.
 </pre>
 
 <h2>Embed images and other files</h2>
 
-<p>Insert images directly in Google Docs—they will be downloaded and stored beside the post. Alt and title text are preserved if they are part of the image in Google Docs.</p>
+<p>Insert images directly in Google Docs. They will be downloaded and stored beside the post. Alt and title text are preserved if they are part of the image in Google Docs.</p>
 
-<h2>Formatting tips</h2>
+<h2>Headings</h2>
 
-<ul>
-  <li>Use the Google Docs heading styles (<code>Heading 1</code>, <code>Heading 2</code>, etc.) for in-post structure. They are converted to matching HTML heading levels on your blog.</li>
-  <li>Use <em>Title</em> and <em>Subtitle</em> styles only if you want them to turn into the main title and an introductory subheading.</li>
-</ul>
+<p>Use the Google Docs heading styles (<code>Heading 1</code>, <code>Heading 2</code>, etc.) for in-post structure.</p>
+
+<h2>Text formatting</h2>
+
+<p>Bold, italic, superscript, subscript, underline and strikethrough text are preserved. Other inline styles are removed so the post inherits your theme's typography.</p>
+
+<h2>Links</h2>
+
+<p>Links in your Google Doc are cleaned automatically. Google's tracking redirects are removed so each link on your blog points directly to the original URL.</p>
+
+<h2>Lists</h2>
+
+<p>Use the Google Docs feature 'Insert > List' to create lists. These are preserved in the published post.</p>
+
+<h2>Tables</h2>
+
+<p>Use the Google Docs feature 'Insert > Table' to create tables. These are preserved in the published post.</p>
+
+<h2>Footnotes</h2>
+
+<p>Footnotes in your Google Doc are preserved in the published post.</p>
+
+<h2>Line breaks</h2>
+
+<p>Single line breaks are preserved by default so poetry or addresses appear as expected.</p>
 
 <h2>Blockquotes</h2>
 
@@ -32,17 +52,14 @@ The rest of your post goes here.
 &gt;
 &gt; This is the second paragraph. Vestibulum enim wisi.</pre>
 
+<h2>Comments</h2>
 
-<h2>How Google Doc exports are converted</h2>
+<p>Comments in the document are removed from the post or page before publishing.</p>
 
-<ul>
-  <li><strong>Headings are preserved.</strong> The built-in <em>Title</em> style becomes a title on your site and the <em>Subtitle</em> style becomes subheadings. Use normal heading levels inside the body of the document for the rest of your structure.</li>
-  <li><strong>Links are cleaned.</strong> Google’s tracking redirects are removed so each link on your blog points directly to the original URL.</li>
-  <li><strong>Metadata is parsed.</strong> Optional YAML-style front matter at the top of the document becomes post metadata.</li>
-  <li><strong>Inline styles are stripped.</strong> Bold, italic, superscript, subscript, underline and strike through text are preserved and the remaining inline styles are removed so the post inherits your theme’s typography.</li>
-  <li><strong>Comments</strong> in the document are removed from the post or page before publishing.</li>
-  <li><strong>Footnotes</strong> are preserved.</li>
-  <li><strong>Line breaks are preserved.</strong> Single line breaks are kept by default so poetry or addresses appear as expected.</li>
-  <li><strong>Images and other assets are downloaded.</strong> Embedded images are fetched, stored on Blot and the image references are updated to point to those local copies.</li>
-  <li><strong>5&nbsp;MB size limit.</strong> Google’s HTML export must be smaller than 5&nbsp;MB. Larger documents should be split or simplified before they can be published.</li>
-</ul>
+<h2>Columns</h2>
+
+<p>Google Docs cannot export columns.</p>
+
+<h2>Size limits</h2>
+
+<p>Google Docs must be smaller than 5&nbsp;MB. Larger documents should be split or simplified before they can be published.</p>
