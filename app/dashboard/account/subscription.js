@@ -145,10 +145,13 @@ Subscription.route("/cancel")
     cancelPaypalSubscription,
     function (req, res) {
       const now = Date.now();
+      const stripeCreatedMs = toMs(req.user.subscription?.created);
+      const stripePeriodStartMs = toMs(req.user.subscription?.current_period_start);
+      const paypalStartMs = toMs(req.user.paypal?.start_time);
       const subscriptionStartMs =
-        toMs(req.user.subscription?.created) ||
-        toMs(req.user.subscription?.current_period_start) ||
-        toMs(req.user.paypal?.start_time);
+        paypalStartMs ||
+        stripeCreatedMs ||
+        stripePeriodStartMs;
       const isFirstPeriod = Boolean(
         subscriptionStartMs && now - subscriptionStartMs <= THIRTY_DAYS_MS
       );
