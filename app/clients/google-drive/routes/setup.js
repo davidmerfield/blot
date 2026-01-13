@@ -240,7 +240,7 @@ async function checkEditorPermissions(drive, folderId) {
   }
 }
 
-const establishSyncLock = require("../../sync/establishSyncLock");
+const establishSyncLock = require("sync/establishSyncLock");
 const createDriveClient = require("../serviceAccount/createDriveClient");
 const { promisify } = require("util");
 const getBlog = promisify(require("models/blog").get);
