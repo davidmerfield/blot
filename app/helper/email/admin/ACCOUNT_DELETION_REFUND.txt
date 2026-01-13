@@ -1,3 +1,0 @@
-Account deletion refund
-
-{{email}} deleted their account within the first month and received a {{refund.amountPretty}}{{#refund.currency}} ({{refund.currency}}){{/refund.currency}} refund via {{refund.providerPretty}}.
