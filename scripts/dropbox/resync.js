@@ -83,7 +83,15 @@ const processBlog = async (blog) => {
         step: "resync",
       });
     } finally {
-      await done();
+      if (done) {
+        try {
+          await done();
+        } catch (err) {
+          console.error(
+            `WARN: Dropbox resync failed to release sync lock for ${blog.id}: ${formatError(err)}`
+          );
+        }
+      }
     }
   } catch (err) {
     failedResyncs++;

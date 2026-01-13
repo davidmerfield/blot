@@ -53,9 +53,9 @@ const processBlog = async (blog) => {
 
     totalIcloudBlogs++;
 
-    syncLock = await establishSyncLock(blog.id);
+    const { folder, done } = await establishSyncLock(blog.id);
 
-    await fromiCloud(blog.id, syncLock.folder.status, syncLock.folder.update);
+    await fromiCloud(blog.id, folder.status, folder.update);
 
     try {
       await fix(blog);
@@ -83,9 +83,9 @@ const processBlog = async (blog) => {
       step: "resync",
     });
   } finally {
-    if (syncLock && syncLock.done) {
+    if (done) {
       try {
-        await syncLock.done();
+        await done();
       } catch (err) {
         console.error(
           `WARN: iCloud resync failed to release sync lock for ${blog.id}: ${formatError(
