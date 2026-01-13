@@ -8,6 +8,9 @@ Spring newsletter
 - Google Docs now support superscript, subscript, strike, underline
 
 **Bug fixes**
+- Fix bug with URL settings in package.json
+- Fixed various sync bugs with the iCloud client
+- Fixed bug with Dropbox changes involving case-only, e.g. 'file.txt' -> 'FILE.TXT'
 
 **Questions**
 

@@ -1,3 +1,5 @@
+Unwind bugginess with template slugs / local templates
+
 Make iCloud sync issue and Dropbox sync issue emails more useful
 - script to create log for a single site
 
@@ -6,6 +8,7 @@ CLIENT SETUP FLOW:
 - RESET TO BLOT (TWICE?) then sync/FIX then begin ordinary syncing
 
 Start writing tests for icloud client
+
 Start writing tests for macserver
 
 Dropbox client
