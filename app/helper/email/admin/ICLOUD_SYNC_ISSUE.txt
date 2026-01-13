@@ -1,6 +1,6 @@
 iCloud sync issue
 
-The hourly sync validation check detected previously unsynced changes from iCloud for the following sites:
+The hourly sync validation detected previously unsynced changes from iCloud for the following sites:
 
 {{#blogs}}
 - {{id}} {{handle}} — {{changeCount}} change{{#changeCountPlural}}s{{/changeCountPlural}}

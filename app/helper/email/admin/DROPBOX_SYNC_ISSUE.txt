@@ -1,6 +1,6 @@
 Dropbox sync issue
 
-The daily sync validation check detected previously unsynced changes from Dropbox for the following sites:
+The hourly sync validation detected previously unsynced changes from Dropbox for the following sites:
 
 {{#blogs}}
 - {{id}} {{handle}} — {{changeCount}} change{{#changeCountPlural}}s{{/changeCountPlural}}
