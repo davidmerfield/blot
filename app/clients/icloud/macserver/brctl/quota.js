@@ -1,4 +1,5 @@
 const exec = require("../exec");
+const clfdate = require("../util/clfdate");
 
 module.exports = async () => {
   // use brctl quota to get the iCloud Drive quota and usage
@@ -6,9 +7,14 @@ module.exports = async () => {
   const { stdout, stderr } = await exec("brctl", ["quota"]);
   
   if (stderr) {
-    console.error(`Error getting iCloud Drive quota: ${stderr}`);
+    console.error(clfdate(), `Error getting iCloud Drive quota: ${stderr}`);
     throw new Error("Failed to get iCloud Drive quota");
   }
 
-  return parseInt(stdout.match(/(\d+) bytes of quota remaining/)[1]);
+  const match = stdout.match(/(\d+) bytes of quota remaining/);
+  if (!match || !match[1]) {
+    throw new Error(`Unexpected iCloud Drive quota output: ${stdout}`);
+  }
+
+  return parseInt(match[1], 10);
 };

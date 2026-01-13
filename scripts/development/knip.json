@@ -1,6 +1,5 @@
 {
   "entry": [
-    "app/index.js",
     "scripts/**/*.js",
     "**/tests/**/*.js",
     "**/tests.js",

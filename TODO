@@ -1,11 +1,22 @@
-Investigate transient EHOSTUNREACH error when fetching stats from macserver.
-- switching from node-fetch to native fetch did not resolve the issue
+Unwind bugginess with template slugs / local templates
+
+Make iCloud sync issue and Dropbox sync issue emails more useful
+- script to create log for a single site
+
+CLIENT SETUP FLOW:
+- RESET FROM BLOT (NON DESTRUCTIVE, deduplicate on conflict)
+- RESET TO BLOT (TWICE?) then sync/FIX then begin ordinary syncing
+
+Start writing tests for icloud client
+
+Start writing tests for macserver
 
 Dropbox client
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
 - Bug: Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
   - Bug: handle a sync lock failure on second blog when migrating an app folder
 - Bug: retry transient Dropbox API errors with exponential backoff while surfacing hard failures for manual intervention.
+- Bug: re-use iCloud resolve case-conflicts function (maybe move into sync?) to ensure blogs with case-sensitive file conflicts are properly initialized on Dropbox
 - Bug: Switch uploads >150 MB to the Dropbox upload session API with chunked transfer and resumable checkpoints
 - Bug: run reset-to-blot when sync fails / errors
 - Bug: ensure you can move the folder in full-folder permission mode
@@ -42,26 +53,17 @@ Dropbox client
       - updates
 
 iCloud client:
-- Does a file called '#Introduction.md#' trigger a bug with the iCloud client initial transfer if it exists in your blog folder before setup?
-- Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset).
-- Modify app/clients/icloud/util/monitorMacServerStats.js to send a recovery notification when stats are back online
+- Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset). 
+  - can we solve by running reset to blot after running reset from blot? perhaps to be safe we run reset to blot without 'delete' powers?
+- Bug: ensure that the hourly sync check absolutely is gated by the sync lock to prevent a scenario during a long initial setup where the state is nuked back from iCloud (files not yet transferred would be removed on Blot)
 - iCloud: when you change the case of a folder, the files (and posts) inside duplicate and are stored twice
-- Does iCloud client bug out when file with #Introduction.md# exists?
-- Fix [Michael's iCloud client setup bug](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
-- Fix bug with initial transfer error (make sure sync lock doesn't hang indefinitely)
-- Improve sync stability of iCloud client
-  - Especially for folder renames, many file moves
-  - Tell Todd
-  - Tell Fede
-- Work out issue with iCloud disconnect / setup with [Florian's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTzSJsxwwRTMNxWTMrGCQXTlh)
-- It seems we ran into an issue where icloud was not syncing *updates* to an existing file. When we perform a full sync, can we force brctl download for each folder? is that enough? or do we need to brctl download each file too? 
-- Investigate the 500 timeout errors – are these caused by pending syncs / folder locks?
-  - tail -n 1000000 /var/instance-ssd/logs/access.log | grep " 500 " | grep "/clients/icloud"
-- Why are there unrenamed folders in the mac server icloud drive?
-  - partial incomplete setup? sharing a non-empty folder? 
 - Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
 - Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
-
+- Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
+- Investigate the 500 timeout errors – are these caused by pending syncs / folder locks?
+  - tail -n 1000000 /var/instance-ssd/logs/access.log | grep " 500 " | grep "/clients/icloud"
+- Investigate the unrenamed folders in the mac server icloud drive?
+  - partial incomplete setup? sharing a non-empty folder? 
 
 Bug reports:
 - The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
@@ -113,6 +115,13 @@ Fix bug with 'failed to update folder lock' that throws an error – is the issu
   - I tried this and it didn't seem to trigger the bug
   - Is this correlated with high disk activity?
 - will fix bug with concurrent syncs from iCloud client by enforcing a build timeout in sync/set.js so we can accurately set the upload request timeout for the iCloud client (line 63 of upload.js)
+
+Add diagnostic logging for ECOMPROMISED lock errors:
+- Add onCompromised handler to lockfile.lock() in app/sync/index.js (line 45)
+- Track lock acquisition time (lockAcquiredAt) when lock is successfully acquired
+- Create diagnostic function to gather: blogID, lockDuration, system load (os.loadavg), memory usage (process.memoryUsage), disk space (freeDiskSpace helper), lock file stats, process info (pid, uptime), lock config values
+- In onCompromised handler: gather diagnostics (with 2s timeout), log structured error with console.error(), re-throw error to crash server
+- Use clfdate() for logging format consistency
 
 Fix bug with iCloud client which doesn't surface / handle removed folder
 - to reproduce, connect to icloud then delete the folder
@@ -774,6 +783,8 @@ Clamp length of password and email address in log in and sign up and reset forms
 - return an error if these are too long
 
 Improve git client
+- Implement similar feature to dropbox client resync on restart and once per day
+
     1. **Harden sync against transient Git failures**  
       * Add structured error handling and exponential backoff to the fetch and reset steps in [`sync.js`](./sync.js) so transient network or repository errors do not abort the entire sync.  
       * Surface actionable messages to `folder.log` when retries are exhausted to aid diagnostics.
@@ -794,6 +805,7 @@ Improve git client
       * Backfill tests that stub the metrics emitter to ensure the instrumentation does not break the sync flow.
       
 Improve google drive client
+- Implement similar feature to dropbox client resync on restart and once per day
     ## 1. Harden service-account webhook lifecycle
     - **Problem**: Changes and files webhooks can expire silently, causing the sync queue to stall until manual intervention. Logs in `serviceAccount/watchChanges.js` and the reset scripts indicate we rely on cron-style resets rather than active monitoring.
     - **Tasks**:
@@ -1411,6 +1423,7 @@ Write new clients to sync blog folders
   - Tell [Harry](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxRdvrcfMwTVnvGrHKgvJmfwxM)
 - [SFTP](https://www.npmjs.com/package/ftpd) 
   - Tell [Coraline](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllCmcFflWmXcCdVzTJztDTwXx)
+  - Tell [Utkorg](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQBKmPsLNTbQnxjbDDtzdqKn)
   - Tell [Calvin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChclvkfHMWfnqGdWkQnzMdklW) 
   - Tell [Fabrice](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNCspWMdnbCdzfHGwBrSKPBSC)
 - [NextCloud](https://nextcloud.com/) 

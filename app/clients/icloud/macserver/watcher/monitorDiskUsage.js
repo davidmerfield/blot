@@ -1,6 +1,7 @@
 const fs = require("fs-extra");
 const { execFile } = require("child_process");
 const { iCloudDriveDirectory } = require("../config");
+const clfdate = require("../util/clfdate");
 
 const POLL_INTERVAL = 15 * 1000; // Check every 15 seconds
 const MAX_NUMBER_OF_FILES_TRACKED_PER_BLOG = 150;
@@ -16,7 +17,7 @@ const blogUpdateTimes = new Map(); // Tracks the last update time for each blog
 const getDiskUsage = () => {
   return new Promise((resolve, reject) => {
     // Run du -sk <dir> with stderr redirected to /dev/null
-    console.log(`Getting disk usage for iCloud Drive...`);
+    console.log(clfdate(), `Getting disk usage for iCloud Drive...`);
     const child = execFile(
       "du",
       ["-sk", iCloudDriveDirectory],
@@ -27,10 +28,10 @@ const getDiskUsage = () => {
         }
 
         try {
-          console.log(`Disk usage output: ${stdout}`);
+          console.log(clfdate(), `Disk usage output: ${stdout}`);
           // Parse output
           const bytes = parseInt(stdout.split("\t")[0]) * 1024;
-          console.log(`Disk usage: ${bytes} bytes`);
+          console.log(clfdate(), `Disk usage: ${bytes} bytes`);
           resolve(bytes);
         } catch (parseError) {
           reject(new Error(`Error parsing du output: ${parseError.message}`));
@@ -122,12 +123,12 @@ const sortBlogsByUpdateTime = () => {
 };
 
 const check = async (evictFiles) => {
-  console.log(`Checking free disk space...`);
+  console.log(clfdate(), `Checking free disk space...`);
 
   let diskUsage = await getDiskUsage();
 
   if (diskUsage < MAX_DISK_USAGE_BYTES) {
-    console.log(
+    console.log(clfdate(), 
       `Disk usage is below threshold: ${diskUsage} bytes of ${MAX_DISK_USAGE_BYTES} bytes`
     );
     return;
@@ -135,7 +136,7 @@ const check = async (evictFiles) => {
 
   let bytesToEvict = diskUsage - MAX_DISK_USAGE_BYTES;
 
-  console.log(
+  console.log(clfdate(), 
     `Disk usage is above threshold: ${diskUsage} bytes, need to evict ${bytesToEvict} bytes`
   );
 
@@ -144,7 +145,7 @@ const check = async (evictFiles) => {
 
   for (const blogID of sortedBlogs) {
     const lastUpdated = (Date.now() - blogUpdateTimes.get(blogID)) / 1000;
-    console.log(
+    console.log(clfdate(), 
       `Checking blogID ${blogID} for files to evict, blog was last updated: ${lastUpdated} seconds ago`
     );
 
@@ -160,7 +161,7 @@ const check = async (evictFiles) => {
       try {
         stat = await fs.stat(filePath);
       } catch (fileError) {
-        console.error(`Error getting file stat: ${fileError}`);
+        console.error(clfdate(), `Error getting file stat: ${fileError}`);
         continue;
       }
 
@@ -174,36 +175,38 @@ const check = async (evictFiles) => {
       bytesToBeEvicted += stat.size;
 
       if (bytesToBeEvicted >= bytesToEvict) {
-        console.log(`Stopping at ${filesToEvict.length} files`);
+        console.log(clfdate(), `Stopping at ${filesToEvict.length} files`);
         break;
       }
     }
 
     if (filesToEvict.length === 0) {
-      console.log(`No files to evict for blogID: ${blogID}`);
+      console.log(clfdate(), `No files to evict for blogID: ${blogID}`);
       continue;
     }
 
-    console.log(`Evicting ${filesToEvict.length} files for blogID: ${blogID}`);
+    console.log(clfdate(), `Evicting ${filesToEvict.length} files for blogID: ${blogID}`);
     await evictFiles(blogID, filesToEvict);
     diskUsage = await getDiskUsage();
     bytesToEvict = diskUsage - MAX_DISK_USAGE_BYTES;
 
     if (diskUsage < MAX_DISK_USAGE_BYTES) {
-      console.log(
+      console.log(clfdate(), 
         `Disk usage is now below threshold: ${diskUsage} bytes of ${MAX_DISK_USAGE_BYTES} bytes`
       );
       return;
     }
   }
 
-  console.warn(`Disk usage is still above threshold: ${diskUsage} bytes`);
+  console.warn(clfdate(), `Disk usage is still above threshold: ${diskUsage} bytes`);
 };
 
 const checkDiskSpace = (evictFiles) => {
-  console.log(`Starting disk space monitoring...`);
+  console.log(clfdate(), `Starting disk space monitoring...`);
   setInterval(() => {
-    check(evictFiles);
+    check(evictFiles).catch((error) => {
+      console.error(clfdate(), `Disk space check failed: ${error}`);
+    });
   }, POLL_INTERVAL);
 };
 

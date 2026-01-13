@@ -2,11 +2,11 @@ const clfdate = require("helper/clfdate");
 const database = require("../database");
 const disconnect = require("../disconnect");
 const express = require("express");
-const fetch = require("node-fetch"); // For making HTTP requests
+const fetch = require("../util/rateLimitedFetchWithRetriesAndTimeout");
 const dashboard = new express.Router();
 const parseBody = require("body-parser").urlencoded({ extended: false });
 const config = require("config"); // For accessing configuration values
-const establishSyncLock = require("../util/establishSyncLock");
+const establishSyncLock = require("sync/establishSyncLock");
 
 const VIEWS = require("path").resolve(__dirname + "/../views") + "/";
 
@@ -14,8 +14,12 @@ const MACSERVER_URL = config.icloud.server_address; // The Macserver base URL fr
 const MACSERVER_AUTH = config.icloud.secret; // The Macserver Authorization secret from config
 
 dashboard.use(async function (req, res, next) {
-  res.locals.account = await database.get(req.blog.id);
-  next();
+  try {
+    res.locals.account = await database.get(req.blog.id);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 dashboard.get("/", function (req, res) {
@@ -74,30 +78,43 @@ dashboard
         return next(new Error("Paste the sharing link into the box"));
       }
 
-      // Make the request to the Macserver /setup endpoint
-      console.log(`Sending setup request to Macserver for blogID: ${blogID}`);
-      const response = await fetch(`${MACSERVER_URL}/setup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: MACSERVER_AUTH, // Use the Macserver Authorization header
-          blogID: blogID,
-          sharingLink: sharingLink || "", // Include the sharingLink header, even if empty
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `Macserver /setup request failed: ${response.status} - ${errorText}`
-        );
-        return next(new Error(`Failed to set up folder: ${errorText}`));
-      }
-
-      console.log(`Macserver /setup request succeeded for blogID: ${blogID}`);
       const { folder, done } = await establishSyncLock(blogID);
       folder.status("Waiting for folder setup to complete...");
       await done();
+
+      // Make the request to the Macserver /setup endpoint
+      console.log(`Sending setup request to Macserver for blogID: ${blogID}`);
+      try {
+        await fetch(`${MACSERVER_URL}/setup`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: MACSERVER_AUTH, // Use the Macserver Authorization header
+            blogID: blogID,
+            sharingLink: sharingLink || "", // Include the sharingLink header, even if empty
+          },
+        });
+      } catch (error) {
+        console.error(
+          `Macserver /setup request failed for blogID: ${blogID}`,
+          error
+        );
+        // Clean up the database entry if setup failed
+        try {
+          await database.delete(blogID);
+        } catch (dbError) {
+          console.error(
+            `Error cleaning up database after setup failure: ${dbError.message}`
+          );
+        }
+        return next(
+          new Error(
+            `Failed to set up folder: ${error.message || "Unknown error"}`
+          )
+        );
+      }
+
+      console.log(`Macserver /setup request succeeded for blogID: ${blogID}`);
 
       // Redirect back to the dashboard
       res.redirect(req.baseUrl);
@@ -107,10 +124,14 @@ dashboard
     }
   });
 
-dashboard.post("/cancel", async function (req, res) {
-  await database.blog.delete(req.blog.id);
+dashboard.post("/cancel", async function (req, res, next) {
+  try {
+    await database.delete(req.blog.id);
 
-  res.message(req.baseUrl, "Cancelled the creation of your new folder");
+    res.message(req.baseUrl, "Cancelled the creation of your new folder");
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = dashboard;

@@ -106,6 +106,9 @@ async function read(blog, path, callback) {
       $(this).remove();
     });
 
+    // remove all empty spans
+    $('span:empty').remove();
+
     // replace italic inlines with em
     $('span[style*="font-style:italic"]').each(function (i, elem) {
       $(this).replaceWith("<em>" + $(this).html() + "</em>");
@@ -116,6 +119,35 @@ async function read(blog, path, callback) {
       $(this).replaceWith("<strong>" + $(this).html() + "</strong>");
     });
 
+    // replace superscript inlines with sup
+    $('span[style*="vertical-align:super"]').each(function (i, elem) {
+      $(this).replaceWith("<sup>" + $(this).html() + "</sup>");
+    });
+
+    // replace subscript inlines with sub
+    $('span[style*="vertical-align:sub"]').each(function (i, elem) {
+      $(this).replaceWith("<sub>" + $(this).html() + "</sub>");
+    });
+
+    // replace underline inlines with u
+    $('span[style*="text-decoration:underline"]').each(function (i, elem) {
+      // if this contains a link, skip
+      if ($(this).find('a').length > 0) {
+        return;
+      }
+      $(this).replaceWith("<u>" + $(this).html() + "</u>");
+    });
+
+    // replace strikethrough inlines with strike
+    $('span[style*="text-decoration:line-through"]').each(function (i, elem) {
+      $(this).replaceWith("<strike>" + $(this).html() + "</strike>");
+    });
+
+    // wrap contents of li with strike in <strike> tag
+    $('li[style*="text-decoration:line-through"]').each(function (i, elem) {
+      $(this).wrapInner("<strike>" + $(this).html() + "</strike>");
+    });
+    
     // remove all inline style attributes
     $("[style]").removeAttr("style");
 

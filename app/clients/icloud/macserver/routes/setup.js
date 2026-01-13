@@ -4,6 +4,7 @@ const fs = require("fs-extra");
 const Bottleneck = require("bottleneck");
 const status = require("../httpClient/status");
 const { iCloudDriveDirectory } = require("../config");
+const clfdate = require("../util/clfdate");
 
 // Only one setup can run at a time otherwise the apple script
 // might not work correctly or accept the wrong sharing link
@@ -17,7 +18,7 @@ const setupLimiter = new Bottleneck({
  * @param {string} sharingLink - The iCloud sharing link for the folder
  */
 const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
-  console.log(
+  console.log(clfdate(), 
     `Waiting for a new folder to set up blogID: ${blogID} using sharingLink: ${sharingLink}`
   );
 
@@ -33,13 +34,13 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
     .filter((dir) => dir.isDirectory())
     .map((dir) => dir.name);
 
-  console.log(
+  console.log(clfdate(), 
     `Initial state of iCloud Drive: ${
       initialDirNames.join(", ") || "No directories"
     }`
   );
 
-  console.log("running the acceptSharingLink script");
+  console.log(clfdate(), "running the acceptSharingLink script");
   await acceptSharingLink(sharingLink);
 
   while (true && Date.now() - start < timeout) {
@@ -58,7 +59,7 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
 
     if (newDirs.length > 0) {
       const newDirName = newDirs[0]; // Handle the first new directory found
-      console.log(`Found new folder: ${newDirName}`);
+      console.log(clfdate(), `Found new folder: ${newDirName}`);
 
       const oldPath = join(iCloudDriveDirectory, newDirName);
       const newPath = join(iCloudDriveDirectory, blogID);
@@ -68,7 +69,7 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
 
       // Rename the folder
       await fs.rename(oldPath, newPath);
-      console.log(`Renamed folder from ${newDirName} to ${blogID}`);
+      console.log(clfdate(), `Renamed folder from ${newDirName} to ${blogID}`);
       return; // Setup is complete, exit the loop
     }
 
@@ -76,11 +77,17 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
     await new Promise((resolve) => setTimeout(resolve, checkInterval));
   }
 
-  console.error(
+  console.error(clfdate(), 
     `Timed out waiting for a new folder to set up blogID: ${blogID} after ${timeout}ms`
   );
   throw new Error("Invalid sharing link");
 });
+const escapeAppleScriptString = (value) =>
+  String(value)
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, "\\\"")
+    .replace(/\r\n|\r|\n/g, "\\n");
+
 // Used the accessibility inspector to find the UI elements to interact with
 const appleScript = (sharingLink) => `
 -- Open the specified sharing link in Finder
@@ -141,12 +148,25 @@ end try
 `;
 
 async function acceptSharingLink(sharingLink) {
-  console.log(`Running AppleScript to accept sharing link: ${sharingLink}`);
+  console.log(clfdate(), `Running AppleScript to accept sharing link: ${sharingLink}`);
+  const escapedSharingLink = escapeAppleScriptString(sharingLink);
 
-  const { stdout, stderr } = await exec("osascript", [
-    "-e",
-    appleScript(sharingLink),
-  ]);
+  let stdout;
+  let stderr;
+  try {
+    ({ stdout, stderr } = await exec(
+      "osascript",
+      ["-e", appleScript(escapedSharingLink)],
+      { timeout: 15000 }
+    ));
+  } catch (error) {
+    console.error(
+      clfdate(),
+      `AppleScript execution failed for sharing link: ${sharingLink}`,
+      error
+    );
+    throw error;
+  }
 
   if (stderr && stderr.trim()) {
     throw new Error(`Unexpected AppleScript stderr: ${stderr}`);
@@ -159,7 +179,7 @@ async function acceptSharingLink(sharingLink) {
   // We don't know if the script succeeded or failed because it's hard to 
   // write to stdout or stderr from AppleScript. We check if it worked
   // by determining if the folder was created
-  console.log(`AppleScript finished`);
+  console.log(clfdate(), `AppleScript finished`);
 }
 
 module.exports = async (req, res) => {
@@ -168,25 +188,29 @@ module.exports = async (req, res) => {
   const sharingLink = req.header("sharingLink"); // New header for the sharing link
 
   if (!blogID) {
+    console.error(clfdate(), "Missing blogID header for setup request");
     return res.status(400).send("Missing blogID header");
   }
 
   if (!sharingLink) {
+    console.error(clfdate(), "Missing sharingLink header for setup request", {
+      blogID,
+    });
     return res.status(400).send("Missing sharingLink header");
   }
 
-  console.log(
+  console.log(clfdate(), 
     `Received setup request for blogID: ${blogID}, sharingLink: ${sharingLink}`
   );
 
-  res.sendStatus(200);
-
   try {
     await setupBlog(blogID, sharingLink);
-    console.log(`Setup complete for blogID: ${blogID}`);
+    console.log(clfdate(), `Setup complete for blogID: ${blogID}`);
     await status(blogID, { acceptedSharingLink: true, error: null });
+    return res.sendStatus(200);
   } catch (error) {
-    console.error(`Setup failed for blogID (${blogID}):`, error);
+    console.error(clfdate(), `Setup failed for blogID (${blogID}):`, error);
     await status(blogID, { acceptedSharingLink: false, error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };

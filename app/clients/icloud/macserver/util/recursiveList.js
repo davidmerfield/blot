@@ -1,22 +1,23 @@
 const path = require("path");
 const { ls } = require("../brctl");
 const shouldIgnoreFile = require("../../../util/shouldIgnoreFile");
+const clfdate = require("./clfdate");
 
 const MAX_DEPTH = 1000;
 
 async function recursiveList(dirPath, depth = 0) {
   if (depth > MAX_DEPTH) {
-    console.warn(`Maximum depth ${MAX_DEPTH} reached at ${dirPath}`);
+    console.warn(clfdate(), `Maximum depth ${MAX_DEPTH} reached at ${dirPath}`);
     return;
   }
 
-  console.log(`ls: ${dirPath}`);
+  console.log(clfdate(), `ls: ${dirPath}`);
 
   try {
     const contents = await ls(dirPath);
 
     if (!contents || contents.trim() === "") {
-      console.warn(`No contents for directory: ${dirPath}`);
+      console.warn(clfdate(), `No contents for directory: ${dirPath}`);
       return;
     }
 
@@ -32,7 +33,7 @@ async function recursiveList(dirPath, depth = 0) {
       await recursiveList(subDir, depth + 1);
     }
   } catch (error) {
-    console.error("Error processing directory", dirPath, error);
+    console.error(clfdate(), "Error processing directory", dirPath, error);
   }
 }
 

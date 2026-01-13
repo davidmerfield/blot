@@ -1,19 +1,39 @@
-const { join } = require("path");
+const { join, resolve, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const brctl = require('../brctl');
+const clfdate = require("../util/clfdate");
+const normalizeMacserverPath = require("./normalizeMacserverPath");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
   const path = Buffer.from(req.header("pathBase64"), "base64").toString("utf8");
+  const normalizedPath = normalizeMacserverPath(path);
 
   if (!blogID || !path) {
+    console.error(
+      clfdate(),
+      "Missing blogID or path header for download request",
+      { blogID, path }
+    );
     return res.status(400).send("Missing blogID or path header");
   }
 
-  console.log(`Received download request for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Received download request for blogID: ${blogID}, path: ${path}`);
 
   try {
-    const filePath = join(iCloudDriveDirectory, blogID, path);
+    const basePath = resolve(join(iCloudDriveDirectory, blogID));
+    const filePath = resolve(join(basePath, normalizedPath));
+
+    if (filePath !== basePath && !filePath.startsWith(`${basePath}${sep}`)) {
+      console.error(clfdate(), 
+        "Invalid path: attempted to access parent directory",
+        basePath,
+        filePath
+      );
+      return res
+        .status(400)
+        .send("Invalid path: attempted to access parent directory");
+    }
 
     // first download the file to make sure it's present on the local machine
     const stat = await brctl.download(filePath);
@@ -22,15 +42,15 @@ module.exports = async (req, res) => {
     const modifiedTime = stat.mtime.toISOString();
   
     res.setHeader("modifiedTime", modifiedTime);
-    res.download(filePath, path);  
+    res.download(filePath, normalizedPath);  
   } catch (err) {
     // handle ENOENT error
     if (err.code === "ENOENT") {
-      console.error("File not found:", err);
+      console.error(clfdate(), "File not found:", err);
       return res.status(404).send("File not found");
     }
 
-    console.error("Failed to download file:", path, err);
+    console.error(clfdate(), "Failed to download file:", path, err);
     res.status(500).send("Failed to download file " + path);
   }
 };

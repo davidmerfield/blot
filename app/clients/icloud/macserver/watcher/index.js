@@ -1,6 +1,11 @@
 const chokidar = require("chokidar");
 const fs = require("fs-extra");
-const { getLimiterForBlogID } = require("../limiters");
+const {
+  getLimiterForBlogID,
+  removeLimiterForBlogID,
+  getLimiterCount,
+} = require("../limiters");
+const clfdate = require("../util/clfdate");
 const { iCloudDriveDirectory } = require("../config");
 const { constants } = require("fs");
 const { join } = require("path");
@@ -11,6 +16,33 @@ const status = require("../httpClient/status");
 const upload = require("../httpClient/upload");
 const mkdir = require("../httpClient/mkdir");
 const remove = require("../httpClient/remove");
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const withRetries = async (label, operation, options = {}) => {
+  const { attempts = 4, baseDelayMs = 200 } = options;
+
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) {
+        break;
+      }
+      const delayMs = baseDelayMs * 2 ** (attempt - 1);
+      console.warn(clfdate(), 
+        `${label} failed on attempt ${attempt}/${attempts}, retrying in ${delayMs}ms:`,
+        error
+      );
+      await sleep(delayMs);
+    }
+  }
+
+  console.error(clfdate(), `${label} failed after ${attempts} attempts:`, lastError);
+  throw lastError;
+};
 
 const extractBlogID = (filePath) => {
   if (!filePath.startsWith(iCloudDriveDirectory)) {
@@ -52,7 +84,14 @@ const handleFileEvent = async (event, blogID, filePath) => {
 
     // Handle the deletion of the entire blog directory
     if (event === "unlinkDir" && pathInBlogDirectory === "") {
-      console.warn(`Blog directory deleted: ${blogID}`);
+      console.warn(clfdate(), `Blog directory deleted: ${blogID}`);
+      const limiterCountBefore = getLimiterCount();
+      removeLimiterForBlogID(blogID);
+      const limiterCountAfter = getLimiterCount();
+      console.assert(
+        limiterCountAfter < limiterCountBefore,
+        `Expected limiter map size to decrease after deleting ${blogID}. Before: ${limiterCountBefore}, After: ${limiterCountAfter}`
+      );
       await status(blogID, { error: "Blog directory deleted" });
       await unwatch(blogID); // Stop watching this blog folder
       removeBlog(blogID); // Remove from largest files map
@@ -63,16 +102,16 @@ const handleFileEvent = async (event, blogID, filePath) => {
       // Check if the directory for the blogID exists
       await fs.access(join(iCloudDriveDirectory, blogID), constants.F_OK);
     } catch (err) {
-      console.warn(`Ignoring event for unregistered blogID: ${blogID}`);
+      console.warn(clfdate(), `Ignoring event for unregistered blogID: ${blogID}`);
       return;
     }
 
     if (!pathInBlogDirectory) {
-      console.warn(`Failed to parse path from path: ${filePath}`);
+      console.warn(clfdate(), `Failed to parse path from path: ${filePath}`);
       return;
     }
 
-    console.log(
+    console.log(clfdate(), 
       `Event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory}`
     );
 
@@ -82,15 +121,24 @@ const handleFileEvent = async (event, blogID, filePath) => {
     // Schedule the event handler to run within the limiter
     await limiter.schedule(async () => {
       if (event === "add" || event === "change") {
-        await upload(blogID, pathInBlogDirectory);
+        await withRetries(
+          `upload ${blogID}/${pathInBlogDirectory}`,
+          () => upload(blogID, pathInBlogDirectory)
+        );
       } else if (event === "unlink" || event === "unlinkDir") {
-        await remove(blogID, pathInBlogDirectory);
+        await withRetries(
+          `remove ${blogID}/${pathInBlogDirectory}`,
+          () => remove(blogID, pathInBlogDirectory)
+        );
       } else if (event === "addDir") {
-        await mkdir(blogID, pathInBlogDirectory);
+        await withRetries(
+          `mkdir ${blogID}/${pathInBlogDirectory}`,
+          () => mkdir(blogID, pathInBlogDirectory)
+        );
       }
     });
   } catch (error) {
-    console.error(`Error handling file event (${event}, ${filePath}):`, error);
+    console.error(clfdate(), `Error handling file event (${event}, ${filePath}):`, error);
   }
 };
 
@@ -127,7 +175,7 @@ const initialize = async () => {
       if (blogID) {
         await watch(blogID);
       } else {
-        console.warn(`Ignoring non-blog folder: ${folder.name}`);
+        console.warn(clfdate(), `Ignoring non-blog folder: ${folder.name}`);
       }
     }
   }
@@ -136,14 +184,14 @@ const initialize = async () => {
 // Watches a specific blog folder
 const watch = async (blogID) => {
   if (blogWatchers.has(blogID)) {
-    console.warn(`Already watching blog folder: ${blogID}`);
+    console.warn(clfdate(), `Already watching blog folder: ${blogID}`);
     return;
   }
 
   const blogPath = join(iCloudDriveDirectory, blogID);
   let initialScanComplete = false;
 
-  console.log(`Starting watcher for blog folder: ${blogID}`);
+  console.log(clfdate(), `Starting watcher for blog folder: ${blogID}`);
   // Monitor the CPU usage on the macserver before and after
   // making any changes to the polling intervals
   const watcher = chokidar
@@ -158,7 +206,7 @@ const watch = async (blogID) => {
       const blogID = extractBlogID(filePath);
 
       if (!blogID) {
-        console.warn(`Failed to parse blogID from path: ${filePath}`);
+        console.warn(clfdate(), `Failed to parse blogID from path: ${filePath}`);
         return;
       }
 
@@ -175,10 +223,10 @@ const watch = async (blogID) => {
       }
     })
     .on("ready", () => {
-      console.log(`Initial scan complete for blog folder: ${blogID}`);
+      console.log(clfdate(), `Initial scan complete for blog folder: ${blogID}`);
       initialScanComplete = true; // Mark the initial scan as complete
     })
-    .on('error', (error) => console.error(`Watcher error: ${error}`));
+    .on('error', (error) => console.error(clfdate(), `Watcher error: ${error}`));
 
   blogWatchers.set(blogID, watcher);
 };
@@ -187,11 +235,11 @@ const watch = async (blogID) => {
 const unwatch = async (blogID) => {
   const watcher = blogWatchers.get(blogID);
   if (!watcher) {
-    console.warn(`No active watcher for blog folder: ${blogID}`);
+    console.warn(clfdate(), `No active watcher for blog folder: ${blogID}`);
     return;
   }
 
-  console.log(`Stopping watcher for blog folder: ${blogID}`);
+  console.log(clfdate(), `Stopping watcher for blog folder: ${blogID}`);
   await watcher.close();
   blogWatchers.delete(blogID);
 };

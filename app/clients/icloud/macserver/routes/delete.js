@@ -1,40 +1,79 @@
 const fs = require("fs-extra");
-const { join } = require("path");
+const { join, resolve, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
+const clfdate = require("../util/clfdate");
+const normalizeMacserverPath = require("./normalizeMacserverPath");
 
 const { watch, unwatch } = require("../watcher");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
   const path = Buffer.from(req.header("pathBase64"), "base64").toString("utf8");
+  const normalizedPath = normalizeMacserverPath(path);
 
   // Validate required headers
   if (!blogID || !path) {
+    console.error(
+      clfdate(),
+      "Missing required headers for delete request",
+      { blogID, path }
+    );
     return res.status(400).send("Missing required headers: blogID or path");
   }
 
-  console.log(`Received delete request for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Received delete request for blogID: ${blogID}, path: ${path}`);
 
-  const filePath = join(iCloudDriveDirectory, blogID, path);
+  const basePath = resolve(join(iCloudDriveDirectory, blogID));
+  const filePath = resolve(join(basePath, normalizedPath));
 
-  // first unwatch the blogID to prevent further events from being triggered
-  await unwatch(blogID);
-
-  for (let i = 0; i < 10; i++) {
-    try {
-      await fs.remove(filePath);
-      console.log(`Deleted file: ${filePath}`);
-      break;
-    } catch (error) {
-      console.error(`Failed to delete file (${filePath}):`, error);
-      await new Promise((resolve) => setTimeout(resolve, 1000 * i)); // Exponential backoff
-    }
+  if (filePath !== basePath && !filePath.startsWith(`${basePath}${sep}`)) {
+    console.error(clfdate(), 
+      "Invalid path: attempted to access parent directory",
+      basePath,
+      filePath
+    );
+    return res
+      .status(400)
+      .send("Invalid path: attempted to access parent directory");
   }
 
-  console.log(`Handled file deletion: ${filePath}`);
+  // first unwatch the blogID to prevent further events from being triggered
+  try {
+    await unwatch(blogID);
+  } catch (error) {
+    console.error(clfdate(), `Failed to unwatch blogID (${blogID}):`, error);
+    return res.status(500).send("Failed to unwatch blog folder");
+  }
 
-  // re-watch the blogID
-  await watch(blogID);
+  let success = false;
 
-  res.sendStatus(200);
+  try {
+    for (let i = 0; i < 10; i++) {
+      try {
+        await fs.remove(filePath);
+        success = true;
+        console.log(clfdate(), `Deleted file: ${filePath}`);
+        break;
+      } catch (error) {
+        success = false;
+        console.error(clfdate(), `Failed to delete file (${filePath}):`, error);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * i)); // Exponential backoff
+      }
+    }
+
+    console.log(clfdate(), `Handled file deletion: ${filePath}`);
+
+    if (!success) {
+      return res.status(500).send("Failed to delete file after retries");
+    }
+
+    return res.sendStatus(200);
+  } finally {
+    // re-watch the blogID
+    try {
+      await watch(blogID);
+    } catch (error) {
+      console.error(clfdate(), `Failed to rewatch blogID (${blogID}):`, error);
+    }
+  }
 };

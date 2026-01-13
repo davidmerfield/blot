@@ -1,13 +1,19 @@
 const fs = require("fs-extra");
-const { resolve, join } = require("path");
+const { resolve, join, sep } = require("path");
 const { iCloudDriveDirectory } = require("../config");
 const { watch, unwatch } = require("../watcher");
+const clfdate = require("../util/clfdate");
 
 module.exports = async (req, res) => {
   const blogID = req.header("blogID");
   const path = Buffer.from(req.header("pathBase64"), "base64").toString("utf8");
 
   if (!blogID || !path) {
+    console.error(
+      clfdate(),
+      "Missing blogID or path header for mkdir request",
+      { blogID, path }
+    );
     return res.status(400).send("Missing blogID or path header");
   }
 
@@ -16,38 +22,53 @@ module.exports = async (req, res) => {
   const dirPath = resolve(join(basePath, path));
 
   // Check if the resolved path is inside the allowed directory
-  if (!dirPath.startsWith(basePath)) {
-    console.log(`Invalid path: attempted to access parent directory`, basePath, dirPath);
+  if (!(dirPath === basePath || dirPath.startsWith(basePath + sep))) {
+    console.error(
+      clfdate(),
+      "Invalid path: attempted to access parent directory",
+      basePath,
+      dirPath
+    );
     return res
       .status(400)
       .send("Invalid path: attempted to access parent directory");
   }
 
-  console.log(`Received mkdir request for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Received mkdir request for blogID: ${blogID}, path: ${path}`);
 
   const stat = await fs.stat(dirPath).catch(() => null);
 
   if (stat && stat.isDirectory()) {
-    console.log(`Directory already exists: ${dirPath}`);
+    console.log(clfdate(), `Directory already exists: ${dirPath}`);
     return res.sendStatus(200);
   } else if (stat) {
-    await fs.remove(dirPath);
+    try {
+      await fs.remove(dirPath);
+    } catch (error) {
+      console.error(clfdate(), `Failed to remove existing path (${dirPath}):`, error);
+      return res.status(500).send("Failed to remove existing path");
+    }
   }
 
-  console.log(`Received mkdir request for blogID: ${blogID}, path: ${path}`);
+  console.log(clfdate(), `Received mkdir request for blogID: ${blogID}, path: ${path}`);
 
   // first unwatch the blogID to prevent further events from being triggered
-  await unwatch(blogID);
+  try {
+    await unwatch(blogID);
+  } catch (error) {
+    console.error(clfdate(), `Failed to unwatch blogID (${blogID}):`, error);
+    return res.status(500).send("Failed to unwatch blog folder");
+  }
 
   let success = false;
   for (let i = 0; i < 5; i++) {
     try {
       await fs.ensureDir(dirPath);
-      console.log(`Created directory: ${dirPath}`);
+      console.log(clfdate(), `Created directory: ${dirPath}`);
       success = true;
       break;
     } catch (error) {
-      console.error(`Failed to create directory (${dirPath}):`, error);
+      console.error(clfdate(), `Failed to create directory (${dirPath}):`, error);
       if (i < 4) {
         // Only wait if we're going to retry
         await new Promise((resolve) =>
@@ -58,7 +79,12 @@ module.exports = async (req, res) => {
   }
 
   // re-watch the blogID
-  await watch(blogID);
+  try {
+    await watch(blogID);
+  } catch (error) {
+    console.error(clfdate(), `Failed to rewatch blogID (${blogID}):`, error);
+    return res.status(500).send("Failed to rewatch blog folder");
+  }
 
   if (!success) {
     return res

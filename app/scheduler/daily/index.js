@@ -22,8 +22,6 @@ function main (callback) {
       require("./hits"),
       log("Checking number of users"),
       require("./revenue"),
-      // log("Checking number of posts"),
-      // require("./entries"),
       log("Checking number of newsletter subscribers"),
       require("./newsletter-subscribers"),
       log("Finished daily update")

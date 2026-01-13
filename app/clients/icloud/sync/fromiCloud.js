@@ -21,6 +21,12 @@ module.exports = async (blogID, publish, update) => {
   if (!update) update = () => {};
 
   const checkWeCanContinue = CheckWeCanContinue(blogID);
+  const summary = {
+    downloaded: 0,
+    removed: 0,
+    createdDirs: 0,
+    skipped: 0,
+  };
 
   try {
     publish("Syncing folder tree");
@@ -45,6 +51,7 @@ module.exports = async (blogID, publish, update) => {
         await checkWeCanContinue();
         publish("Removing local ignored item", path);
         await fs.remove(localPath(blogID, path));
+        summary.removed += 1;
         await update(path);
         continue;
       }
@@ -57,6 +64,7 @@ module.exports = async (blogID, publish, update) => {
         await checkWeCanContinue();
         publish("Removing local item", join(dir, name));
         await fs.remove(localPath(blogID, path));
+        summary.removed += 1;
         await update(path);
       }
     }
@@ -72,13 +80,16 @@ module.exports = async (blogID, publish, update) => {
           await checkWeCanContinue();
           publish("Removing", path);
           await fs.remove(localPath(blogID, path));
+          summary.removed += 1;
           publish("Creating directory", path);
           await fs.ensureDir(localPath(blogID, path));
+          summary.createdDirs += 1;
           await update(path);
         } else if (!existsLocally) {
           await checkWeCanContinue();
           publish("Creating directory", path);
           await fs.ensureDir(localPath(blogID, path));
+          summary.createdDirs += 1;
           await update(path);
         }
 
@@ -91,6 +102,7 @@ module.exports = async (blogID, publish, update) => {
           try {
             if (size > maxFileSize) {
               publish("File too large", path);
+              summary.skipped += 1;
               continue;
             }
 
@@ -98,6 +110,7 @@ module.exports = async (blogID, publish, update) => {
             publish("Updating", path);
 
             await download(blogID, path);
+            summary.downloaded += 1;
             await update(path);
           } catch (e) {
             publish("Failed to download", path, e);
@@ -113,4 +126,6 @@ module.exports = async (blogID, publish, update) => {
     publish("Sync failed", err.message);
     // Possibly rethrow or handle
   }
+
+  return summary;
 };

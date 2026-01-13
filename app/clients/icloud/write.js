@@ -8,13 +8,18 @@ module.exports = async (blogID, path, contents, callback) => {
     return callback(new Error(`Cannot write ignored file: ${path}`));
   }
 
-  const pathOnBlot = localPath(blogID, path);
+  try {
+    const pathOnBlot = localPath(blogID, path);
+    await fs.outputFile(pathOnBlot, contents);
+  } catch (error) {
+    console.error(`Blog: ${blogID} Error writing to ${path}:`, error);
+    return callback(error);
+  }
 
   try {
-    await fs.outputFile(pathOnBlot, contents);
     await remoteUpload(blogID, path);
   } catch (error) {
-    console.error(`Error writing to ${pathOnBlot}:`, error);
+    console.error(`Error uploading ${path} to remote:`, error);
     return callback(error);
   }
 

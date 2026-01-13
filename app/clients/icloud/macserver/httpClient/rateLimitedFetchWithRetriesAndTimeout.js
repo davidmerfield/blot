@@ -1,5 +1,6 @@
 const Bottleneck = require("bottleneck");
 const fetch = require("node-fetch");
+const clfdate = require("../util/clfdate");
 
 // Global rate limiter configuration
 const limiter = new Bottleneck({
@@ -33,27 +34,27 @@ const fetchWithRetriesAndTimeout = async (url, options = {}) => {
 
       // Handle timeout or other fetch errors
       if (error.name === "AbortError") {
-        console.error(`Request timed out (attempt ${attempt} of ${retries}): ${url}`);
+        console.error(clfdate(), `Request timed out (attempt ${attempt} of ${retries}): ${url}`);
       } else {
-        console.error(`Request failed: ${url} ${error.message} (attempt ${attempt}/${retries})`);
+        console.error(clfdate(), `Request failed: ${url} ${error.message} (attempt ${attempt}/${retries})`);
         
         if (options && options.headers && options.headers.blogID) {
-          console.error(`- blog id: ${options.headers.blogID}`);
+          console.error(clfdate(), `- blog id: ${options.headers.blogID}`);
         }
 
         if (options && options.headers && options.headers.pathBase64) {
-          console.error(`- path: ${Buffer.from(options.headers.pathBase64, 'base64').toString('utf8')}`);
+          console.error(clfdate(), `- path: ${Buffer.from(options.headers.pathBase64, 'base64').toString('utf8')}`);
         } 
 
         if (options && options.body) {
-          console.error(`- body size: ${options.body.length} bytes`);
+          console.error(clfdate(), `- body size: ${options.body.length} bytes`);
         }
 
         // log if the abort signal was triggered for any reason
         if (signal.aborted) {
-          console.error(`- abort signal was triggered`);
+          console.error(clfdate(), `- abort signal was triggered`);
         } else {
-          console.error(`- abort signal was not triggered`);
+          console.error(clfdate(), `- abort signal was not triggered`);
         }
         
       }

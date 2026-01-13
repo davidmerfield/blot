@@ -2,6 +2,7 @@ const readline = require("readline");
 const { iCloudDriveDirectory } = require("./config");
 const { spawn } = require("child_process");
 const recursiveList = require("./util/recursiveList");
+const clfdate = require("./util/clfdate");
 
 // The purpose of this module is to keep iCloud Drive in sync
 // and it achieves this by running `brctl monitor` to detect blog
@@ -29,9 +30,9 @@ module.exports = () => {
       const match = line.match(/blog_[a-fA-F0-9]+/);
       if (match) {
         const blogId = match[0];
-        console.log("Recursively listing contents of:", blogId);
+        console.log(clfdate(), "Recursively listing contents of:", blogId);
         recursiveList(`${iCloudDriveDirectory}/${blogId}`, 0).catch((error) => {
-          console.error(
+          console.error(clfdate(), 
             `Failed to recursively list contents of ${blogId}:`,
             error
           );
@@ -40,12 +41,12 @@ module.exports = () => {
     });
 
     monitorProcess.stderr.on("data", (data) => {
-      console.error(`stderr: ${data}`);
+      console.error(clfdate(), `stderr: ${data}`);
     });
 
     monitorProcess.on("close", (code) => {
       rl.close();
-      console.warn(
+      console.warn(clfdate(), 
         `brctl monitor exited with code ${code}, restarting in 1s...`
       );
       setTimeout(startMonitor, 1000);

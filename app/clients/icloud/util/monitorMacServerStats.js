@@ -14,6 +14,8 @@ const ICLOUD_SPACE_LIMIT = config.icloud.iCloudSpaceLimit;
 
 const POLLING_INTERVAL = 60 * 1000; // 1 minute
 
+const fetch = require("./rateLimitedFetchWithRetriesAndTimeout");
+
 // map to keep track of which notifications have been sent
 const notificationsSent = {};
 
@@ -25,10 +27,6 @@ module.exports = () => {
       const res = await fetch(MAC_SERVER_ADDRESS + "/stats", {
         headers: { Authorization },
       });
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! Status: ${res.status}`);
-      }
 
       const stats = await res.json();
 
@@ -48,6 +46,15 @@ module.exports = () => {
       );
 
       console.log(clfdate(), "Mac server stats: ", stats);
+
+      // Check if server recovered from being down
+      if (notificationsSent.icloud_server_down) {
+        if (!notificationsSent.icloud_server_recovered) {
+          email.ICLOUD_SERVER_RECOVERED();
+          notificationsSent.icloud_server_recovered = true;
+        }
+        notificationsSent.icloud_server_down = false;
+      }
 
       if (stats.disk_bytes_available < DISK_SPACE_LIMIT) {
         console.log(clfdate(), "Disk space is low");
@@ -84,6 +91,7 @@ module.exports = () => {
         email.ICLOUD_SERVER_DOWN();
         notificationsSent.icloud_server_down = true;
       }
+      notificationsSent.icloud_server_recovered = false;
     }
-  }, POLLING_INTERVAL); 
+  }, POLLING_INTERVAL);
 };
