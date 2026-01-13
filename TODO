@@ -1,3 +1,6 @@
+Make iCloud sync issue and Dropbox sync issue emails more useful
+- script to create log for a single site
+
 CLIENT SETUP FLOW:
 - RESET FROM BLOT (NON DESTRUCTIVE, deduplicate on conflict)
 - RESET TO BLOT (TWICE?) then sync/FIX then begin ordinary syncing
@@ -1417,6 +1420,7 @@ Write new clients to sync blog folders
   - Tell [Harry](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxRdvrcfMwTVnvGrHKgvJmfwxM)
 - [SFTP](https://www.npmjs.com/package/ftpd) 
   - Tell [Coraline](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllCmcFflWmXcCdVzTJztDTwXx)
+  - Tell [Utkorg](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQBKmPsLNTbQnxjbDDtzdqKn)
   - Tell [Calvin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChclvkfHMWfnqGdWkQnzMdklW) 
   - Tell [Fabrice](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNCspWMdnbCdzfHGwBrSKPBSC)
 - [NextCloud](https://nextcloud.com/) 

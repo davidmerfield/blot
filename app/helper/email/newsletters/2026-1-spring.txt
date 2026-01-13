@@ -5,6 +5,7 @@ Spring newsletter
 **New features**
 
 **Changes**
+- Google Docs now support superscript, subscript, strike, underline
 
 **Bug fixes**
 
