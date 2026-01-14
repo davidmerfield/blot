@@ -1,8 +1,42 @@
 describe("video-embed plugin", function () {
   const videoEmbed = require("../index");
   const cheerio = require("cheerio");
+  const nock = require("nock");
+  const bandcampOgHtml = ({ src, width, height }) => `<!doctype html>
+    <html>
+      <head>
+        <meta property="og:video" content="${src}">
+        <meta property="og:video:width" content="${width}">
+        <meta property="og:video:height" content="${height}">
+      </head>
+      <body></body>
+    </html>`;
+
+  afterEach(function () {
+    nock.cleanAll();
+  });
 
   it("embeds videos from youtube, vimeo and music from bandcamp", function (done) {
+    nock("https://oliviachaney.bandcamp.com")
+      .get("/album/circus-of-desire")
+      .reply(
+        200,
+        bandcampOgHtml({
+          src: "https://bandcamp.com/EmbeddedPlayer/v=2/album=2447688282/size=large/tracklist=false/artwork=small/",
+          width: 400,
+          height: 120,
+        })
+      );
+    nock("https://cloquet.bandcamp.com")
+      .get("/track/new-drugs")
+      .reply(
+        200,
+        bandcampOgHtml({
+          src: "https://bandcamp.com/EmbeddedPlayer/v=2/track=2483181576/size=large/tracklist=false/artwork=small/",
+          width: 400,
+          height: 120,
+        })
+      );
     const $ = cheerio.load(
       `<a href="https://www.youtube.com/watch?v=MJ62hh0a9U4">https://www.youtube.com/watch?v=MJ62hh0a9U4</a>
         <a href="https://vimeo.com/87952436">https://vimeo.com/87952436</a>
