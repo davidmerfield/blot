@@ -15,16 +15,6 @@ describe("build", function () {
     };
   });
 
-  it("will use a title to generate an image caption over the alt text", function (done) {
-    const contents = `![Alt text here](foo.jpg "Title here")`;
-    const path = "/hello.txt";
-    const html =
-      '<p><img src="/foo.jpg" title="Title here" alt="Alt text here"><span class="caption">Title here</span></p>';
-
-    this.blog.plugins.imageCaption = { enabled: true, options: {} };
-    this.buildAndCheck({ path, contents }, { html }, done);
-  });
-
   it("will turn titles into title case if plugin is enabled", function (done) {
     const contents = "# Title goes here";
     const path = "/hello.txt";

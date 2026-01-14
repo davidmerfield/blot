@@ -30,7 +30,7 @@ function summary($, title) {
   // will be exluded
   // ```
   $(
-    "pre, .katex, script, object, iframe, style, h1, h2, h3, h4, h5, h6, img + .caption"
+    "pre, .katex, script, object, iframe, style, h1, h2, h3, h4, h5, h6, img + .caption, figcaption"
   ).remove();
 
   // add a space before the end of
