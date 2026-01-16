@@ -155,14 +155,23 @@ module.exports = async function sync(blogID, publish, update) {
             console.log("Downloading missing:", path);
           }
 
-          const updated = await download(blogID, drive, path, {
-            id,
-            md5Checksum,
-            mimeType,
-            modifiedTime,
-          });
+          try {
+            const result = await download(blogID, drive, path, {
+              id,
+              md5Checksum,
+              mimeType,
+              modifiedTime,
+            });
 
-          if (updated) await update(path);
+            if (result?.skippedReason === "exportSizeLimitExceeded") {
+              publish("Skipped oversized Google Doc", path);
+            }
+
+            if (result?.updated) await update(path);
+          } catch (err) {
+            publish("Download failed", path);
+            console.error("Download failed for", path, err);
+          }
         }
       } else {
         if (existsLocally && !existsLocally.isDirectory) {
