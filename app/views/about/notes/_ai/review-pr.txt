@@ -1,4 +1,4 @@
-Use git diff to perform a line-by-line review of this branch against master.
+Use git diff and git status to perform a line-by-line review of this branch against master, including uncomitted changes.
 
 For each change, reconstruct the surrounding context (functions, call sites, and related files) and assess:
 
