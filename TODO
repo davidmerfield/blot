@@ -539,9 +539,7 @@ Improvements to template engine
   - Whitespace trimming and tell [Chad](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChmTsrnBLkSXfNXKDtXdNFjfk)
   - Number formatting (e.g. add commas to int.) and tell [Chad](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChmTsrnBLkSXfNXKDtXdNFjfk)
 - Make template slug seperate from the template ID, simply for human readability
-- Tell [bukit](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwqMCsWCjhPcWpPszlZhtqNnM) when it's possible to change the URL of the /tagged/x pages in the template engine
 - Investigate performance of rich text editor in Safari on template editor and follow up with [Rachel](https://mail.google.com/mail/u/0/#inbox/FMfcgzQXKNFKbzhWFnsgQrBBfGqZNMhL)
-- Make it possible to change URL of tagged pages and tell [Jarrod](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQvxkjzVJFTpMQSNJRzptKkdH)
 - Add blog.statistics and entry.statistics (total words, etc.) and tell [Pratik](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmtDzMRWDrnBcZmXBmCWtvbwJD)
 - Work out how to make live but saveable modifications for preview purposes on the template editor. I have already established a messaging channel between preview HTML pages and the template editor with the script injected in render/middleware.
 - Add [background patterns](https://bansal.io/pattern-css#checks) to template editor tools, tell [Ish](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMsVFZBwLtkGslXZXkcxmKdvf)
