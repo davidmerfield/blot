@@ -2,6 +2,7 @@ iCloud client:
 - Log when icloud client fails to communicate event to main server
 - repeatedly call new /resync endpoint with blogID until server responds?
 - Make iCloud site routes blocking so the mac server waits for the main server to finish building before sending the next sync update? But consider timeout
+- Fix bug: handle deletion of iCloud folder by user cleanly and clearly
 - Fix bug with iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
 - does this solve the icloud client sync issues?
 - Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset). 
@@ -71,6 +72,9 @@ Dropbox client
 It seems like the paypal next bill dates are not syncing correctly for some users (e.g.slopserve)
 
 Unwind bugginess with template slugs / local templates
+- Slugs should be derived from template.name and unique per owner
+- Local editing should use folder name ↔ name ↔ slug consistently
+- Add slug lookup utility and update dashboard/template load paths
 
 Add a warning email one week before first renewal reminding customers to cancel
 - with link to switch to annual billing
