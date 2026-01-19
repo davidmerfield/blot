@@ -25,7 +25,7 @@ iCloud client:
 - Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
 
 Fix bugs with templates:
-- Fix bug with videos on Reference template and [Tell Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGslbPSKMXkRbvrHKFTWhbJbPlg)
+- Fix bug with videos inside posts on Links template and [Tell Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGslbPSKMXkRbvrHKFTWhbJbPlg)
 - Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
 - Fix 'back' button in photo template and tell [Bibi](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcPJTmPXxWvhbmFpvwdfVzhpn)
 - Fix side navigation on Blog template and tell [Sava](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJcgnPdxPcSqPwmMnFSThFMQg)
