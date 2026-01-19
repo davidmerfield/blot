@@ -7,6 +7,30 @@ const tempDir = require("helper/tempDir")();
 const guid = require("helper/guid");
 const computeMd5Checksum = require("../util/md5Checksum");
 
+const isExportSizeLimitError = (err) => {
+  return (
+    err?.code === 403 &&
+    (err?.errors?.[0]?.reason === "exportSizeLimitExceeded" ||
+      err?.message?.includes("too large to be exported"))
+  );
+};
+
+const ensurePlaceholderWithMtime = async (pathOnBlot, modifiedTime) => {
+  await fs.ensureFile(pathOnBlot);
+  // We update the date-modified time of the file to match the remote file
+  // to prevent Blot re-downloading by ensuring the file is not considered stale
+  try {
+    debug("Setting mtime for file", pathOnBlot, "to", modifiedTime);
+    debug("mtime before:", (await fs.stat(pathOnBlot)).mtime);
+    const mtime = new Date(modifiedTime);
+    debug("mtime to set:", mtime);
+    await fs.utimes(pathOnBlot, mtime, mtime);
+    debug("mtime after:", (await fs.stat(pathOnBlot)).mtime);
+  } catch (e) {
+    debug("Error setting mtime", e);
+  }
+};
+
 module.exports = async (
   blogID,
   drive,
@@ -16,12 +40,29 @@ module.exports = async (
   return new Promise(async function (resolve, reject) {
     let pathOnBlot = localPath(blogID, path);
     const tempPath = join(tempDir, guid());
+    let settled = false;
+    const settle = (action) => {
+      if (settled) return;
+      settled = true;
+      action();
+    };
+
+    const handleExportSizeLimit = async (err) => {
+      if (!isExportSizeLimitError(err)) {
+        return false;
+      }
+
+      debug("EXPORT size limit exceeded for file", pathOnBlot);
+      await ensurePlaceholderWithMtime(pathOnBlot, modifiedTime);
+      debug("   created empty file at:", colors.green(pathOnBlot));
+      return true;
+    };
     try {
       if (mimeType === "application/vnd.google-apps.folder") {
         await fs.ensureDir(pathOnBlot);
         debug("MKDIR folder");
         debug("   to:", colors.green(pathOnBlot));
-        return resolve(false);
+        return resolve({ updated: false });
       }
 
       // create an empty placeholder file for Google App files
@@ -32,25 +73,13 @@ module.exports = async (
         mimeType.startsWith("application/vnd.google-apps.") &&
         mimeType !== "application/vnd.google-apps.document"
       ) {
-        await fs.ensureFile(pathOnBlot);
-        // We update the date-modified time of the file to match the remote file
-        // to prevent Blot re-downloading by ensuring the file is not considered stale
-        try {
-          debug("Setting mtime for file", pathOnBlot, "to", modifiedTime);
-          debug("mtime before:", (await fs.stat(pathOnBlot)).mtime);
-          const mtime = new Date(modifiedTime);
-          debug("mtime to set:", mtime);
-          await fs.utimes(pathOnBlot, mtime, mtime);
-          debug("mtime after:", (await fs.stat(pathOnBlot)).mtime);
-        } catch (e) {
-          debug("Error setting mtime", e);
-        }
+        await ensurePlaceholderWithMtime(pathOnBlot, modifiedTime);
         debug(
           "SKIP download of file because it is a Google App file type",
           mimeType
         );
         debug("   created empty file at:", colors.green(pathOnBlot));
-        return resolve(false);
+        return resolve({ updated: false });
       }
 
       const existingMd5Checksum = await computeMd5Checksum(pathOnBlot);
@@ -60,7 +89,7 @@ module.exports = async (
         debug("      path:", path);
         debug("   locally:", existingMd5Checksum);
         debug("    remote:", md5Checksum);
-        return resolve(false);
+        return resolve({ updated: false });
       }
 
       debug("DOWNLOAD file");
@@ -96,6 +125,8 @@ module.exports = async (
 
       data
         .on("end", async () => {
+          if (settled) return;
+          settled = true;
           try {
             await fs.move(tempPath, pathOnBlot, { overwrite: true });
           } catch (e) {
@@ -114,13 +145,36 @@ module.exports = async (
           }
 
           debug("DOWNLOAD file SUCCEEDED");
-          resolve(true);
+          resolve({ updated: true });
         })
-        .on("error", reject)
+        .on("error", (err) => {
+          if (settled) return;
+          settled = true;
+          handleExportSizeLimit(err)
+            .then((handled) => {
+              if (handled) {
+                return resolve({
+                  updated: false,
+                  skippedReason: "exportSizeLimitExceeded",
+                });
+              }
+              return reject(err);
+            })
+            .catch((handleError) => reject(handleError));
+        })
         .pipe(dest);
     } catch (e) {
       debug("download error", e);
-      reject(e);
+      const handled = await handleExportSizeLimit(e);
+      if (handled) {
+        return settle(() =>
+          resolve({
+            updated: false,
+            skippedReason: "exportSizeLimitExceeded",
+          })
+        );
+      }
+      settle(() => reject(e));
     }
   });
 };
