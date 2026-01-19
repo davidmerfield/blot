@@ -89,7 +89,6 @@ module.exports = async (req, res) => {
         }
 
         console.error(clfdate(), "Failed to process file", {
-          filePath,
           error,
         });
       }
