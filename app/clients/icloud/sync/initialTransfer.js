@@ -3,6 +3,7 @@ const MACSERVER_URL = config.icloud.server_address; // The Macserver base URL fr
 const MACSERVER_AUTH = config.icloud.secret; // The Macserver Authorization secret from config
 const database = require("../database");
 const syncToiCloud = require("./toiCloud");
+const syncFromiCloud = require("./fromiCloud");
 const resolveCaseConflicts = require("./resolveCaseConflicts");
 const establishSyncLock = require("sync/establishSyncLock");
 const fetch = require("../util/rateLimitedFetchWithRetriesAndTimeout");
@@ -16,8 +17,24 @@ module.exports = async function initialTransfer(blogID) {
     await database.store(blogID, { transferringToiCloud: true, error: null });
     folder.status("Resolving case conflicts");
     await resolveCaseConflicts(blogID, folder.status, folder.update);
-    folder.status("Syncing to iCloud");
-    await syncToiCloud(blogID, folder.status, folder.update);
+    
+    // 'soft' sync does not remove 
+    // files from the iCloud folder if they do not exist on Blot.
+    // this lets the user set up a folder which contains files and
+    // which will be merged with the Blot folder.
+    folder.status("Transferring files to iCloud");
+    await syncToiCloud(blogID, folder.status, folder.update, { soft: true });
+
+    // we run the sync again to verify the transfer succeeded
+    folder.status("Verifying transfer");
+    await syncToiCloud(blogID, folder.status, folder.update, { soft: true });
+
+    // then run a sync from iCloud to pull down any files which
+    // were added to the iCloud folder after the transfer.
+    folder.status("Syncing from iCloud");
+    await syncFromiCloud(blogID, folder.status, folder.update);
+
+    folder.status("Transfer complete");
 
     // Now that the transfer is complete, notify the Macserver to begin watching the iCloud folder
     // for changes. This will let us know when the user has changed their folder on iCloud.

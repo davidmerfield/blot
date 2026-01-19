@@ -27,7 +27,7 @@ async function retry(fn, ...args) {
   }
 }
 
-module.exports = async (blogID, publish, update) => {
+module.exports = async (blogID, publish, update, { soft = false } = {}) => {
   publish = publish || function () {};
   update = update || function () {};
 
@@ -44,7 +44,7 @@ module.exports = async (blogID, publish, update) => {
         (item) => item.name.normalize("NFC") === name.normalize("NFC")
       );
 
-      if (!localItem) {
+      if (!localItem && !soft) {
         const path = join(dir, name);
         await checkWeCanContinue();
         publish("Removing from iCloud", join(dir, name));
