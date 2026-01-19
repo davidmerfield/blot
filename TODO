@@ -223,7 +223,7 @@ Fix [Frank](https://mail.google.com/mail/u/0/1527fbcf999ba0c3)'s strange templat
 
 Fix bugs with template engine:
 - Prevent double submission on template editor at insertion and front-end levels
-- Make it possible to rename template directories and tell [Darren](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwHxvsmgwbnxLbDMNDplTLltlc) and tell [questioner](https://blot.im/questions/1610)
+- Make it possible to rename template directories and tell [Darren](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwHxvsmgwbnxLbDMNDplTLltlc) and tell [questioner](https://blot.im/questions/1610) and [questioner](https://blot.im/questions/3329)
 - Fix bug not exposing issue with invalid JSON in package.json for locally-edited template on dashboard and tell [Jason](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjndBRlNNjZtlddcVVfFWVBbg)
 - Investigate bug with template views whose names include hashtags and follow up with [Jay](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqPzMvLDJBfbNfLzpkKDzmZSNt)
 - Fix bug with undeleteable template files prefixed with dot and tell [Stuart](https://mail.google.com/mail/u/0/?zx=j8rkxjpin0du#inbox/FMfcgzGqRZbhWzrwNrgrFLQBBDWBzhxL)
