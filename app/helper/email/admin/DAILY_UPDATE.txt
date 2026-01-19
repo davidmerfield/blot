@@ -1,27 +1,7 @@
 Daily update for {{date}}
 
-Posts: {{total_new_entries}} published yesterday, {{total_entries}} total posts across all sites
-
-Requests: {{nginx.requests}} requests served, {{node.requests}} by node
-
-Bandwidth: {{nginx.bytesSent}} of data sent, {{nginx.bytesReceived}} received
-
-Response time: {{nginx.medianResponseTime}}s, {{node.medianResponseTime}}s by node
-
 Sites: {{total_active_blogs}} sites with active subscriptions, {{total_customers}} customers
 
 Recurring revenue: {{annual_recurring_revenue}} per year, {{monthly_percentage}} paid monthly, {{paypal_percentage}} paid with PayPal
 
 Newsletter subscribers: {{newsletter_subscribers}}
-
-***
-
-{{#blogs_with_new_entries}}
-[{{label}}]({{{url}}})
-
-{{#entries}}
-- [{{title}}]({{{link}}})
-{{/entries}}
-
-{{/blogs_with_new_entries}}
-
