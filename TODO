@@ -26,7 +26,8 @@ iCloud client:
 
 Fix bugs with templates:
 - Fix bug with videos on Reference template and [Tell Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGslbPSKMXkRbvrHKFTWhbJbPlg)
-- Fix post navigation on Portfolio template and tell [Questioner](https://blot.im/questions/1894)
+- Improve post navigation on Portfolio template within tagged collections and tell [Questioner](https://blot.im/questions/1894)
+- Make it possible to sort by id with dropdown on portfolio template
 - Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
 - Fix 'back' button in photo template and tell [Bibi](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcPJTmPXxWvhbmFpvwdfVzhpn)
 - Fix side navigation on Blog template and tell [Sava](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJcgnPdxPcSqPwmMnFSThFMQg)
