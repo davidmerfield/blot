@@ -44,39 +44,65 @@ module.exports = async (req, res) => {
     console.error(clfdate(), "Error listing directory:", dirPath, error);
   }
 
+  let files = [];
+
   try {
     // now that we are sure the directory is in sync, we can read it
-    const files = await fs.readdir(dirPath, { withFileTypes: true });
+    files = await fs.readdir(dirPath, { withFileTypes: true });
+  } catch (error) {
+    
+    if (error.code === "ENOENT") {
+      return res.status(404).send("Folder does not exist");
+    }
 
+    return res.status(500).send("Failed to read directory contents");
+  }
+  
+  try {
     // Ignore system files and directories we don't want to sync
     const filteredFiles = files.filter((file) => !shouldIgnoreFile(file.name));
 
     const result = [];
 
     for (const file of filteredFiles) {
-      const filePath = join(dirPath, file.name);
-      const stat = await fs.stat(filePath);
+      try {
+        const filePath = join(dirPath, file.name);
+        const stat = await fs.stat(filePath);
 
-      const modifiedTime = stat.mtime.toISOString();
-      const size = stat.size;
-      const isDirectory = file.isDirectory();
+        const modifiedTime = stat.mtime.toISOString();
+        const size = stat.size;
+        const isDirectory = file.isDirectory();
 
-      result.push({
-        name: file.name,
-        isDirectory,
-        size: isDirectory ? undefined : size,
-        modifiedTime: isDirectory ? undefined : modifiedTime,
-      });
+        result.push({
+          name: file.name,
+          isDirectory,
+          size: isDirectory ? undefined : size,
+          modifiedTime: isDirectory ? undefined : modifiedTime,
+        });
+      } catch (error) {
+        // Don't let this error block the response, a file 
+        // might have been deleted or moved since the
+        // directory was listed
+
+        if (error.code === "ENOENT") {
+          continue;
+        }
+
+        console.error(clfdate(), "Failed to process file", {
+          filePath,
+          error,
+        });
+      }
     }
 
     console.log(clfdate(), `Readdir complete for blogID: ${blogID}, path: ${path}`);
     console.log(clfdate(), result);
     res.json(result);
   } catch (error) {
-    console.error(clfdate(), "Failed to read directory contents", {
+    console.error(clfdate(), "Failed to process directory contents", {
       dirPath,
       error,
     });
-    res.status(500).send("Failed to read directory contents");
+    res.status(500).send("Failed to process directory contents");
   }
 };
