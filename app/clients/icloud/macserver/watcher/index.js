@@ -16,6 +16,7 @@ const status = require("../httpClient/status");
 const upload = require("../httpClient/upload");
 const mkdir = require("../httpClient/mkdir");
 const remove = require("../httpClient/remove");
+const resync = require("../httpClient/resync");
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -120,21 +121,35 @@ const handleFileEvent = async (event, blogID, filePath) => {
 
     // Schedule the event handler to run within the limiter
     await limiter.schedule(async () => {
-      if (event === "add" || event === "change") {
-        await withRetries(
-          `upload ${blogID}/${pathInBlogDirectory}`,
-          () => upload(blogID, pathInBlogDirectory)
-        );
-      } else if (event === "unlink" || event === "unlinkDir") {
-        await withRetries(
-          `remove ${blogID}/${pathInBlogDirectory}`,
-          () => remove(blogID, pathInBlogDirectory)
-        );
-      } else if (event === "addDir") {
-        await withRetries(
-          `mkdir ${blogID}/${pathInBlogDirectory}`,
-          () => mkdir(blogID, pathInBlogDirectory)
-        );
+      try {
+        if (event === "add" || event === "change") {
+          await withRetries(
+            `upload ${blogID}/${pathInBlogDirectory}`,
+            () => upload(blogID, pathInBlogDirectory)
+          );
+        } else if (event === "unlink" || event === "unlinkDir") {
+          await withRetries(
+            `remove ${blogID}/${pathInBlogDirectory}`,
+            () => remove(blogID, pathInBlogDirectory)
+          );
+        } else if (event === "addDir") {
+          await withRetries(
+            `mkdir ${blogID}/${pathInBlogDirectory}`,
+            () => mkdir(blogID, pathInBlogDirectory)
+          );
+        }
+      } catch (error) {
+        resync(
+          blogID,
+          `event ${event} for ${pathInBlogDirectory} failed after retries`
+        ).catch((resyncError) => {
+          console.error(
+            clfdate(),
+            `Unexpected error requesting resync for blogID: ${blogID}`,
+            resyncError
+          );
+        });
+        throw error;
       }
     });
   } catch (error) {
