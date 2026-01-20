@@ -109,5 +109,6 @@ module.exports = async (blogID, publish, update, { soft = false, abortOnError = 
   } catch (e) {
     publish("Sync failed");
     console.log(prefix(), "Sync failed", e);
+    if (abortOnError) throw e;
   }
 };
