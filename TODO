@@ -1,4 +1,5 @@
 iCloud client:
+- Add email notification when iCloud server has resyncRequested!
 - Fix bug: high priority, drift sync. chokidar missing events (rename incomplete, it applied on the delete):
   - To reproduce, edit two files then quickly rename them.
   - To solve... not sure? leverage brctl monitor?
