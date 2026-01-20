@@ -1,26 +1,22 @@
 iCloud client:
-- Fix bug: data loss: ensure that the hourly sync check absolutely is gated by the sync lock to prevent a scenario during a long initial setup where the state is nuked back from iCloud (files not yet transferred would be removed on Blot)
-- Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
-- Fix bug: low priority, this just causes an error in the logs when freeing up disk space. Problem: attempting to evict a file within a .pages directory (a special apple file) e.g. Post.pages/preview.jpg will fail: you need to evict the parent directory perhaps?
-- Investigate: chokidar missing events (rename incomplete, it applied on the delete):
+- Fix bug: high priority, drift sync. chokidar missing events (rename incomplete, it applied on the delete):
   - To reproduce, edit two files then quickly rename them.
   - To solve... not sure? leverage brctl monitor?
   - NOTE: once triggered, chokidar totally loses track of the files, subsequent events don't even fire!
-- iCloud: when you change the case of a folder, the files (and posts) inside duplicate and are stored twice
+  - maybe we can solve by:
+    - switching away from chokidar polling? if this fails, document why!
+    - maybe use: https://www.npmjs.com/package/fsevents?activeTab=readme
+    - leveraging `brctl monitor -i` which includes paths of new or updated files, but not removed files. it also fires for evict events...
+- Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
+- Fix bug: low priority, this just causes an error in the logs when freeing up disk space. Problem: attempting to evict a file within a .pages directory (a special apple file) e.g. Post.pages/preview.jpg will fail: you need to evict the parent directory perhaps?
 - Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
-- Add logging instrumentation of modified file paths to sync verification to aid in analysis of sync drift
+- Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
+  - Add logging instrumentation of modified file paths to sync verification to aid in analysis of sync drift
 - Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
 - Start writing tests for icloud client
 - Start writing tests for macserver
-- Modify setup flow:
-  - Phase 1: RESET FROM BLOT (NON DESTRUCTIVE, deduplicate on conflict)
-  - Phase 2: RESET TO BLOT (TWICE?) then sync/FIX then begin ordinary syncing
 - Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
-- Investigate the 500 timeout errors – are these caused by pending syncs / folder locks?
-  - tail -n 1000000 /var/instance-ssd/logs/access.log | grep " 500 " | grep "/clients/icloud"
-- Investigate the unrenamed folders in the mac server icloud drive?
-  - partial incomplete setup? sharing a non-empty folder? 
-- Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
+- Make the various internal server errors (500) more clear when there is a folder lock, perhaps respond with 429? or some other status? and clearer message
 
 Fix bugs with templates:
 - Fix bug with videos inside posts on Links template and [Tell Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGslbPSKMXkRbvrHKFTWhbJbPlg)

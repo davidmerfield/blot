@@ -74,6 +74,10 @@ const resyncRecentlySynced = async (options = {}) => {
     // because we might have missed some events
     if (Date.now() - lastSync < windowMs) {
       console.log(clfdate(), "Resyncing blog: ", blogID);
+
+      // Ensure the hourly sync check is always gated by the sync
+      // lock to prevent files from being removed from Blot 
+      // during an initial setup. This prevents data loss.
       const { folder, done } = await establishSyncLock(blogID);
       try {
         // We don't sync to iCloud here because we want to respect
@@ -131,6 +135,9 @@ const runValidation = async ({ notify = true } = {}) => {
           console.log(clfdate(), "iCloud:", blogID, ...args);
         };
 
+        // Ensure the hourly sync check is always gated by the sync
+        // lock to prevent files from being removed from Blot 
+        // during an initial setup. This prevents data loss.
         const { folder, done } = await establishSyncLock(blogID);
         let summary;
 
