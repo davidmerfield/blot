@@ -360,8 +360,19 @@ form input:focus,
 .entry h1 {
   font-size: 2em;
   line-height: 1.2;
-  margin: 2em 0
+  margin-top: 2em;
+  margin-bottom: 1em;
 }
+
+.entry img {  visibility: hidden;
+  opacity: 0;
+  will-change: opacity;
+  transition: opacity 0.3s, visibility 0.3s;}
+  .entry img.fadeIn {
+        visibility: visible;
+    opacity: 1;
+}
+
 
 .entry img {
   max-width: 100%;
@@ -370,16 +381,40 @@ form input:focus,
   max-height: calc(100vh - 2.6em)
 }
 
-.entry>img {
-  margin: 0 auto;
-  display: block;
-}
-
 .entry {
+  max-width: 40rem;
+  margin-left: auto;
+  margin-right: auto;
   line-height: 1.5;
   word-wrap: break-word;
   color: {{text_color}};
+  min-height: 100vh;
 }
+
+.entry > img {
+  margin: 0 auto;
+  display: block;
+  max-width: 100%;
+  height: auto;
+  width: auto;
+  margin-top: 2em;
+  margin-bottom: 2em;
+  max-height: calc(100vh - 4rem);
+}
+
+/* for full bleed images, center the caption */
+.entry > img + .caption {
+  text-align: center;
+}
+/* for full bleed images, center the content vertically*/
+.entry:has(> img) {
+  min-height: auto;
+  max-width: 100%;
+}
+
+
+
+
 
 .entry a {
   color: inherit;
@@ -438,12 +473,12 @@ form input:focus,
 
 .tags-container {
   display:flex;
-  flex-basis:42rem;
+  flex-basis: 75%;
   flex-shrink:0;
-  padding:0.325rem 0 0;
+  padding:0.325rem 0.4rem 0;
   overflow:hidden;
   font-size:0.875em;
-  flex-grow: 0;
+  flex-grow: 1;
 }
 
 #tags {
@@ -738,7 +773,7 @@ input#toggle {
   visibility: hidden;
 }
 
-    .entry-container .caption {margin-bottom: 2em;}
+    .entry-container .caption {margin-top: 2em; margin-bottom: 2em; }
 
     .entry-container  .main {
       min-height: calc(100vh - 2rem);

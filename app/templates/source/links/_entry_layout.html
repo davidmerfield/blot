@@ -18,30 +18,21 @@
       <a class="close" href="/" style="visibility:hidden"></a>
     </div>
     <div class="entry" style="flex-grow:1;
-"><style type="text/css">
-        .entry img {  visibility: hidden;
-  opacity: 0;
-  will-change: opacity;
-  transition: opacity 0.3s, visibility 0.3s;}
-  .entry img.fadeIn {
-        visibility: visible;
-    opacity: 1;
-}
-      </style>
+">
       {{{html}}}
-      <script type="text/javascript">
-        function fadeIn(node){
-          node.classList.add('fadeIn');
-        }
-        function fadeOut(){
-          document.querySelectorAll('.entry img').forEach(node => node.classList.remove('fadeIn'));
-        }
-        document.querySelectorAll('.entry img').forEach(function(node){
-          node.onload = fadeIn.bind(null, node);
-          if (node.complete) node.classList.add('fadeIn');
-        })
-      </script>
     </div>
+    <script type="text/javascript">
+      function fadeIn(node){
+        node.classList.add('fadeIn');
+      }
+      function fadeOut(){
+        document.querySelectorAll('.entry img').forEach(node => node.classList.remove('fadeIn'));
+      }
+      document.querySelectorAll('.entry img').forEach(function(node){
+        node.onload = fadeIn.bind(null, node);
+        if (node.complete) node.classList.add('fadeIn');
+      })
+    </script>
     <div class="side right-side" style="">
       <a class="close" href="/" onclick="return lastIndexPage()"></a>
       <a class="right-toolbar" style="{{^previous}}visibility:hidden{{/previous}}" href="{{{previous.url}}}"> </a>

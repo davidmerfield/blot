@@ -6,9 +6,7 @@
   <div class="header">{{> index_link}}
     <label for="toggle">Menu</label>
 
-    <div class="hide search" style="flex-basis:42rem;flex-shrink:0;flex-grow:0">{{#tag}}
-      <h1 style="padding:0 0.9rem;margin:0;font-size:1.85em;">{{tag}}
-      </h1>{{/tag}} {{^tag}} {{> search_field}} {{/tag}}
+    <div class="hide search" style="flex-basis:42rem;flex-shrink:0;flex-grow:0">{{> search_field}}
     </div>
 
     <div class="hide nav">{{#menu}}
