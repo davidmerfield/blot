@@ -88,6 +88,7 @@ module.exports = async (blogID, publish, update, { skipDeletions = false, abortO
           if (size > maxFileSize) {
             publish("Skipping file which is too large", path);
             console.log(prefix(), "Skipping file size=" + size, path);
+            if (abortOnError) throw new Error("File is too large: " + path);
             continue;
           }
           publish("Transferring to iCloud", path);
