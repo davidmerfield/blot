@@ -78,7 +78,19 @@ const resyncRecentlySynced = async (options = {}) => {
       // Ensure the hourly sync check is always gated by the sync
       // lock to prevent files from being removed from Blot 
       // during an initial setup. This prevents data loss.
-      const { folder, done } = await establishSyncLock(blogID);
+      let folder;
+      let done;
+
+      try {
+        ({ folder, done } = await establishSyncLock(blogID));
+      } catch (error) {
+        console.warn(
+          clfdate(),
+          "Blog is currently syncing elsewhere, skipping resync:",
+          blogID
+        );
+        return;
+      }
       try {
         // We don't sync to iCloud here because we want to respect
         // the state of the iCloud folder. It's possible that Blot
