@@ -69,9 +69,9 @@ function sync(blogID, callback) {
               lockConfig: {
                 stale: LOCK_STALE_TIMEOUT_MS,
                 update: LOCK_UPDATE_INTERVAL_MS
-              },
-              diagnostics
+              }
             });
+            console.error(clfdate(), "[LOCK COMPROMISED]", diagnostics);
           })
           .catch(diagErr => {
             // If diagnostics gathering fails, still log compromise

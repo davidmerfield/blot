@@ -1,4 +1,5 @@
 iCloud client:
+- add logging instrumentation of modified file paths to sync verification
 - Log when icloud client fails to communicate event to main server
 - repeatedly call new /resync endpoint with blogID until server responds?
 - Make iCloud site routes blocking so the mac server waits for the main server to finish building before sending the next sync update? But consider timeout
@@ -419,6 +420,9 @@ Build image upload feature into template editor. Support default banner images a
 Build markdown description feature into template editor. Support default site description.
 
 Build favicon generator into template editor. Make it distinct from avatar.
+
+Add checkbox to toggle newsletter subscription to account page
+Inbox
 
 Adjust color settings into a simple 'presets' picker, then an option to dive into specific altertions on seperate view.
 - make it possible to conenct two colors, e.g. navigation background color -> same as background color
