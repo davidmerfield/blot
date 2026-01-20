@@ -4,6 +4,15 @@ on the services page of the dashboard */
 {{{body_font.styles}}}
 {{{syntax_highlighter.styles}}}
 
+:root {
+  --text-color: {{text_color}};
+  --medium-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.75);
+  --light-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
+  --background-color: {{background_color}};
+  --border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.15);
+}
+
+
 html,
 body {
   width: 100%;
@@ -15,7 +24,7 @@ body {
   line-height: {{{line_height}}};
   {{/body_font}}
   -webkit-font-smoothing: antialiased;
-  color: {{text_color}};
+  color: var(--text-color)
   background: {{background_color}};
 }
 
@@ -37,7 +46,7 @@ body.entry-container {display:flex;flex-direction:column;min-height:100%;}
 
 .header a.index-link {
   display:flex;
-  color: {{text_color}};
+  color: var(--text-color);
   align-items:center;
   padding:0.65rem 1.3rem;
   white-space:nowrap;
@@ -57,17 +66,17 @@ body.entry-container {display:flex;flex-direction:column;min-height:100%;}
 hr {
   border: none;
   margin: 0;
-  border-top: 1px solid {{text_color}};
+  border-top: 1px solid var(--text-color)
   opacity: 0.2
 }
 
 a.light {
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.85);
+  color: var(--medium-text-color);
   text-decoration: none;
 }
 
 a.light:hover {
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6);
+  color: var(--light-text-color);
 }
 
 a.light:hover img {
@@ -75,11 +84,11 @@ a.light:hover img {
 }
 
 a.light:active {
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.25);
+  opacity: 0.5;
 }
 
 a.light:active img {
-  opacity: 0.666
+  opacity: 0.666;
 }
 
 .header input {
@@ -107,7 +116,7 @@ a.light:active img {
   width: 25%;
   box-sizing: border-box;
   font-size: 0.8125em;
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.8);
+  color: var(--medium-text-color);
   text-decoration: none;
   text-align: center;
 }
@@ -186,7 +195,7 @@ ul.task-list { list-style-type: none; }
 }
 
 .post:hover .thumbnail:after {
-  border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.15);
+  border-color: var(--border-color);
 }
 
 .post:hover .date {
@@ -206,16 +215,16 @@ ul.task-list { list-style-type: none; }
 }
 
 .post.no-thumbnail .thumbnail:after {
-  border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.15);
+  border-color: var(--border-color);
   border-width: 2px
 }
 
 .post.no-thumbnail:hover .thumbnail:after {
-  border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.4);
+  border-color: var(--light-text-color);
 }
 
 .post.no-thumbnail .thumbnail {
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.4);
+  color: var(--light-text-color);
   text-align: center;
 }
 
@@ -252,7 +261,7 @@ form input {
 
 form input[type="text"] {
   flex-grow: 1;
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.9);
+  color: var(--medium-text-color);
   background: url('data:image/svg+xml;utf8,<?xml version="1.0" encoding="utf-8"?><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 42.6 42.6" style="enable-background:new 0 0 42.6 42.6;" xml:space="preserve"><path fill="rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5)" d="M42.6,40.5L28.2,26.1c2.4-2.8,3.7-6.4,3.7-10.2c0-4.3-1.7-8.3-4.7-11.3c-3-3-7-4.7-11.3-4.7S7.7,1.7,4.7,4.7 c-6.2,6.2-6.2,16.3,0,22.5c3,3,7,4.7,11.3,4.7c3.8,0,7.3-1.3,10.2-3.7l14.4,14.4L42.6,40.5z M6.8,25.1c-5-5-5-13.2,0-18.3 C9.2,4.3,12.5,3,15.9,3c3.5,0,6.7,1.3,9.1,3.8c2.4,2.4,3.8,5.7,3.8,9.1c0,3.5-1.3,6.7-3.8,9.1c-2.4,2.4-5.7,3.8-9.1,3.8 C12.5,28.9,9.2,27.5,6.8,25.1z"/></svg>') no-repeat 1rem center;
   background-size: 0.95rem;
   cursor: text;
@@ -270,7 +279,7 @@ form input:focus,
 
 ::placeholder {
   /* Most modern browsers support this now. */
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
+  color: var(--light-text-color);
 }
 
 #dropdown {
@@ -327,7 +336,7 @@ form input:focus,
 }
 
 #dropdown .date {
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.4);
+  color: var(--light-text-color);
   flex-shrink: 0;
 }
 
@@ -382,12 +391,12 @@ form input:focus,
 }
 
 .entry {
-  max-width: 40rem;
+  max-width: 45rem;
   margin-left: auto;
   margin-right: auto;
   line-height: 1.5;
   word-wrap: break-word;
-  color: {{text_color}};
+  color: var(--text-color)
   min-height: 100vh;
 }
 
@@ -442,7 +451,7 @@ form input:focus,
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 2em auto;
-  border-left: 0.1875em rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.1) solid;
+  border-left: 0.1875em var(--border-color) solid;
   padding-left: 1em;
   font-style: italic;
 }
@@ -453,7 +462,7 @@ form input:focus,
 }
 
 .entry hr {
-  background-color: {{text_color}};
+  background-color: var(--text-color)
   opacity: 0.1;
   border: none;
   height: 0.125em;
@@ -507,7 +516,7 @@ form input:focus,
 #tags a strong {
   visibility: hidden;
   font-weight: 500;
-  color: {{text_color}};
+  color: var(--text-color)
 }
 
 #tags a span {
@@ -558,7 +567,7 @@ form input:focus,
   font-size: 0.875em;
   position: relative;
   text-decoration: none;
-  color: {{text_color}};
+  color: var(--text-color)
   opacity: 0.1;
 }
 
@@ -644,7 +653,7 @@ text-transform: uppercase;
 .archives a.item {
   display: flex;
   align-items: center;
-  color: {{text_color}};
+  color: var(--text-color)
   opacity: 0.4;
   text-decoration: none;
 }
@@ -668,7 +677,7 @@ text-transform: uppercase;
 
 .upper {
   text-decoration: none;
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
+  color: var(--light-text-color);
   margin-top: 1px;
   display: inline-block;
   text-transform: uppercase;
@@ -829,7 +838,7 @@ input#toggle {
       transform: rotate(-135deg);
       border: solid;
       border-width: 1px 1px 0 0;
-      border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.4);
+      border-color: var(--light-text-color);
     }
 
     .entry-container  .right-toolbar:before {
@@ -853,7 +862,7 @@ input#toggle {
       bottom: 0;
       right: auto;
       width: 1px;
-      background: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.4);
+      background: var(--light-text-color);
       height: 16px;
       margin: auto 0;
       -webkit-transform: rotate(-135deg);
