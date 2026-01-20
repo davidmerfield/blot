@@ -88,6 +88,9 @@ module.exports = async (blogID, publish, update, { skipDeletions = false, abortO
           if (size > maxFileSize) {
             publish("Skipping file which is too large", path);
             console.log(prefix(), "Skipping file size=" + size, path);
+            // it's important to throw an error here to prevent data loss
+            // down the line, if the assumpation after this process runs
+            // is that the folders are in sync between Blot and iCloud.
             if (abortOnError) throw new Error("File is too large: " + path);
             continue;
           }
