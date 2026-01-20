@@ -1,11 +1,6 @@
 iCloud client:
 - add logging instrumentation of modified file paths to sync verification
-- Log when icloud client fails to communicate event to main server
-- repeatedly call new /resync endpoint with blogID until server responds?
-- Make iCloud site routes blocking so the mac server waits for the main server to finish building before sending the next sync update? But consider timeout
-- Fix bug: handle deletion of iCloud folder by user cleanly and clearly
-- Fix bug with iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
-- does this solve the icloud client sync issues?
+- Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
 - Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset). 
   - can we solve by running reset to blot after running reset from blot? perhaps to be safe we run reset to blot without 'delete' powers?
 - Bug: ensure that the hourly sync check absolutely is gated by the sync lock to prevent a scenario during a long initial setup where the state is nuked back from iCloud (files not yet transferred would be removed on Blot)
