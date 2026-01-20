@@ -18,18 +18,18 @@ module.exports = async function initialTransfer(blogID) {
     folder.status("Resolving case conflicts");
     await resolveCaseConflicts(blogID, folder.status, folder.update);
     
-    // 'soft' sync does not remove 
+    // 'skipDeletions' sync does not remove 
     // files from the iCloud folder if they do not exist on Blot.
     // this lets the user set up a folder which contains files and
     // which will be merged with the Blot folder.
     folder.status("Transferring files to iCloud");
-    await syncToiCloud(blogID, folder.status, folder.update, { soft: true });
+    await syncToiCloud(blogID, folder.status, folder.update, { skipDeletions: true });
 
     // we run the sync again to verify the transfer succeeded
     // it's important to abort on error here so we can surface the error to the user
     // and avoid data loss by continuing to sync down from iCloud
     folder.status("Verifying transfer");
-    await syncToiCloud(blogID, folder.status, folder.update, { soft: true, abortOnError: true });
+    await syncToiCloud(blogID, folder.status, folder.update, { skipDeletions: true, abortOnError: true });
 
     // then run a sync from iCloud to pull down any files which
     // were added to the iCloud folder after the transfer.
