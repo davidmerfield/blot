@@ -27,7 +27,8 @@ async function retry(fn, ...args) {
   }
 }
 
-module.exports = async (blogID, publish, update, { soft = false } = {}) => {
+
+module.exports = async (blogID, publish, update, { soft = false, abortOnError = false } = {}) => {
   publish = publish || function () {};
   update = update || function () {};
 
@@ -53,6 +54,7 @@ module.exports = async (blogID, publish, update, { soft = false } = {}) => {
         } catch (e) {
           publish("Failed to remove", path);
           console.log(prefix(), "Failed to remove", path, e);
+          if (abortOnError) throw e;
         }
       }
     }
@@ -72,6 +74,7 @@ module.exports = async (blogID, publish, update, { soft = false } = {}) => {
           } catch (e) {
             publish("Failed to create directory", path);
             console.log(prefix(), "Failed to create directory", path, e);
+            if (abortOnError) throw e;
             continue;
           }
         }
@@ -92,6 +95,8 @@ module.exports = async (blogID, publish, update, { soft = false } = {}) => {
             await retry(remoteUpload, blogID, path);
           } catch (e) {
             publish("Failed to upload", path, e);
+            console.log(prefix(), "Failed to upload", path, e);
+            if (abortOnError) throw e;
           }
         }
       }

@@ -26,8 +26,10 @@ module.exports = async function initialTransfer(blogID) {
     await syncToiCloud(blogID, folder.status, folder.update, { soft: true });
 
     // we run the sync again to verify the transfer succeeded
+    // it's important to abort on error here so we can surface the error to the user
+    // and avoid data loss by continuing to sync down from iCloud
     folder.status("Verifying transfer");
-    await syncToiCloud(blogID, folder.status, folder.update, { soft: true });
+    await syncToiCloud(blogID, folder.status, folder.update, { soft: true, abortOnError: true });
 
     // then run a sync from iCloud to pull down any files which
     // were added to the iCloud folder after the transfer.
