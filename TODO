@@ -31,6 +31,22 @@ Fix bugs with templates:
 - Improve post navigation on Portfolio template within tagged collections and tell [Questioner](https://blot.im/questions/1894)
 - Make it possible to sort by id with dropdown on all templates
 
+Links template:
+- [x] Ensure border colors are abstract
+
+Index page:
+- [x] Add infinite scroll
+
+Navigation:
+- [ ] Add dropdown support to navigation
+
+Entry page:
+  - [ ] Close button should go 'back'
+  - [ ] Add layout CSS
+  - [ ] Next / prev should respect tag collections
+  - [ ] Add exif info
+  - [ ] Add backlinks
+  
 Dropbox client
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
 - Bug: Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
