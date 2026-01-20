@@ -155,7 +155,12 @@ const initialize = async () => {
       await unwatch(blogID);
 
       for (const filePath of files) {
-        await brctl.evict(filePath); // Evict the file
+        try {
+          await brctl.evict(filePath); // Evict the file
+        } catch (error) {
+          // Continue processing files even if eviction of a specific file fails, as brctl evict can intermittently produce errors for certain files.
+          console.error(clfdate(), `Failed to evict file (${filePath}):`, error);
+        }
       }
 
       // Re-watch the blogID after eviction
