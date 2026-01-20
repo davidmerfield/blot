@@ -1,16 +1,5 @@
 <div class="toolbar">
 
-  <div style="padding: 0.325rem 1.3rem;
-    flex-basis: 25%;
-    flex-grow:1;white-space: nowrap;
-    box-sizing: border-box;    display: flex;
-    align-items: center;">
-
-    <span class="upper">
-  {{#pagination}}Page {{current}} of {{total}} {{/pagination}}
-  {{^pagination}}All {{entries.length}} posts{{/pagination}}</span>
-  </div>
-
   <div class="tags-container">
 
     {{#popular_tags.length}}
@@ -18,7 +7,7 @@
       {{#popular_tags}}<a href="/{{^active}}tagged/{{slug}}{{/active}}" class="{{active}}"><strong>{{tag}}</strong><span>{{tag}}</span></a>{{/popular_tags}}
     </div>
 
-    <a href="/tags" class="opac upper" style="position:relative;top:2px;flex-shrink:0">All&nbsp;categories&puncsp;&rarr;</a>
+    <a href="/tags" class="opac upper" style="position:relative;top:2px;flex-shrink:0">View all&puncsp;&rarr;</a>
 
     {{/popular_tags.length}}
   </div>
@@ -33,8 +22,12 @@
       {{/menu}}
     </div>
     <div style="text-align:right;position:relative;top:-2px">
+      <a class="upper opac"
+      {{#pagination}}Page {{current}} of {{total}} {{/pagination}}
+  {{^pagination}}All {{entries.length}} posts{{/pagination}}
+    </a>
       <a class="upper opac" style="{{^previous}}opacity:0.25{{/previous}}" {{#previous}}href="/page/{{previous}}"{{/previous}}>← PREVIOUS</a>
-      <a class="upper opac" style="{{^next}}opacity:0.25;{{/next}}margin-left:0.7rem" {{#next}}href="/page/{{pagination.next}}"{{/next}}>NEXT PAGE →</a>
+      <a class="upper opac" style="{{^next}}opacity:0.25;{{/next}}margin-left:0.7rem" {{#next}}href="/page/{{pagination.next}}"{{/next}}>NEXT →</a>
     </div>
   </div>
 </div>

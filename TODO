@@ -20,7 +20,6 @@ iCloud client:
 - Make the various internal server errors (500) more clear when there is a folder lock, perhaps respond with 429? or some other status? and clearer message
 
 Fix bugs with templates:
-- Fix bug with videos inside posts on Links template and [Tell Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGslbPSKMXkRbvrHKFTWhbJbPlg)
 - Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
 - Fix 'back' button in photo template and tell [Bibi](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcPJTmPXxWvhbmFpvwdfVzhpn)
 - Fix side navigation on Blog template and tell [Sava](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJcgnPdxPcSqPwmMnFSThFMQg)
@@ -30,7 +29,7 @@ Fix bugs with templates:
 - Fix bugs with documentation template and tell [Ray](https://blot.im/questions/3233)
 - Fix bug with Documentation template and the setting 'Adds zoom to large images' and [tell customer](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgJMGTSPcnwTNxVJVPZZnrhJB)
 - Improve post navigation on Portfolio template within tagged collections and tell [Questioner](https://blot.im/questions/1894)
-- Make it possible to sort by id with dropdown on portfolio template
+- Make it possible to sort by id with dropdown on all templates
 
 Dropbox client
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted

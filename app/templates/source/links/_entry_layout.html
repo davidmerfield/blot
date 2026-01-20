@@ -17,31 +17,33 @@
       <a class="left-toolbar" style="{{^next}}visibility:hidden{{/next}}" href="{{{next.url}}}"></a>
       <a class="close" href="/" style="visibility:hidden"></a>
     </div>
-    <div class="entry" data-source="{{path}}" style="flex-grow:1;
-"><style type="text/css">
-        .entry img {  visibility: hidden;
-  opacity: 0;
-  will-change: opacity;
-  transition: opacity 0.3s, visibility 0.3s;}
-  .entry img.fadeIn {
-        visibility: visible;
-    opacity: 1;
-}
-      </style>
-      {{{body}}}
-      <script type="text/javascript">
-        function fadeIn(node){
-          node.classList.add('fadeIn');
-        }
-        function fadeOut(){
-          document.querySelectorAll('.entry img').forEach(node => node.classList.remove('fadeIn'));
-        }
-        document.querySelectorAll('.entry img').forEach(function(node){
-          node.onload = fadeIn.bind(null, node);
-          if (node.complete) node.classList.add('fadeIn');
-        })
-      </script>
+    <div class="entry" style="flex-grow:1;
+">
+      {{{html}}}
+      
+      {{#entry.backlinks.length}}
+      <br>
+      <hr>
+      <h4>Links to this page</h4>
+      <p>
+      {{#entry.backlinks}}
+      <a href="{{{url}}}">{{title}}</a><br>
+      {{/entry.backlinks}}
+      </p>
+      {{/entry.backlinks.length}}
     </div>
+    <script type="text/javascript">
+      function fadeIn(node){
+        node.classList.add('fadeIn');
+      }
+      function fadeOut(){
+        document.querySelectorAll('.entry img').forEach(node => node.classList.remove('fadeIn'));
+      }
+      document.querySelectorAll('.entry img').forEach(function(node){
+        node.onload = fadeIn.bind(null, node);
+        if (node.complete) node.classList.add('fadeIn');
+      })
+    </script>
     <div class="side right-side" style="">
       <a class="close" href="/" onclick="return lastIndexPage()"></a>
       <a class="right-toolbar" style="{{^previous}}visibility:hidden{{/previous}}" href="{{{previous.url}}}"> </a>
@@ -56,14 +58,26 @@
   </div>
 
   {{^titleTag}}
-  <br>
-  <br>
-  <br>
+  
+
   <div class="entry" style="min-width:300px;max-width:50em;padding-left: 1rem;
     padding-right: 1rem;
     box-sizing: border-box;">
     <h1 style="margin:0.7rem 0 0">{{title}}</h1>
     <hr style="margin:0.7rem 0">
+    {{#exif}}
+  <div class="exifdata">
+      {{#Make}}
+      <p class="camera">Camera: {{Make}} {{Model}}</p>
+      {{/Make}}
+      {{#LensMake}}
+      <p class="lens">Lens: {{LensMake}} {{LensModel}}</p>
+      {{/LensMake}}
+      {{#FocalLength}}
+      <p class="exposure">Exposure: {{FocalLength}}mm{{#ExposureTime}}, {{ExposureTime}}s{{/ExposureTime}}{{#FNumber}}, f/{{FNumber}}{{/FNumber}}{{#ISO}}, ISO {{ISO}}{{/ISO}}</p>
+      {{/FocalLength}}
+  </div>
+  {{/exif}}
     <p style="margin:0 0 0.7rem"><small>Added {{date}} under {{#tags}} {{#last}}{{^first}}and{{/first}}{{/last}} <a href="/tagged/{{slug}}">{{tag}}</a>{{^last}},{{/last}} {{/tags}}</small></p>
   </div>
   <br>
