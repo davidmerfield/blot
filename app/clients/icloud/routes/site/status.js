@@ -21,7 +21,7 @@ module.exports = async function (req, res) {
     return res.status(500).send("Internal Server Error");
   }
 
-  if (status.requestedResync) {
+  if (status.resyncRequested) {
     try {
       // This will throw if the sync lock is already established
       const { done, folder } = await establishSyncLock(blogID);
