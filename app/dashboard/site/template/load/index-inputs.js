@@ -5,6 +5,20 @@ const MAP = {
     label: "Posts per page",
     min: 1,
     max: 60
+  },
+  sort_by: {
+    label: "Sort posts by",
+    options: [
+      { label: "Publish date", value: "date" },
+      { label: "File path", value: "id" }
+    ]
+  },
+  sort_order: {
+    label: "Sort order",
+    options: [
+      { label: "Ascending", value: "asc" },
+      { label: "Descending", value: "desc" }
+    ]
   }
 };
 

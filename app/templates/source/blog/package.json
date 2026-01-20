@@ -5,6 +5,16 @@
     "page_size": 20,
     "background_color": "#FFFFFF",
     "text_color": "#111111",
+    "sort_by": "date",
+    "sort_by_options": [
+      "date",
+      "id"
+    ],
+    "sort_order": "desc",
+    "sort_order_options": [
+      "asc",
+      "desc"
+    ],
     "links_color": "#111111",
     "font": {
       "id": "verdana",
