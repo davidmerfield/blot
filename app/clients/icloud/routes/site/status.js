@@ -9,6 +9,11 @@ const requestResync = async (blogID) => {
   try {
     folder.status("Resync requested");
     console.log("Resync requested from iCloud", { blogID });
+    // since we treat the iCloud folder as the source of truth,
+    // there is the risk that files added to Blot's folder (e.g. preview files)
+    // or template files which were edited online will be clobbered. 
+    // in in future, we might be able to implement a system to merge
+    // but for now we'll just sync down from iCloud.
     await syncFromiCloud(blogID, folder.status.bind(folder), folder.update);
     folder.status("Resync complete");
   } finally {

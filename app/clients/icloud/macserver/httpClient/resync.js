@@ -26,6 +26,8 @@ const requestResyncOnce = async (blogID) => {
       body: JSON.stringify({ resyncRequested: true }),
     });
 
+    // technically our fetch wrapper already throws on non-OK responses
+    // but we'll keep this here for clarity
     if (response && response.ok === false) {
       throw new Error(`Resync request failed with status ${response.status}`);
     }
