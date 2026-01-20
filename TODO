@@ -1,4 +1,5 @@
 iCloud client:
+- add logging instrumentation of modified file paths to sync verification
 - Log when icloud client fails to communicate event to main server
 - repeatedly call new /resync endpoint with blogID until server responds?
 - Make iCloud site routes blocking so the mac server waits for the main server to finish building before sending the next sync update? But consider timeout
@@ -8,6 +9,7 @@ iCloud client:
 - Fix bug with iCloud client setup: if you share an existing iCloud folder with files inside, they are not synced back to Blot (you have to manually press reset). 
   - can we solve by running reset to blot after running reset from blot? perhaps to be safe we run reset to blot without 'delete' powers?
 - Bug: ensure that the hourly sync check absolutely is gated by the sync lock to prevent a scenario during a long initial setup where the state is nuked back from iCloud (files not yet transferred would be removed on Blot)
+- Fix bug: low priority, this just causes an error in the logs when freeing up disk space. Problem: attempting to evict a file within a .pages directory (a special apple file) e.g. Post.pages/preview.jpg will fail: you need to evict the parent directory perhaps?
 - Why don't empty files sync on the dashboard? (esp. via iCloud client)
 - iCloud: when you change the case of a folder, the files (and posts) inside duplicate and are stored twice
 - Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
@@ -23,6 +25,19 @@ iCloud client:
 - Investigate the unrenamed folders in the mac server icloud drive?
   - partial incomplete setup? sharing a non-empty folder? 
 - Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
+
+Fix bugs with templates:
+- Fix bug with videos inside posts on Links template and [Tell Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGslbPSKMXkRbvrHKFTWhbJbPlg)
+- Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
+- Fix 'back' button in photo template and tell [Bibi](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcPJTmPXxWvhbmFpvwdfVzhpn)
+- Fix side navigation on Blog template and tell [Sava](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJcgnPdxPcSqPwmMnFSThFMQg)
+- Add layout fix to blog template and [tell Lewis](https://mail.google.com/mail/u/0/#inbox/FMfcgzQVzFWlSFWmjZrDMrMjPtmtWwQc)
+- Fix bug with [header position on the blog template](https://blot.im/questions/2211)
+- Make 'close' button on entry permalink page of reference template work like the photo template and tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsmNSSSRKHnlgCBllnqJCcPhxD)
+- Fix bugs with documentation template and tell [Ray](https://blot.im/questions/3233)
+- Fix bug with Documentation template and the setting 'Adds zoom to large images' and [tell customer](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgJMGTSPcnwTNxVJVPZZnrhJB)
+- Improve post navigation on Portfolio template within tagged collections and tell [Questioner](https://blot.im/questions/1894)
+- Make it possible to sort by id with dropdown on portfolio template
 
 Dropbox client
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
@@ -92,6 +107,7 @@ Bug reports:
 - Migrate base templates from entries to {{#posts}} and tell Omar
 - Document the special routing features for entries.html and tell Omar
 
+
 Fix bug with repeat resyncs of specific sites via Google Drive:
 - To identify, run node scripts/google-drive/resync.js multiple times, some sites continually resync the same files...
 
@@ -111,8 +127,6 @@ Fix bug with [~/gitbug folder](https://mail.google.com/mail/u/0/#inbox/KtbxLxgKJ
 Fix bug with huge draft crashing the sync server /a327ex/drafts/it_follows.txt
 
 Fix bug linking to relative pdf in subfolders, e.g. Pages/File.md '[](./file.pdf)' breaks
-
-Fix bugs with documentation template and tell [Ray](https://blot.im/questions/3233)
 
 Fix possible bug with changing folder name in Google Drive from uppercase to lowercase (what happens to file inside?). Is this related to entry lookup for deleted files? How was the missing ghost file undeleteable? the case of one variant was deleted but the other was not. The case of the ID mismatched. The folder lock was stuck.
 
@@ -168,7 +182,7 @@ Fix bugs with custom domain setup
 - Disable redirect to HTTPS for blogs by default (to ensure old browsers without SNI work) but ensure all prominent links to the blog on dashboard use HTTPS
 - cache domain validity and display checkmark on dashboard
 
-Fix bug with Documentation template and the setting 'Adds zoom to large images' and [tell customer](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgJMGTSPcnwTNxVJVPZZnrhJB)
+
 
 Fix bug with huge tiddlywiki post that crashed site by enforcing a size limit on txt and markdown files and html files for them to become posts
 - Ensure the error for files too large is made clearly visible
@@ -196,19 +210,10 @@ Fix bug where one bad page can take down upstream repeatedly
 – perhaps we need to cache in proxy cache timeouts? or somehow detect if a request causes upstream to crash?
 
 Fix template partial embeddings which no longer work because of switch from lowercase to true case:
+- write script to find these
 - e.g. {{> /pages/home.txt}} when pages is really Pages
 - we should resolve the case-insensitive path to file when saving a template and parsing its partials
 
-Fix bugs with templates:
-- Fix bug with videos on Reference template and [Tell Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGslbPSKMXkRbvrHKFTWhbJbPlg)
-- Fix post navigation on Portfolio template and tell [Questioner](https://blot.im/questions/1894)
-- Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
-- Fix 'back' button in photo template and tell [Bibi](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcPJTmPXxWvhbmFpvwdfVzhpn)
-- Fix side navigation on Blog template and tell [Sava](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJcgnPdxPcSqPwmMnFSThFMQg)
-- Fix bug with [date on magazine template](https://blot.im/questions/2244)
-- Add layout fix to blog template and [tell Lewis](https://mail.google.com/mail/u/0/#inbox/FMfcgzQVzFWlSFWmjZrDMrMjPtmtWwQc)
-Fix bug with [header position on the blog template](https://blot.im/questions/2211)
-- Make 'close' button on entry permalink page of reference template work like the photo template and tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsmNSSSRKHnlgCBllnqJCcPhxD)
 
 Fix bug with [many twitter embeds and tell Nash](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllMNfjvRBthVncQtPJQpmrksx)
 
@@ -220,7 +225,7 @@ Fix [Frank](https://mail.google.com/mail/u/0/1527fbcf999ba0c3)'s strange templat
 
 Fix bugs with template engine:
 - Prevent double submission on template editor at insertion and front-end levels
-- Make it possible to rename template directories and tell [Darren](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwHxvsmgwbnxLbDMNDplTLltlc) and tell [questioner](https://blot.im/questions/1610)
+- Make it possible to rename template directories and tell [Darren](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwHxvsmgwbnxLbDMNDplTLltlc) and tell [questioner](https://blot.im/questions/1610) and [questioner](https://blot.im/questions/3329)
 - Fix bug not exposing issue with invalid JSON in package.json for locally-edited template on dashboard and tell [Jason](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjndBRlNNjZtlddcVVfFWVBbg)
 - Investigate bug with template views whose names include hashtags and follow up with [Jay](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqPzMvLDJBfbNfLzpkKDzmZSNt)
 - Fix bug with undeleteable template files prefixed with dot and tell [Stuart](https://mail.google.com/mail/u/0/?zx=j8rkxjpin0du#inbox/FMfcgzGqRZbhWzrwNrgrFLQBBDWBzhxL)
@@ -416,6 +421,9 @@ Build image upload feature into template editor. Support default banner images a
 Build markdown description feature into template editor. Support default site description.
 
 Build favicon generator into template editor. Make it distinct from avatar.
+
+Add checkbox to toggle newsletter subscription to account page
+Inbox
 
 Adjust color settings into a simple 'presets' picker, then an option to dive into specific altertions on seperate view.
 - make it possible to conenct two colors, e.g. navigation background color -> same as background color
