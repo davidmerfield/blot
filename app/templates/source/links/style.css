@@ -726,6 +726,11 @@ label {
   align-items: center;
 }
 
+.nav a {
+  white-space: nowrap;
+  text-wrap-mode: nowrap;
+}
+
 input#toggle {
   position: absolute;
   top: 0;
@@ -734,26 +739,6 @@ input#toggle {
 }
 
     .entry-container .caption {margin-bottom: 2em;}
-
-   [data-source$=".txt" i] > *,
-   [data-source$=".md" i] > * { max-width: 45em;margin: 0 auto }
-
-   [data-source$=".md" i] img,
-  [data-source$=".txt" i] img {
-    margin: 1em 0;
-    max-width: 100%;
-    height: auto;
-    width: auto;
-    max-height: none;
-    }
-
-    
-    [data-source$=".jpg" i] .caption,
-    [data-source$=".jpeg" i] .caption,
-    [data-source$=".png" i] .caption,
-    [data-source$=".gif" i] .caption {
-      display: none;
-    }
 
     .entry-container  .main {
       min-height: calc(100vh - 2rem);

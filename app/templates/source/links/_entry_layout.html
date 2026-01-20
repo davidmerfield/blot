@@ -17,7 +17,7 @@
       <a class="left-toolbar" style="{{^next}}visibility:hidden{{/next}}" href="{{{next.url}}}"></a>
       <a class="close" href="/" style="visibility:hidden"></a>
     </div>
-    <div class="entry" data-source="{{path}}" style="flex-grow:1;
+    <div class="entry" style="flex-grow:1;
 "><style type="text/css">
         .entry img {  visibility: hidden;
   opacity: 0;
@@ -28,7 +28,7 @@
     opacity: 1;
 }
       </style>
-      {{{body}}}
+      {{{html}}}
       <script type="text/javascript">
         function fadeIn(node){
           node.classList.add('fadeIn');
