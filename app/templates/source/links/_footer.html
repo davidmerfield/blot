@@ -11,7 +11,7 @@
 </div>
 <div class="pagination" style="padding:1.3rem 2.6rem;margin:0 0.8rem 0">
   <div style="display:flex;align-items: baseline;">
-    <span style="text-decoration:none;color:rgba(0,0,0,.25);margin-top:2px;display:inline-block;text-transform:uppercase;font-size:11px">
+    <span style="text-decoration:none;color:var(--light-text-color);margin-top:2px;display:inline-block;text-transform:uppercase;font-size:11px">
   {{#pagination}}Page {{current}} of {{total}} {{/pagination}}
   {{^pagination}}All {{entries.length}} posts{{/pagination}}</span>
     <div style="flex-grow:1;">
@@ -22,7 +22,7 @@
         <a class="arrow" {{#next}}href="/page/{{pagination.next}}"{{/next}}>→</a>
       </div>
     </div>
-    <span style="text-decoration:none;color:rgba(0,0,0,.25);margin-top:2px;display:inline-block;text-transform:uppercase;font-size:11px">
+    <span style="text-decoration:none;color:var(--light-text-color);margin-top:2px;display:inline-block;text-transform:uppercase;font-size:11px">
   {{#pagination}}Page {{current}} of {{total}} {{/pagination}}
   {{^pagination}}All {{entries.length}} posts{{/pagination}}</span>
   </div>

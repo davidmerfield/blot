@@ -9,7 +9,11 @@ on the services page of the dashboard */
   --medium-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.75);
   --light-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
   --background-color: {{background_color}};
-  --border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.15);
+  --border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.1);
+  --light-border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.075);
+  --text-color-05: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05);
+  --text-color-07: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.07);
+  --text-color-08: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.08);
 }
 
 
@@ -24,8 +28,8 @@ body {
   line-height: {{{line_height}}};
   {{/body_font}}
   -webkit-font-smoothing: antialiased;
-  color: var(--text-color)
-  background: {{background_color}};
+  color: var(--text-color);
+  background: var(--background-color);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -106,7 +110,8 @@ a.light:active img {
 .posts {
   display: flex;
   flex-wrap: wrap;
-  padding: 2.6em
+  padding: 2.6em;
+  min-height: calc(100vh - 16rem);
 }
 
 .post {
@@ -288,9 +293,9 @@ form input:focus,
   top: 100%;
   left: 0;
   right: 0;
-  background: {{background_color}};
+  background: var(--background-color);
   z-index: 1;
-  box-shadow: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05) 0px 0px 0px 1px, rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05) 0px 3px 6px, rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.1) 0px 9px 24px;
+  box-shadow: var(--text-color-05) 0px 0px 0px 1px, var(--text-color-05) 0px 3px 6px, var(--border-color) 0px 9px 24px;
   margin-top: 1px
 }
 
@@ -298,8 +303,8 @@ form input:focus,
   display: flex;
   padding: 1em 1.3em;
   overflow: hidden;
-  border-bottom: 1px solid rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05);
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.85);
+  border-bottom: 1px solid var(--text-color-05);
+  color: var(--medium-text-color);
   font-size: 1em;
   text-decoration: none;
 }
@@ -310,7 +315,7 @@ form input:focus,
  */
 #dropdown a:focus {
   outline: none;
-  background: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05);
+  background: var(--text-color-05);
 }
 
 #dropdown a .thumbnail {
@@ -354,13 +359,13 @@ form input:focus,
   padding: 0.65rem 1.3rem 0.65rem 1.3rem;
   margin: 0 0.8rem;
   display: inline-block;
-  background: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05);
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.1);
+  background: var(--text-color-05);
+  color: var(--border-color);
 }
 
 .pagination .button[href] {
-  background:rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.08);
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.8)
+  background: var(--text-color-08);
+  color: var(--medium-text-color)
 }
 
 /* Entry layout */
@@ -589,11 +594,11 @@ form input:focus,
 }
 
 .paginator a[href]:hover:before {
-  background: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05);
+  background: var(--text-color-05);
 }
 
 .paginator a.true:before {
-  background: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.07);
+  background: var(--text-color-07);
 }
 
 
@@ -659,8 +664,8 @@ text-transform: uppercase;
 }
 
 .archives a.item:hover {
-  background: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05);
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.85)
+  background: var(--text-color-05);
+  color: var(--medium-text-color)
 }
 
 .archives a.item span {
@@ -685,12 +690,12 @@ text-transform: uppercase;
 }
 
 .toolbar, .header, .posts, .pagination, .tags {
-    border-bottom: 1px solid rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05);
+    border-bottom: 1px solid var(--light-border-color);
 }
 
 .toolbar {
   display: flex;
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.8);
+  color: var(--medium-text-color);
 }
 
 label {
@@ -724,13 +729,13 @@ label {
 
   .nav a {
     display: block;
-    border-bottom: 1px solid rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05);
+    border-bottom: 1px solid var(--text-color-05);
   }
 
 
   .header .search {
-    border-top: 1px solid rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05);
-    border-bottom: 1px solid rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.05);
+    border-top: 1px solid var(--text-color-05);
+    border-bottom: 1px solid var(--text-color-05);
     padding: 0.65rem 0;
     z-index: 2;
     min-height: auto
@@ -804,7 +809,7 @@ input#toggle {
       text-align: center;
       display: inline-block;
       margin: 1.3rem;
-      border: 1px solid rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.25);
+      border: 1px solid var(--border-color);
       padding: 2.6rem 1.3rem;
       text-decoration: none;
       box-sizing: border-box;
