@@ -1,0 +1,50 @@
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+nav .menu {
+    backdrop-filter: blur(24px);
+    background-color: oklab(0.946105 -1.19209e-7 0 / 0.5);
+    border-radius: var(--border-radius);
+    display: flex;
+    --link-spacing: 0.6rem
+}
+
+nav .menu a {
+    font-size: var(--small-font-size);
+    font-weight: 500;
+    color: var(--text-color);
+    transition: color 0.2s ease;
+    padding: var(--link-spacing);
+}
+
+nav .menu a .icon-folder {
+    position: relative;
+    top: -0.1em;
+    margin-right: 0.2rem;
+}
+
+nav .menu a:hover {
+    color: var(--light-text-color);
+}
+
+nav .menu a:first-child {
+    padding-left: calc(var(--link-spacing) * 2);
+}
+
+nav .menu a:last-child {
+    padding-right: calc(var(--link-spacing) * 2);
+}
+
+nav .cta a {
+    background-color: var(--text-color);
+    color: var(--background-color);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+}
