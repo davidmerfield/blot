@@ -8,6 +8,13 @@ module.exports = async function (req, res) {
   const blogID = req.header("blogID");
   const status = req.body;
 
+  const handle = (label, err) => {
+    console.error(label, err);
+    if (!res.headersSent) {
+      res.status(500).send("Internal Server Error");
+    }
+  }
+
   if (!blogID || !status) {
     return res.status(400).send("Missing blogID or status");
   }
@@ -17,8 +24,7 @@ module.exports = async function (req, res) {
     await database.store(blogID, status);
 
   } catch (err) {
-    console.error("Failed to store status in database", err);
-    return res.status(500).send("Internal Server Error");
+    return handle("Failed to store status in database", err);
   }
 
   if (status.resyncRequested) {
@@ -45,8 +51,7 @@ module.exports = async function (req, res) {
         await done();
       }
     } catch (err) {
-      console.error("Error in requestResync", err);
-      return res.status(500).send("Internal Server Error");
+      return handle("Error in requestResync", err);
     }
   } else if (status.acceptedSharingLink) {
     try {
@@ -56,9 +61,8 @@ module.exports = async function (req, res) {
 
       await initialTransfer(blogID);
     } catch (err) {
-      console.error("Error in initialTransfer", err);
-      return res.status(500).send("Internal Server Error");
-    }
+      return handle("Error in initialTransfer", err);
+    } 
   } else {
     try {
       const { done, folder } = await establishSyncLock(blogID);
@@ -73,8 +77,7 @@ module.exports = async function (req, res) {
         await done();
       }
     } catch (err) {
-      console.error("Error in syncFromiCloud", err);
-      return res.status(500).send("Internal Server Error");
+      return handle("Error in syncFromiCloud", err);
     }
   }
 };
