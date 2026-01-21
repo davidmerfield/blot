@@ -1,6 +1,4 @@
 iCloud client:
-- Add email notification when iCloud server has resyncRequested!
-- Once per day, Blot should resync EVERY iCloud directory currently connected without an error message (this complements the hourly sync verification)
 - Fix bug: high priority, drift sync. chokidar missing events (rename incomplete, it applied on the delete):
   - To reproduce, edit two files then quickly rename them.
   - To solve... not sure? leverage brctl monitor?
@@ -18,7 +16,7 @@ iCloud client:
 - Start writing tests for icloud client
 - Start writing tests for macserver
 - Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
-- Make the various internal server errors (500) more clear when there is a folder lock, perhaps respond with 429? or some other status? and clearer message
+- Investigate: can we modify app/clients/icloud/routes/site/upload.js and app/clients/icloud/macserver/httpClient/upload.js to exchange a content hash? to prevent needless re-upload?
 
 Fix bugs with templates:
 - Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
