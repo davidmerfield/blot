@@ -2,6 +2,7 @@ const database = require("../../database");
 const initialTransfer = require("../../sync/initialTransfer");
 const syncFromiCloud = require("../../sync/fromiCloud");
 const establishSyncLock = require("sync/establishSyncLock");
+const { handleSyncLockError } = require("../lock");
 
 module.exports = async function (req, res) {
 
@@ -51,6 +52,17 @@ module.exports = async function (req, res) {
         await done();
       }
     } catch (err) {
+      if (
+        handleSyncLockError({
+          err,
+          res,
+          blogID,
+          action: "status resync",
+        })
+      ) {
+        return;
+      }
+
       return handle("Error in requestResync", err);
     }
   } else if (status.acceptedSharingLink) {
@@ -77,6 +89,17 @@ module.exports = async function (req, res) {
         await done();
       }
     } catch (err) {
+      if (
+        handleSyncLockError({
+          err,
+          res,
+          blogID,
+          action: "status update",
+        })
+      ) {
+        return;
+      }
+
       return handle("Error in syncFromiCloud", err);
     }
   }
