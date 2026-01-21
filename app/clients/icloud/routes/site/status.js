@@ -2,6 +2,8 @@ const database = require("../../database");
 const initialTransfer = require("../../sync/initialTransfer");
 const syncFromiCloud = require("../../sync/fromiCloud");
 const establishSyncLock = require("sync/establishSyncLock");
+const { handleSyncLockError } = require("../lock");
+const email = require("helper/email");
 
 module.exports = async function (req, res) {
 
@@ -39,6 +41,7 @@ module.exports = async function (req, res) {
       try {
         folder.status("Resync requested");
         console.log("Resync requested from iCloud", { blogID });
+        email.ICLOUD_RESYNC_REQUESTED(null, { blogID });
 
         // Since we treat the iCloud folder as the source of truth,
         // there is the risk that files added to Blot's folder (e.g. preview files)
@@ -51,6 +54,17 @@ module.exports = async function (req, res) {
         await done();
       }
     } catch (err) {
+      if (
+        handleSyncLockError({
+          err,
+          res,
+          blogID,
+          action: "status resync",
+        })
+      ) {
+        return;
+      }
+
       return handle("Error in requestResync", err);
     }
   } else if (status.acceptedSharingLink) {
@@ -77,6 +91,17 @@ module.exports = async function (req, res) {
         await done();
       }
     } catch (err) {
+      if (
+        handleSyncLockError({
+          err,
+          res,
+          blogID,
+          action: "status update",
+        })
+      ) {
+        return;
+      }
+
       return handle("Error in syncFromiCloud", err);
     }
   }

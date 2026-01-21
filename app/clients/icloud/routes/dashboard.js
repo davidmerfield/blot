@@ -7,6 +7,7 @@ const dashboard = new express.Router();
 const parseBody = require("body-parser").urlencoded({ extended: false });
 const config = require("config"); // For accessing configuration values
 const establishSyncLock = require("sync/establishSyncLock");
+const { handleSyncLockError } = require("./lock");
 
 const VIEWS = require("path").resolve(__dirname + "/../views") + "/";
 
@@ -119,6 +120,17 @@ dashboard
       // Redirect back to the dashboard
       res.redirect(req.baseUrl);
     } catch (error) {
+      if (
+        handleSyncLockError({
+          err: error,
+          res,
+          blogID: req.blog.id,
+          action: "setup folder",
+        })
+      ) {
+        return;
+      }
+
       console.error("Error in /set-up-folder:", error);
       next(error); // Pass the error to the error handler
     }

@@ -219,6 +219,124 @@ const runValidation = async ({ notify = true } = {}) => {
   });
 };
 
+const resyncAllConnected = async ({ notify = true } = {}) => {
+  console.log(clfdate(), "iCloud: Running daily resync for connected accounts");
+
+  const blogsWithChanges = [];
+  let checkedBlogs = 0;
+
+  try {
+    await database.iterate(async (blogID, account) => {
+      if (!account.setupComplete) {
+        console.log(
+          clfdate(),
+          "iCloud: Daily resync skipped (setup incomplete)",
+          blogID
+        );
+        return;
+      }
+
+      if (account.error) {
+        console.log(
+          clfdate(),
+          "iCloud: Daily resync skipped (account error)",
+          blogID,
+          account.error
+        );
+        return;
+      }
+
+      try {
+        const blog = await getBlog({ id: blogID });
+        if (!blog || blog.client !== "icloud") return;
+
+        checkedBlogs += 1;
+
+        const publish = (...args) => {
+          console.log(clfdate(), "iCloud: Daily resync", blogID, ...args);
+        };
+
+        let folder;
+        let done;
+
+        try {
+          ({ folder, done } = await establishSyncLock(blogID));
+        } catch (error) {
+          console.warn(
+            clfdate(),
+            "iCloud: Daily resync skipped (already syncing)",
+            blogID
+          );
+          return;
+        }
+
+        let summary;
+
+        try {
+          summary = await syncFromiCloud(blogID, folder.status, folder.update);
+        } catch (error) {
+          console.error(
+            clfdate(),
+            "iCloud: Error during daily resync for blog",
+            blogID,
+            error
+          );
+        } finally {
+          await done();
+        }
+
+        if (!summary) return;
+
+        const changeCount = countChanges(summary);
+
+        if (changeCount > 0) {
+          blogsWithChanges.push({
+            id: blogID,
+            handle: blog.handle,
+            truncatedId: blogID.slice(0, 12),
+            changeCount,
+            changeCountPlural: changeCount !== 1,
+            downloaded: summary.downloaded || 0,
+            removed: summary.removed || 0,
+            createdDirs: summary.createdDirs || 0
+          });
+        }
+      } catch (error) {
+        console.error(
+          clfdate(),
+          "iCloud: Error iterating daily resync for blog",
+          blogID,
+          error
+        );
+      }
+    });
+  } catch (error) {
+    console.error(clfdate(), "iCloud: Failed to iterate accounts", error);
+    return;
+  }
+
+  console.log(
+    clfdate(),
+    "iCloud: Daily resync complete",
+    `checked=${checkedBlogs}`,
+    `issues=${blogsWithChanges.length}`
+  );
+
+  if (!notify || blogsWithChanges.length === 0) return;
+
+  email.ICLOUD_SYNC_ISSUE(null, { blogs: blogsWithChanges }, function (err) {
+    if (err) {
+      console.error(
+        clfdate(),
+        "iCloud: Failed to send daily resync issue email",
+        err
+      );
+    } else {
+      console.log(clfdate(), "iCloud: Sent daily resync issue report email");
+    }
+  });
+};
+
 const init = async () => {
 
   await database.iterate(async (blogID, account) => {
@@ -237,11 +355,15 @@ const init = async () => {
   console.log(clfdate(), "iCloud: Scheduling hourly sync validation");
   scheduler.scheduleJob("0 * * * *", () => runValidation({ notify: true }));
 
+  console.log(clfdate(), "iCloud: Scheduling daily resync");
+  scheduler.scheduleJob("0 3 * * *", () => resyncAllConnected({ notify: true }));
+
   resyncRecentlySynced({ notify: false });
 
   monitorMacServerStats();
 };
 
 init.resyncRecentlySynced = resyncRecentlySynced;
+init.resyncAllConnected = resyncAllConnected;
 
 module.exports = init;

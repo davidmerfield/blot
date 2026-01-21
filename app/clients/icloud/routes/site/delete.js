@@ -1,6 +1,7 @@
 const localPath = require("helper/localPath");
 const establishSyncLock = require("sync/establishSyncLock");
 const fs = require("fs-extra");
+const { handleSyncLockError } = require("../lock");
 
 module.exports = async function (req, res) {
   try {
@@ -49,6 +50,17 @@ module.exports = async function (req, res) {
       done();
     }
   } catch (err) {
+    if (
+      handleSyncLockError({
+        err,
+        res,
+        blogID: req.header("blogID"),
+        action: "delete",
+      })
+    ) {
+      return;
+    }
+
     console.error("Error in /delete:", err);
     res.status(500).send("Internal Server Error");
   }
