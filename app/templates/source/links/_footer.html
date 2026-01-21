@@ -2,6 +2,7 @@
 
 {{! Blocks out the same height of the header at the end of the page. Useful for centering stuff}}
 
+{{^infinite_scroll}}
 {{#pagination}}
 <div class="pagination" style="display:flex;padding:1.3rem 2.6rem;">
   <a style="flex-grow:0.5" class="button" {{#previous}}href="/page/{{previous}}"{{/previous}}>&larr; <span style="float:right">Previous</span></a>
@@ -29,6 +30,13 @@
 </div>
 
 {{/pagination}}
+{{/infinite_scroll}}
+
+{{#infinite_scroll}}
+{{#pagination}}
+  <a class="next-page" {{#next}}href="/page/{{next}}"{{/next}}>Next &rarr;</a>
+{{/pagination}}
+{{/infinite_scroll}}
 
 
 <div style="padding:0.65rem 2.5rem;display:flex;color:rgba(0,0,0,.4);">
