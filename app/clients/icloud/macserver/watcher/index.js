@@ -214,6 +214,11 @@ const watch = async (blogID) => {
   // making any changes to the polling intervals
   const watcher = chokidar
     .watch(blogPath, {
+      // we need to use polling otherwise we get this error on server start:
+      // Watcher error: Error: EMFILE: too many open files, watch
+      // IF in future, we can get rid of polling, perhaps we can remove the watch/unwatch calls in the rest of the code?
+      // This might work. We also might be able to leverage
+      // chokidar.watcher.add() and chokidar.watcher.unwatch() to manage files more specifically, reducing the risk of missed events and sync drift?
       usePolling: true,
       interval: 250, // Poll every 0.25s for non-binary files
       binaryInterval: 1000, // Poll every 1s for binary files
