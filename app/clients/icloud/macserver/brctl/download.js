@@ -1,13 +1,14 @@
-const { iCloudDriveDirectory } = require("../config");
-const fs = require("fs-extra");
-const exec = require("../exec");
+import { iCloudDriveDirectory } from "../config.js";
+import fs from "fs-extra";
+import exec from "../exec.js";
+import clfdate from "../util/clfdate.js";
+
 const TIMEOUT = 15 * 1000; // 15 seconds
 const POLLING_INTERVAL = 200; // 200ms
-const clfdate = require("../util/clfdate");
 
 const BLOCK_SIZE = 512;
 
-module.exports = async (path) => {
+export default async (path) => {
   console.log(clfdate(), `Downloading file from iCloud: ${path}`);
 
   const stat = await fs.stat(path);

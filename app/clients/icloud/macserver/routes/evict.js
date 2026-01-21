@@ -1,13 +1,11 @@
-const { join, resolve, sep } = require("path");
-const { iCloudDriveDirectory } = require("../config");
-const clfdate = require("../util/clfdate");
-const normalizeMacserverPath = require("./normalizeMacserverPath");
+import { join, resolve, sep } from "path";
+import { iCloudDriveDirectory } from "../config.js";
+import clfdate from "../util/clfdate.js";
+import normalizeMacserverPath from "./normalizeMacserverPath.js";
+import * as brctl from "../brctl/index.js";
+import { unwatch, watch } from "../watcher/index.js";
 
-const brctl = require("../brctl");
-
-const { unwatch, watch } = require("../watcher");
-
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const blogID = req.header("blogID");
   const pathBase64 = req.header("pathBase64");
   const path = pathBase64

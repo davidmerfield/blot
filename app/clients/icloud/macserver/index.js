@@ -1,11 +1,21 @@
-const express = require("express");
+import express from "express";
 const { raw } = express;
-const { Authorization, maxFileSize } = require("./config");
-const { initialize } = require("./watcher");
-const notifyServerStarted = require("./httpClient/notifyServerStarted");
-const clfdate = require("./util/clfdate");
-
-const monitorer = require("./monitorer");
+import { Authorization, maxFileSize } from "./config.js";
+import { initialize } from "./watcher/index.js";
+import notifyServerStarted from "./httpClient/notifyServerStarted.js";
+import clfdate from "./util/clfdate.js";
+import monitorer from "./monitorer.js";
+import uploadRoute from "./routes/upload.js";
+import evictRoute from "./routes/evict.js";
+import deleteRoute from "./routes/delete.js";
+import mkdirRoute from "./routes/mkdir.js";
+import watchRoute from "./routes/watch.js";
+import disconnectRoute from "./routes/disconnect.js";
+import readdirRoute from "./routes/readdir.js";
+import recursiveListRoute from "./routes/recursiveList.js";
+import downloadRoute from "./routes/download.js";
+import statsRoute from "./routes/stats.js";
+import setupRoute from "./routes/setup.js";
 
 const asyncHandler = (handler) => (req, res, next) =>
   Promise.resolve(handler(req, res, next)).catch(next);
@@ -37,26 +47,26 @@ const startServer = async () => {
 
   app.use(raw({ type: "application/octet-stream", limit }));
 
-  app.post("/upload", asyncHandler(require("./routes/upload")));
+  app.post("/upload", asyncHandler(uploadRoute));
 
-  app.post("/evict", asyncHandler(require("./routes/evict")));
+  app.post("/evict", asyncHandler(evictRoute));
 
-  app.post("/delete", asyncHandler(require("./routes/delete")));
+  app.post("/delete", asyncHandler(deleteRoute));
 
-  app.post("/mkdir", asyncHandler(require("./routes/mkdir")));
+  app.post("/mkdir", asyncHandler(mkdirRoute));
 
-  app.post("/watch", asyncHandler(require("./routes/watch")));
+  app.post("/watch", asyncHandler(watchRoute));
 
-  app.post("/disconnect", asyncHandler(require("./routes/disconnect")));
+  app.post("/disconnect", asyncHandler(disconnectRoute));
 
-  app.get("/readdir", asyncHandler(require("./routes/readdir")));
-  app.post("/recursiveList", asyncHandler(require("./routes/recursiveList")));
+  app.get("/readdir", asyncHandler(readdirRoute));
+  app.post("/recursiveList", asyncHandler(recursiveListRoute));
 
-  app.get("/download", asyncHandler(require("./routes/download")));
+  app.get("/download", asyncHandler(downloadRoute));
 
-  app.get("/stats", asyncHandler(require("./routes/stats")));
+  app.get("/stats", asyncHandler(statsRoute));
 
-  app.post("/setup", asyncHandler(require("./routes/setup")));
+  app.post("/setup", asyncHandler(setupRoute));
 
   app.use((err, req, res, next) => {
     console.error(clfdate(), "Macserver error:", err);

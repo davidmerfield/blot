@@ -1,7 +1,7 @@
-const exec = require("../exec");
-const clfdate = require("../util/clfdate");
+import exec from "../exec.js";
+import clfdate from "../util/clfdate.js";
 
-module.exports = async () => {
+export default async () => {
   // use brctl quota to get the iCloud Drive quota and usage
   // e.g. '1899909948243 bytes of quota remaining in personal account'
   const { stdout, stderr } = await exec("brctl", ["quota"]);

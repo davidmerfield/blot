@@ -1,17 +1,16 @@
-const {
+import {
   remoteServer,
   Authorization,
   iCloudDriveDirectory,
   maxFileSize,
-} = require("../config");
-const clfdate = require("../util/clfdate");
+} from "../config.js";
+import clfdate from "../util/clfdate.js";
+import fs from "fs-extra";
+import * as brctl from "../brctl/index.js";
+import fetch from "./rateLimitedFetchWithRetriesAndTimeout.js";
+import { join } from "path";
 
-const fs = require("fs-extra");
-const brctl = require("../brctl");
-const fetch = require("./rateLimitedFetchWithRetriesAndTimeout");
-const { join } = require("path");
-
-module.exports = async (blogID, path) => {
+export default async (blogID, path) => {
   // Input validation
   if (!blogID || typeof blogID !== "string") {
     console.error(clfdate(), "Invalid blogID for upload client request", {
