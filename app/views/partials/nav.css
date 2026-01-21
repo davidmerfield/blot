@@ -24,6 +24,10 @@ nav .menu a {
     padding: var(--link-spacing);
 }
 
+nav .menu a.selected {
+    color: var(--light-text-color);
+}
+
 nav .menu a .icon-folder {
     position: relative;
     top: -0.1em;
@@ -43,8 +47,26 @@ nav .menu a:last-child {
 }
 
 nav .cta a {
+    font-size: var(--small-font-size);
+    font-weight: 500;
+    padding: 0.33rem 0.666rem;
+    border-radius: 2rem;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    border: 1px solid var(--dark-border-color);
+    transition: opacity 0.2s ease;
+}
+
+nav .cta a.main {
     background-color: var(--text-color);
     color: var(--background-color);
-    padding: 0.5rem 1rem;
-    border-radius: var(--border-radius);
+    border: 1px solid var(--text-color);
+}
+
+nav .cta a:hover {
+    opacity: 0.6;
+}
+
+nav .cta a.main:hover {
+    opacity: 0.8;
 }
