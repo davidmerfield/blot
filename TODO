@@ -885,6 +885,8 @@ Use tinify free api to compress some of the folder images?
 Add asset library / file upload to template editor and share files across templates
 - use this to help implement a favicon feature which minifies the favicon
 
+Extend markdown parser to support [content blocks syntax](https://github.com/iainc/Markdown-Content-Blocks)
+
 Extend markdown parser to add a special class to a list of only images for targeting into an image grid or gallery?
 - `- ![Image](_image.jpg)...` -> `<ul class="image-list">`... could then be used in CSS?
 
