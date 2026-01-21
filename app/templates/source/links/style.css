@@ -19,6 +19,17 @@ on the services page of the dashboard */
   --font-stack: {{{body_font.stack}}};
   --font-size: {{body_font.font_size}}px;
   --line-height: {{body_font.line_height}};
+  --font-size-small: 0.875em;
+  --border-width: 0.0625em;
+  --border-width-thick: calc(var(--border-width) * 2);
+  --spacing: 1;
+  --space: calc(var(--spacing) * 1em);
+  --space-033: calc(var(--space) * 0.33);
+  --space-065: calc(var(--space) * 0.65);
+  --space-1: var(--space);
+  --space-13: calc(var(--space) * 1.3);
+  --space-2: calc(var(--space) * 2);
+  --space-26: calc(var(--space) * 2.6);
   --search-icon: url('data:image/svg+xml;utf8,<?xml version="1.0" encoding="utf-8"?><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 42.6 42.6" style="enable-background:new 0 0 42.6 42.6;" xml:space="preserve"><path fill="rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5)" d="M42.6,40.5L28.2,26.1c2.4-2.8,3.7-6.4,3.7-10.2c0-4.3-1.7-8.3-4.7-11.3c-3-3-7-4.7-11.3-4.7S7.7,1.7,4.7,4.7 c-6.2,6.2-6.2,16.3,0,22.5c3,3,7,4.7,11.3,4.7c3.8,0,7.3-1.3,10.2-3.7l14.4,14.4L42.6,40.5z M6.8,25.1c-5-5-5-13.2,0-18.3 C9.2,4.3,12.5,3,15.9,3c3.5,0,6.7,1.3,9.1,3.8c2.4,2.4,3.8,5.7,3.8,9.1c0,3.5-1.3,6.7-3.8,9.1c-2.4,2.4-5.7,3.8-9.1,3.8 C12.5,28.9,9.2,27.5,6.8,25.1z"/></svg>');
 }
 
@@ -59,7 +70,7 @@ body.entry-container {
   display: flex;
   color: var(--text-color);
   align-items: center;
-  padding: 0.65em 1.3em;
+  padding: var(--space-065) var(--space-13);
   white-space: nowrap;
   text-rendering: optimizeLegibility;
   font-size: 1em;
@@ -77,7 +88,7 @@ body.entry-container {
 hr {
   border: none;
   margin: 0;
-  border-top: 0.0625em solid var(--border-color);
+  border-top: var(--border-width) solid var(--border-color);
 }
 
 /* UTILITY CLASSES */
@@ -106,7 +117,7 @@ a.light:active img {
 .header input {
   margin: 0;
   display: inline-block;
-  padding: 0.65em 0;
+  padding: var(--space-065) 0;
 }
 
 .menu {
@@ -120,7 +131,7 @@ a.light:active img {
 .posts {
   display: flex;
   flex-wrap: wrap;
-  padding: 2.6em;
+  padding: var(--space-26);
   min-height: calc(100vh - 16em);
 }
 
@@ -131,7 +142,7 @@ a.light:active img {
 .post {
   position: relative;
   padding: 0.8em;
-  margin-bottom: 2em;
+  margin-bottom: var(--space-2);
   width: 25%;
   box-sizing: border-box;
   font-size: 0.8125em;
@@ -171,7 +182,7 @@ ul.task-list {
   display: block;
   overflow: hidden;
   position: relative;
-  margin-bottom: 1.3em
+  margin-bottom: var(--space-13)
 }
 
 .post .thumbnail:after {
@@ -181,7 +192,7 @@ ul.task-list {
   left: 0;
   right: 0;
   bottom: 0;
-  border: 0.0625em solid transparent
+  border: var(--border-width) solid transparent
 }
 
 .post:hover .thumbnail:after {
@@ -206,7 +217,7 @@ ul.task-list {
 
 .post.no-thumbnail .thumbnail:after {
   border-color: var(--border-color);
-  border-width: 0.125em
+  border-width: var(--border-width-thick)
 }
 
 .post.no-thumbnail:hover .thumbnail:after {
@@ -280,15 +291,15 @@ form input:focus,
   right: 0;
   background: var(--background-color);
   z-index: 1;
-  box-shadow: var(--text-color-05) 0 0 0 0.0625em, var(--text-color-05) 0 0.1875em 0.375em, var(--border-color) 0 0.5625em 1.5em;
-  margin-top: 0.0625em
+  box-shadow: var(--text-color-05) 0 0 0 var(--border-width), var(--text-color-05) 0 0.1875em 0.375em, var(--border-color) 0 0.5625em 1.5em;
+  margin-top: var(--border-width)
 }
 
 #dropdown a {
   display: flex;
-  padding: 1em 1.3em;
+  padding: var(--space-1) var(--space-13);
   overflow: hidden;
-  border-bottom: 0.0625em solid var(--text-color-05);
+  border-bottom: var(--border-width) solid var(--text-color-05);
   color: var(--medium-text-color);
   font-size: 1em;
   text-decoration: none;
@@ -308,7 +319,7 @@ form input:focus,
   display: inline-block;
   width: 1em;
   height: 1em;
-  margin: 0 0.65em 0 0;
+  margin: 0 var(--space-065) 0 0;
 }
 
 #dropdown img {
@@ -340,7 +351,7 @@ form input:focus,
 .pagination .button {
   text-decoration: none;
   color: inherit;
-  padding: 0.65em 1.3em 0.65em 1.3em;
+  padding: var(--space-065) var(--space-13) var(--space-065) var(--space-13);
   margin: 0 0.8em;
   display: inline-block;
   background: var(--text-color-05);
@@ -357,7 +368,7 @@ form input:focus,
 .entry h1 {
   font-size: 2em;
   line-height: 1.2;
-  margin-top: 2em;
+  margin-top: var(--space-2);
   margin-bottom: 1em;
 }
 
@@ -378,7 +389,7 @@ form input:focus,
   max-width: 100%;
   height: auto;
   width: auto;
-  max-height: calc(100vh - 2.6em)
+  max-height: calc(100vh - var(--space-26))
 }
 
 .entry {
@@ -397,8 +408,8 @@ form input:focus,
   max-width: 100%;
   height: auto;
   width: auto;
-  margin-top: 2em;
-  margin-bottom: 2em;
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-2);
   max-height: calc(100vh - 4em);
 }
 
@@ -441,21 +452,21 @@ form input:focus,
 .entry blockquote {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  margin: 2em auto;
+  margin: var(--space-2) auto;
   border-left: 0.1875em var(--border-color) solid;
   padding-left: 1em;
   font-style: italic;
 }
 
 .entry p {
-  margin-top: 2em;
-  margin-bottom: 2em
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-2)
 }
 
 .entry hr {
   background-color: var(--border-color);
   border: none;
-  height: 0.125em;
+  height: var(--border-width-thick);
   margin: 3em 0;
 }
 
@@ -465,9 +476,9 @@ form input:focus,
   display: flex;
   flex-basis: 75%;
   flex-shrink: 0;
-  padding: 0.325em 0.4em;
+  padding: var(--space-033) var(--space-065);
   overflow: hidden;
-  font-size: 0.875em;
+  font-size: var(--font-size-small);
   flex-grow: 1;
 }
 
@@ -486,7 +497,7 @@ form input:focus,
 #tags a {
   display: inline-block;
   margin: 0;
-  padding: 0 0.33em;
+  padding: 0 var(--space-033);
   white-space: nowrap;
   color: inherit;
   position: relative;
@@ -543,9 +554,9 @@ form input:focus,
   min-width: 1.5em;
   text-align: center;
   display: inline-block;
-  padding: 0.325em 0;
+  padding: var(--space-033) 0;
   margin: 0 0.1em;
-  font-size: 0.875em;
+  font-size: var(--font-size-small);
   position: relative;
   text-decoration: none;
   color: var(--border-color);
@@ -590,7 +601,7 @@ form input:focus,
 }
 
 .archives h1 {
-  margin-left: 1.3em
+  margin-left: var(--space-13)
 }
 
 .archives table {
@@ -612,7 +623,7 @@ table a {
 
 .archives table td,
 .archives table th {
-  padding: 0.35em 0.7em;
+  padding: var(--space-033) var(--space-065);
 }
 
 .archives table th {
@@ -624,7 +635,7 @@ table a {
 }
 
 .archives .links {
-  padding: 1.9em;
+  padding: var(--space-2);
   text-align: left;
   display: block;
   white-space: nowrap;
@@ -656,7 +667,7 @@ table a {
 .upper {
   text-decoration: none;
   color: var(--light-text-color);
-  margin-top: 0.0625em;
+  margin-top: var(--border-width);
   display: inline-block;
   text-transform: uppercase;
   font-size: 0.6875em
@@ -667,7 +678,7 @@ table a {
 .posts,
 .pagination,
 .tags {
-  border-bottom: 0.0625em solid var(--light-border-color);
+  border-bottom: var(--border-width) solid var(--light-border-color);
 }
 
 .toolbar {
@@ -707,12 +718,12 @@ input#toggle {
 /* ENTRY CONTAINER (Modal/Detail View) */
 
 .entry-container .caption {
-  margin-top: 2em;
-  margin-bottom: 2em;
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .entry-container .main {
-  min-height: calc(100vh - 2em);
+  min-height: calc(100vh - var(--space-2));
   flex-grow: 1;
 }
 
@@ -722,7 +733,7 @@ input#toggle {
 
 .entry-container .top .right-toolbar,
 .entry-container .top .left-toolbar {
-  padding: 1.3em
+  padding: var(--space-13)
 }
 
 .entry-container .left-toolbar,
@@ -730,16 +741,16 @@ input#toggle {
 .entry-container .close {
   text-align: center;
   display: inline-block;
-  margin: 1.3em;
-  border: 0.0625em solid var(--border-color);
-  padding: 2.6em 1.3em;
+  margin: var(--space-13);
+  border: var(--border-width) solid var(--border-color);
+  padding: var(--space-26) var(--space-13);
   text-decoration: none;
   box-sizing: border-box;
   position: relative;
 }
 
 .entry-container .close {
-  padding: 1.3em
+  padding: var(--space-13)
 }
 
 .entry-container .left-toolbar:focus,
@@ -764,7 +775,7 @@ input#toggle {
   -ms-transform: rotate(-135deg);
   transform: rotate(-135deg);
   border: solid;
-  border-width: 0.0625em 0.0625em 0 0;
+  border-width: var(--border-width) var(--border-width) 0 0;
   border-color: var(--light-text-color);
 }
 
@@ -788,7 +799,7 @@ input#toggle {
   top: 0;
   bottom: 0;
   right: auto;
-  width: 0.0625em;
+  width: var(--border-width);
   background: var(--light-text-color);
   height: 1em;
   margin: auto 0;
@@ -839,7 +850,7 @@ input#toggle {
     display: block !important;
     position: absolute;
     top: 0;
-    padding: 0.7em 1.3em;
+    padding: var(--space-065) var(--space-13);
     cursor: pointer;
     right: 0;
   }
@@ -861,13 +872,13 @@ input#toggle {
 
   .nav a {
     display: block;
-    border-bottom: 0.0625em solid var(--text-color-05);
+    border-bottom: var(--border-width) solid var(--text-color-05);
   }
 
   .header .search {
-    border-top: 0.0625em solid var(--text-color-05);
-    border-bottom: 0.0625em solid var(--text-color-05);
-    padding: 0.65em 0;
+    border-top: var(--border-width) solid var(--text-color-05);
+    border-bottom: var(--border-width) solid var(--text-color-05);
+    padding: var(--space-065) 0;
     z-index: 2;
     min-height: auto
   }
