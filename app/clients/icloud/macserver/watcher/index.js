@@ -214,7 +214,9 @@ const watch = async (blogID) => {
   // making any changes to the polling intervals
   const watcher = chokidar
     .watch(blogPath, {
-      usePolling: false, // see if this works now that we're using chokidar 5.0.0
+      usePolling: true,
+      interval: 250, // Poll every 0.25s for non-binary files
+      binaryInterval: 1000, // Poll every 1s for binary files
       ignoreInitial: false, // Process initial events
       ignored: /(^|[/\\])\../, // Ignore dotfiles
     })
