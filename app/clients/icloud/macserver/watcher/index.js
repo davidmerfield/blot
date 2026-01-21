@@ -16,23 +16,6 @@ import mkdir from "../httpClient/mkdir.js";
 import remove from "../httpClient/remove.js";
 import resync from "../httpClient/resync.js";
 
-// A test of the global chokidar instance – does it trigger EMFILE errors when polling is false and fs events are used?
-const globalWatcher = chokidar
-  .watch(iCloudDriveDirectory, {
-    ignoreInitial: true, // ignore initial events
-    ignored: /(^|[/\\])\../, // ignore dotfiles
-    followSymlinks: false, // don't follow symlinks
-  })
-  .on("all", (event, filePath) => {
-    console.log(clfdate(), `Global watcher event: ${event}, filePath: ${filePath}`);
-  })
-  .on("ready", () => {
-    console.log(clfdate(), `Global watcher ready`);
-  })
-  .on("error", (error) => {
-    console.error(clfdate(), `Global watcher error: ${error}`);
-  });
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const withRetries = async (label, operation, options = {}) => {
