@@ -4,9 +4,9 @@ html {
   --medium-background-color: #e4eafb;
   --light-background-color: #f7f9fe; 
 
-  --text-color: #000;
+  --text-color: rgb(18, 18, 18);
   --medium-text-color: #7e848f;
-  --light-text-color: #9ba0ac;
+  --light-text-color: oklab(0.182204 -7.45058e-9 -1.49012e-8 / 0.4);
 
   --accent-color: #0066de; /* used for links */
   --light-accent-color: #0066de; /* used for button background */
@@ -974,6 +974,39 @@ ul.pill-navigation {
 
 #contact-form [name="contact_e879"] {
   min-height: 120px;box-sizing: border-box;border:1px solid #dddddc;border-radius: 5px;width:100%;padding:0.5rem;margin:0.5rem 0
+}
+
+.banner {
+  width: 100%;
+  padding: 4rem 2rem;
+  text-align: center;
+  margin-bottom: 4rem;
+  box-sizing: border-box;
+}
+
+.banner-heading {
+  margin: 0;
+  padding: 0;
+  font-weight: 600;
+  line-height: 1.1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 100%;
+}
+
+.banner-line {
+  display: block;
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  letter-spacing: -0.02em;
+}
+
+@media screen and (max-width: 600px) {
+  .banner {
+    padding: 3rem 1rem;
+    margin-bottom: 3rem;
+  }
+  
 }
 
 .intro {
