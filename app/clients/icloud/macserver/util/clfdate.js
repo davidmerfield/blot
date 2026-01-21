@@ -21,7 +21,7 @@ function pad2(num) {
   return (str.length === 1 ? "0" : "") + str;
 }
 
-module.exports = function clfdate() {
+export default function clfdate() {
   var dateTime = new Date();
 
   var date = dateTime.getDate();
@@ -57,4 +57,4 @@ module.exports = function clfdate() {
     "]" + 
     (CONTAINER_NAME ? " [" + CONTAINER_NAME + "]" : "")
   );
-};
+}

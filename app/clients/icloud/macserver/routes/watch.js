@@ -1,7 +1,7 @@
-const { watch } = require("../watcher");
-const clfdate = require("../util/clfdate");
+import { watch } from "../watcher/index.js";
+import clfdate from "../util/clfdate.js";
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const blogID = req.header("blogID");
 
   if (!blogID) {

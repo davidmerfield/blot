@@ -1,6 +1,6 @@
-const { iCloudDriveDirectory } = require("../config");
-const exec = require("../exec");
-const clfdate = require("../util/clfdate");
+import { iCloudDriveDirectory } from "../config.js";
+import exec from "../exec.js";
+import clfdate from "../util/clfdate.js";
 
 const CONFIG = {
   TIMEOUT: 5 * 1000,
@@ -37,7 +37,7 @@ const listDirectory = async (dirPath) => {
   }
 };
 
-module.exports = async (dirPath) => {
+export default async (dirPath) => {
   try {
     return await listDirectory(dirPath);
   } catch (error) {

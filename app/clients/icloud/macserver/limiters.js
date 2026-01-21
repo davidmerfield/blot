@@ -1,5 +1,5 @@
-const Bottleneck = require("bottleneck");
-const clfdate = require("./util/clfdate");
+import Bottleneck from "bottleneck";
+import clfdate from "./util/clfdate.js";
 
 // Create a map of limiters, one per blogID
 const limiters = new Map();
@@ -32,7 +32,7 @@ const removeLimiterForBlogID = (blogID) => {
 
 const getLimiterCount = () => limiters.size;
 
-module.exports = {
+export {
   getLimiterForBlogID,
   removeLimiterForBlogID,
   getLimiterCount,

@@ -1,7 +1,7 @@
-const fs = require("fs-extra");
-const { execFile } = require("child_process");
-const { iCloudDriveDirectory } = require("../config");
-const clfdate = require("../util/clfdate");
+import fs from "fs-extra";
+import { execFile } from "child_process";
+import { iCloudDriveDirectory } from "../config.js";
+import clfdate from "../util/clfdate.js";
 
 const POLL_INTERVAL = 15 * 1000; // Check every 15 seconds
 const MAX_NUMBER_OF_FILES_TRACKED_PER_BLOG = 150;
@@ -210,7 +210,7 @@ const checkDiskSpace = (evictFiles) => {
   }, POLL_INTERVAL);
 };
 
-module.exports = {
+export {
   checkDiskSpace,
   addFile,
   removeFile,

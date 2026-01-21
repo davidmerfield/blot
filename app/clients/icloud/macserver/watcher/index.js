@@ -1,22 +1,20 @@
-const chokidar = require("chokidar");
-const fs = require("fs-extra");
-const {
+import chokidar from 'chokidar';
+import fs from "fs-extra";
+import {
   getLimiterForBlogID,
   removeLimiterForBlogID,
   getLimiterCount,
-} = require("../limiters");
-const clfdate = require("../util/clfdate");
-const { iCloudDriveDirectory } = require("../config");
-const { constants } = require("fs");
-const { join } = require("path");
-
-const brctl = require("../brctl");
-
-const status = require("../httpClient/status");
-const upload = require("../httpClient/upload");
-const mkdir = require("../httpClient/mkdir");
-const remove = require("../httpClient/remove");
-const resync = require("../httpClient/resync");
+} from "../limiters.js";
+import clfdate from "../util/clfdate.js";
+import { iCloudDriveDirectory } from "../config.js";
+import { constants } from "fs";
+import { join } from "path";
+import * as brctl from "../brctl/index.js";
+import status from "../httpClient/status.js";
+import upload from "../httpClient/upload.js";
+import mkdir from "../httpClient/mkdir.js";
+import remove from "../httpClient/remove.js";
+import resync from "../httpClient/resync.js";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -68,12 +66,12 @@ const extractPathInBlogDirectory = (filePath) => {
   return restPath.join("/");
 };
 
-const {
+import {
   checkDiskSpace,
   removeBlog,
   addFile,
   removeFile,
-} = require("./monitorDiskUsage");
+} from "./monitorDiskUsage.js";
 
 // Map to track active chokidar watchers for each blog folder
 const blogWatchers = new Map();
@@ -264,4 +262,4 @@ const unwatch = async (blogID) => {
   blogWatchers.delete(blogID);
 };
 
-module.exports = { initialize, unwatch, watch };
+export { initialize, unwatch, watch };

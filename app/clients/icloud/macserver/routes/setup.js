@@ -1,10 +1,10 @@
-const exec = require("../exec");
-const { join } = require("path");
-const fs = require("fs-extra");
-const Bottleneck = require("bottleneck");
-const status = require("../httpClient/status");
-const { iCloudDriveDirectory } = require("../config");
-const clfdate = require("../util/clfdate");
+import exec from "../exec.js";
+import { join } from "path";
+import fs from "fs-extra";
+import Bottleneck from "bottleneck";
+import status from "../httpClient/status.js";
+import { iCloudDriveDirectory } from "../config.js";
+import clfdate from "../util/clfdate.js";
 
 // Only one setup can run at a time otherwise the apple script
 // might not work correctly or accept the wrong sharing link
@@ -182,7 +182,7 @@ async function acceptSharingLink(sharingLink) {
   console.log(clfdate(), `AppleScript finished`);
 }
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const blogID = req.header("blogID");
 
   const sharingLink = req.header("sharingLink"); // New header for the sharing link
