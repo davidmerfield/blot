@@ -216,11 +216,17 @@ const watch = async (blogID) => {
   // making any changes to the polling intervals
   const watcher = chokidar
     .watch(blogPath, {
-      usePolling: true,
-      interval: 250, // Poll every 0.25s for non-binary files
-      binaryInterval: 1000, // Poll every 1s for binary files
+      // we tried using polling but it was missing events
+      // during rapid edit then rename operations
+      // if we need to switch back to polling in future,
+      // please document why!
+      // the docs might have a clue:
+      // "It is typically necessary to set this to true to successfully watch files over a network, and it may be necessary to successfully watch files in other non-standard situations."
+      usePolling: false, // the default is false
+
       ignoreInitial: false, // Process initial events
       ignored: /(^|[/\\])\../, // Ignore dotfiles
+      followSymlinks: false, // Don't follow symlinks
     })
     .on("all", (event, filePath) => {
       const blogID = extractBlogID(filePath);
