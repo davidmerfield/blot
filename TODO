@@ -1,4 +1,10 @@
 iCloud client:
+- How can we leverage fs.watch({recursive}) to replace chokidar and improve performance and reliability?
+  - n.b. the event labels are unreliable -> delete appears as 'rename', etc. we'll need to confirm with fs.stat
+- Remove evict route
+- Rename /watch route to setup-complete
+- Remove recursiveReaddirRoute
+  - instead, to sync folder tree, whenever readddir is called, it should maintain an internal map of the last time a blog's subfolder tree was recursively checked, and call it? or maybe just call ls and brctl download on the specific folder? or is this too slow?
 - Fix bug: high priority, drift sync. chokidar missing events (rename incomplete, it applied on the delete):
   - To reproduce, edit two files then quickly rename them.
   - To solve... not sure? leverage brctl monitor?
