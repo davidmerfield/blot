@@ -1,5 +1,10 @@
 iCloud client:
 - How can we leverage fs.watch({recursive}) to replace chokidar and improve performance and reliability?
+  import { watch as fswatch } from 'node:fs';
+
+  fswatch(iCloudDriveDirectory, { recursive: true }, (event, filename) => {
+    console.log(clfdate(), `FS watch watcher event: ${event}, filename: ${filename}`);
+  });
   - n.b. the event labels are unreliable -> delete appears as 'rename', etc. we'll need to confirm with fs.stat
 - Remove evict route
 - Rename /watch route to setup-complete
