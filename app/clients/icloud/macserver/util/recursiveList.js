@@ -1,7 +1,7 @@
-const path = require("path");
-const { ls } = require("../brctl");
-const shouldIgnoreFile = require("../../../util/shouldIgnoreFile");
-const clfdate = require("./clfdate");
+import path from "path";
+import { ls } from "../brctl/index.js";
+import shouldIgnoreFile from "../../../util/shouldIgnoreFile.js";
+import clfdate from "./clfdate.js";
 
 const MAX_DEPTH = 1000;
 
@@ -37,4 +37,4 @@ async function recursiveList(dirPath, depth = 0) {
   }
 }
 
-module.exports = recursiveList;
+export default recursiveList;

@@ -1,6 +1,6 @@
-const { remoteServer, Authorization } = require("../config");
-const fetch = require("./rateLimitedFetchWithRetriesAndTimeout");
-const clfdate = require("../util/clfdate");
+import { remoteServer, Authorization } from "../config.js";
+import fetch from "./rateLimitedFetchWithRetriesAndTimeout.js";
+import clfdate from "../util/clfdate.js";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const RESYNC_MAX_ATTEMPTS = 20;
@@ -43,7 +43,7 @@ const requestResyncOnce = async (blogID) => {
   console.log(clfdate(), `Resync requested for blogID: ${blogID}`);
 };
 
-module.exports = async (blogID, reason) => {
+export default async (blogID, reason) => {
   console.log(
     clfdate(),
     `Requesting resync for blogID: ${blogID}`,
