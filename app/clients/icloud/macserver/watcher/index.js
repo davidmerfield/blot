@@ -16,6 +16,12 @@ import mkdir from "../httpClient/mkdir.js";
 import remove from "../httpClient/remove.js";
 import resync from "../httpClient/resync.js";
 
+import { watch as fswatch } from 'node:fs';
+
+fswatch(iCloudDriveDirectory, (event, filename) => {
+  console.log(clfdate(), `FS watch watcher event: ${event}, filename: ${filename}`);
+});
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const withRetries = async (label, operation, options = {}) => {
