@@ -113,6 +113,10 @@ a.light:active img {
   min-height: calc(100vh - 16rem);
 }
 
+.infinite-scroll .posts {
+  min-height: calc(100vh - 13.25rem);
+}
+
 .post {
   position: relative;
   padding: 0.8em;
