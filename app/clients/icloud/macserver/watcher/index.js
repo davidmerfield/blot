@@ -18,7 +18,7 @@ import resync from "../httpClient/resync.js";
 
 import { watch as fswatch } from 'node:fs';
 
-fswatch(iCloudDriveDirectory, (event, filename) => {
+fswatch(iCloudDriveDirectory, { recursive: true }, (event, filename) => {
   console.log(clfdate(), `FS watch watcher event: ${event}, filename: ${filename}`);
 });
 
