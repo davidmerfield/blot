@@ -18,6 +18,8 @@ iCloud client:
     - switching away from chokidar polling? if this fails, document why!
     - maybe use: https://www.npmjs.com/package/fsevents?activeTab=readme
     - leveraging `brctl monitor -i` which includes paths of new or updated files, but not removed files. it also fires for evict events...
+- Daily icloud resync should also log how long the longest folder took to resync.
+- Sync verification should instrument the sync/fix function to also report errors where the folder doesn't match the database.
 - Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
 - Fix bug: low priority, this just causes an error in the logs when freeing up disk space. Problem: attempting to evict a file within a .pages directory (a special apple file) e.g. Post.pages/preview.jpg will fail: you need to evict the parent directory perhaps?
 - Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
