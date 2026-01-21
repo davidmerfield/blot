@@ -1,6 +1,6 @@
 nav {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     padding: 1rem;
     position: sticky;
@@ -87,7 +87,7 @@ nav .menu {
 /* CTA links - separate, right-aligned on desktop */
 nav .cta {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.5rem;
 }
 
@@ -97,9 +97,11 @@ nav .cta a {
     padding: 0.33rem 0.666rem;
     border-radius: 2rem;
     color: var(--text-color);
+    line-height: 1.3;
     background-color: var(--background-color);
     border: 1px solid var(--dark-border-color);
     transition: opacity 0.2s ease;
+      height: max-content
 }
 
 nav .cta a.main {
