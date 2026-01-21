@@ -20,7 +20,7 @@ import resync from "../httpClient/resync.js";
 const globalWatcher = chokidar
   .watch(iCloudDriveDirectory, {
     usePolling: false,
-    initial: false,
+    ignoreInitial: true, // Process initial events
     ignored: /(^|[/\\])\../, // Ignore dotfiles
     persistent: true,
     followSymlinks: false,
