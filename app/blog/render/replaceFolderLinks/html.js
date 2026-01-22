@@ -37,7 +37,7 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
         let hasMatchingAttr = false;
         for (let i = 0; i < node.attrs.length; i++) {
           const attr = node.attrs[i];
-          if (attr.name === "href" || attr.name === "src") {
+          if (attr.name === "href" || attr.name === "src" || attr.name === "poster") {
 
             // Ensure attr.value is a string
             if (typeof attr.value !== "string") {
@@ -69,7 +69,7 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
 
     for (const node of elements) {
       for (const attr of node.attrs) {
-        if (attr.name === "href" || attr.name === "src") {
+        if (attr.name === "href" || attr.name === "src" || attr.name === "poster") {
           let value = attr.value;
             
           // Remove host if it matches any of the patterns
