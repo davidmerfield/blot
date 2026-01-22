@@ -1,6 +1,5 @@
 iCloud client:
-- For large sites, holding the lock during a long resync can block legitimate events from getting in, causing even more resyncs... an infinite resync loop. How can we fix? make it possible for the *macserver* to list state on Blot? and simply issue regular events (upload/delete) for changes?
-- Fix bug with sync drift:
+- If we need to resolve further bugs with sync drift:
   - Implement additional parsing of modified paths from monitorer.js (brctl monitor -i) and reconcile these in addition to the fswatch module with the chokidar events for additional redundancy
 - Remove evict route
 - Rename /watch route to setup-complete
