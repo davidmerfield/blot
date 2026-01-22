@@ -117,7 +117,7 @@ const handleFileEvent = async (event, blogID, filePath) => {
     }
 
     console.log(clfdate(), 
-      `Event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory}`
+      `Chokidar Event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory}`
     );
 
     if (event === "add" || event === "change") {
@@ -142,20 +142,25 @@ const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
   await delay(FS_WATCH_SETTLE_DELAY_MS);
 
   if (hasRecentChokidarEvent(blogID, pathInBlogDirectory)) {
+    console.log(clfdate(), `FS Watch Event: duplicate, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
     return;
   }
 
   const fullPath = buildBlogPath(blogID, pathInBlogDirectory);
 
+
   try {
     const stats = await fs.stat(fullPath);
     if (stats.isFile()) {
+      console.log(clfdate(), `FS Watch Event: upload, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
       await performAction(blogID, pathInBlogDirectory, "upload");
     } else if (stats.isDirectory()) {
+      console.log(clfdate(), `FS Watch Event: mkdir, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
       await performAction(blogID, pathInBlogDirectory, "mkdir");
     }
   } catch (error) {
     if (error.code === "ENOENT") {
+      console.log(clfdate(), `FS Watch Event: remove, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
       await performAction(blogID, pathInBlogDirectory, "remove");
       return;
     }
