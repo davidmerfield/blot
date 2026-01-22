@@ -53,9 +53,7 @@ module.exports = async function (req, res) {
     const dedupEntry = {
       inFlight: true,
       cooldownUntil: now + RESYNC_DEDUP_WINDOW_MS,
-      cleanupTimeout: setTimeout(() => {
-        resyncDedupRegistry.delete(blogID);
-      }, RESYNC_DEDUP_WINDOW_MS),
+      cleanupTimeout: null,
     };
     resyncDedupRegistry.set(blogID, dedupEntry);
 
@@ -81,10 +79,24 @@ module.exports = async function (req, res) {
         folder.status("Resync complete");
       } finally {
         dedupEntry.inFlight = false;
+        dedupEntry.cooldownUntil = Date.now() + RESYNC_DEDUP_WINDOW_MS;
+        if (dedupEntry.cleanupTimeout) {
+          clearTimeout(dedupEntry.cleanupTimeout);
+        }
+        dedupEntry.cleanupTimeout = setTimeout(() => {
+          resyncDedupRegistry.delete(blogID);
+        }, RESYNC_DEDUP_WINDOW_MS);
         await done();
       }
     } catch (err) {
       dedupEntry.inFlight = false;
+      dedupEntry.cooldownUntil = Date.now() + RESYNC_DEDUP_WINDOW_MS;
+      if (dedupEntry.cleanupTimeout) {
+        clearTimeout(dedupEntry.cleanupTimeout);
+      }
+      dedupEntry.cleanupTimeout = setTimeout(() => {
+        resyncDedupRegistry.delete(blogID);
+      }, RESYNC_DEDUP_WINDOW_MS);
       if (
         handleSyncLockError({
           err,
