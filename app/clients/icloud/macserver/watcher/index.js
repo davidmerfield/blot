@@ -167,7 +167,7 @@ const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
   }
 
   if (hasRecentChokidarEvent(blogID, pathInBlogDirectory, action)) {
-    console.log(clfdate(), `FS Watch Event: duplicate, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
+    console.log(clfdate(), `FS Watch Event: duplicate, action: ${action}, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
     return;
   }
 
