@@ -28,6 +28,14 @@ import {
   removeFile,
 } from "./monitorDiskUsage.js";
 
+import { realpath } from "fs/promises";
+import path from "path";
+
+async function exactCaseViaRealpath(p) {
+  const resolved = await realpath(p);
+  return resolved === path.resolve(p);
+}
+
 // Map to track active chokidar watchers for each blog folder
 const blogWatchers = new Map();
 const chokidarEventMap = new Map();
@@ -123,6 +131,20 @@ const handleFileEvent = async (event, blogID, filePath) => {
       `Chokidar Event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory}`
     );
 
+    // because this runs on macos and the disk is 
+    // case insensitive, we need to verify that the
+    // pathInBlogDirectory is the exact same as the path
+    // on the disk – if not, we need to issue a remove event
+    const fullPath = buildBlogPath(blogID, pathInBlogDirectory);
+    const exactCase = await exactCaseViaRealpath(fullPath);
+    
+    if (!exactCase) {
+      if (event === "add" || event === "change") {
+        console.log(clfdate(), `Chokidar Event: Changing event from add/change to remove for path: ${pathInBlogDirectory} because of case mismatch`);
+        event = "unlink";
+      } 
+    }
+
     if (event === "add" || event === "change") {
       await performAction(blogID, pathInBlogDirectory, "upload");
     } else if (event === "unlink" || event === "unlinkDir") {
@@ -134,6 +156,7 @@ const handleFileEvent = async (event, blogID, filePath) => {
     console.error(clfdate(), `Error handling file event (${event}, ${filePath}):`, error);
   }
 };
+
 
 const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
   // This will skip blog directory deletions
@@ -149,7 +172,16 @@ const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
 
   try {
     const stats = await fs.stat(fullPath);
-    if (stats.isFile()) {
+
+    const exactCase = await exactCaseViaRealpath(fullPath);
+
+    // because this runs on macos and the disk is 
+    // case insensitive, we need to verify that the
+    // pathInBlogDirectory is the exact same as the path
+    // on the disk – if not, we need to issue a remove event
+    if (!exactCase) {
+      action = "remove";
+    } else if (stats.isFile()) {
       action = "upload";
     } else if (stats.isDirectory()) {
       action = "mkdir";
