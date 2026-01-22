@@ -24,8 +24,18 @@ const extractPathInBlogDirectory = (filePath) => {
   return restPath.join("/");
 };
 
-const buildChokidarEventKey = (blogID, pathInBlogDirectory) =>
-  `${blogID}:${pathInBlogDirectory}`;
+const validActions = ["upload", "remove", "mkdir"];
+
+const assertValidAction = (action) => {
+  if (!validActions.includes(action)) {
+    throw new Error(`Invalid action: ${action}`);
+  }
+};
+
+const buildChokidarEventKey = (blogID, pathInBlogDirectory, action) => {
+  assertValidAction(action);
+  return `${blogID}:${pathInBlogDirectory}:${action}`;
+};
 
 const buildBlogPath = (blogID, pathInBlogDirectory) =>
   join(iCloudDriveDirectory, blogID, pathInBlogDirectory);
@@ -33,6 +43,8 @@ const buildBlogPath = (blogID, pathInBlogDirectory) =>
 export {
   extractBlogID,
   extractPathInBlogDirectory,
+  validActions,
+  assertValidAction,
   buildChokidarEventKey,
   buildBlogPath,
 };
