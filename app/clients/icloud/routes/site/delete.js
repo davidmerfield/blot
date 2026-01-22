@@ -15,14 +15,24 @@ module.exports = async function (req, res) {
       return res.status(400).send("Missing required headers: blogID or path");
     }
 
+    // Compute the local file path on disk before taking the lock
+    const pathOnDisk = localPath(blogID, filePath);
+
+    if (!(await fs.pathExists(pathOnDisk))) {
+      console.warn(`File not found (pre-lock): ${filePath}`);
+      return res.sendStatus(204);
+    }
+
     console.log(`Deleting file for blogID: ${blogID}, path: ${filePath}`);
 
     // Establish sync lock to allow safe file operations
     const { done, folder } = await establishSyncLock(blogID);
 
     try {
-      // Compute the local file path on disk
-      const pathOnDisk = localPath(blogID, filePath);
+      if (!(await fs.pathExists(pathOnDisk))) {
+        console.warn(`File not found (locked): ${filePath}`);
+        return res.sendStatus(204);
+      }
 
       console.log(`Deleting file at: ${pathOnDisk}`);
 
@@ -36,15 +46,7 @@ module.exports = async function (req, res) {
       folder.status("Removed " + filePath);
 
       console.log(`File successfully deleted: ${pathOnDisk}`);
-      res.status(200).send(`File successfully deleted for blogID: ${blogID}`);
-    } catch (err) {
-      if (err.code === "ENOENT") {
-        // File does not exist
-        console.warn(`File not found: ${filePath}`);
-        res.status(404).send("File not found");
-      } else {
-        throw err; // Re-throw unexpected errors
-      }
+      return res.status(200).send(`File successfully deleted for blogID: ${blogID}`);
     } finally {
       // Release the sync lock
       done();
