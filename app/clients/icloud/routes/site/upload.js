@@ -10,6 +10,7 @@ module.exports = async function (req, res) {
       "utf8"
     );
     const modifiedTime = req.header("modifiedTime");
+    const pathOnDisk = localPath(blogID, filePath);
 
     // Validate required headers
     if (!blogID || !filePath) {
@@ -21,12 +22,49 @@ module.exports = async function (req, res) {
       `Uploading binary file for blogID: ${blogID}, path: ${filePath}`
     );
 
+    if (await fs.pathExists(pathOnDisk)) {
+      const existingContents = await fs.readFile(pathOnDisk);
+      const contentsMatch = Buffer.isBuffer(req.body)
+        ? existingContents.equals(req.body)
+        : existingContents.equals(Buffer.from(req.body));
+      let modifiedTimeMatches = true;
+
+      if (modifiedTime) {
+        const stat = await fs.stat(pathOnDisk);
+        modifiedTimeMatches =
+          stat.mtime.getTime() === new Date(modifiedTime).getTime();
+      }
+
+      if (contentsMatch && modifiedTimeMatches) {
+        return res
+          .status(200)
+          .send(`File already up to date for blogID: ${blogID}`);
+      }
+    }
+
     // Establish sync lock to allow safe file operations
     const { done, folder } = await establishSyncLock(blogID);
 
     try {
-      // Compute the local file path on disk
-      const pathOnDisk = localPath(blogID, filePath);
+      if (await fs.pathExists(pathOnDisk)) {
+        const existingContents = await fs.readFile(pathOnDisk);
+        const contentsMatch = Buffer.isBuffer(req.body)
+          ? existingContents.equals(req.body)
+          : existingContents.equals(Buffer.from(req.body));
+        let modifiedTimeMatches = true;
+
+        if (modifiedTime) {
+          const stat = await fs.stat(pathOnDisk);
+          modifiedTimeMatches =
+            stat.mtime.getTime() === new Date(modifiedTime).getTime();
+        }
+
+        if (contentsMatch && modifiedTimeMatches) {
+          return res
+            .status(200)
+            .send(`File already up to date for blogID: ${blogID}`);
+        }
+      }
 
       folder.status("Saving " + filePath);
 
