@@ -1,6 +1,3 @@
-Fix bug with replaceFolderLinks: why aren't the videos getting routed through CDN
-- `view-source:https://fsanchez.io/work`
-
 iCloud client:
 - For large sites, holding the lock during a long resync can block legitimate events from getting in, causing even more resyncs... an infinite resync loop. How can we fix? make it possible for the *macserver* to list state on Blot? and simply issue regular events (upload/delete) for changes?
 - How can we leverage fs.watch({recursive}) to replace chokidar and improve performance and reliability?
