@@ -78,13 +78,12 @@ module.exports = async function (req, res) {
       // Call the folder's update method to register the file deletion
       for (const pathToUpdate of pathsToUpdate) {
         await folder.update(pathToUpdate);
+        // Set the folder status to reflect the delete action
+        folder.status("Removed " + pathToUpdate);
       }
 
-      // Set the folder status to reflect the delete action
-      folder.status("Removed " + filePath);
-
-      console.log(`File successfully deleted: ${pathOnDisk}`);
-      return res.status(200).send(`File successfully deleted for blogID: ${blogID}`);
+      console.log(`Successfully deleted: ${pathOnDisk}`);
+      return res.status(200).send(`Successfully deleted for blogID: ${blogID}`);
     } finally {
       // Release the sync lock
       done();
