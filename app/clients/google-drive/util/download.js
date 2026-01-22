@@ -8,11 +8,21 @@ const guid = require("helper/guid");
 const computeMd5Checksum = require("../util/md5Checksum");
 
 const isExportSizeLimitError = (err) => {
-  return (
-    err?.code === 403 &&
-    (err?.errors?.[0]?.reason === "exportSizeLimitExceeded" ||
-      err?.message?.includes("too large to be exported"))
-  );
+  
+  // Try to parse err.message if it's a JSON string
+  let errorData = null;
+
+  if (typeof err.message === 'string') {
+    try {
+      errorData = JSON.parse(err.message);
+    } catch (e) {
+      // Not JSON, that's fine
+    }
+  } else if (err.message && typeof err.message === 'object') {
+    errorData = err.message;
+  }
+  
+  return errorData?.error?.code === 403 && errorData?.error?.message?.includes("too large to be exported");
 };
 
 const ensurePlaceholderWithMtime = async (pathOnBlot, modifiedTime) => {
@@ -48,11 +58,26 @@ module.exports = async (
     };
 
     const handleExportSizeLimit = async (err) => {
+
       if (!isExportSizeLimitError(err)) {
         return false;
       }
 
       debug("EXPORT size limit exceeded for file", pathOnBlot);
+      
+      // For Google Docs, fetch and log exportLinks for debugging
+      // if (mimeType === "application/vnd.google-apps.document") {
+      //   try {
+      //     const fileMetadata = await drive.files.get({
+      //       fileId: id,
+      //       fields: "exportLinks",
+      //     });
+      //     console.log("exportLinks for Google Doc:", fileMetadata.data.exportLinks);
+      //   } catch (apiError) {
+      //     debug("Error fetching exportLinks:", apiError);
+      //   }
+      // }
+      
       await ensurePlaceholderWithMtime(pathOnBlot, modifiedTime);
       debug("   created empty file at:", colors.green(pathOnBlot));
       return true;
