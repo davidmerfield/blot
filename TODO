@@ -1,24 +1,11 @@
 iCloud client:
 - For large sites, holding the lock during a long resync can block legitimate events from getting in, causing even more resyncs... an infinite resync loop. How can we fix? make it possible for the *macserver* to list state on Blot? and simply issue regular events (upload/delete) for changes?
-- How can we leverage fs.watch({recursive}) to replace chokidar and improve performance and reliability?
-  import { watch as fswatch } from 'node:fs';
-
-  fswatch(iCloudDriveDirectory, { recursive: true }, (event, filename) => {
-    console.log(clfdate(), `FS watch watcher event: ${event}, filename: ${filename}`);
-  });
-  - n.b. the event labels are unreliable -> delete appears as 'rename', etc. we'll need to confirm with fs.stat
+- Fix bug with sync drift:
+  - Implement additional parsing of modified paths from monitorer.js (brctl monitor -i) and reconcile these in addition to the fswatch module with the chokidar events for additional redundancy
 - Remove evict route
 - Rename /watch route to setup-complete
 - Remove recursiveReaddirRoute
   - instead, to sync folder tree, whenever readddir is called, it should maintain an internal map of the last time a blog's subfolder tree was recursively checked, and call it? or maybe just call ls and brctl download on the specific folder? or is this too slow?
-- Fix bug: high priority, drift sync. chokidar missing events (rename incomplete, it applied on the delete):
-  - To reproduce, edit two files then quickly rename them.
-  - To solve... not sure? leverage brctl monitor?
-  - NOTE: once triggered, chokidar totally loses track of the files, subsequent events don't even fire!
-  - maybe we can solve by:
-    - switching away from chokidar polling? if this fails, document why!
-    - maybe use: https://www.npmjs.com/package/fsevents?activeTab=readme
-    - leveraging `brctl monitor -i` which includes paths of new or updated files, but not removed files. it also fires for evict events...
 - Daily icloud resync should also log how long the longest folder took to resync.
 - Sync verification should instrument the sync/fix function to also report errors where the folder doesn't match the database.
 - Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
