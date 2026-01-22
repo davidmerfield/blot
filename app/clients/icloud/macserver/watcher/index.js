@@ -16,6 +16,7 @@ import { startFsWatch as startFsWatchInternal, stopFsWatch as stopFsWatchInterna
 import {
   buildBlogPath,
   buildChokidarEventKey,
+  assertValidAction,
   extractBlogID,
   extractPathInBlogDirectory,
 } from "./pathUtils.js";
@@ -37,21 +38,23 @@ const FS_WATCH_SETTLE_DELAY_MS = 300;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const recordChokidarEvent = (blogID, pathInBlogDirectory) => {
+const recordChokidarEvent = (blogID, pathInBlogDirectory, action) => {
   if (!pathInBlogDirectory) {
     return;
   }
 
-  const key = buildChokidarEventKey(blogID, pathInBlogDirectory);
+  assertValidAction(action);
+  const key = buildChokidarEventKey(blogID, pathInBlogDirectory, action);
   chokidarEventMap.set(key, Date.now());
 };
 
-const hasRecentChokidarEvent = (blogID, pathInBlogDirectory) => {
+const hasRecentChokidarEvent = (blogID, pathInBlogDirectory, action) => {
   if (!pathInBlogDirectory) {
     return false;
   }
 
-  const key = buildChokidarEventKey(blogID, pathInBlogDirectory);
+  assertValidAction(action);
+  const key = buildChokidarEventKey(blogID, pathInBlogDirectory, action);
   const timestamp = chokidarEventMap.get(key);
   return Boolean(
     timestamp && Date.now() - timestamp < CHOKIDAR_EVENT_WINDOW_MS
@@ -141,31 +144,35 @@ const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
 
   await delay(FS_WATCH_SETTLE_DELAY_MS);
 
-  if (hasRecentChokidarEvent(blogID, pathInBlogDirectory)) {
-    console.log(clfdate(), `FS Watch Event: duplicate, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
-    return;
-  }
-
   const fullPath = buildBlogPath(blogID, pathInBlogDirectory);
-
+  let action = null;
 
   try {
     const stats = await fs.stat(fullPath);
     if (stats.isFile()) {
-      console.log(clfdate(), `FS Watch Event: upload, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
-      await performAction(blogID, pathInBlogDirectory, "upload");
+      action = "upload";
     } else if (stats.isDirectory()) {
-      console.log(clfdate(), `FS Watch Event: mkdir, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
-      await performAction(blogID, pathInBlogDirectory, "mkdir");
+      action = "mkdir";
     }
   } catch (error) {
     if (error.code === "ENOENT") {
-      console.log(clfdate(), `FS Watch Event: remove, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
-      await performAction(blogID, pathInBlogDirectory, "remove");
-      return;
+      action = "remove";
+    } else {
+      throw error;
     }
-    throw error;
   }
+
+  if (!action) {
+    return;
+  }
+
+  if (hasRecentChokidarEvent(blogID, pathInBlogDirectory, action)) {
+    console.log(clfdate(), `FS Watch Event: duplicate, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
+    return;
+  }
+
+  console.log(clfdate(), `FS Watch Event: ${action}, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
+  await performAction(blogID, pathInBlogDirectory, action);
 };
 
 // Initializes the top-level watcher and starts disk monitoring
@@ -244,6 +251,14 @@ const watch = async (blogID) => {
     .on("all", (event, filePath) => {
       const blogID = extractBlogID(filePath);
       const pathInBlogDirectory = extractPathInBlogDirectory(filePath);
+      const action =
+        event === "add" || event === "change"
+          ? "upload"
+          : event === "unlink" || event === "unlinkDir"
+            ? "remove"
+            : event === "addDir"
+              ? "mkdir"
+              : null;
 
       if (!blogID) {
         console.warn(clfdate(), `Failed to parse blogID from path: ${filePath}`);
@@ -258,8 +273,9 @@ const watch = async (blogID) => {
       }
 
       // We only handle file events after the initial scan is complete
-      if (initialScanComplete) {
-        recordChokidarEvent(blogID, pathInBlogDirectory);
+      if (initialScanComplete && action) {
+        assertValidAction(action);
+        recordChokidarEvent(blogID, pathInBlogDirectory, action);
         handleFileEvent(event, blogID, filePath);
       }
     })
