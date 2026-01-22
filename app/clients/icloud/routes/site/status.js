@@ -5,6 +5,11 @@ const establishSyncLock = require("sync/establishSyncLock");
 const { handleSyncLockError } = require("../lock");
 const email = require("helper/email");
 
+const RESYNC_DEDUP_WINDOW_MS = 10 * 1000;
+// Process-local resync deduplication: if multiple Node processes handle requests,
+// this in-memory guard will not deduplicate across processes.
+const resyncDedupRegistry = new Map();
+
 module.exports = async function (req, res) {
 
   const blogID = req.header("blogID");
@@ -30,6 +35,30 @@ module.exports = async function (req, res) {
   }
 
   if (status.resyncRequested) {
+    const now = Date.now();
+    const existingEntry = resyncDedupRegistry.get(blogID);
+    if (existingEntry) {
+      const isCooldown = existingEntry.cooldownUntil > now;
+      if (existingEntry.inFlight || isCooldown) {
+        console.log("Resync request deduplicated", {
+          blogID,
+          inFlight: existingEntry.inFlight,
+          cooldownUntil: existingEntry.cooldownUntil,
+        });
+        return res.send("ok");
+      }
+      resyncDedupRegistry.delete(blogID);
+    }
+
+    const dedupEntry = {
+      inFlight: true,
+      cooldownUntil: now + RESYNC_DEDUP_WINDOW_MS,
+      cleanupTimeout: setTimeout(() => {
+        resyncDedupRegistry.delete(blogID);
+      }, RESYNC_DEDUP_WINDOW_MS),
+    };
+    resyncDedupRegistry.set(blogID, dedupEntry);
+
     try {
       // This will throw if the sync lock is already established
       const { done, folder } = await establishSyncLock(blogID);
@@ -51,9 +80,11 @@ module.exports = async function (req, res) {
         await syncFromiCloud(blogID, folder.status.bind(folder), folder.update);
         folder.status("Resync complete");
       } finally {
+        dedupEntry.inFlight = false;
         await done();
       }
     } catch (err) {
+      dedupEntry.inFlight = false;
       if (
         handleSyncLockError({
           err,
