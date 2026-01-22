@@ -319,6 +319,70 @@ describe("replaceFolderLinks", function () {
     expect(result).toMatch(cdnRegex("/media/subtitles.vtt"));
     expect(result).toMatch(cdnRegex("/media/audio.mp3"));
   });
+
+  it("should rewrite srcset candidates with descriptors", async function () {
+    await this.write({ path: "/img-1.jpg", content: "image1" });
+    await this.write({ path: "/img-2.jpg", content: "image2" });
+    await this.template({
+      "entries.html": '<img srcset="/img-1.jpg 1x, /img-2.jpg 2x">',
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toMatch(
+      new RegExp(
+        `<img srcset="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/img-1.jpg 1x, ${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/img-2.jpg 2x">`
+      )
+    );
+  });
+
+  it("should handle srcset attributes on source elements", async function () {
+    await this.write({ path: "/images/picture-1.jpg", content: "fake image data" });
+    await this.template({
+      "entries.html": `
+        <picture>
+          <source srcset="/images/picture-1.jpg 1x" type="image/jpeg">
+        </picture>
+      `.trim(),
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toMatch(
+      new RegExp(
+        `<source srcset="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/picture-1.jpg 1x" type="image/jpeg">`
+      )
+    );
+  });
+
+  it("should rewrite host-matching absolute srcset URLs", async function () {
+    await this.write({ path: "/images/abs.jpg", content: "image" });
+    await this.template({
+      "entries.html": `<img srcset="https://${this.blog.handle}.${config.host}/images/abs.jpg 1x">`,
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toMatch(
+      new RegExp(
+        `<img srcset="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/abs.jpg 1x">`
+      )
+    );
+  });
+
+  it("should leave malformed srcset attributes unchanged", async function () {
+    await this.template({
+      "entries.html": '<img srcset=", /img.jpg 1x">',
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toEqual('<img srcset=", /img.jpg 1x">');
+  });
   
   it("ignores empty hrefs and srcs", async function () {
     await this.template({
