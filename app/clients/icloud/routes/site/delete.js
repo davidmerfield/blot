@@ -1,6 +1,7 @@
 const localPath = require("helper/localPath");
 const establishSyncLock = require("sync/establishSyncLock");
 const fs = require("fs-extra");
+const path = require("path");
 const { handleSyncLockError } = require("../lock");
 
 module.exports = async function (req, res) {
@@ -36,11 +37,48 @@ module.exports = async function (req, res) {
 
       console.log(`Deleting file at: ${pathOnDisk}`);
 
+      const pathsToUpdate = [filePath];
+      const stat = await fs.lstat(pathOnDisk);
+
+      if (stat.isDirectory()) {
+        const collectChildPaths = async (directoryPath) => {
+          const entries = await fs.readdir(directoryPath, { withFileTypes: true });
+          const childPaths = [];
+
+          for (const entry of entries) {
+            const entryPath = path.join(directoryPath, entry.name);
+            childPaths.push(entryPath);
+
+            if (entry.isDirectory()) {
+              childPaths.push(...(await collectChildPaths(entryPath)));
+            }
+          }
+
+          return childPaths;
+        };
+
+        const childPathsOnDisk = await collectChildPaths(pathOnDisk);
+
+        for (const childPathOnDisk of childPathsOnDisk) {
+          const relativeChildPath = path.join(
+            filePath,
+            path.relative(pathOnDisk, childPathOnDisk)
+          );
+          pathsToUpdate.push(relativeChildPath);
+        }
+
+        console.log(
+          `Folder delete will update ${pathsToUpdate.length} paths for ${filePath}`
+        );
+      }
+
       // Remove the file (if it exists)
       await fs.remove(pathOnDisk); // Removes the file or directory
 
       // Call the folder's update method to register the file deletion
-      await folder.update(filePath);
+      for (const pathToUpdate of pathsToUpdate) {
+        await folder.update(pathToUpdate);
+      }
 
       // Set the folder status to reflect the delete action
       folder.status("Removed " + filePath);
