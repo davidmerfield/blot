@@ -37,7 +37,7 @@ const startFsWatch = (reconcileFsWatchEvent) => {
         return;
       }
 
-      reconcileFsWatchEvent(blogID, pathInBlogDirectory, eventType).catch(
+      reconcileFsWatchEvent(blogID, pathInBlogDirectory).catch(
         (error) => {
           console.error(
             clfdate(),

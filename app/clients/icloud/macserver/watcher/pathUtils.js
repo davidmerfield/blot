@@ -8,7 +8,7 @@ const extractBlogID = (filePath) => {
   const relativePath = filePath.replace(`${iCloudDriveDirectory}/`, "");
   const [blogID] = relativePath.split("/");
 
-  if (!blogID.startsWith("blog_")) {
+  if (!blogID || !blogID.startsWith("blog_")) {
     return null;
   }
 

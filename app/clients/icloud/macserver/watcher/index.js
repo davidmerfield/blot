@@ -133,6 +133,8 @@ const handleFileEvent = async (event, blogID, filePath) => {
 };
 
 const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
+  // This will skip blog directory deletions
+  // but that's OK!
   if (!pathInBlogDirectory) {
     return;
   }

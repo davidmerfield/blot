@@ -34,6 +34,13 @@ const withRetries = async (label, operation, options = {}) => {
 };
 
 const performAction = async (blogID, pathInBlogDirectory, action) => {
+
+  const validActions = ['upload', 'remove', 'mkdir'];
+  
+  if (!validActions.includes(action)) {
+    throw new Error(`Invalid action: ${action}. Must be one of: ${validActions.join(', ')}`);
+  }
+
   const limiter = getLimiterForBlogID(blogID);
 
   await limiter.schedule(async () => {
