@@ -1,19 +1,25 @@
 Use git diff and git status to perform a line-by-line review of this branch against master, including uncomitted changes.
 
-For each change, reconstruct the surrounding context (functions, call sites, and related files) and assess:
+Don't create any files or make any changes, just flag issues for further investigation.
 
-correctness and potential bugs (logic errors, edge cases, off-by-one, null/undefined paths)
-unintended behavioral changes or regressions
-API and function usage (signatures, contracts, invariants)
-error handling, state management, and resource cleanup
-performance implications and complexity changes
-security or data-integrity risks, if applicable
+For each change, reconstruct the surrounding context (functions, call sites, and related files). 
 
-Flag anything that is ambiguous, risky, or inconsistent with existing patterns. For each issue, provide:
+Then assess the changes for:
 
-the exact diff location
-a concise explanation of the risk
-a concrete suggestion or alternative implementation
-Ignore formatting or stylistic changes unless they affect behavior. Prioritize correctness and maintainability over minor refactors.
+- correctness and bugs (logic errors, edge cases, off-by-one, null/undefined paths)
+- unintended behavioral changes or regressions
+- API and function usage (signatures, contracts, invariants)
+- error handling, state management, and resource cleanup
+- security or data-integrity risks, if applicable
 
-Assume this code will be deployed to production. Treat unclear behavior as a potential bug. Prefer explicitness and backward compatibility. Don't create any files or make any changes yet, just flag issues for further investigation.
+Don't be too nitpicky. 
+
+Flag anything that is wrong, clearly risky, or inconsistent with existing patterns. Do not analyze code which is not changed. For each issue, provide:
+
+- the exact diff location
+- a concise explanation of the risk
+- a concrete suggestion or alternative implementation
+- Ignore formatting or stylistic changes unless they affect behavior. 
+- Prioritize correctness and maintainability over minor refactors.
+
+Assume this code will be deployed to production. Treat unclear behavior as a potential bug. Prefer explicitness and backward compatibility. 
