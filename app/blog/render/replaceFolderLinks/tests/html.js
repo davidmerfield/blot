@@ -290,6 +290,36 @@ describe("replaceFolderLinks", function () {
     );
   });
 
+  it("should replace src attributes on source and track elements", async function () {
+    await this.write({ path: "/images/picture.jpg", content: "fake image data" });
+    await this.write({ path: "/media/video.mp4", content: "fake video data" });
+    await this.write({ path: "/media/audio.mp3", content: "fake audio data" });
+    await this.write({ path: "/media/subtitles.vtt", content: "fake vtt data" });
+    await this.template({
+      "entries.html": `
+        <picture>
+          <source src="/images/picture.jpg" type="image/jpeg">
+          <img src="/images/picture.jpg">
+        </picture>
+        <video>
+          <source src="/media/video.mp4" type="video/mp4">
+          <track src="/media/subtitles.vtt" kind="subtitles">
+        </video>
+        <audio>
+          <source src="/media/audio.mp3" type="audio/mpeg">
+        </audio>
+      `.trim(),
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toMatch(cdnRegex("/images/picture.jpg"));
+    expect(result).toMatch(cdnRegex("/media/video.mp4"));
+    expect(result).toMatch(cdnRegex("/media/subtitles.vtt"));
+    expect(result).toMatch(cdnRegex("/media/audio.mp3"));
+  });
+  
   it("ignores empty hrefs and srcs", async function () {
     await this.template({
       "entries.html": '<img src=""><a href="">',
