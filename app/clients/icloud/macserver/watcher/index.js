@@ -135,14 +135,18 @@ const handleFileEvent = async (event, blogID, filePath) => {
     // case insensitive, we need to verify that the
     // pathInBlogDirectory is the exact same as the path
     // on the disk – if not, we need to issue a remove event
-    const fullPath = buildBlogPath(blogID, pathInBlogDirectory);
-    const exactCase = await exactCaseViaRealpath(fullPath);
-    
-    if (!exactCase) {
-      if (event === "add" || event === "change") {
-        console.log(clfdate(), `Chokidar Event: Changing event from add/change to remove for path: ${pathInBlogDirectory} because of case mismatch`);
-        event = "unlink";
-      } 
+    if (event === "add" || event === "change") {
+      try {
+        const fullPath = buildBlogPath(blogID, pathInBlogDirectory);
+        const exactCase = await exactCaseViaRealpath(fullPath);
+        if (!exactCase) {
+          console.log(clfdate(), `Chokidar Event: Changing event from add/change to remove for path: ${pathInBlogDirectory} because of case mismatch`);
+          event = "unlink";
+        }
+      } catch (error) {
+        console.error(clfdate(), `Error verifying exact case for path: ${fullPath}:`, error);
+        return;
+      }
     }
 
     if (event === "add" || event === "change") {
