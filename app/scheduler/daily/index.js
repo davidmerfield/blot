@@ -24,6 +24,8 @@ function main (callback) {
       require("./new-posts"),
       log("Checking number of newsletter subscribers"),
       require("./newsletter-subscribers"),
+      log("Checking for new customers"),
+      require("./new-customers"),
       log("Finished daily update")
     ],
     function (fn, next) {
