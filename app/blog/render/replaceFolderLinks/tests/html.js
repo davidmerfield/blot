@@ -24,6 +24,22 @@ describe("replaceFolderLinks", function () {
     );
   });
 
+  it("should replace poster attributes with versioned CDN URLs", async function () {
+    await this.write({ path: "/images/poster.jpg", content: "fake image data" });
+    await this.template({
+      "entries.html": '<video poster="/images/poster.jpg"></video>',
+    });
+
+    const res = await this.get("/");
+    const result = await res.text();
+
+    expect(result).toMatch(
+      new RegExp(
+        `<video poster="${config.cdn.origin}/folder/v-[a-f0-9]{8}/[^"]+/images/poster.jpg"></video>`
+      )
+    );
+  });
+
   it("should be case-insensitive", async function () {
     await this.write({ path: "/Images/Test.jpg", content: "fake image data" });
     await this.template({
