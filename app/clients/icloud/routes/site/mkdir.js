@@ -17,23 +17,32 @@ module.exports = async function (req, res) {
 
     console.log(`Creating directory for blogID: ${blogID}, path: ${dirPath}`);
 
+    const pathOnDisk = localPath(blogID, dirPath);
+    const directoryExists = await fs.pathExists(pathOnDisk);
+
+    if (directoryExists) {
+      console.log(`Directory already exists at: ${pathOnDisk}`);
+      return res.status(200).send("Directory already exists");
+    }
+
     // Establish sync lock to allow safe file operations
     const { done, folder } = await establishSyncLock(blogID);
 
     try {
-      // Compute the local directory path on disk
-      const pathOnDisk = localPath(blogID, dirPath);
+      const directoryExistsInLock = await fs.pathExists(pathOnDisk);
 
       console.log(`Creating directory at: ${pathOnDisk}`);
 
-      // Ensure the directory exists
-      await fs.ensureDir(pathOnDisk); // Creates the directory if it does not exist
+      if (!directoryExistsInLock) {
+        // Ensure the directory exists
+        await fs.ensureDir(pathOnDisk); // Creates the directory if it does not exist
 
-      // Call the folder's update method to register the directory creation
-      await folder.update(dirPath);
+        // Call the folder's update method to register the directory creation
+        await folder.update(dirPath);
 
-      // Set the folder status to reflect the mkdir action
-      folder.status("Created " + dirPath);
+        // Set the folder status to reflect the mkdir action
+        folder.status("Created " + dirPath);
+      }
 
       console.log(`Directory successfully created: ${pathOnDisk}`);
       res
