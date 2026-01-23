@@ -17,8 +17,7 @@ export default () => {
   function startMonitor() {
     const monitorProcess = spawn("brctl", [
       "monitor",
-      "-i",
-      iCloudDriveDirectory,
+      "-i"
     ]);
 
     const rl = readline.createInterface({
@@ -28,10 +27,17 @@ export default () => {
 
     rl.on("line", (line) => {
       const match = line.match(/blog_[a-fA-F0-9]+/);
-      console.log(clfdate(), `brctl monitor event: ${line}`);
+
+      // non-matching lines are either blank or contain
+      // a date and time for the subsequent line or 
+      // refer to files outside a specific blog directory
       if (match) {
+        console.log(clfdate(), `brctl monitor event: ${line}`);
+
         const blogId = match[0];
+
         console.log(clfdate(), "brctl monitor: Recursively listing contents of:", blogId);
+
         recursiveList(`${iCloudDriveDirectory}/${blogId}`, 0).catch((error) => {
           console.error(clfdate(), 
             `Failed to recursively list contents of ${blogId}:`,
