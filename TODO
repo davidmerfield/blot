@@ -1,33 +1,3 @@
-iCloud client:
-- Think about adding a more efficient endpoint to sync folder state. 
-  - use wisdom from rsync?
-  - the call to recursive list can take a way long time for large blogs (blog_3ec96xxx) so we need to increase timeout from 10 seconds to maybe multiple minutes...
-    - can we get rid of recursive list entirely if we simply call brctl download on the paths flagged by brctl monitor?
-  - don't hold sync lock the whole time? 
-  - fetch file list, compute changes, then lock, then apply?
-    - we'll need to update the call sites since the lock will be handled within
-- If we need to resolve further bugs with sync drift:
-  - Implement additional parsing of modified paths from monitorer.js (brctl monitor -i) and reconcile these in addition to the fswatch module with the chokidar events for additional redundancy
-- Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
-- Daily icloud resync should also log how long the longest folder took to resync.
-- Add stats on response time to iCloud server health check logging
-  - maybe monitor response time average and email notify when it increases dramatically?
-- Sync verification should instrument the sync/fix function to also report errors where the folder doesn't match the database.
-- Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
-- Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
-  - Add logging instrumentation of modified file paths to sync verification to aid in analysis of sync drift
-- Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
-- Start writing tests for icloud client
-- Start writing tests for macserver
-- Instead of our bespoke header modifiedTime we should use 'Last-Modified' and note we don't need to set this for route using res.download – res.download does this automatically
-- Fix bug: low priority, this just causes an error in the logs when freeing up disk space. Problem: attempting to evict a file within a .pages directory (a special apple file) e.g. Post.pages/preview.jpg will fail: you need to evict the parent directory perhaps?
-- Remove evict route
-- Rename /watch route to setup-complete
-- Remove recursiveReaddirRoute
-  - instead, to sync folder tree, whenever readddir is called, it should maintain an internal map of the last time a blog's subfolder tree was recursively checked, and call it? or maybe just call ls and brctl download on the specific folder? or is this too slow?
-- Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
-- Investigate: can we modify app/clients/icloud/routes/site/upload.js and app/clients/icloud/macserver/httpClient/upload.js to exchange a content hash? to prevent needless re-upload?
-
 Fix bugs with templates:
 - Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
 - Fix 'back' button in photo template and tell [Bibi](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcPJTmPXxWvhbmFpvwdfVzhpn)
@@ -41,15 +11,9 @@ Fix bugs with templates:
 - Make it possible to sort by id with dropdown on all templates
 
 Links template:
-- [x] Ensure border colors are abstract
-
-Index page:
-- [x] Add infinite scroll
-
-Navigation:
-- [ ] Add dropdown support to navigation
-
-Entry page:
+  Navigation:
+  - [ ] Add dropdown support to navigation
+  Entry page:
   - [ ] Close button should go 'back'
   - [ ] Add layout CSS
   - [ ] Next / prev should respect tag collections
@@ -57,6 +21,7 @@ Entry page:
   - [ ] Add backlinks
   
 Dropbox client
+- Sync verification should instrument the sync/fix function to also report errors where the folder doesn't match the database.
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
 - Bug: Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
   - Bug: handle a sync lock failure on second blog when migrating an app folder
@@ -121,6 +86,36 @@ Google Drive:
 
 Git client:
 - Add sync check
+
+iCloud client:
+- Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
+- If we need to resolve further bugs with sync drift:
+  - Implement additional parsing of modified paths from monitorer.js (brctl monitor -i) and reconcile these in addition to the fswatch module with the chokidar events for additional redundancy
+- Think about adding a more efficient endpoint to sync folder state. 
+  - use wisdom from rsync?
+  - the call to recursive list can take a way long time for large blogs (blog_3ec96xxx) so we need to increase timeout from 10 seconds to maybe multiple minutes...
+    - can we get rid of recursive list entirely if we simply call brctl download on the paths flagged by brctl monitor?
+  - don't hold sync lock the whole time? 
+  - fetch file list, compute changes, then lock, then apply?
+    - we'll need to update the call sites since the lock will be handled within
+- Daily icloud resync should also log how long the longest folder took to resync.
+- Add stats on response time to iCloud server health check logging
+  - maybe monitor response time average and email notify when it increases dramatically?
+- Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
+- Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
+  - Add logging instrumentation of modified file paths to sync verification to aid in analysis of sync drift
+- Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
+- Start writing tests for icloud client
+- Start writing tests for macserver
+- Instead of our bespoke header modifiedTime we should use 'Last-Modified' and note we don't need to set this for route using res.download – res.download does this automatically
+- Fix bug: low priority, this just causes an error in the logs when freeing up disk space. Problem: attempting to evict a file within a .pages directory (a special apple file) e.g. Post.pages/preview.jpg will fail: you need to evict the parent directory perhaps?
+- Remove evict route
+- Rename /watch route to setup-complete
+- Remove recursiveReaddirRoute
+  - instead, to sync folder tree, whenever readddir is called, it should maintain an internal map of the last time a blog's subfolder tree was recursively checked, and call it? or maybe just call ls and brctl download on the specific folder? or is this too slow?
+- Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
+- Investigate: can we modify app/clients/icloud/routes/site/upload.js and app/clients/icloud/macserver/httpClient/upload.js to exchange a content hash? to prevent needless re-upload?
+
 
 Bug reports:
 - The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
