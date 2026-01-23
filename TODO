@@ -10,6 +10,12 @@ Fix bugs with templates:
 - Improve post navigation on Portfolio template within tagged collections and tell [Questioner](https://blot.im/questions/1894)
 - Make it possible to sort by id with dropdown on all templates
 
+Add performance tests which output something like this for PRs (compare against master branch, fail if over threshold):
+  Total CPU  29.90%          -> 11.64%
+  Syscalls   3.10s           -> 0.66s
+  Crypto     1.6s            -> 0.11s
+  Bandwidth  ~6.5 Mbit/sec   -> ~3 Mbit/sec
+
 Links template:
   Navigation:
   - [ ] Add dropdown support to navigation
