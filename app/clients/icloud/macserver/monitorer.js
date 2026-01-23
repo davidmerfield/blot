@@ -28,9 +28,10 @@ export default () => {
 
     rl.on("line", (line) => {
       const match = line.match(/blog_[a-fA-F0-9]+/);
+      console.log(clfdate(), `brctl monitor event: ${line}`);
       if (match) {
         const blogId = match[0];
-        console.log(clfdate(), "Recursively listing contents of:", blogId);
+        console.log(clfdate(), "brctl monitor: Recursively listing contents of:", blogId);
         recursiveList(`${iCloudDriveDirectory}/${blogId}`, 0).catch((error) => {
           console.error(clfdate(), 
             `Failed to recursively list contents of ${blogId}:`,
