@@ -4,7 +4,7 @@ import shouldIgnoreFile from "../../../util/shouldIgnoreFile.js";
 import clfdate from "./clfdate.js";
 
 const MAX_DEPTH = 1000;
-const UPDATE_INTERVAL = 5000; // milliseconds
+const UPDATE_INTERVAL = 1000; // 1 second
 
 const inFlightByDirPath = new Map();
 
@@ -40,54 +40,49 @@ async function recursiveList(dirPath, depth = 0) {
 
 function startRun(dirPath, entry) {
   console.log(clfdate(), `Starting recursive list: ${dirPath}`);
-  
   const startTime = Date.now();
-  let progressInterval;
 
   entry.inFlight = (async () => {
-    // Track progress with time-based updates
-    progressInterval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      console.log(clfdate(), `Progress: ${Math.round(elapsed / 1000)}s elapsed, processing: ${dirPath}`);
+    const progressInterval = setInterval(() => {
+      const elapsedMs = Date.now() - startTime;
+      console.log(
+        clfdate(),
+        `Progress: ${Math.round(elapsedMs / 1000)}s elapsed, processing: ${dirPath}`
+      );
     }, UPDATE_INTERVAL);
 
     try {
       await recursiveList(dirPath);
     } finally {
-      if (progressInterval) {
-        clearInterval(progressInterval);
+      clearInterval(progressInterval);
+
+      const elapsedMs = Date.now() - startTime;
+      console.log(
+        clfdate(),
+        `Completed recursive list: ${dirPath} (${Math.round(elapsedMs / 1000)}s elapsed)`
+      );
+
+      if (entry.rerunRequested) {
+        entry.rerunRequested = false;
+        startRun(dirPath, entry); // overwrites entry.inFlight (same semantics as before)
+      } else {
+        inFlightByDirPath.delete(dirPath);
       }
     }
   })();
-
-  entry.inFlight.finally(() => {
-    if (progressInterval) {
-      clearInterval(progressInterval);
-    }
-    const elapsed = Date.now() - startTime;
-    console.log(clfdate(), `Completed recursive list: ${dirPath} (${Math.round(elapsed / 1000)}s elapsed)`);
-    
-    if (entry.rerunRequested) {
-      entry.rerunRequested = false;
-      startRun(dirPath, entry);
-    } else {
-      inFlightByDirPath.delete(dirPath);
-    }
-  });
 }
 
 function recursiveListDebounced(dirPath) {
-  const existing = inFlightByDirPath.get(dirPath);
-
-  if (existing) {
-    existing.rerunRequested = true;
-    return existing.inFlight;
+  const entry = inFlightByDirPath.get(dirPath);
+  if (entry) {
+    entry.rerunRequested = true;
+    return entry.inFlight;
   }
 
-  const entry = { inFlight: null, rerunRequested: false };
-  inFlightByDirPath.set(dirPath, entry);
-  startRun(dirPath, entry);
-  return entry.inFlight;
+  const next = { inFlight: null, rerunRequested: false };
+  inFlightByDirPath.set(dirPath, next);
+  startRun(dirPath, next);
+  return next.inFlight;
 }
 
 export { recursiveListDebounced };
