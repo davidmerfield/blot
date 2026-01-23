@@ -39,37 +39,46 @@ async function recursiveList(dirPath, depth = 0) {
 }
 
 function startRun(dirPath, entry) {
-  console.log(clfdate(), `Starting recursive list: ${dirPath}`);
-  const startTime = Date.now();
+  try {
+    console.log(clfdate(), `Starting recursive list: ${dirPath}`);
+    const startTime = Date.now();
 
-  entry.inFlight = (async () => {
-    const progressInterval = setInterval(() => {
-      const elapsedMs = Date.now() - startTime;
-      console.log(
-        clfdate(),
-        `Progress: ${Math.round(elapsedMs / 1000)}s elapsed, processing: ${dirPath}`
-      );
-    }, UPDATE_INTERVAL);
+    entry.inFlight = (async () => {
+      let progressInterval;
 
-    try {
-      await recursiveList(dirPath);
-    } finally {
-      clearInterval(progressInterval);
+      try {
+        progressInterval = setInterval(() => {
+          const elapsedMs = Date.now() - startTime;
+          console.log(
+            clfdate(),
+            `Progress: ${Math.round(elapsedMs / 1000)}s elapsed, processing: ${dirPath}`
+          );
+        }, UPDATE_INTERVAL);
 
-      const elapsedMs = Date.now() - startTime;
-      console.log(
-        clfdate(),
-        `Completed recursive list: ${dirPath} (${Math.round(elapsedMs / 1000)}s elapsed)`
-      );
+        await recursiveList(dirPath);
+      } finally {
+        if (progressInterval) {
+          clearInterval(progressInterval);
+        }
 
-      if (entry.rerunRequested) {
-        entry.rerunRequested = false;
-        startRun(dirPath, entry); // overwrites entry.inFlight (same semantics as before)
-      } else {
-        inFlightByDirPath.delete(dirPath);
+        const elapsedMs = Date.now() - startTime;
+        console.log(
+          clfdate(),
+          `Completed recursive list: ${dirPath} (${Math.round(elapsedMs / 1000)}s elapsed)`
+        );
+
+        if (entry.rerunRequested) {
+          entry.rerunRequested = false;
+          startRun(dirPath, entry); // overwrites entry.inFlight (same semantics as before)
+        } else {
+          inFlightByDirPath.delete(dirPath);
+        }
       }
-    }
-  })();
+    })();
+  } catch (error) {
+    inFlightByDirPath.delete(dirPath);
+    throw error;
+  }
 }
 
 function recursiveListDebounced(dirPath) {
