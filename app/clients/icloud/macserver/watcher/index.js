@@ -175,6 +175,11 @@ const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
     return;
   }
 
+  if (shouldIgnore(pathInBlogDirectory)) {
+    console.log(clfdate(), `Ignoring FS Watch Event: ${action}, blogID: ${blogID}, path: ${pathInBlogDirectory} because it matches the shouldIgnore filter`);
+    return;
+  }
+
   await delay(FS_WATCH_SETTLE_DELAY_MS);
 
   const fullPath = buildBlogPath(blogID, pathInBlogDirectory);
