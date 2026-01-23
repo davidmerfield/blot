@@ -37,8 +37,9 @@ module.exports = async (blogID, publish, update) => {
   }
 
   const walk = async (dir) => {
-    publish("Checking", dir);
 
+    console.log(clfdate(), `Syncing folder: ${dir}`);
+    
     const [remoteContents, localContents] = await Promise.all([
       remoteReaddir(blogID, dir),
       localReaddir(localPath(blogID, dir)),
