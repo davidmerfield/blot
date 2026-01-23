@@ -30,6 +30,7 @@ import {
 
 import { realpath } from "fs/promises";
 import path from "path";
+import shouldIgnore from "./shouldIgnore.js";
 
 async function exactCaseViaRealpath(p) {
   const resolved = await realpath(p);
@@ -97,6 +98,11 @@ const stopFsWatch = () => stopFsWatchInternal();
 const handleFileEvent = async (event, blogID, filePath) => {
   try {
     const pathInBlogDirectory = extractPathInBlogDirectory(filePath);
+
+    if (shouldIgnore(pathInBlogDirectory)) {
+      console.log(clfdate(), `Ignoring file event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory} because it matches the shouldIgnore filter`);
+      return;
+    }
 
     // Handle the deletion of the entire blog directory
     if (event === "unlinkDir" && pathInBlogDirectory === "") {
@@ -166,6 +172,12 @@ const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
   // This will skip blog directory deletions
   // but that's OK!
   if (!pathInBlogDirectory) {
+    console.log(clfdate(), `Ignoring FS Watch Event: blogID: ${blogID}, path: ${pathInBlogDirectory} because it is falsy`);
+    return;
+  }
+
+  if (shouldIgnore(pathInBlogDirectory)) {
+    console.log(clfdate(), `Ignoring FS Watch Event: blogID: ${blogID}, path: ${pathInBlogDirectory} because it matches the shouldIgnore filter`);
     return;
   }
 
@@ -282,7 +294,6 @@ const watch = async (blogID) => {
       interval: 250, // Poll every 0.25s for non-binary files
       binaryInterval: 1000, // Poll every 1s for binary files
       ignoreInitial: false, // Process initial events
-      ignored: /(^|[/\\])\../, // Ignore dotfiles
     })
     .on("all", (event, filePath) => {
       const blogID = extractBlogID(filePath);

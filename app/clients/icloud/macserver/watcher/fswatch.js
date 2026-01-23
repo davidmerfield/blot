@@ -33,10 +33,6 @@ const startFsWatch = (reconcileFsWatchEvent) => {
         return;
       }
 
-      if (/(^|[/\\])\../.test(pathInBlogDirectory)) {
-        return;
-      }
-
       reconcileFsWatchEvent(blogID, pathInBlogDirectory).catch(
         (error) => {
           console.error(
