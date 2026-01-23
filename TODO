@@ -1,6 +1,8 @@
 iCloud client:
 - Think about adding a more efficient endpoint to sync folder state. 
   - use wisdom from rsync?
+  - the call to recursive list can take a way long time for large blogs (blog_3ec96xxx) so we need to increase timeout from 10 seconds to maybe multiple minutes...
+    - can we get rid of recursive list entirely if we simply call brctl download on the paths flagged by brctl monitor?
   - don't hold sync lock the whole time? 
   - fetch file list, compute changes, then lock, then apply?
     - we'll need to update the call sites since the lock will be handled within
