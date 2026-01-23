@@ -2,6 +2,7 @@ const localPath = require("helper/localPath");
 const establishSyncLock = require("sync/establishSyncLock");
 const fs = require("fs-extra");
 const { handleSyncLockError } = require("../lock");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 module.exports = async function (req, res) {
   try {
@@ -10,13 +11,18 @@ module.exports = async function (req, res) {
       "utf8"
     );
     const modifiedTime = req.header("modifiedTime");
-    const pathOnDisk = localPath(blogID, filePath);
 
     // Validate required headers
     if (!blogID || !filePath) {
       console.warn("Missing required headers: blogID or path");
       return res.status(400).send("Missing required headers: blogID or path");
     }
+
+    if (shouldIgnoreFile(filePath)) {
+      return res.sendStatus(204);
+    }
+
+    const pathOnDisk = localPath(blogID, filePath);
 
     console.log(
       `Uploading binary file for blogID: ${blogID}, path: ${filePath}`
