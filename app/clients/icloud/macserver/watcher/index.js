@@ -172,11 +172,12 @@ const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
   // This will skip blog directory deletions
   // but that's OK!
   if (!pathInBlogDirectory) {
+    console.log(clfdate(), `Ignoring FS Watch Event: blogID: ${blogID}, path: ${pathInBlogDirectory} because it is falsy`);
     return;
   }
 
   if (shouldIgnore(pathInBlogDirectory)) {
-    console.log(clfdate(), `Ignoring FS Watch Event: ${action}, blogID: ${blogID}, path: ${pathInBlogDirectory} because it matches the shouldIgnore filter`);
+    console.log(clfdate(), `Ignoring FS Watch Event: blogID: ${blogID}, path: ${pathInBlogDirectory} because it matches the shouldIgnore filter`);
     return;
   }
 
