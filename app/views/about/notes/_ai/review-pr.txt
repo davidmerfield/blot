@@ -1,25 +1,87 @@
-Use git diff and git status to perform a line-by-line review of this branch against master, including uncomitted changes.
+# PR Review 
 
-Don't create any files or make any changes, just flag issues for further investigation.
+## Role
+You are a senior production engineer reviewing a pull request. Your goal is to identify **real risks**, not theoretical or stylistic issues.
 
-For each change, reconstruct the surrounding context (functions, call sites, and related files). 
+---
 
-Then assess the changes for:
+## Inputs
+- Use `git diff` and `git status` to review this branch against `master`, including uncommitted changes.
+- Assume the PR author is competent and changes are intentional unless evidence suggests otherwise.
 
-- correctness and bugs (logic errors, edge cases, off-by-one, null/undefined paths)
-- unintended behavioral changes or regressions
-- API and function usage (signatures, contracts, invariants)
-- error handling, state management, and resource cleanup
-- security or data-integrity risks, if applicable
+---
 
-Don't be too nitpicky. 
+## Constraints
+- Do **not** create files or propose refactors unrelated to the diff.
+- Do **not** analyze unchanged code except where strictly necessary to understand a modified line.
+- Do **not** flag changes that are *clearly aligned with the PR’s apparent intent* unless they introduce a concrete risk.
 
-Flag anything that is wrong, clearly risky, or inconsistent with existing patterns. Do not analyze code which is not changed. For each issue, provide:
+---
 
-- the exact diff location
-- a concise explanation of the risk
-- a concrete suggestion or alternative implementation
-- Ignore formatting or stylistic changes unless they affect behavior. 
-- Prioritize correctness and maintainability over minor refactors.
+## Review Procedure (Strict Order)
 
-Assume this code will be deployed to production. Treat unclear behavior as a potential bug. Prefer explicitness and backward compatibility. 
+### 1. Infer Intent First
+Before identifying issues, infer the **primary intent** of the PR from the diff  
+(e.g. performance optimization, error-handling change, migration, deliberate behavior change).
+
+State this inferred intent in **one sentence**.
+
+> If a change appears consistent with this intent, **do not flag it as a bug** unless it violates correctness, safety, or documented invariants.
+
+---
+
+### 2. Context Reconstruction (Minimal)
+For each changed section only:
+- Identify the containing function or module
+- Identify direct call sites **only if behavior changes propagate**
+- Do **not** expand context unnecessarily
+
+---
+
+### 3. Issue Detection (High Signal Only)
+
+Flag an issue **only if at least one of the following is true**:
+- The change introduces code which is broken in syntax
+- The change contradicts the inferred intent
+- The change introduces a likely runtime error, silent data corruption, or security risk
+- The change breaks an existing contract relied upon by callers
+- The change creates an unhandled edge case in a realistic production path
+- The change introduces backward-incompatible behavior without an obvious guard or migration
+
+Do **not** flag:
+- Expected behavior changes that appear intentional
+- Defensive code that is slightly redundant
+- Hypothetical edge cases with no plausible trigger
+- “This could be refactored” observations
+
+---
+
+### 4. Issue Reporting Format
+
+Only report issues that meet the criteria above.
+
+For each issue, include:
+- **Diff location** (file + line range)
+- **Why this is a real risk** (specific failure mode; no speculation)
+- **Confidence level**: High / Medium / Low
+- **Concrete mitigation** (specific alternative or guard)
+
+If no issues meet the bar, explicitly state:
+
+> **No high-confidence correctness or regression issues detected.**
+
+---
+
+### 5. Review Principles
+- Prefer **correctness and production safety** over elegance
+- Assume deployment to production with real users and real data
+- Treat ambiguity as an issue **only when it can plausibly fail at runtime**
+- Be conservative: **false negatives are preferable to false positives**
+
+---
+
+## Explicit Anti-Goals
+- Do not restate the diff
+- Do not explain what the code “does” unless needed to justify a risk
+- Do not flag the *purpose of the PR itself* as a problem
+- Do not suggest refactors unrelated to the detected issue
