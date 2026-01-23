@@ -2,6 +2,7 @@ const localPath = require("helper/localPath");
 const establishSyncLock = require("sync/establishSyncLock");
 const fs = require("fs-extra");
 const { handleSyncLockError } = require("../lock");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 module.exports = async function (req, res) {
   try {
@@ -13,6 +14,10 @@ module.exports = async function (req, res) {
     // Validate required headers
     if (!blogID || !dirPath) {
       return res.status(400).send("Missing required headers: blogID or path");
+    }
+
+    if (shouldIgnoreFile(dirPath)) {
+      return res.sendStatus(204);
     }
 
     console.log(`Creating directory for blogID: ${blogID}, path: ${dirPath}`);
