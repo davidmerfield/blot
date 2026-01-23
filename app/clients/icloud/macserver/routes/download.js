@@ -42,7 +42,10 @@ export default async (req, res) => {
     const modifiedTime = stat.mtime.toISOString();
   
     res.setHeader("modifiedTime", modifiedTime);
-    res.download(filePath, normalizedPath);  
+    res.download(filePath, normalizedPath, {
+      // Explicitly permit serving dotfiles; by default, Express responds with a NotFoundError when a dotfile is requested. Blot syncs some dotfiles (see app/clients/util/shouldIgnoreFile.js) so we need to allow them.
+      dotfiles: "allow",
+    });
   } catch (err) {
     // handle ENOENT error
     if (err.code === "ENOENT") {
