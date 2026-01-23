@@ -6,6 +6,8 @@ import clfdate from "./clfdate.js";
 const MAX_DEPTH = 1000;
 const UPDATE_INTERVAL = 50;
 
+const inFlightByDirPath = new Map();
+
 async function recursiveList(dirPath, depth = 0, stats = { directoriesProcessed: 0 }) {
   const isTopLevel = depth === 0;
 
@@ -52,4 +54,32 @@ async function recursiveList(dirPath, depth = 0, stats = { directoriesProcessed:
   }
 }
 
-export default recursiveList;
+function startRun(dirPath, entry) {
+  entry.inFlight = recursiveList(dirPath);
+
+  entry.inFlight.finally(() => {
+    if (entry.rerunRequested) {
+      entry.rerunRequested = false;
+      startRun(dirPath, entry);
+    } else {
+      inFlightByDirPath.delete(dirPath);
+    }
+  });
+}
+
+function recursiveListDebounced(dirPath) {
+  const existing = inFlightByDirPath.get(dirPath);
+
+  if (existing) {
+    existing.rerunRequested = true;
+    return existing.inFlight;
+  }
+
+  const entry = { inFlight: null, rerunRequested: false };
+  inFlightByDirPath.set(dirPath, entry);
+  startRun(dirPath, entry);
+  return entry.inFlight;
+}
+
+export { recursiveListDebounced };
+export default recursiveListDebounced;
