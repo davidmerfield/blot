@@ -3,10 +3,13 @@ iCloud client:
   - use wisdom from rsync?
   - don't hold sync lock the whole time? 
   - fetch file list, compute changes, then lock, then apply?
+    - we'll need to update the call sites since the lock will be handled within
 - If we need to resolve further bugs with sync drift:
   - Implement additional parsing of modified paths from monitorer.js (brctl monitor -i) and reconcile these in addition to the fswatch module with the chokidar events for additional redundancy
 - Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
 - Daily icloud resync should also log how long the longest folder took to resync.
+- Add stats on response time to iCloud server health check logging
+  - maybe monitor response time average and email notify when it increases dramatically?
 - Sync verification should instrument the sync/fix function to also report errors where the folder doesn't match the database.
 - Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
 - Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
