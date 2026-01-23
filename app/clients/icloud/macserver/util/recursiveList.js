@@ -4,15 +4,11 @@ import shouldIgnoreFile from "../../../util/shouldIgnoreFile.js";
 import clfdate from "./clfdate.js";
 
 const MAX_DEPTH = 1000;
-const UPDATE_INTERVAL = 50;
+const UPDATE_INTERVAL = 1000; // 1 second
 
-async function recursiveList(dirPath, depth = 0, stats = { directoriesProcessed: 0 }) {
-  const isTopLevel = depth === 0;
+const inFlightByDirPath = new Map();
 
-  if (isTopLevel) {
-    console.log(clfdate(), `Starting recursive list: ${dirPath}`);
-  }
-
+async function recursiveList(dirPath, depth = 0) {
   try {
     if (depth > MAX_DEPTH) {
       console.warn(clfdate(), `Maximum depth ${MAX_DEPTH} reached at ${dirPath}`);
@@ -34,22 +30,69 @@ async function recursiveList(dirPath, depth = 0, stats = { directoriesProcessed:
       .filter((name) => !shouldIgnoreFile(name))
       .map((name) => path.join(dirPath, name));
 
-    stats.directoriesProcessed++;
-
-    if (stats.directoriesProcessed % UPDATE_INTERVAL === 0) {
-      console.log(clfdate(), `Progress: ${stats.directoriesProcessed} directories processed current directory: ${dirPath}`);
-    }
-
     for (const subDir of dirs) {
-      await recursiveList(subDir, depth + 1, stats);
+      await recursiveList(subDir, depth + 1);
     }
   } catch (error) {
     console.error(clfdate(), "Error processing directory", dirPath, error);
-  } finally {
-    if (isTopLevel) {
-      console.log(clfdate(), `Completed recursive list: ${dirPath} (${stats.directoriesProcessed} directories processed)`);
-    }
   }
 }
 
-export default recursiveList;
+function startRun(dirPath, entry) {
+  try {
+    console.log(clfdate(), `Starting recursive list: ${dirPath}`);
+    const startTime = Date.now();
+
+    entry.inFlight = (async () => {
+      let progressInterval;
+
+      try {
+        progressInterval = setInterval(() => {
+          const elapsedMs = Date.now() - startTime;
+          console.log(
+            clfdate(),
+            `Progress: ${Math.round(elapsedMs / 1000)}s elapsed, processing: ${dirPath}`
+          );
+        }, UPDATE_INTERVAL);
+
+        await recursiveList(dirPath);
+      } finally {
+        if (progressInterval) {
+          clearInterval(progressInterval);
+        }
+
+        const elapsedMs = Date.now() - startTime;
+        console.log(
+          clfdate(),
+          `Completed recursive list: ${dirPath} (${Math.round(elapsedMs / 1000)}s elapsed)`
+        );
+
+        if (entry.rerunRequested) {
+          entry.rerunRequested = false;
+          startRun(dirPath, entry); // overwrites entry.inFlight (same semantics as before)
+        } else {
+          inFlightByDirPath.delete(dirPath);
+        }
+      }
+    })();
+  } catch (error) {
+    inFlightByDirPath.delete(dirPath);
+    throw error;
+  }
+}
+
+function recursiveListDebounced(dirPath) {
+  const entry = inFlightByDirPath.get(dirPath);
+  if (entry) {
+    entry.rerunRequested = true;
+    return entry.inFlight;
+  }
+
+  const next = { inFlight: null, rerunRequested: false };
+  inFlightByDirPath.set(dirPath, next);
+  startRun(dirPath, next);
+  return next.inFlight;
+}
+
+export { recursiveListDebounced };
+export default recursiveListDebounced;

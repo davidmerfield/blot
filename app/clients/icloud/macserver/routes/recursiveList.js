@@ -36,7 +36,7 @@ export default async (req, res) => {
   );
 
   try {
-    await recursiveList(dirPath, 0);
+    await recursiveList(dirPath);
     res.status(200).json({ success: true });
   } catch (error) {
     console.error(clfdate(), "Error performing recursive list", { dirPath, error });

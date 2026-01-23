@@ -36,8 +36,6 @@ export default () => {
 
         const blogId = match[0];
 
-        console.log(clfdate(), "brctl monitor: Recursively listing contents of:", blogId);
-
         recursiveList(`${iCloudDriveDirectory}/${blogId}`, 0).catch((error) => {
           console.error(clfdate(), 
             `Failed to recursively list contents of ${blogId}:`,
