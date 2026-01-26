@@ -325,4 +325,6 @@ module.exports = function updateCdnManifest(templateID, callback) {
   })();
 };
 
+module.exports.cleanupOldHash = cleanupOldHash;
+
 

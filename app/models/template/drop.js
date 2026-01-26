@@ -4,6 +4,7 @@ var client = require("models/client");
 var key = require("./key");
 var makeID = require("./util/makeID");
 var Blog = require("models/blog");
+var cleanupTemplateCdnAssets = require("./util/cleanupTemplateCdnAssets");
 
 module.exports = function drop(owner, templateName, callback) {
   var templateID = makeID(owner, templateName);
@@ -34,6 +35,18 @@ module.exports = function drop(owner, templateName, callback) {
     for (var i in views) {
       multi.del(key.view(templateID, views[i].name));
       multi.del(key.url(templateID, views[i].url));
+    }
+
+    // Purge CDN URLs and clean up assets (fire and forget - don't block deletion)
+    if (
+      metadata &&
+      metadata.cdn &&
+      typeof metadata.cdn === "object" &&
+      Object.keys(metadata.cdn).length > 0
+    ) {
+      cleanupTemplateCdnAssets(templateID, metadata).catch((err) => {
+        console.error(`CDN cleanup failed for ${templateID}:`, err);
+      });
     }
 
     multi.exec(function (err) {
