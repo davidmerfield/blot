@@ -26,5 +26,6 @@ module.exports = (blog) => {
   return {
     log,
     status,
+    syncID,
   };
 };
