@@ -33,7 +33,15 @@ function sync(blogID, callback) {
     log("Starting sync");
 
     let release;
-    const lockPath = localPath(blogID, "/");
+    let lockPath = localPath(blogID, "/");
+
+    // localPath currently returns a path with
+    // a trailing slash, we need to remove it
+    // for diagnostics to work properly
+    if (lockPath.endsWith("/") && lockPath !== "/") {
+      lockPath = lockPath.slice(0, -1);
+    }
+
     let lockAcquiredAt;
 
     try {
