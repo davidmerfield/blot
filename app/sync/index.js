@@ -7,6 +7,12 @@ const lockfile = require("proper-lockfile");
 const messenger = require("./messenger");
 const gatherLockDiagnostics = require("./lock-diagnostics");
 const clfdate = require("helper/clfdate");
+const {
+  addPendingSync,
+  removePendingSync,
+  addPendingUpdate,
+  removePendingUpdate
+} = require("./lock-diagnostics-state");
 
 const LOCK_STALE_TIMEOUT_MS = 10 * 1000;
 const LOCK_UPDATE_INTERVAL_MS = 3 * 1000; // lowered from 5s to avoid ECOMPROMISED errors?
@@ -28,7 +34,7 @@ function sync(blogID, callback) {
       return callback(new Error("Cannot sync blog " + blogID));
     }
 
-    const { log, status } = messenger(blog);
+    const { log, status, syncID } = messenger(blog);
 
     log("Starting sync");
 
@@ -105,6 +111,7 @@ function sync(blogID, callback) {
         }
       });
       lockAcquiredAt = Date.now();
+      addPendingSync(blogID, syncID);
       log("Successfully acquired lock on folder");
     } catch (e) {
       log("Failed to acquire lock on folder");
@@ -126,7 +133,22 @@ function sync(blogID, callback) {
       path,
       update: function () {
         changes = true;
-        _update.apply(_update, arguments);
+        const path = arguments[0];
+        const callback = arguments[1];
+        if (typeof callback !== "function") {
+          _update.apply(_update, arguments);
+          return;
+        }
+        addPendingUpdate(blogID, syncID, path);
+        let called = false;
+        const wrappedCallback = function () {
+          if (!called) {
+            called = true;
+            removePendingUpdate(blogID, syncID, path);
+          }
+          return callback.apply(this, arguments);
+        };
+        _update.call(_update, path, wrappedCallback);
       },
       status,
       log,
@@ -141,6 +163,7 @@ function sync(blogID, callback) {
     // function which wanted to modify the blog's folder.
     callback(null, folder, function (syncError, callback) {
       log("Sync callback invoked");
+      removePendingSync(blogID, syncID);
       folder.status("Synced");
 
       if (typeof syncError === "function")

@@ -2,6 +2,10 @@ const fs = require("fs");
 const os = require("os");
 const { promisify } = require("util");
 const freeDiskSpace = require("../scheduler/free-disk-space");
+const {
+  getPendingSyncs,
+  getPendingUpdates
+} = require("./lock-diagnostics-state");
 
 const freeDiskSpaceAsync = promisify(freeDiskSpace);
 const DEFAULT_TIMEOUT_MS = 2000;
@@ -69,6 +73,8 @@ const gatherLockDiagnostics = async ({
     lockPath,
     lockFilePath,
     now,
+    pendingSyncs: getPendingSyncs(),
+    pendingUpdates: getPendingUpdates(),
     lockDurationMs:
       typeof lockAcquiredAt === "number" ? now - lockAcquiredAt : null,
     processUptimeSec: (() => {
