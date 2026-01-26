@@ -121,6 +121,22 @@ function sync(blogID, callback) {
     // we want to know if folder.update or folder.rename is called
     let changes = false;
     let _update = new Update(blog, log, status);
+    const originalUpdate = _update;
+    _update = function (path, callback) {
+      if (typeof callback !== "function") {
+        return originalUpdate.apply(originalUpdate, arguments);
+      }
+      addPendingUpdate(blogID, syncID, path);
+      let called = false;
+      const wrappedCallback = function () {
+        if (!called) {
+          called = true;
+          removePendingUpdate(blogID, syncID, path);
+        }
+        return callback.apply(this, arguments);
+      };
+      return originalUpdate.call(originalUpdate, path, wrappedCallback);
+    };
     let path = localPath(blogID, "/");
 
     // Right now localPath returns a path with a trailing slash for some
@@ -133,22 +149,7 @@ function sync(blogID, callback) {
       path,
       update: function () {
         changes = true;
-        const path = arguments[0];
-        const callback = arguments[1];
-        if (typeof callback !== "function") {
-          _update.apply(_update, arguments);
-          return;
-        }
-        addPendingUpdate(blogID, syncID, path);
-        let called = false;
-        const wrappedCallback = function () {
-          if (!called) {
-            called = true;
-            removePendingUpdate(blogID, syncID, path);
-          }
-          return callback.apply(this, arguments);
-        };
-        _update.call(_update, path, wrappedCallback);
+        _update.apply(_update, arguments);
       },
       status,
       log,
