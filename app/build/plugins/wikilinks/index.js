@@ -1,6 +1,6 @@
 const { tryEach, eachOf } = require("async");
 const path = require("path");
-const { resolve, dirname } = path;
+const { resolve, dirname, extname } = path;
 const byPath = require("./byPath");
 const byFilename = require("./byFilename");
 const byURL = require("./byURL");
@@ -11,6 +11,14 @@ const makeSlug = require("helper/makeSlug");
 const debug = require("debug")("blot:entry:build:plugins:wikilinks");
 
 const basename = (path.posix || path).basename;
+
+
+// Helper function to check if a path is a markdown/text file
+function isMarkdownFile(path) {
+  if (!path) return false;
+  const ext = extname(path).toLowerCase();
+  return [".txt", ".text", ".md", ".markdown"].indexOf(ext) > -1;
+}
 
 function render($, callback, { blogID, path }) {
   const wikilinks = $("[title='wikilink']");
@@ -117,6 +125,28 @@ function render($, callback, { blogID, path }) {
             $node.text(title || url);
           }
         } else {
+          if (isMarkdownFile(linkedPath)) {
+            const { get } = require("models/entry");
+
+            return get(blogID, linkedPath, function (entry) {
+              if (!entry) {
+                return next();
+              }
+
+              const html = entry && entry.html ? entry.html : "";
+              const embedded = $("<div class='embedded-markdown'></div>");
+              embedded.html(html);
+              $node.replaceWith(embedded);
+
+              if (linkedPath && !dependencies.includes(linkedPath)) {
+                debug("Adding dependency on", linkedPath);
+                dependencies.push(linkedPath);
+              }
+
+              return next();
+            });
+          }
+
           debug("Setting media src to", url);
           $node.attr("src", linkedPath);
 
