@@ -1,15 +1,3 @@
-Extend lock diagnostics to track pending syncs and file updates:
-- Add to lock-diagnostics.js an in-memory Map tracking blogs with pending syncs: Map<blogID, Set<syncID>>
-  - Add entry when sync starts (in sync/index.js, when messenger is called and syncID is generated)
-  - Remove entry when done() callback is invoked (the function returned as third argument to sync callback)
-- Add to lock-diagnostics.js an in-memory Map tracking files with pending updates: Map<blogID, Map<syncID, Set<filePath>>>
-  - Add entry when folder.update(path, callback) is called (in sync/index.js, wrap the folder.update function)
-  - Remove entry when folder.update callback is invoked (the callback passed to folder.update)
-- Modify gatherLockDiagnostics to include:
-  - pendingSyncs: array of {blogID, syncID} objects (flattened from the blogs map)
-  - pendingFileUpdates: array of {blogID, syncID, filePath} objects (flattened from the files map)
-- Ensure thread-safety: use Map/Set data structures and handle concurrent access properly
-
 Extend recursiveList timeout when requesting Macserver (it can take 80 seconds)
 
 Document SSL as part of service on pricing page
