@@ -27,3 +27,79 @@
         <br><br>
     </div>
 </div>
+
+<div
+  id="template-font-picker"
+  class="template-font-picker"
+  data-template-font-picker
+  hidden
+>
+  <div class="template-font-picker__filters" data-font-picker-filters>
+    <button
+      type="button"
+      class="template-font-picker__filter is-active"
+      data-font-picker-filter="all"
+    >
+      All
+    </button>
+    <button
+      type="button"
+      class="template-font-picker__filter"
+      data-font-picker-filter="sans"
+    >
+      Sans
+    </button>
+    <button
+      type="button"
+      class="template-font-picker__filter"
+      data-font-picker-filter="serif"
+    >
+      Serif
+    </button>
+    <button
+      type="button"
+      class="template-font-picker__filter"
+      data-font-picker-filter="mono"
+    >
+      Mono
+    </button>
+    <button
+      type="button"
+      class="template-font-picker__filter"
+      data-font-picker-filter="other"
+    >
+      Other
+    </button>
+    <button
+      type="button"
+      class="template-font-picker__filter"
+      data-font-picker-filter="system"
+    >
+      System
+    </button>
+  </div>
+  <div
+    class="template-font-picker__options"
+    data-font-picker-options
+    role="listbox"
+    aria-label="Available fonts"
+  >
+    {{#fontPickerOptions}}
+    <button
+      type="button"
+      class="template-font-picker__option"
+      data-font-option-id="{{{id}}}"
+      data-font-tags="{{tagsString}}"
+      role="option"
+      aria-selected="false"
+    >
+      {{#svg}}
+        {{{svg}}}
+      {{/svg}}
+      {{^svg}}
+        <span style="font-family: {{stack}};">{{name}}</span>
+      {{/svg}}
+    </button>
+    {{/fontPickerOptions}}
+  </div>
+</div>
