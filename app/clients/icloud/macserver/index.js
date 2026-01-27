@@ -100,7 +100,7 @@ const startServer = async () => {
 
     // Start the monitorer to keep iCloud in sync
     console.log(clfdate(), "Starting iCloud monitorer...");
-    // monitorer();
+    monitorer();
     
     console.log(clfdate(), "Macserver started successfully");
   } catch (error) {
