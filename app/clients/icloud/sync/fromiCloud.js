@@ -9,6 +9,7 @@ const remoteReaddir = require("./util/remoteReaddir");
 const remoteRecursiveList = require("./util/remoteRecursiveList");
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
+const database = require("../database");
 const config = require("config");
 const maxFileSize = config.icloud.maxFileSize; // Maximum file size for iCloud uploads in bytes
 
@@ -123,6 +124,8 @@ module.exports = async (blogID, publish, update) => {
 
   try {
     await walk("/");
+    // update the database to remove the error flag if it exists
+    await database.store(blogID, { error: null });
   } catch (err) {
     publish("Sync failed", err.message);
     // Possibly rethrow or handle

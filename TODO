@@ -2,6 +2,7 @@ Revert server changes to iCloud
 - 0043d91b36621ecd6aef2bcc263f51f209924792
 - 98dc9405c883825917de8e436ec620f60adaf975
 
+We need to filter out (block) fswatch sync and brctl monitorer events until a folder setup flow is complete (do we do this already for chokidar?) (this causes problems setting up large folders)
 
 Extend recursiveList timeout when requesting Macserver (it can take 80 seconds)
 
