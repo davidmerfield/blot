@@ -25,7 +25,7 @@ site.get("/started", async function (req, res) {
     if (totalNotificationsSent < maxNotifications) {
       email.ICLOUD_SERVER_STARTED();
       totalNotificationsSent++;
-      await resyncRecentlySynced();
+      // await resyncRecentlySynced();
     } else if (!panicNotificationsSent) {
       panicNotificationsSent = true;
       email.ICLOUD_SERVER_PANIC();

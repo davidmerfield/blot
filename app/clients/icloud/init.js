@@ -358,7 +358,7 @@ const init = async () => {
   console.log(clfdate(), "iCloud: Scheduling daily resync");
   scheduler.scheduleJob("0 3 * * *", () => resyncAllConnected({ notify: true }));
 
-  resyncRecentlySynced({ notify: false });
+  // resyncRecentlySynced({ notify: false });
 
   monitorMacServerStats();
 };
