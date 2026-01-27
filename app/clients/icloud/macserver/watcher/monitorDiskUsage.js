@@ -167,7 +167,7 @@ const check = async (evictFiles) => {
 
       // Skip already evicted files
       if (stat.blocks === 0) {
-        console.info(`Skipping evicted file: ${filePath}`);
+        // console.info(`Skipping evicted file: ${filePath}`);
         continue;
       }
 
