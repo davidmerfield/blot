@@ -4,7 +4,7 @@ import { iCloudDriveDirectory } from "../config.js";
 import clfdate from "../util/clfdate.js";
 
 const POLL_INTERVAL = 15 * 1000; // Check every 15 seconds
-const MAX_NUMBER_OF_FILES_TRACKED_PER_BLOG = 500;
+const MAX_NUMBER_OF_FILES_TRACKED_PER_BLOG = 1000;
 const MAX_DISK_USAGE_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
 
 // Map to track the largest files and metadata for each blog folder
