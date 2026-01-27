@@ -267,7 +267,7 @@ const initialize = async () => {
   }
 
   startChokidarPruneLoop();
-  startFsWatch();
+  // startFsWatch();
 };
 
 // Watches a specific blog folder
