@@ -353,10 +353,10 @@ const init = async () => {
   });
 
   console.log(clfdate(), "iCloud: Scheduling hourly sync validation");
-  scheduler.scheduleJob("0 * * * *", () => runValidation({ notify: true }));
+  // scheduler.scheduleJob("0 * * * *", () => runValidation({ notify: true }));
 
   console.log(clfdate(), "iCloud: Scheduling daily resync");
-  scheduler.scheduleJob("0 3 * * *", () => resyncAllConnected({ notify: true }));
+  // scheduler.scheduleJob("0 3 * * *", () => resyncAllConnected({ notify: true }));
 
   // resyncRecentlySynced({ notify: false });
 
