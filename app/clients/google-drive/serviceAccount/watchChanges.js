@@ -47,7 +47,9 @@ module.exports = async function watchChanges(serviceAccountId, drive) {
 
   let startPageToken;
   try {
-    startPageToken = (await drive.changes.getStartPageToken()).data.startPageToken;
+    startPageToken = (
+      await drive.changes.getStartPageToken({ supportsAllDrives: true })
+    ).data.startPageToken;
   } catch (err) {
     throw new Error(`Failed to fetch startPageToken: ${err.message}`);
   }
@@ -63,6 +65,7 @@ module.exports = async function watchChanges(serviceAccountId, drive) {
   try {
     response = await drive.changes.watch({
       pageToken: startPageToken,
+      supportsAllDrives: true,
       requestBody: watchRequest,
     });
     if (!response.data.id || !response.data.resourceId || !response.data.expiration) {

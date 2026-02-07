@@ -131,6 +131,7 @@ module.exports = async (
           {
             fileId: id,
             mimeType: "text/html",
+            supportsAllDrives: true,
           },
           {
             responseType: "stream",
@@ -140,7 +141,7 @@ module.exports = async (
         data = res.data;
       } else {
         const res = await drive.files.get(
-          { fileId: id, alt: "media" },
+          { fileId: id, alt: "media", supportsAllDrives: true },
           { responseType: "stream" }
         );
         data = res.data;

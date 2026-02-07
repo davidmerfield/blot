@@ -154,22 +154,150 @@ async function getExistingFolderIDs(email) {
 }
 
 async function getAvailableFolders(drive, email, existingIDs) {
-  const res = await drive.files.list({
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-    fields: "files(id, name, parents, kind, mimeType, owners)",
-    q: `'${email}' in owners and 
-        trashed = false and 
-        mimeType = 'application/vnd.google-apps.folder'`,
-  });
+  // List shared drives (Team Drives) - used to allow root-level folders inside them
+  let sharedDriveIds = new Set();
+  try {
+    let pageToken;
+    const allSharedDrives = [];
+    do {
+      const drivesRes = await drive.drives.list({
+        pageSize: 100,
+        pageToken: pageToken || undefined,
+        useDomainAdminAccess: false,
+        fields: "nextPageToken, drives(id, name)",
+      });
+      const drives = drivesRes.data.drives || [];
+      allSharedDrives.push(...drives);
+      pageToken = drivesRes.data.nextPageToken;
+    } while (pageToken);
 
-  // filter out folders already in use
-  // and folders with a defined (non-undefined) parents array
-  // by removing folders with parents we avoid syncing to folders
-  // that are inside other folders the service account may have access to
-  return res.data.files.filter(
-    (file) => !existingIDs.includes(file.id) && !file.parents
-  );
+    sharedDriveIds = new Set(allSharedDrives.map((d) => d.id));
+
+    console.log(
+      clfdate(),
+      "Google Drive setup (debug):",
+      "drives.list (shared drives) count:",
+      allSharedDrives.length
+    );
+    allSharedDrives.forEach((d, i) => {
+      console.log(
+        clfdate(),
+        "Google Drive setup (debug):",
+        `  shared drive [${i + 1}] id=${d.id} name=${JSON.stringify(d.name)}`
+      );
+    });
+  } catch (e) {
+    console.log(
+      clfdate(),
+      "Google Drive setup (debug):",
+      "drives.list failed:",
+      e.message
+    );
+  }
+
+  // Use sharedWithMe folders and check writer email in permissions (the
+  // "'email' in writers" query does not work for folders in shared drives).
+  const writerRoles = ["owner", "organizer", "fileOrganizer", "writer"];
+  const readerRoles = ["reader", "commenter"];
+  let available = [];
+  try {
+    let pageToken;
+    const sharedWithMeItems = [];
+    do {
+      const sharedRes = await drive.files.list({
+        pageSize: 100,
+        supportsAllDrives: true,
+        corpora: "allDrives",
+        includeItemsFromAllDrives: true,
+        pageToken: pageToken || undefined,
+        fields: "nextPageToken, files(id, name, parents, mimeType)",
+        q:
+          "sharedWithMe = true and trashed = false and mimeType = 'application/vnd.google-apps.folder'",
+      });
+      const files = sharedRes.data.files || [];
+      sharedWithMeItems.push(...files);
+      pageToken = sharedRes.data.nextPageToken;
+    } while (pageToken);
+
+    console.log(
+      clfdate(),
+      "Google Drive setup (debug):",
+      "sharedWithMe folders total:",
+      sharedWithMeItems.length
+    );
+    for (let i = 0; i < sharedWithMeItems.length; i++) {
+      const file = sharedWithMeItems[i];
+      const parentInfo = file.parents?.length
+        ? `parents=[${file.parents.join(", ")}]`
+        : "no parents";
+      const hasNoParents = !file.parents || file.parents.length === 0;
+      const notInUse = !existingIDs.includes(file.id);
+
+      let isWriterForEmail = false;
+      try {
+        const permRes = await drive.permissions.list({
+          fileId: file.id,
+          supportsAllDrives: true,
+          fields: "permissions(type, role, emailAddress, displayName)",
+        });
+        const perms = permRes.data.permissions || [];
+        isWriterForEmail = perms.some(
+          (p) =>
+            writerRoles.includes(p.role) &&
+            p.emailAddress &&
+            p.emailAddress.toLowerCase() === email.toLowerCase()
+        );
+        const writers = perms
+          .filter((p) => writerRoles.includes(p.role))
+          .map((p) => p.emailAddress || p.displayName || `${p.type}:${p.role}`);
+        const readers = perms
+          .filter((p) => readerRoles.includes(p.role))
+          .map((p) => p.emailAddress || p.displayName || `${p.type}:${p.role}`);
+        console.log(
+          clfdate(),
+          "Google Drive setup (debug):",
+          `  sharedWithMe [${i + 1}] id=${file.id} name=${JSON.stringify(file.name)} ${parentInfo}`
+        );
+        console.log(
+          clfdate(),
+          "Google Drive setup (debug):",
+          `    writers: ${writers.length ? writers.join(", ") : "(none)"}`
+        );
+        console.log(
+          clfdate(),
+          "Google Drive setup (debug):",
+          `    readers: ${readers.length ? readers.join(", ") : "(none)"}`
+        );
+      } catch (permErr) {
+        console.log(
+          clfdate(),
+          "Google Drive setup (debug):",
+          "    permissions failed:",
+          permErr.message
+        );
+      }
+
+      if (isWriterForEmail && hasNoParents && notInUse) {
+        available.push({ id: file.id, name: file.name });
+      }
+    }
+    console.log(
+      clfdate(),
+      "Google Drive setup (debug):",
+      "available (sharedWithMe, writer match, no parents, not in use):",
+      available.length,
+      available.map((f) => f.name)
+    );
+  } catch (e) {
+    console.log(
+      clfdate(),
+      "Google Drive setup (debug):",
+      "sharedWithMe query failed:",
+      e.message
+    );
+  }
+
+  return available;
 }
 
 async function processFolder(folder, drive, blogID, status, isLastFolder) {
@@ -224,10 +352,18 @@ async function checkEditorPermissions(drive, folderId) {
     });
 
     const permissions = permissionsRes.data.permissions || [];
+
+    console.log(
+      clfdate(),
+      "Google Drive Client",
+      "checkEditorPermissions:",
+      folderId,
+      permissions
+    );
     return permissions.some(
       (perm) =>
         (perm.type === "user" || perm.type === "anyone") &&
-        perm.role === "writer"
+        (perm.role === "writer" || perm.role === "organizer")
     );
   } catch (e) {
     console.error(
