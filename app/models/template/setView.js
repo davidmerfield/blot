@@ -9,6 +9,7 @@ var viewModel = require("./viewModel");
 var getView = require("./getView");
 var serialize = require("./util/serialize");
 var getMetadata = require("./getMetadata");
+var setMetadata = require("./setMetadata");
 var Blog = require("models/blog");
 var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
@@ -292,6 +293,22 @@ module.exports = function setView(templateID, updates, callback) {
 
 							updateCdnManifest(templateID, (manifestErr) => {
 								if (manifestErr) return callback(manifestErr);
+
+								// Clear this view from template metadata.errors when saving
+								// via the dashboard so fixing a view clears its error state
+								if (metadata.errors && metadata.errors[name]) {
+									delete metadata.errors[name];
+									setMetadata(
+										templateID,
+										{ errors: metadata.errors },
+										(setMetaErr) => {
+											if (setMetaErr) return callback(setMetaErr);
+											if (!changes) return callback();
+											Blog.set(metadata.owner, { cacheID: Date.now() }, callback);
+										}
+									);
+									return;
+								}
 
 								if (!changes) return callback();
 
