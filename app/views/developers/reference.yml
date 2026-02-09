@@ -191,7 +191,7 @@
 
         - name: large
           type: object
-          description: which has a width and height under 1060px.
+          description: which has a width and height under 1200px.
 
         - name: square
           type: object
