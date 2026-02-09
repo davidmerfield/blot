@@ -3,27 +3,62 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="index, follow">
+    <meta property="og:site_name" content="{{title}}">
 
     <title>{{> title}}</title>
-    <meta name="description" content="{{> description}}">
-    
-    <!-- Begin proprietary meta tags for sharing on social media -->
-    <meta property="og:title" content="{{> title}}">
-    <meta property="og:description" content="{{> description}}">
-    <meta property="og:type" content="website">
     {{#entry}}
-    {{#thumbnail.large}}
-    <meta property="og:image" content="{{{url}}}">
-    <meta name="twitter:card" content="summary_large_image">
-    {{/thumbnail.large}}
-    <meta property="og:url" content="{{{absoluteURL}}}">
+    {{#summary}}<meta name="description" content="{{summary}}">{{/summary}}
+    {{^summary}}<meta name="description" content="{{title}}">{{/summary}}
     {{/entry}}
-    <!-- End proprietary meta tags for sharing on social media -->
+    {{^entry}}<meta name="description" content="{{> description}}">{{/entry}}
 
-    <link rel="alternate" type="application/rss+xml" title="{{title}}" href="{{{blogURL}}}{{{feedURL}}}">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for {{title}}" href="{{{blogURL}}}{{{feedURL}}}">
     {{#avatar}}<link rel="icon" href="{{{avatar}}}" type="image/x-icon">{{/avatar}}
     <link rel="preconnect" href="{{{cdn}}}" />
     <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
+
+    {{#entry}}
+    {{#absoluteURL}}
+    <link rel="canonical" href="{{{absoluteURL}}}">
+    <meta property="og:url" content="{{{absoluteURL}}}">
+    {{/absoluteURL}}
+    <meta property="og:title" content="{{title}}">
+    {{#summary}}<meta property="og:description" content="{{summary}}">{{/summary}}{{^summary}}<meta property="og:description" content="{{title}}">{{/summary}}
+    {{#thumbnail.large}}
+    <meta property="og:image" content="{{{url}}}">
+    <meta property="og:image:width" content="{{width}}">
+    <meta property="og:image:height" content="{{height}}">
+    {{/thumbnail.large}}
+    {{^thumbnail.large}}
+    {{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}
+    {{/thumbnail.large}}
+    <meta property="og:type" content="article">
+    {{#thumbnail.large}}<meta name="twitter:card" content="summary_large_image">{{/thumbnail.large}}{{^thumbnail.large}}<meta name="twitter:card" content="summary">{{/thumbnail.large}}
+    <meta name="twitter:title" content="{{title}}">
+    {{#summary}}<meta name="twitter:description" content="{{summary}}">{{/summary}}{{^summary}}<meta name="twitter:description" content="{{title}}">{{/summary}}
+    {{#thumbnail.large}}<meta name="twitter:image" content="{{{url}}}">{{/thumbnail.large}}
+    {{^thumbnail.large}}
+    {{#avatar}}<meta name="twitter:image" content="{{{avatar}}}">{{/avatar}}
+    {{/thumbnail.large}}
+    <meta property="article:author" content="{{{blogURL}}}">
+    <meta property="article:published_time" content="{{#formatDate}}YYYY-MM-DDTHH:mm:ssZ{{/formatDate}}">
+    <meta property="article:modified_time" content="{{#formatUpdated}}YYYY-MM-DDTHH:mm:ssZ{{/formatUpdated}}">
+    {{#tags}}
+    <meta property="article:tag" content="{{name}}">
+    {{/tags}}
+    {{/entry}}
+
+    {{^entry}}
+    <meta property="og:type" content="website">
+    {{#url}}
+    <link rel="canonical" href="{{{url}}}">
+    <meta property="og:url" content="{{{url}}}">
+    {{/url}}
+    <meta property="og:title" content="{{> title}}">
+    <meta property="og:description" content="{{> description}}">
+    {{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}
+    {{/entry}}
 </head>
 <body class=" {{#entry}}{{^page}} dim {{/page}}{{/entry}} ">
 
