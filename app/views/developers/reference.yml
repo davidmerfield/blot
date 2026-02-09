@@ -179,7 +179,7 @@
 
     - name: thumbnail
       type: object
-      description: "object containing the thumbnails for the entry, if they exist. Blot will not increase the size of smaller images. The JSON added to each entry looks something like this"
+      description: "object containing the thumbnails for the entry, if they exist. Blot will not increase the size of smaller images. When a thumbnail is generated, each size (small, medium, large, square) is present; if the source image is smaller than a size limit, the thumbnail is still generated at the source image’s dimensions (no upscaling). The JSON added to each entry looks something like this"
       properties:
         - name: small
           type: object
@@ -191,7 +191,7 @@
 
         - name: large
           type: object
-          description: which has a width and height under 1200px.
+          description: which has a width and height under 1200px (or smaller if the source image is smaller).
 
         - name: square
           type: object
