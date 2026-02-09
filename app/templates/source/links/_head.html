@@ -11,7 +11,7 @@
     {{/entry}}
     {{^entry}}<meta name="description" content="{{> description}}">{{/entry}}
 
-    <link rel="alternate" type="application/rss+xml" title="RSS Feed for {{title}}" href="{{{blogURL}}}{{{feedURL}}}">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for {{title}}" href="{{{siteURL}}}{{{feedURL}}}">
     {{#avatar}}<link rel="icon" href="{{{avatar}}}" type="image/x-icon">{{/avatar}}
     <link rel="preconnect" href="{{{cdn}}}" />
     <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
@@ -49,8 +49,8 @@
     {{#avatar}}<meta name="twitter:image" content="{{{avatar}}}">{{/avatar}}
     {{/thumbnail.large}}
 
-    <!-- (F) Author (defaults to blogURL) -->
-    <meta property="article:author" content="{{{blogURL}}}">
+    <!-- (F) Author (defaults to siteURL) -->
+    <meta property="article:author" content="{{{siteURL}}}">
 
     <!-- (G) Dates (auto from Blot entry; ISO 8601 via formatDate/formatUpdated) -->
     <meta property="article:published_time" content="{{#formatDate}}YYYY-MM-DDTHH:mm:ssZ{{/formatDate}}">

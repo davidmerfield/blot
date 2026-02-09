@@ -15,8 +15,8 @@
   "version": "https://jsonfeed.org/version/1",
   "title": "{{#encodeJSON}}{{{title}}}{{/encodeJSON}}",
   "description": "{{#encodeJSON}}Feed for {{{title}}}{{/encodeJSON}}",
-  "home_page_url": "{{{blogURL}}}",
-  "feed_url": "{{{blogURL}}}/jsonfeed.json",
+  "home_page_url": "{{{siteURL}}}",
+  "feed_url": "{{{siteURL}}}/jsonfeed.json",
   "items": [
     {{#recentEntries}}
     { 
@@ -26,7 +26,7 @@
       "summary": "{{#encodeJSON}}{{{summary}}}{{/encodeJSON}}",
       {{/summary}}
       {{#thumbnail.large}}
-      "image": "{{{blogURL}}}{{{url}}}",
+      "image": "{{{siteURL}}}{{{url}}}",
       {{/thumbnail.large}}
       "content_html": "{{#encodeJSON}}{{#absoluteURLs}}{{{body}}}{{/absoluteURLs}}{{/encodeJSON}}",
       "date_published": "{{#formatDate}}YYYY-MM-DDTHH:mm:ssZ{{/formatDate}}",

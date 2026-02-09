@@ -59,13 +59,13 @@
       type: string
       description: Your site’s timezone in the [tz database format](https://en.wikipedia.org/wiki/Tz_database)
 
-    - name: blogURL
+    - name: siteURL
       type: string
       description: URL to your site’s homepage
 
-    - name: siteURL
+    - name: blogURL
       type: string
-      description: Same as [blogURL](#blog.blogURL)
+      description: Alias for [siteURL](#blog.siteURL)
 
     - name: feedURL
       type: string
