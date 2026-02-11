@@ -6,6 +6,7 @@ const createDriveActivityClient = require("./serviceAccount/createDriveActivityC
 const fetchStorageInfo = require("./serviceAccount/fetchStorageInfo");
 const watchChanges = require("./serviceAccount/watchChanges");
 const pollDriveActivity = require("./serviceAccount/pollDriveActivity");
+const hotDocPoller = require("./serviceAccount/hotDocPoller");
 const { restartSetupProcesses } = require("./routes/setup");
 
 const main = async (initial = false) => {
@@ -25,6 +26,8 @@ const main = async (initial = false) => {
     try {
       const drive = await createDriveClient(serviceAccountId);
       const driveactivity = await createDriveActivityClient(serviceAccountId);
+
+      hotDocPoller.registerDriveClient(serviceAccountId, drive);
 
       console.log(prefix(), "Fetching storage usage of service account");
       await fetchStorageInfo(serviceAccountId, drive);
@@ -50,6 +53,7 @@ const main = async (initial = false) => {
 };
 
 module.exports = async () => {
+  hotDocPoller.start();
   main(true);
   // we do this repeatedly every 10 minutes
   // to refresh the service account data

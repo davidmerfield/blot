@@ -171,6 +171,28 @@ module.exports = {
   },
 
   google_drive: {
+    hot_doc_poller: {
+      enabled: process.env.BLOT_GOOGLEDRIVE_HOT_DOC_POLLER_ENABLED === "true",
+      per_service_account_min_time_ms:
+        parseInt(process.env.BLOT_GOOGLEDRIVE_HOT_DOC_POLLER_PER_ACCOUNT_MIN_TIME_MS, 10) || 600,
+      per_service_account_max_concurrent:
+        parseInt(process.env.BLOT_GOOGLEDRIVE_HOT_DOC_POLLER_PER_ACCOUNT_MAX_CONCURRENT, 10) || 1,
+      global_max_concurrent:
+        parseInt(process.env.BLOT_GOOGLEDRIVE_HOT_DOC_POLLER_GLOBAL_MAX_CONCURRENT, 10) || 4,
+      jitter_ms:
+        parseInt(process.env.BLOT_GOOGLEDRIVE_HOT_DOC_POLLER_JITTER_MS, 10) || 500,
+      tick_interval_ms:
+        parseInt(process.env.BLOT_GOOGLEDRIVE_HOT_DOC_POLLER_TICK_INTERVAL_MS, 10) || 1000,
+      max_items_global:
+        parseInt(process.env.BLOT_GOOGLEDRIVE_HOT_DOC_POLLER_MAX_ITEMS_GLOBAL, 10) || 2000,
+      max_items_per_service_account:
+        parseInt(process.env.BLOT_GOOGLEDRIVE_HOT_DOC_POLLER_MAX_ITEMS_PER_SERVICE_ACCOUNT, 10) || 300,
+      sync_cooldown_ms:
+        parseInt(process.env.BLOT_GOOGLEDRIVE_HOT_DOC_POLLER_SYNC_COOLDOWN_MS, 10) || 8000,
+      rate_limit_backoff_ms:
+        parseInt(process.env.BLOT_GOOGLEDRIVE_HOT_DOC_POLLER_RATE_LIMIT_BACKOFF_MS, 10) || 20000,
+    },
+
     service_accounts: (() => {
       try {
         // Check if the environment variable is defined and not empty
