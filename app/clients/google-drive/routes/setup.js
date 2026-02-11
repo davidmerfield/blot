@@ -264,11 +264,12 @@ async function checkEditorPermissions(drive, folderId, serviceAccountId) {
     });
 
     const permissions = permissionsRes.data.permissions || [];
+    
     return permissions.some(
       (perm) =>
         perm.type === "user" &&
         perm.emailAddress === serviceAccountEmail &&
-        (perm.role === "writer" || perm.role === "organizer")
+        (perm.role === "writer" || perm.role === "fileOrganizer")
     );
   } catch (e) {
     console.error(
