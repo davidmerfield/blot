@@ -208,9 +208,7 @@ async function read(blog, path, callback) {
     cleanupSpans($);
 
     // handle line breaks
-    if (blog.flags.google_docs_preserve_linebreaks !== false) {
-      linebreaks($);
-    }
+    linebreaks($);
 
     await processImages(blog.id, path, $);
 

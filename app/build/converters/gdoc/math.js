@@ -61,7 +61,25 @@ function eachTextNode(node, cb) {
   });
 }
 
+// Get element text with <br> treated as newlines (clone, replace br, then .text()).
+function getTextWithLineBreaks($, node) {
+  const clone = $(node).clone();
+  clone.find("br").replaceWith("\n");
+  return clone.text();
+}
+
 module.exports = function gdocMath($) {
+  // Preprocess: paragraphs that contain both $$ and <br> have math split across
+  // multiple text nodes (e.g. "$$" + <br> + "c=d" + <br> + "$$"), so the
+  // per-text-node converter never sees "$$\nc=d\n$$" and doesn't run. Collapse
+  // such <p> to a single text node with br→\n so display-math detection and
+  // conversion work as usual below.
+  $("p").each(function () {
+    const $p = $(this);
+    if ($p.html().indexOf(delimiter) === -1 || $p.find("br").length === 0) return;
+    $p.text(getTextWithLineBreaks($, this));
+  });
+
   eachTextNode($("body")[0], (textNode) => {
     const converted = convertMathInText(textNode.data);
 
