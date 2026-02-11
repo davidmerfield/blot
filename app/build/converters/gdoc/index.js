@@ -57,7 +57,7 @@ function convertCodeTables($) {
       const codeNode = pre.find("code");
 
       if (language) {
-        codeNode.attr("class", language);
+        pre.attr("class", language);
       }
 
       codeNode.text(code);
