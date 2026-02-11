@@ -264,7 +264,11 @@ async function checkEditorPermissions(drive, folderId, serviceAccountId) {
     });
 
     const permissions = permissionsRes.data.permissions || [];
-    
+
+    // for regular folders shared from personal drives,
+    // the permission role we need is 'writer'
+    // for regular folders shared from shared drives,
+    // the permission role we need is 'fileOrganizer'
     return permissions.some(
       (perm) =>
         perm.type === "user" &&
