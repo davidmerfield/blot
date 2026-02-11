@@ -1,0 +1,427 @@
+const Bottleneck = require("bottleneck");
+const clfdate = require("helper/clfdate");
+const createDriveClient = require("./createDriveClient");
+const establishSyncLock = require("sync/establishSyncLock");
+const database = require("../database");
+const sync = require("../sync");
+
+const prefix = () => `${clfdate()} Google Drive hotDocPoller:`;
+
+const POLL_INTERVAL_MS = 1000;
+const BLOG_SYNC_COOLDOWN_MS = 10000;
+const MAX_ITEMS_GLOBAL = 500;
+const MAX_ITEMS_PER_SERVICE_ACCOUNT = 150;
+const RATE_LIMIT_BACKOFF_MS = 30000;
+const EVICT_AFTER_SECONDS = 600;
+
+const SCHEDULE_TIERS = [
+  { maxAgeSeconds: 10, everyMs: 2000 },
+  { maxAgeSeconds: 30, everyMs: 3000 },
+  { maxAgeSeconds: 60, everyMs: 5000 },
+  { maxAgeSeconds: 120, everyMs: 10000 },
+  { maxAgeSeconds: 600, everyMs: 30000 },
+];
+
+const jitterMs = (baseMs) => {
+  const spread = Math.max(1, Math.floor(baseMs * 0.2));
+  return Math.floor(Math.random() * spread);
+};
+
+const isRateLimitError = (err) => {
+  const code = err?.code || err?.status || err?.response?.status;
+  return code === 429 || code === 403;
+};
+
+class HotDocPoller {
+  constructor() {
+    this.items = new Map();
+    this.started = false;
+    this.timer = null;
+
+    this.globalLimiter = new Bottleneck({
+      maxConcurrent: 2,
+      minTime: 100,
+    });
+
+    this.perServiceAccountLimiter = new Bottleneck.Group({
+      maxConcurrent: 1,
+      minTime: 1500,
+    });
+
+    this.metrics = {
+      enqueueCount: 0,
+      pollAttempts: 0,
+      changeDetectedCount: 0,
+      syncTriggerCount: 0,
+      evictions: 0,
+      rateLimitEvents: 0,
+    };
+
+    this.lastSyncByBlog = new Map();
+    this.driveByServiceAccount = new Map();
+  }
+
+  start() {
+    if (this.started) return;
+    this.started = true;
+    this.timer = setInterval(() => {
+      this.tick().catch((err) => {
+        console.error(prefix(), "tick-error", err?.message || err);
+      });
+    }, POLL_INTERVAL_MS);
+  }
+
+  stop() {
+    if (!this.started) return;
+    clearInterval(this.timer);
+    this.started = false;
+    this.timer = null;
+  }
+
+  keyFor(blogID, fileId) {
+    return `${blogID}:${fileId}`;
+  }
+
+  getPollIntervalMs(ageSeconds) {
+    const tier = SCHEDULE_TIERS.find((entry) => ageSeconds <= entry.maxAgeSeconds);
+    return tier ? tier.everyMs : null;
+  }
+
+  log(event, context = {}, level = "info") {
+    const payload = JSON.stringify({ event, ...context });
+    if (level === "warn") {
+      console.warn(prefix(), payload);
+      return;
+    }
+
+    console.log(prefix(), payload);
+  }
+
+  async getDrive(serviceAccountId) {
+    if (this.driveByServiceAccount.has(serviceAccountId)) {
+      return this.driveByServiceAccount.get(serviceAccountId);
+    }
+
+    const drive = await createDriveClient(serviceAccountId);
+    this.driveByServiceAccount.set(serviceAccountId, drive);
+    return drive;
+  }
+
+  async fetchLatestRevisionState(drive, fileId) {
+    const response = await drive.revisions.list({
+      fileId,
+      pageSize: 1,
+      fields: "revisions(id,modifiedTime)",
+      supportsAllDrives: true,
+    });
+
+    const revision = response?.data?.revisions?.[0];
+    return {
+      lastKnownRevision: revision?.id || null,
+      lastKnownModifiedTime: revision?.modifiedTime || null,
+    };
+  }
+
+  boostBackoffForAll(now) {
+    for (const item of this.items.values()) {
+      item.nextDueAt = now + RATE_LIMIT_BACKOFF_MS + jitterMs(5000);
+      item.state = "backoff";
+    }
+  }
+
+  evictOldest(reason = "cap") {
+    let oldestKey = null;
+    let oldestSeen = Number.POSITIVE_INFINITY;
+
+    for (const [key, item] of this.items.entries()) {
+      if (item.firstSeen < oldestSeen) {
+        oldestSeen = item.firstSeen;
+        oldestKey = key;
+      }
+    }
+
+    if (oldestKey) {
+      const item = this.items.get(oldestKey);
+      this.items.delete(oldestKey);
+      this.metrics.evictions += 1;
+      this.log("evicted", {
+        reason,
+        blogID: item.blogID,
+        serviceAccountId: item.serviceAccountId,
+        fileId: item.fileId,
+      });
+    }
+  }
+
+  enforceCaps(serviceAccountId) {
+    while (this.items.size > MAX_ITEMS_GLOBAL) {
+      this.evictOldest("global-cap");
+    }
+
+    const sameServiceAccount = [...this.items.values()].filter(
+      (item) => item.serviceAccountId === serviceAccountId
+    );
+
+    if (sameServiceAccount.length <= MAX_ITEMS_PER_SERVICE_ACCOUNT) return;
+
+    sameServiceAccount
+      .sort((a, b) => a.firstSeen - b.firstSeen)
+      .slice(0, sameServiceAccount.length - MAX_ITEMS_PER_SERVICE_ACCOUNT)
+      .forEach((item) => {
+        this.items.delete(this.keyFor(item.blogID, item.fileId));
+        this.metrics.evictions += 1;
+        this.log("evicted", {
+          reason: "service-account-cap",
+          blogID: item.blogID,
+          serviceAccountId: item.serviceAccountId,
+          fileId: item.fileId,
+        }, "warn");
+      });
+  }
+
+  async enqueue({ blogID, serviceAccountId, fileId, folderId }) {
+    if (!blogID || !serviceAccountId || !fileId || !folderId) return;
+
+    this.start();
+
+    const key = this.keyFor(blogID, fileId);
+    const now = Date.now();
+
+    if (this.items.has(key)) {
+      const existing = this.items.get(key);
+      existing.lastSeen = now;
+      existing.folderId = folderId;
+      existing.serviceAccountId = serviceAccountId;
+      existing.nextDueAt = now + 2000 + jitterMs(300);
+      existing.state = "active";
+      this.metrics.enqueueCount += 1;
+      this.log("re-enqueued", { blogID, serviceAccountId, fileId, folderId });
+      this.enforceCaps(serviceAccountId);
+      return;
+    }
+
+    const item = {
+      blogID,
+      serviceAccountId,
+      fileId,
+      folderId,
+      firstSeen: now,
+      lastSeen: now,
+      lastPolledAt: null,
+      pollCount: 0,
+      nextDueAt: now + 2000 + jitterMs(300),
+      lastKnownModifiedTime: null,
+      lastKnownRevision: null,
+      state: "new",
+    };
+
+    this.items.set(key, item);
+    this.metrics.enqueueCount += 1;
+    this.log("enqueued", { blogID, serviceAccountId, fileId, folderId });
+
+    try {
+      const drive = await this.getDrive(serviceAccountId);
+      const limiter = this.perServiceAccountLimiter
+        .key(serviceAccountId)
+        .chain(this.globalLimiter);
+
+      const initial = await limiter.schedule(async () => {
+        return this.fetchLatestRevisionState(drive, fileId);
+      });
+
+      item.lastKnownModifiedTime = initial.lastKnownModifiedTime;
+      item.lastKnownRevision = initial.lastKnownRevision;
+      item.state = "active";
+    } catch (err) {
+      if (isRateLimitError(err)) {
+        this.metrics.rateLimitEvents += 1;
+        this.boostBackoffForAll(now);
+        this.log("rate-limit", {
+          phase: "enqueue-initial-state",
+          blogID,
+          serviceAccountId,
+          fileId,
+          message: err?.message,
+        }, "warn");
+      } else {
+        this.log("enqueue-initial-state-failed", {
+          blogID,
+          serviceAccountId,
+          fileId,
+          message: err?.message,
+        });
+      }
+    }
+
+    this.enforceCaps(serviceAccountId);
+  }
+
+  async checkItem(item) {
+    const now = Date.now();
+    const ageSeconds = Math.floor((now - item.lastSeen) / 1000);
+
+    if (ageSeconds > EVICT_AFTER_SECONDS) {
+      this.items.delete(this.keyFor(item.blogID, item.fileId));
+      this.metrics.evictions += 1;
+      this.log("evicted", {
+        reason: "age",
+        blogID: item.blogID,
+        serviceAccountId: item.serviceAccountId,
+        fileId: item.fileId,
+      });
+      return;
+    }
+
+    const intervalMs = this.getPollIntervalMs(ageSeconds);
+    if (!intervalMs) {
+      this.items.delete(this.keyFor(item.blogID, item.fileId));
+      this.metrics.evictions += 1;
+      this.log("evicted", {
+        reason: "tier-ended",
+        blogID: item.blogID,
+        serviceAccountId: item.serviceAccountId,
+        fileId: item.fileId,
+      });
+      return;
+    }
+
+    item.state = "polling";
+    item.lastPolledAt = now;
+    item.pollCount += 1;
+    item.nextDueAt = now + intervalMs + jitterMs(intervalMs);
+    this.metrics.pollAttempts += 1;
+
+    const drive = await this.getDrive(item.serviceAccountId);
+    const limiter = this.perServiceAccountLimiter
+      .key(item.serviceAccountId)
+      .chain(this.globalLimiter);
+
+    const latest = await limiter.schedule(async () => {
+      return this.fetchLatestRevisionState(drive, item.fileId);
+    });
+
+    const changed =
+      Boolean(latest.lastKnownRevision) &&
+      (latest.lastKnownRevision !== item.lastKnownRevision ||
+        latest.lastKnownModifiedTime !== item.lastKnownModifiedTime);
+
+    item.lastKnownModifiedTime = latest.lastKnownModifiedTime;
+    item.lastKnownRevision = latest.lastKnownRevision;
+    item.state = "active";
+
+    if (!changed) return;
+
+    this.metrics.changeDetectedCount += 1;
+    this.log("change-detected", {
+      blogID: item.blogID,
+      serviceAccountId: item.serviceAccountId,
+      fileId: item.fileId,
+      pollCount: item.pollCount,
+    });
+
+    await this.triggerDownloadAndSync(item);
+  }
+
+  async triggerDownloadAndSync(item) {
+    const now = Date.now();
+    const lastSync = this.lastSyncByBlog.get(item.blogID);
+
+    if (lastSync && now - lastSync < BLOG_SYNC_COOLDOWN_MS) {
+      this.log("sync-cooldown", {
+        blogID: item.blogID,
+        serviceAccountId: item.serviceAccountId,
+        fileId: item.fileId,
+      });
+      return;
+    }
+
+    this.lastSyncByBlog.set(item.blogID, now);
+
+    const { done, folder } = await establishSyncLock(item.blogID);
+    try {
+      const drive = await this.getDrive(item.serviceAccountId);
+      const folderDb = database.folder(item.folderId);
+      const path = await folderDb.get(item.fileId);
+
+      if (!path) {
+        this.log("missing-path", {
+          blogID: item.blogID,
+          serviceAccountId: item.serviceAccountId,
+          fileId: item.fileId,
+          folderId: item.folderId,
+        });
+      } else {
+        const file = await drive.files.get({
+          fileId: item.fileId,
+          fields: "id,mimeType,md5Checksum,modifiedTime",
+          supportsAllDrives: true,
+        });
+
+        const download = require("../util/download");
+        const result = await download(
+          item.blogID,
+          drive,
+          path,
+          {
+            id: file.data.id,
+            mimeType: file.data.mimeType,
+            md5Checksum: file.data.md5Checksum,
+            modifiedTime: file.data.modifiedTime,
+          },
+          {
+            serviceAccountId: item.serviceAccountId,
+            folderId: item.folderId,
+            skipHotEnqueue: true,
+          }
+        );
+
+        if (result?.updated && folder?.update) {
+          await folder.update(path);
+        }
+      }
+    } finally {
+      await done();
+    }
+
+    this.metrics.syncTriggerCount += 1;
+    this.log("sync-trigger", {
+      blogID: item.blogID,
+      serviceAccountId: item.serviceAccountId,
+      fileId: item.fileId,
+    });
+
+    await sync(item.blogID);
+  }
+
+  async tick() {
+    const now = Date.now();
+    const dueItems = [...this.items.values()].filter((item) => item.nextDueAt <= now);
+
+    for (const item of dueItems) {
+      try {
+        await this.checkItem(item);
+      } catch (err) {
+        if (isRateLimitError(err)) {
+          this.metrics.rateLimitEvents += 1;
+          this.boostBackoffForAll(now);
+          this.log("rate-limit", {
+            blogID: item.blogID,
+            serviceAccountId: item.serviceAccountId,
+            fileId: item.fileId,
+            message: err?.message,
+          }, "warn");
+          continue;
+        }
+
+        this.log("poll-error", {
+          blogID: item.blogID,
+          serviceAccountId: item.serviceAccountId,
+          fileId: item.fileId,
+          message: err?.message,
+        });
+      }
+    }
+  }
+}
+
+module.exports = new HotDocPoller();
