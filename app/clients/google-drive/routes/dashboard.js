@@ -145,7 +145,7 @@ dashboard
 
     // This can happen in the background
     try {
-      await finishSetup(blog, drive, email, sync);
+      await finishSetup(blog, drive, email, sync, serviceAccountId);
     } catch (e) {
       console.log(clfdate(), "Google Drive Client: finishSetup", e);
     }
