@@ -154,23 +154,32 @@ async function getExistingFolderIDs(email) {
 }
 
 async function getAvailableFolders(drive, email, existingIDs) {
-  const res = await drive.files.list({
-    pageSize: 100,
-    supportsAllDrives: true,
-    corpora: "allDrives",
-    includeItemsFromAllDrives: true,
-    orderBy: 'sharedWithMeTime desc',
-    fields: "files(id, name, parents, kind, mimeType, owners, sharingUser(emailAddress))",
-    q: `trashed = false and 
-        sharedWithMe = true and 
-        mimeType = 'application/vnd.google-apps.folder'`,
-  });
+  const allFiles = [];
+  let pageToken = null;
+
+  do {
+    const res = await drive.files.list({
+      pageSize: 100,
+      pageToken: pageToken || undefined,
+      supportsAllDrives: true,
+      corpora: "allDrives",
+      includeItemsFromAllDrives: true,
+      orderBy: 'sharedWithMeTime desc',
+      fields: "nextPageToken, files(id, name, parents, kind, mimeType, owners, sharingUser(emailAddress))",
+      q: `trashed = false and 
+          sharedWithMe = true and 
+          mimeType = 'application/vnd.google-apps.folder'`,
+    });
+
+    allFiles.push(...(res.data.files || []));
+    pageToken = res.data.nextPageToken || null;
+  } while (pageToken);
 
   // filter out folders whose sharingUser is not the same as the email, or whose owners do not include the email
-  const filteredFolders = res.data.files.filter(
+  const filteredFolders = allFiles.filter(
     (file) => file.sharingUser?.emailAddress === email || file.owners && file.owners.some(owner => owner.emailAddress === email)
   );
-  
+
   // filter out folders already in use
   // and folders with a defined (non-undefined) parents array
   // by removing folders with parents we avoid syncing to folders
