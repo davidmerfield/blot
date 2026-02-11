@@ -820,6 +820,11 @@ a.bordered-button {
   padding: 3px 6px;
 }
 
+a:has(.ui-action) {
+  color: var(--text-color);
+  text-decoration: none;
+}
+
 .ui-action span, 
 .ui-action svg {
   vertical-align: middle;

@@ -3,7 +3,7 @@ Autumn newsletter
 *You received this email because you subscribed to [Blot’s newsletter](https://blot.im/news). You can [unsubscribe](https://blot.im/news/cancel) if you like. Please don’t hesitate to reply directly to this email if you have any thoughts or questions.*
 
 **New features**
-- Added *Fathom* as [one of the analytics providers](https://blot.im/settings/services) you can install on your site.
+- Added *Fathom* as [one of the analytics providers](https://blot.im/sites/default/settings/services) you can install on your site.
 - You can now set metadata for your custom template through its source files in your site’s folder. This means that you no longer need to open the online template editor in order to set the URL of a template view.
 - Added a template function to encode your posts as spec-compliant XHTML. This addition fixes a number of vintage RSS feed validation bugs.
 

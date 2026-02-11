@@ -7,7 +7,7 @@
 <p><ol>
   <li>Check if there is a template whose route matches the request’s path. <a href="#rendering">Render the template</a> if it matches.</li>
   <li>Check if there is a file which matches the request’s path in your site’s folder. <a href="/how#files-in-your-folder-are-public">Send the file</a> as a response if it matches.</li>
-  <li>Check your site&apos;s list of <a href="/settings/urls/redirects">redirects</a>.</li>
+  <li>Check your site&apos;s list of <a href="/sites/default/settings/redirects">redirects</a>.</li>
   <li>Render your site’s error page if it exists, if not render Blot's error page.</li>
 </ol></p>
 
@@ -18,12 +18,12 @@
 <p><ol>
   <li>Check if there is a template whose route matches the request’s path. <a href="#rendering">Render the template</a> if it matches.</li>
   <li>Check if there is a file which matches the request’s path in your site’s folder. <a href="/how#files-in-your-folder-are-public">Send the file</a> as a response if it matches.</li>
-  <li>Check your site&apos;s list of <a href="/settings/urls/redirects">redirects</a>.</li>
+  <li>Check your site&apos;s list of <a href="/sites/default/settings/redirects">redirects</a>.</li>
   <li>Render your site’s error page.</li>
 </ol></p>
 
 <h2>What if a post and a file share the same URL?</h2>
-<p>Blot shows the post instead of the file. This is because Blot <a href="#routing">routes requests</a> from your readers to your site’s template first. If you prefer, you can <a href="/settings/template">disable your site’s template</a> on the dashboard and just use Blot as a static file server.</p>
+<p>Blot shows the post instead of the file. This is because Blot <a href="#routing">routes requests</a> from your readers to your site’s template first. If you prefer, you can <a href="/sites/default/template">disable your site’s template</a> on the dashboard and just use Blot as a static file server.</p>
 
 <h2 id="rendering">Rendering</h2>
 <p>Blot's templates are written in <a href="https://mustache.github.io/">Mustache</a>.

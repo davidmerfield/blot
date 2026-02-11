@@ -3,7 +3,7 @@ Spring newsletter
 *You received this email because you subscribed to [Blot’s newsletter](https://blot.im/news). You can [unsubscribe](https://blot.im/news/cancel) if you like. Please don’t hesitate to reply directly to this email if you have any thoughts or questions.*
 
 **New features**
-- Added an option to embed comments from *Commento*. You can set this up on your site’s [services page](https://blot.im/settings/services). 
+- Added an option to embed comments from *Commento*. You can set this up on your site’s [services page](https://blot.im/sites/default/settings/services). 
 
 **Changes**
 - Increased the price for future customers to $4 per month. This has not affected existing customers in any way: you will continue to pay the same fee as usual.
@@ -11,7 +11,7 @@ Spring newsletter
 - Improved the [custom metadata](https://blot.im/publishing/metadata) parser. Now the first sentence of a post which happens to contain a colon is no longer parsed incorrectly as if it were custom metadata. Now custom metadata *keys* must be alphanumeric and contain no more than one space. Dashes and underscores are also allowed.
 - Made a number of changes to the algorithm which extracts a summary for each post. Image caption text is no longer included in this summary. Whitespace is also better normalized to prevent the title entering the summary.
 - Adjusted the format of the templates’ default CSS and JavaScript URLs to make them easier to cache.
-- Your [custom redirects](https://blot.im/settings/services/redirects) now return an HTTP status of *301*, which indicates the redirect is permanent, instead of *302*, which indicates a temporary redirect.
+- Your [custom redirects](https://blot.im/sites/default/settings/redirects) now return an HTTP status of *301*, which indicates the redirect is permanent, instead of *302*, which indicates a temporary redirect.
 - Increased the length of sessions on your site’s dashboard to 90 days. Previously, you had to log in again after each browser session.
 - Updated Blot’s dependencies to their latest stable version and redesigned the dashboard and documentation, as is tradition.
 

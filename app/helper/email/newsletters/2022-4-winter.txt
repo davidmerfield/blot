@@ -4,11 +4,11 @@ Winter newsletter
 
 **New features**
 - Blot now extracts thumbnails from videos in your posts. This makes a big difference if you post videos and use a template like [Reference](https://blot.im/templates/reference), [Photo](https://blot.im/templates/photo) or [Portfolio](https://blot.im/templates/portfolio), with thumbnails on their index pages.
-- Link posts, [generated from bookmark files](https://blot.im/how/posts/bookmarks), now include a screenshot of the linked site. This feature is turned on for new sites. If you have an existing site, you’ll need to enable ‘Add a screenshot to posts from bookmarks’ on [the services page](https://blot.im/settings/services) of your dashboard.
-- We added a new ‘random entry’ feature. If you add a link to */random* to [your site’s menu](https://blot.im/settings/links), you’ll be redirected to a random post each time you click.
+- Link posts, [generated from bookmark files](https://blot.im/how/posts/bookmarks), now include a screenshot of the linked site. This feature is turned on for new sites. If you have an existing site, you’ll need to enable ‘Add a screenshot to posts from bookmarks’ on [the services page](https://blot.im/sites/default/settings/services) of your dashboard.
+- We added a new ‘random entry’ feature. If you add a link to */random* to [your site’s menu](https://blot.im/sites/default/settings/links), you’ll be redirected to a random post each time you click.
 - You can now download the source folders for the test sites used to [preview the templates](https://blot.im/templates).
 - We added features required by educational institutions to create and manage a large number of student accounts.
-- The [folder settings page](https://blot.im/settings/client) of your dashboard now includes a log of the changes you make to your folder.
+- The [folder settings page](https://blot.im/sites/default/client) of your dashboard now includes a log of the changes you make to your folder.
 
 **Changes**
 - We adjusted the format of the URLs on your site’s dashboard so they include the username of the site you are editing.

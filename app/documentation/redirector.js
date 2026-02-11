@@ -4,7 +4,7 @@ const redirector = new Express.Router();
 const internal = {
   "/dashboard": "/sites",
   "/account": "/sites/account",
-  "/settings": "/sites/settings",
+  "/settings": "/sites/default",
   "/log-in": "/sites/log-in",
   "/sign-up": "/sites/sign-up",
   "/notes": "/about/notes",
