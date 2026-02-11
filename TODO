@@ -2,15 +2,11 @@ For chuck: I'll look into whether it's possible to do this without the tag folde
 
 Google Drive:
 - Add sync check
-- Support shared drive folders with google drive client and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBkLKSVzvjZLRSCpRJwcKBPlf)
-- Handle large Google Document images (> 10mb, see Back to school.gdoc) by using the exportLinks -> ZIP property in app/clients/google-drive/util/download.js. make this the fallback method of exporting google docs then tell [Chuck](https://mail.google.com/mail/u/0/#sent/FMfcgzQfBQFmTvLKzPkJrgsBTWZmQJWS) he can restore the original images
-  - I'd like to modify the google drive client to change how it handles google docs: right now, it exports the google doc as HTML, i believe, and stores the HTML on disk. I'd like to switch to using the exportLinks to retrieve the document as a ZIP. This will allow us to fetch the full resolution images. how could we do this? can we investigate all the export methods and see which offer the original image. will it be too slow to fetch the zip each time? can we patch in changes? this will probably mean storing something different on disk (instead of the HTML, a ZIP file?) unfortunately it'll mean keeping backwards compatibility, and the google docs reader will initially need to accomodate the old method of storing HTML only. 
-  - will also fix the image quality issues with Google Docs (tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBkLKcwvDRFcrCLWQlwhJDSvc))
-- Can we use HTML in Google Docs? Tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBkHrXrgvdvCVldLCXDBwLFTp)
-- Add support for code blocks in [google docs](https://docs.google.com/document/d/1aDV4QVQm5w-j5DbMHDh50d3KknKuaPh9Qx1vFHbDhEo/edit?tab=t.0#heading=h.m7hsgfqddgv6)
-- right now, I believe the google drive client holds a sync lock while waiting for the creation of a folder. i think we should avoid doing this, instead waiting to establish a sync lock after the folder exists
 - Improve html output for google docs and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQFmTvLKzPkJrgsBTWZmQJWS)
   Issue: <p><img><br><img></p> should be <p><img></p><p><img></p>
+- Add support for code blocks in [google docs](https://docs.google.com/document/d/1aDV4QVQm5w-j5DbMHDh50d3KknKuaPh9Qx1vFHbDhEo/edit?tab=t.0#heading=h.m7hsgfqddgv6)
+- Can we use HTML in Google Docs? Tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBkHrXrgvdvCVldLCXDBwLFTp)
+- right now, I believe the google drive client holds a sync lock while waiting for the creation of a folder. i think we should avoid doing this, instead waiting to establish a sync lock after the folder exists
 
 Think about using avif/webp for thumbnails, adding <picture> tags with jpg fallback.
 
