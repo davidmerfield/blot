@@ -155,21 +155,31 @@ async function getExistingFolderIDs(email) {
 
 async function getAvailableFolders(drive, email, existingIDs) {
   const res = await drive.files.list({
+    pageSize: 100,
     supportsAllDrives: true,
+    corpora: "allDrives",
     includeItemsFromAllDrives: true,
-    fields: "files(id, name, parents, kind, mimeType, owners)",
-    q: `'${email}' in owners and 
-        trashed = false and 
+    orderBy: 'sharedWithMeTime desc',
+    fields: "files(id, name, parents, kind, mimeType, owners, sharingUser(emailAddress))",
+    q: `trashed = false and 
+        sharedWithMe = true and 
         mimeType = 'application/vnd.google-apps.folder'`,
   });
 
+  // filter out folders whose sharingUser is not the same as the email, or whose owners do not include the email
+  const filteredFolders = res.data.files.filter(
+    (file) => file.sharingUser?.emailAddress === email || file.owners && file.owners.some(owner => owner.emailAddress === email)
+  );
+  
   // filter out folders already in use
   // and folders with a defined (non-undefined) parents array
   // by removing folders with parents we avoid syncing to folders
   // that are inside other folders the service account may have access to
-  return res.data.files.filter(
+  const filteredFoldersNotInUse = filteredFolders.filter(
     (file) => !existingIDs.includes(file.id) && !file.parents
   );
+
+  return filteredFoldersNotInUse;
 }
 
 async function processFolder(folder, drive, blogID, status, isLastFolder) {
@@ -226,8 +236,8 @@ async function checkEditorPermissions(drive, folderId) {
     const permissions = permissionsRes.data.permissions || [];
     return permissions.some(
       (perm) =>
-        (perm.type === "user" || perm.type === "anyone") &&
-        perm.role === "writer"
+        (perm.type === "user" || perm.type === "anyone" || perm.type === "group") &&
+        (perm.role === "writer" || perm.role === "organizer")
     );
   } catch (e) {
     console.error(
