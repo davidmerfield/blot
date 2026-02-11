@@ -13,6 +13,59 @@ const linebreaks = require("./linebreaks");
 const processImages = require("./images");
 const cleanupSpans = require("./cleanup-spans");
 
+function textWithLineBreaks($, node) {
+  const clonedNode = $(node).clone();
+  clonedNode.find("br").replaceWith("\n");
+  return clonedNode.text();
+}
+
+function extractTableCellCode($, cell) {
+  const paragraphs = $(cell).find("p");
+
+  if (paragraphs.length > 0) {
+    return paragraphs
+      .map(function () {
+        return textWithLineBreaks($, this);
+      })
+      .get()
+      .join("\n");
+  }
+
+  return textWithLineBreaks($, cell);
+}
+
+function convertCodeTables($) {
+  $("table").each(function () {
+    const table = $(this);
+    const rows = table.find("tr");
+    const cells = table.find("td");
+
+    // Single-cell table (1x1): convert the lone cell into code block
+    if (rows.length === 1 && cells.length === 1) {
+      const code = extractTableCellCode($, cells[0]);
+      const pre = $("<pre><code></code></pre>");
+      pre.find("code").text(code);
+      table.replaceWith(pre);
+      return;
+    }
+
+    // Two-cell vertical table (2x1): first cell is language, second is code
+    if (rows.length === 2 && cells.length === 2) {
+      const language = extractTableCellCode($, cells[0]).trim();
+      const code = extractTableCellCode($, cells[1]);
+      const pre = $("<pre><code></code></pre>");
+      const codeNode = pre.find("code");
+
+      if (language) {
+        codeNode.attr("class", language);
+      }
+
+      codeNode.text(code);
+      table.replaceWith(pre);
+    }
+  });
+}
+
 function is(path) {
   return [".gdoc"].indexOf(extname(path).toLowerCase()) > -1;
 }
@@ -165,6 +218,9 @@ async function read(blog, path, callback) {
 
     // handle footnotes
     footnotes($);
+
+    // transform code tables before final serialization
+    convertCodeTables($);
 
     let html = $("body").html();
 
