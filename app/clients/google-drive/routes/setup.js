@@ -178,10 +178,14 @@ async function getAvailableFolders(drive, email, existingIDs) {
     pageToken = res.data.nextPageToken || null;
   } while (pageToken);
 
+  console.log(clfdate(), 'Google Drive Client', 'getAvailableFolders:', allFiles.length);
+
   // filter out folders whose sharingUser is not the same as the email, or whose owners do not include the email
   const filteredFolders = allFiles.filter(
     (file) => file.sharingUser?.emailAddress === email || file.owners && file.owners.some(owner => owner.emailAddress === email)
   );
+
+  console.log(clfdate(), 'Google Drive Client', 'filteredFolders:', filteredFolders.length);
 
   // filter out folders already in use
   // and folders with a defined (non-undefined) parents array
@@ -191,6 +195,8 @@ async function getAvailableFolders(drive, email, existingIDs) {
     (file) => !existingIDs.includes(file.id) && !file.parents
   );
 
+  console.log(clfdate(), 'Google Drive Client', 'filteredFoldersNotInUse:', filteredFoldersNotInUse.length);
+  
   return filteredFoldersNotInUse;
 }
 
