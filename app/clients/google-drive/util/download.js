@@ -266,11 +266,27 @@ module.exports = async (
       debug("getting file from Drive");
       let data;
 
-      const res = await drive.files.get(
-        { fileId: id, alt: "media", supportsAllDrives: true },
-        { responseType: "stream" }
-      );
-      data = res.data;
+      // e.g. google docs, sheets, slides
+      if (mimeType === "application/vnd.google-apps.document") {
+        const res = await drive.files.export(
+          {
+            fileId: id,
+            mimeType: "text/html",
+            supportsAllDrives: true,
+          },
+          {
+            responseType: "stream",
+          }
+        );
+
+        data = res.data;
+      } else {
+        const res = await drive.files.get(
+          { fileId: id, alt: "media", supportsAllDrives: true },
+          { responseType: "stream" }
+        );
+        data = res.data;
+      }
 
       debug("got file from Drive");
 
