@@ -1,11 +1,15 @@
 const fs = require("fs-extra");
 const localPath = require("helper/localPath");
 const colors = require("colors/safe");
-const join = require("path").join;
+const { join, dirname } = require("path");
 const debug = require("debug")("blot:clients:google-drive:download");
 const tempDir = require("helper/tempDir")();
 const guid = require("helper/guid");
 const computeMd5Checksum = require("../util/md5Checksum");
+const config = require("config");
+const hash = require("helper/hash");
+const cheerio = require("cheerio");
+const yauzl = require("yauzl");
 
 const isExportSizeLimitError = (err) => {
   
@@ -39,6 +43,73 @@ const ensurePlaceholderWithMtime = async (pathOnBlot, modifiedTime) => {
   } catch (e) {
     debug("Error setting mtime", e);
   }
+};
+
+const streamToFile = (readStream, filePath) => {
+  return new Promise((resolve, reject) => {
+    const writer = fs.createWriteStream(filePath);
+    readStream.on("error", (err) => {
+      writer.destroy();
+      reject(err);
+    });
+    writer.on("error", reject);
+    writer.on("finish", () => resolve());
+    readStream.pipe(writer);
+  });
+};
+
+const extractZip = (zipPath, extractDir) => {
+  return new Promise((resolve, reject) => {
+    yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
+      if (err) return reject(err);
+      zipfile.readEntry();
+      zipfile.on("entry", (entry) => {
+        if (/\/$/.test(entry.fileName)) {
+          fs.ensureDir(join(extractDir, entry.fileName)).then(() => {
+            zipfile.readEntry();
+          }, reject);
+        } else {
+          const destPath = join(extractDir, entry.fileName);
+          zipfile.openReadStream(entry, (openErr, readStream) => {
+            if (openErr) return reject(openErr);
+            fs.ensureDir(dirname(destPath)).then(() => {
+              const writer = fs.createWriteStream(destPath);
+              readStream.pipe(writer);
+              writer.on("error", reject);
+              writer.on("finish", () => zipfile.readEntry());
+              readStream.on("error", (e) => {
+                writer.destroy();
+                reject(e);
+              });
+            }, reject);
+          });
+        }
+      });
+      zipfile.on("end", () => resolve());
+      zipfile.on("error", reject);
+    });
+  });
+};
+
+const resolveHtmlAndImagesDir = async (extractDir) => {
+  const entries = await fs.readdir(extractDir, { withFileTypes: true });
+  let workDir = extractDir;
+  if (entries.length === 1 && entries[0].isDirectory()) {
+    workDir = join(extractDir, entries[0].name);
+  }
+  const workEntries = await fs.readdir(workDir, { withFileTypes: true });
+  const htmlEntry = workEntries.find(
+    (e) => !e.isDirectory() && e.name.toLowerCase().endsWith(".html")
+  );
+  if (!htmlEntry) throw new Error("No HTML file found in zip");
+  const htmlPath = join(workDir, htmlEntry.name);
+  const imagesDirPath = join(workDir, "images");
+  let imagesDir = null;
+  try {
+    const stat = await fs.stat(imagesDirPath);
+    if (stat.isDirectory()) imagesDir = imagesDirPath;
+  } catch (_) {}
+  return { htmlPath, imagesDir };
 };
 
 module.exports = async (
@@ -119,6 +190,76 @@ module.exports = async (
 
       debug("DOWNLOAD file");
       debug("   to:", colors.green(pathOnBlot));
+
+      if (mimeType === "application/vnd.google-apps.document") {
+        const zipPath = join(tempDir, guid());
+        const extractDir = join(tempDir, guid());
+        try {
+          debug("getting Google Doc as zip from Drive");
+          const res = await drive.files.export(
+            {
+              fileId: id,
+              mimeType: "application/zip",
+              supportsAllDrives: true,
+            },
+            { responseType: "stream" }
+          );
+          await streamToFile(res.data, zipPath);
+          await extractZip(zipPath, extractDir);
+          const { htmlPath, imagesDir } =
+            await resolveHtmlAndImagesDir(extractDir);
+          const docHash = hash(path);
+          const blogDir = join(config.blog_static_files_dir, blogID);
+          const assetDir = join(blogDir, "_assets", docHash);
+          await fs.ensureDir(assetDir);
+          if (imagesDir) {
+            const imageFiles = await fs.readdir(imagesDir);
+            for (const name of imageFiles) {
+              const srcPath = join(imagesDir, name);
+              const st = await fs.stat(srcPath);
+              if (st.isFile())
+                await fs.copy(srcPath, join(assetDir, name), {
+                  overwrite: true,
+                });
+            }
+          }
+          const html = await fs.readFile(htmlPath, "utf-8");
+          const $ = cheerio.load(html, { decodeEntities: false });
+          $("img").each(function () {
+            const src = $(this).attr("src");
+            if (!src) return;
+            const normalized = src.replace(/^\.\//, "").trim();
+            if (normalized.startsWith("images/")) {
+              const filename = normalized.slice(7);
+              $(this).attr("src", "/_assets/" + docHash + "/" + filename);
+            }
+          });
+          await fs.writeFile(pathOnBlot, $.html().trim(), "utf-8");
+          try {
+            const mtime = new Date(modifiedTime);
+            await fs.utimes(pathOnBlot, mtime, mtime);
+          } catch (e) {
+            debug("Error setting mtime", e);
+          }
+          await fs.remove(zipPath).catch(() => {});
+          await fs.remove(extractDir).catch(() => {});
+          debug("DOWNLOAD file SUCCEEDED");
+          return resolve({ updated: true });
+        } catch (err) {
+          await fs.remove(zipPath).catch(() => {});
+          await fs.remove(extractDir).catch(() => {});
+          const handled = await handleExportSizeLimit(err);
+          if (handled) {
+            return settle(() =>
+              resolve({
+                updated: false,
+                skippedReason: "exportSizeLimitExceeded",
+              })
+            );
+          }
+          return settle(() => reject(err));
+        }
+      }
 
       var dest = fs.createWriteStream(tempPath);
 
