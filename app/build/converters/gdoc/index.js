@@ -12,6 +12,7 @@ const footnotes = require("./footnotes");
 const linebreaks = require("./linebreaks");
 const processImages = require("./images");
 const cleanupSpans = require("./cleanup-spans");
+const convertMath = require("./math");
 
 function textWithLineBreaks($, node) {
   const clonedNode = $(node).clone();
@@ -207,9 +208,7 @@ async function read(blog, path, callback) {
     cleanupSpans($);
 
     // handle line breaks
-    if (blog.flags.google_docs_preserve_linebreaks !== false) {
-      linebreaks($);
-    }
+    linebreaks($);
 
     await processImages(blog.id, path, $);
 
@@ -221,6 +220,9 @@ async function read(blog, path, callback) {
 
     // transform code tables before final serialization
     convertCodeTables($);
+
+    // convert TeX equations wrapped in $$...$$ to KaTeX output
+    convertMath($);
 
     let html = $("body").html();
 

@@ -76,33 +76,6 @@ describe("gdoc converter", function () {
     });
   });
 
-  it("respects the flag to not preserve line breaks", async function () {
-    const name = "linebreak.gdoc";
-
-    const test = this;
-    const path = `/${name}`;
-    const expected = await fs.readFile(
-      `${__dirname + path}.google_docs_preserve_linebreaks.html`,
-      "utf8"
-    );
-
-    // set the flag to 'false'
-    const blogWithFlag = {
-      ...test.blog,
-      flags: { google_docs_preserve_linebreaks: false },
-    };
-
-    fs.copySync(__dirname + path, test.blogDirectory + path);
-
-    await new Promise((resolve, reject) => {
-      gdoc.read(blogWithFlag, path, function (err, result) {
-        if (err) return reject(err);
-        expect(result).toEqual(expected);
-        resolve();
-      });
-    });
-  });
-
   it("reuses cached transformer asset when the remote URL expires", async function () {
     const test = this;
     const path = `/image-alt-title.gdoc`;

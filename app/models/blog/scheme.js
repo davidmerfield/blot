@@ -7,7 +7,7 @@ var STATUS = { syncID: "string", message: "string", datestamp: "number" };
 
 var FLAGS = {
   google_drive_beta: "boolean",
-  google_docs_preserve_linebreaks: "boolean",
+  google_docs_preserve_linebreaks: "boolean", // deprecated IGNORE and REMOVE in future release
   deleted_entries_sanitized: "boolean",
 };
 
