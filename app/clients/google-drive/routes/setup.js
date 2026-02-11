@@ -196,7 +196,7 @@ async function getAvailableFolders(drive, email, existingIDs) {
   );
 
   console.log(clfdate(), 'Google Drive Client', 'filteredFoldersNotInUse:', filteredFoldersNotInUse.length);
-  
+
   return filteredFoldersNotInUse;
 }
 
@@ -279,7 +279,7 @@ async function checkEditorPermissions(drive, folderId, serviceAccountId) {
       (perm) =>
         perm.type === "user" &&
         perm.emailAddress === serviceAccountEmail &&
-        (perm.role === "writer" || perm.role === "fileOrganizer")
+        (perm.role === "writer" || perm.role === "fileOrganizer" || perm.role === "organizer")
     );
   } catch (e) {
     console.error(
