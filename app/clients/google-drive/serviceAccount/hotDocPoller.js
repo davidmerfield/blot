@@ -1,6 +1,7 @@
 const Bottleneck = require("bottleneck");
 const clfdate = require("helper/clfdate");
 const createDriveClient = require("./createDriveClient");
+const createDocsClient = require("./createDocsClient");
 const establishSyncLock = require("sync/establishSyncLock");
 const database = require("../database");
 const sync = require("../sync");
@@ -59,6 +60,7 @@ class HotDocPoller {
 
     this.lastSyncByBlog = new Map();
     this.driveByServiceAccount = new Map();
+    this.docsByServiceAccount = new Map();
   }
 
   start() {
@@ -107,7 +109,17 @@ class HotDocPoller {
     return drive;
   }
 
-  async fetchLatestRevisionState(drive, fileId) {
+  async getDocs(serviceAccountId) {
+    if (this.docsByServiceAccount.has(serviceAccountId)) {
+      return this.docsByServiceAccount.get(serviceAccountId);
+    }
+
+    const docs = await createDocsClient(serviceAccountId);
+    this.docsByServiceAccount.set(serviceAccountId, docs);
+    return docs;
+  }
+
+  async fetchLatestRevisionState(drive, docs, fileId) {
     const response = await drive.revisions.list({
       fileId,
       pageSize: 1,
@@ -115,9 +127,58 @@ class HotDocPoller {
       supportsAllDrives: true,
     });
 
+    this.log("fetchLatestRevisionState", {
+      fileId,
+      response: response?.data,
+    });
+
     const revision = response?.data?.revisions?.[0];
+
+    // for debugging purposes, call drive.files.get to get the file metadata
+    // and the version
+    try {
+      const file = await drive.files.get({
+        fileId,
+        fields: "id,mimeType,md5Checksum,modifiedTime,version",
+        supportsAllDrives: true,
+      });
+
+      this.log("file", {
+        fileId,
+        file: file?.data,
+      });
+    } catch (err) {
+      this.log("file-get-error", {
+        fileId,
+        message: err?.message,
+      });
+    }
+
+    let revisionId = null;
+    // for debugging: documents.get (Docs API) – only applies to Google Docs
+    if (docs) {
+      try {
+        const doc = await docs.documents.get({ documentId: fileId });
+        this.log("documents.get", {
+          fileId,
+          documentId: doc?.data?.documentId,
+          title: doc?.data?.title,
+          revisionId: doc?.data?.revisionId,
+        });
+
+        if (doc?.data?.revisionId) {
+          revisionId = doc?.data?.revisionId;
+        }
+      } catch (err) {
+        this.log("documents.get-error", {
+          fileId,
+          message: err?.message,
+        });
+      }
+    }
+
     return {
-      lastKnownRevision: revision?.id || null,
+      lastKnownRevision: revisionId || revision?.id || null,
       lastKnownModifiedTime: revision?.modifiedTime || null,
     };
   }
@@ -225,8 +286,9 @@ class HotDocPoller {
         .key(serviceAccountId)
         .chain(this.globalLimiter);
 
+      const docs = await this.getDocs(serviceAccountId);
       const initial = await limiter.schedule(async () => {
-        return this.fetchLatestRevisionState(drive, fileId);
+        return this.fetchLatestRevisionState(drive, docs, fileId);
       });
 
       item.lastKnownModifiedTime = initial.lastKnownModifiedTime;
@@ -292,12 +354,13 @@ class HotDocPoller {
     this.metrics.pollAttempts += 1;
 
     const drive = await this.getDrive(item.serviceAccountId);
+    const docs = await this.getDocs(item.serviceAccountId);
     const limiter = this.perServiceAccountLimiter
       .key(item.serviceAccountId)
       .chain(this.globalLimiter);
 
     const latest = await limiter.schedule(async () => {
-      return this.fetchLatestRevisionState(drive, item.fileId);
+      return this.fetchLatestRevisionState(drive, docs, item.fileId);
     });
 
     const changed =
