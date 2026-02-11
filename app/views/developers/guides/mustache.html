@@ -2,44 +2,40 @@
 
 <h1>Mustache</h1>
 
-<style type="text/css">
-small pre {padding:0.75rem 1rem;border:1px solid rgba(0,0,0,0.05);}
 
-</style>
 
 <p>Templates are written in <A href="https://mustache.github.io/mustache.5.html">Mustache</a>. Templates can be used for HTML, CSS, JavaScript, RSS feeds - anything. They works by expanding tags using values provided in a object. For example, the template:</p>
 
 
-<small><pre><code>Welcome to {{name}}'s blog
+<pre class="html"><code>Welcome to {{name}}'s site
 
 Recent posts:
 {{#posts}}
 - {{title}}
 {{/posts}}
-</code></pre></small>
+</code></pre>
 
-<p>When rendered with the following object:</p>
+<p>When rendered with the following JSON:</p>
 
-<small><pre><code>{
+<pre class="json"><code>{
   "name": "Chris",
   "posts": [
     { title: "Apple" },
     { title: "Orange" }
   ]
 }
-</code></pre></small>
+</code></pre>
 
+<p>Will produce the following output:</p>
 
-<p>Will produce the following result:</p>
-
-<small><pre><code>Welcome to Chris's blog
+<pre class="html"><code>Welcome to Chris's site
 
 Recent posts:
 - Apple
 - Orange
-</code></pre></small>
+</code></pre>
 
-<p>You can retrieve the object used to render your site's template if you append the query string <em>?debug=true</em> to any page on your site.</p>
+<p>You can retrieve the JSON used to render your site's template if you append the query string <code>?debug=true</code> to any page on your site.</p>
 
 <p></p>
 
@@ -72,27 +68,27 @@ useful when changing delimiters (see "Set Delimiter" below).</p>
 
 <p>For example, the template:</p>
 
-<small><pre><code>* {{name}}
+<pre class="html"><code>* {{name}}
 * {{age}}
 * {{company}}
 * {{{company}}}
-</code></pre></small>
+</code></pre>
 
 <p>When given the following object:</p>
 
-<small><pre><code>{
+<pre class="json"><code>{
   "name": "Chris",
   "company": "&lt;b&gt;GitHub&lt;/b&gt;"
 }
-</code></pre></small>
+</code></pre>
 
 <p>Will produce:</p>
 
-<small><pre><code>* Chris
+<pre class="html"><code>* Chris
 *
 * &amp;lt;b&amp;gt;GitHub&amp;lt;/b&amp;gt;
 * &lt;b&gt;GitHub&lt;/b&gt;
-</code></pre></small>
+</code></pre>
 
 <h3 id="Sections">Sections</h3>
 
@@ -104,32 +100,32 @@ value of the key in the current context.</p>
 
 <p>The behavior of the section is determined by the value of the key.</p>
 
-<p><strong>False Values or Empty Lists</strong></p>
+<h4>False values or empty lists</h4>
 
 <p>If the <code>person</code> key exists and has a value of false or an empty
 list, the HTML between the pound and slash will not be displayed.</p>
 
 <p>Template:</p>
 
-<small><pre><code>Shown.
+<pre class="html"><code>Shown.
 {{#person}}
   Never shown!
 {{/person}}
-</code></pre></small>
+</code></pre>
 
 <p>Hash:</p>
 
-<small><pre><code>{
+<pre class="json"><code>{
   "person": false
 }
-</code></pre></small>
+</code></pre>
 
 <p>Output:</p>
 
-<small><pre><code>Shown.
-</code></pre></small>
+<pre class="html"><code>Shown.
+</code></pre>
 
-<p><strong>Non-Empty Lists</strong></p>
+<h4>Non-empty lists</h4>
 
 <p>If the <code>person</code> key exists and has a non-false value, the HTML between
 the pound and slash will be rendered and displayed one or more times.</p>
@@ -142,30 +138,30 @@ loop over collections.</p>
 <p>Template:</p>
 
 
-<small><pre><code>{{#repo}}
+<pre><code>{{#repo}}
   &lt;b&gt;{{name}}&lt;/b&gt;
 {{/repo}}
-</code></pre></small>
+</code></pre>
 
 <p>Hash:</p>
 
-<small><pre><code>{
+<pre><code>{
   "repo": [
     { "name": "resque" },
     { "name": "hub" },
     { "name": "rip" }
   ]
 }
-</code></pre></small>
+</code></pre>
 
 <p>Output:</p>
 
-<small><pre><code>&lt;b&gt;resque&lt;/b&gt;
+<pre><code>&lt;b&gt;resque&lt;/b&gt;
 &lt;b&gt;hub&lt;/b&gt;
 &lt;b&gt;rip&lt;/b&gt;
-</code></pre></small>
+</code></pre>
 
-<p><strong>Lambdas</strong></p>
+<h4>Lambdas</h4>
 
 <p>When the value is a callable object, such as a function or lambda, the
 object will be invoked and passed the block of text. The text passed
@@ -175,14 +171,14 @@ filters or caching.</p>
 
 <p>Template:</p>
 
-<small><pre><code>{{#wrapped}}
+<pre><code>{{#wrapped}}
   {{name}} is awesome.
 {{/wrapped}}
-</code></pre></small>
+</code></pre>
 
 <p>Hash:</p>
 
-<small><pre><code>{
+<pre><code>{
   "name": "Willy",
   "wrapped": function() {
     return function(text, render) {
@@ -190,36 +186,36 @@ filters or caching.</p>
     }
   }
 }
-</code></pre></small>
+</code></pre>
 
 <p>Output:</p>
 
-<small><pre><code>&lt;b&gt;Willy is awesome.&lt;/b&gt;
-</code></pre></small>
+<pre><code>&lt;b&gt;Willy is awesome.&lt;/b&gt;
+</code></pre>
 
-<p><strong>Non-False Values</strong></p>
+<h4>Non-false values</h4>
 
 <p>When the value is non-false but not a list, it will be used as the
 context for a single rendering of the block.</p>
 
 <p>Template:</p>
 
-<small><pre><code>{{#person?}}
+<pre><code>{{#person?}}
   Hi {{name}}!
 {{/person?}}
-</code></pre></small>
+</code></pre>
 
 <p>Hash:</p>
 
-<small><pre><code>{
+<pre><code>{
   "person?": { "name": "Jon" }
 }
-</code></pre></small>
+</code></pre>
 
 <p>Output:</p>
 
-<small><pre><code>Hi Jon!
-</code></pre></small>
+<pre><code>Hi Jon!
+</code></pre>
 
 <h3 id="Inverted-Sections">Inverted Sections</h3>
 
@@ -234,37 +230,37 @@ if the key doesn't exist, is false, or is an empty list.</p>
 
 <p>Template:</p>
 
-<small><pre><code>{{#repo}}
+<pre><code>{{#repo}}
   &lt;b&gt;{{name}}&lt;/b&gt;
 {{/repo}}
 {{^repo}}
   No repos :(
 {{/repo}}
-</code></pre></small>
+</code></pre>
 
 <p>Hash:</p>
 
-<small><pre><code>{
+<pre><code>{
   "repo": []
 }
-</code></pre></small>
+</code></pre>
 
 <p>Output:</p>
 
-<small><pre><code>No repos :(
-</code></pre></small>
+<pre><code>No repos :(
+</code></pre>
 
 <h3 id="Comments">Comments</h3>
 
 <p>Comments begin with a bang and are ignored. The following template:</p>
 
-<small><pre><code>&lt;h1&gt;Today{{! ignore me }}.&lt;/h1&gt;
-</code></pre></small>
+<pre><code>&lt;h1&gt;Today{{! ignore me }}.&lt;/h1&gt;
+</code></pre>
 
 <p>Will render as follows:</p>
 
-<small><pre><code>&lt;h1&gt;Today.&lt;/h1&gt;
-</code></pre></small>
+<pre><code>&lt;h1&gt;Today.&lt;/h1&gt;
+</code></pre>
 
 <p>Comments may contain newlines.</p>
 
@@ -278,13 +274,13 @@ recursive partials are possible. Just avoid infinite loops.</p>
 <p>They also inherit the calling context. Whereas in an [ERB](http://en.wikipedia.org/wiki/ERuby) file you may have
 this:</p>
 
-<small><pre><code>&lt;%= partial :next_more, :start =&gt; start, :size =&gt; size %&gt;
-</code></pre></small>
+<pre><code>&lt;%= partial :next_more, :start =&gt; start, :size =&gt; size %&gt;
+</code></pre>
 
 <p>Mustache requires only this:</p>
 
-<small><pre><code>{{&gt; next_more}}
-</code></pre></small>
+<pre><code>{{&gt; next_more}}
+</code></pre>
 
 <p>Why? Because the <code>next_more.html</code> file will inherit the <code>size</code> and
 <code>start</code> methods from the calling context.</p>
@@ -294,7 +290,7 @@ expansion, nested templates, or subtemplates, even though those aren't literally
 
 <p>For example, this template and partial:</p>
 
-<small><pre><code>base.html:
+<pre><code>base.html:
 &lt;h2&gt;Names&lt;/h2&gt;
 {{#names}}
   {{&gt; user}}
@@ -302,15 +298,15 @@ expansion, nested templates, or subtemplates, even though those aren't literally
 
 user.html:
 &lt;strong&gt;{{name}}&lt;/strong&gt;
-</code></pre></small>
+</code></pre>
 
 <p>Can be thought of as a single, expanded template:</p>
 
-<small><pre><code>&lt;h2&gt;Names&lt;/h2&gt;
+<pre><code>&lt;h2&gt;Names&lt;/h2&gt;
 {{#names}}
   &lt;strong&gt;{{name}}&lt;/strong&gt;
 {{/names}}
-</code></pre></small>
+</code></pre>
 
 <h3 id="Set-Delimiter">Set Delimiter</h3>
 
@@ -319,12 +315,12 @@ delimiters from <code>{{</code> and <code>}}</code> to custom strings.</p>
 
 <p>Consider the following contrived example:</p>
 
-<small><pre><code>* {{default_tags}}
+<pre><code>* {{default_tags}}
 {{=&lt;% %>=}}
 * &lt;% erb_style_tags %>
 &lt;%={{ }}=%>
 * {{ default_tags_again }}
-</code></pre></small>
+</code></pre>
 
 <p>Here we have a list with three items. The first item uses the default
 tag style, the second uses erb style as defined by the Set Delimiter

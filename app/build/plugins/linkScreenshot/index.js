@@ -7,8 +7,8 @@ const uuid = require("uuid/v4");
 const { is } = require("build/converters/webloc");
 const clfdate = require("helper/clfdate");
 const SCREENSHOT_DIR = "_bookmark_screenshots";
-const SCREENSHOT_WIDTH = 1060;
-const SCREENSHOT_HEIGHT = 1060;
+const SCREENSHOT_WIDTH = 1200;
+const SCREENSHOT_HEIGHT = 1200;
 
 function render($, callback, { blogID, path }) {
   if (!is(path)) return callback();

@@ -10,6 +10,21 @@
       {{> navigation}}
     </section>
     <section class="content">
+      {{#show-toc}}
+      <section class="main-section main-section-with-toc">
+        <section class="main-section-content js-toc-content">
+          {{> breadcrumbs}}
+          {{> body}}
+        </section>
+        <aside class="toc-sidebar">
+          <div id="toc-wrapper">
+            <p>On this page</p>
+            <div id="toc"></div>
+          </div>
+        </aside>
+      </section>
+      {{/show-toc}}
+      {{^show-toc}}
       <section class="main-section">
         {{> breadcrumbs}}
         {{#selected.how}}
@@ -26,6 +41,7 @@
           {{> body}}
         {{/selected.how}}
       </section>
+      {{/show-toc}}
       {{> footer}}
     </section>
   </section>

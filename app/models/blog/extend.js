@@ -59,6 +59,7 @@ module.exports = function extend(blog) {
   blog.locals = {
     feedURL: blog.feedURL,
     blogURL: blog.blogURL,
+    siteURL: blog.blogURL,
     cssURL: blog.cssURL,
     scriptURL: blog.scriptURL,
   };

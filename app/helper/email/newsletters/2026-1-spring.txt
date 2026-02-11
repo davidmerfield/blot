@@ -6,6 +6,7 @@ Spring newsletter
 
 **Changes**
 - Google Docs now support superscript, subscript, strike, underline
+- Support Wikilink lookup by title for pages as well as posts
 
 **Bug fixes**
 - Fix bug with URL settings in package.json

@@ -1,29 +1,42 @@
-.window {
+.finder.window {
   font: 12px / 1.8 normal -apple-system, BlinkMacSystemFont, sans-serif;
   text-rendering: optimizeLegibility;
   background: white;
   border-radius: 5px;
+  margin-left: 1px;
   display: block;
   position: relative;
   overflow: hidden;
+  box-shadow: inset 0 1px 0 #f5f4f5, 0 -1px 0 rgba(0, 0, 0, 0.11), 0 1px 0 rgba(0, 0, 0, 0.26), -1px 0 0 rgba(0, 0, 0, 0.13), 1px 0 0 rgba(0, 0, 0, 0.13);  
+}
+
+background .finder.window {
   box-shadow: 0 22px 64px rgba(0,0,0,0.46), inset 0 1px 0 #f5f4f5, 0 -1px 0 rgba(0, 0, 0, 0.11), 0 1px 0 rgba(0, 0, 0, 0.26), -1px 0 0 rgba(0, 0, 0, 0.13), 1px 0 0 rgba(0, 0, 0, 0.13);  
 }
 
-.window.text {
+.finder.window.text {
   background: #f7f7f7;
 }
 
-.window.code {
+
+.finder.window.text {
+  background: #fafafa!important;
+  margin-top: 1.5rem!important;
+  margin-left: 1px!important;
+        box-shadow: inset 0 1px 0 #f5f4f5, 0 -1px 0 rgb(0 0 0 / 11%), 0 1px 0 rgb(0 0 0 / 26%), -1px 0 0 rgb(0 0 0 / 13%), 1px 0 0 rgb(0 0 0 / 13%);
+}
+
+.finder.window.code {
   background: #002b36;
   box-shadow: 0 22px 64px rgba(0,0,0,0.46), 0 -1px 0 rgba(0, 0, 0, 0.11), 0 1px 0 rgba(0, 0, 0, 0.26), -1px 0 0 rgba(0, 0, 0, 0.13), 1px 0 0 rgba(0, 0, 0, 0.13);    
   padding-bottom: 14px
 }
 
-.window.folder {
+.finder.window.folder {
   background: #fff;
 }
 
-.no-shadow {box-shadow: none}
+.finder.window.no-shadow {box-shadow: none}
 
 /* 
 
@@ -34,25 +47,25 @@ corners of a border in different colors with CSS.
 
 */ 
 
-.corner {
+.finder .corner {
   border-width: 1px;
   border-style: solid;
   position: absolute;
   width: 8px; height: 8px;
   border-radius: 0; 
-  display: none; f
+  display: none;
 }
 
-.corner.left {border-right: none;left: 0;}
-.corner.right {border-left: none;right: 0;}
+.finder .corner.left {border-right: none;left: 0;}
+.finder .corner.right {border-left: none;right: 0;}
 
-.corner.bottom {bottom:0;border-top: none;border-color:rgba(0,0,0,0.37)}
-.corner.bottom.left {border-bottom-left-radius: 6px;}
-.corner.bottom.right {border-bottom-right-radius: 6px;}
+.finder .corner.bottom {bottom:0;border-top: none;border-color:rgba(0,0,0,0.37)}
+.finder .corner.bottom.left {border-bottom-left-radius: 6px;}
+.finder .corner.bottom.right {border-bottom-right-radius: 6px;}
 
-.corner.top {top:0;border-bottom: none;border-color:rgba(0,0,0,0.13)}
-.corner.top.left {border-top-left-radius: 6px;}
-.corner.top.right {border-top-right-radius: 6px;}
+.finder .corner.top {top:0;border-bottom: none;border-color:rgba(0,0,0,0.13)}
+.finder .corner.top.left {border-top-left-radius: 6px;}
+.finder .corner.top.right {border-top-right-radius: 6px;}
 
 /* 
 
@@ -61,34 +74,34 @@ are gradients and I don't know how to do that in CSS.
 
 */ 
 
-.border {
+.finder .border {
   position: absolute;
   display: none;
 }
 
-.border.left, .border.right {
+.finder .border.left, .finder .border.right {
   top:9px;
   bottom: 9px;
   width: 1px;
   background: linear-gradient(rgba(0,0,0,0.11), rgba(0,0,0,0.36) 24%, rgba(0,0,0,0.37));
 }
 
-.border.left {left: 0;}
-.border.right {right: 0;}
+.finder .border.left {left: 0;}
+.finder .border.right {right: 0;}
 
-.border.top, .border.bottom {
+.finder .border.top, .finder .border.bottom {
   height: 1px;
   left: 9px;right: 9px;
 }
 
-.border.bottom {bottom:0;background: linear-gradient(to right, rgba(0,0,0,0.37),  rgba(0,0,0,0.56) 5%, rgba(0,0,0,0.56) 95%, rgba(0,0,0,0.37));}
+.finder .border.bottom {bottom:0;background: linear-gradient(to right, rgba(0,0,0,0.37),  rgba(0,0,0,0.56) 5%, rgba(0,0,0,0.56) 95%, rgba(0,0,0,0.37));}
 
-.no-shadow .border.bottom {background: rgba(0,0,0,0.37);}
+.finder.window.no-shadow .border.bottom {background: rgba(0,0,0,0.37);}
 
-.border.top {top: 0px;background: linear-gradient(to right,rgba(0,0,0,.13),rgba(0,0,0,.13) 5%,rgba(0,0,0,.13) 95%,rgba(0,0,0,.13))}
+.finder .border.top {top: 0px;background: linear-gradient(to right,rgba(0,0,0,.13),rgba(0,0,0,.13) 5%,rgba(0,0,0,.13) 95%,rgba(0,0,0,.13))}
 
 
-.toolbar {
+.finder .toolbar {
   font-weight: normal;
   font: inherit;
   margin: 0;
@@ -103,37 +116,37 @@ are gradients and I don't know how to do that in CSS.
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.38), 0 1px 0 rgba(0, 0, 0, 0.26);
 }
 
-.text.with-chrome .toolbar {
+.finder.window.text.with-chrome .toolbar {
   line-height: 30px;height: 27px;
 }
 
 
 /* Used to simulate a text editor without chrome */
-.text:not(.with-chrome) .toolbar,
-.code .toolbar {
+.finder.window.text:not(.with-chrome) .toolbar,
+.finder.window.code .toolbar {
   box-shadow: none;
   background: none;
   color: transparent;
 }
 
-.text .name {display: none;text-indent: 11px}
-.text.with-chrome .name {display: block;}
+.finder.window.text .name {display: none;text-indent: 11px}
+.finder.window.text.with-chrome .name {display: block;}
 
-.text:not(.with-chrome) .toolbar .dots,
-.code .toolbar .dots {
+.finder.window.text:not(.with-chrome) .toolbar .dots,
+.finder.window.code .toolbar .dots {
   top: 8px;
   left: 4px;
 }
 
 
-.text.with-chrome .toolbar .dots {
+.finder.window.text.with-chrome .toolbar .dots {
   top: 2px;
   left: 5px;  
 }
 
-.window .dots {position: absolute;left: 0}
+.finder.window .dots {position: absolute;left: 0}
 
-.window .dot {
+.finder.window .dot {
   width: 12px;height: 12px;
   border-radius: 100%;
   display: inline-block;
@@ -143,11 +156,11 @@ are gradients and I don't know how to do that in CSS.
   box-shadow: inset 0 0 1px rgba(0,0,0,0.3)
 }
 
-.window .dot:nth-child(1) {background: rgb(252,98,93)}
-.window .dot:nth-child(2) {background: rgb(253,189,65)}
-.window .dot:nth-child(3) {background: rgb(53,203,75)}
+.finder.window .dot:nth-child(1) {background: rgb(252,98,93)}
+.finder.window .dot:nth-child(2) {background: rgb(253,189,65)}
+.finder.window .dot:nth-child(3) {background: rgb(53,203,75)}
 
-.dropbox {
+.finder .dropbox {
   background-image: url('dropbox-icon.png');
   background-size: 17px;
   width: 17px;height: 14px;
@@ -156,7 +169,7 @@ are gradients and I don't know how to do that in CSS.
   position: relative;top:2px
 }
 
-.text-chevron {
+.finder .text-chevron {
   background-image: url('textfile-arrow.png');
   background-size: 8px;
   float: none;
@@ -168,7 +181,7 @@ are gradients and I don't know how to do that in CSS.
 }
 
 
-.textfile {
+.finder .textfile {
   background-image: url('textfile.png');
   background-size: 13px;
   float: none;
@@ -180,7 +193,7 @@ are gradients and I don't know how to do that in CSS.
 }
 
 
-.sorter {
+.finder .sorter {
   font: inherit;
   font-weight: 500;
   font-size:11px;
@@ -196,7 +209,7 @@ are gradients and I don't know how to do that in CSS.
   position: relative;
 }
 
-.icon.chevron {
+.finder .icon.chevron {
   background-image: url('chevron.png');
   background-size: 7px;
   width: 7px;
@@ -207,7 +220,7 @@ are gradients and I don't know how to do that in CSS.
 }
 
 
-.text pre {
+.finder.window.text pre {
   margin: 0 auto;
   max-width: 40rem;
   padding: 2.22rem 5rem;
@@ -227,10 +240,10 @@ are gradients and I don't know how to do that in CSS.
   word-wrap: break-word;       /* Internet Explorer 5.5+ */
 }
 
-.text.narrow pre {padding: 16px 19px}
-.text.medium pre {padding: 16px 19px}
+.finder.window.text.narrow pre {padding: 16px 19px}
+.finder.window.text.medium pre {padding: 16px 19px}
 
-.code pre.hljs, .code .line-numbers {
+.finder.window.code pre.hljs, .finder.window.code .line-numbers {
   margin: 1rem 0 0;
   padding: 0 3rem 0;
   letter-spacing: 0.01em;
@@ -242,7 +255,7 @@ are gradients and I don't know how to do that in CSS.
   position: relative;
 }
 
-.code .line-numbers {
+.finder.window.code .line-numbers {
     position: absolute;
     left: 19px;
     top: 24px;
@@ -255,23 +268,23 @@ are gradients and I don't know how to do that in CSS.
 }
 
 
-.focus pre:after {
+.finder.window.focus pre:after {
     content: "\2007";
     background: #29beea;
     width: 0.25em;
     position: relative;
     left: -1px;
     display: inline-block;
-    -webkit-animation: blink 0.5s ease-in-out 0.25s infinite alternate;
+    -webkit-animation: finder-blink 0.5s ease-in-out 0.25s infinite alternate;
 }
 
-@-webkit-keyframes blink {
+@-webkit-keyframes finder-blink {
   0% {opacity:1}
   100% {opacity:0}
 }
 
 
-.contents {
+.finder .contents {
   margin: 0;
   padding: 0;
   border-radius: 0 0 5px 5px;
@@ -279,7 +292,7 @@ are gradients and I don't know how to do that in CSS.
   display: block;
 }
 
-.item { 
+.finder .item { 
   font: inherit;
   display: block;
   padding-left: 24px;
@@ -290,13 +303,13 @@ are gradients and I don't know how to do that in CSS.
   margin: 0;
 }
 
-.item.nested-1 {padding-left: 44px}
-.item.nested-2 {padding-left: 64px}
-.item.nested-3 {padding-left: 84px}
-.item.nested-4 {padding-left: 104px}
-.item:nth-child(2n) {background: rgb(255,255,255)}
+.finder .item.nested-1 {padding-left: 44px}
+.finder .item.nested-2 {padding-left: 64px}
+.finder .item.nested-3 {padding-left: 84px}
+.finder .item.nested-4 {padding-left: 104px}
+.finder .item:nth-child(2n) {background: rgb(255,255,255)}
 
-.icon {
+.finder .icon {
   width: 19px;
   height: 19px;
   display: inline-block;
@@ -306,10 +319,10 @@ are gradients and I don't know how to do that in CSS.
   vertical-align: text-bottom;
 }
 
-.toolbar .icon {vertical-align: initial;}
+.finder .toolbar .icon {vertical-align: initial;}
 
-.item .icon {display: block;float: left;margin-right: 3px}
-.item .icon.folder:before {
+.finder .item .icon {display: block;float: left;margin-right: 3px}
+.finder .item .icon.folder:before {
   content: "";
   width: 7.5px;height: 9px;
   background: url('arrow-grey.png');
@@ -317,42 +330,42 @@ are gradients and I don't know how to do that in CSS.
   position: absolute;left: -16px;top: 5px
 }
 
-.item.open .folder:before {
+.finder .item.open .folder:before {
   width: 9px;height: 7.5px;
   background: url('arrow-down-grey.png');
   background-size: 9px;
   left: -16px;top: 5px
 }
 
-.item:nth-child(2n) .folder:before {
+.finder .item:nth-child(2n) .folder:before {
   background-image: url('arrow-white.png')
 }
 
-.item.open:nth-child(2n) .folder:before {
+.finder .item.open:nth-child(2n) .folder:before {
   background-image: url('arrow-down-white.png')
 }
 
 
-.folder {background: url('folder-white.png') no-repeat center 3px / 16px;}
-.item:nth-child(odd) .folder {background-image: url('folder-grey.png');} 
+.finder .icon.folder {background: url('folder-white.png') no-repeat center 3px / 16px;}
+.finder .item:nth-child(odd) .icon.folder {background-image: url('folder-grey.png');} 
 
-.file {background: url('document-white.png') no-repeat center 2px / 14px;}
-.item:nth-child(odd) .file {background-image: url('document-grey.png');} 
+.finder .icon.file {background: url('document-white.png') no-repeat center 2px / 14px;}
+.finder .item:nth-child(odd) .icon.file {background-image: url('document-grey.png');} 
 
-.md {background: url('markdown-white.png') no-repeat center 2px / 14px;}
-.item:nth-child(odd) .md {background-image: url('markdown-grey.png');} 
+.finder .icon.md {background: url('markdown-white.png') no-repeat center 2px / 14px;}
+.finder .item:nth-child(odd) .icon.md {background-image: url('markdown-grey.png');} 
 
-.txt {background: url('txt-white.png') no-repeat center 2px / 14px;}
-.item:nth-child(odd) .txt {background-image: url('txt-grey.png');} 
+.finder .icon.txt {background: url('txt-white.png') no-repeat center 2px / 14px;}
+.finder .item:nth-child(odd) .icon.txt {background-image: url('txt-grey.png');} 
 
-.img {background: url('image-white.png') no-repeat center 2px / 14px;}
-.item:nth-child(odd) .img {background-image: url('image-grey.png');} 
+.finder .icon.img {background: url('image-white.png') no-repeat center 2px / 14px;}
+.finder .item:nth-child(odd) .icon.img {background-image: url('image-grey.png');} 
 
-.html {background: url('html-white.png') no-repeat center 2px / 14px;}
-.item:nth-child(odd) .html {background-image: url('html-grey.png');} 
+.finder .icon.html {background: url('html-white.png') no-repeat center 2px / 14px;}
+.finder .item:nth-child(odd) .icon.html {background-image: url('html-grey.png');} 
 
-.zip {background: url('archive-white.png') no-repeat center 2px / 14px;}
-.item:nth-child(odd) .zip {background-image: url('archive-grey.png');} 
+.finder .icon.zip {background: url('archive-white.png') no-repeat center 2px / 14px;}
+.finder .item:nth-child(odd) .icon.zip {background-image: url('archive-grey.png');} 
 
-.webloc {background: url('webloc-white.png') no-repeat center 2px / 14px;}
-.item:nth-child(odd) .webloc {background-image: url('webloc-grey.png');} 
+.finder .icon.webloc {background: url('webloc-white.png') no-repeat center 2px / 14px;}
+.finder .item:nth-child(odd) .icon.webloc {background-image: url('webloc-grey.png');} 

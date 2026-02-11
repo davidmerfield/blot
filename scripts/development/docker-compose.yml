@@ -20,6 +20,7 @@ services:
       - BLOT_HOST=${BLOT_HOST}
       - BLOT_REDIS_HOST=redis
       - CONTAINER_NAME=blot-container-green
+      - DEBUG=${DEBUG:-}
     volumes:
       - ../../data:/usr/src/app/data
       - ../../.git:/usr/src/app/.git

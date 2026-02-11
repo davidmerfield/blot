@@ -1,8 +1,8 @@
-- name: blog
+- name: Site properties
   keys:
     - name: title
       type: string
-      description: Your site’s title, set on the title page of your dashboard. Blog properties are available at the top level of the Mustache context (use `{{title}}`, not `{{blog.title}}`).
+      description: Your site’s title, set on the title page of your dashboard. 
       example: <h1>{{title}}</h1>
 
     - name: avatar
@@ -59,13 +59,13 @@
       type: string
       description: Your site’s timezone in the [tz database format](https://en.wikipedia.org/wiki/Tz_database)
 
-    - name: blogURL
+    - name: siteURL
       type: string
       description: URL to your site’s homepage
 
-    - name: siteURL
+    - name: blogURL
       type: string
-      description: Same as [blogURL](#blog.blogURL)
+      description: Alias for [siteURL](#blog.siteURL)
 
     - name: feedURL
       type: string
@@ -79,7 +79,7 @@
       type: boolean
       description: true if you’ve indicated your avatar is round, false if not
 
-- name: entry
+- name: Entry properties
   keys:
     - name: id
       type: string
@@ -103,7 +103,7 @@
 
     - name: url
       type: string
-      description: The URL to the post
+      description: The resolved, unique URL to the post.
 
     - name: tags
       type: array
@@ -139,7 +139,7 @@
 
     - name: date
       type: string
-      description: The blog post’s publication date, as a human-readable string
+      description: The blog post’s publication date, as a human-readable string. This is only present when `hide_dates` is false and the entry is not a menu item or page. Use [formatDate](#entry.formatDate) for custom formatting regardless of display settings.
 
     - name: dateStamp
       type: number
@@ -179,7 +179,7 @@
 
     - name: thumbnail
       type: object
-      description: "object containing the thumbnails for the entry, if they exist. Blot will not increase the size of smaller images. The JSON added to each entry looks something like this"
+      description: "object containing the thumbnails for the entry, if they exist. Blot will not increase the size of smaller images. When a thumbnail is generated, each size (small, medium, large, square) is present; if the source image is smaller than a size limit, the thumbnail is still generated at the source image’s dimensions (no upscaling). The JSON added to each entry looks something like this"
       properties:
         - name: small
           type: object
@@ -191,7 +191,7 @@
 
         - name: large
           type: object
-          description: which has a width and height under 1060px.
+          description: which has a width and height under 1200px (or smaller if the source image is smaller).
 
         - name: square
           type: object
@@ -243,7 +243,7 @@
 
     - name: created
       type: number
-      description: The file’s creation date, as a Unix timestamp.
+      description: The timestamp when the entry was added to Blot, as a Unix timestamp. For the publication date (often derived from metadata or the file path), see [entry.dateStamp](#entry.dateStamp).
 
     - name: updated
       type: number
@@ -251,7 +251,7 @@
 
     - name: summary
       type: string
-      description: The text of the ﬁrst paragraph of the entry.
+      description: Plain text extracted from the rendered content (excluding headings, block code, and similar elements), with whitespace normalized and truncated to ~150 characters.
 
     - name: titleTag
       type: string
@@ -275,11 +275,11 @@
 
     - name: slug
       type: string
-      description: The value of the metadata property permalink. Same as URL.
+      description: A slug derived from the title or path, which may be used to build the permalink.
 
     - name: permalink
       type: string
-      description: The value of the metadata property permalink. Same as URL.
+      description: The requested, format-based permalink candidate before it is resolved to the final URL.
 
     - name: index
       type: number
@@ -401,7 +401,7 @@
       example: |
         {{#absoluteURLs}}
         {{{html}}}
-        {{/absoluteURLs
+        {{/absoluteURLs}}
 
     - name: encodeJSON
       type: function

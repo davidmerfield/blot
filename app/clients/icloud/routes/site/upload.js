@@ -2,6 +2,7 @@ const localPath = require("helper/localPath");
 const establishSyncLock = require("sync/establishSyncLock");
 const fs = require("fs-extra");
 const { handleSyncLockError } = require("../lock");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 module.exports = async function (req, res) {
   try {
@@ -17,16 +18,59 @@ module.exports = async function (req, res) {
       return res.status(400).send("Missing required headers: blogID or path");
     }
 
+    if (shouldIgnoreFile(filePath)) {
+      return res.sendStatus(204);
+    }
+
+    const pathOnDisk = localPath(blogID, filePath);
+
     console.log(
       `Uploading binary file for blogID: ${blogID}, path: ${filePath}`
     );
+
+    if (await fs.pathExists(pathOnDisk)) {
+      const existingContents = await fs.readFile(pathOnDisk);
+      const contentsMatch = Buffer.isBuffer(req.body)
+        ? existingContents.equals(req.body)
+        : existingContents.equals(Buffer.from(req.body));
+      let modifiedTimeMatches = true;
+
+      if (modifiedTime) {
+        const stat = await fs.stat(pathOnDisk);
+        modifiedTimeMatches =
+          stat.mtime.getTime() === new Date(modifiedTime).getTime();
+      }
+
+      if (contentsMatch && modifiedTimeMatches) {
+        return res
+          .status(200)
+          .send(`File already up to date for blogID: ${blogID}`);
+      }
+    }
 
     // Establish sync lock to allow safe file operations
     const { done, folder } = await establishSyncLock(blogID);
 
     try {
-      // Compute the local file path on disk
-      const pathOnDisk = localPath(blogID, filePath);
+      if (await fs.pathExists(pathOnDisk)) {
+        const existingContents = await fs.readFile(pathOnDisk);
+        const contentsMatch = Buffer.isBuffer(req.body)
+          ? existingContents.equals(req.body)
+          : existingContents.equals(Buffer.from(req.body));
+        let modifiedTimeMatches = true;
+
+        if (modifiedTime) {
+          const stat = await fs.stat(pathOnDisk);
+          modifiedTimeMatches =
+            stat.mtime.getTime() === new Date(modifiedTime).getTime();
+        }
+
+        if (contentsMatch && modifiedTimeMatches) {
+          return res
+            .status(200)
+            .send(`File already up to date for blogID: ${blogID}`);
+        }
+      }
 
       folder.status("Saving " + filePath);
 

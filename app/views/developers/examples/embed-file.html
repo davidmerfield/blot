@@ -6,7 +6,7 @@
 
 <p>First, create a file containing the content you want to embed. For example, add <code>/Pages/Home.md</code> with:</p>
 
-<pre style="border:1px solid var(--border-color);max-width:600px;padding:12px;margin:12px 0;border-radius: var(--border-radius);"><code>Page: Yes
+<pre class="text" data-file="Home.md"><code>Page: Yes
 Menu: No
 
 Your introductory content goes here.
@@ -17,7 +17,7 @@ You can use **Markdown** formatting as usual.
 
 <p>Your homepage is generated from the template view <em>entries.html</em>. To embed the HTML output from <code>Home.md</code>, insert:</p>
 
-<pre style="border:1px solid var(--border-color);max-width:600px;padding:12px;margin:12px 0;border-radius: var(--border-radius);"><code>{{> /Pages/Home.md}}
+<pre class="html" data-file="entries.html"><code>{{> /Pages/Home.md}}
 </code></pre>
 
 <p>The <code>{{> /Pages/Home.md}}</code> directive pulls the rendered HTML of <code>Home.md</code> into the template at that position. If the file does not exist, Blot inserts an empty string. This syntax works identically to partial-template inclusion.</p>

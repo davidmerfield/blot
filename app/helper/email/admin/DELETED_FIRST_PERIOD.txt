@@ -1,5 +1,5 @@
 User deleted account with refund
 
-{{email}} used to pay {{pretty.price}} per {{pretty.interval}} for {{pretty.amount}} blog{{pretty.s}}
+{{email}} used to pay {{pretty.price}} per {{pretty.interval}} for {{pretty.amount}} site{{pretty.s}}
 
 Because they deleted their account within the first month they received a {{refund.amountPretty}}{{#refund.currency}} ({{refund.currency}}){{/refund.currency}} refund via {{refund.providerPretty}}.

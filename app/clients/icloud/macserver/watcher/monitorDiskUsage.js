@@ -4,8 +4,8 @@ import { iCloudDriveDirectory } from "../config.js";
 import clfdate from "../util/clfdate.js";
 
 const POLL_INTERVAL = 15 * 1000; // Check every 15 seconds
-const MAX_NUMBER_OF_FILES_TRACKED_PER_BLOG = 150;
-const MAX_DISK_USAGE_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
+const MAX_NUMBER_OF_FILES_TRACKED_PER_BLOG = 1000;
+const MAX_DISK_USAGE_BYTES = 30 * 1024 * 1024 * 1024; // 10 GB
 
 // Map to track the largest files and metadata for each blog folder
 const largestFilesMap = new Map();
@@ -167,7 +167,7 @@ const check = async (evictFiles) => {
 
       // Skip already evicted files
       if (stat.blocks === 0) {
-        console.info(`Skipping evicted file: ${filePath}`);
+        // console.info(`Skipping evicted file: ${filePath}`);
         continue;
       }
 

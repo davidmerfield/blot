@@ -1,0 +1,110 @@
+/* Table of contents (tocbot) – only when .main-section-with-toc is present */
+
+/* Override .main-section overflow so sticky sidebar works (no clipping) */
+.main-section.main-section-with-toc {
+  overflow: visible;
+}
+
+.main-section-with-toc {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.main-section-with-toc .main-section-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.main-section-with-toc .toc-sidebar {
+  flex-shrink: 0;
+  width: 220px;
+  position: sticky;
+  top: 1.5rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+#toc {
+  overflow-y: auto;
+  max-height: calc(100vh - 3rem);
+}
+
+#toc > .toc-list {
+  overflow: hidden;
+  position: relative;
+}
+
+#toc > .toc-list li {
+  list-style: none;
+}
+
+.toc-list {
+  margin: 0;
+  padding: 0 16px 0 0;
+  list-style-type: none;
+}
+
+.main-section-with-toc a.toc-link {
+  color: var(--light-text-color);
+  height: 100%;
+  position: relative;
+  display: block;
+  padding-left: 1em;
+  text-decoration: none;
+  font-size: var(--small-font-size, 14px);
+  line-height: 1.4;
+}
+
+.main-section-with-toc a.toc-link:hover {
+  color: var(--text-color);
+}
+
+.main-section-with-toc a.toc-link.is-active-link {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.main-section-with-toc .toc-list .toc-list a.toc-link {
+  font-size: 13px;
+  padding-left: 2em;
+}
+
+.main-section-with-toc .toc-link::before {
+  background-color: var(--border-color);
+  content: " ";
+  display: inline-block;
+  height: inherit;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  position: absolute;
+  width: 1px;
+}
+
+.main-section-with-toc .toc-link.is-active-link::before {
+  background-color: var(--text-color);
+}
+
+.main-section-with-toc .is-collapsible {
+  max-height: 1000px;
+  overflow: hidden;
+}
+
+.main-section-with-toc .is-collapsed {
+  max-height: 0;
+}
+
+#toc-wrapper p:first-child {
+  font-size: 0.8em;
+  color: var(--light-text-color);
+  opacity: 0.8;
+  margin: 0 0 0.5em 0;
+}
+
+@media (max-width: 900px) {
+  .main-section-with-toc .toc-sidebar {
+    display: none;
+  }
+}

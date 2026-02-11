@@ -5,21 +5,19 @@
 
 <pre class="text"><code>Author: Eric Blair
 
-Metadata keys should be a single word. They are case insensitive
-
-
-</code></pre>
+Metadata keys should be a single word. They are case insensitive.</code></pre>
 
 <p>Once the property exists in a file, you can use it in your template:</p>
-<pre class="code html"><code><html>
-  <title>{{title}}</title>
-  <body>
+
+<pre class="html" data-file="entry.html"><code>&lt;html&gt;
+  &lt;title&gt;{{title}}&lt;/title&gt;
+  &lt;body&gt;
     {{#entry}}
-    <p>Posted by {{metadata.author}}</p>
+    &lt;p&gt;Posted by {{metadata.author}}&lt;/p&gt;
     ...
     {{/entry}}
-  </body>
-  </html>
+  &lt;/body&gt;
+&lt;/html&gt;
 </code></pre>
 
 [[={{ }}=]]

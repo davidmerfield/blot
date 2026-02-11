@@ -1,36 +1,60 @@
-iCloud client:
-- For large sites, holding the lock during a long resync can block legitimate events from getting in, causing even more resyncs... an infinite resync loop. How can we fix? make it possible for the *macserver* to list state on Blot? and simply issue regular events (upload/delete) for changes?
-- How can we leverage fs.watch({recursive}) to replace chokidar and improve performance and reliability?
-  import { watch as fswatch } from 'node:fs';
+For chuck: I'll look into whether it's possible to do this without the tag folder '[Blog]' so we avoid tagging the posts. It should be possible to simply use a folder called 'Blog' and instead filter the {{#posts}} list based on the sub folder. I'll get back to you
 
-  fswatch(iCloudDriveDirectory, { recursive: true }, (event, filename) => {
-    console.log(clfdate(), `FS watch watcher event: ${event}, filename: ${filename}`);
-  });
-  - n.b. the event labels are unreliable -> delete appears as 'rename', etc. we'll need to confirm with fs.stat
-- Remove evict route
-- Rename /watch route to setup-complete
-- Remove recursiveReaddirRoute
-  - instead, to sync folder tree, whenever readddir is called, it should maintain an internal map of the last time a blog's subfolder tree was recursively checked, and call it? or maybe just call ls and brctl download on the specific folder? or is this too slow?
-- Fix bug: high priority, drift sync. chokidar missing events (rename incomplete, it applied on the delete):
-  - To reproduce, edit two files then quickly rename them.
-  - To solve... not sure? leverage brctl monitor?
-  - NOTE: once triggered, chokidar totally loses track of the files, subsequent events don't even fire!
-  - maybe we can solve by:
-    - switching away from chokidar polling? if this fails, document why!
-    - maybe use: https://www.npmjs.com/package/fsevents?activeTab=readme
-    - leveraging `brctl monitor -i` which includes paths of new or updated files, but not removed files. it also fires for evict events...
-- Daily icloud resync should also log how long the longest folder took to resync.
-- Sync verification should instrument the sync/fix function to also report errors where the folder doesn't match the database.
-- Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
-- Fix bug: low priority, this just causes an error in the logs when freeing up disk space. Problem: attempting to evict a file within a .pages directory (a special apple file) e.g. Post.pages/preview.jpg will fail: you need to evict the parent directory perhaps?
-- Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
-- Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
-  - Add logging instrumentation of modified file paths to sync verification to aid in analysis of sync drift
-- Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
-- Start writing tests for icloud client
-- Start writing tests for macserver
-- Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
-- Investigate: can we modify app/clients/icloud/routes/site/upload.js and app/clients/icloud/macserver/httpClient/upload.js to exchange a content hash? to prevent needless re-upload?
+Google Drive:
+- Add sync check
+- Support shared drive folders with google drive client and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBkLKSVzvjZLRSCpRJwcKBPlf)
+- Handle large Google Document images (> 10mb, see Back to school.gdoc) by using the exportLinks -> ZIP property in app/clients/google-drive/util/download.js. make this the fallback method of exporting google docs then tell [Chuck](https://mail.google.com/mail/u/0/#sent/FMfcgzQfBQFmTvLKzPkJrgsBTWZmQJWS) he can restore the original images
+  - I'd like to modify the google drive client to change how it handles google docs: right now, it exports the google doc as HTML, i believe, and stores the HTML on disk. I'd like to switch to using the exportLinks to retrieve the document as a ZIP. This will allow us to fetch the full resolution images. how could we do this? can we investigate all the export methods and see which offer the original image. will it be too slow to fetch the zip each time? can we patch in changes? this will probably mean storing something different on disk (instead of the HTML, a ZIP file?) unfortunately it'll mean keeping backwards compatibility, and the google docs reader will initially need to accomodate the old method of storing HTML only. 
+  - will also fix the image quality issues with Google Docs (tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBkLKcwvDRFcrCLWQlwhJDSvc))
+- Can we use HTML in Google Docs? Tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBkHrXrgvdvCVldLCXDBwLFTp)
+- Add support for code blocks in [google docs](https://docs.google.com/document/d/1aDV4QVQm5w-j5DbMHDh50d3KknKuaPh9Qx1vFHbDhEo/edit?tab=t.0#heading=h.m7hsgfqddgv6)
+- right now, I believe the google drive client holds a sync lock while waiting for the creation of a folder. i think we should avoid doing this, instead waiting to establish a sync lock after the folder exists
+- Improve html output for google docs and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQFmTvLKzPkJrgsBTWZmQJWS)
+  Issue: <p><img><br><img></p> should be <p><img></p><p><img></p>
+
+Think about using avif/webp for thumbnails, adding <picture> tags with jpg fallback.
+
+Add a documentation page on media handling
+- explain image compression and thumbnails
+
+Add a documentation page on typography and fonts
+- explain typeset
+
+Add commit mono font to font picker - https://commitmono.com/
+
+Revert server changes to iCloud
+- 0043d91b36621ecd6aef2bcc263f51f209924792
+- 98dc9405c883825917de8e436ec620f60adaf975
+
+Fix serious bug with iCloud client:
+- brctl evict now conflicts with the fswatch events (they loop together infinitely, which I think eventually crashes the server or blocks iCloud sync 
+)
+We need to filter out (block) fswatch sync and brctl monitorer events until a folder setup flow is complete (do we do this already for chokidar?) (this causes problems setting up large folders)
+
+Extend recursiveList timeout when requesting Macserver (it can take 80 seconds)
+
+Document SSL as part of service on pricing page
+
+Fix bugs with sync
+iCloud
+Dropbox
+Google Drive
+Git
+Fix bug with local editing and template slugs
+Improve brochure
+Improve demo video
+Improve templates
+Fix mobile behaviour
+Make all variables editable on template editor
+Add way to drag and drop files onto dashboard
+Implement more netlify features
+Create CDN system with edge servers holding static blog content close to users
+Use bunny?
+Increase pricing to $7 per month for individuals
+Make it possible to create a site for free
+Add $70 per month organizational tier?
+Add github client
+Lower costs using s3 
 
 Fix bugs with templates:
 - Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
@@ -44,16 +68,16 @@ Fix bugs with templates:
 - Improve post navigation on Portfolio template within tagged collections and tell [Questioner](https://blot.im/questions/1894)
 - Make it possible to sort by id with dropdown on all templates
 
+Add performance tests which output something like this for PRs (compare against master branch, fail if over threshold):
+  Total CPU  29.90%          -> 11.64%
+  Syscalls   3.10s           -> 0.66s
+  Crypto     1.6s            -> 0.11s
+  Bandwidth  ~6.5 Mbit/sec   -> ~3 Mbit/sec
+
 Links template:
-- [x] Ensure border colors are abstract
-
-Index page:
-- [x] Add infinite scroll
-
-Navigation:
-- [ ] Add dropdown support to navigation
-
-Entry page:
+  Navigation:
+  - [ ] Add dropdown support to navigation
+  Entry page:
   - [ ] Close button should go 'back'
   - [ ] Add layout CSS
   - [ ] Next / prev should respect tag collections
@@ -61,6 +85,7 @@ Entry page:
   - [ ] Add backlinks
   
 Dropbox client
+- Sync verification should instrument the sync/fix function to also report errors where the folder doesn't match the database.
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
 - Bug: Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
   - Bug: handle a sync lock failure on second blog when migrating an app folder
@@ -116,12 +141,38 @@ Add a warning email one week before first renewal reminding customers to cancel
 - with link to switch to annual billing
 - with offer to help migrate to Blot
 
-Google Drive:
-- Add sync check
-- right now, I believe the google drive client holds a sync lock while waiting for the creation of a folder. i think we should avoid doing this, instead waiting to establish a sync lock after the folder exists? thoughts? pros and cons?
-
 Git client:
 - Add sync check
+
+iCloud client:
+- Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
+- If we need to resolve further bugs with sync drift:
+  - Implement additional parsing of modified paths from monitorer.js (brctl monitor -i) and reconcile these in addition to the fswatch module with the chokidar events for additional redundancy
+- Think about adding a more efficient endpoint to sync folder state. 
+  - use wisdom from rsync?
+  - the call to recursive list can take a way long time for large blogs (blog_3ec96xxx) so we need to increase timeout from 10 seconds to maybe multiple minutes...
+    - can we get rid of recursive list entirely if we simply call brctl download on the paths flagged by brctl monitor?
+  - don't hold sync lock the whole time? 
+  - fetch file list, compute changes, then lock, then apply?
+    - we'll need to update the call sites since the lock will be handled within
+- Daily icloud resync should also log how long the longest folder took to resync.
+- Add stats on response time to iCloud server health check logging
+  - maybe monitor response time average and email notify when it increases dramatically?
+- Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
+- Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
+  - Add logging instrumentation of modified file paths to sync verification to aid in analysis of sync drift
+- Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
+- Start writing tests for icloud client
+- Start writing tests for macserver
+- Instead of our bespoke header modifiedTime we should use 'Last-Modified' and note we don't need to set this for route using res.download – res.download does this automatically
+- Fix bug: low priority, this just causes an error in the logs when freeing up disk space. Problem: attempting to evict a file within a .pages directory (a special apple file) e.g. Post.pages/preview.jpg will fail: you need to evict the parent directory perhaps?
+- Remove evict route
+- Rename /watch route to setup-complete
+- Remove recursiveReaddirRoute
+  - instead, to sync folder tree, whenever readddir is called, it should maintain an internal map of the last time a blog's subfolder tree was recursively checked, and call it? or maybe just call ls and brctl download on the specific folder? or is this too slow?
+- Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
+- Investigate: can we modify app/clients/icloud/routes/site/upload.js and app/clients/icloud/macserver/httpClient/upload.js to exchange a content hash? to prevent needless re-upload?
+
 
 Bug reports:
 - The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
@@ -898,6 +949,8 @@ Add asset library / file upload to template editor and share files across templa
 - use this to help implement a favicon feature which minifies the favicon
 
 Extend markdown parser to support [content blocks syntax](https://github.com/iainc/Markdown-Content-Blocks)
+
+Extend markdown parser to support Obsidian Callouts and follow up with [questioner](https://blot.im/questions/3374)
 
 Extend markdown parser to add a special class to a list of only images for targeting into an image grid or gallery?
 - `- ![Image](_image.jpg)...` -> `<ul class="image-list">`... could then be used in CSS?

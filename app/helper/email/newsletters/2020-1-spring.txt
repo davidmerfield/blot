@@ -8,18 +8,18 @@ Spring newsletter
 **Changes**
 - Increased the price for future customers to $4 per month. This has not affected existing customers in any way: you will continue to pay the same fee as usual.
 - Template preview subdomains, like this [preview of the Scrapbook template](https://preview-scrapbook-on-ferox.blot.im/), are finally accessible over HTTPS. This now means that every aspect of Blot is served securely.
-- Improved the [custom metadata](https://blot.im/publishing/metadata) parser. Now the first sentence of a blog post which happens to contain a colon is no longer parsed incorrectly as if it were custom metadata. Now custom metadata *keys* must be alphanumeric and contain no more than one space. Dashes and underscores are also allowed.
+- Improved the [custom metadata](https://blot.im/publishing/metadata) parser. Now the first sentence of a post which happens to contain a colon is no longer parsed incorrectly as if it were custom metadata. Now custom metadata *keys* must be alphanumeric and contain no more than one space. Dashes and underscores are also allowed.
 - Made a number of changes to the algorithm which extracts a summary for each post. Image caption text is no longer included in this summary. Whitespace is also better normalized to prevent the title entering the summary.
 - Adjusted the format of the templates’ default CSS and JavaScript URLs to make them easier to cache.
 - Your [custom redirects](https://blot.im/settings/services/redirects) now return an HTTP status of *301*, which indicates the redirect is permanent, instead of *302*, which indicates a temporary redirect.
-- Increased the length of sessions on your blog’s dashboard to 90 days. Previously, you had to log in again after each browser session.
+- Increased the length of sessions on your site’s dashboard to 90 days. Previously, you had to log in again after each browser session.
 - Updated Blot’s dependencies to their latest stable version and redesigned the dashboard and documentation, as is tradition.
 
 **Bugs fixed**
 - Fixed a bug in the appearance of one of the default date formats which produced dates that look like *2020-03-19 18:00*. Previously, a post pushed at 6pm would appear as *06:00* instead of *18:00*.
 - Fixed a problem with the git client and files whose names contain non-ASCII characters. By default, the *git diff* command returns non-ASCII characters in quoted octal notation, i.e. *\nnn\nnn*. The git client can now properly handle this encoding.
 - Fixed a series of bugs which occurred when you switched from the Dropbox client to the git client. These were triggered by the difference in the handling of case-sensitivity: Dropbox is case-insensitive, git is not.
-- Fixed a bug which prevented the inclusion of particular pages on your blog’s sitemap.
+- Fixed a bug which prevented the inclusion of particular pages on your site’s sitemap.
 - Fixed a number of bugs triggered by Mustache’s default character escaping for URLs. Thank you Marlin for working on this.
 
 **Mistakes**

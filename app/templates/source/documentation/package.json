@@ -1,7 +1,6 @@
 {
 	"name": "Documentation",
 	"locals": {
-		"title": "Documentation",
 		"page_size": 100,
 		"sort_by": "id",
 		"spacing": 1,

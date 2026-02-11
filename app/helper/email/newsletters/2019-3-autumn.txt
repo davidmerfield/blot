@@ -3,26 +3,26 @@ Autumn newsletter
 *You received this email because you subscribed to [Blot’s newsletter](https://blot.im/news). You can [unsubscribe](https://blot.im/news/cancel) if you like. Please don’t hesitate to reply directly to this email if you have any thoughts or questions.*
 
 **New features**
-- Added *Fathom* as [one of the analytics providers](https://blot.im/settings/services) you can install on your blog.
-- You can now set metadata for your custom template through its source files in your blog’s folder. This means that you no longer need to open the online template editor in order to set the URL of a template view.
+- Added *Fathom* as [one of the analytics providers](https://blot.im/settings/services) you can install on your site.
+- You can now set metadata for your custom template through its source files in your site’s folder. This means that you no longer need to open the online template editor in order to set the URL of a template view.
 - Added a template function to encode your posts as spec-compliant XHTML. This addition fixes a number of vintage RSS feed validation bugs.
 
 **Changes**
 - Improved the *Log in* page to make it easier to reset your password.
 - Hardened Blot’s server against SSH brute-force attacks and generally tightened the server’s firewall.
-- Improved the template function which transforms relative URLs inside a blog post into absolute URLs. 
+- Improved the template function which transforms relative URLs inside a post into absolute URLs. 
 - Adjusted the design of the dashboard and documentation, as is tradition.
 - Updated the libraries on which Blot depends to patch any known security vulnerabilities, as is tradition.
 
 **Bugs fixed**
 - Fixed a bug with the parsing of newlines for files created on Windows. Did you know that different operating systems use different character codes used to terminate lines in text files?
-- After changing your email on Blot’s dashboard, your new email is now sent to Blot’s payment processor to ensure you recieve receipts at the correct address in future.
+- After changing your email on your site’s dashboard, your new email is now sent to Blot’s payment processor to ensure you recieve receipts at the correct address in future.
 - Resolved a number of mobile display bugs with the Magazine, Portfolio and Photo templates.
-- Fixed a mishandling of server errors which sometimes caused half-rendered pages to appear on your blog’s dashboard.
+- Fixed a mishandling of server errors which sometimes caused half-rendered pages to appear on your site’s dashboard.
 
 **Mistakes**
 
-Blot’s server went down three times over the summer. The first downtime began on July 3rd, the second on July 28th and the last on August 21st. During each of these incidents, something caused the CPUs on Blot’s server to max out, and stay maxed. Blot’s reverse proxy froze and stopped passing requests to the processes which render the pages on your blogs. I could not SSH into Blot’s server nor control it through my hosting provider’s tools. 
+Blot’s server went down three times over the summer. The first downtime began on July 3rd, the second on July 28th and the last on August 21st. During each of these incidents, something caused the CPUs on Blot’s server to max out, and stay maxed. Blot’s reverse proxy froze and stopped passing requests to the processes which render the pages on your sites. I could not SSH into Blot’s server nor control it through my hosting provider’s tools. 
 
 Each time, I managed to get Blot online by booting a replacement server on clean hardware. I added additional logging after each incident. However, I have not determined the ultimate cause or causes of these incidents.
 
