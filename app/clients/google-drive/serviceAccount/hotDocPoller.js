@@ -130,33 +130,33 @@ class HotDocPoller {
     return docs;
   }
 
+  // It's harder than you might think to track updates to a Google Doc
+  // quickly and efficiently. See this:
+
+  // https://stackoverflow.com/questions/71772606/google-drive-files-spreadsheets-rest-api-how-to-avoid-delay-when-tracking-file
+  
+  // We tried polling files.get, relying on changes.watch, and even files.watch
+  // and revisions.list but the fastest and most reliable way to track updates
+  // was to use docs.documents.get.
   async fetchLatestRevisionState(docs, fileId) {
     if (!docs) {
       return { lastKnownRevision: null, lastKnownModifiedTime: null };
     }
 
-    try {
-      const doc = await docs.documents.get({ documentId: fileId });
-      const revisionId = doc?.data?.revisionId ?? null;
+    const doc = await docs.documents.get({ documentId: fileId });
+    const revisionId = doc?.data?.revisionId ?? null;
 
-      this.log("fetchLatestRevisionState documents.get", {
-        fileId,
-        documentId: doc?.data?.documentId,
-        title: doc?.data?.title,
-        revisionId,
-      });
+    this.log("fetchLatestRevisionState documents.get", {
+      fileId,
+      documentId: doc?.data?.documentId,
+      title: doc?.data?.title,
+      revisionId,
+    });
 
-      return {
-        lastKnownRevision: revisionId,
-        lastKnownModifiedTime: null,
-      };
-    } catch (err) {
-      this.log("fetchLatestRevisionState documents.get-error", {
-        fileId,
-        message: err?.message,
-      });
-      return { lastKnownRevision: null, lastKnownModifiedTime: null };
-    }
+    return {
+      lastKnownRevision: revisionId,
+      lastKnownModifiedTime: null,
+    };
   }
 
   boostBackoffForAll(now) {
@@ -267,8 +267,10 @@ class HotDocPoller {
         return this.fetchLatestRevisionState(docs, fileId);
       });
 
-      item.lastKnownModifiedTime = initial.lastKnownModifiedTime;
-      item.lastKnownRevision = initial.lastKnownRevision;
+      if (initial.lastKnownRevision != null) {
+        item.lastKnownRevision = initial.lastKnownRevision;
+        item.lastKnownModifiedTime = initial.lastKnownModifiedTime;
+      }
       item.state = "active";
     } catch (err) {
       if (isRateLimitError(err)) {
@@ -343,8 +345,10 @@ class HotDocPoller {
       (latest.lastKnownRevision !== item.lastKnownRevision ||
         latest.lastKnownModifiedTime !== item.lastKnownModifiedTime);
 
-    item.lastKnownModifiedTime = latest.lastKnownModifiedTime;
-    item.lastKnownRevision = latest.lastKnownRevision;
+    if (latest.lastKnownRevision != null) {
+      item.lastKnownRevision = latest.lastKnownRevision;
+      item.lastKnownModifiedTime = latest.lastKnownModifiedTime;
+    }
     item.state = "active";
 
     if (!changed) return;
