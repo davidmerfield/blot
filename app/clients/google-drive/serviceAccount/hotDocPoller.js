@@ -62,6 +62,7 @@ class HotDocPoller {
     this.items = new Map();
     this.started = false;
     this.timer = null;
+    this.tickInProgress = false;
 
     this.globalLimiter = new Bottleneck({
       maxConcurrent: 2,
@@ -91,8 +92,16 @@ class HotDocPoller {
     if (this.started) return;
     this.started = true;
     this.timer = setInterval(() => {
+      if (this.tickInProgress) {
+        this.log("tick-skipped", { reason: "already-running" });
+        return;
+      }
+
+      this.tickInProgress = true;
       this.tick().catch((err) => {
         console.error(prefix(), "tick-error", err?.message || err);
+      }).finally(() => {
+        this.tickInProgress = false;
       });
     }, POLL_INTERVAL_MS);
   }
@@ -375,7 +384,10 @@ class HotDocPoller {
       pollCount: item.pollCount,
     });
 
-    await this.triggerDownloadAndSync(item);
+    const didSync = await this.triggerDownloadAndSync(item);
+    if (!didSync) {
+      return;
+    }
 
     item.lastKnownRevision = latest.lastKnownRevision;
     item.lastKnownModifiedTime = latest.lastKnownModifiedTime;
@@ -391,7 +403,7 @@ class HotDocPoller {
         serviceAccountId: item.serviceAccountId,
         fileId: item.fileId,
       });
-      return;
+      return false;
     }
 
     this.lastSyncByBlog.set(item.blogID, now);
@@ -450,6 +462,7 @@ class HotDocPoller {
     });
 
     await sync(item.blogID);
+    return true;
   }
 
   async tick() {
