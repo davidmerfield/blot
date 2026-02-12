@@ -114,13 +114,15 @@ body {
   justify-content: space-between;
 }
 
-.main-section-how-left {
+.main-section-how-left,
+.main-section-content {
   width: 66.6666%;
   flex-grow: 0;
   min-width: 0;
 }
 
-.main-section-how-right {
+.main-section-how-right,
+.toc-sidebar {
   width: 33.3333%;
   max-width: 300px;
   flex-shrink: 0;
@@ -825,6 +827,23 @@ a:has(.ui-action) {
   text-decoration: none;
 }
 
+/* Single-line supported file extensions (e.g. /how/files/markdown) */
+.supported-extensions {
+  font-size: var(--small-font-size);
+  color: var(--medium-text-color);
+  margin-bottom: var(--spacing);
+}
+.supported-extensions span {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  margin-right: 0.2rem;
+  border-radius: 999px;
+  background: var(--border-color);
+  color: var(--medium-text-color);
+}
+.supported-extensions span:last-child {
+  margin-right: 0;
+}
 .ui-action span, 
 .ui-action svg {
   vertical-align: middle;

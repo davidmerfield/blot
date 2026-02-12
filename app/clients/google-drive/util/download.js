@@ -10,6 +10,8 @@ const config = require("config");
 const hash = require("helper/hash");
 const cheerio = require("cheerio");
 const yauzl = require("yauzl");
+const hotDocPoller = require("../serviceAccount/hotDocPoller");
+const database = require("../database");
 
 const isExportSizeLimitError = (err) => {
   
@@ -116,7 +118,8 @@ module.exports = async (
   blogID,
   drive,
   path,
-  { id, md5Checksum, mimeType, modifiedTime }
+  { id, md5Checksum, mimeType, modifiedTime },
+  { serviceAccountId, folderId, skipHotEnqueue } = {}
 ) => {
   return new Promise(async function (resolve, reject) {
     let pathOnBlot = localPath(blogID, path);
@@ -154,6 +157,34 @@ module.exports = async (
       return true;
     };
     try {
+      if (
+        !skipHotEnqueue &&
+        id &&
+        mimeType === "application/vnd.google-apps.document"
+      ) {
+        let accountServiceAccountId = serviceAccountId;
+        let accountFolderId = folderId;
+
+        if (!accountServiceAccountId || !accountFolderId) {
+          const account = await database.blog.get(blogID);
+          accountServiceAccountId = accountServiceAccountId || account?.serviceAccountId;
+          accountFolderId = accountFolderId || account?.folderId;
+        }
+
+        if (accountServiceAccountId && accountFolderId) {
+          hotDocPoller
+            .enqueue({
+              blogID,
+              serviceAccountId: accountServiceAccountId,
+              fileId: id,
+              folderId: accountFolderId,
+            })
+            .catch((err) => {
+              debug("hotDocPoller enqueue failed", err?.message || err);
+            });
+        }
+      }
+
       if (mimeType === "application/vnd.google-apps.folder") {
         await fs.ensureDir(pathOnBlot);
         debug("MKDIR folder");

@@ -3,10 +3,18 @@ const { promisify } = require("util");
 const establishSyncLock = require("sync/establishSyncLock");
 const getBlog = promisify(require("models/blog").get);
 const fix = promisify(require("sync/fix"));
-const sync = require("./sync");
+const database = require("../database");
 
 module.exports = async function (blogID) {
+
+  const sync = require("./sync.js");
+
   try {
+    const account = await database.blog.get(blogID);
+    if (!account?.folderId) {
+      return;
+    }
+
     const blog = await getBlog({ id: blogID });
     const { done, folder } = await establishSyncLock(blogID);
     try {

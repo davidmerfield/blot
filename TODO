@@ -2,6 +2,9 @@ For chuck: I'll look into whether it's possible to do this without the tag folde
 
 Google Drive:
 - Add sync check
+- Can we avoid tripping the blog's cacheID with google drive syncs that produce no changes?
+- Unwind the cyclic dependency in hotdocpoller with download.js
+- Improve sync efficieny with option to target a specific folder or file first (Track ids in database)
 - Improve html output for google docs and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQFmTvLKzPkJrgsBTWZmQJWS)
   Issue: <p><img><br><img></p> should be <p><img></p><p><img></p>
 - Add support for code blocks in [google docs](https://docs.google.com/document/d/1aDV4QVQm5w-j5DbMHDh50d3KknKuaPh9Qx1vFHbDhEo/edit?tab=t.0#heading=h.m7hsgfqddgv6)

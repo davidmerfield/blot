@@ -162,6 +162,9 @@ module.exports = async function sync(blogID, publish, update) {
               md5Checksum,
               mimeType,
               modifiedTime,
+            }, {
+              serviceAccountId,
+              folderId,
             });
 
             if (result?.skippedReason === "exportSizeLimitExceeded") {

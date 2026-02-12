@@ -18,7 +18,6 @@
 
 .main-section-with-toc .toc-sidebar {
   flex-shrink: 0;
-  width: 220px;
   position: sticky;
   top: 1.5rem;
   align-self: flex-start;

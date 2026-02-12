@@ -10,38 +10,31 @@
       {{> navigation}}
     </section>
     <section class="content">
-      {{#show-toc}}
+      {{#show-main-section-right}}
       <section class="main-section main-section-with-toc">
-        <section class="main-section-content js-toc-content">
+        <section class="main-section-content {{#show-toc-or-on-this-page}}js-toc-content{{/show-toc-or-on-this-page}}">
           {{> breadcrumbs}}
           {{> body}}
         </section>
         <aside class="toc-sidebar">
+          {{#selected.how}}
+          {{> links}}
+          {{/selected.how}}
+          {{#show-toc-or-on-this-page}}
           <div id="toc-wrapper">
             <p>On this page</p>
             <div id="toc"></div>
           </div>
+          {{/show-toc-or-on-this-page}}
         </aside>
       </section>
-      {{/show-toc}}
-      {{^show-toc}}
+      {{/show-main-section-right}}
+      {{^show-main-section-right}}
       <section class="main-section">
         {{> breadcrumbs}}
-        {{#selected.how}}
-          <section class="main-section-how">
-            <section class="main-section-how-left">
-              {{> body}}
-            </section>
-            <section class="main-section-how-right">
-              {{> links}}
-            </section>
-          </section>
-        {{/selected.how}}
-        {{^selected.how}}
-          {{> body}}
-        {{/selected.how}}
+        {{> body}}
       </section>
-      {{/show-toc}}
+      {{/show-main-section-right}}
       {{> footer}}
     </section>
   </section>
