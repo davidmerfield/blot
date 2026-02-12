@@ -114,6 +114,102 @@ const resolveHtmlAndImagesDir = async (extractDir) => {
   return { htmlPath, imagesDir };
 };
 
+const getDriveAuth = (drive) => {
+  return (
+    drive?.context?._options?.auth ||
+    drive?._options?.auth ||
+    null
+  );
+};
+
+const fetchZipExportStreamFromExportLink = async (drive, exportUrl) => {
+  const auth = getDriveAuth(drive);
+
+  if (!auth?.request) {
+    throw new Error("Missing authenticated Drive request client");
+  }
+
+  // Call request as a method on auth so its internals (e.g. this.getClient()) work
+  const response = await auth.request({
+    url: exportUrl,
+    method: "GET",
+    responseType: "stream",
+  });
+
+  return response?.data;
+};
+
+const downloadGoogleDocAsZip = async ({
+  drive,
+  id,
+  path,
+  blogID,
+  modifiedTime,
+  pathOnBlot,
+  zipStream,
+}) => {
+  const zipPath = join(tempDir, guid());
+  const extractDir = join(tempDir, guid());
+
+  try {
+    const stream =
+      zipStream ||
+      (
+        await drive.files.export(
+          {
+            fileId: id,
+            mimeType: "application/zip",
+            supportsAllDrives: true,
+          },
+          { responseType: "stream" }
+        )
+      ).data;
+
+    await streamToFile(stream, zipPath);
+    await extractZip(zipPath, extractDir);
+    const { htmlPath, imagesDir } = await resolveHtmlAndImagesDir(extractDir);
+    const docHash = hash(path);
+    const blogDir = join(config.blog_static_files_dir, blogID);
+    const assetDir = join(blogDir, "_assets", docHash);
+    await fs.ensureDir(assetDir);
+
+    if (imagesDir) {
+      const imageFiles = await fs.readdir(imagesDir);
+      for (const name of imageFiles) {
+        const srcPath = join(imagesDir, name);
+        const st = await fs.stat(srcPath);
+        if (st.isFile()) {
+          await fs.copy(srcPath, join(assetDir, name), { overwrite: true });
+        }
+      }
+    }
+
+    const html = await fs.readFile(htmlPath, "utf-8");
+    const $ = cheerio.load(html, { decodeEntities: false });
+    $("img").each(function () {
+      const src = $(this).attr("src");
+      if (!src) return;
+      const normalized = src.replace(/^\.\//, "").trim();
+      if (normalized.startsWith("images/")) {
+        const filename = normalized.slice(7);
+        $(this).attr("src", "/_assets/" + docHash + "/" + filename);
+      }
+    });
+
+    await fs.writeFile(pathOnBlot, $.html().trim(), "utf-8");
+
+    try {
+      const mtime = new Date(modifiedTime);
+      await fs.utimes(pathOnBlot, mtime, mtime);
+    } catch (e) {
+      debug("Error setting mtime", e);
+    }
+  } finally {
+    await fs.remove(zipPath).catch(() => {});
+    await fs.remove(extractDir).catch(() => {});
+  }
+};
+
 module.exports = async (
   blogID,
   drive,
@@ -138,23 +234,59 @@ module.exports = async (
       }
 
       debug("EXPORT size limit exceeded for file", pathOnBlot);
-      
-      // For Google Docs, fetch and log exportLinks for debugging
-      // if (mimeType === "application/vnd.google-apps.document") {
-      //   try {
-      //     const fileMetadata = await drive.files.get({
-      //       fileId: id,
-      //       fields: "exportLinks",
-      //     });
-      //     console.log("exportLinks for Google Doc:", fileMetadata.data.exportLinks);
-      //   } catch (apiError) {
-      //     debug("Error fetching exportLinks:", apiError);
-      //   }
-      // }
+
+      if (mimeType === "application/vnd.google-apps.document") {
+        try {
+          const fileMetadata = await drive.files.get({
+            fileId: id,
+            fields: "exportLinks,id,mimeType,modifiedTime",
+            supportsAllDrives: true,
+          });
+          const exportLinks = fileMetadata?.data?.exportLinks;
+          const zipExportUrl = exportLinks?.["application/zip"];
+
+          if (!zipExportUrl) {
+            debug(
+              "ZIP export fallback unavailable: no application/zip exportLink",
+              { fileId: id }
+            );
+          } else {
+            try {
+              const zipStream = await fetchZipExportStreamFromExportLink(
+                drive,
+                zipExportUrl
+              );
+
+              await downloadGoogleDocAsZip({
+                drive,
+                id,
+                path,
+                blogID,
+                modifiedTime,
+                pathOnBlot,
+                zipStream,
+              });
+
+              debug("ZIP export fallback download SUCCEEDED");
+              return "downloadedZipFallback";
+            } catch (zipDownloadError) {
+              debug("ZIP export fallback download failed", {
+                fileId: id,
+                error: zipDownloadError?.message || zipDownloadError,
+              });
+            }
+          }
+        } catch (metadataError) {
+          debug("Failed to fetch exportLinks for ZIP export fallback", {
+            fileId: id,
+            error: metadataError?.message || metadataError,
+          });
+        }
+      }
       
       await ensurePlaceholderWithMtime(pathOnBlot, modifiedTime);
       debug("   created empty file at:", colors.green(pathOnBlot));
-      return true;
+      return "placeholder";
     };
     try {
       if (
@@ -223,64 +355,24 @@ module.exports = async (
       debug("   to:", colors.green(pathOnBlot));
 
       if (mimeType === "application/vnd.google-apps.document") {
-        const zipPath = join(tempDir, guid());
-        const extractDir = join(tempDir, guid());
         try {
           debug("getting Google Doc as zip from Drive");
-          const res = await drive.files.export(
-            {
-              fileId: id,
-              mimeType: "application/zip",
-              supportsAllDrives: true,
-            },
-            { responseType: "stream" }
-          );
-          await streamToFile(res.data, zipPath);
-          await extractZip(zipPath, extractDir);
-          const { htmlPath, imagesDir } =
-            await resolveHtmlAndImagesDir(extractDir);
-          const docHash = hash(path);
-          const blogDir = join(config.blog_static_files_dir, blogID);
-          const assetDir = join(blogDir, "_assets", docHash);
-          await fs.ensureDir(assetDir);
-          if (imagesDir) {
-            const imageFiles = await fs.readdir(imagesDir);
-            for (const name of imageFiles) {
-              const srcPath = join(imagesDir, name);
-              const st = await fs.stat(srcPath);
-              if (st.isFile())
-                await fs.copy(srcPath, join(assetDir, name), {
-                  overwrite: true,
-                });
-            }
-          }
-          const html = await fs.readFile(htmlPath, "utf-8");
-          const $ = cheerio.load(html, { decodeEntities: false });
-          $("img").each(function () {
-            const src = $(this).attr("src");
-            if (!src) return;
-            const normalized = src.replace(/^\.\//, "").trim();
-            if (normalized.startsWith("images/")) {
-              const filename = normalized.slice(7);
-              $(this).attr("src", "/_assets/" + docHash + "/" + filename);
-            }
+          await downloadGoogleDocAsZip({
+            drive,
+            id,
+            path,
+            blogID,
+            modifiedTime,
+            pathOnBlot,
           });
-          await fs.writeFile(pathOnBlot, $.html().trim(), "utf-8");
-          try {
-            const mtime = new Date(modifiedTime);
-            await fs.utimes(pathOnBlot, mtime, mtime);
-          } catch (e) {
-            debug("Error setting mtime", e);
-          }
-          await fs.remove(zipPath).catch(() => {});
-          await fs.remove(extractDir).catch(() => {});
           debug("DOWNLOAD file SUCCEEDED");
           return resolve({ updated: true });
         } catch (err) {
-          await fs.remove(zipPath).catch(() => {});
-          await fs.remove(extractDir).catch(() => {});
           const handled = await handleExportSizeLimit(err);
-          if (handled) {
+          if (handled === "downloadedZipFallback") {
+            return settle(() => resolve({ updated: true }));
+          }
+          if (handled === "placeholder") {
             return settle(() =>
               resolve({
                 updated: false,
@@ -350,7 +442,10 @@ module.exports = async (
           settled = true;
           handleExportSizeLimit(err)
             .then((handled) => {
-              if (handled) {
+              if (handled === "downloadedZipFallback") {
+                return resolve({ updated: true });
+              }
+              if (handled === "placeholder") {
                 return resolve({
                   updated: false,
                   skippedReason: "exportSizeLimitExceeded",
@@ -364,7 +459,10 @@ module.exports = async (
     } catch (e) {
       debug("download error", e);
       const handled = await handleExportSizeLimit(e);
-      if (handled) {
+      if (handled === "downloadedZipFallback") {
+        return settle(() => resolve({ updated: true }));
+      }
+      if (handled === "placeholder") {
         return settle(() =>
           resolve({
             updated: false,
