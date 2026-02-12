@@ -41,7 +41,20 @@ const jitterMs = (baseMs) => {
 
 const isRateLimitError = (err) => {
   const code = err?.code || err?.status || err?.response?.status;
-  return code === 429 || code === 403;
+
+  if (code === 429) return true;
+  if (code !== 403) return false;
+
+  const reasons = [
+    ...(err?.errors || []),
+    ...(err?.response?.data?.error?.errors || []),
+  ]
+    .map((entry) => entry?.reason)
+    .filter(Boolean);
+
+  return reasons.some((reason) =>
+    ["rateLimitExceeded", "userRateLimitExceeded"].includes(reason)
+  );
 };
 
 class HotDocPoller {
@@ -344,14 +357,15 @@ class HotDocPoller {
       Boolean(latest.lastKnownRevision) &&
       (latest.lastKnownRevision !== item.lastKnownRevision ||
         latest.lastKnownModifiedTime !== item.lastKnownModifiedTime);
-
-    if (latest.lastKnownRevision != null) {
-      item.lastKnownRevision = latest.lastKnownRevision;
-      item.lastKnownModifiedTime = latest.lastKnownModifiedTime;
-    }
     item.state = "active";
 
-    if (!changed) return;
+    if (!changed) {
+      if (latest.lastKnownRevision != null) {
+        item.lastKnownRevision = latest.lastKnownRevision;
+        item.lastKnownModifiedTime = latest.lastKnownModifiedTime;
+      }
+      return;
+    }
 
     this.metrics.changeDetectedCount += 1;
     this.log("change-detected", {
@@ -362,6 +376,9 @@ class HotDocPoller {
     });
 
     await this.triggerDownloadAndSync(item);
+
+    item.lastKnownRevision = latest.lastKnownRevision;
+    item.lastKnownModifiedTime = latest.lastKnownModifiedTime;
   }
 
   async triggerDownloadAndSync(item) {
