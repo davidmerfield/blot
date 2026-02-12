@@ -12,9 +12,13 @@ const writeChangeToFolder = require('./save/writeChangeToFolder');
 // so docs can deep link to e.g. /sites/gitt/template/default/links
 TemplateEditor.use("/default", (req, res, next) => {
   const slug = res.locals.template?.slug;
-  if (!slug) return next();
-  const pathSuffix = req.path || "";
-  res.redirect(`${res.locals.base}/template/${slug}${pathSuffix}`);
+  if (slug) {
+    const pathSuffix = req.path || "";
+    return res.redirect(`${res.locals.base}/template/${slug}${pathSuffix}`);
+  }
+  // Blog has no template set (e.g. new or migrated); redirect to template list
+  // so we don't try to load non-existent template slug "default"
+  res.redirect(`${res.locals.base}/template`);
 });
 
 TemplateEditor.param("viewSlug", require("./load/template-views"));
