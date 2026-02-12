@@ -40,12 +40,66 @@ async function exactCaseViaRealpath(p) {
 // Map to track active chokidar watchers for each blog folder
 const blogWatchers = new Map();
 const chokidarEventMap = new Map();
+const evictionSuppressionMap = new Map();
 const CHOKIDAR_EVENT_WINDOW_MS = 60_000;
 const CHOKIDAR_PRUNE_INTERVAL_MS = 30_000;
+const EVICTION_SUPPRESSION_POST_MS = 2_000;
+const EVICTION_SUPPRESSION_TTL_MS = 10_000;
 let chokidarPruneInterval = null;
 const FS_WATCH_SETTLE_DELAY_MS = 300;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const buildEvictionSuppressionKey = (blogID, pathInBlogDirectory) =>
+  `${blogID}:${pathInBlogDirectory}`;
+
+const markEvictionSuppressed = (blogID, pathInBlogDirectory) => {
+  if (!pathInBlogDirectory) {
+    return;
+  }
+
+  const key = buildEvictionSuppressionKey(blogID, pathInBlogDirectory);
+  const now = Date.now();
+  evictionSuppressionMap.set(key, {
+    suppressUntil: now + EVICTION_SUPPRESSION_POST_MS,
+    expiresAt: now + EVICTION_SUPPRESSION_TTL_MS,
+  });
+};
+
+const extendEvictionSuppression = (blogID, pathInBlogDirectory) => {
+  if (!pathInBlogDirectory) {
+    return;
+  }
+
+  const key = buildEvictionSuppressionKey(blogID, pathInBlogDirectory);
+  const now = Date.now();
+  const existing = evictionSuppressionMap.get(key);
+  const suppressUntil = Math.max(existing?.suppressUntil ?? 0, now + EVICTION_SUPPRESSION_POST_MS);
+  const expiresAt = Math.max(existing?.expiresAt ?? 0, now + EVICTION_SUPPRESSION_TTL_MS);
+  evictionSuppressionMap.set(key, { suppressUntil, expiresAt });
+};
+
+const isEvictionSuppressed = (blogID, pathInBlogDirectory) => {
+  if (!pathInBlogDirectory) {
+    return false;
+  }
+
+  const key = buildEvictionSuppressionKey(blogID, pathInBlogDirectory);
+  const suppression = evictionSuppressionMap.get(key);
+
+  if (!suppression) {
+    return false;
+  }
+
+  const now = Date.now();
+
+  if (suppression.expiresAt <= now) {
+    evictionSuppressionMap.delete(key);
+    return false;
+  }
+
+  return suppression.suppressUntil > now;
+};
 
 const recordChokidarEvent = (blogID, pathInBlogDirectory, action) => {
   if (!pathInBlogDirectory) {
@@ -79,13 +133,25 @@ const pruneChokidarEvents = () => {
   }
 };
 
+const pruneEvictionSuppressions = () => {
+  const now = Date.now();
+  for (const [key, suppression] of evictionSuppressionMap.entries()) {
+    if (suppression.expiresAt <= now) {
+      evictionSuppressionMap.delete(key);
+    }
+  }
+};
+
 const startChokidarPruneLoop = () => {
   if (chokidarPruneInterval) {
     return;
   }
 
   chokidarPruneInterval = setInterval(
-    pruneChokidarEvents,
+    () => {
+      pruneChokidarEvents();
+      pruneEvictionSuppressions();
+    },
     CHOKIDAR_PRUNE_INTERVAL_MS
   );
   chokidarPruneInterval.unref?.();
@@ -181,6 +247,11 @@ const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
     return;
   }
 
+  if (isEvictionSuppressed(blogID, pathInBlogDirectory)) {
+    console.log(clfdate(), `Ignoring FS Watch Event: blogID: ${blogID}, path: ${pathInBlogDirectory} because it is in eviction suppression`);
+    return;
+  }
+
   await delay(FS_WATCH_SETTLE_DELAY_MS);
 
   const fullPath = buildBlogPath(blogID, pathInBlogDirectory);
@@ -236,11 +307,16 @@ const initialize = async () => {
       await unwatch(blogID);
 
       for (const filePath of files) {
+        const pathInBlogDirectory = extractPathInBlogDirectory(filePath);
+        markEvictionSuppressed(blogID, pathInBlogDirectory);
+
         try {
           await brctl.evict(filePath); // Evict the file
         } catch (error) {
           // Continue processing files even if eviction of a specific file fails, as brctl evict can intermittently produce errors for certain files.
           console.error(clfdate(), `Failed to evict file (${filePath}):`, error);
+        } finally {
+          extendEvictionSuppression(blogID, pathInBlogDirectory);
         }
       }
 
