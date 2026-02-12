@@ -1,0 +1,156 @@
+var config = require("config");
+
+var ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+
+function toMs(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) return value.getTime();
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return null;
+    return value < 1e12 ? value * 1000 : value;
+  }
+
+  if (typeof value === "string") {
+    var parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  return null;
+}
+
+function resolvePaypalIntervalMs(paypal) {
+  if (!paypal || !paypal.plan_id) return null;
+
+  var plans = (config.paypal && config.paypal.plans) || {};
+
+  var planIdentifier = Object.keys(plans).find(function (id) {
+    return plans[id] === paypal.plan_id;
+  });
+
+  if (!planIdentifier) return null;
+
+  if (planIdentifier.indexOf("monthly") !== -1) return ONE_MONTH_MS;
+  if (planIdentifier.indexOf("yearly") !== -1) return 365 * 24 * 60 * 60 * 1000;
+
+  return null;
+}
+
+function stripePeriodEndAtMs(subscription) {
+  if (!subscription) return null;
+  return toMs(subscription.current_period_end);
+}
+
+function paypalPeriodEndAtMs(paypal) {
+  if (!paypal) return null;
+
+  var nextBilling = toMs(paypal.billing_info && paypal.billing_info.next_billing_time);
+  if (nextBilling) return nextBilling;
+
+  var lastPayment = toMs(
+    paypal.billing_info &&
+      paypal.billing_info.last_payment &&
+      paypal.billing_info.last_payment.time
+  );
+
+  var intervalMs = resolvePaypalIntervalMs(paypal);
+  if (lastPayment && intervalMs) return lastPayment + intervalMs;
+
+  return toMs(paypal.status_update_time);
+}
+
+function shouldDisableFromStripeSubscription(subscription, now) {
+  now = now || Date.now();
+
+  if (!subscription) return false;
+
+  if (subscription.status === "canceled") return true;
+
+  if (subscription.cancel_at_period_end) {
+    var periodEnd = stripePeriodEndAtMs(subscription);
+    return Boolean(periodEnd && periodEnd <= now);
+  }
+
+  return false;
+}
+
+function shouldDisableFromPaypalSubscription(paypal, now) {
+  now = now || Date.now();
+
+  if (!paypal || !paypal.status) return false;
+
+  var status = paypal.status.toUpperCase();
+  if (status === "EXPIRED" || status === "SUSPENDED") return true;
+
+  if (status !== "CANCELLED") return false;
+
+  var periodEnd = paypalPeriodEndAtMs(paypal);
+  return Boolean(periodEnd && periodEnd <= now);
+}
+
+function cancellationDetails(user, now) {
+  now = now || Date.now();
+
+  if (user && user.subscription) {
+    var stripePeriodEnd = stripePeriodEndAtMs(user.subscription);
+    var stripeCancelled =
+      user.subscription.status === "canceled" ||
+      user.subscription.cancel_at_period_end;
+
+    if (stripeCancelled) {
+      return {
+        cancelled: true,
+        provider: "stripe",
+        periodEndedAt: stripePeriodEnd,
+        periodEnded: Boolean(stripePeriodEnd && stripePeriodEnd <= now),
+      };
+    }
+  }
+
+  if (user && user.paypal && user.paypal.status) {
+    var paypalPeriodEnd = paypalPeriodEndAtMs(user.paypal);
+    var status = user.paypal.status.toUpperCase();
+    var cancelled =
+      status === "CANCELLED" ||
+      status === "EXPIRED" ||
+      status === "SUSPENDED";
+
+    if (cancelled) {
+      return {
+        cancelled: true,
+        provider: "paypal",
+        periodEndedAt: paypalPeriodEnd,
+        periodEnded: Boolean(paypalPeriodEnd && paypalPeriodEnd <= now),
+      };
+    }
+  }
+
+  return {
+    cancelled: false,
+    provider: null,
+    periodEndedAt: null,
+    periodEnded: false,
+  };
+}
+
+function deletionDue(user, now, graceMs) {
+  now = now || Date.now();
+  graceMs = typeof graceMs === "number" ? graceMs : ONE_MONTH_MS;
+
+  var details = cancellationDetails(user, now);
+  if (!details.cancelled || !details.periodEndedAt) return false;
+
+  return details.periodEndedAt + graceMs <= now;
+}
+
+module.exports = {
+  ONE_MONTH_MS: ONE_MONTH_MS,
+  cancellationDetails: cancellationDetails,
+  deletionDue: deletionDue,
+  paypalPeriodEndAtMs: paypalPeriodEndAtMs,
+  shouldDisableFromPaypalSubscription: shouldDisableFromPaypalSubscription,
+  shouldDisableFromStripeSubscription: shouldDisableFromStripeSubscription,
+  stripePeriodEndAtMs: stripePeriodEndAtMs,
+  toMs: toMs,
+};

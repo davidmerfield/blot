@@ -13,6 +13,7 @@ const fs = require("fs-extra");
 const exec = require("child_process").exec;
 const zombies = require("./zombies");
 const checkCardTesters = require("./check-card-testers");
+const subscriptionLifecycleJob = require("./subscription-lifecycle");
 
 // If any disk has less than 2GB of space, we should notify the admin
 const MINIMUM_DISK_SPACE_IN_K = 2 * 1024 * 1024;
@@ -200,6 +201,15 @@ module.exports = function () {
   //   });
   // });
 
+
+
+  console.log(clfdate(), "Scheduled daily subscription lifecycle processing");
+  scheduler.scheduleJob({ hour: 9, minute: 0 }, function () {
+    console.log(clfdate(), "Processing subscription lifecycle changes");
+    subscriptionLifecycleJob(function (err) {
+      if (err) console.log(clfdate(), "Error processing subscription lifecycle", err);
+    });
+  });
 
   console.log(clfdate(), "Scheduled daily check of suspected fraudulent users");
   scheduler.scheduleJob({ hour: 11, minute: 0 }, async function () {
