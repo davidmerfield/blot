@@ -236,7 +236,6 @@ module.exports = async (
       debug("EXPORT size limit exceeded for file", pathOnBlot);
 
       if (mimeType === "application/vnd.google-apps.document") {
-        console.log("EXPORT size limit exceeded for file", pathOnBlot);
         try {
           const fileMetadata = await drive.files.get({
             fileId: id,
@@ -247,14 +246,12 @@ module.exports = async (
           const zipExportUrl = exportLinks?.["application/zip"];
 
           if (!zipExportUrl) {
-            console.log("ZIP export fallback unavailable: no application/zip exportLink", { fileId: id });
             debug(
               "ZIP export fallback unavailable: no application/zip exportLink",
               { fileId: id }
             );
           } else {
             try {
-              console.log("Fetching ZIP export stream from export link", zipExportUrl);
               const zipStream = await fetchZipExportStreamFromExportLink(
                 drive,
                 zipExportUrl
@@ -270,14 +267,9 @@ module.exports = async (
                 zipStream,
               });
 
-              console.log("ZIP export fallback download SUCCEEDED");
               debug("ZIP export fallback download SUCCEEDED");
               return "downloadedZipFallback";
             } catch (zipDownloadError) {
-              console.log("ZIP export fallback download failed", {
-                fileId: id,
-                error: zipDownloadError?.message || zipDownloadError,
-              });
               debug("ZIP export fallback download failed", {
                 fileId: id,
                 error: zipDownloadError?.message || zipDownloadError,
@@ -285,10 +277,6 @@ module.exports = async (
             }
           }
         } catch (metadataError) {
-          console.log("Failed to fetch exportLinks for ZIP export fallback", {
-            fileId: id,
-            error: metadataError?.message || metadataError,
-          });
           debug("Failed to fetch exportLinks for ZIP export fallback", {
             fileId: id,
             error: metadataError?.message || metadataError,
