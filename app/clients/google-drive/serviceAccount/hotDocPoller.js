@@ -1,3 +1,10 @@
+/**
+ * Hot doc poller: tracks recently-edited Google Docs and triggers sync when
+ * revisionId changes (via docs.documents.get).
+ *
+ * Rate limit: Google allows 5 docs.get() requests per service account per second.
+ * We cap at 4 requests per service account per second to keep a buffer.
+ */
 const Bottleneck = require("bottleneck");
 const clfdate = require("helper/clfdate");
 const createDriveClient = require("./createDriveClient");
@@ -7,6 +14,10 @@ const database = require("../database");
 const sync = require("../sync");
 
 const prefix = () => `${clfdate()} Google Drive hotDocPoller:`;
+
+// docs.get() quota: 5/sec per service account; we use 4/sec for buffer
+const DOCS_GET_MAX_PER_SERVICE_ACCOUNT_PER_SEC = 4;
+const DOCS_GET_MIN_TIME_MS = 1000 / DOCS_GET_MAX_PER_SERVICE_ACCOUNT_PER_SEC;
 
 const POLL_INTERVAL_MS = 1000;
 const BLOG_SYNC_COOLDOWN_MS = 10000;
@@ -46,7 +57,7 @@ class HotDocPoller {
 
     this.perServiceAccountLimiter = new Bottleneck.Group({
       maxConcurrent: 1,
-      minTime: 1500,
+      minTime: DOCS_GET_MIN_TIME_MS,
     });
 
     this.metrics = {
@@ -119,68 +130,33 @@ class HotDocPoller {
     return docs;
   }
 
-  async fetchLatestRevisionState(drive, docs, fileId) {
-    const response = await drive.revisions.list({
-      fileId,
-      pageSize: 1,
-      fields: "revisions(id,modifiedTime)",
-      supportsAllDrives: true,
-    });
+  async fetchLatestRevisionState(docs, fileId) {
+    if (!docs) {
+      return { lastKnownRevision: null, lastKnownModifiedTime: null };
+    }
 
-    this.log("fetchLatestRevisionState", {
-      fileId,
-      response: response?.data,
-    });
-
-    const revision = response?.data?.revisions?.[0];
-
-    // for debugging purposes, call drive.files.get to get the file metadata
-    // and the version
     try {
-      const file = await drive.files.get({
+      const doc = await docs.documents.get({ documentId: fileId });
+      const revisionId = doc?.data?.revisionId ?? null;
+
+      this.log("fetchLatestRevisionState documents.get", {
         fileId,
-        fields: "id,mimeType,md5Checksum,modifiedTime,version",
-        supportsAllDrives: true,
+        documentId: doc?.data?.documentId,
+        title: doc?.data?.title,
+        revisionId,
       });
 
-      this.log("file", {
-        fileId,
-        file: file?.data,
-      });
+      return {
+        lastKnownRevision: revisionId,
+        lastKnownModifiedTime: null,
+      };
     } catch (err) {
-      this.log("file-get-error", {
+      this.log("fetchLatestRevisionState documents.get-error", {
         fileId,
         message: err?.message,
       });
+      return { lastKnownRevision: null, lastKnownModifiedTime: null };
     }
-
-    let revisionId = null;
-    // for debugging: documents.get (Docs API) – only applies to Google Docs
-    if (docs) {
-      try {
-        const doc = await docs.documents.get({ documentId: fileId });
-        this.log("documents.get", {
-          fileId,
-          documentId: doc?.data?.documentId,
-          title: doc?.data?.title,
-          revisionId: doc?.data?.revisionId,
-        });
-
-        if (doc?.data?.revisionId) {
-          revisionId = doc?.data?.revisionId;
-        }
-      } catch (err) {
-        this.log("documents.get-error", {
-          fileId,
-          message: err?.message,
-        });
-      }
-    }
-
-    return {
-      lastKnownRevision: revisionId || revision?.id || null,
-      lastKnownModifiedTime: revision?.modifiedTime || null,
-    };
   }
 
   boostBackoffForAll(now) {
@@ -225,19 +201,20 @@ class HotDocPoller {
 
     if (sameServiceAccount.length <= MAX_ITEMS_PER_SERVICE_ACCOUNT) return;
 
-    sameServiceAccount
+    const toEvict = sameServiceAccount
       .sort((a, b) => a.firstSeen - b.firstSeen)
-      .slice(0, sameServiceAccount.length - MAX_ITEMS_PER_SERVICE_ACCOUNT)
-      .forEach((item) => {
-        this.items.delete(this.keyFor(item.blogID, item.fileId));
-        this.metrics.evictions += 1;
-        this.log("evicted", {
-          reason: "service-account-cap",
-          blogID: item.blogID,
-          serviceAccountId: item.serviceAccountId,
-          fileId: item.fileId,
-        }, "warn");
-      });
+      .slice(0, sameServiceAccount.length - MAX_ITEMS_PER_SERVICE_ACCOUNT);
+
+    for (const item of toEvict) {
+      this.items.delete(this.keyFor(item.blogID, item.fileId));
+      this.metrics.evictions += 1;
+      this.log("evicted", {
+        reason: "service-account-cap",
+        blogID: item.blogID,
+        serviceAccountId: item.serviceAccountId,
+        fileId: item.fileId,
+      }, "warn");
+    }
   }
 
   async enqueue({ blogID, serviceAccountId, fileId, folderId }) {
@@ -281,14 +258,13 @@ class HotDocPoller {
     this.log("enqueued", { blogID, serviceAccountId, fileId, folderId });
 
     try {
-      const drive = await this.getDrive(serviceAccountId);
+      const docs = await this.getDocs(serviceAccountId);
       const limiter = this.perServiceAccountLimiter
         .key(serviceAccountId)
         .chain(this.globalLimiter);
 
-      const docs = await this.getDocs(serviceAccountId);
       const initial = await limiter.schedule(async () => {
-        return this.fetchLatestRevisionState(drive, docs, fileId);
+        return this.fetchLatestRevisionState(docs, fileId);
       });
 
       item.lastKnownModifiedTime = initial.lastKnownModifiedTime;
@@ -353,14 +329,13 @@ class HotDocPoller {
     item.nextDueAt = now + intervalMs + jitterMs(intervalMs);
     this.metrics.pollAttempts += 1;
 
-    const drive = await this.getDrive(item.serviceAccountId);
     const docs = await this.getDocs(item.serviceAccountId);
     const limiter = this.perServiceAccountLimiter
       .key(item.serviceAccountId)
       .chain(this.globalLimiter);
 
     const latest = await limiter.schedule(async () => {
-      return this.fetchLatestRevisionState(drive, docs, item.fileId);
+      return this.fetchLatestRevisionState(docs, item.fileId);
     });
 
     const changed =
