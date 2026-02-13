@@ -4,6 +4,7 @@ var ensure = require("helper/ensure");
 var Entry = require("../entry");
 var DateStamp = require("../../build/prepare/dateStamp");
 var Blog = require("../blog");
+var pathIndex = require("./pathIndex");
 
 var MAX_RANDOM_ATTEMPTS = 10;
 
@@ -16,6 +17,7 @@ module.exports = (function () {
     "scheduled",
     "pages",
     "deleted",
+    "entries:lex",
   ];
 
   function resave(blogID, callback) {
@@ -432,6 +434,140 @@ module.exports = (function () {
     return defaultSortOrder; // Default sort order
   }
 
+
+
+  function normalizePathPrefix(pathPrefix) {
+    if (typeof pathPrefix !== "string") return null;
+
+    pathPrefix = pathPrefix.trim();
+    if (!pathPrefix) return null;
+
+    if (pathPrefix[0] !== "/") pathPrefix = "/" + pathPrefix;
+
+    return pathPrefix;
+  }
+
+  function fetchEntryScores(blogID, entryIDs, callback) {
+    if (!entryIDs.length) return callback(null, []);
+
+    var key = listKey(blogID, "entries");
+    var multi = redis.multi();
+
+    entryIDs.forEach(function (entryID) {
+      multi.zscore(key, entryID);
+    });
+
+    multi.exec(function (err, rawScores) {
+      if (err) return callback(err);
+
+      var withScores = [];
+
+      for (var i = 0; i < entryIDs.length; i++) {
+        var score = rawScores && rawScores[i];
+        if (score === null || score === undefined) continue;
+
+        withScores.push({
+          id: entryIDs[i],
+          score: parseFloat(score),
+        });
+      }
+
+      callback(null, withScores);
+    });
+  }
+
+  function getPrefixFilteredPage(
+    blogID,
+    pathPrefix,
+    sortBy,
+    order,
+    start,
+    end,
+    pageSize,
+    zeroIndexedPageNo,
+    pageNo,
+    callback
+  ) {
+    pathIndex.ensureIndex(blogID, function (err) {
+      if (err) {
+        console.error(err);
+        return callback(err, [], null);
+      }
+
+      var min = "[" + pathPrefix;
+      var max = "[" + pathPrefix + "\xff";
+
+      redis.zrangebylex(pathIndex.lexKey(blogID), min, max, function (error, matchingIDs) {
+        if (error) {
+          console.error(error);
+          return callback(error, [], null);
+        }
+
+        var totalEntries = matchingIDs.length;
+
+        if (!totalEntries) {
+          return handlePaginationAndCallback(
+            blogID,
+            [],
+            0,
+            zeroIndexedPageNo,
+            pageSize,
+            start,
+            end,
+            pageNo,
+            callback
+          );
+        }
+
+        if (sortBy === "id") {
+          var ids = order === "desc" ? matchingIDs.slice().reverse() : matchingIDs.slice();
+
+          return handlePaginationAndCallback(
+            blogID,
+            ids.slice(start, end + 1),
+            totalEntries,
+            zeroIndexedPageNo,
+            pageSize,
+            start,
+            end,
+            pageNo,
+            callback
+          );
+        }
+
+        fetchEntryScores(blogID, matchingIDs, function (error, scoredEntries) {
+          if (error) {
+            console.error(error);
+            return callback(error, [], null);
+          }
+
+          scoredEntries.sort(function (a, b) {
+            return order === "asc" ? b.score - a.score : a.score - b.score;
+          });
+
+          totalEntries = scoredEntries.length;
+
+          var pagedIDs = scoredEntries
+            .slice(start, end + 1)
+            .map(function (item) {
+              return item.id;
+            });
+
+          handlePaginationAndCallback(
+            blogID,
+            pagedIDs,
+            totalEntries,
+            zeroIndexedPageNo,
+            pageSize,
+            start,
+            end,
+            pageNo,
+            callback
+          );
+        });
+      });
+    });
+  }
   function getPage(
     blogID,
     options = {},
@@ -444,7 +580,8 @@ module.exports = (function () {
       pageNumber: pageNoInput = "1", 
       pageSize: rawPageSize, 
       sortBy: rawSortBy, 
-      order: rawOrder 
+      order: rawOrder,
+      pathPrefix: rawPathPrefix
     } = options;
 
     // Validate page number input
@@ -462,6 +599,7 @@ module.exports = (function () {
     // Validate and set sorting options
     const sortBy = validateSortBy(rawSortBy);
     const order = validateSortOrder(rawOrder);
+    const pathPrefix = normalizePathPrefix(rawPathPrefix);
 
     const zeroIndexedPageNo = pageNo - 1; // zero indexed
 
@@ -469,6 +607,21 @@ module.exports = (function () {
     var end = start + (pageSize - 1);
 
     // Determine how to fetch the sorted list
+    if (pathPrefix) {
+      return getPrefixFilteredPage(
+        blogID,
+        pathPrefix,
+        sortBy,
+        order,
+        start,
+        end,
+        pageSize,
+        zeroIndexedPageNo,
+        pageNo,
+        callback
+      );
+    }
+
     if (sortBy === "id") {
       // Sort by entry ID (alphabetically)
       const sortOptions = [

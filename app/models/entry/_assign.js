@@ -2,6 +2,7 @@ var Blog = require("models/blog");
 var ensure = require("helper/ensure");
 var debug = require("debug")("blot:entry:assign");
 var redis = require("models/client");
+var pathIndex = require("../entries/pathIndex");
 
 var model = require("./model");
 
@@ -26,9 +27,12 @@ var lists = [
 module.exports = function (blogID, entry, callback) {
   ensure(blogID, "string").and(entry, model).and(callback, "function");
 
-  var multi = redis.multi();
+  pathIndex.ensureIndex(blogID, function (err) {
+    if (err) return callback(err);
 
-  function add(list, score) {
+    var multi = redis.multi();
+
+    function add(list, score) {
     // By default, are sorted by date stamp
     // which is the entry's publish date
     if (score === undefined) score = entry.dateStamp;
@@ -43,78 +47,89 @@ module.exports = function (blogID, entry, callback) {
 
     // Blot uses redis' sorted sets to
     // create lists of entries.
-    multi.zadd(key, score, value);
+      multi.zadd(key, score, value);
+
+      if (list === ENTRIES) {
+        multi.zadd(pathIndex.lexKey(blogID), 0, value);
+      }
   }
 
-  function drop(list) {
+    function drop(list) {
     var key = listKey(blogID, list);
     var value = entry.id;
 
     ensure(list, "string").and(value, "string");
 
-    multi.zrem(key, value);
+      multi.zrem(key, value);
+
+      if (list === ENTRIES) {
+        multi.zrem(pathIndex.lexKey(blogID), value);
+      }
   }
 
   // There is a list of every entry that Blot knows
   // about for this blog. This includes deleted entries etc...
-  add(ALL, entry.created);
+    add(ALL, entry.created);
 
   // There is a list of every deleted entry, again sorted
   // by creation date for catching file renames.
   // Perhaps it should be entry.updated?
   // There is also a list of every entry sorted by creation
   // date for catching renames.
-  if (entry.deleted) {
-    add(DELETED, Date.now());
-    drop(CREATED);
-  } else {
-    drop(DELETED);
-    add(CREATED, entry.created);
-  }
+    if (entry.deleted) {
+      add(DELETED, Date.now());
+      drop(CREATED);
+    } else {
+      drop(DELETED);
+      add(CREATED, entry.created);
+    }
 
   // Only show entry on list of blog posts
   // if it is neither on the menu/page, scheduled
   // for future publication, deleted or a draft.
-  var visible = !(
-    entry.menu ||
-    entry.scheduled ||
-    entry.page ||
-    entry.deleted ||
-    entry.draft
-  );
+    var visible = !(
+      entry.menu ||
+      entry.scheduled ||
+      entry.page ||
+      entry.deleted ||
+      entry.draft
+    );
 
-  if (visible) {
-    add(ENTRIES);
-  } else {
-    drop(ENTRIES);
-  }
-
-  if (entry.page) {
-    add(PAGES);
-  } else {
-    drop(PAGES);
-  }
-
-  if (entry.draft) {
-    add(DRAFTS);
-  } else {
-    drop(DRAFTS);
-  }
-
-  if (entry.scheduled) {
-    add(SCHEDULED);
-  } else {
-    drop(SCHEDULED);
-  }
-
-  multi.exec(function (err) {
-    if (err) return callback(err);
-
-    if (entry.menu) {
-      addToMenu(blogID, entry, callback);
+    if (visible) {
+      add(ENTRIES);
     } else {
-      dropFromMenu(blogID, entry, callback);
+      drop(ENTRIES);
     }
+
+    if (entry.page) {
+      add(PAGES);
+    } else {
+      drop(PAGES);
+    }
+
+    if (entry.draft) {
+      add(DRAFTS);
+    } else {
+      drop(DRAFTS);
+    }
+
+    if (entry.scheduled) {
+      add(SCHEDULED);
+    } else {
+      drop(SCHEDULED);
+    }
+
+    multi.set(pathIndex.readyKey(blogID), "1");
+
+    multi.exec(function (err) {
+      if (err) return callback(err);
+
+      if (entry.menu) {
+        addToMenu(blogID, entry, callback);
+      } else {
+        dropFromMenu(blogID, entry, callback);
+      }
+    });
   });
 };
 
