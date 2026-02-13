@@ -105,9 +105,26 @@ async function deleteSubscription(req, res, next) {
         throw new Error("Stripe client unavailable");
       }
 
-      const deleted = await client.customers.del(
-        req.user.subscription.customer
-      );
+      let deleted;
+
+      try {
+        deleted = await client.customers.del(req.user.subscription.customer);
+      } catch (error) {
+        if (isStripeCustomerMissingError(error)) {
+          console.warn(
+            "Stripe customer already missing; continuing account deletion",
+            {
+              customer: req.user.subscription.customer,
+              code: error.code,
+              type: error.type,
+              statusCode: error.statusCode,
+            }
+          );
+          deleted = { deleted: true };
+        } else {
+          throw error;
+        }
+      }
 
       if (!deleted || deleted.deleted !== true) {
         throw new Error("Stripe customer not deleted");
@@ -505,6 +522,16 @@ function normalizeErrorMessage(error) {
   } catch (_) {
     return String(error);
   }
+}
+
+function isStripeCustomerMissingError(error) {
+  if (!error) return false;
+
+  return (
+    error.type === "StripeInvalidRequestError" &&
+    error.code === "resource_missing" &&
+    (error.statusCode === undefined || error.statusCode === 404)
+  );
 }
 
 // We expose these methods for our scripts

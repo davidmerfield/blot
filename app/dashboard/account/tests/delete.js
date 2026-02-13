@@ -478,6 +478,90 @@ describe("Dashboard account deletion refunds", function () {
     );
   });
 
+
+  it("continues deleting account when Stripe customer is already missing", async function () {
+    const stripeError = new Error("No such customer");
+    stripeError.type = "StripeInvalidRequestError";
+    stripeError.code = "resource_missing";
+    stripeError.statusCode = 404;
+
+    const stripeClient = {
+      invoices: { list: jasmine.createSpy("list") },
+      refunds: { create: jasmine.createSpy("create") },
+      customers: {
+        del: jasmine.createSpy("del").and.returnValue(Promise.reject(stripeError)),
+      },
+    };
+
+    Delete._setStripeClient(stripeClient);
+
+    const req = {
+      user: {
+        subscription: {
+          customer: "cus_missing",
+          created: Math.floor(Date.now() / 1000),
+        },
+      },
+      issueDeletionRefundHandled: true,
+    };
+
+    spyOn(console, "warn");
+    spyOn(console, "error");
+
+    await runMiddleware(Delete.exports.subscription, req);
+
+    expect(stripeClient.customers.del).toHaveBeenCalledWith("cus_missing");
+    expect(console.warn).toHaveBeenCalledWith(
+      "Stripe customer already missing; continuing account deletion",
+      jasmine.objectContaining({
+        customer: "cus_missing",
+        code: "resource_missing",
+        type: "StripeInvalidRequestError",
+        statusCode: 404,
+      })
+    );
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("fails deleting account for unexpected Stripe customer deletion errors", async function () {
+    const stripeError = new Error("Stripe network issue");
+    stripeError.type = "StripeConnectionError";
+
+    const stripeClient = {
+      invoices: { list: jasmine.createSpy("list") },
+      refunds: { create: jasmine.createSpy("create") },
+      customers: {
+        del: jasmine.createSpy("del").and.returnValue(Promise.reject(stripeError)),
+      },
+    };
+
+    Delete._setStripeClient(stripeClient);
+
+    const req = {
+      user: {
+        subscription: {
+          customer: "cus_broken",
+          created: Math.floor(Date.now() / 1000),
+        },
+      },
+      issueDeletionRefundHandled: true,
+    };
+
+    spyOn(console, "warn");
+    spyOn(console, "error");
+
+    await expectAsync(runMiddleware(Delete.exports.subscription, req)).toBeRejectedWith(
+      stripeError
+    );
+
+    expect(stripeClient.customers.del).toHaveBeenCalledWith("cus_broken");
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith(
+      "Error in deleting subscription:",
+      stripeError
+    );
+  });
+
   it("sends the refund email when a refund is issued", function (done) {
     const refund = {
       issued: true,
