@@ -27,6 +27,9 @@ var lists = [
 module.exports = function (blogID, entry, callback) {
   ensure(blogID, "string").and(entry, model).and(callback, "function");
 
+  // TEMPORARY ROLLOUT SAFETY: this call keeps deployments seamless before
+  // scripts/blog/backfill-entries-path-index.js has been run for all blogs.
+  // Remove after the production backfill is complete (see TODO).
   pathIndex.ensureIndex(blogID, function (err) {
     if (err) return callback(err);
 

@@ -33,7 +33,7 @@ function waitForReady(blogID, retries, callback) {
   }, WAIT_DELAY_MS);
 }
 
-function backfill(blogID, callback) {
+function backfillIndex(blogID, callback) {
   redis.zrange(entriesKey(blogID), 0, -1, function (err, ids) {
     if (err) return callback(err);
 
@@ -52,7 +52,7 @@ function backfill(blogID, callback) {
 
     multi.exec(function (err) {
       if (err) return callback(err);
-      callback();
+      callback(null, ids ? ids.length : 0);
     });
   });
 }
@@ -64,6 +64,10 @@ function ensureIndex(blogID, callback) {
     if (err) return callback(err);
     if (ready) return callback();
 
+    // TEMPORARY ROLLOUT FALLBACK:
+    // This lazy backfill path is here to support seamless production rollout.
+    // After running scripts/blog/backfill-entries-path-index.js for all blogs in
+    // production, this block (and its lock/wait helpers) can be removed.
     redis.set(
       lockKey(blogID),
       "1",
@@ -77,7 +81,9 @@ function ensureIndex(blogID, callback) {
           return waitForReady(blogID, WAIT_RETRIES, callback);
         }
 
-        backfill(blogID, callback);
+        backfillIndex(blogID, function (err) {
+          callback(err);
+        });
       }
     );
   });
@@ -87,4 +93,5 @@ module.exports = {
   lexKey: lexKey,
   readyKey: readyKey,
   ensureIndex: ensureIndex,
+  backfillIndex: backfillIndex,
 };

@@ -9,6 +9,7 @@ var FLAGS = {
   google_drive_beta: "boolean",
   google_docs_preserve_linebreaks: "boolean", // deprecated IGNORE and REMOVE in future release
   deleted_entries_sanitized: "boolean",
+  entries_path_index_backfilled: "boolean",
 };
 
 // KEY, TYPE, WRITE?, PUBLIC?

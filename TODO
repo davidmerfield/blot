@@ -1,3 +1,5 @@
+- Remove temporary lazy backfill fallback in app/models/entries/pathIndex.js (`ensureIndex` lock/wait path) after running scripts/blog/backfill-entries-path-index.js across production and confirming all blogs have `flags.entries_path_index_backfilled=true`
+
 For chuck: I'll look into whether it's possible to do this without the tag folder '[Blog]' so we avoid tagging the posts. It should be possible to simply use a folder called 'Blog' and instead filter the {{#posts}} list based on the sub folder. I'll get back to you
 
 Google Drive:
