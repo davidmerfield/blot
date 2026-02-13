@@ -3,7 +3,6 @@ const Entries = require("./index"); // Replace with the correct path to the Entr
 const Entry = require("../entry");
 const Blog = require("../blog");
 const entryKey = require("../entry/key").entry;
-const pathIndex = require("./pathIndex");
 
 function buildEntry(path, overrides) {
   const now = Date.now();
@@ -364,7 +363,7 @@ describe("entries", function () {
       redis.zadd(entriesKey, now, "/Blog/existing.txt", function (err) {
         if (err) return done.fail(err);
 
-        pathIndex.backfillIndex(blogID, function (err) {
+        redis.multi().zadd(lexKey, 0, "/Blog/existing.txt").set(readyKey, "1").exec(function (err) {
           if (err) return done.fail(err);
 
           Entry.set(blogID, "/Blog/new.txt", buildEntry("/Blog/new.txt"), function (err) {
@@ -412,9 +411,14 @@ describe("entries", function () {
         "/Notes/d.txt"
       );
 
-      await new Promise((resolve, reject) =>
-        pathIndex.backfillIndex(blogID, (err) => (err ? reject(err) : resolve()))
-      );
+      await redis
+        .multi()
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/a.txt")
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/b.txt")
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/c.txt")
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Notes/d.txt")
+        .set(`blog:${blogID}:entries:lex:ready`, "1")
+        .exec();
 
       Entries.getPage(
         blogID,
