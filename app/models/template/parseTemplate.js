@@ -25,7 +25,14 @@ var retrieveThese = _.filter(modules, function (name) {
   .sort();
 
 var projectedEntryLocals = {
-  allEntries: true,
+  allEntries: [""],
+  all_entries: [""],
+  recentEntries: [""],
+  recent_entries: [""],
+  posts: [""],
+  search_results: [""],
+  tagged: ["entries"],
+  archives: ["months.entries"],
 };
 
 function parseTemplate(template) {
@@ -73,6 +80,80 @@ function parseTemplate(template) {
     return true;
   }
 
+  function projectedFieldFromContext(contextPath, variableName) {
+    if (!contextPath || !variableName || variableName.indexOf(".") > -1) return null;
+
+    for (var root in projectedEntryLocals) {
+      var prefixes = projectedEntryLocals[root] || [];
+      for (var i = 0; i < prefixes.length; i++) {
+        var prefix = prefixes[i] ? root + "." + prefixes[i] : root;
+        if (contextPath === prefix) {
+          return { root: root, field: variableName };
+        }
+      }
+    }
+
+    return null;
+  }
+
+
+
+  function isProjectedPathSegment(contextPath, variableName) {
+    if (!contextPath || !variableName || variableName.indexOf(".") > -1) return false;
+
+    for (var root in projectedEntryLocals) {
+      var prefixes = projectedEntryLocals[root] || [];
+      for (var i = 0; i < prefixes.length; i++) {
+        var prefix = prefixes[i];
+        if (!prefix) continue;
+
+        var parts = prefix.split(".");
+        for (var depth = 0; depth < parts.length; depth++) {
+          var currentPath = depth === 0 ? root : root + "." + parts.slice(0, depth).join(".");
+          if (contextPath === currentPath && variableName === parts[depth]) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  function isProjectedEntryPath(root, propertyPath) {
+    if (!projectedEntryLocals[root] || !propertyPath) return false;
+
+    var prefixes = projectedEntryLocals[root] || [];
+
+    for (var i = 0; i < prefixes.length; i++) {
+      if (prefixes[i] === propertyPath) return true;
+    }
+
+    return false;
+  }
+
+  function projectedFieldFromPropertyAccess(root, propertyPath) {
+    if (!projectedEntryLocals[root] || !propertyPath) return null;
+
+    var prefixes = projectedEntryLocals[root] || [];
+
+    for (var i = 0; i < prefixes.length; i++) {
+      var prefix = prefixes[i];
+
+      if (!prefix) {
+        if (propertyPath.indexOf(".") === -1) return propertyPath;
+        continue;
+      }
+
+      if (propertyPath.indexOf(prefix + ".") !== 0) continue;
+
+      var fieldName = propertyPath.slice((prefix + ".").length);
+      if (fieldName && fieldName.indexOf(".") === -1) return fieldName;
+    }
+
+    return null;
+  }
+
   // This can be used to recursively
   // strip locals and partials we need
   // to fetch from the db before rendering
@@ -116,8 +197,16 @@ function parseTemplate(template) {
         // e.g. length (or subfolder.property for deeper nesting)
         var propertyPath = variable.indexOf(".") > -1 &&
           variable.slice(variable.indexOf(".") + 1);
-        var contextRoot = context && context.slice(0, -1).split(".")[0];
-        var isProjectedFieldInContext = setProjectedEntryField(contextRoot, variable);
+        var contextPath = context ? context.slice(0, -1) : "";
+        var projectedFieldContext = projectedFieldFromContext(contextPath, variable);
+        var isProjectedFieldInContext = false;
+
+        if (projectedFieldContext) {
+          isProjectedFieldInContext = setProjectedEntryField(
+            projectedFieldContext.root,
+            projectedFieldContext.field
+          );
+        }
 
         if (retrieveThese.indexOf(variable) > -1) {
           // Special case: 'cdn' should always be an array (empty for literals, with targets for blocks)
@@ -153,8 +242,17 @@ function parseTemplate(template) {
               retrieve.cdn = [];
             }
           } else {
-            if (projectedEntryLocals[variableRoot]) {
-              setNestedProperty(variableRoot, "fields." + propertyPath, true);
+            var projectedField = projectedFieldFromPropertyAccess(
+              variableRoot,
+              propertyPath
+            );
+
+            if (projectedField) {
+              setNestedProperty(variableRoot, "fields." + projectedField, true);
+            } else if (isProjectedEntryPath(variableRoot, propertyPath)) {
+              retrieve[variableRoot] = retrieve[variableRoot] && retrieve[variableRoot] !== true
+                ? retrieve[variableRoot]
+                : {};
             } else {
               // Build nested structure for whitelisted root with property access
               setNestedProperty(variableRoot, propertyPath, true);
@@ -181,7 +279,8 @@ function parseTemplate(template) {
         if (
           retrieveThese.indexOf(variable) === -1 &&
           variable !== "cdn" &&
-          !isProjectedFieldInContext
+          !isProjectedFieldInContext &&
+          !isProjectedPathSegment(contextPath, variable)
         ) {
           // Only track the root variable, not nested properties
           // If variable has dots and root is whitelisted, skip (already handled above)

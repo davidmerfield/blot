@@ -80,6 +80,70 @@ describe("parseTemplate", function () {
     });
   });
 
+
+  it("projects fields from all_entries section access", function () {
+    var template = `{{#all_entries}}{{title}}{{/all_entries}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { all_entries: { fields: { title: true } } },
+    });
+  });
+
+  it("projects fields from recentEntries section access", function () {
+    var template = `{{#recentEntries}}{{title}}{{/recentEntries}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { recentEntries: { fields: { title: true } } },
+    });
+  });
+
+  it("projects fields from recent_entries section access", function () {
+    var template = `{{#recent_entries}}{{title}}{{/recent_entries}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { recent_entries: { fields: { title: true } } },
+    });
+  });
+
+  it("projects fields from posts section access", function () {
+    var template = `{{#posts}}{{title}}{{/posts}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { posts: { fields: { title: true } } },
+    });
+  });
+
+  it("projects fields from search_results section access", function () {
+    var template = `{{#search_results}}{{title}}{{/search_results}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { search_results: { fields: { title: true } } },
+    });
+  });
+
+  it("projects fields from tagged entries access", function () {
+    var template = `{{#tagged.entries}}{{title}}{{/tagged.entries}}{{tagged.entries.url}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { tagged: { fields: { title: true, url: true } } },
+    });
+  });
+
+  it("projects fields from archives entries access", function () {
+    var template = `{{#archives}}{{#months}}{{#entries}}{{title}}{{/entries}}{{/months}}{{/archives}}{{archives.months.entries.url}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { archives: { fields: { title: true, url: true } } },
+    });
+  });
+
   it("tracks nested plugin assets", function () {
     var template = `{{{plugin.katex.css}}}`;
     var result = parseTemplate(template);
