@@ -92,38 +92,71 @@ function shouldDisableFromPaypalSubscription(paypal, now) {
 function cancellationDetails(user, now) {
   now = now || Date.now();
 
-  if (user && user.subscription) {
-    var stripePeriodEnd = stripePeriodEndAtMs(user.subscription);
+  var stripe = user && user.subscription;
+  var paypal = user && user.paypal;
+
+  var stripePeriodEnd = stripePeriodEndAtMs(stripe);
+  var stripeStatus = stripe && stripe.status;
+  var stripeIsActiveStatus =
+    stripeStatus === "active" || stripeStatus === "trialing";
+  var stripeActive =
+    Boolean(stripe && stripeIsActiveStatus) &&
+    (!stripePeriodEnd || stripePeriodEnd > now);
+
+  var paypalStatus = paypal && paypal.status && paypal.status.toUpperCase();
+  var paypalActive = paypalStatus === "ACTIVE";
+
+  if (stripeActive || paypalActive) {
+    return {
+      cancelled: false,
+      provider: null,
+      periodEndedAt: null,
+      periodEnded: false,
+    };
+  }
+
+  var cancellationCandidates = [];
+
+  if (stripe) {
     var stripeCancelled =
-      user.subscription.status === "canceled" ||
-      user.subscription.cancel_at_period_end;
+      stripe.status === "canceled" || stripe.cancel_at_period_end;
 
     if (stripeCancelled) {
-      return {
+      cancellationCandidates.push({
         cancelled: true,
         provider: "stripe",
         periodEndedAt: stripePeriodEnd,
         periodEnded: Boolean(stripePeriodEnd && stripePeriodEnd <= now),
-      };
+      });
     }
   }
 
-  if (user && user.paypal && user.paypal.status) {
-    var paypalPeriodEnd = paypalPeriodEndAtMs(user.paypal);
-    var status = user.paypal.status.toUpperCase();
+  if (paypalStatus) {
+    var paypalPeriodEnd = paypalPeriodEndAtMs(paypal);
     var cancelled =
-      status === "CANCELLED" ||
-      status === "EXPIRED" ||
-      status === "SUSPENDED";
+      paypalStatus === "CANCELLED" ||
+      paypalStatus === "EXPIRED" ||
+      paypalStatus === "SUSPENDED";
 
     if (cancelled) {
-      return {
+      cancellationCandidates.push({
         cancelled: true,
         provider: "paypal",
         periodEndedAt: paypalPeriodEnd,
         periodEnded: Boolean(paypalPeriodEnd && paypalPeriodEnd <= now),
-      };
+      });
     }
+  }
+
+  if (cancellationCandidates.length) {
+    cancellationCandidates.sort(function (a, b) {
+      if (a.periodEndedAt && b.periodEndedAt) return b.periodEndedAt - a.periodEndedAt;
+      if (a.periodEndedAt) return -1;
+      if (b.periodEndedAt) return 1;
+      return 0;
+    });
+
+    return cancellationCandidates[0];
   }
 
   return {
