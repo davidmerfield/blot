@@ -1,4 +1,3 @@
-var ensure = require("helper/ensure");
 var redis = require("models/client");
 
 function entriesKey(blogID) {
@@ -36,19 +35,8 @@ function backfillIndex(blogID, callback) {
   });
 }
 
-function ensureIndex(blogID, callback) {
-  ensure(blogID, "string").and(callback, "function");
-
-  redis.exists(readyKey(blogID), function (err, ready) {
-    if (err) return callback(err);
-    if (ready) return callback();
-    callback(new Error("Entries path index is not ready for blog " + blogID));
-  });
-}
-
 module.exports = {
   lexKey: lexKey,
   readyKey: readyKey,
-  ensureIndex: ensureIndex,
   backfillIndex: backfillIndex,
 };

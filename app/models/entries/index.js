@@ -488,83 +488,76 @@ module.exports = (function () {
     pageNo,
     callback
   ) {
-    pathIndex.ensureIndex(blogID, function (err) {
-      if (err) {
-        console.error(err);
-        return callback(err, [], null);
+    var min = "[" + pathPrefix;
+    var max = "[" + pathPrefix + "\xff";
+
+    redis.zrangebylex(pathIndex.lexKey(blogID), min, max, function (error, matchingIDs) {
+      if (error) {
+        console.error(error);
+        return callback(error, [], null);
       }
 
-      var min = "[" + pathPrefix;
-      var max = "[" + pathPrefix + "\xff";
+      var totalEntries = matchingIDs.length;
 
-      redis.zrangebylex(pathIndex.lexKey(blogID), min, max, function (error, matchingIDs) {
+      if (!totalEntries) {
+        return handlePaginationAndCallback(
+          blogID,
+          [],
+          0,
+          zeroIndexedPageNo,
+          pageSize,
+          start,
+          end,
+          pageNo,
+          callback
+        );
+      }
+
+      if (sortBy === "id") {
+        var ids = order === "desc" ? matchingIDs.slice().reverse() : matchingIDs.slice();
+
+        return handlePaginationAndCallback(
+          blogID,
+          ids.slice(start, end + 1),
+          totalEntries,
+          zeroIndexedPageNo,
+          pageSize,
+          start,
+          end,
+          pageNo,
+          callback
+        );
+      }
+
+      fetchEntryScores(blogID, matchingIDs, function (error, scoredEntries) {
         if (error) {
           console.error(error);
           return callback(error, [], null);
         }
 
-        var totalEntries = matchingIDs.length;
+        scoredEntries.sort(function (a, b) {
+          return order === "asc" ? b.score - a.score : a.score - b.score;
+        });
 
-        if (!totalEntries) {
-          return handlePaginationAndCallback(
-            blogID,
-            [],
-            0,
-            zeroIndexedPageNo,
-            pageSize,
-            start,
-            end,
-            pageNo,
-            callback
-          );
-        }
+        totalEntries = scoredEntries.length;
 
-        if (sortBy === "id") {
-          var ids = order === "desc" ? matchingIDs.slice().reverse() : matchingIDs.slice();
-
-          return handlePaginationAndCallback(
-            blogID,
-            ids.slice(start, end + 1),
-            totalEntries,
-            zeroIndexedPageNo,
-            pageSize,
-            start,
-            end,
-            pageNo,
-            callback
-          );
-        }
-
-        fetchEntryScores(blogID, matchingIDs, function (error, scoredEntries) {
-          if (error) {
-            console.error(error);
-            return callback(error, [], null);
-          }
-
-          scoredEntries.sort(function (a, b) {
-            return order === "asc" ? b.score - a.score : a.score - b.score;
+        var pagedIDs = scoredEntries
+          .slice(start, end + 1)
+          .map(function (item) {
+            return item.id;
           });
 
-          totalEntries = scoredEntries.length;
-
-          var pagedIDs = scoredEntries
-            .slice(start, end + 1)
-            .map(function (item) {
-              return item.id;
-            });
-
-          handlePaginationAndCallback(
-            blogID,
-            pagedIDs,
-            totalEntries,
-            zeroIndexedPageNo,
-            pageSize,
-            start,
-            end,
-            pageNo,
-            callback
-          );
-        });
+        handlePaginationAndCallback(
+          blogID,
+          pagedIDs,
+          totalEntries,
+          zeroIndexedPageNo,
+          pageSize,
+          start,
+          end,
+          pageNo,
+          callback
+        );
       });
     });
   }

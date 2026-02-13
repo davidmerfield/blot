@@ -433,7 +433,7 @@ describe("entries", function () {
       );
     });
 
-    it("returns an error when querying with a prefix before index readiness", async function (done) {
+    it("returns no matches when querying with a prefix before index readiness", async function (done) {
       const blogID = this.blog.id;
       const entriesKey = `blog:${blogID}:entries`;
       const lexKey = `blog:${blogID}:entries:lex`;
@@ -456,10 +456,15 @@ describe("entries", function () {
       Entries.getPage(
         blogID,
         { pageNumber: 1, pageSize: 5, sortBy: "id", order: "asc", pathPrefix: "/Blog/" },
-        function (error, entries) {
-          expect(error).toEqual(jasmine.any(Error));
-          expect(error.message).toContain("Entries path index is not ready for blog");
+        function (error, entries, pagination) {
+          expect(error).toBeNull();
           expect(entries).toEqual([]);
+          expect(pagination).toEqual({
+            current: 1,
+            next: null,
+            total: 0,
+            pageSize: 5,
+          });
 
           redis.exists(readyKey, function (err, ready) {
             if (err) return done.fail(err);
