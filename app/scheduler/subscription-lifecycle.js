@@ -17,9 +17,85 @@ module.exports = function processSubscriptionLifecycle(callback) {
 
   var disabled = 0;
   var deleted = 0;
+  var enabled = 0;
 
   eachUser(
     function (user, next) {
+      var overdue = subscriptionLifecycle.overdueDetails(user);
+
+      if (overdue.overdue) {
+        var overdueStartedAtISO = overdue.startedAt
+          ? new Date(overdue.startedAt).toISOString()
+          : "unknown";
+
+        if (overdue.phase === "grace_active") {
+          console.log(
+            clfdate(),
+            "Subscription lifecycle overdue phase=grace_active",
+            user.email,
+            "startedAt=" + overdueStartedAtISO
+          );
+
+          if (!user.isDisabled) return next();
+
+          return User.enable(user, function (enableErr) {
+            if (enableErr) return next(enableErr);
+
+            enabled += 1;
+
+            email.OVERDUE_SUBSCRIPTION_GRACE_ACTIVE("", {
+              email: user.email,
+              subscriptionOverdueOn: overdueStartedAtISO,
+            });
+
+            next();
+          });
+        }
+
+        if (overdue.phase === "disabled_grace") {
+          console.log(
+            clfdate(),
+            "Subscription lifecycle overdue phase=disabled_grace",
+            user.email,
+            "startedAt=" + overdueStartedAtISO
+          );
+
+          if (user.isDisabled) return next();
+
+          return User.disable(user, function (disableErr) {
+            if (disableErr) return next(disableErr);
+
+            disabled += 1;
+
+            email.OVERDUE_SUBSCRIPTION_DISABLED_GRACE("", {
+              email: user.email,
+              subscriptionOverdueOn: overdueStartedAtISO,
+            });
+
+            next();
+          });
+        }
+
+        console.log(
+          clfdate(),
+          "Subscription lifecycle overdue phase=deletion_flow",
+          user.email,
+          "startedAt=" + overdueStartedAtISO
+        );
+
+        return deleteUserAccount(user, function (deleteErr) {
+          if (deleteErr) return next(deleteErr);
+
+          email.OVERDUE_SUBSCRIPTION_DELETION_FLOW("", {
+            email: user.email,
+            subscriptionOverdueOn: overdueStartedAtISO,
+          });
+
+          deleted += 1;
+          next();
+        });
+      }
+
       var details = subscriptionLifecycle.cancellationDetails(user);
 
       if (!details.cancelled || !details.periodEnded) return next();
@@ -76,6 +152,7 @@ module.exports = function processSubscriptionLifecycle(callback) {
       console.log(
         clfdate(),
         "Subscription lifecycle job complete",
+        "enabled=" + enabled,
         "disabled=" + disabled,
         "deleted=" + deleted
       );

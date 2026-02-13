@@ -177,10 +177,63 @@ function deletionDue(user, now, graceMs) {
   return details.periodEndedAt + graceMs <= now;
 }
 
+function overdueDetails(user, now) {
+  now = now || Date.now();
+
+  var stripe = user && user.subscription;
+
+  if (!stripe) {
+    return {
+      overdue: false,
+      startedAt: null,
+      phase: null,
+    };
+  }
+
+  var status = stripe.status;
+  if (status !== "past_due" && status !== "unpaid") {
+    return {
+      overdue: false,
+      startedAt: null,
+      phase: null,
+    };
+  }
+
+  var startedAt = stripePeriodEndAtMs(stripe);
+  if (!startedAt) {
+    return {
+      overdue: false,
+      startedAt: null,
+      phase: null,
+    };
+  }
+
+  if (startedAt > now) {
+    return {
+      overdue: false,
+      startedAt: null,
+      phase: null,
+    };
+  }
+
+  var elapsed = now - startedAt;
+  var phase = "grace_active";
+
+  if (elapsed >= 2 * ONE_MONTH_MS) phase = "deletion_flow";
+  else if (elapsed >= ONE_MONTH_MS) phase = "disabled_grace";
+
+  return {
+    overdue: true,
+    startedAt: startedAt,
+    phase: phase,
+  };
+}
+
 module.exports = {
   ONE_MONTH_MS: ONE_MONTH_MS,
   cancellationDetails: cancellationDetails,
   deletionDue: deletionDue,
+  overdueDetails: overdueDetails,
   paypalPeriodEndAtMs: paypalPeriodEndAtMs,
   shouldDisableFromPaypalSubscription: shouldDisableFromPaypalSubscription,
   shouldDisableFromStripeSubscription: shouldDisableFromStripeSubscription,
