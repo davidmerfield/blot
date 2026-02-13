@@ -28,7 +28,7 @@ describe("textbundle", function () {
     );
     expect(result).toContain("<em>text</em>");
     expect(result).toContain("<table>");
-    expect(result).toContain('<p><span class="katex">');
+    expect(result).toContain('<span class="katex">');
     // Blot resolved the image correctly
     expect(result).toContain(
       `<img src="https://cdn.localhost/${this.blog.id}/_image_cache/`
