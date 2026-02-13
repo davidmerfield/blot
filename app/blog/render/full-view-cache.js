@@ -7,6 +7,36 @@ var fullViewCache = new LRUCache({
   max: 1000,
 });
 
+function cloneDeep(value) {
+  if (Array.isArray(value)) {
+    return value.map(cloneDeep);
+  }
+
+  if (value && typeof value === "object") {
+    var clone = {};
+
+    Object.keys(value).forEach(function (key) {
+      clone[key] = cloneDeep(value[key]);
+    });
+
+    return clone;
+  }
+
+  return value;
+}
+
+function deepFreeze(value) {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) {
+    return value;
+  }
+
+  Object.keys(value).forEach(function (key) {
+    deepFreeze(value[key]);
+  });
+
+  return Object.freeze(value);
+}
+
 function createCacheKey(blog, template, viewName) {
   var blogID = blog && blog.id;
   var cacheID = blog && blog.cacheID;
@@ -27,7 +57,7 @@ module.exports = function getCachedFullView(options, callback) {
   var key = createCacheKey(blog, template, viewName);
 
   if (fullViewCache.has(key)) {
-    return callback(null, fullViewCache.get(key));
+    return callback(null, cloneDeep(fullViewCache.get(key)));
   }
 
   Template.getFullView(blog.id, template.id, viewName, function (err, response) {
@@ -35,9 +65,11 @@ module.exports = function getCachedFullView(options, callback) {
       return callback(err);
     }
 
-    fullViewCache.set(key, response);
+    var immutableCopy = deepFreeze(cloneDeep(response));
 
-    return callback(null, response);
+    fullViewCache.set(key, immutableCopy);
+
+    return callback(null, cloneDeep(immutableCopy));
   });
 };
 
