@@ -66,9 +66,9 @@ main {
 
 html.is-loading main::after {
   content: "";
-  position: fixed;
-  top: 16px;
-  right: 16px;
+  position: absolute;
+  top: 48px;
+  left: 48px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
