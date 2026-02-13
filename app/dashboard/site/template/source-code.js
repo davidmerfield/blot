@@ -80,19 +80,32 @@ SourceCode.route("/:viewSlug/edit")
     res.render("dashboard/template/source-code/edit");
   })
   .post(require("./save/fork-if-needed"), function (req, res, next) {
+    // Send plain-text errors so the template editor shows a clean message
+    // instead of the full HTML error page
+    function sendError(err) {
+      const status = err.status || err.statusCode || 500;
+      res.status(status).send(err.message || "An error occurred");
+    }
+
     var view = formJSON(req.body, Template.viewModel);
 
     view.name = req.view.name;
 
     if (req.params.viewSlug === "package.json") {
+      let parsed;
+      try {
+        parsed = JSON.parse(view.content);
+      } catch (e) {
+        return sendError(e);
+      }
       Template.package.save(
         req.template.id,
-        JSON.parse(view.content),
+        parsed,
         function (err, views) {
-          if (err) return next(err);
+          if (err) return sendError(err);
 
           Template.getMetadata(req.template.id, function (err, metadata) {
-            if (err) return next(err);
+            if (err) return sendError(err);
 
             const templateForSync = metadata || req.template;
 
@@ -113,13 +126,13 @@ SourceCode.route("/:viewSlug/edit")
               });
             },
               function (err) {
-                if (err) return next(err);
+                if (err) return sendError(err);
                 writeChangeToFolder(
                   req.blog,
                   templateForSync,
                   view,
                   function (err) {
-                    if (err) return next(err);
+                    if (err) return sendError(err);
                     if (res.locals.templateForked) {
                       res.set("X-Template-Forked", "1");
                     }
@@ -133,9 +146,9 @@ SourceCode.route("/:viewSlug/edit")
       );
     } else {
       Template.setView(req.template.id, view, function (err) {
-        if (err) return next(err);
+        if (err) return sendError(err);
         writeChangeToFolder(req.blog, req.template, view, function (err) {
-          if (err) return next(err);
+          if (err) return sendError(err);
           if (res.locals.templateForked) {
             res.set("X-Template-Forked", "1");
           }
