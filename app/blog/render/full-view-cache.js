@@ -12,11 +12,12 @@ function createCacheKey(blog, template, viewName) {
   var cacheID = blog && blog.cacheID;
   var templateID = template && template.id;
 
-  return [blogID, cacheID, templateID, viewName]
-    .map(function (part) {
-      return String(part);
-    })
-    .join(":");
+  return JSON.stringify({
+    blogID: String(blogID),
+    cacheID: String(cacheID),
+    templateID: String(templateID),
+    viewName: String(viewName),
+  });
 }
 
 module.exports = function getCachedFullView(options, callback) {

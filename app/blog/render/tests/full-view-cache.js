@@ -75,6 +75,39 @@ describe("full view cache", function () {
     );
   });
 
+
+  it("does not collide cache keys when input segments contain colons", function () {
+    var firstKey = getCachedFullView._createCacheKey(
+      { id: "foo:bar", cacheID: "baz" },
+      { id: "qux" },
+      "view"
+    );
+
+    var secondKey = getCachedFullView._createCacheKey(
+      { id: "foo", cacheID: "bar:baz" },
+      { id: "qux" },
+      "view"
+    );
+
+    expect(firstKey).not.toBe(secondKey);
+  });
+
+  it("keeps null and undefined cache key behavior stable", function () {
+    var keyWithNull = getCachedFullView._createCacheKey(
+      { id: null, cacheID: undefined },
+      { id: undefined },
+      null
+    );
+
+    expect(keyWithNull).toBe(
+      JSON.stringify({
+        blogID: "null",
+        cacheID: "undefined",
+        templateID: "undefined",
+        viewName: "null",
+      })
+    );
+  });
   it("recomputes when blog.cacheID changes", function (done) {
     spyOn(Template, "getFullView").and.callFake(function (
       blogID,
