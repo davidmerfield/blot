@@ -1,21 +1,15 @@
-var async = require("async");
 var clfdate = require("helper/clfdate");
 var User = require("models/user");
 var eachUser = require("../../scripts/each/user");
-var Delete = require("dashboard/account/delete");
 var email = require("helper/email");
 var subscriptionLifecycle = require("models/user/subscriptionLifecycle");
 
 function deleteUserAccount(user, callback) {
-  var req = { user: user };
-  var res = {};
-
-  async.applyEachSeries(
-    [Delete.exports.subscription, Delete.exports.blogs, Delete.exports.user],
-    req,
-    res,
-    callback
-  );
+  void user;
+  // Safety rollout: temporarily keep this as a no-op so we can verify
+  // subscription lifecycle behavior in production before permanently
+  // deleting user data.
+  callback();
 }
 
 module.exports = function processSubscriptionLifecycle(callback) {
