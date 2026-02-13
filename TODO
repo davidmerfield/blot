@@ -10,6 +10,11 @@ Google Drive:
 - right now, I believe the google drive client holds a sync lock while waiting for the creation of a folder. i think we should avoid doing this, instead waiting to establish a sync lock after the folder exists
 
 Think about using avif/webp for thumbnails, adding <picture> tags with jpg fallback.
+- use webp for image post conversion format app/build/converters/img/index.js
+- use for image caching module
+- use for thumbnails
+
+Use this conventions for [delimiting KaTeX](https://pandoc.org/demo/example33/8.13-math.html) instead of double dollar signs.
 
 Add a documentation page on media handling
 - explain image compression and thumbnails

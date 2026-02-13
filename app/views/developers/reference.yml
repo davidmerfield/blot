@@ -265,8 +265,8 @@
           description: Height of the generated square thumbnail in pixels.
       example: |
         {{#thumbnail.medium}}
-          <img src="{{url}}
-               width="{{width}}" 
+          <img src="{{url}}"
+               width="{{width}}"
                height="{{height}}"/>
         {{/thumbnail.medium}}
 
@@ -390,6 +390,16 @@
         {{#all_entries}}
         <a href="{{url}}">{{title}}</a>
         {{/all_entries}}
+    - name: Pagination
+      type: section
+      description: "Pagination is applied on tagged routes (`/tagged/:slug` and `/tagged/:slug/page/:page`) and on entry list routes that set `page_size`. Templates receive a `pagination` object with `current`, `previous`, `next`, `total`, `pageSize`, and `totalEntries`. Defaults and limits: `page_size` uses a baseline of `5` with valid values `1-100`; tagged routes prefer `tagged_page_size` over `page_size`, and use an effective default of `100` when unset, invalid, or outside `1-500`."
+      example: |
+        {{#pagination.next}}
+        <a href="/tagged/{{slug}}/page/{{pagination.next}}">Older</a>
+        {{/pagination.next}}
+        {{#pagination.previous}}
+        <a href="/tagged/{{slug}}/page/{{pagination.previous}}">Newer</a>
+        {{/pagination.previous}}
     - name: archives
       type: array
       description: A list of all the entries on your site, structured by date. Each item in the entries property of each month is of type [entry](#entry).
@@ -423,6 +433,32 @@
             {{/entries}}
           {{/months}}
         {{/archives}}
+
+    - name: Tagged entry lists
+      type: note
+      description: |
+        The `tagged.html` template is rendered for `/tagged/:tag`. Use `{{#tagged}}...{{/tagged}}` to access the tag page context, including `tag`, `entries`, `total`, `slugs`, and `prettyTags`.
+
+        When filtering entries inside another list, use `entry.tagged.<tag>` (or `tagged.<tag>` from within an entry context), as shown in the tag-filter example template.
+
+        Tag identifiers are case-insensitive and can be either the original tag text (`Apple`) or its slug (`apple`, `multi-word`).
+      example: |
+        {{#tagged}}
+          <h1>{{tag}} ({{total}})</h1>
+          {{#entries}}
+          <a href="{{url}}">{{title}}</a>
+          {{/entries}}
+        {{/tagged}}
+
+        {{#all_entries}}
+          {{#entry.tagged.Apple}}
+          <a href="{{url}}">{{title}}</a>
+          {{/entry.tagged.Apple}}
+        {{/all_entries}}
+
+        <a href="/tagged/Apple">Apple</a>
+        <a href="/tagged/apple">apple</a>
+        <a href="/tagged/multi-word">multi-word</a>
 
 - name: Lists of tags
   keys:

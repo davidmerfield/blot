@@ -1106,7 +1106,7 @@ ul.pill-navigation {
   display: block;
   padding:.35rem 0 .35rem .4rem;
   border-radius: var(--border-radius);
-  color: #656e82;
+  color: var(--medium-text-color);
   transition: background 0.2s, color 0.2s;
 }
 
@@ -1140,7 +1140,7 @@ ul.pill-navigation {
 
 .navigation .minor a span {
   margin-right: 0.7rem;
-  color: var(--medium-text-color)
+  color: var(--light-text-color)
 }
 
 
@@ -1279,7 +1279,7 @@ ul.steps li:last-child:before {
     display: block;
     border-bottom: 1px solid var(--border-color);
     padding: 0.5rem 1rem;
-    color: #656e82;
+    color: var(--medium-text-color);
     font-size: 14px;
     background-color: var(--background-color);
     transition: background-color 0.2s;
@@ -1293,8 +1293,12 @@ ul.steps li:last-child:before {
     border-bottom: none;
   }
 
+  .panel-link span {
+    color: var(--light-text-color);
+  }
+  
   .panel-link svg {
-    fill: currentColor;
+    fill: var(--light-text-color);
     vertical-align: middle;
     position: relative;
     top: -0.1em;

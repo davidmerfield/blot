@@ -78,6 +78,12 @@ a.close-button:hover > span,
     position: relative;
 }
 
+.template-button.selected span,
+.template-button.selected svg {
+    color: var(--accent-color);
+    fill: var(--accent-color);
+}
+
 .template-button.selected:after {
       border-bottom: 2px solid var(--accent-color);
       content: "";
@@ -98,7 +104,7 @@ a.close-button:hover > span,
 .template-button span {font-size: 14px;}
 
 .template-button svg {
-    fill:currentColor;
+    fill:var(--light-text-color);
     width: 14px;
     vertical-align: middle;
     position:relative;
@@ -107,6 +113,7 @@ a.close-button:hover > span,
 }
 
 .template-button span {
+  color: var(--light-text-color);
   vertical-align: middle;position:relative;top:-0.1em;
   margin-right: 4px;
 }
