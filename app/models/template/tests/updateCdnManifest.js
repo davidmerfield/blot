@@ -8,6 +8,7 @@ const Blog = require("models/blog");
 const path = require("path");
 const fs = require("fs-extra");
 const config = require("config");
+const renderView = require("blog/render/view");
 
 const getAsync = promisify(client.get).bind(client);
 const getMetadataAsync = promisify(getMetadata).bind(getMetadata);
@@ -63,6 +64,40 @@ describe("updateCdnManifest", function () {
 
     expect(renderedOutput).toBeDefined();
     expect(renderedOutput).toBe("body{color:red}");
+  });
+
+  it("regenerates manifest hashes after cache-busting to avoid stale full-view cache", async function () {
+    const test = this;
+
+    await setViewAsync(test.template.id, {
+      name: "entries.html",
+      content: "{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    await setViewAsync(test.template.id, {
+      name: "style.css",
+      content: "body{color:black}",
+    });
+
+    const metadata1 = await getMetadataAsync(test.template.id);
+    const oldHash = metadata1.cdn["style.css"];
+
+    // Prime full-view-cache for the current blog cacheID
+    await renderView(test.template.id, "style.css");
+
+    // Ensure Date.now() advances so Blog.set writes a new cacheID.
+    await new Promise((resolve) => setTimeout(resolve, 2));
+
+    await setViewAsync(test.template.id, {
+      name: "style.css",
+      content: "body{color:white}",
+    });
+
+    const metadata2 = await getMetadataAsync(test.template.id);
+    const newHash = metadata2.cdn["style.css"];
+
+    expect(newHash).toBeDefined();
+    expect(newHash).not.toBe(oldHash);
   });
 
   it("removes old rendered output from Redis when hash changes", async function () {
