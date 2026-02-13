@@ -1052,7 +1052,9 @@ ul.pill-navigation {
 
 
 .top-tool-row {
-  display: flex;border-top: 1px solid var(--border-color);padding-top: 12px;margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-color);padding-top: 12px;margin-bottom: 12px;
 }
 
 .tool-category {

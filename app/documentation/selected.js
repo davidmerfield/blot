@@ -22,6 +22,7 @@ var TITLES = {
   "urls": "URL format",
   "hard-stop-start-ec2-instance": "How to stop and start an EC2 instance",
   "who": "Who uses Blot?",
+  "tools": "Tools",
   "developers": "Developers",
   "working-with-ai": "Working with AI",
   "troubleshooting": "Troubleshooting",

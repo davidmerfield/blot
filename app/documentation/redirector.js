@@ -90,7 +90,8 @@ const internal = {
   "/how/posts/comments": "/how/configure/comments",
   "/formatting": "/how/posts",
   "/redirects": "/how/configure/redirects",
-  "/configuring": "/how/configure"
+  "/configuring": "/how/configure",
+  "/tools": "/how/tools"
 };
 
 const external = {

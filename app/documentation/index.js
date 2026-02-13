@@ -107,11 +107,6 @@ documentation.get("/examples", require("./featured"));
 
 documentation.get("/templates", require("./templates.js"));
 
-documentation.use("/tools/all-*", (req, res, next) => {
-  delete res.locals.breadcrumbs;
-  next();
-});
-
 documentation.get(
   "/templates/for-:type",
   require("./templates.js"),

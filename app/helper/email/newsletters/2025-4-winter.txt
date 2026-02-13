@@ -6,10 +6,10 @@ Winter newsletter
 - Added two new templates:
   - The [Hypertext template](https://blot.im/templates/hypertext), designed for a digital garden or personal wiki and inspired by [Obsidian Publish](https://obsidian.md/publish). The sidebar navigation maps directly to the structure of your folder.
   - The [Journal template](https://blot.im/templates/journal), designed for a blog and based on [Tufte.css](https://edwardtufte.github.io/tufte-css/).
-- Blot now supports the [TextBundle format](https://blot.im/how/files/markdown#textbundle), which lets you embed images in Markdown files when using apps like [Ulysses](https://blot.im/tools/ulysses) and [Bear](https://blot.im/tools/bear).
+- Blot now supports the [TextBundle format](https://blot.im/how/files/markdown#textbundle), which lets you embed images in Markdown files when using apps like [Ulysses](https://blot.im/how/tools/ulysses) and [Bear](https://blot.im/how/tools/bear).
 - You can now [highlight text](https://blot.im/how/files/markdown#highlighting) in Markdown files.
 - Added [Geist fonts](https://vercel.com/font) to the font picker on the web template editor.
-- Blot can now automatically insert a title heading based on the file name. This makes it much easier to use [Obsidian](https://blot.im/tools/obsidian) to work on your site.
+- Blot can now automatically insert a title heading based on the file name. This makes it much easier to use [Obsidian](https://blot.im/how/tools/obsidian) to work on your site.
 
 **Changes**
 - Blot now delivers your site’s stylesheet and scripts through its CDN so your site loads more quickly.

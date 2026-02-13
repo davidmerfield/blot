@@ -5,8 +5,8 @@ const cheerio = require("cheerio");
 const mustache = require("mustache");
 
 const rootDirectory = config.blot_directory + "/app";
-const toolsDirectory = rootDirectory + "/views/tools";
-const outputDirectory = config.views_directory + "/tools";
+const toolsDirectory = rootDirectory + "/views/how/tools";
+const outputDirectory = config.views_directory + "/how/tools";
 const html = require("./html");
 // Returns mustache code that will be replaced with a CDN URL
 const cdn = () => (text, render) => '{{#cdn}}' + render(text) + '{{/cdn}}';

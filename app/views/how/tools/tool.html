@@ -10,14 +10,14 @@
 
         <ul class="tool-list">
             {{#related}}
-            <li><a href="/tools/{{slug}}">{{#icon}}<img src="{{#cdn}}/tools/{{{icon}}}{{/cdn}}" width="16">{{/icon}}<span class="a">{{title}}</span></a></li>
+            <li><a href="/how/tools/{{slug}}">{{#icon}}<img src="{{#cdn}}/how/tools/{{{icon}}}{{/cdn}}" width="16">{{/icon}}<span class="a">{{title}}</span></a></li>
             {{/related}}  
           </ul>
           
     </Div>
     <div style="flex-basis: 33.333%;flex-shrink: 0;">
         <h2>Website</h2>
-        <p>{{#icon}}<img src="{{#cdn}}/tools{{{icon}}}{{/cdn}}" width="16" height="16" style="width:16px">{{/icon}} <a href="{{{link}}}" target="_blank" rel="nofollow"> {{link}}</a></p>
+        <p>{{#icon}}<img src="{{#cdn}}/how/tools{{{icon}}}{{/cdn}}" width="16" height="16" style="width:16px">{{/icon}} <a href="{{{link}}}" target="_blank" rel="nofollow"> {{link}}</a></p>
         {{#files.length}}
         <h2>Files published by Blot</h2>
         <ul class="clients files">
@@ -35,7 +35,7 @@
         {{{name}}}
         {{/platforms}}</p>
         <h2>Category</h2>
-        <a href="/tools/{{category.slug}}">{{category.title}}</a>
+        <a href="/how/tools/{{category.slug}}">{{category.title}}</a>
     </div>
 </div>
 
