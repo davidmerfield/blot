@@ -291,29 +291,29 @@ module.exports = function setView(templateID, updates, callback) {
 						multi.exec((err) => {
 							if (err) return callback(err);
 
-							updateCdnManifest(templateID, (manifestErr) => {
-								if (manifestErr) return callback(manifestErr);
-
-								// Clear this view from template metadata.errors when saving
-								// via the dashboard so fixing a view clears its error state
+							if (!changes) {
 								if (metadata.errors && metadata.errors[name]) {
 									delete metadata.errors[name];
-									setMetadata(
-										templateID,
-										{ errors: metadata.errors },
-										(setMetaErr) => {
-											if (setMetaErr) return callback(setMetaErr);
-											if (!changes) return callback();
-											Blog.set(metadata.owner, { cacheID: Date.now() }, callback);
-										}
-									);
-									return;
+									return setMetadata(templateID, { errors: metadata.errors }, callback);
 								}
 
-								if (!changes) return callback();
+								return callback();
+							}
 
-								Blog.set(metadata.owner, { cacheID: Date.now() }, (err) => {
-									callback(err);
+							Blog.set(metadata.owner, { cacheID: Date.now() }, (cacheErr) => {
+								if (cacheErr) return callback(cacheErr);
+
+								updateCdnManifest(templateID, (manifestErr) => {
+									if (manifestErr) return callback(manifestErr);
+
+									// Clear this view from template metadata.errors when saving
+									// via the dashboard so fixing a view clears its error state
+									if (metadata.errors && metadata.errors[name]) {
+										delete metadata.errors[name];
+										return setMetadata(templateID, { errors: metadata.errors }, callback);
+									}
+
+									callback();
 								});
 							});
 						});
