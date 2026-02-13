@@ -24,6 +24,10 @@ var retrieveThese = _.filter(modules, function (name) {
   })
   .sort();
 
+var projectedEntryLocals = {
+  allEntries: true,
+};
+
 function parseTemplate(template) {
   var retrieve = {};
   var partials = {};
@@ -59,6 +63,14 @@ function parseTemplate(template) {
     }
     
     current[parts[parts.length - 1]] = value;
+  }
+
+  function setProjectedEntryField(root, fieldName) {
+    if (!projectedEntryLocals[root]) return false;
+    if (!fieldName || fieldName.indexOf(".") > -1) return false;
+
+    setNestedProperty(root, "fields." + fieldName, true);
+    return true;
   }
 
   // This can be used to recursively
@@ -104,6 +116,8 @@ function parseTemplate(template) {
         // e.g. length (or subfolder.property for deeper nesting)
         var propertyPath = variable.indexOf(".") > -1 &&
           variable.slice(variable.indexOf(".") + 1);
+        var contextRoot = context && context.slice(0, -1).split(".")[0];
+        var isProjectedFieldInContext = setProjectedEntryField(contextRoot, variable);
 
         if (retrieveThese.indexOf(variable) > -1) {
           // Special case: 'cdn' should always be an array (empty for literals, with targets for blocks)
@@ -113,14 +127,20 @@ function parseTemplate(template) {
               retrieve.cdn = [];
             }
           } else {
-            // If variable has no dots, it's a root variable - set as boolean
-            // If it has dots, it's a nested property - build nested structure
-            if (!propertyPath) {
-              retrieve[variable] = true;
+            if (projectedEntryLocals[variable]) {
+              retrieve[variable] = retrieve[variable] && retrieve[variable] !== true
+                ? retrieve[variable]
+                : {};
             } else {
-              // This shouldn't happen for whitelisted variables with dots,
-              // but handle it just in case
-              retrieve[variable] = true;
+              // If variable has no dots, it's a root variable - set as boolean
+              // If it has dots, it's a nested property - build nested structure
+              if (!propertyPath) {
+                retrieve[variable] = true;
+              } else {
+                // This shouldn't happen for whitelisted variables with dots,
+                // but handle it just in case
+                retrieve[variable] = true;
+              }
             }
           }
         }
@@ -133,8 +153,12 @@ function parseTemplate(template) {
               retrieve.cdn = [];
             }
           } else {
-            // Build nested structure for whitelisted root with property access
-            setNestedProperty(variableRoot, propertyPath, true);
+            if (projectedEntryLocals[variableRoot]) {
+              setNestedProperty(variableRoot, "fields." + propertyPath, true);
+            } else {
+              // Build nested structure for whitelisted root with property access
+              setNestedProperty(variableRoot, propertyPath, true);
+            }
           }
         } else if (retrieveThese.indexOf(variableRoot) > -1 && !propertyPath) {
           // Root variable without property access - set as boolean if not already an object
@@ -154,7 +178,11 @@ function parseTemplate(template) {
         // System locals are already tracked above, so only track non-system locals here
         // The retrieve system will safely ignore non-system locals during fetching
         // Skip tracking if variable has dots and root is whitelisted (already handled with nested structure)
-        if (retrieveThese.indexOf(variable) === -1 && variable !== "cdn") {
+        if (
+          retrieveThese.indexOf(variable) === -1 &&
+          variable !== "cdn" &&
+          !isProjectedFieldInContext
+        ) {
           // Only track the root variable, not nested properties
           // If variable has dots and root is whitelisted, skip (already handled above)
           if (!propertyPath || retrieveThese.indexOf(variableRoot) === -1) {

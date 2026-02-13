@@ -45,4 +45,34 @@ describe("template", function () {
       });
     });
   });
+
+
+  it("merges projected allEntries fields from view and partials", function (done) {
+    var test = this;
+
+    var partial = {
+      name: "entry-url.html",
+      content: "{{#allEntries}}{{url}}{{/allEntries}}",
+    };
+
+    var view = {
+      name: "entries.html",
+      content: "{{#allEntries}}{{title}}{{/allEntries}}{{> " + partial.name + "}}",
+    };
+
+    async.map([view, partial], setView.bind(null, test.template.id), function (err) {
+      if (err) return done.fail(err);
+
+      getFullView(test.blog.id, test.template.id, view.name, function (err, fullView) {
+        if (err) return done.fail(err);
+
+        expect(fullView[2]).toEqual({
+          allEntries: { fields: { title: true, url: true } },
+        });
+
+        done();
+      });
+    });
+  });
+
 });

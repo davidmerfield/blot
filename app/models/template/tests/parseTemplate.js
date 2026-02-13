@@ -60,6 +60,26 @@ describe("parseTemplate", function () {
     });
   });
 
+
+
+  it("projects fields from allEntries section access", function () {
+    var template = `{{#allEntries}}{{title}}{{/allEntries}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { allEntries: { fields: { title: true } } },
+    });
+  });
+
+  it("merges allEntries section field access with direct property access", function () {
+    var template = `{{#allEntries}}{{title}}{{/allEntries}}{{allEntries.url}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { allEntries: { fields: { title: true, url: true } } },
+    });
+  });
+
   it("tracks nested plugin assets", function () {
     var template = `{{{plugin.katex.css}}}`;
     var result = parseTemplate(template);
