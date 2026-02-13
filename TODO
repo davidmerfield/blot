@@ -18,6 +18,8 @@ Think about using avif/webp for thumbnails, adding <picture> tags with jpg fallb
 
 Use this conventions for [delimiting KaTeX](https://pandoc.org/demo/example33/8.13-math.html) instead of double dollar signs.
 
+Add pause and resume routes to account page for subscriptions
+
 Add a documentation page on media handling
 - explain image compression and thumbnails
 
