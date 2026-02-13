@@ -1,0 +1,3 @@
+Blot deleted cancelled user account
+
+Blot deleted user {{email}} because they had cancelled their subscription and their subscription expired on {{subscriptionExpiredOn}}.

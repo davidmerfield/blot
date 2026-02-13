@@ -3,6 +3,7 @@ var clfdate = require("helper/clfdate");
 var User = require("models/user");
 var eachUser = require("../../scripts/each/user");
 var Delete = require("dashboard/account/delete");
+var email = require("helper/email");
 var subscriptionLifecycle = require("models/user/subscriptionLifecycle");
 
 function deleteUserAccount(user, callback) {
@@ -36,8 +37,18 @@ module.exports = function processSubscriptionLifecycle(callback) {
 
           if (!subscriptionLifecycle.deletionDue(user)) return next();
 
+          var periodEndedAtISO = details.periodEndedAt
+            ? new Date(details.periodEndedAt).toISOString()
+            : "unknown";
+
           deleteUserAccount(user, function (deleteErr) {
             if (deleteErr) return next(deleteErr);
+
+            email.DELETED_CANCELLED_SUBSCRIPTION_EXPIRED("", {
+              email: user.email,
+              subscriptionExpiredOn: periodEndedAtISO,
+            });
+
             deleted += 1;
             next();
           });
@@ -46,8 +57,18 @@ module.exports = function processSubscriptionLifecycle(callback) {
 
       if (!subscriptionLifecycle.deletionDue(user)) return next();
 
+      var periodEndedAtISO = details.periodEndedAt
+        ? new Date(details.periodEndedAt).toISOString()
+        : "unknown";
+
       deleteUserAccount(user, function (deleteErr) {
         if (deleteErr) return next(deleteErr);
+
+        email.DELETED_CANCELLED_SUBSCRIPTION_EXPIRED("", {
+          email: user.email,
+          subscriptionExpiredOn: periodEndedAtISO,
+        });
+
         deleted += 1;
         next();
       });
