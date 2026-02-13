@@ -81,6 +81,25 @@ describe("parseTemplate", function () {
   });
 
 
+
+  it("handles nested sections inside allEntries without leaking nested fields as top-level locals", function () {
+    var template = `{{#allEntries}}{{#thumbnail}}{{large}}{{/thumbnail}}{{/allEntries}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { allEntries: { fields: { thumbnail: true } } },
+    });
+  });
+
+  it("handles inverted sections inside allEntries", function () {
+    var template = `{{#allEntries}}{{^more}}Read more{{/more}}{{/allEntries}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { allEntries: { fields: { more: true } } },
+    });
+  });
+
   it("projects fields from all_entries section access", function () {
     var template = `{{#all_entries}}{{title}}{{/all_entries}}`;
     var result = parseTemplate(template);

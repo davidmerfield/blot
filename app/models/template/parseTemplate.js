@@ -80,6 +80,29 @@ function parseTemplate(template) {
     return true;
   }
 
+
+  function projectedRootForContext(contextPath) {
+    if (!contextPath) return null;
+
+    for (var root in projectedEntryLocals) {
+      var prefixes = projectedEntryLocals[root] || [];
+
+      for (var i = 0; i < prefixes.length; i++) {
+        var prefix = prefixes[i];
+        var collectionPath = prefix ? root + "." + prefix : root;
+
+        if (
+          contextPath === collectionPath ||
+          contextPath.indexOf(collectionPath + ".") === 0
+        ) {
+          return root;
+        }
+      }
+    }
+
+    return null;
+  }
+
   function projectedFieldFromContext(contextPath, variableName) {
     if (!contextPath || !variableName || variableName.indexOf(".") > -1) return null;
 
@@ -199,6 +222,7 @@ function parseTemplate(template) {
           variable.slice(variable.indexOf(".") + 1);
         var contextPath = context ? context.slice(0, -1) : "";
         var projectedFieldContext = projectedFieldFromContext(contextPath, variable);
+        var projectedRootContext = projectedRootForContext(contextPath);
         var isProjectedFieldInContext = false;
 
         if (projectedFieldContext) {
@@ -280,7 +304,8 @@ function parseTemplate(template) {
           retrieveThese.indexOf(variable) === -1 &&
           variable !== "cdn" &&
           !isProjectedFieldInContext &&
-          !isProjectedPathSegment(contextPath, variable)
+          !isProjectedPathSegment(contextPath, variable) &&
+          !projectedRootContext
         ) {
           // Only track the root variable, not nested properties
           // If variable has dots and root is whitelisted, skip (already handled above)

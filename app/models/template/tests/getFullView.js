@@ -75,4 +75,34 @@ describe("template", function () {
     });
   });
 
+
+  it("handles partial usage inside allEntries sections", function (done) {
+    var test = this;
+
+    var partial = {
+      name: "entry-partial.html",
+      content: "{{{html}}}",
+    };
+
+    var view = {
+      name: "entries-with-partial.html",
+      content: "{{#allEntries}}{{> " + partial.name + "}}{{/allEntries}}",
+    };
+
+    async.map([view, partial], setView.bind(null, test.template.id), function (err) {
+      if (err) return done.fail(err);
+
+      getFullView(test.blog.id, test.template.id, view.name, function (err, fullView) {
+        if (err) return done.fail(err);
+
+        expect(fullView[2]).toEqual({
+          allEntries: {},
+          html: true,
+        });
+
+        done();
+      });
+    });
+  });
+
 });
