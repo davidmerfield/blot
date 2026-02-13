@@ -17,6 +17,7 @@ const config = require("config");
 const avatarDirectory = __dirname + "/avatars";
 const outputDirectory = join(__dirname, "../../views/images/featured");
 const verifySiteIsOnline = require("./verifySiteIsOnline");
+const fetchSubscriptionDuration = require("./fetchSubscriptionDuration");
 
 if (require.main === module) {
   build(async (err, sites) => {
@@ -76,13 +77,37 @@ async function build(callback) {
   sites = await Promise.all(
     sites.map(async (site) => {
       const isOnline = await verifySiteIsOnline(site.host);
-      return isOnline ? site : null;
+
+      if (!isOnline) return null;
+
+      const tenure = await fetchSubscriptionDuration(site.host);
+
+      return {
+        ...site,
+        tenure,
+        tenure_label: formatTenureLabel(tenure),
+      };
     })
   ).then((sites) => sites.filter((i) => i));
 
   const result = await generateImages(sites);
 
   callback(null, result);
+}
+
+function formatTenureLabel(durationMs) {
+  if (!Number.isFinite(durationMs) || durationMs <= 0) return null;
+
+  const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+  const completedMonths = Math.floor(durationMs / ONE_MONTH_MS);
+  const months = Math.max(1, completedMonths);
+
+  if (months < 12) {
+    return `${months} month${months === 1 ? "" : "s"} on Blot`;
+  }
+
+  const years = Math.max(1, Math.floor(months / 12));
+  return `${years} year${years === 1 ? "" : "s"} on Blot`;
 }
 
 const tidy = (bio) => {
