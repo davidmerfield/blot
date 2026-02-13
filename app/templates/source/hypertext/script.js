@@ -102,6 +102,7 @@ class PageTransitioner {
     // clear the existing content
     content.innerHTML = '';
     content.classList.add("loading");
+    document.documentElement.classList.add("is-loading");
     
     // close the mobile nav when a link is clicked
     document.querySelector('#toggle-left').checked = false;
@@ -167,6 +168,7 @@ class PageTransitioner {
       console.error("Navigation failed:", err);
     } finally {
       content.classList.remove("loading");
+      document.documentElement.classList.remove("is-loading");
       this.currentXHR = null;
     }
   }

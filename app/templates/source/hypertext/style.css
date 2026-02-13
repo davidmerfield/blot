@@ -60,8 +60,28 @@ hr {
   overflow-wrap: anywhere;
 }
 
-main.loading {
-  display: none;
+main {
+  position: relative;
+}
+
+html.is-loading main::after {
+  content: "";
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--medium-text-color);
+  opacity: 0.2;
+  animation: loading-pulse 0.45s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+@keyframes loading-pulse {
+  from { opacity: 0.2; }
+  to { opacity: 0.8; }
 }
 
 .column {
