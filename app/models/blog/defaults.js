@@ -32,6 +32,5 @@ module.exports = {
   flags: {
     google_drive_beta: false,
     deleted_entries_sanitized: false,
-    entries_path_index_backfilled: false,
   },
 };

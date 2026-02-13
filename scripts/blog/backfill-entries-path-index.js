@@ -11,11 +11,11 @@
 const colors = require("colors/safe");
 const { promisify } = require("util");
 const eachBlogOrOneBlog = require("../each/eachBlogOrOneBlog");
-const Blog = require("models/blog");
+const redis = require("models/client");
 const pathIndex = require("models/entries/pathIndex");
 
 const backfillIndex = promisify(pathIndex.backfillIndex);
-const BlogSet = promisify(Blog.set);
+const zcard = promisify(redis.zcard).bind(redis);
 
 let processed = 0;
 let skipped = 0;
@@ -23,30 +23,44 @@ let rebuilt = 0;
 let rebuiltMembers = 0;
 let errors = 0;
 
+async function countsMatch(blogID) {
+  const entriesCount = await zcard(`blog:${blogID}:entries`);
+  const lexCount = await zcard(pathIndex.lexKey(blogID));
+
+  return {
+    matches: entriesCount === lexCount,
+    entriesCount,
+    lexCount,
+  };
+}
+
 async function processBlog(blog) {
   processed += 1;
 
-  const flags = blog.flags || {};
-
-  if (flags.entries_path_index_backfilled) {
-    skipped += 1;
-    console.log(colors.gray(`Skipping ${blog.id} (already backfilled)`));
-    return;
-  }
-
   try {
+    const before = await countsMatch(blog.id);
+
+    if (before.matches) {
+      skipped += 1;
+      console.log(
+        colors.gray(
+          `Skipping ${blog.id} (already backfilled: entries=${before.entriesCount}, lex=${before.lexCount})`
+        )
+      );
+      return;
+    }
+
     const members = await backfillIndex(blog.id);
+    const after = await countsMatch(blog.id);
+
+    if (!after.matches) {
+      throw new Error(
+        `post-backfill counts still differ (entries=${after.entriesCount}, lex=${after.lexCount})`
+      );
+    }
+
     rebuilt += 1;
     rebuiltMembers += members;
-
-    const updatedFlags = Object.assign({}, flags, {
-      entries_path_index_backfilled: true,
-    });
-
-    await BlogSet(blog.id, {
-      flags: updatedFlags,
-      cacheID: Date.now(),
-    });
 
     console.log(
       colors.green(
