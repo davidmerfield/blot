@@ -26,11 +26,52 @@ describe("full view cache", function () {
 
     getCachedFullView(options, function (err, firstResult) {
       expect(err).toBeNull();
-      expect(firstResult).toBe(response);
+      expect(firstResult).toEqual(response);
+      expect(firstResult).not.toBe(response);
 
       getCachedFullView(options, function (secondErr, secondResult) {
         expect(secondErr).toBeNull();
-        expect(secondResult).toBe(response);
+        expect(secondResult).toEqual(response);
+        expect(secondResult).not.toBe(response);
+        expect(secondResult).not.toBe(firstResult);
+        expect(Template.getFullView).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+  });
+
+  it("returns isolated copies so caller mutations do not taint cache", function (done) {
+    spyOn(Template, "getFullView").and.callFake(function (
+      blogID,
+      templateID,
+      viewName,
+      callback
+    ) {
+      callback(null, [
+        { title: "Original" },
+        { head: "" },
+        [{ id: "asset-1" }],
+        "text/html",
+        "{{title}}",
+      ]);
+    });
+
+    var options = {
+      blog: { id: "blog-1", cacheID: 111 },
+      template: { id: "template-1" },
+      viewName: "entry.html",
+    };
+
+    getCachedFullView(options, function (err, firstResult) {
+      expect(err).toBeNull();
+
+      firstResult[0].title = "Mutated";
+      firstResult[2][0].id = "asset-2";
+
+      getCachedFullView(options, function (secondErr, secondResult) {
+        expect(secondErr).toBeNull();
+        expect(secondResult[0].title).toBe("Original");
+        expect(secondResult[2][0].id).toBe("asset-1");
         expect(Template.getFullView).toHaveBeenCalledTimes(1);
         done();
       });
