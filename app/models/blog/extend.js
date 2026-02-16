@@ -4,6 +4,7 @@ var url = require("./url");
 var protocol = "https";
 var punycode = require("helper/punycode");
 var imageExif = require("./util/imageExif");
+var converters = require("./util/converters");
 
 module.exports = function extend(blog) {
   var pages = [];
@@ -17,6 +18,7 @@ module.exports = function extend(blog) {
   blog.pretty = {};
 
   imageExif.apply(blog);
+  converters.apply(blog);
 
   if (blog.dateFormat) blog["is" + blog.dateFormat] = "selected";
 
@@ -69,6 +71,8 @@ module.exports = function extend(blog) {
   blog.locals.isImageExifOff = blog.isImageExifOff;
   blog.locals.isImageExifBasic = blog.isImageExifBasic;
   blog.locals.isImageExifFull = blog.isImageExifFull;
+
+  blog.locals.converters = blog.converters;
 
   // Import blog info into
   // rendering context
