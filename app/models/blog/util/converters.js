@@ -15,11 +15,6 @@ const DEFAULTS = VALID_CONVERTER_IDS.reduce(function (acc, id) {
   return acc;
 }, {});
 
-const LEGACY_ID_ALIASES = {
-  images: "img",
-  image: "img",
-};
-
 function normalizeBoolean(value, fallback) {
   if (typeof value === "boolean") return value;
 
@@ -53,13 +48,6 @@ function normalize(raw, options = {}) {
     if (Object.prototype.hasOwnProperty.call(raw, id)) {
       normalized[id] = normalizeBoolean(raw[id], fallback[id]);
     }
-  }
-
-  for (const legacyKey in LEGACY_ID_ALIASES) {
-    if (!Object.prototype.hasOwnProperty.call(raw, legacyKey)) continue;
-
-    const id = LEGACY_ID_ALIASES[legacyKey];
-    normalized[id] = normalizeBoolean(raw[legacyKey], fallback[id]);
   }
 
   return normalized;

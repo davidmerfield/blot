@@ -52,7 +52,6 @@ describe("Blog.set", function () {
     });
   });
 
-
   it("normalizes converter preferences", function (done) {
     var test = this;
 
@@ -74,21 +73,6 @@ describe("Blog.set", function () {
         });
       }
     );
-  });
-
-  it("supports legacy image converter key", function (done) {
-    var test = this;
-
-    set(test.blog.id, { converters: { images: false } }, function (errors) {
-      if (errors) return done.fail(errors);
-
-      get({ id: test.blog.id }, function (err, blog) {
-        if (err) return done.fail(err);
-
-        expect(blog.converters.img).toBe(false);
-        done();
-      });
-    });
   });
 
   it("updates the handle host without touching custom domains", function (done) {
