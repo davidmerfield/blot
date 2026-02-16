@@ -60,6 +60,12 @@ hr {
   overflow-wrap: anywhere;
 }
 
+.entry-date {
+  margin: 1.25rem 0 0;
+  color: var(--light-text-color);
+  font-size: var(--small-font-size);
+}
+
 main {
   position: relative;
 }
