@@ -164,7 +164,7 @@ dashboard.get("/permission", function (req, res) {
 // This route recieves the user back from
 // Dropbox when they have accepted or denied
 // the request to access their folder.
-dashboard.get("/authenticate", function (req, res) {
+dashboard.get("/authenticate", function (req, res, next) {
   // the user has reloaded this page
   // if (req.session.dropbox && req.session.dropbox.preparing === true) {
   //   console.log('here, redirecting cause of session');
@@ -197,14 +197,14 @@ dashboard.get("/authenticate", function (req, res) {
   req.session.dropbox = account;
 
   Blog.set(req.blog.id, { client: "dropbox" }, function (err) {
-    if (err) return console.log("Error setting Dropbox client", err);
+    if (err) return next(err);
 
     setup(account, req.session, function (err) {
       console.log("err setting up", err);
     });
-  });
 
-  res.redirect(req.baseUrl);
+    res.redirect(req.baseUrl);
+  });
 });
 
 // Will remove the Dropbox account from the client's database
