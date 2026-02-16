@@ -27,6 +27,7 @@ module.exports = async (blogID, publish, update) => {
     removed: 0,
     createdDirs: 0,
     skipped: 0,
+    placeholdersCreated: 0,
   };
 
   try {
@@ -103,8 +104,20 @@ module.exports = async (blogID, publish, update) => {
         if (!existsLocally || (existsLocally && !identicalOnRemote)) {
           try {
             if (size > maxFileSize) {
-              publish("File too large", path);
+              publish(
+                "File too large",
+                `${path} (${size} bytes > ${maxFileSize} byte limit)`
+              );
               summary.skipped += 1;
+
+              try {
+                await fs.outputFile(localPath(blogID, path), "");
+                summary.placeholdersCreated += 1;
+                publish("Created placeholder for oversized file", path);
+              } catch (err) {
+                publish("Failed to create placeholder", path, err.message);
+              }
+
               continue;
             }
 
