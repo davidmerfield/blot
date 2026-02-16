@@ -85,7 +85,7 @@ describe("icloud fromiCloud sync", function () {
     expect(stat.size).toBe(0);
     expect(summary.skipped).toBe(1);
     expect(summary.placeholdersCreated).toBe(1);
-    expect(published.some((line) => line.includes("Created placeholder for oversized file"))).toBeTrue();
+    expect(published.some((line) => line.includes("Created placeholder for oversized file"))).toBe(true);
   });
 
   it("replaces mismatched local content with a 0-byte placeholder for oversized remote files", async () => {
