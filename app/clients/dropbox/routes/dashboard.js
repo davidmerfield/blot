@@ -10,6 +10,7 @@ const moment = require("moment");
 const { Dropbox } = require("dropbox");
 const views = __dirname + "/../views/";
 const client = require("models/client");
+const Blog = require("models/blog");
 
 dashboard.use(function loadDropboxAccount (req, res, next) {
   Database.get(req.blog.id, function (err, account) {
@@ -195,8 +196,12 @@ dashboard.get("/authenticate", function (req, res) {
   // this the first time the user has visited this page
   req.session.dropbox = account;
 
-  setup(account, req.session, function (err) {
-    console.log("err setting up", err);
+  Blog.set(req.blog.id, { client: "dropbox" }, function (err) {
+    if (err) return console.log("Error setting Dropbox client", err);
+
+    setup(account, req.session, function (err) {
+      console.log("err setting up", err);
+    });
   });
 
   res.redirect(req.baseUrl);
@@ -209,6 +214,10 @@ dashboard.get("/disconnect", function (req, res) {
 });
 
 dashboard.post("/disconnect", function (req, res, next) {
+  if (!req.blog.client) {
+    return res.redirect(res.locals.dashboardBase + "/client");
+  }
+
   client.publish(
     "sync:status:" + req.blog.id,
     "Attempting to disconnect from Dropbox"

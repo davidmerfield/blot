@@ -56,7 +56,8 @@ button[type="submit"]:hover {background: rgba(0,0,0,0.03);cursor: pointer;}
 <form style="padding-top:0;padding-bottom: 0" method='post' action="{{{base}}}/client/reset/resync" class="dashboard-form">
 
   <div class="buttons">
-    <a href="{{{base}}}/client/{{blog.client}}">Cancel</a>
+    {{#effectiveClient}}<a href="{{{base}}}/client/{{effectiveClient}}">Cancel</a>{{/effectiveClient}}
+    {{^effectiveClient}}<a href="{{{base}}}/client/{{blog.client}}">Cancel</a>{{/effectiveClient}}
   </div>
   <br>
 </form>
