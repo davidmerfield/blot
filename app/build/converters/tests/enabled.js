@@ -36,6 +36,22 @@ describe("build/converters/enabled", function () {
     expect(ids).not.toContain("img");
   });
 
+
+  it("normalizes non-boolean preferences before filtering", function () {
+    var enabled = enabledConverters({
+      id: "blog",
+      converters: {
+        img: "off",
+      },
+    });
+
+    var ids = enabled.map(function (converter) {
+      return converter.id;
+    });
+
+    expect(ids).not.toContain("img");
+  });
+
   it("treats disabled image files as wrong type", function () {
     var enabled = enabledConverters({
       id: "blog",
