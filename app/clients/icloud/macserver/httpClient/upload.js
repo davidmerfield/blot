@@ -10,6 +10,20 @@ import * as brctl from "../brctl/index.js";
 import fetch from "./rateLimitedFetchWithRetriesAndTimeout.js";
 import { join } from "path";
 
+const OVERSIZE_FILE_ERROR_CODE = "ERR_FILE_TOO_LARGE";
+
+class OversizeFileError extends Error {
+  constructor({ filePath, relativePath, size, maxFileSize }) {
+    super(`File size exceeds maximum of ${maxFileSize} bytes`);
+    this.name = "OversizeFileError";
+    this.code = OVERSIZE_FILE_ERROR_CODE;
+    this.filePath = filePath;
+    this.relativePath = relativePath;
+    this.size = size;
+    this.maxFileSize = maxFileSize;
+  }
+}
+
 export default async (blogID, path) => {
   // Input validation
   if (!blogID || typeof blogID !== "string") {
@@ -51,7 +65,12 @@ export default async (blogID, path) => {
       `File size exceeds maximum for upload: ${filePath}`,
       { size: stat.size, maxFileSize }
     );
-    throw new Error(`File size exceeds maximum of ${maxFileSize} bytes`);
+    throw new OversizeFileError({
+      filePath,
+      relativePath: path,
+      size: stat.size,
+      maxFileSize,
+    });
   }
 
   const modifiedTime = stat.mtime.toISOString();
@@ -113,3 +132,5 @@ export default async (blogID, path) => {
 
   console.log(clfdate(), "Upload successful:", text);
 };
+
+export { OVERSIZE_FILE_ERROR_CODE, OversizeFileError };
