@@ -10,6 +10,7 @@ var config = require("config");
 var BackupDomain = require("./util/backupDomain");
 var flushCache = require("./flushCache");
 var normalizeImageExif = require("./util/imageExif").normalize;
+var normalizeConverters = require("./util/converters").normalize;
 var updateCdnManifest = require("../template/util/updateCdnManifest");
 var forkSiteTemplate = require("../template/util/forkSiteTemplate");
 var promisify = require("util").promisify;
@@ -50,6 +51,14 @@ module.exports = function (blogID, blog, callback) {
         latest.imageExif = normalizeImageExif(previousMode, {
           fallback: "off",
         });
+      }
+
+      if (Object.prototype.hasOwnProperty.call(latest, "converters")) {
+        latest.converters = normalizeConverters(latest.converters, {
+          fallback: former && former.converters,
+        });
+      } else if (!former.converters) {
+        latest.converters = normalizeConverters(former && former.converters);
       }
 
       changes = Changes(latest, former);
