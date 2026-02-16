@@ -324,13 +324,18 @@ module.exports = function delta(client, folderID, blogID) {
         // path of each change inside the blog folder.
         if (result.path_display) {
           const blogPath = result.path_display.replace(/\/+$/, "");
+          const blogPathLower = blogPath.toLowerCase();
           const blogPrefix = blogPath + "/";
+          const blogPrefixLower = blogPrefix.toLowerCase();
 
           result.entries = result.entries
             .filter(function (entry) {
+              const entryPath = entry.path_display || "";
+              const entryPathLower = entryPath.toLowerCase();
+
               return (
-                entry.path_display.startsWith(blogPrefix) &&
-                entry.path_display !== blogPath
+                entryPathLower.startsWith(blogPrefixLower) &&
+                entryPathLower !== blogPathLower
               );
             })
             .map(function (entry) {
