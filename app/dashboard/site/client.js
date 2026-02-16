@@ -260,6 +260,25 @@ client_routes.use("/:client", function (req, res, next) {
     return res.redirect(res.locals.base + "/client/" + req.blog.client);
   }
 
+  if (!req.blog.client) {
+    const selectedClientPath = "/" + req.params.client;
+    const relativePath =
+      req.path.slice(selectedClientPath.length) || "/";
+    const allowedUnpersistedPaths = new Set([
+      "/",
+      "/connect",
+      "/setup",
+      "/set-up-folder",
+      "/redirect",
+      "/authenticate",
+      "/create",
+    ]);
+
+    if (!allowedUnpersistedPaths.has(relativePath)) {
+      return res.redirect(res.locals.base + "/client");
+    }
+  }
+
   res.locals.base = req.baseUrl;
   res.locals.effectiveClient = req.params.client;
 
