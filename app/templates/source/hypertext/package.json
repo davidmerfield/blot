@@ -2,7 +2,7 @@
   "name": "Hypertext",
   "locals": {
     "page_size": 100,
-    "hide_dates": false,
+    "hide_dates": true,
     "date_display": "MMMM D, Y",
     "lang": "en",
     "sort_by": "id",

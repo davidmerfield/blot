@@ -2,7 +2,7 @@
   "name": "Portfolio",
   "locals": {
     "page_size": 20,
-    "hide_dates": false,
+    "hide_dates": true,
     "date_display": "MMMM D, Y",
     "background_color": "#FFFFFF",
     "text_color": "#000000",
