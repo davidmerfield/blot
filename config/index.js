@@ -67,15 +67,7 @@ module.exports = {
   port: BLOT_PORT,
   clients_port: 8888,
 
-  redis: (function () {
-    const host = process.env.BLOT_REDIS_HOST || "127.0.0.1";
-    const port = process.env.BLOT_REDIS_PORT
-      ? parseInt(process.env.BLOT_REDIS_PORT, 10)
-      : host === "toxiproxy"
-        ? 26379
-        : 6379;
-    return { host, port };
-  })(),
+  redis: { port: 6379, host: process.env.BLOT_REDIS_HOST || "127.0.0.1" },
 
   admin: {
     uid: process.env.BLOT_ADMIN_UID,

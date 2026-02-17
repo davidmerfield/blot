@@ -47,8 +47,8 @@ fi
 # Toxiproxy image is FROM scratch (no shell), so use HTTP API from host instead of exec.
 echo "[toxiproxy] Configuring redis proxy via API ..."
 curl -sf -X DELETE "${API}/proxies/redis" >/dev/null 2>&1 || true
-curl -sf -X POST "${API}/proxies" -H "Content-Type: application/json" -d "{\"name\":\"redis\",\"listen\":\"0.0.0.0:26379\",\"upstream\":\"redis:6379\"}" >/dev/null
+curl -sf -X POST "${API}/proxies" -H "Content-Type: application/json" -d "{\"name\":\"redis\",\"listen\":\"0.0.0.0:6379\",\"upstream\":\"redis:6379\"}" >/dev/null
 curl -sf -X POST "${API}/proxies/redis/toxics" -H "Content-Type: application/json" -d "{\"name\":\"redis-latency\",\"type\":\"latency\",\"attributes\":{\"latency\":${LATENCY_MS},\"jitter\":${JITTER_MS}}}" >/dev/null
 
-echo "[toxiproxy] Ready: node-app -> toxiproxy:26379 -> redis:6379 (latency ${LATENCY_MS}ms + jitter ${JITTER_MS}ms)"
+echo "[toxiproxy] Ready: node-app -> toxiproxy:6379 -> redis:6379 (latency ${LATENCY_MS}ms + jitter ${JITTER_MS}ms)"
 echo "[toxiproxy] Note: packet loss/reorder (tc netem) skipped — image has no shell; set BLOT_USE_TOXIPROXY=false or ignore."
