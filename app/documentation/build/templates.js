@@ -28,12 +28,42 @@ const DEFAULT_FOLDER_PREVIEW = `Pages
   Secret.txt
 Posts`;
 
+const MAX_VISIBLE_FOLDERS_PER_LEVEL = 3;
+
+const isDotfile = (name = "") => name.startsWith(".");
+
+const sanitizePreviewTree = (nodes = []) => {
+  const sanitizedNodes = nodes
+    .filter((node) => node && !isDotfile(node.name))
+    .map((node) => {
+      const sanitizedNode = {
+        ...node,
+        children: sanitizePreviewTree(node.children || []),
+      };
+
+      return sanitizedNode;
+    });
+
+  let visibleFolderCount = 0;
+
+  for (const node of sanitizedNodes) {
+    if (node.type !== "directory") continue;
+
+    visibleFolderCount += 1;
+    if (visibleFolderCount > MAX_VISIBLE_FOLDERS_PER_LEVEL) {
+      node.collapsed = true;
+      node.children = [];
+    }
+  }
+
+  return sanitizedNodes;
+};
+
 const formatTreeForPreview = (nodes = [], indent = "") =>
   nodes
     .map((node) => {
-      const suffix = node.type === "directory" ? "/" : "";
-      const collapse = node.collapsed ? " …" : "";
-      const line = `${indent}${node.name}${suffix}${collapse}`;
+      const collapse = node.collapsed ? "" : "";
+      const line = `${indent}${node.name}${collapse}`;
       const children = (node.children || []).length
         ? `\n${formatTreeForPreview(node.children, `${indent}  `)}`
         : "";
@@ -143,11 +173,14 @@ module.exports = async () => {
     }
 
     const treeEntry = manifest[template.demo_folder] || {};
-    const previewTree = treeEntry.displayTree || treeEntry.fullTree;
-    templateData.folder_preview = previewTree
+    const previewTree = sanitizePreviewTree(treeEntry.displayTree || treeEntry.fullTree || []);
+    templateData.folder_preview = previewTree.length
       ? formatTreeForPreview(previewTree)
       : DEFAULT_FOLDER_PREVIEW;
 
     await renderView("template.html", { template: templateData, cdn }, `${template.slug}/index.html`, partials);
   }
 };
+
+module.exports.sanitizePreviewTree = sanitizePreviewTree;
+module.exports.formatTreeForPreview = formatTreeForPreview;
