@@ -14,6 +14,29 @@ describe("git client handle changes", function () {
     var newHandle = oldHandle + "renamed";
     var oldRepo = dataDir + "/" + oldHandle + ".git";
     var newRepo = dataDir + "/" + newHandle + ".git";
+    var redirectStatus = 308;
+
+    var assertRedirect = function (path, expectedLocation, callback) {
+      var req = http.request(
+        {
+          method: "GET",
+          hostname: "127.0.0.1",
+          port: context.server.port,
+          path,
+        },
+        function (res) {
+          expect(res.statusCode).toBe(redirectStatus);
+          expect(res.headers.location).toBe(expectedLocation);
+          res.resume();
+          callback();
+        }
+      );
+
+      req.on("error", function (err) {
+        done.fail(err);
+      });
+      req.end();
+    };
 
     fs.pathExists(oldRepo, function (err, exists) {
       if (err) return done.fail(err);
@@ -31,31 +54,39 @@ describe("git client handle changes", function () {
             if (err) return done.fail(err);
             expect(oldExists).toBe(false);
 
-            var req = http.request(
-              {
-                method: "GET",
-                hostname: "127.0.0.1",
-                port: context.server.port,
-                path: "/clients/git/end/" + oldHandle + ".git",
-              },
-              function (res) {
-                expect(res.statusCode).toBe(308);
-                expect(res.headers.location).toBe(
+            assertRedirect(
+              "/clients/git/end/" + oldHandle + ".git",
+              "http://127.0.0.1:" +
+                context.server.port +
+                "/clients/git/end/" +
+                newHandle +
+                ".git",
+              function () {
+                assertRedirect(
+                  "/clients/git/end/" +
+                    oldHandle +
+                    ".git/info/refs?service=git-receive-pack",
                   "http://127.0.0.1:" +
                     context.server.port +
                     "/clients/git/end/" +
                     newHandle +
-                    ".git"
+                    ".git/info/refs?service=git-receive-pack",
+                  function () {
+                    assertRedirect(
+                      "/clients/git/end/" +
+                        oldHandle +
+                        ".git/git-receive-pack",
+                      "http://127.0.0.1:" +
+                        context.server.port +
+                        "/clients/git/end/" +
+                        newHandle +
+                        ".git/git-receive-pack",
+                      done
+                    );
+                  }
                 );
-                res.resume();
-                done();
               }
             );
-
-            req.on("error", function (err) {
-              done.fail(err);
-            });
-            req.end();
           });
         });
       });

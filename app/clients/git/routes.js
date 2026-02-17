@@ -109,6 +109,17 @@ site.use("/end/:gitHandle.git", function (req, res, next) {
     if (err || !blog) return next();
 
     if (blog.handle !== req.params.gitHandle) {
+      var oldPathPrefix =
+        "/clients/git/end/" + req.params.gitHandle + ".git";
+      var originalUrl = req.originalUrl || "";
+      var trailingPathAndQuery = "";
+
+      if (originalUrl.indexOf(oldPathPrefix) === 0) {
+        trailingPathAndQuery = originalUrl.slice(oldPathPrefix.length);
+      } else {
+        trailingPathAndQuery = req.url || "";
+      }
+
       return res
         .status(308)
         .redirect(
@@ -117,7 +128,8 @@ site.use("/end/:gitHandle.git", function (req, res, next) {
             req.get("host") +
             "/clients/git/end/" +
             blog.handle +
-            ".git"
+            ".git" +
+            trailingPathAndQuery
         );
     }
 
