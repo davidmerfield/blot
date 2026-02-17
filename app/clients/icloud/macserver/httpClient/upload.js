@@ -10,6 +10,18 @@ import * as brctl from "../brctl/index.js";
 import fetch from "./rateLimitedFetchWithRetriesAndTimeout.js";
 import { join } from "path";
 
+class FileTooLargeError extends Error {
+  constructor({ path, size, maxFileSize, mtime }) {
+    super(`File size exceeds maximum of ${maxFileSize} bytes`);
+    this.name = "FileTooLargeError";
+    this.code = "ERR_FILE_TOO_LARGE";
+    this.path = path;
+    this.size = size;
+    this.maxFileSize = maxFileSize;
+    this.mtime = mtime;
+  }
+}
+
 export default async (blogID, path) => {
   // Input validation
   if (!blogID || typeof blogID !== "string") {
@@ -46,12 +58,56 @@ export default async (blogID, path) => {
   }
 
   if (stat.size > maxFileSize) {
+    const modifiedTime = stat.mtime.toISOString();
+
     console.error(
       clfdate(),
       `File size exceeds maximum for upload: ${filePath}`,
       { size: stat.size, maxFileSize }
     );
-    throw new Error(`File size exceeds maximum of ${maxFileSize} bytes`);
+
+    let response;
+    try {
+      response = await fetch(`${remoteServer}/upload`, {
+        timeout: 60 * 1000,
+        method: "POST",
+        headers: {
+          Authorization,
+          blogID,
+          pathBase64: Buffer.from(path).toString("base64"),
+          modifiedTime,
+          "x-placeholder": "true",
+          "x-original-size": String(stat.size),
+        },
+      });
+    } catch (error) {
+      console.error(
+        clfdate(),
+        `Failed to record oversized file placeholder on remote server: ${filePath}`,
+        error
+      );
+      throw error;
+    }
+
+    const text = await response.text();
+
+    if (!response.ok) {
+      console.error(
+        clfdate(),
+        `Placeholder upload failed with status ${response.status} for file: ${filePath}`,
+        text
+      );
+      throw new Error(
+        `Placeholder upload failed with status ${response.status}`
+      );
+    }
+
+    throw new FileTooLargeError({
+      path,
+      size: stat.size,
+      maxFileSize,
+      mtime: modifiedTime,
+    });
   }
 
   const modifiedTime = stat.mtime.toISOString();

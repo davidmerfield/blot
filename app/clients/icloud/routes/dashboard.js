@@ -8,6 +8,7 @@ const parseBody = require("body-parser").urlencoded({ extended: false });
 const config = require("config"); // For accessing configuration values
 const establishSyncLock = require("sync/establishSyncLock");
 const { handleSyncLockError } = require("./lock");
+const Blog = require("models/blog");
 
 const VIEWS = require("path").resolve(__dirname + "/../views") + "/";
 
@@ -66,7 +67,21 @@ dashboard
   .post(parseBody, async function (req, res, next) {
     try {
       if (req.body.cancel) {
+        if (!req.blog.client) {
+          return res.redirect(res.locals.dashboardBase + "/client");
+        }
+
         return disconnect(req.blog.id, next);
+      }
+
+      const setClientError = await new Promise((resolve) => {
+        Blog.set(req.blog.id, { client: "icloud" }, function (err) {
+          resolve(err);
+        });
+      });
+
+      if (setClientError) {
+        return next(setClientError);
       }
 
       const blogID = req.blog.id;
