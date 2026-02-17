@@ -11,7 +11,7 @@ describe("git client handle changes", function () {
   it("renames repos and redirects old handles", function (done) {
     var context = this;
     var oldHandle = context.blog.handle;
-    var newHandle = oldHandle + "-renamed";
+    var newHandle = oldHandle + "renamed";
     var oldRepo = dataDir + "/" + oldHandle + ".git";
     var newRepo = dataDir + "/" + newHandle + ".git";
 
@@ -39,7 +39,7 @@ describe("git client handle changes", function () {
                 path: "/clients/git/end/" + oldHandle + ".git",
               },
               function (res) {
-                expect(res.statusCode).toBe(301);
+                expect(res.statusCode).toBe(308);
                 expect(res.headers.location).toBe(
                   "http://127.0.0.1:" +
                     context.server.port +

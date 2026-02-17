@@ -110,7 +110,7 @@ site.use("/end/:gitHandle.git", function (req, res, next) {
 
     if (blog.handle !== req.params.gitHandle) {
       return res
-        .status(301)
+        .status(308)
         .redirect(
           req.protocol +
             "://" +
