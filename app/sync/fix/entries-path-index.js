@@ -5,7 +5,7 @@ module.exports = function entriesPathIndex(blog, callback) {
   const entriesKey = "blog:" + blog.id + ":entries";
   const lexKey = pathIndex.lexKey(blog.id);
 
-  client.multi().zcard(entriesKey).zcard(lexKey).exec(function (err, res) {
+  client.batch().zcard(entriesKey).zcard(lexKey).exec(function (err, res) {
     if (err) return callback(err);
 
     const entriesCount = parseInt(res[0], 10) || 0;
