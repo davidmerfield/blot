@@ -72,7 +72,7 @@ documentation.get(
 
 documentation.use(require("./selected"));
 
-documentation.get("/", require("./templates.js"), function (req, res, next) {
+documentation.get("/", function (req, res, next) {
   res.locals.title = "Blot";
   res.locals.description = "Turns a folder into a website";
   // otherwise the <title> of the page is 'Blot - Blot'
@@ -105,26 +105,27 @@ documentation.post(
 
 documentation.get("/examples", require("./featured"));
 
-documentation.get("/templates", require("./templates.js"));
+documentation.get("/templates", (req, res) => {
+  res.render("templates/index");
+});
 
-documentation.get(
-  "/templates/for-:type",
-  require("./templates.js"),
-  (req, res, next) => {
-    res.locals.hidebreadcrumbs = true;
-    res.render("templates");
-  }
-);
+documentation.get("/templates/for-:type", (req, res, next) => {
+  res.locals.hidebreadcrumbs = true;
+  const view = `templates/for-${req.params.type}/index`;
+  res.render(view, (err, html) => {
+    if (err) return next();
+    res.send(html);
+  });
+});
 
-documentation.get(
-  "/templates/:template",
-  require("./templates.js"),
-  (req, res, next) => {
-    if (!res.locals.template) return next();
-    res.locals.layout = "partials/layout-full-screen";
-    res.render("templates/template");
-  }
-);
+documentation.get("/templates/:template", (req, res, next) => {
+  res.locals.layout = "partials/layout-full-screen";
+  const view = `templates/${req.params.template}/index`;
+  res.render(view, (err, html) => {
+    if (err) return next();
+    res.send(html);
+  });
+});
 
 documentation.use("/templates/fonts", require("./fonts"));
 
