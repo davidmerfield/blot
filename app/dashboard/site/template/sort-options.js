@@ -14,13 +14,13 @@ module.exports = [
   {
     label: "File path - A to Z",
     sort_by: "id",
-    sort_order: "desc",
-    value: "id_desc"
+    sort_order: "asc",
+    value: "id_asc"
   },
   {
     label: "File path - Z to A",
     sort_by: "id",
-    sort_order: "asc",
-    value: "id_asc"
+    sort_order: "desc",
+    value: "id_desc"
   }
 ];

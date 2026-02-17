@@ -6,9 +6,25 @@ const DEFAULT_SORT = {
   sort_order: "desc"
 };
 
-const resolveSortSelection = value => {
-  const matched = SORT_OPTIONS.find(option => option.value === value);
-  return matched || SORT_OPTIONS.find(
+const resolveSortSelection = locals => {
+  const matchedByValue = SORT_OPTIONS.find(
+    option => option.value === locals.sort_by
+  );
+
+  if (matchedByValue) {
+    return matchedByValue;
+  }
+
+  const matchedByStoredSort = SORT_OPTIONS.find(
+    option =>
+      option.sort_by === locals.sort_by && option.sort_order === locals.sort_order
+  );
+
+  if (matchedByStoredSort) {
+    return matchedByStoredSort;
+  }
+
+  return SORT_OPTIONS.find(
     option =>
       option.sort_by === DEFAULT_SORT.sort_by &&
       option.sort_order === DEFAULT_SORT.sort_order
@@ -23,7 +39,7 @@ module.exports = function (req, res, next) {
       parseInt(req.locals.number_of_rows);
   }
 
-  const sortSelection = resolveSortSelection(req.locals.sort_by);
+  const sortSelection = resolveSortSelection(req.locals);
   if (sortSelection) {
     req.locals.sort_by = sortSelection.sort_by;
     req.locals.sort_order = sortSelection.sort_order;
