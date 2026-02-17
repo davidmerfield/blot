@@ -14,7 +14,7 @@ describe("git client handle changes", function () {
     var newHandle = oldHandle + "renamed";
     var oldRepo = dataDir + "/" + oldHandle + ".git";
     var newRepo = dataDir + "/" + newHandle + ".git";
-    var redirectStatus = 308;
+    var redirectStatus = 302;
 
     var assertRedirect = function (path, expectedLocation, callback) {
       var req = http.request(
@@ -42,7 +42,7 @@ describe("git client handle changes", function () {
       if (err) return done.fail(err);
       expect(exists).toBe(true);
 
-      setBlog(context.blog.id, { handle: newHandle }, function (err) {
+      setBlog(context.blog.id, { handle: newHandle, client: "git" }, function (err) {
         if (err) return done.fail(err);
         context.blog.handle = newHandle;
 
