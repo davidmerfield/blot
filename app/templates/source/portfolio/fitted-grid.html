@@ -23,7 +23,7 @@
   {{^thumbnail.large.url}}
   <a class="post text" href="{{{url}}}" style="flex-grow:{{thumbnail_size}}">
     <span class="title">{{title}}</span>
-    <span class="date">{{date}}</span>
+    {{#date}}<span class="date">{{date}}</span>{{/date}}
   </a>
   {{/thumbnail.large.url}}
   

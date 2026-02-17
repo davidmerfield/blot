@@ -39,3 +39,31 @@ brew install mkcert nss
 Then start the server:
 
 npm start
+
+### Redis fault injection in development (Toxiproxy)
+
+The development compose stack now includes a `toxiproxy` hop between the app and Redis:
+
+`node-app -> toxiproxy:26379 -> redis:6379`
+
+It is enabled by default in development and configures:
+
+- latency with jitter (default `50ms ± 20ms`)
+- packet loss (default `2%`)
+- packet reordering (default `10%`)
+
+You can tune this when starting the dev environment:
+
+```bash
+BLOT_TOXIPROXY_LATENCY_MS=80 \
+BLOT_TOXIPROXY_JITTER_MS=30 \
+BLOT_TOXIPROXY_PACKET_LOSS_PERCENT=5 \
+BLOT_TOXIPROXY_REORDER_PERCENT=15 \
+npm start
+```
+
+To disable fault injection entirely:
+
+```bash
+BLOT_USE_TOXIPROXY=false npm start
+```

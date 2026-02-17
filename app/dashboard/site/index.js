@@ -3,6 +3,7 @@ var site = express.Router();
 var load = require("./load");
 var save = require("./save");
 var trace = require("helper/trace");
+var flags = require("./flags");
 const sse = require("helper/sse")({
   channel: (req) => `sync:status:${req.blog.id}`,
 });
@@ -13,6 +14,8 @@ site.post(
   trace("saved redirects"),
   save.format,
   trace("formated form"),
+  save.flags,
+  trace("saved flags"),
   save.injectTitle,
   trace("updated injectTitle options"),
   save.analytics,
@@ -80,6 +83,8 @@ site.get("/settings/services", load.plugins, (req, res) => {
 site.get("/settings/redirects", load.redirects, (req, res) => {
   res.render("dashboard/site/settings/redirects");
 });
+
+site.get("/settings/flags", flags.get);
 
 site
   .route("/settings/redirects/404s")

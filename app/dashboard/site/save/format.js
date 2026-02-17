@@ -2,6 +2,7 @@ var Blog = require("models/blog");
 var formJSON = require("helper/formJSON");
 var extend = require("helper/extend");
 var normalizeImageExif = require("models/blog/util/imageExif").normalize;
+var normalizeConverters = require("models/blog/util/converters").normalize;
 
 module.exports = function (req, res, next) {
   try {
@@ -39,6 +40,25 @@ module.exports = function (req, res, next) {
     req.updates.imageExif = normalizeImageExif(req.updates.imageExif, {
       fallback: req.blog && req.blog.imageExif ? req.blog.imageExif : "off",
     });
+  }
+
+
+  if (Object.prototype.hasOwnProperty.call(req.updates, "converters")) {
+    var converterUpdates = req.updates.converters;
+
+    if (
+      converterUpdates &&
+      typeof converterUpdates.img === "object" &&
+      Object.prototype.hasOwnProperty.call(converterUpdates.img, "enabled")
+    ) {
+      converterUpdates.img = converterUpdates.img.enabled;
+    }
+
+    req.updates.converters = normalizeConverters(converterUpdates, {
+      fallback: req.blog && req.blog.converters ? req.blog.converters : undefined,
+    });
+
+    extend(req.updates.converters).and(req.blog.converters || {});
   }
 
 

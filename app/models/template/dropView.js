@@ -27,11 +27,13 @@ module.exports = function dropView(templateID, viewName, callback) {
       multi.exec(function (err) {
         if (err) return callback(err);
 
-        updateCdnManifest(templateID, function (manifestErr) {
-          if (manifestErr) return callback(manifestErr);
+        Blog.set(metadata.owner, { cacheID: Date.now() }, function (cacheErr) {
+          if (cacheErr) return callback(cacheErr);
 
-          Blog.set(metadata.owner, { cacheID: Date.now() }, function (err) {
-            callback(err, "Deleted " + templateID);
+          updateCdnManifest(templateID, function (manifestErr) {
+            if (manifestErr) return callback(manifestErr);
+
+            callback(null, "Deleted " + templateID);
           });
         });
       });

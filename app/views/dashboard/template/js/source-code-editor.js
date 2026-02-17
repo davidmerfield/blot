@@ -2,6 +2,7 @@ const CodeMirror = require("./codemirror/codemirror.js");
 const initSidebarActionMenu = require("./sidebar-action-menu");
 
 require("./codemirror/active-line.js");
+require("./codemirror/match-brackets.js");
 require("./codemirror/mode-css.js");
 require("./codemirror/mode-simple.js");
 require("./codemirror/mode-multiplex.js");
@@ -30,6 +31,7 @@ function initializeSourceEditor() {
     lineWrapping: true,
     smartIndent: false,
     styleActiveLine: true,
+    matchBrackets: true,
     theme: "default",
     extraKeys: {
       "Cmd-S": doSave,

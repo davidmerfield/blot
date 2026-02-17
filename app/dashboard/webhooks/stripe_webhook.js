@@ -45,6 +45,7 @@ var Express = require("express");
 var config = require("config");
 var email = require("helper/email");
 var User = require("models/user");
+var subscriptionLifecycle = require("models/user/subscriptionLifecycle");
 var createStripe = require("stripe");
 
 var webhooks = Express.Router();
@@ -145,6 +146,9 @@ function update_subscription(customer_id, subscription, callback) {
     if (err || !user) return callback(err || new Error(NO_USER));
 
     var previousSubscription = user.subscription || {};
+    var shouldDisable = subscriptionLifecycle.shouldDisableFromStripeSubscription(
+      subscription
+    );
 
     if (subscription.status === "canceled" && user.isDisabled)
       email.ALREADY_CANCELLED(user.uid);
@@ -172,11 +176,11 @@ function update_subscription(customer_id, subscription, callback) {
       User.set(user.uid, updates, next);
     };
 
-    if (subscription.status === "canceled") {
+    if (shouldDisable && !user.isDisabled) {
       handler = function (next) {
         User.disable(user, updates, next);
       };
-    } else if (subscription.status === "active" && user.isDisabled) {
+    } else if (!shouldDisable && subscription.status === "active" && user.isDisabled) {
       handler = function (next) {
         User.enable(user, updates, next);
       };

@@ -5,6 +5,7 @@ describe("template", () => {
 	require("./setup")({ createTemplate: true });
 
 	const setView = promisify(require("../index").setView);
+	const setMetadata = promisify(require("../index").setMetadata);
 	const getView = promisify(require("../index").getView);
 	const getMetadata = promisify(require("../index").getMetadata);
 	const Blog = require("models/blog");
@@ -362,4 +363,64 @@ describe("template", () => {
                         }
                 });
         });
+
+	describe("clearing template errors when saving a view", () => {
+		it("clears the view from metadata.errors when saving valid content for that view", async function () {
+			const templateID = this.template.id;
+
+			await setMetadata(templateID, {
+				errors: { "entry.html": "Unclosed section \"entries\" on line 5" },
+			});
+
+			let metadata = await getMetadata(templateID);
+			expect(metadata.errors).toEqual({
+				"entry.html": "Unclosed section \"entries\" on line 5",
+			});
+
+			await setView(templateID, {
+				name: "entry.html",
+				content: "<h1>{{title}}</h1>",
+			});
+
+			metadata = await getMetadata(templateID);
+			expect(metadata.errors).toEqual({});
+		});
+
+		it("clears only the saved view from metadata.errors when multiple views have errors", async function () {
+			const templateID = this.template.id;
+
+			await setMetadata(templateID, {
+				errors: {
+					"entry.html": "Unclosed section on line 1",
+					"index.html": "Bad partial on line 2",
+				},
+			});
+
+			await setView(templateID, {
+				name: "entry.html",
+				content: "Fixed content",
+			});
+
+			const metadata = await getMetadata(templateID);
+			expect(metadata.errors).toEqual({
+				"index.html": "Bad partial on line 2",
+			});
+		});
+
+		it("does not add or change errors when saving a view that was not in metadata.errors", async function () {
+			const templateID = this.template.id;
+
+			await setMetadata(templateID, {
+				errors: { "other.html": "Some error" },
+			});
+
+			await setView(templateID, {
+				name: "clean.html",
+				content: "New valid view",
+			});
+
+			const metadata = await getMetadata(templateID);
+			expect(metadata.errors).toEqual({ "other.html": "Some error" });
+		});
+	});
 });

@@ -75,17 +75,25 @@ async function resetToBlot(blogID, publish) {
   // This means that future syncs will be fast
   await set(blogID, { cursor });
 
-  await walk(blogID, client, publish, dropboxRoot, "/");
+  const summary = {
+    downloaded: 0,
+    removed: 0,
+    createdDirs: 0,
+    skipped: 0,
+  };
+
+  await walk(blogID, client, publish, dropboxRoot, "/", summary);
 
   await set(blogID, {
     error_code: 0,
-    last_sync: Date.now(),
   });
 
   publish("Finished processing folder");
+
+  return summary;
 }
 
-const walk = async (blogID, client, publish, dropboxRoot, dir) => {
+const walk = async (blogID, client, publish, dropboxRoot, dir, summary) => {
   const localRoot = localPath(blogID, "/");
   publish("Checking", dir);
   const [remoteContents, localContents] = await Promise.all([
@@ -100,6 +108,7 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
       publish("Removing ignored", path_display);
       try {
         await fs.remove(join(localRoot, dir, name));
+        summary.removed += 1;
       } catch (e) {
         publish("Failed to remove ignored", path_display, e.message);
       }
@@ -114,6 +123,7 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
       publish("Removing", path_display);
       try {
         await fs.remove(join(localRoot, dir, name));
+        summary.removed += 1;
       } catch (e) {
         publish("Failed to remove", path_display, e.message);
       }
@@ -136,17 +146,28 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
       if (localCounterpart && !localCounterpart.is_directory) {
         publish("Removing", pathOnDisk);
         await fs.remove(pathOnDisk);
+        summary.removed += 1;
         publish("Creating directory", pathOnDisk);
         await fs.mkdir(pathOnDisk);
+        summary.createdDirs += 1;
       } else if (!localCounterpart) {
         publish("Creating directory", pathOnBlot);
         await fs.mkdir(pathOnDisk);
+        summary.createdDirs += 1;
       }
 
-      await walk(blogID, client, publish, dropboxRoot, join(dir, name));
+      await walk(
+        blogID,
+        client,
+        publish,
+        dropboxRoot,
+        join(dir, name),
+        summary
+      );
     } else {
       if (hasUnsupportedExtension(pathOnDropbox)) {
         publish("Skipping unsupported file", pathOnBlot);
+        summary.skipped += 1;
         try {
           await fs.outputFile(pathOnDisk, "");
         } catch (err) {
@@ -163,6 +184,7 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
           "Skipping oversized file",
           `${pathOnBlot} (${remoteItem.size} bytes > ${MAX_FILE_SIZE} byte limit)`
         );
+        summary.skipped += 1;
         try {
           await fs.outputFile(pathOnDisk, "");
         } catch (err) {
@@ -179,6 +201,7 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
         publish("Downloading", pathOnBlot);
         try {
           await download(client, pathOnDropbox, pathOnDisk);
+          summary.downloaded += 1;
         } catch (e) {
           continue;
         }
@@ -186,6 +209,7 @@ const walk = async (blogID, client, publish, dropboxRoot, dir) => {
         publish("Downloading", pathOnBlot);
         try {
           await download(client, pathOnDropbox, pathOnDisk);
+          summary.downloaded += 1;
         } catch (e) {
           continue;
         }

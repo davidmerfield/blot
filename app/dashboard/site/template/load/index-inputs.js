@@ -2,7 +2,7 @@ const determine_input = require("./util/determine-input");
 
 const MAP = {
   page_size: {
-    label: "Number of posts per page",
+    label: "Posts per page",
     min: 1,
     max: 60
   }

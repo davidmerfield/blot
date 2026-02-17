@@ -1,10 +1,9 @@
-var Template = require("models/template");
-
 var ERROR = require("./error");
 var loadView = require("./load");
 var renderLocals = require("./locals");
 var finalRender = require("./main");
 var retrieve = require("./retrieve");
+var getCachedFullView = require("./full-view-cache");
 
 var ensure = require("helper/ensure");
 var extend = require("helper/extend");
@@ -36,7 +35,6 @@ module.exports = function (req, res, _next) {
     if (!req.template) return next();
 
     var blog = req.blog;
-    var blogID = blog.id;
     var templateID = req.template.id;
 
     // We have a special case for Cloudflare
@@ -50,38 +48,40 @@ module.exports = function (req, res, _next) {
 
     if (callback) callback = callOnce(callback);
 
-    Template.getFullView(blogID, templateID, name, function (err, response) {
-      if (err) {
-        return next(err);
-      }
+    getCachedFullView(
+      { blog: blog, template: req.template, viewName: name },
+      function (err, response) {
+        if (err) {
+          return next(err);
+        }
 
-      if (!response) {
-        err = new Error(
-          `The view '${name}' does not exist under templateID=${templateID}`
-        );
-        err.code = "NO_VIEW";
-        return next(err);
-      }
+        if (!response) {
+          err = new Error(
+            `The view '${name}' does not exist under templateID=${templateID}`
+          );
+          err.code = "NO_VIEW";
+          return next(err);
+        }
 
-      req.log("Loaded view");
+        req.log("Loaded view");
 
-      var viewLocals = response[0];
-      var viewPartials = response[1];
-      var missingLocals = response[2];
-      var viewType = response[3];
-      var view = response[4];
-      var query = Object.keys(req.query).length ? { query: req.query } : {};
+        var viewLocals = response[0];
+        var viewPartials = response[1];
+        var missingLocals = response[2];
+        var viewType = response[3];
+        var view = response[4];
+        var query = Object.keys(req.query).length ? { query: req.query } : {};
 
-      extend(res.locals)
-        .and(query)
-        .and(viewLocals)
-        .and(req.template.locals)
-        .and(blog.locals);
+        extend(res.locals)
+          .and(query)
+          .and(viewLocals)
+          .and(req.template.locals)
+          .and(blog.locals);
 
-      extend(res.locals.partials).and(viewPartials);
+        extend(res.locals.partials).and(viewPartials);
 
-      retrieve(req, res, missingLocals, function (err, foundLocals) {
-        extend(res.locals).and(foundLocals);
+        retrieve(req, res, missingLocals, function (err, foundLocals) {
+          extend(res.locals).and(foundLocals);
 
         // LOAD ANY LOCALS OR PARTIALS
         // WHICH ARE REFERENCED IN LOCALS
@@ -173,7 +173,8 @@ module.exports = function (req, res, _next) {
             }
           });
         });
-      });
-    });
+        });
+      }
+    );
   }
 };

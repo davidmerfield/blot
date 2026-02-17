@@ -1,7 +1,26 @@
 {{#template}}
 {{> preview-header}}
 
+<div style="width: 100%;max-width: 100%;background-color: #f0f0f0;padding: 48px;display: flex;flex-direction: column;align-items: center;justify-content: center;box-sizing: border-box;">
+    <a href="{{#cdn}}{{{zip}}}{{/cdn}}" target="_blank" class="template-button">
+        <span class="icon-download"></span>&thinsp;
+        Download folder
+    </a>
+
+    <pre style="width: 400px" class="folder" title="{{name}}"><code>Pages
+    About.txt
+    Contact.docx  
+    Home.txt
+    Link.webloc
+    Secret.txt
+  Posts
+  
+  </code></pre></div>
+
+  
+  <div style="max-width: 600px;margin-top: 48px;margin:48px auto;">
 {{{README}}}
+</div>
 
 {{/template}}
 

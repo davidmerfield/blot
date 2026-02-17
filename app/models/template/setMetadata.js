@@ -52,18 +52,29 @@ module.exports = function setMetadata(id, updates, callback) {
       client.hmset(key.metadata(id), metadata, function (err) {
         if (err) return callback(err);
 
-        updateCdnManifest(id, function (manifestErr) {
-          if (manifestErr) return callback(manifestErr);
-
-          if (!changes) return callback(null, changes);
-
-          if (metadata.isPublic || metadata.owner === "SITE") {
-            return callback(null, changes);
-          }
-
-          Blog.set(metadata.owner, { cacheID: Date.now() }, function (err) {
-            callback(err, changes);
+        if (!changes) {
+          return updateCdnManifest(id, function (manifestErr) {
+            if (manifestErr) return callback(manifestErr);
+            callback(null, changes);
           });
+        }
+
+        const shouldBumpCache = !(metadata.isPublic || metadata.owner === "SITE");
+
+        const regenerateManifest = function () {
+          updateCdnManifest(id, function (manifestErr) {
+            if (manifestErr) return callback(manifestErr);
+            callback(null, changes);
+          });
+        };
+
+        if (!shouldBumpCache) {
+          return regenerateManifest();
+        }
+
+        Blog.set(metadata.owner, { cacheID: Date.now() }, function (cacheErr) {
+          if (cacheErr) return callback(cacheErr);
+          regenerateManifest();
         });
       });
     });

@@ -9,6 +9,8 @@ const readdir = async (drive, dirId) => {
     const params = {
       q: `'${dirId}' in parents and trashed = false`,
       pageToken: nextPageToken,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
       fields:
         "nextPageToken, files/id, files/name, files/modifiedTime, files/md5Checksum, files/mimeType, files/size",
     };

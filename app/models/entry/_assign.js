@@ -2,6 +2,7 @@ var Blog = require("models/blog");
 var ensure = require("helper/ensure");
 var debug = require("debug")("blot:entry:assign");
 var redis = require("models/client");
+var pathIndex = require("../entries/pathIndex");
 
 var model = require("./model");
 
@@ -44,6 +45,10 @@ module.exports = function (blogID, entry, callback) {
     // Blot uses redis' sorted sets to
     // create lists of entries.
     multi.zadd(key, score, value);
+
+    if (list === ENTRIES) {
+      multi.zadd(pathIndex.lexKey(blogID), 0, value);
+    }
   }
 
   function drop(list) {
@@ -53,6 +58,10 @@ module.exports = function (blogID, entry, callback) {
     ensure(list, "string").and(value, "string");
 
     multi.zrem(key, value);
+
+    if (list === ENTRIES) {
+      multi.zrem(pathIndex.lexKey(blogID), value);
+    }
   }
 
   // There is a list of every entry that Blot knows
@@ -106,6 +115,8 @@ module.exports = function (blogID, entry, callback) {
   } else {
     drop(SCHEDULED);
   }
+
+  multi.set(pathIndex.readyKey(blogID), "1");
 
   multi.exec(function (err) {
     if (err) return callback(err);

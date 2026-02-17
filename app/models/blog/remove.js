@@ -10,14 +10,21 @@ var flushCache = require("./flushCache");
 
 var START_CURSOR = "0";
 var SCAN_SIZE = 1000;
+var BLOG_ID_REGEX = /^blog_[a-f0-9]+$/;
+
+function isValidBlogID(blogID) {
+  return typeof blogID === "string" && BLOG_ID_REGEX.test(blogID);
+}
 
 function remove(blogID, callback) {
+  if (!isValidBlogID(blogID)) return callback(new Error("Invalid blog id"));
+
   get({ id: blogID }, function (err, blog) {
-    if (err || !blog) return callback(err || new Error("No blog"));
+    if (err || !blog || !blog.id) return callback(err || new Error("No blog"));
 
     // We need to enable the blog to disconnect the client
     // since we need to acquire a sync lock...
-    set(blog.id, { isDisabled: false }, function (err) {
+    set(blogID, { isDisabled: false }, function (err) {
       if (err) return callback(err);
 
       flushCache(blogID, function (err) {
@@ -84,15 +91,18 @@ function deleteKeys(blog, callback) {
 
   var patterns = ["template:" + blog.id + ":*", "blog:" + blog.id + ":*"];
 
-  var remove = ["template:owned_by:" + blog.id, "handle:" + blog.handle];
+  var remove = ["template:owned_by:" + blog.id];
+
+  if (blog.handle) {
+    remove.push("handle:" + blog.handle);
+    remove.push("domain:" + blog.handle + "." + config.host);
+  }
 
   // TODO ALSO remove alternate key with/out 'www', e.g. www.example.com
   if (blog.domain) {
     remove.push("domain:" + blog.domain);
     remove.push("domain:" + BackupDomain(blog.domain));
   }
-
-  remove.push("domain:" + blog.handle + "." + config.host);
 
   async.each(
     patterns,

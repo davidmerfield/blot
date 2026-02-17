@@ -1,10 +1,24 @@
-const express = require("express");
+import express from "express";
 const { raw } = express;
-const { Authorization, maxFileSize } = require("./config");
-const { initialize } = require("./watcher");
-const notifyServerStarted = require("./httpClient/notifyServerStarted");
+import { Authorization, maxFileSize } from "./config.js";
+import { initialize } from "./watcher/index.js";
+import notifyServerStarted from "./httpClient/notifyServerStarted.js";
+import clfdate from "./util/clfdate.js";
+import monitorer from "./monitorer.js";
+import uploadRoute from "./routes/upload.js";
+import evictRoute from "./routes/evict.js";
+import deleteRoute from "./routes/delete.js";
+import mkdirRoute from "./routes/mkdir.js";
+import watchRoute from "./routes/watch.js";
+import disconnectRoute from "./routes/disconnect.js";
+import readdirRoute from "./routes/readdir.js";
+import recursiveListRoute from "./routes/recursiveList.js";
+import downloadRoute from "./routes/download.js";
+import statsRoute from "./routes/stats.js";
+import setupRoute from "./routes/setup.js";
 
-const monitorer = require("./monitorer");
+const asyncHandler = (handler) => (req, res, next) =>
+  Promise.resolve(handler(req, res, next)).catch(next);
 
 // maxFileSize is in bytes but limit must be in the format '5mb'
 const limit = `${maxFileSize / 1000000}mb`;
@@ -13,11 +27,16 @@ const startServer = async () => {
   const app = express();
 
   app.use((req, res, next) => {
-    console.log(`Request: ${req.method} ${req.url}`);
+    console.log(clfdate(), `Request: ${req.method} ${req.url}`);
 
     const authorization = req.header("Authorization"); // New header for the Authorization secret
 
     if (authorization !== Authorization) {
+      console.error(clfdate(), "Unauthorized request", {
+        method: req.method,
+        url: req.url,
+        hasAuthorization: Boolean(authorization),
+      });
       return res.status(403).send("Unauthorized");
     }
 
@@ -28,29 +47,34 @@ const startServer = async () => {
 
   app.use(raw({ type: "application/octet-stream", limit }));
 
-  app.post("/upload", require("./routes/upload"));
-  
-  app.post("/evict", require("./routes/evict"));
+  app.post("/upload", asyncHandler(uploadRoute));
 
-  app.post("/delete", require("./routes/delete"));
+  app.post("/evict", asyncHandler(evictRoute));
 
-  app.post("/mkdir", require("./routes/mkdir"));
+  app.post("/delete", asyncHandler(deleteRoute));
 
-  app.post("/watch", require("./routes/watch"));
+  app.post("/mkdir", asyncHandler(mkdirRoute));
 
-  app.post("/disconnect", require("./routes/disconnect"));
+  app.post("/watch", asyncHandler(watchRoute));
 
-  app.get("/readdir", require("./routes/readdir"));
-  app.post("/recursiveList", require("./routes/recursiveList"));
+  app.post("/disconnect", asyncHandler(disconnectRoute));
 
-  app.get("/download", require("./routes/download"));
+  app.get("/readdir", asyncHandler(readdirRoute));
+  app.post("/recursiveList", asyncHandler(recursiveListRoute));
 
-  app.get("/stats", require("./routes/stats"));
+  app.get("/download", asyncHandler(downloadRoute));
 
-  app.post("/setup", require("./routes/setup"));
+  app.get("/stats", asyncHandler(statsRoute));
+
+  app.post("/setup", asyncHandler(setupRoute));
+
+  app.use((err, req, res, next) => {
+    console.error(clfdate(), "Macserver error:", err);
+    res.status(500).send("Internal Server Error");
+  });
 
   app.listen(3000, () => {
-    console.log("Macserver is running on port 3000");
+    console.log(clfdate(), "Macserver is running on port 3000");
   });
 };
 
@@ -59,28 +83,28 @@ const startServer = async () => {
   try {
 
     // Test connectivity with the remote server
-    console.log("Pinging remote server...");
+    console.log(clfdate(), "Pinging remote server...");
     try {
       await notifyServerStarted();
     } catch (error) {
-      console.error("Failed to ping remote server:", error);
+      console.error(clfdate(), "Failed to ping remote server:", error);
     }
 
     // Start the local server
-    console.log("Starting macserver...");
+    console.log(clfdate(), "Starting macserver...");
     await startServer();
 
     // Initialize the file watcher
-    console.log("Initializing file watchers for existing folders...");
+    console.log(clfdate(), "Initializing file watchers for existing folders...");
     await initialize();
 
     // Start the monitorer to keep iCloud in sync
-    console.log("Starting iCloud monitorer...");
+    console.log(clfdate(), "Starting iCloud monitorer...");
     monitorer();
     
-    console.log("Macserver started successfully");
+    console.log(clfdate(), "Macserver started successfully");
   } catch (error) {
-    console.error("Error starting macserver:", error);
+    console.error(clfdate(), "Error starting macserver:", error);
     process.exit(1);
   }
 })();

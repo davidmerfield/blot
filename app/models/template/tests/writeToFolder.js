@@ -8,6 +8,7 @@ var setView = require("../index").setView;
 var dropView = require("../index").dropView;
 var setMetadata = require("../index").setMetadata;
 var packageAPI = require("../index").package;
+var removeEnabledFromAllTemplates = require("../index").removeEnabledFromAllTemplates;
 var writeChangeToFolder = require("../../../dashboard/site/template/save/writeChangeToFolder");
 
   require("./setup")({ createTemplate: true });
@@ -82,6 +83,49 @@ var writeChangeToFolder = require("../../../dashboard/site/template/save/writeCh
         expect(fs.readJsonSync(targetPath).locals).toEqual(metadata.locals);
         done();
       });
+    });
+  });
+
+  it("removeEnabledFromAllTemplates disables all templates with enabled: true", function (done) {
+    var test = this;
+    var templatesRoot = join(test.blogDirectory, "Templates");
+    var template1Dir = join(templatesRoot, "template-1");
+    var template2Dir = join(templatesRoot, "template-2");
+    var template3Dir = join(templatesRoot, "template-3");
+    var package1 = JSON.stringify({ name: "Template 1", enabled: true }, null, 2);
+    var package2 = JSON.stringify({ name: "Template 2", enabled: true }, null, 2);
+    var package3 = JSON.stringify({ name: "Template 3", enabled: false }, null, 2);
+
+    fs.ensureDirSync(template1Dir);
+    fs.ensureDirSync(template2Dir);
+    fs.ensureDirSync(template3Dir);
+    fs.outputFileSync(join(template1Dir, "package.json"), package1);
+    fs.outputFileSync(join(template2Dir, "package.json"), package2);
+    fs.outputFileSync(join(template3Dir, "package.json"), package3);
+
+    removeEnabledFromAllTemplates(test.blog.id, function (err, modifiedSlugs) {
+      if (err) return done.fail(err);
+      
+      // Templates with enabled: true should be disabled
+      expect(
+        fs.readJsonSync(join(template1Dir, "package.json")).enabled
+      ).toEqual(false);
+      expect(
+        fs.readJsonSync(join(template2Dir, "package.json")).enabled
+      ).toEqual(false);
+      
+      // Templates with enabled: false should remain unchanged
+      expect(
+        fs.readJsonSync(join(template3Dir, "package.json")).enabled
+      ).toEqual(false);
+      
+      // Should return the slugs of modified templates
+      expect(Array.isArray(modifiedSlugs)).toBe(true);
+      expect(modifiedSlugs.length).toBe(2);
+      expect(modifiedSlugs).toContain("template-1");
+      expect(modifiedSlugs).toContain("template-2");
+      
+      done();
     });
   });
 

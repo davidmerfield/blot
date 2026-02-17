@@ -2,6 +2,7 @@
   "name": "macserver",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,11 +10,11 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
-    "chokidar": "3.6.0",
     "bottleneck": "2.19.5",
+    "chokidar": "5.0.0",
     "dotenv": "16.4.7",
     "express": "4.21.2",
     "fs-extra": "11.3.0",
-    "node-fetch": "2.6.7"    
+    "node-fetch": "2.6.7"
   }
 }

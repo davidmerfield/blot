@@ -2,7 +2,7 @@
 
 <ul class="steps">
   <li>
-    <strong>Create a new folder</strong> in your iCloud Drive.  
+    <strong>Create a new folder</strong> in your iCloud Drive.
   </li>
   <li>
     <strong>Right-click the new folder</strong> and select <b>Share...</b>
@@ -34,8 +34,9 @@
       <label for="sharingLink" style="margin-top:12px;font-size:16px;color:var(--text-color)">Paste iCloud folder sharing link here:</label>
       <input type="text" name="sharingLink" placeholder="https://www.icloud.com/iclouddrive/..." value="">
       <div class="buttons">
-        <button type="submit">Finish Setup</button> 
-        <button type="submit" name="cancel" value="true">Cancel</button> 
+        <button type="submit">Finish Setup</button>
+        {{^blog.client}}<a href="{{{dashboardBase}}}/client">Cancel</a>{{/blog.client}}
+        {{#blog.client}}<button type="submit" name="cancel" value="true">Cancel</button>{{/blog.client}}
       </div>
     </form>
   </li>

@@ -2,10 +2,11 @@ const cheerio = require("cheerio");
 
 module.exports = async contents => {
   const transformers = [
+    require("../tools/hljs"),
     require("../tools/typeset"),
     require("../tools/anchor-links"),
     require("../tools/tex"),
-    require("../tools/finder").html_parser
+    require("../tools/finder").html_parser,
   ];
 
   // we want to remove any indentation before the partial tag {{> body}}

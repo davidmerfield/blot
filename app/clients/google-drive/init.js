@@ -6,6 +6,7 @@ const createDriveActivityClient = require("./serviceAccount/createDriveActivityC
 const fetchStorageInfo = require("./serviceAccount/fetchStorageInfo");
 const watchChanges = require("./serviceAccount/watchChanges");
 const pollDriveActivity = require("./serviceAccount/pollDriveActivity");
+const hotDocPoller = require("./serviceAccount/hotDocPoller");
 const { restartSetupProcesses } = require("./routes/setup");
 
 const main = async (initial = false) => {
@@ -19,6 +20,10 @@ const main = async (initial = false) => {
   // Re-watch for new folders for sites in the middle of the setup process
   if (initial) {
     restartSetupProcesses();
+  }
+
+  if (initial) {
+    hotDocPoller.start();
   }
 
   for (const { client_id: serviceAccountId } of serviceAccounts) {

@@ -6,6 +6,7 @@
     "text_color": "#000",
     "hide_dates": false,
     "date_display": "MMMM D, Y",
+    "infinite_scroll": true,
     "body_font": {},
     "syntax_highlighter": {
       "id": "stackoverflow-light"

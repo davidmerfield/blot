@@ -46,6 +46,8 @@ async function computeViewsHash() {
     join(__dirname, "html.js"),
     join(__dirname, "tools.js"),
     join(__dirname, "../tools/git-commits.js"),
+    join(__dirname, "../tools/hljs.js"),
+    join(__dirname, "../tools/finder/build.js"),
   ];
 
   for (const script of buildScripts) {

@@ -42,7 +42,9 @@
     </a>
 </div>
 
-<p>Updated on {{#formatUpdated}}DD MMMM, YYYY{{/formatUpdated}}</p>
+{{#entry.date}}
+<p>Updated on {{.}}</p>
+{{/entry.date}}
 </div>
 {{/first}}
 {{/entries}}

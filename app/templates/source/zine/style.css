@@ -169,6 +169,14 @@ hr.full {width: 100%;border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.15);}
 
 blockquote {font-style: italic;margin:0;padding: 0 0 0 1em;border-left: 1px solid rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.3)}
 
+p,
+li,
+blockquote,
+figcaption {
+  orphans: 2;
+  widows: 2;
+}
+
 table {
   word-break: normal;
   word-break: keep-all;
