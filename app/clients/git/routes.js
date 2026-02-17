@@ -121,8 +121,7 @@ site.use("/end/:gitHandle.git", function (req, res, next) {
       }
 
       return res
-        .status(308)
-        .redirect(
+        .redirect(308,
           req.protocol +
             "://" +
             req.get("host") +

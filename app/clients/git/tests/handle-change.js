@@ -14,7 +14,7 @@ describe("git client handle changes", function () {
     var newHandle = oldHandle + "renamed";
     var oldRepo = dataDir + "/" + oldHandle + ".git";
     var newRepo = dataDir + "/" + newHandle + ".git";
-    var redirectStatus = 302;
+    var redirectStatus = 308;
 
     var assertRedirect = function (path, expectedLocation, callback) {
       var req = http.request(

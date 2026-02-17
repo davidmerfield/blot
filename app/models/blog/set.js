@@ -106,18 +106,6 @@ module.exports = function (blogID, blog, callback) {
         if (former.handle) {
           multi.del(key.domain(former.handle + "." + config.host));
         }
-
-        if (former.handle && latest.handle) {
-          var usesGit = former.client === "git" || latest.client === "git";
-
-          if (usesGit) {
-            try {
-              await renameGitRepo(former.handle, latest.handle);
-            } catch (renameError) {
-              return callback(renameError);
-            }
-          }
-        }
       }
 
       // We check against empty string, because if the
@@ -204,6 +192,18 @@ module.exports = function (blogID, blog, callback) {
           } catch (updateError) {
             // for now, do nothing
             console.log('Blog.set', blogID, 'Error updating template CDN manifest', updateError);
+          }
+        }
+
+        if (former.handle && latest.handle) {
+          var usesGit = former.client === "git" || latest.client === "git";
+
+          if (usesGit) {
+            try {
+              await renameGitRepo(former.handle, latest.handle);
+            } catch (renameError) {
+              return callback(renameError);
+            }
           }
         }
 
