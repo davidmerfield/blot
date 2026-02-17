@@ -451,13 +451,13 @@ module.exports = (function () {
     if (!entryIDs.length) return callback(null, []);
 
     var key = listKey(blogID, "entries");
-    var multi = redis.multi();
+    var batch = redis.batch();
 
     entryIDs.forEach(function (entryID) {
-      multi.zscore(key, entryID);
+      batch.zscore(key, entryID);
     });
 
-    multi.exec(function (err, rawScores) {
+    batch.exec(function (err, rawScores) {
       if (err) return callback(err);
 
       var withScores = [];

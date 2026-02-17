@@ -4,6 +4,8 @@
   "locals": {
     "lang": "en-US",
     "page_size": 10,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
     "author": "",
     "subtitle": ""
   },
