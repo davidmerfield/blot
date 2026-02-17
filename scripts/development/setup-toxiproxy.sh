@@ -8,12 +8,12 @@ JITTER_MS="${BLOT_TOXIPROXY_JITTER_MS:-20}"
 LOSS_PERCENT="${BLOT_TOXIPROXY_PACKET_LOSS_PERCENT:-2}"
 REORDER_PERCENT="${BLOT_TOXIPROXY_REORDER_PERCENT:-10}"
 
+API="http://127.0.0.1:8474"
 compose() {
-  if command -v docker-compose >/dev/null 2>&1; then
-    docker-compose -f "$COMPOSE_FILE" "$@"
-  else
-    docker compose -f "$COMPOSE_FILE" "$@"
-  fi
+  BLOT_HOST="${BLOT_HOST:-local.blot}" \
+  command -v docker-compose >/dev/null 2>&1 \
+    && docker-compose -f "$COMPOSE_FILE" "$@" \
+    || docker compose -f "$COMPOSE_FILE" "$@"
 }
 
 if [ "${BLOT_USE_TOXIPROXY:-true}" != "true" ]; then
@@ -21,32 +21,34 @@ if [ "${BLOT_USE_TOXIPROXY:-true}" != "true" ]; then
   exit 0
 fi
 
-echo "[toxiproxy] Waiting for toxiproxy API"
-for _ in $(seq 1 25); do
-  if compose exec -T toxiproxy wget -qO- http://127.0.0.1:8474/version >/dev/null 2>&1; then
+DEBUG="${BLOT_TOXIPROXY_DEBUG:-}"
+
+# Toxiproxy image is FROM scratch (no shell/wget/curl), so check from host via published port.
+# Use short timeouts so curl cannot hang.
+echo "[toxiproxy] Waiting for toxiproxy API (http://127.0.0.1:8474/version)"
+for i in $(seq 1 25); do
+  [ -n "$DEBUG" ] && echo "[toxiproxy] attempt $i/25 ..."
+  if out=$(curl -sf --connect-timeout 2 --max-time 3 http://127.0.0.1:8474/version 2>&1); then
+    [ -n "$DEBUG" ] && echo "[toxiproxy] attempt $i/25: got response"
     break
   fi
+  curl_exit=$?
+  [ -n "$DEBUG" ] && echo "[toxiproxy] attempt $i/25: curl exit=$curl_exit"
   sleep 0.5
 done
 
-if ! compose exec -T toxiproxy wget -qO- http://127.0.0.1:8474/version >/dev/null 2>&1; then
-  echo "[toxiproxy] API not reachable"
+if ! last_out=$(curl -sf --connect-timeout 2 --max-time 3 http://127.0.0.1:8474/version 2>&1); then
+  echo "[toxiproxy] API not reachable after 25 attempts (port 8474 published? container running?)"
+  echo "[toxiproxy] Try: BLOT_TOXIPROXY_DEBUG=1 ./scripts/development/start.sh (shows each attempt), or: docker compose -f $COMPOSE_FILE ps && docker compose -f $COMPOSE_FILE logs toxiproxy"
   exit 1
 fi
+[ -n "$DEBUG" ] && echo "[toxiproxy] API ready: $last_out"
 
-echo "[toxiproxy] Configuring redis proxy"
-compose exec -T toxiproxy sh -lc "
-  set -e
-  toxiproxy-cli delete redis >/dev/null 2>&1 || true
-  toxiproxy-cli create redis -l 0.0.0.0:26379 -u redis:6379
-  toxiproxy-cli toxic add redis -t latency -n redis-latency -a latency=${LATENCY_MS} -a jitter=${JITTER_MS}
-"
+# Toxiproxy image is FROM scratch (no shell), so use HTTP API from host instead of exec.
+echo "[toxiproxy] Configuring redis proxy via API ..."
+curl -sf -X DELETE "${API}/proxies/redis" >/dev/null 2>&1 || true
+curl -sf -X POST "${API}/proxies" -H "Content-Type: application/json" -d "{\"name\":\"redis\",\"listen\":\"0.0.0.0:26379\",\"upstream\":\"redis:6379\"}" >/dev/null
+curl -sf -X POST "${API}/proxies/redis/toxics" -H "Content-Type: application/json" -d "{\"name\":\"redis-latency\",\"type\":\"latency\",\"attributes\":{\"latency\":${LATENCY_MS},\"jitter\":${JITTER_MS}}}" >/dev/null
 
-echo "[toxiproxy] Applying packet loss (${LOSS_PERCENT}%) + reordering (${REORDER_PERCENT}%) via tc netem"
-compose exec -T toxiproxy sh -lc "
-  tc qdisc replace dev eth0 root netem \
-    loss ${LOSS_PERCENT}% 25% \
-    reorder ${REORDER_PERCENT}% 50%
-"
-
-echo "[toxiproxy] Ready: node-app -> toxiproxy:26379 -> redis:6379"
+echo "[toxiproxy] Ready: node-app -> toxiproxy:26379 -> redis:6379 (latency ${LATENCY_MS}ms + jitter ${JITTER_MS}ms)"
+echo "[toxiproxy] Note: packet loss/reorder (tc netem) skipped — image has no shell; set BLOT_USE_TOXIPROXY=false or ignore."
