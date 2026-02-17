@@ -7,7 +7,8 @@ module.exports = function (req, res, callback) {
     sortBy: req?.template?.locals?.sort_by,
     order: req?.template?.locals?.sort_order,
     pageNumber: req?.params?.page ?? req?.query?.page,
-    pageSize: req?.template?.locals?.page_size,
+    pageSize: res.locals?.page_size ?? req?.template?.locals?.page_size,
+    pathPrefix: res.locals?.path_prefix ?? req?.template?.locals?.path_prefix,
   };
 
   req.log("Loading page of entries");

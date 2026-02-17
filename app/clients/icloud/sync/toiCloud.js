@@ -27,7 +27,8 @@ async function retry(fn, ...args) {
   }
 }
 
-module.exports = async (blogID, publish, update) => {
+
+module.exports = async (blogID, publish, update, { skipDeletions = false, abortOnError = false } = {}) => {
   publish = publish || function () {};
   update = update || function () {};
 
@@ -44,7 +45,7 @@ module.exports = async (blogID, publish, update) => {
         (item) => item.name.normalize("NFC") === name.normalize("NFC")
       );
 
-      if (!localItem) {
+      if (!localItem && !skipDeletions) {
         const path = join(dir, name);
         await checkWeCanContinue();
         publish("Removing from iCloud", join(dir, name));
@@ -53,6 +54,7 @@ module.exports = async (blogID, publish, update) => {
         } catch (e) {
           publish("Failed to remove", path);
           console.log(prefix(), "Failed to remove", path, e);
+          if (abortOnError) throw e;
         }
       }
     }
@@ -72,6 +74,7 @@ module.exports = async (blogID, publish, update) => {
           } catch (e) {
             publish("Failed to create directory", path);
             console.log(prefix(), "Failed to create directory", path, e);
+            if (abortOnError) throw e;
             continue;
           }
         }
@@ -85,6 +88,10 @@ module.exports = async (blogID, publish, update) => {
           if (size > maxFileSize) {
             publish("Skipping file which is too large", path);
             console.log(prefix(), "Skipping file size=" + size, path);
+            // it's important to throw an error here to prevent data loss
+            // down the line, if the assumpation after this process runs
+            // is that the folders are in sync between Blot and iCloud.
+            if (abortOnError) throw new Error("File is too large: " + path);
             continue;
           }
           publish("Transferring to iCloud", path);
@@ -92,6 +99,8 @@ module.exports = async (blogID, publish, update) => {
             await retry(remoteUpload, blogID, path);
           } catch (e) {
             publish("Failed to upload", path, e);
+            console.log(prefix(), "Failed to upload", path, e);
+            if (abortOnError) throw e;
           }
         }
       }
@@ -104,5 +113,6 @@ module.exports = async (blogID, publish, update) => {
   } catch (e) {
     publish("Sync failed");
     console.log(prefix(), "Sync failed", e);
+    if (abortOnError) throw e;
   }
 };

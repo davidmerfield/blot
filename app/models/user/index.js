@@ -19,5 +19,6 @@ module.exports = {
   set: require("./set"),
   disable: require("./disable"),
   enable: require("./enable"),
+  subscriptionTenure: require("./subscriptionTenure"),
   validate: require("./validate")
 };

@@ -248,8 +248,8 @@ describe("template", function () {
     const fileContent = await fs.readFile(filePath, "utf8");
     expect(fileContent).toBe(viewContent);
 
-    // Previous hash purged after installation switch
-    expect(await fs.pathExists(sourceFilePath)).toBe(false);
+    // Previous hash not purged after installation switch
+    expect(await fs.pathExists(sourceFilePath)).toBe(true);
   });
 
   it("preserves metadata except CDN manifest when cloning", async function () {

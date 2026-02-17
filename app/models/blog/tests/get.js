@@ -21,4 +21,21 @@ describe("Blog.get", function () {
       });
     });
   });
+
+  it("falls back to converter defaults when missing", function (done) {
+    var test = this;
+
+    client.hdel(key.info(test.blog.id), "converters", function (err) {
+      if (err) return done.fail(err);
+
+      get({ id: test.blog.id }, function (err, blog) {
+        if (err) return done.fail(err);
+
+        expect(blog.converters.img).toBe(true);
+        expect(blog.converters.markdown).toBe(true);
+        expect(blog.converters.docx).toBe(true);
+        done();
+      });
+    });
+  });
 });

@@ -81,6 +81,12 @@ module.exports = function readFromFolder (blogID, dir, callback) {
                       for (var i in views[name]) view[i] = views[name][i];
 
                     view.content = content;
+                    if (
+                      Array.isArray(view.urlPatterns) &&
+                      view.urlPatterns.length
+                    ) {
+                      view.url = view.urlPatterns;
+                    }
                     view.url = view.url || "/" + view.name;
 
                     setView(id, view, function (err) {

@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"> 
   <url>
-    <loc>{{blogURL}}</loc> 
+    <loc>{{siteURL}}</loc> 
   </url>
   {{#menu}}
   {{#isPage}}
   <url>
-    <loc>{{blogURL}}{{url}}/</loc>
+    <loc>{{siteURL}}{{url}}/</loc>
   </url>
   {{/isPage}}
   {{/menu}}    
   {{#allEntries}}  
   <url>
-    <loc>{{blogURL}}{{url}}/</loc> 
+    <loc>{{siteURL}}{{url}}/</loc> 
     <lastmod>{{#formatUpdated}}YYYY-MM-DD{{/formatUpdated}}</lastmod>  </url>
   {{/allEntries}}  
 </urlset>

@@ -6,6 +6,7 @@ var async = require("async");
 var getTemplateList = require("./getTemplateList");
 var drop = require("./drop");
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
+var clfdate = require("helper/clfdate");
 
 module.exports = function (blogID, callback) {
   ensure(blogID, "string").and(callback, "function");
@@ -30,12 +31,12 @@ module.exports = function (blogID, callback) {
 
             var dir = templateDir + "/" + template;
 
-            console.log('Blog:', blogID, 'Reading template from folder:', dir);
+            console.log(clfdate(), blogID.slice(0, 12), "buildFromFolder: reading template", dir);
             readFromFolder(blogID, dir, function (err) {
               if (err) {
                 // we need to expose this error
                 // on the design page!
-                console.log('Blog:', blogID, 'Failed to read template from folder:', dir, err);
+                console.log(clfdate(), blogID.slice(0, 12), "buildFromFolder: failed to read template", dir, err);
               }
 
               templatesInFolder.push(template);
@@ -47,8 +48,8 @@ module.exports = function (blogID, callback) {
       });
     },
     function (err) {
-      console.log('Blog:', blogID, 'Templates in folder:', templatesInFolder);
-      console.log('Blog:', blogID, 'Removing local templates not in folder');
+      console.log(clfdate(), blogID.slice(0, 12), "buildFromFolder: templates in folder", templatesInFolder.length);
+      console.log(clfdate(), blogID.slice(0, 12), "buildFromFolder: removing local templates not in folder");
       getTemplateList(blogID, function (err, templates) {
 
         if (err) {
@@ -69,15 +70,17 @@ module.exports = function (blogID, callback) {
         async.eachSeries(
           localTemplatesToRemove,
           function (template, next) {
+            console.log(clfdate(), blogID.slice(0, 12), "buildFromFolder: removing template", template.slug);
             drop(blogID, template.slug, function (err) {
               if (err) {
-                console.error("Failed to remove template", template.slug);
+                console.error(clfdate(), blogID.slice(0, 12), "buildFromFolder: failed to remove template", template.slug);
               }
               next();
             });
           },
           function (err) {
             if (err) return callback(err);
+            console.log(clfdate(), blogID.slice(0, 12), "buildFromFolder: complete");
             callback(null);
           }
         );

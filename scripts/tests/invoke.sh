@@ -25,10 +25,9 @@ TEST_ENV_FILE="$TESTS_DIR/test.env"
 # Stop and remove any existing containers
 docker rm -f $REDIS_CONTAINER $TEST_CONTAINER 2>/dev/null || true
 
-# Check if test.env exists
+# Create test.env if it doesn't exist
 if [ ! -f "$TEST_ENV_FILE" ]; then
-  echo "Error: $TEST_ENV_FILE does not exist in the tests directory."
-  exit 1
+  touch "$TEST_ENV_FILE"
 fi
 
 # Start Redis container
@@ -51,6 +50,7 @@ docker run --rm \
   --env-file "$TEST_ENV_FILE" \
   -e TEST_PATH="$TEST_PATH" \
   -e TEST_SEED="$TEST_SEED" \
+  -e DEBUG="$DEBUG" \
   -e BLOT_REDIS_HOST="redis" \
   -e BLOT_HOST="localhost" \
   -v "$APP_DIR:/usr/src/app/app" \

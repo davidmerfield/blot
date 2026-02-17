@@ -1,7 +1,13 @@
 
 <h1>Reference</h1>
 
-<span></span>
+{{=[[ ]]=}}
+<p>
+  Blot templates use Mustache syntax. <code>&#123;&#123;value&#125;&#125;</code> HTML-escapes output, while <code>&#123;&#123;&#123;value&#125;&#125;&#125;</code> renders unescaped HTML (use sparingly and only for trusted content). Section blocks like <code>&#123;&#123;#entry&#125;&#125;...&#123;&#123;/entry&#125;&#125;</code> switch context to the nested object inside the block. Site properties are available in the top level context.
+</p>
+
+[[={{ }}=]]
+
 <style type="text/css">
     
   h2 {
@@ -19,7 +25,7 @@ font-size:16px;font-weight:400;margin-left: 2rem;
   }
 
   a.type {
-    font-size: 11px;font-weight:500;margin-right:6px;border:1px solid;padding: 0 3px;text-transform: uppercase;text-decoration: none;color:var(--accent-color);
+    font-size: 10px;font-weight:500;margin-right:6px;border:1px solid var(--border-color);padding: 0 3px;text-transform: uppercase;text-decoration: none;color:var(--light-text-color);
     margin: 0 6px;
   }
 
@@ -30,6 +36,11 @@ font-size:16px;font-weight:400;margin-left: 2rem;
   .description p {margin:6px 0;}
   .sub-description {display: inline;}
   .sub-description p {display: inline;}
+
+  .ref-table { display: table; }
+  .ref-table-body { display: table-row-group; }
+  .ref-table-row { display: table-row;  }
+  .ref-table-cell { display: table-cell;border-top: 1px solid rgba(0,0,0,0.05);padding: 4px }
 </style>
 
 {{#docs}}
@@ -49,17 +60,26 @@ font-size:16px;font-weight:400;margin-left: 2rem;
 </div>
 
 {{#properties.length}}
-<ul class="properties" style="padding: 0 0 0 1.3333rem">
-{{#properties}}
-  <li><a style="color:inherit;text-decoration: none;" href="#{{../../name}}.{{../name}}.{{name}}"><code id="{{../../name}}.{{../name}}.{{name}}">{{name}}</code></a> <a class="type"  target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/{{type}}">{{type}}</a><div class="sub-description">{{{description}}}</div>
-  </li>
-{{/properties}}
-</ul>
+<div class="ref-table">
+  <div class="ref-table-body">
+    {{#properties}}
+    <div class="ref-table-row">
+      <div class="ref-table-cell"><code id="{{name}}">{{name}}</code></div>
+      <div class="ref-table-cell type">
+        <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/{{type}}" class="type">{{type}}</a></div>
+      <div class="ref-table-cell sub-description">{{{description}}}</div>
+    </div>
+    {{/properties}}
+  </div>
+</div>
 {{/properties.length}}
 
 {{#example}}
-<div style="">
-<pre style="font-size: 13px;font-style: italic;margin:0;border:1px solid rgba(0,0,0,0.05);margin:6px 0"><code>{{example}}</code></pre>
+<div style="margin:6px 0">
+<pre class="html" style="font-size: 13px;margin:0;"><code>{{example}}</code></pre>
+{{#output}}
+<pre class="html output" style="font-size: 13px;margin:0;"><code>{{output}}</code></pre>
+{{/output}}
 </div>
 {{/example}}
 </div>

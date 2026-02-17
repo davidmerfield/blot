@@ -35,7 +35,8 @@ function render($, callback, options) {
       }
 
       // Pass in the `pathname` component of the image src (no URL params or hash)
-      cache.lookup(src, optimize(blogID), function (err, info) {
+      // Also pass the original src so we can include the filename in the CDN URL
+      cache.lookup(src, optimize(blogID, src), function (err, info) {
         if (err) {
           debug(src, "Optimize failed with Error:", err);
           return next();

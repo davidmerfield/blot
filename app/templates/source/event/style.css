@@ -53,6 +53,14 @@ a:hover { text-decoration: underline; }
 strong { font-weight: 600; }
 small { color: var(--light-text-color); }
 
+.main p,
+.main li,
+.main blockquote,
+.main figcaption {
+  orphans: 2;
+  widows: 2;
+}
+
 /* TYPOGRAPHY */
 h1 {
   margin: 0; font-weight: 400; line-height: 1.2;

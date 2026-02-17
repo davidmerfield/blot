@@ -80,18 +80,38 @@ SourceCode.route("/:viewSlug/edit")
     res.render("dashboard/template/source-code/edit");
   })
   .post(require("./save/fork-if-needed"), function (req, res, next) {
+    // Send plain-text errors so the template editor shows a clean message
+    // instead of the full HTML error page
+    function sendError(err) {
+      const status = err.status || err.statusCode || 500;
+      res.status(status).send(err.message || "An error occurred");
+    }
+
     var view = formJSON(req.body, Template.viewModel);
 
     view.name = req.view.name;
 
     if (req.params.viewSlug === "package.json") {
+      let parsed;
+      try {
+        parsed = JSON.parse(view.content);
+      } catch (e) {
+        return sendError(e);
+      }
       Template.package.save(
         req.template.id,
-        JSON.parse(view.content),
+        parsed,
         function (err, views) {
-          async.eachSeries(
-            Object.keys(views),
-            function (name, next) {
+          if (err) return sendError(err);
+
+          Template.getMetadata(req.template.id, function (err, metadata) {
+            if (err) return sendError(err);
+
+            const templateForSync = metadata || req.template;
+
+            async.eachSeries(
+              Object.keys(views),
+              function (name, next) {
               Template.getView(req.template.id, name, function (err, view) {
                 // getView returns an error if the view does not exist
                 // We want to be able to create new views using local editing
@@ -105,24 +125,30 @@ SourceCode.route("/:viewSlug/edit")
                 Template.setView(req.template.id, view, next);
               });
             },
-            function (err) {
-              if (err) return next(err);
-              writeChangeToFolder(req.blog, req.template, view, function (err) {
-                if (err) return next(err);
-                if (res.locals.templateForked) {
-                  res.set("X-Template-Forked", "1");
-                }
-                res.send("Saved changes!");
-              });
-            }
-          );
+              function (err) {
+                if (err) return sendError(err);
+                writeChangeToFolder(
+                  req.blog,
+                  templateForSync,
+                  view,
+                  function (err) {
+                    if (err) return sendError(err);
+                    if (res.locals.templateForked) {
+                      res.set("X-Template-Forked", "1");
+                    }
+                    res.send("Saved changes!");
+                  }
+                );
+              }
+            );
+          });
         }
       );
     } else {
       Template.setView(req.template.id, view, function (err) {
-        if (err) return next(err);
+        if (err) return sendError(err);
         writeChangeToFolder(req.blog, req.template, view, function (err) {
-          if (err) return next(err);
+          if (err) return sendError(err);
           if (res.locals.templateForked) {
             res.set("X-Template-Forked", "1");
           }

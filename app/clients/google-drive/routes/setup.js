@@ -1,25 +1,29 @@
 const resetFromBlot = require("../sync/resetToDrive");
 const database = require("../database");
 const clfdate = require("helper/clfdate");
+const config = require("config");
 
 // Maximum time to wait for the user to complete the setup
 // before aborting and requiring them to start again
 const SETUP_TIMEOUT = 1000 * 60 * 60 * 2; // 2 hours
 
-async function finishSetup(blog, drive, email, sync) {
+async function finishSetup(blog, drive, email, serviceAccountId) {
   let folderId;
   let folderName;
+  let sync;
 
   const checkWeCanContinue = async () => {
-    const {
-      preparing,
-      email: latestEmail,
-      startedSetup,
-    } = await database.blog.get(blog.id);
+    const account = await database.blog.get(blog.id);
+
+    if (!account) {
+      throw new Error("Account missing");
+    }
+
+    const { preparing, email: latestEmail, startedSetup } = account;
 
     // the user has edited their Google Drive account
-    // email address so abort the setup, release the sync
-    // lock and allow the other setup process to start
+    // email address so abort the setup and allow the
+    // other setup process to start
     if (latestEmail !== email) throw new Error("Email changed");
 
     // the user has cancelled the setup
@@ -29,9 +33,16 @@ async function finishSetup(blog, drive, email, sync) {
     if (startedSetup && Date.now() - startedSetup > SETUP_TIMEOUT) {
       throw new Error("Setup timed out");
     }
+
+    if (account.serviceAccountId !== serviceAccountId) {
+      throw new Error("Service account changed");
+    }
+
+    return account;
   };
 
   try {
+    // Phase A: wait for an eligible shared folder without the sync lock
     do {
       await checkWeCanContinue();
       console.log(
@@ -39,22 +50,45 @@ async function finishSetup(blog, drive, email, sync) {
         "Google Drive Client",
         "Checking for empty shared folder..."
       );
+
       const res = await findEmptySharedFolder(
         blog.id,
         drive,
         email,
-        sync.folder.status
+        () => {},
+        serviceAccountId
       );
 
       // wait 2 seconds before trying again
       if (!res) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         continue;
-      } else {
-        folderId = res.folderId;
-        folderName = res.folderName;
       }
+
+      folderId = res.folderId;
+      folderName = res.folderName;
     } while (!folderId);
+
+    // Phase B: only lock right before mutating sync-critical state
+    sync = await establishSyncLock(blog.id);
+
+    const status = sync.folder.status;
+    status("Waiting for invite to Google Drive folder");
+
+    await checkWeCanContinue();
+
+    const refreshedFolder = await processFolder(
+      { id: folderId, name: folderName },
+      drive,
+      blog.id,
+      status,
+      true,
+      serviceAccountId
+    );
+
+    if (!refreshedFolder) {
+      throw new Error("Folder no longer eligible");
+    }
 
     await database.blog.store(blog.id, {
       folderId,
@@ -64,13 +98,12 @@ async function finishSetup(blog, drive, email, sync) {
     });
 
     await checkWeCanContinue();
-    sync.folder.status("Ensuring new folder is in sync");
+    status("Ensuring new folder is in sync");
 
-    await resetFromBlot(blog.id, sync.folder.status);
+    await resetFromBlot(blog.id, status);
 
     await database.blog.store(blog.id, { preparing: false });
-    sync.folder.status("All files transferred");
-    sync.done(null, () => {});
+    status("All files transferred");
   } catch (e) {
     console.log(clfdate(), "Google Drive Client", e);
 
@@ -96,7 +129,7 @@ async function finishSetup(blog, drive, email, sync) {
         folderName: null,
       });
     }
-
+  } finally {
     if (sync && typeof sync.done === "function") {
       sync.done(null, () => {});
     }
@@ -106,7 +139,7 @@ async function finishSetup(blog, drive, email, sync) {
 /**
  * Find an empty shared folder that can be used for syncing.
  */
-async function findEmptySharedFolder(blogID, drive, email, status) {
+async function findEmptySharedFolder(blogID, drive, email, status, serviceAccountId) {
   // Get all shared folders owned by email that aren't already in use
   const existingFolderIDs = await getExistingFolderIDs(email);
   const availableFolders = await getAvailableFolders(
@@ -133,7 +166,8 @@ async function findEmptySharedFolder(blogID, drive, email, status) {
       drive,
       blogID,
       status,
-      isLastFolder
+      isLastFolder,
+      serviceAccountId
     );
     if (result) return result;
   }
@@ -154,25 +188,50 @@ async function getExistingFolderIDs(email) {
 }
 
 async function getAvailableFolders(drive, email, existingIDs) {
-  const res = await drive.files.list({
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-    fields: "files(id, name, parents, kind, mimeType, owners)",
-    q: `'${email}' in owners and 
-        trashed = false and 
-        mimeType = 'application/vnd.google-apps.folder'`,
-  });
+  const allFiles = [];
+  let pageToken = null;
+
+  do {
+    const res = await drive.files.list({
+      pageSize: 100,
+      pageToken: pageToken || undefined,
+      supportsAllDrives: true,
+      corpora: "allDrives",
+      includeItemsFromAllDrives: true,
+      orderBy: 'sharedWithMeTime desc',
+      fields: "nextPageToken, files(id, name, parents, kind, mimeType, owners, sharingUser(emailAddress))",
+      q: `trashed = false and 
+          sharedWithMe = true and 
+          mimeType = 'application/vnd.google-apps.folder'`,
+    });
+
+    allFiles.push(...(res.data.files || []));
+    pageToken = res.data.nextPageToken || null;
+  } while (pageToken);
+
+  console.log(clfdate(), 'Google Drive Client', 'getAvailableFolders:', allFiles.length);
+
+  // filter out folders whose sharingUser is not the same as the email, or whose owners do not include the email
+  const filteredFolders = allFiles.filter(
+    (file) => file.sharingUser?.emailAddress === email || file.owners && file.owners.some(owner => owner.emailAddress === email)
+  );
+
+  console.log(clfdate(), 'Google Drive Client', 'filteredFolders:', filteredFolders.length);
 
   // filter out folders already in use
   // and folders with a defined (non-undefined) parents array
   // by removing folders with parents we avoid syncing to folders
   // that are inside other folders the service account may have access to
-  return res.data.files.filter(
+  const filteredFoldersNotInUse = filteredFolders.filter(
     (file) => !existingIDs.includes(file.id) && !file.parents
   );
+
+  console.log(clfdate(), 'Google Drive Client', 'filteredFoldersNotInUse:', filteredFoldersNotInUse.length);
+
+  return filteredFoldersNotInUse;
 }
 
-async function processFolder(folder, drive, blogID, status, isLastFolder) {
+async function processFolder(folder, drive, blogID, status, isLastFolder, serviceAccountId) {
   // Check folder contents
   const folderContents = await drive.files.list({
     supportsAllDrives: true,
@@ -195,7 +254,11 @@ async function processFolder(folder, drive, blogID, status, isLastFolder) {
   }
 
   // Check permissions
-  const hasEditorPermission = await checkEditorPermissions(drive, folder.id);
+  const hasEditorPermission = await checkEditorPermissions(
+    drive,
+    folder.id,
+    serviceAccountId
+  );
 
   if (!hasEditorPermission) {
     if (isLastFolder) {
@@ -215,19 +278,39 @@ async function processFolder(folder, drive, blogID, status, isLastFolder) {
   };
 }
 
-async function checkEditorPermissions(drive, folderId) {
+function getServiceAccountEmail(serviceAccountId) {
+  const serviceAccount = config.google_drive.service_accounts.find(
+    (credentials) => credentials.client_id === serviceAccountId
+  );
+
+  return serviceAccount?.client_email;
+}
+
+async function checkEditorPermissions(drive, folderId, serviceAccountId) {
+  const serviceAccountEmail = getServiceAccountEmail(serviceAccountId);
+
+  if (!serviceAccountEmail) {
+    return false;
+  }
+
   try {
     const permissionsRes = await drive.permissions.list({
       fileId: folderId,
       supportsAllDrives: true,
-      fields: "permissions(role,type)",
+      fields: "permissions(role,type,emailAddress)",
     });
 
     const permissions = permissionsRes.data.permissions || [];
+
+    // for regular folders shared from personal drives,
+    // the permission role we need is 'writer'
+    // for regular folders shared from shared drives,
+    // the permission role we need is 'fileOrganizer'
     return permissions.some(
       (perm) =>
-        (perm.type === "user" || perm.type === "anyone") &&
-        perm.role === "writer"
+        perm.type === "user" &&
+        perm.emailAddress === serviceAccountEmail &&
+        (perm.role === "writer" || perm.role === "fileOrganizer" || perm.role === "organizer")
     );
   } catch (e) {
     console.error(
@@ -240,7 +323,7 @@ async function checkEditorPermissions(drive, folderId) {
   }
 }
 
-const establishSyncLock = require("../util/establishSyncLock");
+const establishSyncLock = require("sync/establishSyncLock");
 const createDriveClient = require("../serviceAccount/createDriveClient");
 const { promisify } = require("util");
 const getBlog = promisify(require("models/blog").get);
@@ -325,21 +408,7 @@ async function restartSetupProcesses() {
       continue;
     }
 
-    let sync;
-
-    try {
-      sync = await establishSyncLock(blog.id);
-    } catch (e) {
-      console.log(
-        clfdate(),
-        "Google Drive Client",
-        "Failed to establish sync lock"
-      );
-      continue;
-    }
-
-    sync.folder.status("Waiting for invite to Google Drive folder");
-    finishSetup(blog, drive, email, sync);
+    finishSetup(blog, drive, email, serviceAccountId);
   }
 }
 

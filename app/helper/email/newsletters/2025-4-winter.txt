@@ -1,25 +1,48 @@
 Winter newsletter
 
-*You received this email because you subscribed to [Blot’s newsletter](https://blot.im/about/news). You can [unsubscribe](https://blot.im/about/news/cancel) if you like. Please reply directly to this email if you have any thoughts or questions.*
+*You received this email because you subscribed to [Blot’s newsletter](https://blot.im/news). You can [unsubscribe](https://blot.im/news/cancel) at any time. Please reply directly to this email if you have any thoughts or questions.*  
 
 **New features**
-- Plugin which injects titles into markdown posts without them. This makes using Obsidian much easier. 
-- added pagination to tagged template pages
-- Added support for TextBundle files.
+- Added two new templates:
+  - The [Hypertext template](https://blot.im/templates/hypertext), designed for a digital garden or personal wiki and inspired by [Obsidian Publish](https://obsidian.md/publish). The sidebar navigation maps directly to the structure of your folder.
+  - The [Journal template](https://blot.im/templates/journal), designed for a blog and based on [Tufte.css](https://edwardtufte.github.io/tufte-css/).
+- Blot now supports the [TextBundle format](https://blot.im/how/files/markdown#textbundle), which lets you embed images in Markdown files when using apps like [Ulysses](https://blot.im/how/tools/ulysses) and [Bear](https://blot.im/how/tools/bear).
+- You can now [highlight text](https://blot.im/how/files/markdown#highlighting) in Markdown files.
+- Added [Geist fonts](https://vercel.com/font) to the font picker on the web template editor.
+- Blot can now automatically insert a title heading based on the file name. This makes it much easier to use [Obsidian](https://blot.im/how/tools/obsidian) to work on your site.
 
 **Changes**
-- added file size limit to dropbox client
+- Blot now delivers your site’s stylesheet and scripts through its CDN so your site loads more quickly.
+- The pages on your site that list [posts with a given tag](https://blot.im/how/metadata#tags) are now paginated.
+- Blot’s template editor now includes a mobile preview and improved controls for customizing templates.
+- The URLs for images cached through Blot’s CDN now end with the source image file name.
+- Updated Blot’s dependencies to patch known security vulnerabilities and made changes to the dashboard and documentation.
 
-**Bugs fixed**
-- fixed bug with issue syncing large files via dropbox
-- fixed bug with wikilinks referencing deleted entries
+**Bug fixes**
+- [Dropbox](https://blot.im/how/sync/dropbox) now syncs large files up to 100 MB in size reliably, and skips syncing larger files without crashing.
+- The [Git client](https://blot.im/how/sync/git) now handles larger pushes without crashing.
+- Links in blockquotes in [Google Docs](https://blot.im/how/files/google-docs) posts now work.
+- The index page on your site handles spuriously large page numbers correctly.
 
 **Questions**
+- [Sync a GitHub-based theme to a local folder?](https://blot.im/questions/3299)
+- [Hosting a PWA on Blot?](https://blot.im/questions/3284)
+- [Show posts from Substack on the start page?](https://blot.im/questions/3282)
 
 **Mistakes**
 
-**Plans for this season**
+The last period was [without a single incident of downtime](https://status.blot.im) and I have improved the server stability and average response time after implementing some measures to block excessive non-human traffic.
 
-If you have any thoughts or questions about any of this, please don’t hesitate to reply directly to this email.
+I was responsible for a bug that temporarily removed some user data. A recent change now routes your site’s CSS and JavaScript through Blot’s CDN. For sites with locally edited templates, this involved writing the modified templates into your site folders. An earlier change to that code unintentionally deleted .git subfolders inside these template folders. 
+
+With the help of [Paul](https://paul.af/), I was able to identify the problem and then restore all affected repositories and fix the code to preserve existing subdirectories. If your site was affected, I contacted you directly.
+
+**Plans for the spring**
+- Improve the existing templates and add new templates.
+- Adjust the way posts are stored in the database. Currently, each post is stored as a single JSON blob in Redis, which requires fetching the entire object even when only a few fields are needed. I plan to migrate this data to Redis hashes, allowing selective retrieval of specific properties (for example, titles and URLs for archive pages), which will improve the speed of your site.
+- Migrate more data from local disk storage to an object-storage API. Blot sometimes fails when individual servers run out of disk space. Moving to an unbounded object store (e.g., S3) will avoid this issue.
+- Work on the web template editor and developer documentation.
+
+If you have any thoughts or questions, please don’t hesitate to reply directly to this email.
 
 Sincerely, David

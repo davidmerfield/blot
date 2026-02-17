@@ -2,6 +2,8 @@
   "name": "Gallery",
   "locals": {
     "page_size": 96,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
     "text_color": "#000000",
     "background_color": "#FFFFFF",
     "accent_color": "blue",
@@ -41,12 +43,6 @@
       "partials": {
         "title": "{{{entry.title}}} - {{{title}}}",
         "description": "{{{entry.summary}}}"
-      }
-    },
-    "public.html": {
-      "partials": {
-        "title": "Index of {{{path}}}",
-        "description": "All the files and folders inside {{{path}}}"
       }
     },
     "search.html": {

@@ -152,7 +152,7 @@ function render($, callback, { blogID, path }) {
       });
     },
     function () {
-      callback(null, dependencies);
+      callback(null, { newDependencies: dependencies });
     }
   );
 }

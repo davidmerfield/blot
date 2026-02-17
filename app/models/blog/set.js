@@ -10,7 +10,10 @@ var config = require("config");
 var BackupDomain = require("./util/backupDomain");
 var flushCache = require("./flushCache");
 var normalizeImageExif = require("./util/imageExif").normalize;
+var normalizeConverters = require("./util/converters").normalize;
 var updateCdnManifest = require("../template/util/updateCdnManifest");
+var forkSiteTemplate = require("../template/util/forkSiteTemplate");
+var renameGitRepo = require("clients/git/renameRepo");
 var promisify = require("util").promisify;
 var updateCdnManifestAsync = promisify(updateCdnManifest);
 
@@ -34,7 +37,7 @@ module.exports = function (blogID, blog, callback) {
   validate(blogID, blog, function (errors, latest) {
     if (errors) return callback(errors);
 
-    get({ id: blogID }, function (err, former) {
+    get({ id: blogID }, async function (err, former) {
       former = former || {};
 
       if (err) return callback(err);
@@ -51,7 +54,33 @@ module.exports = function (blogID, blog, callback) {
         });
       }
 
+      if (Object.prototype.hasOwnProperty.call(latest, "converters")) {
+        latest.converters = normalizeConverters(latest.converters, {
+          fallback: former && former.converters,
+        });
+      } else if (!former.converters) {
+        latest.converters = normalizeConverters(former && former.converters);
+      }
+
       changes = Changes(latest, former);
+
+      if (
+        changes.template &&
+        latest.template &&
+        latest.template.indexOf("SITE:") === 0
+      ) {
+        try {
+          var forkedTemplateID = await forkSiteTemplate(blogID, latest.template);
+
+          if (forkedTemplateID && forkedTemplateID !== latest.template) {
+            latest.template = forkedTemplateID;
+            changes.template = forkedTemplateID;
+          }
+        } catch (forkError) {
+          // for now, do nothing
+          console.log('Blog.set', blogID, 'Error forking template', forkError);
+        }
+      }
 
       // Blot stores the rendered output of requests in a
       // cache directory, files inside which are served before
@@ -150,38 +179,34 @@ module.exports = function (blogID, blog, callback) {
         // to this blog, so empty the list of changes
         if (err) return callback(err, []);
 
-        // Wait for any required CDN manifest updates to complete
-        if (changes.template) {
-          const updatePromises = [];
-          
-          if (latest.template) {
-            updatePromises.push(
-              updateCdnManifestAsync(latest.template).catch(function (err) {
-                console.error(
-                  "Error updating CDN manifest for new template",
-                  latest.template,
-                  err
-                );
-              })
-            );
-          }
+        const template = latest.template || former.template;
 
-          if (former.template) {
-            updatePromises.push(
-              updateCdnManifestAsync(former.template).catch(function (err) {
-                console.error(
-                  "Error updating CDN manifest for former template",
-                  former.template,
-                  err
-                );
-              })
-            );
-          }
+        // Also update CDN manifest when plugin settings change, since
+        // plugin changes (especially analytics) affect the rendered output
+        // of views like script.js that use {{{appJS}}}
+        const shouldUpdateManifest = changes.template || changes.plugins;
 
-          // Wait for all CDN manifest updates to complete before proceeding
-          await Promise.all(updatePromises);
+        if (template && shouldUpdateManifest) {
+          try {
+            await updateCdnManifestAsync(template);
+          } catch (updateError) {
+            // for now, do nothing
+            console.log('Blog.set', blogID, 'Error updating template CDN manifest', updateError);
+          }
         }
-        
+
+        if (former.handle && latest.handle) {
+          var usesGit = former.client === "git" || latest.client === "git";
+
+          if (usesGit) {
+            try {
+              await renameGitRepo(former.handle, latest.handle);
+            } catch (renameError) {
+              return callback(renameError);
+            }
+          }
+        }
+
         flushCache(blogID, former, function (err) {
           callback(err, changesList);
         });

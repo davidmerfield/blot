@@ -1,0 +1,55 @@
+{{^query.partial}}
+
+<!-- Hidden checkbox to toggle navigation -->
+<input type="checkbox" id="nav-toggle" />
+
+<label for="nav-toggle" class="popup-cover"></label>
+
+<input type="checkbox" id="toggle-left" class="toggle-checkbox" />
+
+<div class="control-bar">
+  <label for="toggle-left" class="control-label">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="svg-icon lucide-menu"
+    >
+      <line x1="4" y1="12" x2="20" y2="12"></line>
+      <line x1="4" y1="6" x2="20" y2="6"></line>
+      <line x1="4" y1="18" x2="20" y2="18"></line></svg>
+    </label>
+  <a href="/">{{title}}</a>
+</div>
+
+<div class="column-container">
+  <div class="column">
+      <div class="navigation">
+        <a href="/">
+          <h2>
+            {{#avatar}}
+            <img width="16" height="16" src="{{{avatar}}}" class="avatar" title="{{title}}" />
+            {{/avatar}}
+            {{^avatar}}
+            <span style="display: inline-block;width:8px;"></span>
+            {{/avatar}}
+            
+            {{title}}
+          </h2>
+        </a>
+        <ul class="sidebar">
+          {{#menu}}
+          <li data-menu="true"><a class="{{active}}" href="{{{url}}}">{{label}}</a></li>
+          {{/menu}}          
+          {{> pagination}}
+        </ul>
+      </div>
+  </div>
+{{/query.partial}}
+

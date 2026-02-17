@@ -1,22 +1,19 @@
-        {{=[[ ]]=}}
+{{=[[ ]]=}}
 
 <h1>A page with posts with a particular tag</h1>
 
 <p>Let's say you want to create a page on your site which shows all the posts tagged 'Apple'. Create a new template with the follow content:</p>
 
-<pre class="code html">
-<html>
-<head><title>Your blog</title></head>
-<body>
-  {{#allEntries}}
-  {{#tagged.Apple}}
+<pre class="html" data-file="tagged.html"><code>&lt;html&gt;
+&lt;head&gt;&lt;title&gt;Your blog&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+{{#allEntries}}
+{{#tagged.Apple}}
+&lt;p&gt;&lt;a href="{{url}}"&gt;{{title}}&lt;/a&gt;&lt;/p&gt;
+{{/tagged.Apple}}
+{{/allEntries}}
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
 
-  <p><a href="{{{url}}}">{{title}}</a></p>
-
-  {{/tagged.Apple}}
-  {{/allEntries}}
-</body>
-</html>
-</pre>
-
-        [[={{ }}=]]
+[[={{ }}=]]

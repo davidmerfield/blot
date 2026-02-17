@@ -5,6 +5,7 @@ const Entry = require("models/entry");
 const IgnoredFiles = require("models/ignoredFiles");
 const moment = require("moment");
 const converters = require("build/converters");
+const enabledConverters = require("build/converters/enabled");
 
 require("moment-timezone");
 
@@ -26,12 +27,28 @@ module.exports = async function (blog, path) {
       }),
     ])
       .then(([ignoredReason, entry]) => {
-        
+        const matchingConverter = converters.find((converter) => {
+          return converter.is(path);
+        });
+        const matchingConverterEnabled = enabledConverters(blog).some(
+          (converter) => {
+            return matchingConverter && converter.id === matchingConverter.id;
+          }
+        );
+
         let ignored = {};
 
         if (!entry) {
 
-          if (ignoredReason && ignoredReason === 'WRONG_TYPE') {
+          if (
+            ignoredReason &&
+            ignoredReason === 'WRONG_TYPE' &&
+            matchingConverter &&
+            matchingConverter.id === "img" &&
+            !matchingConverterEnabled
+          ) {
+            ignored.imageConverterDisabled = true;
+          } else if (ignoredReason && ignoredReason === 'WRONG_TYPE') {
             ignored.wrongType = true;
           } else if (path.toLowerCase().indexOf("/templates/") === 0) {
             ignored.templateFile = true;
@@ -59,6 +76,8 @@ module.exports = async function (blog, path) {
         // a dictionary we use to display conditionally in the UI
         file.extension = {};
         file.extension = normalizeExtension(path)
+        file.converter = matchingConverter || null;
+        file.converterEnabled = matchingConverterEnabled;
         
         file.entry = entry;
         file.ignored = ignored;

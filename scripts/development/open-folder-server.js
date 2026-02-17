@@ -40,8 +40,7 @@ http
       folderPath = path.join(BLOGS_DIR, blogID);
     }
 
-    console.log('OPENING', folderPath);
-    spawn("open", [folderPath], {
+    spawn("open", ['-R',folderPath], {
       detached: true,
       stdio: "ignore",
     }).unref();

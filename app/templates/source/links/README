@@ -3,3 +3,117 @@ The _Reference_ template is designed for a database of photos and links. It feat
 The layout of the grid itself was taken from [Are.na](https://www.are.na/) with a few tweaks to my taste. The global navigation is designed to get out of the way. It features prominent links to your pages and a list of the tags used on your reference.
 
 You can navigate between the full posts page using the arrows on the left and right. This is heavily designed around images.
+
+## How Templates Work in Blot
+
+Blot templates are collections of HTML, CSS, and JavaScript files that use [Mustache](https://mustache.github.io/) templating to render your blog. When a reader visits your site, Blot:
+
+1. **Routes the request** - Determines which template file to render based on the URL
+2. **Parses the template** - Extracts variables and partials referenced in the template
+3. **Retrieves data** - Fetches the necessary data from your blog (entries, tags, etc.)
+4. **Renders the template** - Uses Mustache to combine the template with the data
+5. **Serves the response** - Sends the rendered HTML to the reader
+
+### Template Files
+
+Templates consist of **views** (full page templates) and **partials** (reusable fragments). Partials are files that start with an underscore (`_`), like `_header.html` or `_footer.html`.
+
+#### Common Template Files
+
+**`entries.html`** - The index page that displays a list of your blog entries. This is rendered at the root URL (`/`) and paginated URLs (`/page/2`, etc.). It receives:
+- `entries` - An array of entry objects for the current page
+- `pagination` - Information about pagination (current page, total pages, next/previous links)
+
+**`entry.html`** - The template for individual blog posts. This is rendered when someone visits a specific entry's URL. It receives:
+- `entry` - The current entry object with properties like `title`, `html`, `url`, `date`, etc.
+- `entry.next` - The next entry (if available)
+- `entry.previous` - The previous entry (if available)
+
+**`error.html`** - The template shown when Blot can't find a matching route. It receives:
+- `error` - An error object with details about what went wrong
+
+**`package.json`** - The configuration file for your template. It contains:
+- `locals` - Default values for template variables (colors, fonts, page size, etc.)
+- `views` - Configuration for each view, including custom URLs and partials for metadata (like page titles and descriptions)
+
+**`style.css`** - Your template's stylesheet. This file is processed through Mustache, so you can use template variables directly in your CSS.
+
+**`script.js`** - Your template's JavaScript file. Like CSS, this is also processed through Mustache and can use template variables.
+
+**Partials** (files starting with `_`) - Reusable template fragments. For example:
+- `_header.html` - Site header/navigation
+- `_footer.html` - Site footer
+- `_head.html` - HTML `<head>` section
+- `_post.html` - Template for rendering a single post in a list
+
+You include partials in your templates using `{{> partial_name}}` (without the underscore or extension).
+
+### appCSS and appJS
+
+`appCSS` and `appJS` are special variables that inject CSS and JavaScript from plugins that users enable in their Blot dashboard. These include:
+
+- **Analytics** (Google Analytics, Plausible, Fathom, etc.)
+- **Syntax highlighting** (for code blocks)
+- **Image zoom** functionality
+- **Math rendering** (KaTeX)
+- Other optional features
+
+To use them, simply include `{{{appCSS}}}` in your `style.css` and `{{{appJS}}}` in your `script.js`. The triple braces (`{{{ }}}`) prevent HTML escaping, which is necessary for injecting raw CSS/JS.
+
+Example in `style.css`:
+```css
+/* Your template styles */
+:root {
+  --background-color: {{background_color}};
+}
+
+/* Plugin styles are injected here */
+{{{appCSS}}}
+```
+
+Example in `script.js`:
+```javascript
+// Your template JavaScript
+{{{appJS}}}
+
+// Your other scripts...
+```
+
+### Local Variables in CSS
+
+CSS files in Blot templates are processed through Mustache, meaning you can use template variables directly in your stylesheets. This allows templates to be customized through the `package.json` configuration.
+
+Variables come from three sources (in order of precedence):
+1. **View-specific locals** - Variables defined in `package.json` for a specific view
+2. **Template locals** - Variables defined in `package.json` under `locals`
+3. **Blog locals** - Variables from blog settings (like colors, fonts)
+
+Here's how you might use local variables in CSS:
+
+```css
+:root {
+  /* Direct variable substitution */
+  --background-color: {{background_color}};
+  --text-color: {{text_color}};
+  
+  /* Using helper functions */
+  --light-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
+  --border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.1);
+  
+  /* Conditional variables */
+  {{#body_font}}
+  --font-family: {{{stack}}};
+  --font-size: {{{font_size}}}px;
+  --line-height: {{{line_height}}};
+  {{/body_font}}
+}
+
+body {
+  background: var(--background-color);
+  color: var(--text-color);
+  font-family: var(--font-family);
+}
+```
+
+The `{{#rgb}}...{{/rgb}}` helper converts a color to RGB values, which is useful for creating rgba() colors with opacity. The triple braces (`{{{ }}}`) are used when you need unescaped output (like URLs or HTML).
+
