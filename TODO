@@ -1,5 +1,3 @@
-Remove temporary lazy backfill fallback in app/models/entries/pathIndex.js (`ensureIndex` lock/wait path) after running scripts/blog/backfill-entries-path-index.js across production and confirming `ZCARD blog:<id>:entries` matches `ZCARD blog:<id>:entries:lex` for all blogs
-
 Fix bug with Google Docs when disconnecting a site from Google Drive on Blot then reconnecting the site to Google Drive. 
 
 I'm concerned that malicious webhooks could be abused to delete sites
