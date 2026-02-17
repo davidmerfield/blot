@@ -196,6 +196,7 @@ describe("template", function () {
       "assets/style.css": "d1e2f3a4b5c6d7e8",
       "partials/footer.html": "e1f2a3b4c5d6e7f8",
     };
+    var metadataKey = key.metadata(test.template.id);
     var purgePath = require.resolve("helper/purgeCdnUrls");
     var dropPath = require.resolve("../drop");
     var originalPurgeModule = require.cache[purgePath];
@@ -212,11 +213,20 @@ describe("template", function () {
     var dropWithPurgeStub = require("../drop");
 
     new Promise(function (resolve, reject) {
-      setMetadata(test.template.id, { cdn: manifest }, function (err) {
+      client.hset(metadataKey, "cdn", JSON.stringify(manifest), function (err) {
         if (err) return reject(err);
         resolve();
       });
     })
+      .then(function () {
+        return new Promise(function (resolve, reject) {
+          client.hget(metadataKey, "cdn", function (err, rawCdn) {
+            if (err) return reject(err);
+            expect(JSON.parse(rawCdn)).toEqual(manifest);
+            resolve();
+          });
+        });
+      })
       .then(function () {
         return new Promise(function (resolve, reject) {
           dropWithPurgeStub(test.blog.id, test.template.name, function (err) {
