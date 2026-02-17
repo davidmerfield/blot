@@ -3,6 +3,8 @@
   "isPublic": false,
   "locals": {
     "page_size": 20,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
     "background_color": "#FFFFFF",
     "text_color": "#111111",
     "links_color": "#111111",

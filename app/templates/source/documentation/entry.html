@@ -36,7 +36,10 @@
     </a>
 </div>
 
-<p>Updated on {{#entry.formatUpdated}}DD MMMM, YYYY{{/entry.formatUpdated}}</p>
+
+{{#entry.date}}
+<p>Updated on {{.}}</p>
+{{/entry.date}}
 </div>
 
 {{> footer}}

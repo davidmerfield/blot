@@ -1,7 +1,7 @@
 
 
 <div class="inset">
-  
+
 <p>Enter the email for your Google Drive account to link your folder.</p>
 
   <form class="dashboard-form" action="{{{base}}}/set-up-folder" method="post">
@@ -9,8 +9,9 @@
     <label for="email">Google Drive account:</label>
     <input type="text" name="email" value="{{suggestedEmail}}">
     <div class="buttons">
-      <button type="submit">Add email</button> 
-      <button type="submit" name="cancel" value="true">Cancel</button> 
+      <button type="submit">Add email</button>
+      {{^blog.client}}<a href="{{{dashboardBase}}}/client">Cancel</a>{{/blog.client}}
+      {{#blog.client}}<button type="submit" name="cancel" value="true">Cancel</button>{{/blog.client}}
     </div>
   </form>
 

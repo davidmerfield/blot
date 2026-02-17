@@ -15,7 +15,7 @@
 		"dark_text_color": "#eee",
 		"dark_link_color": "#eee",
 		"hide_dates": false,
-		"date_display": "MMM D",
+		"date_display": "DD MMMM, YYYY",
 		"syntax_highlighter": {
 			"id": "solarized-light"
 		},

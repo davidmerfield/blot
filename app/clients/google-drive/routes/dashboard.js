@@ -4,6 +4,7 @@ const disconnect = require("../disconnect");
 const createDriveClient = require("../serviceAccount/createDriveClient");
 const requestServiceAccount = require("clients/google-drive/serviceAccount/request");
 const parseBody = require("body-parser").urlencoded({ extended: false });
+const Blog = require("models/blog");
 
 const express = require("express");
 const dashboard = new express.Router();
@@ -75,11 +76,15 @@ dashboard
     const existingAccount = await database.blog.get(req.blog.id);
 
     if (req.body.cancel) {
+      if (!req.blog.client) {
+        return res.redirect(res.locals.dashboardBase + "/client");
+      }
+
       if (existingAccount && existingAccount.folderId && !existingAccount.error) {
         return res.redirect(req.baseUrl);
-      } else {
-        return disconnect(req.blog.id, next);
       }
+
+      return disconnect(req.blog.id, next);
     }
 
     if (!req.body.email) {
@@ -96,6 +101,16 @@ dashboard
 
     if (req.body.email.indexOf("@") === -1) {
       return res.message(req.baseUrl, "Please enter a valid email address");
+    }
+
+    const setClientError = await new Promise((resolve) => {
+      Blog.set(req.blog.id, { client: "google-drive" }, function (err) {
+        resolve(err);
+      });
+    });
+
+    if (setClientError) {
+      return next(setClientError);
     }
 
     // Determine the service account ID we'll use to sync this blog.
