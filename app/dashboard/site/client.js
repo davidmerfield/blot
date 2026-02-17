@@ -261,9 +261,7 @@ client_routes.use("/:client", function (req, res, next) {
   }
 
   if (!req.blog.client) {
-    const selectedClientPath = "/" + req.params.client;
-    const relativePath =
-      req.path.slice(selectedClientPath.length) || "/";
+    const relativePath = req.path || "/";
     const allowedUnpersistedPaths = new Set([
       "/",
       "/connect",
