@@ -1,4 +1,4 @@
-const { spawn } = require("child_process");
+import { spawn } from "child_process";
 
 // A promisified spawn function to execute commands with async/await.
 // Designed to be slightly safer than using exec because I'm worried
@@ -63,4 +63,4 @@ const exec = (command, args = [], options = {}) => {
   });
 };
 
-module.exports = exec;
+export default exec;

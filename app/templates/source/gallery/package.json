@@ -2,6 +2,8 @@
   "name": "Gallery",
   "locals": {
     "page_size": 96,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
     "text_color": "#000000",
     "background_color": "#FFFFFF",
     "accent_color": "blue",

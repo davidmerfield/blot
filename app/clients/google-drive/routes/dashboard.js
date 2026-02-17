@@ -1,10 +1,10 @@
 const clfdate = require("helper/clfdate");
 const database = require("../database");
 const disconnect = require("../disconnect");
-const establishSyncLock = require("sync/establishSyncLock");
 const createDriveClient = require("../serviceAccount/createDriveClient");
 const requestServiceAccount = require("clients/google-drive/serviceAccount/request");
 const parseBody = require("body-parser").urlencoded({ extended: false });
+const Blog = require("models/blog");
 
 const express = require("express");
 const dashboard = new express.Router();
@@ -76,11 +76,15 @@ dashboard
     const existingAccount = await database.blog.get(req.blog.id);
 
     if (req.body.cancel) {
+      if (!req.blog.client) {
+        return res.redirect(res.locals.dashboardBase + "/client");
+      }
+
       if (existingAccount && existingAccount.folderId && !existingAccount.error) {
         return res.redirect(req.baseUrl);
-      } else {
-        return disconnect(req.blog.id, next);
       }
+
+      return disconnect(req.blog.id, next);
     }
 
     if (!req.body.email) {
@@ -97,6 +101,16 @@ dashboard
 
     if (req.body.email.indexOf("@") === -1) {
       return res.message(req.baseUrl, "Please enter a valid email address");
+    }
+
+    const setClientError = await new Promise((resolve) => {
+      Blog.set(req.blog.id, { client: "google-drive" }, function (err) {
+        resolve(err);
+      });
+    });
+
+    if (setClientError) {
+      return next(setClientError);
     }
 
     // Determine the service account ID we'll use to sync this blog.
@@ -127,25 +141,12 @@ dashboard
       );
     }
 
-    let sync;
-
-    try {
-      sync = await establishSyncLock(blog.id);
-    } catch (e) {
-      return res.message(
-        req.baseUrl,
-        "Your folder is busy. Please try again later."
-      );
-    }
-
-    sync.folder.status("Waiting for invite to Google Drive folder");
-
     console.log(clfdate(), "Google Drive Client", "Setting up folder");
     res.redirect(req.baseUrl);
 
     // This can happen in the background
     try {
-      await finishSetup(blog, drive, email, sync);
+      await finishSetup(blog, drive, email, serviceAccountId);
     } catch (e) {
       console.log(clfdate(), "Google Drive Client: finishSetup", e);
     }

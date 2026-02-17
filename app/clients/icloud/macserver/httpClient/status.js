@@ -1,8 +1,8 @@
-const { remoteServer, Authorization } = require("../config");
-const fetch = require("./rateLimitedFetchWithRetriesAndTimeout");
-const clfdate = require("../util/clfdate");
+import { remoteServer, Authorization } from "../config.js";
+import fetch from "./rateLimitedFetchWithRetriesAndTimeout.js";
+import clfdate from "../util/clfdate.js";
 
-module.exports = async (...args) => {
+export default async (...args) => {
   const [blogID, status] = args;
 
   if (!blogID || typeof blogID !== "string") {

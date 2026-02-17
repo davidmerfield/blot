@@ -1,9 +1,9 @@
-const { join, resolve, sep } = require("path");
-const { iCloudDriveDirectory } = require("../config");
-const recursiveList = require("../util/recursiveList");
-const clfdate = require("../util/clfdate");
+import { join, resolve, sep } from "path";
+import { iCloudDriveDirectory } from "../config.js";
+import recursiveList from "../util/recursiveList.js";
+import clfdate from "../util/clfdate.js";
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const blogID = req.header("blogID");
   const pathBase64 = req.header("pathBase64");
   const path = pathBase64
@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
   );
 
   try {
-    await recursiveList(dirPath, 0);
+    await recursiveList(dirPath);
     res.status(200).json({ success: true });
   } catch (error) {
     console.error(clfdate(), "Error performing recursive list", { dirPath, error });

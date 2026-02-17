@@ -19,6 +19,7 @@ var dashboard = Express.Router();
 var site = Express.Router();
 var clfdate = require("helper/clfdate");
 var host = require("config").host;
+var Blog = require("models/blog");
 
 dashboard.get("/", function (req, res, next) {
   repos.exists(req.blog.handle + ".git", function (exists) {
@@ -56,15 +57,24 @@ dashboard.post("/create", function (req, res, next) {
   
   if (req.body.cancel) {
     console.log(clfdate() + " Git: User cancelled creation of repo");
+
+    if (!req.blog.client) {
+      return res.redirect(res.locals.dashboardBase + "/client");
+    }
+
     return disconnect(req.blog.id, next);
   }
 
-  res.redirect(req.baseUrl);
+  Blog.set(req.blog.id, { client: "git" }, function (err) {
+    if (err) return next(err);
 
-  create(req.blog, function (err) {
-    if (err) {
-      console.log(clfdate() + " Git: Error creating repo", err);
-    }
+    res.redirect(req.baseUrl);
+
+    create(req.blog, function (err) {
+      if (err) {
+        console.log(clfdate() + " Git: Error creating repo", err);
+      }
+    });
   });
 });
 

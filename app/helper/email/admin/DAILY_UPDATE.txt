@@ -6,6 +6,13 @@ Recurring revenue: {{annual_recurring_revenue}} per year, {{monthly_percentage}}
 
 Newsletter subscribers: {{newsletter_subscribers}}
 
+{{#new_customers.length}}
+New customers:
+{{#new_customers}}
+- [{{email}}](https://www.google.com/search?udm=14&q={{email}}) {{#sites}} {{{url}}} {{/sites}}
+{{/new_customers}}
+{{/new_customers.length}}
+
 {{#blogs_with_new_posts.length}}
 New posts:
 

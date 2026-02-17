@@ -1,0 +1,22 @@
+const fetch = require("node-fetch");
+
+module.exports = async function fetchSubscriptionDuration(host) {
+  try {
+    const response = await fetch(
+      "https://" + host + "/verify/subscription-duration",
+      { timeout: 5000 }
+    );
+
+    if (response.status === 404 || response.status === 204) return null;
+    if (!response.ok) return null;
+
+    const payload = await response.json().catch(() => null);
+    const duration = payload && payload.duration;
+
+    if (!Number.isFinite(duration) || duration <= 0) return null;
+
+    return duration;
+  } catch (error) {
+    return null;
+  }
+};

@@ -1,0 +1,3 @@
+User in overdue grace period (active access)
+
+{{email}} is overdue since {{subscriptionOverdueOn}} and remains enabled during month 0-1 of overdue handling.

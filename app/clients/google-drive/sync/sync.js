@@ -41,6 +41,7 @@ module.exports = async function sync(blogID, publish, update) {
   try {
     const folder = await drive.files.get({
       fileId: folderId,
+      supportsAllDrives: true,
       fields: "id, name, trashed",
     });
 
@@ -161,6 +162,9 @@ module.exports = async function sync(blogID, publish, update) {
               md5Checksum,
               mimeType,
               modifiedTime,
+            }, {
+              serviceAccountId,
+              folderId,
             });
 
             if (result?.skippedReason === "exportSizeLimitExceeded") {

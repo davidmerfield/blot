@@ -1,40 +1,104 @@
 <h1>Google Docs</h1>
 
-<p>Supports files created by <a href="https://en.wikipedia.org/wiki/Google_Docs">Google Docs</a>. You must sync your folder with <a href="/how/sync/google-drive">Google Drive</a> in order to publish Google Docs.</p>
+<p class="supported-extensions">File extensions: <span>.gdoc</span></p>
+
+<p>Blot will automatically publish Google Docs inside your folder when you sync your folder with <a href="/how/sync/google-drive">Google Drive</a>.</p>
 
 <h2>Metadata</h2>
 
 <p>Blot reads <a href="/how/metadata">metadata</a> at the very top of your Google Doc. For example:</p>
 
-<pre>Title: October Newsletter
+<pre class="md"><code>Title: October Newsletter
 Tags: announcements, fall
 
 The rest of your post goes here.
-</pre>
+</code></pre>
 
-<h2>Embed images and other files</h2>
+<h2>Images</h2>
 
-<p>Insert images directly in Google Docs. They will be downloaded and stored beside the post. Alt and title text are preserved if they are part of the image in Google Docs.</p>
+<p>Insert photos directly in Google Docs using the menu <span class="ui-action">Insert</span> then <span class="ui-action">Image</span>, or by dragging and dropping an image file into the document. If you define Alt and title text in Google Docs, Blot will use them for the image's alt text and caption.</p>
 
 <h2>Headings</h2>
 
-<p>Use the Google Docs heading styles (<code>Heading 1</code>, <code>Heading 2</code>, etc.) for in-post structure.</p>
+<p>Apply the text style <span class="ui-action">Title</span>, <span class="ui-action">Heading 1</span>, <span class="ui-action">Heading 2</span>, etc. in Google Docs to create headings.</p>
 
 <h2>Text formatting</h2>
 
-<p>Bold, italic, superscript, subscript, underline and strikethrough text are preserved. Other inline styles are removed so the post inherits your theme's typography.</p>
+<p>Blot preserves most text formatting in Google Docs. Single line breaks are preserved by default so poetry or addresses appear as expected.</p>
+
+<table class="feature-table">
+  <tbody>
+    <tr>
+      <td><strong>Bold</strong></td>
+      <td><span style="color:green;font-size: 12px;margin-right: 4px;position: relative;top:-2px" class="icon-small-check"></span></td>
+    </tr>
+    <tr>
+      <td><em>Italic</em></td>
+      <td><span style="color:green;font-size: 12px;margin-right: 4px;position: relative;top:-2px" class="icon-small-check"></span></td>
+    </tr>
+    <tr>
+        <td><span style="text-decoration:underline;">Underline</span></td>
+        <td><span style="color:green;font-size: 12px;margin-right: 4px;position: relative;top:-2px" class="icon-small-check"></span></td>
+      </tr>
+      <tr>
+        <td><span style="text-decoration:line-through;">Strikethrough</span></td>
+        <td><span style="color:green;font-size: 12px;margin-right: 4px;position: relative;top:-2px" class="icon-small-check"></span></td>
+      </tr>
+  
+    <tr>
+      <td><span style="vertical-align:super;"><sup>Super</sup>script</span></td>
+      <td><span style="color:green;font-size: 12px;margin-right: 4px;position: relative;top:-2px" class="icon-small-check"></span></td>
+    </tr>
+    <tr>
+      <td><span style="vertical-align:sub;"><sub>Sub</sub>script</span></td>
+      <td><span style="color:green;font-size: 12px;margin-right: 4px;position: relative;top:-2px" class="icon-small-check"></span></td>
+    </tr>
+    <tr>
+      <td>Font</td>
+      <td><span style="color:red;font-size: 12px;margin-right: 4px;position: relative;top:-2px" class="icon-small-no-entry"></span></td>
+    </tr>
+    <tr>
+      <td>Colors</td>
+      <td><span style="color:red;font-size: 12px;margin-right: 4px;position: relative;top:-2px" class="icon-small-no-entry"></span></td>
+    </tr>
+    <tr>
+        <td>Spacing</td>
+        <td><span style="color:red;font-size: 12px;margin-right: 4px;position: relative;top:-2px" class="icon-small-no-entry"></span></td>
+    </tr>
+  </tbody>
+</table>
+
 
 <h2>Links</h2>
 
-<p>Links in your Google Doc are cleaned automatically. Google's tracking redirects are removed so each link on your blog points directly to the original URL.</p>
+<p>Use <span class="ui-action">Insert</span> then <span class="ui-action">Link</span> to create links. Blot removes Google's tracking redirects so each link points directly to the original URL.</p>
 
 <h2>Lists</h2>
 
-<p>Use the Google Docs feature 'Insert > List' to create lists. These are preserved in the published post.</p>
+<p>Use the <span class="ui-action">Bulleted list</span>, <span class="ui-action">Numbered list</span>, or <span class="ui-action">Checklist</span> buttons in Google Docs to create lists. </p>
 
 <h2>Tables</h2>
 
-<p>Use the Google Docs feature 'Insert > Table' to create tables. These are preserved in the published post.</p>
+<p>Use <span class="ui-action">Insert</span> then <span class="ui-action">Table</span> then select the table size to create tables. </p>
+
+<h2>Code</h2>
+
+<p>Use a single-celled tables to mark up code blocks in your document. For example:</p>
+<p><span class="ui-action">Insert</span> then <span class="ui-action">Table</span> then <span class="ui-action">1 x 1</span></p>
+
+<p>If you create a double celled table, with two rows, you can specify the language of the code in the first cell to enable syntax highlighting:</p>
+<p><span class="ui-action">Insert</span> then <span class="ui-action">Table</span> then <span class="ui-action">2 x 1</span></p>
+
+<div class="guide-callout guide-callout--info">
+    <p>
+  <strong>Tip:</strong> To avoid Google Docs’ “smart quotes” (curly quotes), press <kbd>Command</kbd> + <kbd>Z</kbd> immediately after typing quotation marks. This will undo the automatic replacement of your straight quotes with curly quotes.</p>
+</div>
+
+<p>
+    This follows the same convention as the
+    <a href="https://workspace.google.com/marketplace/app/code_blocks/100740430168">Code Blocks</a>
+    app for Google Docs. You do not need to install the app to use code blocks in Google Docs with Blot.
+  </p>
 
 <h2>Footnotes</h2>
 
@@ -44,13 +108,21 @@ The rest of your post goes here.
 
 <p>Single line breaks are preserved by default so poetry or addresses appear as expected.</p>
 
+<h2>Math</h2>
+
+<p>You can mark up <a href="/how/formatting/math">math</a> in your Google Docs. Math is rendered by the KaTeX plugin after conversion, so behavior is consistent with other text-based formats when the plugin is enabled.</p>
+<pre class="md"><code>$$
+f(x) = 2x^2 + 2/3
+$$
+</code></pre>
+
 <h2>Blockquotes</h2>
 
-<p>You can use Markdown or email-style &gt; characters for block quoting. They are presented as:</p>
+<p>Use Markdown or email-style &gt; characters for marking up block quotes. For example:</p>
 
-<pre>&gt; This is a blockquote with two paragraphs.
+<pre class="md"><code>&gt; This is a blockquote with two paragraphs.
 &gt;
-&gt; This is the second paragraph. Vestibulum enim wisi.</pre>
+&gt; This is the second paragraph. Vestibulum enim wisi.</code></pre>
 
 <h2>Comments</h2>
 
@@ -59,7 +131,3 @@ The rest of your post goes here.
 <h2>Columns</h2>
 
 <p>Google Docs cannot export columns.</p>
-
-<h2>Size limits</h2>
-
-<p>Google Docs must be smaller than 5&nbsp;MB. Larger documents should be split or simplified before they can be published.</p>

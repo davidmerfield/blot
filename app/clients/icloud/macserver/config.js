@@ -1,12 +1,22 @@
-require("dotenv").config();
-const clfdate = require("./util/clfdate");
+import "dotenv/config";
+import clfdate from "./util/clfdate.js";
+import fs from "fs-extra";
+import { createRequire } from "module";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
-const fs = require("fs-extra");
+// Create a require function for importing CJS modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const require = createRequire(import.meta.url);
+
+// Import the CJS config module
+const config = require(join(__dirname, "../../../../config/index.js"));
 
 const remoteServer = process.env.REMOTE_SERVER;
 const iCloudDriveDirectory = process.env.ICLOUD_DRIVE_DIRECTORY;
 const Authorization = process.env.BLOT_ICLOUD_SERVER_SECRET; // Use the correct environment variable
-const maxFileSize = require('../../../config').icloud.maxFileSize; // Maximum file size for iCloud uploads
+const maxFileSize = config.icloud.maxFileSize; // Maximum file size for iCloud uploads
 
 if (!remoteServer) {
   throw new Error("REMOTE_SERVER is not set");
@@ -31,7 +41,7 @@ fs.access(
     process.exit(1);
   });
 
-module.exports = {
+export {
   remoteServer,
   iCloudDriveDirectory,
   Authorization,

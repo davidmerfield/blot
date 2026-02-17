@@ -1,11 +1,11 @@
-const fs = require("fs-extra");
-const { join } = require("path");
-const { iCloudDriveDirectory } = require("../config");
-const { removeLimiterForBlogID } = require("../limiters");
-const { unwatch } = require("../watcher");
-const clfdate = require("../util/clfdate");
+import fs from "fs-extra";
+import { join } from "path";
+import { iCloudDriveDirectory } from "../config.js";
+import { removeLimiterForBlogID } from "../limiters.js";
+import { unwatch } from "../watcher/index.js";
+import clfdate from "../util/clfdate.js";
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const blogID = req.header("blogID");
 
   if (!blogID) {

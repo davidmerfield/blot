@@ -1,0 +1,179 @@
+{{=[[ ]]=}}
+
+<h1>SEO &amp; social meta tags</h1>
+
+<p>This tutorial explains the meta tags in <code>app/templates/source/blog/_head.html</code> line-by-line and shows how to map each Mustache variable to the developer reference.</p>
+
+<h2>Base tags</h2>
+
+<h3>Character set</h3>
+<pre class="html"><code>&lt;meta charset="utf-8"&gt;</code></pre>
+<p>This declares UTF-8 for consistent text rendering across browsers.</p>
+
+<h3>Viewport</h3>
+<pre class="html"><code>&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;</code></pre>
+<p>This sets the layout viewport on mobile devices.</p>
+
+<h3>Robots</h3>
+<pre class="html"><code>&lt;meta name="robots" content="index, follow"&gt;</code></pre>
+<p>This allows search engines to index the page and follow links.</p>
+
+<h3>Site name</h3>
+<pre class="html"><code>&lt;meta property="og:site_name" content="{{title}}"&gt;</code></pre>
+<p>Uses your blog title to label the site in Open Graph previews. See <a href="/developers/reference#blog.title">blog.title</a>.</p>
+
+<h3>Title</h3>
+<pre class="html"><code>&lt;title&gt;{{&gt; title}}&lt;/title&gt;</code></pre>
+<p>The <code>title</code> partial renders the page title (often includes entry title + blog title). This partial is not documented in the reference (see <a href="#missing-docs">Missing documentation</a>).</p>
+
+<h3>Description</h3>
+<pre class="html"><code>{{#entry}}
+{{#summary}}&lt;meta name="description" content="{{summary}}"&gt;{{/summary}}
+{{^summary}}&lt;meta name="description" content="{{title}}"&gt;{{/summary}}
+{{/entry}}
+{{^entry}}&lt;meta name="description" content="{{&gt; description}}"&gt;{{/entry}}</code></pre>
+<p>
+  On entry pages, the description uses the entry summary if available, falling back to the entry title. See <a href="/developers/reference#entry.summary">entry.summary</a> and <a href="/developers/reference#entry.title">entry.title</a>.
+  On non-entry pages, the <code>description</code> partial is used, which is also not currently documented (see <a href="#missing-docs">Missing documentation</a>).
+</p>
+
+<h3>RSS, favicon, and CDN stylesheet</h3>
+<pre class="html"><code>&lt;link rel="alternate" type="application/rss+xml" title="RSS Feed for {{title}}" href="{{{blogURL}}}{{{feedURL}}}"&gt;
+{{#avatar}}&lt;link rel="icon" href="{{{avatar}}}" type="image/x-icon"&gt;{{/avatar}}
+&lt;link rel="preconnect" href="{{{cdn}}}" /&gt;
+&lt;link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}"&gt;</code></pre>
+<p>
+  <a href="/developers/reference#blog.blogURL">blog.blogURL</a> + <a href="/developers/reference#blog.feedURL">blog.feedURL</a> builds the RSS URL.
+  <a href="/developers/reference#blog.avatar">blog.avatar</a> provides the favicon.
+  The CDN helper is documented at <a href="/developers/reference#cdn">cdn</a> and is used both as a literal and as a section helper.
+</p>
+
+<h2>Open Graph tags (entry pages)</h2>
+
+<h3>Canonical URL &amp; Open Graph URL</h3>
+<pre class="html"><code>{{#entry}}
+{{#absoluteURL}}
+&lt;link rel="canonical" href="{{{absoluteURL}}}"&gt;
+&lt;meta property="og:url" content="{{{absoluteURL}}}"&gt;
+{{/absoluteURL}}</code></pre>
+<p>Use the fully qualified URL for canonical and <code>og:url</code>. See <a href="/developers/reference#entry.absoluteURL">entry.absoluteURL</a>.</p>
+
+<h3>Title</h3>
+<pre class="html"><code>&lt;meta property="og:title" content="{{title}}"&gt;</code></pre>
+<p>Uses the entry title. See <a href="/developers/reference#entry.title">entry.title</a>.</p>
+
+<h3>Description</h3>
+<pre class="html"><code>{{#summary}}&lt;meta property="og:description" content="{{summary}}"&gt;{{/summary}}{{^summary}}&lt;meta property="og:description" content="{{title}}"&gt;{{/summary}}</code></pre>
+<p>Prefers the entry summary, falling back to the entry title. See <a href="/developers/reference#entry.summary">entry.summary</a> and <a href="/developers/reference#entry.title">entry.title</a>.</p>
+
+<h3>Preview image</h3>
+<pre class="html"><code>{{#thumbnail.large}}
+&lt;meta property="og:image" content="{{{url}}}"&gt;
+&lt;meta property="og:image:width" content="{{width}}"&gt;
+&lt;meta property="og:image:height" content="{{height}}"&gt;
+{{/thumbnail.large}}
+{{^thumbnail.large}}
+{{#avatar}}&lt;meta property="og:image" content="{{{avatar}}}"&gt;{{/avatar}}
+{{/thumbnail.large}}</code></pre>
+<p>
+  The section uses <a href="/developers/reference#entry.thumbnail">entry.thumbnail</a> and specifically the <code>large</code> variant for 1200px-wide previews. The <code>url</code>, <code>width</code>, and <code>height</code> properties are part of that thumbnail object but do not have dedicated anchors (see <a href="#missing-docs">Missing documentation</a>). The fallback uses <a href="/developers/reference#blog.avatar">blog.avatar</a>.
+</p>
+
+<h3>Type</h3>
+<pre class="html"><code>&lt;meta property="og:type" content="article"&gt;</code></pre>
+<p>Entry pages declare themselves as articles.</p>
+
+<h2>Twitter Card tags (entry pages)</h2>
+
+<h3>Card type</h3>
+<pre class="html"><code>{{#thumbnail.large}}&lt;meta name="twitter:card" content="summary_large_image"&gt;{{/thumbnail.large}}{{^thumbnail.large}}&lt;meta name="twitter:card" content="summary"&gt;{{/thumbnail.large}}</code></pre>
+<p>Uses a large card when a large thumbnail exists, otherwise falls back to a summary card. See <a href="/developers/reference#entry.thumbnail">entry.thumbnail</a>.</p>
+
+<h3>Title &amp; description</h3>
+<pre class="html"><code>&lt;meta name="twitter:title" content="{{title}}"&gt;
+{{#summary}}&lt;meta name="twitter:description" content="{{summary}}"&gt;{{/summary}}{{^summary}}&lt;meta name="twitter:description" content="{{title}}"&gt;{{/summary}}</code></pre>
+<p>Uses entry title and summary with the same fallback as Open Graph. See <a href="/developers/reference#entry.title">entry.title</a> and <a href="/developers/reference#entry.summary">entry.summary</a>.</p>
+
+<h3>Image</h3>
+<pre class="html"><code>{{#thumbnail.large}}&lt;meta name="twitter:image" content="{{{url}}}"&gt;{{/thumbnail.large}}
+{{^thumbnail.large}}
+{{#avatar}}&lt;meta name="twitter:image" content="{{{avatar}}}"&gt;{{/avatar}}
+{{/thumbnail.large}}</code></pre>
+<p>Uses the large thumbnail if available, otherwise falls back to <a href="/developers/reference#blog.avatar">blog.avatar</a>. See <a href="/developers/reference#entry.thumbnail">entry.thumbnail</a>.</p>
+
+<h2>Article tags (entry pages)</h2>
+
+<h3>Author</h3>
+<pre class="html"><code>&lt;meta property="article:author" content="{{{blogURL}}}"&gt;</code></pre>
+<p>Uses the site homepage URL as the author profile. See <a href="/developers/reference#blog.blogURL">blog.blogURL</a>.</p>
+
+<h3>Published and modified times</h3>
+<pre class="html"><code>&lt;meta property="article:published_time" content="{{#formatDate}}YYYY-MM-DDTHH:mm:ssZ{{/formatDate}}"&gt;
+&lt;meta property="article:modified_time" content="{{#formatUpdated}}YYYY-MM-DDTHH:mm:ssZ{{/formatUpdated}}"&gt;</code></pre>
+<p>
+  Dates use the entry helpers <a href="/developers/reference#entry.formatDate">entry.formatDate</a> and <a href="/developers/reference#entry.formatUpdated">entry.formatUpdated</a> to emit ISO 8601 timestamps.
+</p>
+
+<h3>Tags</h3>
+<pre class="html"><code>{{#tags}}
+&lt;meta property="article:tag" content="{{name}}"&gt;
+{{/tags}}</code></pre>
+<p>Loops through entry tags. See <a href="/developers/reference#entry.tags">entry.tags</a>.</p>
+
+<h2>Non-entry pages (home, tags, archives, etc.)</h2>
+
+<pre class="html"><code>{{^entry}}
+&lt;meta property="og:type" content="website"&gt;
+{{#url}}
+&lt;link rel="canonical" href="{{{url}}}"&gt;
+&lt;meta property="og:url" content="{{{url}}}"&gt;
+{{/url}}
+&lt;meta property="og:title" content="{{&gt; title}}"&gt;
+&lt;meta property="og:description" content="{{&gt; description}}"&gt;
+{{#avatar}}&lt;meta property="og:image" content="{{{avatar}}}"&gt;{{/avatar}}
+{{/entry}}</code></pre>
+<p>
+  Non-entry pages identify as <code>website</code>, use the <code>title</code> and <code>description</code> partials, and fall back to <a href="/developers/reference#blog.avatar">blog.avatar</a> for <code>og:image</code>.
+  The <code>url</code> variable used for canonical and <code>og:url</code> does not have a documented reference anchor (see <a href="#missing-docs">Missing documentation</a>).
+</p>
+
+<h2>Entry vs. non-entry behavior</h2>
+
+<ul>
+  <li><code>{{#entry}}</code> switches context to the entry object (see <a href="/developers/reference#entry">entry</a>), so <code>{{title}}</code> refers to the entry title within this block.</li>
+  <li><code>{{^entry}}</code> is the inverted section used for pages without an entry context (home, lists, etc.).</li>
+  <li>Entry pages use <a href="/developers/reference#entry.absoluteURL">entry.absoluteURL</a> for canonical and <code>og:url</code>. Non-entry pages use <code>url</code> if present.</li>
+  <li>Open Graph and Twitter descriptions prefer <a href="/developers/reference#entry.summary">entry.summary</a> but fall back to <a href="/developers/reference#entry.title">entry.title</a> to avoid blank metadata.</li>
+</ul>
+
+<h2>Implementation advice</h2>
+
+<ul>
+  <li><strong>Summary vs. title:</strong> Prefer <a href="/developers/reference#entry.summary">entry.summary</a> when it concisely represents the post; fall back to <a href="/developers/reference#entry.title">entry.title</a> so previews are never empty.</li>
+  <li><strong>Image sizing:</strong> Use the large thumbnail for <code>og:image</code> and <code>twitter:image</code>. It targets ~1200px wide (best for social previews) via <a href="/developers/reference#entry.thumbnail">entry.thumbnail</a>.</li>
+  <li><strong>When to use summary_large_image:</strong> Use <code>summary_large_image</code> when a large thumbnail exists; otherwise <code>summary</code> keeps Twitter cards compact.</li>
+  <li><strong>Absolute URLs:</strong> Canonical and <code>og:url</code> must be fully qualified (not relative) so crawlers and social scrapers resolve the canonical page correctly. Use <a href="/developers/reference#entry.absoluteURL">entry.absoluteURL</a>.</li>
+</ul>
+
+<h2>Audit &amp; validation tools</h2>
+
+<ul>
+  <li><a href="https://developer.chrome.com/docs/lighthouse/">Google Lighthouse</a> (SEO audit in DevTools)</li>
+  <li><a href="https://search.google.com/search-console">Google Search Console URL Inspection</a> or <a href="https://search.google.com/test/rich-results">Rich Results Test</a></li>
+  <li><a href="https://developers.facebook.com/tools/debug/">Facebook Sharing Debugger</a></li>
+  <li><a href="https://cards-dev.twitter.com/validator">Twitter/X Card Validator</a></li>
+  <li><a href="https://www.linkedin.com/post-inspector/">LinkedIn Post Inspector</a></li>
+</ul>
+
+<h2 id="missing-docs">Missing documentation</h2>
+
+<p>The following template values in <code>_head.html</code> are used but do not have explicit reference anchors today. Consider documenting them in <code>app/views/developers/reference.yml</code>:</p>
+
+<ul>
+  <li><code>{{&gt; title}}</code> partial (proposed anchor: <code>partials.title</code>).</li>
+  <li><code>{{&gt; description}}</code> partial (proposed anchor: <code>partials.description</code>).</li>
+  <li><code>{{url}}</code> on non-entry pages (proposed anchor: <code>view.url</code> or <code>page.url</code>).</li>
+  <li><code>{{thumbnail.large.url}}</code>, <code>{{thumbnail.large.width}}</code>, <code>{{thumbnail.large.height}}</code> (proposed anchors: <code>entry.thumbnail.large.url</code>, <code>entry.thumbnail.large.width</code>, <code>entry.thumbnail.large.height</code>).</li>
+</ul>
+
+[[={{ }}=]]

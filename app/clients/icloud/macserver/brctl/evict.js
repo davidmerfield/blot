@@ -1,11 +1,12 @@
-const { iCloudDriveDirectory } = require("../config");
-const fs = require("fs-extra");
-const exec = require("../exec");
+import { iCloudDriveDirectory } from "../config.js";
+import fs from "fs-extra";
+import exec from "../exec.js";
+import clfdate from "../util/clfdate.js";
+
 const TIMEOUT = 10 * 1000; // 10 seconds
 const POLLING_INTERVAL = 200; // 200 ms
-const clfdate = require("../util/clfdate");
 
-module.exports = async (path) => {
+export default async (path) => {
   console.log(clfdate(), `Evicting: ${path}`);
 
   const stat = await fs.stat(path);

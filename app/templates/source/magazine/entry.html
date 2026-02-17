@@ -8,11 +8,17 @@
   <div style="min-height:6rem;flex-direction:row;align-items:center" class="flex mt3 pt3 mb5 ">
     <div class="w-100">
     {{^page}}
-      <div class="w-20 bl pt5 nt5 fr pl3 lh-copy  b--black-10">
- 
-	{{#date}}<a href="{{{url}}}" class="db black-30 f5 pr4 no-underline"><span  date-from-now="{{dateStamp}}">{{date}}</span></a>{{/date}}
-    <span class="db black-50 f5">{{#tags}}<a href="/tagged/{{slug}}" class="no-underline">{{tag}}</a>{{^last}}, {{/last}}{{/tags}}</span>    
-  		</div> 
+      {{#date}}
+      <div class="w-20 bl pt5 nt5 fr pl3 lh-copy b--black-10">
+        <a href="{{{url}}}" class="db black-30 f5 pr4 no-underline"><span date-from-now="{{dateStamp}}">{{date}}</span></a>
+        <span class="db black-50 f5">{{#tags}}<a href="/tagged/{{slug}}" class="no-underline">{{tag}}</a>{{^last}}, {{/last}}{{/tags}}</span>
+      </div>
+      {{/date}}
+      {{^date}}
+      <div class="w-20 pt5 nt5 fr pl3 lh-copy">
+        <span class="db black-50 f5">{{#tags}}<a href="/tagged/{{slug}}" class="no-underline">{{tag}}</a>{{^last}}, {{/last}}{{/tags}}</span>
+      </div>
+      {{/date}}
 {{/page}}
       <div class="w-80 pr4" >{{{titleTag}}}</div>
     </div>

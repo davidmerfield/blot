@@ -9,6 +9,7 @@ const remoteReaddir = require("./util/remoteReaddir");
 const remoteRecursiveList = require("./util/remoteRecursiveList");
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
+const database = require("../database");
 const config = require("config");
 const maxFileSize = config.icloud.maxFileSize; // Maximum file size for iCloud uploads in bytes
 
@@ -26,6 +27,7 @@ module.exports = async (blogID, publish, update) => {
     removed: 0,
     createdDirs: 0,
     skipped: 0,
+    placeholdersCreated: 0,
   };
 
   try {
@@ -37,8 +39,9 @@ module.exports = async (blogID, publish, update) => {
   }
 
   const walk = async (dir) => {
-    publish("Checking", dir);
 
+    console.log(clfdate(), `Syncing folder: ${dir}`);
+    
     const [remoteContents, localContents] = await Promise.all([
       remoteReaddir(blogID, dir),
       localReaddir(localPath(blogID, dir)),
@@ -101,8 +104,20 @@ module.exports = async (blogID, publish, update) => {
         if (!existsLocally || (existsLocally && !identicalOnRemote)) {
           try {
             if (size > maxFileSize) {
-              publish("File too large", path);
+              publish(
+                "File too large",
+                `${path} (${size} bytes > ${maxFileSize} byte limit)`
+              );
               summary.skipped += 1;
+
+              try {
+                await fs.outputFile(localPath(blogID, path), "");
+                summary.placeholdersCreated += 1;
+                publish("Created placeholder for oversized file", path);
+              } catch (err) {
+                publish("Failed to create placeholder", path, err.message);
+              }
+
               continue;
             }
 
@@ -122,6 +137,8 @@ module.exports = async (blogID, publish, update) => {
 
   try {
     await walk("/");
+    // update the database to remove the error flag if it exists
+    await database.store(blogID, { error: null });
   } catch (err) {
     publish("Sync failed", err.message);
     // Possibly rethrow or handle

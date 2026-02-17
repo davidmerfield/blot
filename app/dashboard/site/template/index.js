@@ -8,6 +8,15 @@ const duplicateTemplate = require("./save/duplicate-template");
 const { isAjaxRequest, sendAjaxResponse } = require("./save/ajax-response");
 const writeChangeToFolder = require('./save/writeChangeToFolder');
 
+// /template/default and /template/default/... redirect to the installed template's slug
+// so docs can deep link to e.g. /sites/gitt/template/default/links
+TemplateEditor.use("/default", (req, res, next) => {
+  const slug = res.locals.template?.slug;
+  if (!slug) return next();
+  const pathSuffix = req.path || "";
+  res.redirect(`${res.locals.base}/template/${slug}${pathSuffix}`);
+});
+
 TemplateEditor.param("viewSlug", require("./load/template-views"));
 
 TemplateEditor.param("viewSlug", require("./load/template-view"));

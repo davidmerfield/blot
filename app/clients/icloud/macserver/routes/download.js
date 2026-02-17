@@ -1,10 +1,10 @@
-const { join, resolve, sep } = require("path");
-const { iCloudDriveDirectory } = require("../config");
-const brctl = require('../brctl');
-const clfdate = require("../util/clfdate");
-const normalizeMacserverPath = require("./normalizeMacserverPath");
+import { join, resolve, sep } from "path";
+import { iCloudDriveDirectory } from "../config.js";
+import * as brctl from '../brctl/index.js';
+import clfdate from "../util/clfdate.js";
+import normalizeMacserverPath from "./normalizeMacserverPath.js";
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const blogID = req.header("blogID");
   const path = Buffer.from(req.header("pathBase64"), "base64").toString("utf8");
   const normalizedPath = normalizeMacserverPath(path);
@@ -42,7 +42,10 @@ module.exports = async (req, res) => {
     const modifiedTime = stat.mtime.toISOString();
   
     res.setHeader("modifiedTime", modifiedTime);
-    res.download(filePath, normalizedPath);  
+    res.download(filePath, normalizedPath, {
+      // Explicitly permit serving dotfiles; by default, Express responds with a NotFoundError when a dotfile is requested. Blot syncs some dotfiles (see app/clients/util/shouldIgnoreFile.js) so we need to allow them.
+      dotfiles: "allow",
+    });
   } catch (err) {
     // handle ENOENT error
     if (err.code === "ENOENT") {

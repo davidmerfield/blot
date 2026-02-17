@@ -7,16 +7,9 @@
 const fs = require("fs-extra");
 const config = require("config");
 
-const modify = i => {
-
-  // remove leading 'is a' or 'is an'
-  i = i.replace(/^is a(n)? /, "");
-
-  // capitalize the first letter
-  i = i[0].toUpperCase() + i.slice(1);
-
-  return i;
-}
+const modify = (i) => {
+  return i[0].toUpperCase() + i.slice(1);
+};
 
 const loadFeatured = async () => {
   const featuredPath = config.data_directory + "/featured/featured.json";

@@ -58,7 +58,23 @@ function emailUser(req, res, next) {
   Email.DELETED("", req.user, next);
 }
 function deleteBlogs(req, res, next) {
-  async.each(req.user.blogs, Blog.remove, next);
+  async.each(req.user.blogs || [], function (blogID, cb) {
+    Blog.remove(blogID, function (err) {
+      if (
+        err &&
+        (err.message === "No blog" || err.message === "Invalid blog id")
+      ) {
+        console.warn("Blog cleanup anomaly; continuing account deletion", {
+          uid: req.user && req.user.uid,
+          blogID,
+          reason: err.message,
+        });
+        return cb();
+      }
+
+      cb(err);
+    });
+  }, next);
 }
 
 function deleteUser(req, res, next) {
@@ -69,26 +85,35 @@ async function deleteSubscription(req, res, next) {
   try {
     await ensureIssueDeletionRefund(req);
 
-    if (req.user.paypal?.status) {
-      const response = await fetch(
-        `${config.paypal.api_base}/v1/billing/subscriptions/${req.user.paypal.id}/cancel`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: buildPaypalAuthHeader(),
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            reason: "Customer deleted account",
-          }),
+    if (req.user.paypal?.id) {
+      const cancellablePaypalStatuses = ["ACTIVE", "SUSPENDED"];
+      const paypalStatus = String(req.user.paypal?.status || "").toUpperCase();
+
+      if (cancellablePaypalStatuses.includes(paypalStatus)) {
+        const response = await fetch(
+          `${config.paypal.api_base}/v1/billing/subscriptions/${req.user.paypal.id}/cancel`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: buildPaypalAuthHeader(),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              reason: "Customer deleted account",
+            }),
+          }
+        );
+
+        if (response.status !== 204) {
+          throw await paypalError(response, "PayPal API error");
         }
-      );
 
-      if (response.status !== 204) {
-        throw await paypalError(response, "PayPal API error");
+        console.log("PayPal subscription canceled");
+      } else {
+        console.log(
+          `Skipping PayPal cancellation: subscription is already non-cancellable (status: ${paypalStatus || "MISSING"})`
+        );
       }
-
-      console.log("PayPal subscription canceled");
     } else if (req.user.subscription?.customer) {
       const client = getStripeClient();
 
@@ -96,9 +121,26 @@ async function deleteSubscription(req, res, next) {
         throw new Error("Stripe client unavailable");
       }
 
-      const deleted = await client.customers.del(
-        req.user.subscription.customer
-      );
+      let deleted;
+
+      try {
+        deleted = await client.customers.del(req.user.subscription.customer);
+      } catch (error) {
+        if (isStripeCustomerMissingError(error)) {
+          console.warn(
+            "Stripe customer already missing; continuing account deletion",
+            {
+              customer: req.user.subscription.customer,
+              code: error.code,
+              type: error.type,
+              statusCode: error.statusCode,
+            }
+          );
+          deleted = { deleted: true };
+        } else {
+          throw error;
+        }
+      }
 
       if (!deleted || deleted.deleted !== true) {
         throw new Error("Stripe customer not deleted");
@@ -496,6 +538,16 @@ function normalizeErrorMessage(error) {
   } catch (_) {
     return String(error);
   }
+}
+
+function isStripeCustomerMissingError(error) {
+  if (!error) return false;
+
+  return (
+    error.type === "StripeInvalidRequestError" &&
+    error.code === "resource_missing" &&
+    (error.statusCode === undefined || error.statusCode === 404)
+  );
 }
 
 // We expose these methods for our scripts

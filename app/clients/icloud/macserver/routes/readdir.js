@@ -1,11 +1,11 @@
-const fs = require("fs-extra");
-const { join, resolve, sep } = require("path");
-const { iCloudDriveDirectory } = require("../config");
-const { ls } = require("../brctl");
-const shouldIgnoreFile = require('../../../util/shouldIgnoreFile');
-const clfdate = require("../util/clfdate");
+import fs from "fs-extra";
+import { join, resolve, sep } from "path";
+import { iCloudDriveDirectory } from "../config.js";
+import { ls } from "../brctl/index.js";
+import shouldIgnoreFile from '../../../util/shouldIgnoreFile.js';
+import clfdate from "../util/clfdate.js";
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const blogID = req.header("blogID");
   const path = Buffer.from(req.header("pathBase64"), "base64").toString("utf8");
 

@@ -1,74 +1,74 @@
-#e15f16 zacharykeeting.com Zachary Keeting, is an artist
-#da9a87 blog.andrewjanjigian.com Andrew Janjigian, is a photographer
-#7a8aa8 keywords.oxus.net Kerim Friedman, is an anthropologist
-#b59681 discombobulated.co.nz Jessica Nickelsen, is a writer
-#1b6cb5 rebeccakukshtel.com Rebecca Kukshtel, is a software engineer
-#d790c0 blog.aurynn.com Aurynn Shaw, is a software engineer
-#a5a374 john.pavlusoffice.com John Pavlus, is a writer
-#a0aab9 iiiiiiiii.in Ishtaarth Dalmia, is a writer
-#60b7dc www.failuretolerated.com Sean McCoy, is a game designer
-#ab4548 mrfrisby.com Stuart Frisby, is a designer
-#696e66 vaughntan.org Vaughn Tan, is a writer
-#e2c556 eli.li Eli Mellen, is a software engineer
-#d08573 paul.af Paul Esch-Laurent, is a software engineer
-#9e826d diary.craigwhite.nyc Craig White, is an artist
-#5177a4 www.chrbutler.com Christopher Butler, is a designer
-#576c50 benlog.net Ben Greenberg, is a journalist
-#111111 www.letterspace.org Robert van Vliet, is a writer
-#94c5df inhab.it Wil Turner, is a writer
-#828282 www.skellis.net Simon Ellis, is an artist
-#da6d8d ianamurray.work Iana Murray, is a journalist
-#475162 www.dustinsenos.com Dustin Senos, is a designer
-#83857f theocasciani.page Théo Casciani, is a writer
-#629292 diklein.com David Klein, is a designer
-#ff9060 www.emilycass.org Emily Cass, is an architect
-#dbb3c9 jessytuddenham.com Jessy Tuddenham, is a dancer
-#b97371 bnjmnmddn.com Benjamin Madden, is an academic
-#517c80 www.jsoliday.com J. Soliday, is a musician
-#d0a66f tellyou.today Neale Stokes, is a librarian
-#7a9951 brainsister.com Jessica Doyle, is a writer
-#945830 poetry.bencallahan.com Ben Callahan, is a poet
-#6b98d2 www.maxkeith.co Max Keith, is a runner
-#99abc4 spittingdog.net Dave Haysom, is a translator
-#d28f00 reillybrennan.com Reilly Brennan, is a venture capitalist
-#c40002 sidenote.ridwansanusi.com Ridwan Sanusi, is a designer
-#6e44b3 max.engineer Max Chernyak, is a software engineer
-#f1bd00 oliviaastawood.com Olivia Wood, is a writer
-#21732d www.nitinpai.in Nitin Pai, is a think-tank director
-#000000 jeankapsa.com Jean Kapsa, is a pianist
-#000000 www.declad.com Lewis Martin, is an architect
-#000000 notesof.com Thibault Michel, is a designer
-#000000 bgreen.lol Brandon Lucas Green, is a musician
-#000000 meredithgran.com Meredith Gran, is a cartoonist
-#000000 ellanew.com Ellane W, is a designer
-#000000 alongtheray.com Raymond Hines, is a writer
-#000000 matthiaszeeb.net Matthias Zeeb, is an economist
-#000000 simonuvarov.com Simon Uvarov, is a software engineer
-#000000 www.carsonteuscher.com Carson Teuscher, is a historian
-#000000 erinkissane.com Erin Kissane, is a writer
-#000000 nonaneva.com ノナネヷ, is an artist
-#000000 ilovewasting.ink Peter Orosz, is a writer
-#000000 blog.vesikar.com Yash Vesikar, is a computer scientist
-#000000 words.studiopallister.com James Pallister, is a writer
-#000000 www.gillianrosselli.com Gillian Rosselli, is an artist
-#000000 www.caitlinmrivers.com Caitlin Rivers, is an epidemiologist
-#000000 jbeau.info Jeremy Beaudry, is an artist
-#000000 www.audunberdal.no Audun Berdal, is a designer
-#000000 www.amirsharif.com Amir Sharif, is a software engineer
-#000000 www.spakhm.com Slava Akhmechet, is a software engineer
-#000000 www.hayalpozanti.com Hayal Pozanti, is an artist
-#000000 www.rossrichardson.com Ross Richardson, is a cinematographer
-#000000 alineleynen.com Aline Leynen, is a jeweller
-#000000 robinschoenbaechler.com Robin Schoenbaechler, is a designer
-#000000 www.stephgreen.co.uk Steph Green, is a writer
-#000000 davidelitompkins.com David Eli Tompkins, is a painter
-#000000 tormodotterjohansen.se Tormod Johansen, is an academic
-#000000 merissalombardo.com Merissa Lombardo, is a production designer
-#000000 alyssabrocato.com Alyssa Brocato, is a cinematographer
-#000000 shaileshchitnis.com Shailesh Chitnis, is a journalist
-#000000 elenarazlogova.net Elena Razlogova, is a historian
-#000000 kristinemorgan.com Kristine Morgan, is a writer
-#000000 maggiewangphotography.com Maggie Wang, is an academic
-#000000 chuckpearson.blog Chuck Pearson, is a designer
-#000000 garywebbracing.com Gary Webb, is a racing driver
-#000000 vichhika.com Vichhika Tep, is a designer
+zacharykeeting.com Zachary Keeting, artist
+blog.andrewjanjigian.com Andrew Janjigian, photographer
+keywords.oxus.net Kerim Friedman, anthropologist
+discombobulated.co.nz Jessica Nickelsen, writer
+rebeccakukshtel.com Rebecca Kukshtel, software engineer
+blog.aurynn.com Aurynn Shaw, software engineer
+john.pavlusoffice.com John Pavlus, writer
+iiiiiiiii.in Ishtaarth Dalmia, writer
+www.failuretolerated.com Sean McCoy, game designer
+mrfrisby.com Stuart Frisby, designer
+vaughntan.org Vaughn Tan, writer, 2019
+eli.li Eli Mellen, software engineer
+paul.af Paul Esch-Laurent, software engineer
+diary.craigwhite.nyc Craig White, artist
+www.chrbutler.com Christopher Butler, designer
+benlog.net Ben Greenberg, journalist
+www.letterspace.org Robert van Vliet, writer
+inhab.it Wil Turner, writer
+www.skellis.net Simon Ellis, artist
+ianamurray.work Iana Murray, journalist
+www.dustinsenos.com Dustin Senos, designer
+theocasciani.page Théo Casciani, writer
+diklein.com David Klein, designer
+www.emilycass.org Emily Cass, architect
+jessytuddenham.com Jessy Tuddenham, dancer
+bnjmnmddn.com Benjamin Madden, academic
+www.jsoliday.com J. Soliday, musician
+tellyou.today Neale Stokes, librarian
+brainsister.com Jessica Doyle, writer
+poetry.bencallahan.com Ben Callahan, poet
+www.maxkeith.co Max Keith, runner
+spittingdog.net Dave Haysom, translator
+reillybrennan.com Reilly Brennan, venture capitalist
+sidenote.ridwansanusi.com Ridwan Sanusi, designer
+max.engineer Max Chernyak, software engineer
+oliviaastawood.com Olivia Wood, writer
+www.nitinpai.in Nitin Pai, think-tank director
+jeankapsa.com Jean Kapsa, pianist
+www.declad.com Lewis Martin, architect
+notesof.com Thibault Michel, designer
+bgreen.lol Brandon Lucas Green, musician
+meredithgran.com Meredith Gran, cartoonist
+ellanew.com Ellane W, designer
+alongtheray.com Raymond Hines, writer
+matthiaszeeb.net Matthias Zeeb, economist
+simonuvarov.com Simon Uvarov, software engineer
+www.carsonteuscher.com Carson Teuscher, historian
+erinkissane.com Erin Kissane, writer
+nonaneva.com ノナネヷ, artist
+ilovewasting.ink Peter Orosz, writer
+blog.vesikar.com Yash Vesikar, computer scientist
+words.studiopallister.com James Pallister, writer
+www.gillianrosselli.com Gillian Rosselli, artist
+www.caitlinmrivers.com Caitlin Rivers, epidemiologist
+jbeau.info Jeremy Beaudry, artist
+www.audunberdal.no Audun Berdal, designer
+www.amirsharif.com Amir Sharif, software engineer
+www.spakhm.com Slava Akhmechet, software engineer
+www.hayalpozanti.com Hayal Pozanti, artist
+www.rossrichardson.com Ross Richardson, cinematographer
+alineleynen.com Aline Leynen, jeweller
+robinschoenbaechler.com Robin Schoenbaechler, designer
+www.stephgreen.co.uk Steph Green, writer
+davidelitompkins.com David Eli Tompkins, painter
+tormodotterjohansen.se Tormod Johansen, academic
+merissalombardo.com Merissa Lombardo, production designer
+alyssabrocato.com Alyssa Brocato, cinematographer
+shaileshchitnis.com Shailesh Chitnis, journalist
+elenarazlogova.net Elena Razlogova, historian
+kristinemorgan.com Kristine Morgan, writer
+maggiewangphotography.com Maggie Wang, academic
+chuckpearson.blog Chuck Pearson, designer
+garywebbracing.com Gary Webb, racing driver
+vichhika.com Vichhika Tep, designer

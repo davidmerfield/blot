@@ -9,6 +9,7 @@ var viewModel = require("./viewModel");
 var getView = require("./getView");
 var serialize = require("./util/serialize");
 var getMetadata = require("./getMetadata");
+var setMetadata = require("./setMetadata");
 var Blog = require("models/blog");
 var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
@@ -290,13 +291,29 @@ module.exports = function setView(templateID, updates, callback) {
 						multi.exec((err) => {
 							if (err) return callback(err);
 
-							updateCdnManifest(templateID, (manifestErr) => {
-								if (manifestErr) return callback(manifestErr);
+							if (!changes) {
+								if (metadata.errors && metadata.errors[name]) {
+									delete metadata.errors[name];
+									return setMetadata(templateID, { errors: metadata.errors }, callback);
+								}
 
-								if (!changes) return callback();
+								return callback();
+							}
 
-								Blog.set(metadata.owner, { cacheID: Date.now() }, (err) => {
-									callback(err);
+							Blog.set(metadata.owner, { cacheID: Date.now() }, (cacheErr) => {
+								if (cacheErr) return callback(cacheErr);
+
+								updateCdnManifest(templateID, (manifestErr) => {
+									if (manifestErr) return callback(manifestErr);
+
+									// Clear this view from template metadata.errors when saving
+									// via the dashboard so fixing a view clears its error state
+									if (metadata.errors && metadata.errors[name]) {
+										delete metadata.errors[name];
+										return setMetadata(templateID, { errors: metadata.errors }, callback);
+									}
+
+									callback();
 								});
 							});
 						});

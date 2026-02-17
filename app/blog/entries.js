@@ -8,6 +8,7 @@ module.exports = function (req, res, next) {
     order: req?.template?.locals?.sort_order,
     pageNumber: req?.params?.page ?? req?.query?.page,
     pageSize: req?.template?.locals?.page_size,
+    pathPrefix: req?.template?.locals?.path_prefix,
   };
 
   req.log("Loading entries");

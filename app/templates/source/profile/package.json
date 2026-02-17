@@ -6,7 +6,9 @@
     "description": "A short description.",
     "email": "email@site.url",
     "microblog_user": "enter-username",
-    "page_size": 20
+    "page_size": 20,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y"
   },
   "views": {
     "tagged": {

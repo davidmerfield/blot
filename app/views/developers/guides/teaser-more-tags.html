@@ -1,0 +1,45 @@
+{{=[[ ]]=}}
+
+<h1>Using {{{teaser}}} and {{more}}</h1>
+
+<p>This guide explains how to control the preview length shown on your homepage or other entry lists.</p>
+
+<h2>How it works</h2>
+
+<ul>
+  <li><code>{{{body}}}</code> renders the full entry body.</li>
+  <li><code>{{{teaser}}}</code> renders the entry title and teaser content.</li>
+  <li><code>{{{teaserBody}}}</code> renders only the teaser content (without the title).</li>
+</ul>
+
+<p>By default, Blot automatically picks a teaser from the beginning of your post. To set where it ends, insert <code>{{more}}</code> in your post.</p>
+
+<pre class="text" data-file="post.md"><code># My post title
+
+This paragraph appears in the preview.
+
+{{more}}
+
+This content appears only on the full post page.</code></pre>
+
+<h2>Limit the index page preview length</h2>
+
+<p>To limit the post preview displayed on the index page, replace <code>{{{body}}}</code> with <code>{{{teaserBody}}}</code> in <code>index.html</code> or <code>entries.html</code>.</p>
+
+<pre class="html" data-file="entries.html"><code>{{#entries}}
+  <article>
+    <h2><a href="{{{url}}}">{{title}}</a></h2>
+    {{{teaserBody}}}
+  </article>
+{{/entries}}</code></pre>
+
+<p>If you want the title included as part of the teaser block, use <code>{{{teaser}}}</code> instead.</p>
+
+<h2>More information</h2>
+
+<ul>
+  <li><a href="https://blot.im/questions/117">How to add read more links to blog posts</a></li>
+  <li><a href="https://blot.im/questions/814">How to shorten posts on the blog home page</a></li>
+</ul>
+
+[[={{ }}=]]

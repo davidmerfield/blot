@@ -18,6 +18,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../../ && pwd)"
 SETUP="$DIR/config/openresty/setup.sh"
 COMPOSE_FILE="$DIR/scripts/development/docker-compose.yml"
 FOLDER_SERVER="$DIR/scripts/development/open-folder-server.js"
+TOXIPROXY_SETUP="$DIR/scripts/development/setup-toxiproxy.sh"
 
 # Env for builds
 export COMPOSE_DOCKER_CLI_BUILD="${COMPOSE_DOCKER_CLI_BUILD:-bake}"
@@ -65,6 +66,11 @@ node "$FOLDER_SERVER" &
 FOLDER_PID=$!
 
 compose up --build -d
+
+if [ "${BLOT_USE_TOXIPROXY:-true}" = "true" ]; then
+  echo "[start] Configuring toxiproxy"
+  bash "$TOXIPROXY_SETUP"
+fi
 
 # start logs in background to avoid 'exit status 130' noise on Ctrl-C
 compose logs -f --no-log-prefix node-app &

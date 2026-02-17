@@ -1,26 +1,87 @@
-iCloud client:
-- Add email notification when iCloud server has resyncRequested!
-- Fix bug: high priority, drift sync. chokidar missing events (rename incomplete, it applied on the delete):
-  - To reproduce, edit two files then quickly rename them.
-  - To solve... not sure? leverage brctl monitor?
-  - NOTE: once triggered, chokidar totally loses track of the files, subsequent events don't even fire!
-  - maybe we can solve by:
-    - switching away from chokidar polling? if this fails, document why!
-    - maybe use: https://www.npmjs.com/package/fsevents?activeTab=readme
-    - leveraging `brctl monitor -i` which includes paths of new or updated files, but not removed files. it also fires for evict events...
-- Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
-- Fix bug: low priority, this just causes an error in the logs when freeing up disk space. Problem: attempting to evict a file within a .pages directory (a special apple file) e.g. Post.pages/preview.jpg will fail: you need to evict the parent directory perhaps?
-- Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
-- Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
-  - Add logging instrumentation of modified file paths to sync verification to aid in analysis of sync drift
-- Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
-- Start writing tests for icloud client
-- Start writing tests for macserver
-- Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
-- Make the various internal server errors (500) more clear when there is a folder lock, perhaps respond with 429? or some other status? and clearer message
+Why is the magazine template loading a page of entries for each request? I think it's the page retrieve variable...
+
+Fix bug with Google Docs when disconnecting a site from Google Drive on Blot then reconnecting the site to Google Drive. 
+
+I'm concerned that malicious webhooks could be abused to delete sites
+- operator must be the only person to trigger the delete overdue or cancelled site flow.
+- collect data on the number of sites to delete once per day for a once-weekly update email and include commands to run in email
+- update the admin emails and the noop / simplify the subscription code if needed. still proceed with the user / site disabling (but not deletion)
+
+Work out what causes the '-2' suffix on posts when renaming a huge folder?
+
+Move blot GitHub to its own organization
+
+problem: allEntries takes a huge time to render on sites with lots of posts
+solution: 
+1. Modify templates to store the entry properties they require to render for each list in retrieve, e.g. {{#allEntries}} {{title}} {{/allEntries}} -> retrieve: allEntries: ['title']
+2. Modify entry model to store entries as hashes rather than single JSON string. make this elegant to deploy: run the two systems in parallel at first, with backfill, including a script to run to completely the backfill, then switch over to the hash, then purge the original keys.
+3. Modify the models/entry and models/entries code to make it possible to retrieve specific properties only for entry lists
+4. Modify app/blog template engine code to retrieve only the properties used
+
+For chuck: I'll look into whether it's possible to do this without the tag folder '[Blog]' so we avoid tagging the posts. It should be possible to simply use a folder called 'Blog' and instead filter the {{#posts}} list based on the sub folder. I'll get back to you
+
+Switch templates from entries.html to index.html with explicit url: [].
+- fix docs on routing order
+
+Google Drive:
+- Add sync check
+- Improve sync efficieny with option to target a specific folder or file first (Track ids in database)
+- Improve html output for google docs and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQFmTvLKzPkJrgsBTWZmQJWS)
+  Issue: <p><img><br><img></p> should be <p><img></p><p><img></p>
+- right now, I believe the google drive client holds a sync lock while waiting for the creation of a folder. i think we should avoid doing this, instead waiting to establish a sync lock after the folder exists
+
+Think about using avif/webp for thumbnails, adding <picture> tags with jpg fallback.
+- use webp for image post conversion format app/build/converters/img/index.js
+- use for image caching module
+- use for thumbnails
+
+Use this conventions for [delimiting KaTeX](https://pandoc.org/demo/example33/8.13-math.html) instead of double dollar signs.
+
+Add pause and resume routes to account page for subscriptions
+
+Add a documentation page on media handling
+- explain image compression and thumbnails
+
+Add a documentation page on typography and fonts
+- explain typeset
+
+Add commit mono font to font picker - https://commitmono.com/
+
+Revert server changes to iCloud
+- 0043d91b36621ecd6aef2bcc263f51f209924792
+- 98dc9405c883825917de8e436ec620f60adaf975
+
+Fix serious bug with iCloud client:
+- brctl evict now conflicts with the fswatch events (they loop together infinitely, which I think eventually crashes the server or blocks iCloud sync 
+)
+We need to filter out (block) fswatch sync and brctl monitorer events until a folder setup flow is complete (do we do this already for chokidar?) (this causes problems setting up large folders)
+
+Extend recursiveList timeout when requesting Macserver (it can take 80 seconds)
+
+Document SSL as part of service on pricing page
+
+Fix bugs with sync
+iCloud
+Dropbox
+Google Drive
+Git
+Fix bug with local editing and template slugs
+Improve brochure
+Improve demo video
+Improve templates
+Fix mobile behaviour
+Make all variables editable on template editor
+Add way to drag and drop files onto dashboard
+Implement more netlify features
+Create CDN system with edge servers holding static blog content close to users
+Use bunny?
+Increase pricing to $7 per month for individuals
+Make it possible to create a site for free
+Add $70 per month organizational tier?
+Add github client
+Lower costs using s3 
 
 Fix bugs with templates:
-- Fix bug with videos inside posts on Links template and [Tell Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGslbPSKMXkRbvrHKFTWhbJbPlg)
 - Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
 - Fix 'back' button in photo template and tell [Bibi](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcPJTmPXxWvhbmFpvwdfVzhpn)
 - Fix side navigation on Blog template and tell [Sava](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJcgnPdxPcSqPwmMnFSThFMQg)
@@ -30,9 +91,26 @@ Fix bugs with templates:
 - Fix bugs with documentation template and tell [Ray](https://blot.im/questions/3233)
 - Fix bug with Documentation template and the setting 'Adds zoom to large images' and [tell customer](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgJMGTSPcnwTNxVJVPZZnrhJB)
 - Improve post navigation on Portfolio template within tagged collections and tell [Questioner](https://blot.im/questions/1894)
-- Make it possible to sort by id with dropdown on portfolio template
+- Make it possible to sort by id with dropdown on all templates
 
+Add performance tests which output something like this for PRs (compare against master branch, fail if over threshold):
+  Total CPU  29.90%          -> 11.64%
+  Syscalls   3.10s           -> 0.66s
+  Crypto     1.6s            -> 0.11s
+  Bandwidth  ~6.5 Mbit/sec   -> ~3 Mbit/sec
+
+Links template:
+  Navigation:
+  - [ ] Add dropdown support to navigation
+  Entry page:
+  - [ ] Close button should go 'back'
+  - [ ] Add layout CSS
+  - [ ] Next / prev should respect tag collections
+  - [ ] Add exif info
+  - [ ] Add backlinks
+  
 Dropbox client
+- Sync verification should instrument the sync/fix function to also report errors where the folder doesn't match the database.
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
 - Bug: Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
   - Bug: handle a sync lock failure on second blog when migrating an app folder
@@ -88,12 +166,38 @@ Add a warning email one week before first renewal reminding customers to cancel
 - with link to switch to annual billing
 - with offer to help migrate to Blot
 
-Google Drive:
-- Add sync check
-- right now, I believe the google drive client holds a sync lock while waiting for the creation of a folder. i think we should avoid doing this, instead waiting to establish a sync lock after the folder exists? thoughts? pros and cons?
-
 Git client:
 - Add sync check
+
+iCloud client:
+- Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
+- If we need to resolve further bugs with sync drift:
+  - Implement additional parsing of modified paths from monitorer.js (brctl monitor -i) and reconcile these in addition to the fswatch module with the chokidar events for additional redundancy
+- Think about adding a more efficient endpoint to sync folder state. 
+  - use wisdom from rsync?
+  - the call to recursive list can take a way long time for large blogs (blog_3ec96xxx) so we need to increase timeout from 10 seconds to maybe multiple minutes...
+    - can we get rid of recursive list entirely if we simply call brctl download on the paths flagged by brctl monitor?
+  - don't hold sync lock the whole time? 
+  - fetch file list, compute changes, then lock, then apply?
+    - we'll need to update the call sites since the lock will be handled within
+- Daily icloud resync should also log how long the longest folder took to resync.
+- Add stats on response time to iCloud server health check logging
+  - maybe monitor response time average and email notify when it increases dramatically?
+- Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
+- Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
+  - Add logging instrumentation of modified file paths to sync verification to aid in analysis of sync drift
+- Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
+- Start writing tests for icloud client
+- Start writing tests for macserver
+- Instead of our bespoke header modifiedTime we should use 'Last-Modified' and note we don't need to set this for route using res.download – res.download does this automatically
+- Fix bug: low priority, this just causes an error in the logs when freeing up disk space. Problem: attempting to evict a file within a .pages directory (a special apple file) e.g. Post.pages/preview.jpg will fail: you need to evict the parent directory perhaps?
+- Remove evict route
+- Rename /watch route to setup-complete
+- Remove recursiveReaddirRoute
+  - instead, to sync folder tree, whenever readddir is called, it should maintain an internal map of the last time a blog's subfolder tree was recursively checked, and call it? or maybe just call ls and brctl download on the specific folder? or is this too slow?
+- Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
+- Investigate: can we modify app/clients/icloud/routes/site/upload.js and app/clients/icloud/macserver/httpClient/upload.js to exchange a content hash? to prevent needless re-upload?
+
 
 Bug reports:
 - The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
@@ -298,8 +402,6 @@ Fix bug accessibility issue with menu links reordering and tell [Grace](https://
 Fix bug with accessibility issues with scrolling and code blocks and tell [Eli](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwqJjjrrGHDWjLPzfxGpnkZTh) if I make any changes
 
 ---
-
-Make it possible to disable processing of image files into individual posts and tell [Brendan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQdzvsdKBgDQqPRcBzTJKVPqNfr)
 
 Investigate issues with image heavy obsidian vaults
 
@@ -868,6 +970,10 @@ Use tinify free api to compress some of the folder images?
 
 Add asset library / file upload to template editor and share files across templates
 - use this to help implement a favicon feature which minifies the favicon
+
+Extend markdown parser to support [content blocks syntax](https://github.com/iainc/Markdown-Content-Blocks)
+
+Extend markdown parser to support Obsidian Callouts and follow up with [questioner](https://blot.im/questions/3374)
 
 Extend markdown parser to add a special class to a list of only images for targeting into an image grid or gallery?
 - `- ![Image](_image.jpg)...` -> `<ul class="image-list">`... could then be used in CSS?

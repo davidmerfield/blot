@@ -1,11 +1,13 @@
-const brctl = require("../brctl");
-const { promisify } = require("util");
-const fs = require("fs-extra");
-const statfs = promisify(require("fs").statfs);
-const { iCloudDriveDirectory } = require("../config");
-const clfdate = require("../util/clfdate");
+import * as brctl from "../brctl/index.js";
+import { promisify } from "util";
+import fs from "fs-extra";
+import { statfs as statfsSync } from "fs";
+import { iCloudDriveDirectory } from "../config.js";
+import clfdate from "../util/clfdate.js";
 
-module.exports = async (req, res) => {
+const statfs = promisify(statfsSync);
+
+export default async (req, res) => {
   const result = {};
 
   try {

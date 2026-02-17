@@ -1,22 +1,28 @@
-- name: blog
+- name: Site properties
   keys:
     - name: title
       type: string
-      description: Your site’s title, set on the title page of your dashboard. Blog properties are available at the top level of the Mustache context (use `{{title}}`, not `{{blog.title}}`).
+      description: Your site’s title, set on the <a href="/sites/default/title"><span class="ui-action">Title</span></a> page of your dashboard. 
       example: <h1>{{title}}</h1>
+      output: <h1>My Site</h1>
 
     - name: avatar
       type: string
-      description: The URL to your profile picture, or avatar, uploaded on the Photo page of your dashboard
+      description: The URL to your profile picture, or avatar, uploaded on the <a href="/sites/default/template/default/photo"><span class="ui-action">Photo</span></a> page of your dashboard
       example: <img src="{{{avatar}}}" />
+      output: <img src="https://example.com/avatar.jpg" />
 
     - name: menu
       type: array
-      description: "A list of links on your site's menu, added on the Links page of your site's dashboard and pages. Each item in the list has the following properties:"
+      description: "A list of links in your site's navigation. This list includes links you add on the Links page of your dashboard, plus links for pages (entries with menu metadata) when present. Each item in the list has the following properties:"
       example: |
         {{#menu}}
         <a href="{{url}}">{{label}}</a>
         {{/menu}}
+      output: |
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+        ...
       properties:
         - name: id
           type: string
@@ -32,10 +38,10 @@
           description: The metadata set for the page which generated this link.
         - name: active
           type: boolean
-          description: true if you are currently looking at this link
+          description: <code>true</code> if you are currently looking at this link
         - name: first
           type: boolean
-          description: true if this link is the first in your menu
+          description: <code>true</code> if this link is the first in your menu
         - name: penultimate
           type: boolean
           description: true if this link is the penultimate link in your menu
@@ -45,7 +51,9 @@
 
     - name: cacheID
       type: number
-      description: A datestamp for when your site was last updated
+      description: A Unix timestamp in milliseconds for when your site was last updated.
+      example: "{{cacheID}}"
+      output: "1707096312000"
 
     - name: updated
       type: function
@@ -54,33 +62,42 @@
         Updated on {{updated}}.
 
         Updated on {{#updated}}MMMM DDDo, YYYY{{/updated}}.
+      output: |
+        Updated on 2024-02-01
+        Updated on February 1st, 2024
 
     - name: timezone
       type: string
       description: Your site’s timezone in the [tz database format](https://en.wikipedia.org/wiki/Tz_database)
 
-    - name: blogURL
+    - name: siteURL
       type: string
       description: URL to your site’s homepage
 
-    - name: siteURL
+    - name: blogURL
       type: string
-      description: Same as [blogURL](#blog.blogURL)
+      description: Alias for [siteURL](#blog.siteURL)
 
     - name: feedURL
       type: string
-      description: Path to your site's RSS feed
+      description: Relative path to your site's RSS feed (prepend [siteURL](#blog.siteURL) for a fully qualified URL).
+      example: /feed.rss
 
     - name: sitemapURL
       type: string
-      description: Path to your site’s sitemap
+      description: Relative path to your site's sitemap (prepend [siteURL](#blog.siteURL) for a fully qualified URL).
+      example: /sitemap.xml
 
     - name: roundAvatar
       type: boolean
       description: true if you’ve indicated your avatar is round, false if not
 
-- name: entry
+- name: Entry properties
   keys:
+    - name: Identity
+      type: section
+      description: Core identifiers and naming fields. These are present for entries unless noted otherwise.
+
     - name: id
       type: string
       description: Alias for the [path](#entry.path) property, which uniquely identiﬁes the post.
@@ -101,16 +118,20 @@
       type: string
       description: The blog post’s title.
 
+    - name: URLs
+      type: section
+      description: URL fields for resolved paths and canonical links.
+
     - name: url
       type: string
-      description: The URL to the post
+      description: The resolved, unique URL to the post.
 
     - name: tags
       type: array
       description: "List of tags for the entry. Each item in the list has the following properties:"
       example: |
         {{#entry.tags}}
-        <a href="{{slug}}">{{tag}}</a>
+        <a href="{{url}}">{{tag}}</a>
         {{/entry.tags}}
       properties:
         - name: tag
@@ -125,6 +146,10 @@
           type: string
           description: URL-friendly version of the tag
 
+        - name: url
+          type: string
+          description: Relative URL to this tag page.
+
         - name: first
           type: boolean
           description: true if this tag is the first in this entry's list of tags
@@ -135,15 +160,21 @@
 
     - name: absoluteURL
       type: string
-      description: The full-qualified URL to the post
+      description: The fully qualified URL (scheme + host + path) to the post.
+      example: https://example.com/2024/hello-world
+
+    - name: Dates
+      type: section
+      description: Publication and file lifecycle timestamps.
 
     - name: date
       type: string
-      description: The blog post’s publication date, as a human-readable string
+      description: The blog post’s publication date, as a human-readable string. This is only present when `hide_dates` is false and the entry is not a menu item or page. Use [formatDate](#entry.formatDate) for custom formatting regardless of display settings.
 
     - name: dateStamp
       type: number
-      description: The blog post’s publication date, as a unix timestamp.
+      description: The blog post's publication date, as a Unix timestamp in milliseconds.
+      example: "1707096312000"
 
     - name: backlinks
       type: array
@@ -179,27 +210,63 @@
 
     - name: thumbnail
       type: object
-      description: "object containing the thumbnails for the entry, if they exist. Blot will not increase the size of smaller images. The JSON added to each entry looks something like this"
+      description: "Object containing the thumbnails for the entry, if they exist. Blot will not increase the size of smaller images. When a thumbnail is generated, each size (small, medium, large, square) is present; if the source image is smaller than a size limit, the thumbnail is still generated at the source image’s dimensions (no upscaling)."
       properties:
         - name: small
           type: object
-          description: which has a width and height under 160px.
+          description: Thumbnail with width and height under 160px.
+        - name: small.url
+          type: string
+          description: Relative URL to the generated small thumbnail image.
+        - name: small.width
+          type: number
+          description: Width of the generated small thumbnail in pixels.
+        - name: small.height
+          type: number
+          description: Height of the generated small thumbnail in pixels.
 
         - name: medium
           type: object
-          description: the default, which has a width under 640px.
+          description: Default thumbnail variant with width under 640px.
+        - name: medium.url
+          type: string
+          description: Relative URL to the generated medium thumbnail image.
+        - name: medium.width
+          type: number
+          description: Width of the generated medium thumbnail in pixels.
+        - name: medium.height
+          type: number
+          description: Height of the generated medium thumbnail in pixels.
 
         - name: large
           type: object
-          description: which has a width and height under 1060px.
+          description: Thumbnail with width and height under 1200px (or smaller if the source image is smaller).
+        - name: large.url
+          type: string
+          description: Relative URL to the generated large thumbnail image.
+        - name: large.width
+          type: number
+          description: Width of the generated large thumbnail in pixels.
+        - name: large.height
+          type: number
+          description: Height of the generated large thumbnail in pixels.
 
         - name: square
           type: object
-          description: which has a width and height of 160px.
+          description: Square thumbnail variant, typically 160px by 160px.
+        - name: square.url
+          type: string
+          description: Relative URL to the generated square thumbnail image.
+        - name: square.width
+          type: number
+          description: Width of the generated square thumbnail in pixels.
+        - name: square.height
+          type: number
+          description: Height of the generated square thumbnail in pixels.
       example: |
         {{#thumbnail.medium}}
-          <img src="{{url}}
-               width="{{width}}" 
+          <img src="{{url}}"
+               width="{{width}}"
                height="{{height}}"/>
         {{/thumbnail.medium}}
 
@@ -210,7 +277,7 @@
     - name: exif
       type: object
       description: |
-        Sanitized EXIF metadata populated for image-based entries when EXIF preservation is enabled on the blog. Templates can iterate over the object as a context block, for example: `{{#entry.exif}}{{Make}}{{/entry.exif}}`.
+        Sanitized EXIF metadata populated for image-based entries when EXIF preservation is enabled. Configure this in your dashboard at **Settings → Images → Image metadata (EXIF)**. Default mode for new sites is `basic`. Use `off` to disable EXIF, `basic` for a privacy-preserving subset, or `full` to expose all parsed keys (including GPS fields).
       example: |
         {{#entry.exif}}
         {{Make}} {{Model}} — {{ExposureTime}}s at ƒ/{{FNumber}}, ISO {{ISO}}
@@ -243,15 +310,17 @@
 
     - name: created
       type: number
-      description: The file’s creation date, as a Unix timestamp.
+      description: The timestamp when the entry was added to Blot, as a Unix timestamp in milliseconds. For the publication date (often derived from metadata or the file path), see [entry.dateStamp](#entry.dateStamp).
+      example: "1707096312000"
 
     - name: updated
       type: number
-      description: The file’s last-modiﬁed date, as a Unix timestamp.
+      description: The file's last-modified date, as a Unix timestamp in milliseconds.
+      example: "1707096312000"
 
     - name: summary
       type: string
-      description: The text of the ﬁrst paragraph of the entry.
+      description: Plain text extracted from rendered content, excluding headings (`h1`-`h6`), fenced/code blocks (`pre`, `code`), and non-content structural elements. Whitespace is normalized, then the result is truncated to approximately 150 characters as a heuristic summary target.
 
     - name: titleTag
       type: string
@@ -275,15 +344,15 @@
 
     - name: slug
       type: string
-      description: The value of the metadata property permalink. Same as URL.
+      description: A slug derived from the title or path, which may be used to build the permalink.
 
     - name: permalink
       type: string
-      description: The value of the metadata property permalink. Same as URL.
+      description: The requested, format-based permalink candidate before it is resolved to the final URL.
 
     - name: index
       type: number
-      description: The index of the entry in the list of all of your entries. For example, the ﬁrst entry published has an {{index}} of 1 and the 10th entry published has an {{index}} of 10.
+      description: 1-based publication-order index among published entries in chronological order (oldest published entry is `1`; newest has the largest index). Draft and deleted entries are excluded.
 
     - name: menu
       type: boolean
@@ -321,6 +390,16 @@
         {{#all_entries}}
         <a href="{{url}}">{{title}}</a>
         {{/all_entries}}
+    - name: Pagination
+      type: section
+      description: "Pagination is applied on tagged routes (`/tagged/:slug` and `/tagged/:slug/page/:page`) and on entry list routes that set `page_size`. Templates receive a `pagination` object with `current`, `previous`, `next`, `total`, `pageSize`, and `totalEntries`. Defaults and limits: `page_size` uses a baseline of `5` with valid values `1-100`; tagged routes prefer `tagged_page_size` over `page_size`, and use an effective default of `100` when unset, invalid, or outside `1-500`."
+      example: |
+        {{#pagination.next}}
+        <a href="/tagged/{{slug}}/page/{{pagination.next}}">Older</a>
+        {{/pagination.next}}
+        {{#pagination.previous}}
+        <a href="/tagged/{{slug}}/page/{{pagination.previous}}">Newer</a>
+        {{/pagination.previous}}
     - name: archives
       type: array
       description: A list of all the entries on your site, structured by date. Each item in the entries property of each month is of type [entry](#entry).
@@ -336,7 +415,13 @@
           description: "'s' if the year has more than one entry. Use it for pluralization."
         - name: months
           type: array
-          description: A list of months in this year
+          description: A list of month groups in this year.
+        - name: months.month
+          type: string
+          description: Month label for this group.
+        - name: months.entries
+          type: array
+          description: List of [entry](#entry) objects published in this month.
 
       example: |
         {{#archives}}
@@ -348,6 +433,32 @@
             {{/entries}}
           {{/months}}
         {{/archives}}
+
+    - name: Tagged entry lists
+      type: note
+      description: |
+        The `tagged.html` template is rendered for `/tagged/:tag`. Use `{{#tagged}}...{{/tagged}}` to access the tag page context, including `tag`, `entries`, `total`, `slugs`, and `prettyTags`.
+
+        When filtering entries inside another list, use `entry.tagged.<tag>` (or `tagged.<tag>` from within an entry context), as shown in the tag-filter example template.
+
+        Tag identifiers are case-insensitive and can be either the original tag text (`Apple`) or its slug (`apple`, `multi-word`).
+      example: |
+        {{#tagged}}
+          <h1>{{tag}} ({{total}})</h1>
+          {{#entries}}
+          <a href="{{url}}">{{title}}</a>
+          {{/entries}}
+        {{/tagged}}
+
+        {{#all_entries}}
+          {{#entry.tagged.Apple}}
+          <a href="{{url}}">{{title}}</a>
+          {{/entry.tagged.Apple}}
+        {{/all_entries}}
+
+        <a href="/tagged/Apple">Apple</a>
+        <a href="/tagged/apple">apple</a>
+        <a href="/tagged/multi-word">multi-word</a>
 
 - name: Lists of tags
   keys:
@@ -365,6 +476,9 @@
         - name: slug
           type: string
           description: The tag text, in a URL-friendly form
+        - name: url
+          type: string
+          description: Relative URL to this tag page.
         - name: entries
           type: array
           description: A list of every [entry](#entry) with this tag in reverse-chronological order.
@@ -386,6 +500,9 @@
         - name: slug
           type: string
           description: The tag text, in a URL-friendly form
+        - name: url
+          type: string
+          description: Relative URL to this tag page.
         - name: entries
           type: array
           description: A list of every [entry](#entry) with this tag in reverse-chronological order.
@@ -395,13 +512,21 @@
 
 - name: Utilities
   keys:
+    - name: Utilities usage
+      type: note
+      description: |
+        Utilities can be used either as literal values (for example `{{cdn}}`) or as section/block helpers (`{{#helper}}...{{/helper}}`) that transform the block contents.
+      example: |
+        <link rel="preconnect" href="{{{cdn}}}" />
+        {{#encodeXML}}{{title}}{{/encodeXML}}
+
     - name: absoluteURLs
       type: function
       description: The same contents, with any relative URLs fully resolved. This is useful to create an RSS feed, since many clients struggle with relative URLs. For example
       example: |
         {{#absoluteURLs}}
         {{{html}}}
-        {{/absoluteURLs
+        {{/absoluteURLs}}
 
     - name: encodeJSON
       type: function
@@ -444,6 +569,16 @@
     - name: plugin
       type: object
       description: |
-        Provides access to the public CSS or JavaScript for specific plugins so you can load only what you need. The helper respects your blog's plugin settings and returns nothing for missing or disabled plugins.
+        Provides access to public CSS/JS payloads for specific plugins, so you can load only what you need. The helper respects your blog's plugin settings and returns nothing for missing, disabled, or asset-less plugins.
+      properties:
+        - name: <pluginKey>.css
+          type: string
+          description: Public CSS emitted by the plugin when available.
+        - name: <pluginKey>.js
+          type: string
+          description: Public JavaScript emitted by the plugin when available.
+        - name: known keys
+          type: array
+          description: "analytics, autoImage, bluesky, codeHighlighting, commento, disqus, externalLinks, flickr, image, imageCaption, injectTitle, katex, linebreaks, mediaPreload, linkScreenshot, titlecase, twitter, typeset, videoEmbeds, wikilinks, zoom"
       example: |
         <style>{{{plugin.katex.css}}}</style>

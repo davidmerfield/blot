@@ -30,9 +30,8 @@ module.exports = function (blog, text, options, callback) {
     // without blank lines between them.
     "-simple_tables" +
     "-multiline_tables" +
-    // We already convert any math with katex
-    // perhaps we should use pandoc to do this
-    // instead of a separate function?
+    // Leave $$...$$ untouched so the KaTeX plugin can
+    // render math consistently across all text converters.
     "-tex_math_dollars" +
     // This sometimes throws errors for some reason
     "-yaml_metadata_block" +

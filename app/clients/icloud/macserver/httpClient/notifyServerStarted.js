@@ -1,8 +1,8 @@
-const { remoteServer, Authorization } = require("../config");
-const fetch = require("./rateLimitedFetchWithRetriesAndTimeout");
-const clfdate = require("../util/clfdate");
+import { remoteServer, Authorization } from "../config.js";
+import fetch from "./rateLimitedFetchWithRetriesAndTimeout.js";
+import clfdate from "../util/clfdate.js";
 
-module.exports = async (...args) => {
+export default async (...args) => {
   if (args.length !== 0) {
     console.error(clfdate(), "Invalid argument count for notifyServerStarted", {
       argsLength: args.length,

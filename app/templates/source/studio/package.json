@@ -2,8 +2,9 @@
   "name": "Studio",
   "locals": {
     "page_size": 36,
-        "demo_folder": "thoughtforms"
-
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
+    "demo_folder": "thoughtforms"
   },
   "isPublic": false,
   "views": {

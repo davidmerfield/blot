@@ -1,10 +1,10 @@
-const fs = require("fs-extra");
-const { resolve, join, sep } = require("path");
-const { iCloudDriveDirectory } = require("../config");
-const { watch, unwatch } = require("../watcher");
-const clfdate = require("../util/clfdate");
+import fs from "fs-extra";
+import { resolve, join, sep } from "path";
+import { iCloudDriveDirectory } from "../config.js";
+import { watch, unwatch } from "../watcher/index.js";
+import clfdate from "../util/clfdate.js";
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const blogID = req.header("blogID");
   const path = Buffer.from(req.header("pathBase64"), "base64").toString("utf8");
 

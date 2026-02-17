@@ -161,6 +161,25 @@ Heading Here
     this.syncAndCheck(files, entry, done);
   });
 
+  it("will resolve wikilinks by title to pages as well as posts", function (done) {
+    const path = "/LinkingPost.md";
+
+    const files = [
+      {
+        path: "/About.md",
+        content: "Title: About Us\nLink: about\nPage: yes\n\n# About this site"
+      },
+      { path, content: "Title: Linking Post\nLink: linking-post\n\n[[About Us]]" }
+    ];
+
+    const entry = {
+      path,
+      html: '\n<p><a href="/about" title="wikilink">About Us</a></p>'
+    };
+
+    this.syncAndCheck(files, entry, done);
+  });
+
   it("will support media embedding", async function (done) {
     await this.blog.write({
       path: "/_Image.png",

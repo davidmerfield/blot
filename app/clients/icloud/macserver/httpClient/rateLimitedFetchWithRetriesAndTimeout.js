@@ -1,6 +1,6 @@
-const Bottleneck = require("bottleneck");
-const fetch = require("node-fetch");
-const clfdate = require("../util/clfdate");
+import Bottleneck from "bottleneck";
+import fetch from "node-fetch";
+import clfdate from "../util/clfdate.js";
 
 // Global rate limiter configuration
 const limiter = new Bottleneck({
@@ -70,4 +70,4 @@ const fetchWithRetriesAndTimeout = async (url, options = {}) => {
 // Wrap the fetchWithRetriesAndTimeout function with the rate limiter
 const rateLimitedFetchWithRetriesAndTimeout = limiter.wrap(fetchWithRetriesAndTimeout);
 
-module.exports = rateLimitedFetchWithRetriesAndTimeout;
+export default rateLimitedFetchWithRetriesAndTimeout;

@@ -5,6 +5,10 @@ const root = require("helper/rootDir");
 const fs = require("fs-extra");
 const TEMPLATES_DIRECTORY = root + "/app/templates/source";
 const IMAGE_DIRECTORY = root + "/app/views/images/examples";
+// Template gallery previews use a fixed 1060x780 viewport; this is independent
+// of entry thumbnail sizing or OG image dimensions.
+const TEMPLATE_SCREENSHOT_WIDTH = 1060;
+const TEMPLATE_SCREENSHOT_HEIGHT = 780;
 
 
 const templates = fs
@@ -56,7 +60,10 @@ const takeScreenshot = async ({ url, destination }) => {
   const path = `${destination}.png`;
 
   console.log(`Taking screenshot of ${url} to ${path}`);
-  await screenshot(url, path, { width: 1060, height: 780 });
+  await screenshot(url, path, {
+    width: TEMPLATE_SCREENSHOT_WIDTH,
+    height: TEMPLATE_SCREENSHOT_HEIGHT,
+  });
 
   const mobilePath = `${destination}.mobile.png`;
   console.log(`Taking mobile screenshot of ${url} to ${mobilePath}`);

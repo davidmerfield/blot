@@ -2,6 +2,13 @@ const database = require("../../database");
 const initialTransfer = require("../../sync/initialTransfer");
 const syncFromiCloud = require("../../sync/fromiCloud");
 const establishSyncLock = require("sync/establishSyncLock");
+const { handleSyncLockError } = require("../lock");
+const email = require("helper/email");
+
+const RESYNC_DEDUP_WINDOW_MS = 10 * 1000;
+// Process-local resync deduplication: if multiple Node processes handle requests,
+// this in-memory guard will not deduplicate across processes.
+const resyncDedupRegistry = new Map();
 
 module.exports = async function (req, res) {
 
@@ -28,6 +35,28 @@ module.exports = async function (req, res) {
   }
 
   if (status.resyncRequested) {
+    const now = Date.now();
+    const existingEntry = resyncDedupRegistry.get(blogID);
+    if (existingEntry) {
+      const isCooldown = existingEntry.cooldownUntil > now;
+      if (existingEntry.inFlight || isCooldown) {
+        console.log("Resync request deduplicated", {
+          blogID,
+          inFlight: existingEntry.inFlight,
+          cooldownUntil: existingEntry.cooldownUntil,
+        });
+        return res.send("ok");
+      }
+      resyncDedupRegistry.delete(blogID);
+    }
+
+    const dedupEntry = {
+      inFlight: true,
+      cooldownUntil: now + RESYNC_DEDUP_WINDOW_MS,
+      cleanupTimeout: null,
+    };
+    resyncDedupRegistry.set(blogID, dedupEntry);
+
     try {
       // This will throw if the sync lock is already established
       const { done, folder } = await establishSyncLock(blogID);
@@ -39,6 +68,7 @@ module.exports = async function (req, res) {
       try {
         folder.status("Resync requested");
         console.log("Resync requested from iCloud", { blogID });
+        email.ICLOUD_RESYNC_REQUESTED(null, { blogID });
 
         // Since we treat the iCloud folder as the source of truth,
         // there is the risk that files added to Blot's folder (e.g. preview files)
@@ -48,9 +78,36 @@ module.exports = async function (req, res) {
         await syncFromiCloud(blogID, folder.status.bind(folder), folder.update);
         folder.status("Resync complete");
       } finally {
+        dedupEntry.inFlight = false;
+        dedupEntry.cooldownUntil = Date.now() + RESYNC_DEDUP_WINDOW_MS;
+        if (dedupEntry.cleanupTimeout) {
+          clearTimeout(dedupEntry.cleanupTimeout);
+        }
+        dedupEntry.cleanupTimeout = setTimeout(() => {
+          resyncDedupRegistry.delete(blogID);
+        }, RESYNC_DEDUP_WINDOW_MS);
         await done();
       }
     } catch (err) {
+      dedupEntry.inFlight = false;
+      dedupEntry.cooldownUntil = Date.now() + RESYNC_DEDUP_WINDOW_MS;
+      if (dedupEntry.cleanupTimeout) {
+        clearTimeout(dedupEntry.cleanupTimeout);
+      }
+      dedupEntry.cleanupTimeout = setTimeout(() => {
+        resyncDedupRegistry.delete(blogID);
+      }, RESYNC_DEDUP_WINDOW_MS);
+      if (
+        handleSyncLockError({
+          err,
+          res,
+          blogID,
+          action: "status resync",
+        })
+      ) {
+        return;
+      }
+
       return handle("Error in requestResync", err);
     }
   } else if (status.acceptedSharingLink) {
@@ -77,6 +134,17 @@ module.exports = async function (req, res) {
         await done();
       }
     } catch (err) {
+      if (
+        handleSyncLockError({
+          err,
+          res,
+          blogID,
+          action: "status update",
+        })
+      ) {
+        return;
+      }
+
       return handle("Error in syncFromiCloud", err);
     }
   }

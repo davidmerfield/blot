@@ -4,6 +4,7 @@
     "**/tests/**/*.js",
     "**/tests.js",
     "app/clients/icloud/macserver/index.js",
+    "app/config.js",
     "app/templates/source/**/*.js",
     "app/build/plugins/*/public.js",
     "app/views/js/documentation.js",
