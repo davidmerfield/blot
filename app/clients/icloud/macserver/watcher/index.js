@@ -44,7 +44,7 @@ const evictionSuppressionMap = new Map();
 const CHOKIDAR_EVENT_WINDOW_MS = 60_000;
 const CHOKIDAR_PRUNE_INTERVAL_MS = 30_000;
 const EVICTION_SUPPRESSION_POST_MS = 2_000;
-const EVICTION_SUPPRESSION_TTL_MS = 10_000;
+const EVICTION_SUPPRESSION_TTL_MS = 30_000;
 let chokidarPruneInterval = null;
 const FS_WATCH_SETTLE_DELAY_MS = 300;
 
@@ -61,7 +61,7 @@ const markEvictionSuppressed = (blogID, pathInBlogDirectory) => {
   const key = buildEvictionSuppressionKey(blogID, pathInBlogDirectory);
   const now = Date.now();
   evictionSuppressionMap.set(key, {
-    suppressUntil: now + EVICTION_SUPPRESSION_POST_MS,
+    suppressUntil: Number.POSITIVE_INFINITY,
     expiresAt: now + EVICTION_SUPPRESSION_TTL_MS,
   });
 };
@@ -73,9 +73,8 @@ const extendEvictionSuppression = (blogID, pathInBlogDirectory) => {
 
   const key = buildEvictionSuppressionKey(blogID, pathInBlogDirectory);
   const now = Date.now();
-  const existing = evictionSuppressionMap.get(key);
-  const suppressUntil = Math.max(existing?.suppressUntil ?? 0, now + EVICTION_SUPPRESSION_POST_MS);
-  const expiresAt = Math.max(existing?.expiresAt ?? 0, now + EVICTION_SUPPRESSION_TTL_MS);
+  const suppressUntil = now + EVICTION_SUPPRESSION_POST_MS;
+  const expiresAt = now + EVICTION_SUPPRESSION_TTL_MS;
   evictionSuppressionMap.set(key, { suppressUntil, expiresAt });
 };
 
