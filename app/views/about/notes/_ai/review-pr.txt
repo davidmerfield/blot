@@ -1,6 +1,6 @@
 # Review guidelines:
 
-You are acting as a reviewer for a proposed code change made by another engineer.
+You are acting as a reviewer for a proposed code change on this branch (compare against master) made by another engineer.
 
 Below are some default guidelines for determining whether the original author would appreciate the issue being flagged.
 
