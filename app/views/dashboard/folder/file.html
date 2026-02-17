@@ -48,7 +48,14 @@
        <!-- File is a post or page -->
   <p>
     <i><span class="icon-small-check"></span></i>
-    <b>File is a {{type}}</b>To prevent this file becoming a {{type}}, start the file name with an underscore or move it into a folder that starts with an underscore.</p>
+    <b>File is a {{type}}</b>
+    {{#converter.img}}
+    To prevent this file becoming a {{type}}, start the file name with an underscore, move it into a folder that starts with an underscore, or <a href="{{{base}}}/sites/default/settings/images">disable image posts</a>.
+    {{/converter.img}}
+    {{^converter.img}}
+    To prevent this file becoming a {{type}}, start the file name with an underscore or move it into a folder that starts with an underscore.
+    {{/converter.img}}
+  </p>
   {{#scheduled}}
   {{^draft}}
   <!-- File is scheduled for future publication -->
@@ -67,6 +74,7 @@
     {{#underscorePath}}It's inside a folder whose name starts with an underscore. {{/underscorePath}}
     {{#underscoreName}}It is ignored because its name starts with an underscore.{{/underscoreName}}
     {{#templateFile}}It's inside the Templates folder.{{/templateFile}}
+    {{#imageConverterDisabled}}Image posts are disabled in your site's image settings, so this image did not become a post or page. You can make this image become a post by enabling image posts on the <a href="{{{base}}}/sites/default/settings/images">image settings page</a>.{{/imageConverterDisabled}}
     {{/ignored}}
   </p>
   </div>
