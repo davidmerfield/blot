@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - create", function () {
   require("./setup")();
 
   var create = require("models/template/index").create;

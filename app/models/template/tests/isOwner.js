@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - isOwner", function () {
   require("./setup")({ createTemplate: true });
 
   var isOwner = require("../index").isOwner;

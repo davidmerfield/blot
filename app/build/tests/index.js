@@ -1,4 +1,4 @@
-describe("build", function () {
+describe("build: core", function () {
   var build = require("../index");
   var fs = require("fs-extra");
   var express = require("express");
@@ -301,25 +301,23 @@ describe("build", function () {
     });
   });
 
-  it("will generate a list of internal links", async function (done) {
+  it("will generate a list of internal links", async function () {
     const path = "/post.txt";
     const contents = "[linker](/linked)";
     const entry = await this.build(path, contents);
 
     expect(entry.internalLinks).toEqual(["/linked"]);
-    done();
   });
 
-  it("will generate an empty list of internal links", async function (done) {
+  it("will generate an empty list of internal links", async function () {
     const path = "/post.txt";
     const contents = "Hey no link here.";
     const entry = await this.build(path, contents);
 
     expect(entry.internalLinks).toEqual([]);
-    done();
   });
 
-  it("will preserve nested YAML metadata arrays and objects", async function (done) {
+  it("will preserve nested YAML metadata arrays and objects", async function () {
     const path = "/post.txt";
     const contents = `---\narray:\n  - one\n  - two\nobject:\n  key: value\n---\n\n# Hello`;
     const entry = await this.build(path, contents);
@@ -329,10 +327,9 @@ describe("build", function () {
       object: { key: "value" },
     });
 
-    done();
   });
 
-  it("will tolerate empty YAML front matter", async function (done) {
+  it("will tolerate empty YAML front matter", async function () {
     const path = "/post.txt";
     const contents = `---\n---\n\n# Hello`;
     const entry = await this.build(path, contents);
@@ -340,10 +337,9 @@ describe("build", function () {
     expect(entry.metadata).toEqual({});
     expect(entry.html.trim()).toEqual('<h1 id="hello">Hello</h1>');
 
-    done();
   });
 
-  it("will extract tags in nested YAML metadata arrays", async function (done) {
+  it("will extract tags in nested YAML metadata arrays", async function () {
     const path = "/post.txt";
     const contents = `---\ntags:\n  - one\n  - two\nobject:\n  key: value\n---\n\n# Hello`;
     const entry = await this.build(path, contents);
@@ -355,51 +351,45 @@ describe("build", function () {
 
     expect(entry.tags).toEqual(["one", "two"]);
 
-    done();
   });
 
-  it("will build without error if date is a YAML array (i.e. not a string)", async function (done) {
+  it("will build without error if date is a YAML array (i.e. not a string)", async function () {
     const path = "/post.txt";
     const contents = `---\ndate:\n  - 2020\n  - 12\n  - 25\n---\n\n# Hello`;
     const entry = await this.build(path, contents);
 
     expect(entry.path).toEqual(path);
-    done();
   });
 
-  it("will build without error if page is a YAML array (i.e. not a string)", async function (done) {
+  it("will build without error if page is a YAML array (i.e. not a string)", async function () {
     const path = "/post.txt";
     const contents = `---\npage:\n  - 2020\n  - 12\n  - 25\n---\n\n# Hello`;
     const entry = await this.build(path, contents);
 
     expect(entry.path).toEqual(path);
-    done();
   });
 
-  it("will build without error if draft is a YAML array (i.e. not a bool)", async function (done) {
+  it("will build without error if draft is a YAML array (i.e. not a bool)", async function () {
     const path = "/post.txt";
     const contents = `---\ndraft:\n  - 2020\n  - 12\n  - 25\n---\n\n# Hello`;
     const entry = await this.build(path, contents);
 
     expect(entry.path).toEqual(path);
-    done();
   });
 
-  it("will build without error if menu is a YAML array (i.e. not a bool)", async function (done) {
+  it("will build without error if menu is a YAML array (i.e. not a bool)", async function () {
     const path = "/post.txt";
     const contents = `---\nmenu:\n  - 2020\n  - 12\n  - 25\n---\n\n# Hello`;
     const entry = await this.build(path, contents);
 
     expect(entry.path).toEqual(path);
-    done();
   });
 
-  it("will build without error if thumbnail is a YAML array (i.e. not a string)", async function (done) {
+  it("will build without error if thumbnail is a YAML array (i.e. not a string)", async function () {
     const path = "/post.txt";
     const contents = `---\nthumbnail:\n  - 2020\n  - 12\n  - 25\n---\n\n# Hello`;
     const entry = await this.build(path, contents);
 
     expect(entry.path).toEqual(path);
-    done();
   });
 });

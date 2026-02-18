@@ -1,4 +1,4 @@
-describe("isHidden", function () {
+describe("isHidden - isHidden", function () {
   var assert = require("assert");
   var isHidden = require("../isHidden");
 

@@ -88,7 +88,7 @@
     "depcheck": "1.4.7",
     "dir-compare": "4.0.0",
     "faker": "4.1.0",
-    "jasmine": "3.3.1",
+    "jasmine": "6.0.0",
     "nock": "13.5.4",
     "nodemon": "3.1.0",
     "nyc": "17.1.0",

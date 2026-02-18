@@ -180,7 +180,7 @@ Heading Here
     this.syncAndCheck(files, entry, done);
   });
 
-  it("will support media embedding", async function (done) {
+  it("will support media embedding", async function () {
     await this.blog.write({
       path: "/_Image.png",
       content: await global.test.fake.pngBuffer()
@@ -201,10 +201,9 @@ Heading Here
     expect(entry.html).toContain('title="wikilink"');
     expect(entry.html).toContain('alt="An example image"');
 
-    done();
   });
 
-  it("will support media embedding with spaces in filenames", async function (done) {
+  it("will support media embedding with spaces in filenames", async function () {
     await this.blog.write({
       path: "/Pasted image 2024-01-01.png",
       content: await global.test.fake.pngBuffer()
@@ -225,10 +224,9 @@ Heading Here
     expect(entry.html).toContain('/_image_cache/');
     expect(entry.html).toContain('alt="Pasted image 2024-01-01.png"');
 
-    done();
   });
 
-  it("will support media embedding from nested folders", async function (done) {
+  it("will support media embedding from nested folders", async function () {
     await this.blog.write({
       path: "/Assets/image.png",
       content: await global.test.fake.pngBuffer()
@@ -249,10 +247,9 @@ Heading Here
     expect(entry.html).toContain('alt="Assets/image.png"');
     expect(entry.html).toContain('/_image_cache/');
 
-    done();
   });
 
-  it("will process embedded media through the image cache", async function (done) {
+  it("will process embedded media through the image cache", async function () {
     await this.blog.write({
       path: "/Assets/photo.png",
       content: await global.test.fake.pngBuffer()
@@ -270,10 +267,9 @@ Heading Here
     expect(entry.html).toContain('<img');
     expect(entry.html).toContain('/_image_cache/');
 
-    done();
   });
 
-  it("will support video embedding with piped alt text", async function (done) {
+  it("will support video embedding with piped alt text", async function () {
     await this.blog.write({
       path: "/Assets/video.mp4",
       content: Buffer.from("fake video content")
@@ -293,10 +289,9 @@ Heading Here
     expect(entry.html).toContain('title="wikilink"');
     expect(entry.html).toContain('Demo video');
 
-    done();
   });
 
-  it("will support audio embedding via wikilinks", async function (done) {
+  it("will support audio embedding via wikilinks", async function () {
     await this.blog.write({
       path: "/Assets/audio.mp3",
       content: Buffer.from("fake audio content")
@@ -316,10 +311,9 @@ Heading Here
     expect(entry.html).toContain('title="wikilink"');
     expect(entry.html).toContain('Sample audio');
 
-    done();
   });
 
-  it("will support document embedding via wikilinks", async function (done) {
+  it("will support document embedding via wikilinks", async function () {
     await this.blog.write({
       path: "/Assets/document.pdf",
       content: Buffer.from("%PDF-1.4 fake pdf content")
@@ -337,7 +331,6 @@ Heading Here
     expect(entry.html).toContain('<embed src="/Assets/document.pdf"');
     expect(entry.html).toContain('title="wikilink"');
 
-    done();
   });
 
   it("will support wikilinks by URL", function (done) {

@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - dropView", function () {
   require("./setup")({ createTemplate: true, createView: true });
 
   var dropView = require("../index").dropView;

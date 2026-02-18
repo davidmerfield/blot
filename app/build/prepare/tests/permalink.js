@@ -1,4 +1,4 @@
-describe("title parser", function () {
+describe("title parser: permalink", function () {
   const Permalink = require("../permalink");
 
   global.test.blog();

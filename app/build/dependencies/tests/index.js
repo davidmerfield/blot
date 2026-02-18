@@ -1,4 +1,4 @@
-describe("dependencies", function () {
+describe("build: dependencies resolver", function () {
   var depedencies = require("../index");
 
   // tests for depedencies

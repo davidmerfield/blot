@@ -283,6 +283,7 @@ jobs:
   test:
     needs: setup-tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix: ${{ fromJson(needs.setup-tests.outputs.matrix) }}
       fail-fast: false
@@ -304,6 +305,12 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check duplicate top-level suites - ${{ matrix.test_suite }}
+        run: node scripts/tests/check-duplicate-top-level-describes.js ${{ matrix.test_suite }}
+        
+      - name: Log test suite and seed
+        run: echo "Running suite=${{ matrix.test_suite }} with seed=${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}"
+
       - name: Run tests - ${{ matrix.test_suite }}
         env:
           BLOT_STRIPE_KEY: ${{ secrets.BLOT_STRIPE_KEY }}
@@ -321,4 +328,4 @@ jobs:
             -v ${{ github.workspace }}/scripts:/usr/src/app/scripts \
             -v ${{ github.workspace }}/config:/usr/src/app/config \
             $IMAGE_TAG \
-            sh -c "node scripts/tests ${{ matrix.test_suite }}"
+            sh -c "BLOT_TESTS_SEED=${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }} node scripts/tests ${{ matrix.test_suite }}"

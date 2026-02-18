@@ -1,4 +1,4 @@
-describe("isHidden", function () {
+describe("isHidden - tags", function () {
   var assert = require("assert");
   var extractTags = require("../tags");
 

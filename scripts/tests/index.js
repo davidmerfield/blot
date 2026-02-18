@@ -91,6 +91,17 @@ jasmine.addReporter({
   },
 });
 
+jasmine.addReporter({
+  jasmineDone: function (result) {
+    process.exitCode = result.overallStatus === "passed" ? 0 : 1;
+
+    // Make completion deterministic once reporters have finished flushing output.
+    setImmediate(function () {
+      process.exit(process.exitCode);
+    });
+  },
+});
+
 var startTimes = {};
 var durations = {};
 
@@ -141,18 +152,28 @@ global.test = {
   templates: require("./util/templates"),
 
   timeout: function (ms) {
-    // Store original value
-    let originalTimeout;
+    var originalTimeout;
+    var hasOriginalTimeout = false;
 
     beforeAll(function () {
-      // In your setup, jasmine.DEFAULT_TIMEOUT_INTERVAL isn't available
-      // We need to access the timeout through the Jasmine instance
-      originalTimeout = jasmine.jasmine.DEFAULT_TIMEOUT_INTERVAL;
-      jasmine.jasmine.DEFAULT_TIMEOUT_INTERVAL = ms;
+      if (
+        !globalThis.jasmine ||
+        typeof globalThis.jasmine.DEFAULT_TIMEOUT_INTERVAL !== "number"
+      ) {
+        throw new Error(
+          "test.timeout(ms) requires jasmine.DEFAULT_TIMEOUT_INTERVAL to be available."
+        );
+      }
+
+      originalTimeout = globalThis.jasmine.DEFAULT_TIMEOUT_INTERVAL;
+      hasOriginalTimeout = true;
+      globalThis.jasmine.DEFAULT_TIMEOUT_INTERVAL = ms;
     });
 
     afterAll(function () {
-      jasmine.jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout || 5000;
+      if (hasOriginalTimeout && globalThis.jasmine) {
+        globalThis.jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout;
+      }
     });
   },
 

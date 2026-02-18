@@ -1,4 +1,4 @@
-describe("build", function () {
+describe("build: plugins", function () {
   const build = require("build");
   const fs = require("fs-extra");
 

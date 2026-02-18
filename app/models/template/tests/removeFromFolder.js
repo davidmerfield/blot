@@ -1,5 +1,5 @@
 
-describe("template", function () {
+describe("template - removeFromFolder", function () {
   const { promisify } = require("util");
 
   const writeToFolder =  promisify(require("../index").writeToFolder);

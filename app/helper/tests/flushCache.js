@@ -117,17 +117,16 @@ describe("flushCache", function () {
     expect(timestamps.at(-1) - timestamps[0]).toBeGreaterThanOrEqual(3000);
   });
 
-  it("handles failed requests appropriately", async function (done) {
+  it("handles failed requests appropriately", async function () {
     await this.setup({
       onPurge: (req, res) => res.status(500).send("error"),
     });
 
     try {
       await this.flush("example.com");
-      done.fail("Should have thrown an error");
+      fail("Should have thrown an error");
     } catch (error) {
       expect(error instanceof Error).toBe(true);
-      done();
     }
   });
 
@@ -170,22 +169,21 @@ describe("flushCache", function () {
     server2.close();
   });
 
-  it("validates input parameters", async function (done) {
+  it("validates input parameters", async function () {
     await this.setup({
       onPurge: (req, res) => res.send("ok"),
     });
 
     try {
       await this.flush({ invalid: "input" });
-      done.fail("Should have thrown an error");
+      fail("Should have thrown an error");
     } catch (error) {
       expect(error instanceof Error).toBe(true);
-      done();
     }
   });
 
   // Re-implement when we have a timeout mechanism
-  xit("handles network errors gracefully", async function (done) {
+  xit("handles network errors gracefully", async function () {
     const flush = flushCache({
       reverse_proxies: ["http://invalid-domain-name:12345"],
       requestsPerSecond: 10,
@@ -193,10 +191,9 @@ describe("flushCache", function () {
 
     try {
       await flush("example.com");
-      done.fail("Should have thrown an error");
+      fail("Should have thrown an error");
     } catch (error) {
       expect(error instanceof Error).toBe(true);
-      done();
     }
   });
 });

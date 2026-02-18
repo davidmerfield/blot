@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - readFromFolder", function () {
   var fs = require("fs-extra");
   var get = require("../index").getView;
 

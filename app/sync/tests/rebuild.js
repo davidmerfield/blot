@@ -2,7 +2,7 @@ describe("rebuild", function () {
   // Set up a test blog before each test
   global.test.blog();
 
-  it("will rebuild entries on blog", async function (done) {
+  it("will rebuild entries on blog", async function () {
     const path = "/Hello.txt";
 
     await this.blog.write({ path, content: "Title: Hello" });
@@ -13,10 +13,9 @@ describe("rebuild", function () {
     await this.blog.rebuild();
     await this.blog.check({ path, title: "Bye" });
 
-    done();
   });
 
-  it("will rebuild cached images on blog", async function (done) {
+  it("will rebuild cached images on blog", async function () {
     const path = "/Hello.txt";
 
     await this.blog.write({ path, content: "![](_image.png)" });
@@ -37,10 +36,9 @@ describe("rebuild", function () {
     expect(rebuiltEntry.html).not.toEqual(entry.html);
     expect(entry.thumbnail).toEqual(rebuiltEntry.thumbnail);
 
-    done();
   });
 
-  it("will rebuild entries with dependent files", async function (done) {
+  it("will rebuild entries with dependent files", async function () {
     const path = "/Posts/Hello.txt";
 
     await this.blog.write({ path, content: "![Image](/Public/image.png)" });
@@ -58,10 +56,9 @@ describe("rebuild", function () {
     await this.blog.rebuild();
     await this.blog.check({ path });
 
-    done();
   });
 
-  it("will rebuild thumbnails on blog", async function (done) {
+  it("will rebuild thumbnails on blog", async function () {
     const path = "/Hello.txt";
 
     await this.blog.write({ path, content: "![](_image.png)" });
@@ -82,6 +79,5 @@ describe("rebuild", function () {
     expect(rebuiltEntry.html).toEqual(entry.html);
     expect(entry.thumbnail).not.toEqual(rebuiltEntry.thumbnail);
 
-    done();
   });
 });

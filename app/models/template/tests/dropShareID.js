@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - dropShareID", function () {
   require("./setup")({ createTemplate: true, createView: true });
 
   var createShareID = require("../index").createShareID;

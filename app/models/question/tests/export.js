@@ -7,7 +7,7 @@ describe("exportQuestions", function () {
     const exportQuestions = require('../export'); // Adjust the path as needed
     const create = require("../create"); // Function to create questions/replies
     
-    it("exports questions correctly from Redis", async function (done) {
+    it("exports questions correctly from Redis", async function () {
       // Insert mock data into Redis using create function
       const question1 = await create({ title: 'How?', body: 'Yes' });
       const question2 = await create({ title: 'What?', body: 'No' });
@@ -50,28 +50,30 @@ describe("exportQuestions", function () {
       ];
   
       expect(exportedData).toEqual(expectedData);
-      done();
     });
   
-    it("handles empty questions gracefully", async function (done) {
-        client.keys("blot:questions:*", async function (err, keys) {
-            if (err) return done(err);
-            if (keys.length > 0) {
-              client.del(keys, async function (err, response) {
-                if (err) return done(err);
-                const exportedData = await exportQuestions();
-                expect(exportedData).toEqual([]);
-                done();
-            });
-            } else {
-                const exportedData = await exportQuestions();
-                expect(exportedData).toEqual([]);
-                done();
-                    }
+    it("handles empty questions gracefully", async function () {
+      const keys = await new Promise((resolve, reject) => {
+        client.keys("blot:questions:*", function (err, result) {
+          if (err) return reject(err);
+          resolve(result);
+        });
+      });
+
+      if (keys.length > 0) {
+        await new Promise((resolve, reject) => {
+          client.del(keys, function (err) {
+            if (err) return reject(err);
+            resolve();
           });
+        });
+      }
+
+      const exportedData = await exportQuestions();
+      expect(exportedData).toEqual([]);
     });
   
-    it("handles questions without replies", async function (done) {
+    it("handles questions without replies", async function () {
       const question = await create({ title: 'How?', body: 'Yes' });
   
       const exportedData = await exportQuestions();
@@ -90,10 +92,9 @@ describe("exportQuestions", function () {
       ];
   
       expect(exportedData).toEqual(expectedData);
-      done();
     });
   
-    it("handles replies without comments", async function (done) {
+    it("handles replies without comments", async function () {
       const question = await create({ title: 'How?', body: 'Yes' });
       const reply = await create({ body: 'Reply to How?', parent: question.id });
   
@@ -124,10 +125,9 @@ describe("exportQuestions", function () {
       ];
   
       expect(exportedData).toEqual(expectedData);
-      done();
     });
 
-    it("handles replies with comments", async function (done) {
+    it("handles replies with comments", async function () {
       const question = await create({ title: 'How?', body: 'Yes' });
       const reply = await create({ body: 'Reply to How?', parent: question.id });
       const comment = await create({ body: 'Comment to Reply', parent: reply.id });
@@ -169,11 +169,10 @@ describe("exportQuestions", function () {
       ];
   
       expect(exportedData).toEqual(expectedData);
-      done();
     });
 
 
-    it("handles questions with tags", async function (done) {
+    it("handles questions with tags", async function () {
         const question = await create({ title: 'How?', body: 'Yes', tags: ['tag1', 'tag2'] });
       
         const exportedData = await exportQuestions();
@@ -192,10 +191,9 @@ describe("exportQuestions", function () {
         ];
       
         expect(exportedData).toEqual(expectedData);
-        done();
       });
 
-      it("handles questions with author information", async function (done) {
+      it("handles questions with author information", async function () {
         const question = await create({ title: 'How?', body: 'Yes', author: 'User1' });
       
         const exportedData = await exportQuestions();
@@ -214,10 +212,9 @@ describe("exportQuestions", function () {
         ];
       
         expect(exportedData).toEqual(expectedData);
-        done();
       });
 
-      it("handles replies with author information", async function (done) {
+      it("handles replies with author information", async function () {
         const question = await create({ title: 'How?', body: 'Yes' });
         const reply = await create({ body: 'Reply to How?', parent: question.id, author: 'User2' });
       
@@ -248,7 +245,6 @@ describe("exportQuestions", function () {
         ];
       
         expect(exportedData).toEqual(expectedData);
-        done();
       });
 
       it("will throw an error if you trigger an issue with redis smembers", async function () {
