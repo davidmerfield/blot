@@ -151,16 +151,23 @@ describe("entries", function () {
     });
   });
 
-  it("getTotal should return the total number of entries for a blog", async function (done) {
+  it("getTotal should return the total number of entries for a blog", async function () {
     const key = `blog:${this.blog.id}:entries`;
 
     // Add mock entries in Redis
     await redis.zadd(key, 1, "entry1", 2, "entry2", 3, "entry3");
 
-    Entries.getTotal(this.blog.id, function (err, total) {
-      expect(err).toBeNull();
-      expect(total).toBe(3);
-      done();
+    await new Promise((resolve, reject) => {
+      Entries.getTotal(this.blog.id, function (err, total) {
+        if (err) return reject(err);
+
+        try {
+          expect(total).toBe(3);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
     });
   });
 
@@ -172,16 +179,23 @@ describe("entries", function () {
     });
   });
 
-  it("getAllIDs should return all entry IDs for a blog", async function (done) {
+  it("getAllIDs should return all entry IDs for a blog", async function () {
     const key = `blog:${this.blog.id}:all`;
 
     // Add mock entries in Redis
     await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
 
-    Entries.getAllIDs(this.blog.id, function (err, ids) {
-      expect(err).toBeNull();
-      expect(ids).toEqual(["id3", "id2", "id1"]); // Returned in descending order
-      done();
+    await new Promise((resolve, reject) => {
+      Entries.getAllIDs(this.blog.id, function (err, ids) {
+        if (err) return reject(err);
+
+        try {
+          expect(ids).toEqual(["id3", "id2", "id1"]); // Returned in descending order
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
     });
   });
 
@@ -232,7 +246,7 @@ describe("entries", function () {
     });
   });
 
-  it("getPage should return a page of entries sorted by date", async function (done) {
+  it("getPage should return a page of entries sorted by date", async function () {
     const key = `blog:${this.blog.id}:entries`;
     const now = Date.now();
     // Add 6 mock entries in Redis
@@ -270,54 +284,64 @@ describe("entries", function () {
     const blogID = this.blog.id;
 
     // get the second page of entries, 2 per page, sorted by date with newest first
-    Entries.getPage(
-      blogID,
-      {
-        pageNumber: pageNo,
-        pageSize,
-        sortBy: "date",
-      },
-      function (error, entries, pagination) {
-        expect(error).toBeNull();
-        expect(entries.map((entry) => entry.id)).toEqual(["/d.txt", "/c.txt"]);
-        expect(pagination).toEqual({
-          current: 2,
-          next: 3,
-          previous: 1,
-          total: 3, // 6 entries / 2 per page
-          pageSize: 2,
-        });
+    await new Promise((resolve, reject) => {
+      Entries.getPage(
+        blogID,
+        {
+          pageNumber: pageNo,
+          pageSize,
+          sortBy: "date",
+        },
+        function (error, entries, pagination) {
+          if (error) return reject(error);
 
-        // get the first page of entries, 2 per page, sorted reverse alphabetically
-        Entries.getPage(
-          blogID,
-          { pageNumber: 1, pageSize, sortBy: "id", order: "desc" },
-          function (error, entries, pagination) {
-            expect(error).toBeNull();
-            expect(entries.map((entry) => entry.id)).toEqual([
-              "/f.txt",
-              "/e.txt",
-            ]);
-            // get the first page of entries, 2 per page, sorted alphabetically
-            Entries.getPage(
-              blogID,
-          { pageNumber: 1, pageSize, sortBy: "id", order: "asc" },
-              function (error, entries, pagination) {
-                expect(error).toBeNull();
-                expect(entries.map((entry) => entry.id)).toEqual([
-                  "/a.txt",
-                  "/b.txt",
-                ]);
-                done();
-              }
-            );
+          try {
+            expect(entries.map((entry) => entry.id)).toEqual(["/d.txt", "/c.txt"]);
+            expect(pagination).toEqual({
+              current: 2,
+              next: 3,
+              previous: 1,
+              total: 3,
+              pageSize: 2,
+            });
+          } catch (e) {
+            return reject(e);
           }
-        );
-      }
-    );
+
+          Entries.getPage(
+            blogID,
+            { pageNumber: 1, pageSize, sortBy: "id", order: "desc" },
+            function (error, entries) {
+              if (error) return reject(error);
+
+              try {
+                expect(entries.map((entry) => entry.id)).toEqual(["/f.txt", "/e.txt"]);
+              } catch (e) {
+                return reject(e);
+              }
+
+              Entries.getPage(
+                blogID,
+                { pageNumber: 1, pageSize, sortBy: "id", order: "asc" },
+                function (error, entries) {
+                  if (error) return reject(error);
+
+                  try {
+                    expect(entries.map((entry) => entry.id)).toEqual(["/a.txt", "/b.txt"]);
+                    resolve();
+                  } catch (e) {
+                    reject(e);
+                  }
+                }
+              );
+            }
+          );
+        }
+      );
+    });
   });
 
-  it("getRecent should return the most recent entries with their indices", async function (done) {
+  it("getRecent should return the most recent entries with their indices", async function () {
     const key = `blog:${this.blog.id}:entries`;
 
     // Add mock entries in Redis
@@ -332,13 +356,14 @@ describe("entries", function () {
       callback(entries);
     });
 
-    Entries.getRecent(this.blog.id, function (entries) {
-      expect(entries.map((entry) => entry.id)).toEqual(["id3", "id2", "id1"]);
-      expect(entries[0].index).toBe(3);
-      expect(entries[1].index).toBe(2);
-      expect(entries[2].index).toBe(1);
-      done();
+    const entries = await new Promise((resolve) => {
+      Entries.getRecent(this.blog.id, resolve);
     });
+
+    expect(entries.map((entry) => entry.id)).toEqual(["id3", "id2", "id1"]);
+    expect(entries[0].index).toBe(3);
+    expect(entries[1].index).toBe(2);
+    expect(entries[2].index).toBe(1);
   });
 
   it("getRecent should return an empty array if there are no entries", function (done) {
@@ -394,7 +419,7 @@ describe("entries", function () {
       });
     });
 
-    it("filters posts by path prefix and paginates by id", async function (done) {
+    it("filters posts by path prefix and paginates by id", async function () {
       const blogID = this.blog.id;
       const entriesKey = `blog:${blogID}:entries`;
       const now = Date.now();
@@ -420,21 +445,27 @@ describe("entries", function () {
         .set(`blog:${blogID}:entries:lex:ready`, "1")
         .exec();
 
-      Entries.getPage(
-        blogID,
-        { pageNumber: 1, pageSize: 2, sortBy: "id", order: "asc", pathPrefix: "/Blog/" },
-        function (error, entries, pagination) {
-          expect(error).toBeNull();
-          expect(entries.map((entry) => entry.id)).toEqual(["/Blog/a.txt", "/Blog/b.txt"]);
-          expect(pagination).toEqual({
-            current: 1,
-            next: 2,
-            total: 2,
-            pageSize: 2,
-          });
-          done();
-        }
-      );
+      await new Promise((resolve, reject) => {
+        Entries.getPage(
+          blogID,
+          { pageNumber: 1, pageSize: 2, sortBy: "id", order: "asc", pathPrefix: "/Blog/" },
+          function (error, entries, pagination) {
+            if (error) return reject(error);
+            try {
+              expect(entries.map((entry) => entry.id)).toEqual(["/Blog/a.txt", "/Blog/b.txt"]);
+              expect(pagination).toEqual({
+                current: 1,
+                next: 2,
+                total: 2,
+                pageSize: 2,
+              });
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          }
+        );
+      });
     });
   });
   describe("adjacentTo", function () {
@@ -445,46 +476,55 @@ describe("entries", function () {
       });
     });
 
-    it("should return adjacent entries correctly", async function (done) {
+    it("should return adjacent entries correctly", async function () {
       const key = `blog:${this.blog.id}:entries`;
 
       // Add mock entries in Redis
       await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
 
-      Entries.adjacentTo(this.blog.id, "id2", function (next, previous, rank) {
+      const { next, previous, rank } = await new Promise((resolve) => {
+        Entries.adjacentTo(this.blog.id, "id2", function (next, previous, rank) {
+          resolve({ next, previous, rank });
+        });
+      });
+
         expect(previous).toEqual({ id: "id1" });
         expect(next).toEqual({ id: "id3" });
         expect(rank).toBe(2);
-        done();
-      });
     });
 
-    it("should return undefined if the entry is at the start of the list", async function (done) {
+    it("should return undefined if the entry is at the start of the list", async function () {
       const key = `blog:${this.blog.id}:entries`;
 
       // Add mock entries in Redis
       await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
 
-      Entries.adjacentTo(this.blog.id, "id1", function (next, previous, rank) {
+      const { next, previous, rank } = await new Promise((resolve) => {
+        Entries.adjacentTo(this.blog.id, "id1", function (next, previous, rank) {
+          resolve({ next, previous, rank });
+        });
+      });
+
         expect(previous).toBeUndefined();
         expect(next).toEqual({ id: "id2" });
         expect(rank).toBe(1);
-        done();
-      });
     });
 
-    it("should return undefined if the entry is at the end of the list", async function (done) {
+    it("should return undefined if the entry is at the end of the list", async function () {
       const key = `blog:${this.blog.id}:entries`;
 
       // Add mock entries in Redis
       await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
 
-      Entries.adjacentTo(this.blog.id, "id3", function (next, previous, rank) {
+      const { next, previous, rank } = await new Promise((resolve) => {
+        Entries.adjacentTo(this.blog.id, "id3", function (next, previous, rank) {
+          resolve({ next, previous, rank });
+        });
+      });
+
         expect(previous).toEqual({ id: "id2" });
         expect(next).toBeUndefined();
         expect(rank).toBe(3);
-        done();
-      });
     });
   });
 
@@ -570,7 +610,7 @@ describe("entries", function () {
   });
 
   describe("resave", function () {
-    it("should update entries with new dateStamps", async function (done) {
+    it("should update entries with new dateStamps", async function () {
       const blog = { id: this.blog.id, permalink: true };
       const entries = [
         { path: "entry1", metadata: {}, id: "id1", metadata: {} },
@@ -598,10 +638,16 @@ describe("entries", function () {
         callback();
       });
 
-      Entries.resave(this.blog.id, function (err) {
-        expect(err).toBeNull();
-        expect(Entry.set).toHaveBeenCalledTimes(2); // Once per entry
-        done();
+      await new Promise((resolve, reject) => {
+        Entries.resave(this.blog.id, function (err) {
+          if (err) return reject(err);
+          try {
+            expect(Entry.set).toHaveBeenCalledTimes(2);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        });
       });
     });
 

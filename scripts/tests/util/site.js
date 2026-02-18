@@ -204,7 +204,7 @@ module.exports = function (options = {}) {
   });
 
   if (options.login) {
-    beforeEach(async function (done) {
+    beforeEach(async function () {
       // first fetch the login page to get the csrf token
       const loginPage = await this.fetch("/sites/log-in", {
         redirect: "manual",
@@ -223,7 +223,7 @@ module.exports = function (options = {}) {
       );
 
       if (!csrfTokenMatch) {
-        return done(new Error("CSRF token not found in login page"));
+        throw new Error("CSRF token not found in login page");
       }
 
       const email = this.user.email;
@@ -255,8 +255,8 @@ module.exports = function (options = {}) {
       expect(res.status).toEqual(302);
 
       if (res.status !== 302) {
-        return done(
-          new Error(`Failed to log in: expected status 302, got ${res.status}`)
+        throw new Error(
+          `Failed to log in: expected status 302, got ${res.status}`
         );
       }
 
@@ -279,7 +279,6 @@ module.exports = function (options = {}) {
 
       expect(dashboardText).toMatch(email);
 
-      done();
     });
   }
 };

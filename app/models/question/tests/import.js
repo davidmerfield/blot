@@ -6,7 +6,7 @@ describe("importQuestions", function () {
     const exportQuestions = require('../export'); // We'll use this to verify the import
   
   
-    it("imports questions correctly into Redis", async function (done) {
+    it("imports questions correctly into Redis", async function () {
       const allQuestions = [
         {
           id: '1',
@@ -47,28 +47,26 @@ describe("importQuestions", function () {
   
       expect(exportedData.length).toBe(2);
       expect(exportedData).toEqual(jasmine.arrayContaining(allQuestions));
-      done();
     });
   
-    it("handles empty input gracefully", async function (done) {
+    it("handles empty input gracefully", async function () {
       await importQuestions([]);
   
       const exportedData = await exportQuestions();
   
       expect(exportedData).toEqual([]);
-      done();
     });
   
-    it("throws an error for invalid input", async function (done) {
+    it("throws an error for invalid input", async function () {
       try {
         await importQuestions({});
+        fail('Should have thrown');
       } catch (err) {
         expect(err.message).toBe('Input must be an array');
-        done();
       }
     });
   
-    it("imports questions without replies", async function (done) {
+    it("imports questions without replies", async function () {
       const allQuestions = [
         {
           id: '1',
@@ -88,10 +86,9 @@ describe("importQuestions", function () {
   
       expect(exportedData.length).toBe(1);
       expect(exportedData).toEqual(jasmine.arrayContaining(allQuestions));
-      done();
     });
   
-    it("imports replies without comments", async function (done) {
+    it("imports replies without comments", async function () {
       const allQuestions = [
         {
           id: '1',
@@ -122,7 +119,6 @@ describe("importQuestions", function () {
   
       expect(exportedData.length).toBe(1);
       expect(exportedData).toEqual(jasmine.arrayContaining(allQuestions));
-      done();
     });
   
 });

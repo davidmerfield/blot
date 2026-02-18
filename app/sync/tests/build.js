@@ -145,7 +145,7 @@ describe("build", function () {
     this.syncAndCheck(file, entry, done);
   });
 
-  it("rebuilds dependent entries", async function (done) {
+  it("rebuilds dependent entries", async function () {
     var path = "/post.txt";
     var content = "![](/image.png)";
 
@@ -163,6 +163,11 @@ describe("build", function () {
         result.indexOf("cdn.") > -1 && result.indexOf(this.blog.id) > -1
     };
 
-    this.syncAndCheck(files, entry, done);
+    await new Promise((resolve, reject) => {
+      this.syncAndCheck(files, entry, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
   });
 });
