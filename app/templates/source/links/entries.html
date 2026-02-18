@@ -1,8 +1,10 @@
 {{> header}}
 
-{{#pagination}}
+{{#posts.length}}
+      {{#pagination}}
 {{> toolbar}}
 {{/pagination}}
+      {{/posts.length}}
 
 {{^posts.length}}
 <div class="centered">

@@ -13,6 +13,7 @@
 				<nav class="navigation paging-navigation" role="navigation">
 					<h1 class="screen-reader-text">Posts navigation</h1>
 					<div class="nav-links">
+						{{#posts.length}}
 						{{#pagination}}
 						{{#next}}
 						<div class="nav-previous">
@@ -25,6 +26,7 @@
 						</div>
 						{{/previous}}
 						{{/pagination}}
+						{{/posts.length}}
 					</div><!-- .nav-links -->
 				</nav><!-- .navigation -->	
 			</main><!-- #main -->

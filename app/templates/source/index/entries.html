@@ -18,7 +18,8 @@
 
     <br><br><br>
 
-    {{#pagination}}
+    {{#posts.length}}
+      {{#pagination}}
 
       {{#previous}}
       <a class="menu" href="/page/{{previous}}">&larr;&nbsp;Newer posts</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -35,6 +36,7 @@
       </div>
 
     {{/pagination}}
+      {{/posts.length}}
 
     <br>
 

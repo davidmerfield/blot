@@ -48,6 +48,7 @@
 
       {{/posts}}
 
+      {{#posts.length}}
       {{#pagination}}
       <div class="pagination">
         {{#previous}}
@@ -59,6 +60,7 @@
         {{/next}}
       </div>
       {{/pagination}}
+      {{/posts.length}}
 
       {{> footer}}
     </div>

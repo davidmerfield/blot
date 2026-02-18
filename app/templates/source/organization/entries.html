@@ -150,7 +150,8 @@
           <div class="mt-5">
             <!-- Pagination links -->
 
-            {{#pagination}}
+            {{#posts.length}}
+      {{#pagination}}
             <ul class="pagination">
 
               {{^previous}}
@@ -171,6 +172,7 @@
 
             </ul>
             {{/pagination}}
+      {{/posts.length}}
 
           </div>
 

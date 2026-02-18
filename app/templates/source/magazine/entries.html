@@ -7,11 +7,13 @@
 
 {{#pagination.previous}}
 <div class="mt5 cf">
-  {{#pagination}}
+  {{#posts.length}}
+      {{#pagination}}
   <a {{^next}}style="visibility:hidden"{{/next}} class="fr ml4 black-50 no-underline" href="/page/{{next}}">Next  →</a>
   <a {{^previous}}style="visibility:hidden"{{/previous}} class="fr black-50 no-underline" href="/page/{{previous}}">←  Previous</a>
   <p class="mv0 fw5 fl">Page {{current}} of {{total}}</p>
   {{/pagination}}
+      {{/posts.length}}
 </div>
 {{/pagination.previous}}
 
@@ -53,10 +55,12 @@
 {{/posts}}
 {{/pagination.previous}}
 
-{{#pagination}}
+{{#posts.length}}
+      {{#pagination}}
 {{#next}}
 <span class=" db bt   b--black-05 pb4"></span>
 <a class="dim db tc fw8 f5 pt4 pb6 no-underline 2" href="/page/{{next}}">Next page</a>
 {{/next}}
 {{/pagination}}
+      {{/posts.length}}
 {{> footer}}
