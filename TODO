@@ -21,8 +21,6 @@ solution:
 3. Modify the models/entry and models/entries code to make it possible to retrieve specific properties only for entry lists
 4. Modify app/blog template engine code to retrieve only the properties used
 
-For chuck: I'll look into whether it's possible to do this without the tag folder '[Blog]' so we avoid tagging the posts. It should be possible to simply use a folder called 'Blog' and instead filter the {{#posts}} list based on the sub folder. I'll get back to you
-
 Switch templates from entries.html to index.html with explicit url: [].
 - fix docs on routing order
 
@@ -31,7 +29,6 @@ Google Drive:
 - Improve sync efficieny with option to target a specific folder or file first (Track ids in database)
 - Improve html output for google docs and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQFmTvLKzPkJrgsBTWZmQJWS)
   Issue: <p><img><br><img></p> should be <p><img></p><p><img></p>
-- right now, I believe the google drive client holds a sync lock while waiting for the creation of a folder. i think we should avoid doing this, instead waiting to establish a sync lock after the folder exists
 
 Think about using avif/webp for thumbnails, adding <picture> tags with jpg fallback.
 - use webp for image post conversion format app/build/converters/img/index.js
@@ -42,8 +39,6 @@ Think about using avif/webp for thumbnails, adding <picture> tags with jpg fallb
 - Tell [Robin](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTCqXKgdvjbcvDqNmKtnpdpTg)
 
 Use this conventions for [delimiting KaTeX](https://pandoc.org/demo/example33/8.13-math.html) instead of double dollar signs.
-
-Add pause and resume routes to account page for subscriptions
 
 Add a documentation page on media handling
 - explain image compression and thumbnails
@@ -56,13 +51,6 @@ Add commit mono font to font picker - https://commitmono.com/
 Revert server changes to iCloud
 - 0043d91b36621ecd6aef2bcc263f51f209924792
 - 98dc9405c883825917de8e436ec620f60adaf975
-
-Fix serious bug with iCloud client:
-- brctl evict now conflicts with the fswatch events (they loop together infinitely, which I think eventually crashes the server or blocks iCloud sync 
-)
-We need to filter out (block) fswatch sync and brctl monitorer events until a folder setup flow is complete (do we do this already for chokidar?) (this causes problems setting up large folders)
-
-Extend recursiveList timeout when requesting Macserver (it can take 80 seconds)
 
 Document SSL as part of service on pricing page
 
@@ -519,6 +507,8 @@ Build favicon generator into template editor. Make it distinct from avatar.
 
 Add checkbox to toggle newsletter subscription to account page
 Inbox
+
+Add pause and resume routes to account page for subscriptions
 
 Adjust color settings into a simple 'presets' picker, then an option to dive into specific altertions on seperate view.
 - make it possible to conenct two colors, e.g. navigation background color -> same as background color
