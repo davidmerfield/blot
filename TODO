@@ -52,8 +52,6 @@ Revert server changes to iCloud
 - 0043d91b36621ecd6aef2bcc263f51f209924792
 - 98dc9405c883825917de8e436ec620f60adaf975
 
-Document SSL as part of service on pricing page
-
 Fix bugs with sync
 iCloud
 Dropbox

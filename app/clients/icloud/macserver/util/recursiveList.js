@@ -5,6 +5,7 @@ import clfdate from "./clfdate.js";
 
 const MAX_DEPTH = 1000;
 const UPDATE_INTERVAL = 1000; // 1 second
+const RECURSIVE_LIST_TIMEOUT_MS = 90 * 1000;
 
 const inFlightByDirPath = new Map();
 
@@ -40,7 +41,10 @@ async function recursiveList(dirPath, depth = 0) {
 
 function startRun(dirPath, entry) {
   try {
-    console.log(clfdate(), `Starting recursive list: ${dirPath}`);
+    console.log(
+      clfdate(),
+      `Starting recursive list: ${dirPath} (timeout: ${Math.round(RECURSIVE_LIST_TIMEOUT_MS / 1000)}s)`
+    );
     const startTime = Date.now();
 
     entry.inFlight = (async () => {
@@ -51,8 +55,19 @@ function startRun(dirPath, entry) {
           const elapsedMs = Date.now() - startTime;
           console.log(
             clfdate(),
-            `Progress: ${Math.round(elapsedMs / 1000)}s elapsed, processing: ${dirPath}`
+            `Progress: ${Math.round(elapsedMs / 1000)}s elapsed (timeout: ${Math.round(
+              RECURSIVE_LIST_TIMEOUT_MS / 1000
+            )}s), processing: ${dirPath}`
           );
+
+          if (elapsedMs >= RECURSIVE_LIST_TIMEOUT_MS) {
+            console.warn(
+              clfdate(),
+              `Recursive list is approaching/exceeding client timeout (${Math.round(
+                elapsedMs / 1000
+              )}s elapsed vs ${Math.round(RECURSIVE_LIST_TIMEOUT_MS / 1000)}s timeout): ${dirPath}`
+            );
+          }
         }, UPDATE_INTERVAL);
 
         await recursiveList(dirPath);
@@ -64,7 +79,9 @@ function startRun(dirPath, entry) {
         const elapsedMs = Date.now() - startTime;
         console.log(
           clfdate(),
-          `Completed recursive list: ${dirPath} (${Math.round(elapsedMs / 1000)}s elapsed)`
+          `Completed recursive list: ${dirPath} (${Math.round(
+            elapsedMs / 1000
+          )}s elapsed, timeout: ${Math.round(RECURSIVE_LIST_TIMEOUT_MS / 1000)}s)`
         );
 
         if (entry.rerunRequested) {
