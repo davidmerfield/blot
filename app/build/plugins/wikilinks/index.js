@@ -130,6 +130,11 @@ function render($, callback, { blogID, path }) {
 
             return get(blogID, linkedPath, function (entry) {
               if (!entry) {
+                debug(
+                  "No entry found for markdown media target, falling back to src",
+                  linkedPath || url
+                );
+                $node.attr("src", linkedPath || url);
                 return next();
               }
 
