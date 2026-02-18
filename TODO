@@ -297,10 +297,7 @@ Fix bug with light mode colors and tell [Gary](https://mail.google.com/mail/u/0/
 
 Fix bugs with git client
 - Investigate a bug with git client credentials triggered when you have two sites using git on one account, and delete one of the sites
-- Fix bug which occurs when you change your username while using the Git client (caused by the broken repo url) and tell [Koen](https://mail.google.com/mail/u/0/#inbox/1670f516115ef9bd) and [Andre](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqfMMxJXpbTZLvGzVmZlFPNfk) and [Josh](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqnkxhvtmPpdMMkRPjzpktrxG) and [Ryan](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGCGthpSTxskRFFVjtrGnhnSvh) and [David](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllVjvNfvdDVmnmlRvrFsNnQSD)
 - Work out how to pipe custom error messages down
-- Pipe custom message when you change a blog's handle (breaking repo url)
-- Tell [Koen](https://mail.google.com/mail/u/0/#inbox/1670f516115ef9bd) about the broken repo URL fix
 
 Fix bug with menu which occur when multiple pages are added at once Menu needs concurrency or atomic operations (so we can build posts in parallel)
 - move menu into its own model (it's possible to add thousands of entries to it...)
@@ -353,8 +350,6 @@ Fix bug with Work out why Pandoc cannot handle 'linked' images (instead of conve
 
 Fix bug with tags that contain slashes and tell [Jack](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpFgzpsCkCMGqnClfqMkWZqNNz)
 
-Fix bug with git client which occurs when you change your username with the git client
-
 Fix bug with template error causing server to go down (issue with folder rebuild)
     reproduce bug with chinese template?
 
@@ -365,8 +360,6 @@ Fix bug with Google Drive on Mark's site which unneccessarily re-downloads some 
 Fix post encoding bugs
 - Fix [Kevin](https://mail.google.com/mail/u/0/#inbox/1665be131ce98928)'s URL encoding bug. Each entry's url property is not encoded as a URI component on the server but it needs to be.
 - Fix encoding bug with greek URLs then tell [Rodericus](https://mail.google.com/mail/u/0/#search/rodericus/15bb13fafc1c34e5) know
-
-Fix bugs with git removed / renamed file unit test on Travis
 
 Fix bug with slashes in tags and tell [Dave](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMjqlPTzJxBPcQPnGsQsPSsvh)
 
@@ -785,9 +778,6 @@ Update redis server to version 8
 - take advantage of full text search
 
 Implement limit for allentries, sitemap, etc.
-
-Set long-timeout for git client requests on reverse proxy
-- prevent request retry for non
 
 Add tests for webp thumbnails
 
@@ -1556,7 +1546,6 @@ Improvements to teaser generator
 Make it possible to [disable draft preview files](https://blot.im/questions/3193)
 
 Performance improvements
-- Use a docker image to speed up test suite: https://github.com/davidmerfield/Blot/pull/463
 - Faster server, with SSL termination across CDN
 - set up 'cdn.blot.im' as cloudfront distribution endpoint?
 - Streamline and cache loading of data on dashboard
@@ -1740,7 +1729,6 @@ Add support for nesting multiple layout tags e.g. "{<>} {||} Y" and tell [Marius
 Improvements to Git client
 - Make it possible to connect github repo via their API and tell [reg](https://mail.google.com/mail/u/0/#inbox/FMfcgzQXKhPKRfSsfGpXCdcxtFBhdKDt)
 - Add support for LFS and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVMcpnxGHqnxJHNdbMBSrglzg)
-- Remove git folder when switching to Dropbox client and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDDqlwPCNcJrLDqprtcKWXFTn)
 - Backdate existing commits (perhaps set file ctime using info from git log?) This would sidestep the frustration experienced by [Gavin](https://mail.google.com/mail/u/0/#inbox/1669a8e621f9ef37) when he imported an existing repository.
 - Extend sync lock during long syncs
 - Write test to simulate process dying and restarting mid-pull. Does the client recover? What happens if a pull fails midway? Does git recover?
