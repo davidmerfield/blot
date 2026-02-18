@@ -112,7 +112,9 @@ function render($, callback, { blogID, path }) {
             });
 
           // For unresolved links, still rewrite display text to basename for absolute paths
-          if (isLink && !piped) {
+          const isUnresolvedAbsolutePath = strippedHref.startsWith("/");
+
+          if (isLink && !piped && isUnresolvedAbsolutePath) {
             const displayTitle = filenameToken || strippedHref;
             if (displayTitle) {
               const withoutExt = extname(displayTitle)

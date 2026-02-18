@@ -176,6 +176,27 @@ describe("wikilinks", function () {
     expect(body).toContain('>Guide<');
   });
 
+  it("preserves unresolved relative wikilink text", async function () {
+    await this.write({
+      path: "/Daily/Plan.txt",
+      content: [
+        "Title: Daily Plan",
+        "Link: daily/plan",
+        "",
+        "[[docs/missing-note]]",
+      ].join("\n"),
+    });
+    await this.blog.rebuild();
+
+    const res = await this.get("/daily/plan");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain('href="docs/missing-note"');
+    expect(body).toContain('>docs/missing-note<');
+    expect(body).not.toContain('>missing-note<');
+  });
+
   it("resolves filename-only wikilinks by traversing sibling directories", async function () {
     await this.write({
       path: "/Fruits/Tasty/Mango.md",
