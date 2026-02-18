@@ -5,6 +5,7 @@ var disconnect = require("./disconnect");
 var pushover = require("pushover");
 var sync = require("./sync");
 var dataDir = require("./dataDir");
+var Blog = require("models/blog");
 var debug = require("debug")("blot:clients:git:routes");
 var repos = pushover(dataDir, { autoCreate: true });
 repos.on("error", function (err) {
@@ -19,6 +20,7 @@ var dashboard = Express.Router();
 var site = Express.Router();
 var clfdate = require("helper/clfdate");
 var host = require("config").host;
+var Blog = require("models/blog");
 
 dashboard.get("/", function (req, res, next) {
   repos.exists(req.blog.handle + ".git", function (exists) {
@@ -56,15 +58,24 @@ dashboard.post("/create", function (req, res, next) {
   
   if (req.body.cancel) {
     console.log(clfdate() + " Git: User cancelled creation of repo");
+
+    if (!req.blog.client) {
+      return res.redirect(res.locals.dashboardBase + "/client");
+    }
+
     return disconnect(req.blog.id, next);
   }
 
-  res.redirect(req.baseUrl);
+  Blog.set(req.blog.id, { client: "git" }, function (err) {
+    if (err) return next(err);
 
-  create(req.blog, function (err) {
-    if (err) {
-      console.log(clfdate() + " Git: Error creating repo", err);
-    }
+    res.redirect(req.baseUrl);
+
+    create(req.blog, function (err) {
+      if (err) {
+        console.log(clfdate() + " Git: Error creating repo", err);
+      }
+    });
   });
 });
 
@@ -91,6 +102,38 @@ dashboard.get("/disconnect", function (req, res) {
 dashboard.post("/disconnect", function (req, res, next) {
   req.blog.client = "";
   disconnect(req.blog.id, next);
+});
+
+site.use("/end/:gitHandle.git", function (req, res, next) {
+  Blog.get({ handle: req.params.gitHandle }, function (err, blog) {
+    if (err || !blog) return next();
+
+    if (blog.handle !== req.params.gitHandle) {
+      var oldPathPrefix =
+        "/clients/git/end/" + req.params.gitHandle + ".git";
+      var originalUrl = req.originalUrl || "";
+      var trailingPathAndQuery = "";
+
+      if (originalUrl.indexOf(oldPathPrefix) === 0) {
+        trailingPathAndQuery = originalUrl.slice(oldPathPrefix.length);
+      } else {
+        trailingPathAndQuery = req.url || "";
+      }
+
+      return res
+        .redirect(308,
+          req.protocol +
+            "://" +
+            req.get("host") +
+            "/clients/git/end/" +
+            blog.handle +
+            ".git" +
+            trailingPathAndQuery
+        );
+    }
+
+    return next();
+  });
 });
 
 site.use("/end/:gitHandle.git", authenticate);
@@ -156,6 +199,13 @@ repos.on("push", function (push) {
 
       debug("Git push response error", err);
     });
+  }
+
+  if (push && push.branch && push.branch !== "master") {
+    return push.reject(
+      400,
+      "Push rejected: only the master branch is allowed. Please push to master or open a PR."
+    );
   }
 
   push.accept();

@@ -1,0 +1,43 @@
+Models
+------
+
+Models are the data layer. They read and write to Redis. The Redis client is a singleton: require `models/client` (from `app/models/client.js`, which wraps `app/models/redis.js`).
+
+
+Redis conventions
+-----------------
+
+- **Use `client.batch()` for read-only pipelines.** Use `client.multi()` only when you need to write. `batch()` is cheaper for Redis when you're only reading.
+
+- **Key names live in `key.js`.** Each model that uses Redis has a `key.js` (or equivalent) that centralises key names (e.g. `blog:${blogID}:info`, `user:${uid}:info`). Use these instead of building keys inline.
+
+- **Complex types: scheme + serial.** Models that store nested objects (e.g. blog) define a `scheme.js` and use a serial module to JSON.stringify/parse when writing/reading hashes. See blog’s `scheme.js`, `serial.js` and `get.js`/`set.js`.
+
+
+Entities
+--------
+
+- **blog** – Blog/site record (handle, domain, settings, status). Uses hash + handle/domain lookups. Has `extend()` for computed fields used in templates.
+- **entry** – Single entry (by path or id): get, set, drop, search. Entry data is keyed by blog + path.
+- **entries** – Blog-scoped entry lists and helpers: lists (all, drafts, scheduled, pages, etc.), resave, adjacentTo, path index, dependency graph. Uses sorted sets and the entry model.
+- **user** – User account, auth (password, access token), billing ids (Stripe, PayPal), enable/disable.
+- **template** – Template metadata and views per blog; read/write from folder; share IDs; CDN manifest.
+- **tags** – Tag names and counts per blog; normalize, list, popular.
+- **redirects** – Redirect rules per blog (check, list, set, drop).
+- **question** – Q&A / form submissions: create, get, list, search, tags, import/export.
+- **404** – Track 404s per blog; ignore/unignore paths, list.
+- **ignoredFiles** – Hash of paths Blot won’t process (e.g. too large, wrong type), with reason codes. See `REASONS` in the file.
+
+
+Using models from the app
+-------------------------
+
+Require by path: `require('models/blog')`, `require('models/entry')`, `require('models/entries')`, etc. The app resolves `models/` to `app/models/` (see e.g. scripts/development/knip.json).
+
+
+Adding or changing a model
+--------------------------
+
+1. Add a folder under `app/models` (or a single file like `ignoredFiles.js`).
+2. Export an object of functions (or a single function). Models that use Redis should require `models/client` and use the key module pattern.
+3. For new Redis keys, add them to the model’s `key.js` (or equivalent)

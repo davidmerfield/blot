@@ -1,7 +1,9 @@
 {
   "name": "Index",
   "locals": {
-    "page_size": 20
+    "page_size": 20,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y"
   },
   "isPublic": false,
   "views": {

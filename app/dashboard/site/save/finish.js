@@ -8,6 +8,7 @@ var dictionary = {
   forceSSL: "Saved SSL redirect setting",
   roundAvatar: "Saved photo settings",
   imageExif: "Saved image metadata preferences",
+  converters: "Saved image publishing preferences",
   avatar: "Saved changes to your photo",
   menu: "Saved changes to your links",
   dateFormat: "Saved changes to the order in which you write your dates",
@@ -35,7 +36,7 @@ module.exports = function (req, res, next) {
     // preference so the stored EXIF matches their setting.
     if (
       changes &&
-      (changes.indexOf("plugins") > -1 || changes.indexOf("imageExif") > -1)
+      (changes.indexOf("plugins") > -1 || changes.indexOf("imageExif") > -1 || changes.indexOf("converters") > -1)
     ) {
       // we need to fetch the latest version of the blog to rebuild
       const options = {

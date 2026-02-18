@@ -14,9 +14,10 @@ const removeClientFromBlog = (blogID) => new Promise((resolve, reject) => {
 });
 
 module.exports = async (blogID, callback) => {
+  let remoteWarning = null;
+
   try {
-    // First, notify the Mac server to disconnect
-    // This ensures the server is aware before we delete local state
+    // Phase A (best effort): notify the Mac server to disconnect.
     await fetch(`${MACSERVER_URL}/disconnect`, {
       method: "POST",
       headers: {
@@ -25,27 +26,30 @@ module.exports = async (blogID, callback) => {
         blogID: blogID,
       },
     });
+  } catch (error) {
+    remoteWarning = {
+      event: "icloud-disconnect-remote-failed",
+      blogID,
+      error: {
+        message: error && error.message,
+        name: error && error.name,
+      },
+    };
 
-    // Only delete from database after successful server notification
+    // Structured event for deferred cleanup / operator follow-up.
+    console.warn(
+      "icloud-disconnect-remote-failed",
+      JSON.stringify(remoteWarning)
+    );
+  }
+
+  try {
+    // Phase B (authoritative local): always disconnect locally.
     await database.delete(blogID);
-
     await removeClientFromBlog(blogID);
 
-    callback();
+    callback(null, remoteWarning);
   } catch (error) {
-    console.error(
-      `Error during Macserver /disconnect request: ${error.message}`
-    );
-    // If the server request fails, we need to decide whether to clean up local state.
-    // To avoid inconsistent state (local DB deleted but server still thinks connected),
-    // we do NOT delete from database on server notification failure.
-    // The blog will remain in a connected state, allowing retry of the disconnect operation.
-    // This is a fail-secure approach that maintains state consistency.
-    console.warn(
-      `Disconnect failed for blogID ${blogID}: server notification failed. ` +
-      `Local state preserved to maintain consistency. Disconnect can be retried.`
-    );
-
     callback(error);
   }
 };

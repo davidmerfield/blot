@@ -191,9 +191,6 @@ TemplateEditor.route("/:templateSlug/syntax-highlighter")
   )
   .get(function (req, res) {
     res.locals.selected = { ...res.locals.selected, settings: "selected" };
-    if (res.locals.syntax_themes) {
-      res.locals.syntax_themes.expanded = true;
-    }
     res.locals.title = `Syntax highlighter - ${req.template.name}`;
     res.render("dashboard/template/syntax-highlighter");
   });

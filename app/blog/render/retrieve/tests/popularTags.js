@@ -68,6 +68,20 @@ describe("popular tags", function () {
         expect(results[0].slug).toEqual('beta');
         expect(results[0].count).toEqual(2);
     });
+    it("encodes slugs in popular_tags output", async function () {
+        await this.write({ path: '/a.txt', content: 'Tags: Design/UI\n\nFoo' });
+        await this.write({ path: '/b.txt', content: 'Tags: Design/UI\n\nBar' });
+
+        await this.template({
+            'entries.html': `{{#popular_tags}}{{slug}}{{/popular_tags}}`
+        });
+
+        const res = await this.get('/');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body.trim()).toEqual('design%2Fui');
+    });
 
 });
 

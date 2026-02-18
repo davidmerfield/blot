@@ -460,6 +460,22 @@ describe("tags work on sites", function () {
     expect(entriesPage2).toEqual(["fallback one"]);
   });
 
+  it("encodes the tagged route slug local", async function () {
+    await this.publish({
+      path: "/slash-tag-route.txt",
+      content: "Title: Slash\nTags: Design/UI\n\nBody",
+    });
+
+    await this.template({
+      "tagged.html": "slug={{slug}};tag={{{tag}}}",
+    });
+
+    const res = await this.getWithRawPath('/tagged/design%2Fui');
+    expect(res.status).toBe(200);
+    expect((await res.text()).trim()).toBe('slug=design%2Fui;tag=Design/UI');
+  });
+
+
   it("reports total count when pagination options are provided", async function () {
     await this.publish({
       path: "/page-a.txt",

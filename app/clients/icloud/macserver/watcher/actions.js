@@ -7,6 +7,8 @@ import upload from "../httpClient/upload.js";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const isFileTooLargeError = (error) => error?.code === "ERR_FILE_TOO_LARGE";
+
 const withRetries = async (label, operation, options = {}) => {
   const { attempts = 4, baseDelayMs = 200 } = options;
 
@@ -16,6 +18,21 @@ const withRetries = async (label, operation, options = {}) => {
       return await operation();
     } catch (error) {
       lastError = error;
+
+      if (isFileTooLargeError(error)) {
+        console.warn(
+          clfdate(),
+          `${label} reported oversized file; skipping retries and treating placeholder as intentional:`,
+          {
+            path: error.path,
+            size: error.size,
+            maxFileSize: error.maxFileSize,
+            mtime: error.mtime,
+          }
+        );
+        throw error;
+      }
+
       if (attempt === attempts) {
         break;
       }
@@ -62,6 +79,21 @@ const performAction = async (blogID, pathInBlogDirectory, action) => {
         );
       }
     } catch (error) {
+      if (isFileTooLargeError(error)) {
+        console.warn(
+          clfdate(),
+          "Oversized file recorded as placeholder; upload skipped intentionally",
+          {
+            blogID,
+            pathInBlogDirectory,
+            size: error.size,
+            maxFileSize: error.maxFileSize,
+            mtime: error.mtime,
+          }
+        );
+        return;
+      }
+
       resync(
         blogID,
         `${action} for ${pathInBlogDirectory} failed after retries`

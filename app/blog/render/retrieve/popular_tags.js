@@ -69,16 +69,14 @@ module.exports = function (req, res, callback) {
     }
 
     // Map to match expected format
-    req.log("Formatting popular tags");
-    tags = tags.map(function (tag) {
-      return {
-        name: tag.name,
-        tag: tag.name, // for backward compatibility
-        entries: tag.entries,
-        total: tag.count,
-        slug: tag.slug,
-      };
-    });
+    req.log('Formatting popular tags');
+    tags = tags.map((tag) => ({
+      name: tag.name,
+      tag: tag.name, // for backward compatibility
+      entries: tag.entries,
+      total: tag.count,
+      slug: encodeURIComponent(tag.slug)
+    }));
 
     var immutableCopy = deepFreeze(cloneDeep(tags));
 

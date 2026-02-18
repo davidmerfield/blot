@@ -40,6 +40,7 @@ var DECLARATION = {
   scriptURL: ["string", false, true],
   roundAvatar: ["boolean", true, true],
   imageExif: ["string", true, true],
+  converters: ["object", true, true],
 };
 
 var MODEL = { TYPE: {}, PUBLIC: [], WRITEABLE: [] };

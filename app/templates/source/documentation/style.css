@@ -591,7 +591,10 @@ b, strong {
   left: 1em;
 }
 
-
+img {
+  max-width: 100%;
+  height: auto;  
+}
 
 /* Apple-style Table CSS */
 table {

@@ -5,19 +5,80 @@ const config = require("config");
 const clfdate = require("helper/clfdate");
 const VIEW_DIRECTORY = config.views_directory + "/folders";
 const FOLDER_DIRECTORY = __dirname;
+const MANIFEST_PATH = VIEW_DIRECTORY + "/manifest.json";
 
 const tmp = require("helper/tempDir")();
 const cache = {};
+
+const buildFolderTree = (directoryPath, depth = 0, relativePath = "") => {
+  return fs.readdirSync(directoryPath).map((name) => {
+    const nodePath = directoryPath + "/" + name;
+    const stat = fs.statSync(nodePath);
+    const normalizedPath = relativePath ? relativePath + "/" + name : name;
+
+    if (stat.isDirectory()) {
+      return {
+        name,
+        type: "directory",
+        children: buildFolderTree(nodePath, depth + 1, normalizedPath),
+        depth,
+        path: normalizedPath,
+      };
+    }
+
+    return {
+      name,
+      type: "file",
+      children: [],
+      depth,
+      path: normalizedPath,
+    };
+  });
+};
+
+const buildDisplayTree = (nodes) => {
+  return nodes.map((node) => {
+    const displayNode = {
+      name: node.name,
+      type: node.type,
+      depth: node.depth,
+      path: node.path,
+    };
+
+    if (node.type !== "directory") {
+      displayNode.children = [];
+      return displayNode;
+    }
+
+    if (node.depth > 2) {
+      displayNode.collapsed = true;
+      displayNode.children = [];
+      return displayNode;
+    }
+
+    displayNode.children = buildDisplayTree(node.children || []);
+    return displayNode;
+  });
+};
 
 const main = () => {
   return new Promise((resolve, reject) => {
     const folders = fs
       .readdirSync(FOLDER_DIRECTORY)
-      .filter((i) => i.indexOf(".") === -1);
+      .filter((i) => i.indexOf(".") === -1)
+      .filter((i) => fs.statSync(FOLDER_DIRECTORY + "/" + i).isDirectory());
+
+    const manifest = {};
 
     async.eachSeries(
       folders,
       (folder, next) => {
+        const fullTree = buildFolderTree(FOLDER_DIRECTORY + "/" + folder);
+        manifest[folder] = {
+          fullTree,
+          displayTree: buildDisplayTree(fullTree),
+        };
+
         if (cache[folder]) {
           return fs.copy(
             cache[folder],
@@ -83,7 +144,16 @@ const main = () => {
         archive.directory(FOLDER_DIRECTORY + "/" + folder + "/", false);
         archive.finalize();
       },
-      resolve
+      (err) => {
+        if (err) {
+          return reject(err);
+        }
+
+        fs.ensureDirSync(VIEW_DIRECTORY);
+        fs.writeJsonSync(MANIFEST_PATH, manifest, { spaces: 2 });
+
+        resolve();
+      }
     );
   });
 };
@@ -96,3 +166,5 @@ if (require.main === module) {
 }
 
 module.exports = main;
+module.exports.buildFolderTree = buildFolderTree;
+module.exports.buildDisplayTree = buildDisplayTree;

@@ -3,6 +3,7 @@ var ensure = require("helper/ensure");
 var key = require("./key");
 var serial = require("./serial");
 var applyImageExif = require("./util/imageExif").apply;
+var applyConverters = require("./util/converters").apply;
 
 module.exports = function get(by, callback) {
   ensure(by, "object").and(callback, "function");
@@ -33,6 +34,7 @@ module.exports = function get(by, callback) {
 
       blog = serial.de(blog);
       applyImageExif(blog);
+      applyConverters(blog);
 
       callback(null, blog);
     });

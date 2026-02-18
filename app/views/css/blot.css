@@ -527,8 +527,24 @@ a.bordered-button {
   border-radius: 4px;
 }
 
+.template-folder-wrapper {
+  width: 100%;max-width: 100%;background-color: #f0f0f0;padding: 48px;display: flex;flex-direction: column;align-items: center;justify-content: center;box-sizing: border-box;
+}
 
 
+.template-folder-wrapper .finder .contents {
+   max-height: 400px;
+   min-height: 200px;
+   overflow-y: auto;
+}
+
+
+
+.template-folder-wrapper .finder {
+  width: 40vw;
+  max-width: 600px;
+  min-width: 300px;
+}
 
 
 /* List of documents from Notes section */

@@ -2,10 +2,25 @@ describe("template", function () {
   require("./setup")({ createTemplate: true });
 
   var drop = require("../index").drop;
+  var setMetadata = require("../index").setMetadata;
   var getTemplateList = require("../index").getTemplateList;
   var client = require("models/client");
   var Blog = require("models/blog");
   var key = require("../key");
+  var config = require("config");
+  var fs = require("fs-extra");
+  var path = require("path");
+  var generateCdnUrl = require("../util/generateCdnUrl");
+
+  var renderedOutputBaseDir = path.join(config.data_directory, "cdn", "template");
+
+  function getRenderedOutputPath(hash, target) {
+    var basename = path.basename(target);
+    var dir1 = hash.substring(0, 2);
+    var dir2 = hash.substring(2, 4);
+    var hashRemainder = hash.substring(4);
+    return path.join(renderedOutputBaseDir, dir1, dir2, hashRemainder, basename);
+  }
 
   it("drops a template", function (done) {
     drop(this.blog.id, this.template.name, done);
@@ -101,6 +116,188 @@ describe("template", function () {
       if (err) return done.fail(err);
       expect(typeof message).toBe("string");
       done();
+    });
+  });
+
+  it("removes rendered output Redis keys and disk files from CDN manifest entries", function (done) {
+    var test = this;
+    var manifest = {
+      "assets/style.css": "a1b2c3d4e5f6a7b8",
+      "partials/header.html": "b1c2d3e4f5a6b7c8",
+    };
+
+    Promise.all(
+      Object.keys(manifest).map(function (target) {
+        var hash = manifest[target];
+        var renderedKey = key.renderedOutput(hash);
+        var filePath = getRenderedOutputPath(hash, target);
+        return fs
+          .ensureDir(path.dirname(filePath))
+          .then(function () {
+            return fs.writeFile(filePath, "rendered");
+          })
+          .then(function () {
+            return new Promise(function (resolve, reject) {
+              client.set(renderedKey, "rendered", function (err) {
+                if (err) return reject(err);
+                resolve();
+              });
+            });
+          });
+      })
+    )
+      .then(function () {
+        return new Promise(function (resolve, reject) {
+          setMetadata(test.template.id, { cdn: manifest }, function (err) {
+            if (err) return reject(err);
+            resolve();
+          });
+        });
+      })
+      .then(function () {
+        return new Promise(function (resolve, reject) {
+          drop(test.blog.id, test.template.name, function (err) {
+            if (err) return reject(err);
+            resolve();
+          });
+        });
+      })
+      .then(function () {
+        return Promise.all(
+          Object.keys(manifest).map(function (target) {
+            var hash = manifest[target];
+            var renderedKey = key.renderedOutput(hash);
+            var filePath = getRenderedOutputPath(hash, target);
+
+            return Promise.all([
+              new Promise(function (resolve, reject) {
+                client.get(renderedKey, function (err, result) {
+                  if (err) return reject(err);
+                  expect(result).toBeNull();
+                  resolve();
+                });
+              }),
+              fs.pathExists(filePath).then(function (exists) {
+                expect(exists).toBe(false);
+              }),
+            ]);
+          })
+        );
+      })
+      .then(function () {
+        done();
+      })
+      .catch(done.fail);
+  });
+
+  it("purges CDN URLs from metadata manifest entries when dropping a template", function (done) {
+    var test = this;
+    var manifest = {
+      "assets/style.css": "d1e2f3a4b5c6d7e8",
+      "partials/footer.html": "e1f2a3b4c5d6e7f8",
+    };
+    var metadataKey = key.metadata(test.template.id);
+    var purgePath = require.resolve("helper/purgeCdnUrls");
+    var dropPath = require.resolve("../drop");
+    var originalPurgeModule = require.cache[purgePath];
+    var originalDropModule = require.cache[dropPath];
+    var purgeSpy = jasmine.createSpy("purgeCdnUrls").and.returnValue(Promise.resolve());
+
+    require.cache[purgePath] = {
+      id: purgePath,
+      filename: purgePath,
+      loaded: true,
+      exports: purgeSpy,
+    };
+    delete require.cache[dropPath];
+    var dropWithPurgeStub = require("../drop");
+
+    new Promise(function (resolve, reject) {
+      client.hset(metadataKey, "cdn", JSON.stringify(manifest), function (err) {
+        if (err) return reject(err);
+        resolve();
+      });
+    })
+      .then(function () {
+        return new Promise(function (resolve, reject) {
+          client.hget(metadataKey, "cdn", function (err, rawCdn) {
+            if (err) return reject(err);
+            expect(JSON.parse(rawCdn)).toEqual(manifest);
+            resolve();
+          });
+        });
+      })
+      .then(function () {
+        return new Promise(function (resolve, reject) {
+          dropWithPurgeStub(test.blog.id, test.template.name, function (err) {
+            if (err) return reject(err);
+            resolve();
+          });
+        });
+      })
+      .then(function () {
+        var expectedUrls = Object.keys(manifest).map(function (target) {
+          return generateCdnUrl(target, manifest[target]);
+        });
+        expect(purgeSpy).toHaveBeenCalledTimes(1);
+        expect(purgeSpy).toHaveBeenCalledWith(expectedUrls);
+      })
+      .then(function () {
+        if (originalPurgeModule) {
+          require.cache[purgePath] = originalPurgeModule;
+        } else {
+          delete require.cache[purgePath];
+        }
+
+        if (originalDropModule) {
+          require.cache[dropPath] = originalDropModule;
+        } else {
+          delete require.cache[dropPath];
+        }
+        done();
+      })
+      .catch(function (err) {
+        if (originalPurgeModule) {
+          require.cache[purgePath] = originalPurgeModule;
+        } else {
+          delete require.cache[purgePath];
+        }
+
+        if (originalDropModule) {
+          require.cache[dropPath] = originalDropModule;
+        } else {
+          delete require.cache[dropPath];
+        }
+
+        done.fail(err);
+      });
+  });
+
+  it("still drops when metadata.cdn is missing or malformed", function (done) {
+    var test = this;
+    var metadataKey = key.metadata(test.template.id);
+
+    client.hdel(metadataKey, "cdn", function (err) {
+      if (err) return done.fail(err);
+
+      drop(test.blog.id, test.template.name, function (err) {
+        if (err) return done.fail(err);
+
+        require("../index").create(test.blog.id, "malformed-cdn", {}, function (err) {
+          if (err) return done.fail(err);
+
+          var malformedTemplateID = test.blog.id + ":malformed-cdn";
+          client.hset(key.metadata(malformedTemplateID), "cdn", '"broken"', function (err) {
+            if (err) return done.fail(err);
+
+            drop(test.blog.id, "malformed-cdn", function (err, message) {
+              if (err) return done.fail(err);
+              expect(typeof message).toBe("string");
+              done();
+            });
+          });
+        });
+      });
     });
   });
 });

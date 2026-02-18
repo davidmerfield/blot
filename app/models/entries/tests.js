@@ -353,38 +353,37 @@ describe("entries", function () {
 
 
   describe("path index maintenance", function () {
-    it("backfills lex index lazily when entries are updated", function (done) {
+    it("updates lex index for changed entries once index is ready", function (done) {
       const blogID = this.blog.id;
       const entriesKey = `blog:${blogID}:entries`;
       const lexKey = `blog:${blogID}:entries:lex`;
       const readyKey = `blog:${blogID}:entries:lex:ready`;
       const now = Date.now();
 
-      redis
-        .zadd(entriesKey, now, "/Blog/existing.txt", function (err) {
+      redis.zadd(entriesKey, now, "/Blog/existing.txt", function (err) {
+        if (err) return done.fail(err);
+
+        redis.multi().zadd(lexKey, 0, "/Blog/existing.txt").set(readyKey, "1").exec(function (err) {
           if (err) return done.fail(err);
 
-          redis.del(lexKey, readyKey, function (err) {
+          Entry.set(blogID, "/Blog/new.txt", buildEntry("/Blog/new.txt"), function (err) {
             if (err) return done.fail(err);
 
-            Entry.set(blogID, "/Blog/new.txt", buildEntry("/Blog/new.txt"), function (err) {
+            redis.zrange(lexKey, 0, -1, function (err, ids) {
               if (err) return done.fail(err);
 
-              redis.zrange(lexKey, 0, -1, function (err, ids) {
+              expect(ids).toContain("/Blog/existing.txt");
+              expect(ids).toContain("/Blog/new.txt");
+
+              redis.exists(readyKey, function (err, ready) {
                 if (err) return done.fail(err);
-
-                expect(ids).toContain("/Blog/existing.txt");
-                expect(ids).toContain("/Blog/new.txt");
-
-                redis.exists(readyKey, function (err, ready) {
-                  if (err) return done.fail(err);
-                  expect(ready).toBe(1);
-                  done();
-                });
+                expect(ready).toBe(1);
+                done();
               });
             });
           });
         });
+      });
     });
   });
   describe("path prefix pagination", function () {
@@ -412,6 +411,15 @@ describe("entries", function () {
         "/Notes/d.txt"
       );
 
+      await redis
+        .multi()
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/a.txt")
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/b.txt")
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/c.txt")
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Notes/d.txt")
+        .set(`blog:${blogID}:entries:lex:ready`, "1")
+        .exec();
+
       Entries.getPage(
         blogID,
         { pageNumber: 1, pageSize: 2, sortBy: "id", order: "asc", pathPrefix: "/Blog/" },
@@ -425,48 +433,6 @@ describe("entries", function () {
             pageSize: 2,
           });
           done();
-        }
-      );
-    });
-
-    it("backfills lex index lazily when querying with a prefix", async function (done) {
-      const blogID = this.blog.id;
-      const entriesKey = `blog:${blogID}:entries`;
-      const lexKey = `blog:${blogID}:entries:lex`;
-      const readyKey = `blog:${blogID}:entries:lex:ready`;
-      const now = Date.now();
-
-      await redis.zadd(
-        entriesKey,
-        now,
-        "/Blog/new-1.txt",
-        now + 1,
-        "/Blog/new-2.txt",
-        now + 2,
-        "/Elsewhere/new-3.txt"
-      );
-
-      await redis.del(lexKey);
-      await redis.del(readyKey);
-
-      Entries.getPage(
-        blogID,
-        { pageNumber: 1, pageSize: 5, sortBy: "id", order: "asc", pathPrefix: "/Blog/" },
-        function (error, entries) {
-          expect(error).toBeNull();
-          expect(entries.map((entry) => entry.id)).toEqual(["/Blog/new-1.txt", "/Blog/new-2.txt"]);
-
-          redis.exists(readyKey, function (err, ready) {
-            if (err) return done.fail(err);
-            expect(ready).toBe(1);
-
-            redis.zrange(lexKey, 0, -1, function (err, ids) {
-              if (err) return done.fail(err);
-              expect(ids).toContain("/Blog/new-1.txt");
-              expect(ids).toContain("/Elsewhere/new-3.txt");
-              done();
-            });
-          });
         }
       );
     });

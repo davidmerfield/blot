@@ -1,11 +1,25 @@
 Run `node scripts/template/recalculate-retrieve.js` to recalculate `view.retrieve` metadata for all template views.
 
 Remove temporary lazy backfill fallback in app/models/entries/pathIndex.js (`ensureIndex` lock/wait path) after running scripts/blog/backfill-entries-path-index.js across production and confirming `ZCARD blog:<id>:entries` matches `ZCARD blog:<id>:entries:lex` for all blogs
+Why is the magazine template loading a page of entries for each request? I think it's the page retrieve variable...
 
-Modify templates to store the entry properties they require to render
-Modify entry model to store in hashes rather than single string
-Make it possible to retrieve specific properties only for entry lists
-Modify template engine to retrieve only the properties used
+Fix bug with Google Docs when disconnecting a site from Google Drive on Blot then reconnecting the site to Google Drive. 
+
+I'm concerned that malicious webhooks could be abused to delete sites
+- operator must be the only person to trigger the delete overdue or cancelled site flow.
+- collect data on the number of sites to delete once per day for a once-weekly update email and include commands to run in email
+- update the admin emails and the noop / simplify the subscription code if needed. still proceed with the user / site disabling (but not deletion)
+
+Work out what causes the '-2' suffix on posts when renaming a huge folder?
+
+Move blot GitHub to its own organization
+
+problem: allEntries takes a huge time to render on sites with lots of posts
+solution: 
+1. Modify templates to store the entry properties they require to render for each list in retrieve, e.g. {{#allEntries}} {{title}} {{/allEntries}} -> retrieve: allEntries: ['title']
+2. Modify entry model to store entries as hashes rather than single JSON string. make this elegant to deploy: run the two systems in parallel at first, with backfill, including a script to run to completely the backfill, then switch over to the hash, then purge the original keys.
+3. Modify the models/entry and models/entries code to make it possible to retrieve specific properties only for entry lists
+4. Modify app/blog template engine code to retrieve only the properties used
 
 For chuck: I'll look into whether it's possible to do this without the tag folder '[Blog]' so we avoid tagging the posts. It should be possible to simply use a folder called 'Blog' and instead filter the {{#posts}} list based on the sub folder. I'll get back to you
 
@@ -23,6 +37,9 @@ Think about using avif/webp for thumbnails, adding <picture> tags with jpg fallb
 - use webp for image post conversion format app/build/converters/img/index.js
 - use for image caching module
 - use for thumbnails
+- use for responsive images in posts / generated from image files
+- Tell [Audun](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZSsHbLvRXQKWQdCTNmPFSkZMM)
+- Tell [Robin](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTCqXKgdvjbcvDqNmKtnpdpTg)
 
 Use this conventions for [delimiting KaTeX](https://pandoc.org/demo/example33/8.13-math.html) instead of double dollar signs.
 
@@ -283,10 +300,7 @@ Fix bug with light mode colors and tell [Gary](https://mail.google.com/mail/u/0/
 
 Fix bugs with git client
 - Investigate a bug with git client credentials triggered when you have two sites using git on one account, and delete one of the sites
-- Fix bug which occurs when you change your username while using the Git client (caused by the broken repo url) and tell [Koen](https://mail.google.com/mail/u/0/#inbox/1670f516115ef9bd) and [Andre](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqfMMxJXpbTZLvGzVmZlFPNfk) and [Josh](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqnkxhvtmPpdMMkRPjzpktrxG) and [Ryan](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGCGthpSTxskRFFVjtrGnhnSvh) and [David](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllVjvNfvdDVmnmlRvrFsNnQSD)
 - Work out how to pipe custom error messages down
-- Pipe custom message when you change a blog's handle (breaking repo url)
-- Tell [Koen](https://mail.google.com/mail/u/0/#inbox/1670f516115ef9bd) about the broken repo URL fix
 
 Fix bug with menu which occur when multiple pages are added at once Menu needs concurrency or atomic operations (so we can build posts in parallel)
 - move menu into its own model (it's possible to add thousands of entries to it...)
@@ -339,8 +353,6 @@ Fix bug with Work out why Pandoc cannot handle 'linked' images (instead of conve
 
 Fix bug with tags that contain slashes and tell [Jack](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpFgzpsCkCMGqnClfqMkWZqNNz)
 
-Fix bug with git client which occurs when you change your username with the git client
-
 Fix bug with template error causing server to go down (issue with folder rebuild)
     reproduce bug with chinese template?
 
@@ -351,8 +363,6 @@ Fix bug with Google Drive on Mark's site which unneccessarily re-downloads some 
 Fix post encoding bugs
 - Fix [Kevin](https://mail.google.com/mail/u/0/#inbox/1665be131ce98928)'s URL encoding bug. Each entry's url property is not encoded as a URI component on the server but it needs to be.
 - Fix encoding bug with greek URLs then tell [Rodericus](https://mail.google.com/mail/u/0/#search/rodericus/15bb13fafc1c34e5) know
-
-Fix bugs with git removed / renamed file unit test on Travis
 
 Fix bug with slashes in tags and tell [Dave](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMjqlPTzJxBPcQPnGsQsPSsvh)
 
@@ -391,8 +401,6 @@ Fix bug accessibility issue with menu links reordering and tell [Grace](https://
 Fix bug with accessibility issues with scrolling and code blocks and tell [Eli](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwqJjjrrGHDWjLPzfxGpnkZTh) if I make any changes
 
 ---
-
-Make it possible to disable processing of image files into individual posts and tell [Brendan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQdzvsdKBgDQqPRcBzTJKVPqNfr)
 
 Investigate issues with image heavy obsidian vaults
 
@@ -773,9 +781,6 @@ Update redis server to version 8
 - take advantage of full text search
 
 Implement limit for allentries, sitemap, etc.
-
-Set long-timeout for git client requests on reverse proxy
-- prevent request retry for non
 
 Add tests for webp thumbnails
 
@@ -1544,7 +1549,6 @@ Improvements to teaser generator
 Make it possible to [disable draft preview files](https://blot.im/questions/3193)
 
 Performance improvements
-- Use a docker image to speed up test suite: https://github.com/davidmerfield/Blot/pull/463
 - Faster server, with SSL termination across CDN
 - set up 'cdn.blot.im' as cloudfront distribution endpoint?
 - Streamline and cache loading of data on dashboard
@@ -1728,7 +1732,6 @@ Add support for nesting multiple layout tags e.g. "{<>} {||} Y" and tell [Marius
 Improvements to Git client
 - Make it possible to connect github repo via their API and tell [reg](https://mail.google.com/mail/u/0/#inbox/FMfcgzQXKhPKRfSsfGpXCdcxtFBhdKDt)
 - Add support for LFS and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVMcpnxGHqnxJHNdbMBSrglzg)
-- Remove git folder when switching to Dropbox client and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDDqlwPCNcJrLDqprtcKWXFTn)
 - Backdate existing commits (perhaps set file ctime using info from git log?) This would sidestep the frustration experienced by [Gavin](https://mail.google.com/mail/u/0/#inbox/1669a8e621f9ef37) when he imported an existing repository.
 - Extend sync lock during long syncs
 - Write test to simulate process dying and restarting mid-pull. Does the client recover? What happens if a pull fails midway? Does git recover?

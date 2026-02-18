@@ -145,6 +145,38 @@ describe("dropbox delta relative path normalization", function () {
     });
   });
 
+  it("handles folder metadata path case mismatches", function (done) {
+    var entries = [
+      {
+        ".tag": "file",
+        path_display: "/Apps/Blot/SiteA/root.txt",
+      },
+    ];
+
+    var client = {
+      filesListFolder: function () {
+        return Promise.resolve({
+          result: { entries: entries, cursor: "cursor", has_more: false },
+        });
+      },
+      filesGetMetadata: function () {
+        return Promise.resolve({
+          result: { path_display: "/Apps/Blot/SITEA" },
+        });
+      },
+    };
+
+    var delta = Delta(client, "folder-id", "blog-id");
+
+    delta(null, function (err, res) {
+      if (err) return done.fail(err);
+
+      expect(res.entries.length).toEqual(1);
+      expect(res.entries[0].relative_path).toEqual("root.txt");
+      done();
+    });
+  });
+
   it("normalizes root-level entries to stay inside the blog folder", function (done) {
     var entries = [
       {

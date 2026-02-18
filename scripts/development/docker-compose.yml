@@ -14,11 +14,12 @@ services:
       - "8080:8080"
     depends_on:
       - redis
+      - toxiproxy
     env_file:
       - ../../.env
     environment:
       - BLOT_HOST=${BLOT_HOST}
-      - BLOT_REDIS_HOST=redis
+      - BLOT_REDIS_HOST=${BLOT_REDIS_HOST:-toxiproxy}
       - CONTAINER_NAME=blot-container-green
       - DEBUG=${DEBUG:-}
     volumes:
@@ -38,6 +39,19 @@ services:
       - "6379:6379" # Expose Redis port 6379 to host so we can run scripts if needed
     volumes:
       - "../../data:/data"
+
+  toxiproxy:
+    build:
+      context: ./toxiproxy
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8474:8474"
+    expose:
+      - "26379"
 
   nginx:
     build:
