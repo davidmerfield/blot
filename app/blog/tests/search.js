@@ -1,10 +1,17 @@
 describe("search", function () {
 
+    const SEARCH_TEMPLATE = {
+        "search.html": `<h1 data-template="search">{{query}}</h1> {{#entries}} {{{html}}} {{/entries}}`,
+        "error.html": "{{error.title}}",
+    };
+
     require('./util/setup')();
 
-    it("lets you search for an entry", async function () {
+    beforeEach(async function () {
+        await this.template(SEARCH_TEMPLATE);
+    });
 
-        await this.template({ "search.html": `<h1>{{query}}</h1> {{#entries}} {{{html}}} {{/entries}}`});
+    it("lets you search for an entry", async function () {
 
         await this.write({path: '/a.txt', content: 'Hello, A!'});
         await this.write({path: '/b.txt', content: 'Hello, B!'});
@@ -14,6 +21,7 @@ describe("search", function () {
         const body = await res.text();
 
         expect(res.status).toEqual(200);
+        expect(res.headers.get('cache-control')).toEqual('no-cache');
         expect(body).toContain('Hello, A!');
         expect(body).toContain('Hello, B!');
         expect(body).toContain('Hello, C!');
@@ -24,21 +32,28 @@ describe("search", function () {
 
     it("does not error if there are multiple queries", async function () {
         
-        await this.template({ "search.html": `<h1>{{query}}</h1> {{#entries}} {{{html}}} {{/entries}}`});
-
         await this.write({path: '/a.txt', content: 'Hello, A!'});
 
         const res = await this.get('/search?q=hello&q=a');
         const body = await res.text();
 
         expect(res.status).toEqual(200);
+        expect(res.headers.get('cache-control')).toEqual('no-cache');
         expect(body).toContain('Hello, A!');
-    }); 
+    });
+
+
+    it("ignores non-string queries", async function () {
+
+        const res = await this.get('/search?q[foo]=bar');
+        const body = await res.text();
+
+        expect(res.status).toEqual(404);
+        expect(body).not.toContain('data-template="search"');
+    });
 
 
     it("if there is no query it returns an empty list", async function () {
-        
-        await this.template({ "search.html": `<h1>{{query}}</h1> {{#entries}} {{{html}}} {{/entries}}`});
 
         await this.write({path: '/a.txt', content: 'Hello, A!'});
 
@@ -46,13 +61,10 @@ describe("search", function () {
         const body = await res.text();
 
         expect(res.status).toEqual(200);
-        expect(body).toEqual('<h1></h1> '); 
+        expect(body).toEqual('<h1 data-template="search"></h1> '); 
     }); 
 
     it("if no entries match it returns an empty list", async function () {
-        
-        await this.template({ "search.html": `<h1>{{query}}</h1> {{#entries}} {{{html}}} {{/entries}}`});
-
         await this.write({path: '/a.txt', content: 'Hello, A!'});
 
         const res = await this.get('/search?q=goodbye');

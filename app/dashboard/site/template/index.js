@@ -6,6 +6,16 @@ const Blog = require("models/blog");
 const archiver = require("archiver");
 const duplicateTemplate = require("./save/duplicate-template");
 const { isAjaxRequest, sendAjaxResponse } = require("./save/ajax-response");
+const writeChangeToFolder = require('./save/writeChangeToFolder');
+
+// /template/default and /template/default/... redirect to the installed template's slug
+// so docs can deep link to e.g. /sites/gitt/template/default/links
+TemplateEditor.use("/default", (req, res, next) => {
+  const slug = res.locals.template?.slug;
+  if (!slug) return next();
+  const pathSuffix = req.path || "";
+  res.redirect(`${res.locals.base}/template/${slug}${pathSuffix}`);
+});
 
 TemplateEditor.param("viewSlug", require("./load/template-views"));
 
@@ -61,9 +71,22 @@ TemplateEditor.route("/:templateSlug/install")
     var updates = { template: templateID };
     Blog.set(req.blog.id, updates, function (err) {
       if (err) return next(err);
-      res.message(
-        "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
-        "Installed template"
+
+      Template.removeEnabledFromAllTemplates(
+        req.blog.id,
+        function (removeErr) {
+          if (removeErr) {
+            console.warn(
+              "Failed to remove enabled from local templates after install",
+              req.blog.id,
+              removeErr
+            );
+          }
+          res.message(
+            "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
+            "Installed template"
+          );
+        }
       );
     });
   });
@@ -105,16 +128,20 @@ function persistTemplateUpdate(req, res, next) {
     { locals: req.locals, partials: req.partials },
     function (err) {
       if (err) return next(err);
-      if (isAjaxRequest(req)) {
-        const ajaxOptions = {};
-        if (res.locals.templateForked) {
-          ajaxOptions.headers = { "X-Template-Forked": "1" };
-        }
-        return sendAjaxResponse(res, ajaxOptions);
-      }
+      writeChangeToFolder(req.blog, req.template, {}, function (err) {
+        if (err) return next(err);
 
-      res.message(req.baseUrl + req.url, "Success!");
-    }
+        if (isAjaxRequest(req)) {
+          const ajaxOptions = {};
+          if (res.locals.templateForked) {
+            ajaxOptions.headers = { "X-Template-Forked": "1" };
+          }
+          return sendAjaxResponse(res, ajaxOptions);
+        }
+
+        res.message(req.baseUrl + req.url, "Success!");
+      });
+    },
   );
 }
 
@@ -122,6 +149,7 @@ TemplateEditor.route("/:templateSlug")
   .all(require("./load/font-inputs"))
   .all(require("./load/syntax-highlighter"))
   .all(require("./load/color-inputs"))
+  .all(require("./load/url-inputs"))
   .all(require("./load/index-inputs"))
   .all(require("./load/navigation-inputs"))
   .all(require("./load/dates"))
@@ -136,6 +164,22 @@ TemplateEditor.route("/:templateSlug")
     res.render("dashboard/template/settings");
   });
 
+TemplateEditor.route("/:templateSlug/uploads/:key")
+  .get(require("./load/url-inputs"), function (req, res, next) {
+    res.locals.upload = res.locals.uploads.find((i) => i.key === req.params.key);
+    if (!res.locals.upload) return next();
+    res.locals.title = `${res.locals.upload.label} - ${req.template.name}`;
+    res.locals.selected = { ...res.locals.selected, settings: "selected" };
+    res.render("dashboard/template/controls/upload-form");
+  })
+  .post(require("./save/fork-if-needed"), require("./save/upload-local"));
+
+// Catch-all for /uploads/ without a key - redirect to template settings
+// This must come AFTER the specific route above
+TemplateEditor.get("/:templateSlug/uploads", function (req, res) {
+  res.redirect(res.locals.base || `${req.baseUrl}/${req.params.templateSlug}`);
+});
+
 TemplateEditor.route("/:templateSlug/syntax-highlighter")
   .all(require("./load/font-inputs"))
   .all(require("./load/syntax-highlighter"))
@@ -147,39 +191,65 @@ TemplateEditor.route("/:templateSlug/syntax-highlighter")
   )
   .get(function (req, res) {
     res.locals.selected = { ...res.locals.selected, settings: "selected" };
-    if (res.locals.syntax_themes) {
-      res.locals.syntax_themes.expanded = true;
-    }
     res.locals.title = `Syntax highlighter - ${req.template.name}`;
     res.render("dashboard/template/syntax-highlighter");
   });
 
 TemplateEditor.route("/:templateSlug/local-editing")
-  .get(function (req, res) {
+  .get(require("./load/template-views"), function (req, res) {
     res.locals.enabled = req.template.localEditing;
+    res.locals.selected = {
+      ...res.locals.selected,
+      source: "selected",
+      local_editing: "selected",
+    };
     res.locals.title = `Local editing - ${req.template.name}`;
-    res.render("dashboard/template/local-editing");
+    res.render("dashboard/template/source-code/local-editing");
   })
   .post(require("./save/fork-if-needed"), function (req, res, next) {
-    Template.setMetadata(
-      req.template.id,
-      { localEditing: true },
-      function (err) {
-        if (err) return next(err);
-
-        res.message(
-          "/sites/" + req.blog.handle + "/template",
-          "Transferred template <b>" + req.template.name + "</b> to your folder"
+    if (req.template.localEditing) {
+      Template.removeFromFolder(req.blog.id, req.template.id, function () {
+        Template.setMetadata(
+          req.template.id,
+          { localEditing: false },
+          function (err) {
+            if (err) return next(err);
+            res.message(
+              "/sites/" +
+                req.blog.handle +
+                "/template/" +
+                req.template.id.split(":").slice(1).join(":") +
+                "/source-code",
+              "Moved template from your folder"
+            );
+          }
         );
+      });
+    } else {
+      Template.setMetadata(
+        req.template.id,
+        { localEditing: true },
+        function (err) {
+          if (err) return next(err);
 
-        Template.writeToFolder(req.blog.id, req.template.id, function () {
-          // could we do something with this error? Could we wait to render the page?
-          // it would be useful to have a progress bar here to prevent
-          // busted folder state
-          // we should also do something with the error
-        });
-      }
-    );
+          res.message(
+            "/sites/" +
+              req.blog.handle +
+              "/template/" +
+              req.template.id.split(":").slice(1).join(":") +
+              "/source-code",
+            "Moved template to your folder"
+          );
+
+          Template.writeToFolder(req.blog.id, req.template.id, function () {
+            // could we do something with this error? Could we wait to render the page?
+            // it would be useful to have a progress bar here to prevent
+            // busted folder state
+            // we should also do something with the error
+          });
+        }
+      );
+    }
   });
 
 TemplateEditor.route("/:templateSlug/download-zip").get(function (req, res) {
@@ -293,18 +363,22 @@ TemplateEditor.route("/:templateSlug/delete")
   })
   .post(function (req, res, next) {
     const idSlug = req.template.id.split(":").slice(1).join(":");
-    Template.drop(req.blog.id, idSlug, function (err) {
-      if (err) return next(err);
+    Template.removeFromFolder(req.blog.id, req.template.id, function () {
+      Template.drop(req.blog.id, idSlug, function (err) {
+        if (err) return next(err);
 
-      const currentTemplateIDSlug = req.blog.template
-        .split(":")
-        .slice(1)
-        .join(":");
+        const currentTemplateIDSlug = req.blog.template
+          .split(":")
+          .slice(1)
+          .join(":");
 
-      res.message(
-        res.locals.dashboardBase + "/template/" + (currentTemplateIDSlug || ""),
-        "Deleted template <b>" + req.template.name + "</b>"
-      );
+        res.message(
+          res.locals.dashboardBase +
+            "/template/" +
+            (currentTemplateIDSlug || ""),
+          "Deleted template <b>" + req.template.name + "</b>"
+        );
+      });
     });
   });
 
@@ -337,9 +411,5 @@ TemplateEditor.route("/:templateSlug/reset")
   });
 
 TemplateEditor.use("/:templateSlug/source-code", require("./source-code"));
-
-TemplateEditor.use(function (err, req, res, next) {
-  res.status(400).send("Error: " + err.message || "Error");
-});
 
 module.exports = TemplateEditor;

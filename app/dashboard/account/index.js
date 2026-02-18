@@ -7,13 +7,17 @@ const prettyPrice = require("helper/prettyPrice");
 const type = require("helper/type");
 const Email = require("helper/email");
 
+const BREADCRUMBS = {
+  "pay-subscription": "Subscription overdue",
+};
+
 Account.use(function (req, res, next) {
   res.locals.breadcrumbs.add("Account", "/account");
   res.locals.account = true;
   next();
 });
 
-Account.use(['/subscription', '/pay-subscription'], function (req, res, next) {
+Account.use(["/subscription", "/pay-subscription"], function (req, res, next) {
   if (!req.user.subscription || !req.user.subscription.customer) return next();
 
   stripe.customers.retrieve(
@@ -28,12 +32,12 @@ Account.use(['/subscription', '/pay-subscription'], function (req, res, next) {
       if (customer.balance !== 0 && Math.sign(customer.balance) === -1) {
         res.locals.balance = {
           credit: true,
-          amount: prettyPrice(Math.abs(customer.balance))
+          amount: prettyPrice(Math.abs(customer.balance)),
         };
       } else if (customer.balance !== 0 && Math.sign(customer.balance) === 1) {
         res.locals.balance = {
           debit: true,
-          amount: prettyPrice(Math.abs(customer.balance))
+          amount: prettyPrice(Math.abs(customer.balance)),
         };
       }
 
@@ -49,9 +53,13 @@ Account.route("/").get(function (req, res) {
 Account.use("/:section", function (req, res, next) {
   var uppercaseName = req.params.section;
 
-  uppercaseName = uppercaseName[0].toUpperCase() + uppercaseName.slice(1);
-  uppercaseName = uppercaseName.split("-").join(" ");
-
+  if (BREADCRUMBS[req.params.section]) {
+    uppercaseName = BREADCRUMBS[req.params.section]
+  } else {
+    uppercaseName = uppercaseName[0].toUpperCase() + uppercaseName.slice(1);
+    uppercaseName = uppercaseName.split("-").join(" ");
+  }
+  
   res.locals.breadcrumbs.add(uppercaseName, req.params.section);
   next();
 });
@@ -59,8 +67,12 @@ Account.use("/:section", function (req, res, next) {
 Account.use("/:section/:subsection", function (req, res, next) {
   var uppercaseName = req.params.subsection;
 
-  uppercaseName = uppercaseName[0].toUpperCase() + uppercaseName.slice(1);
-  uppercaseName = uppercaseName.split("-").join(" ");
+  if (BREADCRUMBS[req.params.subsection]) {
+    uppercaseName = BREADCRUMBS[req.params.subsection]
+  } else {
+    uppercaseName = uppercaseName[0].toUpperCase() + uppercaseName.slice(1);
+    uppercaseName = uppercaseName.split("-").join(" ");
+  }
 
   res.locals.breadcrumbs.add(uppercaseName, req.params.subsection);
   next();

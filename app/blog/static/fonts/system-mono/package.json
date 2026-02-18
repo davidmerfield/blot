@@ -1,7 +1,8 @@
 {
   "name": "System mono",
   "tags": [
-    "mono"
+    "mono",
+    "system"
   ],
   "stack": "Consolas, monaco, monospace",
   "line_height": 1.6,

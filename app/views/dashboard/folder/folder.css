@@ -40,7 +40,7 @@
   }
 
   .status-link:hover {
-    background-color: #e4eafb75;
+    background-color: var(--light-background-color);
   }
 
   .sync-status {
@@ -247,7 +247,7 @@
 }
 
 .directory-list tr:hover {
-  background-color: #e4eafb75;
+  background-color: var(--light-background-color);
 }
 
 .directory-list tr:first-child:last-child:hover {

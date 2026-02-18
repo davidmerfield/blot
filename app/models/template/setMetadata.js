@@ -6,6 +6,7 @@ var metadataModel = require("./metadataModel");
 var ensure = require("helper/ensure");
 var Blog = require("models/blog");
 var injectLocals = require("./injectLocals");
+var updateCdnManifest = require("./util/updateCdnManifest");
 
 module.exports = function setMetadata(id, updates, callback) {
   try {
@@ -23,6 +24,8 @@ module.exports = function setMetadata(id, updates, callback) {
       if (metadata[i] !== updates[i]) changes = true;
       metadata[i] = updates[i];
     }
+
+    metadata.cdn = metadata.cdn || {};
 
     if (!metadata.owner)
       return callback(
@@ -49,14 +52,29 @@ module.exports = function setMetadata(id, updates, callback) {
       client.hmset(key.metadata(id), metadata, function (err) {
         if (err) return callback(err);
 
-        if (!changes) return callback(null, changes);
-
-        if (metadata.isPublic || metadata.owner === "SITE") {
-          return callback(null, changes);
+        if (!changes) {
+          return updateCdnManifest(id, function (manifestErr) {
+            if (manifestErr) return callback(manifestErr);
+            callback(null, changes);
+          });
         }
 
-        Blog.set(metadata.owner, { cacheID: Date.now() }, function (err) {
-          callback(err, changes);
+        const shouldBumpCache = !(metadata.isPublic || metadata.owner === "SITE");
+
+        const regenerateManifest = function () {
+          updateCdnManifest(id, function (manifestErr) {
+            if (manifestErr) return callback(manifestErr);
+            callback(null, changes);
+          });
+        };
+
+        if (!shouldBumpCache) {
+          return regenerateManifest();
+        }
+
+        Blog.set(metadata.owner, { cacheID: Date.now() }, function (cacheErr) {
+          if (cacheErr) return callback(cacheErr);
+          regenerateManifest();
         });
       });
     });

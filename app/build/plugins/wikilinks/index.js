@@ -152,14 +152,14 @@ function render($, callback, { blogID, path }) {
       });
     },
     function () {
-      callback(null, dependencies);
+      callback(null, { newDependencies: dependencies });
     }
   );
 }
 module.exports = {
   render,
-  category: "Typography",
+  category: "links",
   title: "Wikilinks",
-  description: "Convert Wikilinks into links",
+  description: "Convert wikilinks to standard links",
   first: true,
 };

@@ -1,9 +1,34 @@
 <div class="inputs">
+
+	{{#colors.length}}
 	<div class="settings-group">
-		<h2 class="template-heading">Menu links</h2>
-		<a class="line links" href="{{{base}}}/links">
-			<span class="center">
-				{{#blog.menu}}
+	<h2 class="template-heading">Colors</h2>
+	{{#colors}} 
+	{{> color}} 
+	{{/colors}}
+	</div>
+	{{/colors.length}}
+
+	{{#fonts.length}} 	
+        {{#fonts}}
+        {{> font}}
+        {{/fonts}}
+        {{/fonts.length}}
+
+        {{#uploads.length}}
+        <div class="settings-group">
+        <h2 class="template-heading">Uploads</h2>
+        {{#uploads}}
+        {{> upload}}
+        {{/uploads}}
+        </div>
+        {{/uploads.length}}
+
+        <div class="settings-group">
+                <h2 class="template-heading">Menu</h2>
+                <a class="line links" href="{{{base}}}/links">
+                        <span class="center">
+                                {{#blog.menu}}
 				<span class="tablet">{{label}}</span>
 				{{/blog.menu}}
 				
@@ -13,6 +38,9 @@
 				<span class="link" >Edit</span>
 			</span>
 			</a>
+{{#navigation}}
+	{{> template-editor-group}}
+	{{/navigation}}			
 	</div>	
 
 	<div class="settings-group">
@@ -33,29 +61,8 @@
 		</a>
 	</div>
 
-	{{#colors.length}}
-	<div class="settings-group">
-	<h2 class="template-heading">Colors</h2>
-	{{#colors}} 
-	{{> color}} 
-	{{/colors}}
-	</div>
-	{{/colors.length}}
 
-	{{#fonts.length}} 	
-	{{#fonts}} 
-	{{> font}} 
-	{{/fonts}} 
-	{{/fonts.length}} 	
 
-	{{#navigation.length}}
-	<div class="settings-group">
-	<h2 class="template-heading">Navigation</h2>
-	{{#navigation}}
-	{{> template-editor-group}}
-	{{/navigation}}
-	</div>
-	{{/navigation.length}}
 
 
 	{{#index_page.length}}
@@ -72,7 +79,7 @@
 {{#syntax_themes}}
         <div class="settings-group">
                 <h2 class="template-heading">Syntax highlighter</h2>
-                <a class="line" href="{{{base}}}/syntax-highlighter" style="padding: 11px 20px;">
+                <a class="line" href="{{{base}}}/syntax-highlighter" style="padding: 11px 20px;border-bottom: none;">
                         <span class="center">Open syntax controls</span>
                         <span class="right">Edit</span>
                 </a>
@@ -80,11 +87,7 @@
         {{/syntax_themes}}
 </div>
 
-{{#template.isMirror}}
-<div class="settings-group">
-        <a class="line" href="{{{base}}}/reset" style="padding: 11px 20px;">
-                <span class="center">Reset template</span>
-        </a>
-</div>
-{{/template.isMirror}}
+	<div class="settings-group template-docs-support-links-group">
+		{{> template-docs-support-links}}
+	</div>
 

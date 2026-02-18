@@ -10,6 +10,7 @@ const moment = require("moment");
 const { Dropbox } = require("dropbox");
 const views = __dirname + "/../views/";
 const client = require("models/client");
+const Blog = require("models/blog");
 
 dashboard.use(function loadDropboxAccount (req, res, next) {
   Database.get(req.blog.id, function (err, account) {
@@ -163,7 +164,7 @@ dashboard.get("/permission", function (req, res) {
 // This route recieves the user back from
 // Dropbox when they have accepted or denied
 // the request to access their folder.
-dashboard.get("/authenticate", function (req, res) {
+dashboard.get("/authenticate", function (req, res, next) {
   // the user has reloaded this page
   // if (req.session.dropbox && req.session.dropbox.preparing === true) {
   //   console.log('here, redirecting cause of session');
@@ -195,11 +196,15 @@ dashboard.get("/authenticate", function (req, res) {
   // this the first time the user has visited this page
   req.session.dropbox = account;
 
-  setup(account, req.session, function (err) {
-    console.log("err setting up", err);
-  });
+  Blog.set(req.blog.id, { client: "dropbox" }, function (err) {
+    if (err) return next(err);
 
-  res.redirect(req.baseUrl);
+    setup(account, req.session, function (err) {
+      console.log("err setting up", err);
+    });
+
+    res.redirect(req.baseUrl);
+  });
 });
 
 // Will remove the Dropbox account from the client's database
@@ -209,6 +214,10 @@ dashboard.get("/disconnect", function (req, res) {
 });
 
 dashboard.post("/disconnect", function (req, res, next) {
+  if (!req.blog.client) {
+    return res.redirect(res.locals.dashboardBase + "/client");
+  }
+
   client.publish(
     "sync:status:" + req.blog.id,
     "Attempting to disconnect from Dropbox"

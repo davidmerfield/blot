@@ -13,6 +13,7 @@ var dictionary = {
   "archives": require("./archives"),
   "asset": require("./asset"),
   "avatar_url": require("./avatar_url"),
+  "cdn": require("./cdn"),
   "css_url": require("./css_url"),
   "folder": require("./folder"),
   "encodeJSON": require("./encodeJSON"),
@@ -22,12 +23,11 @@ var dictionary = {
   "isActive": require("./isActive"),
   "is": require("./is"),
   "latestEntry": require("./latestEntry"),
-  "page": require("./page"),
   "posts": require("./posts"),
   "plugin_css": require("./plugin_css"),
   "plugin_js": require("./plugin_js"),
+  "plugin": require("./plugin"),
   "popular_tags": require("./popular_tags"),
-  "public": require("./public"),
   "recentEntries": require("./recentEntries"),
   "recent_entries": require("./recent_entries"),
   "rgb": require("./rgb"),
@@ -45,6 +45,8 @@ module.exports = function (req, res, retrieve, callback) {
   ensure(req, "object").and(retrieve, "object").and(callback, "function");
 
   var locals = {};
+
+  req.retrieve = retrieve;
 
   async.each(
     _.keys(retrieve),

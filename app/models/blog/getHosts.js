@@ -13,16 +13,16 @@ module.exports = function getHosts(callback) {
   getAllIDs(function (err, ids) {
     if (err) throw err;
 
-    var multi = client.multi();
+    var batch = client.batch();
 
     for (var i = 0; i < ids.length; i++)
-      multi.hmget(key.info(ids[i]), "domain", "handle");
+      batch.hmget(key.info(ids[i]), "domain", "handle");
 
     // This is a very expensive call.
     // We could easily do some work to make this quicker
     // However, it's only going to be invoked when a user
     // changes their username / custom domain.
-    multi.exec(function (err, res) {
+    batch.exec(function (err, res) {
       if (err) throw err;
 
       var hosts = [];

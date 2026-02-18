@@ -7,6 +7,7 @@ var stripe = require("stripe")(config.stripe.secret);
 var email = require("helper/email");
 var prettyPrice = require("helper/prettyPrice");
 const PLAN_MAP = config.stripe.plan_map;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 Subscription.route("/").get(function (req, res) {
   res.render("dashboard/account/subscription", {
@@ -143,7 +144,23 @@ Subscription.route("/cancel")
     cancelStripeSubscription,
     cancelPaypalSubscription,
     function (req, res) {
-      email.CANCELLED(req.user.uid);
+      const now = Date.now();
+      const stripeCreatedMs = toMs(req.user.subscription?.created);
+      const stripePeriodStartMs = toMs(req.user.subscription?.current_period_start);
+      const paypalStartMs = toMs(req.user.paypal?.start_time);
+      const subscriptionStartMs =
+        paypalStartMs ||
+        stripeCreatedMs ||
+        stripePeriodStartMs;
+      const isFirstPeriod = Boolean(
+        subscriptionStartMs && now - subscriptionStartMs <= THIRTY_DAYS_MS
+      );
+
+      if (isFirstPeriod) {
+        email.CANCELLED_FIRST_PERIOD(req.user.uid);
+      } else {
+        email.CANCELLED(req.user.uid);
+      }
       res.message(req.baseUrl, "Your subscription has been cancelled");
     }
   );
@@ -449,6 +466,26 @@ function restartStripeSubscription (req, res, next) {
       User.set(req.user.uid, { subscription: subscription }, next);
     }
   );
+}
+
+function toMs(timestamp) {
+  if (!timestamp) return null;
+
+  if (timestamp instanceof Date) return timestamp.getTime();
+
+  if (typeof timestamp === "number") {
+    if (!Number.isFinite(timestamp)) return null;
+
+    return timestamp < 1e12 ? timestamp * 1000 : timestamp;
+  }
+
+  if (typeof timestamp === "string") {
+    const parsed = Date.parse(timestamp);
+
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  return null;
 }
 
 module.exports = Subscription;

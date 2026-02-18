@@ -205,6 +205,38 @@ describe("wikilinks", function () {
     expect(body).toContain(">Project Plan<");
   });
 
+  it("resolves wikilinks by title to pages as well as posts", async function () {
+    await this.write({
+      path: "/About.md",
+      content: [
+        "Title: About Us",
+        "Link: about",
+        "Page: yes",
+        "",
+        "# About this site",
+      ].join("\n"),
+    });
+    await this.blog.rebuild();
+
+    await this.write({
+      path: "/TitleLinkPost.md",
+      content: [
+        "Title: Title Link Test",
+        "Link: title-link-test",
+        "",
+        "See [[About Us]] for more.",
+      ].join("\n"),
+    });
+    await this.blog.rebuild();
+
+    const res = await this.get("/title-link-test");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain('href="/about"');
+    expect(body).toContain(">About Us<");
+  });
+
 
   // todo: work out why this test fails for '[[Heading Demo]]' and '[[#Heading Demo]]' but 
   // passes for '[[custom-heading]]' and '[[#custom-heading]]'
@@ -392,6 +424,33 @@ describe("wikilinks", function () {
     expect(body).toContain('href="/library/research-summary"');
     expect(body).toContain(">Research Summary<");
     expect(body).not.toContain('href="Spec Sheet.md"');
+  });
+
+  it("does not match folders when resolving by filename", async function () {
+    
+    await this.write({
+      path: "/Hello.md",
+      content: [
+        "Link: hello",
+        "",
+        "[[Corsi|...more]]",
+      ].join("\n"),
+    });
+    
+    await this.write({
+      path: "/Corsi/Index.md",
+      content: [
+        "Title: Corsi",
+        "Link: resolved",
+        "",
+        "This is the target",
+      ].join("\n"),
+    });
+
+    await this.blog.rebuild();
+
+    expect(await this.text("/hello")).toContain('<a href="/resolved"') // match by post title
+    expect(await this.text("/hello")).not.toContain('<a href="/Corsi"') // match for folder name (incorrect)
   });
 
   // todo: implement a test spec which verifies filename lookup works *without* file extension

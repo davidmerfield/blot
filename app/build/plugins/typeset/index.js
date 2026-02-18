@@ -25,7 +25,7 @@ module.exports = {
   prerender: prerender,
   category: "Typography",
   title: "Substitution",
-  description: "Fix common typographical errors",
+  description: "Correct common typographic errors",
   options: {
     hangingPunctuation: true,
     punctuation: true,

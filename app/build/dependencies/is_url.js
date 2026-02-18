@@ -29,13 +29,21 @@ function is_url(string) {
     return false;
   }
 
-  if (!url || !url.href || !url.host || !url.protocol) {
+  if (!url || !url.href || !url.protocol) {
     debug(string, "lacks properties of URLs");
     return false;
   }
 
-  debug(string, "is a valid URL!");
-  return true;
+  // Accept protocols which do not require a host (e.g. mailto, tel, sms, data)
+  var noHostProtocols = { "mailto:": true, "tel:": true, "sms:": true, "data:": true };
+
+  if (url.host || noHostProtocols[url.protocol]) {
+    debug(string, "is a valid URL!");
+    return true;
+  }
+
+  debug(string, "missing host and not a no-host protocol");
+  return false;
 }
 
 module.exports = is_url;

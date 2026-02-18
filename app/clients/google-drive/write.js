@@ -9,6 +9,7 @@ const TMP = require("helper/tempDir")();
 const guid = require("helper/guid");
 const { Readable } = require("stream");
 const database = require("./database");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 // We can make this much more efficient by thoughtfully using
 // streams in pipelines rather than wastefully
@@ -20,6 +21,10 @@ module.exports = async function write(blogID, path, input, callback) {
 
   try {
     if (path[0] !== "/") path = "/" + path;
+
+    if (shouldIgnoreFile(path)) {
+      return callback(new Error(`Cannot write ignored file: ${path}`));
+    }
 
     console.log(prefix(), "writing input to tmp");
     const tempPath = await writeToTmp(input);
@@ -64,6 +69,7 @@ module.exports = async function write(blogID, path, input, callback) {
 
         await drive.files.update({
           fileId: fileId,
+          supportsAllDrives: true,
           media: {
             body: fs.createReadStream(tempPath),
           },
@@ -86,6 +92,7 @@ module.exports = async function write(blogID, path, input, callback) {
             name: basename(path),
             parents: [parentID],
           },
+          supportsAllDrives: true,
           media: {
             body: fs.createReadStream(tempPath),
           },
@@ -141,6 +148,8 @@ const establishParentDirectories = async (drive, pathParent, blogFolderID) => {
 
     const { data } = await drive.files.list({
       q: `'${folderId}' in parents and trashed = false`,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
     });
 
     let dirID =
@@ -154,6 +163,7 @@ const establishParentDirectories = async (drive, pathParent, blogFolderID) => {
           parents: [folderId],
           mimeType: "application/vnd.google-apps.folder",
         },
+        supportsAllDrives: true,
         fields: "id",
       });
 

@@ -93,7 +93,7 @@ describe("pluginHTML", function () {
 
         expect(res.status).toEqual(200);
         expect(body).toContain('www.google-analytics.com/analytics.js');
-        expect(body).toContain(`var GAID="${plugins.analytics.options.trackingID}"`);
+        expect(body).toContain(`var GAID = '${plugins.analytics.options.trackingID}';`);
     });
 
     it("injects clicky analytics into appJS", async function () {
@@ -166,7 +166,7 @@ describe("pluginHTML", function () {
 
         expect(res.status).toEqual(200);
         expect(body).toContain('cdn.usefathom.com');
-        expect(body).toContain(`fathom("set","siteId","${plugins.analytics.options.trackingID}")`);
+        expect(body).toContain(`fathom('set', 'siteId', '${plugins.analytics.options.trackingID}');`);
     });
 
     it("injects cloudflare analytics into appJS", async function () {

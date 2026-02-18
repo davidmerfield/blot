@@ -6,6 +6,7 @@
 // for detected Obsidian vaults, but authors can still opt out via the plugin
 // settings.
 const titlify = require("../../prepare/titlify");
+const makeSlug = require("helper/makeSlug");
 
 function render($, callback, options = {}) {
   try {
@@ -17,6 +18,10 @@ function render($, callback, options = {}) {
     if (!title) return callback();
 
     const heading = $("<h1></h1>").text(title);
+
+    // add an ID for the heading
+    heading.attr('id', makeSlug(title));
+
     const firstChild = $.root().children().first();
 
     if (firstChild && firstChild.length) {
@@ -56,9 +61,9 @@ function isMarkdown(path = "") {
 module.exports = {
   render,
   isDefault: false,
-  category: "Formatting",
+  category: "headings",
   title: "Inject title",
-  description: "Insert a heading derived from the file name when none exists.",
+  description: "Insert a heading from file name if missing",
   options: {
     manuallyDisabled: false,
   },

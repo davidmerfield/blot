@@ -1,1 +1,9 @@
 {{{appCSS}}}
+
+p,
+li,
+blockquote,
+figcaption {
+  orphans: 2;
+  widows: 2;
+}

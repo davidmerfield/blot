@@ -1,53 +1,49 @@
 {
   "name": "Hypertext",
   "locals": {
-    "page_size": 36,
-        "demo_folder": "thoughtforms"
-
+    "page_size": 100,
+    "lang": "en",
+    "sort_by": "id",
+    "background_color": "#fff",
+    "text_color": "rgb(0, 0, 0)",
+    "link_color": "rgb(48, 84, 235)",
+    "syntax_highlighter": {
+      "id": "solarized-light"
+    },
+    "syntax_highlighter_font": {
+      "id": "plex-mono"
+    },
+    "body_font": {
+      "id": "system-sans"
+    },
+    "demo_folder": "hypertext"
   },
-  "isPublic": false,
   "views": {
-    "public": {
-      "partials": {
-        "title": "Index of {{{path}}}",
-        "description": "All the files and folders inside {{{path}}}"
-      }
-    },
     "archives.html": {
-      "url": "/archives",
-      "partials": {
-        "title": "Archives - {{{title}}}",
-        "description": "All the entries posted on {{{title}}}"
-      }
+      "url": "/archives"
     },
-    "tagged.html": {
-      "partials": {
-        "title": "Entries tagged {{{tag}}} from {{{title}}}",
-        "description": "All of the entries posted on {{{title}}} tagged {{{tag}}}"
-      }
+    "search.html": {
+      "url": "/search"
+    },
+    "pagination.html": {
+      "url": "/pagination/:page"
     },
     "entries.html": {
       "partials": {
-        "title": "{{{title}}}",
-        "description": "The latest entries posted on {{{title}}}"
-      }
-    },
-    "error.html": {
-      "partials": {
-        "title": "{{{error.title}}} - {{{title}}}",
-        "description": "Error on {{{title}}}"
+        "title": "{{#entries}}{{#first}}{{{title}}} -  {{/first}}{{/entries}}{{{title}}}",
+        "description": "{{#entries}}{{#first}}{{{title}}} -  {{/first}}{{/entries}}{{{title}}}"
       }
     },
     "entry.html": {
       "partials": {
         "title": "{{{entry.title}}} - {{{title}}}",
-        "description": "{{{entry.summary}}}"
+        "description": "{{{entry.title}}} - {{{title}}}"
       }
     },
-    "search.html": {
+    "error.html": {
       "partials": {
-        "title": "Search - {{{title}}}",
-        "description": "Search all the entries posted on {{{title}}}"
+        "title": "{{error.title}} - {{{title}}}",
+        "description": "{{error.message}}"
       }
     }
   }

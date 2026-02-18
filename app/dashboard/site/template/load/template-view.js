@@ -8,6 +8,7 @@ module.exports = function (req, res, next) {
     req.view = res.locals.view = {
       content: Template.package.generate(req.blog.id, template, views),
       name: "package.json",
+      isPackageJSON: true,
       editorMode: editorMode("package.json"),
     };
 
@@ -18,8 +19,8 @@ module.exports = function (req, res, next) {
     if (err || !view) return next(new Error("No view"));
 
     view.editorMode = editorMode(view.name);
+    view.isPackageJSON = false;
     req.view = res.locals.view = view;
-
     next();
   });
 };
@@ -27,7 +28,7 @@ module.exports = function (req, res, next) {
 // Determine the mode for the
 // text editor based on the file extension
 function editorMode(name) {
-  var mode = "xml";
+  var mode = "htmlmixed";
 
   if (extname(name) === ".js") mode = "javascript";
 
@@ -36,6 +37,10 @@ function editorMode(name) {
   if (extname(name) === ".css") mode = "css";
 
   if (extname(name) === ".txt") mode = "text";
+
+  if (extname(name) === ".rss") mode = "xml";
+
+  if (extname(name) === ".xml") mode = "xml";
 
   return mode;
 }

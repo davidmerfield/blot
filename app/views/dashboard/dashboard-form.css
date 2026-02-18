@@ -15,8 +15,44 @@ form.dashboard-form {
     display: flex;
     border-top: 1px solid var(--border-color);
   }
+
+  #menu section {
+    align-items: center;
+  }
   
-  
+  #menu .handle {
+    padding: 12px 10px;
+    cursor: grab;
+    display: flex;
+  }
+
+   #add {
+    padding: 8px 16px;
+    display: block;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    color: var(--accent-color);
+    padding-right: 40px;
+  }
+
+  #menu .handle:hover,
+   #add:hover {
+    background-color: var(--light-background-color);
+  }
+
+  #menu input {
+    margin: -1px 0;
+    position: relative;
+  }
+
+    #menu input:nth-of-type(2) {
+      margin-right: -1px;
+      z-index: 3;
+    }
+  #menu input:hover {
+    z-index: 4;
+  }
+
   form.dashboard-form label {
     margin: 0;
     font-size: 14px;

@@ -1,0 +1,11 @@
+{
+  "name": "Palatino",
+  "tags": [
+    "serif",
+    "system"
+  ],
+  "stack": "palatino, 'palatino linotype', 'book antiqua', georgia, serif",
+  "line_height": 1.55,
+  "line_width": 38,
+  "font_size": 16
+}

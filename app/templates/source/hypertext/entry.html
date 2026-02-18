@@ -1,29 +1,23 @@
 <!DOCTYPE html>
-<html>
-  {{> head}}
-  <body>
-    {{> header}}
-    <div class="container">
-      {{#entry}}
-
-        {{{titleTag}}}
-
-        <p class="light">
-          {{date}}
-
-          {{#tags.length}}
-            {{#tags}}
-            ☼ <a class="light" href="/tagged/{{slug}}">{{name}}</a>
-            {{/tags}}
-          {{/tags.length}}
-        </p>
-
-        {{{body}}}
-
-        <Br />
-        {{> pluginHTML}}
-
-      {{/entry}}
+<html lang="{{lang}}">
+{{> head}}
+<body>
+    {{> navigation}}
+    <main>
+      <div class="entry">
+      {{{entry.html}}}
+      {{#entry.backlinks.length}}
+      <br>
+      <hr>
+      <h4>Links to this page</h4>
+      <p>
+      {{#entry.backlinks}}
+      <a href="{{{url}}}">{{title}}</a><br>
+      {{/entry.backlinks}}
+      </p>
+      {{/entry.backlinks.length}}
+      </div>
+    </main>
     {{> footer}}
-  </body>
+</body>
 </html>

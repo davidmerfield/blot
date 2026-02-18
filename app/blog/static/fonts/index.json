@@ -56,7 +56,8 @@
     "id": "arial",
     "stack": "Arial,Helvetica Neue,Helvetica,sans-serif",
     "tags": [
-      "sans"
+      "sans",
+      "system"
     ],
     "line_height": 1.615,
     "line_width": 38,
@@ -127,6 +128,19 @@
     "line_width": 38,
     "font_size": 16,
     "styles": "@font-face{font-family:Chivo;font-style:normal;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/chivo/400.eot?version=9ae571&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/chivo/400.eot?version=9ae571&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/chivo/400.woff?version=5c7ac5&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/chivo/400.ttf?version=da67b3&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/chivo/400.otf?version=22dcb6&extension=.otf') format('opentype')}@font-face{font-family:Chivo;font-style:italic;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/chivo/400-italic.eot?version=5ab3ad&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/chivo/400-italic.eot?version=5ab3ad&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/chivo/400-italic.woff?version=073c14&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/chivo/400-italic.ttf?version=38d4c8&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/chivo/400-italic.otf?version=567eda&extension=.otf') format('opentype')}.pull-double{margin-left:-.395em}.push-double{margin-right:.395em}.pull-single{margin-left:-.231em}.push-single{margin-right:.231em}.push-double,.push-single{display:inline-block}"
+  },
+  {
+    "name": "Comic Sans",
+    "id": "comic-sans",
+    "stack": "'comic sans ms', 'comic sans', cursive, sans-serif",
+    "tags": [
+      "other",
+      "system"
+    ],
+    "line_height": 1.4,
+    "line_width": 38,
+    "font_size": 16,
+    "styles": ""
   },
   {
     "name": "Computer Modern",
@@ -205,6 +219,19 @@
     "line_width": 38,
     "font_size": 16,
     "styles": "@font-face{font-family:Cormorant;font-style:normal;font-weight:300;src:url('{{{config.cdn.origin}}}/fonts/cormorant/300.eot?version=00b644&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/cormorant/300.eot?version=00b644&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/cormorant/300.woff?version=3586cb&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/cormorant/300.ttf?version=a5b2f2&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/cormorant/300.otf?version=d65323&extension=.otf') format('opentype')}@font-face{font-family:Cormorant;font-style:italic;font-weight:300;src:url('{{{config.cdn.origin}}}/fonts/cormorant/300-italic.eot?version=c67dae&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/cormorant/300-italic.eot?version=c67dae&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/cormorant/300-italic.woff?version=cc8545&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/cormorant/300-italic.ttf?version=e0651e&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/cormorant/300-italic.otf?version=74c60b&extension=.otf') format('opentype')}@font-face{font-family:Cormorant;font-style:normal;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/cormorant/400.eot?version=22648e&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/cormorant/400.eot?version=22648e&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/cormorant/400.woff?version=4c2656&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/cormorant/400.ttf?version=4518fe&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/cormorant/400.otf?version=cb3c40&extension=.otf') format('opentype')}@font-face{font-family:Cormorant;font-style:italic;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/cormorant/400-italic.eot?version=a0c51e&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/cormorant/400-italic.eot?version=a0c51e&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/cormorant/400-italic.woff?version=078bc9&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/cormorant/400-italic.ttf?version=e43ca3&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/cormorant/400-italic.otf?version=e55cf7&extension=.otf') format('opentype')}@font-face{font-family:Cormorant;font-style:normal;font-weight:500;src:url('{{{config.cdn.origin}}}/fonts/cormorant/500.eot?version=d1dfe9&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/cormorant/500.eot?version=d1dfe9&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/cormorant/500.woff?version=56508f&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/cormorant/500.ttf?version=cbad48&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/cormorant/500.otf?version=feea2a&extension=.otf') format('opentype')}@font-face{font-family:Cormorant;font-style:italic;font-weight:500;src:url('{{{config.cdn.origin}}}/fonts/cormorant/500-italic.eot?version=cd5cd3&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/cormorant/500-italic.eot?version=cd5cd3&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/cormorant/500-italic.woff?version=e27003&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/cormorant/500-italic.ttf?version=18fd7d&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/cormorant/500-italic.otf?version=588157&extension=.otf') format('opentype')}@font-face{font-family:Cormorant;font-style:normal;font-weight:600;src:url('{{{config.cdn.origin}}}/fonts/cormorant/600.eot?version=04cb3d&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/cormorant/600.eot?version=04cb3d&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/cormorant/600.woff?version=b376e6&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/cormorant/600.ttf?version=914078&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/cormorant/600.otf?version=85e517&extension=.otf') format('opentype')}@font-face{font-family:Cormorant;font-style:italic;font-weight:600;src:url('{{{config.cdn.origin}}}/fonts/cormorant/600-italic.eot?version=a50574&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/cormorant/600-italic.eot?version=a50574&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/cormorant/600-italic.woff?version=933e89&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/cormorant/600-italic.ttf?version=c0e266&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/cormorant/600-italic.otf?version=8267f6&extension=.otf') format('opentype')}@font-face{font-family:Cormorant;font-style:normal;font-weight:700;src:url('{{{config.cdn.origin}}}/fonts/cormorant/700.eot?version=f920f2&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/cormorant/700.eot?version=f920f2&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/cormorant/700.woff?version=efc762&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/cormorant/700.ttf?version=34af1a&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/cormorant/700.otf?version=0f5f98&extension=.otf') format('opentype')}@font-face{font-family:Cormorant;font-style:italic;font-weight:700;src:url('{{{config.cdn.origin}}}/fonts/cormorant/700-italic.eot?version=c585bd&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/cormorant/700-italic.eot?version=c585bd&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/cormorant/700-italic.woff?version=0db14e&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/cormorant/700-italic.ttf?version=48e965&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/cormorant/700-italic.otf?version=0101d6&extension=.otf') format('opentype')}.pull-double{margin-left:-.283em}.push-double{margin-right:.283em}.pull-single{margin-left:-.14em}.push-single{margin-right:.14em}.push-double,.push-single{display:inline-block}"
+  },
+  {
+    "name": "Courier New",
+    "id": "courier-new",
+    "stack": "'courier new', courier, consolas, monospace",
+    "tags": [
+      "mono",
+      "system"
+    ],
+    "line_height": 1.45,
+    "line_width": 38,
+    "font_size": 16,
+    "styles": ""
   },
   {
     "name": "Crimson Text",
@@ -290,7 +317,7 @@
     "svg": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<html><head></head><body><svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"388.79999999999995\" height=\"94.46400000000001\" viewBox=\"0 -2.7679999999999936 388.79999999999995 100\" preserveAspectRatio=\"xMinYMid meet\"><path d=\"M38.41 26.82L16.16 26.82L16.16 44.17L35.60 44.17L35.60 49.21L16.16 49.21L16.16 71.28L9.97 71.28L9.97 21.71L39.17 21.71L38.41 26.82ZM52.24 33.37L69.62 33.37L69.62 66.49L80.32 66.49L80.32 71.28L51.88 71.28L51.88 66.49L63.58 66.49L63.58 38.16L52.24 38.16L52.24 33.37ZM64.80 15.62L64.80 15.62Q66.82 15.62 68.02 16.85Q69.23 18.07 69.23 19.84L69.23 19.84Q69.23 21.67 68.02 22.91Q66.82 24.16 64.80 24.16L64.80 24.16Q62.89 24.16 61.67 22.91Q60.44 21.67 60.44 19.84L60.44 19.84Q60.44 18.07 61.67 16.85Q62.89 15.62 64.80 15.62ZM113.65 71.28L94.00 71.28L94.00 66.64L99.90 66.64L99.90 38.02L94.00 38.02L94.00 33.37L104.51 33.37L105.62 42.34Q107.82 37.66 110.95 35.10Q114.08 32.54 119.23 32.54L119.23 32.54Q120.82 32.54 122.06 32.78Q123.30 33.01 124.60 33.37L124.60 33.37L122.83 38.77Q121.64 38.45 120.67 38.29Q119.70 38.12 118.44 38.12L118.44 38.12Q114.08 38.12 110.95 41.22Q107.82 44.32 105.95 50.58L105.95 50.58L105.95 66.64L113.65 66.64L113.65 71.28ZM123.73 46.19L118.76 46.19L118.76 37.94L119.38 33.37L124.60 33.37L123.73 46.19ZM163.98 44.82L163.98 63.00Q163.98 65.27 164.74 66.31Q165.49 67.36 167.08 67.86L167.08 67.86L165.60 72.11Q163.15 71.78 161.32 70.54Q159.48 69.30 158.65 66.78L158.65 66.78Q156.60 69.41 153.54 70.76Q150.48 72.11 146.77 72.11L146.77 72.11Q141.08 72.11 137.81 68.90Q134.53 65.70 134.53 60.41L134.53 60.41Q134.53 54.54 139.10 51.41Q143.68 48.28 152.32 48.28L152.32 48.28L157.90 48.28L157.90 45.11Q157.90 41.00 155.50 39.29Q153.11 37.58 148.86 37.58L148.86 37.58Q146.99 37.58 144.47 38.03Q141.95 38.48 139.00 39.53L139.00 39.53L137.41 34.96Q140.90 33.66 143.96 33.12Q147.02 32.58 149.80 32.58L149.80 32.58Q156.89 32.58 160.43 35.87Q163.98 39.17 163.98 44.82L163.98 44.82ZM148.32 67.50L148.32 67.50Q151.13 67.50 153.68 66.08Q156.24 64.66 157.90 62.14L157.90 62.14L157.90 52.38L152.42 52.38Q146.16 52.38 143.59 54.54Q141.01 56.70 141.01 60.34L141.01 60.34Q141.01 63.86 142.83 65.68Q144.65 67.50 148.32 67.50ZM241.78 20.92L241.78 20.92Q246.64 20.92 249.91 22.14Q253.19 23.36 256.14 25.74L256.14 25.74L252.65 29.81Q250.31 27.83 247.70 26.98Q245.09 26.14 242.24 26.14L242.24 26.14Q238.18 26.14 234.72 28.06Q231.26 29.99 229.16 34.43Q227.05 38.88 227.05 46.48L227.05 46.48Q227.05 53.86 229.05 58.32Q231.05 62.78 234.47 64.76Q237.89 66.74 242.10 66.74L242.10 66.74Q246.28 66.74 248.96 65.48Q251.64 64.22 253.62 62.60L253.62 62.60L256.86 66.71Q254.59 68.90 250.96 70.51Q247.32 72.11 242.03 72.11L242.03 72.11Q236.02 72.11 231.14 69.16Q226.26 66.20 223.42 60.50Q220.57 54.79 220.57 46.48L220.57 46.48Q220.57 38.12 223.47 32.44Q226.37 26.75 231.21 23.83Q236.05 20.92 241.78 20.92ZM280.87 32.58L280.87 32.58Q286.24 32.58 289.85 35.01Q293.47 37.44 295.29 41.87Q297.11 46.30 297.11 52.31L297.11 52.31Q297.11 58.10 295.24 62.57Q293.36 67.03 289.75 69.57Q286.13 72.11 280.80 72.11L280.80 72.11Q275.47 72.11 271.84 69.66Q268.20 67.21 266.35 62.77Q264.49 58.32 264.49 52.38L264.49 52.38Q264.49 46.51 266.36 42.05Q268.24 37.58 271.89 35.08Q275.54 32.58 280.87 32.58ZM280.87 37.51L280.87 37.51Q275.98 37.51 273.47 41.13Q270.97 44.75 270.97 52.38L270.97 52.38Q270.97 59.87 273.44 63.50Q275.90 67.14 280.80 67.14L280.80 67.14Q285.70 67.14 288.16 63.50Q290.63 59.87 290.63 52.31L290.63 52.31Q290.63 44.75 288.18 41.13Q285.73 37.51 280.87 37.51ZM332.32 37.04L332.32 17.35L338.36 18.11L338.36 71.28L333.07 71.28L332.50 66.28Q330.37 69.30 327.62 70.70Q324.86 72.11 321.73 72.11L321.73 72.11Q316.80 72.11 313.60 69.62Q310.39 67.14 308.84 62.69Q307.30 58.25 307.30 52.38L307.30 52.38Q307.30 46.69 309.06 42.21Q310.82 37.73 314.15 35.15Q317.48 32.58 322.16 32.58L322.16 32.58Q325.44 32.58 327.92 33.71Q330.41 34.85 332.32 37.04L332.32 37.04ZM323.75 37.44L323.75 37.44Q319.00 37.44 316.44 41.15Q313.88 44.86 313.88 52.38L313.88 52.38Q313.88 57.28 314.93 60.59Q315.97 63.90 318.01 65.56Q320.04 67.21 322.99 67.21L322.99 67.21Q326.23 67.21 328.52 65.38Q330.80 63.54 332.32 61.24L332.32 61.24L332.32 42.30Q330.77 40.00 328.57 38.72Q326.38 37.44 323.75 37.44ZM383.08 54.47L357.59 54.47Q357.77 58.86 359.28 61.65Q360.79 64.44 363.28 65.75Q365.76 67.07 368.68 67.07L368.68 67.07Q371.59 67.07 373.95 66.20Q376.31 65.34 378.79 63.65L378.79 63.65L381.64 67.64Q378.97 69.73 375.57 70.92Q372.17 72.11 368.60 72.11L368.60 72.11Q363.10 72.11 359.21 69.62Q355.32 67.14 353.29 62.69Q351.25 58.25 351.25 52.38L351.25 52.38Q351.25 46.62 353.30 42.16Q355.36 37.69 359.06 35.14Q362.77 32.58 367.81 32.58L367.81 32.58Q372.60 32.58 376.06 34.83Q379.51 37.08 381.37 41.24Q383.22 45.40 383.22 51.16L383.22 51.16Q383.22 52.13 383.18 52.97Q383.15 53.82 383.08 54.47L383.08 54.47ZM367.88 37.55L367.88 37.55Q363.67 37.55 360.85 40.54Q358.02 43.52 357.62 49.79L357.62 49.79L377.39 49.79Q377.28 43.70 374.72 40.63Q372.17 37.55 367.88 37.55Z\"></path></svg></body></html>",
     "stack": "'Fira Code'",
     "tags": [
-      "sans"
+      "mono"
     ],
     "line_height": 1.4,
     "line_width": 38,
@@ -324,11 +351,64 @@
     "styles": "@font-face{font-family:Fondamento;font-style:normal;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/fondamento/400.eot?version=1e55eb&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/fondamento/400.eot?version=1e55eb&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/fondamento/400.woff?version=a5d58d&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/fondamento/400.ttf?version=bd1c8b&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/fondamento/400.otf?version=fd8ad2&extension=.otf') format('opentype')}@font-face{font-family:Fondamento;font-style:italic;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/fondamento/400-italic.eot?version=93897a&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/fondamento/400-italic.eot?version=93897a&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/fondamento/400-italic.woff?version=1589c5&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/fondamento/400-italic.ttf?version=d9066a&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/fondamento/400-italic.otf?version=0560a4&extension=.otf') format('opentype')}.pull-double{margin-left:-.34130859375em}.push-double{margin-right:.34130859375em}.pull-single{margin-left:-.19482421875em}.push-single{margin-right:.19482421875em}.push-double,.push-single{display:inline-block}"
   },
   {
+    "name": "Garamond",
+    "id": "garamond",
+    "stack": "garamond, 'times new roman', times, serif",
+    "tags": [
+      "serif",
+      "system"
+    ],
+    "line_height": 1.6,
+    "line_width": 38,
+    "font_size": 16,
+    "styles": ""
+  },
+  {
+    "name": "Geist",
+    "id": "geist",
+    "svg": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<html><head></head><body><svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"171.144\" height=\"93.60000000000001\" viewBox=\"0 -3.1999999999999957 171.144 100\" preserveAspectRatio=\"xMinYMid meet\"><path d=\"M26.06 73.51L26.06 73.51Q18.86 73.51 13.75 70.06Q8.64 66.60 5.94 60.59Q3.24 54.58 3.24 46.87L3.24 46.87Q3.24 39.17 5.98 33.12Q8.71 27.07 13.86 23.58Q19.01 20.09 26.21 20.09L26.21 20.09Q32.33 20.09 36.54 22.32Q40.75 24.55 43.24 28.37Q45.72 32.18 46.66 36.94L46.66 36.94L40.18 37.37Q39.24 32.40 36.00 29.27Q32.76 26.14 26.21 26.14L26.21 26.14Q20.38 26.14 16.74 29.02Q13.10 31.90 11.41 36.61Q9.72 41.33 9.72 46.87L9.72 46.87Q9.72 52.70 11.45 57.35Q13.18 61.99 16.85 64.73Q20.52 67.46 26.21 67.46L26.21 67.46Q30.74 67.46 34.06 65.41Q37.37 63.36 39.17 59.90Q40.97 56.45 41.04 52.42L41.04 52.42L26.35 52.42L26.35 46.51L46.80 46.51L46.80 72.36L42.19 72.36L41.76 60.55L42.62 61.56Q41.76 65.02 39.31 67.72Q36.86 70.42 33.44 71.96Q30.02 73.51 26.06 73.51ZM71.78 73.22L71.78 73.22Q66.38 73.22 62.46 70.78Q58.54 68.33 56.41 63.83Q54.29 59.33 54.29 53.28L54.29 53.28Q54.29 47.23 56.41 42.77Q58.54 38.30 62.39 35.82Q66.24 33.34 71.50 33.34L71.50 33.34Q76.46 33.34 80.28 35.68Q84.10 38.02 86.22 42.48Q88.34 46.94 88.34 53.35L88.34 53.35L88.34 55.15L60.62 55.15Q60.98 61.27 63.90 64.37Q66.82 67.46 71.78 67.46L71.78 67.46Q75.53 67.46 77.94 65.70Q80.35 63.94 81.29 61.06L81.29 61.06L87.77 61.56Q86.26 66.67 82.04 69.95Q77.83 73.22 71.78 73.22ZM60.62 49.82L60.62 49.82L81.72 49.82Q81.29 44.28 78.52 41.69Q75.74 39.10 71.50 39.10L71.50 39.10Q67.10 39.10 64.26 41.80Q61.42 44.50 60.62 49.82ZM102.60 72.36L96.55 72.36L96.55 34.20L102.60 34.20L102.60 72.36ZM102.74 28.22L96.41 28.22L96.41 21.17L102.74 21.17L102.74 28.22ZM127.30 73.22L127.30 73.22Q122.04 73.22 118.48 71.57Q114.91 69.91 113.00 67.00Q111.10 64.08 110.81 60.34L110.81 60.34L117.14 59.90Q117.72 63.36 119.99 65.41Q122.26 67.46 127.30 67.46L127.30 67.46Q131.18 67.46 133.31 66.20Q135.43 64.94 135.43 62.14L135.43 62.14Q135.43 60.62 134.75 59.62Q134.06 58.61 132.05 57.85Q130.03 57.10 126.14 56.38L126.14 56.38Q120.82 55.37 117.79 53.86Q114.77 52.34 113.54 50.18Q112.32 48.02 112.32 45.00L112.32 45.00Q112.32 39.89 116.10 36.61Q119.88 33.34 126.79 33.34L126.79 33.34Q131.83 33.34 135.04 35.10Q138.24 36.86 139.90 39.67Q141.55 42.48 141.91 45.58L141.91 45.58L135.58 46.01Q135.43 44.21 134.50 42.62Q133.56 41.04 131.69 40.07Q129.82 39.10 126.65 39.10L126.65 39.10Q122.54 39.10 120.60 40.68Q118.66 42.26 118.66 44.71L118.66 44.71Q118.66 46.58 119.41 47.77Q120.17 48.96 122.08 49.72Q123.98 50.47 127.30 51.05L127.30 51.05Q132.91 51.98 136.08 53.42Q139.25 54.86 140.51 56.99Q141.77 59.11 141.77 62.14L141.77 62.14Q141.77 67.39 137.70 70.31Q133.63 73.22 127.30 73.22ZM168.70 72.36L162.65 72.36Q157.46 72.36 154.98 69.98Q152.50 67.61 152.50 62.57L152.50 62.57L152.50 25.27L158.54 25.27L158.54 62.42Q158.54 65.02 159.70 66.02Q160.85 67.03 163.22 67.03L163.22 67.03L168.70 67.03L168.70 72.36ZM168.70 39.53L146.88 39.53L146.88 34.20L168.70 34.20L168.70 39.53Z\"></path></svg></body></html>",
+    "stack": "'Geist'",
+    "tags": [
+      "sans"
+    ],
+    "line_height": 1.4,
+    "line_width": 38,
+    "font_size": 16,
+    "styles": "@font-face{font-family:Geist;font-style:normal;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/geist/400.eot?version=280f76&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/geist/400.eot?version=280f76&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/geist/400.woff?version=2f8a94&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/geist/400.ttf?version=3bf843&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/geist/400.otf?version=4b8355&extension=.otf') format('opentype')}@font-face{font-family:Geist;font-style:italic;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/geist/400-italic.eot?version=e59360&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/geist/400-italic.eot?version=e59360&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/geist/400-italic.woff?version=090047&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/geist/400-italic.ttf?version=5f28e6&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/geist/400-italic.otf?version=e42485&extension=.otf') format('opentype')}.pull-double{margin-left:-.346em}.push-double{margin-right:.346em}.pull-single{margin-left:-.178em}.push-single{margin-right:.178em}.push-double,.push-single{display:inline-block}"
+  },
+  {
+    "name": "Geist Mono",
+    "id": "geist-mono",
+    "svg": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<html><head></head><body><svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"431.99999999999994\" height=\"93.60000000000001\" viewBox=\"0 -3.1999999999999957 431.99999999999994 100\" preserveAspectRatio=\"xMinYMid meet\"><path d=\"M21.46 73.51L21.46 73.51Q16.06 73.51 11.84 70.52Q7.63 67.54 5.18 61.60Q2.74 55.66 2.74 46.87L2.74 46.87Q2.74 38.59 5.00 32.62Q7.27 26.64 11.52 23.36Q15.77 20.09 21.74 20.09L21.74 20.09Q26.42 20.09 30.06 22.18Q33.70 24.26 36.14 27.97Q38.59 31.68 39.67 36.50L39.67 36.50L33.19 36.94Q31.97 32.18 29.12 29.16Q26.28 26.14 21.74 26.14L21.74 26.14Q17.78 26.14 14.98 28.55Q12.17 30.96 10.69 35.60Q9.22 40.25 9.22 46.87L9.22 46.87Q9.22 53.42 10.73 58.03Q12.24 62.64 15.08 65.05Q17.93 67.46 22.03 67.46L22.03 67.46Q25.70 67.46 28.33 65.56Q30.96 63.65 32.47 60.23Q33.98 56.81 34.13 52.42L34.13 52.42L21.89 52.42L21.89 46.51L39.89 46.51L39.89 72.36L34.13 72.36L33.84 60.26L35.57 60.84Q34.56 64.51 32.80 67.39Q31.03 70.27 28.26 71.89Q25.49 73.51 21.46 73.51ZM65.45 73.22L65.45 73.22Q60.05 73.22 56.12 70.78Q52.20 68.33 50.08 63.83Q47.95 59.33 47.95 53.28L47.95 53.28Q47.95 47.23 50.08 42.77Q52.20 38.30 56.05 35.82Q59.90 33.34 65.16 33.34L65.16 33.34Q70.13 33.34 73.94 35.68Q77.76 38.02 79.92 42.48Q82.08 46.94 82.08 53.35L82.08 53.35L82.08 55.15L54.29 55.15Q54.65 61.27 57.56 64.37Q60.48 67.46 65.45 67.46L65.45 67.46Q69.19 67.46 71.60 65.70Q74.02 63.94 74.95 61.06L74.95 61.06L81.43 61.56Q79.92 66.67 75.71 69.95Q71.50 73.22 65.45 73.22ZM54.29 49.82L54.29 49.82L75.46 49.82Q75.02 44.28 72.22 41.69Q69.41 39.10 65.16 39.10L65.16 39.10Q60.77 39.10 57.92 41.80Q55.08 44.50 54.29 49.82ZM107.50 72.36L92.16 72.36L92.16 67.03L107.50 67.03L107.50 36.58L110.45 39.53L92.88 39.53L92.88 34.20L113.54 34.20L113.54 67.03L126.72 67.03L126.72 72.36L113.54 72.36L107.50 72.36ZM113.26 28.22L106.92 28.22L106.92 21.17L113.26 21.17L113.26 28.22ZM151.92 73.22L151.92 73.22Q146.95 73.22 143.35 71.50Q139.75 69.77 137.70 66.85Q135.65 63.94 135.36 60.34L135.36 60.34L141.70 59.90Q142.27 63.43 144.83 65.45Q147.38 67.46 151.92 67.46L151.92 67.46Q156.17 67.46 158.51 66.24Q160.85 65.02 160.85 62.42L160.85 62.42Q160.85 60.77 160.06 59.69Q159.26 58.61 157.10 57.85Q154.94 57.10 150.77 56.38L150.77 56.38Q145.22 55.37 142.09 53.89Q138.96 52.42 137.66 50.18Q136.37 47.95 136.37 44.86L136.37 44.86Q136.37 41.54 138.02 38.95Q139.68 36.36 142.92 34.85Q146.16 33.34 150.84 33.34L150.84 33.34Q155.59 33.34 158.80 35.03Q162.00 36.72 163.87 39.49Q165.74 42.26 166.32 45.58L166.32 45.58L159.98 46.01Q159.55 43.99 158.36 42.44Q157.18 40.90 155.27 40.00Q153.36 39.10 150.77 39.10L150.77 39.10Q146.59 39.10 144.58 40.75Q142.56 42.41 142.56 44.86L142.56 44.86Q142.56 46.80 143.50 47.95Q144.43 49.10 146.52 49.79Q148.61 50.47 152.06 51.05L152.06 51.05Q157.97 51.98 161.21 53.46Q164.45 54.94 165.74 57.10Q167.04 59.26 167.04 62.42L167.04 62.42Q167.04 65.81 165.06 68.22Q163.08 70.63 159.66 71.93Q156.24 73.22 151.92 73.22ZM210.24 72.36L200.02 72.36Q194.47 72.36 191.74 69.77Q189 67.18 189 61.85L189 61.85L189 25.27L195.05 25.27L195.05 61.85Q195.05 64.51 196.27 65.77Q197.50 67.03 200.02 67.03L200.02 67.03L210.24 67.03L210.24 72.36ZM210.24 39.53L176.40 39.53L176.40 34.20L210.24 34.20L210.24 39.53ZM283.54 66.60L278.06 66.60L268.42 27.00L268.99 27.00L268.99 72.36L262.80 72.36L262.80 21.24L272.16 21.24L282.24 63.29L279.36 63.29L289.44 21.24L298.80 21.24L298.80 72.36L292.61 72.36L292.61 27.00L293.18 27.00L283.54 66.60ZM324 73.22L324 73.22Q318.74 73.22 314.82 70.78Q310.90 68.33 308.74 63.83Q306.58 59.33 306.58 53.28L306.58 53.28Q306.58 47.16 308.74 42.70Q310.90 38.23 314.82 35.78Q318.74 33.34 324 33.34L324 33.34Q329.26 33.34 333.18 35.78Q337.10 38.23 339.26 42.70Q341.42 47.16 341.42 53.28L341.42 53.28Q341.42 59.33 339.26 63.83Q337.10 68.33 333.18 70.78Q329.26 73.22 324 73.22ZM324 67.46L324 67.46Q329.26 67.46 332.17 63.68Q335.09 59.90 335.09 53.28L335.09 53.28Q335.09 46.66 332.17 42.88Q329.26 39.10 324 39.10L324 39.10Q318.74 39.10 315.83 42.88Q312.91 46.66 312.91 53.28L312.91 53.28Q312.91 59.90 315.83 63.68Q318.74 67.46 324 67.46ZM357.70 72.36L351.65 72.36L351.65 34.20L357.19 34.20L357.41 43.92L356.69 43.27Q357.41 39.89 359.32 37.69Q361.22 35.50 363.89 34.42Q366.55 33.34 369.50 33.34L369.50 33.34Q373.90 33.34 376.81 35.28Q379.73 37.22 381.24 40.50Q382.75 43.78 382.75 47.81L382.75 47.81L382.75 72.36L376.70 72.36L376.70 49.54Q376.70 44.21 374.62 41.44Q372.53 38.66 368.21 38.66L368.21 38.66Q365.26 38.66 362.88 39.92Q360.50 41.18 359.10 43.60Q357.70 46.01 357.70 49.54L357.70 49.54L357.70 72.36ZM410.40 73.22L410.40 73.22Q405.14 73.22 401.22 70.78Q397.30 68.33 395.14 63.83Q392.98 59.33 392.98 53.28L392.98 53.28Q392.98 47.16 395.14 42.70Q397.30 38.23 401.22 35.78Q405.14 33.34 410.40 33.34L410.40 33.34Q415.66 33.34 419.58 35.78Q423.50 38.23 425.66 42.70Q427.82 47.16 427.82 53.28L427.82 53.28Q427.82 59.33 425.66 63.83Q423.50 68.33 419.58 70.78Q415.66 73.22 410.40 73.22ZM410.40 67.46L410.40 67.46Q415.66 67.46 418.57 63.68Q421.49 59.90 421.49 53.28L421.49 53.28Q421.49 46.66 418.57 42.88Q415.66 39.10 410.40 39.10L410.40 39.10Q405.14 39.10 402.23 42.88Q399.31 46.66 399.31 53.28L399.31 53.28Q399.31 59.90 402.23 63.68Q405.14 67.46 410.40 67.46Z\"></path></svg></body></html>",
+    "stack": "'Geist Mono'",
+    "tags": [
+      "sans"
+    ],
+    "line_height": 1.4,
+    "line_width": 38,
+    "font_size": 16,
+    "styles": "@font-face{font-family:'Geist Mono';font-style:normal;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/geist-mono/400.eot?version=646ce1&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/geist-mono/400.eot?version=646ce1&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/geist-mono/400.woff?version=007678&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/geist-mono/400.ttf?version=827a96&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/geist-mono/400.otf?version=986b47&extension=.otf') format('opentype')}@font-face{font-family:'Geist Mono';font-style:italic;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/geist-mono/400-italic.eot?version=399ac0&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/geist-mono/400-italic.eot?version=399ac0&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/geist-mono/400-italic.woff?version=44f40d&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/geist-mono/400-italic.ttf?version=c0408d&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/geist-mono/400-italic.otf?version=d05114&extension=.otf') format('opentype')}.pull-double{margin-left:-.6em}.push-double{margin-right:.6em}.pull-single{margin-left:-.6em}.push-single{margin-right:.6em}.push-double,.push-single{display:inline-block}"
+  },
+  {
+    "name": "Georgia",
+    "id": "georgia",
+    "stack": "georgia, 'times new roman', times, serif",
+    "tags": [
+      "serif",
+      "system"
+    ],
+    "line_height": 1.55,
+    "line_width": 38,
+    "font_size": 16,
+    "styles": ""
+  },
+  {
     "name": "Gill Sans",
     "id": "gill-sans",
     "stack": "'Gill Sans MT', 'Gill Sans', 'Gill Sans Std', Verdana, 'Bitstream Vera Sans', sans-serif",
     "tags": [
-      "sans"
+      "sans",
+      "system"
     ],
     "line_height": 1.5,
     "line_width": 38,
@@ -366,7 +446,8 @@
     "id": "helvetica",
     "stack": "Helvetica,Helvetica Neue,Arial,sans-serif",
     "tags": [
-      "sans"
+      "sans",
+      "system"
     ],
     "line_height": 1.56,
     "line_width": 39,
@@ -384,6 +465,19 @@
     "line_width": 38,
     "font_size": 16,
     "styles": "@font-face{font-family:'iA Writer Duospace';font-style:normal;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/ia-writer/400.eot?version=9d9627&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/ia-writer/400.eot?version=9d9627&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/ia-writer/400.woff2?version=ddb8db&extension=.woff2') format('woff2'),url('{{{config.cdn.origin}}}/fonts/ia-writer/400.woff?version=b52acf&extension=.woff') format('woff')}@font-face{font-family:'iA Writer Duospace';font-style:italic;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/ia-writer/400-italic.eot?version=308f32&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/ia-writer/400-italic.eot?version=308f32&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/ia-writer/400-italic.woff2?version=b525f8&extension=.woff2') format('woff2'),url('{{{config.cdn.origin}}}/fonts/ia-writer/400-italic.woff?version=70d67c&extension=.woff') format('woff')}@font-face{font-family:'iA Writer Duospace';font-style:normal;font-weight:600;src:url('{{{config.cdn.origin}}}/fonts/ia-writer/600.eot?version=4463d8&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/ia-writer/600.eot?version=4463d8&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/ia-writer/600.woff2?version=1d85b6&extension=.woff2') format('woff2'),url('{{{config.cdn.origin}}}/fonts/ia-writer/600.woff?version=3d1167&extension=.woff') format('woff')}@font-face{font-family:'iA Writer Duospace';font-style:italic;font-weight:600;src:url('{{{config.cdn.origin}}}/fonts/ia-writer/600-italic.eot?version=2bd1de&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/ia-writer/600-italic.eot?version=2bd1de&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/ia-writer/600-italic.woff2?version=c0b31e&extension=.woff2') format('woff2'),url('{{{config.cdn.origin}}}/fonts/ia-writer/600-italic.woff?version=eaa9ca&extension=.woff') format('woff')}.pull-double{margin-left:-.6em}.push-double{margin-right:.6em}.pull-single{margin-left:-.6em}.push-single{margin-right:.6em}.push-double,.push-single{display:inline-block}"
+  },
+  {
+    "name": "Impact",
+    "id": "impact",
+    "stack": "impact, 'arial black', sans-serif",
+    "tags": [
+      "sans",
+      "system"
+    ],
+    "line_height": 1.3,
+    "line_width": 38,
+    "font_size": 16,
+    "styles": ""
   },
   {
     "name": "Inconsolata",
@@ -529,6 +623,19 @@
     "styles": "@font-face{font-family:Karla;font-style:normal;font-weight:200;src:url('{{{config.cdn.origin}}}/fonts/karla/200.eot?version=e7259d&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/200.eot?version=e7259d&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/200.woff?version=e78705&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/200.ttf?version=0b928d&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/200.otf?version=465c5a&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:italic;font-weight:200;src:url('{{{config.cdn.origin}}}/fonts/karla/200-italic.eot?version=4e576b&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/200-italic.eot?version=4e576b&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/200-italic.woff?version=d76730&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/200-italic.ttf?version=f88057&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/200-italic.otf?version=5e4e81&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:normal;font-weight:300;src:url('{{{config.cdn.origin}}}/fonts/karla/300.eot?version=f3b14b&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/300.eot?version=f3b14b&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/300.woff?version=8030e1&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/300.ttf?version=a11615&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/300.otf?version=1820e2&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:italic;font-weight:300;src:url('{{{config.cdn.origin}}}/fonts/karla/300-italic.eot?version=2f4784&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/300-italic.eot?version=2f4784&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/300-italic.woff?version=b821c0&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/300-italic.ttf?version=2de582&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/300-italic.otf?version=5f2f1d&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:normal;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/karla/400.eot?version=aadb06&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/400.eot?version=aadb06&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/400.woff?version=a4c35a&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/400.ttf?version=871b31&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/400.otf?version=d09e4d&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:italic;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/karla/400-italic.eot?version=1314d1&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/400-italic.eot?version=1314d1&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/400-italic.woff?version=209d17&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/400-italic.ttf?version=fef8a5&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/400-italic.otf?version=9052ba&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:normal;font-weight:500;src:url('{{{config.cdn.origin}}}/fonts/karla/500.eot?version=76a505&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/500.eot?version=76a505&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/500.woff?version=90eda6&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/500.ttf?version=b2df7a&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/500.otf?version=bd921a&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:italic;font-weight:500;src:url('{{{config.cdn.origin}}}/fonts/karla/500-italic.eot?version=f20067&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/500-italic.eot?version=f20067&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/500-italic.woff?version=24e1ff&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/500-italic.ttf?version=e55db7&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/500-italic.otf?version=75c907&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:normal;font-weight:600;src:url('{{{config.cdn.origin}}}/fonts/karla/600.eot?version=f0704a&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/600.eot?version=f0704a&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/600.woff?version=02496b&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/600.ttf?version=6ef19b&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/600.otf?version=b7f737&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:italic;font-weight:600;src:url('{{{config.cdn.origin}}}/fonts/karla/600-italic.eot?version=4084de&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/600-italic.eot?version=4084de&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/600-italic.woff?version=36ad24&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/600-italic.ttf?version=d792c4&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/600-italic.otf?version=5f2bc4&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:normal;font-weight:700;src:url('{{{config.cdn.origin}}}/fonts/karla/700.eot?version=358c9d&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/700.eot?version=358c9d&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/700.woff?version=6d400f&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/700.ttf?version=886c86&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/700.otf?version=ee4b3a&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:italic;font-weight:700;src:url('{{{config.cdn.origin}}}/fonts/karla/700-italic.eot?version=b00584&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/700-italic.eot?version=b00584&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/700-italic.woff?version=9d0ebd&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/700-italic.ttf?version=a54dac&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/700-italic.otf?version=7f84a4&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:normal;font-weight:800;src:url('{{{config.cdn.origin}}}/fonts/karla/800.eot?version=f30c7e&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/800.eot?version=f30c7e&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/800.woff?version=d8814d&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/800.ttf?version=b025bf&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/800.otf?version=b71c2c&extension=.otf') format('opentype')}@font-face{font-family:Karla;font-style:italic;font-weight:800;src:url('{{{config.cdn.origin}}}/fonts/karla/800-italic.eot?version=dcd34e&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/karla/800-italic.eot?version=dcd34e&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/karla/800-italic.woff?version=b9d749&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/karla/800-italic.ttf?version=914610&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/karla/800-italic.otf?version=a35f84&extension=.otf') format('opentype')}.pull-double{margin-left:-.3045em}.push-double{margin-right:.3045em}.pull-single{margin-left:-.1355em}.push-single{margin-right:.1355em}.push-double,.push-single{display:inline-block}"
   },
   {
+    "name": "Menlo",
+    "id": "menlo",
+    "stack": "menlo, monaco, consolas, 'courier new', monospace",
+    "tags": [
+      "mono",
+      "system"
+    ],
+    "line_height": 1.5,
+    "line_width": 38,
+    "font_size": 16,
+    "styles": ""
+  },
+  {
     "name": "Michroma",
     "id": "michroma",
     "svg": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<html><head></head><body><svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"458.859375\" height=\"102.375\" viewBox=\"0 1.1875 458.859375 100\" preserveAspectRatio=\"xMinYMid meet\"><path d=\"M13.64 83.25L6.89 83.25L6.89 29.25L16.95 29.25L49.61 73.30L81.77 29.25L91.83 29.25L91.83 83.25L85.08 83.25L85.08 35.37L52.84 79.70L46.72 79.70L13.64 35.37L13.64 83.25ZM109.97 83.25L103.22 83.25L103.22 45L109.97 45L109.97 83.25ZM109.97 36L103.22 36L103.22 29.25L109.97 29.25L109.97 36ZM142.63 84.02L142.63 84.02Q135.84 84.02 131.10 83.34Q126.35 82.65 123.43 80.53Q120.52 78.40 119.18 74.14Q117.84 69.89 117.84 62.79L117.84 62.79Q117.84 55.90 119.18 51.75Q120.52 47.60 123.43 45.49Q126.35 43.38 131.10 42.68Q135.84 41.98 142.63 41.98L142.63 41.98Q150.75 41.98 156.01 42.91Q161.26 43.84 163.79 46.72Q166.32 49.61 166.32 55.51L166.32 55.51L159.86 55.51Q159.86 52.10 158.45 50.41Q157.04 48.73 153.32 48.16Q149.59 47.60 142.63 47.60L142.63 47.60Q136.37 47.60 132.71 48.13Q129.06 48.66 127.34 50.19Q125.61 51.71 125.10 54.74Q124.59 57.76 124.59 62.79L124.59 62.79Q124.59 67.99 125.10 71.12Q125.61 74.25 127.34 75.81Q129.06 77.38 132.71 77.89Q136.37 78.40 142.63 78.40L142.63 78.40Q147.94 78.40 151.31 78.10Q154.69 77.80 156.55 76.90Q158.41 76.01 159.13 74.30Q159.86 72.60 159.86 69.75L159.86 69.75L166.32 69.75Q166.32 74.46 164.92 77.31Q163.51 80.16 160.63 81.60Q157.75 83.04 153.26 83.53Q148.78 84.02 142.63 84.02ZM181.09 83.25L174.34 83.25L174.34 29.25L181.09 29.25L181.09 48.13Q182.60 46.09 184.83 44.72Q187.07 43.35 190.81 42.66Q194.55 41.98 200.64 41.98L200.64 41.98Q208.58 41.98 213.17 43.52Q217.76 45.07 219.69 49.04Q221.63 53.02 221.63 60.29L221.63 60.29L221.63 83.25L214.84 83.25L214.84 60.29Q214.84 56.14 214.14 53.61Q213.43 51.08 211.73 49.78Q210.02 48.48 207.04 48.04Q204.05 47.60 199.44 47.60L199.44 47.60Q192.41 47.60 188.40 48.76Q184.39 49.92 182.74 52.40Q181.09 54.88 181.09 58.85L181.09 58.85L181.09 83.25ZM238.01 83.25L231.26 83.25L231.26 42.75L238.01 42.75L238.01 48.34Q239.13 46.55 240.28 45.35Q241.42 44.16 243.26 43.45Q245.11 42.75 248.27 42.45Q251.44 42.15 256.61 42.15L256.61 42.15L256.61 47.81Q249.64 47.81 245.83 48.30Q242.02 48.80 240.36 49.97Q238.71 51.15 238.36 53.23Q238.01 55.30 238.01 58.50L238.01 58.50L238.01 83.25ZM288.88 84.02L288.88 84.02Q282.09 84.02 277.35 83.34Q272.60 82.65 269.68 80.53Q266.77 78.40 265.43 74.14Q264.09 69.89 264.09 62.79L264.09 62.79Q264.09 55.90 265.43 51.75Q266.77 47.60 269.68 45.49Q272.60 43.38 277.35 42.68Q282.09 41.98 288.88 41.98L288.88 41.98Q295.70 41.98 300.43 42.68Q305.16 43.38 308.07 45.49Q310.99 47.60 312.33 51.75Q313.66 55.90 313.66 62.79L313.66 62.79Q313.66 69.89 312.33 74.14Q310.99 78.40 308.07 80.53Q305.16 82.65 300.43 83.34Q295.70 84.02 288.88 84.02ZM306.91 62.79L306.91 62.79Q306.91 57.76 306.40 54.74Q305.89 51.71 304.17 50.19Q302.45 48.66 298.81 48.13Q295.17 47.60 288.88 47.60L288.88 47.60Q282.62 47.60 278.96 48.13Q275.31 48.66 273.59 50.19Q271.86 51.71 271.35 54.74Q270.84 57.76 270.84 62.79L270.84 62.79Q270.84 67.99 271.35 71.12Q271.86 74.25 273.59 75.81Q275.31 77.38 278.96 77.89Q282.62 78.40 288.88 78.40L288.88 78.40Q295.17 78.40 298.81 77.89Q302.45 77.38 304.17 75.81Q305.89 74.25 306.40 71.12Q306.91 67.99 306.91 62.79ZM328.43 83.25L321.68 83.25L321.68 42.75L328.43 42.75L328.43 47.78Q329.94 45.74 332.05 44.37Q334.16 43.00 337.45 42.31Q340.73 41.63 345.87 41.63L345.87 41.63Q352.23 41.63 356.24 43.35Q360.25 45.07 362.14 49.29L362.14 49.29Q363.87 46.62 366.29 44.91Q368.72 43.21 372.39 42.42Q376.07 41.63 381.45 41.63L381.45 41.63Q387.84 41.63 391.85 43.37Q395.86 45.11 397.74 49.29Q399.62 53.47 399.62 60.75L399.62 60.75L399.62 83.25L392.87 83.25L392.87 60.75Q392.87 55.20 391.71 52.29Q390.55 49.39 387.86 48.32Q385.17 47.25 380.60 47.25L380.60 47.25Q371.64 47.25 367.82 49.89Q364.01 52.52 364.01 58.50L364.01 58.50L364.01 58.46Q364.04 59.55 364.04 60.75L364.04 60.75L364.04 83.25L357.29 83.25L357.29 60.75Q357.29 55.20 356.13 52.29Q354.97 49.39 352.28 48.32Q349.59 47.25 345.02 47.25L345.02 47.25Q336.06 47.25 332.24 49.89Q328.43 52.52 328.43 58.50L328.43 58.50L328.43 83.25ZM429.89 84.02L429.89 84.02Q422.61 84.02 417.88 83.27Q413.16 82.51 410.85 79.95Q408.55 77.38 408.55 71.96L408.55 71.96Q408.55 66.45 410.71 63.86Q412.88 61.28 417.57 60.50Q422.26 59.73 429.89 59.73L429.89 59.73Q436.08 59.73 440.26 60.01Q444.45 60.29 447.75 61.00L447.75 61.00Q447.68 56.32 447.12 53.63Q446.55 50.94 445.01 49.64Q443.46 48.34 440.49 47.97Q437.52 47.60 432.60 47.60L432.60 47.60Q426.97 47.60 423.79 47.85Q420.61 48.09 419.17 48.73Q417.73 49.36 417.36 50.55Q416.99 51.75 416.99 53.65L416.99 53.65L410.24 53.65Q410.24 49.85 411.28 47.53Q412.31 45.21 414.81 44.02Q417.30 42.82 421.65 42.40Q425.99 41.98 432.60 41.98L432.60 41.98Q439.70 41.98 444.04 42.89Q448.38 43.80 450.65 46.18Q452.92 48.55 453.71 52.80Q454.50 57.06 454.50 63.77L454.50 63.77L454.50 83.25L447.75 83.25L447.75 80.47Q446.55 81.74 444.45 82.51Q442.34 83.29 438.84 83.65Q435.34 84.02 429.89 84.02ZM429.89 78.54L429.89 78.54Q435.90 78.54 439.49 78.40Q443.07 78.26 444.85 77.63Q446.63 76.99 447.19 75.59Q447.75 74.18 447.75 71.65L447.75 71.65L447.75 65.43L429.89 65.21Q425.14 65.14 422.24 65.34Q419.34 65.53 417.83 66.18Q416.32 66.83 415.81 68.22Q415.30 69.61 415.30 71.96L415.30 71.96Q415.30 74.25 415.81 75.59Q416.32 76.92 417.83 77.55Q419.34 78.19 422.24 78.36Q425.14 78.54 429.89 78.54Z\"></path></svg></body></html>",
@@ -592,6 +699,19 @@
     "line_width": 38,
     "font_size": 16,
     "styles": "@font-face{font-family:Oswald;font-style:normal;font-weight:200;src:url('{{{config.cdn.origin}}}/fonts/oswald/200.eot?version=78ecbc&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/oswald/200.eot?version=78ecbc&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/oswald/200.woff?version=00453f&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/oswald/200.ttf?version=bae2f0&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/oswald/200.otf?version=e7a6f3&extension=.otf') format('opentype')}@font-face{font-family:Oswald;font-style:normal;font-weight:300;src:url('{{{config.cdn.origin}}}/fonts/oswald/300.eot?version=653837&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/oswald/300.eot?version=653837&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/oswald/300.woff?version=f4df4e&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/oswald/300.ttf?version=6ee38c&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/oswald/300.otf?version=ad8c71&extension=.otf') format('opentype')}@font-face{font-family:Oswald;font-style:normal;font-weight:400;src:url('{{{config.cdn.origin}}}/fonts/oswald/400.eot?version=2cf40b&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/oswald/400.eot?version=2cf40b&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/oswald/400.woff?version=dbeab4&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/oswald/400.ttf?version=a7ccbd&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/oswald/400.otf?version=2e4ea2&extension=.otf') format('opentype')}@font-face{font-family:Oswald;font-style:normal;font-weight:500;src:url('{{{config.cdn.origin}}}/fonts/oswald/500.eot?version=0ec030&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/oswald/500.eot?version=0ec030&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/oswald/500.woff?version=e30070&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/oswald/500.ttf?version=14cf87&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/oswald/500.otf?version=258ced&extension=.otf') format('opentype')}@font-face{font-family:Oswald;font-style:normal;font-weight:600;src:url('{{{config.cdn.origin}}}/fonts/oswald/600.eot?version=9f1693&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/oswald/600.eot?version=9f1693&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/oswald/600.woff?version=303a57&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/oswald/600.ttf?version=6a5d13&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/oswald/600.otf?version=358f28&extension=.otf') format('opentype')}@font-face{font-family:Oswald;font-style:normal;font-weight:700;src:url('{{{config.cdn.origin}}}/fonts/oswald/700.eot?version=ee68c2&extension=.eot');src:url('{{{config.cdn.origin}}}/fonts/oswald/700.eot?version=ee68c2&extension=.eot#iefix') format('embedded-opentype'),url('{{{config.cdn.origin}}}/fonts/oswald/700.woff?version=ec3f76&extension=.woff') format('woff'),url('{{{config.cdn.origin}}}/fonts/oswald/700.ttf?version=452bfe&extension=.ttf') format('truetype'),url('{{{config.cdn.origin}}}/fonts/oswald/700.otf?version=faff5f&extension=.otf') format('opentype')}.pull-double{margin-left:-.266em}.push-double{margin-right:.266em}.pull-single{margin-left:-.127em}.push-single{margin-right:.127em}.push-double,.push-single{display:inline-block}"
+  },
+  {
+    "name": "Palatino",
+    "id": "palatino",
+    "stack": "palatino, 'palatino linotype', 'book antiqua', georgia, serif",
+    "tags": [
+      "serif",
+      "system"
+    ],
+    "line_height": 1.55,
+    "line_width": 38,
+    "font_size": 16,
+    "styles": ""
   },
   {
     "name": "Piazzolla",
@@ -819,7 +939,8 @@
     "id": "system-mono",
     "stack": "Consolas, monaco, monospace",
     "tags": [
-      "mono"
+      "mono",
+      "system"
     ],
     "line_height": 1.6,
     "line_width": 39,
@@ -831,7 +952,8 @@
     "id": "system-sans",
     "stack": "-apple-system, BlinkMacSystemFont, 'avenir next', avenir, 'helvetica neue', helvetica, ubuntu, roboto, noto, 'segoe ui', arial, sans-serif",
     "tags": [
-      "sans"
+      "sans",
+      "system"
     ],
     "line_height": 1.4,
     "line_width": 38,
@@ -843,7 +965,8 @@
     "id": "system-serif",
     "stack": "serif",
     "tags": [
-      "serif"
+      "serif",
+      "system"
     ],
     "line_height": 1.45,
     "line_width": 38,
@@ -868,7 +991,21 @@
     "id": "times",
     "stack": "Times,'Times New Roman',serif",
     "tags": [
-      "serif"
+      "serif",
+      "system"
+    ],
+    "line_height": 1.45,
+    "line_width": 38,
+    "font_size": 16,
+    "styles": ""
+  },
+  {
+    "name": "Trebuchet",
+    "id": "trebuchet-ms",
+    "stack": "'trebuchet ms', tahoma, verdana, sans-serif",
+    "tags": [
+      "sans",
+      "system"
     ],
     "line_height": 1.45,
     "line_width": 38,
@@ -906,7 +1043,8 @@
     "id": "verdana",
     "stack": "Verdana, 'Bitstream Vera Sans', Geneva, sans-serif",
     "tags": [
-      "sans"
+      "sans",
+      "system"
     ],
     "line_height": 1.425,
     "line_width": 37.9,

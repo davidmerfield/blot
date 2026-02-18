@@ -78,7 +78,9 @@ module.exports = function (req, res, next) {
     templates = templates.reduce(function (acc, template) {
       // ensure that the template owned by the blog id is in the list
       // rather than the template owned by 'SITE' if there are two templates
-      if (acc.some((t) => t.slug === template.slug && t.name === template.name)) {
+      const targetTemplate = acc.some((t) => t.slug === template.slug && t.name === template.name);
+
+      if (targetTemplate && !targetTemplate.localEditing && !template.localEditing) {
         // if the template is owned by the blog id, replace the template owned by 'SITE'
         // with the template owned by the blog id and also set the property
         if (template.owner === blogID && !template.localEditing) {

@@ -12,10 +12,7 @@ const refreshTemplatePreview = () => {
   const previewFrame = document.getElementById("full_size_preview");
 
   if (previewFrame) {
-    console.log("refreshing preview");
     previewFrame.src += "";
-  } else {
-    console.log("no preview frame to refresh");
   }
 };
 
@@ -24,7 +21,7 @@ const handleAjaxSaveResponse = (response) => {
     response && response.headers && response.headers.get("X-Template-Forked");
 
   if (forked === "1") {
-    window.location.reload();
+    window.location = window.location;
     return response;
   }
 

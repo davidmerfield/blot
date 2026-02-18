@@ -52,6 +52,29 @@ describe("Blog.set", function () {
     });
   });
 
+  it("normalizes converter preferences", function (done) {
+    var test = this;
+
+    set(
+      test.blog.id,
+      { converters: { img: false, markdown: "true", unknown: false } },
+      function (errors) {
+        if (errors) return done.fail(errors);
+
+        get({ id: test.blog.id }, function (err, blog) {
+          if (err) return done.fail(err);
+
+          expect(blog.converters.img).toBe(false);
+          expect(blog.converters.markdown).toBe(true);
+          expect(blog.converters.docx).toBe(true);
+          expect(blog.converters.unknown).toBe(undefined);
+
+          done();
+        });
+      }
+    );
+  });
+
   it("updates the handle host without touching custom domains", function (done) {
     var test = this;
     var originalHandle = test.blog.handle;
@@ -93,6 +116,43 @@ describe("Blog.set", function () {
               }
             );
           });
+        });
+      });
+    });
+  });
+
+  it("updates the cacheID when the menu changes", function (done) {
+    var test = this;
+
+    get({ id: test.blog.id }, function (err, before) {
+      if (err) return done.fail(err);
+
+      var updatedMenu = before.menu.map(function (item, index) {
+        if (index === 0) {
+          return Object.assign({}, item, {
+            label: item.label + " Updated",
+          });
+        }
+
+        return item;
+      });
+
+      var originalCacheID = before.cacheID;
+      var originalCssURL = before.cssURL;
+      var originalScriptURL = before.scriptURL;
+
+      set(test.blog.id, { menu: updatedMenu }, function (err) {
+        if (err) return done.fail(err);
+
+        get({ id: test.blog.id }, function (err, after) {
+          if (err) return done.fail(err);
+
+          expect(after.menu[0].label).toBe(updatedMenu[0].label);
+          expect(after.cacheID).not.toBe(originalCacheID);
+          expect(after.cssURL).not.toBe(originalCssURL);
+          expect(after.scriptURL).not.toBe(originalScriptURL);
+
+          done();
         });
       });
     });

@@ -1,4 +1,7 @@
-<div style="padding: 11px 26px;">
+{{> close-button}}
+
+<div style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
+        <h1>Are.na import</h1>
   <p style="max-width: 600px;">
     The importer can turn an <a href="https://www.are.na/" rel="nofollow">Are.na channel</a> into an archive (.zip) containing
     markdown files. The importer downloads images and stores them with the
@@ -13,7 +16,7 @@
     <input
       type="text"
       name="channel"
-      placeholder="https://www.are.na/alex-singh/assorted-design-references"
+      placeholder="https://www.are.na/..."
     />
 
     <div class="buttons">
@@ -21,4 +24,5 @@
       <a href="{{{importBase}}}">Cancel</a>
     </div>
   </form>
+
 </div>

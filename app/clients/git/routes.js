@@ -5,13 +5,22 @@ var disconnect = require("./disconnect");
 var pushover = require("pushover");
 var sync = require("./sync");
 var dataDir = require("./dataDir");
+var Blog = require("models/blog");
+var debug = require("debug")("blot:clients:git:routes");
 var repos = pushover(dataDir, { autoCreate: true });
+repos.on("error", function (err) {
+  if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+    return debug("Git repos connection error", err.message || err);
+  }
+
+  debug("Git repos error", err);
+});
 var Express = require("express");
 var dashboard = Express.Router();
 var site = Express.Router();
-var debug = require("debug")("blot:clients:git:routes");
 var clfdate = require("helper/clfdate");
 var host = require("config").host;
+var Blog = require("models/blog");
 
 dashboard.get("/", function (req, res, next) {
   repos.exists(req.blog.handle + ".git", function (exists) {
@@ -49,15 +58,24 @@ dashboard.post("/create", function (req, res, next) {
   
   if (req.body.cancel) {
     console.log(clfdate() + " Git: User cancelled creation of repo");
+
+    if (!req.blog.client) {
+      return res.redirect(res.locals.dashboardBase + "/client");
+    }
+
     return disconnect(req.blog.id, next);
   }
 
-  res.redirect(req.baseUrl);
+  Blog.set(req.blog.id, { client: "git" }, function (err) {
+    if (err) return next(err);
 
-  create(req.blog, function (err) {
-    if (err) {
-      console.log(clfdate() + " Git: Error creating repo", err);
-    }
+    res.redirect(req.baseUrl);
+
+    create(req.blog, function (err) {
+      if (err) {
+        console.log(clfdate() + " Git: Error creating repo", err);
+      }
+    });
   });
 });
 
@@ -84,6 +102,38 @@ dashboard.get("/disconnect", function (req, res) {
 dashboard.post("/disconnect", function (req, res, next) {
   req.blog.client = "";
   disconnect(req.blog.id, next);
+});
+
+site.use("/end/:gitHandle.git", function (req, res, next) {
+  Blog.get({ handle: req.params.gitHandle }, function (err, blog) {
+    if (err || !blog) return next();
+
+    if (blog.handle !== req.params.gitHandle) {
+      var oldPathPrefix =
+        "/clients/git/end/" + req.params.gitHandle + ".git";
+      var originalUrl = req.originalUrl || "";
+      var trailingPathAndQuery = "";
+
+      if (originalUrl.indexOf(oldPathPrefix) === 0) {
+        trailingPathAndQuery = originalUrl.slice(oldPathPrefix.length);
+      } else {
+        trailingPathAndQuery = req.url || "";
+      }
+
+      return res
+        .redirect(308,
+          req.protocol +
+            "://" +
+            req.get("host") +
+            "/clients/git/end/" +
+            blog.handle +
+            ".git" +
+            trailingPathAndQuery
+        );
+    }
+
+    return next();
+  });
 });
 
 site.use("/end/:gitHandle.git", authenticate);
@@ -117,6 +167,47 @@ site.get("/syncs-finished/:blogID", function (req, res) {
 });
 
 repos.on("push", function (push) {
+  if (push) {
+    push.on("error", function (err) {
+      if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+        return debug("Git push error", err.message || err);
+      }
+
+      debug("Git push unexpected error", err);
+    });
+  }
+
+  if (push && push.request) {
+    push.request.on("error", function (err) {
+      if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+        return debug("Git push request connection error", err.message || err);
+      }
+
+      debug("Git push request error", err);
+    });
+
+    push.request.on("aborted", function () {
+      debug("Git push request aborted");
+    });
+  }
+
+  if (push && push.response) {
+    push.response.on("error", function (err) {
+      if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+        return debug("Git push response connection error", err.message || err);
+      }
+
+      debug("Git push response error", err);
+    });
+  }
+
+  if (push && push.branch && push.branch !== "master") {
+    return push.reject(
+      400,
+      "Push rejected: only the master branch is allowed. Please push to master or open a PR."
+    );
+  }
+
   push.accept();
 
   // This might cause an interesting race condition. It happened for me during
@@ -158,6 +249,39 @@ repos.on("push", function (push) {
 // site.use("/end/:gitHandle.git", function(req, res) {
 // I would feel more comfortable if I could.
 site.use("/end", function (req, res) {
+  function endResponse() {
+    if (res && !res.headersSent && !res.finished && !res.writableEnded) {
+      try {
+        res.end();
+      } catch (err) {
+        debug("Error ending git response", err);
+      }
+    }
+  }
+
+  req.on("error", function (err) {
+    if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+      debug("Git request connection error", err.message || err);
+    } else {
+      debug("Git request error", err);
+    }
+
+    endResponse();
+  });
+
+  req.on("aborted", function () {
+    debug("Git request aborted");
+    endResponse();
+  });
+
+  res.on("error", function (err) {
+    if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
+      return debug("Git response connection error", err.message || err);
+    }
+
+    debug("Git response error", err);
+  });
+
   req.pause();
   repos.handle(req, res);
   req.resume();

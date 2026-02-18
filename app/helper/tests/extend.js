@@ -76,4 +76,27 @@ describe("extend ", function () {
     extend(a2).and(b2);
     expect(a2).toEqual(r2);
   });
+
+  it("merges arrays when both exist", function () {
+    var a = { items: [1, 2], tags: ["foo"] };
+    var b = { items: [3, 4], tags: ["bar", "foo"], other: [5, 6] };
+    extend(a).and(b);
+    expect(a.items).toEqual([1, 2, 3, 4]);
+    expect(a.tags).toEqual(["foo", "bar"]); // deduplicated and sorted
+    expect(a.other).toEqual([5, 6]);
+  });
+
+  it("sets array if undefined in target", function () {
+    var a = { name: "Test" };
+    var b = { items: [1, 2, 3] };
+    extend(a).and(b);
+    expect(a.items).toEqual([1, 2, 3]);
+  });
+
+  it("preserves array if undefined in source", function () {
+    var a = { items: [1, 2, 3] };
+    var b = { name: "Test" };
+    extend(a).and(b);
+    expect(a.items).toEqual([1, 2, 3]);
+  });
 });

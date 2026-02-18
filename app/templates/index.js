@@ -443,11 +443,12 @@ function watch(directory) {
   debug("Watching", directory, "for changes...");
 
   var queue = async.queue(function (directory, callback) {
+    console.time("Built " + directory);
     build(directory, function (err) {
       if (err) {
         console.error(err.message);
       }
-
+      console.timeEnd("Built " + directory);
       callback();
     });
   });

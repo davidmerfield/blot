@@ -2,21 +2,21 @@
 
 <h1>JSON feed</h1>
 
-<p>The <a href="https://jsonfeed.org">JSON feed</a> format is a pragmatic syndication format, like RSS and Atom, but with one big difference: it’s JSON instead of XML.</p>
+<p>The <a href="https://jsonfeed.org">JSON feed</a> format is a syndication format, like RSS and Atom, but it’s JSON instead of XML.</p>
 
-<p>To expose a JSON feed on your site, add a new view to your template and paste in the following code. <em>Warning: If you have an existing view called <b>feed.rss</b> or <b>feed.xml</b>, please name your JSON feed something other than <b>feed.json</b>. There's an obscure bug which I will fix soon that is triggered when two template views share the same name, even if they have different extensions.</em></p>
-
-<p>You can verify your feed is correctly formed using the <a href="http://validator.jsonfeed.org/">JSON feed validator</a>.</p>
-
-<br>
-
-<pre class="code html">
-{ 
+<p>To expose a JSON feed on your site:</p>
+<div class="steps">
+  <ol>
+    <li>Add a new view to your template. <div class="guide-callout guide-callout--warning">
+      <b>Warning:</b> If you have an existing view called <b>feed.rss</b> or <b>feed.xml</b>, please name your JSON feed something other than <b>feed.json</b>. Two template views cannot share the same name, even if they have different extensions.
+    </div>
+    </li>
+    <li>Paste in the following code: <pre class="html" data-file="json-feed.json"><code>{ 
   "version": "https://jsonfeed.org/version/1",
   "title": "{{#encodeJSON}}{{{title}}}{{/encodeJSON}}",
   "description": "{{#encodeJSON}}Feed for {{{title}}}{{/encodeJSON}}",
-  "home_page_url": "{{{blogURL}}}",
-  "feed_url": "{{{blogURL}}}/jsonfeed.json",
+  "home_page_url": "{{{siteURL}}}",
+  "feed_url": "{{{siteURL}}}/jsonfeed.json",
   "items": [
     {{#recentEntries}}
     { 
@@ -26,7 +26,7 @@
       "summary": "{{#encodeJSON}}{{{summary}}}{{/encodeJSON}}",
       {{/summary}}
       {{#thumbnail.large}}
-      "image": "{{{blogURL}}}{{{url}}}",
+      "image": "{{{siteURL}}}{{{url}}}",
       {{/thumbnail.large}}
       "content_html": "{{#encodeJSON}}{{#absoluteURLs}}{{{body}}}{{/absoluteURLs}}{{/encodeJSON}}",
       "date_published": "{{#formatDate}}YYYY-MM-DDTHH:mm:ssZ{{/formatDate}}",
@@ -35,7 +35,16 @@
     {{/recentEntries}}
   ]
 }
-</pre>
+</code></pre>
+</li>
+  </ol>
+</div>
+
+ add a new view to your template and paste in the following code.</p>
+
+<p>You can verify your feed is correctly formed using the <a href="http://validator.jsonfeed.org/">JSON feed validator</a>.</p>
+
+
 
 <br><br>
 <p><em>Thanks to <a href="https://www.amitgawande.com/">Amit Gawande</a> and <a href="https://www.thingelstad.com/">Jamie Thingelstad</a> for their help with this guide. And thanks to <a href="https://manton.org">Manton Reece</a> and <a href="http://inessential.com/">Brent Simmons</a> for writing the JSON feed spec.</em></p>

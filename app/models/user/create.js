@@ -26,6 +26,8 @@ module.exports = function create (
     isDisabled: false,
     blogs: [],
     lastSession: "",
+    created: Date.now(),
+    welcomeEmailSent: false,
     email: email,
     subscription: subscription,
     paypal: paypal,

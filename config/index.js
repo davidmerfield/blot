@@ -44,7 +44,7 @@ module.exports = {
     // the development server needs to know the production
     // server's host. This let's us use the same code
     relay_host: "webhooks.blot.im",
-    development_host: "localhost",
+    development_host: "local.blot",
   },
 
   maintenance: process.env.BLOT_MAINTENANCE === "true",
@@ -219,14 +219,7 @@ module.exports = {
       }
     })(),
   },
-
-  twitter: {
-    consumer_key: process.env.BLOT_TWITTER_CONSUMER_KEY,
-    consumer_secret: process.env.BLOT_TWITTER_CONSUMER_SECRET,
-    access_token: process.env.BLOT_TWITTER_ACCESS_TOKEN_KEY,
-    access_token_secret: process.env.BLOT_TWITTER_ACCESS_TOKEN_SECRET,
-  },
-
+  
   icloud: {
     secret: process.env.BLOT_ICLOUD_SERVER_SECRET,
     server_address: process.env.BLOT_ICLOUD_SERVER_ADDRESS,

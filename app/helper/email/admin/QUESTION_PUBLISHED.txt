@@ -1,0 +1,5 @@
+Question published: {{title}}
+
+{{body}}
+
+[View published question]({{{questionURL}}})

@@ -18,6 +18,9 @@ describe("is_url", function () {
   should_be_url("https://example.org");
   should_be_url("https://ww.example.org.123");
   should_be_url("https://example.org/apple/pie");
+  should_be_url("mailto:user@example.com");
+  should_be_url("tel:+15551234567");
+  should_be_url("sms:+15551234567");
 
   should_not_be_url();
   should_not_be_url({ a: 1, b: 2 });

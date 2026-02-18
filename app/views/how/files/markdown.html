@@ -1,10 +1,8 @@
 <h1>Markdown</h1>
 
-.txt&nbsp; .md&nbsp; .rtf
+<p class="supported-extensions">File extensions: <span>.txt</span> <span>.md</span> <span>.rtf</span> <span>.textbundle</span></p>
 
-<p>Use the full range of <a href="/how/posts/markdown">Markdown</a> features to add formatting to your posts. Blot also renders <a href="/how/posts/tex">mathematics</a>  and provides syntax highlighting for code snippets.</p>
-
-<p>Markdown is a text-to-HTML conversion tool for web writers created by John Gruber. Markdown allows you to write using an easy-to-read, easy-to-write plain text format that is simple to convert to HTML. </p>
+<p>Markdown is a text-to-HTML conversion tool for web writers. Markdown allows you to write using an easy-to-read, easy-to-write plain text format that is simple to convert to HTML. Blot also supports <a href="/how/formatting/math">math</a> via the KaTeX plugin (rendered after conversion when enabled) and provides syntax highlighting for code snippets.</p>
 
 <pre class="text with-chrome" title="Post.txt"><code><b># Formatting</b>
 
@@ -15,132 +13,133 @@ Use it for links, headings, lists and much more.
 </code>
 </pre>
 
-<p>Note that you can always mix HTML tags directly into Markdown files, should you need to do something beyond the limits of the Markdown.</p>
-
 <h2>Bold and italics</h2>
 
 <p>Surrounding text with two asterisks makes text bold:</p>
 
-<pre><code>**This text will be bold.**</code></pre>
+<pre class="md"><code>**This text will be bold.**</code></pre>
 
 <p>To create italics, use a single asterix (*) on either side of the text:</p>
 
-<pre><code>*This text will be italic.*</code></pre>
+<pre class="md"><code>*This text will be italic.*</code></pre>
 
 <p>Both * or _ symbols work to make text bold or italic. This way you can combine bold and italic in the same sentence. For example:</p>
 
-<pre><code>**Everyone _must_ listen.**</code></pre>
+<pre class="md"><code>**Everyone _must_ listen.**</code></pre>
+
 
 <h2>Headings</h2>
 
 <p>You can create headings using the octothorpe (#).</p>
 
-<pre><code># Largest heading</code></pre>
+<pre class="md"><code># Largest heading</code></pre>
 
 <p>Use two octothropes to create a subheading.</p>
 
-<pre><code>## Subheading</code></pre>
+<pre class="md"><code>## Subheading</code></pre>
 
 <p>Alternatively, for H1 and H2, an underline-ish style:</p>
 
-<p><pre>Alternative heading
+<pre class="md"><code>Alternative heading
 ===================
 
 Alternative subheading
-----------------------</pre>
-</p>
+----------------------</code></pre>
 
 <h2>Links</h2>
 
 <p>Create a text link by wrapping the linked text in brackets [ ], and then wrapping the link in parenthesis ( ). For example:</p>
 
-<pre><code>[Wikipedia](https://wikipedia.org)</pre></code>
+<pre class="md"><code>[Wikipedia](https://wikipedia.org)</code></pre>
 
 <h2>Images</h2>
 
 <p>Use the syntax for a link, with an exclamation point (!) in front. For example:
 
-<pre><code>![Image title](https://url.of/the/image.jpg)</code></pre>
-</code></pre>
+<pre class="md"><code>![Image title](https://url.of/the/image.jpg)</code></pre>
+</p>
 
 <p>If the file <code>_image.jpg</code> is inside the same directory, then you can use a relative path like so:</p>
 
-<pre><code>![Image title](_image.jpg)</code></pre>
-</code></pre>
+<pre class="md"><code>![Image title](_image.jpg)</code></pre>
 
 <p>Otherwise, use an absolute path with your site folder as root:</p>
 
-<pre><code>![Image title](/_Files/image.jpg)</code></pre>
-</code></pre>
+<pre class="md"><code>![Image title](/_Files/image.jpg)</code></pre>
 
 <p>You can wrap the image in a link like so:</p>
 
-<pre><code>[![Image title](https://url.of/the/image.jpg)](https://url.of/the/page)</code></pre>
+<pre class="md"><code>[![Image title](https://url.of/the/image.jpg)](https://url.of/the/page)</code></pre>
 
 
 <h2>Lists</h2>
 <p>Make a bulleted list by preceding list items with a single hyphen (-)  or an asterix (*). You need a space between the hyphen and the text.</p>
 
-<pre>- Round
+<pre class="md"><code>- Round
 - Shell
-- Projectile</pre>
+- Projectile</code></pre>
 
 <p>Create a numbered list by preceding list items with a number.</p>
 
-<pre>1. Eins
+<pre class="md"><code>1. Eins
 2. Deux
-3. Tres</pre>
+3. Tres</code></pre>
 
 <p>Create a list which starts with a custom number by putting a single parenthesis like so:</p>
-<pre> 9) Ninth
+<pre class="md"><code> 9) Ninth
 10) Tenth
-11) Eleventh</pre>
+11) Eleventh</code></pre>
 
 <p>Create a list with non-nigit characters like so:</p>
-<pre>i. Unus
+<pre class="md"><code>i. Unus
 ii. Duo
-iii. Tres</pre>
+iii. Tres</code></pre>
 
 <p>If it's a capital letter, put two characters after the period:</p>
-<pre>A.  Unus
+<pre class="md"><code>A.  Unus
 B.  Duo
-C.  Tres</pre>
+C.  Tres</code></pre>
 
 <p>Create a checklist like so:</p>
-<pre>- [x] First task
+<pre class="md"><code>- [x] First task
 - [ ] Second task
-- [ ] Third task</pre>
+- [ ] Third task</code></pre>
 
 <h2>Footnotes</h2>
 <p>Use square brackets and a caret (^) to mark the position of a footnote in your text:</p>
 
-<pre>Use this syntax.[^1] Another line with a different footnote.[^2]</pre>
+<pre class="md"><code>Use this syntax.[^1] Another line with a different footnote.[^2]</code></pre>
 
 <p>And then write the footnotes themselves at the bottom of your file like this:</p>
 
-<pre>[^1]: And the note goes here.
-[^2]: And the second goes here too.</pre>
+<pre class="md"><code>[^1]: And the note goes here.
+[^2]: And the second goes here too.</code></pre>
 
 <p>You can also write footnotes inline with your text:</p>
-<pre>Use this syntax ^[Footnote text goes here] for inline footnotes.</pre>
+<pre class="md"><code>Use this syntax ^[Footnote text goes here] for inline footnotes.</code></pre>
 
 <h2>Strike out text</h2>
 <p>Put a double tilde (~) on either side of the text you want to strikethrough:</p>
 
-<pre><code>~~Strike out mistakes~~</code></pre>
+<pre class="md"><code>~~Strike out mistakes~~</code></pre>
+
+<h2>Highlighting</h2>
+<p>Surround text with double equals signs (==) to mark or highlight it:</p>
+
+<pre class="md"><code>==This text will be highlighted.==</code></pre>
 
 <h2>Code</h2>
 <p>Indent code with four spaces:</p>
 
-<pre>
+<pre class="md"><code>
     var foo = &#x201C;bar&#x201D;;
-</pre>
+</code></pre>
 
 <p>You can also wrap code with three backticks (`) and specify the language to enable syntax highlighting:</p>
 
-<pre>```javascript
+<pre class="md"><code>```javascript
 var foo = "bar";
-```</pre>
+```</code></pre>
 
 <p>You can customize your code's syntax highlighting by modifying the highlight.js CSS file which comes with <a href="/templates/developers">your site's template.</a></p>
 
@@ -148,26 +147,26 @@ var foo = "bar";
 
 <p>Use three or more hyphens (-), asterisks (*) or underscores (_) to create a horizontal rule.</p>
 
-<pre><code>---</code></pre>
-<pre><code>***</code></pre>
-<pre><code>___</code></pre>
+<pre class="md"><code>---</code></pre>
+<pre class="md"><code>***</code></pre>
+<pre class="md"><code>___</code></pre>
 
 <h2>Blockquotes</h2>
 
 <p>Markdown uses email-style > characters for block quoting. They are presented as:</p>
 
-<pre>> This is a blockquote with two paragraphs.
+<pre class="md"><code>> This is a blockquote with two paragraphs.
 >
-> This is the second pragraph. Vestibulum enim wisi.</pre>
+> This is the second pragraph. Vestibulum enim wisi.</code></pre>
 
 <h2>Tables</h2>
 
 <p>You can the follow syntax to create tables:</p>
 
-<pre>| Syntax      | Description |
+<pre class="md"><code>| Syntax      | Description |
 | ----------- | ----------- |
 | Header      | Title       |
-| Paragraph   | Text        |</pre>
+| Paragraph   | Text        |</code></pre>
 
 
 
@@ -177,3 +176,9 @@ var foo = "bar";
 
 <h2>Citations</h2>
 <p>You can use an external BibTex citations file to store your citations. Read the <a href="/how/posts/citations">guide to using citations</a>.</p>
+
+<h2>TextBundle</h2>
+<p>You can use the <a href="https://textbundle.org/">TextBundle</a> format to embed images in Markdown files when using supported apps including <a href="/how/tools/ulysses">Ulysses</a> and <a href="/how/tools/bear">Bear</a>.</p>
+
+<h2>Divs and spans (Pandoc)</h2>
+<p>Blot supports Pandoc's native <a href="https://pandoc.org/MANUAL.html#divs-and-spans">Div and Span syntax</a> in Markdown, so you can add attributes with fenced divs and bracketed spans. This makes it possible to create custom features in your template by targeting classes and IDs in your CSS or layout. See the <a href="/templates/developers">developer documentation</a> for more on customizing templates.</p>

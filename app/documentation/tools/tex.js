@@ -40,7 +40,6 @@ module.exports = $ => {
   }
 
   function findTextNodes (node) {
-    // if ($(node).is(ignore)) return false;
 
     $(node)
       .contents()
@@ -50,15 +49,17 @@ module.exports = $ => {
         if (childNode.type === "text") {
           var text = childNode.data;
 
-          while (has_TeX(text)) {
-            try {
-              text = render(text);
-            } catch (e) {
-              break;
+          if (has_TeX(text)) {
+            while (has_TeX(text)) {
+              try {
+                text = render(text);
+              } catch (e) {
+                break;
+              }
             }
+            $(childNode).replaceWith(text);
           }
 
-          $(childNode).replaceWith(text);
         } else {
           findTextNodes(childNode);
         }

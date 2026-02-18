@@ -1,6 +1,6 @@
 {{> template-settings-back}}
 
-<form method='post' class="dashboard-form" action='{{{dashboardBase}}}' enctype='multipart/form-data'>
+<form method='post' class="dashboard-form" action='{{{dashboardBase}}}' enctype='multipart/form-data' style="max-width: 600px;">
 
   	<div class="settings-group">
 		<h2 class="template-heading">Menu links</h2>
@@ -19,15 +19,33 @@
   {{/blog.menu.length}}
   {{#blog.menu}}
   <section id="link_{{ id }}">
-    <span class="handle">&#9776;</span>
+    <span class="handle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M10 13a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm0-4a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm-4 4a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm5-9a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM6 5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg></span>
     <input type="hidden" name="menu.{{ index }}.id" value="{{ id }}"/ >
     {{#page}}
 
-    <a class="pageLink" target="_blank" href="{{ blog.blogURL }}{{ url }}">
-      <span class="link" style="height: 1px; display: inline-block">{{
+    <div style="flex-grow: 1;border-left: 1px solid var(--border-color);">
+    <div style="display: flex;">
+      <span style="flex-basis: 33%;flex-grow:1;padding: 8px 10px;border-right: 1px solid var(--border-color);">{{
         label
       }}</span>
-    </a>
+      <span  style="flex-basis: 33%;flex-grow:1;padding:8px 10px;border-right: 1px solid var(--border-color);">{{
+        url
+      }}</span>
+          <a href="#!" class="removeLink page">Delete</a>
+      </div>
+
+      <a href="{{{dashboardBase}}}/folder{{{id}}}" style="display: block;font-size: 14px;border-top: 1px solid var(--border-color);padding:5px 10px;">
+        <span class="icon-file"></span>&nbsp;
+        {{
+        id
+      }}</a>
+
+      <div class="details" style="display: none;font-size: 14px;border-top: 1px solid var(--border-color);background:var(--light-background-color);padding:0 10px 10px">
+        <p>To remove this link from your menu, add the following <a href="/how/metadata#menu">metadata</a> to the file:</p>
+        <pre style="margin-bottom: 0;"><code>Menu: no</code></pre>
+      </div>
+          
+</div>
     {{/page}}
     {{^page}}
 
@@ -50,7 +68,7 @@
 </section>
 
 <section id="link_" style="display: none">
-  <span class="handle">&#9776;</span>
+    <span class="handle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M10 13a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm0-4a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm-4 4a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm5-9a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM6 5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg></span>
   <input disabled type="hidden" name="menu.{index}.id" value="{id}"/ >
   <input
     disabled
@@ -74,18 +92,8 @@
 
 <a
   id="add"
-  href="#!"
-  style="
-    padding: 11px 20px;
-    display: block;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-    color: var(--accent-color);
-    padding-right: 40px;
-  "
-  ><span class="photo-holder plus" style="text-align: center; text-indent: 1px"
-    >+</span
-  ><span class="on-hover">Add new link</span></a
+  href="#!">
+    <span class="icon-plus"></span>&nbsp; Add link</a
 >
 
 {{> form-footer}}
@@ -94,77 +102,4 @@
 
 </div>
 </form>
-
-<script src="/js/jquery.js?{{ cacheID }}"></script>
-<script src="/js/sortable.js?{{ cacheID }}"></script>
-<script type="text/javascript">
-  Sortable.create($(".sortable")[0], {
-    handle: ".handle",
-    ghostClass: "sortable-ghost",
-    onUpdate: function () {
-      $(".sortable")
-        .find("section")
-        .each(function () {
-          var index = $(this).index();
-          $(this)
-            .find("input")
-            .each(function () {
-              var name = $(this).attr("name");
-              var newName =
-                name.slice(0, name.indexOf(".") + 1) +
-                index +
-                name.slice(name.lastIndexOf("."));
-              $(this).attr("name", newName);
-              console.log(name + " > " + newName);
-            });
-          console.log("");
-        });
-    }
-  });
-
-  $("#menu").on("click", ".removeLink", function (e) {
-    $(this).parent().remove();
-    e.preventDefault();
-
-    if (!$("#menu section").length) {
-      $("#emptyMenu").show();
-    }
-
-    return false;
-  });
-
-  $("#add").click(function (e) {
-    
-    var index = $("#menu section").length;
-    var linkID = new Date().getTime();
-    var newlink = $("#link_").clone().removeAttr("style");
-
-    $("#emptyMenu").hide();
-
-    newlink
-      .attr("id", function (el, val) {
-        return val + linkID;
-      })
-      .find("input")
-      .removeAttr("disabled")
-      .end()
-      .find('input[name*="{index}"]')
-      .attr("name", function (i, val) {
-        return val.split("{index}").join(index);
-      })
-      .end()
-      .find('input[value*="{id}"]')
-      .attr("value", function (i, val) {
-        return val.split("{id}").join(linkID);
-      })
-      .end();
-
-    newlink.appendTo("#menu");
-
-    $('[name="title_' + linkID + '"]').focus();
-
-    e.preventDefault();
-    return false;
-  });
-</script>
 

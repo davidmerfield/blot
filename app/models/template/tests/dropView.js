@@ -94,7 +94,7 @@ describe("template", function () {
   // This is not yet implemented
   it("dropView returns an error when the template does not exist", function (done) {
     var test = this;
-    dropView(test.fake.random.word(), test.view.name, function (err) {
+    dropView("nonexistent:template", test.view.name, function (err) {
       expect(err instanceof Error).toBe(true);
       expect(err.code).toEqual("ENOENT");
       done();

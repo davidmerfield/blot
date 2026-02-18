@@ -50,7 +50,7 @@ a.blog-link .text-info {
 }
 
 .site:hover {
-  background-color: #e4eafb75
+  background-color: var(--light-background-color);
 }
 
 .site:active {
@@ -96,7 +96,7 @@ button.logout {
 }
 
 button.logout:hover {
-  background-color: #e4eafb;
+  background-color: var(--light-background-color);
   color: var(--accent-color);
 }
 
@@ -143,20 +143,6 @@ span.file {
 
 span.file {
   background-image: url("/images/file.svg");
-}
-
-.underline {
-  color: blue;
-  text-decoration: none;
-  text-shadow: 0.03em 0 #fff, -0.03em 0 #fff, 0 0.03em #fff, 0 -0.03em #fff,
-    0.06em 0 #fff, -0.06em 0 #fff, 0.09em 0 #fff, -0.09em 0 #fff, 0.12em 0 #fff,
-    -0.12em 0 #fff, 0 0.03em #fff, 0 -0.03em #fff, 0 0.06em #fff, 0 -0.06em #fff,
-    0 0.08em #fff, 0 -0.08em #fff;
-  background-image: linear-gradient(#fff, #fff), linear-gradient(#fff, #fff),
-    linear-gradient(blue, blue);
-  background-size: 0 0, 0 0, 0.07em 0.07em;
-  background-repeat: no-repeat, no-repeat, repeat-x;
-  background-position: 0% 90%, 100% 90%, 0% 95%;
 }
 
 .sortable>section {}
@@ -299,7 +285,12 @@ line-height: 48px;
 
 .removeLink {
   text-decoration: none;
-  font-size: 12px
+  font-size: 12px;
+  padding: 11px;
+  color: var(--error-text-color)
+}
+.removeLink:hover {
+  background-color: var(--light-background-color);
 }
 
 
@@ -435,4 +426,5 @@ line-height: 48px;
   color: var(--success-text-color);
   background: var(--success-background-color);
 }
+
 

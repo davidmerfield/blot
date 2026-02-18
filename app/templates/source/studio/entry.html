@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+    <div class="container">
+      {{#entry}}
+
+        {{{titleTag}}}
+
+        <p class="light">
+          {{date}}
+
+          {{#tags.length}}
+            {{#tags}}
+            ☼ <a class="light" href="/tagged/{{slug}}">{{name}}</a>
+            {{/tags}}
+          {{/tags.length}}
+        </p>
+
+        {{{body}}}
+
+        <br>
+        {{> pluginHTML}}
+
+      {{/entry}}
+    {{> footer}}
+  </body>
+</html>

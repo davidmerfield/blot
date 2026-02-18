@@ -88,6 +88,41 @@ describe("entries", function () {
     });
   });
 
+  describe("scheduled rebuilds", function () {
+    it("clears the scheduled flag when the dateStamp is removed", function (done) {
+      const blogID = this.blog.id;
+      const path = "/scheduled-entry.txt";
+      const future = Date.now() + 24 * 60 * 60 * 1000;
+
+      const initialEntry = buildEntry(path, { dateStamp: future });
+
+      Entry.set(blogID, path, initialEntry, function (err) {
+        if (err) return done.fail(err);
+
+        Entry.get(blogID, path, function (stored) {
+          expect(stored.scheduled).toBe(true);
+
+          const rebuild = Object.assign({}, stored, {
+            metadata: {},
+            dateStampWasRemoved: true,
+          });
+
+          delete rebuild.dateStamp;
+
+          Entry.set(blogID, path, rebuild, function (err) {
+            if (err) return done.fail(err);
+
+            Entry.get(blogID, path, function (updated) {
+              expect(updated.scheduled).toBe(false);
+              expect(updated.dateStamp).toBe(updated.created);
+              done();
+            });
+          });
+        });
+      });
+    });
+  });
+
   describe("pruneMissing", function () {
     it("removes orphaned IDs from entry lists", function (done) {
       const blogID = this.blog.id;
@@ -158,37 +193,76 @@ describe("entries", function () {
     });
   });
 
+  it("getPage should reject invalid page numbers", function (done) {
+    const blogID = this.blog.id;
+    const pageSize = 2;
+
+    // Test various invalid inputs
+    const invalidInputs = [
+      null,
+      "",
+      "abc",
+      "-1",
+      "0",
+      "1.5",
+      "1000001", // exceeds MAX_PAGE_NUMBER
+      "999999999999999999999", // exceeds safe integer
+    ];
+
+    let testsRemaining = invalidInputs.length;
+
+    invalidInputs.forEach((invalidInput) => {
+      Entries.getPage(
+        blogID,
+        { pageNumber: invalidInput, pageSize },
+        function (error, entries, pagination) {
+          expect(error).not.toBeNull();
+          expect(error.statusCode).toBe(400);
+          expect(error.message).toBe("Invalid page number");
+          expect(error.invalidInput).toBe(invalidInput);
+          expect(entries).toBeNull();
+          expect(pagination).toBeNull();
+
+          testsRemaining--;
+          if (testsRemaining === 0) {
+            done();
+          }
+        }
+      );
+    });
+  });
+
   it("getPage should return a page of entries sorted by date", async function (done) {
     const key = `blog:${this.blog.id}:entries`;
     const now = Date.now();
     // Add 6 mock entries in Redis
     await redis.zadd(
-        key,
-        now,
-        "/a.txt",
-        now + 1000,
-        "/b.txt",
-        now + 2000,
-        "/c.txt",
-        now + 3000,
-        "/d.txt",
-        now + 4000,
-        "/e.txt",
-        now + 5000,
-        "/f.txt"
-    );  
+      key,
+      now,
+      "/a.txt",
+      now + 1000,
+      "/b.txt",
+      now + 2000,
+      "/c.txt",
+      now + 3000,
+      "/d.txt",
+      now + 4000,
+      "/e.txt",
+      now + 5000,
+      "/f.txt"
+    );
 
     // spy on the Entry.get function
     // to return the full fake entry
     spyOn(Entry, "get").and.callFake((blogID, ids, callback) => {
-        // if array, return an array of fake entries
-        if (Array.isArray(ids)) {
-            const entries = ids.map((id) => ({ id }));
-            return callback(entries);
-            // return a single fake entry
-        } else {
-            return callback({ id: ids });
-        }
+      // if array, return an array of fake entries
+      if (Array.isArray(ids)) {
+        const entries = ids.map((id) => ({ id }));
+        return callback(entries);
+        // return a single fake entry
+      } else {
+        return callback({ id: ids });
+      }
     });
 
     const pageNo = 2;
@@ -196,27 +270,52 @@ describe("entries", function () {
     const blogID = this.blog.id;
 
     // get the second page of entries, 2 per page, sorted by date with newest first
-    Entries.getPage(blogID, pageNo, pageSize, function (entries, pagination) {
+    Entries.getPage(
+      blogID,
+      {
+        pageNumber: pageNo,
+        pageSize,
+        sortBy: "date",
+      },
+      function (error, entries, pagination) {
+        expect(error).toBeNull();
         expect(entries.map((entry) => entry.id)).toEqual(["/d.txt", "/c.txt"]);
         expect(pagination).toEqual({
-            current: 2,
-            next: 3,
-            previous: 1,
-            total: 3, // 6 entries / 2 per page
-            pageSize: 2,
+          current: 2,
+          next: 3,
+          previous: 1,
+          total: 3, // 6 entries / 2 per page
+          pageSize: 2,
         });
 
         // get the first page of entries, 2 per page, sorted reverse alphabetically
-        Entries.getPage(blogID, 1, pageSize, function (entries, pagination) {
-            expect(entries.map((entry) => entry.id)).toEqual(["/f.txt", "/e.txt"]);
+        Entries.getPage(
+          blogID,
+          { pageNumber: 1, pageSize, sortBy: "id", order: "desc" },
+          function (error, entries, pagination) {
+            expect(error).toBeNull();
+            expect(entries.map((entry) => entry.id)).toEqual([
+              "/f.txt",
+              "/e.txt",
+            ]);
             // get the first page of entries, 2 per page, sorted alphabetically
-            Entries.getPage(blogID, 1, pageSize, function (entries, pagination) {
-                expect(entries.map((entry) => entry.id)).toEqual(["/a.txt", "/b.txt"]);
+            Entries.getPage(
+              blogID,
+          { pageNumber: 1, pageSize, sortBy: "id", order: "asc" },
+              function (error, entries, pagination) {
+                expect(error).toBeNull();
+                expect(entries.map((entry) => entry.id)).toEqual([
+                  "/a.txt",
+                  "/b.txt",
+                ]);
                 done();
-            }, { sortBy: "id", order: "asc" });
-        }, { sortBy: "id", order: "desc" });
-    });
-});
+              }
+            );
+          }
+        );
+      }
+    );
+  });
 
   it("getRecent should return the most recent entries with their indices", async function (done) {
     const key = `blog:${this.blog.id}:entries`;
@@ -249,6 +348,95 @@ describe("entries", function () {
     });
   });
 
+
+
+
+
+  describe("path index maintenance", function () {
+    it("updates lex index for changed entries once index is ready", function (done) {
+      const blogID = this.blog.id;
+      const entriesKey = `blog:${blogID}:entries`;
+      const lexKey = `blog:${blogID}:entries:lex`;
+      const readyKey = `blog:${blogID}:entries:lex:ready`;
+      const now = Date.now();
+
+      redis.zadd(entriesKey, now, "/Blog/existing.txt", function (err) {
+        if (err) return done.fail(err);
+
+        redis.multi().zadd(lexKey, 0, "/Blog/existing.txt").set(readyKey, "1").exec(function (err) {
+          if (err) return done.fail(err);
+
+          Entry.set(blogID, "/Blog/new.txt", buildEntry("/Blog/new.txt"), function (err) {
+            if (err) return done.fail(err);
+
+            redis.zrange(lexKey, 0, -1, function (err, ids) {
+              if (err) return done.fail(err);
+
+              expect(ids).toContain("/Blog/existing.txt");
+              expect(ids).toContain("/Blog/new.txt");
+
+              redis.exists(readyKey, function (err, ready) {
+                if (err) return done.fail(err);
+                expect(ready).toBe(1);
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+  describe("path prefix pagination", function () {
+    beforeEach(function () {
+      spyOn(Entry, "get").and.callFake((blogID, ids, callback) => {
+        if (!Array.isArray(ids)) return callback({ id: ids });
+        callback(ids.map((id) => ({ id })));
+      });
+    });
+
+    it("filters posts by path prefix and paginates by id", async function (done) {
+      const blogID = this.blog.id;
+      const entriesKey = `blog:${blogID}:entries`;
+      const now = Date.now();
+
+      await redis.zadd(
+        entriesKey,
+        now,
+        "/Blog/a.txt",
+        now + 1,
+        "/Blog/b.txt",
+        now + 2,
+        "/Blog/c.txt",
+        now + 3,
+        "/Notes/d.txt"
+      );
+
+      await redis
+        .multi()
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/a.txt")
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/b.txt")
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/c.txt")
+        .zadd(`blog:${blogID}:entries:lex`, 0, "/Notes/d.txt")
+        .set(`blog:${blogID}:entries:lex:ready`, "1")
+        .exec();
+
+      Entries.getPage(
+        blogID,
+        { pageNumber: 1, pageSize: 2, sortBy: "id", order: "asc", pathPrefix: "/Blog/" },
+        function (error, entries, pagination) {
+          expect(error).toBeNull();
+          expect(entries.map((entry) => entry.id)).toEqual(["/Blog/a.txt", "/Blog/b.txt"]);
+          expect(pagination).toEqual({
+            current: 1,
+            next: 2,
+            total: 2,
+            pageSize: 2,
+          });
+          done();
+        }
+      );
+    });
+  });
   describe("adjacentTo", function () {
     beforeEach(function () {
       spyOn(Entry, "get").and.callFake((blogID, ids, callback) => {
@@ -337,7 +525,9 @@ describe("entries", function () {
 
       Entries.random(this.blog.id, function (entry) {
         try {
-          expect(entry).toEqual(jasmine.objectContaining({ id: "valid", url: "/valid" }));
+          expect(entry).toEqual(
+            jasmine.objectContaining({ id: "valid", url: "/valid" })
+          );
           expect(redis.zrandmember.calls.count()).toBe(2);
           expect(Entry.get.calls.count()).toBe(2);
           done();
@@ -377,7 +567,6 @@ describe("entries", function () {
         }
       });
     });
-
   });
 
   describe("resave", function () {

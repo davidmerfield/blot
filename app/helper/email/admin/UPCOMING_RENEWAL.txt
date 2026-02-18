@@ -1,3 +1,3 @@
 User notified of subscription renewal in 7 days
 
-{{email}} ({{blogs.length}} blog{{s}} – {{pretty.price}} total) was notified that their subscription will renew next week. They were offered a chance to cancel their subscription or update their billing information.
+{{email}} ({{blogs.length}} site{{s}} – {{pretty.price}} total) was notified that their subscription will renew next week. They were offered a chance to cancel their subscription or update their billing information.

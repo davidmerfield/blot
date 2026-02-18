@@ -8,7 +8,7 @@
 }
 
 .question-row:hover {
-  background-color: #e4eafb75;
+  background-color: var(--light-background-color);
 }
 
 

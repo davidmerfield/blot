@@ -79,9 +79,17 @@ width: 284px;
 }
 
 .color-picker-popup:hover {
-	background-color: #e4eafb75;
+	background-color: var(--light-background-color);
 }
 
 .color-label {
 	margin:5px 16px 5px 0;flex-grow: 1;user-select: none;
+}
+
+.color-picker {
+	border-bottom: 1px solid var(--light-border-color);
+}
+
+.color-picker:last-of-type {
+	border-bottom: none;
 }

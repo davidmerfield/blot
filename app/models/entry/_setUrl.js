@@ -49,7 +49,7 @@ var UID_PERMUTATIONS = 500;
 //   path: '/a.jpg'
 // }));
 
-function Candidates (blog, entry) {
+function Candidates(blog, entry) {
   var candidates = [];
 
   var format = blog.permalink.isCustom ? blog.permalink.custom : blog.permalink.format;
@@ -146,44 +146,44 @@ function Candidates (blog, entry) {
   return candidates;
 }
 
-function check (blogID, candidate, entryID, callback) {
+function check(blogID, candidate, entryID, callback) {
   var key = Key(blogID, candidate);
 
   redis.get(key, function (err, existingID) {
     if (err) return callback(err);
 
     // This url is available and unused
-    if (!existingID) return callback();
+    if (!existingID) return callback(null, false, null);
 
     // This url points to this entry already
-    if (existingID === entryID) return callback();
+    if (existingID === entryID) return callback(null, false, null);
 
     // This url points to a different entry
     get(blogID, existingID, function (existingEntry) {
       // For some reason (bug) the url key was
       // set but the entry does not exist. Claim the url.
-      if (!existingEntry) return callback();
+      if (!existingEntry) return callback(null, false, null);
 
       // The existing entry has since moved to a different url
       // (perhaps the author modified its permalink etc...)
       // so this entry can claim this url.
-      if (existingEntry.url !== candidate) return callback();
+      if (existingEntry.url !== candidate) return callback(null, false, null);
 
       // The existing entry was deleted after claiming this
       // url, so this entry can claim it.
-      if (existingEntry.deleted) return callback();
+      if (existingEntry.deleted) return callback(null, false, null);
 
       // If we reach this far down, it means the entry
       // which has claimed this url is still visible and
       // still uses this url, so we can't claim it.
-      return callback(null, true);
+      return callback(null, true, existingEntry.path);
     });
   });
 }
 
 // this needs to return an error if something went wrong
 // and the finalized, stored url to the entry...
-module.exports = function (blogID, entry, callback) {
+function setUrl(blogID, entry, callback) {
   ensure(blogID, "string").and(entry, "object").and(callback, "function");
 
   try {
@@ -193,37 +193,65 @@ module.exports = function (blogID, entry, callback) {
   }
 
   if (entry.metadata === undefined) {
-    console.log('Error: Blog:', blogID, 'Entry.setURL: Entry metadata is unexpectedly undefined', entry);
-    return callback(null, "");
+    console.log(
+      "Error: Blog:",
+      blogID,
+      "Entry.setURL: Entry metadata is unexpectedly undefined",
+      entry
+    );
+    return callback(null, { url: "", conflictingEntryPath: null });
   }
 
   debug("Setting url for", entry.path);
 
-  if (entry.draft || entry.deleted) return callback(null, "");
+  if (entry.draft || entry.deleted)
+    return callback(null, { url: "", conflictingEntryPath: null });
 
   Blog.get({ id: blogID }, function (err, blog) {
     if (err) return callback(err);
 
     if (!blog) return callback(new Error("Blog not found"));
 
+    var candidates = Candidates(blog, entry);
+    var firstCandidate = candidates[0];
+    var firstCandidateTaken = false;
+    var firstCandidateConflictingPath = null;
+
     // does This cause a memory leak? we sometimes
     // exist before calling all the next functions
     // if we find a successful candidate.
-    async.eachSeries(
-      Candidates(blog, entry),
-      function (candidate, next) {
+    async.eachOfSeries(
+      candidates,
+      function (candidate, index, next) {
         debug("Checking candidate", candidate);
-        check(blogID, candidate, entry.id, function (err, taken) {
+        check(blogID, candidate, entry.id, function (
+          err,
+          taken,
+          conflictingEntryPath
+        ) {
           if (err) return callback(err);
 
-          if (taken) return next();
+          if (taken) {
+            if (index === 0) {
+              firstCandidateTaken = true;
+              firstCandidateConflictingPath = conflictingEntryPath;
+            }
+
+            return next();
+          }
 
           var key = Key(blogID, candidate);
 
           redis.set(key, entry.id, function (err) {
             if (err) return callback(err);
 
-            return callback(null, candidate);
+            return callback(null, {
+              url: candidate,
+              conflictingEntryPath:
+                firstCandidateTaken && candidate !== firstCandidate
+                  ? firstCandidateConflictingPath
+                  : null,
+            });
           });
         });
       },
@@ -235,4 +263,7 @@ module.exports = function (blogID, entry, callback) {
       }
     );
   });
-};
+}
+
+module.exports = setUrl;
+module.exports.Candidates = Candidates;

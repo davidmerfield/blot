@@ -1,11 +1,11 @@
-<form method="post" class="select" style="padding:5px 16px 12px;font-size: 14px;display:flex;align-items: baseline;">
+<form method="post" class="select">
   <input type="hidden" name="_csrf" value="{{csrftoken}}" />
-  <span style="flex-shrink: 0;flex-basis: 70px;">
+  <label for="select.{{key}}" style="flex-shrink: 0;">
     {{label}}:
-  </span>
-  <span>
-  {{#options}}
-  <button type="submit" name="locals.{{key}}" class="{{selected}}" value="{{value}}">{{label}}</button>
-  {{/options}}
-  </span>
+  </label>
+  <select id="select.{{key}}" name="locals.{{key}}" style="flex-grow: 1;">
+    {{#options}}
+    <option value="{{value}}" {{selected}}>{{label}}</option>
+    {{/options}}
+  </select>
 </form>

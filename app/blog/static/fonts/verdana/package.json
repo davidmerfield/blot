@@ -1,7 +1,8 @@
 {
   "name": "Verdana",
   "tags": [
-    "sans"
+    "sans",
+    "system"
   ],
   "stack": "Verdana, 'Bitstream Vera Sans', Geneva, sans-serif",
   "system": true,

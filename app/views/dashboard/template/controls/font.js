@@ -79,22 +79,8 @@ Array.from(document.querySelectorAll('[data-font-picker-form]')).forEach(form =>
     }
     scheduleHide();
   });
-  trigger.addEventListener('mouseleave', scheduleHide);
 
-  form.addEventListener('mouseenter', cancelHide);
-  form.addEventListener('mouseleave', scheduleHide);
-  form.addEventListener('focusin', cancelHide);
-  form.addEventListener('focusout', event => {
-    const next = event.relatedTarget;
-    const pickerElement = getPickerElement();
-    if (
-      next &&
-      (form.contains(next) || (pickerElement && pickerElement.contains(next)))
-    ) {
-      return;
-    }
-    scheduleHide();
-  });
+
 
   form.querySelectorAll('input[type="number"]').forEach(input => {
     input.addEventListener('change', () => {

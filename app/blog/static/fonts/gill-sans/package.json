@@ -1,7 +1,8 @@
 {
   "name": "Gill Sans",
   "tags": [
-    "sans"
+    "sans",
+    "system"
   ],
   "stack": "'Gill Sans MT', 'Gill Sans', 'Gill Sans Std', Verdana, 'Bitstream Vera Sans', sans-serif",
   "line_height": 1.5,

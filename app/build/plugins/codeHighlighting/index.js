@@ -35,8 +35,8 @@ function highlight(code, lang) {
 }
 
 module.exports = {
-  category: "Typography",
+  category: "codemath",
   title: "Code",
   render: render,
-  description: "Add syntax highlighting to code",
+  description: "Highlight code syntax",
 };

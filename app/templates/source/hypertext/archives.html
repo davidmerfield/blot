@@ -1,24 +1,20 @@
 <!DOCTYPE html>
-<html>
-  {{> head}}
-  <body>
-    {{> header}}
-    <div class="container archive">
-      <h1>Archive</h1>
-      {{#archives}}
-        <h2 class="">{{year}}</h2>
-        {{#months}}
-          <h3 class="">{{month}}</h3>
-          <p>
-          {{#entries}}
-          <a href="{{{url}}}">{{title}}</a><Br />
-          {{/entries}}
-          <Br />
-          </p>
-        {{/months}}
-        <div class="clear"></div>
-      {{/archives}}
-    </div>
+<html lang="{{lang}}">
+{{> head}}
+<body>
+    {{> navigation}}
+    <main>
+       <h1>Archives</h1>
+       {{> search-form}}
+       <div class="archives-grid">
+         {{#allEntries}}
+         <div class="archive-item">
+           <a href="{{{url}}}" class="archive-title">{{title}}</a>
+           <span class="archive-date">{{#date}}{{date}}{{/date}}</span>
+         </div>
+         {{/allEntries}}
+       </div>
+    </main>
     {{> footer}}
-  </body>
+</body>
 </html>

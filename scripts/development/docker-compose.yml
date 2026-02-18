@@ -14,11 +14,14 @@ services:
       - "8080:8080"
     depends_on:
       - redis
+      - toxiproxy
     env_file:
       - ../../.env
     environment:
-      - BLOT_REDIS_HOST=redis
+      - BLOT_HOST=${BLOT_HOST}
+      - BLOT_REDIS_HOST=${BLOT_REDIS_HOST:-toxiproxy}
       - CONTAINER_NAME=blot-container-green
+      - DEBUG=${DEBUG:-}
     volumes:
       - ../../data:/usr/src/app/data
       - ../../.git:/usr/src/app/.git
@@ -37,6 +40,19 @@ services:
     volumes:
       - "../../data:/data"
 
+  toxiproxy:
+    build:
+      context: ./toxiproxy
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8474:8474"
+    expose:
+      - "26379"
+
   nginx:
     build:
       context: ../../config/openresty
@@ -45,7 +61,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ../../data/ssl:/etc/ssl
+      - ../../config/openresty/development_server.conf:/etc/nginx/nginx.conf:ro
+      - ../../config/openresty/init.sh:/etc/nginx/init.sh:ro
+      - ../../data/ssl:/etc/ssl:ro
     depends_on:
       - node-app
-    command:  /bin/sh -c "sh  /etc/nginx/init.sh"
+    command: /bin/sh -c "sh /etc/nginx/init.sh"

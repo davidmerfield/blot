@@ -1,0 +1,11 @@
+{
+  "name": "Impact",
+  "tags": [
+    "sans",
+    "system"
+  ],
+  "stack": "impact, 'arial black', sans-serif",
+  "line_height": 1.3,
+  "line_width": 38,
+  "font_size": 16
+}

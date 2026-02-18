@@ -1,3 +1,37 @@
+<style>
+    
+  .imports {padding: 24px 0;display: flex;flex-wrap: wrap;list-style: none;gap: 1em;max-width: 800px;}
+  .imports li {flex-basis: 33%;}
+  .imports li a {
+    padding:11px 20px;
+    color:var(--text-color);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    transition: color 0.25s, background-color 0.25s;
+  }
+   .imports li a:hover {
+    background-color: var(--light-background-color);
+    color: var(--accent-color);
+   }
+
+   .imports li img {
+    max-width: 16px;
+    margin-right: 8px;
+    height: auto;
+   }
+  </style>
+  
+  
+  {{> close-button}}
+
+<div style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
+        <h1>Import</h1>
+
 {{#imports.length}}
 <div class="live-updates">
 <p><strong>Your imports:</strong></h2>
@@ -6,22 +40,26 @@
   .i {border-top:1px solid rgba(0,0,0,0.05);}
   .i:hover {background: rgba(0,0,0,0.02)}
   .i > td form {flex-shrink: 0}
+
 </style>
 <table style="max-width: none;table-layout: auto;font-size:14px;">
 
 {{#imports}} 
 <tr class="i" id="{{id}}">
 
-  <td class="{{^complete}}{{^error}}working{{/error}}{{/complete}}{{#error}}error{{/error}} status">{{name}}</td> 
+  <td class="{{^complete}}{{^error}}working{{/error}}{{/complete}} status">{{name}}</td> 
 
+  <td style="width:100%;color:rgba(0,0,0,0.5)">{{identifier}}</td> 
 
-  
 
   {{#complete}}
-  <td style="width:100%;color:rgba(0,0,0,0.5)">{{identifier}}</td> 
 
   {{^error}}
   <td style="padding-right:0"><a href="{{{importBase}}}/download/{{id}}" target="_blank" class="s no-underline" style="display:block;border-radius:4px;white-space: nowrap;padding:4px 11px;text-decoration:none;font-weight: 600;flex-shrink:0;color:#0070e8;border: 1px solid rgba(0,0,0,0.1)">Download result ({{size}} zip)  ↓</a></td>
+  {{/error}}
+  
+  {{#error}}
+  <td><span class="error" style="padding:6px 12px;line-height: 1;">{{error}}</span></td>
   {{/error}}
 
   <td><form  method="post" action="{{{importBase}}}/delete/{{id}}">
@@ -29,6 +67,8 @@
     <button type="submit" style="display:block;border-radius:4px;white-space: nowrap;padding:6px 11px;text-decoration:none;font-weight: 600;flex-shrink:0;color: #ff3e00;border: 1px solid rgba(0,0,0,0.1);cursor:pointer;background:none;line-height: 1.275;">Remove</button>
   </form></td>
 {{/complete}}
+
+
 
 {{^complete}}
 
@@ -49,14 +89,13 @@
 </div>
 {{/imports.length}}
 
-<p style="max-width: 500px">The importer generates an archive of files which you can download, unzip and then add to your site's folder.</p>
 
-<h2>New import</h2>
-<ul class="clients">
-  <li><a href="{{{importBase}}}/wordpress"><span class="a">Wordpress</span></a></li>
-  <li><a href="{{{importBase}}}/are.na"><span class="a">Are.na</span></a></li>
+<ul class="imports">
+  <li><a href="{{{importBase}}}/wordpress"><img width="100" height="100" src="/images/configure/wordpress.png"> <span class="a">Wordpress</span></a></li>
+  <li><a href="{{{importBase}}}/are.na"><img width="250" height="149" src="/images/configure/are.na.png">  <span class="a">Are.na</span></a></li>
 </ul>
 
+<p style="max-width: 500px">Need an importer for another source? <a href="/contact">Request a new importer</a>.</p>
 
 <script type="text/javascript">
   // https://www.npmjs.com/package/reconnecting-eventsource
@@ -131,6 +170,4 @@ function loadFolder(callback) {
 
 </script>
 
-<div class="buttons">
-  <a href="{{{base}}}" class="button">Cancel</a>
 </div>

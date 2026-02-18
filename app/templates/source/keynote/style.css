@@ -36,6 +36,11 @@ a {color: inherit;text-decoration: none;}
 
 blockquote {color: #585858;margin-left: 52px}
 
+p,
+li,
+blockquote,
+figcaption {orphans: 2; widows: 2;}
+
 hr {width: 100%;border: none;border-bottom: 1px solid rgba(0,0,0,0.15)}
 
 .date {font-family: Menlo, monospace;

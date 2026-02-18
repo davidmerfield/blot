@@ -61,35 +61,11 @@ function createFontPicker() {
     optionButtons.forEach((button) => {
       const tags = (button.dataset.fontTags || "").split(" ").filter(Boolean);
       const shouldShow = filter === "all" || tags.indexOf(filter) > -1;
-      button.hidden = !shouldShow;
+      button.style.display = shouldShow ? 'block' : 'none';
     });
 
     if (optionsRoot) {
       optionsRoot.scrollTop = 0;
-    }
-  };
-
-  const highlightSelection = (id) => {
-    let selectedButton = null;
-
-    optionButtons.forEach((button) => {
-      const isSelected = id && button.dataset.fontOptionId === id;
-      button.classList.toggle("is-selected", isSelected);
-      button.setAttribute("aria-selected", isSelected ? "true" : "false");
-      if (isSelected) selectedButton = button;
-    });
-
-    if (selectedButton && optionsRoot && !selectedButton.hidden) {
-      const rect = optionsRoot.getBoundingClientRect();
-      const listTop = rect.top;
-      const listBottom = rect.bottom;
-      const buttonRect = selectedButton.getBoundingClientRect();
-      const buttonTop = buttonRect.top;
-      const buttonBottom = buttonRect.bottom;
-
-      if (buttonTop < listTop || buttonBottom > listBottom) {
-        selectedButton.scrollIntoView({ block: "nearest" });
-      }
     }
   };
 
@@ -161,7 +137,7 @@ function createFontPicker() {
     container.hidden = false;
     container.classList.add("is-visible");
     container.setAttribute("aria-hidden", "false");
-    highlightSelection(context.currentValue);
+    // highlightSelection(context.currentValue);
 
     requestAnimationFrame(() => {
       position(context.anchor);
@@ -199,15 +175,7 @@ function createFontPicker() {
 
   applyFilter(currentFilter);
 
-  container.addEventListener("mouseenter", cancelHide);
-  container.addEventListener("mouseleave", scheduleHide);
-  container.addEventListener("focusin", cancelHide);
-  container.addEventListener("focusout", (event) => {
-    if (container.contains(event.relatedTarget)) return;
-    scheduleHide();
-  });
-
-  document.addEventListener("pointerdown", (event) => {
+  document.addEventListener("click", (event) => {
     if (!activeContext) return;
     const anchor = activeContext.anchor;
     if (container.contains(event.target)) return;

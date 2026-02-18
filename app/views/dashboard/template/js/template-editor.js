@@ -1,3 +1,5 @@
+var initSidebarActionMenu = require("./sidebar-action-menu");
+
 // we want to preserve the scroll offset whenever a link is clicked in the template list
 // the parent container of the links on this page is:
 // <div id="template-list" style="overflow-y: scroll;width: 100%;height: 100%;padding-right: 17px;">
@@ -15,154 +17,45 @@ if (template_list) {
   });
 
   var templateActionMenu = document.getElementById("template-action-menu");
-  var templateActionMenuLinks = templateActionMenu
-    ? {
-        settings: templateActionMenu.querySelector(
-          '[data-menu-link="settings"]'
-        ),
-        use: templateActionMenu.querySelector('[data-menu-link="use"]'),
-        source: templateActionMenu.querySelector('[data-menu-link="source"]'),
-        rename: templateActionMenu.querySelector('[data-menu-link="rename"]'),
-        duplicate: templateActionMenu.querySelector('[data-menu-link="duplicate"]'),
-        delete: templateActionMenu.querySelector('[data-menu-link="delete"]'),
-      }
-    : null;
-
-  var activeTemplateRow = null;
-  var activeTemplateTrigger = null;
-
-  function closeTemplateMenu() {
-    if (
-      !templateActionMenu ||
-      !templateActionMenu.classList.contains("is-open")
-    )
-      return;
-    templateActionMenu.classList.remove("is-open");
-    templateActionMenu.setAttribute("aria-hidden", "true");
-    if (activeTemplateRow) {
-      activeTemplateRow.classList.remove("menu-open");
-    }
-    if (activeTemplateTrigger) {
-      activeTemplateTrigger.setAttribute("aria-expanded", "false");
-    }
-    activeTemplateRow = null;
-    activeTemplateTrigger = null;
-  }
-
-  function positionTemplateMenu(row) {
-    if (!templateActionMenu) return;
-    var offsetTop = row.offsetTop;
-    if (template_list) {
-      offsetTop -= template_list.scrollTop;
-    }
-    templateActionMenu.style.top = offsetTop + "px";
-  }
-
-  function updateTemplateMenu(trigger) {
-    if (!templateActionMenuLinks) return;
-
-    var baseUrl = trigger.getAttribute("data-editurl");
-    if (baseUrl) {
-      baseUrl = baseUrl.replace(/\/+$/, "");
-    }
-
-    templateActionMenuLinks.settings.href = baseUrl || "#";
-    templateActionMenuLinks.use.href = baseUrl ? baseUrl + "/install" : "#";
-    templateActionMenuLinks.source.href = baseUrl
-      ? baseUrl + "/source-code"
-      : "#";
-    templateActionMenuLinks.rename.href = baseUrl ? baseUrl + "/rename" : "#";
-    templateActionMenuLinks.delete.href = baseUrl ? baseUrl + "/delete" : "#";
-    templateActionMenuLinks.duplicate.href = baseUrl ? baseUrl + "/duplicate" : "#";
-  }
-
-  function openTemplateMenu(row, trigger) {
-    if (!templateActionMenu) return;
-
-    if (activeTemplateRow && activeTemplateRow !== row) {
-      activeTemplateRow.classList.remove("menu-open");
-    }
-    updateTemplateMenu(trigger);
-    positionTemplateMenu(row);
-    templateActionMenu.classList.add("is-open");
-    templateActionMenu.setAttribute("aria-hidden", "false");
-    row.classList.add("menu-open");
-    activeTemplateRow = row;
-    activeTemplateTrigger = trigger;
-    activeTemplateTrigger.setAttribute("aria-expanded", "true");
-    if (templateActionMenuLinks) {
-      window.requestAnimationFrame(function () {
-        templateActionMenuLinks.settings.focus();
-      });
-    }
-  }
-
-  template_list.addEventListener("click", function (event) {
-    var trigger = event.target.closest(".template-row__menu-trigger");
-    if (!trigger || !templateActionMenu) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    var row = trigger.closest(".template-row");
-    if (!row) return;
-
-    if (
-      row === activeTemplateRow &&
-      templateActionMenu.classList.contains("is-open")
-    ) {
-      closeTemplateMenu();
-      return;
-    }
-
-    openTemplateMenu(row, trigger);
-  });
-
-  template_list.addEventListener("scroll", function () {
-    if (activeTemplateRow) {
-      positionTemplateMenu(activeTemplateRow);
-    }
-  });
-
-  window.addEventListener("resize", function () {
-    if (activeTemplateRow) {
-      positionTemplateMenu(activeTemplateRow);
-    }
-  });
-
-  document.addEventListener("click", function (event) {
-    if (!templateActionMenu) return;
-    if (!templateActionMenu.contains(event.target)) {
-      closeTemplateMenu();
-    }
-  });
-
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") {
-      closeTemplateMenu();
-      if (activeTemplateTrigger) {
-        activeTemplateTrigger.focus();
-      }
-    }
-  });
-
   if (templateActionMenu) {
-    templateActionMenu.addEventListener("click", function (event) {
-      event.stopPropagation();
-      if (event.target.tagName === "A") {
-        closeTemplateMenu();
-      }
-    });
+    var cleanTemplateBase = function (dataset) {
+      var baseUrl = dataset.editurl || "";
+      if (baseUrl) baseUrl = baseUrl.replace(/\/+$/, "");
+      return baseUrl;
+    };
 
-    templateActionMenu.addEventListener("focusout", function () {
-      window.requestAnimationFrame(function () {
-        if (
-          document.activeElement !== activeTemplateTrigger &&
-          !templateActionMenu.contains(document.activeElement)
-        ) {
-          closeTemplateMenu();
-        }
-      });
+    initSidebarActionMenu({
+      container: template_list,
+      menuElement: templateActionMenu,
+      rowSelector: ".template-row",
+      triggerSelector: ".template-row__menu-trigger",
+      initialFocusKey: "settings",
+      linkMap: {
+        settings: function (dataset) {
+          var baseUrl = cleanTemplateBase(dataset);
+          return baseUrl || null;
+        },
+        use: function (dataset) {
+          var baseUrl = cleanTemplateBase(dataset);
+          return baseUrl ? baseUrl + "/install" : null;
+        },
+        source: function (dataset) {
+          var baseUrl = cleanTemplateBase(dataset);
+          return baseUrl ? baseUrl + "/source-code" : null;
+        },
+        rename: function (dataset) {
+          var baseUrl = cleanTemplateBase(dataset);
+          return baseUrl ? baseUrl + "/rename" : null;
+        },
+        "delete": function (dataset) {
+          var baseUrl = cleanTemplateBase(dataset);
+          return baseUrl ? baseUrl + "/delete" : null;
+        },
+        duplicate: function (dataset) {
+          var baseUrl = cleanTemplateBase(dataset);
+          return baseUrl ? baseUrl + "/duplicate" : null;
+        },
+      },
     });
   }
 

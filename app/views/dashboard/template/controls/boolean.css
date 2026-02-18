@@ -1,2 +1,6 @@
-  label.bool {cursor: pointer;}
-  label.bool:hover {background: #fff}
+form.boolean:hover {
+  background-color: var(--light-background-color);
+}
+
+label.bool {cursor: pointer;}
+.boolean input {cursor: pointer;}

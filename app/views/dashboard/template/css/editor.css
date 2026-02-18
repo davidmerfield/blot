@@ -1,32 +1,62 @@
 
 .CodeMirror {
 	flex-grow: 1;
-	min-height: calc(100vh - 15rem);
+	min-height: calc(100vh - 182px);
 	font-family: monospace;
 }
 
 .CodeMirror-gutters {
-	background-color: #fbf8f6;
+  padding-right: 4px;
 }
 
 .CodeMirror-linenumber {
-	color: rgb(158, 154, 152);
+	color: var(--light-text-color);
 }
 
 .file-list {
-	padding: 1rem 0;
+  border:1px solid var(--border-color);
+  border-radius: var(--border-radius);
 }
 
-.file-list .selected {
-	background: rgba(255, 255, 255, 0.5);
-	color: #000;
+.file-list .template-row.selected {
+  background-color: var(--light-background-color);
 }
-.file-list a {
-	font-size: 14px;
-	padding: 0 1rem;
-	display: block;
-	color: #777;
-	text-decoration: none;
+
+.file-list .template-row.selected .template-row__link,
+.file-list .template-row__link.selected {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.file-list .template-row__link svg {
+    fill:currentColor;
+    vertical-align: middle;
+    position:relative;
+    top:-0.1em;
+
+}
+.file-list .template-row__link svg {
+  width: 18px;height: 18px;
+}
+.file-list .template-row__link span,
+.file-list .template-row__link svg {
+  margin-right: 0px;
+
+}
+
+.file-list .template-row__link {
+        font-size: 14px;
+  padding:2px 11px;
+        display: block;
+        color: var(--medium-text-color);
+        text-decoration: none;
+  background-color: transparent;
+  transition: background-color 0.2s;
+}
+
+.file-list .template-row__link:hover,
+.file-list .template-row__link:focus-visible {
+  background-color: var(--light-background-color);
 }
 
 .tab.selected {
@@ -36,7 +66,6 @@
 	background: transparent;
 }
 
-.smallLink {font-size: 11px;color: #555;margin-left:0.2rem}
   
   .CodeMirror-lines {
     padding: 0;
@@ -56,39 +85,49 @@
     z-index: 2;}
 
   #save.button {
-        border-radius: 2px;
-    padding: 4px 8px;
-    font-size: 14px;
-    font-weight: 600;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--dark-border-color);
+    padding: 8px 16px;
     text-decoration: none;
-    color: #555;
+    color: var(--success-text-color);
     background-color: rgb(255, 255, 255);
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.12) 0px 1px 1px 0px, rgba(60, 66, 87, 0.16) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px;
     flex-grow: 1;
+    font-size: 14px;
     text-align: left;
-    border: none;
     cursor: pointer;
 
   }
 
   #save.button:before {
-    content: "●";
-    color: green;
-    text-shadow: 0 0 6px green;
-    padding: 0 1rem 0 0.75rem
+    content: "";
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+    border-radius: 1em;
+    font-size: 8px;
+    background: var(--success-text-color);
+    margin-right:  12px
   }
 
-  #save.button.disabled:before {color: #ddd;text-shadow: none;}
+  #save.button.disabled:before {background: #ddd;text-shadow: none;}
 
   #save.button.disabled {
-    background-color: transparent;
-    color: #888;
+    background-color: #fafafa;
+    border-color: #fafafa;
+    color: var(--light-text-color);
     font-weight: 500;
-    box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.12) 0px 1px 1px 0px, rgba(60, 66, 87, 0.16) 0px 0px 0px -1px;
   }
 
-  #save.button:focus {border:none;outline: none}
 
   .CodeMirror-sizer {
-    border-top: 1px solid #ccc;
+  }
+
+  .editor-container{
+    width:calc(100vw - 670px);border:1px solid var(--border-color);border-radius: var(--border-radius);
+  }
+
+  .editor-container .error {
+    margin:-1px 0 0 0;
+    border-left: none;
+    border-right: none;
   }

@@ -4,6 +4,7 @@ var ensure = require("helper/ensure");
 var Entry = require("../entry");
 var DateStamp = require("../../build/prepare/dateStamp");
 var Blog = require("../blog");
+var pathIndex = require("./pathIndex");
 
 var MAX_RANDOM_ATTEMPTS = 10;
 
@@ -16,6 +17,7 @@ module.exports = (function () {
     "scheduled",
     "pages",
     "deleted",
+    "entries:lex",
   ];
 
   function resave(blogID, callback) {
@@ -324,21 +326,295 @@ module.exports = (function () {
   }
 
   random.MAX_ATTEMPTS = MAX_RANDOM_ATTEMPTS;
-  function getPage(blogID, pageNo, pageSize, callback, options = {}) {
-    ensure(blogID, "string")
-      .and(pageNo, "number")
-      .and(pageSize, "number")
-      .and(callback, "function");
 
-    // Default sorting options
-    const { sortBy = "date", order = "asc" } = options;
+  // Maximum page number to keep (pageNo - 1) * pageSize within Redis integer limits
+  // Redis integers are 64-bit signed, so max safe value is 2^63 - 1
+  // With reasonable page sizes (e.g., 100), we can safely allow up to ~9e15 pages
+  // But for practical purposes, we'll cap at a much lower value
+  const MAX_PAGE_NUMBER = 10000; // 10,000 pages should be more than enough
 
-    pageNo--; // zero indexed
+  /**
+   * Validates and parses a page number from user input.
+   * Returns null if the input is invalid, otherwise returns the validated page number.
+   *
+   * @param {string|number|undefined} pageNumber - The page number from user input.
+   * @returns {number|null} - A valid page number, or null if invalid.
+   */
+  function validatePageNumber(pageNumber) {
+    // Handle undefined/null/empty string
+    if (pageNumber === undefined || pageNumber === null || pageNumber === "") {
+      return null;
+    }
 
-    var start = pageNo * pageSize;
+    // Convert to string for validation
+    const pageStr = String(pageNumber).trim();
+
+    // Must be purely digits (no decimals, no negative signs, no letters)
+    if (!/^\d+$/.test(pageStr)) {
+      return null;
+    }
+
+    // Parse as integer
+    const parsed = parseInt(pageStr, 10);
+
+    // Check if parsing was successful and result is a safe integer
+    if (isNaN(parsed) || !Number.isSafeInteger(parsed)) {
+      return null;
+    }
+
+    // Must be positive
+    if (parsed <= 0) {
+      return null;
+    }
+
+    // Must not exceed maximum
+    if (parsed > MAX_PAGE_NUMBER) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  /**
+   * Validates and parses the page size.
+   * Falls back to a default value if the input is invalid or undefined.
+   *
+   * @param {string|number|undefined} pageSize - Page size from user input.
+   * @returns {number} - A valid page size (default: 5).
+   */
+  function validatePageSize(pageSize) {
+    const defaultPageSize = 5;
+
+    // Attempt to parse and validate page size (user input)
+    const parsedPageSize = parseInt(pageSize, 10);
+    if (
+      !isNaN(parsedPageSize) &&
+      parsedPageSize > 0 &&
+      parsedPageSize <= 100
+    ) {
+      return parsedPageSize;
+    }
+
+    return defaultPageSize; // Default page size
+  }
+
+  /**
+   * Validates and parses the sort by field.
+   * Falls back to a default value if the input is invalid or undefined.
+   *
+   * @param {string|undefined} sortBy - Sort by field from user input.
+   * @returns {string} - A valid sort by field (default: "date").
+   */
+  function validateSortBy(sortBy) {
+    const defaultSortBy = "date";
+
+    // Validate and parse sort by field (user input)
+    if (sortBy === "id") {
+      return sortBy;
+    }
+
+    return defaultSortBy; // Default sort by field
+  }
+
+  /**
+   * Validates and parses the sort order.
+   * Falls back to a default value if the input is invalid or undefined.
+   *
+   * @param {string|undefined} order - Sort order from user input.
+   * @returns {string} - A valid sort order (default: "asc").
+   */
+  function validateSortOrder(order) {
+    const defaultSortOrder = "asc";
+
+    // Validate and parse sort order (user input)
+    if (order === "asc" || order === "desc") {
+      return order;
+    }
+
+    return defaultSortOrder; // Default sort order
+  }
+
+
+
+  function normalizePathPrefix(pathPrefix) {
+    if (typeof pathPrefix !== "string") return null;
+
+    pathPrefix = pathPrefix.trim();
+    if (!pathPrefix) return null;
+
+    if (pathPrefix[0] !== "/") pathPrefix = "/" + pathPrefix;
+
+    return pathPrefix;
+  }
+
+  function fetchEntryScores(blogID, entryIDs, callback) {
+    if (!entryIDs.length) return callback(null, []);
+
+    var key = listKey(blogID, "entries");
+    var batch = redis.batch();
+
+    entryIDs.forEach(function (entryID) {
+      batch.zscore(key, entryID);
+    });
+
+    batch.exec(function (err, rawScores) {
+      if (err) return callback(err);
+
+      var withScores = [];
+
+      for (var i = 0; i < entryIDs.length; i++) {
+        var score = rawScores && rawScores[i];
+        if (score === null || score === undefined) continue;
+
+        withScores.push({
+          id: entryIDs[i],
+          score: parseFloat(score),
+        });
+      }
+
+      callback(null, withScores);
+    });
+  }
+
+  function getPrefixFilteredPage(
+    blogID,
+    pathPrefix,
+    sortBy,
+    order,
+    start,
+    end,
+    pageSize,
+    zeroIndexedPageNo,
+    pageNo,
+    callback
+  ) {
+    var min = "[" + pathPrefix;
+    var max = "[" + pathPrefix + "\xff";
+
+    redis.zrangebylex(pathIndex.lexKey(blogID), min, max, function (error, matchingIDs) {
+      if (error) {
+        console.error(error);
+        return callback(error, [], null);
+      }
+
+      var totalEntries = matchingIDs.length;
+
+      if (!totalEntries) {
+        return handlePaginationAndCallback(
+          blogID,
+          [],
+          0,
+          zeroIndexedPageNo,
+          pageSize,
+          start,
+          end,
+          pageNo,
+          callback
+        );
+      }
+
+      if (sortBy === "id") {
+        var ids = order === "desc" ? matchingIDs.slice().reverse() : matchingIDs.slice();
+
+        return handlePaginationAndCallback(
+          blogID,
+          ids.slice(start, end + 1),
+          totalEntries,
+          zeroIndexedPageNo,
+          pageSize,
+          start,
+          end,
+          pageNo,
+          callback
+        );
+      }
+
+      fetchEntryScores(blogID, matchingIDs, function (error, scoredEntries) {
+        if (error) {
+          console.error(error);
+          return callback(error, [], null);
+        }
+
+        scoredEntries.sort(function (a, b) {
+          return order === "asc" ? b.score - a.score : a.score - b.score;
+        });
+
+        totalEntries = scoredEntries.length;
+
+        var pagedIDs = scoredEntries
+          .slice(start, end + 1)
+          .map(function (item) {
+            return item.id;
+          });
+
+        handlePaginationAndCallback(
+          blogID,
+          pagedIDs,
+          totalEntries,
+          zeroIndexedPageNo,
+          pageSize,
+          start,
+          end,
+          pageNo,
+          callback
+        );
+      });
+    });
+  }
+  function getPage(
+    blogID,
+    options = {},
+    callback
+  ) {
+    ensure(blogID, "string").and(callback, "function");
+
+    // Extract and validate options
+    const { 
+      pageNumber: pageNoInput = "1", 
+      pageSize: rawPageSize, 
+      sortBy: rawSortBy, 
+      order: rawOrder,
+      pathPrefix: rawPathPrefix
+    } = options;
+
+    // Validate page number input
+    const pageNo = validatePageNumber(pageNoInput);
+    if (pageNo === null) {
+      const error = new Error("Invalid page number");
+      error.statusCode = 400;
+      error.invalidInput = pageNoInput;
+      return callback(error, null, null);
+    }
+
+    // Validate and set page size
+    const pageSize = validatePageSize(rawPageSize);
+
+    // Validate and set sorting options
+    const sortBy = validateSortBy(rawSortBy);
+    const order = validateSortOrder(rawOrder);
+    const pathPrefix = normalizePathPrefix(rawPathPrefix);
+
+    const zeroIndexedPageNo = pageNo - 1; // zero indexed
+
+    var start = zeroIndexedPageNo * pageSize;
     var end = start + (pageSize - 1);
 
     // Determine how to fetch the sorted list
+    if (pathPrefix) {
+      return getPrefixFilteredPage(
+        blogID,
+        pathPrefix,
+        sortBy,
+        order,
+        start,
+        end,
+        pageSize,
+        zeroIndexedPageNo,
+        pageNo,
+        callback
+      );
+    }
+
     if (sortBy === "id") {
       // Sort by entry ID (alphabetically)
       const sortOptions = [
@@ -353,31 +629,34 @@ module.exports = (function () {
       redis.sort(sortOptions, function (error, entryIDs) {
         if (error) {
           console.error(error);
-          return callback([]);
+          return callback(error, [], null);
         }
-
 
         redis.zcard(listKey(blogID, "entries"), function (error, totalEntries) {
           if (error) {
             console.error(error);
-            return callback([]);
+            return callback(error, [], null);
           }
           handlePaginationAndCallback(
             blogID,
             entryIDs,
             totalEntries,
-            pageNo,
+            zeroIndexedPageNo,
             pageSize,
             start,
             end,
+            pageNo,
             callback
           );
         });
       });
     } else {
       // Default sorting by date (Redis scores)
-      
-      const rangeFn = order === "asc" ? redis.zrevrange.bind(redis) : redis.zrange.bind(redis);
+
+      const rangeFn =
+        order === "asc"
+          ? redis.zrevrange.bind(redis)
+          : redis.zrange.bind(redis);
 
       rangeFn(
         listKey(blogID, "entries"),
@@ -386,24 +665,25 @@ module.exports = (function () {
         function (error, entryIDs) {
           if (error) {
             console.error(error);
-            return callback([]);
+            return callback(error, [], null);
           }
           redis.zcard(
             listKey(blogID, "entries"),
             function (error, totalEntries) {
               if (error) {
                 console.error(error);
-                return callback([]);
+                return callback(error, [], null);
               }
 
               handlePaginationAndCallback(
                 blogID,
                 entryIDs,
                 totalEntries,
-                pageNo,
+                zeroIndexedPageNo,
                 pageSize,
                 start,
                 end,
+                pageNo,
                 callback
               );
             }
@@ -420,27 +700,26 @@ module.exports = (function () {
     blogID,
     entryIDs,
     totalEntries,
-    pageNo,
+    zeroIndexedPageNo,
     pageSize,
     start,
     end,
+    pageNo,
     callback
   ) {
-
     Entry.get(blogID, entryIDs, function (entries) {
-        
       var pagination = {};
 
       totalEntries = parseInt(totalEntries);
 
       pagination.total = Math.ceil(totalEntries / pageSize);
-      pagination.current = pageNo + 1;
+      pagination.current = pageNo;
       pagination.pageSize = pageSize;
 
       // total entries is not 0 indexed, remove 1
-      if (totalEntries - 1 > end) pagination.next = pageNo + 2;
+      if (totalEntries - 1 > end) pagination.next = zeroIndexedPageNo + 2;
 
-      if (pageNo > 0) pagination.previous = pageNo;
+      if (zeroIndexedPageNo > 0) pagination.previous = zeroIndexedPageNo;
 
       if (!pagination.next && !pagination.previous) pagination = false;
 
@@ -454,7 +733,13 @@ module.exports = (function () {
         index--;
       });
 
-      return callback(entries, pagination);
+      // Guard against missing pagination object (e.g., if Redis fails)
+      // Note: pagination.current is already set by the model
+      if (pagination && entries && entries.length > 0) {
+        entries.at(-1).pagination = pagination;
+      }
+      
+      return callback(null, entries, pagination);
     });
   }
 
@@ -513,5 +798,6 @@ module.exports = (function () {
     getCreated: getCreated,
     getDeleted: getDeleted,
     random: random,
+    // Note: validatePageSize is NOT exported - it's internal to the model
   };
 })();
