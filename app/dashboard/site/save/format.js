@@ -4,6 +4,30 @@ var extend = require("helper/extend");
 var normalizeImageExif = require("models/blog/util/imageExif").normalize;
 var normalizeConverters = require("models/blog/util/converters").normalize;
 
+function normalizeBooleanOption(value) {
+  if (value === null || value === undefined || value === false || value === 0)
+    return false;
+
+  if (value === true || value === 1) return true;
+
+  if (typeof value === "string") {
+    var normalized = value.trim().toLowerCase();
+
+    if (
+      normalized === "" ||
+      normalized === "false" ||
+      normalized === "off" ||
+      normalized === "0"
+    )
+      return false;
+
+    if (normalized === "true" || normalized === "on" || normalized === "1")
+      return true;
+  }
+
+  return Boolean(value);
+}
+
 module.exports = function (req, res, next) {
   try {
     req.updates = formJSON(req.body, Blog.scheme.TYPE);
@@ -66,14 +90,17 @@ module.exports = function (req, res, next) {
     // this bullshit below is because I haven't properly declared
     // the model for blog.plugins so formJSON needs a little help...
     for (var i in req.updates.plugins) {
-      req.updates.plugins[i].enabled = req.updates.plugins[i].enabled === "on";
+      req.updates.plugins[i].enabled = normalizeBooleanOption(
+        req.updates.plugins[i].enabled
+      );
       if (!req.updates.plugins[i].options) req.updates.plugins[i].options = {};
     }
 
     if (req.updates.plugins.typeset) {
       for (var x in req.updates.plugins.typeset.options)
-        req.updates.plugins.typeset.options[x] =
-          req.updates.plugins.typeset.options[x] === "on";
+        req.updates.plugins.typeset.options[x] = normalizeBooleanOption(
+          req.updates.plugins.typeset.options[x]
+        );
     }
 
     extend(req.updates.plugins).and(req.blog.plugins);
