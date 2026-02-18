@@ -132,9 +132,9 @@ function render($, callback, { blogID, path }) {
               if (!entry) {
                 debug(
                   "No entry found for markdown media target, falling back to src",
-                  linkedPath || url
+                  url || linkedPath
                 );
-                $node.attr("src", linkedPath || url);
+                $node.attr("src", url || linkedPath);
                 return next();
               }
 
