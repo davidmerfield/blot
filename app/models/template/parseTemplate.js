@@ -206,7 +206,10 @@ function parseTemplate(template) {
         var suppressAsProjectedFieldReference = false;
         var isProjectedFieldInContext = false;
 
-        if (projectedFieldContext) {
+        if (
+          projectedFieldContext &&
+          isLikelyProjectedEntryField(projectedFieldContext.field)
+        ) {
           isProjectedFieldInContext = setProjectedEntryField(
             projectedFieldContext.root,
             projectedFieldContext.field
