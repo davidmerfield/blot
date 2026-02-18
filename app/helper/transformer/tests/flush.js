@@ -1,4 +1,4 @@
-describe("transformer", function () {
+describe("transformer: flush", function () {
   // Creates test environment
   require("./setup")({});
 

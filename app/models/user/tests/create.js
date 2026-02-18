@@ -1,4 +1,4 @@
-describe("user", function () {
+describe("user: create", function () {
   var User = require("models/user");
 
   it("creates and deletes a user", function (done) {

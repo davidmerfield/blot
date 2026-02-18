@@ -1,4 +1,4 @@
-describe("title parser", function () {
+describe("title parser: title", function () {
   var cheerio = require("cheerio");
   var Title = require("../title");
 
