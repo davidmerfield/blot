@@ -12,11 +12,13 @@ module.exports = function (req, res, callback) {
   };
 
   req.log("Loading page of entries");
-  getPage(blogID, options, (err, entries) => {
+  getPage(blogID, options, (err, entries, pagination) => {
     if (err) {
       return callback(err);
     }
 
+    res.locals.pagination = pagination;
+  
     callback(null, entries);
   });
 };

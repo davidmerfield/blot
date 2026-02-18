@@ -1,66 +1,54 @@
-const { convert } = require("../../plugins");
+const build = require("build");
+const fs = require("fs-extra");
 
 describe("typeset plugin", function () {
-  const blogBase = {
-    domain: "example.com",
-    handle: "typeset-plugin",
-    id: "typeset-plugin-test"
-  };
-
-  function runTypeset(options, html, callback) {
-    convert(
-      {
-        ...blogBase,
-        plugins: {
-          typeset: {
-            enabled: true,
-            options
-          }
-        }
-      },
-      "/post.html",
-      html,
-      callback
-    );
-  }
+  require("./util/setup")();
 
   it("treats string false values as disabled for punctuation and small caps", function (done) {
-    const input = '<p>He said "Hello" -- and NASA.</p>';
+    const path = "/typeset-disabled.txt";
+    const contents = 'He said "Hello" -- and NASA.';
 
-    runTypeset(
-      {
-        punctuation: "false",
-        smallCaps: "false"
+    this.blog.plugins.typeset = {
+      enabled: true,
+      options: {
+        punctuation: "off",
+        smallCaps: "false",
       },
-      input,
-      function (err, output) {
-        if (err) return done.fail(err);
+    };
 
-        expect(output).toContain('" -- and NASA.');
-        expect(output).not.toContain("“");
-        expect(output).not.toContain('class="small-caps"');
-        done();
-      }
-    );
+    fs.outputFileSync(this.blogDirectory + path, contents);
+
+    build(this.blog, path, function (err, entry) {
+      expect(err).toBeNull();
+      expect(entry.html).not.toContain('<span class="small-caps">');
+      expect(entry.html).not.toContain("—");
+      expect(entry.html).not.toContain("&mdash;");
+      expect(entry.html).not.toContain("&thinsp;");
+      expect(entry.html).not.toContain(" ");
+      done();
+    });
   });
 
   it("treats string true values as enabled for punctuation and small caps", function (done) {
-    const input = '<p>He said "Hello" -- and NASA.</p>';
+    const path = "/typeset-enabled.txt";
+    const contents = 'He said "Hello" -- and NASA.';
 
-    runTypeset(
-      {
-        punctuation: "true",
-        smallCaps: "true"
+    this.blog.plugins.typeset = {
+      enabled: "true",
+      options: {
+        punctuation: "on",
+        smallCaps: "1",
       },
-      input,
-      function (err, output) {
-        if (err) return done.fail(err);
+    };
 
-        expect(output.includes("“")).toBe(true);
-        expect(output.includes('class="small-caps"')).toBe(true);
-        expect(output).not.toContain('" -- and NASA.');
-        done();
-      }
-    );
+    fs.outputFileSync(this.blogDirectory + path, contents);
+
+    build(this.blog, path, function (err, entry) {
+      expect(err).toBeNull();
+      expect(entry.html).toContain('<span class="small-caps">NASA</span>');
+      expect(entry.html).toContain("“");
+      expect(/&mdash;|—/.test(entry.html)).toEqual(true);
+      done();
+    });
   });
 });
