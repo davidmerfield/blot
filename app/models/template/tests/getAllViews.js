@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - getAllViews", function () {
   require("./setup")({ createTemplate: true, createView: true });
 
   var getAllViews = require("../index").getAllViews;

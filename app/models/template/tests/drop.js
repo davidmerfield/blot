@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - drop", function () {
   require("./setup")({ createTemplate: true });
 
   var drop = require("../index").drop;

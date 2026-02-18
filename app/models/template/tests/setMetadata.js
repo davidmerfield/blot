@@ -1,5 +1,5 @@
 const { promisify } = require("util");
-describe("template", function () {
+describe("template - setMetadata", function () {
   require("./setup")({ createTemplate: true });
 
   const setMetadata = promisify(require("../index").setMetadata);

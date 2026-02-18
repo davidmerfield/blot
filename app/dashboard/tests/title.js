@@ -1,4 +1,4 @@
-describe("folder", function () {
+describe("folder - title", function () {
   global.test.site({ login: true });
 
   it("can update the site title", async function () {

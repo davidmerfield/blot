@@ -1,4 +1,4 @@
-describe("update", function () {
+describe("update - update", function () {
   var sync = require("../index");
   var fs = require("fs-extra");
 

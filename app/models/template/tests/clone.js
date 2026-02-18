@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - clone", function () {
   require("./setup")();
 
   const getMetadata = require("../getMetadata");
