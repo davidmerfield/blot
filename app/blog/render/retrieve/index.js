@@ -34,8 +34,6 @@ var dictionary = {
   "script_url": require("./script_url"),
   "search_query": require("./search_query"),
   "search_results": require("./search_results"),
-  "sort:date": require("./sort:date"),
-  "sort:path": require("./sort:path"),
   "tagged": require("./tagged"),
   "total_posts": require("./total_posts"),
   "updated": require("./updated"),
