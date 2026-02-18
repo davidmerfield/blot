@@ -321,76 +321,72 @@ describe("folder module", function () {
     expect(await folder.get(fileId)).toBe("/baz/bar/file1.txt");
   });
   
-  it("throws an error when trying to set a mapping with an empty ID or path", async function (done) {
+  it("throws an error when trying to set a mapping with an empty ID or path", async function () {
     const metadata = { size: 1024, lastModified: "2025-02-21" };
   
     try {
       await folder.set("", "/file1.txt", metadata);
-      done.fail("Expected an error for empty ID");
+      fail("Expected an error for empty ID");
     } catch (err) {
       expect(err.message).toBe("ID and path must be non-empty strings");
     }
   
     try {
       await folder.set("file_1", "", metadata);
-      done.fail("Expected an error for empty path");
+      fail("Expected an error for empty path");
     } catch (err) {
       expect(err.message).toBe("ID and path must be non-empty strings");
     }
   
     try {
       await folder.set(null, null, metadata);
-      done.fail("Expected an error for null ID and path");
+      fail("Expected an error for null ID and path");
     } catch (err) {
       expect(err.message).toBe("ID and path must be non-empty strings");
     }
   
-    done();
   });
 
-  it("throws an error when trying to move a nonexistent file or folder", async function (done) {
+  it("throws an error when trying to move a nonexistent file or folder", async function () {
     const nonExistentId = "nonexistent_file";
     const newPath = "/new/path/file.txt";
   
     try {
       await folder.move(nonExistentId, newPath);
-      done.fail("Expected an error for nonexistent ID");
+      fail("Expected an error for nonexistent ID");
     } catch (err) {
       expect(err.message).toBe(`No file or folder found for ID: ${nonExistentId}`);
     }
   
-    done();
   });
   
-  it("throws an error when trying to remove a nonexistent file or folder", async function (done) {
+  it("throws an error when trying to remove a nonexistent file or folder", async function () {
     const nonExistentId = "nonexistent_file";
   
     const removedPaths = await folder.remove(nonExistentId);
     expect(removedPaths).toEqual([]); // Should simply return an empty array
   
-    done();
   });
 
-  it("throws an error when metadata is not a valid object", async function (done) {
+  it("throws an error when metadata is not a valid object", async function () {
     const id = "file_1";
     const path = "/folder/file1.txt";
   
     try {
       await folder.set(id, path, "invalid_metadata");
-      done.fail("Expected an error for invalid metadata");
+      fail("Expected an error for invalid metadata");
     } catch (err) {
       expect(err.message).toBe("Metadata must be a valid object");
     }
   
     try {
       await folder.set(id, path, null); // Null metadata should still succeed
-      done();
     } catch (err) {
-      done.fail("Did not expect an error for null metadata");
+      fail("Did not expect an error for null metadata");
     }
   });
 
-  it("handles errors when metadata is corrupted or invalid", async function (done) {
+  it("handles errors when metadata is corrupted or invalid", async function () {
     const id = "file_1";
     const path = "/folder/file1.txt";
   
@@ -399,15 +395,14 @@ describe("folder module", function () {
   
     try {
       await folder.getMetadata(id);
-      done.fail("Expected a SyntaxError for corrupted metadata");
+      fail("Expected a SyntaxError for corrupted metadata");
     } catch (err) {
       expect(err instanceof SyntaxError).toBe(true);
     }
   
-    done();
   });
 
-  it("handles path collisions gracefully during move operations", async function (done) {
+  it("handles path collisions gracefully during move operations", async function () {
     const folderId1 = "folder_1";
     const folderId2 = "folder_2";
   
@@ -416,12 +411,11 @@ describe("folder module", function () {
   
     try {
       await folder.move(folderId1, "/bar"); // Attempt to move /foo to /bar
-      done.fail("Expected an error due to path collision");
+      fail("Expected an error due to path collision");
     } catch (err) {
       expect(err.message).toBe("Target path already exists: /bar");
     }
   
-    done();
   });
 
   it("replaces the path when the same ID is reused", async function () {
@@ -472,7 +466,7 @@ describe("folder module", function () {
     expect(retrievedPath).toBe(path); // Path should remain unchanged
   });
 
-  it("throws an error when trying to move to an existing path", async function (done) {
+  it("throws an error when trying to move to an existing path", async function () {
     const folderId = "folder_1";
     const existingFolderId = "folder_2";
     const oldFolderPath = "/foo";
@@ -483,12 +477,11 @@ describe("folder module", function () {
   
     try {
       await folder.move(folderId, newFolderPath); // This should throw an error
-      done.fail("Expected an error when moving to an existing path");
+      fail("Expected an error when moving to an existing path");
     } catch (err) {
       expect(err.message).toBe("Target path already exists: /bar");
     }
   
-    done();
   });
 
   it("treats paths as case-sensitive", async function () {
@@ -547,7 +540,7 @@ describe("folder module", function () {
     expect(metadata).toBeNull();
   });
 
-  it("throws an error when trying to move a folder to a subfolder of itself", async function (done) {
+  it("throws an error when trying to move a folder to a subfolder of itself", async function () {
     const folderId = "folder_1";
     const oldFolderPath = "/foo";
     const newFolderPath = "/foo/bar";
@@ -556,12 +549,11 @@ describe("folder module", function () {
   
     try {
       await folder.move(folderId, newFolderPath);
-      done.fail("Expected an error when moving to a subfolder of itself");
+      fail("Expected an error when moving to a subfolder of itself");
     } catch (err) {
       expect(err.message).toBe("Cannot move a folder to a subfolder of itself");
     }
   
-    done();
   });
 
   it("returns entries sorted alphabetically by path", async function () {
@@ -672,22 +664,21 @@ describe("folder module", function () {
     );
   });
 
-  it("throws an error for invalid directory paths", async function (done) {
+  it("throws an error for invalid directory paths", async function () {
     try {
       await folder.readdir("");
-      done.fail("Expected an error for an empty directory path");
+      fail("Expected an error for an empty directory path");
     } catch (err) {
       expect(err.message).toBe("Directory path must be a non-empty string");
     }
 
     try {
       await folder.readdir(null);
-      done.fail("Expected an error for a null directory path");
+      fail("Expected an error for a null directory path");
     } catch (err) {
       expect(err.message).toBe("Directory path must be a non-empty string");
     }
 
-    done();
   });
 
   it("does not include entries outside the given directory", async function () {
