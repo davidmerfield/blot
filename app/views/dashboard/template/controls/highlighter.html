@@ -114,10 +114,13 @@ input[name="{{key}}-toggle"]:checked + .options {
 <h2 class="template-heading">{{label}}</h2>
 <form method="post" class="syntax-highlighter select">
   <input type="hidden" name="_csrf" value="{{csrftoken}}" />
-  <label for="{{key}}-toggle">
+  <label for="{{key}}-toggle" style="border-bottom: none;">
     {{#value}}
       {{#name}}
       <span style="font-family: {{stack}};">{{name}}</span>
+      <span style="background:{{background}};color:{{color}};border-radius:var(--border-radius);padding: 0 4px;margin-left: 4px;">
+      {{#colors}}<span style="color:{{color}}">&bull;</span>{{/colors}}
+      </span>
       {{/name}}
       {{^name}}
       Select a color scheme
@@ -131,8 +134,8 @@ input[name="{{key}}-toggle"]:checked + .options {
 
   <input name="{{key}}-toggle" type="checkbox" id="{{key}}-toggle">
 
-  <div class="options">
-    <div class="filters">
+  <div class="options" style="margin:0;border:none">
+    <div class="filters" style="margin-top:0;">
       <label for="{{key}}-show-all">All</label>
       <label for="{{key}}-show-light">Light</label>
       <label for="{{key}}-show-dark">Dark</label>
@@ -146,18 +149,19 @@ input[name="{{key}}-toggle"]:checked + .options {
       {{/tags}}
       name="locals.{{key}}.id"
       value="{{{id}}}"
-      style="background:{{background}};color:{{color}}"
       {{selected}}>
       {{{name}}}
+      <span style="background:{{background}};color:{{color}};border-radius:var(--border-radius);padding: 0 4px;margin-left: 4px;">
       {{#colors}}<span style="color:{{color}}">&bull;</span>{{/colors}}
+      </span>
     </button>
     {{/options}}
     </div>
   </div>
 </form>
 
+</div>
+
 {{#font}}
 {{> font}}
 {{/font}}
-
-</div>

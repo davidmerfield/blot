@@ -11,7 +11,9 @@ module.exports = function (req, res, next) {
       ...(Themes.find(
         ({ id }) => id === req.template.locals.syntax_highlighter.id
       ) || {}),
-      ...req.template.locals.syntax_highlighter
+      ...req.template.locals.syntax_highlighter,
+      background: Themes.find(({ id }) => id === req.template.locals.syntax_highlighter.id)?.background,
+      colors: Themes.find(({ id }) => id === req.template.locals.syntax_highlighter.id)?.colors.slice(1).map(color => { return { color } }) || []
     },
     font: req.template.locals.syntax_highlighter_font
       ? {
