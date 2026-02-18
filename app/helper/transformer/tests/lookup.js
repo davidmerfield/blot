@@ -1,4 +1,4 @@
-describe("transformer", function () {
+describe("transformer: lookup", function () {
   var fs = require("fs-extra");
   var Keys = require("../keys");
   var client = require("models/client");

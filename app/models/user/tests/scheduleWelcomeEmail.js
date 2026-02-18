@@ -1,4 +1,4 @@
-describe("user", function () {
+describe("user: scheduleWelcomeEmail", function () {
   global.test.user();
 
   var User = require("models/user");

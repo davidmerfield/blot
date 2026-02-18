@@ -1,4 +1,4 @@
-describe("user", function () {
+describe("user: set", function () {
   global.test.user();
 
   var set = require("../index").set;
