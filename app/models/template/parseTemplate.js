@@ -287,7 +287,7 @@ function parseTemplate(template) {
         suppressAsProjectedFieldReference =
           (token[0] === "#" || token[0] === "^") && isProjectedFieldInContext;
 
-        if (isProjectedFieldInContext) {
+        if (isProjectedFieldInContext && isLowercaseProjectedEntryField(variable)) {
           suppressAsProjectedFieldReference = true;
         }
 
@@ -356,7 +356,13 @@ function parseTemplate(template) {
   function isLikelyProjectedEntryField(variableName) {
     if (!variableName || variableName.indexOf(".") > -1) return false;
 
-    // Uppercase characters usually indicate a non-entry local, e.g. siteTitle
+    // Accept common entry field naming styles, including lower_snake_case
+    // and lowercase-start camelCase tokens.
+    return /^[a-z][a-zA-Z0-9_]*$/.test(variableName);
+  }
+
+  function isLowercaseProjectedEntryField(variableName) {
+    if (!variableName || variableName.indexOf(".") > -1) return false;
     return /^[a-z0-9_]+$/.test(variableName);
   }
 

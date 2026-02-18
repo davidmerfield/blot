@@ -110,6 +110,15 @@ describe("parseTemplate", function () {
     });
   });
 
+  it("tracks camelCase locals in allEntries context", function () {
+    var template = `{{#allEntries}}{{publishedAt}}{{/allEntries}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { allEntries: { fields: { publishedAt: true } }, publishedAt: true },
+    });
+  });
+
   it("tracks non-system locals in nested allEntries field context", function () {
     var template = `{{#allEntries}}{{#thumbnail}}{{siteTitle}}{{/thumbnail}}{{/allEntries}}`;
     var result = parseTemplate(template);
