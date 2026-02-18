@@ -110,12 +110,110 @@ describe("dropbox client", function () {
   }
 });
 
+describe("dropbox delta relative path normalization", function () {
+  var Delta = require("../delta");
+  var Path = require("path");
+
+  it("strips leading slash when the blog folder path is known", function (done) {
+    var entries = [
+      {
+        ".tag": "file",
+        path_display: "/Blog/root.txt",
+      },
+    ];
+
+    var client = {
+      filesListFolder: function () {
+        return Promise.resolve({
+          result: { entries: entries, cursor: "cursor", has_more: false },
+        });
+      },
+      filesGetMetadata: function () {
+        return Promise.resolve({ result: { path_display: "/Blog" } });
+      },
+    };
+
+    var delta = Delta(client, "folder-id", "blog-id");
+
+    delta(null, function (err, res) {
+      if (err) return done.fail(err);
+
+      expect(res.entries.length).toEqual(1);
+      expect(res.entries[0].relative_path).toEqual("root.txt");
+      expect(res.entries[0].relative_path[0]).not.toEqual("/");
+      done();
+    });
+  });
+
+  it("handles folder metadata path case mismatches", function (done) {
+    var entries = [
+      {
+        ".tag": "file",
+        path_display: "/Apps/Blot/SiteA/root.txt",
+      },
+    ];
+
+    var client = {
+      filesListFolder: function () {
+        return Promise.resolve({
+          result: { entries: entries, cursor: "cursor", has_more: false },
+        });
+      },
+      filesGetMetadata: function () {
+        return Promise.resolve({
+          result: { path_display: "/Apps/Blot/SITEA" },
+        });
+      },
+    };
+
+    var delta = Delta(client, "folder-id", "blog-id");
+
+    delta(null, function (err, res) {
+      if (err) return done.fail(err);
+
+      expect(res.entries.length).toEqual(1);
+      expect(res.entries[0].relative_path).toEqual("root.txt");
+      done();
+    });
+  });
+
+  it("normalizes root-level entries to stay inside the blog folder", function (done) {
+    var entries = [
+      {
+        ".tag": "file",
+        path_display: "/root.txt",
+      },
+    ];
+
+    var client = {
+      filesListFolder: function () {
+        return Promise.resolve({
+          result: { entries: entries, cursor: "cursor", has_more: false },
+        });
+      },
+    };
+
+    var delta = Delta(client, "", "blog-id");
+
+    delta(null, function (err, res) {
+      if (err) return done.fail(err);
+
+      expect(res.entries.length).toEqual(1);
+      expect(res.entries[0].relative_path).toEqual("root.txt");
+
+      var pathOnDisk = Path.join("/tmp/blog", res.entries[0].relative_path);
+      expect(pathOnDisk.indexOf("/tmp/blog")).toEqual(0);
+      done();
+    });
+  });
+});
+
 function setupDelta(done) {
   var Delta = require("../delta");
 
   var context = this;
   var account = this.account;
-  var delta = new Delta(account.access_token, account.folder_id);
+  var delta = new Delta(account.access_token, account.folder_id, context.blog.id);
 
   context.delta = function (callback) {
     delta(context.account.cursor, function (err, res) {

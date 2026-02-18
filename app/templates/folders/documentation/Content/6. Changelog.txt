@@ -5,6 +5,12 @@ Title: Changelog
 
 Stay up to date with the latest changes, improvements, and bug fixes in our framework.
 
+
+## Version 1.2.1 - April 2025
+
+### Fixes & Improvements
+- Added a per-site Images setting to disable publishing image files as posts.
+
 ## Version 1.2.0 - March 2025
 
 ### New Features

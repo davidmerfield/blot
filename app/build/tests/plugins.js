@@ -76,4 +76,64 @@ describe("build", function () {
       done();
     });
   });
+
+  [
+    {
+      label: "txt",
+      path: "/math.txt",
+      contents: "Inline $$a+b$$ math",
+    },
+    {
+      label: "md",
+      path: "/math.md",
+      contents: "Inline $$a+b$$ math",
+    },
+    // doesn't yet work because pandoc
+    // processes the org file math directly
+    // and it seems we can't disable it
+    // {
+    //   label: "org",
+    //   path: "/math.org",
+    //   contents: "Inline $$a+b$$ math",
+    // },
+    {
+      label: "rtf",
+      path: "/math.rtf",
+      contents:
+        "{\\rtf1\\ansi\\ansicpg1252\\cocoartf2580\\n{\\fonttbl\\f0\\fswiss\\fcharset0 Helvetica;}\\n\\f0\\fs24 Inline $$a+b$$ math}",
+    },
+    {
+      label: "gdoc",
+      path: "/math.gdoc",
+      contents:
+        "<html><head><meta content=\"text/html; charset=UTF-8\" http-equiv=\"content-type\"></head><body><p>Inline $$a+b$$ math</p></body></html>",
+    },
+  ].forEach(({ label, path, contents }) => {
+    it(`renders katex for ${label} when plugin is enabled`, function (done) {
+      fs.outputFileSync(this.blogDirectory + path, contents);
+      this.blog.plugins.katex = { enabled: true, options: {} };
+
+      build(this.blog, path, (err, entry) => {
+        if (err) return done.fail(err);
+        expect(entry.html).toContain('class="katex"');
+        expect(entry.html).not.toContain("$$a+b$$");
+        done();
+      });
+    });
+  });
+
+  it("does not render katex when plugin is disabled", function (done) {
+    const path = "/math-disabled.txt";
+    const contents = "Inline $$a+b$$ math";
+
+    fs.outputFileSync(this.blogDirectory + path, contents);
+    this.blog.plugins.katex = { enabled: false, options: {} };
+
+    build(this.blog, path, (err, entry) => {
+      if (err) return done.fail(err);
+      expect(entry.html).toContain("$$a+b$$");
+      expect(entry.html).not.toContain('class="katex"');
+      done();
+    });
+  });
 });

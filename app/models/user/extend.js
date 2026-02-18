@@ -2,6 +2,7 @@ var amountInWords = require("helper/amountInWords");
 var prettyDate = require("helper/prettyDate");
 var prettyPrice = require("helper/prettyPrice");
 var config = require("config");
+var subscriptionLifecycle = require("./subscriptionLifecycle");
 
 module.exports = function extend (user) {
   // True if the user has set a password, false otherwise
@@ -50,7 +51,10 @@ module.exports = function extend (user) {
 
     if (subscription.status === "past_due") user.isPastDue = true;
 
-    if (subscription.status === "canceled") user.isDisabled = true;
+    if (
+      subscriptionLifecycle.shouldDisableFromStripeSubscription(subscription)
+    )
+      user.isDisabled = true;
 
     if (user.isUnpaid || user.isPastDue) user.needsToPay = true;
   }
@@ -59,6 +63,11 @@ module.exports = function extend (user) {
     if (user.paypal.status === "ACTIVE") user.isSubscribed = true;
 
     if (user.paypal.status === "CANCELLED") user.willCancel = true;
+
+    if (
+      subscriptionLifecycle.shouldDisableFromPaypalSubscription(user.paypal)
+    )
+      user.isDisabled = true;
 
     const plan_identifier = Object.keys(config.paypal.plans).find(
       identifier => config.paypal.plans[identifier] === user.paypal.plan_id
@@ -82,9 +91,9 @@ module.exports = function extend (user) {
         )
       : prettyDate(
           new Date(user.paypal.billing_info.last_payment.time).getTime() +
-            plan_identifier.includes("monthly")
-            ? 30 * 24 * 60 * 60 * 1000
-            : 365 * 24 * 60 * 60 * 1000
+            (plan_identifier.includes("monthly")
+              ? 30 * 24 * 60 * 60 * 1000
+              : 365 * 24 * 60 * 60 * 1000)
         );
 
     user.pretty.price = prettyPrice(amount * quantity);

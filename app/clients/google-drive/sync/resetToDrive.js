@@ -41,7 +41,7 @@ module.exports = async (blogID, publish) => {
       if (!localContents.find((item) => item.name === name)) {
         await checkWeCanContinue();
         publish("Removing", join(dir, name));
-        await drive.files.delete({ fileId: id });
+        await drive.files.delete({ fileId: id, supportsAllDrives: true });
       }
     }
 
@@ -58,7 +58,10 @@ module.exports = async (blogID, publish) => {
         ) {
           await checkWeCanContinue();
           publish("Removing", path);
-          await drive.files.delete({ fileId: existsOnRemote.id });
+          await drive.files.delete({
+            fileId: existsOnRemote.id,
+            supportsAllDrives: true,
+          });
           publish("Creating directory", path);
           pathId = await mkdir(drive, dirId, name);
         } else if (existsOnRemote && existsOnRemote.id) {
@@ -91,6 +94,7 @@ module.exports = async (blogID, publish) => {
           });
           await drive.files.update({
             fileId: existsOnRemote.id,
+            supportsAllDrives: true,
             media: {
               body: fs.createReadStream(localPath(blogID, path)),
             },
@@ -103,6 +107,7 @@ module.exports = async (blogID, publish) => {
               name,
               parents: [dirId],
             },
+            supportsAllDrives: true,
             media: {
               body: fs.createReadStream(localPath(blogID, path)),
             },
@@ -124,6 +129,7 @@ const mkdir = async (drive, parentId, name) => {
       parents: [parentId],
       mimeType: "application/vnd.google-apps.folder",
     },
+    supportsAllDrives: true,
     fields: "id, name",
   });
 

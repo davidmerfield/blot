@@ -8,13 +8,25 @@ permissions:
 
 env:
   REGISTRY_URL: ghcr.io/davidmerfield/blot
-  BLOT_EC2_HOST: ${{ secrets.BLOT_EC2_HOST }}
+  BLOT_DEPLOY_SSH_HOST: ${{ secrets.BLOT_DEPLOY_SSH_HOST }}
 
 jobs:
   wait-for-build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check branch
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/master" ]; then
+            echo "❌ Error: This workflow can only be run on the master branch."
+            echo "Current branch: ${{ github.ref }}"
+            exit 1
+          fi
+          echo "✅ Branch check passed: running on master branch"
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -50,7 +62,7 @@ jobs:
     needs: wait-for-build
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: Tests
+    environment: deploy
     
     steps:
       - name: Checkout
@@ -67,7 +79,7 @@ jobs:
           chmod 700 ~/.ssh
           cat >> ~/.ssh/config << EOF
           Host blot
-            HostName ${BLOT_EC2_HOST}
+            HostName ${BLOT_DEPLOY_SSH_HOST}
             User deploy
             StrictHostKeyChecking no
             UserKnownHostsFile /dev/null

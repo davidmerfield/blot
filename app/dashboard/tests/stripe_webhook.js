@@ -148,6 +148,61 @@ describe("Stripe subscription webhooks", function () {
     expect(blog.isDisabled).toBe(true);
   });
 
+
+  it("disables active subscriptions once cancel_at_period_end has elapsed", async function () {
+    await setUser(this.user.uid, {
+      subscription: {
+        id: this.subscriptionId,
+        customer: this.customerId,
+        status: "active",
+        plan: { amount: 500, interval: "month" },
+        quantity: 1,
+        cancel_at_period_end: true,
+      },
+    });
+
+    this.stripeClient.customers.retrieveSubscription.and.callFake(
+      (customerId, subscriptionId, callback) =>
+        callback(null, {
+          id: subscriptionId,
+          customer: customerId,
+          status: "active",
+          plan: { amount: 500, interval: "month" },
+          quantity: 1,
+          cancel_at_period_end: true,
+          current_period_end: Math.floor(Date.now() / 1000) - 10,
+        })
+    );
+
+    const event = {
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: this.subscriptionId,
+          customer: this.customerId,
+        },
+      },
+    };
+
+    const response = await this.fetch("/", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(event),
+    });
+
+    expect(response.status).toBe(200);
+
+    await delay(100);
+
+    const user = await getUser(this.user.uid);
+    expect(user.subscription.status).toBe("active");
+    expect(user.subscription.cancel_at_period_end).toBe(true);
+    expect(user.isDisabled).toBe(true);
+
+    const blog = await getBlog({ id: this.blog.id });
+    expect(blog.isDisabled).toBe(true);
+  });
+
   it("re-enables disabled accounts when subscription becomes active", async function () {
     await setUser(this.user.uid, {
       isDisabled: true,

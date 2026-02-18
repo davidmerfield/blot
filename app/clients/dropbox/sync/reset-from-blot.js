@@ -203,7 +203,6 @@ async function resetFromBlot(blogID, publish, signal) {
   await set(blogID, {
     error_code: 0,
     cursor,
-    last_sync: Date.now(),
   });
 
   abortIfRequested(signal);

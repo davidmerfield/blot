@@ -205,6 +205,38 @@ describe("wikilinks", function () {
     expect(body).toContain(">Project Plan<");
   });
 
+  it("resolves wikilinks by title to pages as well as posts", async function () {
+    await this.write({
+      path: "/About.md",
+      content: [
+        "Title: About Us",
+        "Link: about",
+        "Page: yes",
+        "",
+        "# About this site",
+      ].join("\n"),
+    });
+    await this.blog.rebuild();
+
+    await this.write({
+      path: "/TitleLinkPost.md",
+      content: [
+        "Title: Title Link Test",
+        "Link: title-link-test",
+        "",
+        "See [[About Us]] for more.",
+      ].join("\n"),
+    });
+    await this.blog.rebuild();
+
+    const res = await this.get("/title-link-test");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain('href="/about"');
+    expect(body).toContain(">About Us<");
+  });
+
 
   // todo: work out why this test fails for '[[Heading Demo]]' and '[[#Heading Demo]]' but 
   // passes for '[[custom-heading]]' and '[[#custom-heading]]'

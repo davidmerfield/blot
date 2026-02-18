@@ -205,9 +205,34 @@ describe("asset middleware", function () {
     expect(await res.text()).toEqual("# Documentation");
   });
 
-  it("returns 404 for paths containing null bytes", async function () {
-    const res = await this.get("/file.txt%00.jpg");
+  it("rejects traversal patterns and disallowed extensions", async function () {
+    const attempts = [
+      { request: "/../secret.txt", writePath: "/secret.txt" },
+      { request: "/file.php", writePath: "/file.php" },
+      { request: "/file.txt%00.jpg", writePath: "/file.txt" },
+    ];
+
+    for (const attempt of attempts) {
+      await this.write({ path: attempt.writePath, content: "Sensitive" });
+      // Use the raw path otherwise the path will be normalized to /secret.txt by the URL API before the request is sent.
+      const res = await this.getWithRawPath(attempt.request);
+      expect(res.status).toEqual(404);
+      expect(await res.text()).not.toEqual("Sensitive");
+    }
+  });
+
+  it("rejects URL-encoded traversal attempts", async function () {
+    await this.write({ path: "/secret.txt", content: "Top secret" });
+    const res = await this.getWithRawPath("/%2e%2e/secret.txt");
     expect(res.status).toEqual(404);
+    expect(await res.text()).not.toEqual("Top secret");
+  });
+
+  it("continues to serve valid assets", async function () {
+    await this.write({ path: "/public/ok.txt", content: "Allowed" });
+    const res = await this.get("/public/ok.txt");
+    expect(res.status).toEqual(200);
+    expect(await res.text()).toEqual("Allowed");
   });
 
   it("handles special characters in filenames beyond accents", async function () {

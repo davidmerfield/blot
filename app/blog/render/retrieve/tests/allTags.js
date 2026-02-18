@@ -47,5 +47,18 @@ describe("all tags", function () {
       expect(body.trim()).toEqual('<ul><li>tag0 100</li><li>tag1 80</li><li>tag2 60</li><li>tag3 40</li><li>tag4 20</li><li>tag95 20</li><li>tag96 40</li><li>tag97 60</li><li>tag98 80</li><li>tag99 100</li></ul>');
   }, 30000);
 
+  it("encodes slugs in all_tags output", async function () {
+      await this.write({path: '/a.txt', content: 'Tags: Design/UI\n\nFoo'});
+
+      await this.template({
+          'entries.html': `{{#all_tags}}{{slug}}{{/all_tags}}`
+      });
+
+      const res = await this.get('/');
+      const body = await res.text();
+
+      expect(res.status).toEqual(200);
+      expect(body.trim()).toEqual('design%2Fui');
+  });
 
 });

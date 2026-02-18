@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+{{> head}}
+<body>
+    {{> navigation}}
+    <main>
+       <h1>Archives</h1>
+       {{> search-form}}
+       <div class="archives-grid">
+         {{#allEntries}}
+         <div class="archive-item">
+           <a href="{{{url}}}" class="archive-title">{{title}}</a>
+           <span class="archive-date">{{#date}}{{date}}{{/date}}</span>
+         </div>
+         {{/allEntries}}
+       </div>
+    </main>
+    {{> footer}}
+</body>
+</html>

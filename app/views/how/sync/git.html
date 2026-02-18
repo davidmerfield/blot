@@ -5,13 +5,13 @@
   <a rel="nofollow" href="https://git-scm.com/">Git</a>, a version-control
   system for tracking changes in computer files and coordinating work on those
   files among multiple people. You can switch your site seamlessly to another
-  client at any point.
+  sync method at any point.
 </p>
 
 <h2>Setting up Git</h2>
 
 <p>
-  When you configure your site with the git client on the dashboard, Blot will
+  When you configure your site with git on the dashboard, Blot will
   provide a repository URL to clone, along with a username and password.
 </p>
 
@@ -30,6 +30,12 @@
   There are a handful of Git clients for phones and tablets. I've heard from a
   number of customers who use
   <a href="https://workingcopyapp.com/">Working Copy</a>.
+</p>
+
+<h2>Limits</h2>
+<p>
+  Pushes are subject to a <strong>1 GB</strong> limit. Pushes and pulls must send and receive data within <strong>3 minutes</strong>
+  each way. Downloads are throttled to <strong>10 MB/s</strong> after the first 100 MB of a clone or fetch.
 </p>
 
 <h2>Using an existing Git repository</h2>
@@ -82,6 +88,6 @@
 
 <h2>Switching client</h2>
 
-<p>You can switch seamlessly from Git to another client at any point:</p>
+<p>You can switch seamlessly from Git to another sync method at any point:</p>
 
 {{> client_list}}

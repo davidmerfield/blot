@@ -41,6 +41,18 @@ describe("Blog.create", function () {
       expect(test.blog.isImageExifBasic).toBe(true);
       expect(test.blog.isImageExifOff).toBe(false);
 
+      expect(test.blog.converters).toEqual({
+        html: true,
+        img: true,
+        webloc: true,
+        gdoc: true,
+        docx: true,
+        rtf: true,
+        odt: true,
+        org: true,
+        markdown: true,
+      });
+
       done();
     });
   });

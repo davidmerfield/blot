@@ -140,13 +140,20 @@ function convert (blog, path, contents, callback) {
           timeout = Timeout(id, next);
           time(id);
 
+          // Plugins should call their render callbacks with
+          // cb(null, { newDependencies }) to allow us to extend
+          // the result object with future fields (e.g. toc).
           plugin.render(
             $,
-            function (err, newDependencies) {
+            function (err, result) {
               time.end(id);
-              if (newDependencies) {
-                dependencies = dependencies.concat(newDependencies);
+
+              const res = Array.isArray(result) ? { newDependencies: result } : result || {};
+
+              if (res.newDependencies) {
+                dependencies = dependencies.concat(res.newDependencies);
               }
+
               clearTimeout(timeout);
               next();
             },

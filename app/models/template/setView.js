@@ -9,16 +9,18 @@ var viewModel = require("./viewModel");
 var getView = require("./getView");
 var serialize = require("./util/serialize");
 var getMetadata = require("./getMetadata");
+var setMetadata = require("./setMetadata");
 var Blog = require("models/blog");
 var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
 var updateCdnManifest = require("./util/updateCdnManifest");
 var clfdate = require("helper/clfdate");
+const MAX_VIEW_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
 module.exports = function setView(templateID, updates, callback) {
-	ensure(templateID, "string").and(updates, "object").and(callback, "function");
+        ensure(templateID, "string").and(updates, "object").and(callback, "function");
 
-	if (updates.partials !== undefined && type(updates.partials) !== "object") {
+        if (updates.partials !== undefined && type(updates.partials) !== "object") {
 		updates.partials = {};
 		console.log(templateID, updates, "Partials are wrong type");
 	}
@@ -35,15 +37,22 @@ module.exports = function setView(templateID, updates, callback) {
 	}
 
 	// We don't support subdirectories in templates at the moment
-	if (name.includes("/") || name.includes("\\")) {
-		return callback(new Error("View names cannot contain slashes"));
-	}
+        if (name.includes("/") || name.includes("\\")) {
+                return callback(new Error("View names cannot contain slashes"));
+        }
 
-	if (updates.content !== undefined) {
-		try {
-			Mustache.render(updates.content, {});
-		} catch (e) {
-			return callback(e);
+        const serializedUpdates = JSON.stringify(updates);
+        const payloadSize = Buffer.byteLength(serializedUpdates);
+
+        if (payloadSize > MAX_VIEW_PAYLOAD_SIZE) {
+                return callback(new Error("View payload exceeds maximum size of 2 MB"));
+        }
+
+        if (updates.content !== undefined) {
+                try {
+                        Mustache.render(updates.content, {});
+                } catch (e) {
+                        return callback(e);
 		}
 	}
 
@@ -282,13 +291,29 @@ module.exports = function setView(templateID, updates, callback) {
 						multi.exec((err) => {
 							if (err) return callback(err);
 
-							updateCdnManifest(templateID, (manifestErr) => {
-								if (manifestErr) return callback(manifestErr);
+							if (!changes) {
+								if (metadata.errors && metadata.errors[name]) {
+									delete metadata.errors[name];
+									return setMetadata(templateID, { errors: metadata.errors }, callback);
+								}
 
-								if (!changes) return callback();
+								return callback();
+							}
 
-								Blog.set(metadata.owner, { cacheID: Date.now() }, (err) => {
-									callback(err);
+							Blog.set(metadata.owner, { cacheID: Date.now() }, (cacheErr) => {
+								if (cacheErr) return callback(cacheErr);
+
+								updateCdnManifest(templateID, (manifestErr) => {
+									if (manifestErr) return callback(manifestErr);
+
+									// Clear this view from template metadata.errors when saving
+									// via the dashboard so fixing a view clears its error state
+									if (metadata.errors && metadata.errors[name]) {
+										delete metadata.errors[name];
+										return setMetadata(templateID, { errors: metadata.errors }, callback);
+									}
+
+									callback();
 								});
 							});
 						});

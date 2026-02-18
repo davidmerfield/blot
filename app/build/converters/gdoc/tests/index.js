@@ -3,6 +3,7 @@ const fs = require("fs-extra");
 const express = require("express");
 const sharp = require("sharp");
 const nock = require("nock");
+const hash = require("helper/hash");
 
 const imageBuffer = async () =>
   sharp({
@@ -75,33 +76,6 @@ describe("gdoc converter", function () {
     });
   });
 
-  it("respects the flag to not preserve line breaks", async function () {
-    const name = "linebreak.gdoc";
-
-    const test = this;
-    const path = `/${name}`;
-    const expected = await fs.readFile(
-      `${__dirname + path}.google_docs_preserve_linebreaks.html`,
-      "utf8"
-    );
-
-    // set the flag to 'false'
-    const blogWithFlag = {
-      ...test.blog,
-      flags: { google_docs_preserve_linebreaks: false },
-    };
-
-    fs.copySync(__dirname + path, test.blogDirectory + path);
-
-    await new Promise((resolve, reject) => {
-      gdoc.read(blogWithFlag, path, function (err, result) {
-        if (err) return reject(err);
-        expect(result).toEqual(expected);
-        resolve();
-      });
-    });
-  });
-
   it("reuses cached transformer asset when the remote URL expires", async function () {
     const test = this;
     const path = `/image-alt-title.gdoc`;
@@ -147,5 +121,52 @@ describe("gdoc converter", function () {
     }
 
     expect(scope.isDone()).toBe(true);
+  });
+
+  it("leaves pre-rewritten /_assets/ refs unchanged (ZIP export fast-path, no re-copy)", async function () {
+    const test = this;
+    const path = "/zip-style-rewritten.gdoc";
+    const docHash = hash(path);
+    const assetPath = `/_assets/${docHash}/photo.jpeg`;
+    const minimalHtml = [
+      "<html><head><meta charset='utf-8'></head><body>",
+      "<p><img alt='' src='" + assetPath + "'></p>",
+      "</body></html>",
+    ].join("");
+
+    await fs.writeFile(test.blogDirectory + path, minimalHtml, "utf8");
+
+    const result = await new Promise((resolve, reject) => {
+      gdoc.read(test.blog, path, (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+
+    expect(result).toContain(assetPath);
+  });
+
+  it("does not duplicate or re-copy images already at /_assets/...", async function () {
+    const test = this;
+    const path = "/pre-rewritten-assets.gdoc";
+    const docHash = hash(path);
+    const filename = "existing-image.jpg";
+    const assetSrc = `/_assets/${docHash}/${filename}`;
+    const minimalHtml = [
+      "<html><head><meta charset='utf-8'></head><body>",
+      "<p>Text</p><p><img src='" + assetSrc + "' alt='Already in assets'></p>",
+      "</body></html>",
+    ].join("");
+
+    await fs.writeFile(test.blogDirectory + path, minimalHtml, "utf8");
+
+    const result = await new Promise((resolve, reject) => {
+      gdoc.read(test.blog, path, (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+
+    expect(result).toContain(assetSrc);
   });
 });

@@ -1,3 +1,5 @@
+const getEntry = require("../../models/entry/get");
+
 describe("entry", function () {
 
     require('./util/setup')();
@@ -106,6 +108,30 @@ describe("entry", function () {
         if (error) throw error;
 
         expect(res.status).toEqual(400);
+    });
+
+    it("adds dependency when URL is deduplicated during rename", async function () {
+
+        await this.write({path: '/a.txt', content: 'Link: a\nHello, A!'});
+        await this.write({path: '/a1.txt', content: 'Link: a\nHello, A1!'});
+
+        const getEntryByPath = (path) =>
+            new Promise((resolve) => {
+                getEntry(this.blog.id, path, (entry) => resolve(entry));
+            });
+
+        const secondEntry = await getEntryByPath('/a1.txt');
+
+        expect(secondEntry.url).toEqual('/a-2');
+        expect(secondEntry.dependencies).toContain('/a.txt');
+
+        await this.remove('/a.txt');
+        await this.write({path: '/a1.txt', content: 'Link: a\nHello, A1!'});
+
+        const updatedEntry = await getEntryByPath('/a1.txt');
+
+        expect(updatedEntry.url).toEqual('/a');
+        expect(updatedEntry.dependencies).not.toContain('/a.txt');
     });
 
 });

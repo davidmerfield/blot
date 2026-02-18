@@ -2,6 +2,7 @@ module.exports = {
   display_name: "Dropbox",
   description:
     "A file storage and synchronization service",
+  init: require("./init"),
   disconnect: require("./disconnect"),
   resync: require('./sync/reset-to-blot'),
   remove: require("./remove"),

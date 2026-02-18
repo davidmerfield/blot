@@ -53,4 +53,22 @@ describe("augment", function () {
         expect(res.status).toEqual(200);
         expect(body.trim()).toEqual('Second');
     });
+
+    it("encodes tag slugs when augmenting entry tags", async function () {
+
+        await this.write({
+            path: "/slash-tag.txt",
+            content: "Title: Slash Tag\nTags: Design/UI\n\nBody"
+        });
+
+        await this.template({
+            'entry.html': '{{#entry.tags}}{{slug}}{{/entry.tags}}'
+        });
+
+        const res = await this.get('/slash-tag');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body.trim()).toEqual('design%2Fui');
+    });
 });

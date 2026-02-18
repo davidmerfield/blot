@@ -65,6 +65,23 @@ seedrandom(seed, { global: true });
 jasmine.seed(seed);
 jasmine.loadConfig(config);
 
+// Build command for re-running with DEBUG
+function buildDebugCommand() {
+  var cmd = "DEBUG=blot* npm test";
+  if (args[0]) cmd += " " + args[0];
+  if (args[1]) cmd += " " + args[1];
+  return cmd;
+}
+
+// Log DEBUG command at start (only if DEBUG is not already set)
+if (!process.env.DEBUG) {
+  console.log(
+    clfdate(),
+    "To run with debug logs:",
+    colors.cyan(buildDebugCommand())
+  );
+}
+
 jasmine.addReporter({
   specStarted: function (result) {
     console.time(colors.dim(" " + result.fullName));
@@ -84,7 +101,7 @@ jasmine.addReporter({
   specDone: function (result) {
     durations[result.fullName] = Date.now() - startTimes[result.fullName];
   },
-  jasmineDone: function () {
+  jasmineDone: function (result) {
     console.log(clfdate(), "Slowest specs:");
     Object.keys(durations)
       .sort(function (a, b) {
@@ -93,6 +110,14 @@ jasmine.addReporter({
       .map((fullName) => durations[fullName] + "ms " + colors.dim(fullName))
       .slice(0, 10)
       .forEach((line) => console.log(line));
+    
+    // If tests failed, show how to re-run with DEBUG (only if DEBUG is not already set)
+    if (result.overallStatus === "failed" && !process.env.DEBUG) {
+      console.log();
+      console.log("Re-run with debug logs:");
+      console.log(colors.cyan(buildDebugCommand()));
+      console.log();
+    }
   },
 });
 

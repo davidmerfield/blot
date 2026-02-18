@@ -9,7 +9,7 @@ const documentation = Express.Router();
 
 const VIEW_DIRECTORY = config.views_directory;
 
-documentation.get(["/how/format/*"], function (req, res, next) {
+documentation.get(["/how/format/*", "/how/files/markdown", "/how/formatting/math"], function (req, res, next) {
   res.locals["show-on-this-page"] = true;
   next();
 });
@@ -72,7 +72,7 @@ documentation.get(
 
 documentation.use(require("./selected"));
 
-documentation.get("/", require("./templates.js"), function (req, res, next) {
+documentation.get("/", function (req, res, next) {
   res.locals.title = "Blot";
   res.locals.description = "Turns a folder into a website";
   // otherwise the <title> of the page is 'Blot - Blot'
@@ -105,31 +105,27 @@ documentation.post(
 
 documentation.get("/examples", require("./featured"));
 
-documentation.get("/templates", require("./templates.js"));
-
-documentation.use("/tools/all-*", (req, res, next) => {
-  delete res.locals.breadcrumbs;
-  next();
+documentation.get("/templates", (req, res) => {
+  res.render("templates/index");
 });
 
-documentation.get(
-  "/templates/for-:type",
-  require("./templates.js"),
-  (req, res, next) => {
-    res.locals.hidebreadcrumbs = true;
-    res.render("templates");
-  }
-);
+documentation.get("/templates/for-:type", (req, res, next) => {
+  res.locals.hidebreadcrumbs = true;
+  const view = `templates/for-${req.params.type}/index`;
+  res.render(view, (err, html) => {
+    if (err) return next();
+    res.send(html);
+  });
+});
 
-documentation.get(
-  "/templates/:template",
-  require("./templates.js"),
-  (req, res, next) => {
-    if (!res.locals.template) return next();
-    res.locals.layout = "partials/layout-full-screen";
-    res.render("templates/template");
-  }
-);
+documentation.get("/templates/:template", (req, res, next) => {
+  res.locals.layout = "partials/layout-full-screen";
+  const view = `templates/${req.params.template}/index`;
+  res.render(view, (err, html) => {
+    if (err) return next();
+    res.send(html);
+  });
+});
 
 documentation.use("/templates/fonts", require("./fonts"));
 
@@ -149,6 +145,15 @@ function trimLeadingAndTrailingSlash(str) {
   if (str[str.length - 1] === "/") str = str.slice(0, -1);
   return str;
 }
+
+documentation.use(function (req, res, next) {
+  res.locals["show-main-section-right"] =
+    (res.locals.selected && res.locals.selected.how === "selected") ||
+    res.locals["show-toc"];
+  res.locals["show-toc-or-on-this-page"] =
+    res.locals["show-toc"] || res.locals["show-on-this-page"];
+  next();
+});
 
 documentation.use(function (req, res, next) {
   const view = trimLeadingAndTrailingSlash(req.path) || "index";

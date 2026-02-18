@@ -8,6 +8,7 @@ const Blog = require("models/blog");
 const path = require("path");
 const fs = require("fs-extra");
 const config = require("config");
+const renderView = require("blog/render/view");
 
 const getAsync = promisify(client.get).bind(client);
 const getMetadataAsync = promisify(getMetadata).bind(getMetadata);
@@ -63,6 +64,40 @@ describe("updateCdnManifest", function () {
 
     expect(renderedOutput).toBeDefined();
     expect(renderedOutput).toBe("body{color:red}");
+  });
+
+  it("regenerates manifest hashes after cache-busting to avoid stale full-view cache", async function () {
+    const test = this;
+
+    await setViewAsync(test.template.id, {
+      name: "entries.html",
+      content: "{{#cdn}}/style.css{{/cdn}}",
+    });
+
+    await setViewAsync(test.template.id, {
+      name: "style.css",
+      content: "body{color:black}",
+    });
+
+    const metadata1 = await getMetadataAsync(test.template.id);
+    const oldHash = metadata1.cdn["style.css"];
+
+    // Prime full-view-cache for the current blog cacheID
+    await renderView(test.template.id, "style.css");
+
+    // Ensure Date.now() advances so Blog.set writes a new cacheID.
+    await new Promise((resolve) => setTimeout(resolve, 2));
+
+    await setViewAsync(test.template.id, {
+      name: "style.css",
+      content: "body{color:white}",
+    });
+
+    const metadata2 = await getMetadataAsync(test.template.id);
+    const newHash = metadata2.cdn["style.css"];
+
+    expect(newHash).toBeDefined();
+    expect(newHash).not.toBe(oldHash);
   });
 
   it("removes old rendered output from Redis when hash changes", async function () {
@@ -241,12 +276,14 @@ describe("updateCdnManifest", function () {
     const MAX_SIZE = 2 * 1024 * 1024; // 2MB
     const largeContent = "x".repeat(MAX_SIZE + 1); // Exceeds limit
 
-    await setViewAsync(test.template.id, {
-      name: "large.html",
-      content: largeContent,
-    });
+    await expectAsync(
+      setViewAsync(test.template.id, {
+        name: "large.html",
+        content: largeContent,
+      })
+    ).toBeRejectedWith(new Error("View payload exceeds maximum size of 2 MB"));
 
-    // Update manifest - should skip the large file
+    // Update manifest - should skip the large file since it was never stored
     await new Promise((resolve, reject) => {
       updateCdnManifest(test.template.id, (err) => {
         if (err) return reject(err);
@@ -339,7 +376,7 @@ describe("updateCdnManifest", function () {
     expect(metadata.cdn["style.css"].length).toBe(32); // MD5 hash length
   });
 
-  it("always computes manifest for SITE templates regardless of installation", async function () {
+  it("never computes manifest for SITE templates", async function () {
     const test = this;
     const updateCdnManifest = require("../util/updateCdnManifest");
 
@@ -370,10 +407,8 @@ describe("updateCdnManifest", function () {
       });
     });
 
-    // Verify manifest is populated (SITE templates should always compute)
     const metadata = await getMetadataAsync(siteTemplate.id);
-    expect(metadata.cdn["style.css"]).toBeDefined();
-    expect(metadata.cdn["style.css"].length).toBe(32); // MD5 hash length
+    expect(metadata.cdn).toEqual({});
   });
 
   it("cleans up old hashes when skipping uninstalled template", async function () {

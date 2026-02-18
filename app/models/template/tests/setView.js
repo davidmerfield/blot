@@ -5,6 +5,7 @@ describe("template", () => {
 	require("./setup")({ createTemplate: true });
 
 	const setView = promisify(require("../index").setView);
+	const setMetadata = promisify(require("../index").setMetadata);
 	const getView = promisify(require("../index").getView);
 	const getMetadata = promisify(require("../index").getMetadata);
 	const Blog = require("models/blog");
@@ -215,7 +216,7 @@ describe("template", () => {
 		expect(secondMetadata.cdn["style.css"]).not.toEqual(originalHash);
 	});
 
-	describe("empty url array handling", () => {
+        describe("empty url array handling", () => {
 		it("should not create a Redis key with 'undefined' when an empty array is passed", async function () {
 			// First, set a view with a valid URL
 			await setView(this.template.id, {
@@ -298,8 +299,128 @@ describe("template", () => {
 			});
 
 			// The old URL key should be deleted
-			const viewNameAfter = await get(oldUrlKey);
-			expect(viewNameAfter).toBeNull();
+                        const viewNameAfter = await get(oldUrlKey);
+                        expect(viewNameAfter).toBeNull();
+                });
+        });
+
+        describe("view payload size limits", () => {
+                const MAX_VIEW_PAYLOAD_SIZE = 2 * 1024 * 1024;
+
+                const createUpdatesWithPayloadSize = (name, targetSize) => {
+                        const base = { name, content: "" };
+                        const baseSize = Buffer.byteLength(JSON.stringify(base));
+                        const fillerLength = targetSize - baseSize;
+
+                        if (fillerLength < 0) {
+                                throw new Error("Target size is smaller than the base payload size");
+                        }
+
+                        return {
+                                ...base,
+                                content: "a".repeat(fillerLength),
+                        };
+                };
+
+                const getPayloadSize = (updates) => Buffer.byteLength(JSON.stringify(updates));
+
+                it("allows payloads just under the maximum", async function () {
+                        const targetSize = MAX_VIEW_PAYLOAD_SIZE - 1;
+                        const updates = createUpdatesWithPayloadSize("payload-under.html", targetSize);
+
+                        expect(getPayloadSize(updates)).toEqual(targetSize);
+
+                        await setView(this.template.id, updates);
+                        const savedView = await getView(this.template.id, updates.name);
+
+                        expect(savedView.name).toEqual(updates.name);
+                });
+
+                it("allows payloads at the maximum", async function () {
+                        const targetSize = MAX_VIEW_PAYLOAD_SIZE;
+                        const updates = createUpdatesWithPayloadSize("payload-at.html", targetSize);
+
+                        expect(getPayloadSize(updates)).toEqual(targetSize);
+
+                        await setView(this.template.id, updates);
+                        const savedView = await getView(this.template.id, updates.name);
+
+                        expect(savedView.name).toEqual(updates.name);
+                });
+
+                it("rejects payloads over the maximum", async function () {
+                        const targetSize = MAX_VIEW_PAYLOAD_SIZE + 1;
+                        const updates = createUpdatesWithPayloadSize("payload-over.html", targetSize);
+
+                        expect(getPayloadSize(updates)).toEqual(targetSize);
+
+                        try {
+                                await setView(this.template.id, updates);
+                                throw new Error("Expected payload to exceed limit");
+                        } catch (err) {
+                                expect(err instanceof Error).toBe(true);
+                                expect(err.message).toBe("View payload exceeds maximum size of 2 MB");
+                        }
+                });
+        });
+
+	describe("clearing template errors when saving a view", () => {
+		it("clears the view from metadata.errors when saving valid content for that view", async function () {
+			const templateID = this.template.id;
+
+			await setMetadata(templateID, {
+				errors: { "entry.html": "Unclosed section \"entries\" on line 5" },
+			});
+
+			let metadata = await getMetadata(templateID);
+			expect(metadata.errors).toEqual({
+				"entry.html": "Unclosed section \"entries\" on line 5",
+			});
+
+			await setView(templateID, {
+				name: "entry.html",
+				content: "<h1>{{title}}</h1>",
+			});
+
+			metadata = await getMetadata(templateID);
+			expect(metadata.errors).toEqual({});
+		});
+
+		it("clears only the saved view from metadata.errors when multiple views have errors", async function () {
+			const templateID = this.template.id;
+
+			await setMetadata(templateID, {
+				errors: {
+					"entry.html": "Unclosed section on line 1",
+					"index.html": "Bad partial on line 2",
+				},
+			});
+
+			await setView(templateID, {
+				name: "entry.html",
+				content: "Fixed content",
+			});
+
+			const metadata = await getMetadata(templateID);
+			expect(metadata.errors).toEqual({
+				"index.html": "Bad partial on line 2",
+			});
+		});
+
+		it("does not add or change errors when saving a view that was not in metadata.errors", async function () {
+			const templateID = this.template.id;
+
+			await setMetadata(templateID, {
+				errors: { "other.html": "Some error" },
+			});
+
+			await setView(templateID, {
+				name: "clean.html",
+				content: "New valid view",
+			});
+
+			const metadata = await getMetadata(templateID);
+			expect(metadata.errors).toEqual({ "other.html": "Some error" });
 		});
 	});
 });

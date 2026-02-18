@@ -1,3 +1,3 @@
 User is overdue paying for Blot
 
-{{email}} used to pay {{pretty.price}} per {{subscription.plan.interval}} for {{pretty.amount}} blog{{pretty.s}}
+{{email}} used to pay {{pretty.price}} per {{subscription.plan.interval}} for {{pretty.amount}} site{{pretty.s}}

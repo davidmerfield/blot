@@ -23,6 +23,7 @@ module.exports = function (req, res, callback) {
     tags = tags.map((tag) => {
       tag.tag = tag.name;
       tag.total = tag.entries.length;
+      if (tag.slug) tag.slug = encodeURIComponent(tag.slug);
       return tag;
     });
 

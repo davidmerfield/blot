@@ -69,6 +69,7 @@ module.exports = async function write(blogID, path, input, callback) {
 
         await drive.files.update({
           fileId: fileId,
+          supportsAllDrives: true,
           media: {
             body: fs.createReadStream(tempPath),
           },
@@ -91,6 +92,7 @@ module.exports = async function write(blogID, path, input, callback) {
             name: basename(path),
             parents: [parentID],
           },
+          supportsAllDrives: true,
           media: {
             body: fs.createReadStream(tempPath),
           },
@@ -146,6 +148,8 @@ const establishParentDirectories = async (drive, pathParent, blogFolderID) => {
 
     const { data } = await drive.files.list({
       q: `'${folderId}' in parents and trashed = false`,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
     });
 
     let dirID =
@@ -159,6 +163,7 @@ const establishParentDirectories = async (drive, pathParent, blogFolderID) => {
           parents: [folderId],
           mimeType: "application/vnd.google-apps.folder",
         },
+        supportsAllDrives: true,
         fields: "id",
       });
 

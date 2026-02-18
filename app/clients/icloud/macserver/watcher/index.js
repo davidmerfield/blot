@@ -1,58 +1,184 @@
-const chokidar = require("chokidar");
-const fs = require("fs-extra");
-const { getLimiterForBlogID } = require("../limiters");
-const { iCloudDriveDirectory } = require("../config");
-const { constants } = require("fs");
-const { join } = require("path");
+import chokidar from "chokidar";
+import fs from "fs-extra";
+import {
+  getLimiterForBlogID,
+  removeLimiterForBlogID,
+  getLimiterCount,
+} from "../limiters.js";
+import clfdate from "../util/clfdate.js";
+import { iCloudDriveDirectory } from "../config.js";
+import { constants } from "fs";
+import { join } from "path";
+import * as brctl from "../brctl/index.js";
+import status from "../httpClient/status.js";
+import { performAction } from "./actions.js";
+import { startFsWatch as startFsWatchInternal, stopFsWatch as stopFsWatchInternal } from "./fswatch.js";
+import {
+  buildBlogPath,
+  buildChokidarEventKey,
+  assertValidAction,
+  extractBlogID,
+  extractPathInBlogDirectory,
+} from "./pathUtils.js";
 
-const brctl = require("../brctl");
-
-const status = require("../httpClient/status");
-const upload = require("../httpClient/upload");
-const mkdir = require("../httpClient/mkdir");
-const remove = require("../httpClient/remove");
-
-const extractBlogID = (filePath) => {
-  if (!filePath.startsWith(iCloudDriveDirectory)) {
-    return null;
-  }
-  const relativePath = filePath.replace(`${iCloudDriveDirectory}/`, "");
-  const [blogID] = relativePath.split("/");
-
-  if (!blogID.startsWith("blog_")) {
-    return null;
-  }
-
-  return blogID;
-};
-
-const extractPathInBlogDirectory = (filePath) => {
-  if (!filePath.startsWith(iCloudDriveDirectory)) {
-    return null;
-  }
-  const relativePath = filePath.replace(`${iCloudDriveDirectory}/`, "");
-  const [, ...restPath] = relativePath.split("/");
-  return restPath.join("/");
-};
-
-const {
+import {
   checkDiskSpace,
   removeBlog,
   addFile,
   removeFile,
-} = require("./monitorDiskUsage");
+} from "./monitorDiskUsage.js";
+
+import { realpath } from "fs/promises";
+import path from "path";
+import shouldIgnore from "./shouldIgnore.js";
+
+async function exactCaseViaRealpath(p) {
+  const resolved = await realpath(p);
+  return resolved === path.resolve(p);
+}
 
 // Map to track active chokidar watchers for each blog folder
 const blogWatchers = new Map();
+const chokidarEventMap = new Map();
+const evictionSuppressionMap = new Map();
+const CHOKIDAR_EVENT_WINDOW_MS = 60_000;
+const CHOKIDAR_PRUNE_INTERVAL_MS = 30_000;
+const EVICTION_SUPPRESSION_POST_MS = 2_000;
+const EVICTION_SUPPRESSION_TTL_MS = 30_000;
+let chokidarPruneInterval = null;
+const FS_WATCH_SETTLE_DELAY_MS = 300;
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const buildEvictionSuppressionKey = (blogID, pathInBlogDirectory) =>
+  `${blogID}:${pathInBlogDirectory}`;
+
+const markEvictionSuppressed = (blogID, pathInBlogDirectory) => {
+  if (!pathInBlogDirectory) {
+    return;
+  }
+
+  const key = buildEvictionSuppressionKey(blogID, pathInBlogDirectory);
+  const now = Date.now();
+  evictionSuppressionMap.set(key, {
+    suppressUntil: Number.POSITIVE_INFINITY,
+    expiresAt: now + EVICTION_SUPPRESSION_TTL_MS,
+  });
+};
+
+const extendEvictionSuppression = (blogID, pathInBlogDirectory) => {
+  if (!pathInBlogDirectory) {
+    return;
+  }
+
+  const key = buildEvictionSuppressionKey(blogID, pathInBlogDirectory);
+  const now = Date.now();
+  const suppressUntil = now + EVICTION_SUPPRESSION_POST_MS;
+  const expiresAt = now + EVICTION_SUPPRESSION_TTL_MS;
+  evictionSuppressionMap.set(key, { suppressUntil, expiresAt });
+};
+
+const isEvictionSuppressed = (blogID, pathInBlogDirectory) => {
+  if (!pathInBlogDirectory) {
+    return false;
+  }
+
+  const key = buildEvictionSuppressionKey(blogID, pathInBlogDirectory);
+  const suppression = evictionSuppressionMap.get(key);
+
+  if (!suppression) {
+    return false;
+  }
+
+  const now = Date.now();
+
+  if (suppression.expiresAt <= now) {
+    evictionSuppressionMap.delete(key);
+    return false;
+  }
+
+  return suppression.suppressUntil > now;
+};
+
+const recordChokidarEvent = (blogID, pathInBlogDirectory, action) => {
+  if (!pathInBlogDirectory) {
+    return;
+  }
+
+  assertValidAction(action);
+  const key = buildChokidarEventKey(blogID, pathInBlogDirectory, action);
+  chokidarEventMap.set(key, Date.now());
+};
+
+const hasRecentChokidarEvent = (blogID, pathInBlogDirectory, action) => {
+  if (!pathInBlogDirectory) {
+    return false;
+  }
+
+  assertValidAction(action);
+  const key = buildChokidarEventKey(blogID, pathInBlogDirectory, action);
+  const timestamp = chokidarEventMap.get(key);
+  return Boolean(
+    timestamp && Date.now() - timestamp < CHOKIDAR_EVENT_WINDOW_MS
+  );
+};
+
+const pruneChokidarEvents = () => {
+  const cutoff = Date.now() - CHOKIDAR_EVENT_WINDOW_MS;
+  for (const [key, timestamp] of chokidarEventMap.entries()) {
+    if (timestamp < cutoff) {
+      chokidarEventMap.delete(key);
+    }
+  }
+};
+
+const pruneEvictionSuppressions = () => {
+  const now = Date.now();
+  for (const [key, suppression] of evictionSuppressionMap.entries()) {
+    if (suppression.expiresAt <= now) {
+      evictionSuppressionMap.delete(key);
+    }
+  }
+};
+
+const startChokidarPruneLoop = () => {
+  if (chokidarPruneInterval) {
+    return;
+  }
+
+  chokidarPruneInterval = setInterval(
+    () => {
+      pruneChokidarEvents();
+      pruneEvictionSuppressions();
+    },
+    CHOKIDAR_PRUNE_INTERVAL_MS
+  );
+  chokidarPruneInterval.unref?.();
+};
+
+const startFsWatch = () => startFsWatchInternal(reconcileFsWatchEvent);
+const stopFsWatch = () => stopFsWatchInternal();
 
 // Handle file events
 const handleFileEvent = async (event, blogID, filePath) => {
   try {
     const pathInBlogDirectory = extractPathInBlogDirectory(filePath);
 
+    if (shouldIgnore(pathInBlogDirectory)) {
+      console.log(clfdate(), `Ignoring file event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory} because it matches the shouldIgnore filter`);
+      return;
+    }
+
     // Handle the deletion of the entire blog directory
     if (event === "unlinkDir" && pathInBlogDirectory === "") {
-      console.warn(`Blog directory deleted: ${blogID}`);
+      console.warn(clfdate(), `Blog directory deleted: ${blogID}`);
+      const limiterCountBefore = getLimiterCount();
+      removeLimiterForBlogID(blogID);
+      const limiterCountAfter = getLimiterCount();
+      console.assert(
+        limiterCountAfter < limiterCountBefore,
+        `Expected limiter map size to decrease after deleting ${blogID}. Before: ${limiterCountBefore}, After: ${limiterCountAfter}`
+      );
       await status(blogID, { error: "Blog directory deleted" });
       await unwatch(blogID); // Stop watching this blog folder
       removeBlog(blogID); // Remove from largest files map
@@ -63,35 +189,108 @@ const handleFileEvent = async (event, blogID, filePath) => {
       // Check if the directory for the blogID exists
       await fs.access(join(iCloudDriveDirectory, blogID), constants.F_OK);
     } catch (err) {
-      console.warn(`Ignoring event for unregistered blogID: ${blogID}`);
+      console.warn(clfdate(), `Ignoring event for unregistered blogID: ${blogID}`);
       return;
     }
 
     if (!pathInBlogDirectory) {
-      console.warn(`Failed to parse path from path: ${filePath}`);
+      console.warn(clfdate(), `Failed to parse path from path: ${filePath}`);
       return;
     }
 
-    console.log(
-      `Event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory}`
+    console.log(clfdate(), 
+      `Chokidar Event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory}`
     );
 
-    // Get the limiter for this specific blogID
-    const limiter = getLimiterForBlogID(blogID);
-
-    // Schedule the event handler to run within the limiter
-    await limiter.schedule(async () => {
-      if (event === "add" || event === "change") {
-        await upload(blogID, pathInBlogDirectory);
-      } else if (event === "unlink" || event === "unlinkDir") {
-        await remove(blogID, pathInBlogDirectory);
-      } else if (event === "addDir") {
-        await mkdir(blogID, pathInBlogDirectory);
+    // because this runs on macos and the disk is 
+    // case insensitive, we need to verify that the
+    // pathInBlogDirectory is the exact same as the path
+    // on the disk – if not, we need to issue a remove event
+    if (event === "add" || event === "change") {
+      try {
+        const fullPath = buildBlogPath(blogID, pathInBlogDirectory);
+        const exactCase = await exactCaseViaRealpath(fullPath);
+        if (!exactCase) {
+          console.log(clfdate(), `Chokidar Event: Changing event from add/change to remove for path: ${pathInBlogDirectory} because of case mismatch`);
+          event = "unlink";
+        }
+      } catch (error) {
+        console.error(clfdate(), `Error verifying exact case for path: ${fullPath}:`, error);
+        return;
       }
-    });
+    }
+
+    if (event === "add" || event === "change") {
+      await performAction(blogID, pathInBlogDirectory, "upload");
+    } else if (event === "unlink" || event === "unlinkDir") {
+      await performAction(blogID, pathInBlogDirectory, "remove");
+    } else if (event === "addDir") {
+      await performAction(blogID, pathInBlogDirectory, "mkdir");
+    }
   } catch (error) {
-    console.error(`Error handling file event (${event}, ${filePath}):`, error);
+    console.error(clfdate(), `Error handling file event (${event}, ${filePath}):`, error);
   }
+};
+
+
+const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
+  // This will skip blog directory deletions
+  // but that's OK!
+  if (!pathInBlogDirectory) {
+    console.log(clfdate(), `Ignoring FS Watch Event: blogID: ${blogID}, path: ${pathInBlogDirectory} because it is falsy`);
+    return;
+  }
+
+  if (shouldIgnore(pathInBlogDirectory)) {
+    console.log(clfdate(), `Ignoring FS Watch Event: blogID: ${blogID}, path: ${pathInBlogDirectory} because it matches the shouldIgnore filter`);
+    return;
+  }
+
+  if (isEvictionSuppressed(blogID, pathInBlogDirectory)) {
+    console.log(clfdate(), `Ignoring FS Watch Event: blogID: ${blogID}, path: ${pathInBlogDirectory} because it is in eviction suppression`);
+    return;
+  }
+
+  await delay(FS_WATCH_SETTLE_DELAY_MS);
+
+  const fullPath = buildBlogPath(blogID, pathInBlogDirectory);
+  let action = null;
+
+  try {
+    const stats = await fs.stat(fullPath);
+
+    const exactCase = await exactCaseViaRealpath(fullPath);
+
+    // because this runs on macos and the disk is 
+    // case insensitive, we need to verify that the
+    // pathInBlogDirectory is the exact same as the path
+    // on the disk – if not, we need to issue a remove event
+    if (!exactCase) {
+      action = "remove";
+    } else if (stats.isFile()) {
+      action = "upload";
+    } else if (stats.isDirectory()) {
+      action = "mkdir";
+    }
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      action = "remove";
+    } else {
+      throw error;
+    }
+  }
+
+  if (!action) {
+    return;
+  }
+
+  if (hasRecentChokidarEvent(blogID, pathInBlogDirectory, action)) {
+    console.log(clfdate(), `FS Watch Event: duplicate, action: ${action}, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
+    return;
+  }
+
+  console.log(clfdate(), `FS Watch Event: ${action}, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
+  await performAction(blogID, pathInBlogDirectory, action);
 };
 
 // Initializes the top-level watcher and starts disk monitoring
@@ -107,7 +306,17 @@ const initialize = async () => {
       await unwatch(blogID);
 
       for (const filePath of files) {
-        await brctl.evict(filePath); // Evict the file
+        const pathInBlogDirectory = extractPathInBlogDirectory(filePath);
+        markEvictionSuppressed(blogID, pathInBlogDirectory);
+
+        try {
+          await brctl.evict(filePath); // Evict the file
+        } catch (error) {
+          // Continue processing files even if eviction of a specific file fails, as brctl evict can intermittently produce errors for certain files.
+          console.error(clfdate(), `Failed to evict file (${filePath}):`, error);
+        } finally {
+          extendEvictionSuppression(blogID, pathInBlogDirectory);
+        }
       }
 
       // Re-watch the blogID after eviction
@@ -127,38 +336,54 @@ const initialize = async () => {
       if (blogID) {
         await watch(blogID);
       } else {
-        console.warn(`Ignoring non-blog folder: ${folder.name}`);
+        console.warn(clfdate(), `Ignoring non-blog folder: ${folder.name}`);
       }
     }
   }
+
+  startChokidarPruneLoop();
+  startFsWatch();
 };
 
 // Watches a specific blog folder
 const watch = async (blogID) => {
   if (blogWatchers.has(blogID)) {
-    console.warn(`Already watching blog folder: ${blogID}`);
+    console.warn(clfdate(), `Already watching blog folder: ${blogID}`);
     return;
   }
 
   const blogPath = join(iCloudDriveDirectory, blogID);
   let initialScanComplete = false;
 
-  console.log(`Starting watcher for blog folder: ${blogID}`);
+  console.log(clfdate(), `Starting watcher for blog folder: ${blogID}`);
   // Monitor the CPU usage on the macserver before and after
   // making any changes to the polling intervals
   const watcher = chokidar
     .watch(blogPath, {
+      // we need to use polling otherwise we get this error on server start:
+      // Watcher error: Error: EMFILE: too many open files, watch
+      // IF in future, we can get rid of polling, perhaps we can remove the watch/unwatch calls in the rest of the code?
+      // This might work. We also might be able to leverage
+      // chokidar.watcher.add() and chokidar.watcher.unwatch() to manage files more specifically, reducing the risk of missed events and sync drift?
       usePolling: true,
       interval: 250, // Poll every 0.25s for non-binary files
       binaryInterval: 1000, // Poll every 1s for binary files
       ignoreInitial: false, // Process initial events
-      ignored: /(^|[/\\])\../, // Ignore dotfiles
     })
     .on("all", (event, filePath) => {
       const blogID = extractBlogID(filePath);
+      const pathInBlogDirectory = extractPathInBlogDirectory(filePath);
+      const action =
+        event === "add" || event === "change"
+          ? "upload"
+          : event === "unlink" || event === "unlinkDir"
+            ? "remove"
+            : event === "addDir"
+              ? "mkdir"
+              : null;
 
       if (!blogID) {
-        console.warn(`Failed to parse blogID from path: ${filePath}`);
+        console.warn(clfdate(), `Failed to parse blogID from path: ${filePath}`);
         return;
       }
 
@@ -170,15 +395,17 @@ const watch = async (blogID) => {
       }
 
       // We only handle file events after the initial scan is complete
-      if (initialScanComplete) {
+      if (initialScanComplete && action) {
+        assertValidAction(action);
+        recordChokidarEvent(blogID, pathInBlogDirectory, action);
         handleFileEvent(event, blogID, filePath);
       }
     })
     .on("ready", () => {
-      console.log(`Initial scan complete for blog folder: ${blogID}`);
+      console.log(clfdate(), `Initial scan complete for blog folder: ${blogID}`);
       initialScanComplete = true; // Mark the initial scan as complete
     })
-    .on('error', (error) => console.error(`Watcher error: ${error}`));
+    .on("error", (error) => console.error(clfdate(), `Watcher error: ${error}`));
 
   blogWatchers.set(blogID, watcher);
 };
@@ -187,13 +414,13 @@ const watch = async (blogID) => {
 const unwatch = async (blogID) => {
   const watcher = blogWatchers.get(blogID);
   if (!watcher) {
-    console.warn(`No active watcher for blog folder: ${blogID}`);
+    console.warn(clfdate(), `No active watcher for blog folder: ${blogID}`);
     return;
   }
 
-  console.log(`Stopping watcher for blog folder: ${blogID}`);
+  console.log(clfdate(), `Stopping watcher for blog folder: ${blogID}`);
   await watcher.close();
   blogWatchers.delete(blogID);
 };
 
-module.exports = { initialize, unwatch, watch };
+export { initialize, unwatch, watch, startFsWatch, stopFsWatch };
