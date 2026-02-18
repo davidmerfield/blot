@@ -9,6 +9,11 @@ const enabledConverters = require("build/converters/enabled");
 
 require("moment-timezone");
 
+const SYNTHETIC_DEPENDENCY_PREFIXES = [
+  "/__wikilink_slug__/",
+  "/__wikilink_filename__/",
+];
+
 module.exports = async function (blog, path) {
   return new Promise((resolve, reject) => {
     const blogID = blog.id;
@@ -111,9 +116,13 @@ module.exports = async function (blog, path) {
             return  { backlink};
           });
 
-          entry.dependencies = entry.dependencies.map((dependency) => {
+          entry.dependencies = entry.dependencies
+            .filter((dependency) => {
+              return !isSyntheticDependency(dependency);
+            })
+            .map((dependency) => {
             return { dependency };
-           });
+            });
 
            entry.internalLinks = entry.internalLinks.map((internalLink) => {
             return { internalLink };
@@ -200,4 +209,10 @@ function normalizeExtension (path) {
   res[extension] = true;
 
   return res;
+}
+
+function isSyntheticDependency (path) {
+  return SYNTHETIC_DEPENDENCY_PREFIXES.some((prefix) => {
+    return path.indexOf(prefix) === 0;
+  });
 }
