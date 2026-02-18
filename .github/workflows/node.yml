@@ -304,6 +304,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check duplicate top-level suites - ${{ matrix.test_suite }}
+        run: node scripts/tests/check-duplicate-top-level-describes.js ${{ matrix.test_suite }}
+
       - name: Run tests - ${{ matrix.test_suite }}
         env:
           BLOT_STRIPE_KEY: ${{ secrets.BLOT_STRIPE_KEY }}

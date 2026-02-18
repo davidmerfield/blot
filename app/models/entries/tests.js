@@ -46,7 +46,7 @@ function buildEntry(path, overrides) {
   return Object.assign(base, overrides || {});
 }
 
-describe("entries", function () {
+describe("models: entries", function () {
   // Cleans up the Redis database after each test
   // and exposes a test blog to each test
   global.test.blog();

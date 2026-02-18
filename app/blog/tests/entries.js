@@ -1,4 +1,4 @@
-describe("entries", function () {
+describe("blog: entries", function () {
 
     require('./util/setup')();
 

@@ -1,4 +1,4 @@
-describe("build", function () {
+describe("build: core", function () {
   var build = require("../index");
   var fs = require("fs-extra");
   var express = require("express");
