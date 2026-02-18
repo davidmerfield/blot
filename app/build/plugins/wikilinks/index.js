@@ -154,6 +154,15 @@ function render($, callback, { blogID, path }) {
               const html = entry && entry.html ? entry.html : "";
               const embedded = $("<div class='embedded-markdown'></div>");
               embedded.html(html);
+              
+              // if embedded has an h1 with a class of injected-title, remove it
+              // this is a hack to remove the injected title from the embedded markdown
+              const injectedTitle = embedded.find("h1.injected-title");
+              
+              if (injectedTitle && injectedTitle.length) {
+                injectedTitle.remove();
+              }
+
               $node.replaceWith(embedded);
 
               if (linkedPath && !dependencies.includes(linkedPath)) {
