@@ -1,7 +1,7 @@
 const exp = require("constants");
 const { promisify } = require("util");
 
-describe("template", () => {
+describe("template - setView", () => {
 	require("./setup")({ createTemplate: true });
 
 	const setView = promisify(require("../index").setView);

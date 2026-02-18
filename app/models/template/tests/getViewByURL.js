@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - getViewByURL", function () {
   require("./setup")({ createTemplate: true });
 
   it("gets a view from a URL", async function () {

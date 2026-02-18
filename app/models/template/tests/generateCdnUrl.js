@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - generateCdnUrl", function () {
   require("./setup")();
 
   const config = require("config");

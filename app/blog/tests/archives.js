@@ -1,4 +1,4 @@
-describe("template engine", function () {
+describe("template engine - archives", function () {
   require("./util/setup")();
 
   it("renders the archives page", async function () {

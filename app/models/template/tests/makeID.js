@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - makeID", function () {
   require("./setup")();
   var makeID = require("../index").makeID;
 

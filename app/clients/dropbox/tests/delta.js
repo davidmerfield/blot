@@ -1,4 +1,4 @@
-describe("dropbox client", function () {
+describe("dropbox client - delta", function () {
   // In root means the user has set up their
   // entire Dropbox folder as their blog folder.
   // This typically only happens for 'App folders'

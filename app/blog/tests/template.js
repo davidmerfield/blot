@@ -1,6 +1,6 @@
 const fs = require("fs-extra");
 
-describe("template engine", function () {
+describe("template engine - template", function () {
   require("./util/setup")();
 
   it("lists entries in reverse chronological", async function () {

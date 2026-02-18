@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - update", function () {
   require("./setup")({ createTemplate: true });
 
   var update = require("../index").update;

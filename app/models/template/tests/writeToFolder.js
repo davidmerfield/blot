@@ -2,7 +2,7 @@ var fs = require("fs-extra");
 var join = require("path").join;
 var clients = require("clients");
 
-describe("template", function () {
+describe("template - writeToFolder", function () {
 var writeToFolder = require("../index").writeToFolder;
 var setView = require("../index").setView;
 var dropView = require("../index").dropView;

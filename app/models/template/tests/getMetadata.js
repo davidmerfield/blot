@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - getMetadata", function () {
   require("./setup")({ createTemplate: true });
 
   var getMetadata = require("../index").getMetadata;

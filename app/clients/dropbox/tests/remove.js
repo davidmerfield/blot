@@ -1,4 +1,4 @@
-describe("dropbox client", function () {
+describe("dropbox client - remove", function () {
   // Create test user and tmp directory
   require("./setup")();
 

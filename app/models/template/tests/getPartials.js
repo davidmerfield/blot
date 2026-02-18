@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - getPartials", function () {
   require("./setup")({ createTemplate: true, createView: true });
 
   var getPartials = require("../index").getPartials;

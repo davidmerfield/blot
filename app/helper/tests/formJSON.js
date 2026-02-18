@@ -1,4 +1,4 @@
-describe("formJSON ", function () {
+describe("formJSON  - formJSON", function () {
   var formJSON = require("../formJSON");
 
   it("works", function () {

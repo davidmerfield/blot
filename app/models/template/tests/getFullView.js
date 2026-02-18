@@ -1,4 +1,4 @@
-describe("template", function () {
+describe("template - getFullView", function () {
   require("./setup")({ createTemplate: true });
 
   var async = require("async");

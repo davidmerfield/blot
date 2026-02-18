@@ -1,4 +1,4 @@
-describe("folder", function () {
+describe("folder - folder", function () {
   global.test.site({ login: true });
 
   const testCases = [
