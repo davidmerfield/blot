@@ -305,6 +305,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check duplicate top-level suites - ${{ matrix.test_suite }}
+        run: node scripts/tests/check-duplicate-top-level-describes.js ${{ matrix.test_suite }}
+        
       - name: Log test suite and seed
         run: echo "Running suite=${{ matrix.test_suite }} with seed=${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}"
 

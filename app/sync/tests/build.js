@@ -1,4 +1,4 @@
-describe("build", function () {
+describe("sync: build", function () {
   // Set up a test blog before each test
   global.test.blog();
 

@@ -1,4 +1,4 @@
-describe("dependencies", function () {
+describe("build tests: dependencies", function () {
   var build = require("../index");
   var fs = require("fs-extra");
   var nock = require("nock");
