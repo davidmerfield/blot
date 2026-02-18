@@ -2,16 +2,16 @@
 
 <div class="tags">
 
-{{^allTags.length}}
+{{^all_tags.length}}
 <div class="centered">
   <p>No categories yet.</p>
 </div>
-{{/allTags.length}}
+{{/all_tags.length}}
 
-{{#allTags.length}}
+{{#all_tags.length}}
 
 <h1 style="margin-left:1.3rem">All categories</h1>
-{{#allTags}}
+{{#all_tags}}
 <hr>
 <a href="/tagged/{{slug}}" style="color:inherit;text-decoration:none;padding:0 1.3rem 1.3rem">
 
@@ -19,10 +19,10 @@
   <p style="margin:0"><small>{{entries.length}} posts</small></p>
   <div style="clear:both"></div>
 </a>
-{{/allTags}}
+{{/all_tags}}
 
 </div>
-{{/allTags.length}}
+{{/all_tags.length}}
 
 </div>
 

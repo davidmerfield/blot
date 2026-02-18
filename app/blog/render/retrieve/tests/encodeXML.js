@@ -1,5 +1,5 @@
-describe("encodeXML", function () {
-  var encodeXML = require("blog/render/retrieve/encodeXML");
+describe("encode_xml", function () {
+  var encode_xml = require("blog/render/retrieve/encode_xml");
   var mustache = require("mustache");
 
   global.test.blog();
@@ -17,10 +17,10 @@ describe("encodeXML", function () {
     var result;
     var locals = {};
     var html = '<a href="/foo"></a>';
-    var template = "{{#encodeXML}}" + html + "{{/encodeXML}}";
+    var template = "{{#encode_xml}}" + html + "{{/encode_xml}}";
 
-    encodeXML(this.request, {}, function (err, lambda) {
-      result = mustache.render(template, { encodeXML: lambda });
+    encode_xml(this.request, {}, function (err, lambda) {
+      result = mustache.render(template, { encode_xml: lambda });
       expect(result).toEqual('<a href="http://example.com/foo"></a>');
       done();
     });
@@ -30,10 +30,10 @@ describe("encodeXML", function () {
     var result;
     var locals = {};
     var html = "& foo &#xFF08;&#x4FBF;&#x5229;";
-    var template = "{{#encodeXML}}" + html + "{{/encodeXML}}";
+    var template = "{{#encode_xml}}" + html + "{{/encode_xml}}";
 
-    encodeXML(this.request, {}, function (err, lambda) {
-      result = mustache.render(template, { encodeXML: lambda });
+    encode_xml(this.request, {}, function (err, lambda) {
+      result = mustache.render(template, { encode_xml: lambda });
       expect(result).toEqual("&amp; foo （便利");
       done();
     });
@@ -43,10 +43,10 @@ describe("encodeXML", function () {
     var result;
     var locals = {};
     var html = "<script>alert('foo');</script><p>Hey</p>";
-    var template = "{{#encodeXML}}" + html + "{{/encodeXML}}";
+    var template = "{{#encode_xml}}" + html + "{{/encode_xml}}";
 
-    encodeXML(this.request, {}, function (err, lambda) {
-      result = mustache.render(template, { encodeXML: lambda });
+    encode_xml(this.request, {}, function (err, lambda) {
+      result = mustache.render(template, { encode_xml: lambda });
       expect(result).toEqual("<p>Hey</p>");
       done();
     });

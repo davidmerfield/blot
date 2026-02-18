@@ -1,5 +1,5 @@
-describe("absoluteURLs", function () {
-  var absoluteURLs = require("blog/render/retrieve/absoluteURLs");
+describe("absolute_urls", function () {
+  var absolute_urls = require("blog/render/retrieve/absolute_urls");
   var mustache = require("mustache");
 
   global.test.blog();
@@ -17,10 +17,10 @@ describe("absoluteURLs", function () {
     var result;
     var locals = {};
     var html = '<a href="/foo"></a>';
-    var template = "{{#absoluteURLs}}" + html + "{{/absoluteURLs}}";
+    var template = "{{#absolute_urls}}" + html + "{{/absolute_urls}}";
 
-    absoluteURLs(this.request, {}, function (err, lambda) {
-      result = mustache.render(template, { absoluteURLs: lambda });
+    absolute_urls(this.request, {}, function (err, lambda) {
+      result = mustache.render(template, { absolute_urls: lambda });
       expect(result).toEqual('<a href="http://example.com/foo"></a>');
       done();
     });
@@ -30,10 +30,10 @@ describe("absoluteURLs", function () {
     var result;
     var locals = {};
     var html = '<img src="/bar.jpg">';
-    var template = "{{#absoluteURLs}}" + html + "{{/absoluteURLs}}";
+    var template = "{{#absolute_urls}}" + html + "{{/absolute_urls}}";
 
-    absoluteURLs(this.request, {}, function (err, lambda) {
-      result = mustache.render(template, { absoluteURLs: lambda });
+    absolute_urls(this.request, {}, function (err, lambda) {
+      result = mustache.render(template, { absolute_urls: lambda });
       expect(result).toEqual('<img src="http://example.com/bar.jpg">');
       done();
     });
@@ -44,10 +44,10 @@ describe("absoluteURLs", function () {
     var locals = {};
     var html =
       '<a href="http://example.com/foo"><img src="http://example.com/bar.jpg"></a>';
-    var template = "{{#absoluteURLs}}" + html + "{{/absoluteURLs}}";
+    var template = "{{#absolute_urls}}" + html + "{{/absolute_urls}}";
 
-    absoluteURLs(this.request, {}, function (err, lambda) {
-      result = mustache.render(template, { absoluteURLs: lambda });
+    absolute_urls(this.request, {}, function (err, lambda) {
+      result = mustache.render(template, { absolute_urls: lambda });
       expect(result).toEqual(html);
       done();
     });

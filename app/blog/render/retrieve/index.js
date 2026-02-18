@@ -1,35 +1,56 @@
 var _ = require("lodash");
 var async = require("async");
 var ensure = require("helper/ensure");
+
+var all_entries = require("./all_entries");
+var all_tags = require("./all_tags");
+var recent_entries = require("./recent_entries");
+var latest_entry = require("./latest_entry");
+var is_active = require("./is_active");
+var absolute_urls = require("./absolute_urls");
+var encode_json = require("./encode_json");
+var encode_xml = require("./encode_xml");
+var encode_uri_component = require("./encode_uri_component");
+var app_css = require("./app_css");
+var app_js = require("./app_js");
+
 var dictionary = {
-  "absoluteURLs": require("./absoluteURLs"),
+  "absolute_urls": absolute_urls,
+  "absoluteURLs": absolute_urls,
   "active": require("./active"),
-  "allEntries": require("./allEntries"),
-  "allTags": require("./allTags"),
-  "all_entries": require("./all_entries"),
-  "all_tags": require("./all_tags"),
-  "appCSS": require("./appCSS"),
-  "appJS": require("./appJS"),
+  "all_entries": all_entries,
+  "allEntries": all_entries,
+  "all_tags": all_tags,
+  "allTags": all_tags,
+  "app_css": app_css,
+  "appCSS": app_css,
+  "app_js": app_js,
+  "appJS": app_js,
   "archives": require("./archives"),
   "asset": require("./asset"),
   "avatar_url": require("./avatar_url"),
   "cdn": require("./cdn"),
   "css_url": require("./css_url"),
-  "folder": require("./folder"),
-  "encodeJSON": require("./encodeJSON"),
-  "encodeURIComponent": require("./encodeURIComponent"),
-  "encodeXML": require("./encodeXML"),
+  "encode_json": encode_json,
+  "encodeJSON": encode_json,
+  "encode_uri_component": encode_uri_component,
+  "encodeURIComponent": encode_uri_component,
+  "encode_xml": encode_xml,
+  "encodeXML": encode_xml,
   "feed_url": require("./feed_url"),
-  "isActive": require("./isActive"),
+  "folder": require("./folder"),
   "is": require("./is"),
-  "latestEntry": require("./latestEntry"),
-  "posts": require("./posts"),
-  "plugin_css": require("./plugin_css"),
-  "plugin_js": require("./plugin_js"),
+  "is_active": is_active,
+  "isActive": is_active,
+  "latest_entry": latest_entry,
+  "latestEntry": latest_entry,
   "plugin": require("./plugin"),
+  "plugin_css": app_css,
+  "plugin_js": app_js,
   "popular_tags": require("./popular_tags"),
-  "recentEntries": require("./recentEntries"),
-  "recent_entries": require("./recent_entries"),
+  "posts": require("./posts"),
+  "recent_entries": recent_entries,
+  "recentEntries": recent_entries,
   "rgb": require("./rgb"),
   "script_url": require("./script_url"),
   "search_query": require("./search_query"),

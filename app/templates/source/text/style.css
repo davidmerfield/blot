@@ -1,5 +1,5 @@
 /* Inserts the CSS required by various settings on the services page of the dashboard */
-{{{appCSS}}}
+{{{app_css}}}
 
 /* Inserts the @font-face rules required to load whichever fonts are selected. */
 {{{font.styles}}}

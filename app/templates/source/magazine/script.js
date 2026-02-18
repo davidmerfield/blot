@@ -1,4 +1,4 @@
-{{{appJS}}}
+{{{app_js}}}
 
 var body = document.body;
 

@@ -1,2 +1,2 @@
 // Plugin JavaScript for analytics embed code
-{{{appJS}}}
+{{{app_js}}}
