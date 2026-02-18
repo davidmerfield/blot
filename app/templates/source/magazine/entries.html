@@ -1,9 +1,9 @@
 {{> header}}
 
 
-{{^pagination.previous}}{{^entries.length}}
+{{^pagination.previous}}{{^posts.length}}
 <p class="black-50 pt3">Nothing published yet.</p>
-{{/entries.length}}{{/pagination.previous}}
+{{/posts.length}}{{/pagination.previous}}
 
 {{#pagination.previous}}
 <div class="mt5 cf">
@@ -25,20 +25,20 @@
 {{^pagination.previous}}
 
 <div class="clip-1 mt3 featured-entry" style="display:flex;flex-direction:row;flex-wrap:  wrap">
-  {{#entries}}
+  {{#posts}}
   {{#first}}
   {{#thumbnail.large.url}}
   {{> featured}}
   {{/thumbnail.large.url}}
   {{/first}}
-  {{/entries}}
+  {{/posts}}
 </div>
 
-<div style="display:flex;flex-direction:row;flex-wrap:wrap"   {{#entries}} {{#first}} {{#thumbnail.large}} class="skip-1" {{/thumbnail.large}} {{/first}} {{/entries}}>
+<div style="display:flex;flex-direction:row;flex-wrap:wrap"   {{#posts}} {{#first}} {{#thumbnail.large}} class="skip-1" {{/thumbnail.large}} {{/first}} {{/posts}}>
 
-  {{#entries}}
+  {{#posts}}
   {{> entry_line}}
-  {{/entries}}
+  {{/posts}}
 </div>
 
 <div class="cf"></div>
@@ -48,9 +48,9 @@
 {{! All other pages}}
 {{#pagination.previous}}
 
-{{#entries}}
+{{#posts}}
 {{> entry_line}}
-{{/entries}}
+{{/posts}}
 {{/pagination.previous}}
 
 {{#pagination}}
