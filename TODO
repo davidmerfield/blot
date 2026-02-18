@@ -1,4 +1,3 @@
-Fix bug with Google Docs when disconnecting a site from Google Drive on Blot then reconnecting the site to Google Drive. 
 
 I'm concerned that malicious webhooks could be abused to delete sites
 - operator must be the only person to trigger the delete overdue or cancelled site flow.
@@ -20,7 +19,9 @@ Switch templates from entries.html to index.html with explicit url: [].
 - fix docs on routing order
 
 Google Drive:
+- Fix bug with shared drive folders for [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBkLKSVzvjZLRSCpRJwcKBPlf)
 - Add sync check
+- Fix bug with Google Docs when disconnecting a site from Google Drive on Blot then reconnecting the site to Google Drive. 
 - Improve sync efficieny with option to target a specific folder or file first (Track ids in database)
 - Improve html output for google docs and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQFmTvLKzPkJrgsBTWZmQJWS)
   Issue: <p><img><br><img></p> should be <p><img></p><p><img></p>
@@ -149,10 +150,6 @@ Unwind bugginess with template slugs / local templates
 - Local editing should use folder name ↔ name ↔ slug consistently
 - Add slug lookup utility and update dashboard/template load paths
 
-Add a warning email one week before first renewal reminding customers to cancel
-- with link to switch to annual billing
-- with offer to help migrate to Blot
-
 Git client:
 - Add sync check
 
@@ -185,23 +182,16 @@ iCloud client:
 - Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
 - Investigate: can we modify app/clients/icloud/routes/site/upload.js and app/clients/icloud/macserver/httpClient/upload.js to exchange a content hash? to prevent needless re-upload?
 
-
 Bug reports:
 - The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
 - The website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 - Migrate base templates from entries to {{#posts}} and tell Omar
 - Document the special routing features for entries.html and tell Omar
 
-
 Fix bug with repeat resyncs of specific sites via Google Drive:
 - To identify, run node scripts/google-drive/resync.js multiple times, some sites continually resync the same files...
 
 Bug: CDN replaceFolder not working with relative path to CSS file on wall.blot.im
-
-invalid package.json causes crazy error on template editor (missing colon)
-
-Fix bug with huge archives page 
-- `https://deoxy.blot.im/archives`
 
 Fix bug with camelCase custom metadata and tell [questioner](https://blot.im/questions/2294)
 
@@ -278,6 +268,8 @@ Fix bug with incorrect date of files by path and follow up with [Ashish](https:/
 Fix bug with link format using filename and [follow up with yct](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTMLqzhtlSBrtFqNDFDdXPSfk)
 
 Fix bug with light mode colors and tell [Gary](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJSCRWXMlsPRVBsnrcRcbMklc)
+
+Fix bug with placeholder files when switching clients: DATA LOSS, BLOT WILL NOT TRANSFER THE ORIGINAL FILE REPRESENTED BY A PLACEHOLDER.
 
 Fix bugs with git client
 - Investigate a bug with git client credentials triggered when you have two sites using git on one account, and delete one of the sites

@@ -1,4 +1,5 @@
 var defaultPlugins = require("build/plugins").defaultList;
+var _ = require("lodash");
 
 module.exports = {
   client: "",
@@ -38,7 +39,7 @@ module.exports = {
   dateFormat: "M/D/YYYY",
   forceSSL: true,
   redirectSubdomain: true,
-  plugins: defaultPlugins,
+  plugins: _.cloneDeep(defaultPlugins),
   cacheID: 0,
   flags: {
     google_drive_beta: false,

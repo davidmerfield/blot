@@ -7,6 +7,32 @@ const scheduledNotifications = new Map();
 // The number of days before a subscription is renewed or
 // expired to send an email notification to the customer.
 var DAYS_WARNING = 8;
+var SECONDS_IN_DAY = 24 * 60 * 60;
+var MIN_MONTH_SECONDS = 27 * SECONDS_IN_DAY;
+var MAX_MONTH_SECONDS = 32 * SECONDS_IN_DAY;
+
+function roughlyOneMonth (seconds) {
+  return seconds >= MIN_MONTH_SECONDS && seconds <= MAX_MONTH_SECONDS;
+}
+
+function isFirstMonthlyRenewal (subscription) {
+  if (!subscription || !subscription.plan || subscription.plan.interval !== "month")
+    return false;
+
+  var created = subscription.created;
+  var periodStart = subscription.current_period_start;
+  var periodEnd = subscription.current_period_end;
+
+  if (!created || !periodStart || !periodEnd) return false;
+
+  var currentPeriodLength = periodEnd - periodStart;
+  var timeFromStartToRenewal = periodEnd - created;
+
+  return (
+    roughlyOneMonth(currentPeriodLength) &&
+    roughlyOneMonth(timeFromStartToRenewal)
+  );
+}
 
 module.exports = function (uid, callback) {
   var notificationDate;
@@ -20,9 +46,12 @@ module.exports = function (uid, callback) {
     if (!user || !user.subscription || !user.subscription.current_period_end)
       return callback();
 
-    // This user has monthly billing – we don't send them a warning email since
-    // 12 warning emails + 12 receipt emails per year is a little much.
-    if (user.subscription.plan && user.subscription.plan.interval === "month")
+    // For monthly subscriptions, we only send a warning for the first renewal.
+    if (
+      user.subscription.plan &&
+      user.subscription.plan.interval === "month" &&
+      !isFirstMonthlyRenewal(user.subscription)
+    )
       return callback();
 
     // Stripe uses a seconds timestamp vs. JavaScript's ms
@@ -77,6 +106,15 @@ module.exports = function (uid, callback) {
         }
 
         if (user.subscription.status === "active") {
+          if (isFirstMonthlyRenewal(user.subscription)) {
+            debug(
+              user.uid,
+              user.email,
+              "Sending email about a first monthly subscription renewal..."
+            );
+            return email.UPCOMING_MONTHLY_FIRST_RENEWAL(uid);
+          }
+
           debug(
             user.uid,
             user.email,

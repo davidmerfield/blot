@@ -45,6 +45,7 @@ describe("wikilinks plugin", function () {
     const html = `<p><a href="Wikilink CNN acronym" title="wikilink">Wikilink <span class="small-caps">CNN</span> acronym</a></p>`;
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
+    this.blog.plugins.typeset = { enabled: true, options: { smallCaps: true } };
     this.buildAndCheck({ path, contents }, { html }, done);
   });
 
