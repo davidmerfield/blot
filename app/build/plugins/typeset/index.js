@@ -1,5 +1,11 @@
 var typeset = require("typeset");
 
+function normalizeOption(value) {
+  if (value === "false") return false;
+  if (value === "true") return true;
+  return value;
+}
+
 function prerender(html, callback, options) {
   // would be nice to add options. hyphenate in future
   // but it fucks with automatic image links and automatic
@@ -10,9 +16,13 @@ function prerender(html, callback, options) {
 
   var disable = ["ligatures", "hyphenate"];
 
+  options = options || {};
+
+  for (var i in options) options[i] = normalizeOption(options[i]);
+
   options.spaces = options.quotes = options.punctuation;
 
-  for (var i in options) if (options[i] === false) disable.push(i);
+  for (var j in options) if (options[j] === false) disable.push(j);
 
   try {
     html = typeset(html, { disable: disable });
