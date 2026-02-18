@@ -1,20 +1,15 @@
 ---
-Slides:
+Slides: &a1
   - a.txt
   - b.txt
   - c.jpg
-slides:
-  - a.txt
-  - b.txt
-  - c.jpg
+slides: *a1
 Url: /foo
 url: /foo
-Nesting:
+Nesting: &a2
   How:
     yes: true
-nesting:
-  How:
-    yes: true
+nesting: *a2
 ---
 <h1 id="title">Title</h1>
 <p>Hey.</p>
