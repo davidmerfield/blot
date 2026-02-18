@@ -34,10 +34,6 @@ function prerender(html, callback, options) {
 
   var disable = ["ligatures", "hyphenate"];
 
-  options = options || {};
-
-  for (var i in options) options[i] = normalizeOption(options[i]);
-
   options.spaces = options.quotes = options.punctuation;
 
   for (var i in options)
