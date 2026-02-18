@@ -35,7 +35,12 @@ module.exports = function getPartials(
   for (var i in partials) if (partials[i]) allPartials[i] = partials[i];
 
   Object.keys(partials || {}).forEach(function (partialName) {
-    addContext(partialName, parentContextPath || "");
+    // Keep any previously-discovered usage contexts for this partial.
+    // Falling back to the parent context should only happen when no
+    // context has been recorded yet.
+    if (!contextMap[partialName] || !contextMap[partialName].length) {
+      addContext(partialName, parentContextPath || "");
+    }
   });
 
   function addContext(partialName, contextPath) {

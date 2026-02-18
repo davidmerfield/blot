@@ -284,6 +284,10 @@ function parseTemplate(template) {
         suppressAsProjectedFieldReference =
           (token[0] === "#" || token[0] === "^") && isProjectedFieldInContext;
 
+        if (isProjectedFieldInContext) {
+          suppressAsProjectedFieldReference = true;
+        }
+
         if (inProjectedFieldContext && isLikelyProjectedEntryField(variable)) {
           suppressAsProjectedFieldReference = true;
         }
