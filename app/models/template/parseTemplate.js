@@ -46,6 +46,8 @@ function parseTemplate(template) {
     return { partials: partials, retrieve: retrieve };
   }
 
+  var projectedFieldContexts = {};
+
   process("", parsed);
 
   // Helper function to set nested property in retrieve object
@@ -80,28 +82,6 @@ function parseTemplate(template) {
     return true;
   }
 
-
-  function projectedRootForContext(contextPath) {
-    if (!contextPath) return null;
-
-    for (var root in projectedEntryLocals) {
-      var prefixes = projectedEntryLocals[root] || [];
-
-      for (var i = 0; i < prefixes.length; i++) {
-        var prefix = prefixes[i];
-        var collectionPath = prefix ? root + "." + prefix : root;
-
-        if (
-          contextPath === collectionPath ||
-          contextPath.indexOf(collectionPath + ".") === 0
-        ) {
-          return root;
-        }
-      }
-    }
-
-    return null;
-  }
 
   function projectedFieldFromContext(contextPath, variableName) {
     if (!contextPath || !variableName || variableName.indexOf(".") > -1) return null;
@@ -222,7 +202,8 @@ function parseTemplate(template) {
           variable.slice(variable.indexOf(".") + 1);
         var contextPath = context ? context.slice(0, -1) : "";
         var projectedFieldContext = projectedFieldFromContext(contextPath, variable);
-        var projectedRootContext = projectedRootForContext(contextPath);
+        var inProjectedFieldContext = hasProjectedFieldContextAncestor(contextPath);
+        var suppressAsProjectedFieldReference = false;
         var isProjectedFieldInContext = false;
 
         if (projectedFieldContext) {
@@ -300,12 +281,18 @@ function parseTemplate(template) {
         // System locals are already tracked above, so only track non-system locals here
         // The retrieve system will safely ignore non-system locals during fetching
         // Skip tracking if variable has dots and root is whitelisted (already handled with nested structure)
+        suppressAsProjectedFieldReference =
+          (token[0] === "#" || token[0] === "^") && isProjectedFieldInContext;
+
+        if (inProjectedFieldContext && isLikelyProjectedEntryField(variable)) {
+          suppressAsProjectedFieldReference = true;
+        }
+
         if (
           retrieveThese.indexOf(variable) === -1 &&
           variable !== "cdn" &&
-          !isProjectedFieldInContext &&
           !isProjectedPathSegment(contextPath, variable) &&
-          !projectedRootContext
+          !suppressAsProjectedFieldReference
         ) {
           // Only track the root variable, not nested properties
           // If variable has dots and root is whitelisted, skip (already handled above)
@@ -349,9 +336,39 @@ function parseTemplate(template) {
 
         // There are other tokens inside this block
         // process these recursively
+        if ((token[0] === "#" || token[0] === "^") && isProjectedFieldInContext) {
+          markProjectedFieldContext(contextPath ? contextPath + "." + variable : variable);
+        }
+
         if (type(token[4], "array")) process(context + variable, token[4]);
       }
     }
+  }
+
+
+  function isLikelyProjectedEntryField(variableName) {
+    if (!variableName || variableName.indexOf(".") > -1) return false;
+
+    // Uppercase characters usually indicate a non-entry local, e.g. siteTitle
+    return /^[a-z0-9_]+$/.test(variableName);
+  }
+
+  function markProjectedFieldContext(contextPath) {
+    if (!contextPath) return;
+    projectedFieldContexts[contextPath] = true;
+  }
+
+  function hasProjectedFieldContextAncestor(contextPath) {
+    if (!contextPath) return false;
+
+    var current = contextPath;
+    while (current) {
+      if (projectedFieldContexts[current]) return true;
+      var lastDot = current.lastIndexOf(".");
+      current = lastDot > -1 ? current.slice(0, lastDot) : "";
+    }
+
+    return false;
   }
 
   // Ensure retrieve.cdn is sorted and deduplicated

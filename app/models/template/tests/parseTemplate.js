@@ -100,6 +100,25 @@ describe("parseTemplate", function () {
     });
   });
 
+
+  it("tracks non-system locals in allEntries context", function () {
+    var template = `{{#allEntries}}{{siteTitle}}{{/allEntries}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { allEntries: { fields: { siteTitle: true } }, siteTitle: true },
+    });
+  });
+
+  it("tracks non-system locals in nested allEntries field context", function () {
+    var template = `{{#allEntries}}{{#thumbnail}}{{siteTitle}}{{/thumbnail}}{{/allEntries}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { allEntries: { fields: { thumbnail: true } }, siteTitle: true },
+    });
+  });
+
   it("projects fields from all_entries section access", function () {
     var template = `{{#all_entries}}{{title}}{{/all_entries}}`;
     var result = parseTemplate(template);
