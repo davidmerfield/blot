@@ -1,11 +1,11 @@
 {{> head}}
 {{> header}}
 
-{{^entries.length}}
+{{^posts.length}}
     <p>Nothing here.</p>
-{{/entries.length}}
+{{/posts.length}}
 
-        {{#entries}}
+        {{#posts}}
         {{#first}}
 {{^page}}
 {{> navigation}}
@@ -47,6 +47,6 @@
 {{/entry.date}}
 </div>
 {{/first}}
-{{/entries}}
+{{/posts}}
 
 {{> footer}}

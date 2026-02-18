@@ -15,13 +15,13 @@
       {{^pagination.previous}}
       <div class="row remove-site-content-margin">
 
-        {{#entries}}
+        {{#posts}}
         <!-- latest post -->
         {{#first}}
         <div class="col-md-6">
           <div class="card border-0 mb-4 box-shadow">
             <a href="{{{url}}}">
-    <div style="background-image: url( {{{thumbnail.large.url}}}); height: 200px;    background-size: cover;    background-repeat: no-repeat;"></div>     
+    <div style="background-image: url( {{{thumbnail.large.url}}}); height: 200px;    background-size: cover;    background-repeat: no-repeat;"></div>
     </a>
             <div class="card-body px-0 pb-0 d-flex flex-column align-items-start">
               <h2 class="h4 font-weight-bold">
@@ -33,12 +33,12 @@
               <div>
                 <small class="d-block text-muted">
             In <span class="catlist">
-                  
+
                   {{#tags}}
                 <a class="text-capitalize text-muted smoothscroll" href="/tagged/{{slug}}">{{tag}}</a><span class="sep">, </span>
                   {{/tags}}
 
-                </span>                   
+                </span>
         </small>
                 <small class="text-muted">
             {{#date}}{{date}}{{/date}}
@@ -49,17 +49,17 @@
         </div>
         {{/first}}
 
-        {{/entries}}
-     
+        {{/posts}}
+
         <div class="col-md-6 clip-3">
 
-          {{#entries}}
+          {{#posts}}
           {{^first}}
           <div class="mb-3 d-flex align-items-center">
 
             <div class="col-md-4">
               <a href="{{{url}}}" class="w-100">
-    <div style="background-image: url( {{{thumbnail.large.url}}}); height: 80px;    background-size: cover;    background-repeat: no-repeat;"></div>     
+    <div style="background-image: url( {{{thumbnail.large.url}}}); height: 80px;    background-size: cover;    background-repeat: no-repeat;"></div>
     </a>
             </div>
 
@@ -69,13 +69,13 @@
                     </h2>
               <small class="d-block text-muted">
                         In <span class="catlist">
-                        
+
                         {{#tags}}
                         <a class="text-capitalize text-muted smoothscroll" href="/tagged/{{slug}}">{{tag}}</a>{{^last}}, {{/last}}
                         {{/tags}}
 
-                        
-                        </span>                   
+
+                        </span>
                     </small>
               <small class="text-muted">
             {{#date}}{{date}}{{/date}}
@@ -83,7 +83,7 @@
             </div>
           </div>
           {{/first}}
-          {{/entries}}
+          {{/posts}}
 
         </div>
 
@@ -91,7 +91,7 @@
 
       <!-- Highlight (your own choice of highlighting a link, no post here) -->
       <div class="jumbotron jumbotron-fluid jumbotron-home pt-0 pb-0 mb-2rem bg-lightblue position-relative show-5">
-        {{#entries}}
+        {{#posts}}
         <div class="pl-4 pr-0 h-100 tofront ">
           <div class="row justify-content-between ">
             <div class="col-md-6 pt-6 pb-6 align-self-center">
@@ -104,7 +104,7 @@
             <div class="col-md-6 d-none d-md-block pr-0" style="background-size:cover;background-image:url({{{thumbnail.large.url}}});"> </div>
           </div>
         </div>
-        {{/entries}}
+        {{/posts}}
       </div>
       {{/pagination.previous}}
 
@@ -118,7 +118,7 @@
 
           <h4 class="font-weight-bold spanborder"><span>All Stories</span></h4>
 
-          {{#entries}}
+          {{#posts}}
           <div class="mb-5 d-flex justify-content-between main-loop-card">
             <div class="pr-3">
               <h2 class="mb-1 h4 font-weight-bold">
@@ -129,7 +129,7 @@
               </p>
               <small class="d-block text-muted">
     In <span class="catlist">
-      
+
       {{#tags}}
     <a class="text-capitalize text-muted smoothscroll" href="/tagged/{{summary}}">{{tag}}</a><span class="sep">, </span>
       {{/tags}}
@@ -145,7 +145,7 @@
   </a>
             </div>
           </div>
-          {{/entries}}
+          {{/posts}}
 
           <div class="mt-5">
             <!-- Pagination links -->
@@ -190,7 +190,7 @@
                 </h6>
                 <span class="d-block text-muted">
                     In <span class="catlist">
-                      
+
                     {{#tags}}
                     <a class="text-capitalize text-muted smoothscroll" href="{{{url}}}">{{tag}}</a><span class="sep">, </span>
                 {{/tags}}
