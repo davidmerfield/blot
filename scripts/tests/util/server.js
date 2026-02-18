@@ -77,7 +77,8 @@ module.exports = function (router) {
     this.checkBrokenLinks = (url = this.origin, options = {}) => checkBrokenLinks(this.fetch, url, options);
   });
 
-  afterAll(function () {
-    server.close();
+  afterAll(function (done) {
+    if (!server) return done();
+    server.close(done);
   });
 };

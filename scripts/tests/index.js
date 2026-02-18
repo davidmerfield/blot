@@ -5,7 +5,7 @@ var client = require("models/client");
 var clfdate = require("helper/clfdate");
 var seedrandom = require("seedrandom");
 var async = require("async");
-const { before } = require("lodash");
+const asyncHooks = require("async_hooks");
 var seed;
 var config = {
   spec_dir: "",
@@ -95,10 +95,86 @@ jasmine.addReporter({
   jasmineDone: function (result) {
     process.exitCode = result.overallStatus === "passed" ? 0 : 1;
 
-    // Make completion deterministic once reporters have finished flushing output.
-    setImmediate(function () {
-      process.exit(process.exitCode);
+    client.quit(function (err) {
+      if (err) {
+        console.warn(
+          clfdate(),
+          colors.yellow("[tests] Failed to quit redis client"),
+          err.message || err
+        );
+      }
     });
+
+    const diagnosticGraceMs = Number(
+      process.env.BLOT_TESTS_EXIT_GRACE_TIMEOUT_MS || 0
+    );
+
+    if (!Number.isFinite(diagnosticGraceMs) || diagnosticGraceMs <= 0) {
+      return;
+    }
+
+    const sourceByResource = new WeakMap();
+    const hook = asyncHooks.createHook({
+      init: function (_asyncId, type, _triggerAsyncId, resource) {
+        if (!resource || sourceByResource.has(resource)) return;
+        const source = new Error().stack
+          .split("\n")
+          .slice(2)
+          .map((line) => line.trim())
+          .filter((line) => !line.includes("scripts/tests/index.js"))
+          .slice(0, 8)
+          .join("\n");
+
+        sourceByResource.set(resource, { type, source });
+      },
+    });
+
+    hook.enable();
+
+    const gracefulExitTimer = setTimeout(function () {
+      hook.disable();
+
+      const handles = process._getActiveHandles();
+      if (!handles.length) return;
+
+      console.log();
+      console.warn(
+        clfdate(),
+        colors.yellow(
+          `[tests] Process did not exit within ${diagnosticGraceMs}ms. Active handles:`
+        )
+      );
+
+      handles.forEach(function (handle, index) {
+        const details = sourceByResource.get(handle);
+        const type =
+          (details && details.type) ||
+          (handle && handle.constructor && handle.constructor.name) ||
+          typeof handle;
+
+        console.warn(
+          colors.yellow(`  [${index + 1}] ${type}`),
+          handle && handle.constructor && handle.constructor.name
+            ? colors.dim(`(${handle.constructor.name})`)
+            : ""
+        );
+
+        if (index === 0 && details && details.source) {
+          console.warn(colors.yellow("    First still-open handle source:"));
+          console.warn(colors.dim(details.source));
+        }
+      });
+
+      const requests = process._getActiveRequests();
+      if (requests.length) {
+        console.warn(
+          colors.yellow(`  Active requests: ${requests.length}`)
+        );
+      }
+    }, diagnosticGraceMs);
+
+    gracefulExitTimer.unref();
+
   },
 });
 

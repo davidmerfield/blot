@@ -199,8 +199,9 @@ module.exports = function (options = {}) {
     };
   });
 
-  afterAll(function () {
-    server.close();
+  afterAll(function (done) {
+    if (!server) return done();
+    server.close(done);
   });
 
   if (options.login) {
