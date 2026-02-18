@@ -1,3 +1,5 @@
+const cheerio = require("cheerio");
+
 describe("wikilinks", function () {
   require("./util/setup")();
 
@@ -10,6 +12,16 @@ describe("wikilinks", function () {
     };
 
     await this.template({ "entry.html": "{{{entry.html}}}" });
+    await this.blog.update({ plugins });
+    await this.blog.rebuild();
+  }
+
+  async function enableInjectTitle() {
+    const plugins = {
+      ...this.blog.plugins,
+      injectTitle: { enabled: true, options: { manuallyDisabled: false } },
+    };
+
     await this.blog.update({ plugins });
     await this.blog.rebuild();
   }
@@ -546,6 +558,108 @@ describe("wikilinks", function () {
     expect(body).toContain("Review tasks");
     expect(body).toContain("Evening reflection");
     expect(body).not.toContain('href="/notes/checklist"'); // Should be embedded, not linked
+  });
+
+  it("hides auto-injected titles when embedding markdown with injectTitle enabled", async function () {
+    await enableInjectTitle.call(this);
+
+    await this.write({
+      path: "/Snippets/Daily Summary.md",
+      content: [
+        "Link: snippets/daily-summary",
+        "",
+        "Auto-heading should be hidden inside embeds.",
+      ].join("\n"),
+    });
+
+    await this.write({
+      path: "/Pages/Guide.md",
+      content: [
+        "Title: Guide",
+        "Link: pages/guide",
+        "",
+        "# Guide",
+        "",
+        "![[Snippets/Daily Summary]]",
+      ].join("\n"),
+    });
+
+    const body = await this.text("/pages/guide");
+    const $ = cheerio.load(body);
+    const embedded = $(".embedded-markdown").first();
+
+    expect(embedded.length).toBe(1);
+    expect(embedded.find("h1.injected-title").length).toBe(0);
+    expect(embedded.text()).toContain("Auto-heading should be hidden inside embeds.");
+  });
+
+  it("keeps authored headings in embedded markdown even when injectTitle is enabled", async function () {
+    await enableInjectTitle.call(this);
+
+    await this.write({
+      path: "/Snippets/Manual Heading.md",
+      content: [
+        "Title: Manual Heading Snippet",
+        "Link: snippets/manual-heading",
+        "",
+        "# Authored heading",
+        "",
+        "Body content stays visible.",
+      ].join("\n"),
+    });
+
+    await this.write({
+      path: "/Pages/Guide.md",
+      content: [
+        "Title: Guide",
+        "Link: pages/guide",
+        "",
+        "# Guide",
+        "",
+        "![[Snippets/Manual Heading]]",
+      ].join("\n"),
+    });
+
+    const body = await this.text("/pages/guide");
+    const $ = cheerio.load(body);
+    const embedded = $(".embedded-markdown").first();
+
+    expect(embedded.length).toBe(1);
+    expect(embedded.find("h1").first().text()).toBe("Authored heading");
+    expect(embedded.find("h1.injected-title").length).toBe(0);
+    expect(embedded.text()).toContain("Body content stays visible.");
+  });
+
+  it("embeds markdown without injected titles when injectTitle is disabled", async function () {
+    await this.write({
+      path: "/Snippets/No Inject.md",
+      content: [
+        "Link: snippets/no-inject",
+        "",
+        "No synthetic title should exist without injectTitle.",
+      ].join("\n"),
+    });
+
+    await this.write({
+      path: "/Pages/Guide.md",
+      content: [
+        "Title: Guide",
+        "Link: pages/guide",
+        "",
+        "# Guide",
+        "",
+        "![[Snippets/No Inject]]",
+      ].join("\n"),
+    });
+
+    const body = await this.text("/pages/guide");
+    const $ = cheerio.load(body);
+    const embedded = $(".embedded-markdown").first();
+
+    expect(embedded.length).toBe(1);
+    expect(embedded.find("h1").length).toBe(0);
+    expect(embedded.find("h1.injected-title").length).toBe(0);
+    expect(embedded.text()).toContain("No synthetic title should exist without injectTitle.");
   });
 
   it("embeds text files with different extensions (.txt, .text, .markdown)", async function () {
