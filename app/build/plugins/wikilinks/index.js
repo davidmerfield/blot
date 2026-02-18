@@ -111,6 +111,17 @@ function render($, callback, { blogID, path }) {
               if (path && !dependencies.includes(path)) dependencies.push(path);
             });
 
+          // For unresolved links, still rewrite display text to basename for absolute paths
+          if (isLink && !piped) {
+            const displayTitle = filenameToken || strippedHref;
+            if (displayTitle) {
+              const withoutExt = extname(displayTitle)
+                ? displayTitle.slice(0, -extname(displayTitle).length)
+                : displayTitle;
+              $node.text(withoutExt || displayTitle);
+            }
+          }
+
           debug("Wikilink target not found for", href);
           return next();
         }
