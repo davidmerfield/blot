@@ -91,6 +91,17 @@ jasmine.addReporter({
   },
 });
 
+jasmine.addReporter({
+  jasmineDone: function (result) {
+    process.exitCode = result.overallStatus === "passed" ? 0 : 1;
+
+    // Make completion deterministic once reporters have finished flushing output.
+    setImmediate(function () {
+      process.exit(process.exitCode);
+    });
+  },
+});
+
 var startTimes = {};
 var durations = {};
 
