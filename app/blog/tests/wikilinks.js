@@ -143,6 +143,39 @@ describe("wikilinks", function () {
     expect(mangoBody).toContain(">Apple<");
   });
 
+
+  it("does not rewrite unresolved absolute wikilink paths for normal links", async function () {
+    await this.write({
+      path: "/Guide.md",
+      content: [
+        "Title: Root Guide",
+        "Link: guide",
+        "",
+        "# Guide",
+      ].join("\n"),
+    });
+    await this.blog.rebuild();
+
+    await this.write({
+      path: "/Daily/Plan.txt",
+      content: [
+        "Title: Daily Plan",
+        "Link: daily/plan",
+        "",
+        "[[/Daily/Guide]]",
+      ].join("\n"),
+    });
+    await this.blog.rebuild();
+
+    const res = await this.get("/daily/plan");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain('href="/Daily/Guide"');
+    expect(body).not.toContain('href="/guide"');
+    expect(body).toContain('>Guide<');
+  });
+
   it("resolves filename-only wikilinks by traversing sibling directories", async function () {
     await this.write({
       path: "/Fruits/Tasty/Mango.md",
