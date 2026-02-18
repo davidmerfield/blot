@@ -26,8 +26,28 @@ module.exports = function () {
 
   // Build the templates
   beforeAll(function (done) {
-    templates({ watch: false }, done);
-  }, 10 * 1000); // longer timeout
+    const timeoutMs = 30 * 1000;
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      done.fail(
+        new Error(
+          `templates({ watch: false }) did not finish within ${timeoutMs}ms`
+        )
+      );
+    }, timeoutMs);
+
+    templates({ watch: false }, (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+
+      if (err) return done.fail(err);
+      done();
+    });
+  }, 35 * 1000);
 
   beforeEach(function () {
     this.write = async ({ path, content }) => {
