@@ -1,0 +1,9 @@
+Your Blot subscription will renew next week
+
+Can we help with your site before your next bill? Just reply to this email and we can help.
+
+Your [Blot subscription]({{{site}}}) will renew in 7 days.
+
+If you do not want to renew, you can [cancel your subscription]({{{site}}}/log-in?then=/account/subscription/cancel).
+
+If you want fewer billing emails and charges, you can [switch to annual billing]({{{site}}}/log-in?then=/account/subscription/billing-interval).
