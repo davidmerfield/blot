@@ -8,6 +8,7 @@ var extend = require("helper/extend");
 var deCamelize = require("helper/deCamelize");
 var time = require("helper/time");
 var async = require("async");
+var _ = require("lodash");
 const bluesky = require("./bluesky");
 
 // Wait 10 minutes to go to next plugin
@@ -272,7 +273,7 @@ function loadPlugins (plugins) {
     // default plugins for each user
     defaultPlugins[name] = {
       enabled: plugin.isDefault,
-      options: plugin.options || {}
+      options: _.cloneDeep(plugin.options || {})
     };
   });
 

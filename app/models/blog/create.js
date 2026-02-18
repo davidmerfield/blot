@@ -9,6 +9,7 @@ var localPath = require("helper/localPath");
 var User = require("../user");
 var validate = require("./validate");
 var generateID = require("./generateID");
+var _ = require("lodash");
 
 var UID_PLACEHOLDER = "";
 
@@ -45,7 +46,9 @@ module.exports = function create(uid, info, callback) {
     dateFormat: info.dateFormat || "M/D/YYYY",
   };
 
-  extend(blog).and(info).and(defaults);
+  var blogDefaults = _.cloneDeep(defaults);
+
+  extend(blog).and(info).and(blogDefaults);
 
   validate(UID_PLACEHOLDER, blog, function (errors) {
     if (errors) return callback(errors);
