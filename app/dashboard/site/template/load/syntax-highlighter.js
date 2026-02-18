@@ -14,12 +14,15 @@ module.exports = function (req, res, next) {
       ...req.template.locals.syntax_highlighter
     },
     font: req.template.locals.syntax_highlighter_font
-      ? font(
-          "syntax_highlighter_font",
-          req.template.locals.syntax_highlighter_font
-        )
+      ? {
+          ...font(
+            "syntax_highlighter_font",
+            req.template.locals.syntax_highlighter_font
+          ),
+          label: "Code font"
+        }
       : null,
-    label: "Syntax Highlighter",
+    label: "Code colors",
     options: Themes.map(option => {
       return {
         selected:
