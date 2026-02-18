@@ -1,5 +1,5 @@
 // Plugin JavaScript for analytics embed code
-{{{appJS}}}
+{{{app_js}}}
 
 
 /*
@@ -192,7 +192,7 @@ function loadResults() {
 
   linkToSearch.innerHTML = searchInput.value;
   linkToSearch.parentNode.href =
-    "/search?q=" + encodeURIComponent(searchInput.value);
+    "/search?q=" + encode_uri_component(searchInput.value);
 
   httpGetAsync("/search?q=" + query + "&debug=true", function(res) {
     if (searchInput.value !== query) return;

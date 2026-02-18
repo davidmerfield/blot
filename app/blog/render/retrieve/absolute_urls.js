@@ -11,16 +11,16 @@ over HTTPS, this lambda will transform:
 It checks anything with an 'src' or 'href' attribute.
 
 Use it like this:
-{{#absoluteURLs}}
+{{#absolute_urls}}
   {{{entry.html}}}
-{{/absoluteURLs}}
+{{/absolute_urls}}
 
 */
 
 var cheerio = require("cheerio");
-var debug = require("debug")("blot:render:absoluteURLs");
+var debug = require("debug")("blot:render:absolute_urls");
 
-function absoluteURLs (base, $) {
+function absolute_urls (base, $) {
   try {
     $("[href], [src]").each(function () {
       var href = $(this).attr("href");
@@ -53,7 +53,7 @@ module.exports = function (req, res, callback) {
 
       var $ = cheerio.load(text, null, false);
 
-      text = absoluteURLs(base, $);
+      text = absolute_urls(base, $);
       text = $.html();
 
       return text;
@@ -61,6 +61,7 @@ module.exports = function (req, res, callback) {
   });
 };
 
-// We also want to use this function in encodeXML
+// We also want to use this function in encode_xml
 // so we export it without the callback wrapper.
-module.exports.absoluteURLs = absoluteURLs;
+module.exports.absolute_urls = absolute_urls;
+module.exports.absoluteURLs = absolute_urls;

@@ -177,6 +177,16 @@ var foo = "bar";
 <h2>Citations</h2>
 <p>You can use an external BibTex citations file to store your citations. Read the <a href="/how/posts/citations">guide to using citations</a>.</p>
 
+
+<h2>Wikilink embeds</h2>
+<p>Blot supports Obsidian-style wikilink embeds using the <code>![[...]]</code> syntax. You can embed media and also embed Markdown/text notes directly into another note.</p>
+
+<pre class="md"><code>![[Notes/Overview.md]]
+![[Notes/Todo.txt]]
+![[Notes/Appendix.markdown]]</code></pre>
+
+<p>Embedded note files are rendered inline as Markdown. For full details on lookup rules, embedding by relative and absolute path, and supported file types, see the <a href="/how/formatting/wikilinks">Wikilinks guide</a>.</p>
+
 <h2>TextBundle</h2>
 <p>You can use the <a href="https://textbundle.org/">TextBundle</a> format to embed images in Markdown files when using supported apps including <a href="/how/tools/ulysses">Ulysses</a> and <a href="/how/tools/bear">Bear</a>.</p>
 

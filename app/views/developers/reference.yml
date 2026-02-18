@@ -518,39 +518,39 @@
         Utilities can be used either as literal values (for example `{{cdn}}`) or as section/block helpers (`{{#helper}}...{{/helper}}`) that transform the block contents.
       example: |
         <link rel="preconnect" href="{{{cdn}}}" />
-        {{#encodeXML}}{{title}}{{/encodeXML}}
+        {{#encode_xml}}{{title}}{{/encode_xml}}
 
-    - name: absoluteURLs
+    - name: absolute_urls
       type: function
       description: The same contents, with any relative URLs fully resolved. This is useful to create an RSS feed, since many clients struggle with relative URLs. For example
       example: |
-        {{#absoluteURLs}}
+        {{#absolute_urls}}
         {{{html}}}
-        {{/absoluteURLs}}
+        {{/absolute_urls}}
 
-    - name: encodeJSON
+    - name: encode_json
       type: function
       description: The same contents, encoded appropriately for JSON. This is useful to create a JSON feed. You can use it like this
       example: |
-        {{#encodeJSON}}
+        {{#encode_json}}
         {{{html}}}
-        {{/encodeJSON}}
+        {{/encode_json}}
 
-    - name: encodeURIComponent
+    - name: encode_uri_component
       type: function
       description: This is useful for forming urls from entry properties
       example: |
-        ?text={{#encodeURIComponent}}
+        ?text={{#encode_uri_component}}
         {{title}}
-        {{/encodeURIComponent}}
+        {{/encode_uri_component}}
 
-    - name: encodeXML
+    - name: encode_xml
       type: function
       description: The same contents, encoded appropriately for XML. This is useful to create a RSS feed. You can use it like this
       example: |
-        {{#encodeXML}}
+        {{#encode_xml}}
         {{{html}}}
-        {{/encodeXML}}
+        {{/encode_xml}}
 
     - name: rgb
       type: function

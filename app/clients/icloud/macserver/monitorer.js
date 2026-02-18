@@ -3,6 +3,7 @@ import { iCloudDriveDirectory } from "./config.js";
 import { spawn } from "child_process";
 import recursiveList from "./util/recursiveList.js";
 import clfdate from "./util/clfdate.js";
+import { isEvictionSuppressed } from "./evictionSuppression.js";
 
 // The purpose of this module is to keep iCloud Drive in sync
 // and it achieves this by running `brctl monitor` to detect blog
@@ -35,6 +36,14 @@ export default () => {
         console.log(clfdate(), `brctl monitor event: ${line}`);
 
         const blogId = match[0];
+
+        if (isEvictionSuppressed(blogId)) {
+          console.log(
+            clfdate(),
+            `Ignoring brctl monitor event during eviction suppression: ${blogId}`
+          );
+          return;
+        }
 
         recursiveList(`${iCloudDriveDirectory}/${blogId}`, 0).catch((error) => {
           console.error(clfdate(), 

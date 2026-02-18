@@ -5,7 +5,7 @@
   <link>{{{siteURL}}}</link>
   <atom:link href="{{{siteURL}}}/feed.rss" rel="self" type="application/rss+xml"/>
   <description><![CDATA[ The feed of updates to {{{title}}} ]]></description>
-  {{#recentEntries}}
+  {{#recent_entries}}
   <item> 
     <title><![CDATA[ {{{title}}} ]]></title>
     <link>{{{absoluteURL}}}</link>
@@ -14,8 +14,8 @@
     {{! RSS feeds need a RFC 822 date}}
     <pubDate>{{#formatDate}}ddd, DD MMM YYYY HH:mm:ss ZZ{{/formatDate}}</pubDate>
     <dc:creator><![CDATA[ {{{title}}} ]]></dc:creator>
-    <description><![CDATA[ {{#encodeXML}} {{{body}}} {{/encodeXML}} ]]></description>
+    <description><![CDATA[ {{#encode_xml}} {{{body}}} {{/encode_xml}} ]]></description>
   </item>
-  {{/recentEntries}}
+  {{/recent_entries}}
 </channel>
 </rss>

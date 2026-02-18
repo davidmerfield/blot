@@ -1,5 +1,5 @@
 // This is useful for forming urls from entry properties
-// e.g href="https://example.com?text={{#encodeURIComponent}}{{title}}{{/encodeURIComponent}}""
+// e.g href="https://example.com?text={{#encode_uri_component}}{{title}}{{/encode_uri_component}}""
 // and should be used by the social sharing buttons plugin when it exists
 
 module.exports = function (req, res, callback) {

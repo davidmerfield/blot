@@ -48,9 +48,9 @@ Templates consist of **views** (full page templates) and **partials** (reusable 
 
 You include partials in your templates using `{{> partial_name}}` (without the underscore or extension).
 
-### appCSS and appJS
+### app_css and app_js
 
-`appCSS` and `appJS` are special variables that inject CSS and JavaScript from plugins that users enable in their Blot dashboard. These include:
+`app_css` and `app_js` are special variables that inject CSS and JavaScript from plugins that users enable in their Blot dashboard. These include:
 
 - **Analytics** (Google Analytics, Plausible, Fathom, etc.)
 - **Syntax highlighting** (for code blocks)
@@ -58,7 +58,7 @@ You include partials in your templates using `{{> partial_name}}` (without the u
 - **Math rendering** (KaTeX)
 - Other optional features
 
-To use them, simply include `{{{appCSS}}}` in your `style.css` and `{{{appJS}}}` in your `script.js`. The triple braces (`{{{ }}}`) prevent HTML escaping, which is necessary for injecting raw CSS/JS.
+To use them, simply include `{{{app_css}}}` in your `style.css` and `{{{app_js}}}` in your `script.js`. The triple braces (`{{{ }}}`) prevent HTML escaping, which is necessary for injecting raw CSS/JS.
 
 Example in `style.css`:
 ```css
@@ -68,13 +68,13 @@ Example in `style.css`:
 }
 
 /* Plugin styles are injected here */
-{{{appCSS}}}
+{{{app_css}}}
 ```
 
 Example in `script.js`:
 ```javascript
 // Your template JavaScript
-{{{appJS}}}
+{{{app_js}}}
 
 // Your other scripts...
 ```

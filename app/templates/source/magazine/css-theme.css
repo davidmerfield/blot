@@ -3,7 +3,7 @@
 {{{syntax_highlighter.styles}}}
 
 /* This template tag is replaced by CSS when this file is rendered */
-{{{appCSS}}}
+{{{app_css}}}
 
 /* Fixes bug with image zoom plugin and archives page 
    which had previously rendered archives page links 

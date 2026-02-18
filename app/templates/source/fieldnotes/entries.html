@@ -3,13 +3,13 @@
 {{> head}}
 <body class="home blog">
 <div id="page" class="hfeed site">
-	{{> header}}	
+	{{> header}}
 	<div id="content" class="site-content">
 		<div id="primary" class="content-area">
 			<main id="main" class="site-main" role="main">
-				{{#entries}}						
+				{{#posts}}
 				{{> article}}
-				{{/entries}}
+				{{/posts}}
 				<nav class="navigation paging-navigation" role="navigation">
 					<h1 class="screen-reader-text">Posts navigation</h1>
 					<div class="nav-links">
@@ -26,7 +26,7 @@
 						{{/previous}}
 						{{/pagination}}
 					</div><!-- .nav-links -->
-				</nav><!-- .navigation -->	
+				</nav><!-- .navigation -->
 			</main><!-- #main -->
 			<script type="text/javascript">
 				var init = {{pagination.next}};

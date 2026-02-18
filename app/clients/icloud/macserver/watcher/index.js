@@ -20,12 +20,18 @@ import {
   extractBlogID,
   extractPathInBlogDirectory,
 } from "./pathUtils.js";
+import {
+  EVICTION_SUPPRESSION_BLOG_SCOPE,
+  markEvictionSuppressed,
+  extendEvictionSuppression,
+  isEvictionSuppressed,
+  pruneEvictionSuppressions,
+} from "../evictionSuppression.js";
 
 import {
   checkDiskSpace,
   removeBlog,
-  addFile,
-  removeFile,
+  markBlogUpdated,
 } from "./monitorDiskUsage.js";
 
 import { realpath } from "fs/promises";
@@ -40,65 +46,12 @@ async function exactCaseViaRealpath(p) {
 // Map to track active chokidar watchers for each blog folder
 const blogWatchers = new Map();
 const chokidarEventMap = new Map();
-const evictionSuppressionMap = new Map();
 const CHOKIDAR_EVENT_WINDOW_MS = 60_000;
 const CHOKIDAR_PRUNE_INTERVAL_MS = 30_000;
-const EVICTION_SUPPRESSION_POST_MS = 2_000;
-const EVICTION_SUPPRESSION_TTL_MS = 30_000;
 let chokidarPruneInterval = null;
 const FS_WATCH_SETTLE_DELAY_MS = 300;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const buildEvictionSuppressionKey = (blogID, pathInBlogDirectory) =>
-  `${blogID}:${pathInBlogDirectory}`;
-
-const markEvictionSuppressed = (blogID, pathInBlogDirectory) => {
-  if (!pathInBlogDirectory) {
-    return;
-  }
-
-  const key = buildEvictionSuppressionKey(blogID, pathInBlogDirectory);
-  const now = Date.now();
-  evictionSuppressionMap.set(key, {
-    suppressUntil: Number.POSITIVE_INFINITY,
-    expiresAt: now + EVICTION_SUPPRESSION_TTL_MS,
-  });
-};
-
-const extendEvictionSuppression = (blogID, pathInBlogDirectory) => {
-  if (!pathInBlogDirectory) {
-    return;
-  }
-
-  const key = buildEvictionSuppressionKey(blogID, pathInBlogDirectory);
-  const now = Date.now();
-  const suppressUntil = now + EVICTION_SUPPRESSION_POST_MS;
-  const expiresAt = now + EVICTION_SUPPRESSION_TTL_MS;
-  evictionSuppressionMap.set(key, { suppressUntil, expiresAt });
-};
-
-const isEvictionSuppressed = (blogID, pathInBlogDirectory) => {
-  if (!pathInBlogDirectory) {
-    return false;
-  }
-
-  const key = buildEvictionSuppressionKey(blogID, pathInBlogDirectory);
-  const suppression = evictionSuppressionMap.get(key);
-
-  if (!suppression) {
-    return false;
-  }
-
-  const now = Date.now();
-
-  if (suppression.expiresAt <= now) {
-    evictionSuppressionMap.delete(key);
-    return false;
-  }
-
-  return suppression.suppressUntil > now;
-};
 
 const recordChokidarEvent = (blogID, pathInBlogDirectory, action) => {
   if (!pathInBlogDirectory) {
@@ -132,14 +85,6 @@ const pruneChokidarEvents = () => {
   }
 };
 
-const pruneEvictionSuppressions = () => {
-  const now = Date.now();
-  for (const [key, suppression] of evictionSuppressionMap.entries()) {
-    if (suppression.expiresAt <= now) {
-      evictionSuppressionMap.delete(key);
-    }
-  }
-};
 
 const startChokidarPruneLoop = () => {
   if (chokidarPruneInterval) {
@@ -296,27 +241,25 @@ const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
 // Initializes the top-level watcher and starts disk monitoring
 const initialize = async () => {
   // Start periodic disk space monitoring
-  checkDiskSpace(async (blogID, files) => {
+  checkDiskSpace(async (blogID) => {
     // Get the limiter for this specific blogID
     const limiter = getLimiterForBlogID(blogID);
+    const blogPath = join(iCloudDriveDirectory, blogID);
+    const pathInBlogDirectory = EVICTION_SUPPRESSION_BLOG_SCOPE;
 
     // Schedule the event handler to run within the limiter
     await limiter.schedule(async () => {
       // Unwatch the blogID to prevent file locks during eviction
       await unwatch(blogID);
 
-      for (const filePath of files) {
-        const pathInBlogDirectory = extractPathInBlogDirectory(filePath);
-        markEvictionSuppressed(blogID, pathInBlogDirectory);
+      markEvictionSuppressed(blogID, pathInBlogDirectory);
 
-        try {
-          await brctl.evict(filePath); // Evict the file
-        } catch (error) {
-          // Continue processing files even if eviction of a specific file fails, as brctl evict can intermittently produce errors for certain files.
-          console.error(clfdate(), `Failed to evict file (${filePath}):`, error);
-        } finally {
-          extendEvictionSuppression(blogID, pathInBlogDirectory);
-        }
+      try {
+        await brctl.evict(blogPath, { timeoutMs: 60_000 }); // Evict the blog directory
+      } catch (error) {
+        console.error(clfdate(), `Failed to evict blog folder (${blogPath}):`, error);
+      } finally {
+        extendEvictionSuppression(blogID, pathInBlogDirectory);
       }
 
       // Re-watch the blogID after eviction
@@ -387,11 +330,14 @@ const watch = async (blogID) => {
         return;
       }
 
-      // Update the internal file map for disk usage monitoring
-      if (event === "add" || event === "change") {
-        addFile(blogID, filePath);
-      } else if (event === "unlink") {
-        removeFile(blogID, filePath);
+      if (
+        event === "add" ||
+        event === "change" ||
+        event === "unlink" ||
+        event === "unlinkDir" ||
+        event === "addDir"
+      ) {
+        markBlogUpdated(blogID);
       }
 
       // We only handle file events after the initial scan is complete

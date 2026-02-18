@@ -3,7 +3,7 @@
 // feed item. It resolves relative URLs to make the result
 // more portable. It should help produce valid feeds.
 
-var absoluteURLs = require("./absoluteURLs").absoluteURLs;
+var absolute_urls = require("./absolute_urls").absolute_urls;
 var cheerio = require("cheerio");
 
 // Removes everything forbidden by XML 1.0 specifications,
@@ -30,7 +30,7 @@ module.exports = function (req, res, callback) {
           },
           false
         );
-        $ = absoluteURLs(req.protocol + "://" + req.get("host"), $);
+        $ = absolute_urls(req.protocol + "://" + req.get("host"), $);
         $("script").remove();
         xml = $.html();
         xml = removeXMLInvalidChars(xml);

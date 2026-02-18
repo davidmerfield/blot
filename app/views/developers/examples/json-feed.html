@@ -13,26 +13,26 @@
     </li>
     <li>Paste in the following code: <pre class="html" data-file="json-feed.json"><code>{ 
   "version": "https://jsonfeed.org/version/1",
-  "title": "{{#encodeJSON}}{{{title}}}{{/encodeJSON}}",
-  "description": "{{#encodeJSON}}Feed for {{{title}}}{{/encodeJSON}}",
+  "title": "{{#encode_json}}{{{title}}}{{/encode_json}}",
+  "description": "{{#encode_json}}Feed for {{{title}}}{{/encode_json}}",
   "home_page_url": "{{{siteURL}}}",
   "feed_url": "{{{siteURL}}}/jsonfeed.json",
   "items": [
-    {{#recentEntries}}
+    {{#recent_entries}}
     { 
       "id": "{{{absoluteURL}}}",
-      "title": "{{#encodeJSON}}{{{title}}}{{/encodeJSON}}",
+      "title": "{{#encode_json}}{{{title}}}{{/encode_json}}",
       {{#summary}}
-      "summary": "{{#encodeJSON}}{{{summary}}}{{/encodeJSON}}",
+      "summary": "{{#encode_json}}{{{summary}}}{{/encode_json}}",
       {{/summary}}
       {{#thumbnail.large}}
       "image": "{{{siteURL}}}{{{url}}}",
       {{/thumbnail.large}}
-      "content_html": "{{#encodeJSON}}{{#absoluteURLs}}{{{body}}}{{/absoluteURLs}}{{/encodeJSON}}",
+      "content_html": "{{#encode_json}}{{#absolute_urls}}{{{body}}}{{/absolute_urls}}{{/encode_json}}",
       "date_published": "{{#formatDate}}YYYY-MM-DDTHH:mm:ssZ{{/formatDate}}",
       "url": "{{{absoluteURL}}}"
     }{{^last}},{{/last}}
-    {{/recentEntries}}
+    {{/recent_entries}}
   ]
 }
 </code></pre>

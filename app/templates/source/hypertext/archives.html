@@ -7,12 +7,12 @@
        <h1>Archives</h1>
        {{> search-form}}
        <div class="archives-grid">
-         {{#allEntries}}
+         {{#all_entries}}
          <div class="archive-item">
            <a href="{{{url}}}" class="archive-title">{{title}}</a>
            <span class="archive-date">{{#date}}{{date}}{{/date}}</span>
          </div>
-         {{/allEntries}}
+         {{/all_entries}}
        </div>
     </main>
     {{> footer}}

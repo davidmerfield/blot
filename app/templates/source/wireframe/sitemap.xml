@@ -13,9 +13,9 @@
   </url>
   {{/isPage}}
   {{/menu}}    
-  {{#allEntries}}  
+  {{#all_entries}}  
   <url>
     <loc>{{siteURL}}{{url}}/</loc> 
   </url>
-  {{/allEntries}}  
+  {{/all_entries}}  
 </urlset>

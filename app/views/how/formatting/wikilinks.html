@@ -189,3 +189,22 @@ your own text using the following syntax:
   default attachment settings work without extra configuration—just make sure
   the folder is inside your blog directory so the files can sync to Blot.
 </p>
+
+<h3>Embedding Markdown and text files</h3>
+
+<p>
+  In addition to <code>.md</code> notes, Blot also supports embedding
+  <code>.txt</code>, <code>.text</code>, and <code>.markdown</code> files with
+  the same Obsidian-style syntax:
+</p>
+
+<pre><code>![[Research notes.txt]]
+![[Snippets/Outline.text]]
+![[Drafts/Appendix.markdown]]</code></pre>
+
+<p>
+  These file embeds are resolved using the same lookup rules as normal
+  wikilinks (relative path, absolute path, filename, URL, then title). When a
+  match is found, Blot renders the embedded file's Markdown output inline where
+  the embed appears.
+</p>

@@ -7,6 +7,9 @@ describe("metadata parser", function () {
         ["Page:yes", "Permalink:", "Date: 12/10/12", "", "# Hi"].join("\n")
       ).metadata
     ).toEqual({
+      Page: "yes",
+      Permalink: "",
+      Date: "12/10/12",
       permalink: "",
       page: "yes",
       date: "12/10/12"
@@ -19,6 +22,9 @@ describe("metadata parser", function () {
         ["Page:yes", "Permalink:", "Date: 12/10/12", "", "# Hi"].join("\r\n")
       ).metadata
     ).toEqual({
+      Page: "yes",
+      Permalink: "",
+      Date: "12/10/12",
       permalink: "",
       page: "yes",
       date: "12/10/12"
@@ -31,6 +37,9 @@ describe("metadata parser", function () {
         ["Page:yes", "Permalink:", "Date: 12/10/12", "", "# Hi"].join("\r")
       ).metadata
     ).toEqual({
+      Page: "yes",
+      Permalink: "",
+      Date: "12/10/12",
       permalink: "",
       page: "yes",
       date: "12/10/12"
@@ -43,6 +52,8 @@ describe("metadata parser", function () {
         ["---", "Page: yes", "Permalink: hey", "---", "", "# Hi"].join("\n")
       ).metadata
     ).toEqual({
+      Page: "yes",
+      Permalink: "hey",
       permalink: "hey",
       page: "yes"
     });
@@ -52,6 +63,7 @@ describe("metadata parser", function () {
     expect(
       Metadata(["---", "Summary: ", "---", "", "# Hi"].join("\n")).metadata
     ).toEqual({
+      Summary: "",
       summary: ""
     });
   });
@@ -62,12 +74,14 @@ describe("metadata parser", function () {
         ["---", "Tags:", "  - one", "  - two", "---", "", "# Hi"].join("\n")
       ).metadata
     ).toEqual({
+      Tags: ["one", "two"],
       tags: ["one", "two"]
     });
   });
 
   it("parses empty metadata", function () {
     expect(Metadata(["Summary: ", "", "# Hi"].join("\n")).metadata).toEqual({
+      Summary: "",
       summary: ""
     });
   });
@@ -80,6 +94,7 @@ describe("metadata parser", function () {
         )
       ).metadata
     ).toEqual({
+      Author: "me",
       author: "me"
     });
   });
@@ -88,12 +103,14 @@ describe("metadata parser", function () {
     expect(
       Metadata(["Author:me", "Hey", "Date: 1"].join("\n")).metadata
     ).toEqual({
+      Author: "me",
       author: "me"
     });
   });
 
   it("handles spaces in the metadata key", function () {
     expect(Metadata(["Author name: Jason"].join("\n")).metadata).toEqual({
+      "Author name": "Jason",
       "author name": "Jason"
     });
   });
@@ -104,12 +121,14 @@ describe("metadata parser", function () {
 
   it("allows dashes in the metadata key", function () {
     expect(Metadata(["Is-Social: Yes"].join("\n")).metadata).toEqual({
+      "Is-Social": "Yes",
       "is-social": "Yes"
     });
   });
 
   it("allows underscores in the metadata key", function () {
     expect(Metadata(["Is_Social: Yes"].join("\n")).metadata).toEqual({
+      Is_Social: "Yes",
       is_social: "Yes"
     });
   });
@@ -145,6 +164,9 @@ describe("metadata parser", function () {
   it("parses a URL as a metadata value", function () {
     expect(
       Metadata(["Thumbnail: http://example.com/image.jpg"].join("\n")).metadata
-    ).toEqual({ thumbnail: "http://example.com/image.jpg" });
+    ).toEqual({
+      Thumbnail: "http://example.com/image.jpg",
+      thumbnail: "http://example.com/image.jpg"
+    });
   });
 });

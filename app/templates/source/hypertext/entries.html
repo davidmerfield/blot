@@ -5,10 +5,10 @@
     {{> navigation}}
     <main>
         <div class="entry">
-        {{^entries.length}}
+        {{^posts.length}}
             <p>Nothing here.</p>
-        {{/entries.length}}
-        {{#entries}}
+        {{/posts.length}}
+        {{#posts}}
         {{#first}}
             {{{html}}}
             {{#backlinks.length}}
@@ -22,7 +22,7 @@
             </p>
             {{/backlinks.length}}
         {{/first}}
-        {{/entries}}
+        {{/posts}}
         </div>
     </main>
     {{> footer}}
