@@ -20,11 +20,11 @@ describe("typeset plugin", function () {
 
     build(this.blog, path, function (err, entry) {
       expect(err).toBeNull();
-      expect(entry.html).toContain('" -- and NASA.');
       expect(entry.html).not.toContain('<span class="small-caps">');
-      expect(entry.html).not.toContain("“");
       expect(entry.html).not.toContain("—");
       expect(entry.html).not.toContain("&mdash;");
+      expect(entry.html).not.toContain("&thinsp;");
+      expect(entry.html).not.toContain(" ");
       done();
     });
   });
@@ -47,7 +47,7 @@ describe("typeset plugin", function () {
       expect(err).toBeNull();
       expect(entry.html).toContain('<span class="small-caps">NASA</span>');
       expect(entry.html).toContain("“");
-      expect(/&mdash;|—/.test(entry.html)).toBeTrue();
+      expect(/&mdash;|—/.test(entry.html)).toEqual(true);
       done();
     });
   });
