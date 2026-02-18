@@ -13,14 +13,55 @@ const cheerio = require("cheerio");
 const clfdate = require("helper/clfdate");
 
 module.exports = function (options = {}) {
+  const withTimeout = async (promise, timeoutMs, stage) => {
+    let timer;
+
+    try {
+      return await Promise.race([
+        promise,
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `Test site: ${stage} timed out after ${timeoutMs}ms`
+                )
+              ),
+            timeoutMs
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  const logStage = (stage, startedAt) => {
+    const elapsedMs = Date.now() - startedAt;
+    console.log(clfdate(), `Test site: ${stage} (${elapsedMs}ms)`);
+  };
+
   // we must build the views for the documentation
   // and the dashboard before we launch the server
   // we also build the templates into the cache
-  beforeAll(async () => {
-    console.log(clfdate(), "Test site: Building views");
-    await build({ watch: false, skipZip: true });
-    console.log(clfdate(), "Test site: Building templates");
-    await templates({ watch: false });
+  beforeAll(async function () {
+    const viewsStartedAt = Date.now();
+    console.log(clfdate(), "Test site: building views (starting)");
+    await withTimeout(
+      build({ watch: false, skipZip: true }),
+      45000,
+      "building views"
+    );
+    logStage("building views complete", viewsStartedAt);
+
+    const templatesStartedAt = Date.now();
+    console.log(clfdate(), "Test site: building templates (starting)");
+    await withTimeout(
+      templates({ watch: false }),
+      45000,
+      "building templates"
+    );
+    logStage("building templates complete", templatesStartedAt);
   }, 60000);
 
   beforeEach(createUser);
@@ -33,7 +74,8 @@ module.exports = function (options = {}) {
 
   const port = 8919;
 
-  beforeAll(function (done) {
+  beforeAll(async function () {
+    const listeningStartedAt = Date.now();
     this.origin = `http://localhost:${port}`;
 
     const app = require("express")();
@@ -54,14 +96,16 @@ module.exports = function (options = {}) {
 
     app.use(Server);
 
-    server = app.listen(port, () => {
-      console.log(clfdate(), "Test site: Server started at", this.origin);
-      done();
-    });
+    await new Promise((resolve, reject) => {
+      server = app.listen(port, () => {
+        logStage(`server listening at ${this.origin}`, listeningStartedAt);
+        resolve();
+      });
 
-    server.on("error", (err) => {
-      console.log(clfdate(), "Test site: Server error", err);
-      done.fail(err);
+      server.on("error", (err) => {
+        console.log(clfdate(), "Test site: Server error", err);
+        reject(err);
+      });
     });
   });
 
@@ -105,102 +149,95 @@ module.exports = function (options = {}) {
     this.checkBrokenLinks = (url = this.origin, options = {}) =>
       checkBrokenLinks(this.fetch, url, options);
 
-    this.text = (path) => {
-      return new Promise((resolve, reject) => {
-        this.fetch(path)
-          .then((res) => {
-            if (res.status !== 200)
-              return reject(
-                new Error(`Failed to fetch ${path}: ${res.status}`)
-              );
-            res.text().then((text) => resolve(text));
-          })
-          .catch((err) => reject(err));
-      });
+    this.text = async (path) => {
+      const res = await this.fetch(path);
+
+      if (res.status !== 200) {
+        throw new Error(`Failed to fetch ${path}: ${res.status}`);
+      }
+
+      return res.text();
     };
 
-    this.parse = (path) => {
-      return new Promise((resolve, reject) => {
-        this.text(path)
-          .then((text) => {
-            let $;
-            try {
-              $ = cheerio.load(text);
-            } catch (e) {
-              return reject(new Error(`Failed to parse HTML: ${e.message}`));
-            }
-            resolve($);
-          })
-          .catch((err) => reject(err));
-      });
+    this.parse = async (path) => {
+      const text = await this.text(path);
+
+      try {
+        return cheerio.load(text);
+      } catch (e) {
+        throw new Error(`Failed to parse HTML: ${e.message}`);
+      }
     };
     // can be used like so:
     // await this.submit('/sites/example/title', { title: 'New Title' });
     // will first GET the form to get the CSRF token then POST the form
     // with the provided data
-    this.submit = (path, data) => {
-      return new Promise(async (resolve, reject) => {
-        try {
-          // first fetch the page to get the csrf token
-          const page = await this.fetch(path, {
-            redirect: "manual",
-          });
-
-          
-          const headers = Object.fromEntries(page.headers);
-          const cookies = headers["set-cookie"];
-          const csrfCookie = cookies.match(/csrf=([^;]+)/);
-
-          // the response status should be 200
-          expect(page.status).toEqual(200);
-
-          const pageText = await page.text();
-          const csrfTokenMatch = pageText.match(/name="_csrf" value="([^"]+)"/);
-          
-          let formPath = path;
-
-          // determine the form path in case it is different
-          const formMatch = cheerio.load(pageText)('form[action][method="post"]').attr('action');
-          
-          if (formMatch) {
-            formPath = formMatch;
-          }
-
-          if (!csrfTokenMatch) {
-            return reject(new Error("CSRF token not found in form"));
-          }
-
-          const params = new URLSearchParams();
-
-          for (const key in data) {
-            params.append(key, data[key]);
-          }
-
-          params.append("_csrf", csrfTokenMatch[1]);
-
-          const res = await this.fetch(formPath, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-              Cookie: cookies, // Send the CSRF cookie along with the request
-            },
-            body: params.toString(),
-          });
-
-          if (res.status >= 400) {
-            return reject(new Error(`Failed to submit form: ${res.status}`));
-          }
-
-          resolve(res);
-        } catch (err) {
-          reject(err);
-        }
+    this.submit = async (path, data) => {
+      // first fetch the page to get the csrf token
+      const page = await this.fetch(path, {
+        redirect: "manual",
       });
+
+      const headers = Object.fromEntries(page.headers);
+      const cookies = headers["set-cookie"];
+      const csrfCookie = cookies.match(/csrf=([^;]+)/);
+
+      // the response status should be 200
+      expect(page.status).toEqual(200);
+
+      const pageText = await page.text();
+      const csrfTokenMatch = pageText.match(/name="_csrf" value="([^"]+)"/);
+
+      let formPath = path;
+
+      // determine the form path in case it is different
+      const formMatch = cheerio
+        .load(pageText)('form[action][method="post"]')
+        .attr("action");
+
+      if (formMatch) {
+        formPath = formMatch;
+      }
+
+      if (!csrfTokenMatch) {
+        throw new Error("CSRF token not found in form");
+      }
+
+      const params = new URLSearchParams();
+
+      for (const key in data) {
+        params.append(key, data[key]);
+      }
+
+      params.append("_csrf", csrfTokenMatch[1]);
+
+      const res = await this.fetch(formPath, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Cookie: cookies, // Send the CSRF cookie along with the request
+        },
+        body: params.toString(),
+      });
+
+      if (res.status >= 400) {
+        throw new Error(`Failed to submit form: ${res.status}`);
+      }
+
+      return res;
     };
   });
 
-  afterAll(function () {
-    server.close();
+  afterAll(async function () {
+    await new Promise((resolve, reject) => {
+      server.close((err) => {
+        if (err) {
+          return reject(err);
+        }
+
+        resolve();
+      });
+    });
   });
 
   if (options.login) {
