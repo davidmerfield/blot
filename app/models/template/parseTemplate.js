@@ -35,6 +35,14 @@ var projectedEntryLocals = {
   archives: ["months.entries"],
 };
 
+function isProjectedEntryLocal(name) {
+  return !!projectedEntryLocals[name];
+}
+
+function isSystemRetrieveLocal(name) {
+  return retrieveThese.indexOf(name) > -1 || isProjectedEntryLocal(name);
+}
+
 function parseTemplate(template) {
   var retrieve = {};
   var partials = {};
@@ -216,7 +224,7 @@ function parseTemplate(template) {
           );
         }
 
-        if (retrieveThese.indexOf(variable) > -1) {
+        if (isSystemRetrieveLocal(variable)) {
           // Special case: 'cdn' should always be an array (empty for literals, with targets for blocks)
           // to prevent soft merge issues with multiple partials via helper/extend.js
           if (variable === "cdn") {
@@ -242,7 +250,7 @@ function parseTemplate(template) {
           }
         }
 
-        if (retrieveThese.indexOf(variableRoot) > -1 && propertyPath) {
+        if (isSystemRetrieveLocal(variableRoot) && propertyPath) {
           // Special case: 'cdn' should always be an array (empty for literals, with targets for blocks)
           // to prevent soft merge issues with multiple partials via helper/extend.js
           if (variableRoot === "cdn") {
@@ -266,7 +274,7 @@ function parseTemplate(template) {
               setNestedProperty(variableRoot, propertyPath, true);
             }
           }
-        } else if (retrieveThese.indexOf(variableRoot) > -1 && !propertyPath) {
+        } else if (isSystemRetrieveLocal(variableRoot) && !propertyPath) {
           // Root variable without property access - set as boolean if not already an object
           if (variableRoot === "cdn") {
             if (!retrieve.cdn || !Array.isArray(retrieve.cdn)) {
@@ -291,7 +299,7 @@ function parseTemplate(template) {
           suppressAsProjectedFieldReference = true;
         }
 
-        if (inProjectedFieldContext && isLikelyProjectedEntryField(variable)) {
+        if (inProjectedFieldContext && isLowercaseProjectedEntryField(variable)) {
           suppressAsProjectedFieldReference = true;
         }
 
@@ -303,14 +311,14 @@ function parseTemplate(template) {
         ) {
           // Only track the root variable, not nested properties
           // If variable has dots and root is whitelisted, skip (already handled above)
-          if (!propertyPath || retrieveThese.indexOf(variableRoot) === -1) {
+          if (!propertyPath || !isSystemRetrieveLocal(variableRoot)) {
             if (!retrieve[variable]) {
               retrieve[variable] = true;
             }
           }
         }
         
-        if (variableRoot && retrieveThese.indexOf(variableRoot) === -1 && variableRoot !== "cdn") {
+        if (variableRoot && !isSystemRetrieveLocal(variableRoot) && variableRoot !== "cdn") {
           if (!retrieve[variableRoot]) {
             retrieve[variableRoot] = true;
           }
