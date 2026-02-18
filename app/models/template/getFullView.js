@@ -2,6 +2,7 @@ var getView = require("./getView");
 var ensure = require("helper/ensure");
 var extend = require("helper/extend");
 var getPartials = require("./getPartials");
+var parseTemplate = require("./parseTemplate");
 var mime = require("mime-types");
 
 // This method is used to retrieve the locals,
@@ -22,7 +23,13 @@ module.exports = function getFullView(blogID, templateID, viewName, callback) {
     //                     which need to be fetched.
     // - partials (object) partials in view
 
-    getPartials(blogID, templateID, view.partials, function (
+    var partialContexts = parseTemplate.getPartialContexts(view.content || "", "");
+
+    getPartials(
+      blogID,
+      templateID,
+      view.partials,
+      function (
       err,
       allPartials,
       retrieveFromPartials
@@ -44,6 +51,6 @@ module.exports = function getFullView(blogID, templateID, viewName, callback) {
       ];
 
       return callback(null, response);
-    });
+    }, partialContexts, "");
   });
 };

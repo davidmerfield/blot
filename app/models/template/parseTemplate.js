@@ -410,7 +410,52 @@ function parseTemplate(template) {
   }
 }
 
+function getPartialContexts(template, parentContextPath) {
+  var partialContexts = {};
+  var parsed;
+
+  try {
+    parsed = mustache.parse(template || "");
+  } catch (e) {
+    return partialContexts;
+  }
+
+  collect(parentContextPath || "", parsed);
+
+  return partialContexts;
+
+  function addContext(partialName, contextPath) {
+    if (!partialContexts[partialName]) partialContexts[partialName] = [];
+    if (partialContexts[partialName].indexOf(contextPath) === -1) {
+      partialContexts[partialName].push(contextPath);
+    }
+  }
+
+  function collect(contextPath, tokens) {
+    if (!type(tokens, "array")) return;
+
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i];
+      var tokenType = token[0];
+      var tokenValue = token[1];
+
+      if (tokenType === ">") {
+        addContext(tokenValue, contextPath);
+      }
+
+      if ((tokenType === "#" || tokenType === "^") && type(token[4], "array")) {
+        var nextContext = contextPath
+          ? contextPath + "." + tokenValue
+          : tokenValue;
+        collect(nextContext, token[4]);
+      }
+    }
+  }
+}
+
 // console.log(parseTemplate('{{#title}}{{#menu}}{{active}}{{/menu}}{{/title}}'));
 // console.log(parseTemplate('{{{appCSS}}}'));
+
+parseTemplate.getPartialContexts = getPartialContexts;
 
 module.exports = parseTemplate;

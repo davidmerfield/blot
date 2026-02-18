@@ -96,8 +96,39 @@ describe("template", function () {
         if (err) return done.fail(err);
 
         expect(fullView[2]).toEqual({
-          allEntries: {},
-          html: true,
+          allEntries: { fields: { html: true } },
+        });
+
+        done();
+      });
+    });
+  });
+
+
+  it("handles nested allEntries context in partials without top-level leakage", function (done) {
+    var test = this;
+
+    var partial = {
+      name: "entry-thumbnail-partial.html",
+      content: "{{{html}}}",
+    };
+
+    var view = {
+      name: "entries-thumbnail-with-partial.html",
+      content:
+        "{{#allEntries}}{{#thumbnail}}{{> " +
+        partial.name +
+        "}}{{/thumbnail}}{{/allEntries}}",
+    };
+
+    async.map([view, partial], setView.bind(null, test.template.id), function (err) {
+      if (err) return done.fail(err);
+
+      getFullView(test.blog.id, test.template.id, view.name, function (err, fullView) {
+        if (err) return done.fail(err);
+
+        expect(fullView[2]).toEqual({
+          allEntries: { fields: { thumbnail: true } },
         });
 
         done();

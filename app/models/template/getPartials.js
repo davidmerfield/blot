@@ -3,13 +3,24 @@ var async = require("async");
 var ensure = require("helper/ensure");
 var extend = require("helper/extend");
 var promisify = require("util").promisify;
+var parseTemplate = require("./parseTemplate");
 
-module.exports = function getPartials(blogID, templateID, partials, callback) {
+module.exports = function getPartials(
+  blogID,
+  templateID,
+  partials,
+  callback,
+  contextMap,
+  parentContextPath
+) {
   try {
     ensure(blogID, "string")
       .and(templateID, "string")
       .and(partials, "object")
       .and(callback, "function");
+
+    if (!contextMap) contextMap = {};
+    if (!parentContextPath) parentContextPath = "";
   } catch (e) {
     return callback(e);
   }
@@ -23,6 +34,55 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
 
   for (var i in partials) if (partials[i]) allPartials[i] = partials[i];
 
+  Object.keys(partials || {}).forEach(function (partialName) {
+    addContext(partialName, parentContextPath || "");
+  });
+
+  function addContext(partialName, contextPath) {
+    if (!contextMap[partialName]) contextMap[partialName] = [];
+    if (contextMap[partialName].indexOf(contextPath) === -1) {
+      contextMap[partialName].push(contextPath);
+    }
+  }
+
+
+  function wrapInContext(content, contextPath) {
+    if (!contextPath) return content || "";
+
+    var segments = contextPath.split(".").filter(Boolean);
+    var wrapped = content || "";
+
+    for (var i = segments.length - 1; i >= 0; i--) {
+      wrapped = "{{#" + segments[i] + "}}" + wrapped + "{{/" + segments[i] + "}}";
+    }
+
+    return wrapped;
+  }
+
+  function parseRetrieveInContext(content, contextPath) {
+    return parseTemplate(wrapInContext(content, contextPath)).retrieve || {};
+  }
+
+  function mergePartialContexts(viewContent, inheritedContexts) {
+    var merged = {};
+
+    (inheritedContexts || [""]).forEach(function (contextPath) {
+      var partialContexts = parseTemplate.getPartialContexts(viewContent || "", contextPath);
+
+      Object.keys(partialContexts).forEach(function (partialName) {
+        if (!merged[partialName]) merged[partialName] = [];
+
+        partialContexts[partialName].forEach(function (path) {
+          if (merged[partialName].indexOf(path) === -1) {
+            merged[partialName].push(path);
+          }
+        });
+      });
+    });
+
+    return merged;
+  }
+
   fetchList(partials, function () {
     return callback(null, allPartials, retrieve);
   });
@@ -31,6 +91,10 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
     async.eachOfSeries(
       partials,
       function (value, partial, next) {
+        var inheritedContexts =
+          contextMap[partial] && contextMap[partial].length
+            ? contextMap[partial]
+            : [""];
         // Don't fetch a partial if we've got it already.
         // Partials which returned nothing are set as
         // empty strings to prevent any infinities.
@@ -55,8 +119,13 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
             }
 
             // Only allow access to entries which exist and are public
-            if (!entry.deleted && !entry.draft && !entry.scheduled)
+            if (!entry.deleted && !entry.draft && !entry.scheduled) {
               allPartials[partial] = entry.html;
+
+              inheritedContexts.forEach(function (contextPath) {
+                extend(retrieve).and(parseRetrieveInContext(entry.html || "", contextPath));
+              });
+            }
 
             next();
           });
@@ -69,8 +138,26 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
             if (view) {
               allPartials[partial] = view.content;
 
-              // Merge retrieve from partial (extend handles array merging)
-              extend(retrieve).and(view.retrieve);
+              inheritedContexts.forEach(function (contextPath) {
+                if (!contextPath) {
+                  extend(retrieve).and(view.retrieve || {});
+                } else {
+                  extend(retrieve).and(
+                    parseRetrieveInContext(view.content || "", contextPath)
+                  );
+                }
+              });
+
+              var nestedPartials = mergePartialContexts(
+                view.content,
+                inheritedContexts
+              );
+
+              Object.keys(nestedPartials).forEach(function (nestedPartial) {
+                nestedPartials[nestedPartial].forEach(function (nestedContextPath) {
+                  addContext(nestedPartial, nestedContextPath);
+                });
+              });
 
               fetchList(view.partials, next);
             } else {
