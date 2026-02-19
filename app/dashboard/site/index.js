@@ -31,6 +31,7 @@ site.get("/", require("./load/scheduled"));
 
 // Load the files and folders inside a blog's folder
 site.get(["/", "/folder/:path(*)"], require("./folder"));
+site.post("/folder/upload", require("./folder/upload"));
 
 site.get("/folder", (req, res) => {
   // redirect to client settings page
