@@ -361,12 +361,13 @@
 
             collectedFiles.forEach(function (entry, index) {
               var field = 'upload-' + index;
+              var relativePath = applyCurrentFolderPrefix(entry.relativePath);
 
               formData.append(field, entry.file, entry.file.name);
               relativePaths.push({
                 field: field,
                 index: 0,
-                relativePath: entry.relativePath
+                relativePath: relativePath
               });
             });
 

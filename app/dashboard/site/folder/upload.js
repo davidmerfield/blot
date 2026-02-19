@@ -339,21 +339,7 @@ module.exports = async (req, res, next) => {
         try {
           await folder.update(`/${entry.relativePath}`);
         } catch (err) {
-          results.push({
-            path: entry.relativePath,
-            overwritten: entry.exists,
-            local: client
-              ? { skipped: true, reason: "client_write" }
-              : { success: false, error: err.message },
-            client: client
-              ? {
-                  success: false,
-                  name: req.blog.client,
-                  error: err.message,
-                }
-              : { skipped: true },
-          });
-          continue;
+          throw err;
         }
 
         if (!client) {
