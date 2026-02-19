@@ -47,6 +47,13 @@ function createModalEvent(action) {
   };
 }
 
+function createModalActionButtons(actions) {
+  return actions.map((action) => ({
+    disabled: false,
+    getAttribute: (name) => (name === 'data-upload-action' ? action : null),
+  }));
+}
+
 describe('folder directory upload modal listener lifecycle', function () {
   it('does not keep stale action listeners across upload attempts after partial failure', async function () {
     const flush = () => new Promise((resolve) => setImmediate(resolve));
@@ -121,5 +128,89 @@ describe('folder directory upload modal listener lifecycle', function () {
 
     expect(commitCount).toBe(2);
     expect(clickListeners.size).toBe(0);
+  });
+
+  it('allows only one submit across rapid multi-clicks on different action buttons', async function () {
+    const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+    const templatePath = path.join(
+      __dirname,
+      '../../views/dashboard/folder/directory.html'
+    );
+    const templateSource = fs.readFileSync(templatePath, 'utf8');
+    const uploadDroppedFilesSource = extractNamedFunction(
+      templateSource,
+      'uploadDroppedFiles'
+    );
+
+    const clickListeners = new Set();
+    const modalActionButtons = createModalActionButtons(['cancel', 'safe', 'overwrite']);
+    const uploadModal = {
+      hidden: false,
+      querySelectorAll: (selector) => {
+        if (selector === '[data-upload-action]') return modalActionButtons;
+        return [];
+      },
+      addEventListener: (event, handler) => {
+        if (event === 'click') clickListeners.add(handler);
+      },
+      removeEventListener: (event, handler) => {
+        if (event === 'click') clickListeners.delete(handler);
+      },
+    };
+
+    let commitCount = 0;
+    let resolveCommit;
+
+    const context = {
+      Promise,
+      fetch: () =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ overwrite: ['existing.txt'] }),
+        }),
+      buildUploadFormData: () => ({}),
+      renderUploadPreview: () => {},
+      openUploadModal: () => {
+        uploadModal.hidden = false;
+      },
+      closeUploadModal: () => {
+        uploadModal.hidden = true;
+      },
+      uploadModal,
+      commitUpload: () => {
+        commitCount += 1;
+        return new Promise((resolve) => {
+          resolveCommit = resolve;
+        });
+      },
+      '{{{base}}}': '',
+    };
+
+    vm.runInNewContext(
+      `${uploadDroppedFilesSource}\nthis.uploadDroppedFiles = uploadDroppedFiles;`,
+      context
+    );
+
+    const collectedFiles = [{ file: { name: 'example.txt' }, relativePath: 'example.txt' }];
+    const attempt = context.uploadDroppedFiles(collectedFiles);
+
+    await flush();
+
+    const listeners = Array.from(clickListeners);
+    listeners.forEach((handler) => handler(createModalEvent('safe')));
+    listeners.forEach((handler) => handler(createModalEvent('overwrite')));
+
+    expect(commitCount).toBe(1);
+    modalActionButtons.forEach((button) => {
+      expect(button.disabled).toBe(true);
+    });
+
+    resolveCommit();
+    await attempt;
+
+    modalActionButtons.forEach((button) => {
+      expect(button.disabled).toBe(false);
+    });
   });
 });
