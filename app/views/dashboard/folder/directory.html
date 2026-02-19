@@ -481,19 +481,15 @@
               });
           }
 
-          function normalizeUploadEntries(collectedFiles) {
-            return collectedFiles.map(function (entry) {
+          function uploadDroppedFiles(collectedFiles) {
+            if (!collectedFiles.length) return Promise.resolve();
+
+            var normalizedEntries = collectedFiles.map(function (entry) {
               return {
                 file: entry.file,
                 relativePath: applyCurrentFolderPrefix(entry.relativePath)
               };
             });
-          }
-
-          function uploadDroppedFiles(collectedFiles) {
-            if (!collectedFiles.length) return Promise.resolve();
-
-            var normalizedEntries = normalizeUploadEntries(collectedFiles);
 
             return fetch('{{{base}}}/folder/upload?dryRun=1', {
               method: 'POST',
