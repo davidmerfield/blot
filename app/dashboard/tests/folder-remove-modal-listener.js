@@ -59,12 +59,14 @@ describe('folder directory remove modal behavior', function () {
     const templatePath = path.join(__dirname, '../../views/dashboard/folder/directory.html');
     const templateSource = fs.readFileSync(templatePath, 'utf8');
 
+    const decodePathSegmentsSource = extractNamedFunction(templateSource, 'decodePathSegments');
+    const encodePathSegmentsSource = extractNamedFunction(templateSource, 'encodePathSegments');
     const resolveMenuRemovePathSource = extractNamedFunction(templateSource, 'resolveMenuRemovePath');
     const openRemoveModalSource = extractNamedFunction(templateSource, 'openRemoveModal');
     const closeRemoveModalSource = extractNamedFunction(templateSource, 'closeRemoveModal');
     const resetRemoveModalButtonStateSource = extractNamedFunction(templateSource, 'resetRemoveModalButtonState');
     const setRemoveModalButtonsDisabledSource = extractNamedFunction(templateSource, 'setRemoveModalButtonsDisabled');
-    const commitRemoveSource = extractNamedFunction(templateSource, 'commitRemove');
+    const removeFileSource = extractNamedFunction(templateSource, 'removeFile');
     const handleRemoveMenuClickSource = extractNamedFunction(templateSource, 'handleRemoveMenuClick');
     const handleRemoveModalClickSource = extractNamedFunction(templateSource, 'handleRemoveModalClick');
 
@@ -87,6 +89,7 @@ describe('folder directory remove modal behavior', function () {
       Promise,
       removeModal,
       removeTargetPath: null,
+      removeTargetFile: null,
       csrfToken: 'token',
       fetch: (url, options) => {
         fetchCalls.push({ url, options });
@@ -99,12 +102,14 @@ describe('folder directory remove modal behavior', function () {
     };
 
     vm.runInNewContext(
-      `${resolveMenuRemovePathSource}
+      `${decodePathSegmentsSource}
+${encodePathSegmentsSource}
+${resolveMenuRemovePathSource}
 ${resetRemoveModalButtonStateSource}
 ${setRemoveModalButtonsDisabledSource}
 ${openRemoveModalSource}
 ${closeRemoveModalSource}
-${commitRemoveSource}
+${removeFileSource}
 ${handleRemoveMenuClickSource}
 ${handleRemoveModalClickSource}
 this.handleRemoveMenuClick = handleRemoveMenuClick;
@@ -118,7 +123,11 @@ this.handleRemoveModalClick = handleRemoveModalClick;`,
       target: {
         closest: (selector) => {
           if (selector === '[data-menu-link="remove"]') {
-            return { getAttribute: () => 'action:remove-file:posts%2Fhello.md' };
+            return {
+              getAttribute: () => 'action:remove-file:posts%2Fhello.md',
+              classList: { contains: () => false },
+              dataset: { entry: 'false', name: 'posts/hello.md' },
+            };
           }
           return null;
         },
@@ -149,7 +158,11 @@ this.handleRemoveModalClick = handleRemoveModalClick;`,
       target: {
         closest: (selector) => {
           if (selector === '[data-menu-link="remove"]') {
-            return { getAttribute: () => 'action:remove-file:posts%2Fhello.md' };
+            return {
+              getAttribute: () => 'action:remove-file:posts%2Fhello.md',
+              classList: { contains: () => false },
+              dataset: { entry: 'false', name: 'posts/hello.md' },
+            };
           }
           return null;
         },
@@ -173,7 +186,7 @@ this.handleRemoveModalClick = handleRemoveModalClick;`,
     await new Promise((resolve) => setImmediate(resolve));
 
     expect(fetchCalls.length).toBe(1);
-    expect(fetchCalls[0].url).toBe('{{{base}}}/folder/remove/posts%2Fhello.md');
+    expect(fetchCalls[0].url).toBe('{{{base}}}/folder/remove/posts/hello.md');
     expect(refreshCount).toBe(1);
     expect(removeModal.hidden).toBe(true);
   });
@@ -199,15 +212,17 @@ this.handleRemoveModalClick = handleRemoveModalClick;`,
       querySelectorAll: (selector) => (selector === '[data-remove-action]' ? modalButtons : []),
     };
 
-    let rejectCommit;
+    let rejectRemove;
     const context = {
       Promise,
       removeModal,
       removeTargetPath: null,
-      commitRemove: () =>
+      removeTargetFile: null,
+      removeFile: () =>
         new Promise((resolve, reject) => {
-          rejectCommit = reject;
+          rejectRemove = reject;
         }),
+      closeRemoveModal: () => {},
     };
 
     vm.runInNewContext(
@@ -220,7 +235,7 @@ this.handleRemoveModalClick = handleRemoveModalClick;`,
       context
     );
 
-    context.openRemoveModal('drafts/a.md');
+    context.openRemoveModal({ path: 'drafts/a.md', name: 'a.md' });
     context.handleRemoveModalClick({
       target: {
         closest: (selector) => {
@@ -237,7 +252,7 @@ this.handleRemoveModalClick = handleRemoveModalClick;`,
       expect(button.disabled).toBe(true);
     });
 
-    rejectCommit(new Error('boom'));
+    rejectRemove(new Error('boom'));
     await flush();
 
     modalButtons.forEach((button) => {
@@ -256,7 +271,12 @@ describe('folder directory remove action state', function () {
       "remove: function (dataset)"
     );
 
-    const context = {};
+    const context = {
+      folderFileActionMenu: {
+        querySelector: () => ({ dataset: {} }),
+      },
+      encodePathSegments: (value) => encodeURIComponent(String(value || '')).replace(/%2F/g, '/'),
+    };
 
     vm.runInNewContext(
       `var removeResolver = ${removeLinkResolverSource};\nthis.removeResolver = removeResolver;`,
