@@ -26,30 +26,7 @@ function updateTrackingIdVisibility() {
   trackingIdInput.style.display = 'block';
 }
 
-function submitPluginFormOnCheckboxChange(checkbox) {
-  checkbox.addEventListener('change', function() {
-    const form = checkbox.closest('form');
-    const pluginRow = checkbox.closest('.plugin');
-
-    if (pluginRow) {
-      pluginRow.classList.toggle('checked', checkbox.checked);
-    }
-
-    if (!form) {
-      return;
-    }
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', form.action);
-    xhr.send(new FormData(form));
-  });
-}
-
 analyticsSelect.addEventListener('change', updateTrackingIdVisibility);
 updateTrackingIdVisibility();
-
-document
-  .querySelectorAll('.plugin input[type=checkbox]')
-  .forEach(submitPluginFormOnCheckboxChange);
 
 }

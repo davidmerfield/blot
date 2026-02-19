@@ -13,28 +13,3 @@ document
     });
   });
 
-function submitForm(form) {
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', form.action);
-  xhr.onload = function () {};
-  xhr.onerror = function () {};
-  xhr.send(new FormData(form));
-}
-
-const checkboxes = document.querySelectorAll('.plugin input[type=checkbox]');
-checkboxes.forEach(function (checkbox) {
-  checkbox.addEventListener('change', function () {
-    const form = this.closest('form');
-    const plugin = this.closest('.plugin');
-
-    if (!form) {
-      return;
-    }
-
-    if (plugin) {
-      plugin.classList.toggle('checked', this.checked);
-    }
-
-    submitForm(form);
-  });
-});
