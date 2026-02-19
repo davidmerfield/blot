@@ -1,19 +1,47 @@
+:root {
+  --highlighter-filter-font-size: 12px;
+  --highlighter-filter-padding: 0.15em 0.5em;
+  --highlighter-filter-border-radius: 10px;
+  --highlighter-filter-color: #666;
+  --highlighter-option-bg: #fafafa;
+  --highlighter-option-hover-bg: #fff;
+  --highlighter-option-padding: 0.333em 0.5em;
+}
 
-.options {display: none;margin:0.5em;border:1px solid #aaa;user-select: none;width:300px}
-      
+.options {
+  display: none;
+  margin: 0.5em;
+  border: 1px solid #aaa;
+  width: 300px;
+  user-select: none;
+}
+
 .filters {
-  font-size:12px;
-  padding:0.15em 0.5em;user-select: none;
+  font-size: var(--highlighter-filter-font-size);
+  padding: var(--highlighter-filter-padding);
+  user-select: none;
 }
 
 .filters label {
-  border-radius: 10px;padding: 0.15em 0.5em;
+  padding: var(--highlighter-filter-padding);
+  border-radius: var(--highlighter-filter-border-radius);
   cursor: pointer;
-  color:#666;
+  color: var(--highlighter-filter-color);
 }
 
 .options button {
-width: 100%;
-text-align:left;margin:0;border-radius:0;border:none;outline:none;background:#fafafa;border-top: 1px solid #ddd;padding:0.333em 0.5em;       }
+  width: 100%;
+  margin: 0;
+  padding: var(--highlighter-option-padding);
+  border: none;
+  border-top: 1px solid var(--light-border-color);
+  border-radius: 0;
+  outline: none;
+  background: var(--highlighter-option-bg);
+  text-align: left;
+  cursor: pointer;
+}
 
-.options button:hover{background: #fff}
+.options button:hover {
+  background: var(--highlighter-option-hover-bg);
+}

@@ -2,34 +2,42 @@
 
 
 
+:root {
+  --color-picker-width: 284px;
+  --color-picker-height-chooser: 0.65em;
+  --color-picker-spacing: 0.65em;
+  --color-swatch-size: 2rem;
+  --color-swatch-height: 1.25rem;
+}
+
 .pickr {
-	z-index: auto;
+  z-index: auto;
 }
 
 .pcr-app .pcr-selection .pcr-picker {
-	z-index: 1;
+  z-index: 1;
 }
 
 .pcr-app.visible {
-	transition: none;
-	visibility: visible;
-	opacity: 1;
+  transition: none;
+  visibility: visible;
+  opacity: 1;
 }
 
 .pcr-app[data-theme=monolith] .pcr-selection .pcr-color-chooser,
 .pcr-app[data-theme=monolith] .pcr-selection .pcr-color-opacity {
-	height: .65em;
-	margin-top: .65em;
+  height: var(--color-picker-height-chooser);
+  margin-top: var(--color-picker-spacing);
 }
 
 .pcr-app {
-	transition: none;
-	box-shadow: 0 1.5em 1.5em 0 rgba(0, 0, 0, .1), 0 1em 1em 0 rgba(0, 0, 0, .03);
-	border-radius: 0
+  transition: none;
+  box-shadow: 0 1.5em 1.5em 0 rgba(0, 0, 0, 0.1), 0 1em 1em 0 rgba(0, 0, 0, 0.03);
+  border-radius: 0;
 }
 
 .pcr-app[data-theme=monolith] {
-width: 284px;
+  width: var(--color-picker-width);
   padding: 1em;
   margin: -8px 0 0 -1px;
   border-radius: 0 0 var(--border-radius) var(--border-radius);
@@ -39,57 +47,65 @@ width: 284px;
 }
 
 .pcr-app[data-theme=monolith] .pcr-selection .pcr-color-preview {
-	display: none;
+  display: none;
 }
 
 .color-picker .previous {
-	outline: 1px solid rgba(0,0,0,0.2);outline-offset:-1px;margin:0 16px 0 0;width:2rem;height:1.25rem;
-	border-radius: 2px;display: block;
+  outline: 1px solid rgba(0, 0, 0, 0.2);
+  outline-offset: -1px;
+  margin: 0 1em 0 0;
+  width: var(--color-swatch-size);
+  height: var(--color-swatch-height);
+  border-radius: 2px;
+  display: block;
 }
+
 .pcr-app[data-theme=monolith] .pcr-selection .pcr-color-palette .pcr-palette,
 .pcr-app[data-theme=monolith] .pcr-selection .pcr-color-chooser .pcr-slider,
 .pcr-app[data-theme=monolith] .pcr-selection .pcr-color-opacity .pcr-slider,
 .pcr-app[data-theme=monolith] .pcr-selection .pcr-color-preview .pcr-current-color {
-	border-radius: 0;
-	outline: 1px solid rgba(0, 0, 0, 0.1);
-	outline-offset: -1px;
-
+  border-radius: 0;
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+  outline-offset: -1px;
 }
 
 .pcr-app[data-theme=monolith] .pcr-selection .pcr-color-opacity .pcr-slider {
-	outline: 1px solid rgba(0, 0, 0, 0.3);
+  outline: 1px solid rgba(0, 0, 0, 0.3);
 }
 
 .pcr-app .pcr-interaction .pcr-save {
-	background: #4285f4;
-	flex-grow: 1;
+  background: #4285f4;
+  flex-grow: 1;
 }
 
 .pcr-app .pcr-swatches,
 .pcr-app[data-theme=monolith] .pcr-selection .pcr-color-preview .pcr-last-color {
-	display: none;
+  display: none;
 }
 
-
 .color-picker-popup {
-	cursor: pointer;display: flex;align-items: center;
-	transition: background-color .2s;
-	background-color: white;
-	padding: 0 16px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  background-color: white;
+  padding: 0 1em;
 }
 
 .color-picker-popup:hover {
-	background-color: var(--light-background-color);
+  background-color: var(--light-background-color);
 }
 
 .color-label {
-	margin:5px 16px 5px 0;flex-grow: 1;user-select: none;
+  margin: 0.3125em 1em 0.3125em 0;
+  flex-grow: 1;
+  user-select: none;
 }
 
 .color-picker {
-	border-bottom: 1px solid var(--light-border-color);
+  border-bottom: 1px solid var(--light-border-color);
 }
 
 .color-picker:last-of-type {
-	border-bottom: none;
+  border-bottom: none;
 }

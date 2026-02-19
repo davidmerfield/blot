@@ -1,20 +1,44 @@
+:root {
+  --editor-codemirror-min-height: calc(100vh - 182px);
+  --editor-gutter-padding: 0.25em;
+  --editor-file-link-font-size: 14px;
+  --editor-file-link-padding: 0.125em 0.6875em;
+  --editor-file-link-icon-size: 18px;
+  --editor-file-link-transition: background-color 0.2s;
+  --editor-error-padding: 0.75rem 1rem;
+  --editor-error-bg: oldlace;
+  --editor-error-border: 1px solid orange;
+  --editor-error-color: #a06800;
+  --editor-error-margin: 0 15px 0.4375em;
+  --editor-save-button-padding: 0.5em 1em;
+  --editor-save-button-font-size: 14px;
+  --editor-save-button-icon-size: 8px;
+  --editor-save-button-icon-margin: 0.75em;
+  --editor-save-disabled-bg: #fafafa;
+  --editor-container-width: calc(100vw - 670px);
+}
 
 .CodeMirror {
-	flex-grow: 1;
-	min-height: calc(100vh - 182px);
-	font-family: monospace;
+  flex-grow: 1;
+  min-height: var(--editor-codemirror-min-height);
+  font-family: monospace;
 }
 
 .CodeMirror-gutters {
-  padding-right: 4px;
+  padding-right: var(--editor-gutter-padding);
+  background: var(--background-color);
 }
 
 .CodeMirror-linenumber {
-	color: var(--light-text-color);
+  color: var(--light-text-color);
+}
+
+.CodeMirror-lines {
+  padding: 0;
 }
 
 .file-list {
-  border:1px solid var(--border-color);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
 }
 
@@ -28,30 +52,14 @@
   font-weight: 600;
 }
 
-.file-list .template-row__link svg {
-    fill:currentColor;
-    vertical-align: middle;
-    position:relative;
-    top:-0.1em;
-
-}
-.file-list .template-row__link svg {
-  width: 18px;height: 18px;
-}
-.file-list .template-row__link span,
-.file-list .template-row__link svg {
-  margin-right: 0px;
-
-}
-
 .file-list .template-row__link {
-        font-size: 14px;
-  padding:2px 11px;
-        display: block;
-        color: var(--medium-text-color);
-        text-decoration: none;
+  display: block;
+  padding: var(--editor-file-link-padding);
+  font-size: var(--editor-file-link-font-size);
+  color: var(--medium-text-color);
+  text-decoration: none;
   background-color: transparent;
-  transition: background-color 0.2s;
+  transition: var(--editor-file-link-transition);
 }
 
 .file-list .template-row__link:hover,
@@ -59,75 +67,81 @@
   background-color: var(--light-background-color);
 }
 
-.tab.selected {
-	border-bottom: none;
-	font-weight: 500;
-	color: #000;
-	background: transparent;
+.file-list .template-row__link svg {
+  width: var(--editor-file-link-icon-size);
+  height: var(--editor-file-link-icon-size);
+  fill: currentColor;
+  vertical-align: middle;
+  position: relative;
+  top: -0.1em;
 }
 
-  
-  .CodeMirror-lines {
-    padding: 0;
-  }
-  .CodeMirror-gutters {
-    background: var(--background-color);
-  }
+.file-list .template-row__link span,
+.file-list .template-row__link svg {
+  margin-right: 0;
+}
 
+.tab.selected {
+  border-bottom: none;
+  font-weight: 500;
+  color: #000;
+  background: transparent;
+}
 
- .error {padding: 0.75rem 1rem;
-    background: oldlace;
-    /* margin: 1rem; */
-    border: 1px solid orange;
-    /* border-bottom: 1px solid orange; */
-    color: #a06800;
-    margin: 0 15px 7px;
-    z-index: 2;}
+.error {
+  padding: var(--editor-error-padding);
+  margin: var(--editor-error-margin);
+  border: var(--editor-error-border);
+  border-radius: 0;
+  background: var(--editor-error-bg);
+  color: var(--editor-error-color);
+  z-index: 2;
+}
 
-  #save.button {
-        border-radius: var(--border-radius);
-        border: 1px solid var(--dark-border-color);
-    padding: 8px 16px;
-    text-decoration: none;
-    color: var(--success-text-color);
-    background-color: rgb(255, 255, 255);
-    flex-grow: 1;
-    font-size: 14px;
-    text-align: left;
-    cursor: pointer;
+#save.button {
+  display: inline-block;
+  padding: var(--editor-save-button-padding);
+  border: 1px solid var(--dark-border-color);
+  border-radius: var(--border-radius);
+  background-color: #fff;
+  color: var(--success-text-color);
+  font-size: var(--editor-save-button-font-size);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+  flex-grow: 1;
+}
 
-  }
+#save.button::before {
+  content: "";
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: var(--editor-save-button-icon-margin);
+  border-radius: 50%;
+  font-size: var(--editor-save-button-icon-size);
+  background: var(--success-text-color);
+}
 
-  #save.button:before {
-    content: "";
-    width: 1em;
-    height: 1em;
-    display: inline-block;
-    border-radius: 1em;
-    font-size: 8px;
-    background: var(--success-text-color);
-    margin-right:  12px
-  }
+#save.button.disabled::before {
+  background: #ddd;
+}
 
-  #save.button.disabled:before {background: #ddd;text-shadow: none;}
+#save.button.disabled {
+  background-color: var(--editor-save-disabled-bg);
+  border-color: var(--editor-save-disabled-bg);
+  color: var(--light-text-color);
+  font-weight: 500;
+}
 
-  #save.button.disabled {
-    background-color: #fafafa;
-    border-color: #fafafa;
-    color: var(--light-text-color);
-    font-weight: 500;
-  }
+.editor-container {
+  width: var(--editor-container-width);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
 
-
-  .CodeMirror-sizer {
-  }
-
-  .editor-container{
-    width:calc(100vw - 670px);border:1px solid var(--border-color);border-radius: var(--border-radius);
-  }
-
-  .editor-container .error {
-    margin:-1px 0 0 0;
-    border-left: none;
-    border-right: none;
-  }
+.editor-container .error {
+  margin: -1px 0 0 0;
+  border-left: none;
+  border-right: none;
+}

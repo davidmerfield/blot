@@ -1,3 +1,19 @@
+:root {
+  --font-picker-width: 280px;
+  --font-picker-height: 340px;
+  --font-picker-trigger-padding: 0.5rem 1em;
+  --font-option-font-size: 1.2em;
+  --font-option-line-height: 1.1;
+  --font-option-padding: 0.5rem 0.75rem;
+  --font-filter-border-radius: 10px;
+  --font-filter-font-size: 12px;
+  --font-input-width: 60px;
+  --font-input-margin: 0.5em;
+  --font-option-selected-bg: #e0e0e0;
+  --font-option-hover-bg: #fff;
+  --font-picker-bg: #fafafa;
+}
+
 /* Font picker control */
 .template-font-control {
   width: 100%;
@@ -6,7 +22,7 @@
 
 .font-picker-trigger {
   width: 100%;
-  padding: 0.5rem 16px;
+  padding: var(--font-picker-trigger-padding);
   cursor: pointer;
   position: relative;
   border: none;
@@ -18,28 +34,26 @@
   background-color: var(--background-color);
 }
 
-.font-picker-trigger::before {
-
-}
-
 .font-picker-trigger:hover {
   background-color: var(--light-background-color);
   outline: none;
 }
+
 .font-picker-trigger::after {
   content: "";
   width: 1em;
   height: 1em;
   position: absolute;
   top: 50%;
-  margin-top: -0.5em;
   right: 12px;
+  margin-top: -0.5em;
   opacity: 0.3;
   transform: rotate(90deg);
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='m11.28 3.22 4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L13.94 8l-3.72-3.72a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215Zm-6.56 0a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L2.06 8l3.72 3.72a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L.47 8.53a.75.75 0 0 1 0-1.06Z'/></svg>");
   background-size: 1em;
 }
-.font-picker-trigger:hover::after  {
+
+.font-picker-trigger:hover::after {
   opacity: 0.7;
 }
 
@@ -49,40 +63,46 @@
 }
 
 .template-font-control input[type="number"] {
-  margin-left: 8px;
+  margin-left: var(--font-input-margin);
   font-variant-numeric: tabular-nums;
   flex-grow: 0;
-  width: 60px;
+  width: var(--font-input-width);
 }
 
 .sizing {
-  border-bottom: 1px solid var(--light-border-color);
-  padding: 6px 16px;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  padding: 0.375em 1em;
+  border-bottom: 1px solid var(--light-border-color);
 }
 
-.sizing label {flex-grow: 1;}
+.sizing label {
+  flex-grow: 1;
+}
 
 .sizing:hover {
   background-color: var(--light-background-color);
 }
-.sizing:last-child {border-bottom: none;}
+
+.sizing:last-child {
+  border-bottom: none;
+}
+
 /* Shared picker */
 .template-font-picker {
   position: absolute;
   z-index: 1000;
-  background: #fafafa;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  user-select: none;
   display: flex;
-  margin-top:-7px;
+  flex-direction: column;
+  margin-top: -0.4375em;
+  margin-left: -1px;
+  border: 1px solid var(--border-color);
   border-radius: 0 0 var(--border-radius) var(--border-radius);
   overflow: hidden;
-  margin-left: -1px;
-  flex-direction: column;
+  background: var(--font-picker-bg);
+  box-shadow: 0 0.5em 1.5em rgba(0, 0, 0, 0.12);
+  user-select: none;
 }
 
 .template-font-picker[hidden] {
@@ -90,67 +110,63 @@
 }
 
 .template-font-picker__filters {
-  font-size: 12px;
-  padding: 0.3em 0.5em;
   display: flex;
-  border-bottom: 1px solid var(--border-color);
   flex-wrap: wrap;
+  padding: 0.3em 0.5em;
+  border-bottom: 1px solid var(--border-color);
+  font-size: var(--font-filter-font-size);
 }
 
 .template-font-picker__filter {
-  border-radius: 10px;
-  cursor: pointer;
-  color:var(--light-text-color);
   border: none;
+  border-radius: var(--font-filter-border-radius);
+  padding: 0.15em 0.5em;
+  cursor: pointer;
+  color: var(--light-text-color);
   background: transparent;
 }
 
 .template-font-picker__filter:hover {
   color: var(--accent-color);
-
 }
 
 .template-font-picker__filter.is-active {
-  background: var(--light-background-color);
   color: var(--accent-color);
+  background: var(--light-background-color);
 }
 
 .template-font-picker__options {
-  height: 340px;
-  width: 280px;
-  overflow-y: scroll;
+  width: var(--font-picker-width);
+  height: var(--font-picker-height);
   overflow-x: hidden;
-
+  overflow-y: scroll;
 }
 
-
-
 .template-font-picker__option {
-  width: 100%;
-  box-sizing: border-box;
-  text-align: left;
-  margin: 0;
   display: block;
+  width: 100%;
+  margin: 0;
+  padding: var(--font-option-padding);
   border: none;
-  outline: none;
-  font-size: 1.2em;
-  line-height: 1.1;
-  background: #fafafa;
   border-bottom: 1px solid var(--border-color);
-  padding: 0.5rem 0.75rem;
+  outline: none;
+  box-sizing: border-box;
+  font-size: var(--font-option-font-size);
+  line-height: var(--font-option-line-height);
+  background: var(--font-picker-bg);
   cursor: pointer;
 }
 
 .template-font-picker__option:hover {
-  background: #fff;
+  background: var(--font-option-hover-bg);
 }
 
 .template-font-picker__option.is-selected {
-  background: #e0e0e0;
+  background: var(--font-option-selected-bg);
 }
 
 .template-font-picker__option svg {
-  height: 1em;
-  font-size: 1.2em;
   display: block;
+  height: 1em;
+  font-size: var(--font-option-font-size);
 }
