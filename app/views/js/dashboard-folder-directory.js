@@ -390,23 +390,16 @@ function uploadDroppedFiles(collectedFiles) {
   if (!collectedFiles.length) return Promise.resolve();
   if (!uploadUrl) return Promise.reject(new Error('Missing upload URL'));
 
-  var normalizedEntries = collectedFiles.map(function (entry) {
-    return {
-      file: entry.file,
-      relativePath: applyCurrentFolderPrefix(entry.relativePath)
-    };
-  });
-
   return fetch(uploadUrl + '?dryRun=1', {
     method: 'POST',
-    body: buildUploadFormData(normalizedEntries, { dryRun: true })
+    body: buildUploadFormData(collectedFiles, { dryRun: true })
   })
     .then(function (response) {
       if (!response.ok) throw new Error('Upload dry-run failed');
       return response.json();
     })
     .then(function (preview) {
-      renderUploadPreview(normalizedEntries, preview);
+      renderUploadPreview(collectedFiles, preview);
       openUploadModal();
 
       return new Promise(function (resolve, reject) {
@@ -456,7 +449,7 @@ function uploadDroppedFiles(collectedFiles) {
           isSubmitting = true;
           setModalActionButtonsDisabled(true);
 
-          commitUpload(normalizedEntries).then(function () {
+          commitUpload(collectedFiles).then(function () {
             isSubmitting = false;
             setModalActionButtonsDisabled(false);
             finish(resolve);
