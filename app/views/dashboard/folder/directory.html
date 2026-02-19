@@ -82,14 +82,11 @@
         <div class="upload-preview-modal-backdrop" data-upload-modal-close></div>
         <div class="upload-preview-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="upload-preview-title">
           <h2 id="upload-preview-title">Review upload</h2>
-          <p class="upload-preview-summary"></p>
-
-          <h3 class="upload-preview-list-heading">Queued files (<span data-upload-count="queued">0</span>)</h3>
           <ul class="upload-preview-list" data-upload-list="queued"></ul>
 
           <div class="buttons upload-preview-actions">
-            <button type="button" data-upload-action="cancel">Cancel</button>
             <button type="button" data-upload-action="upload">Upload</button>
+            <button type="button" data-upload-action="cancel">Cancel</button>
           </div>
         </div>
       </div>
@@ -387,7 +384,7 @@
                 var mapped = mapFn(item, li);
                 if (typeof mapped === 'string') li.textContent = mapped;
               } else {
-                li.textContent = item;
+                li.innerHTML = `<span class="icon-file-check"></span> ${item}`;
               }
 
               list.appendChild(li);
@@ -412,7 +409,7 @@
               if (overwriteSet.has(entry.relativePath)) {
                 var marker = document.createElement('span');
                 marker.className = 'upload-preview-overwrite-marker';
-                marker.textContent = 'overwrite';
+                marker.textContent = 'Will overwrite existing file';
                 li.appendChild(document.createTextNode(' '));
                 li.appendChild(marker);
               }
@@ -425,8 +422,17 @@
             }
           }
 
+          function resetUploadModalButtonState() {
+            if (!uploadModal || typeof uploadModal.querySelectorAll !== 'function') return;
+            Array.from(uploadModal.querySelectorAll('[data-upload-action]')).forEach(function (actionButton) {
+              actionButton.disabled = false;
+              actionButton.classList.remove('working');
+            });
+          }
+
           function openUploadModal() {
             if (!uploadModal) return;
+            resetUploadModalButtonState();
             uploadModal.hidden = false;
             document.body.classList.add('upload-modal-open');
           }
@@ -435,6 +441,7 @@
             if (!uploadModal) return;
             uploadModal.hidden = true;
             document.body.classList.remove('upload-modal-open');
+            resetUploadModalButtonState();
           }
 
           function collectFailures(result) {
