@@ -432,7 +432,9 @@
 
           function openUploadModal() {
             if (!uploadModal) return;
-            resetUploadModalButtonState();
+            if (typeof resetUploadModalButtonState === 'function') {
+              resetUploadModalButtonState();
+            }
             uploadModal.hidden = false;
             document.body.classList.add('upload-modal-open');
           }
@@ -441,7 +443,9 @@
             if (!uploadModal) return;
             uploadModal.hidden = true;
             document.body.classList.remove('upload-modal-open');
-            resetUploadModalButtonState();
+            if (typeof resetUploadModalButtonState === 'function') {
+              resetUploadModalButtonState();
+            }
           }
 
           function collectFailures(result) {
