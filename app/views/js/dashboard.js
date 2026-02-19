@@ -1,7 +1,9 @@
 require('./localforage.js');
-require('./new-template-files.js');
+require('./cookie-redirect.js')();require('./new-template-files.js');
 require('./form-buttons.js');
 require('./focus-input.js');
+require('./dashboard-setup-title-focus.js');
+require('./dashboard-folder-directory.js');
 require('./determine-timezone.js');
 require('./redirects.js');
 require('./account-create-site-paypal.js');
@@ -18,3 +20,6 @@ require('./site-settings-autosubmit.js');
 require('./site-settings-links.js');
 require('./site-settings-images.js');
 require('./site-settings-redirects.js');
+require('./sign-up-payment-method-toggle.js');
+require('./sign-up-payment.js');
+
