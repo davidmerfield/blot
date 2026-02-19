@@ -489,6 +489,15 @@
 
                 return new Promise(function (resolve, reject) {
                   var finished = false;
+                  var isSubmitting = false;
+
+                  function setModalActionButtonsDisabled(disabled) {
+                    if (!uploadModal || typeof uploadModal.querySelectorAll !== 'function') return;
+
+                    Array.from(uploadModal.querySelectorAll('[data-upload-action]')).forEach(function (actionButton) {
+                      actionButton.disabled = disabled;
+                    });
+                  }
 
                   function cleanup() {
                     if (uploadModal) uploadModal.removeEventListener('click', onClick);
@@ -502,6 +511,8 @@
                   }
 
                   function onClick(event) {
+                    if (isSubmitting) return;
+
                     var close = event.target.closest('[data-upload-modal-close]');
                     if (close) {
                       closeUploadModal();
@@ -523,16 +534,19 @@
 
                     var overwritePaths = action === 'overwrite' ? ((preview && preview.overwrite) || []) : [];
                     var overwriteAll = action === 'overwrite';
-                    button.disabled = true;
+                    isSubmitting = true;
+                    setModalActionButtonsDisabled(true);
 
                     commitUpload(collectedFiles, {
                       overwriteAll: overwriteAll,
                       overwritePaths: overwritePaths
                     }).then(function () {
-                      button.disabled = false;
+                      isSubmitting = false;
+                      setModalActionButtonsDisabled(false);
                       finish(resolve);
                     }).catch(function (err) {
-                      button.disabled = false;
+                      isSubmitting = false;
+                      setModalActionButtonsDisabled(false);
                       finish(reject, err);
                     });
                   }
