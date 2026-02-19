@@ -199,7 +199,7 @@ function initializeSourceSidebarMenu() {
     container: list,
     menuElement: menu,
     rowSelector: ".template-row",
-    triggerSelector: ".template-row__menu-trigger",
+    triggerSelector: ".row-action-menu__trigger",
     initialFocusKey: "edit",
     linkMap: {
       edit: function (dataset) {

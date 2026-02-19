@@ -55,7 +55,7 @@
           {{/contents.length}}
       
           {{#contents}}
-          <tr class="directory-row" data-directory-row="true">
+          <tr class="directory-row row-action-menu-row" data-directory-row="true">
             <td>
               <div class="directory-row__name-cell">
                 <a href="{{{base}}}/folder{{{url}}}" class="directory-row__link {{#directory}}directory{{/directory}} {{#entry}}entry{{/entry}}">
@@ -74,7 +74,7 @@
                 <span class="truncate">{{name}}</span>
                 </a>
                 <button
-                  class="directory-row__menu-trigger"
+                  class="directory-row__menu-trigger row-action-menu__trigger"
                   type="button"
                   aria-haspopup="true"
                   aria-expanded="false"
@@ -93,7 +93,7 @@
           {{/contents}}
         </table>
 
-        <div id="folder-file-action-menu" class="template-action-menu folder-action-menu" aria-hidden="true">
+        <div id="folder-file-action-menu" class="template-action-menu row-action-menu" aria-hidden="true">
           <ul>
             <li><a data-menu-link="download" href="#">Download</a></li>
             <li><a data-menu-link="remove" href="#">Remove</a></li>
@@ -170,7 +170,7 @@
           sortTable();
 
           if (folderBox) {
-            Array.from(folderBox.querySelectorAll('.directory-row__menu-trigger')).forEach(function (trigger) {
+            Array.from(folderBox.querySelectorAll('.row-action-menu__trigger')).forEach(function (trigger) {
               var rowUrl = trigger.getAttribute('data-url') || '';
               trigger.setAttribute('data-encoded-url', encodeURIComponent(rowUrl));
             });
@@ -181,7 +181,7 @@
               container: folderBox,
               menuElement: folderFileActionMenu,
               rowSelector: '.directory-row',
-              triggerSelector: '.directory-row__menu-trigger',
+              triggerSelector: '.row-action-menu__trigger',
               linkMap: {
                 download: function (dataset) {
                   if (!dataset || !dataset.url) return null;
