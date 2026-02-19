@@ -2,6 +2,7 @@ const fs = require("fs-extra");
 const path = require("path");
 const clients = require("clients");
 const localPath = require("helper/localPath");
+const establishSyncLock = require("sync/establishSyncLock");
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 const toArray = (value) => {
@@ -278,68 +279,75 @@ module.exports = async (req, res, next) => {
 
     const client = req.blog.client && clients[req.blog.client];
     const results = [];
+    const { folder, done } = await establishSyncLock(req.blog.id);
 
-    for (const entry of existingChecks) {
-      const canOverwrite =
-        !entry.exists ||
-        overwriteConfig.overwriteAll ||
-        overwriteConfig.overwriteSet.has(entry.relativePath);
+    try {
+      for (const entry of existingChecks) {
+        const canOverwrite =
+          !entry.exists ||
+          overwriteConfig.overwriteAll ||
+          overwriteConfig.overwriteSet.has(entry.relativePath);
 
-      if (!canOverwrite) {
-        results.push({
-          path: entry.relativePath,
-          overwritten: false,
-          skipped: true,
-          reason: "overwrite_not_allowed",
-        });
-        continue;
+        if (!canOverwrite) {
+          results.push({
+            path: entry.relativePath,
+            overwritten: false,
+            skipped: true,
+            reason: "overwrite_not_allowed",
+          });
+          continue;
+        }
+
+        let contents;
+
+        try {
+          contents = await fs.readFile(entry.upload.file.path);
+          await fs.outputFile(entry.absolutePath, contents, { overwrite: true });
+        } catch (err) {
+          results.push({
+            path: entry.relativePath,
+            overwritten: entry.exists,
+            local: { success: false, error: err.message },
+            client: { skipped: true },
+          });
+          continue;
+        }
+
+        await folder.update(`/${entry.relativePath}`);
+
+        if (!client) {
+          results.push({
+            path: entry.relativePath,
+            overwritten: entry.exists,
+            local: { success: true },
+            client: { skipped: true },
+          });
+          continue;
+        }
+
+        try {
+          await writeClientFile(client, req.blog.id, entry.relativePath, contents);
+          results.push({
+            path: entry.relativePath,
+            overwritten: entry.exists,
+            local: { success: true },
+            client: { success: true, name: req.blog.client },
+          });
+        } catch (err) {
+          results.push({
+            path: entry.relativePath,
+            overwritten: entry.exists,
+            local: { success: true },
+            client: {
+              success: false,
+              name: req.blog.client,
+              error: err.message,
+            },
+          });
+        }
       }
-
-      let contents;
-
-      try {
-        contents = await fs.readFile(entry.upload.file.path);
-        await fs.outputFile(entry.absolutePath, contents, { overwrite: true });
-      } catch (err) {
-        results.push({
-          path: entry.relativePath,
-          overwritten: entry.exists,
-          local: { success: false, error: err.message },
-          client: { skipped: true },
-        });
-        continue;
-      }
-
-      if (!client) {
-        results.push({
-          path: entry.relativePath,
-          overwritten: entry.exists,
-          local: { success: true },
-          client: { skipped: true },
-        });
-        continue;
-      }
-
-      try {
-        await writeClientFile(client, req.blog.id, entry.relativePath, contents);
-        results.push({
-          path: entry.relativePath,
-          overwritten: entry.exists,
-          local: { success: true },
-          client: { success: true, name: req.blog.client },
-        });
-      } catch (err) {
-        results.push({
-          path: entry.relativePath,
-          overwritten: entry.exists,
-          local: { success: true },
-          client: {
-            success: false,
-            name: req.blog.client,
-            error: err.message,
-          },
-        });
-      }
+    } finally {
+      await done();
     }
 
     return res.json({

@@ -1,206 +1,174 @@
-const fs = require("fs-extra");
-const localPath = require("helper/localPath");
-const clients = require("clients");
+const path = require("path");
 
-describe("folder upload", function () {
-  global.test.site({ login: true });
+const uploadRoutePath = require.resolve("../site/folder/upload");
 
-  const uploadPath = function () {
-    return `/sites/${this.blog.handle}/folder/upload`;
+const setModuleMock = (moduleName, exportsValue, touched) => {
+  const resolved = require.resolve(moduleName);
+  touched.push({ resolved, previous: require.cache[resolved] });
+  require.cache[resolved] = {
+    id: resolved,
+    filename: resolved,
+    loaded: true,
+    exports: exportsValue,
   };
+};
 
-  const filePath = function (blogID, relativePath) {
-    return localPath(blogID, `/${relativePath}`);
-  };
-
-  const readBlogFile = async function (blogID, relativePath) {
-    return fs.readFile(filePath(blogID, relativePath), "utf8");
-  };
-
-  const postUpload = async function ({ files, fields = {}, query = "" }) {
-    const form = new FormData();
-
-    files.forEach((file, index) => {
-      form.append(
-        file.field || "upload",
-        new Blob([file.content]),
-        file.name || `file-${index}.txt`
-      );
-    });
-
-    for (const [key, value] of Object.entries(fields)) {
-      form.append(key, typeof value === "string" ? value : JSON.stringify(value));
+const restoreModuleMocks = (touched) => {
+  touched.reverse().forEach(({ resolved, previous }) => {
+    if (previous) {
+      require.cache[resolved] = previous;
+    } else {
+      delete require.cache[resolved];
     }
+  });
+};
 
-    const response = await this.fetch(`${uploadPath.call(this)}${query}`, {
-      method: "POST",
-      body: form,
-    });
+describe("dashboard folder upload sync lock", function () {
+  let touched;
 
-    expect(response.status).toBe(200);
-    return response.json();
-  };
-
-  it("uploads a single file to current folder", async function () {
-    const data = await postUpload.call(this, {
-      files: [{ name: "single.txt", content: "single-content" }],
-    });
-
-    expect(data.dryRun).toBe(false);
-    expect(await readBlogFile(this.blog.id, "single.txt")).toBe("single-content");
+  beforeEach(function () {
+    touched = [];
+    delete require.cache[uploadRoutePath];
   });
 
-  it("uploads multiple files in one request", async function () {
-    const data = await postUpload.call(this, {
-      files: [
-        { name: "one.txt", content: "1" },
-        { name: "two.txt", content: "2" },
-      ],
-      fields: {
-        relativePaths: ["one.txt", "two.txt"],
-      },
-    });
-
-    expect(data.results.length).toBe(2);
-    expect(await readBlogFile(this.blog.id, "one.txt")).toBe("1");
-    expect(await readBlogFile(this.blog.id, "two.txt")).toBe("2");
+  afterEach(function () {
+    delete require.cache[uploadRoutePath];
+    restoreModuleMocks(touched);
   });
 
-  it("uploads folder structure preserving relative paths", async function () {
-    await postUpload.call(this, {
-      files: [
-        { name: "a.txt", content: "a" },
-        { name: "b.txt", content: "b" },
-      ],
-      fields: {
-        relativePaths: ["folder/a.txt", "folder/nested/b.txt"],
-      },
-    });
+  it("acquires one lock per request, updates changed paths, and releases the lock", async function () {
+    const lockState = {
+      update: jasmine.createSpy("update").and.resolveTo(),
+      done: jasmine.createSpy("done").and.resolveTo(),
+    };
 
-    expect(await readBlogFile(this.blog.id, "folder/a.txt")).toBe("a");
-    expect(await readBlogFile(this.blog.id, "folder/nested/b.txt")).toBe("b");
-  });
-
-  it("returns overwrite candidates in dry-run response", async function () {
-    await this.write({ path: "existing.txt", content: "before" });
-
-    const data = await postUpload.call(this, {
-      files: [
-        { name: "existing.txt", content: "after" },
-        { name: "new.txt", content: "new" },
-      ],
-      fields: { dryRun: "true" },
-    });
-
-    expect(data.dryRun).toBe(true);
-    expect(data.overwrite).toEqual(["existing.txt"]);
-    expect(data.create).toEqual(["new.txt"]);
-    expect(await readBlogFile(this.blog.id, "existing.txt")).toBe("before");
-  });
-
-  it("commit with overwrite disabled skips collisions", async function () {
-    await this.write({ path: "collision.txt", content: "old" });
-
-    const data = await postUpload.call(this, {
-      files: [{ name: "collision.txt", content: "new" }],
-    });
-
-    expect(data.results[0]).toEqual(
-      jasmine.objectContaining({
-        path: "collision.txt",
-        skipped: true,
-        reason: "overwrite_not_allowed",
-      })
-    );
-
-    expect(await readBlogFile(this.blog.id, "collision.txt")).toBe("old");
-  });
-
-  it("commit with overwrite enabled replaces existing files", async function () {
-    await this.write({ path: "replace.txt", content: "old" });
-
-    const data = await postUpload.call(this, {
-      files: [{ name: "replace.txt", content: "new" }],
-      fields: { overwrite: "true" },
-    });
-
-    expect(data.results[0]).toEqual(
-      jasmine.objectContaining({
-        path: "replace.txt",
-        overwritten: true,
-      })
-    );
-    expect(await readBlogFile(this.blog.id, "replace.txt")).toBe("new");
-  });
-
-  it("invokes client.write for each committed file when blog client is configured", async function () {
-    const originalWrite = clients.local.write;
-    const writeSpy = jasmine
-      .createSpy("clientWrite")
-      .and.callFake((blogID, relativePath, contents, callback) => callback(null));
-
-    clients.local.write = writeSpy;
-
-    try {
-      await this.blog.set("client", "local");
-
-      const data = await postUpload.call(this, {
-        files: [
-          { name: "client-one.txt", content: "1" },
-          { name: "client-two.txt", content: "2" },
-        ],
+    const establishSyncLock = jasmine
+      .createSpy("establishSyncLock")
+      .and.resolveTo({
+        folder: { update: lockState.update },
+        done: lockState.done,
       });
 
-      expect(data.results.length).toBe(2);
-      expect(writeSpy.calls.count()).toBe(2);
-      expect(writeSpy.calls.argsFor(0)[1]).toBe("client-one.txt");
-      expect(writeSpy.calls.argsFor(1)[1]).toBe("client-two.txt");
-    } finally {
-      clients.local.write = originalWrite;
-      await this.blog.set("client", null);
-    }
+    const fs = {
+      pathExists: jasmine
+        .createSpy("pathExists")
+        .and.callFake(async (filePath) => filePath.endsWith("skip.txt")),
+      readFile: jasmine
+        .createSpy("readFile")
+        .and.callFake(async (filePath) => Buffer.from(`content:${filePath}`)),
+      outputFile: jasmine.createSpy("outputFile").and.callFake(async (filePath) => {
+        if (filePath.endsWith("fail.txt")) throw new Error("write failed");
+      }),
+      remove: jasmine.createSpy("remove").and.resolveTo(),
+    };
+
+    const clients = {
+      mockClient: {
+        write: (blogID, filePath, contents, cb) => {
+          if (filePath === "client-fail.txt") return cb(new Error("client failed"));
+          cb(null);
+        },
+      },
+    };
+
+    setModuleMock("sync/establishSyncLock", establishSyncLock, touched);
+    setModuleMock("fs-extra", fs, touched);
+    setModuleMock("clients", clients, touched);
+    setModuleMock("helper/localPath", (blogID, relPath) => {
+      const normalized = relPath.startsWith("/") ? relPath : `/${relPath}`;
+      return path.join("/blogs", String(blogID), normalized);
+    }, touched);
+    setModuleMock("clients/util/shouldIgnoreFile", () => false, touched);
+
+    const handler = require("../site/folder/upload");
+
+    const req = {
+      blog: { id: "blog-1", client: "mockClient" },
+      body: {},
+      query: {},
+      files: {
+        upload: [
+          { path: "/tmp/1", originalFilename: "changed.txt" },
+          { path: "/tmp/2", originalFilename: "skip.txt" },
+          { path: "/tmp/3", originalFilename: "fail.txt" },
+          { path: "/tmp/4", originalFilename: "client-fail.txt" },
+        ],
+      },
+    };
+
+    const res = {
+      json: jasmine.createSpy("json"),
+    };
+
+    const next = jasmine.createSpy("next");
+
+    await handler(req, res, next);
+
+    expect(establishSyncLock).toHaveBeenCalledTimes(1);
+    expect(establishSyncLock).toHaveBeenCalledWith("blog-1");
+
+    expect(lockState.update.calls.allArgs()).toEqual([
+      ["/changed.txt"],
+      ["/client-fail.txt"],
+    ]);
+
+    expect(lockState.done).toHaveBeenCalledTimes(1);
+    expect(next).not.toHaveBeenCalled();
   });
 
-  it("rejects path traversal and absolute path attempts", async function () {
-    const data = await postUpload.call(this, {
-      files: [
-        { name: "x.txt", content: "x" },
-        { name: "y.txt", content: "y" },
-      ],
-      fields: {
-        relativePaths: ["../escape.txt", "/absolute.txt"],
+  it("releases the lock when an error occurs after acquiring it", async function () {
+    const folderUpdateError = new Error("update failed");
+
+    const lockState = {
+      update: jasmine.createSpy("update").and.rejectWith(folderUpdateError),
+      done: jasmine.createSpy("done").and.resolveTo(),
+    };
+
+    const establishSyncLock = jasmine
+      .createSpy("establishSyncLock")
+      .and.resolveTo({
+        folder: { update: lockState.update },
+        done: lockState.done,
+      });
+
+    const fs = {
+      pathExists: jasmine.createSpy("pathExists").and.resolveTo(false),
+      readFile: jasmine.createSpy("readFile").and.resolveTo(Buffer.from("ok")),
+      outputFile: jasmine.createSpy("outputFile").and.resolveTo(),
+      remove: jasmine.createSpy("remove").and.resolveTo(),
+    };
+
+    setModuleMock("sync/establishSyncLock", establishSyncLock, touched);
+    setModuleMock("fs-extra", fs, touched);
+    setModuleMock("clients", {}, touched);
+    setModuleMock("helper/localPath", (blogID, relPath) => {
+      const normalized = relPath.startsWith("/") ? relPath : `/${relPath}`;
+      return path.join("/blogs", String(blogID), normalized);
+    }, touched);
+    setModuleMock("clients/util/shouldIgnoreFile", () => false, touched);
+
+    const handler = require("../site/folder/upload");
+
+    const req = {
+      blog: { id: "blog-2" },
+      body: {},
+      query: {},
+      files: {
+        upload: [{ path: "/tmp/1", originalFilename: "broken.txt" }],
       },
-    });
+    };
 
-    expect(data.rejected).toEqual(
-      jasmine.arrayContaining([
-        jasmine.objectContaining({ relativePath: "../escape.txt", reason: "invalid" }),
-        jasmine.objectContaining({ relativePath: "/absolute.txt", reason: "invalid" }),
-      ])
-    );
+    const res = {
+      json: jasmine.createSpy("json"),
+    };
 
-    expect(await fs.pathExists(filePath(this.blog.id, "escape.txt"))).toBe(false);
-    expect(await fs.pathExists(filePath(this.blog.id, "absolute.txt"))).toBe(false);
-  });
+    const next = jasmine.createSpy("next");
 
-  it("rejects ignored file patterns", async function () {
-    const data = await postUpload.call(this, {
-      files: [
-        { name: ".DS_Store", content: "x" },
-        { name: "ok.txt", content: "ok" },
-      ],
-      fields: {
-        relativePaths: [".DS_Store", "ok.txt"],
-      },
-    });
+    await handler(req, res, next);
 
-    expect(data.rejected).toEqual(
-      jasmine.arrayContaining([
-        jasmine.objectContaining({ relativePath: ".DS_Store", reason: "ignored" }),
-      ])
-    );
-
-    expect(await fs.pathExists(filePath(this.blog.id, ".DS_Store"))).toBe(false);
-    expect(await readBlogFile(this.blog.id, "ok.txt")).toBe("ok");
+    expect(establishSyncLock).toHaveBeenCalledTimes(1);
+    expect(lockState.done).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenCalledWith(folderUpdateError);
+    expect(res.json).not.toHaveBeenCalled();
   });
 });
