@@ -109,7 +109,6 @@ describe('folder directory upload modal listener lifecycle', function () {
     };
 
     let commitCount = 0;
-    let commitOptions;
 
     const context = {
       Promise,
@@ -128,9 +127,8 @@ describe('folder directory upload modal listener lifecycle', function () {
         uploadModal.hidden = true;
       },
       uploadModal,
-      commitUpload: (_, options) => {
+      commitUpload: () => {
         commitCount += 1;
-        commitOptions = options;
         // Simulate partial-failure UX where modal remains visible.
         uploadModal.hidden = false;
         return Promise.resolve();
@@ -151,10 +149,6 @@ describe('folder directory upload modal listener lifecycle', function () {
     await firstAttempt;
 
     expect(commitCount).toBe(1);
-    expect(commitOptions).toEqual({
-      overwriteAll: true,
-      overwritePaths: ['existing.txt'],
-    });
     expect(clickListeners.size).toBe(0);
 
     const secondAttempt = context.uploadDroppedFiles(collectedFiles);
@@ -196,7 +190,6 @@ describe('folder directory upload modal listener lifecycle', function () {
     };
 
     let commitCount = 0;
-    let commitOptions;
     let resolveCommit;
 
     const context = {
@@ -216,9 +209,8 @@ describe('folder directory upload modal listener lifecycle', function () {
         uploadModal.hidden = true;
       },
       uploadModal,
-      commitUpload: (_, options) => {
+      commitUpload: () => {
         commitCount += 1;
-        commitOptions = options;
         return new Promise((resolve) => {
           resolveCommit = resolve;
         });
@@ -248,10 +240,6 @@ describe('folder directory upload modal listener lifecycle', function () {
     Array.from(clickListeners).forEach((handler) => handler(createModalEvent('upload')));
 
     expect(commitCount).toBe(1);
-    expect(commitOptions).toEqual({
-      overwriteAll: true,
-      overwritePaths: ['existing.txt'],
-    });
     modalActionButtons.forEach((button) => {
       expect(button.disabled).toBe(true);
     });
@@ -263,8 +251,6 @@ describe('folder directory upload modal listener lifecycle', function () {
       expect(button.disabled).toBe(false);
     });
 
-    expect(commitOptions.overwriteAll).toBe(true);
-    expect(commitOptions.overwritePaths).toEqual(['existing.txt']);
   });
 });
 

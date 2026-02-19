@@ -341,8 +341,6 @@
           function buildUploadFormData(collectedFiles, options) {
             var formData = new FormData();
             var relativePaths = [];
-            var overwritePaths = (options && options.overwritePaths) || [];
-            var overwriteAll = !!(options && options.overwriteAll);
             var dryRun = !!(options && options.dryRun);
 
             collectedFiles.forEach(function (entry, index) {
@@ -357,8 +355,7 @@
             });
 
             formData.append('relativePaths', JSON.stringify(relativePaths));
-            formData.append('overwrite', overwriteAll ? 'true' : 'false');
-            formData.append('overwritePaths', JSON.stringify(overwritePaths));
+            formData.append('overwrite', 'true');
             formData.append('dryRun', dryRun ? 'true' : 'false');
             formData.append('_csrf', csrfToken);
 
@@ -451,14 +448,10 @@
             return failures;
           }
 
-          function commitUpload(collectedFiles, options) {
+          function commitUpload(collectedFiles) {
             return fetch('{{{base}}}/folder/upload', {
               method: 'POST',
-              body: buildUploadFormData(collectedFiles, {
-                dryRun: false,
-                overwriteAll: !!(options && options.overwriteAll),
-                overwritePaths: (options && options.overwritePaths) || []
-              })
+              body: buildUploadFormData(collectedFiles, { dryRun: false })
             })
               .then(function (response) {
                 if (!response.ok) throw new Error('Upload failed');
@@ -539,14 +532,10 @@
 
                     if (action !== 'upload') return;
 
-                    var overwritePaths = (preview && preview.overwrite) || [];
                     isSubmitting = true;
                     setModalActionButtonsDisabled(true);
 
-                    commitUpload(collectedFiles, {
-                      overwriteAll: true,
-                      overwritePaths: overwritePaths
-                    }).then(function () {
+                    commitUpload(collectedFiles).then(function () {
                       isSubmitting = false;
                       setModalActionButtonsDisabled(false);
                       finish(resolve);
