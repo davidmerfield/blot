@@ -1,4 +1,8 @@
 module.exports = function metadataCaseInsensitive (metadata) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return {};
+  }
+
   const view = {};
 
   Object.keys(metadata)
