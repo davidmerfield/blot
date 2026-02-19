@@ -97,18 +97,8 @@ module.exports = function (blog, text, callback) {
 
     const parsed = extractMetadata(text);
 
-    var metadata = "<!--";
-
-    for (var i in parsed.metadata)
-      metadata += "\n" + i + ": " + parsed.metadata[i];
-
-    if (metadata !== "<!--") {
-      metadata += "\n-->\n";
-      text = metadata + parsed.html;
-    }
-
-    debug("Final:", text);
-    callback(null, text);
+    debug("Final:", parsed.html);
+    callback(null, parsed.html, parsed.metadata);
   });
 
   debug("Pre-pandoc", text);
