@@ -50,7 +50,7 @@ describe("pluginHTML", function () {
         await this.blog.update({plugins})
 
         await this.template({ "entry.html": "{{{entry.html}}} {{> pluginHTML}}" });
-        await this.write({path: '/a.txt', content: 'Link: /foo\n\nHello, world!'});        
+        await this.write({path: '/a.txt', content: 'Link: /foo\nDisqus: mixed-case-disqus-id\n\nHello, world!'});        
         await this.write({path: '/Pages/about.txt', content: 'Link: /about\n\nHello, world!'});        
         await this.write({path: '/Drafts/test.txt', content: 'Hello, draft!'});
 
@@ -61,6 +61,13 @@ describe("pluginHTML", function () {
         }
 
         expect(await areThereComments('/foo')).toBe(true, 'comments should appear on posts');
+
+        const fooRes = await this.get('/foo');
+        const fooBody = await fooRes.text();
+
+        expect(fooRes.status).toEqual(200);
+        expect(fooBody).toContain("var disqus_identifier = 'mixed-case-disqus-id';");
+
         expect(await areThereComments('/about')).toBe(false, 'comments should not appear on pages');
         expect(await areThereComments('/draft/view/Drafts/test.txt')).toBe(false, 'comments should not appear on drafts');  
 
