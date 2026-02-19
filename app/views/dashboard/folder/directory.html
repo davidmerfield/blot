@@ -77,10 +77,63 @@
           </tr>
           {{/contents}}
         </table>
+
+      <div class="upload-preview-modal" hidden>
+        <div class="upload-preview-modal-backdrop" data-upload-modal-close></div>
+        <div class="upload-preview-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="upload-preview-title">
+          <h2 id="upload-preview-title">Review upload</h2>
+          <p class="upload-preview-summary"></p>
+
+          <details class="upload-preview-section" open>
+            <summary>Incoming files (<span data-upload-count="incoming">0</span>)</summary>
+            <ul class="upload-preview-list" data-upload-list="incoming"></ul>
+          </details>
+
+          <details class="upload-preview-section" data-upload-section="overwrite" open>
+            <summary>Will overwrite (<span data-upload-count="overwrite">0</span>)</summary>
+            <ul class="upload-preview-list" data-upload-list="overwrite"></ul>
+          </details>
+
+          <details class="upload-preview-section" data-upload-section="rejected" open>
+            <summary>Skipped/rejected (<span data-upload-count="rejected">0</span>)</summary>
+            <ul class="upload-preview-list" data-upload-list="rejected"></ul>
+          </details>
+
+          <details class="upload-preview-section" data-upload-section="failures" open hidden>
+            <summary>Upload failures (<span data-upload-count="failures">0</span>)</summary>
+            <ul class="upload-preview-list" data-upload-list="failures"></ul>
+          </details>
+
+          <div class="buttons upload-preview-actions">
+            <button type="button" data-upload-action="cancel">Cancel</button>
+            <button type="button" data-upload-action="safe">Upload safe files only</button>
+            <button type="button" data-upload-action="overwrite">Upload and overwrite</button>
+          </div>
+        </div>
+      </div>
         <script>
           const table = document.querySelector('.directory-list');
           const folderBox = document.querySelector('.folder-box.directory');
           const dropTarget = document.querySelector('.folder-drop-target');
+          const uploadModal = document.querySelector('.upload-preview-modal');
+          const uploadModalSummary = uploadModal && uploadModal.querySelector('.upload-preview-summary');
+          const uploadModalLists = {
+            incoming: uploadModal && uploadModal.querySelector('[data-upload-list="incoming"]'),
+            overwrite: uploadModal && uploadModal.querySelector('[data-upload-list="overwrite"]'),
+            rejected: uploadModal && uploadModal.querySelector('[data-upload-list="rejected"]'),
+            failures: uploadModal && uploadModal.querySelector('[data-upload-list="failures"]')
+          };
+          const uploadModalCounts = {
+            incoming: uploadModal && uploadModal.querySelector('[data-upload-count="incoming"]'),
+            overwrite: uploadModal && uploadModal.querySelector('[data-upload-count="overwrite"]'),
+            rejected: uploadModal && uploadModal.querySelector('[data-upload-count="rejected"]'),
+            failures: uploadModal && uploadModal.querySelector('[data-upload-count="failures"]')
+          };
+          const uploadModalSections = {
+            overwrite: uploadModal && uploadModal.querySelector('[data-upload-section="overwrite"]'),
+            rejected: uploadModal && uploadModal.querySelector('[data-upload-section="rejected"]'),
+            failures: uploadModal && uploadModal.querySelector('[data-upload-section="failures"]')
+          };
           const csrfToken = '{{csrftoken}}';
           
           const state = {
@@ -276,9 +329,12 @@
             });
           }
 
-          function buildUploadFormData(collectedFiles, dryRun) {
+          function buildUploadFormData(collectedFiles, options) {
             var formData = new FormData();
             var relativePaths = [];
+            var overwritePaths = (options && options.overwritePaths) || [];
+            var overwriteAll = !!(options && options.overwriteAll);
+            var dryRun = !!(options && options.dryRun);
 
             collectedFiles.forEach(function (entry, index) {
               var field = 'upload-' + index;
@@ -292,10 +348,128 @@
             });
 
             formData.append('relativePaths', JSON.stringify(relativePaths));
+            formData.append('overwrite', overwriteAll ? 'true' : 'false');
+            formData.append('overwritePaths', JSON.stringify(overwritePaths));
             formData.append('dryRun', dryRun ? 'true' : 'false');
             formData.append('_csrf', csrfToken);
 
             return formData;
+          }
+
+          function clearList(list) {
+            if (list) list.innerHTML = '';
+          }
+
+          function renderList(list, items, mapFn) {
+            clearList(list);
+            if (!list || !items || !items.length) return;
+
+            items.forEach(function (item) {
+              var li = document.createElement('li');
+              li.textContent = mapFn ? mapFn(item) : item;
+              list.appendChild(li);
+            });
+          }
+
+          function updateCount(key, count) {
+            if (uploadModalCounts[key]) {
+              uploadModalCounts[key].textContent = String(count || 0);
+            }
+          }
+
+          function setSectionVisibility(section, visible) {
+            if (section) section.hidden = !visible;
+          }
+
+          function renderUploadPreview(collectedFiles, preview) {
+            var incomingPaths = collectedFiles.map(function (entry) { return entry.relativePath; });
+            var overwritePaths = (preview && preview.overwrite) || [];
+            var rejected = (preview && preview.rejected) || [];
+
+            renderList(uploadModalLists.incoming, incomingPaths);
+            renderList(uploadModalLists.overwrite, overwritePaths);
+            renderList(uploadModalLists.rejected, rejected, function (entry) {
+              var label = entry.relativePath || entry.filename || '(unknown file)';
+              return entry.reason ? label + ' — ' + entry.reason : label;
+            });
+            clearList(uploadModalLists.failures);
+
+            updateCount('incoming', incomingPaths.length);
+            updateCount('overwrite', overwritePaths.length);
+            updateCount('rejected', rejected.length);
+            updateCount('failures', 0);
+
+            setSectionVisibility(uploadModalSections.overwrite, overwritePaths.length > 0);
+            setSectionVisibility(uploadModalSections.rejected, rejected.length > 0);
+            setSectionVisibility(uploadModalSections.failures, false);
+
+            if (uploadModalSummary) {
+              uploadModalSummary.textContent = 'Create ' + ((preview && preview.create) || []).length + ', overwrite ' + overwritePaths.length + ', skipped/rejected ' + rejected.length + '.';
+            }
+          }
+
+          function openUploadModal() {
+            if (!uploadModal) return;
+            uploadModal.hidden = false;
+            document.body.classList.add('upload-modal-open');
+          }
+
+          function closeUploadModal() {
+            if (!uploadModal) return;
+            uploadModal.hidden = true;
+            document.body.classList.remove('upload-modal-open');
+          }
+
+          function collectFailures(result) {
+            var failures = [];
+
+            ((result && result.results) || []).forEach(function (entry) {
+              if (entry.skipped) {
+                failures.push(entry.path + ' — skipped (overwrite disabled)');
+              } else if (entry.local && entry.local.success === false) {
+                failures.push(entry.path + ' — local write failed: ' + (entry.local.error || 'Unknown error'));
+              } else if (entry.client && entry.client.success === false) {
+                failures.push(entry.path + ' — remote sync failed: ' + (entry.client.error || 'Unknown error'));
+              }
+            });
+
+            ((result && result.rejected) || []).forEach(function (entry) {
+              var label = entry.relativePath || entry.filename || '(unknown file)';
+              failures.push(label + ' — rejected: ' + (entry.reason || 'unknown'));
+            });
+
+            return failures;
+          }
+
+          function commitUpload(collectedFiles, options) {
+            return fetch('{{{base}}}/folder/upload', {
+              method: 'POST',
+              body: buildUploadFormData(collectedFiles, {
+                dryRun: false,
+                overwriteAll: !!(options && options.overwriteAll),
+                overwritePaths: (options && options.overwritePaths) || []
+              })
+            })
+              .then(function (response) {
+                if (!response.ok) throw new Error('Upload failed');
+                return response.json();
+              })
+              .then(function (result) {
+                var failures = collectFailures(result);
+
+                if (failures.length) {
+                  renderList(uploadModalLists.failures, failures);
+                  updateCount('failures', failures.length);
+                  setSectionVisibility(uploadModalSections.failures, true);
+                  if (uploadModalSummary) {
+                    uploadModalSummary.textContent = 'Upload finished with ' + failures.length + ' issue(s).';
+                  }
+                } else {
+                  closeUploadModal();
+                }
+
+                refreshFolderContents();
+              });
           }
 
           function uploadDroppedFiles(collectedFiles) {
@@ -303,38 +477,66 @@
 
             return fetch('{{{base}}}/folder/upload?dryRun=1', {
               method: 'POST',
-              body: buildUploadFormData(collectedFiles, true)
+              body: buildUploadFormData(collectedFiles, { dryRun: true })
             })
               .then(function (response) {
                 if (!response.ok) throw new Error('Upload dry-run failed');
                 return response.json();
               })
               .then(function (preview) {
-                var createCount = (preview.create || []).length;
-                var overwriteCount = (preview.overwrite || []).length;
-                var rejectedCount = (preview.rejected || []).length;
-                var shouldCommit = window.confirm(
-                  'Upload ' + collectedFiles.length + ' file(s)?\\n' +
-                  'Create: ' + createCount + '\\n' +
-                  'Overwrite: ' + overwriteCount + '\\n' +
-                  'Rejected: ' + rejectedCount
-                );
+                renderUploadPreview(collectedFiles, preview);
+                openUploadModal();
 
-                if (!shouldCommit) return null;
+                return new Promise(function (resolve, reject) {
+                  function cleanup() {
+                    if (uploadModal) uploadModal.removeEventListener('click', onClick);
+                  }
 
-                return fetch('{{{base}}}/folder/upload', {
-                  method: 'POST',
-                  body: buildUploadFormData(collectedFiles, false)
+                  function onClick(event) {
+                    var close = event.target.closest('[data-upload-modal-close]');
+                    if (close) {
+                      cleanup();
+                      closeUploadModal();
+                      resolve();
+                      return;
+                    }
+
+                    var button = event.target.closest('[data-upload-action]');
+                    if (!button) return;
+
+                    var action = button.getAttribute('data-upload-action');
+                    if (action === 'cancel') {
+                      cleanup();
+                      closeUploadModal();
+                      resolve();
+                      return;
+                    }
+
+                    if (action !== 'safe' && action !== 'overwrite') return;
+
+                    var overwritePaths = action === 'overwrite' ? ((preview && preview.overwrite) || []) : [];
+                    var overwriteAll = action === 'overwrite';
+                    button.disabled = true;
+
+                    commitUpload(collectedFiles, {
+                      overwriteAll: overwriteAll,
+                      overwritePaths: overwritePaths
+                    }).then(function () {
+                      button.disabled = false;
+                      if (uploadModal && uploadModal.hidden) cleanup();
+                      resolve();
+                    }).catch(function (err) {
+                      button.disabled = false;
+                      reject(err);
+                    });
+                  }
+
+                  if (uploadModal) {
+                    uploadModal.addEventListener('click', onClick);
+                  } else {
+                    resolve();
+                  }
                 });
-              })
-              .then(function (response) {
-                if (!response) return;
-                if (!response.ok) throw new Error('Upload failed');
-                return response.json();
-              })
-              .then(function (result) {
-                if (!result) return;
-                refreshFolderContents();
               });
           }
 

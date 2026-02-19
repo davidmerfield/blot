@@ -97,6 +97,38 @@ const getMetadataLookups = (body = {}) => {
   return { byIndex, byField, byFieldIndex };
 };
 
+const parseBoolean = (value) => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value !== "string") return false;
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+};
+
+const getOverwriteSet = (body = {}) => {
+  const overwriteAll = parseBoolean(body.overwrite);
+  const payload =
+    body.overwritePaths ||
+    body.overwriteList ||
+    body.overwriteFiles ||
+    parseJSON(body.overwritePaths) ||
+    parseJSON(body.overwriteList) ||
+    parseJSON(body.overwriteFiles);
+
+  const overwriteSet = new Set();
+
+  if (Array.isArray(payload)) {
+    payload.forEach((item) => {
+      if (typeof item === "string" && item.trim()) {
+        overwriteSet.add(item.normalize("NFC").replace(/\\/g, "/").replace(/^\/+/, ""));
+      }
+    });
+  }
+
+  return { overwriteAll, overwriteSet };
+};
+
 const resolveRelativePath = (upload, globalIndex, lookups) => {
   const fromLookup =
     lookups.byFieldIndex.get(`${upload.field}:${upload.index}`) ||
@@ -144,6 +176,7 @@ const writeClientFile = (client, blogID, relativePath, contents) =>
 module.exports = async (req, res, next) => {
   const uploads = collectFiles(req.files);
   const lookups = getMetadataLookups(req.body || {});
+  const overwriteConfig = getOverwriteSet(req.body || {});
   const dryRun =
     req.body.dryRun === "1" ||
     req.body.dryRun === "true" ||
@@ -223,6 +256,21 @@ module.exports = async (req, res, next) => {
     const results = [];
 
     for (const entry of existingChecks) {
+      const canOverwrite =
+        !entry.exists ||
+        overwriteConfig.overwriteAll ||
+        overwriteConfig.overwriteSet.has(entry.relativePath);
+
+      if (!canOverwrite) {
+        results.push({
+          path: entry.relativePath,
+          overwritten: false,
+          skipped: true,
+          reason: "overwrite_not_allowed",
+        });
+        continue;
+      }
+
       let contents;
 
       try {
