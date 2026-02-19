@@ -11,6 +11,7 @@ const zscan = promisify(client.zscan).bind(client);
 const TIMEOUT = 8000;
 const MAX_RESULTS = 25;
 const CHUNK_SIZE = 200;
+const metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 
 function buildSearchText(entry) {
   return [
@@ -24,9 +25,11 @@ function buildSearchText(entry) {
 }
 
 function isSearchable(entry) {
+  const metadataByLowercaseKey = metadataCaseInsensitive(entry.metadata);
+
   if (entry.deleted || entry.draft) return false;
-  if (entry.page && (!entry.metadata.search || isFalsy(entry.metadata.search))) return false;
-  if (entry.metadata.search && isFalsy(entry.metadata.search)) return false;
+  if (entry.page && (!metadataByLowercaseKey.search || isFalsy(metadataByLowercaseKey.search))) return false;
+  if (metadataByLowercaseKey.search && isFalsy(metadataByLowercaseKey.search)) return false;
   return true;
 }
 

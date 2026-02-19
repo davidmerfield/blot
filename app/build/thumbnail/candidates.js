@@ -1,6 +1,8 @@
 const cheerio = require("cheerio");
 const URL = require("url");
 
+const metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
+
 const YOUTUBE_HOSTS = [
   "www.youtube.com",
   "youtube.com",
@@ -12,12 +14,13 @@ const YOUTUBE_HOSTS = [
 
 module.exports = function (metadata, html) {
   const candidates = [];
+  const metadataByLowercaseKey = metadataCaseInsensitive(metadata);
 
   // Would be nice to resolve this relative to
   // the location of the entry so we could
   // use a relative path in the thumbnail metadata
-  if (metadata.thumbnail) {
-    candidates.push(metadata.thumbnail);
+  if (metadataByLowercaseKey.thumbnail) {
+    candidates.push(metadataByLowercaseKey.thumbnail);
   }
 
   const $ = cheerio.load(html, { decodeEntities: false }, false);

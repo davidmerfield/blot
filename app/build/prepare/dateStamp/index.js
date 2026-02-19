@@ -7,15 +7,16 @@ const type = require("helper/type");
 const moment = require("moment");
 require("moment-timezone");
 
+const metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
+
 module.exports = function (blog, path, metadata) {
   const { id, dateFormat, timeZone } = blog;
   let dateStamp;
 
   debug("Blog:", id, "dateFormat:", dateFormat, "timeZone", timeZone, path);
 
-  const metadataDate = metadata.date !== undefined
-    ? metadata.date
-    : metadata[Object.keys(metadata).find(key => key.toLowerCase() === "date")];
+  const metadataByLowercaseKey = metadataCaseInsensitive(metadata);
+  const metadataDate = metadataByLowercaseKey.date;
 
   // If the user specified a date
   // field in the entry's metadata,

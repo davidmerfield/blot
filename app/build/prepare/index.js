@@ -10,6 +10,7 @@ var pathNormalizer = require("helper/pathNormalizer");
 var type = require("helper/type");
 
 var makeSlug = require("helper/makeSlug");
+var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 var ensure = require("helper/ensure");
 var Model = require("models/entry").model;
 
@@ -49,15 +50,7 @@ function Prepare (entry, options = {}) {
     .and(entry.draft, "boolean")
     .and(entry.metadata, "object");
 
-  const metadataKeys = Object.keys(entry.metadata);
-  const metadataByLowercaseKey = {};
-
-  metadataKeys.forEach(metaKey => {
-    const lowercaseKey = String(metaKey).toLowerCase();
-    if (!(lowercaseKey in metadataByLowercaseKey)) {
-      metadataByLowercaseKey[lowercaseKey] = entry.metadata[metaKey];
-    }
-  });
+  const metadataByLowercaseKey = metadataCaseInsensitive(entry.metadata);
 
   function metadataValue (key) {
     if (entry.metadata[key] !== undefined) return entry.metadata[key];
