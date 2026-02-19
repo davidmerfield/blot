@@ -49,6 +49,16 @@ async function middleware(req, res, next) {
 // unless the blog is currenltly in the process of syncing
 const folderCache = {};
 
+const invalidateCache = (blog) => {
+  const prefix = `${blog.id}_${blog.cacheID}_`;
+
+  for (const key of Object.keys(folderCache)) {
+    if (key.startsWith(prefix)) {
+      delete folderCache[key];
+    }
+  }
+};
+
 const loadFolder = async (blog, dir) => {
 
   const cacheKey = blog.id + '_' + blog.cacheID + '_' + dir;
@@ -104,5 +114,7 @@ const loadFolder = async (blog, dir) => {
   return folder;
 }
 
+
+middleware.invalidateCache = invalidateCache;
 
 module.exports = middleware;
