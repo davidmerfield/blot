@@ -488,16 +488,24 @@
                 openUploadModal();
 
                 return new Promise(function (resolve, reject) {
+                  var finished = false;
+
                   function cleanup() {
                     if (uploadModal) uploadModal.removeEventListener('click', onClick);
+                  }
+
+                  function finish(done, value) {
+                    if (finished) return;
+                    finished = true;
+                    cleanup();
+                    done(value);
                   }
 
                   function onClick(event) {
                     var close = event.target.closest('[data-upload-modal-close]');
                     if (close) {
-                      cleanup();
                       closeUploadModal();
-                      resolve();
+                      finish(resolve);
                       return;
                     }
 
@@ -506,9 +514,8 @@
 
                     var action = button.getAttribute('data-upload-action');
                     if (action === 'cancel') {
-                      cleanup();
                       closeUploadModal();
-                      resolve();
+                      finish(resolve);
                       return;
                     }
 
@@ -523,18 +530,17 @@
                       overwritePaths: overwritePaths
                     }).then(function () {
                       button.disabled = false;
-                      if (uploadModal && uploadModal.hidden) cleanup();
-                      resolve();
+                      finish(resolve);
                     }).catch(function (err) {
                       button.disabled = false;
-                      reject(err);
+                      finish(reject, err);
                     });
                   }
 
                   if (uploadModal) {
                     uploadModal.addEventListener('click', onClick);
                   } else {
-                    resolve();
+                    finish(resolve);
                   }
                 });
               });
