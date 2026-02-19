@@ -309,18 +309,52 @@ module.exports = async (req, res, next) => {
 
         try {
           contents = await fs.readFile(entry.upload.file.path);
-          await fs.outputFile(entry.absolutePath, contents, { overwrite: true });
+          if (client) {
+            await writeClientFile(client, req.blog.id, entry.relativePath, contents);
+          } else {
+            await fs.outputFile(entry.absolutePath, contents, { overwrite: true });
+          }
+        } catch (err) {
+          const errorResult = {
+            path: entry.relativePath,
+            overwritten: entry.exists,
+          };
+
+          if (client) {
+            errorResult.local = { skipped: true, reason: "client_write" };
+            errorResult.client = {
+              success: false,
+              name: req.blog.client,
+              error: err.message,
+            };
+          } else {
+            errorResult.local = { success: false, error: err.message };
+            errorResult.client = { skipped: true };
+          }
+
+          results.push(errorResult);
+          continue;
+        }
+
+        try {
+          await folder.update(`/${entry.relativePath}`);
         } catch (err) {
           results.push({
             path: entry.relativePath,
             overwritten: entry.exists,
-            local: { success: false, error: err.message },
-            client: { skipped: true },
+            local: client
+              ? { skipped: true, reason: "client_write" }
+              : { success: false, error: err.message },
+            client: client
+              ? {
+                  success: false,
+                  name: req.blog.client,
+                  error: err.message,
+                }
+              : { skipped: true },
           });
           continue;
         }
-
-        await folder.update(`/${entry.relativePath}`);
 
         if (!client) {
           results.push({
@@ -332,26 +366,12 @@ module.exports = async (req, res, next) => {
           continue;
         }
 
-        try {
-          await writeClientFile(client, req.blog.id, entry.relativePath, contents);
-          results.push({
-            path: entry.relativePath,
-            overwritten: entry.exists,
-            local: { success: true },
-            client: { success: true, name: req.blog.client },
-          });
-        } catch (err) {
-          results.push({
-            path: entry.relativePath,
-            overwritten: entry.exists,
-            local: { success: true },
-            client: {
-              success: false,
-              name: req.blog.client,
-              error: err.message,
-            },
-          });
-        }
+        results.push({
+          path: entry.relativePath,
+          overwritten: entry.exists,
+          local: { skipped: true, reason: "client_write" },
+          client: { success: true, name: req.blog.client },
+        });
       }
     } finally {
       await done();
