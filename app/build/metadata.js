@@ -39,10 +39,8 @@ function Metadata (html) {
         mixedCaseMetadata = {};
       }
 
-      // Map { Permalink } to both { Permalink, permalink }
-      // to preserve original keys while keeping lowercase aliases.
+      // Preserve original metadata keys as parsed.
       Object.keys(mixedCaseMetadata).forEach(mixedCaseKey => {
-        let key = mixedCaseKey.toLowerCase();
         let value = mixedCaseMetadata[mixedCaseKey];
 
         // map 'null' values to empty strings
@@ -51,7 +49,6 @@ function Metadata (html) {
         if (value === null) value = "";
 
         metadata[mixedCaseKey] = value;
-        metadata[key] = value;
       });
 
       // Remove the metadata from the returned HTML
@@ -115,7 +112,7 @@ function Metadata (html) {
       break;
     }
 
-    // Preserve original key and create lowercase alias
+    // Preserve original metadata key casing
     let originalKey = line.slice(0, firstColon).trim();
     key = originalKey.toLowerCase();
 
@@ -141,7 +138,6 @@ function Metadata (html) {
     }
 
     metadata[originalKey] = value;
-    metadata[key] = value;
     debug("Line", i, "will be removed");
     linesToRemove.push(i);
   }

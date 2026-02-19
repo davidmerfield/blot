@@ -13,12 +13,16 @@ module.exports = function (blog, path, metadata) {
 
   debug("Blog:", id, "dateFormat:", dateFormat, "timeZone", timeZone, path);
 
+  const metadataDate = metadata.date !== undefined
+    ? metadata.date
+    : metadata[Object.keys(metadata).find(key => key.toLowerCase() === "date")];
+
   // If the user specified a date
   // field in the entry's metadata,
   // try and parse a timestamp from it.
-  if (metadata.date) {
+  if (metadataDate) {
     // Since there is the possibilty of using YAML, the date might not be a string
-    let dateMetadataString = String(metadata.date);
+    let dateMetadataString = String(metadataDate);
     let parsedFromMetadata = fromMetadata(dateMetadataString, dateFormat, timeZone);
     dateStamp = validate(parsedFromMetadata.created);
     if (dateStamp && parsedFromMetadata.adjusted) {

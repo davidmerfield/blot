@@ -47,7 +47,7 @@ function dependencies (path, html, metadata) {
 
     // Try and resolve the thumbnail path
     // Likewise if it's e.g. ./image.png
-    if (attribute === "thumbnail" || value.indexOf("./") === 0) {
+    if (attribute.toLowerCase() === "thumbnail" || value.indexOf("./") === 0) {
       dependencies.push(resolved_value);
       metadata[attribute] = resolved_value;
       debug(path, attribute, resolved_value, "was added to dependencies");
