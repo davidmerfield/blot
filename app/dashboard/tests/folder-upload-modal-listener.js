@@ -307,7 +307,7 @@ this.closeUploadModal = closeUploadModal;`,
 });
 
 describe('folder directory global drop and folder highlight behavior', function () {
-  it('uploads from window-level drops outside folder area and does not duplicate uploads for folder drops', async function () {
+  it('uses helper-driven drop handling: window drops upload and folder drops only clear highlight', async function () {
     const templatePath = path.join(
       __dirname,
       '../../views/dashboard/folder/directory.html'
@@ -316,6 +316,22 @@ describe('folder directory global drop and folder highlight behavior', function 
     const hasFileDragPayloadSource = extractNamedFunction(
       templateSource,
       'hasFileDragPayload'
+    );
+    const isFileDropEventSource = extractNamedFunction(
+      templateSource,
+      'isFileDropEvent'
+    );
+    const showDropTargetSource = extractNamedFunction(
+      templateSource,
+      'showDropTarget'
+    );
+    const hideDropTargetSource = extractNamedFunction(
+      templateSource,
+      'hideDropTarget'
+    );
+    const resetDropStateSource = extractNamedFunction(
+      templateSource,
+      'resetDropState'
     );
     const windowDropHandlerSource = extractEventListenerHandler(
       templateSource,
@@ -350,7 +366,10 @@ describe('folder directory global drop and folder highlight behavior', function 
 
     vm.runInNewContext(
       `${hasFileDragPayloadSource}
-this.hasFileDragPayload = hasFileDragPayload;
+${isFileDropEventSource}
+${showDropTargetSource}
+${hideDropTargetSource}
+${resetDropStateSource}
 this.windowDropHandler = ${windowDropHandlerSource};
 this.folderDropHandler = ${folderDropHandlerSource};`,
       context
@@ -377,6 +396,11 @@ this.folderDropHandler = ${folderDropHandlerSource};`,
     expect(outsideFolderDrop.prevented).toBe(true);
     expect(calls.collect).toBe(1);
     expect(calls.upload).toBe(1);
+    expect(context.dragDepth).toBe(0);
+    expect(context.dropTarget.style.display).toBe('none');
+
+    context.dragDepth = 3;
+    context.dropTarget.style.display = 'flex';
 
     const folderDrop = createEvent({
       items: [{ kind: 'file' }],
@@ -392,7 +416,7 @@ this.folderDropHandler = ${folderDropHandlerSource};`,
     expect(calls.upload).toBe(1);
   });
 
-  it('keeps folder highlight and upload trigger file-specific', async function () {
+  it('keeps helper behavior file-specific for highlight and upload triggers', async function () {
     const templatePath = path.join(
       __dirname,
       '../../views/dashboard/folder/directory.html'
@@ -401,6 +425,22 @@ this.folderDropHandler = ${folderDropHandlerSource};`,
     const hasFileDragPayloadSource = extractNamedFunction(
       templateSource,
       'hasFileDragPayload'
+    );
+    const isFileDropEventSource = extractNamedFunction(
+      templateSource,
+      'isFileDropEvent'
+    );
+    const showDropTargetSource = extractNamedFunction(
+      templateSource,
+      'showDropTarget'
+    );
+    const hideDropTargetSource = extractNamedFunction(
+      templateSource,
+      'hideDropTarget'
+    );
+    const resetDropStateSource = extractNamedFunction(
+      templateSource,
+      'resetDropState'
     );
     const folderDragEnterHandlerSource = extractEventListenerHandler(
       templateSource,
@@ -424,6 +464,10 @@ this.folderDropHandler = ${folderDropHandlerSource};`,
 
     vm.runInNewContext(
       `${hasFileDragPayloadSource}
+${isFileDropEventSource}
+${showDropTargetSource}
+${hideDropTargetSource}
+${resetDropStateSource}
 this.folderDragEnterHandler = ${folderDragEnterHandlerSource};
 this.windowDropHandler = ${windowDropHandlerSource};`,
       context
