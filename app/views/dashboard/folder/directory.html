@@ -79,6 +79,7 @@
                   aria-haspopup="true"
                   aria-expanded="false"
                   data-url="{{{url}}}"
+                  data-name="{{name}}"
                   data-directory="{{#directory}}true{{/directory}}{{^directory}}false{{/directory}}"
                   data-entry="{{#entry}}true{{/entry}}{{^entry}}false{{/entry}}"
                 >
@@ -134,6 +135,7 @@
             queued: uploadModal && uploadModal.querySelector('[data-upload-list="queued"]')
           };
           var removeTargetPath = null;
+          var removeTargetFile = null;
           const csrfToken = '{{csrftoken}}';
           const currentFolderPrefix = normalizeCurrentFolderPrefix(window.location.pathname);
           
@@ -186,17 +188,36 @@
                   return '{{{base}}}/folder-download' + dataset.url;
                 },
                 remove: function (dataset) {
+                  var removeLink = folderFileActionMenu && folderFileActionMenu.querySelector('[data-menu-link="remove"]');
+                  if (removeLink) {
+                    removeLink.dataset.url = (dataset && dataset.url) || '';
+                    removeLink.dataset.name = (dataset && dataset.name) || '';
+                    removeLink.dataset.entry = (dataset && dataset.entry) || 'false';
+                  }
+
                   if (!dataset || dataset.directory === 'true' || !dataset.url) {
                     return null;
                   }
 
                   return {
-                    href: 'action:remove-file:' + encodeURIComponent(dataset.url.replace(/^\/+/, '')),
+                    href: 'action:remove-file:' + encodePathSegments(dataset.url.replace(/^\/+/, '')),
                     disabled: dataset.entry === 'true'
                   };
                 }
               }
             });
+          }
+
+          function encodePathSegments(path) {
+            return String(path || '')
+              .split('/')
+              .filter(function (segment) {
+                return segment !== '';
+              })
+              .map(function (segment) {
+                return encodeURIComponent(segment);
+              })
+              .join('/');
           }
 
           function resetRemoveModalButtonState() {
@@ -213,12 +234,13 @@
             });
           }
 
-          function openRemoveModal(targetPath) {
-            if (!removeModal || !targetPath) return;
-            removeTargetPath = targetPath;
+          function openRemoveModal(targetFile) {
+            if (!removeModal || !targetFile || !targetFile.path) return;
+            removeTargetFile = targetFile;
+            removeTargetPath = targetFile.path;
             var label = removeModal.querySelector('[data-remove-path-label]');
             if (label) {
-              label.textContent = targetPath;
+              label.textContent = targetFile.name || targetFile.path;
             }
             resetRemoveModalButtonState();
             removeModal.hidden = false;
@@ -228,30 +250,46 @@
             if (!removeModal) return;
             removeModal.hidden = true;
             removeTargetPath = null;
+            removeTargetFile = null;
             resetRemoveModalButtonState();
           }
 
-          function commitRemove(targetPath) {
-            return fetch('{{{base}}}/folder/remove/' + encodeURIComponent(targetPath), {
+          function removeFile(relativeUrl) {
+            var encodedPath = encodePathSegments(relativeUrl);
+
+            return fetch('{{{base}}}/folder/remove/' + encodedPath, {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                _csrf: csrfToken,
-                path: targetPath
-              })
-            }).then(function (response) {
-              if (!response.ok) throw new Error('Remove failed');
-              return response.json();
-            }).then(function (result) {
-              if (!result || result.ok !== true) {
-                throw new Error('Remove failed');
+                'x-csrf-token': csrfToken
               }
+            }).then(function (response) {
+              return response.json().catch(function () {
+                return null;
+              }).then(function (result) {
+                if (!response.ok) {
+                  throw new Error((result && (result.error || result.message)) || 'Remove failed');
+                }
 
-              closeRemoveModal();
-              refreshFolderContents();
+                if (!result || result.ok !== true) {
+                  throw new Error((result && (result.error || result.message)) || 'Remove failed');
+                }
+
+                closeRemoveModal();
+                refreshFolderContents();
+              });
             });
+          }
+
+          function decodePathSegments(path) {
+            return String(path || '')
+              .split('/')
+              .filter(function (segment) {
+                return segment !== '';
+              })
+              .map(function (segment) {
+                return decodeURIComponent(segment);
+              })
+              .join('/');
           }
 
           function resolveMenuRemovePath(link) {
@@ -264,7 +302,7 @@
             if (!encodedPath) return null;
 
             try {
-              return decodeURIComponent(encodedPath);
+              return decodePathSegments(encodedPath);
             } catch (err) {
               return null;
             }
@@ -278,7 +316,15 @@
             if (!targetPath) return;
 
             event.preventDefault();
-            openRemoveModal(targetPath);
+            if (link.classList.contains('is-disabled') || link.dataset.entry === 'true') {
+              return;
+            }
+
+            removeTargetFile = {
+              path: targetPath,
+              name: (link.dataset && link.dataset.name) || targetPath.split('/').pop() || targetPath
+            };
+            openRemoveModal(removeTargetFile);
           }
 
           function handleRemoveModalClick(event) {
@@ -299,9 +345,9 @@
 
             if (action !== 'remove' || !removeTargetPath) return;
 
-            var pendingPath = removeTargetPath;
+            var pendingPath = (removeTargetFile && removeTargetFile.path) || removeTargetPath;
             setRemoveModalButtonsDisabled(true);
-            commitRemove(pendingPath).catch(function () {
+            removeFile(pendingPath).catch(function () {
               setRemoveModalButtonsDisabled(false);
             });
           }
