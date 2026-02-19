@@ -111,15 +111,29 @@
           </div>
         </div>
       </div>
+
+      <div class="remove-entry-modal" hidden>
+        <div class="remove-entry-modal-backdrop" data-remove-modal-close></div>
+        <div class="remove-entry-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="remove-entry-title">
+          <h2 id="remove-entry-title">Remove item</h2>
+          <p data-remove-path-label></p>
+          <div class="buttons">
+            <button type="button" data-remove-action="remove">Remove</button>
+            <button type="button" data-remove-action="cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
         <script>
           const table = document.querySelector('.directory-list');
           const folderBox = document.querySelector('.folder-box.directory');
           const folderFileActionMenu = document.getElementById('folder-file-action-menu');
           const dropTarget = document.querySelector('.folder-drop-target');
           const uploadModal = document.querySelector('.upload-preview-modal');
+          const removeModal = document.querySelector('.remove-entry-modal');
           const uploadModalLists = {
             queued: uploadModal && uploadModal.querySelector('[data-upload-list="queued"]')
           };
+          var removeTargetPath = null;
           const csrfToken = '{{csrftoken}}';
           const currentFolderPrefix = normalizeCurrentFolderPrefix(window.location.pathname);
           
@@ -172,12 +186,12 @@
                   return '{{{base}}}/folder-download' + dataset.url;
                 },
                 remove: function (dataset) {
-                  if (!dataset || dataset.directory === 'true') {
+                  if (!dataset || dataset.directory === 'true' || !dataset.url) {
                     return null;
                   }
 
                   return {
-                    href: 'action:remove-file',
+                    href: 'action:remove-file:' + encodeURIComponent(dataset.url.replace(/^\/+/, '')),
                     disabled: dataset.entry === 'true'
                   };
                 }
@@ -185,13 +199,119 @@
             });
           }
 
-          if (folderFileActionMenu) {
-            folderFileActionMenu.addEventListener('click', function (event) {
-              var link = event.target.closest('[data-menu-link="remove"]');
-              if (!link) return;
-              if ((link.getAttribute('href') || '').indexOf('action:') !== 0) return;
-              event.preventDefault();
+          function resetRemoveModalButtonState() {
+            if (!removeModal || typeof removeModal.querySelectorAll !== 'function') return;
+            Array.from(removeModal.querySelectorAll('[data-remove-action]')).forEach(function (button) {
+              button.disabled = false;
             });
+          }
+
+          function setRemoveModalButtonsDisabled(disabled) {
+            if (!removeModal || typeof removeModal.querySelectorAll !== 'function') return;
+            Array.from(removeModal.querySelectorAll('[data-remove-action]')).forEach(function (button) {
+              button.disabled = disabled;
+            });
+          }
+
+          function openRemoveModal(targetPath) {
+            if (!removeModal || !targetPath) return;
+            removeTargetPath = targetPath;
+            var label = removeModal.querySelector('[data-remove-path-label]');
+            if (label) {
+              label.textContent = targetPath;
+            }
+            resetRemoveModalButtonState();
+            removeModal.hidden = false;
+          }
+
+          function closeRemoveModal() {
+            if (!removeModal) return;
+            removeModal.hidden = true;
+            removeTargetPath = null;
+            resetRemoveModalButtonState();
+          }
+
+          function commitRemove(targetPath) {
+            return fetch('{{{base}}}/folder/remove/' + encodeURIComponent(targetPath), {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                _csrf: csrfToken,
+                path: targetPath
+              })
+            }).then(function (response) {
+              if (!response.ok) throw new Error('Remove failed');
+              return response.json();
+            }).then(function (result) {
+              if (!result || result.ok !== true) {
+                throw new Error('Remove failed');
+              }
+
+              closeRemoveModal();
+              refreshFolderContents();
+            });
+          }
+
+          function resolveMenuRemovePath(link) {
+            if (!link) return null;
+            var href = (link.getAttribute('href') || '').trim();
+            var prefix = 'action:remove-file:';
+            if (href.indexOf(prefix) !== 0) return null;
+
+            var encodedPath = href.slice(prefix.length);
+            if (!encodedPath) return null;
+
+            try {
+              return decodeURIComponent(encodedPath);
+            } catch (err) {
+              return null;
+            }
+          }
+
+          function handleRemoveMenuClick(event) {
+            var link = event.target.closest('[data-menu-link="remove"]');
+            if (!link) return;
+
+            var targetPath = resolveMenuRemovePath(link);
+            if (!targetPath) return;
+
+            event.preventDefault();
+            openRemoveModal(targetPath);
+          }
+
+          function handleRemoveModalClick(event) {
+            var close = event.target.closest('[data-remove-modal-close]');
+            if (close) {
+              closeRemoveModal();
+              return;
+            }
+
+            var button = event.target.closest('[data-remove-action]');
+            if (!button || button.disabled) return;
+
+            var action = button.getAttribute('data-remove-action');
+            if (action === 'cancel') {
+              closeRemoveModal();
+              return;
+            }
+
+            if (action !== 'remove' || !removeTargetPath) return;
+
+            var pendingPath = removeTargetPath;
+            setRemoveModalButtonsDisabled(true);
+            commitRemove(pendingPath).catch(function () {
+              setRemoveModalButtonsDisabled(false);
+            });
+          }
+
+          if (folderFileActionMenu) {
+            folderFileActionMenu.addEventListener('click', handleRemoveMenuClick);
+          }
+
+          if (removeModal) {
+            removeModal.addEventListener('click', handleRemoveModalClick);
           }
           
            
