@@ -158,6 +158,19 @@ describe("dependencies", function () {
     },
   });
 
+
+  // Should resolve thumbnail metadata with mixed-case key
+  should_get_dependencies({
+    html: "Hello",
+    path: "/foo/post.txt",
+    metadata: { ThUmBnAiL: "image.jpg" },
+    result: {
+      html: "Hello",
+      metadata: { ThUmBnAiL: "/foo/image.jpg" },
+      dependencies: ["/foo/image.jpg"],
+    },
+  });
+
   // Should ignore thumbnail metadata which is a URL
   should_get_dependencies({
     html: "x",

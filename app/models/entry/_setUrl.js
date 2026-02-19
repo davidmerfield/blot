@@ -4,6 +4,7 @@ var _ = require("lodash");
 var urlNormalizer = require("helper/urlNormalizer");
 var UID = require("helper/makeUid");
 var makeSlug = require("helper/makeSlug");
+var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 var withoutExtension = require("helper/withoutExtension");
 var redis = require("models/client");
 var Permalink = require("build/prepare/permalink");
@@ -51,15 +52,16 @@ var UID_PERMUTATIONS = 500;
 
 function Candidates(blog, entry) {
   var candidates = [];
+  var metadataByLowercaseKey = metadataCaseInsensitive(entry.metadata);
 
   var format = blog.permalink.isCustom ? blog.permalink.custom : blog.permalink.format;
   
   // Don't use the permalink format for pages
   // or posts with user specified permalinks.
   if (
-    !entry.metadata.permalink &&
-    !entry.metadata.link &&
-    !entry.metadata.url &&
+    !metadataByLowercaseKey.permalink &&
+    !metadataByLowercaseKey.link &&
+    !metadataByLowercaseKey.url &&
     !entry.page
   ) {
     entry.permalink = Permalink(blog.timeZone, format, entry);

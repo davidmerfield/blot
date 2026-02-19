@@ -58,6 +58,26 @@ describe("prepare", function () {
     expect(entry.body).toEqual(entry.html);
   });
 
+
+  it("uses mixed-case metadata keys for page, menu and permalink", function () {
+    var entry = this.entry;
+
+    entry.path = "/post.txt";
+    entry.html = "<p>Hello there</p>";
+    entry.draft = false;
+    entry.metadata = {
+      Page: "yes",
+      MENU: "no",
+      Permalink: "/mixed-case"
+    };
+
+    prepare(entry);
+
+    expect(entry.page).toEqual(true);
+    expect(entry.menu).toEqual(false);
+    expect(entry.permalink).toEqual("/mixed-case");
+  });
+
   it("generates an empty title when given an empty file", function () {
     var entry = this.entry;
 
