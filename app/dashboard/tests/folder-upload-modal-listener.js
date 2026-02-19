@@ -80,6 +80,7 @@ describe('folder directory upload modal listener lifecycle', function () {
     };
 
     let commitCount = 0;
+    let commitOptions;
 
     const context = {
       Promise,
@@ -97,8 +98,9 @@ describe('folder directory upload modal listener lifecycle', function () {
         uploadModal.hidden = true;
       },
       uploadModal,
-      commitUpload: () => {
+      commitUpload: (_, options) => {
         commitCount += 1;
+        commitOptions = options;
         // Simulate partial-failure UX where modal remains visible.
         uploadModal.hidden = false;
         return Promise.resolve();
@@ -115,15 +117,19 @@ describe('folder directory upload modal listener lifecycle', function () {
 
     const firstAttempt = context.uploadDroppedFiles(collectedFiles);
     await flush();
-    clickListeners.forEach((handler) => handler(createModalEvent('safe')));
+    clickListeners.forEach((handler) => handler(createModalEvent('upload')));
     await firstAttempt;
 
     expect(commitCount).toBe(1);
+    expect(commitOptions).toEqual({
+      overwriteAll: true,
+      overwritePaths: ['existing.txt'],
+    });
     expect(clickListeners.size).toBe(0);
 
     const secondAttempt = context.uploadDroppedFiles(collectedFiles);
     await flush();
-    clickListeners.forEach((handler) => handler(createModalEvent('safe')));
+    clickListeners.forEach((handler) => handler(createModalEvent('upload')));
     await secondAttempt;
 
     expect(commitCount).toBe(2);
@@ -144,7 +150,7 @@ describe('folder directory upload modal listener lifecycle', function () {
     );
 
     const clickListeners = new Set();
-    const modalActionButtons = createModalActionButtons(['cancel', 'safe', 'overwrite']);
+    const modalActionButtons = createModalActionButtons(['cancel', 'upload']);
     const uploadModal = {
       hidden: false,
       querySelectorAll: (selector) => {
@@ -160,6 +166,7 @@ describe('folder directory upload modal listener lifecycle', function () {
     };
 
     let commitCount = 0;
+    let commitOptions;
     let resolveCommit;
 
     const context = {
@@ -178,8 +185,9 @@ describe('folder directory upload modal listener lifecycle', function () {
         uploadModal.hidden = true;
       },
       uploadModal,
-      commitUpload: () => {
+      commitUpload: (_, options) => {
         commitCount += 1;
+        commitOptions = options;
         return new Promise((resolve) => {
           resolveCommit = resolve;
         });
@@ -193,21 +201,32 @@ describe('folder directory upload modal listener lifecycle', function () {
     );
 
     const collectedFiles = [{ file: { name: 'example.txt' }, relativePath: 'example.txt' }];
-    const attempt = context.uploadDroppedFiles(collectedFiles);
+    const firstAttempt = context.uploadDroppedFiles(collectedFiles);
 
     await flush();
 
-    const listeners = Array.from(clickListeners);
-    listeners.forEach((handler) => handler(createModalEvent('safe')));
-    listeners.forEach((handler) => handler(createModalEvent('overwrite')));
+    Array.from(clickListeners).forEach((handler) => handler(createModalEvent('cancel')));
+
+    expect(commitCount).toBe(0);
+    await firstAttempt;
+
+    const secondAttempt = context.uploadDroppedFiles(collectedFiles);
+    await flush();
+
+    Array.from(clickListeners).forEach((handler) => handler(createModalEvent('upload')));
+    Array.from(clickListeners).forEach((handler) => handler(createModalEvent('upload')));
 
     expect(commitCount).toBe(1);
+    expect(commitOptions).toEqual({
+      overwriteAll: true,
+      overwritePaths: ['existing.txt'],
+    });
     modalActionButtons.forEach((button) => {
       expect(button.disabled).toBe(true);
     });
 
     resolveCommit();
-    await attempt;
+    await secondAttempt;
 
     modalActionButtons.forEach((button) => {
       expect(button.disabled).toBe(false);

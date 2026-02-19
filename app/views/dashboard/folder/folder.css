@@ -314,12 +314,10 @@
   margin: 0.25rem 0 1rem;
 }
 
-.upload-preview-section {
-  margin: 0.5rem 0;
-}
-
-.upload-preview-section summary {
-  cursor: pointer;
+.upload-preview-list-heading {
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .upload-preview-list {
@@ -331,6 +329,13 @@
 
 .upload-preview-actions {
   margin-top: 1rem;
+}
+
+.upload-preview-overwrite-marker {
+  color: #c73737;
+  font-size: 0.82em;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 body.upload-modal-open {

@@ -84,30 +84,12 @@
           <h2 id="upload-preview-title">Review upload</h2>
           <p class="upload-preview-summary"></p>
 
-          <details class="upload-preview-section" open>
-            <summary>Incoming files (<span data-upload-count="incoming">0</span>)</summary>
-            <ul class="upload-preview-list" data-upload-list="incoming"></ul>
-          </details>
-
-          <details class="upload-preview-section" data-upload-section="overwrite" open>
-            <summary>Will overwrite (<span data-upload-count="overwrite">0</span>)</summary>
-            <ul class="upload-preview-list" data-upload-list="overwrite"></ul>
-          </details>
-
-          <details class="upload-preview-section" data-upload-section="rejected" open>
-            <summary>Skipped/rejected (<span data-upload-count="rejected">0</span>)</summary>
-            <ul class="upload-preview-list" data-upload-list="rejected"></ul>
-          </details>
-
-          <details class="upload-preview-section" data-upload-section="failures" open hidden>
-            <summary>Upload failures (<span data-upload-count="failures">0</span>)</summary>
-            <ul class="upload-preview-list" data-upload-list="failures"></ul>
-          </details>
+          <h3 class="upload-preview-list-heading">Queued files (<span data-upload-count="queued">0</span>)</h3>
+          <ul class="upload-preview-list" data-upload-list="queued"></ul>
 
           <div class="buttons upload-preview-actions">
             <button type="button" data-upload-action="cancel">Cancel</button>
-            <button type="button" data-upload-action="safe">Upload safe files only</button>
-            <button type="button" data-upload-action="overwrite">Upload and overwrite</button>
+            <button type="button" data-upload-action="upload">Upload</button>
           </div>
         </div>
       </div>
@@ -118,21 +100,10 @@
           const uploadModal = document.querySelector('.upload-preview-modal');
           const uploadModalSummary = uploadModal && uploadModal.querySelector('.upload-preview-summary');
           const uploadModalLists = {
-            incoming: uploadModal && uploadModal.querySelector('[data-upload-list="incoming"]'),
-            overwrite: uploadModal && uploadModal.querySelector('[data-upload-list="overwrite"]'),
-            rejected: uploadModal && uploadModal.querySelector('[data-upload-list="rejected"]'),
-            failures: uploadModal && uploadModal.querySelector('[data-upload-list="failures"]')
+            queued: uploadModal && uploadModal.querySelector('[data-upload-list="queued"]')
           };
           const uploadModalCounts = {
-            incoming: uploadModal && uploadModal.querySelector('[data-upload-count="incoming"]'),
-            overwrite: uploadModal && uploadModal.querySelector('[data-upload-count="overwrite"]'),
-            rejected: uploadModal && uploadModal.querySelector('[data-upload-count="rejected"]'),
-            failures: uploadModal && uploadModal.querySelector('[data-upload-count="failures"]')
-          };
-          const uploadModalSections = {
-            overwrite: uploadModal && uploadModal.querySelector('[data-upload-section="overwrite"]'),
-            rejected: uploadModal && uploadModal.querySelector('[data-upload-section="rejected"]'),
-            failures: uploadModal && uploadModal.querySelector('[data-upload-section="failures"]')
+            queued: uploadModal && uploadModal.querySelector('[data-upload-count="queued"]')
           };
           const csrfToken = '{{csrftoken}}';
           
@@ -366,7 +337,14 @@
 
             items.forEach(function (item) {
               var li = document.createElement('li');
-              li.textContent = mapFn ? mapFn(item) : item;
+
+              if (mapFn) {
+                var mapped = mapFn(item, li);
+                if (typeof mapped === 'string') li.textContent = mapped;
+              } else {
+                li.textContent = item;
+              }
+
               list.appendChild(li);
             });
           }
@@ -377,34 +355,28 @@
             }
           }
 
-          function setSectionVisibility(section, visible) {
-            if (section) section.hidden = !visible;
-          }
-
           function renderUploadPreview(collectedFiles, preview) {
-            var incomingPaths = collectedFiles.map(function (entry) { return entry.relativePath; });
             var overwritePaths = (preview && preview.overwrite) || [];
+            var overwriteSet = new Set(overwritePaths);
             var rejected = (preview && preview.rejected) || [];
+            var rejectedCount = rejected.length;
 
-            renderList(uploadModalLists.incoming, incomingPaths);
-            renderList(uploadModalLists.overwrite, overwritePaths);
-            renderList(uploadModalLists.rejected, rejected, function (entry) {
-              var label = entry.relativePath || entry.filename || '(unknown file)';
-              return entry.reason ? label + ' — ' + entry.reason : label;
+            renderList(uploadModalLists.queued, collectedFiles, function (entry, li) {
+              li.textContent = entry.relativePath;
+
+              if (overwriteSet.has(entry.relativePath)) {
+                var marker = document.createElement('span');
+                marker.className = 'upload-preview-overwrite-marker';
+                marker.textContent = 'overwrite';
+                li.appendChild(document.createTextNode(' '));
+                li.appendChild(marker);
+              }
             });
-            clearList(uploadModalLists.failures);
 
-            updateCount('incoming', incomingPaths.length);
-            updateCount('overwrite', overwritePaths.length);
-            updateCount('rejected', rejected.length);
-            updateCount('failures', 0);
-
-            setSectionVisibility(uploadModalSections.overwrite, overwritePaths.length > 0);
-            setSectionVisibility(uploadModalSections.rejected, rejected.length > 0);
-            setSectionVisibility(uploadModalSections.failures, false);
+            updateCount('queued', collectedFiles.length);
 
             if (uploadModalSummary) {
-              uploadModalSummary.textContent = 'Create ' + ((preview && preview.create) || []).length + ', overwrite ' + overwritePaths.length + ', skipped/rejected ' + rejected.length + '.';
+              uploadModalSummary.textContent = 'Uploading ' + collectedFiles.length + ' file(s)' + (overwritePaths.length ? ', including ' + overwritePaths.length + ' overwrite(s)' : '') + (rejectedCount ? '. ' + rejectedCount + ' file(s) were rejected in dry-run and may fail.' : '.');
             }
           }
 
@@ -455,18 +427,8 @@
                 return response.json();
               })
               .then(function (result) {
-                var failures = collectFailures(result);
-
-                if (failures.length) {
-                  renderList(uploadModalLists.failures, failures);
-                  updateCount('failures', failures.length);
-                  setSectionVisibility(uploadModalSections.failures, true);
-                  if (uploadModalSummary) {
-                    uploadModalSummary.textContent = 'Upload finished with ' + failures.length + ' issue(s).';
-                  }
-                } else {
-                  closeUploadModal();
-                }
+                collectFailures(result);
+                closeUploadModal();
 
                 refreshFolderContents();
               });
@@ -530,15 +492,14 @@
                       return;
                     }
 
-                    if (action !== 'safe' && action !== 'overwrite') return;
+                    if (action !== 'upload') return;
 
-                    var overwritePaths = action === 'overwrite' ? ((preview && preview.overwrite) || []) : [];
-                    var overwriteAll = action === 'overwrite';
+                    var overwritePaths = (preview && preview.overwrite) || [];
                     isSubmitting = true;
                     setModalActionButtonsDisabled(true);
 
                     commitUpload(collectedFiles, {
-                      overwriteAll: overwriteAll,
+                      overwriteAll: true,
                       overwritePaths: overwritePaths
                     }).then(function () {
                       isSubmitting = false;
