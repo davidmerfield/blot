@@ -1,0 +1,178 @@
+# models/tags
+
+This module manages the tag index for individual blogs within Blot. It stores, retrieves, and maintains the relationship between tags and blog entries in Redis, and is responsible for normalising tag strings into URL-safe slugs.
+
+The module is invoked automatically during every entry write (via `models/entry/set.js`) and is queried at render time to power tag-based entry retrieval, the all-tags listing, and the popular-tags listing.
+
+---
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `index.js` | Public module surface. Re-exports `get`, `key`, `list`, `normalize`, `popular`, and `set`. |
+| `key.js` | Generates all Redis key strings used by the module. |
+| `normalize.js` | Converts a raw tag string into a normalised, URL-safe slug. Delegates to `helper/makeSlug`. |
+| `get.js` | Public retrieval function. Resolves tag variants (normalised, raw, URI-decoded) before querying Redis. |
+| `_get.js` | Internal retrieval function. Assumes the tag is already normalised. Queries Redis directly. |
+| `set.js` | Writes tag associations for a single entry. Computes added and removed tags relative to the previous state and updates all affected Redis keys atomically. |
+| `list.js` | Returns all tags defined on a blog, with entry counts, as an array of tag objects. |
+| `popular.js` | Returns the most-used tags on a blog, ranked by use count, with support for pagination. |
+
+### `tests/`
+
+| File | Purpose |
+|------|---------|
+| `tests/get.js` | Tests for `get`: basic retrieval, date-based ordering, and pagination via `limit` and `offset`. |
+| `tests/list.js` | Tests for `list`: verifies returned shape including `name`, `slug`, and `entries` array length. |
+| `tests/set.js` | Tests for `set`: verifies that writing an entry's tags completes without error. |
+
+---
+
+## Redis Key Structure
+
+Defined in `key.js`.
+
+| Key pattern | Redis type | Contains |
+|---|---|---|
+| `blog:{blogID}:tags:all` | set | All normalised tag slugs ever associated with this blog |
+| `blog:{blogID}:tags:popular` | sorted set | Normalised tag slugs scored by total use count |
+| `blog:{blogID}:tags:entries-by-dateStamp:{slug}` | sorted set | Entry IDs for a tag, scored by `entry.dateStamp` |
+| `blog:{blogID}:tags:entry:{entryID}` | set | Normalised tag slugs currently applied to a given entry |
+| `blog:{blogID}:tags:name:{slug}` | string | The original (pretty) display name for a normalised tag slug |
+
+---
+
+## Public API
+
+### `set(blogID, entry, callback)`
+
+Reconciles the tag index for a single entry against its current state in Redis.
+
+- `entry` must conform to the schema defined in `models/entry/model.js`. It is validated with `helper/ensure`.
+- Reads the entry's current normalised tag set from `blog:{blogID}:tags:entry:{entry.id}`.
+- Computes the difference between stored tags and the tags on the incoming entry to determine which tags were added and which were removed.
+- For each added tag:
+  - Increments its score in the popularity sorted set.
+  - Adds its pretty name mapping (`blog:{blogID}:tags:name:{slug}` → original tag string).
+  - Adds the entry ID to the per-tag sorted set scored by `entry.dateStamp` (falls back to `Date.now()` if `dateStamp` is not a valid number).
+- For each removed tag:
+  - Removes the entry ID from the per-tag sorted set.
+  - Removes the normalised slug from the entry's tag set.
+  - Decrements its score in the popularity sorted set.
+- Adds all current normalised slugs to the blog-wide tag set (`blog:{blogID}:tags:all`) and the per-entry tag set.
+- Removes any tags whose popularity score has dropped to zero or below via `ZREMRANGEBYSCORE ... -inf 0`.
+- All writes are executed as a single Redis `MULTI` transaction.
+- Entries that are deleted, drafted, scheduled, or located under a path component beginning with `_` have their tags suppressed: the effective tag list is treated as empty, which removes the entry from all tag index structures.
+- Calls back with `(err)`. On Redis error, throws rather than passing to callback.
+
+### `get(blogID, tag, [options], callback)`
+
+Retrieves the entry IDs associated with a tag, tolerating URL-encoded or non-normalised input.
+
+- Attempts lookup in sequence: normalised form of `tag`, raw `tag`, URI-decoded `tag`. Returns the first non-empty result.
+- Delegates each attempt to `_get` (the internal function).
+- `options.limit` (number): maximum number of entry IDs to return. Omitting this returns all IDs.
+- `options.offset` (number): zero-based index to start from. Defaults to `0`.
+- Calls back with `(err, entryIDs, prettyTag, total)`:
+  - `entryIDs`: array of entry ID strings, ordered by `dateStamp` descending.
+  - `prettyTag`: the original display-form tag name as stored, or the queried tag string if no display name is recorded.
+  - `total`: total number of entries associated with the tag regardless of `limit`/`offset`.
+
+### `list(blogID, callback)`
+
+Returns all tags defined on a blog.
+
+- Fetches all normalised slug members from `blog:{blogID}:tags:all`.
+- For each slug, retrieves the display name and the entry count in parallel.
+- Excludes tags whose entry count is zero.
+- Calls back with `(err, tags)` where each element of `tags` is:
+  ```js
+  {
+    name: string,   // original display-form tag name
+    slug: string,   // normalised URL-safe slug
+    entries: Array  // array of length equal to the entry count; elements are null
+  }
+  ```
+
+### `popular(blogID, [options], callback)`
+
+Returns the most-used tags on a blog, ranked by use count descending.
+
+- `options.limit` (number): number of tags to return. Defaults to `10`. Passing `0` calls back with an empty array immediately.
+- `options.offset` (number): zero-based rank to start from. Defaults to `0`.
+- `options` may be passed as a plain number (treated as `{ limit: options }`).
+- Queries `blog:{blogID}:tags:popular` with `ZREVRANGE ... WITHSCORES`, then fetches display names in a batch.
+- Calls back with `(err, tags)` where each element of `tags` is:
+  ```js
+  {
+    name: string,   // original display-form tag name (falls back to slug if not recorded)
+    slug: string,   // normalised URL-safe slug
+    entries: Array, // sparse array of length equal to the use count
+    count: number   // use count
+  }
+  ```
+
+### `normalize(tag)`
+
+Converts a raw tag string to a normalised, URL-safe slug. Delegates to `helper/makeSlug`.
+
+- Lowercases the input, removes or replaces punctuation, collapses whitespace and hyphens, URI-encodes the result, and truncates to 100 characters.
+- Returns a string. Returns an empty string if the input reduces to nothing.
+
+### `key`
+
+An object exposing the five key-generation functions. Exposed on the public interface primarily for use in data repair scripts.
+
+```js
+key.all(blogID)                        // → "blog:{blogID}:tags:all"
+key.popular(blogID)                    // → "blog:{blogID}:tags:popular"
+key.sortedTag(blogID, normalizedTag)   // → "blog:{blogID}:tags:entries-by-dateStamp:{slug}"
+key.entry(blogID, entryID)             // → "blog:{blogID}:tags:entry:{entryID}"
+key.name(blogID, normalizedTag)        // → "blog:{blogID}:tags:name:{slug}"
+```
+
+---
+
+## Internal Structure
+
+`get.js` is the public wrapper around `_get.js`. The distinction exists because tag lookup must be resilient to the several forms in which a tag slug can arrive from a URL (normalised, raw, percent-encoded). `get.js` handles this fan-out, and `_get.js` performs the actual Redis query assuming the slug is already in its final form.
+
+`set.js` is the write path and the only place where Redis tag data is created or modified. All other functions in this module are read-only. `set.js` imports `models/entry/model.js` directly to validate the incoming entry object.
+
+---
+
+## Integration Points
+
+**`models/entry/set.js`** — the primary caller of `tags.set`. After writing an entry to Redis, `entry/set.js` invokes `tags.set` in parallel with list assignment and dependency graph rebuilding. This ensures the tag index is updated atomically with every entry write.
+
+**`app/blog/render/retrieve/tagged.js`** — calls `tags.get` to resolve entry IDs for tag-filtered views. Supports single-tag and multi-tag intersection queries. Handles pagination via `limit` and `offset`.
+
+**`app/blog/render/retrieve/all_tags.js`** — calls `tags.list` to populate the full tag listing view. Sorts results alphabetically by display name and URI-encodes slugs before passing them to templates.
+
+**`app/blog/render/retrieve/popular_tags.js`** — calls `tags.popular` with a fixed limit of `100`. Results are cached in an LRU cache keyed by `blogID`, `cacheID`, and pagination parameters. The cache is invalidated when `blog.cacheID` changes.
+
+**`app/sync/fix/tag-ghosts.js`** — a data repair utility that uses `tags.list`, `tags.get`, and `tags.key` directly to remove tag index entries that reference missing or misidentified entries.
+
+---
+
+## Dependencies
+
+- **`models/client`** — the shared Redis client instance. All reads and writes go through this client.
+- **`helper/ensure`** — runtime type validation. Used in `_get.js`, `set.js`, `list.js`, and `popular.js` to assert that arguments conform to expected types.
+- **`helper/type`** — type-checking predicate. Used in `_get.js` and `popular.js` to validate the `options` argument.
+- **`helper/makeSlug`** — the slug-generation function used by `normalize.js`.
+- **`models/entry/model.js`** — imported by `set.js` to validate the entry object before processing.
+- **`lodash`** — used in `set.js` for `_.difference` to compute added and removed tag sets.
+
+---
+
+## Testing
+
+Tests are in `tests/` and use Jasmine. Each test file calls `global.test.blog()` to set up an isolated test blog before each spec. The test suite requires a running Redis instance and a configured test environment.
+
+Test files:
+
+- `tests/set.js` — confirms that `set` completes without error given a valid entry.
+- `tests/get.js` — verifies basic retrieval, `dateStamp`-descending ordering when a `limit` is applied, and correct offset-based pagination.
+- `tests/list.js` — verifies the shape of the returned tag array including `name`, `slug`, and the length of the `entries` placeholder array.

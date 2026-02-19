@@ -1,0 +1,254 @@
+# app/models/question
+
+## Purpose
+
+This module implements the data model for Blot's public Q&A system. It stores, retrieves, and indexes questions and their replies using Redis as the sole persistence layer. The module is consumed directly by the documentation site's questions router (`app/documentation/questions/`) to back every user-facing page: listing, searching, tagging, creating questions, and posting replies.
+
+Items in this model serve two distinct roles determined by the presence of a `parent` field:
+
+- **Questions** — top-level items with no `parent`. They carry a `title`, `body`, `tags`, and indexing metadata.
+- **Replies** — items with a `parent` set to a question's `id`. They carry only a `body`; their `tags` field is always stored as an empty JSON array.
+
+The data structure supports one additional level of nesting: replies can themselves be parents of comment items. `export.js` walks this three-level hierarchy; the current public API does not expose comment creation directly.
+
+---
+
+## File Inventory
+
+### Source files
+
+| File | Responsibility |
+|---|---|
+| `index.js` | Re-exports the public API surface: `create`, `drop`, `get`, `tags`, `list`, `search`, `update`. |
+| `keys.js` | Defines all Redis key strings and key-generating functions used by this module. |
+| `create.js` | Creates a new question or reply, generates an auto-incremented ID if none is supplied, and updates all relevant indexes atomically. |
+| `get.js` | Retrieves a single question by ID, hydrating it with its replies and human-readable timestamps. |
+| `update.js` | Updates fields on an existing question, including reconciling added and removed tags against all tag indexes. |
+| `drop.js` | Stub — currently a no-op (`module.exports = () => {}`). |
+| `list.js` | Returns a paginated list of questions with configurable sort order and optional tag filtering. |
+| `search.js` | Full-scan keyword search across question titles, bodies, and reply bodies with a relevance scoring function. |
+| `tags.js` | Returns all known tags sorted by the number of questions that carry each tag, with pagination. |
+| `export.js` | Dumps the entire question store to a plain JavaScript array, walking the question → reply → comment hierarchy. |
+| `import.js` | Populates the store from a previously exported array by calling `create` for each question and its replies. |
+
+### Test files (`tests/`)
+
+| File | Coverage |
+|---|---|
+| `setup.js` | `beforeEach`/`afterEach` hooks that flush all `blot:questions:*` keys from Redis. |
+| `index.js` | Verifies the exported API surface. |
+| `create.js` | Question and reply creation, ID assignment, tag storage, and Redis error propagation. |
+| `get.js` | Question retrieval, reply hydration, chronological reply ordering, timestamp fields. |
+| `update.js` | Field updates, tag addition/removal, non-existent ID error handling. |
+| `list.js` | Pagination, sort modes, tag filtering, reply count metadata. |
+| `search.js` | Keyword matching, title-vs-body scoring, reply inclusion, empty-body filtering, pagination. |
+| `tags.js` | Tag popularity ordering and pagination stats. |
+| `export.js` | Full hierarchy export, edge cases for empty stores and Redis error paths. |
+| `import.js` | Round-trip import/export consistency, empty input, invalid input type. |
+
+---
+
+## Redis Key Schema
+
+All keys are defined in `keys.js` and share the prefix `blot:questions:`.
+
+| Key | Type | Purpose |
+|---|---|---|
+| `blot:questions:next_id` | String (integer) | Auto-increment counter; `INCR` produces the next item ID. |
+| `blot:questions:item:<id>` | Hash | All fields of a question or reply (`id`, `parent`, `author`, `title`, `body`, `tags`, `created_at`). |
+| `blot:questions:id:<id>:children` | Sorted Set | Child item IDs scored by `created_at` (milliseconds). For a question, members are reply IDs; for a reply, members are comment IDs. |
+| `blot:questions:all` | Set | All top-level question IDs. Used by `search` for full-scan iteration (`SSCAN`). |
+| `blot:questions:tags` | Set | All tag strings that have at least one question. |
+| `blot:questions:by_last_reply` | Sorted Set | Question IDs scored by the timestamp of the most recent reply. Used as the default sort for `list`. |
+| `blot:questions:by_created` | Sorted Set | Question IDs scored by creation timestamp. |
+| `blot:questions:by_number_of_replies` | Sorted Set | Question IDs scored by reply count (`ZINCRBY` on each new reply). |
+| `blot:questions:by_tag:<tag>` | Sorted Set | Question IDs for a given tag, scored by `created_at`. |
+
+---
+
+## Public API
+
+All functions are exported via `index.js` as `require('models/question')`.
+
+### `create(options)` → `Promise<question>`
+
+Creates a new question or reply and updates all relevant indexes.
+
+```js
+// Create a question
+const question = await create({
+  title: 'How do I configure a custom domain?',
+  body:  'I have a domain at example.com...',
+  author: 'uid-123',
+  tags:  ['domains', 'dns'],
+  // created_at: Date.now().toString()  // optional, defaults to now
+});
+
+// Create a reply
+const reply = await create({
+  body:   'You need to add a CNAME record...',
+  parent: question.id,
+  author: 'uid-456',
+});
+```
+
+**Parameters** (all optional, all strings unless noted):
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `id` | `string` | Auto-generated via `INCR` | Must be unique; throws if an existing ID is supplied. |
+| `parent` | `string` | `''` | Set to a question ID to create a reply. |
+| `title` | `string` | `''` | Ignored for replies (stored but not indexed). |
+| `body` | `string` | `''` | — |
+| `author` | `string` | `''` | Typically a Blot user ID from the session. |
+| `tags` | `string[]` | `[]` | Applied to questions only; silently ignored for replies. |
+| `created_at` | `string` | `Date.now().toString()` | Unix timestamp in milliseconds as a string. |
+
+All fields stored in the Redis hash must be strings. `create` throws synchronously if a non-string property is detected before any Redis commands are issued.
+
+Returns a fully hydrated question object as produced by `get`.
+
+### `get(id)` → `Promise<question|null>`
+
+Retrieves a question by ID with its replies expanded. Returns `null` if no item with that ID exists.
+
+The returned object includes all stored fields plus:
+
+- `replies` — array of reply objects, each with a `time` field (human-readable relative time via `moment.fromNow()`).
+- `number_of_replies` — integer count of replies.
+- `last_reply_created_at` — timestamp string of the most recent reply (falls back to `created_at` if no replies exist).
+- `last_reply_time` — human-readable relative time of the last reply.
+- `created_time` / `time` — human-readable relative creation time.
+- `tags` — parsed as a JavaScript array (stored as JSON in Redis).
+
+Replies are returned in ascending chronological order (oldest first).
+
+### `update(id, updates)` → `Promise<question>`
+
+Applies partial updates to an existing question. Throws if the question does not exist.
+
+```js
+const updated = await update(questionId, {
+  body: 'Revised body text.',
+  tags: ['domains'],
+});
+```
+
+When `updates.tags` is provided:
+- New tags are added to `all_tags` and the appropriate `by_tag:<tag>` sorted set.
+- Tags removed from the question are removed from `by_tag:<tag>`. If a removed tag no longer has any associated questions (`ZCARD` returns 0 or 1 at time of check), it is removed from `all_tags` as well.
+
+Returns the updated question object as produced by `get`.
+
+### `list(options)` → `Promise<{ questions, stats }>`
+
+Returns a paginated list of top-level questions. Replies are not included in listing results.
+
+```js
+const { questions, stats } = await list({
+  page:      1,
+  page_size: 10,           // default: 10
+  sort:      'by_last_reply',  // default
+  tag:       '',           // filter to a specific tag when non-empty
+});
+```
+
+**Sort options** (only applicable when `tag` is not set):
+
+| Value | Behaviour |
+|---|---|
+| `'by_last_reply'` (default) | Most recently replied-to questions first. |
+| `'by_created'` | Most recently created questions first. |
+| `'by_number_of_replies'` | Questions with the most replies first. |
+
+When `tag` is non-empty, results are drawn from `by_tag:<tag>` sorted by `created_at` descending, regardless of the `sort` parameter.
+
+Each question in the result includes `number_of_replies`, `last_reply_created_at`, `last_reply_time`, `created_time`, `time`, and a parsed `tags` array. Questions with an empty or whitespace-only `title` are filtered out.
+
+`stats` contains `{ total, page_size, page }`.
+
+### `search(options)` → `Promise<result[]>`
+
+Performs a full-scan keyword search across all questions. Iterates the `all_questions` set via `SSCAN`, loading each question's title, body, and reply bodies.
+
+```js
+const results = await search({
+  query:     'custom domain',
+  page:      1,
+  page_size: 20,  // default: 20
+});
+```
+
+Scoring is applied per question:
+
+- Each query word found in the **title** contributes 3 points.
+- Each query word found in the **body** contributes 1 point.
+- Each query word found in any **reply body** contributes 1 point.
+
+Only questions with a score greater than 0 are returned. Results are sorted by score descending. Each result contains only `{ id, title, score }`.
+
+Questions with an empty or whitespace-only body are excluded from the candidate set. Replies with empty bodies do not contribute to a question's score.
+
+### `tags(options)` → `Promise<{ tags, stats }>`
+
+Returns all known tags sorted by popularity (number of questions tagged with each).
+
+```js
+const { tags, stats } = await tags({ page: 1 });
+```
+
+Each entry in `tags` is `{ tag: string, count: number }`. Default `page_size` is 10.
+
+### `drop()` → `undefined`
+
+Currently a no-op. The function accepts no arguments and returns nothing.
+
+---
+
+## Internal Structure
+
+`create.js`, `update.js`, `list.js`, `search.js`, and `tags.js` all depend on `keys.js` for Redis key construction and on `models/client` for the Redis connection. `get.js` is also used as a dependency by `create.js` and `update.js` to return a freshly read object after write operations complete. `import.js` depends on `create.js` exclusively.
+
+`export.js` and `import.js` are not exported from `index.js` and are not part of the standard public interface. They are utility functions for bulk data migration.
+
+---
+
+## Dependencies
+
+**Internal:**
+
+- `models/client` — the shared Redis client instance (`app/models/client.js` → `app/models/redis.js`).
+
+**External:**
+
+- `moment` — used in `get.js` and `list.js` to format timestamps as human-readable relative strings (e.g., `"a few seconds ago"`).
+- `fs-extra` — required in `export.js` but not used in the current implementation.
+
+---
+
+## Integration Points
+
+The sole consumer of this module within the application is `app/documentation/questions/`, which mounts an Express router at `/questions` on the documentation site. That router uses `create`, `get`, `update`, `list`, `search`, and `tags` to back the following routes:
+
+| Route | Operation |
+|---|---|
+| `GET /questions` | `list` with `by_last_reply` sort |
+| `GET /questions/replies` | `list` with `by_number_of_replies` sort |
+| `GET /questions/tagged/:tag` | `list` filtered by tag |
+| `GET /questions/tags` | `tags` |
+| `GET /questions/search` | `search` |
+| `GET /questions/:id` | `get` |
+| `POST /questions/ask` | `create` (question) |
+| `POST /questions/:id/new` | `create` (reply) |
+| `POST /questions/:id/edit` | `update` |
+| `GET /questions/feed.rss` | `list` with `by_created` sort |
+
+`app/documentation/questions/related.js` uses `list` with a `tag` parameter to populate a sidebar of related questions on documentation pages.
+
+---
+
+## Testing
+
+Tests use [Jasmine](https://jasmine.github.io/) and run against a live Redis instance. Each test file requires `./setup`, which flushes all `blot:questions:*` keys before and after every test case, ensuring isolation.
+
+To run only the question model tests, target the `tests/` directory with the project's test runner. Tests for Redis error paths use Jasmine spies to inject failures into specific Redis command callbacks.

@@ -1,0 +1,293 @@
+# app/models/blog
+
+This module is the authoritative data layer for blog records in Blot. It defines the blog schema, manages persistence in Redis, enforces validation rules, and handles all lifecycle operations: creation, retrieval, updates, and deletion. Every other subsystem that reads or writes blog state — the request router, sync engine, dashboard, build pipeline, and client connectors — consumes this module.
+
+---
+
+## File Inventory
+
+### Core interface
+
+| File | Description |
+|---|---|
+| `index.js` | Re-exports the public API as a single object. |
+| `scheme.js` | Defines the blog schema: field names, types, and two derived arrays — `WRITEABLE` (fields that can be updated via `set`) and `PUBLIC` (fields exposed to templates). |
+| `defaults.js` | The default field values applied to every newly created blog. |
+| `key.js` | Generates all Redis key strings used by this module. |
+| `serial.js` | Serializes a blog object for Redis storage (`hmset`) and deserializes it on retrieval. Object and array fields are JSON-encoded; booleans and numbers are coerced from strings. |
+
+### Lifecycle operations
+
+| File | Description |
+|---|---|
+| `create.js` | Creates a new blog record, links it to its owner user, initializes the blog's folder on disk, and registers it in the global blog ID set in Redis. |
+| `get.js` | Retrieves a single blog by `id`, `handle`, or `domain`. Applies `imageExif` and `converters` defaults on the way out. |
+| `set.js` | Validates and persists updates to a blog record. Manages side effects: domain/handle key rotation, cache busting, template forking, Git repository renaming, and CDN manifest updates. |
+| `remove.js` | Deletes a blog fully: disconnects the sync client, removes the record from the owner's user document, wipes the blog folder and static files from disk, and deletes all associated Redis keys. |
+| `extend.js` | Decorates an in-memory blog object with computed, template-facing properties: resolved URL, pretty URL, `cssURL`, `scriptURL`, `feedURL`, `pages`, `locals`, and `imageExif`/converter boolean flags. Does not write to Redis. |
+
+### Status log
+
+| File | Description |
+|---|---|
+| `setStatus.js` | Writes a status entry (message, syncID, datestamp) to both `blog:{id}:info` and a capped Redis list at `blog:{id}:status`. The list is trimmed to 2,000 entries. |
+| `getStatuses.js` | Reads paginated status entries from the Redis list. Accepts `page` and `pageSize` options; returns `{ statuses, next, previous }`. |
+
+### Global queries
+
+| File | Description |
+|---|---|
+| `getAllIDs.js` | Returns all blog IDs from the Redis set `blogs`. |
+| `getHosts.js` | Returns all `[host, blogID]` pairs across every blog — both custom domains and Blot subdomains. Used when rebuilding host-to-blog routing maps. |
+| `generateID.js` | Generates a new blog ID of the form `blog_<32-hex-chars>` using UUID v4. |
+| `flushCache.js` | Clears the on-disk response cache for a blog's current and former hostnames by calling `helper/flushCache` configured with the application's reverse proxy list. |
+| `url.js` | Produces versioned CSS and JS asset URLs (`/style.css?cache=<id>` and `/script.js?cache=<id>`). |
+
+### Validation (`validate/`)
+
+| File | Description |
+|---|---|
+| `validate/index.js` | Orchestrates async validation of a blog update object. Calls field-specific validators in parallel and merges errors and normalized values. Fields without a dedicated validator pass through unchanged. |
+| `validate/handle.js` | Enforces handle rules: alphanumeric only, 2–70 characters, not in `banned.txt`, not already claimed by another blog. Lowercases and trims input. |
+| `validate/domain.js` | Enforces custom domain rules: valid hostname syntax, not a Blot subdomain, not exceeding 70 characters, not already registered to a different blog. Normalizes to lowercase ASCII (Punycode). |
+| `validate/title.js` | Normalizes the title to NFC Unicode, strips leading/trailing whitespace, and rejects titles over 70 characters. |
+| `validate/timeZone.js` | Accepts any timezone string recognized by `moment-timezone`; falls back to `"UTC"` silently if invalid or empty. |
+| `validate/plugins.js` | Sanitizes plugin configuration. Currently strips the `.disqus.com` suffix from Disqus shortnames if present. |
+| `validate/banned.txt` | A newline-delimited list of reserved handle names (e.g. `admin`, `mail`, `www`) that cannot be claimed by any blog. |
+
+### Utilities (`util/`)
+
+| File | Description |
+|---|---|
+| `util/backupDomain.js` | Computes a backup domain by toggling the `www.` prefix (adds it if absent, removes it if present). Used to register both forms of a custom domain in Redis. |
+| `util/imageExif.js` | Normalizes the `imageExif` field to one of three modes: `"off"`, `"basic"`, or `"full"`. Exposes `normalize`, `decorate`, and `apply`. `apply` mutates a blog object in place, adding `imageExifMode`, `isImageExifOff`, `isImageExifBasic`, and `isImageExifFull`. |
+| `util/converters.js` | Normalizes the `converters` field, which controls which file types Blot converts to blog entries. Valid converter IDs are `html`, `img`, `webloc`, `gdoc`, `docx`, `rtf`, `odt`, `org`, and `markdown`. `apply` mutates a blog object in place, adding boolean flags such as `isMarkdownConverterEnabled`. |
+
+### Tests (`tests/`)
+
+| File | Description |
+|---|---|
+| `tests/create.js` | Tests for `create`: verifies blog creation, default `imageExif`/`converters` values, registration in the global ID set, and plugin default isolation between blogs. |
+| `tests/get.js` | Tests for `get`: verifies fallback behavior when `imageExif` or `converters` fields are absent from Redis. |
+| `tests/set.js` | Tests for `set`: domain assignment, `imageExif` persistence, converter normalization, handle/domain key rotation, and `cacheID` invalidation on menu changes. |
+| `tests/remove.js` | Tests for `remove`: verifies complete Redis key cleanup after deletion and removal from the global ID set. |
+| `tests/setStatus.js` | Tests for `setStatus`: status writes, default value injection, overwrites, and argument validation. |
+| `tests/getStatuses.js` | Tests for `getStatuses`: pagination, ordering (most recent first), empty results, and argument validation. |
+
+---
+
+## Schema
+
+The blog schema is declared in `scheme.js`. Each field is classified along three axes: its type, whether it is writeable via `set`, and whether it is public (exposed to the template rendering context via `extend`).
+
+| Field | Type | Writeable | Public |
+|---|---|---|---|
+| `id` | string | no | no |
+| `owner` | string | no | no |
+| `handle` | string | yes | yes |
+| `client` | string | yes | no |
+| `status` | object (`{ syncID, message, datestamp }`) | yes | yes |
+| `title` | string | yes | yes |
+| `avatar` | string | yes | yes |
+| `template` | string | yes | no |
+| `domain` | string | yes | yes |
+| `forceSSL` | boolean | yes | no |
+| `redirectSubdomain` | boolean | yes | no |
+| `isDisabled` | boolean | yes | no |
+| `timeZone` | string | yes | yes |
+| `plugins` | object | yes | yes |
+| `permalink` | object (`{ format, custom, isCustom }`) | yes | yes |
+| `menu` | array of link objects | yes | yes |
+| `dateFormat` | string | yes | yes |
+| `cacheID` | number | no | yes |
+| `flags` | object | yes | no |
+| `cssURL` | string | no | yes |
+| `scriptURL` | string | no | yes |
+| `roundAvatar` | boolean | yes | yes |
+| `imageExif` | string | yes | yes |
+| `converters` | object | yes | yes |
+
+---
+
+## Public API
+
+All of the following are exported from `index.js`.
+
+### `create(uid, info, callback)`
+
+Creates a new blog for the user identified by `uid`.
+
+- `uid` — the user's ID string
+- `info` — an object with blog properties; `handle` is required; `title`, `timeZone`, and `dateFormat` are optional
+- `callback(err, blog)` — called with the fully initialized blog object on success
+
+Side effects:
+- Generates a new blog ID via `generateID`
+- Merges `info` with defaults and validates via `validate`
+- Adds the blog ID to the user's `blogs` array and sets `lastSession`
+- Registers the blog ID in the global Redis set (`blogs`)
+- Persists the blog hash via `set`
+- Creates an empty directory at the blog's local path
+
+### `get(by, callback)`
+
+Retrieves a blog object from Redis.
+
+- `by` — an object with exactly one of: `{ id }`, `{ handle }`, or `{ domain }`
+- `callback(err, blog)` — called with the blog object, or `null` if not found
+
+Applies `imageExif` and `converters` normalization before returning.
+
+### `set(blogID, blog, callback)`
+
+Persists updates to a blog record.
+
+- `blogID` — the blog's ID string
+- `blog` — a partial or complete blog object with fields to update
+- `callback(err, changesList)` — called with the array of changed field names on success
+
+Side effects triggered by specific changes:
+- `handle`: updates `handle:{handle}` and `domain:{handle}.{host}` keys; removes the former subdomain domain key
+- `domain`: registers both the primary and backup (`www.`/apex) domain keys; removes former domain keys
+- `template` or `plugins`: forks the template if it references a site template (`SITE:` prefix), updates the CDN manifest, and busts the asset cache (`cacheID`, `cssURL`, `scriptURL`)
+- `menu`: busts the asset cache
+- Any handle change with `client === "git"`: renames the Git repository
+
+### `remove(blogID, callback)`
+
+Fully deletes a blog. Runs four steps in sequence:
+
+1. Disconnects the sync client (`clients[blog.client].disconnect`)
+2. Removes the blog from the owner's user record
+3. Deletes the blog folder and static files directory from disk
+4. Deletes all `blog:{id}:*` and `template:{id}:*` Redis keys, domain/handle routing keys, and removes the ID from the global set
+
+### `extend(blog)`
+
+Decorates a blog object with computed properties for use in the template rendering context. Mutates and returns the same object. Does not read from or write to Redis.
+
+Properties added:
+- `blog.url` — canonical URL (custom domain takes precedence over Blot subdomain)
+- `blog.blogURL` — always the Blot subdomain URL
+- `blog.previewURL` — preview subdomain URL
+- `blog.pretty.url`, `blog.pretty.label`, `blog.pretty.domain` — display-formatted URL strings (Punycode decoded for international domains)
+- `blog.feedURL` — `/feed.rss`
+- `blog.cssURL`, `blog.scriptURL` — versioned asset URLs
+- `blog.pages`, `blog.showPages`, `blog.totalPages` — menu items identified as internal pages
+- `blog.locals` — an object containing all public fields, used as the template rendering context
+- `imageExif` boolean flags (`isImageExifOff`, `isImageExifBasic`, `isImageExifFull`)
+- Per-converter boolean flags (e.g. `isMarkdownConverterEnabled`)
+
+### `setStatus(blogID, status, callback)`
+
+Appends a status message to the blog's sync log.
+
+- `status` — `{ message: string, syncID?: string, datestamp?: number }`
+- Writes to both the `status` field in the blog hash and prepends to the `blog:{id}:status` Redis list
+- Trims the list to 2,000 entries
+
+### `getStatuses(blogID, [options], callback)`
+
+Retrieves paginated sync status entries.
+
+- `options.page` — 1-based page number (default: `1`)
+- `options.pageSize` — entries per page (default: `200`)
+- `callback(err, { statuses, next, previous })` — statuses are in reverse chronological order (most recent first)
+
+### `getAllIDs(callback)`
+
+Returns the complete list of blog IDs from the Redis set `blogs`.
+
+### `getHosts(callback)`
+
+Returns an array of `[hostname, blogID]` pairs for every blog. Each blog contributes up to two pairs: its custom domain (if set) and its Blot subdomain. This is an expensive operation that reads every blog record.
+
+### `validate(blogID, updates, callback)`
+
+Validates a partial blog update object. Runs field-specific validators for `handle`, `domain`, `title`, `timeZone`, and `plugins`. Other fields pass through if they match the schema type. Calls `callback(errors, validUpdates)` where `errors` is `null` if all fields are valid.
+
+### `scheme`
+
+The schema object with three properties:
+- `scheme.TYPE` — a map of field names to type descriptors
+- `scheme.WRITEABLE` — array of field names that `set` accepts
+- `scheme.PUBLIC` — array of field names that `extend` copies into `blog.locals`
+
+### `defaults`
+
+The default values applied to every new blog at creation time.
+
+### `serial`
+
+The serialize/deserialize pair. `serial(obj)` encodes object/array fields as JSON strings for Redis. `serial.de(obj)` decodes them back, also coercing booleans and numbers from their string representations.
+
+### `key`
+
+The Redis key generator. Methods:
+- `key.handle(handle)` → `"handle:{handle}"`
+- `key.info(blogID)` → `"blog:{blogID}:info"`
+- `key.status(blogID)` → `"blog:{blogID}:status"`
+- `key.domain(domain)` → `"domain:{domain}"`
+- `key.ids` → `"blogs"` (the global set of all blog IDs)
+- `key.totalBlogs` → `"total:blogs"`
+
+### `url`
+
+- `url.css(cacheID)` → `/style.css?cache={cacheID}&amp;extension=.css`
+- `url.js(cacheID)` → `/script.js?cache={cacheID}&amp;extension=.js`
+
+---
+
+## Redis Data Layout
+
+| Key pattern | Type | Contents |
+|---|---|---|
+| `blogs` | set | All active blog IDs |
+| `blog:{id}:info` | hash | All blog fields (serialized) |
+| `blog:{id}:status` | list | JSON-encoded status entries, newest first, capped at 2,000 |
+| `handle:{handle}` | string | Blog ID for the given handle |
+| `domain:{domain}` | string | Blog ID for the given custom domain |
+| `total:blogs` | string | Cumulative count of blogs ever created |
+
+---
+
+## Internal Dependencies
+
+| Dependency | Role |
+|---|---|
+| `models/client` | Shared Redis client (from `models/redis.js`) |
+| `models/user` | Used in `create` and `remove` to update the owner's blog list |
+| `helper/ensure` | Runtime type validation of all function arguments |
+| `helper/extend` | Merges objects; used in `create` to combine info and defaults |
+| `helper/localPath` | Resolves the filesystem path for a blog's content folder |
+| `helper/punycode` | Encodes/decodes internationalized domain names |
+| `helper/flushCache` | Clears reverse-proxy cache directories for specified hostnames |
+| `config` | Provides `config.host`, `config.blog_folder_dir`, `config.blog_static_files_dir`, and `config.reverse_proxies` |
+| `build/plugins` | Provides the default plugin list (`defaultList`) used in `defaults.js` |
+| `clients` | Loaded dynamically in `remove` to disconnect the blog's sync client |
+| `clients/git/renameRepo` | Called in `set` when a handle change affects a Git-backed blog |
+| `models/template/util/forkSiteTemplate` | Called in `set` when the assigned template is a site template (`SITE:` prefix) |
+| `models/template/util/updateCdnManifest` | Called in `set` when template or plugin settings change |
+
+---
+
+## Integration Points
+
+- **`app/blog/vhosts.js`**: Calls `Blog.get({ handle })` or `Blog.get({ domain })` on every incoming HTTP request to identify which blog to serve.
+- **`app/sync/`**: Calls `Blog.setStatus` via `sync/messenger.js` to log sync progress. Calls `Blog.set` to update `client`, `status`, and other fields during sync operations.
+- **`app/dashboard/`**: Calls `Blog.set` when the user saves settings. Calls `Blog.get` and `Blog.extend` to populate dashboard views.
+- **`app/clients/`** (Dropbox, Google Drive, Git, iCloud, local): Call `Blog.get`, `Blog.set`, and `Blog.remove` when connecting, disconnecting, or renaming sync clients.
+- **`app/build/`**: Reads `blog.converters` (via `Blog.get` or passed context) to determine which file types to process.
+- **`app/models/entry/`**: Reads blog data to resolve permalink formats, time zones, and build context.
+
+---
+
+## Testing
+
+Tests are in `tests/` and use the global `test.blog()` and `test.user()` helpers that bootstrap a real Redis-backed blog before each spec. There is no mock; tests run against a live Redis instance.
+
+To run the blog model tests:
+
+```
+npx jasmine app/models/blog/tests/*.js
+```

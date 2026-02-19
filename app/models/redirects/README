@@ -1,0 +1,134 @@
+# models/redirects
+
+Manages per-blog URL redirect rules. Redirect rules are stored in Redis and evaluated at request time by the blog's error-handling middleware to issue HTTP 301 responses before a 404 is returned.
+
+## Role in the application
+
+This module sits in the `app/models` layer alongside other Redis-backed data models (entries, tags, 404s, etc.). It is the sole read/write interface for redirect data. The blog request pipeline calls `check` on every unmatched URL; the dashboard calls `set` and `list` to let blog owners manage their redirect rules.
+
+## File inventory
+
+| File | Responsibility |
+|---|---|
+| `index.js` | Re-exports the public interface: `check`, `drop`, `get`, `key`, `list`, `set`, `util`. |
+| `key.js` | Generates Redis key strings for this model. |
+| `set.js` | Writes a full replacement set of redirect mappings for a blog, atomically. |
+| `get.js` | Looks up the redirect destination for a single `from` path, resolving regex captures if applicable. |
+| `check.js` | Resolves the redirect destination for an arbitrary input URL, including regex pattern scanning. |
+| `list.js` | Returns all redirect mappings for a blog as an ordered array. |
+| `drop.js` | Removes a single redirect rule by its `from` path. |
+| `util.js` | Pure helper functions for regex detection, matching, and capture-group substitution. |
+| `readme.txt` | Legacy placeholder noting that tests were not yet written. Superseded by this file. |
+
+## Redis data layout
+
+Two key patterns are used, both scoped to a `blogID`:
+
+```
+blog:<blogID>:redirects              — Sorted set. Members are `from` paths; scores are insertion order (index).
+blog:<blogID>:redirect:<from>        — String. Value is the `to` path for that `from` key.
+```
+
+The sorted set preserves the order in which rules were defined, which determines precedence during regex scanning.
+
+## Public API
+
+All callback-style functions follow the Node.js `(err, result)` convention. All functions validate their arguments via `helper/ensure` and throw on type mismatch.
+
+### `set(blogID, mappings, callback)`
+
+Replaces all redirect rules for the given blog atomically. Executes as a single Redis `MULTI` transaction: deletes all existing keys, then writes the new set.
+
+- `blogID` — string
+- `mappings` — array of `{ from: string, to: string }` objects
+- `callback` — called with `(err)` on completion
+
+Rules are silently dropped if:
+- `from` or `to` is an empty string.
+- `to` matches a `from` value that appears earlier in the list (loop prevention).
+
+### `get(blogID, from, callback [, input])`
+
+Fetches the redirect destination stored under `from` for the given blog.
+
+- `blogID` — string
+- `from` — string; the exact path or regex pattern stored as a key
+- `callback` — called with `(err, to)` where `to` is the destination string or `null`
+- `input` — optional string; the original request URL. Required when `from` is a regex pattern so that capture groups in `to` can be substituted.
+
+When `from` is a non-regex value, `input` is ignored and the raw stored value is returned. When `from` is a regex and `input` is provided, the destination is produced by applying `input.replace(from, to)`.
+
+### `check(blogID, input, callback)`
+
+Resolves the redirect destination for an arbitrary request URL.
+
+- `blogID` — string
+- `input` — string; the URL path of the incoming request
+- `callback` — called with `(err, redirect)` where `redirect` is the destination string or `undefined` if no rule matched
+
+Resolution order:
+
+1. Attempts a direct key lookup via `get(blogID, input, ...)`.
+2. If no direct match, scans the sorted set with `ZSCAN`, testing each member that is identified as a regex pattern against `input`.
+3. Returns `undefined` if no rule matches.
+
+### `list(blogID, callback)`
+
+Returns all redirect rules for the blog in insertion order.
+
+- `blogID` — string
+- `callback` — called with `(err, redirects)` where `redirects` is an array of `{ from, to, index }` objects
+
+### `drop(blogID, from, callback)`
+
+Removes the redirect rule whose source path is `from`.
+
+- `blogID` — string
+- `from` — string
+- `callback` — called with no arguments on success; throws on Redis error
+
+### `key`
+
+The `key` module is exported directly for consumers that need to construct Redis keys independently.
+
+```js
+key.redirects(blogID)          // "blog:<blogID>:redirects"
+key.redirect(blogID, from)     // "blog:<blogID>:redirect:<from>"
+```
+
+### `util`
+
+Exported for use by callers that need regex-awareness outside the standard CRUD operations.
+
+| Function | Signature | Description |
+|---|---|---|
+| `isRegex(string)` | `(string) → boolean` | Returns `true` if the string begins with `\` or contains `(.*)` or `$1`. |
+| `notRegex(string)` | `(string) → boolean` | Inverse of `isRegex`. |
+| `is(input, from)` | `(string, string) → boolean` | Tests `input` against `from` compiled as a case-insensitive `RegExp`. |
+| `map(input, from, to)` | `(string, string, string) → string\|null` | Applies `input.replace(RegExp(from, 'i'), to)`. Returns `null` on compilation failure. |
+| `matches(to, mappings)` | `(string, Array) → boolean` | Returns `true` if `to` matches any `from` in `mappings`, either by exact string equality or regex match. Used by `set` to detect redirect loops. |
+
+## Integration points
+
+### Blog request pipeline
+
+`app/blog/error.js` registers a middleware that calls `Redirects.check(req.blog.id, req.url, ...)` before serving a 404. A matched redirect causes a `301` response via `res.redirect(301, redirect)`. An exact self-match (`redirect === req.url`) is treated as no match to prevent infinite loops.
+
+### Dashboard
+
+`app/dashboard/site/load/redirects.js` calls `Redirects.list` to populate `res.locals.redirects` for the site settings page.
+
+`app/dashboard/site/save/redirects.js` normalizes form input and calls `Redirects.set` to persist the updated rule list. Normalization ensures bare paths without a leading `/` are prefixed before storage.
+
+## Dependencies
+
+- **`models/client`** — shared Redis client instance (`app/models/client.js` → `app/models/redis.js`).
+- **`helper/ensure`** — runtime argument type validation used in every exported function.
+- **`lodash`** — used in `list.js` for `_.map` and `_.zip`.
+
+## Known constraints
+
+- Regex detection in `util.isRegex` is heuristic: a string is treated as a regex only if it starts with `\` or contains the literal substrings `(.*)` or `$1`. Arbitrary regular expression syntax is not detected.
+- `check` uses `ZSCAN` for regex scanning, which does not guarantee full-set iteration in a single call on very large sets; cursor-based pagination is implemented.
+- `drop` throws synchronously on Redis error rather than forwarding the error to its callback.
+- There are no tests specific to this module. Integration coverage exists in `app/blog/tests/error.js`.

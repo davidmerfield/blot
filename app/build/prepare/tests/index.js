@@ -58,6 +58,67 @@ describe("prepare", function () {
     expect(entry.body).toEqual(entry.html);
   });
 
+
+  it("uses mixed-case metadata keys for page, menu and permalink", function () {
+    var entry = this.entry;
+
+    entry.path = "/post.txt";
+    entry.html = "<p>Hello there</p>";
+    entry.draft = false;
+    entry.metadata = {
+      Page: "yes",
+      MENU: "no",
+      Permalink: "/mixed-case"
+    };
+
+    prepare(entry);
+
+    expect(entry.page).toEqual(true);
+    expect(entry.menu).toEqual(false);
+    expect(entry.permalink).toEqual("/mixed-case");
+  });
+
+
+
+  it("overwrites titleTag from canonical metadata key", function () {
+    var entry = this.entry;
+
+    entry.html = "<h1>Generated title</h1><p>Body</p>";
+    entry.metadata = {
+      titleTag: "Metadata title tag"
+    };
+
+    prepare(entry);
+
+    expect(entry.titleTag).toEqual("Metadata title tag");
+  });
+
+  it("overwrites titleTag from mixed-case metadata key", function () {
+    var entry = this.entry;
+
+    entry.html = "<h1>Generated title</h1><p>Body</p>";
+    entry.metadata = {
+      TitleTag: "Mixed case metadata title tag"
+    };
+
+    prepare(entry);
+
+    expect(entry.titleTag).toEqual("Mixed case metadata title tag");
+  });
+
+  it("overwrites teaserBody from metadata", function () {
+    var entry = this.entry;
+
+    entry.html = "<p>Generated teaser body</p>";
+    entry.metadata = {
+      teaserBody: "Metadata teaser body"
+    };
+
+    prepare(entry);
+
+    expect(entry.teaserBody).toEqual("Metadata teaser body");
+  });
+
   it("generates an empty title when given an empty file", function () {
     var entry = this.entry;
 

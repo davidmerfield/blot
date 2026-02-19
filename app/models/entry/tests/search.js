@@ -147,6 +147,19 @@ describe("entry.search", function () {
     done();
   });
 
+
+  it("ignores entries with mixed-case Search metadata set to no", async function (done) {
+    const path = "/post-mixed-search.txt";
+    const contents = `SeArCh: no
+    Hello, world!`;
+
+    await this.set(path, contents);
+
+    expect((await this.search("Hello")).length).toEqual(0);
+
+    done();
+  });
+
   it("includes pages with Search: yes metadata", async function (done) {
     const path = "/Pages/About.txt";
     const contents = `Search: yes

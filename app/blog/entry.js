@@ -2,6 +2,12 @@ var Entry = require("models/entry");
 var normalize = require("helper/urlNormalizer");
 var plugins = require("build/plugins");
 var Entries = require("models/entries");
+var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
+
+var normalizeMetadataToggle = function (value) {
+  if (typeof value === "undefined" || value === null) return "";
+  return String(value).trim().toLowerCase();
+};
 
 module.exports = function (request, response, next) {
   
@@ -32,9 +38,13 @@ module.exports = function (request, response, next) {
     // Disable comments in cases:
     // 1. Blog post metadata DOES have  'Comments: No'
     // 2. Page metadata DOES NOT have   'Comments: Yes'
+    var metadataByLowercaseKey = metadataCaseInsensitive(entry.metadata);
+    entry.metadataLowercase = metadataByLowercaseKey;
+    var commentsToggle = normalizeMetadataToggle(metadataByLowercaseKey.comments);
+
     if (
-      entry.metadata.comments === "No" ||
-      (entry.metadata.comments !== "Yes" && entry.page)
+      commentsToggle === "no" ||
+      (commentsToggle !== "yes" && entry.page)
     ) {
       delete blog.plugins.commento;
       delete blog.plugins.disqus;

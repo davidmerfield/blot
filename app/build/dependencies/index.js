@@ -3,6 +3,7 @@ var cheerio = require("cheerio");
 var is_url = require("./is_url");
 var debug = require("debug")("blot:build:dependencies");
 var is_path = require("./is_path");
+var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 
 // The purpose of this module is to take the HTML for
 // a given blog post and work out if it references any
@@ -19,6 +20,7 @@ function dependencies (path, html, metadata) {
   var $ = cheerio.load(html, { decodeEntities: false }, false);
   var dependencies = [];
   var attribute, value, resolved_value;
+  var metadataByLowercaseKey = metadataCaseInsensitive(metadata);
 
   // We have to be slightly stricter for
   Object.keys(metadata).forEach(function (attribute) {
@@ -47,7 +49,11 @@ function dependencies (path, html, metadata) {
 
     // Try and resolve the thumbnail path
     // Likewise if it's e.g. ./image.png
-    if (attribute === "thumbnail" || value.indexOf("./") === 0) {
+    var isThumbnail =
+      attribute.toLowerCase() === "thumbnail" &&
+      value === metadataByLowercaseKey.thumbnail;
+
+    if (isThumbnail || value.indexOf("./") === 0) {
       dependencies.push(resolved_value);
       metadata[attribute] = resolved_value;
       debug(path, attribute, resolved_value, "was added to dependencies");

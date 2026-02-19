@@ -50,7 +50,7 @@ describe("pluginHTML", function () {
         await this.blog.update({plugins})
 
         await this.template({ "entry.html": "{{{entry.html}}} {{> pluginHTML}}" });
-        await this.write({path: '/a.txt', content: 'Link: /foo\n\nHello, world!'});        
+        await this.write({path: '/a.txt', content: 'Link: /foo\nDisqus: mixed-case-disqus-id\n\nHello, world!'});        
         await this.write({path: '/Pages/about.txt', content: 'Link: /about\n\nHello, world!'});        
         await this.write({path: '/Drafts/test.txt', content: 'Hello, draft!'});
 
@@ -61,6 +61,13 @@ describe("pluginHTML", function () {
         }
 
         expect(await areThereComments('/foo')).toBe(true, 'comments should appear on posts');
+
+        const fooRes = await this.get('/foo');
+        const fooBody = await fooRes.text();
+
+        expect(fooRes.status).toEqual(200);
+        expect(fooBody).toContain("var disqus_identifier = 'mixed-case-disqus-id';");
+
         expect(await areThereComments('/about')).toBe(false, 'comments should not appear on pages');
         expect(await areThereComments('/draft/view/Drafts/test.txt')).toBe(false, 'comments should not appear on drafts');  
 
@@ -79,6 +86,29 @@ describe("pluginHTML", function () {
         expect(await areThereComments('/about')).toBe(true, 'comments should appear on a pages with comments enabled');
 
         expect(await areThereComments('/foo')).toBe(false, 'comments should not appear on posts with comments disabled');
+    });
+
+    it("normalizes comment metadata toggles", async function () {
+
+        const plugins = {...this.blog.plugins, commento: {enabled: true, options: {}}};
+        await this.blog.update({plugins})
+
+        await this.template({ "entry.html": "{{{entry.html}}} {{> pluginHTML}}" });
+        await this.write({path: '/post-no.txt', content: 'Link: /post-no\nComments: no\n\nHello, world!'});
+        await this.write({path: '/post-mixed-no.txt', content: 'Link: /post-mixed-no\ncOmMeNtS: nO\n\nHello, world!'});
+        await this.write({path: '/Pages/page-mixed-yes.txt', content: 'Link: /page-mixed-yes\ncOmMeNtS: YeS\n\nHello, page!'});
+        await this.write({path: '/Pages/page-whitespace-yes.txt', content: 'Link: /page-whitespace-yes\nComments:  yes \n\nHello, page!'});
+
+        const areThereComments = async (path) => {
+            const res = await this.get(path);
+            const body = await res.text();
+            return body.includes('<script defer') && body.includes('src="https://cdn.commento.io/js/commento.js"');
+        }
+
+        expect(await areThereComments('/post-no')).toBe(false, 'comments should not appear on posts with lowercase no');
+        expect(await areThereComments('/post-mixed-no')).toBe(false, 'comments should not appear on posts with mixed case no');
+        expect(await areThereComments('/page-mixed-yes')).toBe(true, 'comments should appear on pages with mixed case yes');
+        expect(await areThereComments('/page-whitespace-yes')).toBe(true, 'comments should appear on pages with whitespace around yes');
     });
 
     it("injects google analytics into appJS", async function () {
