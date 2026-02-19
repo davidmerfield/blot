@@ -18,5 +18,5 @@ require('./site-settings-autosubmit.js');
 require('./site-settings-links.js');
 require('./site-settings-images.js');
 require('./site-settings-redirects.js');
-require('../dashboard/template/js/sidebar-action-menu.js');
+require('./sidebar-action-menu.js');
 

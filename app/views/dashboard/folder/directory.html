@@ -160,29 +160,33 @@
             });
           }
 
-          if (folderBox && folderFileActionMenu && typeof window.initSidebarActionMenu === 'function') {
-            window.initSidebarActionMenu({
-              container: folderBox,
-              menuElement: folderFileActionMenu,
-              rowSelector: '.directory-row',
-              triggerSelector: '.directory-row__menu-trigger',
-              linkMap: {
-                download: function (dataset) {
-                  if (!dataset || !dataset.url) return null;
-                  return '{{{base}}}/folder-download' + dataset.url;
-                },
-                remove: function (dataset) {
-                  if (!dataset || dataset.directory === 'true') {
-                    return null;
-                  }
+          if (folderBox && folderFileActionMenu) {
+            if (typeof window.initSidebarActionMenu === 'function') {
+              window.initSidebarActionMenu({
+                container: folderBox,
+                menuElement: folderFileActionMenu,
+                rowSelector: '.directory-row',
+                triggerSelector: '.directory-row__menu-trigger',
+                linkMap: {
+                  download: function (dataset) {
+                    if (!dataset || !dataset.url) return null;
+                    return '{{{base}}}/folder-download' + dataset.url;
+                  },
+                  remove: function (dataset) {
+                    if (!dataset || dataset.directory === 'true') {
+                      return null;
+                    }
 
-                  return {
-                    href: 'action:remove-file',
-                    disabled: dataset.entry === 'true'
-                  };
+                    return {
+                      href: 'action:remove-file',
+                      disabled: dataset.entry === 'true'
+                    };
+                  }
                 }
-              }
-            });
+              });
+            } else {
+              console.warn('window.initSidebarActionMenu is not available on folder pages. Ensure dashboard.min.js includes app/views/js/sidebar-action-menu.js.');
+            }
           }
 
           if (folderFileActionMenu) {
