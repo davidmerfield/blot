@@ -1,0 +1,277 @@
+# models/entries
+
+This module provides blog-scoped operations over the Redis sorted sets that group entries by state. It is the query layer that sits above `models/entry`: whereas `models/entry` handles individual entry persistence, `models/entries` handles list retrieval, pagination, cross-entry traversal, bulk operations, and index maintenance across the full set of entries belonging to a blog.
+
+All storage is backed by Redis. This module does not write entry objects directly; it reads from and manages the sorted-set membership lists written by `models/entry`'s internal `_assign.js`.
+
+---
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `index.js` | Public module surface. Implements all exported functions using Redis sorted-set operations and delegates individual entry retrieval to `models/entry`. |
+| `pathIndex.js` | Manages the lexicographic index (`blog:{blogID}:entries:lex`) used for path-prefix filtering. Exposes key-name helpers and a `backfillIndex` function for repairing a diverged index. |
+| `tests.js` | Jasmine test suite covering the public API. Uses `global.test.blog()` for test setup and spies on `Entry.get` and `Entry.set` where full build pipeline execution is not required. |
+
+---
+
+## Redis Key Structure
+
+The lists recognised by this module are defined inside `index.js` and keyed by `listKey(blogID, listName)`:
+
+| Key pattern | Sorted by | Contents |
+|-------------|-----------|----------|
+| `blog:{blogID}:all` | `entry.created` | All entries including deleted |
+| `blog:{blogID}:created` | `entry.created` | All non-deleted entries |
+| `blog:{blogID}:entries` | `entry.dateStamp` | Published, visible posts |
+| `blog:{blogID}:drafts` | `entry.dateStamp` | Draft entries |
+| `blog:{blogID}:scheduled` | `entry.dateStamp` | Scheduled (future-dated) entries |
+| `blog:{blogID}:pages` | `entry.dateStamp` | Page entries |
+| `blog:{blogID}:deleted` | deletion timestamp | Deleted entries |
+| `blog:{blogID}:entries:lex` | score 0 (lexicographic) | Entry IDs for path-prefix lookup |
+
+The `entries:lex` key is a parallel sorted set over the same members as `entries` but scored at 0, making it suitable for `ZRANGEBYLEX` queries. It is populated on demand by `pathIndex.backfillIndex` and updated incrementally by `models/entry/_assign.js` when the index is marked ready.
+
+---
+
+## Public API
+
+All functions are properties of the object exported by `index.js`. Require the module as:
+
+```js
+const Entries = require('models/entries');
+```
+
+### `getPage(blogID, options, callback)`
+
+Returns a single page of published entries from the `entries` list with full pagination metadata.
+
+**Parameters:**
+
+- `blogID` — string
+- `options` — object with the following fields:
+  - `pageNumber` — string or number; 1-based; must be a positive integer no greater than `10000`. Returns a `400` error if invalid.
+  - `pageSize` — string or number; clamped to the range `[1, 100]`; defaults to `5`.
+  - `sortBy` — `"date"` (default) or `"id"` (lexicographic sort on entry ID).
+  - `order` — `"asc"` (default) or `"desc"`.
+  - `pathPrefix` — string; when provided, restricts results to entries whose ID begins with this prefix, using the `entries:lex` index.
+- `callback(err, entries, pagination)` — called with an array of `Entry` instances and a pagination object, or `(err, null, null)` on validation failure.
+
+**Pagination object:**
+
+```js
+{
+  total: 3,      // total number of pages
+  current: 2,    // current page number (1-based)
+  pageSize: 5,   // entries per page
+  next: 3,       // present only when a next page exists
+  previous: 1    // present only when a previous page exists
+}
+```
+
+When there is only one page, `pagination` is set to `false` on the callback. The last entry in each page has the pagination object attached as `entry.pagination`.
+
+Each entry in the result has an `index` property: a 1-based ordinal reflecting the entry's position in the total ordered set (the earliest published entry has index 1, the most recently published has index equal to total entry count).
+
+### `get(blogID, options, callback)`
+
+Retrieves one or more named lists in a single call.
+
+- `options.lists` — array of list names (e.g. `["entries", "drafts", "scheduled"]`). Alternatively `options.list` (string) may be used for a single list.
+- `options.skinny` — defaults to `true`; when `true`, retrieves full entry objects via `Entry.get`. When `false`, returns raw entry IDs only.
+- `callback(err, response)` — `response` is an object keyed by list name, each value being an array of entries or IDs.
+
+### `getAll(blogID, [options,] callback)`
+
+Retrieves all entries including deleted ones (reads from the `all` list). Returns skinny entry objects by default (`options.skinny` defaults to `true`).
+
+- `callback(entries)` — array of `Entry` instances.
+
+### `getAllIDs(blogID, callback)`
+
+Returns all entry IDs (including deleted) in reverse-creation-date order.
+
+- `callback(err, ids)` — array of string IDs.
+
+### `getTotal(blogID, callback)`
+
+Returns the count of entries in the published `entries` list.
+
+- `callback(err, total)` — integer.
+
+### `getListIDs(blogID, listName, options, callback)`
+
+Returns the IDs of entries in a named list.
+
+- `options.first` — if set, limits results to the first `N` IDs.
+- `callback(err, ids)` — array of string IDs in reverse-score order.
+
+### `getRecent(blogID, callback)`
+
+Returns the 31 most recently published entries (index range `0..30` from the `entries` list) with `index` properties attached.
+
+- `callback(entries)` — array of `Entry` instances.
+
+### `getCreated(blogID, after, callback)`
+
+Returns entries added to the `created` list after a given Unix timestamp.
+
+- `after` — number (milliseconds since epoch).
+- `callback(err, entries)` — array of `Entry` instances.
+
+### `getDeleted(blogID, after, callback)`
+
+Returns entries added to the `deleted` list after a given Unix timestamp.
+
+- `after` — number (milliseconds since epoch).
+- `callback(err, entries)` — array of `Entry` instances.
+
+### `adjacentTo(blogID, entryID, callback)`
+
+Finds the chronologically adjacent published entries around a given entry.
+
+- `entryID` — string; the ID of the entry to find neighbours for.
+- `callback(next, previous, rank)` — `next` and `previous` are `Entry` instances or `undefined` if the entry is at a boundary. `rank` is the 1-based position of the entry in the `entries` list.
+
+### `each(blogID, dothis, callback)`
+
+Iterates over all entries (including deleted) in reverse-creation-date order, calling `dothis(entry, next)` for each one serially.
+
+- `dothis(entry, next)` — called with a full `Entry` instance; call `next()` to continue.
+- `callback(err)` — called when iteration is complete.
+
+### `random(blogID, callback)`
+
+Returns a randomly selected published entry that has a public URL.
+
+- Calls `ZRANDMEMBER` on the `entries` list and verifies the result has a `url` field. Retries up to `random.MAX_ATTEMPTS` (10) times if the selected entry has no URL.
+- `callback(entry)` — an `Entry` instance, or `undefined` if no suitable entry was found within the attempt limit.
+
+`random.MAX_ATTEMPTS` is exposed as a property on the function.
+
+### `resave(blogID, callback)`
+
+Re-saves every entry in the blog (using the `all` list, which includes deleted entries) with an updated `dateStamp`.
+
+- Loads the blog record to resolve the current permalink configuration.
+- For each entry, calls `DateStamp(blog, entry.path, entry.metadata)` and calls `Entry.set` with the result.
+- Used when a blog's permalink format changes and all date stamps must be recomputed.
+- `callback(err)`.
+
+### `pruneMissing(blogID, callback)`
+
+Removes stale IDs from all managed sorted sets.
+
+- Iterates every list name, fetches its members from Redis, attempts to load them via `Entry.get`, and removes any ID for which no entry data exists.
+- `callback(err)`.
+
+---
+
+## `pathIndex.js`
+
+This file manages the `entries:lex` sorted set used by `getPage` when a `pathPrefix` filter is active.
+
+### Exported functions
+
+#### `lexKey(blogID)`
+
+Returns the Redis key string for the lexicographic index: `blog:{blogID}:entries:lex`.
+
+#### `readyKey(blogID)`
+
+Returns the Redis key string for the readiness flag: `blog:{blogID}:entries:lex:ready`.
+
+#### `backfillIndex(blogID, callback)`
+
+Rebuilds the lex index from scratch by reading all members of `blog:{blogID}:entries` and writing them into `blog:{blogID}:entries:lex` with score 0 in a single `MULTI` transaction. Sets the ready flag on completion.
+
+- `callback(err, count)` — `count` is the number of entries written.
+
+The lex index is only updated incrementally by `_assign.js` when the ready flag is present. If the flag is absent, `_assign.js` skips updates and the index must be backfilled explicitly (e.g. by the `app/sync/fix/entries-path-index.js` repair script).
+
+---
+
+## Internal Structure
+
+`index.js` is a self-invoking function that closes over private helpers:
+
+- `listKey(blogID, list)` — constructs and validates Redis key strings. Throws if `list` is not one of the eight recognised list names.
+- `getRange(blogID, start, end, options, callback)` — the internal paginated fetch used by `getAll`, `getRecent`, `lastUpdate`, and `getPage`. Issues a `ZREVRANGE` and optionally hydrates results via `Entry.get`.
+- `validatePageNumber`, `validatePageSize`, `validateSortBy`, `validateSortOrder` — input sanitisation helpers used by `getPage`. Not exported.
+- `normalizePathPrefix` — normalises a path prefix string (trims, ensures leading `/`).
+- `fetchEntryScores` — fetches scores for a list of entry IDs from the `entries` sorted set using `batch().zscore`. Used for date-sorting within path-prefix–filtered result sets.
+- `getPrefixFilteredPage` — handles `getPage` calls when a `pathPrefix` is provided. Performs a `ZRANGEBYLEX` on the lex index and then sorts and paginates the matching IDs.
+- `handlePaginationAndCallback` — shared final step for all `getPage` code paths. Hydrates entry IDs, attaches `index` properties, constructs the pagination object, and attaches it to the last entry in the result.
+
+---
+
+## Dependencies
+
+### Internal
+
+| Module | Role |
+|--------|------|
+| `models/client` | Redis client singleton |
+| `models/entry` | Individual entry retrieval (`get`) and write (`set`) |
+| `models/blog` | Blog record lookup, used by `resave` |
+| `helper/ensure` | Runtime argument type validation |
+| `app/build/prepare/dateStamp` | Date stamp resolution used by `resave` |
+
+### External
+
+| Package | Role |
+|---------|------|
+| `async` | Serial iteration in `each` and `pruneMissing` |
+
+---
+
+## Integration Points
+
+| Consumer | Functions used |
+|----------|----------------|
+| `app/blog/entries.js` | `getPage` — serves the paginated entries list view |
+| `app/blog/render/retrieve/posts.js` | `getPage` — provides posts to template rendering |
+| `app/blog/render/retrieve/recent_entries.js` | `getRecent` |
+| `app/blog/render/retrieve/all_entries.js` | `getAll` |
+| `app/blog/render/retrieve/total_posts.js` | `getTotal` |
+| `app/blog/render/retrieve/archives.js` | `getAll` |
+| `app/blog/render/retrieve/latest_entry.js` | `getPage` |
+| `app/blog/entry.js` | `adjacentTo` — next/previous navigation |
+| `app/blog/random.js` | `random` — random entry redirect |
+| `app/blog/draft.js` | `adjacentTo` |
+| `app/dashboard/site/save/finish.js` | `resave` |
+| `app/dashboard/site/link-format.js` | `resave` |
+| `app/dashboard/site/export.js` | `getAll` |
+| `app/dashboard/site/load/scheduled.js` | `get` with `lists: ["scheduled"]` |
+| `app/scheduler/publish-scheduled-entries.js` | `get` with `lists: ["scheduled"]` |
+| `app/scheduler/daily/new-posts.js` | `getCreated`, `getDeleted` |
+| `app/sync/renames.js` | `each` |
+| `app/sync/fix/entry-ghosts.js` | `pruneMissing` |
+| `app/sync/fix/list-ghosts.js` | `getAllIDs` |
+| `app/sync/fix/entries-path-index.js` | `pathIndex.backfillIndex`, `pathIndex.lexKey` |
+| `app/build/plugins/wikilinks/byTitle.js` | `get` with `lists: ["entries", "pages"]` |
+| `app/documentation/featured/candidates.js` | `getAll` |
+
+---
+
+## Testing
+
+Tests are in `tests.js` and use the project's Jasmine-based test harness. The suite calls `global.test.blog()` to provision a test blog and reset Redis state between tests.
+
+Test coverage includes:
+
+- Entry TTL behaviour on delete and restore
+- Scheduled entry flag clearing when `dateStamp` is removed
+- `pruneMissing` removal of orphaned IDs
+- `getTotal` and `getAllIDs` against seeded Redis state
+- `getPage` input validation (rejects invalid page numbers)
+- `getPage` date-based and ID-based sorting and pagination
+- `getRecent` with index assignment
+- `adjacentTo` at boundaries and midpoints
+- `random` retry logic and maximum-attempt cutoff
+- `resave` with mocked `Blog.get` and `Entry.set`
+- Path index incremental maintenance after `Entry.set`
+- Path-prefix pagination via the lex index
+
+To run the tests, use the project's standard test runner targeting `app/models/entries/tests.js`. A running Redis instance is required.

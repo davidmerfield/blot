@@ -1,0 +1,250 @@
+# models/user
+
+Provides all data access and lifecycle operations for Blot user accounts. This module is the sole interface through which the rest of the application reads and writes user records. All state is persisted in Redis; there is no secondary data store.
+
+## Role in the Application
+
+A user account is the top-level entity in Blot. Every user owns one or more blogs (`user.blogs` holds an array of blog IDs) and holds billing state for either a Stripe or PayPal subscription. Authentication, account creation, account deletion, subscription status interpretation, and notification scheduling all originate from this module.
+
+The module is consumed directly by the dashboard routes (sign-up, log-in, account management), webhook handlers (Stripe and PayPal), scheduled jobs, and the Git client authenticator.
+
+---
+
+## File Inventory
+
+### Core Schema and Keys
+
+| File | Description |
+|------|-------------|
+| `model.js` | Defines the canonical user schema as a plain object mapping field names to type strings. Used by `validate/` to enforce types on read and write. |
+| `key.js` | Generates all Redis key strings used by this module: the global UID set, per-user info hash, email-to-UID index, Stripe customer-to-UID index, and PayPal subscription-to-UID index. |
+
+### CRUD Operations
+
+| File | Description |
+|------|-------------|
+| `create.js` | Creates a new user record. Generates a UID, validates the initial field set, writes all Redis keys atomically via `MULTI`, and schedules a subscription renewal notification email. |
+| `set.js` | Updates an existing user by merging validated `updates` into the current record. Maintains secondary indexes (email, Stripe customer, PayPal subscription ID) and propagates email changes to Stripe via `updateBillingEmail`. |
+| `getById.js` | Fetches a user by UID. Applies defaults for `created` and `welcomeEmailSent` on records that pre-date those fields. Returns `null` if not found. |
+| `getByEmail.js` | Resolves a UID from the email index and delegates to `getById`. Normalizes the email to lowercase before lookup. |
+| `getByCustomerId.js` | Resolves a UID from the Stripe customer index and delegates to `getById`. |
+| `getByPayPalSubscriptionId.js` | Resolves a UID from the PayPal subscription index and delegates to `getById`. |
+| `getAllIds.js` | Returns all UIDs from the global `uids` Redis set via `SMEMBERS`. |
+| `remove.js` | Deletes all Redis keys associated with a user (info hash, email index, Stripe customer index, PayPal index, sync lease keys) and removes the UID from the global set. |
+
+### Authentication
+
+| File | Description |
+|------|-------------|
+| `hashPassword.js` | Hashes a plaintext password using `bcryptjs` with a cost factor of 10. |
+| `checkPassword.js` | Compares a plaintext password against the stored `passwordHash` using `bcrypt.compare`. |
+| `generateAccessToken.js` | Generates a 16-byte cryptographically random token, stores it in Redis with a TTL (default: 24 hours), and returns it as a hex string. The stored value is either a UID (password-reset flow) or the literal `1` (account creation flow). |
+| `checkAccessToken.js` | Retrieves the value stored against a token and immediately deletes it. The token is single-use; a second call always fails. Returns an error if the token is absent or already consumed. |
+
+### Account State
+
+| File | Description |
+|------|-------------|
+| `disable.js` | Sets `isDisabled: true` on the user record and propagates `isDisabled: true` to every blog the user owns via `models/blog/set`. |
+| `enable.js` | Sets `isDisabled: false` on the user record and propagates `isDisabled: false` to every blog the user owns. |
+
+### Subscription Logic
+
+| File | Description |
+|------|-------------|
+| `subscriptionLifecycle.js` | Pure functions that interpret Stripe and PayPal subscription state. Determines whether a subscription should cause account disablement, whether it is cancelled, whether it is overdue, and whether it is past the grace period for deletion. Handles both Stripe (Unix seconds timestamps) and PayPal (ISO 8601 strings) date formats. |
+| `subscriptionTenure.js` | Computes the total elapsed subscription duration in milliseconds by finding the earliest subscription start date across Stripe and PayPal records. |
+
+### View Preparation
+
+| File | Description |
+|------|-------------|
+| `extend.js` | Annotates a user object with derived display properties before passing it to view templates. Removes sensitive fields (`passwordHash`, `credentials`, `created`, `welcomeEmailSent`). Adds `isSubscribed`, `willCancel`, `isFreeForLife`, `isUnpaid`, `isPastDue`, `needsToPay`, `isMonthly`, `totalFee`, and formatted `pretty.*` fields. Also adds blog plurality helpers (`multipleBlogs`, `s`, `are`). |
+
+### Email Scheduling
+
+| File | Description |
+|------|-------------|
+| `scheduleWelcomeEmail.js` | Schedules a welcome email to be sent 2 hours after account creation using `node-schedule`. If the scheduled time has already passed when called, the email is sent immediately. Skips scheduling if `welcomeEmailSent` is already `true`. Uses an in-process `Map` to track and cancel pending jobs. |
+| `scheduleSubscriptionEmail.js` | Schedules a subscription renewal or expiry notification email 8 days before the Stripe `current_period_end`. Only fires for annual subscriptions or the first monthly renewal. Skips scheduling if the notification date is already past. |
+
+### Internal Utilities
+
+| File | Description |
+|------|-------------|
+| `generateId.js` | Generates a unique user ID of the form `user_XXXXXXXXXXX` using a 32-character alphanumeric charset (no visually ambiguous characters). Total length is 16 characters including the prefix. |
+| `updateBillingEmail.js` | Calls the Stripe API to update the billing email on the Stripe customer record when a user changes their email address. No-ops if the user has no Stripe customer ID. |
+
+### Validation
+
+| File | Description |
+|------|-------------|
+| `validate/index.js` | Merges an `updates` object into a user record after type-checking each field against `model.js`. Dispatches to field-specific validators where they exist, then does a final full-model type check. Returns the updated user object and an array of changed field names. |
+| `validate/email.js` | Normalizes the candidate email (trim, lowercase, strip spaces), checks format with a regex, and verifies uniqueness by querying `getByEmail`. Returns an error with code `EEXISTS` if the address is registered to a different user. |
+
+### Public Interface
+
+| File | Description |
+|------|-------------|
+| `index.js` | Re-exports every public function. This is the intended import target for all external consumers. |
+
+### Tests
+
+| File | Description |
+|------|-------------|
+| `tests/create.js` | Verifies that `create` produces a valid user object with expected initial field values and that `remove` cleans up without error. |
+| `tests/set.js` | Verifies that changing a user's email via `set` removes the old email index key from Redis. |
+| `tests/scheduleWelcomeEmail.js` | Verifies immediate email dispatch when the scheduled time is overdue, that re-scheduling is skipped when `welcomeEmailSent` is true, and that `getById` applies correct defaults for legacy user records missing `created` and `welcomeEmailSent`. |
+
+---
+
+## User Schema
+
+Defined in `model.js`:
+
+```
+uid              string   — Unique identifier, format: "user_XXXXXXXXXXX"
+email            string   — Primary email address (lowercase, trimmed)
+blogs            array    — List of blog IDs owned by this user
+isDisabled       boolean  — Whether the account is suspended
+lastSession      string   — Timestamp or identifier of last authenticated session
+created          number   — Unix timestamp (ms) of account creation
+welcomeEmailSent boolean  — Whether the initial welcome email has been dispatched
+passwordHash     string   — bcrypt hash of the user's password
+subscription     object   — Stripe subscription object (may be empty: {})
+paypal           object   — PayPal subscription object (may be empty: {})
+```
+
+---
+
+## Redis Key Structure
+
+Defined in `key.js`:
+
+| Key pattern | Type | Purpose |
+|---|---|---|
+| `uids` | Set | Global set of all user UIDs |
+| `user:{uid}:info` | String (JSON) | Serialized user object |
+| `email:{email}` | String | Maps email address to UID |
+| `customer:{customerId}` | String | Maps Stripe customer ID to UID |
+| `paypal:{subscriptionId}` | String | Maps PayPal subscription ID to UID |
+| `token:{token}` | String (TTL) | Single-use access token, value is UID or `"1"` |
+
+---
+
+## Public API
+
+All functions are exposed via `index.js`. Callbacks follow Node.js error-first convention: `callback(err, result)`.
+
+### `create(email, passwordHash, subscription, paypal, callback)`
+
+Creates a user record. Validates all fields, generates a UID, writes atomically to Redis, and schedules a subscription renewal notification. Retries automatically on UID collision.
+
+- `subscription` and `paypal` must be objects (may be empty `{}`).
+- Callback receives `(err, user)`.
+
+### `set(uid, updates, callback)`
+
+Merges `updates` into the existing user record after validation. Maintains all secondary indexes. If `email` changes, the old email key is deleted and the Stripe customer email is updated asynchronously.
+
+- Callback receives `(err, changes)` where `changes` is an array of changed field names.
+
+### `getById(uid, callback)`
+
+Fetches a user by UID. Returns `null` as the second argument if the UID does not exist.
+
+### `getByEmail(email, callback)`
+
+Fetches a user by email address. Normalizes input before lookup. Returns `null` if not found.
+
+### `getByCustomerId(customerId, callback)`
+
+Fetches a user by Stripe customer ID. Returns `null` if not found.
+
+### `getByPayPalSubscriptionId(subscriptionId, callback)`
+
+Fetches a user by PayPal subscription ID. Returns `null` if not found.
+
+### `getAllIds(callback)`
+
+Returns all UIDs as an array via `SMEMBERS` on the `uids` set.
+
+### `remove(uid, callback)`
+
+Deletes all Redis keys for the user and removes the UID from the global set. Also removes `sync:lease:{uid}` and `sync:again:{uid}` keys used by the sync subsystem.
+
+### `hashPassword(password, callback)`
+
+Returns a bcrypt hash of `password` (cost factor 10). Callback receives `(err, hash)`.
+
+### `checkPassword(uid, password, callback)`
+
+Compares `password` against the stored hash. Callback receives `(err, isMatch)` where `isMatch` is a boolean.
+
+### `generateAccessToken(options, callback)`
+
+Generates a single-use token stored in Redis with an expiry. `options.uid` sets the stored value (for password reset); omit for account creation flows. `options.expires` sets TTL in seconds (default: 86400). Callback receives `(err, token)`.
+
+### `checkAccessToken(token, callback)`
+
+Validates and consumes a token. Returns an error if the token is invalid or already used. Callback receives `(err, value)`.
+
+### `disable(user, [updates], callback)`
+
+Sets `isDisabled: true` on the user and all owned blogs.
+
+### `enable(user, [updates], callback)`
+
+Sets `isDisabled: false` on the user and all owned blogs.
+
+### `extend(user)`
+
+Mutates and returns `user` with derived display fields. Removes sensitive fields. Called by dashboard middleware before attaching the user to `req.user` and `res.locals.user`.
+
+### `scheduleWelcomeEmail(uid, callback)`
+
+Schedules a welcome email 2 hours after `user.created`. Sends immediately if the delay has elapsed. No-ops if `welcomeEmailSent` is already `true`.
+
+### `scheduleSubscriptionEmail(uid, callback)`
+
+Schedules a Stripe renewal/expiry notification 8 days before `current_period_end`. Applies only to annual subscriptions and the first monthly renewal. No-ops if the notification date is past.
+
+### `subscriptionTenure.getSubscriptionDurationMs(user, [now])`
+
+Returns elapsed subscription time in milliseconds from the earliest known subscription start (Stripe or PayPal), or `null` if no subscription data is present.
+
+### `validate(user, updates, callback)`
+
+Validates and merges `updates` into `user`. Field types are checked against `model.js`. The email field receives additional uniqueness validation. Callback receives `(err, updatedUser, changesArray)`.
+
+---
+
+## Dependencies
+
+### Internal
+
+- `models/client` — Shared Redis client instance (`models/client.js`)
+- `models/blog/set` — Used by `disable` and `enable` to propagate account state to blogs
+- `helper/ensure` — Runtime type assertion, used throughout for argument and schema validation
+- `helper/email` — Sends transactional emails (`WELCOME`, `UPCOMING_EXPIRY`, `UPCOMING_RENEWAL`, `UPCOMING_MONTHLY_FIRST_RENEWAL`)
+- `helper/amountInWords`, `helper/prettyDate`, `helper/prettyPrice` — Formatting utilities used in `extend.js`
+- `config` — Application configuration, provides Stripe and PayPal credentials and plan identifiers
+
+### External
+
+- `bcryptjs` — Password hashing and comparison
+- `stripe` — Stripe API client, used to update customer billing email
+- `node-schedule` — In-process job scheduling for deferred emails
+- `async` — Used for parallel iteration in `disable`, `enable`, and `validate`
+
+---
+
+## Integration Points
+
+- **Dashboard middleware** (`dashboard/util/load-user.js`): Calls `getById` on every authenticated request, then calls `extend` to annotate the user for templates. Redirects to the payment page if `user.needsToPay` is set.
+- **Sign-up route** (`dashboard/sign-up/index.js`): Calls `hashPassword`, `create`, and `scheduleWelcomeEmail` during account registration.
+- **Log-in routes** (`dashboard/log-in/`): Call `getByEmail`, `checkPassword`, `generateAccessToken`, and `checkAccessToken` during authentication and password reset.
+- **Stripe webhook** (`dashboard/webhooks/stripe_webhook.js`): Uses `getByCustomerId` to locate users when processing billing events.
+- **PayPal webhook** (`dashboard/webhooks/paypal_webhook.js`): Uses `getByPayPalSubscriptionId` to locate users when processing subscription events.
+- **Scheduler** (`app/scheduler/`): Uses `getAllIds` to iterate over users for periodic billing checks and subscription lifecycle enforcement.
+- **Blog removal** (`models/blog/remove.js`): Reads user records to clean up blog associations on deletion.

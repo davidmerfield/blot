@@ -1,0 +1,111 @@
+# models/404
+
+Tracks and manages 404 (page not found) events for individual blogs on the Blot platform. Each blog accumulates a per-blog log of URLs that returned a 404 response, stored in Redis. Blog owners can suppress specific URLs from their 404 log by placing them on an ignore list.
+
+## Role in the Application
+
+This module sits in the `app/models` layer, which owns all persistence logic. It is the sole interface for reading and writing 404 data. Two external areas consume it:
+
+- **`app/blog/error.js`** — the catch-all 404 middleware for rendered blogs. Every request that falls through to this handler calls `set` to record the requested URL.
+- **`app/dashboard/site/`** — the dashboard UI for blog settings. `load/404.js` calls `list` to populate the 404 log page; `save/404.js` calls `ignore` or `unignore` in response to form submissions at `POST /settings/redirects/404s`.
+
+## Files
+
+| File | Responsibility |
+|---|---|
+| `index.js` | Re-exports the public interface: `ignore`, `key`, `list`, `set`, `unignore`. |
+| `key.js` | Generates the Redis key strings used by all other files in this module. |
+| `set.js` | Records a URL as a 404 hit for a given blog, maintaining a capped, time-windowed sorted set. |
+| `list.js` | Retrieves all recorded 404 URLs for a blog, split into active and ignored buckets. |
+| `ignore.js` | Adds a URL to the blog's ignore set, suppressing it from the active 404 list. |
+| `unignore.js` | Removes a URL from the blog's ignore set, restoring it to the active 404 list. |
+
+## Public API
+
+All functions accept Node-style callbacks unless otherwise noted. Arguments are validated at runtime via `helper/ensure`; passing the wrong type throws immediately.
+
+---
+
+### `set(blogID, url, callback)`
+
+Records `url` as a 404 hit for `blogID`. Uses a Redis sorted set with the current Unix timestamp as the score. On each write, it also prunes the set by:
+
+- Removing entries older than 30 days.
+- Capping the set to the 500 most recent entries.
+
+The callback receives `(err)`.
+
+```js
+const { set } = require('models/404');
+set(blog.id, req.url, function(err) { /* ... */ });
+```
+
+---
+
+### `list(blogID, callback)`
+
+Retrieves all stored 404 entries for `blogID`. The callback receives `(err, list, ignored)`:
+
+- `list` — array of active (non-ignored) entries, each `{ url: string, time: string }` where `time` is a human-readable relative timestamp (e.g. `"3 days ago"`), sorted most-recent-first.
+- `ignored` — array of entries in the same shape that have been marked as ignored.
+
+```js
+const { list } = require('models/404');
+list(blog.id, function(err, list, ignored) {
+  // list: [{ url: '/missing-page', time: '2 hours ago' }, ...]
+  // ignored: [{ url: '/favicon.ico', time: '5 days ago' }, ...]
+});
+```
+
+---
+
+### `ignore(blogID, url, callback)`
+
+Adds `url` to the ignore set for `blogID`. Once ignored, `list` places this URL in the `ignored` bucket rather than `list`. The callback receives `(err, result)` from Redis `SADD`.
+
+```js
+const { ignore } = require('models/404');
+ignore(blog.id, '/favicon.ico', callback);
+```
+
+---
+
+### `unignore(blogID, url, callback)`
+
+Removes `url` from the ignore set for `blogID`, returning it to the active list. The callback receives `(err, result)` from Redis `SREM`.
+
+```js
+const { unignore } = require('models/404');
+unignore(blog.id, '/favicon.ico', callback);
+```
+
+---
+
+### `key`
+
+An object with two functions for generating Redis key strings. Consumed internally by `set`, `list`, `ignore`, and `unignore`. Exposed on the public interface for inspection or testing.
+
+| Function | Returns |
+|---|---|
+| `key.everything(blogID)` | `"blog:<blogID>:404:everything"` — key for the sorted set of all hits. |
+| `key.ignore(blogID)` | `"blog:<blogID>:404:ignore"` — key for the set of ignored URLs. |
+
+## Redis Data Structures
+
+| Key pattern | Type | Contents |
+|---|---|---|
+| `blog:<blogID>:404:everything` | Sorted set | Member: URL string. Score: Unix timestamp (ms) of most recent hit. |
+| `blog:<blogID>:404:ignore` | Set | URL strings the blog owner has chosen to suppress. |
+
+## Dependencies
+
+- **`models/client`** — the shared Redis client instance (`app/models/client.js`), which wraps `models/redis.js`.
+- **`helper/ensure`** — runtime argument type validation. All public functions call `ensure` before touching Redis.
+- **`moment`** (`list.js` only) — converts stored timestamps to human-readable relative strings via `moment.utc(ts).fromNow()`.
+
+## Known Constraints
+
+- The 30-day window and 500-entry cap are hardcoded in `set.js`. There is no configuration surface for these limits.
+- Pruning occurs on every write, not on a schedule. A URL that has been hit is stored with the timestamp of its most recent record only — the sorted set uses `ZADD` without `NX`, so repeated hits update the score rather than adding duplicate members.
+- The ignore list is stored as an unordered Redis set with no size limit.
+- There are no tests for this module.
