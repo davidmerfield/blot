@@ -203,11 +203,16 @@ function Prepare (entry, options = {}) {
 
   debug(entry.path, "Generating meta-overwrite");
 
-  for (var key in entry.metadata) {
-    const normalizedKey = key.toLowerCase();
+  const modelKeyByLower = Object.keys(Model).reduce((acc, modelKey) => {
+    acc[modelKey.toLowerCase()] = modelKey;
+    return acc;
+  }, {});
 
-    if (canOverwrite(normalizedKey) && type(entry.metadata[key], Model[normalizedKey]))
-      entry[normalizedKey] = entry.metadata[key];
+  for (var key in entry.metadata) {
+    const canonical = modelKeyByLower[key.toLowerCase()];
+
+    if (canOverwrite(canonical) && type(entry.metadata[key], Model[canonical]))
+      entry[canonical] = entry.metadata[key];
   }
 
   debug(entry.path, "Generated  meta-overwrite");

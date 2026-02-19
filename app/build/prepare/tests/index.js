@@ -78,6 +78,47 @@ describe("prepare", function () {
     expect(entry.permalink).toEqual("/mixed-case");
   });
 
+
+
+  it("overwrites titleTag from canonical metadata key", function () {
+    var entry = this.entry;
+
+    entry.html = "<h1>Generated title</h1><p>Body</p>";
+    entry.metadata = {
+      titleTag: "Metadata title tag"
+    };
+
+    prepare(entry);
+
+    expect(entry.titleTag).toEqual("Metadata title tag");
+  });
+
+  it("overwrites titleTag from mixed-case metadata key", function () {
+    var entry = this.entry;
+
+    entry.html = "<h1>Generated title</h1><p>Body</p>";
+    entry.metadata = {
+      TitleTag: "Mixed case metadata title tag"
+    };
+
+    prepare(entry);
+
+    expect(entry.titleTag).toEqual("Mixed case metadata title tag");
+  });
+
+  it("overwrites teaserBody from metadata", function () {
+    var entry = this.entry;
+
+    entry.html = "<p>Generated teaser body</p>";
+    entry.metadata = {
+      teaserBody: "Metadata teaser body"
+    };
+
+    prepare(entry);
+
+    expect(entry.teaserBody).toEqual("Metadata teaser body");
+  });
+
   it("generates an empty title when given an empty file", function () {
     var entry = this.entry;
 
