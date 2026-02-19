@@ -1,23 +1,238 @@
-https://github.com/Jack000/Expose
-https://mail.google.com/mail/u/0/?zx=s4822pgobzlz#inbox/1542a151ea981d82
+# build
 
+The `build` module is the core content processing pipeline for Blot. It accepts a blog object and a file path, reads the file from the blog's local directory, converts it to HTML, applies post-processing plugins, extracts metadata and derived properties, and returns a fully populated entry object ready to be saved to the data store.
 
-add support for 'caption file' e.g. img_4010.txt
-https://mail.google.com/mail/u/0/?zx=s4822pgobzlz#inbox/15420abdb1d340a4
-Want the api to be simple
-Entry.src = [..paths..]?
-Each file (including album files)
-  makeEntry(blog, path, callback)
-  Entry.save(path, callback?)
-Album posts
- album: true
- if (album) updateAlbum(blog.id, entry.id) //
-  <div class="album">
-    <div class="album-item">
-    {{> html}}
-    </div>
-  </div>
-Can this be considered connected to image caption feature?
-How to handle albums inside albums?
-Can I accomplish this without introducing entry.type?
-Or should I introduce entry.type?
+This module is invoked whenever a file in a blog's folder is created or changed. Its output is the entry object as it will appear to Blot's template renderer and data model.
+
+## Public API
+
+### `build(blog, path, callback)`
+
+Exported from `index.js`. This is the primary entry point for the entire module.
+
+```js
+const build = require('app/build');
+
+build(blog, '/2024-01-15 Hello World.txt', function (err, entry) {
+  if (err) return handleError(err);
+  // entry is a fully populated object ready for storage
+});
+```
+
+**Parameters:**
+
+- `blog` — A blog model object. Must include `id`, `domain`, `handle`, `plugins`, `converters`, `dateFormat`, `timeZone`, and `imageExif` fields.
+- `path` — The path to the file within the blog's folder, e.g. `/posts/hello.txt`.
+- `callback(err, entry)` — Called with an error or the completed entry object.
+
+**Returns via callback:**
+
+An entry object with the following fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `html` | string | The fully rendered HTML of the entry body after all plugins have run. |
+| `name` | string | The basename of the source file. |
+| `path` | string | The path to the source file within the blog folder. |
+| `id` | string | Same as `path`. |
+| `metadata` | object | Key-value pairs extracted from the file's front matter. |
+| `title` | string | Extracted or derived title, HTML-entity-decoded. |
+| `titleTag` | string | The raw HTML of the `<h1>` tag if one was found and removed from the body. |
+| `body` | string | The HTML of the entry after title extraction. |
+| `summary` | string | A plain-text excerpt up to 150 characters, derived from body text. |
+| `teaser` | string | The HTML of the entry up to the first read-more break point, or the first three block elements. |
+| `teaserBody` | string | Same as `teaser` but derived from `body` (post title-extraction). |
+| `more` | boolean | `true` if there is content after the teaser break. |
+| `slug` | string | A URL-friendly slug derived from the title or metadata title. |
+| `tags` | string[] | Tags extracted from `[brackets]` in the file path and/or from metadata. |
+| `draft` | boolean | `true` if the entry is a draft (via path or metadata). |
+| `page` | boolean | `true` if the entry is a page (via path, metadata, or underscore prefix). |
+| `menu` | boolean | `true` if the entry should appear in navigation menus. |
+| `permalink` | string | A custom permalink from metadata (`permalink`, `link`, or `url` keys). |
+| `dateStamp` | number | A UTC millisecond timestamp extracted from the path or metadata, adjusted for the blog's timezone. Absent if no date was found. |
+| `dateStampWasRemoved` | boolean | Set to `true` if a `dateStamp` was present before but is now absent. |
+| `updated` | number | The file's modification time in UTC milliseconds (`stat.mtime`). |
+| `size` | number | The file size in bytes from `stat.size`. |
+| `thumbnail` | object | Thumbnail variants generated from the first eligible image in the entry (or empty object). |
+| `dependencies` | string[] | Paths to other files in the blog folder that this entry references (e.g. images). |
+| `exif` | object | Sanitized EXIF metadata, populated for image files; empty object otherwise. |
+| `internalLinks` | string[] | All `href` values in the HTML that begin with `/`. |
+| `deleted` | boolean | Always `false` at build time. |
+
+**Errors:**
+
+- Returns `err.code === 'WRONGTYPE'` if no enabled converter accepts the file extension.
+- Propagates errors from the filesystem, converters, or plugins.
+
+---
+
+## Directory Structure
+
+```
+build/
+├── index.js               Entry point: orchestrates the full build pipeline
+├── single.js              Runs a single file through converter → metadata → dependencies → plugins
+├── metadata.js            Parses metadata from HTML comment blocks and YAML front matter
+├── converters/            File-type converters; each converts a source file to raw HTML
+│   ├── index.js           Loads and exports all converters; conditionally includes Pandoc-based ones
+│   ├── enabled.js         Filters converters by the blog's converter preferences
+│   ├── html/              Handles .html and .htm files
+│   ├── img/               Handles image files; converts non-web formats to PNG via sharp
+│   ├── markdown/          Handles .txt, .text, .md, .markdown files via Pandoc
+│   ├── gdoc/              Handles Google Doc exports (.gdoc); parses and cleans HTML
+│   ├── docx/              Handles Word documents (.docx) via Pandoc
+│   ├── odt/               Handles OpenDocument Text files (.odt) via Pandoc
+│   ├── rtf/               Handles Rich Text Format files (.rtf)
+│   ├── org/               Handles Org-mode files (.org) via Pandoc
+│   └── webloc/            Handles browser bookmark files (.webloc, .url)
+├── plugins/               HTML post-processing plugins applied after conversion
+│   ├── index.js           Loads all plugins; exports convert(), load(), list, defaultList
+│   ├── image/             Caches and optimizes images; sets width/height attributes
+│   ├── wikilinks/         Resolves [[wikilink]] syntax to real URLs
+│   ├── videoEmbeds/       Replaces bare YouTube, Vimeo, and Bandcamp URLs with embed players
+│   ├── codeHighlighting/  Applies syntax highlighting to fenced code blocks via highlight.js
+│   ├── imageCaption/      Converts image alt text to figure captions
+│   ├── autoImage/         Wraps bare images not inside block elements
+│   ├── externalLinks/     Adds target="_blank" or rel attributes to external links
+│   ├── linebreaks/        Converts single newlines to <br> tags
+│   ├── titlecase/         Applies title-case transformation to headings
+│   ├── injectTitle/       Injects the entry's title as an <h1> into the HTML
+│   ├── typeset/           Typography enhancements (smart quotes, ligatures, etc.)
+│   ├── katex/             Renders LaTeX math via KaTeX
+│   ├── twitter/           Embeds tweets from bare Twitter/X URLs
+│   ├── bluesky/           Embeds Bluesky posts from bare URLs
+│   ├── flickr/            Embeds Flickr photo sets
+│   ├── zoom/              Adds click-to-zoom behavior to images
+│   ├── mediaPreload/      Adds preload hints for media elements
+│   ├── linkScreenshot/    Generates screenshot thumbnails for links
+│   ├── analytics/         Injects analytics tracking code
+│   ├── commento/          Injects Commento comment threads
+│   └── disqus/            Injects Disqus comment threads
+├── prepare/               Derives entry properties from HTML and metadata
+│   ├── index.js           Orchestrates all prepare steps; returns the enriched entry
+│   ├── title.js           Extracts title from HTML headings, file path, or first sentence
+│   ├── titlify.js         Converts a file path into a human-readable title string
+│   ├── teaser.js          Splits HTML at read-more break points
+│   ├── summary.js         Generates a plain-text summary up to 150 characters
+│   ├── tags.js            Extracts tags from [bracket] segments in the file path
+│   ├── internalLinks.js   Collects all internal (root-relative) href values
+│   ├── isHidden.js        Determines if an entry path indicates a hidden/private entry
+│   ├── permalink.js       Handles permalink normalization
+│   └── dateStamp/         Extracts a publish date from metadata or path
+│       ├── index.js       Orchestrates date extraction and timezone adjustment
+│       ├── fromMetadata.js Parses a date string using the blog's configured date format
+│       └── fromPath.js    Parses a date from path segments (e.g. /2024-01-15 Hello.txt)
+├── thumbnail/             Generates resized thumbnail images from entry content
+│   ├── index.js           Entry point; resolves candidate images and calls create
+│   ├── candidates.js      Identifies thumbnail candidates from metadata and HTML
+│   ├── create.js          Creates thumbnail variants from a given image path
+│   ├── transform.js       Resizes and transforms still images via sharp
+│   ├── transform-gif.js   Resizes animated GIFs
+│   ├── validate.js        Validates that an image meets minimum size requirements
+│   └── config.js          Defines thumbnail size variants
+└── dependencies/          Identifies other files that an entry references
+    ├── index.js           Scans HTML attributes (src, href) and metadata for local file paths
+    ├── resolve.js         Resolves relative paths against the entry's directory
+    ├── is_url.js          Tests whether a string is a remote URL
+    └── is_path.js         Tests whether a string is a local file path
+```
+
+## Processing Pipeline
+
+A call to `build(blog, path, callback)` executes the following steps in sequence:
+
+1. **Type check** (`index.js`): The path's extension is checked against enabled converters. If no converter accepts it, the callback receives an error with `code: 'WRONGTYPE'`.
+
+2. **Draft check** (`index.js`): The sync module is queried to determine whether the file is currently in a draft folder.
+
+3. **Conversion** (`single.js` → `converters/`): The converter matching the file extension reads the file from disk and produces raw HTML along with an `fs.stat` object and optional `extras` (e.g. EXIF data). For Pandoc-based converters (markdown, docx, odt, org, rtf), an external `pandoc` process is spawned.
+
+4. **Metadata extraction** (`metadata.js`): Called inside `single.js`. Parses key-value metadata from the top of the HTML string. Supports three formats:
+   - YAML front matter (`---` fenced blocks)
+   - HTML comment blocks (`<!-- Key: value -->`)
+   - Bare `Key: value` lines at the start of the file
+
+5. **Dependency resolution** (`dependencies/index.js`): Called inside `single.js`. Scans HTML `src` and `href` attributes, as well as metadata values, to find local file paths. Resolves relative paths to absolute paths within the blog folder. Modifies the HTML to replace relative paths with resolved absolute ones.
+
+6. **Plugin processing** (`plugins/index.js`): Called inside `single.js`. Enabled plugins are applied to the HTML in series using cheerio. Two plugin categories exist:
+   - **Prerenderers**: Receive the raw HTML string and return a modified string. Run before cheerio parsing.
+   - **Renderers**: Receive a loaded cheerio instance `$` and mutate it in place. May return `newDependencies` to extend the dependency list.
+   Plugins may be optional (toggled per blog) or required (always run). Each plugin has a 10-minute timeout.
+
+7. **Thumbnail extraction** (`thumbnail/index.js`): Called in `index.js` after `single.js` completes. Identifies candidate images from the metadata `thumbnail` key, `<img>` tags, and `.videoContainer iframe` elements (YouTube/Vimeo). Calls `create.js` to generate resized variants via sharp (or a dedicated GIF transformer). Results are cached via `helper/transformer`.
+
+8. **Entry assembly** (`index.js`): Constructs the base entry object from the HTML, metadata, stat, thumbnail, EXIF data, and draft status. Computes `dateStamp` by examining metadata and the file path.
+
+9. **Prepare** (`prepare/index.js`): Synchronously derives all remaining entry properties from the assembled HTML and metadata:
+   - Title (from heading, path, or first sentence)
+   - Summary (plain-text excerpt, ≤150 characters)
+   - Teaser (HTML split at read-more markers, or first three block elements)
+   - Slug, tags, page/menu/draft flags, permalink, internal links
+
+## Converters
+
+Each converter is an object with three required members:
+
+```js
+{
+  id: "markdown",           // stable string identifier
+  is(path): boolean,        // returns true if this converter handles the given path
+  read(blog, path, callback) // reads the file and calls callback(err, html, stat, extras)
+}
+```
+
+Converters that do not require Pandoc (`html`, `img`, `webloc`, `gdoc`) are always loaded. The Pandoc-dependent converters (`markdown`, `docx`, `odt`, `org`, `rtf`) are loaded only when `config.pandoc.bin` is set. If Pandoc is absent, a `markdown-without-pandoc` fallback converter is used instead.
+
+Individual blog owners can disable specific converters via `blog.converters` preferences, which are normalized through `models/blog/util/converters`.
+
+## Plugins
+
+Each plugin module exports an object with some of the following properties:
+
+| Property | Type | Description |
+|---|---|---|
+| `id` | string | Auto-assigned from the plugin's directory name. |
+| `title` | string | Human-readable name, auto-derived from the directory name if absent. |
+| `description` | string | Markdown description rendered to HTML. |
+| `category` | string | Grouping label used in the settings UI. |
+| `optional` | boolean | If `true` (default), the plugin can be disabled by the blog owner. |
+| `isDefault` | boolean | If `true` (default), the plugin is enabled for new blogs. |
+| `first` | boolean | If `true`, the plugin is placed at the front of the processing queue. |
+| `render($, callback, options)` | function | DOM-level renderer using a cheerio instance. |
+| `prerender(html, callback, options)` | function | String-level pre-renderer run before cheerio parsing. |
+| `formHTML` | string | HTML form for the plugin's settings panel (loaded from `form.html`). |
+| `publicJS` | string | JavaScript appended to every blog page (loaded from `public.js`). |
+| `publicCSS` | string | CSS appended to every blog page (loaded from `public.css`). |
+| `entryHTML` | string | HTML appended to each full entry view (loaded from `entry.html`). |
+
+The `plugins.convert(blog, path, html, callback)` function runs all enabled plugins in series. The `plugins.load(file, blogPlugins, callback)` function aggregates plugin-contributed `entryHTML`, CSS, and JS for a given blog's enabled plugin set. `plugins.list` is a dictionary of all loaded plugins by name. `plugins.defaultList` is the default plugin configuration applied to new blogs.
+
+## Dependencies
+
+The `config.pandoc.bin` configuration key determines whether Pandoc-dependent converters are available. Pandoc processes are spawned with a memory cap (`config.pandoc.maxmemory`) and a timeout (`config.pandoc.timeout`).
+
+Image operations use the `sharp` library. Thumbnail creation writes output to the blog's static files directory under `/_thumbnails/`. Image format conversions (HEIC, HEIF, TIFF, WebP, AVIF to PNG) write to `/_assets/`.
+
+The `helper/transformer` utility provides caching of expensive operations (image optimization, format conversion, thumbnail creation) keyed by file path.
+
+## Integration Points
+
+- **`app/sync/update/drafts`**: Queried to determine draft status before building.
+- **`models/entry`**: The entry model schema (`model.js`) is used during `prepare` to validate metadata-overwrite operations.
+- **`models/entry.get`**: Called by the wikilinks plugin to embed linked Markdown entry content inline.
+- **`models/blog/util/converters`**: Normalizes per-blog converter preferences for `enabled.js`.
+- **`helper/transformer`**: Used by the image, img converter, and thumbnail subsystems to cache derived assets.
+- **`config.blog_static_files_dir`**: The root of the blog's static asset storage, used by converters and thumbnail creation.
+- **`config.cdn.origin`**: CDN base URL prepended to thumbnail paths.
+
+## Testing
+
+Tests are located in `tests/` at the top level of this directory, and in `tests/` subdirectories within each major subsystem (`converters/`, `plugins/`, `prepare/`, `thumbnail/`, `dependencies/`).
+
+The top-level test suite (`tests/index.js`) tests the full pipeline end-to-end using a real blog instance bootstrapped via `global.test.blog()`. Individual subsystem tests are isolated and use fixture files (`.txt`/`.html` pairs, sample images, sample `.docx`/`.gdoc`/`.org` files) to verify converter output.
+
+To run all tests for this module:
+
+```
+jasmine --filter=build
+```
