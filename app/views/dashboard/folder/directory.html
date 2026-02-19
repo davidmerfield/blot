@@ -106,6 +106,7 @@
             queued: uploadModal && uploadModal.querySelector('[data-upload-count="queued"]')
           };
           const csrfToken = '{{csrftoken}}';
+          const currentFolderPrefix = normalizeCurrentFolderPrefix(window.location.pathname);
           
           const state = {
             column: null,
@@ -316,6 +317,34 @@
             return Array.from(dataTransfer.files || []).length > 0;
           }
 
+          function normalizeCurrentFolderPrefix(pathname) {
+            var path = typeof pathname === 'string' ? pathname : '';
+            var marker = '/folder/';
+            var folderIndex = path.indexOf(marker);
+            var folderPath = '';
+
+            if (folderIndex !== -1) {
+              folderPath = path.slice(folderIndex + marker.length);
+            } else if (path === '/folder') {
+              folderPath = '';
+            }
+
+            folderPath = folderPath
+              .replace(/\\/g, '/')
+              .replace(/^\/+/, '')
+              .replace(/\/+$/, '');
+
+            return folderPath ? folderPath + '/' : '';
+          }
+
+          function applyCurrentFolderPrefix(relativePath) {
+            var normalizedRelativePath = String(relativePath || '')
+              .replace(/\\/g, '/')
+              .replace(/^\/+/, '');
+
+            return currentFolderPrefix + normalizedRelativePath;
+          }
+
           function buildUploadFormData(collectedFiles, options) {
             var formData = new FormData();
             var relativePaths = [];
@@ -330,7 +359,7 @@
               relativePaths.push({
                 field: field,
                 index: 0,
-                relativePath: entry.relativePath
+                relativePath: applyCurrentFolderPrefix(entry.relativePath)
               });
             });
 
@@ -453,6 +482,13 @@
           function uploadDroppedFiles(collectedFiles) {
             if (!collectedFiles.length) return Promise.resolve();
 
+            var queuedEntries = collectedFiles.map(function (entry) {
+              return {
+                file: entry.file,
+                relativePath: applyCurrentFolderPrefix(entry.relativePath)
+              };
+            });
+
             return fetch('{{{base}}}/folder/upload?dryRun=1', {
               method: 'POST',
               body: buildUploadFormData(collectedFiles, { dryRun: true })
@@ -462,7 +498,7 @@
                 return response.json();
               })
               .then(function (preview) {
-                renderUploadPreview(collectedFiles, preview);
+                renderUploadPreview(queuedEntries, preview);
                 openUploadModal();
 
                 return new Promise(function (resolve, reject) {

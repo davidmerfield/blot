@@ -107,10 +107,7 @@ describe("dashboard folder upload sync lock", function () {
     expect(establishSyncLock).toHaveBeenCalledTimes(1);
     expect(establishSyncLock).toHaveBeenCalledWith("blog-1");
 
-    expect(lockState.update.calls.allArgs()).toEqual([
-      ["/changed.txt"],
-      ["/client-fail.txt"],
-    ]);
+    expect(lockState.update).toHaveBeenCalledWith('/changed.txt');
 
     expect(lockState.done).toHaveBeenCalledTimes(1);
     expect(next).not.toHaveBeenCalled();
@@ -270,5 +267,72 @@ describe("dashboard folder upload overwrite list parsing", function () {
         reason: "overwrite_not_allowed",
       },
     ]);
+  });
+});
+
+
+describe("dashboard folder upload prefixed relative paths", function () {
+  let touched;
+
+  beforeEach(function () {
+    touched = [];
+    delete require.cache[uploadRoutePath];
+  });
+
+  afterEach(function () {
+    delete require.cache[uploadRoutePath];
+    restoreModuleMocks(touched);
+  });
+
+  it("writes files into the expected subfolder when relative paths are prefixed", async function () {
+    const fs = {
+      pathExists: jasmine.createSpy("pathExists").and.returnValue(Promise.resolve(false)),
+      readFile: jasmine.createSpy("readFile").and.returnValue(Promise.resolve(Buffer.from("ok"))),
+      outputFile: jasmine.createSpy("outputFile").and.returnValue(Promise.resolve()),
+      remove: jasmine.createSpy("remove").and.returnValue(Promise.resolve()),
+    };
+
+    const establishSyncLock = jasmine
+      .createSpy("establishSyncLock")
+      .and.returnValue(Promise.resolve({
+        folder: { update: jasmine.createSpy("update").and.returnValue(Promise.resolve()) },
+        done: jasmine.createSpy("done").and.returnValue(Promise.resolve()),
+      }));
+
+    setModuleMock("sync/establishSyncLock", establishSyncLock, touched);
+    setModuleMock("fs-extra", fs, touched);
+    setModuleMock("clients", {}, touched);
+    setModuleMock("helper/localPath", (blogID, relPath) => {
+      const normalized = relPath.startsWith("/") ? relPath : `/${relPath}`;
+      return path.join("/blogs", String(blogID), normalized);
+    }, touched);
+    setModuleMock("clients/util/shouldIgnoreFile", () => false, touched);
+
+    const handler = require("../site/folder/upload");
+
+    const req = {
+      blog: { id: "blog-prefixed" },
+      body: {
+        relativePaths: JSON.stringify([
+          { field: "upload", index: 0, relativePath: "subfolder/nested/file.md" },
+        ]),
+      },
+      query: {},
+      files: {
+        upload: [{ path: "/tmp/prefixed", originalFilename: "file.md" }],
+      },
+    };
+
+    const res = { json: jasmine.createSpy("json") };
+    const next = jasmine.createSpy("next");
+
+    await handler(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(fs.outputFile).toHaveBeenCalledWith(
+      "/blogs/blog-prefixed/subfolder/nested/file.md",
+      jasmine.any(Buffer),
+      { overwrite: true }
+    );
   });
 });

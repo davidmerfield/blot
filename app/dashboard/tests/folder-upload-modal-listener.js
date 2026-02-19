@@ -170,6 +170,7 @@ describe('folder directory upload modal listener lifecycle', function () {
           json: () => Promise.resolve({ overwrite: ['existing.txt'] }),
         }),
       buildUploadFormData: () => ({}),
+      applyCurrentFolderPrefix: (relativePath) => relativePath,
       renderUploadPreview: () => {},
       openUploadModal: () => {
         uploadModal.hidden = false;
@@ -257,6 +258,7 @@ describe('folder directory upload modal listener lifecycle', function () {
           json: () => Promise.resolve({ overwrite: ['existing.txt'] }),
         }),
       buildUploadFormData: () => ({}),
+      applyCurrentFolderPrefix: (relativePath) => relativePath,
       renderUploadPreview: () => {},
       openUploadModal: () => {
         uploadModal.hidden = false;
@@ -529,5 +531,66 @@ this.windowDropHandler = ${windowDropHandlerSource};`,
     await Promise.resolve();
 
     expect(collectCalled).toBe(false);
+  });
+});
+
+
+describe('folder directory upload path prefixing', function () {
+  it('prefixes upload relative paths when browsing a subfolder', function () {
+    const templatePath = path.join(
+      __dirname,
+      '../../views/dashboard/folder/directory.html'
+    );
+    const templateSource = fs.readFileSync(templatePath, 'utf8');
+    const normalizeCurrentFolderPrefixSource = extractNamedFunction(
+      templateSource,
+      'normalizeCurrentFolderPrefix'
+    );
+    const applyCurrentFolderPrefixSource = extractNamedFunction(
+      templateSource,
+      'applyCurrentFolderPrefix'
+    );
+    const buildUploadFormDataSource = extractNamedFunction(
+      templateSource,
+      'buildUploadFormData'
+    );
+
+    const appended = [];
+
+    function MockFormData() {
+      this.append = function (key, value) {
+        appended.push({ key, value });
+      };
+    }
+
+    const context = {
+      FormData: MockFormData,
+      csrfToken: 'token',
+      currentFolderPrefix: 'posts/drafts/',
+    };
+
+    vm.runInNewContext(
+      `${normalizeCurrentFolderPrefixSource}
+${applyCurrentFolderPrefixSource}
+${buildUploadFormDataSource}
+this.buildUploadFormData = buildUploadFormData;`,
+      context
+    );
+
+    context.buildUploadFormData(
+      [
+        { file: { name: 'index.md' }, relativePath: 'index.md' },
+        { file: { name: 'nested.md' }, relativePath: 'nested/nested.md' },
+      ],
+      { dryRun: true }
+    );
+
+    const relativePathsEntry = appended.find((entry) => entry.key === 'relativePaths');
+    const relativePaths = JSON.parse(relativePathsEntry.value);
+
+    expect(relativePaths).toEqual([
+      { field: 'upload-0', index: 0, relativePath: 'posts/drafts/index.md' },
+      { field: 'upload-1', index: 0, relativePath: 'posts/drafts/nested/nested.md' },
+    ]);
   });
 });
