@@ -311,9 +311,12 @@ function renderUploadPreview(collectedFiles, preview) {
   var overwriteSet = new Set(overwritePaths);
 
   renderList(uploadModalLists.queued, collectedFiles, function (entry, li) {
-    li.textContent = entry.relativePath;
+    var relativePath = entry.relativePath;
+    var prefixedRelativePath = applyCurrentFolderPrefix(relativePath);
 
-    if (overwriteSet.has(entry.relativePath)) {
+    li.textContent = relativePath;
+
+    if (overwriteSet.has(prefixedRelativePath)) {
       var marker = document.createElement('span');
       marker.className = 'upload-preview-overwrite-marker';
       marker.textContent = 'Will overwrite existing file';
