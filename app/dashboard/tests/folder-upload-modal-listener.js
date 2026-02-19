@@ -84,6 +84,57 @@ function createModalActionButtons(actions) {
 }
 
 describe('folder directory upload modal listener lifecycle', function () {
+  it('renders a single queued list with inline overwrite notes and no summary/count UI', function () {
+    const templatePath = path.join(
+      __dirname,
+      '../../views/dashboard/folder/directory.html'
+    );
+    const templateSource = fs.readFileSync(templatePath, 'utf8');
+
+    expect(templateSource.includes('upload-preview-summary')).toBe(false);
+    expect(templateSource.includes('upload-preview-list-heading')).toBe(false);
+    expect(templateSource.includes('data-upload-count="queued"')).toBe(false);
+
+    const renderUploadPreviewSource = extractNamedFunction(
+      templateSource,
+      'renderUploadPreview'
+    );
+
+    const queuedItems = [];
+    const uploadModalLists = { queued: { _items: queuedItems } };
+
+    const context = {
+      Set,
+      uploadModalLists,
+      renderList: (list, items, mapFn) => {
+        list._items.length = 0;
+        items.forEach((item) => {
+          const li = { textContent: '' };
+          mapFn(item, li);
+          list._items.push(li.textContent);
+        });
+      },
+    };
+
+    vm.runInNewContext(
+      `${renderUploadPreviewSource}\nthis.renderUploadPreview = renderUploadPreview;`,
+      context
+    );
+
+    context.renderUploadPreview(
+      [
+        { relativePath: 'keep.txt' },
+        { relativePath: 'existing.txt' },
+      ],
+      { overwrite: ['existing.txt'] }
+    );
+
+    expect(queuedItems).toEqual([
+      'keep.txt',
+      'existing.txt - Will overwrite existing file',
+    ]);
+  });
+
   it('does not keep stale action listeners across upload attempts after partial failure', async function () {
     const flush = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -260,6 +311,9 @@ describe('folder directory upload modal listener lifecycle', function () {
     modalActionButtons.forEach((button) => {
       expect(button.disabled).toBe(false);
     });
+
+    expect(commitOptions.overwriteAll).toBe(true);
+    expect(commitOptions.overwritePaths).toEqual(['existing.txt']);
   });
 });
 
