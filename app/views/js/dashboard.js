@@ -1,5 +1,6 @@
 require('./localforage.js');
-require('./cookie-redirect.js')();require('./new-template-files.js');
+require('./cookie-redirect.js')();
+require('./new-template-files.js');
 require('./form-buttons.js');
 require('./focus-input.js');
 require('./dashboard-setup-title-focus.js');
