@@ -214,3 +214,55 @@ describe('folder directory upload modal listener lifecycle', function () {
     });
   });
 });
+
+
+describe('folder directory upload modal visibility state', function () {
+  it('is hidden by default and toggles hidden state through open/close handlers', function () {
+    const templatePath = path.join(
+      __dirname,
+      '../../views/dashboard/folder/directory.html'
+    );
+    const templateSource = fs.readFileSync(templatePath, 'utf8');
+    const openUploadModalSource = extractNamedFunction(
+      templateSource,
+      'openUploadModal'
+    );
+    const closeUploadModalSource = extractNamedFunction(
+      templateSource,
+      'closeUploadModal'
+    );
+
+    const uploadModal = { hidden: true };
+    const bodyClasses = new Set();
+
+    const context = {
+      uploadModal,
+      document: {
+        body: {
+          classList: {
+            add: (className) => bodyClasses.add(className),
+            remove: (className) => bodyClasses.delete(className),
+          },
+        },
+      },
+    };
+
+    vm.runInNewContext(
+      `${openUploadModalSource}
+${closeUploadModalSource}
+this.openUploadModal = openUploadModal;
+this.closeUploadModal = closeUploadModal;`,
+      context
+    );
+
+    expect(uploadModal.hidden).toBe(true);
+
+    context.openUploadModal();
+    expect(uploadModal.hidden).toBe(false);
+    expect(bodyClasses.has('upload-modal-open')).toBe(true);
+
+    context.closeUploadModal();
+    expect(uploadModal.hidden).toBe(true);
+    expect(bodyClasses.has('upload-modal-open')).toBe(false);
+  });
+});

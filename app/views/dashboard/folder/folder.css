@@ -287,6 +287,10 @@
   justify-content: center;
 }
 
+.upload-preview-modal[hidden] {
+  display: none !important;
+}
+
 .upload-preview-modal-backdrop {
   position: absolute;
   inset: 0;
