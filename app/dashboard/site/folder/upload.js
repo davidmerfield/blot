@@ -129,6 +129,18 @@ const getOverwriteSet = (body = {}) => {
   return { overwriteAll, overwriteSet };
 };
 
+const isAbsolutePathAttempt = (inputPath = "") => {
+  const value = String(inputPath).trim();
+
+  if (!value) return false;
+
+  return (
+    value.startsWith("/") ||
+    value.startsWith("\\") ||
+    /^[a-zA-Z]:[\\/]/.test(value)
+  );
+};
+
 const resolveRelativePath = (upload, globalIndex, lookups) => {
   const fromLookup =
     lookups.byFieldIndex.get(`${upload.field}:${upload.index}`) ||
@@ -138,7 +150,6 @@ const resolveRelativePath = (upload, globalIndex, lookups) => {
   return (fromLookup || upload.file.originalFilename || "")
     .normalize("NFC")
     .replace(/\\/g, "/")
-    .replace(/^\/+/, "")
     .trim();
 };
 
@@ -201,23 +212,36 @@ module.exports = async (req, res, next) => {
       continue;
     }
 
-    if (shouldIgnoreFile(relativePath)) {
+    if (isAbsolutePathAttempt(relativePath)) {
       rejected.push({
         field: upload.field,
         filename: upload.file.originalFilename,
         relativePath,
+        reason: "invalid",
+        message: "Absolute destination paths are not allowed",
+      });
+      continue;
+    }
+
+    const normalizedRelativePath = relativePath.replace(/^\/+/, "");
+
+    if (shouldIgnoreFile(normalizedRelativePath)) {
+      rejected.push({
+        field: upload.field,
+        filename: upload.file.originalFilename,
+        relativePath: normalizedRelativePath,
         reason: "ignored",
       });
       continue;
     }
 
-    const destination = resolveDestination(req.blog.id, relativePath);
+    const destination = resolveDestination(req.blog.id, normalizedRelativePath);
 
     if (!destination.valid) {
       rejected.push({
         field: upload.field,
         filename: upload.file.originalFilename,
-        relativePath,
+        relativePath: normalizedRelativePath,
         reason: "invalid",
         message: "Path escapes blog folder",
       });
@@ -226,7 +250,7 @@ module.exports = async (req, res, next) => {
 
     accepted.push({
       upload,
-      relativePath,
+      relativePath: normalizedRelativePath,
       absolutePath: destination.absolute,
     });
   }
