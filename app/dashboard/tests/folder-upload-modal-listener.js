@@ -7,7 +7,7 @@ function extractNamedFunction(source, functionName) {
   const start = source.indexOf(signature);
 
   if (start === -1) {
-    throw new Error(`Could not find ${functionName} in template`);
+    throw new Error(`Could not find ${functionName} in source`);
   }
 
   const braceStart = source.indexOf('{', start);
@@ -35,7 +35,7 @@ function extractEventListenerHandler(source, targetExpression, eventName) {
   const start = source.indexOf(signature);
 
   if (start === -1) {
-    throw new Error(`Could not find ${targetExpression} ${eventName} listener in template`);
+    throw new Error(`Could not find ${targetExpression} ${eventName} listener in source`);
   }
 
   const functionStart = source.indexOf('function (event)', start);
@@ -89,7 +89,7 @@ describe('folder directory upload modal listener lifecycle', function () {
 
     const templatePath = path.join(
       __dirname,
-      '../../views/dashboard/folder/directory.html'
+      '../../views/js/dashboard-folder-directory.js'
     );
     const templateSource = fs.readFileSync(templatePath, 'utf8');
     const uploadDroppedFilesSource = extractNamedFunction(
@@ -133,7 +133,7 @@ describe('folder directory upload modal listener lifecycle', function () {
         uploadModal.hidden = false;
         return Promise.resolve();
       },
-      '{{{base}}}': '',
+      uploadUrl: '/folder/upload',
     };
 
     vm.runInNewContext(
@@ -165,7 +165,7 @@ describe('folder directory upload modal listener lifecycle', function () {
 
     const templatePath = path.join(
       __dirname,
-      '../../views/dashboard/folder/directory.html'
+      '../../views/js/dashboard-folder-directory.js'
     );
     const templateSource = fs.readFileSync(templatePath, 'utf8');
     const uploadDroppedFilesSource = extractNamedFunction(
@@ -215,7 +215,7 @@ describe('folder directory upload modal listener lifecycle', function () {
           resolveCommit = resolve;
         });
       },
-      '{{{base}}}': '',
+      uploadUrl: '/folder/upload',
     };
 
     vm.runInNewContext(
@@ -259,7 +259,7 @@ describe('folder directory upload modal visibility state', function () {
   it('is hidden by default and toggles hidden state through open/close handlers', function () {
     const templatePath = path.join(
       __dirname,
-      '../../views/dashboard/folder/directory.html'
+      '../../views/js/dashboard-folder-directory.js'
     );
     const templateSource = fs.readFileSync(templatePath, 'utf8');
     const openUploadModalSource = extractNamedFunction(
@@ -276,6 +276,7 @@ describe('folder directory upload modal visibility state', function () {
 
     const context = {
       uploadModal,
+      resetUploadModalButtonState: () => {},
       document: {
         body: {
           classList: {
@@ -310,7 +311,7 @@ describe('folder directory global drop and folder highlight behavior', function 
   it('uses helper-driven drop handling: window drops upload and folder drops only clear highlight', async function () {
     const templatePath = path.join(
       __dirname,
-      '../../views/dashboard/folder/directory.html'
+      '../../views/js/dashboard-folder-directory.js'
     );
     const templateSource = fs.readFileSync(templatePath, 'utf8');
     const hasFileDragPayloadSource = extractNamedFunction(
@@ -419,7 +420,7 @@ this.folderDropHandler = ${folderDropHandlerSource};`,
   it('keeps helper behavior file-specific for highlight and upload triggers', async function () {
     const templatePath = path.join(
       __dirname,
-      '../../views/dashboard/folder/directory.html'
+      '../../views/js/dashboard-folder-directory.js'
     );
     const templateSource = fs.readFileSync(templatePath, 'utf8');
     const hasFileDragPayloadSource = extractNamedFunction(
@@ -518,7 +519,7 @@ describe('folder directory upload path prefixing', function () {
   it('prefixes upload relative paths when browsing a subfolder', function () {
     const templatePath = path.join(
       __dirname,
-      '../../views/dashboard/folder/directory.html'
+      '../../views/js/dashboard-folder-directory.js'
     );
     const templateSource = fs.readFileSync(templatePath, 'utf8');
     const normalizeCurrentFolderPrefixSource = extractNamedFunction(
