@@ -38,16 +38,16 @@ describe("dashboard folder upload sync lock", function () {
 
   it("acquires one lock per request, updates changed paths, and releases the lock", async function () {
     const lockState = {
-      update: jasmine.createSpy("update").and.resolveTo(),
-      done: jasmine.createSpy("done").and.resolveTo(),
+      update: jasmine.createSpy("update").and.returnValue(Promise.resolve()),
+      done: jasmine.createSpy("done").and.returnValue(Promise.resolve()),
     };
 
     const establishSyncLock = jasmine
       .createSpy("establishSyncLock")
-      .and.resolveTo({
+      .and.returnValue(Promise.resolve({
         folder: { update: lockState.update },
         done: lockState.done,
-      });
+      }));
 
     const fs = {
       pathExists: jasmine
@@ -59,7 +59,7 @@ describe("dashboard folder upload sync lock", function () {
       outputFile: jasmine.createSpy("outputFile").and.callFake(async (filePath) => {
         if (filePath.endsWith("fail.txt")) throw new Error("write failed");
       }),
-      remove: jasmine.createSpy("remove").and.resolveTo(),
+      remove: jasmine.createSpy("remove").and.returnValue(Promise.resolve()),
     };
 
     const clients = {
@@ -120,22 +120,22 @@ describe("dashboard folder upload sync lock", function () {
     const folderUpdateError = new Error("update failed");
 
     const lockState = {
-      update: jasmine.createSpy("update").and.rejectWith(folderUpdateError),
-      done: jasmine.createSpy("done").and.resolveTo(),
+      update: jasmine.createSpy("update").and.callFake(async () => { throw folderUpdateError; }),
+      done: jasmine.createSpy("done").and.returnValue(Promise.resolve()),
     };
 
     const establishSyncLock = jasmine
       .createSpy("establishSyncLock")
-      .and.resolveTo({
+      .and.returnValue(Promise.resolve({
         folder: { update: lockState.update },
         done: lockState.done,
-      });
+      }));
 
     const fs = {
-      pathExists: jasmine.createSpy("pathExists").and.resolveTo(false),
-      readFile: jasmine.createSpy("readFile").and.resolveTo(Buffer.from("ok")),
-      outputFile: jasmine.createSpy("outputFile").and.resolveTo(),
-      remove: jasmine.createSpy("remove").and.resolveTo(),
+      pathExists: jasmine.createSpy("pathExists").and.returnValue(Promise.resolve(false)),
+      readFile: jasmine.createSpy("readFile").and.returnValue(Promise.resolve(Buffer.from("ok"))),
+      outputFile: jasmine.createSpy("outputFile").and.returnValue(Promise.resolve()),
+      remove: jasmine.createSpy("remove").and.returnValue(Promise.resolve()),
     };
 
     setModuleMock("sync/establishSyncLock", establishSyncLock, touched);
@@ -170,5 +170,105 @@ describe("dashboard folder upload sync lock", function () {
     expect(lockState.done).toHaveBeenCalledTimes(1);
     expect(next).toHaveBeenCalledWith(folderUpdateError);
     expect(res.json).not.toHaveBeenCalled();
+  });
+});
+
+describe("dashboard folder upload overwrite list parsing", function () {
+  let touched;
+
+  beforeEach(function () {
+    touched = [];
+    delete require.cache[uploadRoutePath];
+  });
+
+  afterEach(function () {
+    delete require.cache[uploadRoutePath];
+    restoreModuleMocks(touched);
+  });
+
+  const setupHandler = () => {
+    const fs = {
+      pathExists: jasmine.createSpy("pathExists").and.returnValue(Promise.resolve(true)),
+      readFile: jasmine.createSpy("readFile").and.returnValue(Promise.resolve(Buffer.from("ok"))),
+      outputFile: jasmine.createSpy("outputFile").and.returnValue(Promise.resolve()),
+      remove: jasmine.createSpy("remove").and.returnValue(Promise.resolve()),
+    };
+
+    const establishSyncLock = jasmine
+      .createSpy("establishSyncLock")
+      .and.returnValue(Promise.resolve({
+        folder: { update: jasmine.createSpy("update").and.returnValue(Promise.resolve()) },
+        done: jasmine.createSpy("done").and.returnValue(Promise.resolve()),
+      }));
+
+    setModuleMock("sync/establishSyncLock", establishSyncLock, touched);
+    setModuleMock("fs-extra", fs, touched);
+    setModuleMock("clients", {}, touched);
+    setModuleMock("helper/localPath", (blogID, relPath) => {
+      const normalized = relPath.startsWith("/") ? relPath : `/${relPath}`;
+      return path.join("/blogs", String(blogID), normalized);
+    }, touched);
+    setModuleMock("clients/util/shouldIgnoreFile", () => false, touched);
+
+    return { handler: require("../site/folder/upload"), fs };
+  };
+
+  const runUpload = async (handler, body) => {
+    const req = {
+      blog: { id: "blog-overwrite" },
+      body,
+      query: {},
+      files: {
+        upload: [{ path: "/tmp/overwrite", originalFilename: "folder\\Á.txt" }],
+      },
+    };
+
+    const res = { json: jasmine.createSpy("json") };
+    const next = jasmine.createSpy("next");
+
+    await handler(req, res, next);
+
+    return { res, next };
+  };
+
+  it("accepts overwritePaths as a JSON string array", async function () {
+    const { handler, fs } = setupHandler();
+
+    await runUpload(handler, {
+      overwritePaths: JSON.stringify(["/folder/Á.txt"]),
+    });
+
+    expect(fs.readFile).toHaveBeenCalled();
+  });
+
+  it("accepts overwritePaths as a native array", async function () {
+    const { handler, fs } = setupHandler();
+
+    await runUpload(handler, {
+      overwritePaths: ["/folder/Á.txt"],
+    });
+
+    expect(fs.readFile).toHaveBeenCalled();
+  });
+
+  it("ignores invalid JSON overwrite strings without crashing", async function () {
+    const { handler, fs } = setupHandler();
+
+    const { res, next } = await runUpload(handler, {
+      overwritePaths: "not-json",
+    });
+
+    expect(fs.readFile).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+
+    const response = res.json.calls.mostRecent().args[0];
+    expect(response.results).toEqual([
+      {
+        path: "folder/Á.txt",
+        overwritten: false,
+        skipped: true,
+        reason: "overwrite_not_allowed",
+      },
+    ]);
   });
 });

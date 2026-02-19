@@ -109,13 +109,20 @@ const parseBoolean = (value) => {
 
 const getOverwriteSet = (body = {}) => {
   const overwriteAll = parseBoolean(body.overwrite);
-  const payload =
-    body.overwritePaths ||
-    body.overwriteList ||
-    body.overwriteFiles ||
-    parseJSON(body.overwritePaths) ||
-    parseJSON(body.overwriteList) ||
-    parseJSON(body.overwriteFiles);
+  const normalizeOverwriteField = (value) => {
+    if (Array.isArray(value)) return value;
+
+    if (typeof value === "string") {
+      const parsed = parseJSON(value);
+      if (Array.isArray(parsed)) return parsed;
+    }
+
+    return null;
+  };
+
+  const payload = [body.overwritePaths, body.overwriteList, body.overwriteFiles]
+    .map(normalizeOverwriteField)
+    .find((value) => value !== null);
 
   const overwriteSet = new Set();
 
