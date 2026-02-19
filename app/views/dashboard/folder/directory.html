@@ -366,7 +366,7 @@
               relativePaths.push({
                 field: field,
                 index: 0,
-                relativePath: applyCurrentFolderPrefix(entry.relativePath)
+                relativePath: entry.relativePath
               });
             });
 
@@ -481,26 +481,30 @@
               });
           }
 
-          function uploadDroppedFiles(collectedFiles) {
-            if (!collectedFiles.length) return Promise.resolve();
-
-            var queuedEntries = collectedFiles.map(function (entry) {
+          function normalizeUploadEntries(collectedFiles) {
+            return collectedFiles.map(function (entry) {
               return {
                 file: entry.file,
                 relativePath: applyCurrentFolderPrefix(entry.relativePath)
               };
             });
+          }
+
+          function uploadDroppedFiles(collectedFiles) {
+            if (!collectedFiles.length) return Promise.resolve();
+
+            var normalizedEntries = normalizeUploadEntries(collectedFiles);
 
             return fetch('{{{base}}}/folder/upload?dryRun=1', {
               method: 'POST',
-              body: buildUploadFormData(collectedFiles, { dryRun: true })
+              body: buildUploadFormData(normalizedEntries, { dryRun: true })
             })
               .then(function (response) {
                 if (!response.ok) throw new Error('Upload dry-run failed');
                 return response.json();
               })
               .then(function (preview) {
-                renderUploadPreview(queuedEntries, preview);
+                renderUploadPreview(normalizedEntries, preview);
                 openUploadModal();
 
                 return new Promise(function (resolve, reject) {
@@ -551,7 +555,7 @@
                     isSubmitting = true;
                     setModalActionButtonsDisabled(true);
 
-                    commitUpload(collectedFiles).then(function () {
+                    commitUpload(normalizedEntries).then(function () {
                       isSubmitting = false;
                       setModalActionButtonsDisabled(false);
                       finish(resolve);
