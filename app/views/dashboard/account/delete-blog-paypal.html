@@ -9,31 +9,17 @@
   
         <br>
   
-        <div id="paypal-button-container"></div>
+        <div
+          id="paypal-button-container"
+          data-paypal-subscription-id="{{{user.paypal.id}}}"
+          data-paypal-plan-id="{{{user.paypal.plan_id}}}"
+          data-paypal-revise-quantity="{{new_quantity}}"
+          data-paypal-redirect-url="/sites/account/delete-blog-paypal/update"
+        ></div>
     
       <script src="https://www.paypal.com/sdk/js?client-id={{paypal_client_id}}&vault=true&intent=subscription&disable-funding=card"></script>
     
-    
-      <script>
-    
-        paypal
-          .Buttons({
-            createSubscription: function (data, actions) {
-              return actions.subscription.revise("{{{user.paypal.id}}}", {
-                plan_id: "{{{user.paypal.plan_id}}}",
-                quantity: "{{new_quantity}}"
-              });
-            },
-            onApprove: function (data, actions) {
-              // replace the contents of the form with a loading message
-              const form = document.querySelector("form");
-              form.innerHTML = "<p>Loading...</p>";
-              window.location.href = "/sites/account/delete-blog-paypal/update";
-            }
-          })
-          .render("#paypal-button-container"); // Renders the PayPal button
-      </script>
-  
+
       {{/user.paypal.status}}
   </div></div>
   </form>

@@ -6,7 +6,7 @@
 
 
 
-<form id="payment-form" method="POST" style="max-width: 500px" id="payment-form">
+<form id="payment-form" data-stripe-key="{{stripe_key}}" method="POST" style="max-width: 500px" id="payment-form">
 
   <p style="margin-top:0;padding:11px 0 0;margin-bottom:0">Would you like to pay <span class="yellow" style="background:#fff0a8">{{price}} per {{interval}}</span> to activate your subscription? If you have any questions please <a href="/support">contact support</a>.</p>
 

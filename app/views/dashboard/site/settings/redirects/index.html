@@ -135,41 +135,9 @@ Guide to redirects <span style="float: right">&rarr;</span>
 
 </form>
 
-<script type="text/javascript">document.querySelectorAll(".buttons a, .buttons input, .buttons button").forEach(function(a){a.addEventListener("click",function(a){a.target.classList.add("disabled")})})
-</script>
 
 
-<script>
 
-  //  when any of the input checkboxes are toggled
-  var checkboxes = document.querySelectorAll('.plugin input[type=checkbox]');
-  checkboxes.forEach(function(checkbox) {
-    checkbox.addEventListener('change', function() {
-      // serialized and submit the form in the background as a POST request
-      var form = this.closest('form');
-      var el = this;
-  
-      // do nothing
-      // if the checkbox was checked, add the checked class to the parent div which has the class 'plugin'
-      // otherwise remove it
-      if (el.checked) {
-        el.closest('.plugin').classList.add('checked');
-      } else {
-        el.closest('.plugin').classList.remove('checked');
-      }
-  
-      var xhr = new XMLHttpRequest();
-      xhr.open('POST', form.action);
-      xhr.onload = function() {
-        // success callback
-      };
-      xhr.onerror = function() {
-        // error callback
-      };
-      xhr.send(new FormData(form));
-    });
-  });
-  
-  </script>
+
 
   

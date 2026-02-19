@@ -7,45 +7,7 @@ Visit site
 
 
 
-<script type="text/javascript">
-var content = document.querySelector("iframe");
-
-var doc = document.querySelector('iframe') && document.querySelector('iframe').contentWindow && document.querySelector('iframe').contentWindow.document;
-
-if (doc) {
-  
-
-// we can use this to steam changes to CSS properties to the iframe
-var scriptObj = doc.createElement("script");
-scriptObj.type = "text/javascript";
-scriptObj.innerHTML = 'console.log("test");';
-doc.body.appendChild(scriptObj);
-
-// Listen to messages sent from the iframe which contains
-// the preview of the template. We inject the script
-// which sends these messages before the </body> tag of 
-// all HTML pages rendered on preview subdomains.
-var receiveMessage = function receiveMessage(e) {
-    // Only react to messages from the preview subdomain
-    // The user can click on links and load external pages
-    if (e.origin !== "{{{previewOrigin}}}") return;
-
-    // Extract the path of the page they are viewing
-    let path = e.data.slice("iframe:".length);
-
-    // Save the path they have viewed on the server
-    var http = new XMLHttpRequest();
-    var url = "{{{base}}}/settings";
-    var params = "previewPath=" + path;
-    http.open("POST", url, true);
-    http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    http.send(params);
-};
-
-window.addEventListener("message", receiveMessage, false);
-}
-
-</script>
+<div data-preview-origin="{{{previewOrigin}}}" data-preview-post-url="{{{base}}}/settings"></div>
 
 
 
