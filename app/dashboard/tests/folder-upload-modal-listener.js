@@ -516,7 +516,7 @@ this.windowDropHandler = ${windowDropHandlerSource};`,
 
 
 describe('folder directory upload path prefixing', function () {
-  it('prefixes upload relative paths when browsing a subfolder', function () {
+  it('prefixes upload relative paths once when browsing a subfolder', function () {
     const templatePath = path.join(
       __dirname,
       '../../views/js/dashboard-folder-directory.js'
@@ -553,9 +553,13 @@ describe('folder directory upload path prefixing', function () {
       `${normalizeCurrentFolderPrefixSource}
 ${applyCurrentFolderPrefixSource}
 ${buildUploadFormDataSource}
-this.buildUploadFormData = buildUploadFormData;`,
+this.buildUploadFormData = buildUploadFormData;
+this.normalizeCurrentFolderPrefix = normalizeCurrentFolderPrefix;`,
       context
     );
+
+    expect(context.normalizeCurrentFolderPrefix('/folder')).toBe('');
+    expect(context.normalizeCurrentFolderPrefix('/folder/posts/drafts')).toBe('posts/drafts/');
 
     context.buildUploadFormData(
       [
@@ -572,5 +576,108 @@ this.buildUploadFormData = buildUploadFormData;`,
       { field: 'upload-0', index: 0, relativePath: 'posts/drafts/index.md' },
       { field: 'upload-1', index: 0, relativePath: 'posts/drafts/nested/nested.md' },
     ]);
+
+    appended.length = 0;
+
+    context.buildUploadFormData(
+      [
+        {
+          file: { name: 'nested.md' },
+          relativePath: 'posts/drafts/nested/nested.md',
+        },
+      ],
+      { dryRun: true }
+    );
+
+    const prePrefixedPaths = JSON.parse(
+      appended.find((entry) => entry.key === 'relativePaths').value
+    );
+
+    expect(prePrefixedPaths).toEqual([
+      {
+        field: 'upload-0',
+        index: 0,
+        relativePath: 'posts/drafts/posts/drafts/nested/nested.md',
+      },
+    ]);
+  });
+});
+
+
+describe('folder directory dry-run and commit path contract', function () {
+  it('uses the same unprefixed entries for dry-run preview and commit upload', async function () {
+    const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+    const templatePath = path.join(
+      __dirname,
+      '../../views/js/dashboard-folder-directory.js'
+    );
+    const templateSource = fs.readFileSync(templatePath, 'utf8');
+    const uploadDroppedFilesSource = extractNamedFunction(
+      templateSource,
+      'uploadDroppedFiles'
+    );
+
+    const clickListeners = new Set();
+    const uploadModal = {
+      hidden: false,
+      addEventListener: (event, handler) => {
+        if (event === 'click') clickListeners.add(handler);
+      },
+      removeEventListener: (event, handler) => {
+        if (event === 'click') clickListeners.delete(handler);
+      },
+    };
+
+    const buildUploadInputs = [];
+    const previewEntries = [];
+    const commitEntries = [];
+
+    const context = {
+      Promise,
+      fetch: () =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ overwrite: [] }),
+        }),
+      buildUploadFormData: (entries) => {
+        buildUploadInputs.push(entries);
+        return {};
+      },
+      renderUploadPreview: (entries) => {
+        previewEntries.push(entries);
+      },
+      openUploadModal: () => {
+        uploadModal.hidden = false;
+      },
+      closeUploadModal: () => {
+        uploadModal.hidden = true;
+      },
+      uploadModal,
+      commitUpload: (entries) => {
+        commitEntries.push(entries);
+        return Promise.resolve();
+      },
+      uploadUrl: '/folder/upload',
+    };
+
+    vm.runInNewContext(
+      `${uploadDroppedFilesSource}
+this.uploadDroppedFiles = uploadDroppedFiles;`,
+      context
+    );
+
+    const collectedFiles = [
+      { file: { name: 'nested.md' }, relativePath: 'nested/nested.md' },
+    ];
+
+    const uploadAttempt = context.uploadDroppedFiles(collectedFiles);
+    await flush();
+    clickListeners.forEach((handler) => handler(createModalEvent('upload')));
+    await uploadAttempt;
+
+    expect(buildUploadInputs).toEqual([collectedFiles]);
+    expect(previewEntries).toEqual([collectedFiles]);
+    expect(commitEntries).toEqual([collectedFiles]);
   });
 });
