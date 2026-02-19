@@ -142,7 +142,7 @@ module.exports = function (req, res, entry, callback) {
 };
 
 function createRenderMetadata(sourceMetadata) {
-  if (!sourceMetadata || type(sourceMetadata, "object") !== "object") {
+  if (!sourceMetadata || !type(sourceMetadata, "object")) {
     return sourceMetadata;
   }
 
