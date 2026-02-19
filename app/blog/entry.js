@@ -34,6 +34,7 @@ module.exports = function (request, response, next) {
     // 1. Blog post metadata DOES have  'Comments: No'
     // 2. Page metadata DOES NOT have   'Comments: Yes'
     var metadataByLowercaseKey = metadataCaseInsensitive(entry.metadata);
+    entry.metadataLowercase = metadataByLowercaseKey;
 
     if (
       metadataByLowercaseKey.comments === "No" ||
