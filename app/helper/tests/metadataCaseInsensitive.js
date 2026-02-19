@@ -17,6 +17,18 @@ describe("metadataCaseInsensitive", function () {
     });
   });
 
+
+  it("returns empty object for undefined", function () {
+    expect(metadataCaseInsensitive(undefined)).toEqual({});
+  });
+
+  it("returns empty object for null", function () {
+    expect(metadataCaseInsensitive(null)).toEqual({});
+  });
+
+  it("returns empty object for arrays", function () {
+    expect(metadataCaseInsensitive([])).toEqual({});
+  });
   it("uses first key in deterministic order for collisions", function () {
     const metadata = {
       permalink: "/lower",
