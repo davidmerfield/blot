@@ -226,3 +226,7 @@ function initSidebarActionMenu(options) {
 }
 
 module.exports = initSidebarActionMenu;
+
+if (typeof window !== "undefined") {
+  window.initSidebarActionMenu = initSidebarActionMenu;
+}

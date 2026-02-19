@@ -55,28 +55,49 @@
           {{/contents.length}}
       
           {{#contents}}
-          <tr>
+          <tr class="directory-row" data-directory-row="true">
             <td>
-              <a href="{{{base}}}/folder{{{url}}}" class="{{#directory}}directory{{/directory}} {{#entry}}entry{{/entry}}">
+              <div class="directory-row__name-cell">
+                <a href="{{{base}}}/folder{{{url}}}" class="directory-row__link {{#directory}}directory{{/directory}} {{#entry}}entry{{/entry}}">
       
-            {{#directory}}
-            <span class="icon-folder"></span>
-            {{/directory}}
-            {{^directory}}  
-            {{#entry}}    
-            <span class="icon-file-check"></span>
-            {{/entry}}
-            {{^entry}}
-            <span class="icon-file"></span>
-            {{/entry}}
-            {{/directory}}
-            <span class="truncate">{{name}}</span></a>
+                {{#directory}}
+                <span class="icon-folder"></span>
+                {{/directory}}
+                {{^directory}}  
+                {{#entry}}    
+                <span class="icon-file-check"></span>
+                {{/entry}}
+                {{^entry}}
+                <span class="icon-file"></span>
+                {{/entry}}
+                {{/directory}}
+                <span class="truncate">{{name}}</span>
+                </a>
+                <button
+                  class="directory-row__menu-trigger"
+                  type="button"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  data-url="{{{url}}}"
+                  data-directory="{{#directory}}true{{/directory}}{{^directory}}false{{/directory}}"
+                  data-entry="{{#entry}}true{{/entry}}{{^entry}}false{{/entry}}"
+                >
+                  <span class="icon-dots"></span>
+                </button>
+              </div>
             </td>
             <td data-sort="{{unix}}">{{modified}}</td>
             <td data-sort="{{#directory}}0{{/directory}}{{^directory}}{{bytes}}{{/directory}}">{{#directory}}--{{/directory}}{{^directory}}{{size}}{{/directory}}</td>
           </tr>
           {{/contents}}
         </table>
+
+        <div id="folder-file-action-menu" class="template-action-menu folder-action-menu" aria-hidden="true">
+          <ul>
+            <li><a data-menu-link="download" href="#">Download</a></li>
+            <li><a data-menu-link="remove" href="#">Remove</a></li>
+          </ul>
+        </div>
 
       <div class="upload-preview-modal" hidden>
         <div class="upload-preview-modal-backdrop" data-upload-modal-close></div>
@@ -93,6 +114,7 @@
         <script>
           const table = document.querySelector('.directory-list');
           const folderBox = document.querySelector('.folder-box.directory');
+          const folderFileActionMenu = document.getElementById('folder-file-action-menu');
           const dropTarget = document.querySelector('.folder-drop-target');
           const uploadModal = document.querySelector('.upload-preview-modal');
           const uploadModalLists = {
@@ -130,6 +152,47 @@
       
 
           sortTable();
+
+          if (folderBox) {
+            Array.from(folderBox.querySelectorAll('.directory-row__menu-trigger')).forEach(function (trigger) {
+              var rowUrl = trigger.getAttribute('data-url') || '';
+              trigger.setAttribute('data-encoded-url', encodeURIComponent(rowUrl));
+            });
+          }
+
+          if (folderBox && folderFileActionMenu && typeof window.initSidebarActionMenu === 'function') {
+            window.initSidebarActionMenu({
+              container: folderBox,
+              menuElement: folderFileActionMenu,
+              rowSelector: '.directory-row',
+              triggerSelector: '.directory-row__menu-trigger',
+              linkMap: {
+                download: function (dataset) {
+                  if (!dataset || !dataset.url) return null;
+                  return '{{{base}}}/folder-download' + dataset.url;
+                },
+                remove: function (dataset) {
+                  if (!dataset || dataset.directory === 'true') {
+                    return null;
+                  }
+
+                  return {
+                    href: 'action:remove-file',
+                    disabled: dataset.entry === 'true'
+                  };
+                }
+              }
+            });
+          }
+
+          if (folderFileActionMenu) {
+            folderFileActionMenu.addEventListener('click', function (event) {
+              var link = event.target.closest('[data-menu-link="remove"]');
+              if (!link) return;
+              if ((link.getAttribute('href') || '').indexOf('action:') !== 0) return;
+              event.preventDefault();
+            });
+          }
           
            
           function sortTable() {
