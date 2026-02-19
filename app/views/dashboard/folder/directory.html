@@ -300,6 +300,22 @@
             });
           }
 
+          function hasFileDragPayload(dataTransfer) {
+            if (!dataTransfer) return false;
+
+            var items = Array.from(dataTransfer.items || []);
+            if (items.some(function (item) { return item.kind === 'file'; })) {
+              return true;
+            }
+
+            var types = Array.from(dataTransfer.types || []);
+            if (types.some(function (type) { return String(type).toLowerCase() === 'files'; })) {
+              return true;
+            }
+
+            return Array.from(dataTransfer.files || []).length > 0;
+          }
+
           function buildUploadFormData(collectedFiles, options) {
             var formData = new FormData();
             var relativePaths = [];
@@ -522,28 +538,47 @@
           }
 
           window.addEventListener('dragover', function (event) {
-            event.preventDefault();
+            if (hasFileDragPayload(event.dataTransfer)) {
+              event.preventDefault();
+            }
           });
 
           window.addEventListener('drop', function (event) {
             event.preventDefault();
+
+            if (dropTarget) {
+              dropTarget.style.display = 'none';
+            }
+
+            if (!hasFileDragPayload(event.dataTransfer)) {
+              return;
+            }
+
+            collectDroppedFiles(event.dataTransfer)
+              .then(uploadDroppedFiles)
+              .catch(function (error) {
+                console.error(error);
+              });
           });
 
           if (folderBox && dropTarget) {
             var dragDepth = 0;
 
             folderBox.addEventListener('dragenter', function (event) {
+              if (!hasFileDragPayload(event.dataTransfer)) return;
               event.preventDefault();
               dragDepth += 1;
               dropTarget.style.display = 'flex';
             });
 
             folderBox.addEventListener('dragover', function (event) {
+              if (!hasFileDragPayload(event.dataTransfer)) return;
               event.preventDefault();
               dropTarget.style.display = 'flex';
             });
 
             folderBox.addEventListener('dragleave', function (event) {
+              if (!hasFileDragPayload(event.dataTransfer)) return;
               event.preventDefault();
               dragDepth = Math.max(0, dragDepth - 1);
               if (dragDepth === 0) {
@@ -555,12 +590,6 @@
               event.preventDefault();
               dragDepth = 0;
               dropTarget.style.display = 'none';
-
-              collectDroppedFiles(event.dataTransfer)
-                .then(uploadDroppedFiles)
-                .catch(function (error) {
-                  console.error(error);
-                });
             });
           }
       

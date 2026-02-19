@@ -30,6 +30,35 @@ function extractNamedFunction(source, functionName) {
   return source.slice(start, end);
 }
 
+function extractEventListenerHandler(source, targetExpression, eventName) {
+  const signature = `${targetExpression}.addEventListener('${eventName}', function (event) `;
+  const start = source.indexOf(signature);
+
+  if (start === -1) {
+    throw new Error(`Could not find ${targetExpression} ${eventName} listener in template`);
+  }
+
+  const functionStart = source.indexOf('function (event)', start);
+  const braceStart = source.indexOf('{', functionStart);
+
+  let depth = 0;
+  let end = braceStart;
+
+  for (; end < source.length; end += 1) {
+    const char = source[end];
+    if (char === '{') depth += 1;
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        end += 1;
+        break;
+      }
+    }
+  }
+
+  return source.slice(functionStart, end);
+}
+
 function createModalEvent(action) {
   const button = {
     disabled: false,
@@ -283,5 +312,168 @@ this.closeUploadModal = closeUploadModal;`,
     context.closeUploadModal();
     expect(uploadModal.hidden).toBe(true);
     expect(bodyClasses.has('upload-modal-open')).toBe(false);
+  });
+});
+
+describe('folder directory global drop and folder highlight behavior', function () {
+  it('uploads from window-level drops outside folder area and does not duplicate uploads for folder drops', async function () {
+    const templatePath = path.join(
+      __dirname,
+      '../../views/dashboard/folder/directory.html'
+    );
+    const templateSource = fs.readFileSync(templatePath, 'utf8');
+    const hasFileDragPayloadSource = extractNamedFunction(
+      templateSource,
+      'hasFileDragPayload'
+    );
+    const windowDropHandlerSource = extractEventListenerHandler(
+      templateSource,
+      'window',
+      'drop'
+    );
+    const folderDropHandlerSource = extractEventListenerHandler(
+      templateSource,
+      'folderBox',
+      'drop'
+    );
+
+    const calls = {
+      collect: 0,
+      upload: 0,
+    };
+
+    const context = {
+      Promise,
+      dragDepth: 2,
+      dropTarget: { style: { display: 'flex' } },
+      collectDroppedFiles: () => {
+        calls.collect += 1;
+        return Promise.resolve([{ file: { name: 'a.txt' }, relativePath: 'a.txt' }]);
+      },
+      uploadDroppedFiles: (entries) => {
+        calls.upload += 1;
+        return Promise.resolve(entries);
+      },
+      console: { error: () => {} },
+    };
+
+    vm.runInNewContext(
+      `${hasFileDragPayloadSource}
+this.hasFileDragPayload = hasFileDragPayload;
+this.windowDropHandler = ${windowDropHandlerSource};
+this.folderDropHandler = ${folderDropHandlerSource};`,
+      context
+    );
+
+    const createEvent = (dataTransfer) => ({
+      dataTransfer,
+      prevented: false,
+      preventDefault() {
+        this.prevented = true;
+      },
+    });
+
+    const outsideFolderDrop = createEvent({
+      items: [{ kind: 'file' }],
+      types: ['Files'],
+      files: [{ name: 'a.txt' }],
+    });
+
+    context.windowDropHandler(outsideFolderDrop);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(outsideFolderDrop.prevented).toBe(true);
+    expect(calls.collect).toBe(1);
+    expect(calls.upload).toBe(1);
+
+    const folderDrop = createEvent({
+      items: [{ kind: 'file' }],
+      types: ['Files'],
+      files: [{ name: 'b.txt' }],
+    });
+
+    context.folderDropHandler(folderDrop);
+    expect(folderDrop.prevented).toBe(true);
+    expect(context.dragDepth).toBe(0);
+    expect(context.dropTarget.style.display).toBe('none');
+    expect(calls.collect).toBe(1);
+    expect(calls.upload).toBe(1);
+  });
+
+  it('keeps folder highlight and upload trigger file-specific', async function () {
+    const templatePath = path.join(
+      __dirname,
+      '../../views/dashboard/folder/directory.html'
+    );
+    const templateSource = fs.readFileSync(templatePath, 'utf8');
+    const hasFileDragPayloadSource = extractNamedFunction(
+      templateSource,
+      'hasFileDragPayload'
+    );
+    const folderDragEnterHandlerSource = extractEventListenerHandler(
+      templateSource,
+      'folderBox',
+      'dragenter'
+    );
+    const windowDropHandlerSource = extractEventListenerHandler(
+      templateSource,
+      'window',
+      'drop'
+    );
+
+    const context = {
+      Promise,
+      dragDepth: 0,
+      dropTarget: { style: { display: 'none' } },
+      collectDroppedFiles: () => Promise.resolve([]),
+      uploadDroppedFiles: () => Promise.resolve(),
+      console: { error: () => {} },
+    };
+
+    vm.runInNewContext(
+      `${hasFileDragPayloadSource}
+this.folderDragEnterHandler = ${folderDragEnterHandlerSource};
+this.windowDropHandler = ${windowDropHandlerSource};`,
+      context
+    );
+
+    const dragEnterEvent = {
+      dataTransfer: {
+        items: [{ kind: 'string' }],
+        types: ['text/plain'],
+        files: [],
+      },
+      prevented: false,
+      preventDefault() {
+        this.prevented = true;
+      },
+    };
+
+    context.folderDragEnterHandler(dragEnterEvent);
+
+    expect(dragEnterEvent.prevented).toBe(false);
+    expect(context.dragDepth).toBe(0);
+    expect(context.dropTarget.style.display).toBe('none');
+
+    let collectCalled = false;
+    context.collectDroppedFiles = () => {
+      collectCalled = true;
+      return Promise.resolve([]);
+    };
+
+    const nonFileDrop = {
+      dataTransfer: {
+        items: [{ kind: 'string' }],
+        types: ['text/plain'],
+        files: [],
+      },
+      preventDefault() {},
+    };
+
+    context.windowDropHandler(nonFileDrop);
+    await Promise.resolve();
+
+    expect(collectCalled).toBe(false);
   });
 });
