@@ -111,12 +111,27 @@
           </div>
         </div>
       </div>
+
+      <div class="upload-preview-modal" data-remove-modal hidden>
+        <div class="upload-preview-modal-backdrop" data-remove-modal-close></div>
+        <div class="upload-preview-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="remove-preview-title">
+          <h2 id="remove-preview-title">Remove file</h2>
+          <p>Are you sure you want to remove <strong data-remove-file-name></strong>?</p>
+
+          <div class="buttons upload-preview-actions">
+            <button type="button" data-remove-action="confirm">Remove</button>
+            <button type="button" data-remove-action="cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
         <script>
           const table = document.querySelector('.directory-list');
           const folderBox = document.querySelector('.folder-box.directory');
           const folderFileActionMenu = document.getElementById('folder-file-action-menu');
           const dropTarget = document.querySelector('.folder-drop-target');
           const uploadModal = document.querySelector('.upload-preview-modal');
+          const removeModal = document.querySelector('[data-remove-modal]');
+          const removeModalFileName = removeModal && removeModal.querySelector('[data-remove-file-name]');
           const uploadModalLists = {
             queued: uploadModal && uploadModal.querySelector('[data-upload-list="queued"]')
           };
@@ -125,7 +140,8 @@
           
           const state = {
             column: null,
-            order: null
+            order: null,
+            selectedRemovalFile: null
           };
 
           // on page load restore the sort order from local storage
@@ -191,6 +207,51 @@
               if (!link) return;
               if ((link.getAttribute('href') || '').indexOf('action:') !== 0) return;
               event.preventDefault();
+
+              var activeTrigger = folderBox && folderBox.querySelector('.directory-row__menu-trigger[aria-expanded="true"]');
+              if (!activeTrigger || activeTrigger.getAttribute('data-entry') === 'true') return;
+
+              var row = activeTrigger.closest('.directory-row');
+              var displayNameNode = row && row.querySelector('.truncate');
+              var displayName = displayNameNode ? displayNameNode.textContent.trim() : '';
+              var relativeUrl = activeTrigger.getAttribute('data-url') || '';
+
+              state.selectedRemovalFile = {
+                path: relativeUrl,
+                displayName: displayName || relativeUrl
+              };
+
+              openRemoveModal(state.selectedRemovalFile);
+            });
+          }
+
+          if (removeModal) {
+            removeModal.addEventListener('click', function (event) {
+              var close = event.target.closest('[data-remove-modal-close]');
+              if (close) {
+                closeRemoveModal();
+                return;
+              }
+
+              var button = event.target.closest('[data-remove-action]');
+              if (!button) return;
+
+              var action = button.getAttribute('data-remove-action');
+              if (action === 'cancel') {
+                closeRemoveModal();
+                return;
+              }
+
+              if (action !== 'confirm' || !state.selectedRemovalFile || !state.selectedRemovalFile.path) return;
+
+              button.disabled = true;
+              removeFile(state.selectedRemovalFile.path)
+                .catch(function (error) {
+                  console.error(error);
+                })
+                .finally(function () {
+                  button.disabled = false;
+                });
             });
           }
           
@@ -415,6 +476,67 @@
               .replace(/^\/+/, '');
 
             return currentFolderPrefix + normalizedRelativePath;
+          }
+
+          function encodePathBySegment(relativeUrl) {
+            var normalizedRelativePath = String(relativeUrl || '')
+              .replace(/\\/g, '/')
+              .replace(/^\/+/, '')
+              .replace(/\/+$/, '');
+
+            if (!normalizedRelativePath) return '';
+
+            return normalizedRelativePath
+              .split('/')
+              .map(function (segment) {
+                return encodeURIComponent(segment);
+              })
+              .join('/');
+          }
+
+          function openRemoveModal(selectedFile) {
+            if (!removeModal || !selectedFile) return;
+
+            if (removeModalFileName) {
+              removeModalFileName.textContent = selectedFile.displayName || selectedFile.path;
+            }
+
+            removeModal.hidden = false;
+            document.body.classList.add('upload-modal-open');
+          }
+
+          function closeRemoveModal() {
+            if (!removeModal) return;
+            removeModal.hidden = true;
+            document.body.classList.remove('upload-modal-open');
+            state.selectedRemovalFile = null;
+          }
+
+          function removeFile(relativeUrl) {
+            var encodedPath = encodePathBySegment(relativeUrl);
+
+            return fetch('{{{base}}}/folder/remove/' + encodedPath, {
+              method: 'POST',
+              headers: {
+                'x-csrf-token': csrfToken
+              }
+            })
+              .then(function (response) {
+                return response.json().catch(function () {
+                  return {};
+                }).then(function (payload) {
+                  if (!response.ok) {
+                    throw new Error(payload.error || payload.message || 'Remove failed');
+                  }
+
+                  return payload;
+                });
+              })
+              .then(function () {
+                refreshFolderContents(function () {
+                  closeRemoveModal();
+                });
+              });
           }
 
           function buildUploadFormData(collectedFiles, options) {
