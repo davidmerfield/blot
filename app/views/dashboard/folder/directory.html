@@ -95,12 +95,8 @@
           const folderBox = document.querySelector('.folder-box.directory');
           const dropTarget = document.querySelector('.folder-drop-target');
           const uploadModal = document.querySelector('.upload-preview-modal');
-          const uploadModalSummary = uploadModal && uploadModal.querySelector('.upload-preview-summary');
           const uploadModalLists = {
             queued: uploadModal && uploadModal.querySelector('[data-upload-list="queued"]')
-          };
-          const uploadModalCounts = {
-            queued: uploadModal && uploadModal.querySelector('[data-upload-count="queued"]')
           };
           const csrfToken = '{{csrftoken}}';
           const currentFolderPrefix = normalizeCurrentFolderPrefix(window.location.pathname);
@@ -391,17 +387,9 @@
             });
           }
 
-          function updateCount(key, count) {
-            if (uploadModalCounts[key]) {
-              uploadModalCounts[key].textContent = String(count || 0);
-            }
-          }
-
           function renderUploadPreview(collectedFiles, preview) {
             var overwritePaths = (preview && preview.overwrite) || [];
             var overwriteSet = new Set(overwritePaths);
-            var rejected = (preview && preview.rejected) || [];
-            var rejectedCount = rejected.length;
 
             renderList(uploadModalLists.queued, collectedFiles, function (entry, li) {
               li.textContent = entry.relativePath;
@@ -414,12 +402,6 @@
                 li.appendChild(marker);
               }
             });
-
-            updateCount('queued', collectedFiles.length);
-
-            if (uploadModalSummary) {
-              uploadModalSummary.textContent = 'Uploading ' + collectedFiles.length + ' file(s)' + (overwritePaths.length ? ', including ' + overwritePaths.length + ' overwrite(s)' : '') + (rejectedCount ? '. ' + rejectedCount + ' file(s) were rejected in dry-run and may fail.' : '.');
-            }
           }
 
           function resetUploadModalButtonState() {
