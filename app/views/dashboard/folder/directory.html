@@ -25,7 +25,8 @@
     <div class="folder-top"></div>
     {{/root}}
 
-    <div class="folder-box {{#root}}root{{/root}} {{#directory}}directory{{/directory}}" style="{{^root}}min-height:calc(100vh - 11rem){{/root}}">
+    <div class="folder-box {{#root}}root{{/root}} {{#directory}}directory{{/directory}}" style="position:relative;{{^root}}min-height:calc(100vh - 11rem){{/root}}">
+    <div class="folder-drop-target" aria-hidden="true" style="display:none;position:absolute;inset:0;z-index:10;align-items:center;justify-content:center;background:rgba(0, 112, 232, 0.08);border:2px dashed rgba(0, 112, 232, 0.6);border-radius:6px;color:var(--text-color);font-weight:600;pointer-events:none;">Drop files to upload</div>
     {{#directory}}
     <table class="directory-list {{^contents.length}}empty{{/contents.length}}">
         <thead style="height: 1.4em;">
@@ -78,6 +79,9 @@
         </table>
         <script>
           const table = document.querySelector('.directory-list');
+          const folderBox = document.querySelector('.folder-box.directory');
+          const dropTarget = document.querySelector('.folder-drop-target');
+          const csrfToken = '{{csrftoken}}';
           
           const state = {
             column: null,
@@ -164,6 +168,218 @@
           }
 
           window.sortTable = sortTable;
+
+          function refreshFolderContents(callback) {
+            var xhr = new XMLHttpRequest();
+
+            xhr.onreadystatechange = function () {
+              if (xhr.readyState !== 4) return;
+
+              if (xhr.status === 200) {
+                var parser = new DOMParser();
+                var xml = parser.parseFromString(xhr.responseText, 'text/html');
+                var currentNode = document.querySelector('.live-updates');
+                var newNode = xml.querySelector('.live-updates');
+
+                if (currentNode && newNode) {
+                  currentNode.innerHTML = newNode.innerHTML;
+                  sortTable();
+                }
+              }
+
+              if (typeof callback === 'function') callback();
+            };
+
+            xhr.open('GET', window.location.href, true);
+            xhr.send();
+          }
+
+          function readAllDirectoryEntries(directoryReader) {
+            return new Promise(function (resolve, reject) {
+              var entries = [];
+
+              function readBatch() {
+                directoryReader.readEntries(function (batch) {
+                  if (!batch.length) return resolve(entries);
+                  entries = entries.concat(Array.from(batch));
+                  readBatch();
+                }, reject);
+              }
+
+              readBatch();
+            });
+          }
+
+          function collectDroppedFilesFromEntry(entry, parentPath) {
+            var basePath = parentPath || '';
+
+            if (entry.isFile) {
+              return new Promise(function (resolve, reject) {
+                entry.file(function (file) {
+                  resolve([{ file: file, relativePath: (basePath + file.name).replace(/^\//, '') }]);
+                }, reject);
+              });
+            }
+
+            if (entry.isDirectory) {
+              var nextParent = (basePath + entry.name + '/').replace(/^\//, '');
+              var reader = entry.createReader();
+
+              return readAllDirectoryEntries(reader).then(function (entries) {
+                return Promise.all(entries.map(function (childEntry) {
+                  return collectDroppedFilesFromEntry(childEntry, nextParent);
+                })).then(function (nested) {
+                  return nested.reduce(function (all, set) {
+                    return all.concat(set);
+                  }, []);
+                });
+              });
+            }
+
+            return Promise.resolve([]);
+          }
+
+          function collectDroppedFiles(dataTransfer) {
+            var items = Array.from((dataTransfer && dataTransfer.items) || []);
+            var files = Array.from((dataTransfer && dataTransfer.files) || []);
+
+            if (!items.length) {
+              return Promise.resolve(files.map(function (file) {
+                return { file: file, relativePath: file.name };
+              }));
+            }
+
+            var hasEntrySupport = items.some(function (item) {
+              return item.kind === 'file' && typeof item.webkitGetAsEntry === 'function' && item.webkitGetAsEntry();
+            });
+
+            if (!hasEntrySupport) {
+              return Promise.resolve(files.map(function (file) {
+                return { file: file, relativePath: file.webkitRelativePath || file.name };
+              }));
+            }
+
+            var tasks = items.map(function (item) {
+              if (item.kind !== 'file' || typeof item.webkitGetAsEntry !== 'function') {
+                return Promise.resolve([]);
+              }
+
+              var entry = item.webkitGetAsEntry();
+              if (!entry) return Promise.resolve([]);
+              return collectDroppedFilesFromEntry(entry, '');
+            });
+
+            return Promise.all(tasks).then(function (sets) {
+              return sets.reduce(function (all, set) {
+                return all.concat(set);
+              }, []);
+            });
+          }
+
+          function buildUploadFormData(collectedFiles, dryRun) {
+            var formData = new FormData();
+            var relativePaths = [];
+
+            collectedFiles.forEach(function (entry, index) {
+              var field = 'upload-' + index;
+
+              formData.append(field, entry.file, entry.file.name);
+              relativePaths.push({
+                field: field,
+                index: 0,
+                relativePath: entry.relativePath
+              });
+            });
+
+            formData.append('relativePaths', JSON.stringify(relativePaths));
+            formData.append('dryRun', dryRun ? 'true' : 'false');
+            formData.append('_csrf', csrfToken);
+
+            return formData;
+          }
+
+          function uploadDroppedFiles(collectedFiles) {
+            if (!collectedFiles.length) return Promise.resolve();
+
+            return fetch('{{{base}}}/folder/upload?dryRun=1', {
+              method: 'POST',
+              body: buildUploadFormData(collectedFiles, true)
+            })
+              .then(function (response) {
+                if (!response.ok) throw new Error('Upload dry-run failed');
+                return response.json();
+              })
+              .then(function (preview) {
+                var createCount = (preview.create || []).length;
+                var overwriteCount = (preview.overwrite || []).length;
+                var rejectedCount = (preview.rejected || []).length;
+                var shouldCommit = window.confirm(
+                  'Upload ' + collectedFiles.length + ' file(s)?\\n' +
+                  'Create: ' + createCount + '\\n' +
+                  'Overwrite: ' + overwriteCount + '\\n' +
+                  'Rejected: ' + rejectedCount
+                );
+
+                if (!shouldCommit) return null;
+
+                return fetch('{{{base}}}/folder/upload', {
+                  method: 'POST',
+                  body: buildUploadFormData(collectedFiles, false)
+                });
+              })
+              .then(function (response) {
+                if (!response) return;
+                if (!response.ok) throw new Error('Upload failed');
+                return response.json();
+              })
+              .then(function (result) {
+                if (!result) return;
+                refreshFolderContents();
+              });
+          }
+
+          window.addEventListener('dragover', function (event) {
+            event.preventDefault();
+          });
+
+          window.addEventListener('drop', function (event) {
+            event.preventDefault();
+          });
+
+          if (folderBox && dropTarget) {
+            var dragDepth = 0;
+
+            folderBox.addEventListener('dragenter', function (event) {
+              event.preventDefault();
+              dragDepth += 1;
+              dropTarget.style.display = 'flex';
+            });
+
+            folderBox.addEventListener('dragover', function (event) {
+              event.preventDefault();
+              dropTarget.style.display = 'flex';
+            });
+
+            folderBox.addEventListener('dragleave', function (event) {
+              event.preventDefault();
+              dragDepth = Math.max(0, dragDepth - 1);
+              if (dragDepth === 0) {
+                dropTarget.style.display = 'none';
+              }
+            });
+
+            folderBox.addEventListener('drop', function (event) {
+              event.preventDefault();
+              dragDepth = 0;
+              dropTarget.style.display = 'none';
+
+              collectDroppedFiles(event.dataTransfer)
+                .then(uploadDroppedFiles)
+                .catch(function (error) {
+                  console.error(error);
+                });
+            });
+          }
       
           // add sorting to the directory list
           document.querySelectorAll('.directory-list th').forEach(function (header) {
