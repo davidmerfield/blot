@@ -141,10 +141,13 @@ async function fetchTaggedEntriesInternal(blogID, slugs, options) {
       : undefined;
     const { entryIDs, prettyTag, total } = await getTag(blogID, slug, tagOptions);
     const filteredEntryIDs = applyPathPrefixFiltering(entryIDs, pathPrefix);
+    const filteredTotal = filteredEntryIDs.length;
     const finalEntryIDs = pathPrefix && pg.hasPagination
       ? filteredEntryIDs.slice(pg.offset, pg.offset + pg.limit)
       : filteredEntryIDs;
-    const finalTotal = total !== undefined ? total : filteredEntryIDs.length;
+    const finalTotal = pathPrefix
+      ? filteredTotal
+      : (total !== undefined ? total : filteredTotal);
 
     return buildSingleTagResult({
       entryIDs: finalEntryIDs,
