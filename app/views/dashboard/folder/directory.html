@@ -73,22 +73,24 @@
                 {{/directory}}
                 <span class="truncate">{{name}}</span>
                 </a>
-                <button
-                  class="directory-row__menu-trigger row-action-menu__trigger"
-                  type="button"
-                  aria-haspopup="true"
-                  aria-expanded="false"
-                  data-url="{{{url}}}"
-                  data-name="{{name}}"
-                  data-directory="{{#directory}}true{{/directory}}{{^directory}}false{{/directory}}"
-                  data-entry="{{#entry}}true{{/entry}}{{^entry}}false{{/entry}}"
-                >
-                  <span class="icon-dots"></span>
-                </button>
               </div>
             </td>
             <td data-sort="{{unix}}">{{modified}}</td>
-            <td data-sort="{{#directory}}0{{/directory}}{{^directory}}{{bytes}}{{/directory}}">{{#directory}}--{{/directory}}{{^directory}}{{size}}{{/directory}}</td>
+            <td data-sort="{{#directory}}0{{/directory}}{{^directory}}{{bytes}}{{/directory}}">{{#directory}}--{{/directory}}{{^directory}}{{size}}{{/directory}}
+              <button
+              class="directory-row__menu-trigger row-action-menu__trigger"
+              type="button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              data-url="{{{url}}}"
+              data-name="{{name}}"
+              data-directory="{{#directory}}true{{/directory}}{{^directory}}false{{/directory}}"
+              data-entry="{{#entry}}true{{/entry}}{{^entry}}false{{/entry}}"
+            >
+              <span class="icon-dots"></span>
+            </button>
+
+            </td>
           </tr>
           {{/contents}}
         </table>
