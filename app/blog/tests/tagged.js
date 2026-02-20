@@ -358,7 +358,7 @@ describe("tags work on sites", function () {
       {
         "entries.html": "{{#entries}}{{title}}\n{{/entries}}",
         "tagged.html":
-          "pageSize={{pagination.pageSize}};current={{pagination.current}};entries={{#entries}}{{title}}|{{/entries}}",
+          "page_size={{pagination.page_size}};pageSize={{pagination.pageSize}};current={{pagination.current}};entries={{#entries}}{{title}}|{{/entries}}",
       },
       { locals: { page_size: 1, tagged_page_size: 2 } }
     );
@@ -374,7 +374,8 @@ describe("tags work on sites", function () {
     const res = await this.get(`/tagged/special`);
     expect(res.status).toBe(200);
     const body = await res.text();
-    const [pageSizePart, currentPart, entriesPart] = body.split(";");
+    const [pageSizeSnakePart, pageSizePart, currentPart, entriesPart] = body.split(";");
+    expect(pageSizeSnakePart).toBe("page_size=2");
     expect(pageSizePart).toBe("pageSize=2");
     expect(currentPart).toBe("current=1");
     const entries = entriesPart
@@ -388,8 +389,9 @@ describe("tags work on sites", function () {
     const resPage2 = await this.get(`/tagged/special/page/2`);
     expect(resPage2.status).toBe(200);
     const bodyPage2 = await resPage2.text();
-    const [pageSizePart2, currentPart2, entriesPart2] = bodyPage2.split(";");
+    const [pageSizeSnakePart2, pageSizePart2, currentPart2, entriesPart2] = bodyPage2.split(";");
 
+    expect(pageSizeSnakePart2).toBe("page_size=2");
     expect(pageSizePart2).toBe("pageSize=2");
     expect(currentPart2).toBe("current=2");
     const entriesPage2 = entriesPart2
@@ -422,7 +424,7 @@ describe("tags work on sites", function () {
     await this.template(
       {
         "tagged.html":
-          "pageSize={{pagination.pageSize}};current={{pagination.current}};entries={{#entries}}{{title}}|{{/entries}}",
+          "page_size={{pagination.page_size}};pageSize={{pagination.pageSize}};current={{pagination.current}};entries={{#entries}}{{title}}|{{/entries}}",
       },
       { locals: { page_size: 3 } }
     );
@@ -430,8 +432,9 @@ describe("tags work on sites", function () {
     const res = await this.get(`/tagged/alt`);
     expect(res.status).toBe(200);
     const body = await res.text();
-    const [pageSizePart, currentPart, entriesPart] = body.split(";");
+    const [pageSizeSnakePart, pageSizePart, currentPart, entriesPart] = body.split(";");
 
+    expect(pageSizeSnakePart).toBe("page_size=3");
     expect(pageSizePart).toBe("pageSize=3");
     expect(currentPart).toBe("current=1");
     const entries = entriesPart
@@ -449,7 +452,8 @@ describe("tags work on sites", function () {
     const resPage2 = await this.get(`/tagged/alt/page/2`);
     expect(resPage2.status).toBe(200);
     const bodyPage2 = await resPage2.text();
-    const [pageSizePart2, currentPart2, entriesPart2] = bodyPage2.split(";");
+    const [pageSizeSnakePart2, pageSizePart2, currentPart2, entriesPart2] = bodyPage2.split(";");
+    expect(pageSizeSnakePart2).toBe("page_size=3");
     expect(pageSizePart2).toBe("pageSize=3");
     expect(currentPart2).toBe("current=2");
     const entriesPage2 = entriesPart2
@@ -509,6 +513,7 @@ describe("tags work on sites", function () {
       jasmine.objectContaining({
         current: 1,
         pageSize: 1,
+        page_size: 1,
         total: 2,
         totalEntries: 2,
         previous: null,
