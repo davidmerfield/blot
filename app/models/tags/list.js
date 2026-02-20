@@ -1,17 +1,7 @@
 const client = require("models/client");
 const ensure = require("helper/ensure");
+const { normalizePathPrefix, filterEntryIDsByPathPrefix } = require("helper/pathPrefix");
 const key = require("./key");
-
-function normalizePathPrefix(pathPrefix) {
-  if (typeof pathPrefix !== "string") return null;
-
-  pathPrefix = pathPrefix.trim();
-  if (!pathPrefix) return null;
-
-  if (pathPrefix[0] !== "/") pathPrefix = "/" + pathPrefix;
-
-  return pathPrefix;
-}
 
 module.exports = async function getAll(blogID, options, callback) {
   try {
@@ -59,7 +49,7 @@ module.exports = async function getAll(blogID, options, callback) {
         const entries = await new Promise((resolve, reject) => {
           client.zrange(key.sortedTag(blogID, tag), 0, -1, (err, result) => {
             if (err) return reject(err);
-            resolve((result || []).filter((entryID) => entryID.startsWith(pathPrefix)));
+            resolve(filterEntryIDsByPathPrefix(result, pathPrefix));
           });
         });
 
