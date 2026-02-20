@@ -343,6 +343,42 @@ body.upload-modal-open {
 }
 
 
+.remove-entry-modal,
+.download-entry-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-entry-modal[hidden],
+.download-entry-modal[hidden] {
+  display: none !important;
+}
+
+.remove-entry-modal-backdrop,
+.download-entry-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.remove-entry-modal-dialog,
+.download-entry-modal-dialog {
+  position: relative;
+  width: min(480px, calc(100vw - 2rem));
+  max-height: calc(100vh - 4rem);
+  overflow: auto;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+
 .directory-row__name-cell {
   display: flex;
   align-items: center;
