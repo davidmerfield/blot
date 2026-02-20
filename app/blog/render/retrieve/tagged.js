@@ -1,5 +1,6 @@
 const Entry = require("models/entry");
 const Tags = require("models/tags");
+const { filterEntryIDsByPathPrefix } = require("helper/pathPrefix");
 
 function buildPagination(current, pageSize, totalEntries) {
   const total = pageSize > 0 ? Math.ceil(totalEntries / pageSize) : 0;
@@ -73,23 +74,6 @@ function getTag(blogID, slug, opts) {
   });
 }
 
-function normalizePathPrefix(prefix) {
-  if (typeof prefix !== "string") return null;
-
-  const trimmed = prefix.trim();
-  if (!trimmed) return null;
-
-  return trimmed[0] === "/" ? trimmed : `/${trimmed}`;
-}
-
-function applyPathPrefix(entryIDs, pathPrefix) {
-  const normalizedPrefix = normalizePathPrefix(pathPrefix);
-  if (!normalizedPrefix) return entryIDs || [];
-
-  return (entryIDs || []).filter((entryID) =>
-    typeof entryID === "string" && entryID.startsWith(normalizedPrefix)
-  );
-}
 function fetchTaggedEntries(blogID, slugs, options, callback) {
   if (typeof options === "function") {
     callback = options;
@@ -131,7 +115,7 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
 
     return getTag(blogID, slug, tagOptions)
       .then(({ entryIDs, prettyTag, total }) => {
-        const filteredEntryIDs = applyPathPrefix(entryIDs, pathPrefix);
+        const filteredEntryIDs = filterEntryIDsByPathPrefix(entryIDs, pathPrefix);
         const pagedEntryIDs = shouldSliceLocally
           ? filteredEntryIDs.slice(pg.offset, pg.offset + pg.limit)
           : filteredEntryIDs;
@@ -171,7 +155,7 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
       const prettyTags = results.map((r) => r.prettyTag);
       const meta = buildTagMetadata(prettyTags);
 
-      const entryIDs = applyPathPrefix(intersectedEntryIDs, options.pathPrefix);
+      const entryIDs = filterEntryIDsByPathPrefix(intersectedEntryIDs, options.pathPrefix);
 
       return { entryIDs, prettyTags, meta };
     })
