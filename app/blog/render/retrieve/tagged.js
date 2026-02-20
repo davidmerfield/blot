@@ -68,20 +68,28 @@ function buildTaggedResult({ entryIDs, total, prettyTags, slugs, pg }) {
   return attachPagination(result, pg);
 }
 
-function finalizeTaggedEntries({
-  finalEntryIDs,
-  prettyTags,
-  slugs,
-  pg,
-  finalTotal,
-}) {
+function buildSingleTagResult({ entryIDs, prettyTag, slugs, pg, total }) {
   return buildTaggedResult({
-    entryIDs: finalEntryIDs,
-    total: finalTotal,
+    entryIDs,
+    total,
+    prettyTags: [prettyTag],
+    slugs,
+    pg,
+  });
+}
+
+function buildMultiTagResult({ entryIDs, prettyTags, slugs, pg, total }) {
+  return buildTaggedResult({
+    entryIDs,
+    total,
     prettyTags,
     slugs,
     pg,
   });
+}
+
+function applyPathPrefixFiltering(entryIDs, pathPrefix) {
+  return filterEntryIDsByPathPrefix(entryIDs || [], pathPrefix);
 }
 
 function intersectMany(arrays) {
@@ -118,9 +126,9 @@ async function fetchTaggedEntriesInternal(blogID, slugs, options) {
   const pathPrefix = normalizePathPrefix(options.pathPrefix);
 
   if (!normalized.length) {
-    return finalizeTaggedEntries({
-      finalEntryIDs: [],
-      finalTotal: pg.hasPagination ? 0 : undefined,
+    return buildMultiTagResult({
+      entryIDs: [],
+      total: pg.hasPagination ? 0 : undefined,
       prettyTags: [],
       slugs: [],
       pg,
@@ -133,18 +141,16 @@ async function fetchTaggedEntriesInternal(blogID, slugs, options) {
       ? { limit: pg.limit, offset: pg.offset }
       : undefined;
     const { entryIDs, prettyTag, total } = await getTag(blogID, slug, tagOptions);
-    const filteredEntryIDs = filterEntryIDsByPathPrefix(entryIDs || [], pathPrefix);
+    const filteredEntryIDs = applyPathPrefixFiltering(entryIDs, pathPrefix);
     const finalEntryIDs = pathPrefix && pg.hasPagination
       ? filteredEntryIDs.slice(pg.offset, pg.offset + pg.limit)
       : filteredEntryIDs;
-    const finalTotal = total !== undefined
-      ? total
-      : filteredEntryIDs.length;
+    const finalTotal = total !== undefined ? total : filteredEntryIDs.length;
 
-    return finalizeTaggedEntries({
-      finalEntryIDs,
-      finalTotal,
-      prettyTags: [prettyTag],
+    return buildSingleTagResult({
+      entryIDs: finalEntryIDs,
+      total: finalTotal,
+      prettyTag,
       slugs: normalized,
       pg,
     });
@@ -152,18 +158,17 @@ async function fetchTaggedEntriesInternal(blogID, slugs, options) {
 
   // Multiple tags: fetch without pagination options, then intersect and slice locally
   const results = await Promise.all(normalized.map((slug) => getTag(blogID, slug)));
-  const lists = results.map((r) => r.entryIDs || []);
+  const lists = results.map((result) => result.entryIDs || []);
   const intersectedEntryIDs = intersectMany(lists);
-  const prettyTags = results.map((r) => r.prettyTag);
-  const filteredEntryIDs = filterEntryIDsByPathPrefix(intersectedEntryIDs, pathPrefix);
+  const prettyTags = results.map((result) => result.prettyTag);
+  const filteredEntryIDs = applyPathPrefixFiltering(intersectedEntryIDs, pathPrefix);
   const finalEntryIDs = pg.hasPagination
     ? filteredEntryIDs.slice(pg.offset, pg.offset + pg.limit)
     : filteredEntryIDs;
-  const finalTotal = pg.hasPagination ? filteredEntryIDs.length : undefined;
 
-  return finalizeTaggedEntries({
-    finalEntryIDs,
-    finalTotal,
+  return buildMultiTagResult({
+    entryIDs: finalEntryIDs,
+    total: pg.hasPagination ? filteredEntryIDs.length : undefined,
     prettyTags,
     slugs: normalized,
     pg,

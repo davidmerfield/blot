@@ -273,4 +273,69 @@ describe("tagged block", function () {
     expect(res.status).toEqual(200);
     expect(body.trim()).toEqual("2|2|2|One");
   });
+
+  it("paginates multi-tag intersections without path_prefix filtering", async function () {
+    await this.write({
+      path: "/one.txt",
+      content: "Title: One\nTags: foo, bar\n\nOne body",
+    });
+    await this.write({
+      path: "/two.txt",
+      content: "Title: Two\nTags: foo, bar\n\nTwo body",
+    });
+    await this.write({
+      path: "/three.txt",
+      content: "Title: Three\nTags: foo\n\nThree body",
+    });
+
+    await this.template(
+      {
+        "tagged.html": `{{#tagged}}{{total}}|{{pagination.total}}|{{pagination.current}}|{{#entries}}{{title}}{{/entries}}{{/tagged}}`,
+      },
+      {
+        locals: {
+          tagged_page_size: 1,
+        },
+      }
+    );
+
+    const res = await this.get("/tagged/foo/page/2?tag=foo&tag=bar");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body.trim()).toEqual("2|2|2|One");
+  });
+
+  it("paginates multi-tag intersections using filtered totals when path_prefix is set", async function () {
+    await this.write({
+      path: "/blog/one.txt",
+      content: "Title: One\nTags: foo, bar\n\nOne body",
+    });
+    await this.write({
+      path: "/blog/two.txt",
+      content: "Title: Two\nTags: foo, bar\n\nTwo body",
+    });
+    await this.write({
+      path: "/notes/three.txt",
+      content: "Title: Three\nTags: foo, bar\n\nThree body",
+    });
+
+    await this.template(
+      {
+        "tagged.html": `{{#tagged}}{{total}}|{{pagination.total}}|{{pagination.current}}|{{#entries}}{{title}}{{/entries}}{{/tagged}}`,
+      },
+      {
+        locals: {
+          path_prefix: "/blog/",
+          tagged_page_size: 1,
+        },
+      }
+    );
+
+    const res = await this.get("/tagged/foo/page/2?tag=foo&tag=bar");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body.trim()).toEqual("2|2|2|One");
+  });
 });
