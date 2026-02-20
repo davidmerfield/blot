@@ -166,25 +166,15 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
       return { entryIDs, prettyTags };
     })
     .then(({ entryIDs, prettyTags }) => {
-      if (pg.hasPagination) {
-        const sliced = entryIDs.slice(pg.offset, pg.offset + pg.limit);
-        return callback(
-          null,
-          buildTaggedResult({
-            entryIDs: sliced,
-            total: entryIDs.length,
-            prettyTags,
-            slugs: normalized,
-            pg,
-          })
-        );
-      }
-
+      const finalEntryIDs = pg.hasPagination
+        ? entryIDs.slice(pg.offset, pg.offset + pg.limit)
+        : entryIDs;
+      const finalTotal = pg.hasPagination ? entryIDs.length : undefined;
       return callback(
         null,
         buildTaggedResult({
-          entryIDs,
-          total: undefined,
+          entryIDs: finalEntryIDs,
+          total: finalTotal,
           prettyTags,
           slugs: normalized,
           pg,
