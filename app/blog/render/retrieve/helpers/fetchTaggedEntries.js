@@ -11,6 +11,7 @@ function buildPagination(current, pageSize, totalEntries) {
   return {
     current,
     pageSize,
+    page_size: pageSize,
     total,
     totalEntries,
     // Prefer snake_case in public payloads; keep camelCase for legacy compatibility.
