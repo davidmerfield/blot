@@ -1,6 +1,4 @@
-Make it possible to gather all tags used across a group of '{{#posts}}' and then filter tagged posts by path prefix and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBsnXPMttgkKzFTFQSdWWHpTl)
-
-Fix bug uploading files in subfolders on the dashboard
+Fix total post count for pagination when filtering by path_prefix!
 
 I'm concerned that malicious webhooks could be abused to delete sites
 - operator must be the only person to trigger the delete overdue or cancelled site flow.
