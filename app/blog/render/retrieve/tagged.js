@@ -48,6 +48,23 @@ function attachPagination(meta, pg) {
   return meta;
 }
 
+function buildTaggedResult({ entryIDs, total, prettyTags, slugs, pg, includeTotal }) {
+  const metadata = buildTagMetadata(prettyTags);
+  const result = {
+    entryIDs,
+    tag: metadata.tag,
+    tagged: metadata.tagged,
+    prettyTags,
+    slugs,
+  };
+
+  if (includeTotal) {
+    result.total = total;
+  }
+
+  return attachPagination(result, pg);
+}
+
 function intersectMany(arrays) {
   if (!arrays.length) return [];
   let set = new Set(arrays[0]);
@@ -93,17 +110,14 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
   if (!normalized.length) {
     return callback(
       null,
-      attachPagination(
-        {
-          entryIDs: [],
-          total: options.limit !== undefined ? 0 : undefined,
-          tag: "",
-          tagged: {},
-          prettyTags: [],
-          slugs: [],
-        },
-        pg
-      )
+      buildTaggedResult({
+        entryIDs: [],
+        total: 0,
+        prettyTags: [],
+        slugs: [],
+        pg,
+        includeTotal: options.limit !== undefined,
+      })
     );
   }
 
@@ -127,21 +141,16 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
         };
       })
       .then(({ entryIDs, prettyTag, total }) => {
-        const meta = buildTagMetadata([prettyTag]);
-
         return callback(
           null,
-          attachPagination(
-            {
-              entryIDs,
-              total: options.limit !== undefined ? total || 0 : undefined,
-              tag: meta.tag,
-              tagged: meta.tagged,
-              prettyTags: [prettyTag],
-              slugs: normalized,
-            },
-            pg
-          )
+          buildTaggedResult({
+            entryIDs,
+            total: total || 0,
+            prettyTags: [prettyTag],
+            slugs: normalized,
+            pg,
+            includeTotal: options.limit !== undefined,
+          })
         );
       })
       .catch(callback);
@@ -153,39 +162,38 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
       const lists = results.map((r) => r.entryIDs || []);
       const intersectedEntryIDs = intersectMany(lists);
       const prettyTags = results.map((r) => r.prettyTag);
-      const meta = buildTagMetadata(prettyTags);
 
       const entryIDs = filterEntryIDsByPathPrefix(intersectedEntryIDs, options.pathPrefix);
 
-      return { entryIDs, prettyTags, meta };
+      return { entryIDs, prettyTags };
     })
-    .then(({ entryIDs, prettyTags, meta }) => {
+    .then(({ entryIDs, prettyTags }) => {
       if (pg.hasPagination) {
         const sliced = entryIDs.slice(pg.offset, pg.offset + pg.limit);
         return callback(
           null,
-          attachPagination(
-            {
-              entryIDs: sliced,
-              total: entryIDs.length,
-              tag: meta.tag,
-              tagged: meta.tagged,
-              prettyTags,
-              slugs: normalized,
-            },
-            pg
-          )
+          buildTaggedResult({
+            entryIDs: sliced,
+            total: entryIDs.length,
+            prettyTags,
+            slugs: normalized,
+            pg,
+            includeTotal: true,
+          })
         );
       }
 
-      return callback(null, {
-        entryIDs,
-        total: undefined,
-        tag: meta.tag,
-        tagged: meta.tagged,
-        prettyTags,
-        slugs: normalized,
-      });
+      return callback(
+        null,
+        buildTaggedResult({
+          entryIDs,
+          total: entryIDs.length,
+          prettyTags,
+          slugs: normalized,
+          pg,
+          includeTotal: false,
+        })
+      );
     })
     .catch(callback);
 }
