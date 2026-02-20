@@ -286,7 +286,9 @@ describe("entries", function () {
           previous: 1,
           total: 3, // 6 entries / 2 per page
           pageSize: 2,
+          totalEntries: 6,
         });
+        expect(entries.at(-1).pagination).toEqual(pagination);
 
         // get the first page of entries, 2 per page, sorted reverse alphabetically
         Entries.getPage(
@@ -435,7 +437,9 @@ describe("entries", function () {
             next: 2,
             total: 2,
             pageSize: 2,
+            totalEntries: 3,
           });
+          expect(entries.at(-1).pagination).toEqual(pagination);
           done();
         }
       );

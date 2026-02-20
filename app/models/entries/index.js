@@ -716,6 +716,7 @@ module.exports = (function () {
       pagination.total = Math.ceil(totalEntries / pageSize);
       pagination.current = pageNo;
       pagination.pageSize = pageSize;
+      pagination.totalEntries = totalEntries;
 
       // total entries is not 0 indexed, remove 1
       if (totalEntries - 1 > end) pagination.next = zeroIndexedPageNo + 2;

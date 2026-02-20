@@ -65,6 +65,7 @@ Returns a single page of published entries from the `entries` list with full pag
   total: 3,      // total number of pages
   current: 2,    // current page number (1-based)
   pageSize: 5,   // entries per page
+  totalEntries: 15, // total number of entries across all pages
   next: 3,       // present only when a next page exists
   previous: 1    // present only when a previous page exists
 }
