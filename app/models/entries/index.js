@@ -527,7 +527,17 @@ module.exports = (function () {
         }
 
         scoredEntries.sort(function (a, b) {
-          return order === "asc" ? b.score - a.score : a.score - b.score;
+          var scoreDifference = order === "asc" ? b.score - a.score : a.score - b.score;
+
+          if (scoreDifference !== 0) return scoreDifference;
+
+          // Redis-compatible tie handling: equal scores are ordered by member
+          // lexicographically (reverse for ZREVRANGE semantics, forward for ZRANGE).
+          if (a.id === b.id) return 0;
+
+          if (order === "asc") return a.id < b.id ? 1 : -1;
+
+          return a.id < b.id ? -1 : 1;
         });
 
         totalEntries = scoredEntries.length;
