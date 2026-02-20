@@ -369,8 +369,8 @@ body.upload-modal-open {
   align-items: center;
   justify-content: center;
   position: absolute;
-  right: 0;
-  top: 0;
+  right: 6px;
+  top: 6px;
   z-index: 1;
   opacity: 0;
   transition: opacity 0.2s;
