@@ -120,79 +120,65 @@ function getTag(blogID, slug, opts) {
   });
 }
 
-function fetchTaggedEntries(blogID, slugs, options, callback) {
-  if (typeof options === "function") {
-    callback = options;
-    options = {};
-  }
+async function fetchTaggedEntriesInternal(blogID, slugs, options) {
   options = options || {};
 
   const pg = parsePaginationOptions(options);
-
-  let normalized;
-  try {
-    normalized = normalizeSlugs(slugs);
-  } catch (e) {
-    return callback(e);
-  }
+  const normalized = normalizeSlugs(slugs);
 
   if (!normalized.length) {
-    return callback(
-      null,
-      finalizeTaggedEntries({
-        entryIDs: [],
-        prettyTags: [],
-        slugs: [],
-        pg,
-        exposeTotalWhenPaginatedOnly: true,
-      })
-    );
+    return finalizeTaggedEntries({
+      entryIDs: [],
+      prettyTags: [],
+      slugs: [],
+      pg,
+      exposeTotalWhenPaginatedOnly: true,
+    });
   }
 
   if (normalized.length === 1) {
     const slug = normalized[0];
     const pathPrefix = options.pathPrefix;
     const tagOptions = pathPrefix ? undefined : options;
+    const { entryIDs, prettyTag, total } = await getTag(blogID, slug, tagOptions);
 
-    return getTag(blogID, slug, tagOptions)
-      .then(({ entryIDs, prettyTag, total }) => {
-        return callback(
-          null,
-          finalizeTaggedEntries({
-            entryIDs,
-            prettyTags: [prettyTag],
-            slugs: normalized,
-            pg,
-            pathPrefix,
-            total: pathPrefix ? undefined : total,
-            sliceLocally: pathPrefix,
-            exposeTotalWhenPaginatedOnly: false,
-          })
-        );
-      })
-      .catch(callback);
+    return finalizeTaggedEntries({
+      entryIDs,
+      prettyTags: [prettyTag],
+      slugs: normalized,
+      pg,
+      pathPrefix,
+      total: pathPrefix ? undefined : total,
+      sliceLocally: pathPrefix,
+      exposeTotalWhenPaginatedOnly: false,
+    });
   }
 
   // Multiple tags: fetch without pagination options, then intersect and slice locally
-  Promise.all(normalized.map((slug) => getTag(blogID, slug)))
-    .then((results) => {
-      const lists = results.map((r) => r.entryIDs || []);
-      const intersectedEntryIDs = intersectMany(lists);
-      const prettyTags = results.map((r) => r.prettyTag);
+  const results = await Promise.all(normalized.map((slug) => getTag(blogID, slug)));
+  const lists = results.map((r) => r.entryIDs || []);
+  const intersectedEntryIDs = intersectMany(lists);
+  const prettyTags = results.map((r) => r.prettyTag);
 
-      return callback(
-        null,
-        finalizeTaggedEntries({
-          entryIDs: intersectedEntryIDs,
-          prettyTags,
-          slugs: normalized,
-          pg,
-          pathPrefix: options.pathPrefix,
-          sliceLocally: true,
-          exposeTotalWhenPaginatedOnly: true,
-        })
-      );
-    })
+  return finalizeTaggedEntries({
+    entryIDs: intersectedEntryIDs,
+    prettyTags,
+    slugs: normalized,
+    pg,
+    pathPrefix: options.pathPrefix,
+    sliceLocally: true,
+    exposeTotalWhenPaginatedOnly: true,
+  });
+}
+
+function fetchTaggedEntries(blogID, slugs, options, callback) {
+  if (typeof options === "function") {
+    callback = options;
+    options = {};
+  }
+
+  return fetchTaggedEntriesInternal(blogID, slugs, options)
+    .then((result) => callback(null, result))
     .catch(callback);
 }
 
