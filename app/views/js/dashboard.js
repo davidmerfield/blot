@@ -18,5 +18,17 @@ require('./site-settings-autosubmit.js');
 require('./site-settings-links.js');
 require('./site-settings-images.js');
 require('./site-settings-redirects.js');
-require('../dashboard/template/js/sidebar-action-menu.js');
+var initSidebarActionMenu = require('../dashboard/template/js/sidebar-action-menu.js');
+
+if (typeof window !== 'undefined' && window.__folderFileActionMenuConfig) {
+  var folderConfig = window.__folderFileActionMenuConfig;
+  initSidebarActionMenu({
+    container: folderConfig.container,
+    menuElement: folderConfig.menuElement,
+    rowSelector: folderConfig.rowSelector,
+    triggerSelector: folderConfig.triggerSelector,
+    linkMap: folderConfig.linkMap,
+  });
+  delete window.__folderFileActionMenuConfig;
+}
 

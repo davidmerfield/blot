@@ -176,8 +176,8 @@
             });
           }
 
-          if (folderBox && folderFileActionMenu && typeof window.initSidebarActionMenu === 'function') {
-            window.initSidebarActionMenu({
+          if (folderBox && folderFileActionMenu) {
+            window.__folderFileActionMenuConfig = {
               container: folderBox,
               menuElement: folderFileActionMenu,
               rowSelector: '.directory-row',
@@ -205,7 +205,7 @@
                   };
                 }
               }
-            });
+            };
           }
 
           function encodePathSegments(path) {
