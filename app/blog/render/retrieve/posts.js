@@ -4,6 +4,7 @@ const fetchTaggedEntries = require("./helpers/fetchTaggedEntries");
 
 module.exports = function (req, res, callback) {
   const blogID = req?.blog?.id;
+  const log = typeof req?.log === "function" ? req.log.bind(req) : () => {};
 
   const options = {
     sortBy: req?.template?.locals?.sort_by,
@@ -16,7 +17,7 @@ module.exports = function (req, res, callback) {
   const tags = req?.query?.tag || req?.params?.tag || res?.locals?.tag;
 
   if (!tags) {
-    req.log("Loading page of entries");
+    log("Loading page of entries");
     return getPage(blogID, options, (err, entries, pagination) => {
       if (err) {
         return callback(err);
@@ -37,7 +38,7 @@ module.exports = function (req, res, callback) {
 
   const offset = (page - 1) * limit;
 
-  req.log("Loading tagged page of entries");
+  log("Loading tagged page of entries");
   fetchTaggedEntries(
     blogID,
     tags,
