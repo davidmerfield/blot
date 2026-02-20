@@ -1,3 +1,6 @@
+Make it possible to gather all tags used across a group of '{{#posts}}' and then filter tagged posts by path prefix and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBsnXPMttgkKzFTFQSdWWHpTl)
+
+Fix bug uploading files in subfolders on the dashboard
 
 I'm concerned that malicious webhooks could be abused to delete sites
 - operator must be the only person to trigger the delete overdue or cancelled site flow.
@@ -22,7 +25,7 @@ Google Drive:
 - Fix bug with shared drive folders for [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBkLKSVzvjZLRSCpRJwcKBPlf)
 - Add sync check
 - Fix bug with Google Docs when disconnecting a site from Google Drive on Blot then reconnecting the site to Google Drive. 
-- Improve sync efficieny with option to target a specific folder or file first (Track ids in database)
+- Improve sync efficieny with option to target a specific folder or file first (Track ids in database) and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBspgLdtHcrTZqRcPTJFNzBbd) maybe use touch metadata method to force syncs periodically for hot files?
 - Improve html output for google docs and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQFmTvLKzPkJrgsBTWZmQJWS)
   Issue: <p><img><br><img></p> should be <p><img></p><p><img></p>
 

@@ -14,11 +14,6 @@ var Blog = require("models/blog");
 var get = require("./get");
 var debug = require("debug")("blot:entry:set");
 
-//'/style.css', '/script.js', '/feed.rss', '/robots.txt', '/sitemap.xml'
-// are not possible because . is replaced with. ideally check for
-// all template views here...
-var banned = ["/archives", "/search", "/tagged", "/public", ""];
-
 var MIN_SUMMARY_SLUG_WORDS = 3;
 var MAX_SUMMARY_SLUG_WORDS = 10;
 
@@ -132,14 +127,17 @@ function Candidates(blog, entry) {
   });
 
   candidates = candidates.filter(function (candidate) {
+    // Will catch empty strings, null, undefined, etc.
     if (!candidate) return false;
 
     // WE DONT EVER ADD ENTRY.PATH so images are always accessible
     // It's possible that entry.name when normalized === entry.path
     if (entry.path && candidate === entry.path) return false;
 
-    if (banned.indexOf(candidate) > -1) return false;
-
+    // Otherwise we are pretty liberal: we allow posts and pages 
+    // to have the same URL as a template view. This lets us set 
+    // an index page for example directly from the folder using 
+    // the metadata `Link: /`. Think carefuly before changing this.
     return true;
   });
 
