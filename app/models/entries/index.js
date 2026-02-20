@@ -5,6 +5,7 @@ var Entry = require("../entry");
 var DateStamp = require("../../build/prepare/dateStamp");
 var Blog = require("../blog");
 var pathIndex = require("./pathIndex");
+var normalizePathPrefix = require("helper/pathPrefix").normalizePathPrefix;
 
 var MAX_RANDOM_ATTEMPTS = 10;
 
@@ -435,17 +436,6 @@ module.exports = (function () {
   }
 
 
-
-  function normalizePathPrefix(pathPrefix) {
-    if (typeof pathPrefix !== "string") return null;
-
-    pathPrefix = pathPrefix.trim();
-    if (!pathPrefix) return null;
-
-    if (pathPrefix[0] !== "/") pathPrefix = "/" + pathPrefix;
-
-    return pathPrefix;
-  }
 
   function fetchEntryScores(blogID, entryIDs, callback) {
     if (!entryIDs.length) return callback(null, []);

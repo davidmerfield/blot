@@ -122,6 +122,125 @@ describe("tagged block", function () {
     expect(body.trim()).toEqual("<ul><li>Three</li><li>One</li></ul>");
   });
 
+
+
+  it("treats empty and whitespace path_prefix as disabled filtering", async function () {
+    await this.write({
+      path: "/blog/one.txt",
+      content: "Title: One\nTags: foo\n\nOne body",
+    });
+    await this.write({
+      path: "/notes/two.txt",
+      content: "Title: Two\nTags: foo\n\nTwo body",
+    });
+
+    await this.template(
+      {
+        "tagged.html": `<ul>{{#tagged}}{{#entries}}<li>{{title}}</li>{{/entries}}{{/tagged}}</ul>`,
+      },
+      {
+        locals: {
+          path_prefix: "   ",
+        },
+      }
+    );
+
+    const res = await this.get("/tagged/foo");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body.trim()).toEqual("<ul><li>Two</li><li>One</li></ul>");
+  });
+
+  it("normalizes path_prefix values that are missing a leading slash", async function () {
+    await this.write({
+      path: "/blog/one.txt",
+      content: "Title: One\nTags: foo\n\nOne body",
+    });
+    await this.write({
+      path: "/notes/two.txt",
+      content: "Title: Two\nTags: foo\n\nTwo body",
+    });
+
+    await this.template(
+      {
+        "tagged.html": `<ul>{{#tagged}}{{#entries}}<li>{{title}}</li>{{/entries}}{{/tagged}}</ul>`,
+      },
+      {
+        locals: {
+          path_prefix: "blog/",
+        },
+      }
+    );
+
+    const res = await this.get("/tagged/foo");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body.trim()).toEqual("<ul><li>One</li></ul>");
+  });
+
+  it("respects trailing slash path_prefix boundaries", async function () {
+    await this.write({
+      path: "/blog/one.txt",
+      content: "Title: One\nTags: foo\n\nOne body",
+    });
+    await this.write({
+      path: "/blog-two.txt",
+      content: "Title: Two\nTags: foo\n\nTwo body",
+    });
+
+    await this.template(
+      {
+        "tagged.html": `<ul>{{#tagged}}{{#entries}}<li>{{title}}</li>{{/entries}}{{/tagged}}</ul>`,
+      },
+      {
+        locals: {
+          path_prefix: "/blog/",
+        },
+      }
+    );
+
+    const res = await this.get("/tagged/foo");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body.trim()).toEqual("<ul><li>One</li></ul>");
+  });
+
+  it("ignores non-string entry IDs when filtering by path_prefix", function (done) {
+    const tagged = require("blog/render/retrieve/tagged");
+    const Tags = require("models/tags");
+    const Entry = require("models/entry");
+
+    spyOn(Tags, "get").and.callFake(function (blogID, slug, callback) {
+      callback(null, ["/blog/one.txt", 7, null, "/notes/two.txt"], "foo", 4);
+    });
+
+    spyOn(Entry, "get").and.callFake(function (blogID, entryIDs, callback) {
+      expect(entryIDs).toEqual(["/blog/one.txt"]);
+      callback([{ id: "/blog/one.txt", title: "One", dateStamp: 1 }]);
+    });
+
+    const req = {
+      blog: { id: this.blog.id },
+      query: { tag: "foo" },
+      params: {},
+      template: { locals: {} },
+    };
+
+    const res = {
+      locals: { path_prefix: "/blog/" },
+    };
+
+    tagged(req, res, function (err, result) {
+      expect(err).toBeNull();
+      expect(result.entryIDs).toEqual(["/blog/one.txt"]);
+      expect(result.total).toBe(1);
+      done();
+    });
+  });
+
   it("paginates tagged entries using filtered totals when path_prefix is set", async function () {
     await this.write({
       path: "/blog/one.txt",

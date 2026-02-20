@@ -394,8 +394,7 @@ describe("entries", function () {
       });
     });
 
-    it("filters posts by path prefix and paginates by id", async function (done) {
-      const blogID = this.blog.id;
+    async function seedPathPrefixEntries(blogID) {
       const entriesKey = `blog:${blogID}:entries`;
       const now = Date.now();
 
@@ -419,6 +418,11 @@ describe("entries", function () {
         .zadd(`blog:${blogID}:entries:lex`, 0, "/Notes/d.txt")
         .set(`blog:${blogID}:entries:lex:ready`, "1")
         .exec();
+    }
+
+    it("filters posts by path prefix and paginates by id", async function (done) {
+      const blogID = this.blog.id;
+      await seedPathPrefixEntries(blogID);
 
       Entries.getPage(
         blogID,
@@ -432,6 +436,41 @@ describe("entries", function () {
             total: 2,
             pageSize: 2,
           });
+          done();
+        }
+      );
+    });
+
+    it("normalizes pathPrefix values missing a leading slash", async function (done) {
+      const blogID = this.blog.id;
+      await seedPathPrefixEntries(blogID);
+
+      Entries.getPage(
+        blogID,
+        { pageNumber: 1, pageSize: 2, sortBy: "id", order: "asc", pathPrefix: "Blog/" },
+        function (error, entries) {
+          expect(error).toBeNull();
+          expect(entries.map((entry) => entry.id)).toEqual(["/Blog/a.txt", "/Blog/b.txt"]);
+          done();
+        }
+      );
+    });
+
+    it("ignores empty or whitespace pathPrefix values", async function (done) {
+      const blogID = this.blog.id;
+      await seedPathPrefixEntries(blogID);
+
+      Entries.getPage(
+        blogID,
+        { pageNumber: 1, pageSize: 4, sortBy: "id", order: "asc", pathPrefix: "   " },
+        function (error, entries) {
+          expect(error).toBeNull();
+          expect(entries.map((entry) => entry.id)).toEqual([
+            "/Blog/a.txt",
+            "/Blog/b.txt",
+            "/Blog/c.txt",
+            "/Notes/d.txt",
+          ]);
           done();
         }
       );
