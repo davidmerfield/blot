@@ -65,6 +65,35 @@ function buildTaggedResult({ entryIDs, total, prettyTags, slugs, pg }) {
   return attachPagination(result, pg);
 }
 
+function finalizeTaggedEntries({
+  entryIDs,
+  prettyTags,
+  slugs,
+  pg,
+  pathPrefix,
+  total,
+  sliceLocally,
+  exposeTotalWhenPaginatedOnly,
+}) {
+  const filteredEntryIDs = filterEntryIDsByPathPrefix(entryIDs || [], pathPrefix);
+  const finalEntryIDs = sliceLocally && pg.hasPagination
+    ? filteredEntryIDs.slice(pg.offset, pg.offset + pg.limit)
+    : filteredEntryIDs;
+
+  const shouldExposeTotal = exposeTotalWhenPaginatedOnly ? pg.hasPagination : true;
+  const finalTotal = shouldExposeTotal
+    ? (total !== undefined ? total : filteredEntryIDs.length)
+    : undefined;
+
+  return buildTaggedResult({
+    entryIDs: finalEntryIDs,
+    total: finalTotal,
+    prettyTags,
+    slugs,
+    pg,
+  });
+}
+
 function intersectMany(arrays) {
   if (!arrays.length) return [];
   let set = new Set(arrays[0]);
@@ -110,12 +139,12 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
   if (!normalized.length) {
     return callback(
       null,
-      buildTaggedResult({
+      finalizeTaggedEntries({
         entryIDs: [],
-        total: options.limit !== undefined ? 0 : undefined,
         prettyTags: [],
         slugs: [],
         pg,
+        exposeTotalWhenPaginatedOnly: true,
       })
     );
   }
@@ -124,30 +153,20 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
     const slug = normalized[0];
     const pathPrefix = options.pathPrefix;
     const tagOptions = pathPrefix ? undefined : options;
-    const shouldSliceLocally = pathPrefix && pg.hasPagination;
 
     return getTag(blogID, slug, tagOptions)
       .then(({ entryIDs, prettyTag, total }) => {
-        const filteredEntryIDs = filterEntryIDsByPathPrefix(entryIDs, pathPrefix);
-        const pagedEntryIDs = shouldSliceLocally
-          ? filteredEntryIDs.slice(pg.offset, pg.offset + pg.limit)
-          : filteredEntryIDs;
-
-        return {
-          prettyTag,
-          entryIDs: pagedEntryIDs,
-          total: pathPrefix ? filteredEntryIDs.length : total,
-        };
-      })
-      .then(({ entryIDs, prettyTag, total }) => {
         return callback(
           null,
-          buildTaggedResult({
+          finalizeTaggedEntries({
             entryIDs,
-            total: options.limit !== undefined ? total || 0 : undefined,
             prettyTags: [prettyTag],
             slugs: normalized,
             pg,
+            pathPrefix,
+            total: pathPrefix ? undefined : total,
+            sliceLocally: pathPrefix,
+            exposeTotalWhenPaginatedOnly: false,
           })
         );
       })
@@ -161,23 +180,16 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
       const intersectedEntryIDs = intersectMany(lists);
       const prettyTags = results.map((r) => r.prettyTag);
 
-      const entryIDs = filterEntryIDsByPathPrefix(intersectedEntryIDs, options.pathPrefix);
-
-      return { entryIDs, prettyTags };
-    })
-    .then(({ entryIDs, prettyTags }) => {
-      const finalEntryIDs = pg.hasPagination
-        ? entryIDs.slice(pg.offset, pg.offset + pg.limit)
-        : entryIDs;
-      const finalTotal = pg.hasPagination ? entryIDs.length : undefined;
       return callback(
         null,
-        buildTaggedResult({
-          entryIDs: finalEntryIDs,
-          total: finalTotal,
+        finalizeTaggedEntries({
+          entryIDs: intersectedEntryIDs,
           prettyTags,
           slugs: normalized,
           pg,
+          pathPrefix: options.pathPrefix,
+          sliceLocally: true,
+          exposeTotalWhenPaginatedOnly: true,
         })
       );
     })
