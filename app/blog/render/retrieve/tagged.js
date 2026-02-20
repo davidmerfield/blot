@@ -1,6 +1,9 @@
 const Entry = require("models/entry");
 const Tags = require("models/tags");
-const { filterEntryIDsByPathPrefix } = require("helper/pathPrefix");
+const {
+  normalizePathPrefix,
+  filterEntryIDsByPathPrefix,
+} = require("helper/pathPrefix");
 
 function buildPagination(current, pageSize, totalEntries) {
   const total = pageSize > 0 ? Math.ceil(totalEntries / pageSize) : 0;
@@ -66,25 +69,12 @@ function buildTaggedResult({ entryIDs, total, prettyTags, slugs, pg }) {
 }
 
 function finalizeTaggedEntries({
-  entryIDs,
+  finalEntryIDs,
   prettyTags,
   slugs,
   pg,
-  pathPrefix,
-  total,
-  sliceLocally,
-  exposeTotalWhenPaginatedOnly,
+  finalTotal,
 }) {
-  const filteredEntryIDs = filterEntryIDsByPathPrefix(entryIDs || [], pathPrefix);
-  const finalEntryIDs = sliceLocally && pg.hasPagination
-    ? filteredEntryIDs.slice(pg.offset, pg.offset + pg.limit)
-    : filteredEntryIDs;
-
-  const shouldExposeTotal = exposeTotalWhenPaginatedOnly ? pg.hasPagination : true;
-  const finalTotal = shouldExposeTotal
-    ? (total !== undefined ? total : filteredEntryIDs.length)
-    : undefined;
-
   return buildTaggedResult({
     entryIDs: finalEntryIDs,
     total: finalTotal,
@@ -125,32 +115,38 @@ async function fetchTaggedEntriesInternal(blogID, slugs, options) {
 
   const pg = parsePaginationOptions(options);
   const normalized = normalizeSlugs(slugs);
+  const pathPrefix = normalizePathPrefix(options.pathPrefix);
 
   if (!normalized.length) {
     return finalizeTaggedEntries({
-      entryIDs: [],
+      finalEntryIDs: [],
+      finalTotal: pg.hasPagination ? 0 : undefined,
       prettyTags: [],
       slugs: [],
       pg,
-      exposeTotalWhenPaginatedOnly: true,
     });
   }
 
   if (normalized.length === 1) {
     const slug = normalized[0];
-    const pathPrefix = options.pathPrefix;
-    const tagOptions = pathPrefix ? undefined : options;
+    const tagOptions = !pathPrefix && pg.hasPagination
+      ? { limit: pg.limit, offset: pg.offset }
+      : undefined;
     const { entryIDs, prettyTag, total } = await getTag(blogID, slug, tagOptions);
+    const filteredEntryIDs = filterEntryIDsByPathPrefix(entryIDs || [], pathPrefix);
+    const finalEntryIDs = pathPrefix && pg.hasPagination
+      ? filteredEntryIDs.slice(pg.offset, pg.offset + pg.limit)
+      : filteredEntryIDs;
+    const finalTotal = total !== undefined
+      ? total
+      : filteredEntryIDs.length;
 
     return finalizeTaggedEntries({
-      entryIDs,
+      finalEntryIDs,
+      finalTotal,
       prettyTags: [prettyTag],
       slugs: normalized,
       pg,
-      pathPrefix,
-      total: pathPrefix ? undefined : total,
-      sliceLocally: pathPrefix,
-      exposeTotalWhenPaginatedOnly: false,
     });
   }
 
@@ -159,15 +155,18 @@ async function fetchTaggedEntriesInternal(blogID, slugs, options) {
   const lists = results.map((r) => r.entryIDs || []);
   const intersectedEntryIDs = intersectMany(lists);
   const prettyTags = results.map((r) => r.prettyTag);
+  const filteredEntryIDs = filterEntryIDsByPathPrefix(intersectedEntryIDs, pathPrefix);
+  const finalEntryIDs = pg.hasPagination
+    ? filteredEntryIDs.slice(pg.offset, pg.offset + pg.limit)
+    : filteredEntryIDs;
+  const finalTotal = pg.hasPagination ? filteredEntryIDs.length : undefined;
 
   return finalizeTaggedEntries({
-    entryIDs: intersectedEntryIDs,
+    finalEntryIDs,
+    finalTotal,
     prettyTags,
     slugs: normalized,
     pg,
-    pathPrefix: options.pathPrefix,
-    sliceLocally: true,
-    exposeTotalWhenPaginatedOnly: true,
   });
 }
 
