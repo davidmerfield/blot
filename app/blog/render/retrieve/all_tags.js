@@ -36,8 +36,9 @@ module.exports = function (req, res, callback) {
       return tag;
     });
 
-   
-    res.locals.total_posts = Object.keys(set).length;
+    // toDO maybe rename this? it's ugly
+    res.locals.all_tags_total_posts = Object.keys(set).length;
+
     req.log("Listed all tags");
     callback(null, tags);
   });
