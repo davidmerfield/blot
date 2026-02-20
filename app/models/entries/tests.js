@@ -456,6 +456,73 @@ describe("entries", function () {
       );
     });
 
+
+
+    it("applies Redis-compatible tie ordering for equal date scores under pathPrefix", async function (done) {
+      const blogID = this.blog.id;
+      const entriesKey = `blog:${blogID}:entries`;
+      const lexKey = `blog:${blogID}:entries:lex`;
+      const tieScore = Date.now();
+      const tieIDs = ["/Blog/a.txt", "/Blog/m.txt", "/Blog/z.txt"];
+
+      await redis.zadd(
+        entriesKey,
+        tieScore,
+        tieIDs[0],
+        tieScore,
+        tieIDs[1],
+        tieScore,
+        tieIDs[2]
+      );
+
+      await redis
+        .multi()
+        .zadd(lexKey, 0, tieIDs[0])
+        .zadd(lexKey, 0, tieIDs[1])
+        .zadd(lexKey, 0, tieIDs[2])
+        .set(`blog:${blogID}:entries:lex:ready`, "1")
+        .exec();
+
+      const taggedSetKey = `blog:${blogID}:tags:sorted:redis-tie-check`;
+
+      await redis.del(taggedSetKey);
+      await redis.zadd(
+        taggedSetKey,
+        tieScore,
+        tieIDs[0],
+        tieScore,
+        tieIDs[1],
+        tieScore,
+        tieIDs[2]
+      );
+
+      redis.zrevrange(taggedSetKey, 0, -1, function (err, expectedAsc) {
+        if (err) return done.fail(err);
+
+        redis.zrange(taggedSetKey, 0, -1, function (err, expectedDesc) {
+          if (err) return done.fail(err);
+
+          Entries.getPage(
+            blogID,
+            { pageNumber: 1, pageSize: 10, sortBy: "date", order: "asc", pathPrefix: "/Blog/" },
+            function (error, ascEntries) {
+              expect(error).toBeNull();
+              expect(ascEntries.map((entry) => entry.id)).toEqual(expectedAsc);
+
+              Entries.getPage(
+                blogID,
+                { pageNumber: 1, pageSize: 10, sortBy: "date", order: "desc", pathPrefix: "/Blog/" },
+                function (error, descEntries) {
+                  expect(error).toBeNull();
+                  expect(descEntries.map((entry) => entry.id)).toEqual(expectedDesc);
+                  done();
+                }
+              );
+            }
+          );
+        });
+      });
+    });
     it("ignores empty or whitespace pathPrefix values", async function (done) {
       const blogID = this.blog.id;
       await seedPathPrefixEntries(blogID);
