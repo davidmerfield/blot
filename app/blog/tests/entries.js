@@ -164,4 +164,19 @@ describe("entries", function () {
         expect(res2.status).toEqual(200);
         expect(body2).toContain('3/3/2/5/2');
     });
+
+    it("keeps pagination object available on single-page blogs", async function () {
+
+        await this.write({path: '/only.txt', content: 'Hello, only!'});
+
+        await this.template({ "entries.html": "{{pagination.current}}/{{pagination.total}}/{{pagination.previous}}/{{pagination.next}}/{{pagination.page_size}}/{{pagination.total_entries}}" }, {
+            locals: {page_size: 10}
+        });
+
+        const res = await this.get('/');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body).toContain('1/1///10/1');
+    });
 });

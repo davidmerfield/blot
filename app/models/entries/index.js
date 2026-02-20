@@ -722,11 +722,9 @@ module.exports = (function () {
       pagination.total_entries = totalEntries;
 
       // total entries is not 0 indexed, remove 1
-      if (totalEntries - 1 > end) pagination.next = zeroIndexedPageNo + 2;
+      pagination.next = totalEntries - 1 > end ? zeroIndexedPageNo + 2 : null;
 
-      if (zeroIndexedPageNo > 0) pagination.previous = zeroIndexedPageNo;
-
-      if (!pagination.next && !pagination.previous) pagination = false;
+      pagination.previous = zeroIndexedPageNo > 0 ? zeroIndexedPageNo : null;
 
       // The first entry published should have an index of 1
       // The fifth entry published should have an index of 5
@@ -738,9 +736,7 @@ module.exports = (function () {
         index--;
       });
 
-      // Guard against missing pagination object (e.g., if Redis fails)
-      // Note: pagination.current is already set by the model
-      if (pagination && entries && entries.length > 0) {
+      if (entries && entries.length > 0) {
         entries.at(-1).pagination = pagination;
       }
       

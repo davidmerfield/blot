@@ -321,6 +321,39 @@ describe("entries", function () {
     );
   });
 
+  it("getPage should return object pagination on a single page", async function (done) {
+    const key = `blog:${this.blog.id}:entries`;
+    const now = Date.now();
+
+    await redis.zadd(key, now, "/only.txt");
+
+    spyOn(Entry, "get").and.callFake((blogID, ids, callback) => {
+      if (Array.isArray(ids)) return callback(ids.map((id) => ({ id })));
+      return callback({ id: ids });
+    });
+
+    Entries.getPage(
+      this.blog.id,
+      { pageNumber: 1, pageSize: 10, sortBy: "date" },
+      function (error, entries, pagination) {
+        expect(error).toBeNull();
+        expect(entries.map((entry) => entry.id)).toEqual(["/only.txt"]);
+        expect(pagination).toEqual({
+          current: 1,
+          next: null,
+          previous: null,
+          total: 1,
+          pageSize: 10,
+          page_size: 10,
+          totalEntries: 1,
+          total_entries: 1,
+        });
+        expect(entries.at(-1).pagination).toEqual(pagination);
+        done();
+      }
+    );
+  });
+
   it("getRecent should return the most recent entries with their indices", async function (done) {
     const key = `blog:${this.blog.id}:entries`;
 
