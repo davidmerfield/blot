@@ -2,9 +2,28 @@ const client = require("models/client");
 const ensure = require("helper/ensure");
 const key = require("./key");
 
-module.exports = async function getAll(blogID, callback) {
+function normalizePathPrefix(pathPrefix) {
+  if (typeof pathPrefix !== "string") return null;
+
+  pathPrefix = pathPrefix.trim();
+  if (!pathPrefix) return null;
+
+  if (pathPrefix[0] !== "/") pathPrefix = "/" + pathPrefix;
+
+  return pathPrefix;
+}
+
+module.exports = async function getAll(blogID, options, callback) {
   try {
+    if (typeof options === "function") {
+      callback = options;
+      options = null;
+    }
+
     ensure(blogID, "string").and(callback, "function");
+
+    options = options || {};
+    const pathPrefix = normalizePathPrefix(options.pathPrefix || options.path_prefix);
 
     // Fetch all tags using SMEMBERS
     const allTags = await new Promise((resolve, reject) => {
@@ -35,6 +54,25 @@ module.exports = async function getAll(blogID, callback) {
           });
         }),
       ]);
+
+      if (pathPrefix) {
+        const entries = await new Promise((resolve, reject) => {
+          client.zrange(key.sortedTag(blogID, tag), 0, -1, (err, result) => {
+            if (err) return reject(err);
+            resolve((result || []).filter((entryID) => entryID.startsWith(pathPrefix)));
+          });
+        });
+
+        if (!entries.length) continue;
+
+        tags.push({
+          name,
+          slug: tag,
+          entries,
+        });
+
+        continue;
+      }
 
       if (count > 0) {
         tags.push({

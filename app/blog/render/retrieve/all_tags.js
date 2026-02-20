@@ -3,8 +3,12 @@ var Entry = require("models/entry");
 var async = require("async");
 
 module.exports = function (req, res, callback) {
+  var path_prefix =
+    res.locals.path_prefix ??
+    (req.template && req.template.locals && req.template.locals.path_prefix);
+
   req.log("Listing all tags");
-  Tags.list(req.blog.id, function (err, tags) {
+  Tags.list(req.blog.id, { path_prefix }, function (err, tags) {
     // In future, we might want to expose
     // other options for this sorting...
     req.log("Sorting all tags");
