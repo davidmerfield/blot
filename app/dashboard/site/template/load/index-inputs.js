@@ -1,5 +1,12 @@
 const determine_input = require("./util/determine-input");
 
+const SORT_OPTIONS = require("../sort-options");
+
+const DEFAULT_SORT = {
+  sort_by: "date",
+  sort_order: "desc"
+};
+
 const MAP = {
   page_size: {
     label: "Posts per page",
@@ -8,8 +15,34 @@ const MAP = {
   }
 };
 
+const resolveSortValue = locals => {
+  const sortBy = locals.sort_by || DEFAULT_SORT.sort_by;
+  const sortOrder = locals.sort_order || DEFAULT_SORT.sort_order;
+  const matched = SORT_OPTIONS.find(
+    option => option.sort_by === sortBy && option.sort_order === sortOrder
+  );
+
+  return matched ? matched.value : SORT_OPTIONS[0].value;
+};
+
+const buildSortControl = locals => {
+  const selectedValue = resolveSortValue(locals);
+
+  return {
+    key: "sort_by",
+    label: "Post sorting",
+    value: selectedValue,
+    isSelect: true,
+    options: SORT_OPTIONS.map(option => ({
+      label: option.label,
+      value: option.value,
+      selected: option.value === selectedValue ? "selected" : ""
+    }))
+  };
+};
+
 module.exports = function (req, res, next) {
-  res.locals.index_page = Object.keys(req.template.locals)
+  const inputs = Object.keys(req.template.locals)
 
     // If the template uses the thumbnails per row
     // option then hide the page size option
@@ -44,6 +77,10 @@ module.exports = function (req, res, next) {
     )
     .map(key => determine_input(key, req.template.locals, MAP))
     .filter(i => i);
+
+  inputs.push(buildSortControl(req.template.locals));
+
+  res.locals.index_page = inputs;
 
   return next();
 };
