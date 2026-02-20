@@ -717,6 +717,8 @@ module.exports = (function () {
       pagination.current = pageNo;
       pagination.pageSize = pageSize;
       pagination.totalEntries = totalEntries;
+      // Prefer snake_case in public payloads; keep camelCase for legacy compatibility.
+      pagination.total_entries = totalEntries;
 
       // total entries is not 0 indexed, remove 1
       if (totalEntries - 1 > end) pagination.next = zeroIndexedPageNo + 2;
