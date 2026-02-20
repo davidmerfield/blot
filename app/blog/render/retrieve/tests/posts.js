@@ -48,9 +48,18 @@ describe("posts", function () {
       content: "Title: C\nTags: foo\n\nC",
     });
 
-    await this.template({
-      "foo.html": `{{#posts}}{{title}} {{/posts}}`,
-    });
+    await this.template(
+      {
+        "foo.html": `{{#posts}}{{title}} {{/posts}}`,
+      },
+      {
+        views: {
+          "foo.html": {
+            url: "/",
+          },
+        },
+      }
+    );
 
     const res = await this.get("/?tag=foo");
     const text = await res.text();
@@ -114,6 +123,11 @@ describe("posts", function () {
         "foo.html": `{{#posts}}{{title}} {{/posts}}`,
       },
       {
+        views: {
+          "foo.html": {
+            url: "/",
+          },
+        },
         locals: {
           path_prefix: "/blog/",
         },
