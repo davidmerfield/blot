@@ -48,7 +48,7 @@ function attachPagination(meta, pg) {
   return meta;
 }
 
-function buildTaggedResult({ entryIDs, total, prettyTags, slugs, pg, includeTotal }) {
+function buildTaggedResult({ entryIDs, total, prettyTags, slugs, pg }) {
   const metadata = buildTagMetadata(prettyTags);
   const result = {
     entryIDs,
@@ -58,7 +58,7 @@ function buildTaggedResult({ entryIDs, total, prettyTags, slugs, pg, includeTota
     slugs,
   };
 
-  if (includeTotal) {
+  if (total !== undefined) {
     result.total = total;
   }
 
@@ -112,11 +112,10 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
       null,
       buildTaggedResult({
         entryIDs: [],
-        total: 0,
+        total: options.limit !== undefined ? 0 : undefined,
         prettyTags: [],
         slugs: [],
         pg,
-        includeTotal: options.limit !== undefined,
       })
     );
   }
@@ -145,11 +144,10 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
           null,
           buildTaggedResult({
             entryIDs,
-            total: total || 0,
+            total: options.limit !== undefined ? total || 0 : undefined,
             prettyTags: [prettyTag],
             slugs: normalized,
             pg,
-            includeTotal: options.limit !== undefined,
           })
         );
       })
@@ -178,7 +176,6 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
             prettyTags,
             slugs: normalized,
             pg,
-            includeTotal: true,
           })
         );
       }
@@ -187,11 +184,10 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
         null,
         buildTaggedResult({
           entryIDs,
-          total: entryIDs.length,
+          total: undefined,
           prettyTags,
           slugs: normalized,
           pg,
-          includeTotal: false,
         })
       );
     })
