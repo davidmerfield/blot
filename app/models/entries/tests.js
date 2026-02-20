@@ -470,6 +470,7 @@ describe("entries", function () {
           expect(pagination).toEqual({
             current: 1,
             next: 2,
+            previous: null,
             total: 2,
             pageSize: 2,
             page_size: 2,
