@@ -73,6 +73,23 @@ function getTag(blogID, slug, opts) {
   });
 }
 
+function normalizePathPrefix(prefix) {
+  if (typeof prefix !== "string") return null;
+
+  const trimmed = prefix.trim();
+  if (!trimmed) return null;
+
+  return trimmed[0] === "/" ? trimmed : `/${trimmed}`;
+}
+
+function applyPathPrefix(entryIDs, pathPrefix) {
+  const normalizedPrefix = normalizePathPrefix(pathPrefix);
+  if (!normalizedPrefix) return entryIDs || [];
+
+  return (entryIDs || []).filter((entryID) =>
+    typeof entryID === "string" && entryID.startsWith(normalizedPrefix)
+  );
+}
 function fetchTaggedEntries(blogID, slugs, options, callback) {
   if (typeof options === "function") {
     callback = options;
@@ -108,14 +125,30 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
 
   if (normalized.length === 1) {
     const slug = normalized[0];
-    return getTag(blogID, slug, options)
+    const pathPrefix = options.pathPrefix;
+    const tagOptions = pathPrefix ? undefined : options;
+
+    return getTag(blogID, slug, tagOptions)
+      .then(({ entryIDs, prettyTag, total }) => {
+        const filteredEntryIDs = applyPathPrefix(entryIDs, pathPrefix);
+
+        return {
+          prettyTag,
+          entryIDs: filteredEntryIDs,
+          total: pathPrefix ? filteredEntryIDs.length : total,
+        };
+      })
       .then(({ entryIDs, prettyTag, total }) => {
         const meta = buildTagMetadata([prettyTag]);
+        const pagedEntryIDs = pg.hasPagination
+          ? entryIDs.slice(pg.offset, pg.offset + pg.limit)
+          : entryIDs;
+
         return callback(
           null,
           attachPagination(
             {
-              entryIDs,
+              entryIDs: pagedEntryIDs,
               total: options.limit !== undefined ? total || 0 : undefined,
               tag: meta.tag,
               tagged: meta.tagged,
@@ -133,10 +166,15 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
   Promise.all(normalized.map((slug) => getTag(blogID, slug)))
     .then((results) => {
       const lists = results.map((r) => r.entryIDs || []);
-      const entryIDs = intersectMany(lists);
+      const intersectedEntryIDs = intersectMany(lists);
       const prettyTags = results.map((r) => r.prettyTag);
       const meta = buildTagMetadata(prettyTags);
 
+      const entryIDs = applyPathPrefix(intersectedEntryIDs, options.pathPrefix);
+
+      return { entryIDs, prettyTags, meta };
+    })
+    .then(({ entryIDs, prettyTags, meta }) => {
       if (pg.hasPagination) {
         const sliced = entryIDs.slice(pg.offset, pg.offset + pg.limit);
         return callback(
@@ -180,6 +218,8 @@ module.exports = function (req, res, callback) {
   if (!page || page < 1) page = 1;
 
   const templateLocals = (req.template && req.template.locals) || {};
+  const pathPrefix =
+    (res.locals && res.locals.path_prefix) ?? templateLocals.path_prefix;
 
   let preferredLimit;
 
@@ -196,7 +236,7 @@ module.exports = function (req, res, callback) {
 
   const offset = (page - 1) * limit;
 
-  fetchTaggedEntries(blogID, tags, { limit, offset }, function (err, result) {
+  fetchTaggedEntries(blogID, tags, { limit, offset, pathPrefix }, function (err, result) {
     if (err) return callback(err);
 
     Entry.get(blogID, result.entryIDs || [], function (entries) {
