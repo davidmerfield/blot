@@ -127,28 +127,29 @@ function fetchTaggedEntries(blogID, slugs, options, callback) {
     const slug = normalized[0];
     const pathPrefix = options.pathPrefix;
     const tagOptions = pathPrefix ? undefined : options;
+    const shouldSliceLocally = pathPrefix && pg.hasPagination;
 
     return getTag(blogID, slug, tagOptions)
       .then(({ entryIDs, prettyTag, total }) => {
         const filteredEntryIDs = applyPathPrefix(entryIDs, pathPrefix);
+        const pagedEntryIDs = shouldSliceLocally
+          ? filteredEntryIDs.slice(pg.offset, pg.offset + pg.limit)
+          : filteredEntryIDs;
 
         return {
           prettyTag,
-          entryIDs: filteredEntryIDs,
+          entryIDs: pagedEntryIDs,
           total: pathPrefix ? filteredEntryIDs.length : total,
         };
       })
       .then(({ entryIDs, prettyTag, total }) => {
         const meta = buildTagMetadata([prettyTag]);
-        const pagedEntryIDs = pg.hasPagination
-          ? entryIDs.slice(pg.offset, pg.offset + pg.limit)
-          : entryIDs;
 
         return callback(
           null,
           attachPagination(
             {
-              entryIDs: pagedEntryIDs,
+              entryIDs,
               total: options.limit !== undefined ? total || 0 : undefined,
               tag: meta.tag,
               tagged: meta.tagged,
