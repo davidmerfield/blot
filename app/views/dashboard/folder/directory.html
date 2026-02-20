@@ -488,7 +488,7 @@
             var normalizedEntries = collectedFiles.map(function (entry) {
               return {
                 file: entry.file,
-                relativePath: applyCurrentFolderPrefix(entry.relativePath)
+                relativePath: entry.relativePath
               };
             });
 
@@ -501,7 +501,14 @@
                 return response.json();
               })
               .then(function (preview) {
-                renderUploadPreview(normalizedEntries, preview);
+                var previewEntries = normalizedEntries.map(function (entry) {
+                  return {
+                    file: entry.file,
+                    relativePath: applyCurrentFolderPrefix(entry.relativePath)
+                  };
+                });
+
+                renderUploadPreview(previewEntries, preview);
                 openUploadModal();
 
                 return new Promise(function (resolve, reject) {
