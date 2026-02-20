@@ -288,6 +288,7 @@ describe("entries", function () {
           pageSize: 2,
           page_size: 2,
           totalEntries: 6,
+          total_entries: 6,
         });
         expect(entries.at(-1).pagination).toEqual(pagination);
 
@@ -440,6 +441,7 @@ describe("entries", function () {
             pageSize: 2,
             page_size: 2,
             totalEntries: 3,
+            total_entries: 3,
           });
           expect(entries.at(-1).pagination).toEqual(pagination);
           done();
