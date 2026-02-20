@@ -52,9 +52,11 @@ describe("all tags", function () {
       await this.write({path: '/blog/b.txt', content: 'Tags: abc, def\n\nB'});
       await this.write({path: '/notes/c.txt', content: 'Tags: def\n\nC'});
 
+      // this.template reads locals from package metadata (second argument).
       await this.template({
-          'entries.html': `<ul>{{#all_tags}}<li>{{tag}} {{total}} {{entries.length}}</li>{{/all_tags}}</ul>`,
-          'locals.json': JSON.stringify({ path_prefix: '/blog/' })
+          'entries.html': `<ul>{{#all_tags}}<li>{{tag}} {{total}} {{entries.length}}</li>{{/all_tags}}</ul>`
+      }, {
+          locals: { path_prefix: '/blog/' }
       });
 
       const res = await this.get('/');
