@@ -23,14 +23,21 @@ module.exports = function (req, res, callback) {
       return 0;
     });
 
+    let set = {};
+
     req.log("Counting all tags");
     tags = tags.map((tag) => {
       tag.tag = tag.name;
       tag.total = tag.entries.length;
+      tag.entries.forEach(id => {
+        set[id] = true;
+      });
       if (tag.slug) tag.slug = encodeURIComponent(tag.slug);
       return tag;
     });
 
+   
+    res.locals.total_posts = Object.keys(set).length;
     req.log("Listed all tags");
     callback(null, tags);
   });
