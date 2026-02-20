@@ -85,4 +85,30 @@ describe("tags.list", function () {
             });
         });
     });
+
+    it("does not call zcard when filtering by pathPrefix", function (done) {
+        const blogID = this.blog.id;
+        const client = require("models/client");
+
+        set(blogID, {
+            id: "/Blog/one",
+            path: "/Blog/one",
+            tags: ["TagA"],
+        }, function () {
+            spyOn(client, "zcard").and.callThrough();
+
+            list(blogID, { pathPrefix: "Blog" }, function (err, tags) {
+                expect(err).toBeNull();
+                expect(tags).toEqual([
+                    {
+                        name: "TagA",
+                        slug: "taga",
+                        entries: ["/Blog/one"],
+                    },
+                ]);
+                expect(client.zcard).not.toHaveBeenCalled();
+                done();
+            });
+        });
+    });
 });

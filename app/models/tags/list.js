@@ -30,20 +30,12 @@ module.exports = async function getAll(blogID, options, callback) {
     // Iterate over tags and fetch their details
     const tags = [];
     for (const tag of allTags) {
-      const [name, count] = await Promise.all([
-        new Promise((resolve, reject) => {
-          client.get(key.name(blogID, tag), (err, result) => {
-            if (err) return reject(err);
-            resolve(result || "");
-          });
-        }),
-        new Promise((resolve, reject) => {
-          client.zcard(key.sortedTag(blogID, tag), (err, result) => {
-            if (err) return reject(err);
-            resolve(result || 0);
-          });
-        }),
-      ]);
+      const name = await new Promise((resolve, reject) => {
+        client.get(key.name(blogID, tag), (err, result) => {
+          if (err) return reject(err);
+          resolve(result || "");
+        });
+      });
 
       if (pathPrefix) {
         const entries = await new Promise((resolve, reject) => {
@@ -63,6 +55,13 @@ module.exports = async function getAll(blogID, options, callback) {
 
         continue;
       }
+
+      const count = await new Promise((resolve, reject) => {
+        client.zcard(key.sortedTag(blogID, tag), (err, result) => {
+          if (err) return reject(err);
+          resolve(result || 0);
+        });
+      });
 
       if (count > 0) {
         tags.push({
