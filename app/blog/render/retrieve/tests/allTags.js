@@ -47,6 +47,26 @@ describe("all tags", function () {
       expect(body.trim()).toEqual('<ul><li>tag0 100</li><li>tag1 80</li><li>tag2 60</li><li>tag3 40</li><li>tag4 20</li><li>tag95 20</li><li>tag96 40</li><li>tag97 60</li><li>tag98 80</li><li>tag99 100</li></ul>');
   }, 30000);
 
+  it("respects template locals.path_prefix in all_tags", async function () {
+      await this.write({path: '/blog/a.txt', content: 'Tags: abc\n\nA'});
+      await this.write({path: '/blog/b.txt', content: 'Tags: abc, def\n\nB'});
+      await this.write({path: '/notes/c.txt', content: 'Tags: def\n\nC'});
+
+      // this.template reads locals from package metadata (second argument).
+      await this.template({
+          'entries.html': `<ul>{{#all_tags}}<li>{{tag}} {{total}} {{entries.length}}</li>{{/all_tags}}</ul>`
+      }, {
+          locals: { path_prefix: '/blog/' }
+      });
+
+      const res = await this.get('/');
+      const body = await res.text();
+
+      expect(res.status).toEqual(200);
+      expect(body.trim()).toEqual('<ul><li>abc 2 2</li><li>def 1 1</li></ul>');
+  });
+
+
   it("encodes slugs in all_tags output", async function () {
       await this.write({path: '/a.txt', content: 'Tags: Design/UI\n\nFoo'});
 

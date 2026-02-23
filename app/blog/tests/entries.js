@@ -138,4 +138,45 @@ describe("entries", function () {
             }
         }
     });
+
+    it("exposes totalEntries in pagination data", async function () {
+
+        const totalEntries = 5;
+        const page_size = 2;
+
+        for (let i = totalEntries; i > 0; i--) {
+            await this.write({path: `/${i}.txt`, content: `Hello, ${i}!`});
+        }
+
+        await this.template({ "entries.html": "{{pagination.current}}/{{pagination.total}}/{{pagination.page_size}}/{{pagination.total_entries}}/{{pagination.pageSize}}" }, {
+            locals: {page_size}
+        });
+
+        const res = await this.get('/page/1');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body).toContain('1/3/2/5/2');
+
+        const res2 = await this.get('/page/3');
+        const body2 = await res2.text();
+
+        expect(res2.status).toEqual(200);
+        expect(body2).toContain('3/3/2/5/2');
+    });
+
+    it("keeps pagination object available on single-page blogs", async function () {
+
+        await this.write({path: '/only.txt', content: 'Hello, only!'});
+
+        await this.template({ "entries.html": "{{pagination.current}}/{{pagination.total}}/{{pagination.previous}}/{{pagination.next}}/{{pagination.page_size}}/{{pagination.total_entries}}" }, {
+            locals: {page_size: 10}
+        });
+
+        const res = await this.get('/');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body).toContain('1/1///10/1');
+    });
 });

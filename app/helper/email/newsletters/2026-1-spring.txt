@@ -3,15 +3,23 @@ Spring newsletter
 *You received this email because you subscribed to [Blot’s newsletter](https://blot.im/news). You can [unsubscribe](https://blot.im/news/cancel) at any time. Please reply directly to this email if you have any thoughts or questions.*  
 
 **New features**
+- You can now drag-and-drop files directly into a folder on the dashboard
+- [Markdown](https://blot.im/how/files/markdown) now supports embeds
+- You can disable processing of images into posts from the [image settings](https://blot.im/sites/default/settings/images)
 
 **Changes**
 - Google Docs now support superscript, subscript, strike, underline
 - Support Wikilink lookup by title for pages as well as posts
+- Tag index and tag list pages can now be filtered by path
+- The [Git client](https://blot.im/how/sync/git) now supports changes to your site username
 
 **Bug fixes**
 - Fix bug with URL settings in package.json
 - Fixed various sync bugs with the iCloud client
 - Fixed bug with Dropbox changes involving case-only, e.g. 'file.txt' -> 'FILE.TXT'
+- Fixed uploads in subdirectories
+- Fixed date inputs on the template editor
+- Fixed image width on the documentation template
 
 **Questions**
 

@@ -65,12 +65,15 @@ Returns a single page of published entries from the `entries` list with full pag
   total: 3,      // total number of pages
   current: 2,    // current page number (1-based)
   pageSize: 5,   // entries per page
+  total_entries: 15, // total number of entries across all pages
   next: 3,       // present only when a next page exists
   previous: 1    // present only when a previous page exists
 }
 ```
 
 When there is only one page, `pagination` is set to `false` on the callback. The last entry in each page has the pagination object attached as `entry.pagination`.
+
+Use `total_entries` in public template examples. `totalEntries` remains available as a compatibility alias.
 
 Each entry in the result has an `index` property: a 1-based ordinal reflecting the entry's position in the total ordered set (the earliest published entry has index 1, the most recently published has index equal to total entry count).
 

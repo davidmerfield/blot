@@ -45,4 +45,70 @@ describe("tags.list", function () {
             });
         });
     });
+
+    it("filters tags by pathPrefix", function (done) {
+        const blogID = this.blog.id;
+
+        set(blogID, {
+            id: "/Blog/one",
+            path: "/Blog/one",
+            tags: ["TagA", "TagB"],
+        }, function () {
+            set(blogID, {
+                id: "/Blog/two",
+                path: "/Blog/two",
+                tags: ["TagA"],
+            }, function () {
+                set(blogID, {
+                    id: "/notes/one",
+                    path: "/notes/one",
+                    tags: ["TagB", "TagC"],
+                }, function () {
+                    list(blogID, { pathPrefix: "  Blog/ " }, function (err, tags) {
+                        expect(err).toBeNull();
+
+                        const sortedTags = tags
+                            .sort((a, b) => a.slug.localeCompare(b.slug))
+                            .map((tag) => ({
+                                slug: tag.slug,
+                                entries: tag.entries.slice().sort(),
+                            }));
+
+                        expect(sortedTags).toEqual([
+                            { slug: "taga", entries: ["/Blog/one", "/Blog/two"] },
+                            { slug: "tagb", entries: ["/Blog/one"] },
+                        ]);
+
+                        done();
+                    });
+                });
+            });
+        });
+    });
+
+    it("does not call zcard when filtering by pathPrefix", function (done) {
+        const blogID = this.blog.id;
+        const client = require("models/client");
+
+        set(blogID, {
+            id: "/Blog/one",
+            path: "/Blog/one",
+            tags: ["TagA"],
+        }, function () {
+            spyOn(client, "zcard").and.callThrough();
+
+            list(blogID, { pathPrefix: "Blog" }, function (err, tags) {
+                expect(err).toBeNull();
+                expect(tags).toEqual([
+                    {
+                        name: "TagA",
+                        slug: "taga",
+                        entries: ["/Blog/one"],
+                    },
+                ]);
+                expect(client.zcard).not.toHaveBeenCalled();
+                done();
+            });
+        });
+    });
 });

@@ -34,6 +34,112 @@ describe("posts", function () {
     expect(text2.trim()).toEqual("b.txt a.txt");
   });
 
+  it("filters posts by query tag", async function () {
+    await this.write({
+      path: "/a.txt",
+      content: "Title: A\nTags: foo\n\nA",
+    });
+    await this.write({
+      path: "/b.txt",
+      content: "Title: B\nTags: bar\n\nB",
+    });
+    await this.write({
+      path: "/c.txt",
+      content: "Title: C\nTags: foo\n\nC",
+    });
+
+    await this.template(
+      {
+        "foo.html": `{{#posts}}{{title}} {{/posts}}`,
+      },
+      {
+        views: {
+          "foo.html": {
+            url: "/",
+          },
+        },
+      }
+    );
+
+    const res = await this.get("/?tag=foo");
+    const text = await res.text();
+
+    expect(text.trim()).toEqual("C A");
+  });
+
+  it("filters posts by res.locals.tag", function (done) {
+    const posts = require("blog/render/retrieve/posts");
+
+    this.write({
+      path: "/a.txt",
+      content: "Title: A\nTags: foo\n\nA",
+    })
+      .then(() =>
+        this.write({
+          path: "/b.txt",
+          content: "Title: B\nTags: bar\n\nB",
+        })
+      )
+      .then(() => {
+        const req = {
+          blog: { id: this.blog.id },
+          query: {},
+          params: {},
+          template: { locals: {} },
+          log: function () {},
+        };
+
+        const res = {
+          locals: {
+            tag: "foo",
+          },
+        };
+
+        posts(req, res, function (err, entries) {
+          expect(err).toBeNull();
+          expect(entries.map((entry) => entry.title)).toEqual(["A"]);
+          done();
+        });
+      })
+      .catch(done.fail);
+  });
+
+  it("filters posts by tag and path_prefix", async function () {
+    await this.write({
+      path: "/blog/one.txt",
+      content: "Title: One\nTags: foo\n\nOne",
+    });
+    await this.write({
+      path: "/notes/two.txt",
+      content: "Title: Two\nTags: foo\n\nTwo",
+    });
+    await this.write({
+      path: "/blog/three.txt",
+      content: "Title: Three\nTags: bar\n\nThree",
+    });
+
+    await this.template(
+      {
+        "foo.html": `{{#posts}}{{title}} {{/posts}}`,
+      },
+      {
+        views: {
+          "foo.html": {
+            url: "/",
+          },
+        },
+        locals: {
+          path_prefix: "/blog/",
+        },
+      }
+    );
+
+    const res = await this.get("/?tag=foo");
+    const text = await res.text();
+
+    expect(text.trim()).toEqual("One");
+  });
+
   describe("rejects invalid page numbers", function () {
     const cases = [
       ["zero", "/page/0"],

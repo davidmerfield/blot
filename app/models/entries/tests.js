@@ -286,7 +286,11 @@ describe("entries", function () {
           previous: 1,
           total: 3, // 6 entries / 2 per page
           pageSize: 2,
+          page_size: 2,
+          totalEntries: 6,
+          total_entries: 6,
         });
+        expect(entries.at(-1).pagination).toEqual(pagination);
 
         // get the first page of entries, 2 per page, sorted reverse alphabetically
         Entries.getPage(
@@ -313,6 +317,39 @@ describe("entries", function () {
             );
           }
         );
+      }
+    );
+  });
+
+  it("getPage should return object pagination on a single page", async function (done) {
+    const key = `blog:${this.blog.id}:entries`;
+    const now = Date.now();
+
+    await redis.zadd(key, now, "/only.txt");
+
+    spyOn(Entry, "get").and.callFake((blogID, ids, callback) => {
+      if (Array.isArray(ids)) return callback(ids.map((id) => ({ id })));
+      return callback({ id: ids });
+    });
+
+    Entries.getPage(
+      this.blog.id,
+      { pageNumber: 1, pageSize: 10, sortBy: "date" },
+      function (error, entries, pagination) {
+        expect(error).toBeNull();
+        expect(entries.map((entry) => entry.id)).toEqual(["/only.txt"]);
+        expect(pagination).toEqual({
+          current: 1,
+          next: null,
+          previous: null,
+          total: 1,
+          pageSize: 10,
+          page_size: 10,
+          totalEntries: 1,
+          total_entries: 1,
+        });
+        expect(entries.at(-1).pagination).toEqual(pagination);
+        done();
       }
     );
   });
@@ -394,8 +431,7 @@ describe("entries", function () {
       });
     });
 
-    it("filters posts by path prefix and paginates by id", async function (done) {
-      const blogID = this.blog.id;
+    async function seedPathPrefixEntries(blogID) {
       const entriesKey = `blog:${blogID}:entries`;
       const now = Date.now();
 
@@ -419,6 +455,11 @@ describe("entries", function () {
         .zadd(`blog:${blogID}:entries:lex`, 0, "/Notes/d.txt")
         .set(`blog:${blogID}:entries:lex:ready`, "1")
         .exec();
+    }
+
+    it("filters posts by path prefix and paginates by id", async function (done) {
+      const blogID = this.blog.id;
+      await seedPathPrefixEntries(blogID);
 
       Entries.getPage(
         blogID,
@@ -429,9 +470,116 @@ describe("entries", function () {
           expect(pagination).toEqual({
             current: 1,
             next: 2,
+            previous: null,
             total: 2,
             pageSize: 2,
+            page_size: 2,
+            totalEntries: 3,
+            total_entries: 3,
           });
+          expect(entries.at(-1).pagination).toEqual(pagination);
+          done();
+        }
+      );
+    });
+
+    it("normalizes pathPrefix values missing a leading slash", async function (done) {
+      const blogID = this.blog.id;
+      await seedPathPrefixEntries(blogID);
+
+      Entries.getPage(
+        blogID,
+        { pageNumber: 1, pageSize: 2, sortBy: "id", order: "asc", pathPrefix: "Blog/" },
+        function (error, entries) {
+          expect(error).toBeNull();
+          expect(entries.map((entry) => entry.id)).toEqual(["/Blog/a.txt", "/Blog/b.txt"]);
+          done();
+        }
+      );
+    });
+
+
+
+    it("applies Redis-compatible tie ordering for equal date scores under pathPrefix", async function (done) {
+      const blogID = this.blog.id;
+      const entriesKey = `blog:${blogID}:entries`;
+      const lexKey = `blog:${blogID}:entries:lex`;
+      const tieScore = Date.now();
+      const tieIDs = ["/Blog/a.txt", "/Blog/m.txt", "/Blog/z.txt"];
+
+      await redis.zadd(
+        entriesKey,
+        tieScore,
+        tieIDs[0],
+        tieScore,
+        tieIDs[1],
+        tieScore,
+        tieIDs[2]
+      );
+
+      await redis
+        .multi()
+        .zadd(lexKey, 0, tieIDs[0])
+        .zadd(lexKey, 0, tieIDs[1])
+        .zadd(lexKey, 0, tieIDs[2])
+        .set(`blog:${blogID}:entries:lex:ready`, "1")
+        .exec();
+
+      const taggedSetKey = `blog:${blogID}:tags:sorted:redis-tie-check`;
+
+      await redis.del(taggedSetKey);
+      await redis.zadd(
+        taggedSetKey,
+        tieScore,
+        tieIDs[0],
+        tieScore,
+        tieIDs[1],
+        tieScore,
+        tieIDs[2]
+      );
+
+      redis.zrevrange(taggedSetKey, 0, -1, function (err, expectedAsc) {
+        if (err) return done.fail(err);
+
+        redis.zrange(taggedSetKey, 0, -1, function (err, expectedDesc) {
+          if (err) return done.fail(err);
+
+          Entries.getPage(
+            blogID,
+            { pageNumber: 1, pageSize: 10, sortBy: "date", order: "asc", pathPrefix: "/Blog/" },
+            function (error, ascEntries) {
+              expect(error).toBeNull();
+              expect(ascEntries.map((entry) => entry.id)).toEqual(expectedAsc);
+
+              Entries.getPage(
+                blogID,
+                { pageNumber: 1, pageSize: 10, sortBy: "date", order: "desc", pathPrefix: "/Blog/" },
+                function (error, descEntries) {
+                  expect(error).toBeNull();
+                  expect(descEntries.map((entry) => entry.id)).toEqual(expectedDesc);
+                  done();
+                }
+              );
+            }
+          );
+        });
+      });
+    });
+    it("ignores empty or whitespace pathPrefix values", async function (done) {
+      const blogID = this.blog.id;
+      await seedPathPrefixEntries(blogID);
+
+      Entries.getPage(
+        blogID,
+        { pageNumber: 1, pageSize: 4, sortBy: "id", order: "asc", pathPrefix: "   " },
+        function (error, entries) {
+          expect(error).toBeNull();
+          expect(entries.map((entry) => entry.id)).toEqual([
+            "/Blog/a.txt",
+            "/Blog/b.txt",
+            "/Blog/c.txt",
+            "/Notes/d.txt",
+          ]);
           done();
         }
       );

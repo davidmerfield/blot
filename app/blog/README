@@ -81,7 +81,7 @@ If `?debug=true` or `?json=true` is present in the query string, the rendered lo
 
 ### `render/retrieve/`
 
-Each file in this directory is a named retriever. The retrieve system (`render/retrieve/index.js`) accepts a map of local names that the view template declares it needs. It calls the matching retriever function for each name, passing `(req, res, callback)`. Retrievers are registered under both snake_case and camelCase aliases where applicable.
+Each file in this directory is a named retriever. The retrieve system (`render/retrieve/index.js`) accepts a map of local names that the view template declares it needs. It calls the matching retriever function for each name, passing `(req, res, callback)`. Retrievers are registered under both snake_case and camelCase aliases where applicable. Public template examples in this README use snake_case naming, while camelCase aliases continue to work for backward compatibility.
 
 | Local name(s) | Source file | What it provides |
 |---|---|---|
@@ -170,7 +170,7 @@ Comments (Commento/Disqus plugins) are suppressed when entry metadata sets `Comm
 
 ### `entries.js`
 
-Calls `models/entries.getPage()` with options derived from `req.template.locals` (`sort_by`, `sort_order`, `page_size`, `path_prefix`) and from `req.params.page` or `req.query.page`. Sets `res.locals.entries` and `res.locals.pagination`. Renders `entries.html`.
+Calls `models/entries.getPage()` with options derived from `req.template.locals` (`sort_by`, `sort_order`, `page_size`, `path_prefix`) and from `req.params.page` or `req.query.page`. Sets `res.locals.entries` and `res.locals.pagination` (documented in templates with snake_case fields such as `page_size` and `total_entries`; camelCase aliases still resolve for backwards compatibility). Renders `entries.html`.
 
 ### `view.js`
 

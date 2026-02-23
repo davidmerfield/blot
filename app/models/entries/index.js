@@ -5,6 +5,7 @@ var Entry = require("../entry");
 var DateStamp = require("../../build/prepare/dateStamp");
 var Blog = require("../blog");
 var pathIndex = require("./pathIndex");
+var normalizePathPrefix = require("helper/pathPrefix").normalizePathPrefix;
 
 var MAX_RANDOM_ATTEMPTS = 10;
 
@@ -436,17 +437,6 @@ module.exports = (function () {
 
 
 
-  function normalizePathPrefix(pathPrefix) {
-    if (typeof pathPrefix !== "string") return null;
-
-    pathPrefix = pathPrefix.trim();
-    if (!pathPrefix) return null;
-
-    if (pathPrefix[0] !== "/") pathPrefix = "/" + pathPrefix;
-
-    return pathPrefix;
-  }
-
   function fetchEntryScores(blogID, entryIDs, callback) {
     if (!entryIDs.length) return callback(null, []);
 
@@ -475,6 +465,7 @@ module.exports = (function () {
       callback(null, withScores);
     });
   }
+
 
   function getPrefixFilteredPage(
     blogID,
@@ -536,7 +527,17 @@ module.exports = (function () {
         }
 
         scoredEntries.sort(function (a, b) {
-          return order === "asc" ? b.score - a.score : a.score - b.score;
+          var scoreDifference = order === "asc" ? b.score - a.score : a.score - b.score;
+
+          if (scoreDifference !== 0) return scoreDifference;
+
+          // Redis-compatible tie handling: equal scores are ordered by member
+          // lexicographically (reverse for ZREVRANGE semantics, forward for ZRANGE).
+          if (a.id === b.id) return 0;
+
+          if (order === "asc") return a.id < b.id ? 1 : -1;
+
+          return a.id < b.id ? -1 : 1;
         });
 
         totalEntries = scoredEntries.length;
@@ -715,13 +716,15 @@ module.exports = (function () {
       pagination.total = Math.ceil(totalEntries / pageSize);
       pagination.current = pageNo;
       pagination.pageSize = pageSize;
+      pagination.page_size = pageSize;
+      pagination.totalEntries = totalEntries;
+      // Prefer snake_case in public payloads; keep camelCase for legacy compatibility.
+      pagination.total_entries = totalEntries;
 
       // total entries is not 0 indexed, remove 1
-      if (totalEntries - 1 > end) pagination.next = zeroIndexedPageNo + 2;
+      pagination.next = totalEntries - 1 > end ? zeroIndexedPageNo + 2 : null;
 
-      if (zeroIndexedPageNo > 0) pagination.previous = zeroIndexedPageNo;
-
-      if (!pagination.next && !pagination.previous) pagination = false;
+      pagination.previous = zeroIndexedPageNo > 0 ? zeroIndexedPageNo : null;
 
       // The first entry published should have an index of 1
       // The fifth entry published should have an index of 5
@@ -733,9 +736,7 @@ module.exports = (function () {
         index--;
       });
 
-      // Guard against missing pagination object (e.g., if Redis fails)
-      // Note: pagination.current is already set by the model
-      if (pagination && entries && entries.length > 0) {
+      if (entries && entries.length > 0) {
         entries.at(-1).pagination = pagination;
       }
       
