@@ -101,3 +101,79 @@ describe("backlinks", function () {
     expect(body).toContain("Linker");
   });
 });
+
+describe("backlinks edge cases", function () {
+  require("./util/setup")();
+
+  const backlinksTemplate = {
+    "entry.html":
+      "{{#entry}}{{#backlinks.length}}Backlinks: {{#backlinks}}{{title}}{{/backlinks}}{{/backlinks.length}}{{/entry}}",
+  };
+
+  it("does not create a backlink for self-links", async function () {
+    await this.write({
+      path: "/self.txt",
+      content: "Title: Self\n\n[self](/self)",
+    });
+    await this.template(backlinksTemplate);
+
+    const res = await this.get("/self");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).not.toContain("Backlinks:");
+  });
+
+  it("deduplicates multiple links from the same source post", async function () {
+    await this.write({ path: "/target.txt", content: "Title: Target" });
+    await this.write({
+      path: "/linker.txt",
+      content: "Title: Linker\n\n[first](/target) and [second](/target)",
+    });
+    await this.template(backlinksTemplate);
+
+    const res = await this.get("/target");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("Backlinks:");
+    expect((body.match(/Linker/g) || []).length).toEqual(1);
+  });
+
+  it("resolves backlinks when the link includes a fragment or query", async function () {
+    await this.write({ path: "/target.txt", content: "Title: Target" });
+    await this.write({
+      path: "/linker-fragment.txt",
+      content: "Title: Linker Fragment\n\n[target](/target#section)",
+    });
+    await this.write({
+      path: "/linker-query.txt",
+      content: "Title: Linker Query\n\n[target](/target?x=1)",
+    });
+    await this.template(backlinksTemplate);
+
+    const res = await this.get("/target");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("Backlinks:");
+    expect(body).toContain("Linker Fragment");
+    expect(body).toContain("Linker Query");
+  });
+
+  it("ignores external URLs when building backlinks", async function () {
+    await this.write({ path: "/target.txt", content: "Title: Target" });
+    await this.write({
+      path: "/linker-external.txt",
+      content:
+        "Title: Linker External\n\n[external](https://example.com/target)",
+    });
+    await this.template(backlinksTemplate);
+
+    const res = await this.get("/target");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).not.toContain("Backlinks:");
+  });
+});
