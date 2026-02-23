@@ -76,6 +76,27 @@ describe("backlinks", function () {
     expect(body).not.toContain("Backlinks:");
   });
 
+
+  it("resolves backlinks from double-encoded href values", async function () {
+    await this.write({
+      path: "/target.txt",
+      content: "Title: Target\nLink: /a%2520b\n\nContent.",
+    });
+    await this.write({
+      path: "/linker.txt",
+      content:
+        'Title: Linker\n\n<p><a href="/a%2520b">Link to target</a></p>',
+    });
+    await this.template(backlinksTemplate);
+
+    const res = await this.get("/a%2520b");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("Backlinks:");
+    expect(body).toContain("Linker");
+  });
+
   it("renders backlinks when the linked page has umlauts (ä, ü, ö) in its URL", async function () {
     // Page with umlaut in URL (explicit Link so the URL is /grüße)
     await this.write({

@@ -110,6 +110,17 @@ describe("entry", function () {
         expect(res.status).toEqual(400);
     });
 
+    it("resolves a permalink with a literal percent-encoded token after one decode", async function () {
+
+        await this.write({ path: '/encoded.txt', content: 'Link: /a%2520b\nHello, encoded!' });
+
+        const res = await this.get('/a%2520b', { redirect: 'manual' });
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body).toContain('Hello, encoded!');
+    });
+
     it("adds dependency when URL is deduplicated during rename", async function () {
 
         await this.write({path: '/a.txt', content: 'Link: a\nHello, A!'});
