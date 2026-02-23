@@ -260,6 +260,7 @@
             if (!removeModal || typeof removeModal.querySelectorAll !== 'function') return;
             Array.from(removeModal.querySelectorAll('[data-remove-action]')).forEach(function (button) {
               button.disabled = false;
+              button.classList.remove('working');
             });
           }
 
@@ -287,6 +288,8 @@
             removeModal.hidden = true;
             removeTargetPath = null;
             removeTargetFile = null;
+            var label = removeModal.querySelector('[data-remove-path-label]');
+            if (label) label.textContent = '';
             resetRemoveModalButtonState();
           }
 
@@ -360,6 +363,14 @@
             }
           }
 
+          function resetDownloadModalButtonState() {
+            if (!downloadModal || typeof downloadModal.querySelectorAll !== 'function') return;
+            Array.from(downloadModal.querySelectorAll('[data-download-action]')).forEach(function (button) {
+              button.disabled = false;
+              button.classList.remove('working');
+            });
+          }
+
           function openDownloadModal(targetFile) {
             if (!downloadModal || !targetFile || !targetFile.path) return;
             downloadTargetFile = targetFile;
@@ -367,6 +378,7 @@
             if (label) {
               label.textContent = 'Download ' + (targetFile.name || targetFile.path) + '?';
             }
+            resetDownloadModalButtonState();
             downloadModal.hidden = false;
           }
 
@@ -374,6 +386,9 @@
             if (!downloadModal) return;
             downloadModal.hidden = true;
             downloadTargetFile = null;
+            var label = downloadModal.querySelector('[data-download-path-label]');
+            if (label) label.textContent = '';
+            resetDownloadModalButtonState();
           }
 
           function triggerDownload(relativeUrl) {
@@ -438,8 +453,13 @@
             if (action !== 'remove' || !removeTargetPath) return;
 
             var pendingPath = (removeTargetFile && removeTargetFile.path) || removeTargetPath;
+            var displayName = (removeTargetFile && removeTargetFile.name) || pendingPath.split('/').pop() || pendingPath;
             setRemoveModalButtonsDisabled(true);
-            removeFile(pendingPath).catch(function () {
+            removeFile(pendingPath).then(function () {
+              if (typeof window.showFolderToast === 'function') {
+                window.showFolderToast({ message: displayName + ' removed' });
+              }
+            }).catch(function () {
               setRemoveModalButtonsDisabled(false);
             });
           }
@@ -463,8 +483,12 @@
             if (action !== 'download' || !downloadTargetFile || !downloadTargetFile.path) return;
 
             var pendingPath = downloadTargetFile.path;
+            var fileName = downloadTargetFile.name || pendingPath.split('/').pop() || pendingPath;
             closeDownloadModal();
             triggerDownload(pendingPath);
+            if (typeof window.showFolderToast === 'function') {
+              window.showFolderToast({ message: (fileName || 'File') + ' — download started' });
+            }
           }
 
           if (folderFileActionMenu) {
@@ -826,8 +850,13 @@
               .then(function (result) {
                 collectFailures(result);
                 closeUploadModal();
-
                 refreshFolderContents();
+                if (typeof window.showFolderToast === 'function') {
+                  var msg = collectedFiles.length === 1
+                    ? (collectedFiles[0].relativePath + ' uploaded')
+                    : (collectedFiles.length + ' files uploaded');
+                  window.showFolderToast({ message: msg });
+                }
               });
           }
 
