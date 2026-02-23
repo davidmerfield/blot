@@ -71,8 +71,8 @@ describe('folder directory remove modal behavior', function () {
     const handleRemoveModalClickSource = extractNamedFunction(templateSource, 'handleRemoveModalClick');
 
     const modalButtons = [
-      { disabled: false, getAttribute: (name) => (name === 'data-remove-action' ? 'remove' : null) },
-      { disabled: false, getAttribute: (name) => (name === 'data-remove-action' ? 'cancel' : null) },
+      { disabled: false, classList: { remove: () => {} }, getAttribute: (name) => (name === 'data-remove-action' ? 'remove' : null) },
+      { disabled: false, classList: { remove: () => {} }, getAttribute: (name) => (name === 'data-remove-action' ? 'cancel' : null) },
     ];
 
     const pathLabel = { textContent: '' };
@@ -202,8 +202,8 @@ this.handleRemoveModalClick = handleRemoveModalClick;`,
     const handleRemoveModalClickSource = extractNamedFunction(templateSource, 'handleRemoveModalClick');
 
     const modalButtons = [
-      { disabled: false, getAttribute: (name) => (name === 'data-remove-action' ? 'remove' : null) },
-      { disabled: false, getAttribute: (name) => (name === 'data-remove-action' ? 'cancel' : null) },
+      { disabled: false, classList: { remove: () => {} }, getAttribute: (name) => (name === 'data-remove-action' ? 'remove' : null) },
+      { disabled: false, classList: { remove: () => {} }, getAttribute: (name) => (name === 'data-remove-action' ? 'cancel' : null) },
     ];
 
     const removeModal = {
