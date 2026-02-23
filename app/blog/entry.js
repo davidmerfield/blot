@@ -28,7 +28,8 @@ module.exports = function (request, response, next) {
   // add leading slash
   if (url[0] !== "/") url = "/" + url;
 
-  url = decodeURIComponent(url);
+  // Keep path shaping local (slashes + lowercase) but let Entry.getByUrl
+  // handle URI decoding so all URL-decoding behavior is centralized there.
   url = url.toLowerCase();
 
   Entry.getByUrl(blog.id, url, function (entry) {
@@ -63,7 +64,17 @@ module.exports = function (request, response, next) {
     // otherwise. Thanks to Jack for discovering this fun bug.
     // We really should check that this URL is not used by
     // any of the template views but will do that in future.
-    if (normalize(entry.url) !== normalize(url) && url === "/") return next();
+    var comparableUrl = url;
+
+    // Canonical comparison should use a decoded form when possible so
+    // encoded and plain unicode request paths are treated the same.
+    try {
+      comparableUrl = decodeURI(comparableUrl);
+    } catch (e) {
+      // keep encoded form if malformed
+    }
+
+    if (normalize(entry.url) !== normalize(comparableUrl) && comparableUrl === "/") return next();
 
     Entries.adjacentTo(blog.id, entry.id, function (
       nextEntry,
@@ -78,7 +89,7 @@ module.exports = function (request, response, next) {
       // Ensure the user is always viewing
       // the entry at its latest and greatest URL
       // 301 passes link juice for SEO?
-      if (entry.url && normalize(entry.url) !== normalize(url)) {
+      if (entry.url && normalize(entry.url) !== normalize(comparableUrl)) {
         // Res.direct expects a URL, we shouldnt need
         // to do this now but OK. I feel like we're decoding
         // then recoding then decoding. I should just store
