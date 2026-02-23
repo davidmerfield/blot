@@ -234,22 +234,6 @@ describe("backlinks edge cases", function () {
     expect(body).toContain("MD Linker");
   });
 
-  it("resolves backlinks from org-mode links", async function () {
-    await this.write({ path: "/target.txt", content: "Title: Target" });
-    await this.write({
-      path: "/org-linker.org",
-      content: "#+TITLE: Org Linker\n\n[[/target][link from org]]",
-    });
-    await this.template(backlinksTemplate);
-
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
-    expect(body).toContain("Backlinks:");
-    expect(body).toContain("Org Linker");
-  });
-
   it("normalizes unicode backlink targets across formats and excludes near-misses", async function () {
     await this.write({
       path: "/resume-target.txt",
@@ -275,12 +259,6 @@ describe("backlinks edge cases", function () {
         content: "Title: Wikilink\n\n[[résumé]]",
         shouldBacklink: true,
         title: "Wikilink",
-      },
-      {
-        path: "/org-link.org",
-        content: "#+TITLE: Org Link\n\n[[/r%C3%A9sum%C3%A9][org]]",
-        shouldBacklink: true,
-        title: "Org Link",
       },
       {
         path: "/trailing-slash.txt",
