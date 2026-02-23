@@ -66,6 +66,14 @@ module.exports = function (request, response, next) {
     // any of the template views but will do that in future.
     var comparableUrl = url;
 
+    // Canonical comparison should use a decoded form when possible so
+    // encoded and plain unicode request paths are treated the same.
+    try {
+      comparableUrl = decodeURI(comparableUrl);
+    } catch (e) {
+      // keep encoded form if malformed
+    }
+
     if (normalize(entry.url) !== normalize(comparableUrl) && comparableUrl === "/") return next();
 
     Entries.adjacentTo(blog.id, entry.id, function (
