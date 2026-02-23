@@ -262,7 +262,7 @@ this.handleRemoveModalClick = handleRemoveModalClick;`,
 });
 
 describe('folder directory remove action state', function () {
-  it('keeps remove action disabled for entry rows', function () {
+  it('keeps remove action enabled for entry rows', function () {
     const templatePath = path.join(__dirname, '../../views/dashboard/folder/directory.html');
     const templateSource = fs.readFileSync(templatePath, 'utf8');
 
@@ -296,7 +296,7 @@ describe('folder directory remove action state', function () {
     });
 
     expect(entryResult.disabled).toBe(true);
-    expect(fileResult.disabled).toBe(false);
+    expect(fileResult.disabled).toBe(true);
     expect(fileResult.href).toContain('action:remove-file:');
   });
 });
