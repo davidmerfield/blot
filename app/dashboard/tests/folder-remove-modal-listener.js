@@ -295,8 +295,9 @@ describe('folder directory remove action state', function () {
       url: '/plain.md',
     });
 
-    expect(entryResult.disabled).toBe(true);
-    expect(fileResult.disabled).toBe(true);
+    expect(entryResult.disabled).toBe(false);
+    expect(entryResult.href).toContain('action:remove-file:');
+    expect(fileResult.disabled).toBe(false);
     expect(fileResult.href).toContain('action:remove-file:');
   });
 });
