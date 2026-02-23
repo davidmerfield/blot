@@ -197,4 +197,73 @@ describe("backlinks edge cases", function () {
     expect(res.status).toEqual(200);
     expect(body).not.toContain("Backlinks:");
   });
+
+  it("resolves backlinks from HTML anchors in .html source files", async function () {
+    await this.write({ path: "/target.txt", content: "Title: Target" });
+    await this.write({
+      path: "/linker.html",
+      content:
+        '<html><body><a href="/target">via raw html file</a></body></html>',
+    });
+    await this.template(backlinksTemplate);
+
+    const res = await this.get("/target");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("Backlinks:");
+    expect(body).toContain("linker");
+  });
+
+  it("resolves backlinks from markdown files with accented slugs", async function () {
+    await this.write({
+      path: "/café.md",
+      content: "Title: Café\nLink: /caf%C3%A9\n\nTarget entry.",
+    });
+    await this.write({
+      path: "/md-linker.md",
+      content: "Title: MD Linker\n\n[visit café](/caf%C3%A9)",
+    });
+    await this.template(backlinksTemplate);
+
+    const res = await this.get("/caf%C3%A9");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("Backlinks:");
+    expect(body).toContain("MD Linker");
+  });
+
+  it("resolves backlinks from org-mode links", async function () {
+    await this.write({ path: "/target.txt", content: "Title: Target" });
+    await this.write({
+      path: "/org-linker.org",
+      content: "#+TITLE: Org Linker\n\n[[/target][link from org]]",
+    });
+    await this.template(backlinksTemplate);
+
+    const res = await this.get("/target");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("Backlinks:");
+    expect(body).toContain("Org Linker");
+  });
+
+  it("resolves backlinks from Google Docs exports (.gdoc)", async function () {
+    await this.write({ path: "/target.txt", content: "Title: Target" });
+    await this.write({
+      path: "/gdoc-linker.gdoc",
+      content:
+        '<html><body><p><a href="/target">link from google docs html export</a></p></body></html>',
+    });
+    await this.template(backlinksTemplate);
+
+    const res = await this.get("/target");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("Backlinks:");
+    expect(body).toContain("gdoc-linker");
+  });
 });
