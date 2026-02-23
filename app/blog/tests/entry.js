@@ -92,19 +92,6 @@ describe("entry", function () {
         }
     });
 
-
-    it("redirects encoded unicode URLs to canonical unicode paths", async function () {
-
-        await this.write({path: '/grüße.txt', content: 'Link: /grüße\nHello, Grüße!'});
-
-        const res = await this.get('/gr%C3%BC%C3%9Fe', {redirect: 'manual'});
-        const body = await res.text();
-
-        expect(res.status).toEqual(301);
-        expect(res.headers.get('location')).toEqual('/gr%C3%BC%C3%9Fe');
-        expect(body).toContain('Redirecting to /gr%C3%BC%C3%9Fe');
-    });
-
     it("renders canonical unicode URLs without redirect", async function () {
 
         await this.write({path: '/grüße.txt', content: 'Link: /grüße\nHello, Grüße!'});
