@@ -230,6 +230,13 @@
                     return null;
                   }
 
+                  if (dataset.entry === 'true') {
+                    return {
+                      href: null,
+                      disabled: true
+                    };
+                  }
+                  
                   return {
                     href: 'action:remove-file:' + encodePathSegments(dataset.url.replace(/^\/+/, '')),
                     disabled: false
