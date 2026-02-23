@@ -8,10 +8,15 @@ function internalLinks($) {
 
 	$("[href]").each(function () {
 		let value = $(this).attr("href");
+		let normalizedValue = value;
 
-		if (value.indexOf("/") !== 0 || result.indexOf(value) > -1) return;
+		if (value.indexOf("/") !== 0) return;
 
-		result.push(value);
+		normalizedValue = normalizedValue.split("#")[0].split("?")[0];
+
+		if (!normalizedValue || result.indexOf(normalizedValue) > -1) return;
+
+		result.push(normalizedValue);
 	});
 
 	debug(result);
