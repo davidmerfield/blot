@@ -64,7 +64,7 @@ module.exports = async (req, res) => {
     });
   }
 
-  const normalizedPath = rawPath.replace(/^\/+/, "");
+  const normalizedPath = decodeURIComponent(rawPath.replace(/^\/+/, ""));
   const destination = resolveDestination(req.blog.id, normalizedPath);
 
   if (!destination.valid) {
@@ -78,6 +78,7 @@ module.exports = async (req, res) => {
   const exists = await fs.pathExists(destination.absolute);
 
   if (!exists) {
+    console.log('HERE path not found', normalizedPath);
     return res.status(404).json({
       ok: false,
       removed: normalizedPath,
