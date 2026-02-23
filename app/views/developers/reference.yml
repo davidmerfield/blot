@@ -332,11 +332,11 @@
 
     - name: teaser
       type: string
-      description: The HTML of the title and the ﬁrst few items in the entry. You can specify the end of the teaser by inserting the special tag {{more}} into your blog post's ﬁle. Everything before more will be included in the teaser.
+      description: The HTML of the title and the first few items in the entry. You can specify the end of the teaser by inserting the special tag {{more}} into your blog post's file. Everything before more will be included in the teaser.
 
     - name: teaserBody
       type: string
-      description: The HTML of the ﬁrst few items in the entry, excluding the title. Equivalent to teaser without the titleTag.
+      description: The HTML of the first few items in the entry, excluding the title. Equivalent to teaser without the titleTag.
 
     - name: more
       type: boolean
