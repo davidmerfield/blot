@@ -250,6 +250,87 @@ describe("backlinks edge cases", function () {
     expect(body).toContain("Org Linker");
   });
 
+  it("normalizes unicode backlink targets across formats and excludes near-misses", async function () {
+    await this.write({
+      path: "/resume-target.txt",
+      content: "Title: Résumé Target\nLink: /résumé\n\nCanonical target.",
+    });
+
+    const fixtures = [
+      {
+        path: "/md-inline.txt",
+        content:
+          "Title: Markdown Inline\n\n[encoded](/r%C3%A9sum%C3%A9) and <a href=\"/résumé\">decoded</a>",
+        shouldBacklink: true,
+        title: "Markdown Inline",
+      },
+      {
+        path: "/html-inline.txt",
+        content: 'Title: HTML Inline\n\n<a href="/résumé">decoded unicode</a>',
+        shouldBacklink: true,
+        title: "HTML Inline",
+      },
+      {
+        path: "/wikilink.txt",
+        content: "Title: Wikilink\n\n[[résumé]]",
+        shouldBacklink: true,
+        title: "Wikilink",
+      },
+      {
+        path: "/org-link.org",
+        content: "#+TITLE: Org Link\n\n[[/r%C3%A9sum%C3%A9][org]]",
+        shouldBacklink: true,
+        title: "Org Link",
+      },
+      {
+        path: "/trailing-slash.txt",
+        content: "Title: Trailing Slash\n\n[miss](/résumé/)",
+        shouldBacklink: false,
+        title: "Trailing Slash",
+      },
+      {
+        path: "/case-mismatch.txt",
+        content: "Title: Case Mismatch\n\n[miss](/Résumé)",
+        shouldBacklink: false,
+        title: "Case Mismatch",
+      },
+      {
+        path: "/external-host.txt",
+        content: "Title: External Host\n\n[miss](https://example.com/r%C3%A9sum%C3%A9)",
+        shouldBacklink: false,
+        title: "External Host",
+      },
+      {
+        path: "/other-fragment.txt",
+        content: "Title: Other Fragment\n\n[miss](/other#résumé)",
+        shouldBacklink: false,
+        title: "Other Fragment",
+      },
+    ];
+
+    for (const fixture of fixtures) {
+      await this.write({ path: fixture.path, content: fixture.content });
+    }
+
+    await this.template(backlinksTemplate);
+
+    const res = await this.get("/résumé");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("Backlinks:");
+
+    for (const fixture of fixtures) {
+      if (fixture.shouldBacklink) {
+        expect(body).toContain(fixture.title);
+      } else {
+        expect(body).not.toContain(fixture.title);
+      }
+    }
+
+    expect((body.match(/Markdown Inline/g) || []).length).toEqual(1);
+  });
+
   it("resolves backlinks from Google Docs exports (.gdoc)", async function () {
     await this.write({ path: "/target.txt", content: "Title: Target" });
     await this.write({
