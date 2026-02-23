@@ -126,6 +126,9 @@ describe("Blog.set", function () {
 
     get({ id: test.blog.id }, function (err, before) {
       if (err) return done.fail(err);
+      if (!before.menu) {
+        console.log("DEBUG before blog missing menu", before);
+      }
 
       var updatedMenu = before.menu.map(function (item, index) {
         if (index === 0) {

@@ -324,5 +324,3 @@ module.exports = function updateCdnManifest(templateID, callback) {
     }
   })();
 };
-
-

@@ -130,8 +130,50 @@ global.test = {
   fake: require("./util/fake"),
 
   user: function () {
-    beforeEach(require("./util/createUser"));
-    afterEach(require("./util/removeUser"));
+    beforeEach(function (done) {
+      var started = Date.now();
+      var specName = this && this.id ? this.id : "unknown-spec";
+      console.log(
+        clfdate(),
+        "[test.user]",
+        specName,
+        "beforeEach createUser start"
+      );
+      require("./util/createUser").call(this, function (err) {
+        console.log(
+          clfdate(),
+          "[test.user]",
+          specName,
+          "beforeEach createUser done",
+          err ? err.message : "ok",
+          Date.now() - started + "ms"
+        );
+        done(err);
+      });
+    });
+
+    afterEach(function (done) {
+      var started = Date.now();
+      var specName = this && this.id ? this.id : "unknown-spec";
+      console.log(
+        clfdate(),
+        "[test.user]",
+        specName,
+        "afterEach removeUser start",
+        this && this.user && this.user.uid
+      );
+      require("./util/removeUser").call(this, function (err) {
+        console.log(
+          clfdate(),
+          "[test.user]",
+          specName,
+          "afterEach removeUser done",
+          err ? err.message : "ok",
+          Date.now() - started + "ms"
+        );
+        done(err);
+      });
+    });
   },
 
   server: require("./util/server"),

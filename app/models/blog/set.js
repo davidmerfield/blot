@@ -93,6 +93,11 @@ module.exports = function (blogID, blog, callback) {
       // to serve the old cached files for the 'www' subdomain instead
       // of passing the request to Blot to redirect as expected.
       if (changes.handle) {
+        console.log("DEBUG handle change", {
+          blogID,
+          formerHandle: former.handle,
+          latestHandle: latest.handle,
+        });
         multi.set(key.handle(latest.handle), blogID);
 
         // By storing the handle + Blot's host as a 'domain' we
@@ -104,6 +109,7 @@ module.exports = function (blogID, blog, callback) {
         // so that we can redirect the former handle easily,
         // whilst leaving it free for other users to claim.
         if (former.handle) {
+          console.log("DEBUG delete old host key", key.domain(former.handle + "." + config.host));
           multi.del(key.domain(former.handle + "." + config.host));
         }
       }
