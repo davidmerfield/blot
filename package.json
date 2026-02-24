@@ -7,7 +7,7 @@
   "scripts": {
     "download-folder": "./scripts/development/download-folder.sh",
     "test": "./scripts/tests/invoke.sh",
-    "benchmark": "./scripts/benchmarks/invoke.sh",
+    "benchmark": "node scripts/benchmarks/compare.js",
     "benchmark:ci": "node scripts/benchmarks --ci",
     "start": "./scripts/development/start.sh",
     "debug": "DEBUG=blot* ./scripts/development/start.sh",

@@ -1,25 +1,24 @@
+const path = require("path");
+const fs = require("fs-extra");
 const seedrandom = require("seedrandom");
 const { performance } = require("perf_hooks");
+const localPath = require("helper/localPath");
 const { PhaseMonitor, summarizeDurations } = require("./util/metrics");
+const { buildWorkload } = require("./util/workload");
+const { extractPathsFromSitemap } = require("./util/sitemap");
+const { runWithConcurrency } = require("./util/concurrency");
+const { parseBenchmarkConfig } = require("./util/config");
+const { buildBenchmarkResult } = require("./util/result");
 
 describe("blog benchmarks", function () {
   require("./util/setup")();
 
   global.test.timeout(20 * 60 * 1000);
 
-  it("measures build and sitemap render performance", async function () {
-    const rawConfig = global.__BLOT_BENCHMARK_CONFIG || {};
-    const benchmarkConfig = {
-      sites: Number(rawConfig.sites) || 5,
-      files: Number(rawConfig.files) || 1000,
-      seed: String(rawConfig.seed || "blot-benchmark-seed"),
-      renderConcurrency:
-        Number(rawConfig.renderConcurrency) || 8,
-      cpuSampleIntervalMs:
-        Number(rawConfig.cpuSampleIntervalMs) || 250,
-      regressionThresholdPercent:
-        Number(rawConfig.regressionThresholdPercent) || 10,
-    };
+  it("measures build and render performance", async function () {
+    const benchmarkConfig = parseBenchmarkConfig(
+      global.__BLOT_BENCHMARK_CONFIG || {}
+    );
 
     const blogs = Array.isArray(this.blogs) && this.blogs.length
       ? this.blogs
@@ -50,7 +49,15 @@ describe("blog benchmarks", function () {
     buildPhaseMonitor.start();
 
     await runWithConcurrency(writeTasks, 32, async (task) => {
-      await task.blog.write({ path: task.path, content: task.content });
+      if (task.sourcePath != null) {
+        let blogDir = localPath(task.blog.id, "/");
+        if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
+        const destPath = blogDir + task.path;
+        await fs.ensureDir(path.dirname(destPath));
+        await fs.copy(task.sourcePath, destPath);
+      } else {
+        await task.blog.write({ path: task.path, content: task.content });
+      }
     });
 
     await Promise.all(
@@ -135,188 +142,59 @@ describe("blog benchmarks", function () {
       ).length;
     }
 
-    const result = {
-      schema_version: 1,
-      timestamp: new Date().toISOString(),
-      git_sha: process.env.GITHUB_SHA || null,
-      config: {
-        sites: benchmarkConfig.sites,
-        files: benchmarkConfig.files,
-        seed: benchmarkConfig.seed,
-        render_concurrency: benchmarkConfig.renderConcurrency,
-        regression_threshold_percent: benchmarkConfig.regressionThresholdPercent,
-        cpu_sample_interval_ms: benchmarkConfig.cpuSampleIntervalMs,
-      },
-      build: {
-        files_total: benchmarkConfig.files,
-        sites_total: benchmarkConfig.sites,
-        timing_ms: {
-          total: buildPhaseMetrics.timing_ms.total,
-          p50: buildDurations.p50,
-          p95: buildDurations.p95,
-          mean: buildDurations.mean,
-          min: buildDurations.min,
-          max: buildDurations.max,
-          count: buildDurations.count,
-          per_site: buildSiteDurations,
-        },
-        cpu: buildPhaseMetrics.cpu,
-        memory_mb: buildPhaseMetrics.memory_mb,
-      },
-      render: {
-        sitemap_pages_total: renderTasks.length,
-        non_2xx_total: renderFailures.length,
-        timing_ms: {
-          total: renderPhaseMetrics.timing_ms.total,
-          p50: renderTiming.p50,
-          p95: renderTiming.p95,
-          mean: renderTiming.mean,
-          min: renderTiming.min,
-          max: renderTiming.max,
-          count: renderTiming.count,
-        },
-        cpu: renderPhaseMetrics.cpu,
-        memory_mb: renderPhaseMetrics.memory_mb,
-      },
-      sites: siteSummaries,
-      status: "pass",
-    };
+    const result = buildBenchmarkResult({
+      benchmarkConfig,
+      workload,
+      buildPhaseMetrics,
+      buildDurations,
+      buildSiteDurations,
+      renderPhaseMetrics,
+      renderTiming,
+      siteSummaries,
+      renderTasks,
+      renderFailures,
+    });
 
     global.__BLOT_BENCHMARK_RESULT = result;
 
-    expect(workload.files.length).toEqual(benchmarkConfig.files);
+    expect(workload.files.length).toEqual(
+      benchmarkConfig.files + workload.fixtureCount * blogs.length
+    );
     expect(renderTasks.length).toBeGreaterThan(0);
     expect(renderFailures.length).toEqual(0);
 
-    console.log("[benchmark] build total ms:", result.build.timing_ms.total.toFixed(2));
-    console.log("[benchmark] build p50 ms:", result.build.timing_ms.p50.toFixed(2));
-    console.log("[benchmark] build cpu:", result.build.cpu);
-    console.log("[benchmark] build memory:", result.build.memory_mb);
-    console.log("[benchmark] render total ms:", result.render.timing_ms.total.toFixed(2));
-    console.log("[benchmark] render p50 ms:", result.render.timing_ms.p50.toFixed(2));
-    console.log("[benchmark] render cpu:", result.render.cpu);
-    console.log("[benchmark] render memory:", result.render.memory_mb);
+    const totalWallMs =
+      result.build.timing_ms.total + result.render.timing_ms.total;
+    const totalCpuMs =
+      result.build.cpu.user_ms +
+      result.build.cpu.system_ms +
+      result.render.cpu.user_ms +
+      result.render.cpu.system_ms;
+    const totalCpuPercent =
+      totalWallMs > 0 ? (totalCpuMs / totalWallMs) * 100 : 0;
+    const totalMemoryMb = Math.max(
+      result.build.memory_mb.peak_rss,
+      result.render.memory_mb.peak_rss
+    );
+    const totalSeconds = totalWallMs / 1000;
+    const label = (s) => ("  " + s).padEnd(26);
+    const num = (n, width = 10) => String(n).padStart(width);
+
+    console.log("");
+    console.log(label("Total CPU") + num(totalCpuPercent.toFixed(2), 8) + " %");
+    console.log(label("Total Memory") + num(Math.round(totalMemoryMb), 8) + " mb");
+    console.log("");
+    console.log(label("Total time") + num(totalSeconds.toFixed(1), 8) + " seconds");
+    console.log(
+      label("Mean build time") +
+        num(result.build.timing_ms.mean.toFixed(0), 8) +
+        " ms per site"
+    );
+    console.log(
+      label("Mean blog render time") +
+        num(result.render.timing_ms.mean.toFixed(0), 8) +
+        " ms per page"
+    );
+    console.log("");
   });
 });
-
-function buildWorkload(config, blogs, rng) {
-  const files = [];
-  const filesPerSite = new Array(blogs.length).fill(0);
-
-  for (let index = 0; index < config.files; index++) {
-    const blogIndex = index % blogs.length;
-    filesPerSite[blogIndex] += 1;
-
-    const depth = 1 + Math.floor(rng() * 3);
-    const segments = [];
-
-    for (let i = 0; i < depth; i++) {
-      segments.push(randomWord(rng, 6 + Math.floor(rng() * 8)));
-    }
-
-    const slug = `benchmark-${blogIndex}-${index}-${randomWord(rng, 8)}`;
-    const filePath = `/${segments.join("/")}/${slug}.txt`;
-
-    files.push({
-      blogIndex,
-      path: filePath,
-      content: makeEntryContent({ rng, slug, blogIndex, index }),
-    });
-  }
-
-  return {
-    files,
-    filesPerSite,
-  };
-}
-
-function makeEntryContent({ rng, slug, blogIndex, index }) {
-  const sentenceCount = 3 + Math.floor(rng() * 5);
-  const sentences = [];
-
-  for (let i = 0; i < sentenceCount; i++) {
-    sentences.push(randomSentence(rng));
-  }
-
-  return [
-    `Title: Benchmark ${blogIndex}-${index}`,
-    `Link: /${slug}`,
-    "",
-    sentences.join(" "),
-    "",
-  ].join("\n");
-}
-
-function randomSentence(rng) {
-  const words = [];
-  const wordCount = 8 + Math.floor(rng() * 10);
-
-  for (let index = 0; index < wordCount; index++) {
-    words.push(randomWord(rng, 3 + Math.floor(rng() * 7)));
-  }
-
-  const first = words[0];
-  words[0] = first[0].toUpperCase() + first.slice(1);
-
-  return `${words.join(" ")}.`;
-}
-
-function randomWord(rng, length) {
-  const chars = "abcdefghijklmnopqrstuvwxyz";
-  let output = "";
-
-  while (output.length < length) {
-    const idx = Math.floor(rng() * chars.length);
-    output += chars[idx];
-  }
-
-  return output;
-}
-
-function extractPathsFromSitemap(xml) {
-  const locPattern = /<loc>([^<]+)<\/loc>/g;
-  const paths = [];
-
-  let match;
-  while ((match = locPattern.exec(xml)) !== null) {
-    const rawLoc = decodeXmlEntities(match[1].trim());
-
-    try {
-      const parsed = new URL(rawLoc);
-      paths.push(parsed.pathname + (parsed.search || ""));
-    } catch (err) {
-      // ignore malformed sitemap entries while still benchmarking valid pages
-    }
-  }
-
-  return paths;
-}
-
-function decodeXmlEntities(value) {
-  return value
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-}
-
-async function runWithConcurrency(items, limit, worker) {
-  const queue = [...items];
-  const workers = [];
-  const size = Math.max(1, Math.floor(limit));
-
-  for (let i = 0; i < size; i++) {
-    workers.push(
-      (async () => {
-        while (queue.length) {
-          const item = queue.shift();
-          if (!item) continue;
-          await worker(item);
-        }
-      })()
-    );
-  }
-
-  await Promise.all(workers);
-}

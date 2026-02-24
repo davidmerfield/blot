@@ -1,7 +1,36 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "Running benchmarks with args: $*"
+SCRIPT_DIR=$(dirname "$0")
+ROOT_DIR=$(realpath "$SCRIPT_DIR/../..")
+
+# Parse --output <path> so we can mount the host dir and pass container path
+BENCH_ARGS=()
+OUTPUT_MOUNT=()
+while [[ $# -gt 0 ]]; do
+  if [[ "$1" == "--output" && -n "${2:-}" ]]; then
+    OUT_PATH="$2"
+    shift 2
+    if [[ "$OUT_PATH" == /* ]]; then
+      HOST_OUTPUT_DIR=$(dirname "$OUT_PATH")
+    else
+      HOST_OUTPUT_DIR="$ROOT_DIR/$(dirname "$OUT_PATH")"
+    fi
+    mkdir -p "$HOST_OUTPUT_DIR"
+    HOST_OUTPUT_DIR=$(realpath "$HOST_OUTPUT_DIR")
+    OUTPUT_MOUNT=(-v "$HOST_OUTPUT_DIR:/benchmarks")
+    BENCH_ARGS+=(--output "/benchmarks/$(basename "$OUT_PATH")")
+  else
+    BENCH_ARGS+=("$1")
+    shift
+  fi
+done
+
+if ((${#BENCH_ARGS[@]} > 0)); then
+  echo "Running benchmarks with args: ${BENCH_ARGS[*]}"
+else
+  echo "Running benchmarks with no args"
+fi
 
 BLOT_BENCH_ID="${BLOT_BENCH_ID:-blot-bench-$$-${RANDOM}}"
 REDIS_CONTAINER="benchmark-redis-${BLOT_BENCH_ID}"
@@ -11,11 +40,9 @@ BENCH_NETWORK="benchmark-net-${BLOT_BENCH_ID}"
 REDIS_IMAGE="redis:alpine"
 BENCH_IMAGE="blot-bench"
 
-SCRIPT_DIR=$(dirname "$0")
 APP_DIR=$(realpath "$SCRIPT_DIR/../../app")
 SCRIPTS_DIR=$(realpath "$SCRIPT_DIR/../../scripts")
 CONFIG_DIR=$(realpath "$SCRIPT_DIR/../../config")
-ROOT_DIR=$(realpath "$SCRIPT_DIR/../..")
 
 BENCH_ENV=(
   -e BLOT_REDIS_HOST="$REDIS_CONTAINER"
@@ -49,6 +76,8 @@ docker build \
   -t "$BENCH_IMAGE" \
   "$ROOT_DIR" >/dev/null
 
+# With set -u, expanding empty OUTPUT_MOUNT or BENCH_ARGS is an error; allow unset for this line
+set +u
 docker run --rm \
   --name "$BENCH_CONTAINER" \
   --network "$BENCH_NETWORK" \
@@ -57,5 +86,7 @@ docker run --rm \
   -v "$APP_DIR:/usr/src/app/app" \
   -v "$SCRIPTS_DIR:/usr/src/app/scripts" \
   -v "$CONFIG_DIR:/usr/src/app/config" \
+  "${OUTPUT_MOUNT[@]}" \
   "$BENCH_IMAGE" \
-  sh -lc 'rm -rf /usr/src/app/data && mkdir /usr/src/app/data && node -v && npm -v && node scripts/benchmarks "$@"' sh "$@"
+  sh -lc 'rm -rf /usr/src/app/data && mkdir /usr/src/app/data && node -v && npm -v && node scripts/benchmarks "$@"' sh "${BENCH_ARGS[@]}"
+set -u
