@@ -1,25 +1,27 @@
-Make it possible to gather all tags used across a group of '{{#posts}}' and then filter tagged posts by path prefix and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBsnXPMttgkKzFTFQSdWWHpTl)
+Write useful benchmark tool for Blot
+- Add performance tests which output something like this for PRs (compare against master branch, fail if over threshold):
+    Total CPU  29.90%          -> 11.64%
+    Syscalls   3.10s           -> 0.66s
+    Crypto     1.6s            -> 0.11s
+    Bandwidth  ~6.5 Mbit/sec   -> ~3 Mbit/sec
 
-Fix bug uploading files in subfolders on the dashboard
-
-I'm concerned that malicious webhooks could be abused to delete sites
-- operator must be the only person to trigger the delete overdue or cancelled site flow.
-- collect data on the number of sites to delete once per day for a once-weekly update email and include commands to run in email
-- update the admin emails and the noop / simplify the subscription code if needed. still proceed with the user / site disabling (but not deletion)
-
-Work out what causes the '-2' suffix on posts when renaming a huge folder?
-
-Move blot GitHub to its own organization
-
-problem: allEntries takes a huge time to render on sites with lots of posts
-solution: 
+Move to redis hashes for entry storage
+0. This is designed to improve all multi-entry list performance
 1. Modify templates to store the entry properties they require to render for each list in retrieve, e.g. {{#allEntries}} {{title}} {{/allEntries}} -> retrieve: allEntries: ['title']
 2. Modify entry model to store entries as hashes rather than single JSON string. make this elegant to deploy: run the two systems in parallel at first, with backfill, including a script to run to completely the backfill, then switch over to the hash, then purge the original keys.
 3. Modify the models/entry and models/entries code to make it possible to retrieve specific properties only for entry lists
 4. Modify app/blog template engine code to retrieve only the properties used
+- Use hash to store entries rather than a JSON string:
+- app/models/entry/get.js
+- Every time a single entry is fetched we retrieve a full JSON string then JSON parse it.
+- I want to switch to using a redis hash and make it possible to query single entry properties, e.g. html, title
+- Do we have enough space in redis to essentially duplicate every entry?  maybe make it possible to store an entry as both a hash and a string initially (with hash as source of truth in case of conflict). we'll need a script to run to migrate existing entries in the db. once the migration is complete, we can remove some of the doubled code
+- * Extend `app/models/entry/key.js` with a helper that returns the Redis hash key for an entry (e.g., `entryHash(blogID, path)`), keeping the existing string key untouched for backward compatibility.
+* Add a serializer/deserializer utility (new module under `app/models/entry/`, e.g., `format.js`) that can translate between `Entry` objects and hash field payloads (strings stay raw; other types use `JSON.stringify`/`JSON.parse`).
+* Refactor `app/models/entry/get.js` to accept an optional `fields` argument (string or array). Use `multi` to `HMGET`/`HGETALL` from the hash key and fall back to the JSON key when the hash is missing, reusing the serializer to coerce types. Ensure single-field calls return the scalar when only one entry is requested, while preserving existing behaviors for callers expecting full `Entry` objects.
+* Cover the new pathways with unit coverage (or targeted integration coverage) once tests are runnable, verifying full-entry fetches, hash fallback to legacy JSON, and single-field lookups.
 
-Switch templates from entries.html to index.html with explicit url: [].
-- fix docs on routing order
+---
 
 Google Drive:
 - Fix bug with shared drive folders for [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBkLKSVzvjZLRSCpRJwcKBPlf)
@@ -28,79 +30,35 @@ Google Drive:
 - Improve sync efficieny with option to target a specific folder or file first (Track ids in database) and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBspgLdtHcrTZqRcPTJFNzBbd) maybe use touch metadata method to force syncs periodically for hot files?
 - Improve html output for google docs and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQFmTvLKzPkJrgsBTWZmQJWS)
   Issue: <p><img><br><img></p> should be <p><img></p><p><img></p>
+- [ ] new folder setup (e.g. waiting for user to share folder on drive) needs to survive a server restart (See init.js TODO)
+- [ ] slowly resync all connected blogs on server restart
+- [ ] It seems like sometimes the first sentence of Google Docs become titles unexpectedly – possibly a mis-identified title tag?
+- [ ] make it possible to short-circuit the full folder traversal and immediately begin at a specific file/subfolder
+- [ ] to improve sync speed, eventually set up temporary channels to watch google docs for changes – is this faster than polling driveactivity? or work out the fastest way to get fast updates for google docs. Is the move to listen on changes.watch and then setup an optional temporary files.watch channel to stream changes for the length of the channel (don't renew)?
+- [ ] add tests with nock
+- [ ] Test multiple sites sync in parallel
+- [ ] Test multiple Google Drive accounts in parallel
+- [ ] On disconnect, convert Google Docs in folder into Markdown and inform the user
+  - tell henryirvine about this affecting his site
+- [ ] Test drafts
+- [ ] Test local templates
+- How do we handle two files with same name and same parent? How does our fileId:path hash handle this? Make sure we delete the right file. Will file.title as opposed to file.name give us the deduped version?
+  - Bug: move file with deduplicated name from sub folder to other folder
+  - download should check for an existing file with same name but different fileId and dedupe before storing the path?
+- Handle revoked credentials without tanking server
+- Handle removed blog folder without error
+- Handle renamed blog folder
+- Can the google drive client handle a server restart during setup?
+- database.folder should throw ENOENT and EEXIST errors for del, set, move etc.
+- Error handling
+  - Retry when we get google drive's This service is not available error
+  - Handle storage quota errors
+  - Handle 429 errors with exponential backoff retry
+- Add a way for sync/build to accept a ctime as an option. We can't set this at the operating system level but google drive's API does return a createdTime value and we could use this as the true file's created date, rather than the date the file is made on the server
+- `write` should use the best method for large file uploading
+- Work out if we can test this using Mocks  
 
-Think about using avif/webp for thumbnails, adding <picture> tags with jpg fallback.
-- use webp for image post conversion format app/build/converters/img/index.js
-- use for image caching module
-- use for thumbnails
-- use for responsive images in posts / generated from image files
-- Tell [Audun](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZSsHbLvRXQKWQdCTNmPFSkZMM)
-- Tell [Robin](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTCqXKgdvjbcvDqNmKtnpdpTg)
-
-Use this conventions for [delimiting KaTeX](https://pandoc.org/demo/example33/8.13-math.html) instead of double dollar signs.
-
-Add a documentation page on media handling
-- explain image compression and thumbnails
-
-Add a documentation page on typography and fonts
-- explain typeset
-
-Add commit mono font to font picker - https://commitmono.com/
-
-Revert server changes to iCloud
-- 0043d91b36621ecd6aef2bcc263f51f209924792
-- 98dc9405c883825917de8e436ec620f60adaf975
-
-Fix bugs with sync
-iCloud
-Dropbox
-Google Drive
-Git
-Fix bug with local editing and template slugs
-Improve brochure
-Improve demo video
-Improve templates
-Fix mobile behaviour
-Make all variables editable on template editor
-Add way to drag and drop files onto dashboard
-Implement more netlify features
-Create CDN system with edge servers holding static blog content close to users
-Use bunny?
-Increase pricing to $7 per month for individuals
-Make it possible to create a site for free
-Add $70 per month organizational tier?
-Add github client
-Lower costs using s3 
-
-Fix bugs with templates:
-- Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
-- Fix 'back' button in photo template and tell [Bibi](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcPJTmPXxWvhbmFpvwdfVzhpn)
-- Fix side navigation on Blog template and tell [Sava](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJcgnPdxPcSqPwmMnFSThFMQg)
-- Add layout fix to blog template and [tell Lewis](https://mail.google.com/mail/u/0/#inbox/FMfcgzQVzFWlSFWmjZrDMrMjPtmtWwQc)
-- Fix bug with [header position on the blog template](https://blot.im/questions/2211)
-- Make 'close' button on entry permalink page of reference template work like the photo template and tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsmNSSSRKHnlgCBllnqJCcPhxD)
-- Fix bugs with documentation template and tell [Ray](https://blot.im/questions/3233)
-- Fix bug with Documentation template and the setting 'Adds zoom to large images' and [tell customer](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgJMGTSPcnwTNxVJVPZZnrhJB)
-- Improve post navigation on Portfolio template within tagged collections and tell [Questioner](https://blot.im/questions/1894)
-- Make it possible to sort by id with dropdown on all templates
-
-Add performance tests which output something like this for PRs (compare against master branch, fail if over threshold):
-  Total CPU  29.90%          -> 11.64%
-  Syscalls   3.10s           -> 0.66s
-  Crypto     1.6s            -> 0.11s
-  Bandwidth  ~6.5 Mbit/sec   -> ~3 Mbit/sec
-
-Links template:
-  Navigation:
-  - [ ] Add dropdown support to navigation
-  Entry page:
-  - [ ] Close button should go 'back'
-  - [ ] Add layout CSS
-  - [ ] Next / prev should respect tag collections
-  - [ ] Add exif info
-  - [ ] Add backlinks
-  
-Dropbox client
+Dropbox:
 - Sync verification should instrument the sync/fix function to also report errors where the folder doesn't match the database.
 - Bug: ensure that when a process dies, any blogs setting up dropbox client will be re-attempted
 - Bug: Adding an additional blog to existing app folder under constant webhooks failed. New blog had correct folder but old blog still used root. To fix we need to acquire a lock on ALL blogs interacting with that dropbox account to proceed with setup process of second site.
@@ -119,7 +77,7 @@ Dropbox client
 - Bug: dropbox reset FROM BLOT should handle revoked token
 - Bug: add sync lock process to dropbox connection when writing folder contents
 - Bug: ensure the app permission access_token is destroyed when switching to full-folder and vice versa
-- Testing:
+- Testing for dropbox:
   - Write proper tests
   - Add integration test with a dropbox Webhook call. I want to not push some code which would prevent syncing customer folders.
   - Write test to simulate process dying and restarting mid-pull. Does the client recover?
@@ -145,18 +103,40 @@ Dropbox client
   - Phase 1: RESET FROM BLOT (NON DESTRUCTIVE, deduplicate on conflict)
   - Phase 2: RESET TO BLOT (TWICE?) then sync/FIX then begin ordinary syncing
 - Make Dropbox sync issue emails more useful with a script to compile the logs for a single site (including macserver)
+  - Adjust full_folder to add a big warning to prevent confusion about where the new folder is when transitioning permissions
+  - Add a step to authentication flow which says: 'there is already a folder called 'Your blog title' in your Dropbox, would you like to use that?' then overwrite the files inside. This prevents the proliferation of confusing 'Your blog title (1)' when you re-authenticate.
+  - Add a progress bar to the dashboard when writing existing files to Dropbox. It takes a while and confuses people. Perhaps leverage existing status message system with prefix of "(1/247)" to be parsed on front-end and turned into progress bar
+  - Make the folder in Dropbox rename automatically when the customer changes the username for one of their multiple blogs?
+  - When you switch from app folder to full folder, there should be a notification indicating that your folder location has changed
+  - Check content hash for upload possible
+  - Make dropbox reset FROM abortable
+  - Make dropbox reset TO abortable
+  - Surface errors during setup on dashboard
+   - Surface sync issues with Dropbox client on the homepage of dashboard
+   - How do we make errors sticky? To make sure users click through to clients page to re-connect to Dropbox, etc...
 
-It seems like the paypal next bill dates are not syncing correctly for some users (e.g.slopserve)
-
-Unwind bugginess with template slugs / local templates
-- Slugs should be derived from template.name and unique per owner
-- Local editing should use folder name ↔ name ↔ slug consistently
-- Add slug lookup utility and update dashboard/template load paths
-
-Git client:
+Git:
 - Add sync check
+- Add support for LFS and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVMcpnxGHqnxJHNdbMBSrglzg)
+- Backdate existing commits (perhaps set file ctime using info from git log?) This would sidestep the frustration experienced by [Gavin](https://mail.google.com/mail/u/0/#inbox/1669a8e621f9ef37) when he imported an existing repository.
+- Extend sync lock during long syncs
+- Write test to simulate process dying and restarting mid-pull. Does the client recover? What happens if a pull fails midway? Does git recover?
+- Write tests for a series of random client operations (pull, add, push, move, reset, delete) that can be seeded and reliably re-run in the case of failure.
+- Move to neat promise chain api when 2.0 comes out
+* Test that client must keep sending new entries and deleted entries when it recieved an error from entry.build otherwise you get ghost posts...
+- send nice error message with instructions for 413 request too large: "git reset HEAD^" etc...
+- Thoroughly document:
+- Explain that the git client uses the master branch and repos from github will use main in the docs and on the dashboard then tell [N](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqPzKcnQKsQQNkzcRpvCWpWKTr)
+- Tidy up tests and reduce size and runtime
+- This client should acquire a lock on the blog's folder before doing stuff to it more generally, especially during initialization etc...
+- what happens if customer changes their handle? will pushing break?
+  - I want them to be able to keep using their old one *until* someone else claims it, then I want 401 unauthorized, please reauthenticate with new username... but the remote path will be wrong?
+- Rate limit authentication route?
 
-iCloud client:
+iCloud:
+- Revert server changes to iCloud to reintroduce integrity checks
+  - 0043d91b36621ecd6aef2bcc263f51f209924792
+  - 98dc9405c883825917de8e436ec620f60adaf975
 - Fix bug: handle deletion of iCloud folder by user cleanly and clearly. iCloud client which doesn't surface / handle removed folder - to reproduce, connect to icloud then delete the folder
 - If we need to resolve further bugs with sync drift:
   - Implement additional parsing of modified paths from monitorer.js (brctl monitor -i) and reconcile these in addition to the fswatch module with the chokidar events for additional redundancy
@@ -185,16 +165,43 @@ iCloud client:
 - Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
 - Investigate: can we modify app/clients/icloud/routes/site/upload.js and app/clients/icloud/macserver/httpClient/upload.js to exchange a content hash? to prevent needless re-upload?
 
-Bug reports:
-- The syntax highlighter font selector doesn't seem to work, neither with my template nor with the default ones. You can't select a font and tell Omar
-- The website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
-- Migrate base templates from entries to {{#posts}} and tell Omar
-- Document the special routing features for entries.html and tell Omar
+---
+
+Fix bug with local editing and template slugs
+
+Fix bugs with templates:
+- Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
+- Fix 'back' button in photo template and tell [Bibi](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcPJTmPXxWvhbmFpvwdfVzhpn)
+- Fix side navigation on Blog template and tell [Sava](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJcgnPdxPcSqPwmMnFSThFMQg)
+- Add layout fix to blog template and [tell Lewis](https://mail.google.com/mail/u/0/#inbox/FMfcgzQVzFWlSFWmjZrDMrMjPtmtWwQc)
+- Fix bug with [header position on the blog template](https://blot.im/questions/2211)
+- Make 'close' button on entry permalink page of reference template work like the photo template and tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGsmNSSSRKHnlgCBllnqJCcPhxD)
+- Fix bugs with documentation template and tell [Ray](https://blot.im/questions/3233)
+- Fix bug with Documentation template and the setting 'Adds zoom to large images' and [tell customer](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgJMGTSPcnwTNxVJVPZZnrhJB)
+- Improve post navigation on Portfolio template within tagged collections and tell [Questioner](https://blot.im/questions/1894)
+- Links template:
+  Navigation:
+  - [ ] Add dropdown support to navigation
+  Entry page:
+  - [ ] Close button should go 'back'
+  - [ ] Add layout CSS
+  - [ ] Next / prev should respect tag collections
+  - [ ] Add exif info
+  - [ ] Add backlinks
+
+Fix bug with the website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
+
+Fix bug with template slugs / local templates
+- Slugs should be derived from template.name and unique per owner
+- Local editing should use folder name ↔ name ↔ slug consistently
+- Add slug lookup utility and update dashboard/template load paths
+
+Fix bug with the paypal next bill dates are not syncing correctly for some users (e.g.slopserve)
 
 Fix bug with repeat resyncs of specific sites via Google Drive:
 - To identify, run node scripts/google-drive/resync.js multiple times, some sites continually resync the same files...
 
-Bug: CDN replaceFolder not working with relative path to CSS file on wall.blot.im
+Fix bug with CDN replaceFolder not working with relative path to CSS file on wall.blot.im
 
 Fix bug with camelCase custom metadata and tell [questioner](https://blot.im/questions/2294)
 
@@ -235,9 +242,6 @@ Add diagnostic logging for ECOMPROMISED lock errors:
 - In onCompromised handler: gather diagnostics (with 2s timeout), log structured error with console.error(), re-throw error to crash server
 - Use clfdate() for logging format consistency
 
-
-Move image zoom to template settings
-
 Fix bug with cancelled subscriptions that keeps the account around
 - finish script to identify long-expired customers with blogs to safely delete and free up space. 
 - Sort by date expired
@@ -260,8 +264,6 @@ Fix bugs with custom domain setup
 - Disable redirect to HTTPS for blogs by default (to ensure old browsers without SNI work) but ensure all prominent links to the blog on dashboard use HTTPS
 - cache domain validity and display checkmark on dashboard
 
-
-
 Fix bug with huge tiddlywiki post that crashed site by enforcing a size limit on txt and markdown files and html files for them to become posts
 - Ensure the error for files too large is made clearly visible
 
@@ -273,6 +275,8 @@ Fix bug with link format using filename and [follow up with yct](https://mail.go
 Fix bug with light mode colors and tell [Gary](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJSCRWXMlsPRVBsnrcRcbMklc)
 
 Fix bug with placeholder files when switching clients: DATA LOSS, BLOT WILL NOT TRANSFER THE ORIGINAL FILE REPRESENTED BY A PLACEHOLDER.
+
+Fix bug with the '-2' suffix on posts when renaming a huge folder and tell Chuck
 
 Fix bugs with git client
 - Investigate a bug with git client credentials triggered when you have two sites using git on one account, and delete one of the sites
@@ -290,7 +294,6 @@ Fix template partial embeddings which no longer work because of switch from lowe
 - write script to find these
 - e.g. {{> /pages/home.txt}} when pages is really Pages
 - we should resolve the case-insensitive path to file when saving a template and parsing its partials
-
 
 Fix bug with [many twitter embeds and tell Nash](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllMNfjvRBthVncQtPJQpmrksx)
 
@@ -313,7 +316,7 @@ Fix bugs with template engine:
 - Fix date selector for template and tell [Zach](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxTFSjkTvfDRgNHZwSQqDzWKFB)
 - Fix bug with forking / editing new templates and tell [Jarrod](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrbRSDCZqMwzjDdqdGCkScxpsw) when local template folders better reflect template names
 
-Fix bug with script to import wordpress posts and follow up with [Simon](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGCtMPcJhlmcdNvWwtWvgzWJvZ)
+Fix bug with wordpress importer and follow up with [Simon](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGCtMPcJhlmcdNvWwtWvgzWJvZ)
 
 Fix bug with date metadata on [Vincent](https://mail.google.com/mail/u/0/#inbox/FMfcgxwJXVMdhvCJPXwVVSKRTFHQTQzn)'s blog and follow up. I suspect it's to do with the ordering of date tokens.
 
@@ -360,6 +363,10 @@ Fix bug with image minification which produces larger file than source file and 
 
 Fix bug parsing ISO8601 date format and tell [Thomas](https://mail.google.com/mail/u/0/#inbox/1625012def221a8f)
 
+Fix bug when the customer's blog does not have a client, client.write and client.remove need to remove the files from the source folder. Create some kind of local client which we fall back and use when none is configured?
+
+Fix bug with Client.write which does not propogate sync errors... to demonstrate this, revoke dropbox token then try to enable local editing.
+
 Fix bug with pages not appearing in backlinks and [tell questioner](https://blot.im/questions/2913)
 
 Fix bug with magic text in posts which breaks backend and tell [Victor](https://mail.google.com/mail/u/0/#inbox/FMfcgzQVxRMzjBtRWVwLWtlBcFGsSVCQ)
@@ -378,46 +385,146 @@ Fix bug with accessibility issues with scrolling and code blocks and tell [Eli](
 
 ---
 
-Investigate issues with image heavy obsidian vaults
-
-Investigate obsidian and ia writer wikilink resolution issues
-
-Release [Fede](https://wordpress.org/themes/kanso/)'s theme as profile template
-
----
-
 Release new brochure site
 
 Record new video
 
 ---
 
-Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
-
 Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
 
----
+New templates:
+- Release [Fede](https://wordpress.org/themes/kanso/)'s theme as profile template
+- Transfer theme for [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
 
-Improve hypertext template to support listing pages as well as posts in the sidebar
+Remove any plan to automate account removal
+- operator must be the only person to trigger the delete overdue or cancelled site flow via script
+- collect data on the number of sites to delete once per day for a once-weekly update email and include commands to run in email
+- only send the admin notification email when the subscription first changes state in db: stripe sends multiple webhooks and these each trigger emails, even if state does not change
+- update the admin emails and the noop / simplify the subscription code if needed. still proceed with the user / site disabling (but not deletion step)
 
-Make it clearer in the UI that creating a second site increases the subscription at the next billing cycle, probably with a one-time notice.
+Move Blot's GitHub repo to its own organization
 
-Maybe we mix cacheID into query string for {{#cdn}} on preview subdomains with caching headers for improved template editor performance without expensive hash computation?
+Switch templates from entries.html to index.html with explicit url: ['/', '/page/:page'].
+- fix docs on routing order
 
-Template delete should purge the cdn hashes / URLs
+Use the pandoc convention for [delimiting KaTeX](https://pandoc.org/demo/example33/8.13-math.html) instead of double dollar signs and update docs
+- Tell [customer](https://mail.google.com/mail/u/0/?zx=j8rkxjpin0du#inbox/FMfcgzGrbHmWxcrVtbhnzHVnCtfLZhxH)
 
-Handle 429s in purgeCDNUrls? Group multiple into single request?
+Make it possible to create a site for free then require subscription to make it public
+
+Improve markdown:
+- Turn on 'preserve linebreaks by default' for markdown 
+- Extend markdown parser to support [content blocks syntax](https://github.com/iainc/Markdown-Content-Blocks)
+- Extend markdown parser to support Obsidian Callouts and follow up with [questioner](https://blot.im/questions/3374)
+- Extend markdown parser to add a special class to a list of only images for targeting into an image grid or gallery?
+  - `- ![Image](_image.jpg)...` -> `<ul class="image-list">`... could then be used in CSS?
+
+Improve webloc bookmarks:
+- If the bookmark file points to a google doc, can we support google docs even from Dropbox? if the doc is public?
+
+Improve images:
+- Use avif/webp in responsive <picture> tags with jpg fallback for images in posts
+  - use webp for image post conversion format app/build/converters/img/index.js
+  - use for image caching module
+  - add finer-control options for image caching / quality compression
+    - Fetch dimensions of images even if optimize and cache is disable, so that image zoom can work. Tell [Joshua](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsmhMtGvPcwxlSHSSTFVpJVbd)
+  - use for thumbnails
+  - use for responsive images in posts / generated from image files
+  - Tell [Audun](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZSsHbLvRXQKWQdCTNmPFSkZMM)
+  - Tell [Robin](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTCqXKgdvjbcvDqNmKtnpdpTg)
+  - Implement for thumbnails too
+- Add support for large image tiling and zooming with photoswipe or add a plugin using OpenSeadragon to add Deep Zoom capabilities for huge megapixel images so you could publish them directly to Blot.
+- Extract multiple thumbnails per blog post (as many as there are images) for cooler image grid possibilities. Add a property to entries which lets you list all the images in a post so [Jean](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwgpcHJMnwFNXtNHWHMlZFFlb)can add them to his sitemap
+- Add size / time limits to image caching function which fetches remote images
+- Image cacher should work for webp, tiff, etc. as well as JPG
+
+Improvements to docs and documentation:
+- Add a guide to documentation to using Formspark to add a contact form to a site
+- Rewrite code which generates a fake 'macOS' folder to work cross platform:
+  - if the user is browsing from Windows create a windows folder
+  - if the user is browsing from linux create a linux folder
+- Windows video + windows finder.css
+- Create material in docs with title 'Turn X into website' where X is:
+  - Dropbox, Google Drive, etc.
+  - Word Document, Google Doc, etc.
+- Document text editors
+  https://coteditor.com/
+  https://zettelkasten.de/the-archive/
+  https://tot.rocks/
+  https://desairem.com/wordpress/ufocus/
+- Add guide to useful text editors like [this one recommended by Andrew](https://itunes.apple.com/us/app/write-best-note-taking-app/id848311469)
+  - do this as a marketing strategy, e.g. target 'blog with microsoft word', 'blog with google docs', 'blog with ia writer' etc... contact the people who make text editors and ask them to link to us?
+- Personalize the documentation for logged in customers
+- Add [contributor](https://api.github.com/repos/davidmerfield/blot/contributors) / [language](https://api.github.com/repos/davidmerfield/blot/languages) and repo information to source code page using GitHub API.
+- Redo demo video
+- Improve tools section of docs
+  - Update obsidian tools pages (improve)
+  - Add https://www.textasticapp.com/ to text editor tools
+  - Improve tools/bear 
+    - Reach out to Bear to let them know about textbundle support
+  - Improve tools/ulysses
+    - Reach out to Ulysses to let them know about textbundle support
+- Add a documentation page on media handling
+  - explain image compression and thumbnails
+- Add a documentation page on typography and fonts
+  - explain typeset
+
+New plugins:
+- Add [preload=none](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/audio#preload) to all audio and video tags without it defined or maybe preload="metadata"? 
+
+Improvements to dashboard:
+- Make it clearer in the UI that creating a second site increases the subscription at the next billing cycle, probably with a one-time notice.
+- Improve clients
+  - cache sync validity and display checkmark on dashboard
+  - surface errors for clients on dashboard index
+- Resolve inconsistency: 'Create site' vs New template vs Create file
+- Clamp length of password and email address in log in and sign up and reset forms
+  - ensure the forms have tight max-bodies
+  - return an error if these are too long
+- When a folder has lots of elements, trim the list of files on the dashboard, at least on the index page
+
+Improvements to template editor:
+- Do preview subdomains respond to etags?
+- Add [commit mono](https://commitmono.com/) font to font picker
+- File upload feature (_url) needs to generate image dimensions too.. maybe it needs MORE power
+- Enforce size limits on setting tempalte views
+- Allow text entry fields in template settings from the dashboard for template locals, and tell Omar (Build markdown description feature into template editor. Support default site description)
+- Introduce collapsible sections or a separately scrollable div on the template dashboard settings, and tell Omar
+- Build image upload feature into template editor. Support default banner images and image avatars, with default images set, maybe some kind of global library feature across templates...
+- Build favicon generator into template editor. Make it distinct from avatar. Generate proper favicons from uploaded avatars (to prevent streched favicons when non-square avatars are uploaded)
+
+Improvements to templates:
+- Improve hypertext template to support listing pages as well as posts in the sidebar
+- Add media-query to prevent typeset hanging punctuation on small screens (it looks weird) and tell [Shibel](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgpXqMzwcBGWgjxgpcpCnMCQW)
+- Improve [sidebar blog template navigation on small screens](https://blot.im/questions/3137)
+
+Improve importer:
+- Add way to restore a blog from export
+- Update question on what to do to import posts from wordpress or squarespace: instead of contact me, reference the importer. 
+- Can we offload an import into a resource constrained child process?
+- Can we queue up imports and process them one at a time?
+- Add interface to move import into folder directly
+- Add scheduled imports on regular basis into folder directly
+- Add nice import step under 'Services' and as part of sign up
+- Improve Ghost importer and tell [Vin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBWSwbGRtFTnJCPCXzVHntQPtC)
+- Improve Are.na importer so it handles descriptions + also other file types (e.g. PDF, text) and tell [Marco](https://mail.google.com/mail/u/0/#inbox/QgrcJHsBvDqvbgfkRJfBlwLBwlDHDncxVnl)
+- Add micro.blog import to dashboard and tell [Gabriel](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJRvfgrRhXwqDNDlxbpXmRlbd]
+- Create importer script for [John's posts from flickr](https://mail.google.com/mail/u/0/#inbox/166da622325d19e7)
+- Create importer script for tumblr text files and tell [Sawyer](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVMhRNdQhfDwlXsqqFNgmKfTk)
+- Create importer script for Weebly and tell [David](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBTjzpgHQZMJSsvjktggRFNpDw)
+- Map excerpt metadata to summary for Jekyll converter importer
+- Look into how Hexo has written imports for [blogger](https://github.com/hexojs/hexo-migrator-blogger), [joomla](https://github.com/welksonramos/hexo-migrator-joomla), [rss](https://github.com/hexojs/hexo-migrator-rss), [wordpress](https://github.com/hexojs/hexo-migrator-wordpress).
+- Add an importer for Twitter and sell [Sawyer](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVMhRNdQhfDwlXsqqFNgmKfTk)
+
+Improve exporter:
+- Make it possible to configure the export file format (e.g. instead of markdown, word documents) on the importer
+- Add export button to overdue subscription page
+
+Blogs have huge numbers of archived templates – modify the tempalte archiver to only 'create' templates for sites using them, otherwise disappear them. work out how to clean up some of the many archived templates added to sites... (remove ones with zero changes?)
 
 Remove the legacy redis hash routing from cdn/index.js and key definition
 - also create new script to forcefully migrate the dangling hashes from redis to disk, if they exist
-
-We should get notifcations when stripe recovers an overdue subscription, as opposed to the user entering the form
-
-Speed up global template build by not even invoke the setView function if there are no changes... (this avoids running updateCDNManifest when SITE template has no changes)
-
-Dashboard file upload feature (_url) needs to generate image dimensions too.. maybe it needs MORE power
-
-Blogs have huge numbers of archived templates – modify the tempalte archiver to only 'create' templates for sites using them, otherwise disappear them. work out how to clean up some of the many archived templates added to sites... (remove ones with zero changes?)
 
 Fix script to replace cssURL to handle blogs with invalid domains (it's breaking the migration)
 
@@ -428,15 +535,6 @@ Replace existing cssURL and scriptURL and css_url and script_url properties in t
 Replace existing asset helper properties in templates with new cdn helper
 - Check it's only used for CSS/JS...
 
-Enforce size limits on setting tempalte views
-Add integration tests for cdn paths with weird view names, etc.
-Add integration tests for preview subdomain logic (skip for my- not for site)
-
-Add more options to site settings beyond title, such as description and reply email, and tell Omar
-Allow text entry fields in template settings from the dashboard for template locals, and tell Omar
-Add multiple date format selectors on the theme dashboard for different contexts, and tell Omar
-Introduce collapsible sections or a separately scrollable div on the template dashboard settings, and tell Omar
-
 Search results pages should be no-indexed by search engines
 
 Can we optimize renderView in some way?
@@ -445,39 +543,11 @@ Can we optimize renderView in some way?
 - use a proper library, cap memory, etc.
 - should majorly improve performance on popular sites
 
-verify that nginx config serves as many CDN static files as possible
-- eventually these files will be on s3 but for now, use nginx with try files where possible then pass on to upstream
-
-Resolve inconsistency: 'Create site' vs New template vs Create file
-
-'Preview' link on template editor should become 'Visit site' for installed template
-- or maybe add a new button 'visit site'?
-
 ---
-
-Improve Dropbox client
-  - Adjust full_folder to add a big warning to prevent confusion about where the new folder is when transitioning permissions
-  - Add a step to authentication flow which says: 'there is already a folder called 'Your blog title' in your Dropbox, would you like to use that?' then overwrite the files inside. This prevents the proliferation of confusing 'Your blog title (1)' when you re-authenticate.
-  - Add a progress bar to the dashboard when writing existing files to Dropbox. It takes a while and confuses people. Perhaps leverage existing status message system with prefix of "(1/247)" to be parsed on front-end and turned into progress bar
-  - Make the folder in Dropbox rename automatically when the customer changes the username for one of their multiple blogs?
-  - When you switch from app folder to full folder, there should be a notification indicating that your folder location has changed
-  - Check content hash for upload possible
-  - Make dropbox reset FROM abortable
-  - Make dropbox reset TO abortable
-  - Surface errors during setup on dashboard
-   - Surface sync issues with Dropbox client on the homepage of dashboard
-   - How do we make errors sticky? To make sure users click through to clients page to re-connect to Dropbox, etc...
-
 
 Implement TOC Plugin
 - Create a plugin-based TOC system that works for all file types. The plugin will generate TOC HTML from headings and return it via the result object mechanism from task 1.
 - Tell Omar
-
-Update obsidian tools pages (improve)
-
-Update question on what to do to import posts from wordpress or squarespace: instead of contact me, reference the importer. 
-
-Make it possible to configure the export file format (e.g. instead of markdown, word documents) on the importer
 
 Investigate replybox for comments
 
@@ -485,18 +555,7 @@ Apply improvements from andrew's template into documentation template
 
 Turn francesco's template into a seperate 'Restaurant' template
 
-Work on template editor
-
-Build image upload feature into template editor. Support default banner images and image avatars, with default images set, maybe some kind of global library feature across templates...
-
-Build markdown description feature into template editor. Support default site description.
-
-Build favicon generator into template editor. Make it distinct from avatar.
-
 Add checkbox to toggle newsletter subscription to account page
-Inbox
-
-Add pause and resume routes to account page for subscriptions
 
 Adjust color settings into a simple 'presets' picker, then an option to dive into specific altertions on seperate view.
 - make it possible to conenct two colors, e.g. navigation background color -> same as background color
@@ -516,16 +575,14 @@ Set up AWS cost anomaly detection
 
 ---
 
+Add support for 2FA (Two factor authentication) then tell [Luke](https://mail.google.com/mail/u/0/#inbox/163993b0f8499ab3), [Max](https://mail.google.com/mail/u/0/#inbox/1641e9bd104c5b77), [Chaz](https://mail.google.com/mail/u/0/#inbox/165b726aa900158a), [Prathamesh](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQmWhhpCVSlbhdvlvWdmdtJWQ) and [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqnpZncgBDbDskMZdPMXkgGCN).
+
+Add support for SSO then tell [Prathamesh](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQmWhhpCVSlbhdvlvWdmdtJWQ)
+
+Improve the camera make and model names extracted by exiftool using a third-party library, e.g. SONY ILCE-7M3 -> Sony α7 III
+- [ ] Tell [Chuck](https://mail.google.com/mail/u/0/#inbox/QgrcJHrhvXLmnzQkFJsDwTvsrSbqBFVgtxV)
+
 Compute 'words' text property for each entry (unique words, sorted possibly?) to improve the speed of search queries
-
-Turn on 'preserve linebreaks by default' for markdown 
-
-Do preview subdomains respond to etags?
-
-Switch from mustache to handlebars
-- Precompile using template content hash
-- Add strict verification for output differences 
-- Can we generally do a ‘static’ build out directly into a cache (e.g. openresty)?
 
 Identify areas of the codebase which need resource limits to be more secure, e.g. max file size for the image converter, max file size for the docx converter. look across the codebase and create a series of implementation tasks for the most pressing
 
@@ -548,19 +605,7 @@ Think about how to improve the efficieny of the app/views/js/sync_status.js resp
 
 Add screenshot feature to macserver:
 
-Create abstract models/storage that could be used to eventually migrate blog data folders onto s3:
-- 1. Add `app/storage/index.js` that exposes namespaced helpers (e.g., `storage.blogs.resolve(blogID, relativePath)`, `storage.blogs.readFile`, `storage.static.writeFile`) implemented with `fs-extra` and the existing `config.blog_folder_dir` / `config.blog_static_files_dir`.
-- 2. Move the path normalization logic from `helper/localPath.js` into the new storage module (or have `localPath` call the storage API), keeping existing validations intact.
-- 3. Provide unit coverage mirroring `app/helper/tests/localPath.js` to confirm the new abstraction still resolves paths correctly for typical blog IDs and paths.
-- 4. Add mechanism for error storage, e.g. Dropbox .page file error or Dropbox file too large error, etc.
-
 Reach out to include Blot on textbundle website
-
-Improve tools/bear 
-- Reach out to Bear to let them know about textbundle support
-
-Improve tools/ulysses
-- Reach out to Ulysses to let them know about textbundle support
 
 Look into figma make
 
@@ -575,35 +620,18 @@ Transformer should short-circuit network lookups to {{config.host}} or {{cdn}} u
 
 Add support for Apple Pay and Google Pay by upgrading Stripe API version we're using
 
-Migrate JSON blob entry into a redis hash:
-- Use hash to store entries rather than a JSON string:
-- app/models/entry/get.js
-- Every time a single entry is fetched we retrieve a full JSON string then JSON parse it.
-- I want to switch to using a redis hash and make it possible to query single entry properties, e.g. html, title
-- Do we have enough space in redis to essentially duplicate every entry?  maybe make it possible to store an entry as both a hash and a string initially (with hash as source of truth in case of conflict). we'll need a script to run to migrate existing entries in the db. once the migration is complete, we can remove some of the doubled code
-- * Extend `app/models/entry/key.js` with a helper that returns the Redis hash key for an entry (e.g., `entryHash(blogID, path)`), keeping the existing string key untouched for backward compatibility.
-* Add a serializer/deserializer utility (new module under `app/models/entry/`, e.g., `format.js`) that can translate between `Entry` objects and hash field payloads (strings stay raw; other types use `JSON.stringify`/`JSON.parse`).
-* Refactor `app/models/entry/get.js` to accept an optional `fields` argument (string or array). Use `multi` to `HMGET`/`HGETALL` from the hash key and fall back to the JSON key when the hash is missing, reusing the serializer to coerce types. Ensure single-field calls return the scalar when only one entry is requested, while preserving existing behaviors for callers expecting full `Entry` objects.
-* Cover the new pathways with unit coverage (or targeted integration coverage) once tests are runnable, verifying full-entry fetches, hash fallback to legacy JSON, and single-field lookups.
-
 Improve performance rendering sitemaps by using sitemap indexes, and sharding the sitemap.
 - requires adding pagination for listing pages
 - requires using the url / param feature, e.g. [sitemap.xml, sitemap.posts.:page.xml, sitemap.pages.:page.xml]
-
-Leverage bunny tag based caching to perform full blogID based purges: https://bunny.net/blog/introducing-tag-based-cdn-cache-purging/
-
-Add [preload=none](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/audio#preload) to all audio and video tags without it defined or maybe preload="metadata"? 
 
 Speed up 404s
 - Analyze req trace
 - Remove case insensitive lookup and add path resolution to plugins
 
-Work out how to easily have a different page_size for the tagged pages vs the index page
-- can we get rid of blog/tagged.js and update the urls of existing tagged.html files to have dynamic routes?
-
-Add size / time limits to image caching function which fetches remote images
-
-Improvements to template engine
+Improvements to template engine:
+- Speed up global template build by not even invoke the setView function if there are no changes... (this avoids running updateCDNManifest when SITE template has no changes)
+- Implement limits for allentries, sitemap, etc.
+- Maybe we mix cacheID into query string for {{#cdn}} on preview subdomains with caching headers for improved template editor performance without expensive hash computation?
 - Performance improvements
   - Limit number of posts in rss feed to 15 (modify recent entries?)
   - Add pagination to /tagged
@@ -617,6 +645,10 @@ Improvements to template engine
 - maybe write tool to check before/after for lots of test sites? real life sites on blot? error if diff, or offer chance to test?
 - Add a related entry list and tell [David](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrPGTsMcvgWpNsNtmrkWRzDz) and [Thomas](https://mail.google.com/mail/u/0/#inbox/156dbe97153fab61) and [questioner](https://blot.im/questions/1484) and [questioner](https://blot.im/questions/3123)
 - Consider adding support for nested page structure - generate nested menu items from nested folders in /pages
+- Switch from mustache to handlebars
+  - Precompile using template content hash
+  - Add strict verification for output differences 
+  - Can we generally do a ‘static’ build out directly into a cache (e.g. openresty)?
 - Make it possible to query recent entries by tag and tell [Peter](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTMPKDrgrtVnjTnLtMZNHldvZ)
 - Assign guid template IDs
 - Assign unique path to template
@@ -644,11 +676,8 @@ Improvements to template engine
   - Tell [Steve](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxTNsdCppzndskLsxJpvgsdgjv)
   - [Jack](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxTFbfvLCqlhWckvZqTmNPPqSM)
 - Allow the name/slug of a template to change and tell [Marcus](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChSCwzPxFLvSpLcjjRbCkVVbg) and [Pratik](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDDqldQjWRSnwmcMbcpRMHMxL) and [Brad](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGCkmWNjfwTqvrTgJLCSpDcDfk) when the name of a locally-edited template in your blog's folder updates
-- Allow ordering of posts by file name and tell [Jacopo](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNCrgCFZKKzdvTFVvWHCpQChM)
 - Expose request query to views and tell [Abhishek](https://mail.google.com/mail/u/0/?zx=ppqfw9q0jli#inbox/FMfcgzGljvQfHMktFrRNKQWqsxKQWSGZ)
-- Add way to query list of posts using SQL? Something like [jsql](https://archive.codeplex.com/?p=jsql)
-com/mail/u/0/#inbox/1588e3df7489b554) 
-  - [Don't write my own DSL, use SQL](https://news.ycombinator.com/item?id=17890760) Something like this in front matter? recent_posts: SELECT POSTS WHERE ...
+- Add way to query list of posts using SQL?
   - Add support for entry lists of variable length and tell [Logan](https://twitter.com/LoganGreer)
 - Add support for the setting of custom headers (e.g. to enable CORS) and tell [Roy](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDrRShkTjNqPxcnPjFcGthZgbh)
 - Add support for listing files in arbritary folders (e.g. use a custom folder as a 'public' folder) and tell [Nash](https://twitter.com/nashp/status/1111655667817947137) and [Marco](https://mail.google.com/mail/u/0/#search/marco/FMfcgzGmvBrxCgvXVhZQsbdzpgDktSGV)
@@ -720,7 +749,16 @@ Improve folder to CDN pipeline
 
 Add per request resource monitoring, e.g. heap size before/after
 
-Tune proxy next upstream status code conditions to preserve zero-downtime-deployments but prevent expensive requests (timeout?)
+Improve openresty proxy:
+- Tune proxy next upstream status code conditions to preserve zero-downtime-deployments but prevent expensive requests (timeout?)
+- Add support for IPv6 and tell [Raul](https://mail.google.com/mail/u/0/#inbox/167083384282a5df)
+- Verify that nginx config serves as many CDN static files as possible
+- Investigate whether openrestycache can be modified to pre-compress gzip responses
+  - can we add support for brotli?
+  - can we use https://nginx.org/en/docs/http/ngx_http_gzip_static_module.html#gzip_static
+  - should we just be using varnish?
+- Can I use proxy_store instead of openrestycache?
+- Re-set up html minification using html-terser?
 
 Move image zoom plugin to templates
   - Fix bug with image zoomer on mobile devices and tell [Alessandro](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChSCwptjLtLGMjWxdkQNnNfTk)
@@ -736,12 +774,18 @@ Move image zoom plugin to templates
 
 Review, revise, test and run redis orchestration script to restore from s3 backup into new instance
 
-Migrate repository to new account
-
-Add webmentions plugin point-and-click on dashboard
-
 Reduce service provider risk:
 - move domain registrar from AWS to Epik?
+- Remove dependence on AWS
+  - Adds offsite (i.e. non AWS backups) backups
+  - Write out plan to move off AWS
+    - DNS
+    - EC2
+    - S3 for backups
+    - Cloudfront for CDN
+    - backup blogs folder + db somewhere offsite at least once per week
+- We should have a plan to switch CDN from Bunny to Cloudfront in an emergency
+- Should be a simple DNS change
 - write plan to transition off Bunny if needed
   - ideally all this should involved is changing some DNS records
 - test plan to transition off Bunny
@@ -756,18 +800,9 @@ Update redis client for improved performance
 - perhaps to ioredis?
 
 Update redis server to version 8
-- take advantage of full text search
-
-Implement limit for allentries, sitemap, etc.
-
-Add tests for webp thumbnails
-
-Improve the camera make and model names extracted by exiftool using a third-party library, e.g. SONY ILCE-7M3 -> Sony α7 III
-- [ ] Tell [Chuck](https://mail.google.com/mail/u/0/#inbox/QgrcJHrhvXLmnzQkFJsDwTvsrSbqBFVgtxV)
+- take advantage of full text search? or switch to postgres?
 
 Move folder lock location to instance ssd for improved reliability and performance (non-networked drive...) – could be inside the cache
-
-Write about mustache technique for {{#updated}} and {{updated}} to work at the same time (toString)
 
 Extend ignore files feature (currently files starting with _ or folders starting with _)
 - tell [Troy](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrSjWXGrxztLqjVWwjBtcbzl)
@@ -781,34 +816,7 @@ arbritrary paths and keep clean URLS (no underscores). Sitewide .blotignore file
 - add 'ignored ghosts' check to sync/fix
 - Add `Ignore: yes` metadata to trigger the ignored file behaviour
 
-Are there any missing templates because of the switch from lowercase to true case?
-
-How to fix menu links with incorrect case IDs?
-- Write script to catch these and patch
-
-Why do posts on blog_eddd8e5 take so long to set, let alone rebuild?
-
-
 Think about how to purge the old versions of files cached by bunny's permacache
-
-Can we avoid changing cache id for a site after a sync with no changes?
-
-Image cacher should work for webp, tiff, etc. as well as JPG
-
-Check that Google Drive is staying in sync:
-- login -> node scripts/google-drive/reset.js
-- add proper bottlenecks then run this regularly
-
-Add https://www.textasticapp.com/ to text editor tools
-
-Ensure we handle google doc link cards properly
-
-Write proper tests for clients:
-- Google Drive
-    * Build a reusable `nock` helper (e.g., `app/clients/google-drive/tests/nockDrive.js`) that can stub the Drive endpoints used by `sync/sync.js`, `write.js`, `remove.js`, and webhook setup.
-    * Add Jasmine specs that cover edge cases such as folder moves, duplicate file names, MD5 mismatches, and quota errors by exercising the high-level functions and asserting that `database.folder` updates correctly.
-    * Unskip and modernize `serviceAccount/tests/refresh.js`, using the new mock helper to simulate `drive.about.get`, and ensure the suite runs via the existing `scripts/tests/invoke.sh`.
-    * Update the test harness (e.g., by adding the new spec directory to `scripts/tests/invoke.sh` or test globbing) so the Drive client tests execute in CI.
 
 Reduce size of css file by only shipping katex css once the site first publishes a post with katex
 
@@ -819,91 +827,22 @@ Make initial health check /health more powerful
 - make the initial timeout in the health check longer?
 - subsequent requests can just check redis connection?
 
-Use sockets for communication between nginx and node
-
-Improve speed of production build
-- When should folder zipping happen?
-- Can we improve build speed by removing github actions cache and using some base image with dependencies?
-
-Convert callbacks to async/await
-- literally anywhere in the codebase – use util.callbackify to add backwards compatibility
-
-Try and reorganize code into a cleaner MVC division. It's really the controllers that need to be moved.
-
-Write unit tests for database models which have no tests subdirectory
-- e.g. models/404, models/entries, models/redirects
-
-Improve [sidebar blog template navigation on small screens](https://blot.im/questions/3137)
-
-Clamp length of password and email address in log in and sign up and reset forms
-- ensure the forms have tight max-bodies
-- return an error if these are too long
-
-Improve git client
-- Implement similar feature to dropbox client resync on restart and once per day
-
-    1. **Harden sync against transient Git failures**  
-      * Add structured error handling and exponential backoff to the fetch and reset steps in [`sync.js`](./sync.js) so transient network or repository errors do not abort the entire sync.  
-      * Surface actionable messages to `folder.log` when retries are exhausted to aid diagnostics.
-
-    2. **Persist sync progress for crash recovery**  
-      * Introduce a lightweight journal that records in-flight operations in the local blog directory before they execute.  
-      * Extend the startup path to replay or roll back the journal if the process restarts mid-sync, ensuring we do not leave the repo in a partially reset state.  
-      * Cover this behaviour with an automated test that simulates a restart during `git.fetch`/`git.reset` (see existing fixtures under `tests/sync.js`).
-
-    3. **Validate repository state before destructive actions**  
-      * Before running `git.reset --hard origin/master`, verify that the `origin/master` ref exists and that the working tree is clean to avoid losing local edits created outside the client.  
-      * If divergence is detected, fail gracefully with guidance for the user rather than clobbering their changes.  
-      * Document the decision flow in developer docs so operational playbooks account for these safeguards.
-
-    4. **Monitor and alert on repeated sync failures**  
-      * Emit structured metrics (e.g., to StatsD) whenever retries fail or the sync loop exits due to repeated errors.  
-      * Add a dashboard surface or notification hook so operators and customers can see when their Git repo needs manual attention.  
-      * Backfill tests that stub the metrics emitter to ensure the instrumentation does not break the sync flow.
-      
-Improve google drive client
-- Implement similar feature to dropbox client resync on restart and once per day
-    ## 1. Harden service-account webhook lifecycle
-    - **Problem**: Changes and files webhooks can expire silently, causing the sync queue to stall until manual intervention. Logs in `serviceAccount/watchChanges.js` and the reset scripts indicate we rely on cron-style resets rather than active monitoring.
-    - **Tasks**:
-      - Add persistent records for each active channel (channel ID, resource ID, expiration) in the database so their state survives restarts.
-      - Create a periodic job to compare expected expirations with Google Drive and renew channels a day before expiry; alert on failures via existing admin email helpers.
-      - Extend teardown logic in `scripts/google-drive/purgeWebhooks.js` to remove entries for channels that were renewed or cancelled.
-
-    ## 2. Improve resilience of initial folder setup
-    - **Problem**: The setup flow in `routes/setup.js` and `init.js` resets on process restarts, which forces users to repeat sharing steps.
-    - **Tasks**:
-      - Persist setup progress in the site's database record (e.g., storing the setup step and timestamps) so workers can resume after restarts.
-      - Add retries around Drive permission propagation (currently a single attempt) with exponential backoff and user-facing status updates.
-      - Write integration tests that simulate restarts by clearing in-memory state while preserving persisted progress.
-
-    ## 3. Detect and repair sync drift automatically
-    - **Problem**: Reports in TODO mention phantom re-downloads and missing deletions after Drive folder renames. These indicate our mapping of Drive file IDs to local paths can fall out of sync.
-    - **Tasks**:
-      - Add a periodic audit job that samples a blog's Drive folder using `sync/sync.js` traversal and compares hashes with local metadata.
-      - When drift is detected (hash mismatch, missing file, duplicate title), queue a targeted resync using existing `resetToDrive` utilities instead of a full rebuild.
-      - Surface audit findings on the dashboard (`routes/dashboard.js`) so users know when a repair was triggered.
-
-    ## 4. Expand automated test coverage with mocked Drive APIs
-    - **Problem**: Failures are often discovered in production because we have limited regression tests (`serviceAccount/tests/refresh.js` is the only automated test).
-    - **Tasks**:
-      - Introduce a reusable `nock`-based mock layer for Drive HTTP requests so tests can simulate API responses, rate limits, and quota errors.
-      - Cover edge cases for file moves, deduplicated names, and quota errors across `sync/index.js`, `write.js`, and `remove.js`.
-      - Integrate these tests into CI to prevent regressions when modifying sync logic.
-
-    ## 5. Enhance observability and alerting
-    - **Problem**: Errors logged with `prefix()` helpers are not aggregated, making it hard to spot failures quickly.
-    - **Tasks**:
-      - Standardize log fields (site ID, service account ID, operation) and ship them to the central logging service.
-      - Add metrics counters for sync successes/failures and webhook renewals, exporting them to the existing monitoring stack.
-      - Configure threshold-based alerts for repeated failures or prolonged absence of successful syncs per site.
-      
-Speed up templates.build 
-- It seems setView already checks for changes
-- Try and be more selective about which blog model updates trigger blog.flushCache
-- Write now sync updates (e.g. checking /) all trigger blogs to flush cache
+Testing:
+- Write unit tests for database models which have no tests subdirectory
+  - e.g. models/404, models/entries, models/redirects
+- Add tests for webp thumbnails
+- Add integration tests for cdn paths with weird view names, etc.
+- Add integration tests for preview subdomain logic (skip for my- not for site)
+- Add end-to-end tests for brochure site to test sign up flow (use Playwright? Phantom? Chrome headless)
+- [ ] Add spell checking test
+- [ ] Write browser based integration tests for core functionality
+- [ ] how can we test the 'reload-server' script?
+- [ ] how can we test the 'scheduler' functions? we ran into error where it was running twice
 
 Move from EBS to s3
+- Create abstract models/storage that could be used to eventually migrate blog data folders onto s3:
+  - 1. Add `app/storage/index.js` that exposes namespaced helpers (e.g., `storage.blogs.resolve(blogID, relativePath)`, `storage.blogs.readFile`, `storage.static.writeFile`) implemented with `fs-extra` and the existing `config.blog_folder_dir` / `config.blog_static_files_dir`.
+- Lower costs using s3 instead of EBS disks for static file storage
 - Goal is cost reduction and improved scalability
   - should lower storage costs + transfer from $200/month to $20/month
   - no more charges for unused GB disk space
@@ -939,28 +878,11 @@ Move from EBS to s3
 
 Resolve bad links (e.g. incorrect case) in files at build-time rather than run-time so we can avoid the expensive disk lookups in blog/assets.js
 
-Use tinify free api to compress some of the folder images?
-- maybe consider building this into the main product? it might pay for itself
-
-Add asset library / file upload to template editor and share files across templates
-- use this to help implement a favicon feature which minifies the favicon
-
-Extend markdown parser to support [content blocks syntax](https://github.com/iainc/Markdown-Content-Blocks)
-
-Extend markdown parser to support Obsidian Callouts and follow up with [questioner](https://blot.im/questions/3374)
-
-Extend markdown parser to add a special class to a list of only images for targeting into an image grid or gallery?
-- `- ![Image](_image.jpg)...` -> `<ul class="image-list">`... could then be used in CSS?
-
-Extract multiple thumbnails per blog post (as many as there are images) for cooler image grid possibilities.
-
 Add a highlevel function which clients can expose to open a file (e.g. link to dropbox.com or google drive)?
 
 Run image analysis on all images in post
 - extract colors for searching
 - use something to identify related images
-
-Improve tools section
 
 Improvements to questions section:
 - Add 'blue dot' notifications icon to updates and questions based on last post
@@ -969,43 +891,7 @@ Improvements to questions section:
   - https://designportland.org/
 - Add a filter for topic index to show questions by: 'Newest', 'Active', 'Unanswered', 'Votes'
 
-Move Dockerfile into app
-
-Clean up scripts directory, lots of unused or broken scripts
-
-Improve importer
-
-Rewrite code which generates a fake 'macOS' folder to work cross platform:
-- if the user is browsing from Windows create a windows folder
-- if the user is browsing from linux create a linux folder
-
-As much static file delivery through CDN as possible
-
-Get folders out of build images
-
-Start my own interview of customers 'behind the folder'?
-- inspired by usesthis and p&b
-- which tools they use
-- how they organize their folder
-
-Add auto template translator
-
-Re-set up html minification using html-terser
-
-Investigate whether openrestycache can be modified to pre-compress gzip responses
-- can we add support for brotli?
-- can we use https://nginx.org/en/docs/http/ngx_http_gzip_static_module.html#gzip_static
-- should we just be using varnish?
-
-Get critique on full openresty config from LLM
-
-Consider adding varnish in between openresty and nginx and get rid of openrestycache?
-
-Improve developer documentation:
-- Add interactive template renderer to developer docs
-- Document page_size, sort_order, sort_by properties of templates
-
-Add drag and drop file and folder upload to dashboard
+Add auto template translator 
 
 Add global site search of:
 - files on site
@@ -1014,23 +900,15 @@ Add global site search of:
 - questions
 - templates
 
-Write a guide to using Formspark to add a contact form to a site
-
 Add an option to use the date modified property of the file, rather than the date created property as the publish date. This would be especially useful for the Dropbox client, which nukes the original file creation date but preserves the client modified data. This should be opt in because it could lead to misleading behaviour where an old file is dragged into your folder and is published way deep in your archives. Tell [Dirt](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTMSlvtWcHcckPtWlJljHVPdH)
 
 Improvements to local folder experience
 - Interpolate fonts based on an ID (a la web template editor)
 - Interpolate syntax highlighting based on an ID
 
-Use [thumbhash](https://github.com/evanw/thumbhash?tab=readme-ov-file) to generate placeholders when lazy loading images and tell [David](https://mail.google.com/mail/u/0/#inbox/FMfcgxwJXfqzZvHgrtSxzLBCwcvTsFFB) and [Marius](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLtQPwXwJrwgMzjfvDtcwFZzFC)
-
+Use [thumbhash](https://github.com/evanw/thumbhash?tab=readme-ov-file) to generate placeholders so thumbnails can have clean lazy loading and tell [David](https://mail.google.com/mail/u/0/#inbox/FMfcgxwJXfqzZvHgrtSxzLBCwcvTsFFB) and [Marius](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLtQPwXwJrwgMzjfvDtcwFZzFC)
 
 Surface recently edited posts on the sites tab of the dashboard
-
-We should have a plan to switch CDN from Bunny to Cloudfront in an emergency
-- Should be a simple DNS change
-
-Add a plugin using OpenSeadragon to add Deep Zoom capabilities for huge megapixel images so you could publish them directly to Blot.
 
 Can we support white-label cdn subdomain so there are no Blot CDN links?
 
@@ -1038,45 +916,10 @@ Change dashboard cookies: Set-Cookie: mycookie=value; Path=/; SameSite=Lax; Secu
 
 Write tests for animated gif thumbnail
 
-Improvements to Google Drive client
-- [ ] new folder setup (e.g. waiting for user to share folder on drive) needs to survive a server restart (See init.js TODO)
-- [ ] slowly resync all connected blogs on server restart
-- [ ] It seems like sometimes the first sentence of Google Docs become titles unexpectedly – possibly a mis-identified title tag?
-- [ ] make it possible to short-circuit the full folder traversal and immediately begin at a specific file/subfolder
-- [ ] to improve sync speed, eventually set up temporary channels to watch google docs for changes – is this faster than polling driveactivity? or work out the fastest way to get fast updates for google docs. Is the move to listen on changes.watch and then setup an optional temporary files.watch channel to stream changes for the length of the channel (don't renew)?
-- [ ] add tests with nock
-- [ ] Test multiple sites sync in parallel
-- [ ] Test multiple Google Drive accounts in parallel
-- [ ] On disconnect, convert Google Docs in folder into Markdown and inform the user
-  - tell henryirvine about this affecting his site
-- [ ] Test drafts
-- [ ] Test local templates
-- How do we handle two files with same name and same parent? How does our fileId:path hash handle this? Make sure we delete the right file. Will file.title as opposed to file.name give us the deduped version?
-  - Bug: move file with deduplicated name from sub folder to other folder
-  - download should check for an existing file with same name but different fileId and dedupe before storing the path?
-- Handle revoked credentials without tanking server
-- Handle removed blog folder without error
-- Handle renamed blog folder
-- Can the google drive client handle a server restart during setup?
-- database.folder should throw ENOENT and EEXIST errors for del, set, move etc.
-- Error handling
-  - Retry when we get google drive's This service is not available error
-  - Handle storage quota errors
-  - Handle 429 errors with exponential backoff retry
-- Add a way for sync/build to accept a ctime as an option. We can't set this at the operating system level but google drive's API does return a createdTime value and we could use this as the true file's created date, rather than the date the file is made on the server
-- `write` should use the best method for large file uploading
-- Work out if we can test this using Mocks  
-
----
-
-Improve design of default error page
-- https://kristianhjelle.com/
-
-Make templates/folders build less busy and then re-enable it in app/setup
-- consider using git? use local client in smarter way?
-
-Surface Blot client sync errors on dashboard, add email notifications for errors
+Surface Blot client sync errors on dashboard
+- add email notifications for major sync errors (i.e. dropbox token revoked)
 - surface dropbox out of space error
+- Expose markdown build errors on the dashboard to prevent weird non-update situations where it looks like the sync is stuck
 
 ---
 
@@ -1086,132 +929,40 @@ Think about migrating to s3 for blog data storage
 - Purge thumbnails and cached images which are no longer in use
 - Abstract methods which read, write and readdir the blog folder? static files folder?
 - What about pointing the CDN to an s3 bucket then redirecting to upstream for 404?
-    http {
-        server {
-            listen 80;
-
-            # Main location block
-            location / {
-                # Proxy to the S3 bucket
-                set $s3_bucket "bucket.s3.amazonaws.com";
-                proxy_pass https://$s3_bucket;
-
-                # Pass the original Host header (required by S3)
-                proxy_set_header Host $s3_bucket;
-
-                # Handle S3 redirects properly
-                proxy_redirect off;
-
-                # If the response is 404, redirect to the fallback location
-                error_page 404 = @fallback;
-            }
-
-            # Fallback location if the S3 bucket returns a 404
-            location @fallback {
-                # Proxy to the fallback upstream
-                proxy_pass http://fallback-upstream;
-
-                # Optional: Set a custom Host header for the fallback upstream
-                proxy_set_header Host fallback-upstream;
-            }
-        }
-    }
     
 For broken embedded images, attempt to resolve based on a shortest path approach, as in, traverse the folder and attempt to find an image with a matching name
 - Tell [Ellane](https://mail.google.com/mail/u/0/#inbox/QgrcJHsbgZwttcPcXCvTnzchwRZxCNXhQgq)
 
-Make it possible to embed the HTML output of markdown files using Obsidians embedding syntax: ![[Filename]] 
-- Tell [Ellane](https://mail.google.com/mail/u/0/#inbox/QgrcJHsbgZwttcPcXCvTnzchwRZxCNXhQgq)
-
 ---
 
-Make it possible to embed audio like so `![Audio]({{{path}}})`
-
-Experiement with injecting script into preview sites which can postMessage to embedding page, sending html2canvas result which can be stored locally for faster loading?
-
-Make it possible to embed video like so `![Video](...)`
-
-Make it possible to embed PDF like so `![Video](...)`
-
-Merge comment and disqus into single comments plugin
-
-Make the 404 page more useful (see Netlify site)
-
-Expose markdown build errors on the dashboard to prevent weird non-update situations where it looks like the sync is stuck
+Embed feature
+- Add support for native PDF embeds in posts, just put a link to a PDF or a path, e.g. /_assets/file.pdf --> would become a nice embed.
+- Make it possible to embed PDF like so `![Video](...)`
+- Make it possible to embed video like so `![Video](...)`
+- Add support for native MP3 embeds in posts, just put a link to an MP3 or a path, e.g. /_assets/file.mp3 --> would become a nice embed then tell [Luke](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVWLlqqwbksXcScNdhcTjhjfq) and [Nash](http://twitter.com/nashp) and [Andy](https://mail.google.com/mail/u/0/#inbox/LXphbRLrghxkrJmtbtfXwZHrBHqGzzjDqLZVmfRCzrg) and [Charlie](mailto:hi@charlliegleason.com) and [Konstantin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDrRQPphRrjCrWXPLzgHhxkzMN)
+- Add soundcloud embeds then tell [Jonas](https://mail.google.com/mail/u/0/#inbox/16404cc8d437cc23), Nashp, and [Anders](https://twitter.com/4nd3rs/status/1028250661589278720?s=12) and [Richard](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJbvQlJvtLVPDqRCHrGJkZTr)
+- Add are.na embeds and tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLswLkPbqqvMVWPSHvRqtqcKlZ)
 
 Improvements to search engine:
 - Make search use 'AND' instead of 'OR' for multiple terms
 - Remove drafts and tell Paul
 - Make `search: true` work and tell Paul
 
-Make it possible to link between org mode files with: `[[file:another-test.org][another test]]` and tell [questioners](https://blot.im/questions/2163)
-
----
-
-Investigate memberful, maybe add a guide to setting it up on a site?
-
-Add simple server-side analytics:
-- Tell [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNMCtRwGccFxfVKcwlcqfMpg) 
-- Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMjqlPTxhSXLNBDCmqXLQHdvX) 
-- Tell [Romain](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjKngCZjbxTNvLQLRMLfzwHxG)
-
-Add simple commenting system
-- Tell [Precious](https://mail.google.com/mail/u/0/#inbox/QgrcJHrtwLwTldzhrTKHMtnhwVqMXVzCTqv)
-- Tell [Hochan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBZsPZvGMNQLFVmjBkBzhQW) who is willing to beta test
-
-Add way to import directly
-- Add micro.blog import to dashboard and tell [Gabriel](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJRvfgrRhXwqDNDlxbpXmRlbd]
-- And recurring import from elsewhere 
-
-Finish site and dashboard
-- The site CSS persists in the browser cache
-- Make sure folders are zipped when site builds, and delivered through CDN
-- Make sure blot resyncs folders with their associated sites when pulled
-  - Compute a hash of the folder contents and only resync or re-zip as needed
-    - Think about mtimes, metadata as well as file contents
-- The top right button 'your sites' should remember the last page of the dashboard you were on so you can switch from docs to dashboard quickly
-
-Windows video + windows finder.css
-
 Rewrite broken link tests
 
-Add pause subscription
+Add pause subscription for Stripe and PayPal
 - Enable hibernation of blogs 
 
 Add disclaimer to pricing page for old subscribers
 
 Add Generative tree for account page
 
-Add support for INI files and tell [Frank](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJckFhJhMMwFLzrRTfcSmHbrV)
-
 Add {{#posts-without-:tag}} and [tell steve](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxSRHnwcVVlqvwLFzwRQbsqsnK)
-
-Improvements to website:
-- Create material in docs with title 'Turn X into website' where X is:
-  - Dropbox, Google Drive, etc.
-  - Word Document, Google Doc, etc.
-- Document text editors
-  https://coteditor.com/
-  https://zettelkasten.de/the-archive/
-  https://tot.rocks/
-  https://desairem.com/wordpress/ufocus/
-- Add guide to useful text editors like [this one recommended by Andrew](https://itunes.apple.com/us/app/write-best-note-taking-app/id848311469)
-  - do this as a marketing strategy, e.g. target 'blog with microsoft word', 'blog with google docs', 'blog with ia writer' etc... contact the people who make text editors and ask them to link to us?
-- Personalize the documentation for logged in customers
-- Add [contributor](https://api.github.com/repos/davidmerfield/blot/contributors) / [language](https://api.github.com/repos/davidmerfield/blot/languages) and repo information to source code page using GitHub API.
-- Add upload to dashboard
-  - Drag and drop 
-- Redo demo video
 
 ---
 
 Add aws cost usage and forecast to daily update email
 - https://docs.aws.amazon.com/cli/latest/reference/ce/get-cost-and-usage.html
-
-Make it possible to ask a question without logging in
-
-Improve webloc converter:
-- If the bookmark file points to a google doc, can we support google docs even from Dropbox? if the doc is public?
 
 Ensure that overdue PayPal subscription webhooks map to notification emails
 
@@ -1243,7 +994,6 @@ Improve paypal integration:
   - [ ] Test new blog deletion
   - [ ] Test switch to annual billing
   - [ ] Test account deletion
-- [ ] Add subscription pause
 - [ ] Make it possible to add paypal as a payment method for existing stripe users
 - [ ] Verify signature integrity of paypal webhooks
 - [ ] Use PayPal buttons api to modify subscription properties
@@ -1252,34 +1002,16 @@ Improve paypal integration:
   - [ ] Add way to delete account from dashboard
 - [ ] Update scheduleEmailNotification for paypal customers
 
-Can I use proxy_store instead of openrestycache?
-
-Add support for .ulyz file created by Ulysses
-- Adapt [this script](https://github.com/arafel/ulyz-to-markdown/blob/master/ulyz-to-markdown.py)
-
 Make {{active}} strip the domain from the link [before checking](https://github.com/davidmerfield/Blot/blob/master/app/blog/render/retrieve/active.js#L22)? Or automatically strip the domain from internal links on Blot's dashboard?
-
-When a folder has lots of elements, trim the list of files on the dashboard, at least on the index page
 
 Store path -> md5 hash on sync
 - Use to auto version links to files in your folder so they can be cached
 
-Investigate videos instead of gifs for thumbnails
-
-Eventually configure cloud watch reboot sequence then test it
-
 ---
-
-Investigate if we can rewrite git client so we don't need to store double the data - right now we have 48GB duped.
 
 Adjust auto titles of 'screenshot at 12:22pm' and make sure the date parser can handle them
 
 Adjust title generator so h2 titles within the file dont become the title of the post – this is helpful for obsidian
-
----
-
-Improve image posts
-- Add support for large image tiling and zooming with photoswipe
 
 ---
 
@@ -1301,24 +1033,6 @@ Add support for activitypub and tell
 - [Questioner](https://blot.im/questions/2543)
 - [Rhys](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRDsGrLZFghZhShLQHNZdchS)
 
-Work out why we get a 'Zombie process' notification email every morning at 9:05am – now 8:05am it seems the process hangs
-
-Wikilinks should have a class property of 'wikilink' rather than a title attribute and tell [questioner](https://blot.im/questions/39)
-
----
-
-Add a property to entries which lets you list all the images in a post so [Jean](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwgpcHJMnwFNXtNHWHMlZFFlb)
- can add them to his sitemap
-
-
----
-
-Improve CI testing
-- [ ] Add spell checking test
-- [ ] Write browser based integration tests for core functionality
-- [ ] how can we test the 'reload-server' script?
-- [ ] how can we test the 'scheduler' functions? we ran into error where it was running twice
-
 Methods to improve server performance
 - consider expanding the replication of the perma_cache across more regions
 - consider switching to more expensive CDN type (i.e. not volume)
@@ -1332,8 +1046,6 @@ Add support for paying with crypto, BTC ETH
 - Tell [Anita](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsSWMtCTdmrbscFCFLggctmxH)
 - Tell [Arc](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwqJkLxGTKPXhZPSWVjJqQbjs)
 - Tell [Dmitriy](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxSlPTwlRkJxQfntCdmbjFsrZC)
-
-Improve Are.na importer so it handles descriptions + also other file types (e.g. PDF, text) and tell [Marco](https://mail.google.com/mail/u/0/#inbox/QgrcJHsBvDqvbgfkRJfBlwLBwlDHDncxVnl)
 
 Improvements to server
 - [ ] test maintenance and redirector on dashboard
@@ -1355,37 +1067,15 @@ Improvements to sync/reset scripts:
 Add profile photo cropping/masking tool
 - include circle, oval, and other shapes (e.g. https://www.jayceeday.com)
 
-Add explanation for which files are causing which menu links 
-
-Add export button to overdue subscription page
-
-Add way to restore a blog from export
-
 Add way to escape commas in tags and [tell questioner](https://blot.im/questions/1431)
   
 ---
-
-Improvements to importer
-- Can we offload an import into a resource constrained child process?
-- Can we queue up imports and process them one at a time?
-- Add interface to move import into folder directly
-- Add scheduled imports on regular basis into folder directly
-- Add nice import step under 'Services' and as part of sign up
-- Improve Ghost importer and tell [Vin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBWSwbGRtFTnJCPCXzVHntQPtC)
-- Create importer script for [John's posts from flickr](https://mail.google.com/mail/u/0/#inbox/166da622325d19e7)
-- Create importer script for tumblr text files and tell [Sawyer](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVMhRNdQhfDwlXsqqFNgmKfTk)
-- Create importer script for Weebly and tell [David](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBTjzpgHQZMJSsvjktggRFNpDw)
-- Map excerpt metadata to summary for Jekyll converter importer
-- Look into how Hexo has written imports for [blogger](https://github.com/hexojs/hexo-migrator-blogger), [joomla](https://github.com/welksonramos/hexo-migrator-joomla), [rss](https://github.com/hexojs/hexo-migrator-rss), [wordpress](https://github.com/hexojs/hexo-migrator-wordpress).
-- Add an importer for Twitter and sell [Sawyer](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVMhRNdQhfDwlXsqqFNgmKfTk)
-
-Add 'confirm email address' flow to prevent typos in emails
 
 Add simple form endpoint, could be used for contact forms
 
 Add theme with photoswipe and use sharp's tile generation feature along with 
 
-Add [hot reload for preview subdomains](https://blot.im/questions/832)
+Add [hot reload for preview subdomains](https://blot.im/questions/832) when the tab is active or re-opened
 
 Add way to set the slug-part of a URL for a post and tell [George](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsdBjKHPdsRXJBGSbxpQQCbCN) and follow up for [post in Questions](https://blot.im/questions/23) and tell [Jarrod](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQcpsRhzFwxVGFJLLTRsFFGKj)
 
@@ -1395,38 +1085,20 @@ Add way to set the slug-part of a URL for a post and tell [George](https://mail.
 Investigate migrating from Redis to SQLite per-blog database
 - Evaluate feasibility of storing one SQLite database per blog in data/blogs/{blogID}/blog.db
 - Assess performance implications (memory usage, query speed, connection management)
-- Design hybrid approach: SQLite per-blog for blog-scoped data + small Redis/master DB for global lookups (handle/domain mappings, blog IDs set)
-- Identify all global queries that span multiple blogs (getHosts, handle/domain resolution) and plan migration strategy
-- Estimate memory savings vs current Redis approach (SQLite uses OS page cache vs Redis keeping everything in RAM)
-- Consider connection pooling/lazy opening strategy for managing many SQLite connections
-- Evaluate concurrent write patterns and SQLite locking behavior
-- Create proof-of-concept migration for entry storage (currently blog:{id}:entry:{path} in Redis)
-- Benchmark query performance comparison (Redis sorted sets vs SQLite queries)
-- Document migration path and breaking changes required
 
 Can Blot blogs be federated? Respond to [Nigel](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrbRWfcBdwKdRZxsBKjKDwrkTp) once I do some research on this
-
-Rebuild folder sites and tell [Michael](https://mail.google.com/mail/u/0/?zx=j8rkxjpin0du#inbox/FMfcgzGqRQBnhXzfWsqFZhBCGVMMzDGX) that the broken image link is fixed
-
-Follow conventional delimiters for [KateX](https://mail.google.com/mail/u/0/?zx=j8rkxjpin0du#inbox/FMfcgzGrbHmWxcrVtbhnzHVnCtfLZhxH)
 
 ---
 
 Support larger files on DB client and tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQmWjKnmPrwKSXMdZNmlqmtss)
 
-Add support for new formats:
-- jupyter notebooks (via pandoc) and tell [questioner](https://blot.im/questions/2297)
-
 ---
-
-Explain that the git client uses the master branch and repos from github will use main in the docs and on the dashboard then tell [N](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqPzKcnQKsQQNkzcRpvCWpWKTr)
-
-Send out cancellation confirmation emails with option to give feedback
-- auto-refund people who immediately close their account after signing up
 
 Add tag to iterate over all images in a folder and tell [Laurel](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvBwZtktzGVFtcfDWbGZKhsfh)
 
 ---
+
+Make it possible to link between org mode files with: `[[file:another-test.org][another test]]` and tell [questioners](https://blot.im/questions/2163)
 
 Improve backlink's tolerance
 - Add support for full qualified URLs in the backlinks list for each entry. For example, if your blog is example.com, the following link will not appear as an internal link: [Foo](https://example.com/foo) because build/prepare/internalLinks is not aware of the blog domain/handle 
@@ -1434,87 +1106,12 @@ Improve backlink's tolerance
 - Add support for internal links without a leading slash
   - Tell Laurel
 
-Add support for 2FA (Two factor authentication) then tell [Luke](https://mail.google.com/mail/u/0/#inbox/163993b0f8499ab3), [Max](https://mail.google.com/mail/u/0/#inbox/1641e9bd104c5b77), [Chaz](https://mail.google.com/mail/u/0/#inbox/165b726aa900158a), [Prathamesh](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQmWhhpCVSlbhdvlvWdmdtJWQ) and [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqnpZncgBDbDskMZdPMXkgGCN).
-
-Add support for SSO then tell [Prathamesh](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQmWhhpCVSlbhdvlvWdmdtJWQ)
 
 ---
 
-Improvements to dashboard:
-- Improve clients
-  - cache sync validity and display checkmark on dashboard
-  - surface errors for clients on dashboard index
-
-Move citations out of `{{{html}}}` and tell [questioner](https://blot.im/questions/298) and [Mikka](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlkPcprJZlTSFbTGlqSPJcfWJJ)
-
-Add [OneDrive](https://onedrive.com) client
-- Tell [Nenad](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxSHlNTlFCKwNsPbZPxRgbbVkB)
-- Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgzGkbDVrfBwGjnVDdtXkNxKpwjfq) 
-- Tell [Shantesh](https://mail.google.com/mail/u/0/#inbox/166df93b38231ec9)
-- Tell [Nathan](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVgvsdfSnqBppQrXLTVjZBBzp)
-- Tell [ekskog](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVDBmdRXFWTFLqxKgxVkdWnWL)  
-- Tell [John](https://twitter.com/seismonerd/status/1096862510404128768)  
-- Tell [Simon](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChcrhfQNXvkFkdtKntXlhjNfm)  
-- Tell [Andrew](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLtGjKFlzJFfRcVQdWdMBkZzdK)  
-- Tell [Naveen](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMZJvNGJxTXXcnsmXDqdkNnNq)  
-- Tell [Emad](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNCtzTpZsgXXjWsrTGsTTZLjx)  
-- Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjnVGxPWrFPKJRqtlnbkHfwXt)
-- If OneDrive for Business is supported tell [Josh](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVqWwRgxrwLRzrNscfJtllhXz)
-
-Add Apple Notes]client
-- Tell [Håvard](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfVFlPhLBJNRsqHZJzfDTnzTg)
+Move citations out of `{{{body}}}` and into a new tag `{{{citations}}}` and tell [questioner](https://blot.im/questions/298) and [Mikka](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlkPcprJZlTSFbTGlqSPJcfWJJ)? maybe more structured, so you could also do: `{{#citations}}...{{/citations}}`? 
 
 ---
-
-Re-order blog engine routes such that pages/entries are evauluated first, making it possible to set up custom redirects and tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllCcNbxjDTdZzRCcNgmnJjXWM)
-
----
-
-Write new converters to turn files into posts
-- Add AVIF image post support and tell [Simon](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlkFqWwhwwQgrrlwKtctkTgRXx)
-- Add support for [Jupyter Notebook .ipynb](https://predictablynoisy.com/posts/2019/2019-11-11-ipynb_pandoc/#ipynb-to-html) using Pandoc and tell [Arnab](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmtNdkGQxbMVblqjvkHwSMTBbW)
-- Add support for .doc using [libreoffice](https://www.npmjs.com/package/libreoffice-convert) and tell [Kyle](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKkHZVgwCNwsdlhdzCggRtsRhN)
-- Video posts (.mp4) - add way to opt-in to these
-- Add support for .tiff images 
-- OPML files and tell [John](https://mail.google.com/mail/u/0/#inbox/1659bac084c3e404)
-- Audio posts (.mp3 for now?) and tell [Kevin](https://mail.google.com/mail/u/0/#inbox/FMfcgxvzLhcqVldHMCFpTWDmfrRHfwpg) - add way to opt-in
-
-Write new clients to sync blog folders 
-- [rsync]()
-  - Tell [Harry](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxRdvrcfMwTVnvGrHKgvJmfwxM)
-- [SFTP](https://www.npmjs.com/package/ftpd) 
-  - Tell [Coraline](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllCmcFflWmXcCdVzTJztDTwXx)
-  - Tell [Utkorg](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQBKmPsLNTbQnxjbDDtzdqKn)
-  - Tell [Calvin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChclvkfHMWfnqGdWkQnzMdklW) 
-  - Tell [Fabrice](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNCspWMdnbCdzfHGwBrSKPBSC)
-- [NextCloud](https://nextcloud.com/) 
-  - Tell [Vincent](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpHHVZggXQRzJKNTrJHRxLdLjt)
-  - Tell [Coraline](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllCmcFflWmXcCdVzTJztDTwXx)
-  - Tell [Andrew](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJgWDpnsGBCXsCwkxRZnXMph) 
-  - Tell [Mike](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMGDWmSXxbJkvjZbtvdQtNNGZ)
-- [Box](https://box.com) 
-  - Tell [Eric](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMZRzCcPkNppMpSbBzNRKFSNs)
-- [Syncthing](https://www.npmjs.com/package/node-syncthing) 
-  - Tell [Jason](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgpVWzZTVxccmWLmnPBmDFjvV)
-- [Github](https://github.com)
-  - Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvBnVvqHdJXLgDhrtChCqdMQX)  
-- [Jumpshare](https://jumpshare.com)
-  - Tell [Ömer](https://mail.google.com/mail/u/0/#search/omer/FMfcgzGxRnkSFxdSmGLmNQpXjXfBSChT)
-- pCloud 
-  - Tell [Omaid](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDDjqhCxHhJqbGlGNZsfkWWQf)
-  - Tell [Anders](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKkRFxsDShhsHGNcdRqwHFMmJM) 
-  - Tell [Tim](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlkZCjPBbnKtcXvrMQnxSwHBzk)
-  - Tell [JMN](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpGwtXQsVFFTcnTJdBTNdkMmXv)
-  - Tell [Rodney](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcKkJLVFLvfBwTcRdlrzwHXr)
-- Dropmark
-  - Tell [Rado](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDDjrKSQVTXqvgFRGrhMSFvrR)
-- Proton Drive
-  - Tell [Ted](https://mail.google.com/mail/u/0/#search/proton+drive/FMfcgzQVxlMmFdqvrMHgfsFRfRDHLFTh)
-  - Tell [Francois](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZVJvWMbgrxGpRlLvKXsSPTtDr)
-
----
-
-Begin collecting proper measurements for page-rendering speed on the server
 
 Improvements to teaser generator
 - Improve estimate of teaser length
@@ -1528,10 +1125,6 @@ Make it possible to [disable draft preview files](https://blot.im/questions/3193
 
 Performance improvements
 - Faster server, with SSL termination across CDN
-- set up 'cdn.blot.im' as cloudfront distribution endpoint?
-- Streamline and cache loading of data on dashboard
-- Ensure node.js server has one process per CPU
-- Detect CPU intensive functions in node.js process
 - Use the [--trace-sync-io command-line flag](https://expressjs.com/en/advanced/best-practice-performance.html#set-node_env-to-production) to determine if Blot is using any sync methods inappropriately
 - Can we keep the pandoc child_process running and pipe stuff in and out for speed? Measure before after to ensure this helps
 - Add request level timeouts to prevent server swamping
@@ -1540,40 +1133,24 @@ Performance improvements
   - it seems we also need to cancel the resources involved in responding to the request (i.e. disk io, db calls) for this to be really useful
   - Add a timeout of 15 seconds for building posts.
 
-Server changes
-- Write useful benchmark tool for Blot
-- Work out how to detect stray build processes. There were a bunch of zombies consuming memory on Blot's server. Work out how to kill them safely
-- Experiment with different EBS types, perhaps try to use ephemeral disk more since lower latency?
-- Take full advantage of attached SSD
-  - use rsync/inotify to synchronize 'source of truth' EBS disk with the local SSD cache then modify NGINX to check the synced folder on the /cache disk
-  - on boot we would gently copy across all /blogs folders and the /static directory in background task
-
 Add [line numbers](https://github.com/wcoder/highlightjs-line-numbers.js/) to highlight.js hljs code tags
 
 Convert [Vitepress](https://vitepress.vuejs.org/) to Blot and tell [Nicolas](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmtNldkFnLGgZVNfqLcvBjVxWW)
 
 Expose log files on blog's dashboard and tell [Roman](https://mail.google.com/mail/u/0/#inbox/FMfcgzGtwDDXlpTvjNdJwmjXTCzGTqbW), [Sönke](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLtsxjSMlVmNRFGJJxkpsVFNvg) and [questioner](https://blot.im/questions/136) and [John](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvBnVvqHdJXLgDhrtChCqdMQX)
 
-Add end-to-end tests for brochure site to test sign up flow (use Playwright? Phantom? Chrome headless)
-
-Improve wikilinks lookup algorithm:
-- [ ] Add support for 'shortest path where possible' on Obsidian
-  - [ ] search current directory for filename
-  - [ ] search subdirectories for filename
-  - [ ] search parent directories for filename
-- [ ] Add support for 'absolute path' on Obsidian when the vault is a sub directory of your blog folder
-  - [ ] How best to accomplish this?
-- [ ] Add support for deleted files (e.g. [[Target]] -> target.txt still works if target.txt is renamed to foo.txt)
-Support Obsidian-style media embedding and tell [questioners](https://blot.im/questions/746)
+- Wikilinks should have a class property of 'wikilink' rather than a title attribute and tell [questioner](https://blot.im/questions/39)
+- Improve wikilinks lookup algorithm:
+  - [ ] Add support for 'shortest path where possible' on Obsidian
+    - [ ] search current directory for filename
+    - [ ] search subdirectories for filename
+    - [ ] search parent directories for filename
+  - [ ] Add support for 'absolute path' on Obsidian when the vault is a sub directory of your blog folder
+    - [ ] How best to accomplish this?
+  - [ ] Add support for deleted files (e.g. [[Target]] -> target.txt still works if target.txt is renamed to foo.txt)
 
 ---
 
-Fetch dimensions of images even if optimize and cache is disable, so that image zoom can work. Tell [Joshua](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsmhMtGvPcwxlSHSSTFVpJVbd)
-
-Add action to lint code with jshint and eslint
-  - any other static code analysis tools?
-  - separate code to check for broken links, run in parallel
-  
 Improvements to metadata extractor:
 - Improve date parser to use time from file creation date if it's within the same day as the date specified in metadata and follow up with [Nicolas](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsShbhKRcvhWJlKRPHPctMnWM)
 - Adjust summary generator such that a subtitle is used for summary text (i.e. an h2 directly following an h1) We still want to prevent the scenario in which a later h2 becomes the summary, though. Notify [Jessica and rebuild Jessica's site](https://mail.google.com/mail/u/0/#inbox/KtbxLwghhxtxrtdGHFqBRMcDGkGWtxvSdq)
@@ -1589,10 +1166,6 @@ Improve questions section of site, in approximate order of importance:
   - show vote count and answer count next to each question on index
   - 'run code snippet' feature / similar to trinkets.io
 
----
-
-Adjust the chargeForRemaining function in create-blog such that the balance is added or deducted from the proration charge.
-
 Rewrite transformer (in app/helper/transformer)
 - Speak HTTP properly, respect backoffs, use/send eTags
 - Share information across blogs?
@@ -1603,13 +1176,9 @@ Rewrite transformer (in app/helper/transformer)
 
 Add a 'page link format' option to the dashboard – the link format now only applies to entries. Tell [Mike](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKkbjLjgTZLQqMFFMzBBpzMZTg)
 
-Generate proper favicons from uploaded avatars (to prevent streched favicons when non-square avatars are uploaded)
-
 Improvements to server infrastructure
 - Work out way to recover from expired cert in the cache. To reproduce, consider a member who signed up, connected example.com, then moved the domain to another service. The attempt to renew the cert for example.com will fail. When the customer re-registers with Blot, for some reason open-resty-auto-ssl will serve an old certificate. I followed these steps to [reset](https://github.com/GUI/lua-resty-auto-ssl/issues/42) but we should automate this
 - Create DMARC record for Blot https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail https://docs.aws.amazon.com/ses/latest/DeveloperGuide/dmarc.html
-
-Add support for posts generated from Excel files, would generate a table. Use [this library](https://github.com/joshboyan/excel-to-html-table)?
 
 Improvements to entry builder
 - Improve the automatic title generated for screenshots with default MacOs filename from 'at 14:40pm'
@@ -1634,26 +1203,7 @@ is happening before doing this.
 
 ---
 
-Add password protection for blogs then tell [Ed](https://mail.google.com/mail/u/0/#inbox/164edd9d46596ec7), [this person](https://mail.google.com/mail/u/0/#inbox/155f01452a3f7231), [this person](https://mail.google.com/mail/u/0/#inbox/1645b6e48dc13281), and [Will](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlkXsdBcCssKznzgvJQPDQpKlh), and [Modomiro](https://twitter.com/modomiro/status/1053345173743329281) and [Julian](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgpVWqGMHszwgxZRxNTNXRTlX) and [Raph](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgzFTCKQXQmQqdNMdjMfDFkMW) and [Jeremy](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvTvDjVMLQQmxvnZHBnnxdRpk) and [Tara](https://mail.google.com/mail/u/0/#sent/FMfcgxwChJlBCNMWSFhSctjMkBcKdpsq) and [Phil](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChSHbCCgQqZqqKQftJbwHRkss) and [Florian](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDrlSVCrQSVMBlFwQcNcGfZLzn) and Roy's friend Tim and [Kaleb](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNWPljXXlwQVtswFCCLGFCQV) and [Lotus](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNQfSzPBHtqRCQqCDjMTZLCQ) and [Khaled](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMGBFrctdVXhksCvqXXVPfDWR) and [Noel](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNMdwcwMqfVjmJPHKBMxzQChR) and [Franz](https://mail.google.com/mail/u/0/#inbox/FMfcgxwJXVMfwXfsWswWjvrpVKrPqpDt) and [Justin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjBRFjtljCQvlhsfXsSxrCKdJ) and [Kyle](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKkHZVgwCNwsdlhdzCggRtsRhN) and [Devan](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsJznDjRgbzwPmChbNQdqfnfq) and [John](https://mail.google.com/mail/u/0/?zx=bjx0x027sgct#inbox/FMfcgzGqQvvRpSrnkRNsrhddkzBhMsvf) and [Anita](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsSWMtCTdmrbscFCFLggctmxH) and [Emerald](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLtkXpvTkdGzkFCLtmmLTlvrJL) and [Ben](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvBmLLlZwPLbdJdXKQXrwrJnL) and [Giuseppe](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvBnTWqHgFgdwBvcCDcmzLXGV) and [Annie](https://mail.google.com/mail/u/0/?zx=j8rkxjpin0du#inbox/FMfcgzGqRQCwsXBNDJqLjDnJrjGmctdJ) and [Jan](https://mail.google.com/mail/u/0/?zx=j8rkxjpin0du#inbox/FMfcgzGqRPzfVlDPLLjkqCfnBWqmVqKg)
-- think about how to add simple password (just a string) protection to sites. 
-- we need to consider both the node.js app (app/index) and the openresty reverse proxy (config/openresty), especially the proxy caching behaviour for sites. 
-- perhaps we'll need to handle sessions for sites with password protection in some way at the open resty level? or just use some response header from upstream to always bypass the proxy cache? or some cookie? we don't want to add any extra work in openresty for sites without passwords. perhaps sites with passwords return responses with a header that prevents any proxy caching from taking place?
-- anyway, it would involve:
-- updating the blog model (password: string).
-- adding a simple on/off input button to the dashboard, possibly under a new section. 
-- creating a password form view common to all sites, or able to be overwritten (password.html in a template perhaps).
-
-Add raw-link -> open graph cards/embed function, which would fetch the title, description and thumbnail for a link using <meta> tags. Tell [Robert](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlksJFbBlWtzMHgcxcdBRBhQSJ)
-
----
-
 Add support for paths to static files with a trailing slash then tell [Sean](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGBwbZsfsWKHCGcbzXXSPhQWXx)
-
-Add copy button to code snippets in \<pre\> tags and tell [Atif](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGCGxBVcrtzqmXGBtpLTBBjrQf)
-
-Add support for Ulysses .ulz file format and tell [Nash](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqxRmfFfLfBdcrrZBDxXPTtTj)
-
-Add support for Ulysses image syntax and tell [Konstantin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMsRmxKrQzmjmcxnBTqQKHvzj)
 
 Finish template translation offers
 - [Anders Norén](https://www.andersnoren.se/teman/)
@@ -1675,67 +1225,109 @@ Adjust length of slug to use as few words as possible until collision and tell [
 
 --- 
 
-Improve scheduler
-- Adds a command to restore database from backup.
-
-Remove dependence on AWS
-- Adds offsite (i.e. non AWS backups) backups
-- Write out plan to move off AWS
-  - DNS
-  - EC2
-  - S3 for backups
-  - Cloudfront for CDN
-  - backup blogs folder + db somewhere offsite at least once per week
-
 Metadata parser
-- Make custom metadata more strict, follow up with Chris](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgpdRvrccbzfckkZRtPXHzqjs)
-- Add support for [Pelican-style metadata](http://docs.getpelican.com/en/stable/content.html) in HTML posts using <meta name="date" content="2012-07-09 22:28" />
 - Removing Date metadata from a post should reset its date to the file's creation date. Currently nothing changes.
-- Fall back to file name before first sentence when generating title metadata and tell [Rob](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgpVWgqcnbZjCdSXbjrBlLkFC)
-- Add support for setting the index of an item in the menu to metadata and tell [Silvio](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJfNfLljXGvbjpNwDBFWXDWR)
-
-Implement hidden link section on Menu page under profile settings. Default links not on the menu would appear there, making it easy to restore them in future. Tell [Josh](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgVTbfgnTVvCjfMGzWDjvjfML)
-
-Add new variable for last-build-time for a blog, and use this for <lastBuildDate> in the sites' RSS feeds. Tell [Shawn](https://twitter.com/soypunk)
-
-Redirect old draft URL to live published post and tell [Shibel](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCggCNxgsmCtmRTSkVrDlMJqSH)
 
 Improve 404 log page on Dashboard
+- Make the 404 page more useful (see Netlify site)
 - Add button to clear 404 log and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVDLzTVpVZHfgwRgcmtGXFHXx)
 - Add frequency indicator for each route 404 log and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVDLzTVpVZHfgwRgcmtGXFHXx)
 - Add filtering by date to 404 log and [tell this person](https://mail.google.com/mail/u/0/#inbox/1566e52d170f29ca)
 
 Add support for nesting multiple layout tags e.g. "{<>} {||} Y" and tell [Marius](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVqNqbsQJjcrTXRcsFxHVPzDq)
 
-Improvements to Git client
-- Make it possible to connect github repo via their API and tell [reg](https://mail.google.com/mail/u/0/#inbox/FMfcgzQXKhPKRfSsfGpXCdcxtFBhdKDt)
-- Add support for LFS and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVMcpnxGHqnxJHNdbMBSrglzg)
-- Backdate existing commits (perhaps set file ctime using info from git log?) This would sidestep the frustration experienced by [Gavin](https://mail.google.com/mail/u/0/#inbox/1669a8e621f9ef37) when he imported an existing repository.
-- Extend sync lock during long syncs
-- Write test to simulate process dying and restarting mid-pull. Does the client recover? What happens if a pull fails midway? Does git recover?
-- Write tests for a series of random client operations (pull, add, push, move, reset, delete) that can be seeded and reliably re-run in the case of failure.
-- Move to neat promise chain api when 2.0 comes out
-* Test that client must keep sending new entries and deleted entries when it recieved an error from entry.build otherwise you get ghost posts...
-- send nice error message with instructions for 413 request too large: "git reset HEAD^" etc...
-- Thoroughly document:
-- Tidy up tests and reduce size and runtime
-- This client should acquire a lock on the blog's folder before doing stuff to it more generally, especially during initialization etc...
-- what happens if customer changes their handle? will pushing break?
-  - I want them to be able to keep using their old one *until* someone else claims it, then I want 401 unauthorized, please reauthenticate with new username... but the remote path will be wrong?
-- Rate limit authentication route?
+---
 
-Add media-query to prevent typeset hanging punctuation on small screens (it looks weird) and tell [Shibel](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgpXqMzwcBGWgjxgpcpCnMCQW)
+Write new app/build/converters to turn new file formats into posts
+- Add support for posts generated from Excel files, would generate a table. Use [this library](https://github.com/joshboyan/excel-to-html-table)?
+- Add AVIF image post support and tell [Simon](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlkFqWwhwwQgrrlwKtctkTgRXx)
+- Add support for Ulysses .ulz file format and tell [Nash](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqxRmfFfLfBdcrrZBDxXPTtTj) and add support for .ulyz file created by Ulysses Adapt [this script](https://github.com/arafel/ulyz-to-markdown/blob/master/ulyz-to-markdown.py)
+- Add support for [Jupyter Notebook .ipynb](https://predictablynoisy.com/posts/2019/2019-11-11-ipynb_pandoc/#ipynb-to-html) using Pandoc and tell [Arnab](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmtNdkGQxbMVblqjvkHwSMTBbW) and notebooks (via pandoc) and tell [questioner](https://blot.im/questions/2297)
+- Add support for .doc using [libreoffice](https://www.npmjs.com/package/libreoffice-convert) and tell [Kyle](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKkHZVgwCNwsdlhdzCggRtsRhN)
+- Video posts (.mp4) - add way to opt-in to these
+- Add support for .tiff images 
+- OPML files and tell [John](https://mail.google.com/mail/u/0/#inbox/1659bac084c3e404)
+- Audio posts (.mp3 for now?) and tell [Kevin](https://mail.google.com/mail/u/0/#inbox/FMfcgxvzLhcqVldHMCFpTWDmfrRHfwpg) - add way to opt-in
+- Add support for INI files and tell [Frank](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwJckFhJhMMwFLzrRTfcSmHbrV)
+
+Write new clients to sync blog folders 
+- Add [OneDrive](https://onedrive.com) client
+  - Tell [Nenad](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxSHlNTlFCKwNsPbZPxRgbbVkB)
+  - Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgzGkbDVrfBwGjnVDdtXkNxKpwjfq) 
+  - Tell [Shantesh](https://mail.google.com/mail/u/0/#inbox/166df93b38231ec9)
+  - Tell [Nathan](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVgvsdfSnqBppQrXLTVjZBBzp)
+  - Tell [ekskog](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVDBmdRXFWTFLqxKgxVkdWnWL)  
+  - Tell [John](https://twitter.com/seismonerd/status/1096862510404128768)  
+  - Tell [Simon](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChcrhfQNXvkFkdtKntXlhjNfm)  
+  - Tell [Andrew](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLtGjKFlzJFfRcVQdWdMBkZzdK)  
+  - Tell [Naveen](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMZJvNGJxTXXcnsmXDqdkNnNq)  
+  - Tell [Emad](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNCtzTpZsgXXjWsrTGsTTZLjx)  
+  - Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjnVGxPWrFPKJRqtlnbkHfwXt)
+  - If OneDrive for Business is supported tell [Josh](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVqWwRgxrwLRzrNscfJtllhXz)
+- Add Apple Notes client
+  - Tell [Håvard](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbfVFlPhLBJNRsqHZJzfDTnzTg)
+- [rsync]()
+  - Tell [Harry](https://mail.google.com/mail/u/0/#inbox/FMfcgzGxRdvrcfMwTVnvGrHKgvJmfwxM)
+- [SFTP](https://www.npmjs.com/package/ftpd) 
+  - Tell [Coraline](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllCmcFflWmXcCdVzTJztDTwXx)
+  - Tell [Utkorg](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBQBKmPsLNTbQnxjbDDtzdqKn)
+  - Tell [Calvin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChclvkfHMWfnqGdWkQnzMdklW) 
+  - Tell [Fabrice](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNCspWMdnbCdzfHGwBrSKPBSC)
+- [NextCloud](https://nextcloud.com/) 
+  - Tell [Vincent](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpHHVZggXQRzJKNTrJHRxLdLjt)
+  - Tell [Coraline](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllCmcFflWmXcCdVzTJztDTwXx)
+  - Tell [Andrew](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJgWDpnsGBCXsCwkxRZnXMph) 
+  - Tell [Mike](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMGDWmSXxbJkvjZbtvdQtNNGZ)
+- [Box](https://box.com) 
+  - Tell [Eric](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMZRzCcPkNppMpSbBzNRKFSNs)
+- [Syncthing](https://www.npmjs.com/package/node-syncthing) 
+  - Tell [Jason](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgpVWzZTVxccmWLmnPBmDFjvV)
+- [Github](https://github.com)
+  - Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvBnVvqHdJXLgDhrtChCqdMQX) 
+  - Make it possible to connect github repo via their API and tell [reg](https://mail.google.com/mail/u/0/#inbox/FMfcgzQXKhPKRfSsfGpXCdcxtFBhdKDt)
+- [Jumpshare](https://jumpshare.com)
+  - Tell [Ömer](https://mail.google.com/mail/u/0/#search/omer/FMfcgzGxRnkSFxdSmGLmNQpXjXfBSChT)
+- pCloud 
+  - Tell [Omaid](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDDjqhCxHhJqbGlGNZsfkWWQf)
+  - Tell [Anders](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKkRFxsDShhsHGNcdRqwHFMmJM) 
+  - Tell [Tim](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlkZCjPBbnKtcXvrMQnxSwHBzk)
+  - Tell [JMN](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpGwtXQsVFFTcnTJdBTNdkMmXv)
+  - Tell [Rodney](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgcKkJLVFLvfBwTcRdlrzwHXr)
+- Dropmark
+  - Tell [Rado](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDDjrKSQVTXqvgFRGrhMSFvrR)
+- Proton Drive
+  - Tell [Ted](https://mail.google.com/mail/u/0/#search/proton+drive/FMfcgzQVxlMmFdqvrMHgfsFRfRDHLFTh)
+  - Tell [Francois](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZVJvWMbgrxGpRlLvKXsSPTtDr)
 
 ---
+
+Add password protection for blogs then tell [Ed](https://mail.google.com/mail/u/0/#inbox/164edd9d46596ec7), [this person](https://mail.google.com/mail/u/0/#inbox/155f01452a3f7231), [this person](https://mail.google.com/mail/u/0/#inbox/1645b6e48dc13281), and [Will](https://mail.google.com/mail/u/0/#inbox/FMfcgzGlkXsdBcCssKznzgvJQPDQpKlh), and [Modomiro](https://twitter.com/modomiro/status/1053345173743329281) and [Julian](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgpVWqGMHszwgxZRxNTNXRTlX) and [Raph](https://mail.google.com/mail/u/0/#inbox/FMfcgxwCgzFTCKQXQmQqdNMdjMfDFkMW) and [Jeremy](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvTvDjVMLQQmxvnZHBnnxdRpk) and [Tara](https://mail.google.com/mail/u/0/#sent/FMfcgxwChJlBCNMWSFhSctjMkBcKdpsq) and [Phil](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChSHbCCgQqZqqKQftJbwHRkss) and [Florian](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDrlSVCrQSVMBlFwQcNcGfZLzn) and Roy's friend Tim and [Kaleb](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNWPljXXlwQVtswFCCLGFCQV) and [Lotus](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNQfSzPBHtqRCQqCDjMTZLCQ) and [Khaled](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMGBFrctdVXhksCvqXXVPfDWR) and [Noel](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNMdwcwMqfVjmJPHKBMxzQChR) and [Franz](https://mail.google.com/mail/u/0/#inbox/FMfcgxwJXVMfwXfsWswWjvrpVKrPqpDt) and [Justin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjBRFjtljCQvlhsfXsSxrCKdJ) and [Kyle](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKkHZVgwCNwsdlhdzCggRtsRhN) and [Devan](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsJznDjRgbzwPmChbNQdqfnfq) and [John](https://mail.google.com/mail/u/0/?zx=bjx0x027sgct#inbox/FMfcgzGqQvvRpSrnkRNsrhddkzBhMsvf) and [Anita](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsSWMtCTdmrbscFCFLggctmxH) and [Emerald](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLtkXpvTkdGzkFCLtmmLTlvrJL) and [Ben](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvBmLLlZwPLbdJdXKQXrwrJnL) and [Giuseppe](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmvBnTWqHgFgdwBvcCDcmzLXGV) and [Annie](https://mail.google.com/mail/u/0/?zx=j8rkxjpin0du#inbox/FMfcgzGqRQCwsXBNDJqLjDnJrjGmctdJ) and [Jan](https://mail.google.com/mail/u/0/?zx=j8rkxjpin0du#inbox/FMfcgzGqRPzfVlDPLLjkqCfnBWqmVqKg)
+- think about how to add simple password (just a string) protection to sites. 
+- we need to consider both the node.js app (app/index) and the openresty reverse proxy (config/openresty), especially the proxy caching behaviour for sites. 
+- perhaps we'll need to handle sessions for sites with password protection in some way at the open resty level? or just use some response header from upstream to always bypass the proxy cache? or some cookie? we don't want to add any extra work in openresty for sites without passwords. perhaps sites with passwords return responses with a header that prevents any proxy caching from taking place?
+- anyway, it would involve:
+- updating the blog model (password: string).
+- adding a simple on/off input button to the dashboard, possibly under a new section. 
+- creating a password form view common to all sites, or able to be overwritten (password.html in a template perhaps).
+
+Add server-side analytics:
+- Tell [Tom](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGDNMCtRwGccFxfVKcwlcqfMpg) 
+- Tell [John](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHMjqlPTxhSXLNBDCmqXLQHdvX) 
+- Tell [Romain](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjKngCZjbxTNvLQLRMLfzwHxG)
+
+Add commenting system
+- Tell [Precious](https://mail.google.com/mail/u/0/#inbox/QgrcJHrtwLwTldzhrTKHMtnhwVqMXVzCTqv)
+- Tell [Hochan](https://mail.google.com/mail/u/0/#inbox/FMfcgzQcqRBZsPZvGMNQLFVmjBkBzhQW) who is willing to beta test
+
+Add email newsletter system
+- Tell [David](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKkbrQKXjDGTFNmtHVwJXThsWR) 
+- Tell [Nash](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLtGhBWHnmtJMPGRhNDkLTMbCV)
+- Tell [Kyle](https://mail.google.com/mail/u/0/#inbox/FMfcgzGkXSSTDVMfMGZQxcmcmlBSBQrR)
 
 Create an API for Blot
 - Add webhooks and tell [Aurynn](https://mail.google.com/mail/u/0/#inbox/1554260da157b405) and [Shawn](https://twitter.com/soypunk)
 
-When the customer's blog does not have a client, client.write and client.remove need to remove the files from the source folder. Create some kind of local client which we fall back and use when none is configured?
-
-Client.write does not propogate sync errors... to demonstrate this, revoke dropbox token then try to enable local editing.
-
-Reconsider default slug length or add new short slug property and tell [Josh](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBTjxhZStzKhchtwjXbWxDbdfh)
+---
 
 Self-hosting:
 - Write self-hosting documentation
@@ -1758,45 +1350,4 @@ Self-hosting:
   - Tell [Michael](https://mail.google.com/mail/u/0/#inbox/FMfcgzGkXSWvKNHtTgmFlrgkWvkgbksx?compose=CllgCKHQdVwQDCnfClqxMhSRnkDKmXhLckxZBrgkfDjdCrsDZLsRhGmgtgjZdlqmCjmGpKqQJvq)
   - Tell [Frank](https://mail.google.com/mail/u/0/#inbox/FMfcgzGkZkZWrprNcThxMPQKzSTLbkDs)
   - Tell [Zip](https://mail.google.com/mail/u/0/#inbox/FMfcgzGmthffLmfRBswqGmsDKQWdJZFB)
-
 - Tell Nick when it's possible to deploy a self-hosted [Blot on Vercel](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjxHWSvgjKtCWrbhccKFPlkdD) and [Zia](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLsSXWPRNNxDNcdhGHQXBkTtsx)
-
-Add option to sort posts by filename alphabetically and tell [Steve](https://mail.google.com/mail/u/0/#inbox/FMfcgxwJXpTLwnKwSRTFKRqXKNgQkFDv)
-
-Make it possible to reset password when logged in (perhaps after forgetting it) in the change password flow
-
-Hidden posts:
-- Ensure _ entries are true public files, tell john & other folks who depend on the menu: yes, page: no side effect
-- Warn customers that underscore will not work for hidden pages
-- Tell [Rodrigo](https://mail.google.com/mail/u/0/#inbox/1564a13991197f63) don't write previews for _ posts
-
-Embed feature
-- Add support for native PDF embeds in posts, just put a link to a PDF or a path, e.g. /_assets/file.pdf --> would become a nice embed.
-- Add support for native MP3 embeds in posts, just put a link to an MP3 or a path, e.g. /_assets/file.mp3 --> would become a nice embed then tell [Luke](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVWLlqqwbksXcScNdhcTjhjfq) and [Nash](http://twitter.com/nashp) and [Andy](https://mail.google.com/mail/u/0/#inbox/LXphbRLrghxkrJmtbtfXwZHrBHqGzzjDqLZVmfRCzrg) and [Charlie](mailto:hi@charlliegleason.com) and [Konstantin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDrRQPphRrjCrWXPLzgHhxkzMN)
-- Add soundcloud embeds then tell [Jonas](https://mail.google.com/mail/u/0/#inbox/16404cc8d437cc23), Nashp, and [Anders](https://twitter.com/4nd3rs/status/1028250661589278720?s=12) and [Richard](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJbvQlJvtLVPDqRCHrGJkZTr)
-- Add are.na embeds and tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLswLkPbqqvMVWPSHvRqtqcKlZ)
-
----
-
-Improvements to thumbnail generator
-- Prioritize faces in crop?
-- Try to crop out ruined borders. E.g. when making a square crop of a rectangular image with a border, crop into the image as well to remove the border-on-three-sides effect
-- Extract color palette too for the image
-- Offer imgix style API for embedding thumbnails
-
-Improvements to reverse proxy:
-- Add support for IPv6 and tell [Raul](https://mail.google.com/mail/u/0/#inbox/167083384282a5df)
-
-Plugins
-- Adjust image caption plugin to be semantic using <figure>
-- Ensure Youtube plugin still functions if apis fails
-
----
-
-Consider supporting Micro pub and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVzptjbWjjqlhBQtgJsRstVSD)
-
-Consider offering newsletter service and tell [David](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKkbrQKXjDGTFNmtHVwJXThsWR) and [Nash](https://mail.google.com/mail/u/0/#inbox/FMfcgxwLtGhBWHnmtJMPGRhNDkLTMbCV) and [Kyle](https://mail.google.com/mail/u/0/#inbox/FMfcgzGkXSSTDVMfMGZQxcmcmlBSBQrR)
-
-Consider adding support for [PubSubHubbub](https://en.wikipedia.org/wiki/WebSub) support and tell [Thomas](https://mail.google.com/mail/u/0/#inbox/FMfcgxwChJdDWZmclLFChDsbWBQlWsfk)
-
-Consider atompub support for Marsedit and tell Chet and [David](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjBGqSqTdQqtRCwdKplFvgBCP)
