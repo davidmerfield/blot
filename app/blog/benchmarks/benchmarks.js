@@ -190,8 +190,12 @@ describe("blog benchmarks", function () {
 
     console.log("[benchmark] build total ms:", result.build.timing_ms.total.toFixed(2));
     console.log("[benchmark] build p50 ms:", result.build.timing_ms.p50.toFixed(2));
+    console.log("[benchmark] build cpu:", result.build.cpu);
+    console.log("[benchmark] build memory:", result.build.memory_mb);
     console.log("[benchmark] render total ms:", result.render.timing_ms.total.toFixed(2));
     console.log("[benchmark] render p50 ms:", result.render.timing_ms.p50.toFixed(2));
+    console.log("[benchmark] render cpu:", result.render.cpu);
+    console.log("[benchmark] render memory:", result.render.memory_mb);
   });
 });
 
