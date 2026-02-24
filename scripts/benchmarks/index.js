@@ -49,6 +49,7 @@ var benchmarkConfig = {
   renderConcurrency: args.renderConcurrency,
   cpuSampleIntervalMs: args.cpuSampleIntervalMs,
   regressionThresholdPercent: args.regressionThresholdPercent,
+  requestsPerPage: args.requestsPerPage,
 };
 
 global.__BLOT_BENCHMARK_CONFIG = benchmarkConfig;
@@ -231,6 +232,7 @@ function parseArgs(argv) {
     renderConcurrency: 8,
     cpuSampleIntervalMs: 250,
     regressionThresholdPercent: 10,
+    requestsPerPage: 1,
     minBaselineSamples: 10,
     output: null,
     baselineFile: null,
@@ -308,6 +310,12 @@ function parseArgs(argv) {
       continue;
     }
 
+    if (arg === "--requests-per-page" && next) {
+      parsed.requestsPerPage = Number(next);
+      i += 1;
+      continue;
+    }
+
     if (arg === "--path" && next) {
       parsed.path = next;
       i += 1;
@@ -337,6 +345,7 @@ function parseArgs(argv) {
   ensurePositiveInt(parsed.files, "--files");
   ensurePositiveInt(parsed.renderConcurrency, "--render-concurrency");
   ensurePositiveInt(parsed.cpuSampleIntervalMs, "--cpu-sample-interval-ms");
+  ensurePositiveInt(parsed.requestsPerPage, "--requests-per-page");
   ensurePositiveInt(parsed.minBaselineSamples, "--min-baseline-samples");
 
   if (!Number.isFinite(parsed.regressionThresholdPercent) || parsed.regressionThresholdPercent < 0) {
@@ -353,5 +362,5 @@ function ensurePositiveInt(value, name) {
 }
 
 function printHelp() {
-  console.log(`Usage: node scripts/benchmarks [options]\n\nOptions:\n  --sites <n>                    Number of benchmark sites (default: 5)\n  --files <n>                    Total generated files (default: 1000)\n  --seed <value>                 Deterministic seed (default: blot-benchmark-seed)\n  --render-concurrency <n>       Concurrency for sitemap page rendering (default: 8)\n  --cpu-sample-interval-ms <ms>  CPU/memory sampling interval (default: 250)\n  --output <path>                Write JSON benchmark result to path\n  --ci                           Enable CI gate behavior\n  --baseline-file <path>         Baseline JSON file for CI comparison\n  --regression-threshold <n>     Regression threshold percent (default: 10)\n  --min-baseline-samples <n>     Required baseline samples before gating (default: 10)\n  --path <path>                  Limit benchmark discovery to path\n  --help                         Show this help message\n`);
+  console.log(`Usage: node scripts/benchmarks [options]\n\nOptions:\n  --sites <n>                    Number of benchmark sites (default: 5)\n  --files <n>                    Total generated files (default: 1000)\n  --seed <value>                 Deterministic seed (default: blot-benchmark-seed)\n  --render-concurrency <n>       Concurrency for sitemap page rendering (default: 8)\n  --requests-per-page <n>        Requests per sitemap URL per blog (default: 1)\n  --cpu-sample-interval-ms <ms>  CPU/memory sampling interval (default: 250)\n  --output <path>                Write JSON benchmark result to path\n  --ci                           Enable CI gate behavior\n  --baseline-file <path>         Baseline JSON file for CI comparison\n  --regression-threshold <n>     Regression threshold percent (default: 10)\n  --min-baseline-samples <n>     Required baseline samples before gating (default: 10)\n  --path <path>                  Limit benchmark discovery to path\n  --help                         Show this help message\n`);
 }

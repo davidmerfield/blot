@@ -5,7 +5,7 @@ const { performance } = require("perf_hooks");
 const localPath = require("helper/localPath");
 const { PhaseMonitor, summarizeDurations } = require("./util/metrics");
 const { buildWorkload } = require("./util/workload");
-const { extractPathsFromSitemap } = require("./util/sitemap");
+const { expandSitemapUrls } = require("./util/sitemap");
 const { runWithConcurrency } = require("./util/concurrency");
 const { parseBenchmarkConfig } = require("./util/config");
 const { buildBenchmarkResult } = require("./util/result");
@@ -93,11 +93,29 @@ describe("blog benchmarks", function () {
       }
 
       const sitemapXML = await sitemapRes.text();
-      const sitemapPaths = Array.from(new Set(extractPathsFromSitemap(sitemapXML)));
+      const sitemapPaths = await expandSitemapUrls(
+        blog,
+        sitemapXML,
+        this.getForBlog.bind(this)
+      );
 
       if (!sitemapPaths.length) {
         throw new Error(`No sitemap paths found for blog ${blog.handle}`);
       }
+
+      const n = benchmarkConfig.requestsPerPage;
+      const tasksForBlog = sitemapPaths.length * n;
+      console.log(
+        "[benchmark]",
+        blog.handle,
+        "sitemap paths:",
+        sitemapPaths.length,
+        "× requestsPerPage:",
+        n,
+        "=>",
+        tasksForBlog,
+        "render tasks"
+      );
 
       siteSummaries.push({
         blog_id: blog.id,
@@ -107,9 +125,16 @@ describe("blog benchmarks", function () {
       });
 
       for (const path of sitemapPaths) {
-        renderTasks.push({ blogIndex: index, blog, path });
+        for (let r = 0; r < n; r++) {
+          renderTasks.push({ blogIndex: index, blog, path });
+        }
       }
     }
+
+    console.log(
+      "[benchmark] total render tasks (Total requests):",
+      renderTasks.length
+    );
 
     renderPhaseMonitor.start();
 
@@ -181,8 +206,10 @@ describe("blog benchmarks", function () {
     const num = (n, width = 10) => String(n).padStart(width);
 
     console.log("");
+    console.log(label("Requests per page") + num(benchmarkConfig.requestsPerPage, 8));
     console.log(label("Total CPU") + num(totalCpuPercent.toFixed(2), 8) + " %");
     console.log(label("Total Memory") + num(Math.round(totalMemoryMb), 8) + " mb");
+    console.log(label("Total requests") + num(result.render.sitemap_pages_total, 8));
     console.log("");
     console.log(label("Total time") + num(totalSeconds.toFixed(1), 8) + " seconds");
     console.log(

@@ -6,6 +6,7 @@ function parseBenchmarkConfig(raw = {}) {
     renderConcurrency: Number(raw.renderConcurrency) || 8,
     cpuSampleIntervalMs: Number(raw.cpuSampleIntervalMs) || 250,
     regressionThresholdPercent: Number(raw.regressionThresholdPercent) || 10,
+    requestsPerPage: Math.max(1, Math.floor(Number(raw.requestsPerPage) || 10)),
   };
 }
 

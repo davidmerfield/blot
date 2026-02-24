@@ -22,6 +22,7 @@ function buildBenchmarkResult(options) {
       fixture_files_per_site: workload.fixtureCount,
       seed: benchmarkConfig.seed,
       render_concurrency: benchmarkConfig.renderConcurrency,
+      requests_per_page: benchmarkConfig.requestsPerPage,
       regression_threshold_percent: benchmarkConfig.regressionThresholdPercent,
       cpu_sample_interval_ms: benchmarkConfig.cpuSampleIntervalMs,
     },
