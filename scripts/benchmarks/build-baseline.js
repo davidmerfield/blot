@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const fs = require("fs-extra");
+const fs = require("fs");
 const path = require("path");
 
 const args = parseArgs(process.argv.slice(2));
@@ -10,7 +10,7 @@ const samples = [];
 
 for (const file of files) {
   try {
-    const parsed = fs.readJsonSync(file);
+    const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
     const buildP50 = Number(parsed?.build?.timing_ms?.p50);
     const renderP50 = Number(parsed?.render?.timing_ms?.p50);
 
@@ -32,8 +32,8 @@ const baseline = {
   source_files: samples.map((sample) => path.basename(sample.file)),
 };
 
-fs.ensureDirSync(path.dirname(args.output));
-fs.writeJsonSync(args.output, baseline, { spaces: 2 });
+fs.mkdirSync(path.dirname(args.output), { recursive: true });
+fs.writeFileSync(args.output, JSON.stringify(baseline, null, 2));
 
 console.log(`[build-baseline] wrote ${args.output}`);
 console.log(`[build-baseline] sample_count=${baseline.sample_count}`);
