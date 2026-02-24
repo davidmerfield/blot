@@ -20,9 +20,7 @@ module.exports = function ({ channel }) {
 
     res.write("\n");
 
-    client.subscribe(channel(req));
-
-    client.on("message", function (channel, message) {
+    client.subscribe(channel(req), function (message) {
       res.write("\n");
       res.write("data: " + message + "\n\n");
       res.flushHeaders();

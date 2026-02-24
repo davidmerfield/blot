@@ -63,8 +63,7 @@ if (require.main === module) {
   // using scripts/state/info.js
   let redis = require("models/redis");
   let client = new redis();
-  client.subscribe("templates:rebuild");
-  client.on("message", function () {
+  client.subscribe("templates:rebuild", function () {
     main({}, function () {});
   });
 }
@@ -85,9 +84,7 @@ function main(options, callback) {
         // using scripts/state/info.js
         const templateClient = new redis();
 
-        templateClient.subscribe("templates:rebuild");
-
-        templateClient.on("message", function () {
+        templateClient.subscribe("templates:rebuild", function () {
           main({}, function () {});
         });
 

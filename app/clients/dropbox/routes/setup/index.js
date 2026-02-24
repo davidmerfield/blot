@@ -50,9 +50,7 @@ function setup(account, session, callback) {
       done(err, callback);
     };
 
-    client.subscribe("sync:status:" + account.blog.id);
-
-    client.on("message", function (channel, message) {
+    client.subscribe("sync:status:" + account.blog.id, function (message, channel) {
       if (message !== "Attempting to disconnect from Dropbox") return;
       signal.aborted = true;
       abortHandled = true;

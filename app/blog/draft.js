@@ -31,9 +31,7 @@ module.exports = function route(server) {
 
     var channel = "blog:" + blogID + ":draft:" + path;
 
-    client.subscribe(channel);
-
-    client.on("message", function (_channel) {
+    client.subscribe(channel, function (_message, _channel) {
       renderDraft(req, res, next, path, function (html, bodyHTML) {
         try {
           res.write("\n");

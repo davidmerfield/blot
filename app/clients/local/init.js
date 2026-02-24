@@ -16,8 +16,7 @@ module.exports = () => {
   // channel in scripts/load/info.js
   var CHANNEL = "clients:local:new-folder";
   console.log(prefix(), "Listening");
-  client.subscribe(CHANNEL);
-  client.on("message", function (channel, message) {
+  client.subscribe(CHANNEL, function (message, channel) {
     debug("recieved", message, "on", channel);
     if (channel !== CHANNEL) return;
     let { blogID } = JSON.parse(message);
