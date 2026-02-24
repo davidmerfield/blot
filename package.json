@@ -8,7 +8,7 @@
     "download-folder": "./scripts/development/download-folder.sh",
     "test": "./scripts/tests/invoke.sh",
     "benchmark": "./scripts/benchmarks/invoke.sh",
-    "benchmark:ci": "./scripts/benchmarks/invoke.sh --ci",
+    "benchmark:ci": "node scripts/benchmarks --ci",
     "start": "./scripts/development/start.sh",
     "debug": "DEBUG=blot* ./scripts/development/start.sh",
     "deploy-node": "node scripts/deploy",
