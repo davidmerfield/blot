@@ -1,0 +1,126 @@
+name: benchmarks
+
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - "master"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    services:
+      redis:
+        image: redis:6
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Ensure GitHub CLI is available
+        run: |
+          if command -v gh >/dev/null 2>&1; then
+            gh --version
+            exit 0
+          fi
+
+          sudo apt-get update
+          sudo apt-get install -y gh
+
+      - name: Build benchmark image
+        run: docker build --target dev -t blot-bench .
+
+      - name: Build baseline from master artifacts
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p .benchmarks/history
+
+          RUN_IDS=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/benchmarks.yml/runs?branch=master&event=push&status=completed&per_page=50" \
+            --jq '.workflow_runs[] | select(.conclusion=="success") | .id' 2>/dev/null || true)
+
+          COUNT=0
+
+          for RUN_ID in $RUN_IDS; do
+            if [ "$COUNT" -ge 10 ]; then
+              break
+            fi
+
+            ARTIFACT_ID=$(gh api \
+              "repos/${{ github.repository }}/actions/runs/${RUN_ID}/artifacts" \
+              --jq '.artifacts[] | select(.name=="benchmark-result") | .id' 2>/dev/null | head -n 1 || true)
+
+            if [ -z "$ARTIFACT_ID" ]; then
+              continue
+            fi
+
+            ZIP_PATH=".benchmarks/history/${RUN_ID}.zip"
+            JSON_PATH=".benchmarks/history/${RUN_ID}.json"
+
+            gh api "repos/${{ github.repository }}/actions/artifacts/${ARTIFACT_ID}/zip" > "$ZIP_PATH" || true
+
+            if [ ! -s "$ZIP_PATH" ]; then
+              continue
+            fi
+
+            if unzip -p "$ZIP_PATH" benchmark-result.json > "$JSON_PATH"; then
+              COUNT=$((COUNT + 1))
+            fi
+          done
+
+          echo "Collected ${COUNT} benchmark baseline samples from master"
+
+          node scripts/benchmarks/build-baseline.js \
+            --input-dir .benchmarks/history \
+            --output .benchmarks/baseline.json \
+            --min-samples 10
+
+      - name: Run benchmarks in Docker test environment
+        run: |
+          mkdir -p .benchmarks
+
+          BASELINE_FLAG=""
+          if [ -f .benchmarks/baseline.json ]; then
+            BASELINE_FLAG="--baseline-file /benchmarks/baseline.json"
+          fi
+
+          docker run --rm \
+            --network host \
+            -e BLOT_REDIS_HOST=localhost \
+            -e BLOT_HOST=localhost \
+            -e BLOT_PROTOCOL=https \
+            -e GITHUB_SHA=${{ github.sha }} \
+            -v ${{ github.workspace }}/app:/usr/src/app/app \
+            -v ${{ github.workspace }}/scripts:/usr/src/app/scripts \
+            -v ${{ github.workspace }}/config:/usr/src/app/config \
+            -v ${{ github.workspace }}/.benchmarks:/benchmarks \
+            blot-bench \
+            sh -c "rm -rf /usr/src/app/data && mkdir /usr/src/app/data && npm run benchmark:ci -- --output /benchmarks/benchmark-result.json $BASELINE_FLAG"
+
+      - name: Upload benchmark result artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-result
+          path: .benchmarks/benchmark-result.json
+          if-no-files-found: warn
+
+      - name: Upload baseline artifact snapshot
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-baseline-snapshot
+          path: .benchmarks/baseline.json
+          if-no-files-found: warn
