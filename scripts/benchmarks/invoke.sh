@@ -17,6 +17,13 @@ SCRIPTS_DIR=$(realpath "$SCRIPT_DIR/../../scripts")
 CONFIG_DIR=$(realpath "$SCRIPT_DIR/../../config")
 ROOT_DIR=$(realpath "$SCRIPT_DIR/../..")
 
+BENCH_ENV=(
+  -e BLOT_REDIS_HOST="$REDIS_CONTAINER"
+  -e BLOT_HOST="localhost"
+  -e BLOT_PROTOCOL="https"
+  -e NODE_PATH="app"
+)
+
 cleanup() {
   docker rm -f "$BENCH_CONTAINER" >/dev/null 2>&1 || true
   docker rm -f "$REDIS_CONTAINER" >/dev/null 2>&1 || true
@@ -45,9 +52,7 @@ docker build \
 docker run --rm \
   --name "$BENCH_CONTAINER" \
   --network "$BENCH_NETWORK" \
-  -e BLOT_REDIS_HOST="$REDIS_CONTAINER" \
-  -e BLOT_HOST="localhost" \
-  -e BLOT_PROTOCOL="https" \
+  "${BENCH_ENV[@]}" \
   -e DEBUG="${DEBUG:-}" \
   -v "$APP_DIR:/usr/src/app/app" \
   -v "$SCRIPTS_DIR:/usr/src/app/scripts" \
