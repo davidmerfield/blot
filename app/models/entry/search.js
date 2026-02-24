@@ -93,6 +93,7 @@ module.exports = async function (blogID, query, callback) {
 
 
     // now  we check the 'pages' list for any pages which might be searchable
+    cursor = '0';
     do {
       if (Date.now() - startTime > TIMEOUT) {
         return callback(null, results);

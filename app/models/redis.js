@@ -22,6 +22,14 @@ module.exports = function () {
     return args;
   }
 
+  function flatKeyedArgs(args) {
+    if (args.length === 1 && Array.isArray(args[0])) return args[0];
+    if (args.length === 2 && Array.isArray(args[1])) {
+      return [args[0]].concat(args[1]);
+    }
+    return args;
+  }
+
   function normalizeValue(value) {
     if (value === null || typeof value === "undefined") return "";
     if (Buffer.isBuffer(value)) return value;
@@ -29,34 +37,95 @@ module.exports = function () {
     return String(value);
   }
 
+  function normalizeScanReply(reply) {
+    if (!reply || Array.isArray(reply)) return reply;
+    if (
+      typeof reply === "object" &&
+      Object.prototype.hasOwnProperty.call(reply, "cursor")
+    ) {
+      return [String(reply.cursor), reply.keys || []];
+    }
+    return reply;
+  }
+
+  function normalizeSScanReply(reply) {
+    if (!reply || Array.isArray(reply)) return reply;
+    if (
+      typeof reply === "object" &&
+      Object.prototype.hasOwnProperty.call(reply, "cursor")
+    ) {
+      return [String(reply.cursor), reply.members || reply.keys || []];
+    }
+    return reply;
+  }
+
+  function normalizeHScanReply(reply) {
+    if (!reply || Array.isArray(reply)) return reply;
+    if (
+      typeof reply === "object" &&
+      Object.prototype.hasOwnProperty.call(reply, "cursor")
+    ) {
+      return [String(reply.cursor), reply.tuples || reply.map || reply.keys || []];
+    }
+    return reply;
+  }
+
+  function normalizeZScanReply(reply) {
+    if (!reply || Array.isArray(reply)) return reply;
+    if (
+      typeof reply === "object" &&
+      Object.prototype.hasOwnProperty.call(reply, "cursor")
+    ) {
+      const flattened = [];
+      const members = reply.members || reply.tuples || [];
+      members.forEach((member) => {
+        if (
+          member &&
+          typeof member === "object" &&
+          Object.prototype.hasOwnProperty.call(member, "value")
+        ) {
+          flattened.push(member.value, String(member.score));
+        } else {
+          flattened.push(member);
+        }
+      });
+      return [String(reply.cursor), flattened];
+    }
+    return reply;
+  }
+
+  function normalizeHGetAll(reply) {
+    if (!Array.isArray(reply)) {
+      if (reply && typeof reply === "object" && !Object.keys(reply).length) {
+        return null;
+      }
+      return reply;
+    }
+    if (!reply.length) return null;
+    const obj = {};
+    for (let i = 0; i < reply.length; i += 2) {
+      obj[reply[i]] = reply[i + 1];
+    }
+    return obj;
+  }
+
   function createLegacyCommand(name, command, normalizeArgs, normalizeReply) {
-    client[name] = function legacyCommand() {
+    const legacyCommand = function legacyCommand() {
       const args = Array.prototype.slice.call(arguments);
       const callback =
         typeof args[args.length - 1] === "function" ? args.pop() : null;
       const normalizedArgs = normalizeArgs ? normalizeArgs(args) : args;
       const commandArgs = [command].concat(normalizedArgs.map(normalizeValue));
-      const started = Date.now();
-
-      console.log(
-        "[redis-compat] ->",
-        name,
-        "args=",
-        JSON.stringify(normalizedArgs.slice(0, 4)),
-        callback ? "cb" : "promise"
-      );
 
       const promise = client.sendCommand(commandArgs).then((reply) => {
-        console.log(
-          "[redis-compat] <-",
-          name,
-          Date.now() - started + "ms"
-        );
         return normalizeReply ? normalizeReply(reply) : reply;
       });
 
       return withCallback(promise, callback);
     };
+
+    client[name] = legacyCommand;
+    client[command] = legacyCommand;
   }
 
   createLegacyCommand("keys", "KEYS");
@@ -83,16 +152,10 @@ module.exports = function () {
     "hscan",
     "HSCAN",
     flatArgs,
-    function normalizeHScanReply(reply) {
-      if (!reply || Array.isArray(reply)) return reply;
-      if (typeof reply === "object" && Object.prototype.hasOwnProperty.call(reply, "cursor")) {
-        return [String(reply.cursor), reply.tuples || reply.map || reply.keys || []];
-      }
-      return reply;
-    }
+    normalizeHScanReply
   );
-  createLegacyCommand("sadd", "SADD");
-  createLegacyCommand("srem", "SREM");
+  createLegacyCommand("sadd", "SADD", flatKeyedArgs);
+  createLegacyCommand("srem", "SREM", flatKeyedArgs);
   createLegacyCommand("smembers", "SMEMBERS");
   createLegacyCommand("sismember", "SISMEMBER");
   createLegacyCommand(
@@ -113,23 +176,26 @@ module.exports = function () {
   createLegacyCommand("zrangebyscore", "ZRANGEBYSCORE");
   createLegacyCommand("zrevrangebyscore", "ZREVRANGEBYSCORE");
   createLegacyCommand("zremrangebyscore", "ZREMRANGEBYSCORE");
+  createLegacyCommand("zremrangebyrank", "ZREMRANGEBYRANK");
   createLegacyCommand("zcard", "ZCARD");
   createLegacyCommand("zscore", "ZSCORE");
   createLegacyCommand("zrank", "ZRANK");
   createLegacyCommand("zrevrank", "ZREVRANK");
   createLegacyCommand("zcount", "ZCOUNT");
-  createLegacyCommand("zscan", "ZSCAN");
+  createLegacyCommand("zincrby", "ZINCRBY");
+  createLegacyCommand("zrandmember", "ZRANDMEMBER");
+  createLegacyCommand(
+    "zscan",
+    "ZSCAN",
+    flatArgs,
+    normalizeZScanReply
+  );
+  createLegacyCommand("zrangebylex", "ZRANGEBYLEX");
   createLegacyCommand(
     "scan",
     "SCAN",
     flatArgs,
-    function normalizeScanReply(reply) {
-      if (!reply || Array.isArray(reply)) return reply;
-      if (typeof reply === "object" && Object.prototype.hasOwnProperty.call(reply, "cursor")) {
-        return [String(reply.cursor), reply.keys || []];
-      }
-      return reply;
-    }
+    normalizeScanReply
   );
   createLegacyCommand("incr", "INCR");
   createLegacyCommand("decr", "DECR");
@@ -149,26 +215,10 @@ module.exports = function () {
   createLegacyCommand("rename", "RENAME");
   createLegacyCommand("mget", "MGET", flatArgs);
   createLegacyCommand("mset", "MSET", flatArgs);
+  createLegacyCommand("sort", "SORT", flatArgs);
+  createLegacyCommand("hexists", "HEXISTS");
 
-  createLegacyCommand(
-    "hgetall",
-    "HGETALL",
-    null,
-    function normalizeHGetAll(reply) {
-      if (!Array.isArray(reply)) {
-        if (reply && typeof reply === "object" && !Object.keys(reply).length) {
-          return null;
-        }
-        return reply;
-      }
-      if (!reply.length) return null;
-      const obj = {};
-      for (let i = 0; i < reply.length; i += 2) {
-        obj[reply[i]] = reply[i + 1];
-      }
-      return obj;
-    }
-  );
+  createLegacyCommand("hgetall", "HGETALL", null, normalizeHGetAll);
 
   createLegacyCommand("hset", "HSET", function normalizeHSetArgs(args) {
     const key = args[0];
@@ -234,6 +284,7 @@ module.exports = function () {
     const nativeMulti = client.multi.bind(client);
     client.multi = function compatMulti() {
       const multi = nativeMulti();
+      const queuedReplyNormalizers = [];
       const commandNames = [
         "get",
         "set",
@@ -256,11 +307,17 @@ module.exports = function () {
         "zrangebyscore",
         "zrevrangebyscore",
         "zremrangebyscore",
+        "zremrangebyrank",
         "zcard",
         "zscore",
         "zrank",
         "zrevrank",
         "zcount",
+        "zincrby",
+        "zrandmember",
+        "zrangebylex",
+        "sort",
+        "hexists",
         "mget",
         "mset",
         "incr",
@@ -280,11 +337,39 @@ module.exports = function () {
 
       commandNames.forEach((name) => {
         const upper = name.toUpperCase();
-        if (typeof multi[upper] === "function") {
-          multi[name] = function () {
+
+        let normalizeReply = null;
+        if (name === "hgetall") normalizeReply = normalizeHGetAll;
+        if (name === "scan") normalizeReply = normalizeScanReply;
+        if (name === "sscan") normalizeReply = normalizeSScanReply;
+        if (name === "hscan") normalizeReply = normalizeHScanReply;
+        if (name === "zscan") normalizeReply = normalizeZScanReply;
+
+        const hasNativeMultiCommand =
+          typeof multi.addCommand === "function" ||
+          typeof multi[upper] === "function" ||
+          typeof multi[name] === "function";
+
+        if (hasNativeMultiCommand) {
+          const compatCommand = function () {
             const args = Array.prototype.slice.call(arguments);
-            if ((name === "del" || name === "mget" || name === "mset") && args.length === 1 && Array.isArray(args[0])) {
+            if (
+              (name === "del" ||
+                name === "mget" ||
+                name === "mset" ||
+                name === "sadd" ||
+                name === "srem") &&
+              args.length === 1 &&
+              Array.isArray(args[0])
+            ) {
               args.splice(0, 1, ...args[0]);
+            }
+            if (
+              (name === "sadd" || name === "srem") &&
+              args.length === 2 &&
+              Array.isArray(args[1])
+            ) {
+              args.splice(1, 1, ...args[1]);
             }
             if ((name === "set" || name === "setnx") && args.length >= 2) {
               args[1] = normalizeValue(args[1]);
@@ -292,11 +377,19 @@ module.exports = function () {
             const normalizedArgs = args.map(normalizeValue);
             if (typeof multi.addCommand === "function") {
               multi.addCommand([upper].concat(normalizedArgs));
-            } else {
+            } else if (typeof multi[upper] === "function") {
               multi[upper].apply(multi, normalizedArgs);
+            } else if (typeof multi[name] === "function") {
+              multi[name].apply(multi, normalizedArgs);
+            } else {
+              throw new Error("No multi command available: " + upper);
             }
+            queuedReplyNormalizers.push(normalizeReply);
             return multi;
           };
+
+          multi[name] = compatCommand;
+          multi[upper] = compatCommand;
         }
       });
 
@@ -353,7 +446,14 @@ module.exports = function () {
 
       const nativeExec = multi.exec.bind(multi);
       multi.exec = function compatExec(callback) {
-        const promise = nativeExec();
+        const promise = nativeExec().then((result) => {
+          if (!Array.isArray(result)) return result;
+          return result.map((value, index) => {
+            const normalizeReply = queuedReplyNormalizers[index];
+            if (typeof normalizeReply !== "function") return value;
+            return normalizeReply(value);
+          });
+        });
         if (typeof callback === "function") {
           promise.then(
             (result) => callback(null, result),
