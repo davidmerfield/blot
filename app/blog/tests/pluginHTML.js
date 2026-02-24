@@ -15,8 +15,7 @@ describe("pluginHTML", function () {
         await this.write({path: '/Drafts/test.txt', content: 'Hello, draft!'});        
 
         const areThereComments = async (path) => {
-            const res = await this.get(path);
-            const body = await res.text();
+            const body = await this.text(path);
             return body.includes('<script defer') && body.includes('src="https://cdn.commento.io/js/commento.js"');
         }
 
@@ -55,8 +54,7 @@ describe("pluginHTML", function () {
         await this.write({path: '/Drafts/test.txt', content: 'Hello, draft!'});
 
         const areThereComments = async (path) => {
-            const res = await this.get(path);
-            const body = await res.text();
+            const body = await this.text(path);
             return body.includes('<div id="disqus_thread"></div>') && body.includes('disqus.com/embed.js');
         }
 
@@ -100,8 +98,7 @@ describe("pluginHTML", function () {
         await this.write({path: '/Pages/page-whitespace-yes.txt', content: 'Link: /page-whitespace-yes\nComments:  yes \n\nHello, page!'});
 
         const areThereComments = async (path) => {
-            const res = await this.get(path);
-            const body = await res.text();
+            const body = await this.text(path);
             return body.includes('<script defer') && body.includes('src="https://cdn.commento.io/js/commento.js"');
         }
 

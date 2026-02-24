@@ -18,20 +18,20 @@ describe("asset middleware", function () {
 
   it("returns files with lower-case paths against upper-case URLs", async function () {
     await this.write({ path: "/pages/first.txt", content: "Foo" });
-    const res = await this.get(`/Pages/First.txt`);
-    expect(await res.text()).toEqual("Foo");
+    const body = await this.text(`/Pages/First.txt`);
+    expect(body).toEqual("Foo");
   });
 
   it("returns files with upper-case paths against lower-case URLs", async function () {
     await this.write({ path: "/Pages/First.txt", content: "Foo" });
-    const res = await this.get(`/pages/first.txt`);
-    expect(await res.text()).toEqual("Foo");
+    const body = await this.text(`/pages/first.txt`);
+    expect(body).toEqual("Foo");
   });
 
   it("returns files against URLs with incorrect case", async function () {
     await this.write({ path: "/Pages/First.xml", content: "123" });
-    const res = await this.get(`/pAgEs/FiRsT.xMl`);
-    expect(await res.text()).toEqual("123");
+    const body = await this.text(`/pAgEs/FiRsT.xMl`);
+    expect(body).toEqual("123");
   });
 
   it("returns the correct file if there are multiple with similar case", async function () {
@@ -271,8 +271,8 @@ describe("asset middleware", function () {
 
   it("respects query string parameters while ignoring them for file matching", async function () {
     await this.write({ path: "/query.txt", content: "Query test" });
-    const res = await this.get("/query.txt?param1=value1&param2=value2");
-    expect(await res.text()).toEqual("Query test");
+    const body = await this.text("/query.txt?param1=value1&param2=value2");
+    expect(body).toEqual("Query test");
   });
 
   it("handles files with multiple dots correctly", async function () {
@@ -321,8 +321,8 @@ describe("asset middleware", function () {
 
   it("handles paths with repeating slashes", async function () {
     await this.write({ path: "/folder/file.txt", content: "Content" });
-    const res = await this.get("/folder////file.txt");
-    expect(await res.text()).toEqual("Content");
+    const body = await this.text("/folder////file.txt");
+    expect(body).toEqual("Content");
   });
 
   // Alternative test that checks if the content is readable regardless of BOM
@@ -355,8 +355,8 @@ describe("asset middleware", function () {
     for (const variant of variants) {
       await this.write({ path: variant, content: "Index content" });
       const folderPath = variant.substring(0, variant.lastIndexOf("/") + 1);
-      const res = await this.get(folderPath);
-      expect(await res.text()).toEqual("Index content");
+      const body = await this.text(folderPath);
+      expect(body).toEqual("Index content");
     }
   });
 
