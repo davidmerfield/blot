@@ -43,7 +43,7 @@ module.exports = function (req, res, callback) {
           ? result.total
           : (result.entryIDs || []).length;
 
-      res.locals.pagination = result.pagination || {};
+      res.locals.pagination = res.locals.pagination || result.pagination || {};
 
       callback(null, {
         tag: result.tag,
