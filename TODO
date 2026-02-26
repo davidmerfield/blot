@@ -6,7 +6,6 @@ Write useful benchmark tool for Blot
 - Add performance tests which output something like this for PRs (compare against master branch, fail if over threshold):
     Total CPU  29.90%          -> 11.64%
     Syscalls   3.10s           -> 0.66s
-    Crypto     1.6s            -> 0.11s
     Bandwidth  ~6.5 Mbit/sec   -> ~3 Mbit/sec
 
 Move to redis hashes for entry storage
