@@ -14,10 +14,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Linker");
   });
@@ -30,10 +27,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/first");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/first");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Second");
   });
@@ -53,10 +47,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Linker A");
     expect(body).toContain("Linker B");
@@ -69,10 +60,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/standalone");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/standalone");
     expect(body).not.toContain("Backlinks:");
   });
 
@@ -89,10 +77,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/a%2520b");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/a%2520b");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Linker");
   });
@@ -114,10 +99,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/grüße");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/grüße");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Linker");
   });
@@ -131,10 +113,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Grüße Linker");
   });
@@ -155,10 +134,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/self");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/self");
     expect(body).not.toContain("Backlinks:");
   });
 
@@ -170,10 +146,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect((body.match(/Linker/g) || []).length).toEqual(1);
   });
@@ -190,10 +163,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Linker Fragment");
     expect(body).toContain("Linker Query");
@@ -208,10 +178,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).not.toContain("Backlinks:");
   });
 
@@ -224,10 +191,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("linker");
   });
@@ -243,10 +207,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/caf%C3%A9");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/caf%C3%A9");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("MD Linker");
   });
@@ -309,10 +270,7 @@ describe("backlinks edge cases", function () {
 
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/résumé");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/résumé");
     expect(body).toContain("Backlinks:");
 
     for (const fixture of fixtures) {
@@ -335,10 +293,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("gdoc-linker");
   });
