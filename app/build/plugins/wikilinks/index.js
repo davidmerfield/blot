@@ -21,7 +21,23 @@ function isMarkdownFile(path) {
 }
 
 function render($, callback, { blogID, path }) {
-  const wikilinks = $("[title='wikilink']");
+  const legacyWikilinks = $("[title='wikilink']");
+
+  legacyWikilinks.each(function (_, node) {
+    const $node = $(node);
+    const existingClasses = ($node.attr("class") || "")
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (!existingClasses.includes("wikilink")) {
+      existingClasses.push("wikilink");
+      $node.attr("class", existingClasses.join(" "));
+    }
+
+    $node.removeAttr("title");
+  });
+
+  const wikilinks = $(".wikilink");
   let dependencies = [];
 
   eachOf(

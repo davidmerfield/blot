@@ -23,10 +23,21 @@ describe("plugin runner", function () {
 
   it("collects newDependencies from plugin results", async function () {
     const plugins = { wikilinks: { enabled: true, options: {} } };
-    const contents = '<a href="target" title="wikilink">wikilink</a>';
+    const contents = '<a href="target" class="wikilink">wikilink</a>';
 
     const { dependencies } = await runPlugins(plugins, contents);
 
+    expect(dependencies).toContain("/target");
+  });
+
+  it("supports legacy wikilink title markers by migrating to class", async function () {
+    const plugins = { wikilinks: { enabled: true, options: {} } };
+    const contents = '<a href="target" title="wikilink">wikilink</a>';
+
+    const { html, dependencies } = await runPlugins(plugins, contents);
+
+    expect(html).toContain('class="wikilink"');
+    expect(html).not.toContain('title="wikilink"');
     expect(dependencies).toContain("/target");
   });
 

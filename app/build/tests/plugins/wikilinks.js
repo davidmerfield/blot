@@ -4,7 +4,7 @@ describe("wikilinks plugin", function () {
   it("will convert wikilinks if plugin is enabled", function (done) {
     const contents = "A [[wikilink]]";
     const path = "/hello.txt";
-    const html = '<p>A <a href="wikilink" title="wikilink">wikilink</a></p>';
+    const html = '<p>A <a href="wikilink" class="wikilink">wikilink</a></p>';
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -14,7 +14,7 @@ describe("wikilinks plugin", function () {
     const contents = "A [[wikilink]] and [[another]]";
     const path = "/hello.txt";
     const html =
-      '<p>A <a href="wikilink" title="wikilink">wikilink</a> and <a href="another" title="wikilink">another</a></p>';
+      '<p>A <a href="wikilink" class="wikilink">wikilink</a> and <a href="another" class="wikilink">another</a></p>';
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -33,7 +33,7 @@ describe("wikilinks plugin", function () {
     const contents = "- A **[[wikilink]]** in a list";
     const path = "/hello.txt";
     const html =
-      '<ul>\n<li>A <strong><a href="wikilink" title="wikilink">wikilink</a></strong> in a list</li>\n</ul>';
+      '<ul>\n<li>A <strong><a href="wikilink" class="wikilink">wikilink</a></strong> in a list</li>\n</ul>';
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -42,7 +42,7 @@ describe("wikilinks plugin", function () {
   it("will convert wikilinks whose text is affected by the typeset plugin", function (done) {
     const contents = "[[Wikilink CNN acronym]]";
     const path = "/hello.txt";
-    const html = `<p><a href="Wikilink CNN acronym" title="wikilink">Wikilink <span class="small-caps">CNN</span> acronym</a></p>`;
+    const html = `<p><a href="Wikilink CNN acronym" class="wikilink">Wikilink <span class="small-caps">CNN</span> acronym</a></p>`;
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.blog.plugins.typeset = { enabled: true, options: { smallCaps: true } };
@@ -53,7 +53,7 @@ describe("wikilinks plugin", function () {
     const contents = "# Heading Here\n\nSee [[#Heading Here]].";
     const path = "/hello.txt";
     const html =
-      '<h1 id="heading-here">Heading Here</h1>\n<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>';
+      '<h1 id="heading-here">Heading Here</h1>\n<p>See <a href="#heading-here" class="wikilink">Heading Here</a>.</p>';
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -63,7 +63,7 @@ describe("wikilinks plugin", function () {
     const contents = "# Heading Here\n\nSee [[Heading Here]].";
     const path = "/hello.txt";
     const html =
-      '<h1 id="heading-here">Heading Here</h1>\n<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>';
+      '<h1 id="heading-here">Heading Here</h1>\n<p>See <a href="#heading-here" class="wikilink">Heading Here</a>.</p>';
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -76,7 +76,7 @@ describe("wikilinks plugin", function () {
     const html = `<h2 id="headinghere">
 Heading Here
 </h2>
-<p>See <a href="#headinghere" title="wikilink">Heading Here</a>.</p>`;
+<p>See <a href="#headinghere" class="wikilink">Heading Here</a>.</p>`;
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -89,7 +89,7 @@ Heading Here
     const html = `<h2 id="heading-here">
 Heading Here
 </h2>
-<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>`;
+<p>See <a href="#heading-here" class="wikilink">Heading Here</a>.</p>`;
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -102,7 +102,7 @@ Heading Here
     const html = `<h2 id="heading-here">
 Heading Here
 </h2>
-<p>See <a href="#heading-here" title="wikilink">Heading Here</a>.</p>`;
+<p>See <a href="#heading-here" class="wikilink">Heading Here</a>.</p>`;
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -116,7 +116,7 @@ Heading Here
       `<h3>
 <a id="h.abc123"></a>Heading From Docs
 </h3>
-<p>See <a href="#h.abc123" title="wikilink">Heading From Docs</a>.</p>`;
+<p>See <a href="#h.abc123" class="wikilink">Heading From Docs</a>.</p>`;
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -126,7 +126,7 @@ Heading Here
     const contents =
       "<script>console.log('hey');</script>\n\nA **[[wikilink elsewhere]]** ";
     const path = "/hello.txt";
-    const html = `<script>console.log('hey');</script>\n<p>A <strong><a href="wikilink elsewhere" title="wikilink">wikilink elsewhere</a></strong></p>`;
+    const html = `<script>console.log('hey');</script>\n<p>A <strong><a href="wikilink elsewhere" class="wikilink">wikilink elsewhere</a></strong></p>`;
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -134,7 +134,7 @@ Heading Here
 
   it("will support wikilinks whose path contains proper apostrophes", function (done) {
     const path = "/hello.txt";
-    const html = '<p><a href="/target" title="wikilink">Hey</a></p>';
+    const html = '<p><a href="/target" class="wikilink">Hey</a></p>';
 
     const files = [
       { path: "/Target’s.md", content: "Link: target\n# Hey" },
@@ -156,7 +156,7 @@ Heading Here
 
     const entry = {
       path,
-      html: '<p><a href="/target" title="wikilink">Title</a></p>'
+      html: '<p><a href="/target" class="wikilink">Title</a></p>'
     };
 
     this.syncAndCheck(files, entry, done);
@@ -175,7 +175,7 @@ Heading Here
 
     const entry = {
       path,
-      html: '\n<p><a href="/about" title="wikilink">About Us</a></p>'
+      html: '\n<p><a href="/about" class="wikilink">About Us</a></p>'
     };
 
     this.syncAndCheck(files, entry, done);
@@ -199,7 +199,7 @@ Heading Here
     expect(entry.html).toContain('<img');
     expect(entry.html).toContain('src="');
 
-    expect(entry.html).toContain('title="wikilink"');
+    expect(entry.html).toContain('class="wikilink"');
     expect(entry.html).toContain('alt="An example image"');
 
     done();
@@ -291,7 +291,7 @@ Heading Here
 
     expect(entry.html).toContain('src="');
     expect(entry.html).toContain('video.mp4');
-    expect(entry.html).toContain('title="wikilink"');
+    expect(entry.html).toContain('class="wikilink"');
     expect(entry.html).toContain('Demo video');
 
     done();
@@ -314,7 +314,7 @@ Heading Here
 
     expect(entry.html).toContain('src="');
     expect(entry.html).toContain('audio.mp3');
-    expect(entry.html).toContain('title="wikilink"');
+    expect(entry.html).toContain('class="wikilink"');
     expect(entry.html).toContain('Sample audio');
 
     done();
@@ -336,7 +336,7 @@ Heading Here
     const entry = await this.blog.check({ path: "/DocumentPost.txt" });
 
     expect(entry.html).toContain('<embed src="/Assets/document.pdf"');
-    expect(entry.html).toContain('title="wikilink"');
+    expect(entry.html).toContain('class="wikilink"');
 
     done();
   });
@@ -351,7 +351,7 @@ Heading Here
 
     const entry = {
       path,
-      html: '<p><a href="/target" title="wikilink">Title</a></p>'
+      html: '<p><a href="/target" class="wikilink">Title</a></p>'
     };
 
     this.syncAndCheck(files, entry, done);
@@ -379,7 +379,7 @@ Heading Here
     const html =
       "<p>" +
       Array.from(Array(tests.length))
-        .map(i => '<a href="/target" title="wikilink">Target</a>')
+        .map(i => '<a href="/target" class="wikilink">Target</a>')
         .join(" ") +
       "</p>";
 
@@ -397,7 +397,7 @@ Heading Here
   // of the HTML which breaks the path, so wikilinks handles this.
   it("will support wikilinks whose path contains fake apostrophes", function (done) {
     const path = "/hello.txt";
-    const html = '<p><a href="/target" title="wikilink">Hey</a></p>';
+    const html = '<p><a href="/target" class="wikilink">Hey</a></p>';
 
     const files = [
       { path: "/Target's.md", content: "Link: target\n# Hey" },
@@ -413,7 +413,7 @@ Heading Here
     const contents = "[[../[snips]/wikilink]]";
     const path = "/hello.txt";
     const html =
-      '<p><a href="../[snips]/wikilink" title="wikilink">../[snips]/wikilink</a></p>';
+      '<p><a href="../[snips]/wikilink" class="wikilink">../[snips]/wikilink</a></p>';
 
     this.blog.plugins.wikilinks = { enabled: true, options: {} };
     this.buildAndCheck({ path, contents }, { html }, done);
@@ -428,7 +428,7 @@ Heading Here
 
     // We know that Blot has worked out which file to link to
     // because the href is set to foo!
-    const html = '<p><a href="/foo" title="wikilink">Hey</a></p>';
+    const html = '<p><a href="/foo" class="wikilink">Hey</a></p>';
 
     const files = [
       { path: linkPath, content: linkContent },
@@ -450,7 +450,7 @@ Heading Here
 
     // We know that Blot has worked out which file to link to
     // because the href is set to foo!
-    const html = '<p><a href="/foo" title="wikilink">Wikilink</a></p>';
+    const html = '<p><a href="/foo" class="wikilink">Wikilink</a></p>';
 
     const files = [
       { path, content },
@@ -497,7 +497,7 @@ Heading Here
     const html =
       "<p>" +
       Array.from(Array(tests.length))
-        .map(i => '<a href="/not-target" title="wikilink">Not Target</a>')
+        .map(i => '<a href="/not-target" class="wikilink">Not Target</a>')
         .join(" ") +
       "</p>";
 
@@ -541,7 +541,7 @@ Heading Here
     const html =
       "<p>" +
       Array.from(Array(tests.length))
-        .map(i => '<a href="/target" title="wikilink">Target</a>')
+        .map(i => '<a href="/target" class="wikilink">Target</a>')
         .join(" ") +
       "</p>";
 
@@ -585,7 +585,7 @@ Heading Here
     const html =
       "<p>" +
       Array.from(Array(tests.length))
-        .map(i => '<a href="/target" title="wikilink">Target</a>')
+        .map(i => '<a href="/target" class="wikilink">Target</a>')
         .join(" ") +
       "</p>";
 
@@ -629,7 +629,7 @@ Heading Here
     const html =
       "<p>" +
       Array.from(Array(tests.length))
-        .map(i => '<a href="/target" title="wikilink">Target</a>')
+        .map(i => '<a href="/target" class="wikilink">Target</a>')
         .join(" ") +
       "</p>";
 
@@ -655,7 +655,7 @@ Heading Here
 
     // We know that Blot has worked out which file to link to
     // because the href is set to foo!
-    const html = '<p><a href="/foo" title="wikilink">Wikilink</a></p>';
+    const html = '<p><a href="/foo" class="wikilink">Wikilink</a></p>';
 
     const files = [
       { path, content },
