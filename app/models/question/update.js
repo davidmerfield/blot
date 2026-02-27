@@ -61,26 +61,19 @@ module.exports = async (id, updates) => {
 
 // clean up any tags that are no longer used
 function identifyTagsToRemove(removedTags) {
-  const batch = client.batch();
   const tagsToRemove = [];
 
-  for (const tag of removedTags) {
-    batch.zcard(keys.by_tag(tag));
-  }
-
-  return new Promise((resolve, reject) => {
-    batch.exec(async (err, replies) => {
-      if (err) {
-        reject(err);
+  return Promise.all(
+    removedTags.map((tag) => {
+      return client.zcard(keys.by_tag(tag));
+    })
+  ).then((replies) => {
+    for (let i = 0; i < replies.length; i++) {
+      if (replies[i] <= 1) {
+        tagsToRemove.push(removedTags[i]);
       }
+    }
 
-      for (let i = 0; i < replies.length; i++) {
-        if (replies[i] <= 1) {
-          tagsToRemove.push(removedTags[i]);
-        }
-      }
-
-      resolve(tagsToRemove);
-    });
+    return tagsToRemove;
   });
 }

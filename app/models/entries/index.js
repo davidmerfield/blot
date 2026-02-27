@@ -441,15 +441,12 @@ module.exports = (function () {
     if (!entryIDs.length) return callback(null, []);
 
     var key = listKey(blogID, "entries");
-    var batch = redis.batch();
 
-    entryIDs.forEach(function (entryID) {
-      batch.zscore(key, entryID);
-    });
-
-    batch.exec(function (err, rawScores) {
-      if (err) return callback(err);
-
+    Promise.all(
+      entryIDs.map(function (entryID) {
+        return redis.zscore(key, entryID);
+      })
+    ).then(function (rawScores) {
       var withScores = [];
 
       for (var i = 0; i < entryIDs.length; i++) {
@@ -463,7 +460,7 @@ module.exports = (function () {
       }
 
       callback(null, withScores);
-    });
+    }, callback);
   }
 
 
