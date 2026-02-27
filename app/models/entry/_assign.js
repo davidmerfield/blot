@@ -44,10 +44,10 @@ module.exports = function (blogID, entry, callback) {
 
     // Blot uses redis' sorted sets to
     // create lists of entries.
-    multi.ZADD(key, score, value);
+    multi.zAdd(key, { score, value });
 
     if (list === ENTRIES) {
-      multi.ZADD(pathIndex.lexKey(blogID), 0, value);
+      multi.zAdd(pathIndex.lexKey(blogID), { score: 0, value });
     }
   }
 
@@ -57,10 +57,10 @@ module.exports = function (blogID, entry, callback) {
 
     ensure(list, "string").and(value, "string");
 
-    multi.zrem(key, value);
+    multi.zRem(key, value);
 
     if (list === ENTRIES) {
-      multi.zrem(pathIndex.lexKey(blogID), value);
+      multi.zRem(pathIndex.lexKey(blogID), value);
     }
   }
 
@@ -143,6 +143,9 @@ function addToMenu(blogID, entry, callback) {
   };
 
   Blog.get({ id: blogID }, function (err, blog) {
+    if (err) return callback(err);
+    if (!blog) return callback(new Error("Blog not found"));
+
     var menu = blog.menu;
 
     if (!menu || !menu.length) {
@@ -170,6 +173,8 @@ function dropFromMenu(blogID, entry, callback) {
   debugEntry("removing from menu");
 
   Blog.get({ id: blogID }, function (err, blog) {
+    if (err) return callback(err);
+
     if (!blog || !blog.menu || !blog.menu.length) {
       debugEntry("this blog does not have a menu");
       return callback();
@@ -183,9 +188,9 @@ function dropFromMenu(blogID, entry, callback) {
     });
 
     if (menu.length === blog.menu.length) {
-      debugEntry("Was removed from the menu!");
-    } else {
       debugEntry("Warning! Did not find this on the menu");
+    } else {
+      debugEntry("Was removed from the menu!");
     }
 
     Blog.set(blogID, { menu: menu }, function (errors) {
