@@ -7,7 +7,6 @@ const get = promisify((blogID, entryIDs, callback) =>
   })
 );
 
-const zscan = promisify(client.zscan).bind(client);
 const TIMEOUT = 8000;
 const MAX_RESULTS = 25;
 const CHUNK_SIZE = 200;
@@ -51,83 +50,63 @@ module.exports = async function (blogID, query, callback) {
 
   const startTime = Date.now();
   const results = [];
-  let cursor = '0';
+
+  function checkTimeout() {
+    return Date.now() - startTime > TIMEOUT;
+  }
+
+  async function scanAndCollect(key) {
+    for await (const tuples of client.zScanIterator(key, { COUNT: CHUNK_SIZE })) {
+      if (checkTimeout()) {
+        return false;
+      }
+
+      const ids = tuples.length && typeof tuples[0] === "object"
+        ? tuples.map((tuple) => tuple.value)
+        : tuples.filter((_, i) => i % 2 === 0);
+
+      if (!ids.length) {
+        continue;
+      }
+
+      const entries = await get(blogID, ids);
+
+      for (const entry of entries) {
+        if (!isSearchable(entry)) continue;
+
+        const text = buildSearchText(entry);
+
+        const matches = terms.length === 1
+          ? text.includes(terms[0])
+          : terms.every(term => text.includes(term));
+
+        if (matches) {
+          results.push(entry);
+          if (results.length >= MAX_RESULTS) {
+            return false;
+          }
+        }
+
+        if (checkTimeout()) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
 
   try {
-    do {
-      if (Date.now() - startTime > TIMEOUT) {
-        return callback(null, results);
-      }
+    // we use the entries list rather than the 'all' list to skip deleted entries
+    // this can badly affect performance if there are a lot of deleted entries
+    if (!await scanAndCollect("blog:" + blogID + ":entries")) {
+      return callback(null, results);
+    }
 
-      // we use the entries list rather than the 'all' list to skip deleted entries
-      // this can badly affect performance if there are a lot of deleted entries
-      const [nextCursor, reply] = await zscan("blog:" + blogID + ":entries", cursor, 'COUNT', CHUNK_SIZE);
-      cursor = nextCursor;
-      
-      const ids = reply.filter((_, i) => i % 2 === 0);
-      if (!ids.length) continue;
-
-      const entries = await get(blogID, ids);
-
-      for (const entry of entries) {
-        if (!isSearchable(entry)) continue;
-
-        const text = buildSearchText(entry);
-        
-        const matches = terms.length === 1 
-          ? text.includes(terms[0])
-          : terms.every(term => text.includes(term));
-
-        if (matches) {
-          results.push(entry);
-          if (results.length >= MAX_RESULTS) {
-            return callback(null, results);
-          }
-        }
-
-        if (Date.now() - startTime > TIMEOUT) {
-          return callback(null, results);
-        }
-      }
-    } while (cursor !== '0');
-
-
-    // now  we check the 'pages' list for any pages which might be searchable
-    cursor = '0';
-    do {
-      if (Date.now() - startTime > TIMEOUT) {
-        return callback(null, results);
-      }
-
-      const [nextCursor, reply] = await zscan("blog:" + blogID + ":pages", cursor, 'COUNT', CHUNK_SIZE);
-      cursor = nextCursor;
-      
-      const ids = reply.filter((_, i) => i % 2 === 0);
-      if (!ids.length) continue;
-
-      const entries = await get(blogID, ids);
-
-      for (const entry of entries) {
-        if (!isSearchable(entry)) continue;
-
-        const text = buildSearchText(entry);
-        
-        const matches = terms.length === 1 
-          ? text.includes(terms[0])
-          : terms.every(term => text.includes(term));
-
-        if (matches) {
-          results.push(entry);
-          if (results.length >= MAX_RESULTS) {
-            return callback(null, results);
-          }
-        }
-
-        if (Date.now() - startTime > TIMEOUT) {
-          return callback(null, results);
-        }
-      }
-    } while (cursor !== '0');
+    // now we check the 'pages' list for any pages which might be searchable
+    if (!await scanAndCollect("blog:" + blogID + ":pages")) {
+      return callback(null, results);
+    }
 
     return callback(null, results);
   } catch (error) {

@@ -83,4 +83,61 @@ describe("questions.search", function () {
     expect(results.length).toBe(1);
     expect(results[0].id).toBe(withReplyMatch.id);
   });
+  it("handles an empty sScanIterator", async function () {
+    const client = require("models/client");
+
+    spyOn(client, "sScanIterator").and.returnValue((async function* () {})());
+    const zrangeSpy = spyOn(client, "zrange").and.callThrough();
+    const hgetallSpy = spyOn(client, "hgetall").and.callThrough();
+
+    const results = await search({ query: "how" });
+
+    expect(results).toEqual([]);
+    expect(zrangeSpy).not.toHaveBeenCalled();
+    expect(hgetallSpy).not.toHaveBeenCalled();
+  });
+
+  it("collects results across multiple sScanIterator pages", async function () {
+    const client = require("models/client");
+
+    spyOn(client, "sScanIterator").and.returnValue((async function* () {
+      yield ["1"];
+      yield ["2"];
+    })());
+
+    spyOn(client, "zrange").and.returnValue(Promise.resolve([]));
+    spyOn(client, "hgetall").and.callFake((key) => {
+      const id = key.split(":").pop();
+      return Promise.resolve({ id, title: `How ${id}`, body: "Yes" });
+    });
+
+    const results = await search({ query: "how" });
+
+    expect(results.length).toBe(2);
+    expect(results.map((result) => result.id).sort()).toEqual(["1", "2"]);
+  });
+
+  it("stops iterating once enough results fill the requested page", async function () {
+    const client = require("models/client");
+    let pulls = 0;
+
+    spyOn(client, "sScanIterator").and.returnValue((async function* () {
+      pulls += 1;
+      yield ["1"];
+      pulls += 1;
+      yield ["2"];
+    })());
+
+    spyOn(client, "zrange").and.returnValue(Promise.resolve([]));
+    spyOn(client, "hgetall").and.callFake((key) => {
+      const id = key.split(":").pop();
+      return Promise.resolve({ id, title: `How ${id}`, body: "Yes" });
+    });
+
+    const results = await search({ query: "how", page: 1, page_size: 1 });
+
+    expect(results.length).toBe(1);
+    expect(pulls).toBe(1);
+  });
+
 });

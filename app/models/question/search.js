@@ -107,41 +107,32 @@ const load = (ids) => {
 
 module.exports = ({ query, page = 1, page_size = PAGE_SIZE } = {}) => {
   return new Promise((resolve, reject) => {
-    const key = keys.all_questions;
-    const questions = [];
-    const cursor = 0;
+    (async () => {
+      const key = keys.all_questions;
+      const questions = [];
 
-    const iterate = async (err, [cursor, ids]) => {
-      if (err) {
-        return reject(err);
-      }
+      // iterate over the question ids, retrieve the title, and body of each question and see if they contain the query
+      for await (const ids of client.sScanIterator(key)) {
+        const candidates = await load(ids);
 
-      const candidates = await load(ids);
+        candidates.forEach((result) => {
+          const score = Score(query, result);
+          if (score > 0) {
+            questions.push({
+              title: result.title,
+              id: result.id,
+              score,
+            });
+          }
+        });
 
-      candidates.forEach((result) => {
-        const score = Score(query, result);
-        if (score > 0) {
-          questions.push({
-            title: result.title,
-            id: result.id,
-            score,
-          });
+        // we have enough questions to fill a page
+        if (questions.length >= page_size * page) {
+          break;
         }
-      });
-
-      // we have enough questions to fill a page
-      if (questions.length >= page_size * page) {
-        return resolve(sortAndPaginate(questions, page_size, page));
-
-        // we have reached the end of the questions and there are no more questions to retrieve
-      } else if (cursor === "0") {
-        return resolve(sortAndPaginate(questions, page_size, page));
-      } else {
-        return client.sscan(key, cursor, iterate);
       }
-    };
 
-    // iterate over the question ids, retrieve the title, and body of each question and see if they contain the query
-    client.sscan(key, cursor, iterate);
+      resolve(sortAndPaginate(questions, page_size, page));
+    })().catch(reject);
   });
 };
