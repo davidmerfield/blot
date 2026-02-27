@@ -1,6 +1,6 @@
 var Mustache = require("mustache");
 var type = require("helper/type");
-var client = require("models/client");
+var client = require("models/client-new");
 var key = require("./key");
 var urlNormalizer = require("helper/urlNormalizer");
 var ensure = require("helper/ensure");
@@ -65,8 +65,7 @@ module.exports = function setView(templateID, updates, callback) {
 		if (!metadata)
 			return callback(new Error("There is no template called " + templateID));
 
-		client.sadd(allViews, name, (err) => {
-			if (err) return callback(err);
+		client.sAdd(allViews, name).then(() => {
 
 			// Look up previous state of view if applicable
 			getView(templateID, name, (err, view) => {
@@ -236,7 +235,7 @@ module.exports = function setView(templateID, updates, callback) {
 				if (updates.urlPatterns) {
 					// Store `urlPatterns` in Redis
 					const urlPatternsKey = key.urlPatterns(templateID);
-					client.hset(
+					client.hSet(
 						urlPatternsKey,
 						name,
 						JSON.stringify(updates.urlPatterns),
@@ -244,7 +243,7 @@ module.exports = function setView(templateID, updates, callback) {
 				} else if (shouldRemoveUrlPatterns) {
 					// Delete urlPatterns from Redis if it was removed
 					const urlPatternsKey = key.urlPatterns(templateID);
-					client.hdel(urlPatternsKey, name);
+					client.hDel(urlPatternsKey, name);
 				}
 				view.locals = view.locals || {};
 				view.retrieve = view.retrieve || {};
@@ -277,19 +276,18 @@ module.exports = function setView(templateID, updates, callback) {
 
 						// Delete url and urlPatterns from Redis hash if they were removed
 						var multi = client.multi();
-						multi.hset(viewKey, view);
+						multi.hSet(viewKey, view);
 
 						if (shouldRemoveUrl) {
 							console.log("removing hdel", viewKey, "url");
-							multi.hdel(viewKey, "url");
+							multi.hDel(viewKey, "url");
 						}
 						if (shouldRemoveUrlPatterns) {
 							console.log("removing hdel", viewKey, "urlPatterns");
-							multi.hdel(viewKey, "urlPatterns");
+							multi.hDel(viewKey, "urlPatterns");
 						}
 
-						multi.exec((err) => {
-							if (err) return callback(err);
+						multi.exec().then(() => {
 
 							if (!changes) {
 								if (metadata.errors && metadata.errors[name]) {
@@ -315,12 +313,12 @@ module.exports = function setView(templateID, updates, callback) {
 
 									callback();
 								});
-							});
+							}).catch(callback);
 						});
 					},
 				);
 			});
-		});
+		}).catch(callback);
 	});
 };
 
