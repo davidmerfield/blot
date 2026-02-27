@@ -8,6 +8,7 @@ var key = require("./key");
 var BackupDomain = require("./util/backupDomain");
 var flushCache = require("./flushCache");
 
+var START_CURSOR = "0";
 var SCAN_SIZE = 1000;
 var BLOG_ID_REGEX = /^blog_[a-f0-9]+$/;
 
@@ -110,14 +111,26 @@ function deleteKeys(blog, callback) {
   async.each(
     patterns,
     function (pattern, next) {
-      (async function () {
-        for await (const keys of client.scanIterator({ MATCH: pattern, COUNT: SCAN_SIZE })) {
-          // Append the keys we matched in the last pass
-          remove = remove.concat(keys);
+      var args = [START_CURSOR, "MATCH", pattern, "COUNT", SCAN_SIZE];
+
+      client.scan(args, function then(err, res) {
+        if (err) return next(err);
+
+        if (!res || !Array.isArray(res) || res.length < 2) {
+          return next(new Error("Unexpected SCAN reply: " + JSON.stringify(res)));
         }
-      })().then(function () {
+
+        // the cursor for the next pass
+        args[0] = res[0];
+
+        // Append the keys we matched in the last pass
+        remove = remove.concat(res[1]);
+
+        // There are more keys to check, so keep going
+        if (res[0] !== START_CURSOR) return client.scan(args, then);
+
         next();
-      }, next);
+      });
     },
     function (err) {
       if (err) return callback(err);

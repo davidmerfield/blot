@@ -161,21 +161,26 @@ function sortedSetSearch(string, keys, result, callback) {
 }
 
 function redisKeys(pattern, fn, callback) {
-  (async function () {
-    for await (const keys of client.scanIterator({ MATCH: pattern, COUNT: 1000 })) {
-      await new Promise((resolve, reject) => {
-        fn(keys, function (err) {
-          if (err) return reject(err);
-          resolve();
-        });
-      });
-    }
-  })().then(
-    function () {
-      callback();
-    },
-    callback
-  );
+  var complete;
+  var cursor = "0";
+
+  client.scan(cursor, "match", pattern, "count", 1000, function then(err, res) {
+    if (err) return callback(err);
+
+    cursor = res[0];
+
+    fn(res[1], function (err) {
+      if (err) return callback(err);
+
+      complete = cursor === "0";
+
+      if (complete) {
+        callback(err);
+      } else {
+        client.scan(cursor, "match", pattern, "count", 1000, then);
+      }
+    });
+  });
 }
 
 module.exports = main;

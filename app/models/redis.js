@@ -468,25 +468,6 @@ module.exports = function () {
     };
   }
 
-  function createIteratorPassThrough(name) {
-    const nativeIterator =
-      typeof client[name] === "function"
-        ? client[name].bind(client)
-        : client.v4 && typeof client.v4[name] === "function"
-          ? client.v4[name].bind(client.v4)
-          : null;
-
-    if (!nativeIterator) return;
-
-    client[name] = function iteratorPassThrough(options) {
-      return nativeIterator(options);
-    };
-  }
-
-  ["scanIterator", "hScanIterator", "sScanIterator", "zScanIterator"].forEach(
-    createIteratorPassThrough
-  );
-
   if (typeof client.quit === "function") {
     const nativeQuit = client.quit.bind(client);
     client.quit = function compatQuit(callback) {
