@@ -243,38 +243,6 @@ module.exports = function () {
     return args;
   });
 
-  createLegacyCommand("hmset", "HSET", function normalizeHMSetArgs(args) {
-    const key = args[0];
-    const values = args[1];
-
-    if (args.length === 2 && values && typeof values === "object" && !Array.isArray(values)) {
-      const pairs = [];
-      Object.keys(values).forEach((field) => {
-        pairs.push(field, normalizeValue(values[field]));
-      });
-      return [key].concat(pairs);
-    }
-
-    if (args.length === 2 && Array.isArray(values)) {
-      return [
-        key,
-        ...values.map((value, index) =>
-          index % 2 === 1 ? normalizeValue(value) : value
-        ),
-      ];
-    }
-
-    if (args.length >= 3) {
-      const pairs = [];
-      for (let i = 1; i < args.length; i += 2) {
-        pairs.push(args[i], normalizeValue(args[i + 1]));
-      }
-      return [key].concat(pairs);
-    }
-
-    return args;
-  });
-
   createLegacyCommand("zadd", "ZADD", function normalizeZAddArgs(args) {
     // Preserve legacy varargs: zadd key score member [score member...]
     return args;
@@ -295,7 +263,6 @@ module.exports = function () {
         "hgetall",
         "hset",
         "hdel",
-        "hmset",
         "sadd",
         "srem",
         "smembers",
@@ -426,23 +393,6 @@ module.exports = function () {
           return multi;
         };
       }
-
-      multi.hmset = function hmsetCompat(key, values) {
-        if (
-          values &&
-          typeof values === "object" &&
-          !Array.isArray(values)
-        ) {
-          return multi.hset(key, values);
-        }
-
-        if (Array.isArray(values)) {
-          return multi.hset(key, ...values);
-        }
-
-        const args = Array.prototype.slice.call(arguments, 1);
-        return multi.hset(key, ...args);
-      };
 
       const nativeExec = multi.exec.bind(multi);
       multi.exec = function compatExec(callback) {

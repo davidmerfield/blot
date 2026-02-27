@@ -58,7 +58,7 @@ module.exports = async function ({
     multi.zadd(keys.by_number_of_replies, 0, id);
   }
 
-  multi.hmset(keys.item(id), item);
+  multi.hset(keys.item(id), item);
 
   // ensure the multi command fails if the ID
   // is already in use
