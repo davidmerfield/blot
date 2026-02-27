@@ -1,5 +1,3 @@
-const { hset, setnx } = require("../../client");
-
 describe("questions.create", function () {
   require("./setup")();
   const create = require("../create");
@@ -20,7 +18,7 @@ describe("questions.create", function () {
     expect(question.title).toEqual("How?");
     expect(question.body).toEqual("");
     expect(question.tags).toEqual([]);
-  });  
+  });
 
   it("respects the ID you supply it as long as it is not new", async function () {
     const question = await create({
@@ -55,16 +53,15 @@ describe("questions.create", function () {
   });
 
   it("will throw an error if you trigger an issue with redis multi.exec", async function () {
-
-    const client = require("models/client");
+    const client = require("models/client-new");
 
     spyOn(client, "multi").and.returnValue({
-      zadd: () => {},
-      sadd: () => {},
-      zincrby: () => {},
-      hset: () => {},
-      setnx: () => {},
-      exec: (cb) => cb(new Error("Oh no!")),
+      zAdd: () => {},
+      sAdd: () => {},
+      zIncrBy: () => {},
+      hSet: () => {},
+      setNX: () => {},
+      exec: () => Promise.reject(new Error("Oh no!")),
     });
 
     try {
@@ -73,14 +70,12 @@ describe("questions.create", function () {
     } catch (e) {
       expect(e.message).toEqual("Oh no!");
     }
-
   });
 
   it("will throw an error if you trigger an issue with redis exists", async function () {
-    
-    const client = require("models/client");
+    const client = require("models/client-new");
 
-    spyOn(client, "exists").and.callFake((id, cb) => cb(new Error("REDIS EXISTS ISSUE")));
+    spyOn(client, "exists").and.returnValue(Promise.reject(new Error("REDIS EXISTS ISSUE")));
 
     try {
       await create({ title: "How?", id: "1" });
@@ -90,12 +85,10 @@ describe("questions.create", function () {
     }
   });
 
-
   it("will throw an error if you trigger an issue with redis incr", async function () {
-    
-    const client = require("models/client");
+    const client = require("models/client-new");
 
-    spyOn(client, "incr").and.callFake((id, cb) => cb(new Error("REDIS INCR ISSUE")));
+    spyOn(client, "incr").and.returnValue(Promise.reject(new Error("REDIS INCR ISSUE")));
 
     try {
       await create({ title: "How?", body: "Yes" });
@@ -104,7 +97,6 @@ describe("questions.create", function () {
       expect(e.message).toEqual("REDIS INCR ISSUE");
     }
   });
-
 
   it("saves tags if you supply them", async function () {
     const question = await create({
