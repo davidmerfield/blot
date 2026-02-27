@@ -3,7 +3,7 @@ const tags = require("../../tags");
 describe("exportQuestions", function () {
     require("./setup")();
   
-    const client = require("models/client"); // Ensure this client is correctly initialized
+    const client = require("models/client-new"); // Ensure this client is correctly initialized
     const exportQuestions = require('../export'); // Adjust the path as needed
     const create = require("../create"); // Function to create questions/replies
     
@@ -251,43 +251,43 @@ describe("exportQuestions", function () {
         done();
       });
 
-      it("will throw an error if you trigger an issue with redis smembers", async function () {
+      it("will throw an error if you trigger an issue with redis sMembers", async function () {
         
-        spyOn(require("models/client"), "smembers").and.callFake((id, cb) => cb(new Error("REDIS smembers ISSUE")));
+        spyOn(require("models/client-new"), "sMembers").and.returnValue(Promise.reject(new Error("REDIS sMembers ISSUE")));
         
         try {
           await exportQuestions();
           fail("Should have thrown");
         } catch (e) {
-          expect(e.message).toEqual("REDIS smembers ISSUE");
+          expect(e.message).toEqual("REDIS sMembers ISSUE");
         }
       });
 
-      it("will throw an error if you trigger an issue with redis hgetall", async function () {
+      it("will throw an error if you trigger an issue with redis hGetAll", async function () {
         
         const question = await create({ title: 'How?', body: 'Yes' });
 
-        spyOn(require("models/client"), "hgetall").and.callFake((id, cb) => cb(new Error("REDIS hgetall ISSUE")));
+        spyOn(require("models/client-new"), "hGetAll").and.returnValue(Promise.reject(new Error("REDIS hGetAll ISSUE")));
         
         try {
           await exportQuestions();
           fail("Should have thrown");
         } catch (e) {
-          expect(e.message).toEqual("REDIS hgetall ISSUE");
+          expect(e.message).toEqual("REDIS hGetAll ISSUE");
         }
       });
 
-      it("will throw an error if you trigger an issue with redis zrange", async function () {
+      it("will throw an error if you trigger an issue with redis zRange", async function () {
         
         const question = await create({ title: 'How?', body: 'Yes' });
 
-        spyOn(require("models/client"), "zrange").and.callFake((id, start, end, cb) => cb(new Error("REDIS zrange ISSUE")));
+        spyOn(require("models/client-new"), "zRange").and.returnValue(Promise.reject(new Error("REDIS zRange ISSUE")));
         
         try {
           await exportQuestions();
           fail("Should have thrown");
         } catch (e) {
-          expect(e.message).toEqual("REDIS zrange ISSUE");
+          expect(e.message).toEqual("REDIS zRange ISSUE");
         }
       });
   });

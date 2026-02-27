@@ -1,4 +1,4 @@
-const client = require("models/client");
+const client = require("models/client-new");
 const keys = require("./keys");
 const get = require("./get");
 
@@ -23,19 +23,19 @@ module.exports = async (id, updates) => {
       value = value.toString();
     }
 
-    multi.hset(keys.item(id), key, value);
+    multi.hSet(keys.item(id), key, value);
   }
 
   // we need to update any tags
   if (updates.tags) {
     for (const tag of updates.tags) {
-      multi.sadd(keys.all_tags, tag);
-      multi.zadd(keys.by_tag(tag),  parseInt(created_at), id);
+      multi.sAdd(keys.all_tags, tag);
+      multi.zAdd(keys.by_tag(tag), { score: parseInt(created_at, 10), value: id });
     }
 
     for (const tag of existing.tags) {
       if (!updates.tags.includes(tag)) {
-        multi.zrem(keys.by_tag(tag), id);
+        multi.zRem(keys.by_tag(tag), id);
         removedTags.push(tag);
       }
     }
@@ -44,36 +44,23 @@ module.exports = async (id, updates) => {
   const tagsToRemove = await identifyTagsToRemove(removedTags);
 
   for (const tag of tagsToRemove) {
-    multi.srem(keys.all_tags, tag);
+    multi.sRem(keys.all_tags, tag);
   }
 
-  return new Promise((resolve, reject) => {
-    multi.exec((err) => {
-      if (err) {
-        reject(err);
-      }
-      // get the latest version of the question
-      // and return it
-      get(id).then(resolve).catch(reject);
-    });
-  });
+  await multi.exec();
+
+  // get the latest version of the question
+  // and return it
+  return get(id);
 };
 
 // clean up any tags that are no longer used
-function identifyTagsToRemove(removedTags) {
-  const tagsToRemove = [];
-
-  return Promise.all(
+async function identifyTagsToRemove(removedTags) {
+  const replies = await Promise.all(
     removedTags.map((tag) => {
-      return client.zcard(keys.by_tag(tag));
+      return client.zCard(keys.by_tag(tag));
     })
-  ).then((replies) => {
-    for (let i = 0; i < replies.length; i++) {
-      if (replies[i] <= 1) {
-        tagsToRemove.push(removedTags[i]);
-      }
-    }
+  );
 
-    return tagsToRemove;
-  });
+  return removedTags.filter((_, i) => replies[i] <= 1);
 }
