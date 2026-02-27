@@ -34,7 +34,14 @@ function render($, callback, { blogID, path }) {
       $node.attr("class", existingClasses.join(" "));
     }
 
-    $node.removeAttr("title");
+    const isLink = node && node.name === "a";
+    const isMedia = !isLink && $node.attr("src") !== undefined;
+
+    if (isMedia) {
+      $node.attr("data-wikilink-marker", "1");
+    } else {
+      $node.removeAttr("title");
+    }
   });
 
   const wikilinks = $(".wikilink");
@@ -213,6 +220,24 @@ function render($, callback, { blogID, path }) {
           ) {
             debug("Setting image caption to", altText);
             nextNode.text(altText || "");
+          }
+
+          if ($node.attr("data-wikilink-marker") === "1") {
+            const title = ($node.attr("title") || "").toLowerCase();
+            if (title === "wikilink") {
+              $node.removeAttr("title");
+            }
+            $node.removeAttr("data-wikilink-marker");
+          }
+
+          const existingClasses = ($node.attr("class") || "")
+            .split(/\s+/)
+            .filter((className) => className && className !== "wikilink");
+
+          if (existingClasses.length) {
+            $node.attr("class", existingClasses.join(" "));
+          } else {
+            $node.removeAttr("class");
           }
         }
 

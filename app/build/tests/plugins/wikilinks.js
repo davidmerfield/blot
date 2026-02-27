@@ -199,7 +199,7 @@ Heading Here
     expect(entry.html).toContain('<img');
     expect(entry.html).toContain('src="');
 
-    expect(entry.html).toContain('class="wikilink"');
+    expect(entry.html).not.toContain('title="wikilink"');
     expect(entry.html).toContain('alt="An example image"');
 
     done();
@@ -291,7 +291,7 @@ Heading Here
 
     expect(entry.html).toContain('src="');
     expect(entry.html).toContain('video.mp4');
-    expect(entry.html).toContain('class="wikilink"');
+    expect(entry.html).not.toContain('title="wikilink"');
     expect(entry.html).toContain('Demo video');
 
     done();
@@ -314,7 +314,7 @@ Heading Here
 
     expect(entry.html).toContain('src="');
     expect(entry.html).toContain('audio.mp3');
-    expect(entry.html).toContain('class="wikilink"');
+    expect(entry.html).not.toContain('title="wikilink"');
     expect(entry.html).toContain('Sample audio');
 
     done();
@@ -336,7 +336,7 @@ Heading Here
     const entry = await this.blog.check({ path: "/DocumentPost.txt" });
 
     expect(entry.html).toContain('<embed src="/Assets/document.pdf"');
-    expect(entry.html).toContain('class="wikilink"');
+    expect(entry.html).not.toContain('title="wikilink"');
 
     done();
   });
