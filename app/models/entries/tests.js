@@ -792,11 +792,17 @@ describe("entries", function () {
     });
 
     it("handles Redis failures without unhandled rejections", function (done) {
-      spyOn(redis, "zRandMember").and.rejectWith(new Error("boom"));
+      spyOn(redis, "zRandMember").and.returnValue(
+        Promise.reject(new Error("boom"))
+      );
 
       Entries.random(this.blog.id, function (entry) {
-        expect(entry).toBeUndefined();
-        done();
+        try {
+          expect(entry).toBeUndefined();
+          done();
+        } catch (err) {
+          done.fail(err);
+        }
       });
     });
   });
