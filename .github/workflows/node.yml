@@ -164,6 +164,7 @@ jobs:
       # Copy the SKIP_PATHS definition from setup-tests
       SKIP_PATHS: |
         - config/openresty
+        - app/blog/benchmarks
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
