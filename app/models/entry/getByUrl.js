@@ -22,6 +22,7 @@ module.exports = function getByUrl(blogID, entryUrl, callback) {
       get(blogID, entryID, callback);
     })
     .catch(function (error) {
-      throw error;
+      console.error("entry.getByUrl: failed to resolve URL", error);
+      callback();
     });
 };

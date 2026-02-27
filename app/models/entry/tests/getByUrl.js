@@ -91,6 +91,46 @@ describe("entry.getByUrl", function () {
     );
   });
 
+
+  it("handles redis rejection without throwing asynchronously", function (done) {
+    const rejection = new Error("redis get failed");
+    const uncaughtHandler = jasmine.createSpy("uncaughtHandler");
+    const unhandledRejectionHandler = jasmine.createSpy("unhandledRejectionHandler");
+    const originalConsoleError = console.error;
+    const consoleErrorSpy = jasmine.createSpy("console.error");
+
+    process.once("uncaughtException", uncaughtHandler);
+    process.once("unhandledRejection", unhandledRejectionHandler);
+    console.error = consoleErrorSpy;
+
+    withMocks(
+      {
+        get: () => Promise.reject(rejection),
+      },
+      () => {
+        throw new Error("get should not be called when redis.get rejects");
+      },
+      getByUrl => {
+        expect(function () {
+          getByUrl("blog-id", "/entry", function (entry) {
+            expect(entry).toBeUndefined();
+          });
+        }).not.toThrow();
+
+        setTimeout(function () {
+          console.error = originalConsoleError;
+
+          expect(uncaughtHandler).not.toHaveBeenCalled();
+          expect(unhandledRejectionHandler).not.toHaveBeenCalled();
+          expect(consoleErrorSpy).toHaveBeenCalledWith(
+            "entry.getByUrl: failed to resolve URL",
+            rejection
+          );
+          done();
+        }, 10);
+      }
+    );
+  });
   it("keeps already-decoded input stable", function (done) {
     const calls = [];
 
