@@ -68,33 +68,31 @@ module.exports = function getPopular(blogID, options, callback) {
           return callback(null, []);
         }
 
-        const detailsBatch = client.batch();
+        Promise.all(
+          tagsWithCounts.map(function ({ slug }) {
+            return client.get(key.name(blogID, slug));
+          })
+        )
+          .then(function (details) {
+            const hydrated = [];
 
-        tagsWithCounts.forEach(function ({ slug }) {
-          detailsBatch.get(key.name(blogID, slug));
-        });
+            tagsWithCounts.forEach(function ({ slug, count }, index) {
+              if (!count) return;
 
-        detailsBatch.exec(function (err, details) {
-          if (err) return callback(err);
+              const name = details[index] || slug;
+              const entries = Array.from({ length: count });
 
-          const hydrated = [];
-
-          tagsWithCounts.forEach(function ({ slug, count }, index) {
-            if (!count) return;
-
-            const name = details[index] || slug;
-            const entries = Array.from({ length: count });
-            
-            hydrated.push({
-              name,
-              slug,
-              entries,
-              count,
+              hydrated.push({
+                name,
+                slug,
+                entries,
+                count,
+              });
             });
-          });
 
-          callback(null, hydrated);
-        });
+            callback(null, hydrated);
+          })
+          .catch(callback);
       }
     );
   });

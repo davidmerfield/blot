@@ -60,65 +60,48 @@ const hasNonEmptyTitle = (title) =>
 
 const load = (ids) => {
   return new Promise((resolve, reject) => {
-    const batch = client.batch();
+    (async () => {
+      const childIDs = await Promise.all(
+        ids.map((id) => {
+          return client.zrange(keys.children(id), 0, -1);
+        })
+      );
 
-    ids.forEach((id) => {
-      batch.zrange(keys.children(id), 0, -1);
-    });
+      const results = await Promise.all([
+        ...ids.map((id) => client.hgetall(keys.item(id))),
+        ...childIDs.flat().map((id) => client.hgetall(keys.item(id))),
+      ]);
 
-    batch.exec((err, results) => {
-      if (err) {
-        return reject(err);
-      }
+      const questions = results
+        .filter(
+          (result) =>
+            result &&
+            !result.parent &&
+            hasNonEmptyBody(result.body) &&
+            hasNonEmptyTitle(result.title)
+        )
+        .map((result) => {
+          result.replies = results
+            .filter(
+              (reply) =>
+                reply &&
+                reply.parent === result.id &&
+                hasNonEmptyBody(reply.body)
+            )
+            .map((reply) => {
+              return { body: reply.body };
+            });
 
-      const batch = client.batch();
-
-      ids.forEach((id) => {
-        batch.hgetall(keys.item(id));
-      });
-
-      results.forEach((ids) => {
-        ids.forEach((id) => {
-          batch.hgetall(keys.item(id));
+          return {
+            id: result.id,
+            title: result.title,
+            body: result.body,
+            replies: result.replies,
+          };
         });
-      });
 
-      batch.exec((err, results) => {
-        if (err) {
-          return reject(err);
-        }
-
-        const questions = results
-          .filter(
-            (result) =>
-              result &&
-              !result.parent &&
-              hasNonEmptyBody(result.body) &&
-              hasNonEmptyTitle(result.title)
-          )
-          .map((result) => {
-            result.replies = results
-              .filter(
-                (reply) =>
-                  reply &&
-                  reply.parent === result.id &&
-                  hasNonEmptyBody(reply.body)
-              )
-              .map((reply) => {
-                return { body: reply.body };
-              });
-
-            return {
-              id: result.id,
-              title: result.title,
-              body: result.body,
-              replies: result.replies,
-            };
-          });
-
-        resolve(questions);
-      });
-    });
+      resolve(questions);
+    })().catch(reject);
   });
 };
 

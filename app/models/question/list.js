@@ -22,33 +22,29 @@ module.exports = ({
       keys.by_last_reply;
       
 
-    client
-      .batch()
-      .zcard(key)
-      .zrevrange(key, startIndex, endIndex)
-      .exec((err, [total, question_ids]) => {
-        if (err) {
-          reject(err);
-        }
+    (async () => {
+      const [total, question_ids] = await Promise.all([
+        client.zcard(key),
+        client.zrevrange(key, startIndex, endIndex),
+      ]);
 
-        const batch = client.batch();
+      if (!question_ids.length) {
+        return resolve({ questions: [], stats: { total, page_size, page } });
+      }
 
-        if (!question_ids.length) {
-          return resolve({ questions: [], stats: { total, page_size, page } });
-        }
+      const results = (
+        await Promise.all(
+          question_ids.map(async (id) => {
+            return Promise.all([
+              client.hgetall(keys.item(id)),
+              client.zscore(keys.by_last_reply, id),
+              client.zscore(keys.by_number_of_replies, id),
+            ]);
+          })
+        )
+      ).flat();
 
-        question_ids.forEach(id => {
-          batch.hgetall(keys.item(id));
-          batch.zscore(keys.by_last_reply, id);
-          batch.zscore(keys.by_number_of_replies, id);
-        });
-
-        batch.exec((err, results) => {
-          if (err) {
-            reject(err);
-          }
-
-          const questions = results
+      const questions = results
             .filter((_, index) => index % 3 === 0)
             .map((question, index) => {
               const last_reply_created_at = results[index * 3 + 1];
@@ -92,8 +88,7 @@ module.exports = ({
             })
             .filter(question => question.title && !!question.title.trim());
 
-          resolve({ questions, stats: { total, page_size, page } });
-        });
-      });
+      resolve({ questions, stats: { total, page_size, page } });
+    })().catch(reject);
   });
 };

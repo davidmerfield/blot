@@ -13,26 +13,23 @@ module.exports = function getHosts(callback) {
   getAllIDs(function (err, ids) {
     if (err) throw err;
 
-    var batch = client.batch();
+    Promise.all(
+      ids.map(function (id) {
+        return client.hmget(key.info(id), "domain", "handle");
+      })
+    )
+      .then(function (res) {
+        var hosts = [];
 
-    for (var i = 0; i < ids.length; i++)
-      batch.hmget(key.info(ids[i]), "domain", "handle");
+        res.forEach(function (keys, i) {
+          if (keys && keys[0]) hosts.push([keys[0], ids[i]]);
+          if (keys && keys[1]) hosts.push([keys[1] + "." + HOST, ids[i]]);
+        });
 
-    // This is a very expensive call.
-    // We could easily do some work to make this quicker
-    // However, it's only going to be invoked when a user
-    // changes their username / custom domain.
-    batch.exec(function (err, res) {
-      if (err) throw err;
-
-      var hosts = [];
-
-      res.forEach(function (keys, i) {
-        if (keys && keys[0]) hosts.push([keys[0], ids[i]]);
-        if (keys && keys[1]) hosts.push([keys[1] + "." + HOST, ids[i]]);
+        return callback(null, hosts);
+      })
+      .catch(function (err) {
+        return callback(err);
       });
-
-      return callback(null, hosts);
-    });
   });
 };

@@ -8,13 +8,11 @@ const PAGE_SIZE = 10;
 module.exports = ({ page = 1 } = {}) => {
   return new Promise((resolve, reject) => {
     client.smembers(keys.all_tags, (err, tags) => {
-      const batch = client.batch();
-
-      for (const tag of tags) {
-        batch.zcard(keys.by_tag(tag));
-      }
-
-      batch.exec((err, counts) => {
+      Promise.all(
+        tags.map((tag) => {
+          return client.zcard(keys.by_tag(tag));
+        })
+      ).then((counts) => {
         const tagsWithCounts = tags.map((tag, i) => {
           return {
             tag,
@@ -35,7 +33,7 @@ module.exports = ({ page = 1 } = {}) => {
           tags: pageOfTags,
           stats: { page, page_size: PAGE_SIZE, total: sortedTags.length },
         });
-      });
+      }).catch(reject);
     });
   });
 };
