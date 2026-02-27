@@ -44,10 +44,10 @@ module.exports = function (blogID, entry, callback) {
 
     // Blot uses redis' sorted sets to
     // create lists of entries.
-    multi.zadd(key, score, value);
+    multi.ZADD(key, score, value);
 
     if (list === ENTRIES) {
-      multi.zadd(pathIndex.lexKey(blogID), 0, value);
+      multi.ZADD(pathIndex.lexKey(blogID), 0, value);
     }
   }
 

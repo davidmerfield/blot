@@ -116,6 +116,111 @@ describe("entries", function () {
     });
   });
 
+  describe("entry list membership transitions", function () {
+    it("keeps list and lex memberships in sync across state transitions", async function () {
+      const blogID = this.blog.id;
+      const path = "/stateful-entry.txt";
+      const listNames = ["all", "created", "entries", "drafts", "scheduled", "pages", "deleted"];
+      const keyFor = (name) => `blog:${blogID}:${name}`;
+      const lexKey = `blog:${blogID}:entries:lex`;
+
+      async function getMembership() {
+        const membership = {};
+
+        for (const listName of listNames) {
+          membership[listName] = await redis.zRange(keyFor(listName), 0, -1);
+        }
+
+        membership.lex = await redis.zRange(lexKey, 0, -1);
+        return membership;
+      }
+
+      async function setEntry(updates) {
+        await new Promise((resolve, reject) => {
+          Entry.set(blogID, path, updates, (err) => (err ? reject(err) : resolve()));
+        });
+      }
+
+      await setEntry(buildEntry(path));
+
+      let membership = await getMembership();
+      expect(membership.all).toContain(path);
+      expect(membership.created).toContain(path);
+      expect(membership.entries).toContain(path);
+      expect(membership.drafts).not.toContain(path);
+      expect(membership.scheduled).not.toContain(path);
+      expect(membership.pages).not.toContain(path);
+      expect(membership.deleted).not.toContain(path);
+      expect(membership.lex).toContain(path);
+
+      await setEntry({ draft: true });
+
+      membership = await getMembership();
+      expect(membership.all).toContain(path);
+      expect(membership.created).toContain(path);
+      expect(membership.entries).not.toContain(path);
+      expect(membership.drafts).toContain(path);
+      expect(membership.scheduled).not.toContain(path);
+      expect(membership.pages).not.toContain(path);
+      expect(membership.deleted).not.toContain(path);
+      expect(membership.lex).not.toContain(path);
+
+      await setEntry({ draft: false, page: true });
+
+      membership = await getMembership();
+      expect(membership.created).toContain(path);
+      expect(membership.entries).not.toContain(path);
+      expect(membership.drafts).not.toContain(path);
+      expect(membership.pages).toContain(path);
+      expect(membership.scheduled).not.toContain(path);
+      expect(membership.deleted).not.toContain(path);
+      expect(membership.lex).not.toContain(path);
+
+      await setEntry({ page: false, scheduled: true });
+
+      membership = await getMembership();
+      expect(membership.created).toContain(path);
+      expect(membership.entries).not.toContain(path);
+      expect(membership.pages).not.toContain(path);
+      expect(membership.scheduled).toContain(path);
+      expect(membership.deleted).not.toContain(path);
+      expect(membership.lex).not.toContain(path);
+
+      await setEntry({ scheduled: false });
+
+      membership = await getMembership();
+      expect(membership.created).toContain(path);
+      expect(membership.entries).toContain(path);
+      expect(membership.scheduled).not.toContain(path);
+      expect(membership.deleted).not.toContain(path);
+      expect(membership.lex).toContain(path);
+
+      await setEntry({ deleted: true });
+
+      membership = await getMembership();
+      expect(membership.all).toContain(path);
+      expect(membership.created).not.toContain(path);
+      expect(membership.entries).not.toContain(path);
+      expect(membership.drafts).not.toContain(path);
+      expect(membership.scheduled).not.toContain(path);
+      expect(membership.pages).not.toContain(path);
+      expect(membership.deleted).toContain(path);
+      expect(membership.lex).not.toContain(path);
+
+      await setEntry({ deleted: false });
+
+      membership = await getMembership();
+      expect(membership.all).toContain(path);
+      expect(membership.created).toContain(path);
+      expect(membership.entries).toContain(path);
+      expect(membership.drafts).not.toContain(path);
+      expect(membership.scheduled).not.toContain(path);
+      expect(membership.pages).not.toContain(path);
+      expect(membership.deleted).not.toContain(path);
+      expect(membership.lex).toContain(path);
+    });
+  });
+
   describe("pruneMissing", function () {
     it("removes orphaned IDs from entry lists", async function () {
       const blogID = this.blog.id;
