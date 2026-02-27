@@ -1,4 +1,4 @@
-var client = require("models/client");
+var client = require("models/client-new");
 var ensure = require("helper/ensure");
 var key = require("./key");
 var _ = require("lodash");
@@ -8,19 +8,21 @@ module.exports = function (blogID, callback) {
 
   var redirects = key.redirects(blogID);
 
-  client.zrange(redirects, 0, -1, function (err, froms) {
-    if (err) throw err;
+  (async function () {
+    try {
+      var froms = await client.zRange(redirects, 0, -1);
 
-    if (!froms.length) return callback(null, []);
+      if (!froms.length) return callback(null, []);
 
-    var fromKeys = _.map(froms, function (from) {
-      return key.redirect(blogID, from);
-    });
+      var fromKeys = _.map(froms, function (from) {
+        return key.redirect(blogID, from);
+      });
 
-    client.mget(fromKeys, function (err, tos) {
-      if (err) throw err;
+      var tos = await client.mGet(fromKeys);
 
-      if (tos.length !== froms.length) throw "Length mismatch";
+      if (tos.length !== froms.length) {
+        throw new Error("Length mismatch");
+      }
 
       // console.log(tos);
 
@@ -39,6 +41,8 @@ module.exports = function (blogID, callback) {
       // console.log(allRedirects);
 
       callback(null, allRedirects);
-    });
-  });
+    } catch (err) {
+      return callback(err);
+    }
+  })();
 };

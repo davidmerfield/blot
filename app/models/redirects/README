@@ -69,7 +69,7 @@ Resolves the redirect destination for an arbitrary request URL.
 Resolution order:
 
 1. Attempts a direct key lookup via `get(blogID, input, ...)`.
-2. If no direct match, scans the sorted set with `ZSCAN`, testing each member that is identified as a regex pattern against `input`.
+2. If no direct match, scans the sorted set with `zScan`, testing each member that is identified as a regex pattern against `input`.
 3. Returns `undefined` if no rule matches.
 
 ### `list(blogID, callback)`
@@ -85,7 +85,7 @@ Removes the redirect rule whose source path is `from`.
 
 - `blogID` — string
 - `from` — string
-- `callback` — called with no arguments on success; throws on Redis error
+- `callback` — called with `(err)`; errors are forwarded instead of thrown
 
 ### `key`
 
@@ -129,6 +129,5 @@ Exported for use by callers that need regex-awareness outside the standard CRUD 
 ## Known constraints
 
 - Regex detection in `util.isRegex` is heuristic: a string is treated as a regex only if it starts with `\` or contains the literal substrings `(.*)` or `$1`. Arbitrary regular expression syntax is not detected.
-- `check` uses `ZSCAN` for regex scanning, which does not guarantee full-set iteration in a single call on very large sets; cursor-based pagination is implemented.
-- `drop` throws synchronously on Redis error rather than forwarding the error to its callback.
-- There are no tests specific to this module. Integration coverage exists in `app/blog/tests/error.js`.
+- `check` uses `zScan` for regex scanning, which does not guarantee full-set iteration in a single call on very large sets; cursor-based pagination is implemented.
+- Unit coverage for migration behavior exists in `app/models/redirects/tests/index.js`, with integration coverage in `app/blog/tests/error.js`.
