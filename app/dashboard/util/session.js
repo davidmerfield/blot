@@ -1,7 +1,7 @@
 const config = require("config");
 const guid = require("helper/guid");
 const session = require("express-session");
-const Store = require("connect-redis")(session);
+const {RedisStore} = require("connect-redis");
 const redis = require("models/redis");
 const client = new redis();
 
@@ -22,7 +22,7 @@ module.exports = session({
     sameSite: true, // prevent the cookie's exposure to other sites
     maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days in ms
   },
-  store: new Store({
+  store: new RedisStore({
     client,
     port: config.redis.port,
   }),
