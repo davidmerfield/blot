@@ -35,8 +35,8 @@ module.exports = function get(blogID, tag, options, callback) {
     var stop = limit === undefined ? -1 : offset + limit - 1;
 
     const [totalResult, entryIDsResult] = await Promise.all([
-      client.zcard(sortedTagKey),
-      client.zrevrange(sortedTagKey, start, stop),
+      client.ZCARD(sortedTagKey),
+      client.ZREVRANGE(sortedTagKey, start, stop),
     ]);
 
     const total = totalResult || 0;

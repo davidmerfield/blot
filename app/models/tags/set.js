@@ -81,7 +81,7 @@ module.exports = function (blogID, entry, callback) {
     var popularityKey = key.popular(blogID);
 
     added.forEach(function (tag) {
-      multi.zincrby(popularityKey, 1, tag);
+      multi.ZINCRBY(popularityKey, 1, tag);
     });
 
     tags.forEach(function (tag, i) {
@@ -92,7 +92,7 @@ module.exports = function (blogID, entry, callback) {
       if (typeof score !== "number" || isNaN(score)) {
         score = Date.now();
       }
-      multi.zadd(key.sortedTag(blogID, tag), score, entry.id);
+      multi.ZADD(key.sortedTag(blogID, tag), score, entry.id);
     });
 
     // For each tagName in the list of tags which the
@@ -100,9 +100,9 @@ module.exports = function (blogID, entry, callback) {
     // neccessary when the user updates an entry and
     // removes a previously existing tag
     removed.forEach(function (tag) {
-      multi.zrem(key.sortedTag(blogID, tag), entry.id);
+      multi.ZREM(key.sortedTag(blogID, tag), entry.id);
       multi.srem(existingKey, tag);
-      multi.zincrby(popularityKey, -1, tag);
+      multi.ZINCRBY(popularityKey, -1, tag);
     });
 
     // Finally add all the entry's tags to the
@@ -113,7 +113,7 @@ module.exports = function (blogID, entry, callback) {
       multi.sadd(existingKey, tags);
     }
 
-    multi.zremrangebyscore(popularityKey, "-inf", 0);
+    multi.ZREMRANGEBYSCORE(popularityKey, "-inf", 0);
 
     multi.exec(function (err) {
       if (err) throw err;

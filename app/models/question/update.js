@@ -30,12 +30,12 @@ module.exports = async (id, updates) => {
   if (updates.tags) {
     for (const tag of updates.tags) {
       multi.sadd(keys.all_tags, tag);
-      multi.zadd(keys.by_tag(tag),  parseInt(created_at), id);
+      multi.ZADD(keys.by_tag(tag),  parseInt(created_at), id);
     }
 
     for (const tag of existing.tags) {
       if (!updates.tags.includes(tag)) {
-        multi.zrem(keys.by_tag(tag), id);
+        multi.ZREM(keys.by_tag(tag), id);
         removedTags.push(tag);
       }
     }
@@ -65,7 +65,7 @@ function identifyTagsToRemove(removedTags) {
 
   return Promise.all(
     removedTags.map((tag) => {
-      return client.zcard(keys.by_tag(tag));
+      return client.ZCARD(keys.by_tag(tag));
     })
   ).then((replies) => {
     for (let i = 0; i < replies.length; i++) {

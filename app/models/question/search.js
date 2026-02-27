@@ -63,7 +63,7 @@ const load = (ids) => {
     (async () => {
       const childIDs = await Promise.all(
         ids.map((id) => {
-          return client.zrange(keys.children(id), 0, -1);
+          return client.ZRANGE(keys.children(id), 0, -1);
         })
       );
 

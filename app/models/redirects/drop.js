@@ -7,7 +7,7 @@ module.exports = function (blogID, from, callback) {
 
   var redirects = key.redirects(blogID);
 
-  client.zrem(redirects, from, function (err) {
+  client.ZREM(redirects, from, function (err) {
     if (err) throw err;
 
     var fromKey = key.redirect(blogID, from);

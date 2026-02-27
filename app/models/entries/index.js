@@ -47,7 +47,7 @@ module.exports = (function () {
     ensure(blogID, "string").and(entryID, "string").and(callback, "function");
 
     // Get the index of the entry in the list of entries
-    redis.zrank(listKey(blogID, "entries"), entryID, function (error, rank) {
+    redis.ZRANK(listKey(blogID, "entries"), entryID, function (error, rank) {
       if (error) throw error;
 
       // If the entry has no rank its not got siblings
@@ -56,7 +56,7 @@ module.exports = (function () {
 
       var lowerBound = rank > 0 ? rank - 1 : 0;
 
-      redis.zrange(
+      redis.ZRANGE(
         listKey(blogID, "entries"),
         lowerBound,
         rank + 1,
@@ -86,14 +86,14 @@ module.exports = (function () {
   function getTotal(blogID, callback) {
     var entriesKey = listKey(blogID, "entries");
 
-    redis.zcard(entriesKey, callback);
+    redis.ZCARD(entriesKey, callback);
   }
 
   // includes deleted entries
   function getAllIDs(blogID, callback) {
     var allKey = listKey(blogID, "all");
 
-    redis.zrevrange(allKey, 0, -1, callback);
+    redis.ZREVRANGE(allKey, 0, -1, callback);
   }
 
   // includes deleted entries
@@ -163,7 +163,7 @@ module.exports = (function () {
       end = options.first - 1;
     }
 
-    redis.zrevrange(list, start, end, function (err, ids) {
+    redis.ZREVRANGE(list, start, end, function (err, ids) {
       if (err) throw err;
 
       return callback(null, ids);
@@ -174,7 +174,7 @@ module.exports = (function () {
   function each(blogID, dothis, callback) {
     ensure(blogID, "string").and(dothis, "function").and(callback, "function");
 
-    redis.zrevrange(listKey(blogID, "all"), 0, -1, function (error, ids) {
+    redis.ZREVRANGE(listKey(blogID, "all"), 0, -1, function (error, ids) {
       if (error) throw error;
 
       async.eachSeries(
@@ -200,7 +200,7 @@ module.exports = (function () {
       function (listName, nextList) {
         var key = listKey(blogID, listName);
 
-        redis.zrange(key, 0, -1, function (err, ids) {
+        redis.ZRANGE(key, 0, -1, function (err, ids) {
           if (err) return nextList(err);
           if (!ids || !ids.length) return nextList();
 
@@ -271,7 +271,7 @@ module.exports = (function () {
     var listName = options.list || "entries";
     var key = listKey(blogID, listName);
 
-    redis.zrevrange(key, start, end, function (err, entryIDs) {
+    redis.ZREVRANGE(key, start, end, function (err, entryIDs) {
       // todo add err as first parameter of callback
       if (err) return callback([]);
 
@@ -444,7 +444,7 @@ module.exports = (function () {
 
     Promise.all(
       entryIDs.map(function (entryID) {
-        return redis.zscore(key, entryID);
+        return redis.ZSCORE(key, entryID);
       })
     ).then(function (rawScores) {
       var withScores = [];
@@ -630,7 +630,7 @@ module.exports = (function () {
           return callback(error, [], null);
         }
 
-        redis.zcard(listKey(blogID, "entries"), function (error, totalEntries) {
+        redis.ZCARD(listKey(blogID, "entries"), function (error, totalEntries) {
           if (error) {
             console.error(error);
             return callback(error, [], null);
@@ -665,7 +665,7 @@ module.exports = (function () {
             console.error(error);
             return callback(error, [], null);
           }
-          redis.zcard(
+          redis.ZCARD(
             listKey(blogID, "entries"),
             function (error, totalEntries) {
               if (error) {
@@ -752,7 +752,7 @@ module.exports = (function () {
 
   function getRecent(blogID, callback) {
     getRange(blogID, 0, 30, { skinny: true }, function (entries) {
-      redis.zcard(listKey(blogID, "entries"), function (error, totalEntries) {
+      redis.ZCARD(listKey(blogID, "entries"), function (error, totalEntries) {
         // We need to add error handling
         if (error) return callback([]);
 

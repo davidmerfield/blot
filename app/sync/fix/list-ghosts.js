@@ -14,7 +14,7 @@ function main(blog, callback) {
     async.each(
       lists,
       function (list, next) {
-        client.zrevrange("blog:" + blog.id + ":" + list, 0, -1, function (
+        client.ZREVRANGE("blog:" + blog.id + ":" + list, 0, -1, function (
           err,
           res
         ) {
@@ -26,7 +26,7 @@ function main(blog, callback) {
                 if (entry && entry.id === id) return next();
 
                 report.push([list, "MISMATCH", id]);
-                client.zrem("blog:" + blog.id + ":" + list, id, function (err) {
+                client.ZREM("blog:" + blog.id + ":" + list, id, function (err) {
                   if (err) return next(err);
                   if (!entry) return next();
                   Entry.set(blog.id, entry.id, entry, next);

@@ -144,7 +144,7 @@ function sortedSetSearch(string, keys, result, callback) {
   async.each(
     keys,
     function (key, next) {
-      client.zrange(key, 0, -1, function (err, members) {
+      client.ZRANGE(key, 0, -1, function (err, members) {
         if (err) return next(err);
         if (!members) return next();
 
