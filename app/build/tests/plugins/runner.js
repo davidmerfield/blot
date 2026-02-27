@@ -23,7 +23,7 @@ describe("plugin runner", function () {
 
   it("collects newDependencies from plugin results", async function () {
     const plugins = { wikilinks: { enabled: true, options: {} } };
-    const contents = '<a href="target" class="wikilink">wikilink</a>';
+    const contents = '<a href="target" title="wikilink">wikilink</a>';
 
     const { dependencies } = await runPlugins(plugins, contents);
 
@@ -39,6 +39,17 @@ describe("plugin runner", function () {
     expect(html).toContain('class="wikilink"');
     expect(html).not.toContain('title="wikilink"');
     expect(dependencies).toContain("/target");
+  });
+
+
+  it("does not treat user-authored .wikilink classes as generated markers", async function () {
+    const plugins = { wikilinks: { enabled: true, options: {} } };
+    const contents = '<a href="target" class="wikilink">wikilink</a>';
+
+    const { html, dependencies } = await runPlugins(plugins, contents);
+
+    expect(html).toContain('<a href="target" class="wikilink">wikilink</a>');
+    expect(dependencies.length).toBe(0);
   });
 
   it("ignores plugins that return no result", async function () {

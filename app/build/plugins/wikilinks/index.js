@@ -22,7 +22,7 @@ function isMarkdownFile(path) {
 
 
 function render($, callback, { blogID, path }) {
-  const cleanupMediaWikilinkMarker = ($node) => {
+  const cleanupWikilinkMarker = ($node, { removeClass = false } = {}) => {
     if (!$node || !$node.length) return;
 
     if ($node.attr("data-wikilink-marker") === "1") {
@@ -32,6 +32,8 @@ function render($, callback, { blogID, path }) {
       }
       $node.removeAttr("data-wikilink-marker");
     }
+
+    if (!removeClass) return;
 
     const existingClasses = ($node.attr("class") || "")
       .split(/\s+/)
@@ -57,17 +59,15 @@ function render($, callback, { blogID, path }) {
       $node.attr("class", existingClasses.join(" "));
     }
 
-    const isLink = node && node.name === "a";
-    const isMedia = !isLink && $node.attr("src") !== undefined;
+    $node.attr("data-wikilink-marker", "1");
 
-    if (isMedia) {
-      $node.attr("data-wikilink-marker", "1");
-    } else {
+    const isLink = node && node.name === "a";
+    if (isLink) {
       $node.removeAttr("title");
     }
   });
 
-  const wikilinks = $(".wikilink");
+  const wikilinks = $(".wikilink[data-wikilink-marker='1']");
   let dependencies = [];
 
   eachOf(
@@ -93,6 +93,7 @@ function render($, callback, { blogID, path }) {
       const rawTarget = isLink ? $node.attr(attribute) : mediaSource;
 
       if (!rawTarget) {
+        cleanupWikilinkMarker($node, { removeClass: isMedia });
         debug("Skipping wikilink node with no target");
         return next();
       }
@@ -170,9 +171,7 @@ function render($, callback, { blogID, path }) {
             }
           }
 
-          if (isMedia) {
-            cleanupMediaWikilinkMarker($node);
-          }
+          cleanupWikilinkMarker($node, { removeClass: isMedia });
 
           debug("Wikilink target not found for", href);
           return next();
@@ -198,7 +197,7 @@ function render($, callback, { blogID, path }) {
                   url || linkedPath
                 );
                 $node.attr("src", url || linkedPath);
-                cleanupMediaWikilinkMarker($node);
+                cleanupWikilinkMarker($node, { removeClass: isMedia });
                 return next();
               }
 
@@ -250,7 +249,11 @@ function render($, callback, { blogID, path }) {
             nextNode.text(altText || "");
           }
 
-          cleanupMediaWikilinkMarker($node);
+          cleanupWikilinkMarker($node, { removeClass: isMedia });
+        }
+
+        if (isLink) {
+          cleanupWikilinkMarker($node);
         }
 
         if (linkedPath) {
