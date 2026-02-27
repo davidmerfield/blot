@@ -120,6 +120,7 @@ documentation.get("/templates/for-:type", (req, res, next) => {
 
 documentation.get("/templates/:template", (req, res, next) => {
   res.locals.layout = "partials/layout-full-screen";
+  res.locals.host = config.host;
   const view = `templates/${req.params.template}/index`;
   res.render(view, (err, html) => {
     if (err) return next();

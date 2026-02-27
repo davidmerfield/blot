@@ -1,3 +1,5 @@
+Hitting the save changes button under typeset settings spits you back out to homepage! Bug!
+
 Debug issue with warwickmostyn
 
 Fix bug where pages where appearing in the list of posts filtered by path_prefix AND tag – e.g. /work/tagged/automotive and tell Chuck
