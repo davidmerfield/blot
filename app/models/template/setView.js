@@ -14,6 +14,7 @@ var Blog = require("models/blog");
 var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
 var updateCdnManifest = require("./util/updateCdnManifest");
+var serializeRedisHashValues = require("models/redisHashSerializer");
 var clfdate = require("helper/clfdate");
 const MAX_VIEW_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
@@ -272,7 +273,7 @@ module.exports = function setView(templateID, updates, callback) {
 
 						view.retrieve = parseResult.retrieve || {};
 
-						view = serialize(view, viewModel);
+						view = serializeRedisHashValues(serialize(view, viewModel));
 
 						// Delete url and urlPatterns from Redis hash if they were removed
 						var multi = client.multi();

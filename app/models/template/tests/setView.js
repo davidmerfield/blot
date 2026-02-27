@@ -49,6 +49,55 @@ describe("template", () => {
 		expect(savedView.content).toEqual(view.content);
 	});
 
+	it("handles boolean-heavy draft updates without Redis encoder errors", async function () {
+		const templateID = this.template.id;
+
+		await setMetadata(templateID, {
+			localEditing: true,
+			isPublic: false,
+			locals: {
+				featureFlags: {
+					livePreview: true,
+					showDraftBadge: false,
+				},
+			},
+		});
+
+		await setView(templateID, {
+			name: "draft.html",
+			content: "{{title}}",
+			locals: {
+				showHero: true,
+				rollout: [true, false],
+			},
+			retrieve: {
+				includeDraft: true,
+				filters: {
+					featured: false,
+				},
+			},
+		});
+
+		await setView(templateID, {
+			name: "draft.html",
+			content: "{{title}} updated",
+			locals: {
+				showHero: false,
+				rollout: [false, true],
+			},
+			retrieve: {
+				includeDraft: false,
+				filters: {
+					featured: true,
+				},
+			},
+		});
+
+		const view = await getView(templateID, "draft.html");
+		expect(view.locals.showHero).toBe(false);
+		expect(view.retrieve.includeDraft).toBe(false);
+	});
+
 	it("won't set a view with invalid mustache content", async function () {
 		const test = this;
 		const view = {

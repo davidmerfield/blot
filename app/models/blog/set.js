@@ -14,6 +14,7 @@ var normalizeConverters = require("./util/converters").normalize;
 var updateCdnManifest = require("../template/util/updateCdnManifest");
 var forkSiteTemplate = require("../template/util/forkSiteTemplate");
 var renameGitRepo = require("clients/git/renameRepo");
+var serializeRedisHashValues = require("models/redisHashSerializer");
 var promisify = require("util").promisify;
 var updateCdnManifestAsync = promisify(updateCdnManifest);
 
@@ -172,7 +173,7 @@ module.exports = function (blogID, blog, callback) {
         return callback(null, changesList);
       }
 
-      multi.hSet(key.info(blogID), serial(latest));
+      multi.hSet(key.info(blogID), serializeRedisHashValues(serial(latest)));
 
       try {
         await multi.exec();

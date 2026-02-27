@@ -1,4 +1,5 @@
 const client = require("models/client-new");
+const serializeRedisHashValue = require("models/redisHashSerializer").value;
 const keys = require("./keys");
 const get = require("./get");
 
@@ -13,17 +14,7 @@ module.exports = async (id, updates) => {
   const removedTags = [];
 
   for (const key in updates) {
-    let value = updates[key];
-
-    if (typeof value === "object" || Array.isArray(value)) {
-      value = JSON.stringify(value);
-    } else if (typeof value === "boolean") {
-      value = value ? "true" : "false";
-    } else if (typeof value === "number") {
-      value = value.toString();
-    }
-
-    multi.hSet(keys.item(id), key, value);
+    multi.hSet(keys.item(id), key, serializeRedisHashValue(updates[key]));
   }
 
   // we need to update any tags
