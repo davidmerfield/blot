@@ -1,7 +1,7 @@
 Models
 ------
 
-Models are the data layer. They read and write to Redis. The Redis client is a singleton: require `models/client` (from `app/models/client.js`, which wraps `app/models/redis.js`).
+Models are the data layer. They read and write to Redis. New code should use the new Redis client modules: `models/client-new` for the shared singleton connection, or `models/redis-new` when a module needs a dedicated client instance with its own lifecycle.
 
 
 Redis conventions
@@ -14,6 +14,40 @@ Redis conventions
 - **Key names live in `key.js`.** Each model that uses Redis has a `key.js` (or equivalent) that centralises key names (e.g. `blog:${blogID}:info`, `user:${uid}:info`). Use these instead of building keys inline.
 
 - **Complex types: scheme + serial.** Models that store nested objects (e.g. blog) define a `scheme.js` and use a serial module to JSON.stringify/parse when writing/reading hashes. See blog’s `scheme.js`, `serial.js` and `get.js`/`set.js`.
+
+Choosing the Redis client module
+-------------------------------
+
+- **Use `models/client-new` by default.** It exports a process-wide singleton client and is the correct choice for almost all model reads and writes. Do not call `quit()`/`disconnect()` on this shared instance.
+
+- **Use `models/redis-new` only when you need isolation.** `require("models/redis-new")()` creates a dedicated client with an independent lifecycle. Use this for scripts, one-off migrations, worker-style jobs, or module flows that must explicitly connect and close without affecting the app-wide singleton.
+
+- **Rule of thumb:** if the code runs inside normal request/model flow, use `models/client-new`; if it needs explicit connect/teardown control, use a dedicated `models/redis-new` client.
+
+Legacy compatibility caveats
+----------------------------
+
+When migrating older `models/client`/`models/redis` usage, keep these compatibility differences in mind:
+
+- **Callbacks:** `models/client-new` follows modern promise-based redis APIs. Legacy callback-last patterns (e.g. `client.get(key, cb)`) are not automatically shimmed.
+
+- **Command naming:** the legacy adapter exposed both lowercase and uppercase aliases and normalized some argument shapes. With the new client path, use the current redis command API and argument forms directly.
+
+- **Pub/Sub cleanup:** dedicated pub/sub clients created via `models/redis-new` should be unsubscribed and closed when done. Avoid long-lived subscriptions on the shared singleton unless that lifecycle is intentional and app-wide.
+
+- **Connect lifecycle:** `models/client-new` connects once on module load and is shared process-wide. Dedicated `models/redis-new` clients must be connected and then explicitly closed by the owning module.
+
+Migration checklist (copy per module)
+-------------------------------------
+
+Use this checklist when updating a model:
+
+- [ ] Replace `require("models/client")` with `require("models/client-new")` unless the module needs an isolated client lifecycle.
+- [ ] If isolated lifecycle is required, switch to `const createRedisClient = require("models/redis-new")` and manage `connect()` + shutdown in that module.
+- [ ] Convert callback-last Redis calls to promise/`async`-`await` style where needed.
+- [ ] Re-validate Redis command names/arguments against the new client API (no dependence on legacy aliasing/shims).
+- [ ] Audit pub/sub code paths for explicit unsubscribe/cleanup on shutdown.
+- [ ] Verify tests cover connection lifecycle and module teardown behavior after the migration.
 
 
 Entities
@@ -41,5 +75,5 @@ Adding or changing a model
 --------------------------
 
 1. Add a folder under `app/models` (or a single file like `ignoredFiles.js`).
-2. Export an object of functions (or a single function). Models that use Redis should require `models/client` and use the key module pattern.
+2. Export an object of functions (or a single function). Models that use Redis should default to `models/client-new` and use the key module pattern.
 3. For new Redis keys, add them to the model’s `key.js` (or equivalent)
