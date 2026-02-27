@@ -468,10 +468,6 @@ module.exports = function () {
     };
   }
 
-  if (typeof client.batch !== "function") {
-    client.batch = client.multi.bind(client);
-  }
-
   function createIteratorPassThrough(name) {
     const nativeIterator =
       typeof client[name] === "function"
