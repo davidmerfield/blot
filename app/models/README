@@ -49,16 +49,18 @@ Use this checklist when updating a model:
 - [ ] Audit pub/sub code paths for explicit unsubscribe/cleanup on shutdown.
 - [ ] Verify tests cover connection lifecycle and module teardown behavior after the migration.
 
-404 migration notes (template for similar folders)
-------------------------------------------------
+Model migration guidance (reusable)
+-----------------------------------
 
-- **Keep public callbacks stable while adopting async internals.** Wrap migrated logic in an internal async IIFE (or helper), `await` Redis calls from `models/client-new`, and translate outcomes back to the existing callback contract (`callback(null, result...)` on success, `callback(err)` on failure).
+- **Preserve public API contracts while modernizing internals.** Keep existing return shapes/callback signatures stable, but move Redis internals to `async`/`await` with promise-based `models/client-new` commands.
 
-- **Use `multi()` for atomic write paths only.** For write flows like 404 event recording (add + prune + trim), keep commands in one `client.multi() ... .exec()` transaction to preserve ordering and atomicity under concurrent requests.
+- **Reserve `multi()` for true atomic write paths.** For create/update flows that must commit several writes together, keep them inside `client.multi() ... await multi.exec()`. Use direct awaited calls for non-atomic reads.
 
-- **Use modern command names and argument shapes explicitly.** Prefer methods like `sMembers`, `zRangeWithScores(..., { REV: true })`, `zAdd(key, { score, value })`, `zRemRangeByScore`, and `zRemRangeByRank`; do not rely on legacy uppercase aliases (e.g. `SMEMBERS`) or callback shims.
+- **Use modern command names and argument shapes explicitly.** Prefer methods like `sMembers`, `hGetAll`, `zRange(..., { REV: true })`, `zAdd(key, { score, value })`, and `sScan`; avoid legacy lowercase/callback alias assumptions.
 
-- **Update test spies/mocks to `models/client-new` + modern methods.** When migrating tests, re-point module mocks from `models/client` to `models/client-new`, and spy on promise-returning methods (`sAdd`, `sRem`, `zRangeWithScores`, `multi().exec`, etc.) so error-path assertions still reflect production code.
+- **Keep migration patterns model-agnostic.** Apply the same approach whether you are migrating `question`, `redirects`, `404`, or any other model folder.
+
+- **Apply-per-model checklist note:** when command names or call styles change, update test doubles/spies to match the new methods (including `multi().exec()` promise rejection assertions) before finalizing the migration.
 
 Entities
 --------
