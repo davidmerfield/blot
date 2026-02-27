@@ -34,7 +34,7 @@ module.exports = function remove(uid, callback) {
 
         await multi.exec();
 
-        return callback();
+        return callback(null);
       } catch (err) {
         return callback(err);
       }
