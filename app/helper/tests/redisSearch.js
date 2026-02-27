@@ -1,5 +1,5 @@
 const redisSearchPath = require.resolve("helper/redisSearch");
-const redisModelPath = require.resolve("models/redis");
+const redisModelPath = require.resolve("models/client-new");
 
 function loadWithClient(mockClient) {
   delete require.cache[redisSearchPath];
@@ -8,9 +8,7 @@ function loadWithClient(mockClient) {
     id: redisModelPath,
     filename: redisModelPath,
     loaded: true,
-    exports: function MockRedisClient() {
-      return mockClient;
-    },
+    exports: mockClient,
   };
 
   return require(redisSearchPath);
