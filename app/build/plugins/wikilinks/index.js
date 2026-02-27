@@ -20,7 +20,30 @@ function isMarkdownFile(path) {
   return [".txt", ".text", ".md", ".markdown"].indexOf(ext) > -1;
 }
 
+
 function render($, callback, { blogID, path }) {
+  const cleanupMediaWikilinkMarker = ($node) => {
+    if (!$node || !$node.length) return;
+
+    if ($node.attr("data-wikilink-marker") === "1") {
+      const title = ($node.attr("title") || "").toLowerCase();
+      if (title === "wikilink") {
+        $node.removeAttr("title");
+      }
+      $node.removeAttr("data-wikilink-marker");
+    }
+
+    const existingClasses = ($node.attr("class") || "")
+      .split(/\s+/)
+      .filter((className) => className && className !== "wikilink");
+
+    if (existingClasses.length) {
+      $node.attr("class", existingClasses.join(" "));
+    } else {
+      $node.removeAttr("class");
+    }
+  };
+
   const legacyWikilinks = $("[title='wikilink']");
 
   legacyWikilinks.each(function (_, node) {
@@ -147,6 +170,10 @@ function render($, callback, { blogID, path }) {
             }
           }
 
+          if (isMedia) {
+            cleanupMediaWikilinkMarker($node);
+          }
+
           debug("Wikilink target not found for", href);
           return next();
         }
@@ -171,6 +198,7 @@ function render($, callback, { blogID, path }) {
                   url || linkedPath
                 );
                 $node.attr("src", url || linkedPath);
+                cleanupMediaWikilinkMarker($node);
                 return next();
               }
 
@@ -222,23 +250,7 @@ function render($, callback, { blogID, path }) {
             nextNode.text(altText || "");
           }
 
-          if ($node.attr("data-wikilink-marker") === "1") {
-            const title = ($node.attr("title") || "").toLowerCase();
-            if (title === "wikilink") {
-              $node.removeAttr("title");
-            }
-            $node.removeAttr("data-wikilink-marker");
-          }
-
-          const existingClasses = ($node.attr("class") || "")
-            .split(/\s+/)
-            .filter((className) => className && className !== "wikilink");
-
-          if (existingClasses.length) {
-            $node.attr("class", existingClasses.join(" "));
-          } else {
-            $node.removeAttr("class");
-          }
+          cleanupMediaWikilinkMarker($node);
         }
 
         if (linkedPath) {
