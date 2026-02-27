@@ -14,5 +14,12 @@ module.exports = function () {
     },
   });
 
+  client.on("error", function (err) {
+    console.log("Redis Error:");
+    console.log(err);
+    if (err.trace) console.log(err.trace);
+    if (err.stack) console.log(err.stack);
+  });
+
   return client;
 };
