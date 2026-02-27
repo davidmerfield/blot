@@ -135,7 +135,7 @@ function deleteKeys(blog, callback) {
     function (err) {
       if (err) return callback(err);
 
-      multi.del(remove);
+      if (remove.length > 0) multi.del(remove);
       multi.srem(key.ids, blog.id);
       multi.exec(function (err) {
         callback(err);
