@@ -1,7 +1,7 @@
 var ensure = require("helper/ensure");
 var type = require("helper/type");
 
-var redis = require("models/client");
+var redis = require("models/client-new");
 var entryKey = require("./key").entry;
 
 var Entry = require("./instance");
@@ -28,25 +28,28 @@ module.exports = function (blogID, entryIDs, callback) {
 
   ensure(entryIDs, "array");
 
-  redis.mget(entryIDs, function (err, entries) {
-    if (err) throw err;
+  redis
+    .mGet(entryIDs)
+    .then(function (entries) {
+      entries = entries || [];
 
-    entries = entries || [];
+      entries = entries.filter(function (entry) {
+        return entry;
+      });
 
-    entries = entries.filter(function (entry) {
-      return entry;
+      entries = entries.map(function (entry) {
+        return new Entry(JSON.parse(entry)); // return value
+      });
+
+      if (single) {
+        entries = entries[0];
+      }
+
+      if (single && !entries) return callback();
+
+      return callback(entries);
+    })
+    .catch(function (err) {
+      throw err;
     });
-
-    entries = entries.map(function (entry) {
-      return new Entry(JSON.parse(entry)); // return value
-    });
-
-    if (single) {
-      entries = entries[0];
-    }
-
-    if (single && !entries) return callback();
-
-    return callback(entries);
-  });
 };

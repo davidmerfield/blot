@@ -1,7 +1,7 @@
 describe("entry.getByUrl", function () {
   function withMocks(redisImpl, getImpl, run) {
     const modulePath = require.resolve("../getByUrl");
-    const redisPath = require.resolve("models/client");
+    const redisPath = require.resolve("models/client-new");
     const getPath = require.resolve("../get");
 
     const oldGetByUrl = require.cache[modulePath];
@@ -46,9 +46,9 @@ describe("entry.getByUrl", function () {
 
     withMocks(
       {
-        get: (key, callback) => {
+        get: key => {
           calls.push(key);
-          callback(null, "/entry.txt");
+          return Promise.resolve("/entry.txt");
         },
       },
       (blogID, entryID, callback) => {
@@ -72,9 +72,9 @@ describe("entry.getByUrl", function () {
 
     withMocks(
       {
-        get: (key, callback) => {
+        get: key => {
           calls.push(key);
-          callback(null, "/entry.txt");
+          return Promise.resolve("/entry.txt");
         },
       },
       (_blogID, _entryID, callback) => callback({ id: "/entry.txt" }),
@@ -96,9 +96,9 @@ describe("entry.getByUrl", function () {
 
     withMocks(
       {
-        get: (key, callback) => {
+        get: key => {
           calls.push(key);
-          callback(null, "/entry.txt");
+          return Promise.resolve("/entry.txt");
         },
       },
       (_blogID, _entryID, callback) => callback({ id: "/entry.txt" }),

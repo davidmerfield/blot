@@ -59,6 +59,13 @@ Model migration guidance (reusable)
 Migration lessons for callback-based models
 -------------------------------------------
 
+- **For callback-surface modules, migrate internals and keep API shape stable.** Move Redis usage to promise-based `models/client-new` calls internally, while preserving existing callback signatures and result shapes for callers.
+
+- **Use modern command names and argument shapes explicitly.** Don’t rely on legacy lowercase/uppercase aliases or callback-last behavior; call the current Redis API directly.
+
+- **Keep `multi()` + `exec()` for atomic write paths only.** Use awaited direct commands for non-atomic reads and reserve transactions for grouped writes that must commit consistently.
+
+- **Update tests to mock `models/client-new` directly.** Adjust spies/stubs to the migrated method names/signatures and keep assertions behavior-focused.
 - **Keep callback contracts stable while migrating internals.** You can move Redis logic to `async`/`await` and promises internally, but preserve existing callback signatures, callback argument order, and output shapes at module boundaries.
 
 - **Modernize command names and argument forms explicitly.** Use `client-new` methods directly (`zRange`, `zCard`, `zRandMember`, `zAdd(key, { score, value })`, etc.) and remove assumptions about legacy lowercase aliases or callback-last overloads.
