@@ -207,7 +207,7 @@ Currently a no-op. The function accepts no arguments and returns nothing.
 
 ## Internal Structure
 
-`create.js`, `update.js`, `list.js`, `search.js`, and `tags.js` all depend on `keys.js` for Redis key construction and on `models/client` for the Redis connection. `get.js` is also used as a dependency by `create.js` and `update.js` to return a freshly read object after write operations complete. `import.js` depends on `create.js` exclusively.
+`create.js`, `update.js`, `list.js`, `search.js`, and `tags.js` all depend on `keys.js` for Redis key construction and on `models/client-new` for the Redis connection. `get.js` is also used as a dependency by `create.js` and `update.js` to return a freshly read object after write operations complete. `import.js` depends on `create.js` exclusively.
 
 `export.js` and `import.js` are not exported from `index.js` and are not part of the standard public interface. They are utility functions for bulk data migration.
 
@@ -217,7 +217,7 @@ Currently a no-op. The function accepts no arguments and returns nothing.
 
 **Internal:**
 
-- `models/client` — the shared Redis client instance (`app/models/client.js` → `app/models/redis.js`).
+- `models/client-new` — the shared Redis singleton (`app/models/client-new.js` → `app/models/redis-new.js`).
 
 **External:**
 
