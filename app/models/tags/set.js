@@ -1,4 +1,4 @@
-var client = require("models/client");
+var client = require("models/client-new");
 var key = require("./key");
 var _ = require("lodash");
 var ensure = require("helper/ensure");
@@ -67,60 +67,59 @@ module.exports = function (blogID, entry, callback) {
 
   // First we retrieve a list of all the tags used
   // across the user's blog
-  client.SMEMBERS(existingKey, function (err, existing) {
-    if (err) throw err;
+  (async function () {
+    try {
+      var existing = (await client.sMembers(existingKey)) || [];
 
-    // Then we compute a list of tags which the entry
-    // should NOT be present on (intersection of entry's
-    // current tags and all the tags used on the blog)
-    var removed = _.difference(existing, tags);
-    var added = _.difference(tags, existing);
-    var names = [];
+      // Then we compute a list of tags which the entry
+      // should NOT be present on (intersection of entry's
+      // current tags and all the tags used on the blog)
+      var removed = _.difference(existing, tags);
+      var added = _.difference(tags, existing);
 
-    var multi = client.multi();
-    var popularityKey = key.popular(blogID);
+      var multi = client.multi();
+      var popularityKey = key.popular(blogID);
 
-    added.forEach(function (tag) {
-      multi.zincrby(popularityKey, 1, tag);
-    });
+      added.forEach(function (tag) {
+        multi.zIncrBy(popularityKey, 1, tag);
+      });
 
-    tags.forEach(function (tag, i) {
-      names.push(key.name(blogID, tag));
-      names.push(prettyTags[i]);
+      tags.forEach(function (tag, i) {
+        var score = entry.dateStamp;
+        if (typeof score !== "number" || isNaN(score)) {
+          score = Date.now();
+        }
 
-      var score = entry.dateStamp;
-      if (typeof score !== "number" || isNaN(score)) {
-        score = Date.now();
+        multi.set(key.name(blogID, tag), prettyTags[i]);
+        multi.zAdd(key.sortedTag(blogID, tag), { score: score, value: entry.id });
+      });
+
+      // For each tagName in the list of tags which the
+      // entry is NOT on, make sure that is so. This is
+      // neccessary when the user updates an entry and
+      // removes a previously existing tag
+      removed.forEach(function (tag) {
+        multi.zRem(key.sortedTag(blogID, tag), entry.id);
+        multi.sRem(existingKey, tag);
+        multi.zIncrBy(popularityKey, -1, tag);
+      });
+
+      // Finally add all the entry's tags to the
+      // list of tags used across the blog...
+      if (tags.length) {
+        multi.sAdd(key.all(blogID), tags);
+        multi.sAdd(existingKey, tags);
       }
-      multi.zadd(key.sortedTag(blogID, tag), score, entry.id);
-    });
 
-    // For each tagName in the list of tags which the
-    // entry is NOT on, make sure that is so. This is
-    // neccessary when the user updates an entry and
-    // removes a previously existing tag
-    removed.forEach(function (tag) {
-      multi.zrem(key.sortedTag(blogID, tag), entry.id);
-      multi.srem(existingKey, tag);
-      multi.zincrby(popularityKey, -1, tag);
-    });
+      multi.zRemRangeByScore(popularityKey, "-inf", 0);
 
-    // Finally add all the entry's tags to the
-    // list of tags used across the blog...
-    if (tags.length) {
-      multi.mset(names);
-      multi.sadd(key.all(blogID), tags);
-      multi.sadd(existingKey, tags);
-    }
-
-    multi.zremrangebyscore(popularityKey, "-inf", 0);
-
-    multi.exec(function (err) {
-      if (err) throw err;
+      await multi.exec();
 
       callback();
-    });
-  });
+    } catch (err) {
+      callback(err);
+    }
+  })();
 };
 
 // we need a better way to determine if we should ignore the entry (i.e. if has an underscore in its path)

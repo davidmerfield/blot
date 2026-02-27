@@ -88,14 +88,14 @@ describe("tags.list", function () {
 
     it("does not call zcard when filtering by pathPrefix", function (done) {
         const blogID = this.blog.id;
-        const client = require("models/client");
+        const client = require("models/client-new");
 
         set(blogID, {
             id: "/Blog/one",
             path: "/Blog/one",
             tags: ["TagA"],
         }, function () {
-            spyOn(client, "zcard").and.callThrough();
+            spyOn(client, "zCard").and.callThrough();
 
             list(blogID, { pathPrefix: "Blog" }, function (err, tags) {
                 expect(err).toBeNull();
@@ -106,7 +106,7 @@ describe("tags.list", function () {
                         entries: ["/Blog/one"],
                     },
                 ]);
-                expect(client.zcard).not.toHaveBeenCalled();
+                expect(client.zCard).not.toHaveBeenCalled();
                 done();
             });
         });
