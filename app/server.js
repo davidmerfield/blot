@@ -27,22 +27,24 @@ console.log(
 server.set("trust proxy", true);
 
 // Check if the database is healthy
-server.get("/redis-health", function (req, res) {
-  let redis = require("models/redis");
-  let client = redis();
+server.get("/redis-health", async function (req, res) {
+  const createRedisClient = require("models/redis-new");
+  const client = createRedisClient();
 
   // do not cache response
   res.set("Cache-Control", "no-store");
 
-  client.ping(function (err, reply) {
-    if (err) {
-      res.status(400).send("Failed to ping redis");
-    } else {
-      res.send("OK");
+  try {
+    await client.connect();
+    await client.ping();
+    res.send("OK");
+  } catch (err) {
+    res.status(400).send("Failed to ping redis");
+  } finally {
+    if (client.isOpen) {
+      await client.quit();
     }
-
-    client.quit();
-  });
+  }
 });
 
 // Prevent <iframes> embedding pages served by Blot while allowing
