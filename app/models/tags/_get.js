@@ -1,4 +1,4 @@
-const client = require("models/client");
+const client = require("models/client-new");
 const ensure = require("helper/ensure");
 const type = require("helper/type");
 const key = require("./key");
@@ -35,8 +35,8 @@ module.exports = function get(blogID, tag, options, callback) {
     var stop = limit === undefined ? -1 : offset + limit - 1;
 
     const [totalResult, entryIDsResult] = await Promise.all([
-      client.zcard(sortedTagKey),
-      client.zrevrange(sortedTagKey, start, stop),
+      client.zCard(sortedTagKey),
+      client.zRange(sortedTagKey, start, stop, { REV: true }),
     ]);
 
     const total = totalResult || 0;
