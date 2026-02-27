@@ -1,145 +1,96 @@
 var redis = require("models/redis");
 var client = new redis();
-var async = require("async");
 
 function main(string, callback) {
   var types = {};
   var result = [];
 
-  redisKeys(
-    "*",
-    function (keys, callback) {
-      async.each(
-        keys,
-        function (key, next) {
-          if (key.indexOf(string) > -1)
-            result.push({ key: key, value: "KEY ITSELF", type: "KEY" });
+  (async function () {
+    await redisKeys("*", async function (keys) {
+      for (const key of keys) {
+        if (key.indexOf(string) > -1)
+          result.push({ key: key, value: "KEY ITSELF", type: "KEY" });
 
-          client.type(key, function (err, type) {
-            if (err) return next(err);
+        const type = await client.type(key);
 
-            types[type] = types[type] || [];
-            types[type].push(key);
+        types[type] = types[type] || [];
+        types[type].push(key);
+      }
 
-            next();
-          });
-        },
-        function (err) {
-          if (err) return callback(err);
+      for (const type in types) {
+        const keysByType = types[type];
 
-          async.eachOf(
-            types,
-            function (keys, type, next) {
-              if (type === "string") {
-                stringSearch(string, keys, result, next);
-              } else if (type === "hash") {
-                hashSearch(string, keys, result, next);
-              } else if (type === "list") {
-                listSearch(string, keys, result, next);
-              } else if (type === "set") {
-                setSearch(string, keys, result, next);
-              } else if (type === "zset") {
-                sortedSetSearch(string, keys, result, next);
-              } else {
-                next(new Error("No handlers for strings of type: " + type));
-              }
-            },
-            callback
-          );
+        if (type === "string") {
+          await stringSearch(string, keysByType, result);
+        } else if (type === "hash") {
+          await hashSearch(string, keysByType, result);
+        } else if (type === "list") {
+          await listSearch(string, keysByType, result);
+        } else if (type === "set") {
+          await setSearch(string, keysByType, result);
+        } else if (type === "zset") {
+          await sortedSetSearch(string, keysByType, result);
+        } else {
+          throw new Error("No handlers for strings of type: " + type);
         }
-      );
-    },
-    function (err) {
-      if (err) return callback(err);
-      callback(null, result);
-    }
-  );
+      }
+    });
+
+    callback(null, result);
+  })().catch(callback);
 }
 
-function stringSearch(string, keys, result, callback) {
-  async.each(
-    keys,
-    function (key, next) {
-      client.get(key, function (err, value) {
-        if (err) return next(err);
-        if (!value) return next();
-        if (value.indexOf(string) === -1) return next();
+async function stringSearch(string, keys, result) {
+  for (const key of keys) {
+    const value = await client.get(key);
 
-        result.push({ key: key, type: "STRING", value: value });
-        next();
-      });
-    },
-    callback
-  );
+    if (!value) continue;
+    if (value.indexOf(string) === -1) continue;
+
+    result.push({ key: key, type: "STRING", value: value });
+  }
 }
 
-function listSearch(string, keys, result, callback) {
-  async.each(
-    keys,
-    function (key, next) {
-      client.lrange(key, 0, -1, function (err, items) {
-        if (err) return next(err);
+async function listSearch(string, keys, result) {
+  for (const key of keys) {
+    const items = await client.lrange(key, 0, -1);
+    if (!items) continue;
 
-        if (!items) return next();
+    items.forEach(function (item) {
+      if (item.indexOf(string) > -1)
+        result.push({ key: key, type: "LIST", value: item });
+    });
+  }
+}
 
-        items.forEach(function (item) {
-          if (item.indexOf(string) > -1)
-            result.push({ key: key, type: "LIST", value: item });
+async function hashSearch(string, keys, result) {
+  for (const key of keys) {
+    const res = await client.hgetall(key);
+    if (!res) continue;
+
+    for (var property in res)
+      if (res[property].indexOf(string) > -1 || property.indexOf(string) > -1)
+        result.push({
+          key: key,
+          type: "HASH",
+          value: property + " " + res[property],
         });
-
-        next();
-      });
-    },
-    callback
-  );
+  }
 }
 
-function hashSearch(string, keys, result, callback) {
-  async.each(
-    keys,
-    function (key, next) {
-      client.hgetall(key, function (err, res) {
-        if (err) return next(err);
-        if (!res) return next();
+async function setSearch(string, keys, result) {
+  for (const key of keys) {
+    const members = await client.smembers(key);
+    if (!members) continue;
 
-        for (var property in res)
-          if (
-            res[property].indexOf(string) > -1 ||
-            property.indexOf(string) > -1
-          )
-            result.push({
-              key: key,
-              type: "HASH",
-              value: property + " " + res[property],
-            });
-
-        next();
-      });
-    },
-    callback
-  );
+    members.forEach(function (member) {
+      if (member.indexOf(string) > -1)
+        result.push({ key: key, type: "SET", value: member });
+    });
+  }
 }
 
-function setSearch(string, keys, result, callback) {
-  async.each(
-    keys,
-    function (key, next) {
-      client.smembers(key, function (err, members) {
-        if (err) return next(err);
-        if (!members) return next();
-
-        members.forEach(function (member) {
-          if (member.indexOf(string) > -1)
-            result.push({ key: key, type: "SET", value: member });
-        });
-
-        next();
-      });
-    },
-    callback
-  );
-}
-
+<<<<<<< codex/find-and-replace-lowercase-sorted-set-commands
 function sortedSetSearch(string, keys, result, callback) {
   async.each(
     keys,
@@ -152,35 +103,32 @@ function sortedSetSearch(string, keys, result, callback) {
           if (member.indexOf(string) > -1)
             result.push({ key: key, type: "ZSET", value: member });
         });
+=======
+async function sortedSetSearch(string, keys, result) {
+  for (const key of keys) {
+    const members = await client.zrange(key, 0, -1);
+    if (!members) continue;
+>>>>>>> update-redis
 
-        next();
-      });
-    },
-    callback
-  );
+    members.forEach(function (member) {
+      if (member.indexOf(string) > -1)
+        result.push({ key: key, type: "ZSET", value: member });
+    });
+  }
 }
 
-function redisKeys(pattern, fn, callback) {
+async function redisKeys(pattern, fn) {
   var complete;
   var cursor = "0";
 
-  client.scan(cursor, "match", pattern, "count", 1000, function then(err, res) {
-    if (err) return callback(err);
+  while (!complete) {
+    const res = await client.scan(cursor, "match", pattern, "count", 1000);
 
     cursor = res[0];
+    await fn(res[1]);
 
-    fn(res[1], function (err) {
-      if (err) return callback(err);
-
-      complete = cursor === "0";
-
-      if (complete) {
-        callback(err);
-      } else {
-        client.scan(cursor, "match", pattern, "count", 1000, then);
-      }
-    });
-  });
+    complete = cursor === "0";
+  }
 }
 
 module.exports = main;

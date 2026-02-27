@@ -1,9 +1,13 @@
-function main (callback) {
+async function main(callback) {
   var redis = require("models/redis");
   var client = new redis();
-  client.smembers("newsletter:list", function (err, subscribers) {
+
+  try {
+    const subscribers = await client.smembers("newsletter:list");
     callback(null, { newsletter_subscribers: subscribers.length });
-  });
+  } catch (err) {
+    callback(err);
+  }
 }
 
 module.exports = main;

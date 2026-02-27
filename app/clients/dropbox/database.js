@@ -91,7 +91,7 @@ function set(blogID, changes, callback) {
 
     debug("Saving this account");
     multi.sadd(blogsKey(changes.account_id), blogID);
-    multi.hmset(accountKey(blogID), account);
+    multi.hset(accountKey(blogID), account);
     multi.exec(callback);
   });
 }

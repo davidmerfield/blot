@@ -277,7 +277,7 @@ module.exports = function setView(templateID, updates, callback) {
 
 						// Delete url and urlPatterns from Redis hash if they were removed
 						var multi = client.multi();
-						multi.hmset(viewKey, view);
+						multi.hset(viewKey, view);
 
 						if (shouldRemoveUrl) {
 							console.log("removing hdel", viewKey, "url");
