@@ -45,9 +45,10 @@ Use this checklist when updating a model:
 - [ ] Replace `require("models/client")` with `require("models/client-new")` unless the module needs an isolated client lifecycle.
 - [ ] If isolated lifecycle is required, switch to `const createRedisClient = require("models/redis-new")` and manage `connect()` + shutdown in that module.
 - [ ] Convert callback-last Redis calls to promise/`async`-`await` style where needed.
-- [ ] If module exports still use callbacks, keep the public callback contract and wrap awaited Redis calls so rejected promises are forwarded via `(err, result)` callbacks.
-- [ ] Re-validate Redis command names/arguments against the new client API (no dependence on legacy aliasing/shims).
-- [ ] Update tests/mocks/spies for renamed commands and promise-returning call style (including `multi().exec()` rejection paths).
+- [ ] If module exports still use callbacks, keep the public callback contract unchanged and forward promise rejections through the existing callback error channel.
+- [ ] Re-validate Redis command names/arguments against the new client API (e.g. `sMembers`, `setEx`, `setNX`, `zAdd`) without relying on legacy aliasing/shims.
+- [ ] Keep atomic write paths in `multi()` transactions and add test coverage for `await multi.exec()` rejection/error forwarding.
+- [ ] Update tests/mocks/spies for `client-new` method names and promise-returning behavior.
 - [ ] Audit pub/sub code paths for explicit unsubscribe/cleanup on shutdown.
 - [ ] Verify tests cover connection lifecycle and module teardown behavior after the migration.
 
