@@ -9,9 +9,9 @@ describe("template", () => {
 	const getView = promisify(require("../index").getView);
 	const getMetadata = promisify(require("../index").getMetadata);
 	const Blog = require("models/blog");
-	const client = require("models/client");
-	const hdel = promisify(client.hdel).bind(client);
-	const get = promisify(client.get).bind(client);
+	const client = require("models/client-new");
+	const hdel = client.hDel.bind(client);
+	const get = client.get.bind(client);
 	const key = require("../key");
 
 	it("sets a view", async function () {

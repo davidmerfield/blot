@@ -1,7 +1,7 @@
 const { promisify } = require("util");
 const ensure = require("helper/ensure");
 const hash = require("helper/hash");
-const client = require("models/client");
+const client = require("models/client-new");
 const key = require("../key");
 const getMetadata = require("../getMetadata");
 const getView = require("../getView");
@@ -17,9 +17,9 @@ const config = require("config");
 const getMetadataAsync = promisify(getMetadata);
 const getAllViewsAsync = promisify(getAllViews);
 const getViewAsync = promisify(getView);
-const hsetAsync = promisify(client.hset).bind(client);
-const delAsync = promisify(client.del).bind(client);
-const setAsync = promisify(client.set).bind(client);
+const hsetAsync = client.hSet.bind(client);
+const delAsync = client.del.bind(client);
+const setAsync = client.set.bind(client);
 
 // Maximum size for rendered output (2MB)
 const MAX_RENDERED_OUTPUT_SIZE = 2 * 1024 * 1024;

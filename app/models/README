@@ -43,20 +43,11 @@ Migration checklist (copy per module)
 Use this short checklist when migrating any model from legacy Redis code:
 
 - [ ] Switch imports: `models/client` -> `models/client-new` (or `models/redis-new` only when the module owns connect/disconnect lifecycle).
-- [ ] Keep key names, write ordering, and transactional boundaries (`multi().exec()`) unchanged unless fixing a bug.
-- [ ] Convert Redis calls to promise-based command shapes (`hGetAll`, `sMembers`, `lRange`, etc.) and keep exported callback contracts stable.
-- [ ] Preserve return payloads and error flow expected by existing callers.
-- [ ] Update tests to spy/mock `models/client-new` methods and new command names/arguments (including `multi().exec()` rejection paths).
-- [ ] Re-run the migrated model test subset and any directly-coupled model paths.
-- [ ] Replace `require("models/client")` with `require("models/client-new")` unless the module needs an isolated client lifecycle.
-- [ ] If isolated lifecycle is required, switch to `const createRedisClient = require("models/redis-new")` and manage `connect()` + shutdown in that module.
-- [ ] Convert callback-last Redis calls to promise/`async`-`await` style where needed.
-- [ ] If module exports still use callbacks, keep the public callback contract unchanged and forward promise rejections through the existing callback error channel.
-- [ ] Re-validate Redis command names/arguments against the new client API (e.g. `sMembers`, `setEx`, `setNX`, `zAdd`) without relying on legacy aliasing/shims.
-- [ ] Keep atomic write paths in `multi()` transactions and add test coverage for `await multi.exec()` rejection/error forwarding.
-- [ ] Update tests/mocks/spies for `client-new` method names and promise-returning behavior.
-- [ ] Audit pub/sub code paths for explicit unsubscribe/cleanup on shutdown.
-- [ ] Verify tests cover connection lifecycle and module teardown behavior after the migration.
+- [ ] Convert internal Redis calls to promise-based `client-new` command names/arguments (`hGetAll`, `sMembers`, `zAdd`, etc.).
+- [ ] Keep exported callback signatures, result shapes, and error-first semantics unchanged.
+- [ ] Preserve key names, write ordering, and atomic `multi().exec()` boundaries unless intentionally fixing behavior.
+- [ ] Update tests/mocks/spies to target `models/client-new` (including promise rejections and `multi().exec()` failures).
+- [ ] Re-run the migrated model tests and directly-coupled model paths.
 
 Common migration pitfalls
 -------------------------
