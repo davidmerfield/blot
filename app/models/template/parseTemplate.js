@@ -24,6 +24,25 @@ var retrieveThese = _.filter(modules, function (name) {
   })
   .sort();
 
+var projectedEntryLocals = {
+  allEntries: [""],
+  all_entries: [""],
+  recentEntries: [""],
+  recent_entries: [""],
+  posts: [""],
+  search_results: [""],
+  tagged: ["entries"],
+  archives: ["months.entries"],
+};
+
+function isProjectedEntryLocal(name) {
+  return !!projectedEntryLocals[name];
+}
+
+function isSystemRetrieveLocal(name) {
+  return retrieveThese.indexOf(name) > -1 || isProjectedEntryLocal(name);
+}
+
 function parseTemplate(template) {
   var retrieve = {};
   var partials = {};
@@ -34,6 +53,8 @@ function parseTemplate(template) {
   } catch (e) {
     return { partials: partials, retrieve: retrieve };
   }
+
+  var projectedFieldContexts = {};
 
   process("", parsed);
 
@@ -59,6 +80,89 @@ function parseTemplate(template) {
     }
     
     current[parts[parts.length - 1]] = value;
+  }
+
+  function setProjectedEntryField(root, fieldName) {
+    if (!projectedEntryLocals[root]) return false;
+    if (!fieldName || fieldName.indexOf(".") > -1) return false;
+
+    setNestedProperty(root, "fields." + fieldName, true);
+    return true;
+  }
+
+
+  function projectedFieldFromContext(contextPath, variableName) {
+    if (!contextPath || !variableName || variableName.indexOf(".") > -1) return null;
+
+    for (var root in projectedEntryLocals) {
+      var prefixes = projectedEntryLocals[root] || [];
+      for (var i = 0; i < prefixes.length; i++) {
+        var prefix = prefixes[i] ? root + "." + prefixes[i] : root;
+        if (contextPath === prefix) {
+          return { root: root, field: variableName };
+        }
+      }
+    }
+
+    return null;
+  }
+
+
+
+  function isProjectedPathSegment(contextPath, variableName) {
+    if (!contextPath || !variableName || variableName.indexOf(".") > -1) return false;
+
+    for (var root in projectedEntryLocals) {
+      var prefixes = projectedEntryLocals[root] || [];
+      for (var i = 0; i < prefixes.length; i++) {
+        var prefix = prefixes[i];
+        if (!prefix) continue;
+
+        var parts = prefix.split(".");
+        for (var depth = 0; depth < parts.length; depth++) {
+          var currentPath = depth === 0 ? root : root + "." + parts.slice(0, depth).join(".");
+          if (contextPath === currentPath && variableName === parts[depth]) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  function isProjectedEntryPath(root, propertyPath) {
+    if (!projectedEntryLocals[root] || !propertyPath) return false;
+
+    var prefixes = projectedEntryLocals[root] || [];
+
+    for (var i = 0; i < prefixes.length; i++) {
+      if (prefixes[i] === propertyPath) return true;
+    }
+
+    return false;
+  }
+
+  function projectedFieldFromPropertyAccess(root, propertyPath) {
+    if (!projectedEntryLocals[root] || !propertyPath) return null;
+
+    var prefixes = projectedEntryLocals[root] || [];
+
+    for (var i = 0; i < prefixes.length; i++) {
+      var prefix = prefixes[i];
+
+      if (!prefix) {
+        if (propertyPath.indexOf(".") === -1) return propertyPath;
+        continue;
+      }
+
+      if (propertyPath.indexOf(prefix + ".") !== 0) continue;
+
+      var fieldName = propertyPath.slice((prefix + ".").length);
+      if (fieldName && fieldName.indexOf(".") === -1) return fieldName;
+    }
+
+    return null;
   }
 
   // This can be used to recursively
@@ -104,8 +208,23 @@ function parseTemplate(template) {
         // e.g. length (or subfolder.property for deeper nesting)
         var propertyPath = variable.indexOf(".") > -1 &&
           variable.slice(variable.indexOf(".") + 1);
+        var contextPath = context ? context.slice(0, -1) : "";
+        var projectedFieldContext = projectedFieldFromContext(contextPath, variable);
+        var inProjectedFieldContext = hasProjectedFieldContextAncestor(contextPath);
+        var suppressAsProjectedFieldReference = false;
+        var isProjectedFieldInContext = false;
 
-        if (retrieveThese.indexOf(variable) > -1) {
+        if (
+          projectedFieldContext &&
+          isLikelyProjectedEntryField(projectedFieldContext.field)
+        ) {
+          isProjectedFieldInContext = setProjectedEntryField(
+            projectedFieldContext.root,
+            projectedFieldContext.field
+          );
+        }
+
+        if (isSystemRetrieveLocal(variable)) {
           // Special case: 'cdn' should always be an array (empty for literals, with targets for blocks)
           // to prevent soft merge issues with multiple partials via helper/extend.js
           if (variable === "cdn") {
@@ -113,19 +232,25 @@ function parseTemplate(template) {
               retrieve.cdn = [];
             }
           } else {
-            // If variable has no dots, it's a root variable - set as boolean
-            // If it has dots, it's a nested property - build nested structure
-            if (!propertyPath) {
-              retrieve[variable] = true;
+            if (projectedEntryLocals[variable]) {
+              retrieve[variable] = retrieve[variable] && retrieve[variable] !== true
+                ? retrieve[variable]
+                : {};
             } else {
-              // This shouldn't happen for whitelisted variables with dots,
-              // but handle it just in case
-              retrieve[variable] = true;
+              // If variable has no dots, it's a root variable - set as boolean
+              // If it has dots, it's a nested property - build nested structure
+              if (!propertyPath) {
+                retrieve[variable] = true;
+              } else {
+                // This shouldn't happen for whitelisted variables with dots,
+                // but handle it just in case
+                retrieve[variable] = true;
+              }
             }
           }
         }
 
-        if (retrieveThese.indexOf(variableRoot) > -1 && propertyPath) {
+        if (isSystemRetrieveLocal(variableRoot) && propertyPath) {
           // Special case: 'cdn' should always be an array (empty for literals, with targets for blocks)
           // to prevent soft merge issues with multiple partials via helper/extend.js
           if (variableRoot === "cdn") {
@@ -133,10 +258,23 @@ function parseTemplate(template) {
               retrieve.cdn = [];
             }
           } else {
-            // Build nested structure for whitelisted root with property access
-            setNestedProperty(variableRoot, propertyPath, true);
+            var projectedField = projectedFieldFromPropertyAccess(
+              variableRoot,
+              propertyPath
+            );
+
+            if (projectedField) {
+              setNestedProperty(variableRoot, "fields." + projectedField, true);
+            } else if (isProjectedEntryPath(variableRoot, propertyPath)) {
+              retrieve[variableRoot] = retrieve[variableRoot] && retrieve[variableRoot] !== true
+                ? retrieve[variableRoot]
+                : {};
+            } else {
+              // Build nested structure for whitelisted root with property access
+              setNestedProperty(variableRoot, propertyPath, true);
+            }
           }
-        } else if (retrieveThese.indexOf(variableRoot) > -1 && !propertyPath) {
+        } else if (isSystemRetrieveLocal(variableRoot) && !propertyPath) {
           // Root variable without property access - set as boolean if not already an object
           if (variableRoot === "cdn") {
             if (!retrieve.cdn || !Array.isArray(retrieve.cdn)) {
@@ -154,17 +292,33 @@ function parseTemplate(template) {
         // System locals are already tracked above, so only track non-system locals here
         // The retrieve system will safely ignore non-system locals during fetching
         // Skip tracking if variable has dots and root is whitelisted (already handled with nested structure)
-        if (retrieveThese.indexOf(variable) === -1 && variable !== "cdn") {
+        suppressAsProjectedFieldReference =
+          (token[0] === "#" || token[0] === "^") && isProjectedFieldInContext;
+
+        if (isProjectedFieldInContext && isLowercaseProjectedEntryField(variable)) {
+          suppressAsProjectedFieldReference = true;
+        }
+
+        if (inProjectedFieldContext && isLowercaseProjectedEntryField(variable)) {
+          suppressAsProjectedFieldReference = true;
+        }
+
+        if (
+          retrieveThese.indexOf(variable) === -1 &&
+          variable !== "cdn" &&
+          !isProjectedPathSegment(contextPath, variable) &&
+          !suppressAsProjectedFieldReference
+        ) {
           // Only track the root variable, not nested properties
           // If variable has dots and root is whitelisted, skip (already handled above)
-          if (!propertyPath || retrieveThese.indexOf(variableRoot) === -1) {
+          if (!propertyPath || !isSystemRetrieveLocal(variableRoot)) {
             if (!retrieve[variable]) {
               retrieve[variable] = true;
             }
           }
         }
         
-        if (variableRoot && retrieveThese.indexOf(variableRoot) === -1 && variableRoot !== "cdn") {
+        if (variableRoot && !isSystemRetrieveLocal(variableRoot) && variableRoot !== "cdn") {
           if (!retrieve[variableRoot]) {
             retrieve[variableRoot] = true;
           }
@@ -197,9 +351,45 @@ function parseTemplate(template) {
 
         // There are other tokens inside this block
         // process these recursively
+        if ((token[0] === "#" || token[0] === "^") && isProjectedFieldInContext) {
+          markProjectedFieldContext(contextPath ? contextPath + "." + variable : variable);
+        }
+
         if (type(token[4], "array")) process(context + variable, token[4]);
       }
     }
+  }
+
+
+  function isLikelyProjectedEntryField(variableName) {
+    if (!variableName || variableName.indexOf(".") > -1) return false;
+
+    // Accept common entry field naming styles, including lower_snake_case
+    // and lowercase-start camelCase tokens.
+    return /^[a-z][a-zA-Z0-9_]*$/.test(variableName);
+  }
+
+  function isLowercaseProjectedEntryField(variableName) {
+    if (!variableName || variableName.indexOf(".") > -1) return false;
+    return /^[a-z0-9_]+$/.test(variableName);
+  }
+
+  function markProjectedFieldContext(contextPath) {
+    if (!contextPath) return;
+    projectedFieldContexts[contextPath] = true;
+  }
+
+  function hasProjectedFieldContextAncestor(contextPath) {
+    if (!contextPath) return false;
+
+    var current = contextPath;
+    while (current) {
+      if (projectedFieldContexts[current]) return true;
+      var lastDot = current.lastIndexOf(".");
+      current = lastDot > -1 ? current.slice(0, lastDot) : "";
+    }
+
+    return false;
   }
 
   // Ensure retrieve.cdn is sorted and deduplicated
@@ -258,7 +448,52 @@ function parseTemplate(template) {
   }
 }
 
+function getPartialContexts(template, parentContextPath) {
+  var partialContexts = {};
+  var parsed;
+
+  try {
+    parsed = mustache.parse(template || "");
+  } catch (e) {
+    return partialContexts;
+  }
+
+  collect(parentContextPath || "", parsed);
+
+  return partialContexts;
+
+  function addContext(partialName, contextPath) {
+    if (!partialContexts[partialName]) partialContexts[partialName] = [];
+    if (partialContexts[partialName].indexOf(contextPath) === -1) {
+      partialContexts[partialName].push(contextPath);
+    }
+  }
+
+  function collect(contextPath, tokens) {
+    if (!type(tokens, "array")) return;
+
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i];
+      var tokenType = token[0];
+      var tokenValue = token[1];
+
+      if (tokenType === ">") {
+        addContext(tokenValue, contextPath);
+      }
+
+      if ((tokenType === "#" || tokenType === "^") && type(token[4], "array")) {
+        var nextContext = contextPath
+          ? contextPath + "." + tokenValue
+          : tokenValue;
+        collect(nextContext, token[4]);
+      }
+    }
+  }
+}
+
 // console.log(parseTemplate('{{#title}}{{#menu}}{{active}}{{/menu}}{{/title}}'));
 // console.log(parseTemplate('{{{appCSS}}}'));
+
+parseTemplate.getPartialContexts = getPartialContexts;
 
 module.exports = parseTemplate;
