@@ -1,5 +1,5 @@
 var ensure = require("helper/ensure");
-var redis = require("models/client");
+var redis = require("models/client-new");
 var get = require("./get");
 var urlKey = require("./key").url;
 
@@ -14,11 +14,14 @@ module.exports = function getByUrl(blogID, entryUrl, callback) {
     // leave as-is if decoding fails (malformed %)
   }
 
-  redis.get(urlKey(blogID, entryUrl), function (error, entryID) {
-    if (error) throw error;
+  redis
+    .get(urlKey(blogID, entryUrl))
+    .then(function (entryID) {
+      if (entryID === null || entryID === undefined) return callback();
 
-    if (entryID === null || entryID === undefined) return callback();
-
-    get(blogID, entryID, callback);
-  });
+      get(blogID, entryID, callback);
+    })
+    .catch(function (error) {
+      throw error;
+    });
 };

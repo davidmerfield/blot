@@ -1,4 +1,4 @@
-var client = require("models/client");
+var client = require("models/client-new");
 var dependentsKey = require("./key").dependents;
 var _ = require("lodash");
 
@@ -32,12 +32,16 @@ module.exports = function (blogID, entry, previous_dependencies, callback) {
   }
 
   removed_dependencies.forEach(function (path) {
-    multi.SREM(dependentsKey(blogID, path), entry.path);
+    multi.sRem(dependentsKey(blogID, path), entry.path);
   });
 
   new_dependencies.forEach(function (path) {
-    multi.SADD(dependentsKey(blogID, path), entry.path);
+    multi.sAdd(dependentsKey(blogID, path), entry.path);
   });
 
-  multi.exec(callback);
+  multi.exec().then(function () {
+    return callback();
+  }).catch(function (err) {
+    return callback(err);
+  });
 };

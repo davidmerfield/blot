@@ -48,6 +48,15 @@ Use this short checklist when migrating any model from legacy Redis code:
 - [ ] Preserve return payloads and error flow expected by existing callers.
 - [ ] Update tests to spy/mock `models/client-new` methods and new command names/arguments (including `multi().exec()` rejection paths).
 - [ ] Re-run the migrated model test subset and any directly-coupled model paths.
+- [ ] Replace `require("models/client")` with `require("models/client-new")` unless the module needs an isolated client lifecycle.
+- [ ] If isolated lifecycle is required, switch to `const createRedisClient = require("models/redis-new")` and manage `connect()` + shutdown in that module.
+- [ ] Convert callback-last Redis calls to promise/`async`-`await` style where needed.
+- [ ] If module exports still use callbacks, keep the public callback contract unchanged and forward promise rejections through the existing callback error channel.
+- [ ] Re-validate Redis command names/arguments against the new client API (e.g. `sMembers`, `setEx`, `setNX`, `zAdd`) without relying on legacy aliasing/shims.
+- [ ] Keep atomic write paths in `multi()` transactions and add test coverage for `await multi.exec()` rejection/error forwarding.
+- [ ] Update tests/mocks/spies for `client-new` method names and promise-returning behavior.
+- [ ] Audit pub/sub code paths for explicit unsubscribe/cleanup on shutdown.
+- [ ] Verify tests cover connection lifecycle and module teardown behavior after the migration.
 
 Common migration pitfalls
 -------------------------
@@ -55,6 +64,28 @@ Common migration pitfalls
 - Legacy callback-last command usage (`client.get(key, cb)`) does not carry over to `client-new`.
 - Some command names/argument shapes changed (`hmget` -> `hmGet(key, [fields])`, lowercase aliases -> camelCase).
 - The shared `models/client-new` singleton should not be explicitly disconnected by model code.
+
+
+Migration lessons for callback-based models
+-------------------------------------------
+
+- **For callback-surface modules, migrate internals and keep API shape stable.** Move Redis usage to promise-based `models/client-new` calls internally, while preserving existing callback signatures and result shapes for callers.
+
+- **Use modern command names and argument shapes explicitly.** Don’t rely on legacy lowercase/uppercase aliases or callback-last behavior; call the current Redis API directly.
+
+- **Keep `multi()` + `exec()` for atomic write paths only.** Use awaited direct commands for non-atomic reads and reserve transactions for grouped writes that must commit consistently.
+
+- **Update tests to mock `models/client-new` directly.** Adjust spies/stubs to the migrated method names/signatures and keep assertions behavior-focused.
+
+- **Keep callback contracts stable while migrating internals.** You can move Redis logic to `async`/`await` and promises internally, but preserve existing callback signatures, callback argument order, and output shapes at module boundaries.
+
+- **Modernize command names and argument forms explicitly.** Use `client-new` methods directly (`zRange`, `zCard`, `zRandMember`, `zAdd(key, { score, value })`, etc.) and remove assumptions about legacy lowercase aliases or callback-last overloads.
+
+- **Use `Promise.all` for independent reads; keep `multi().exec()` for atomic writes.** Read-only fan-out should run concurrently with promises, while write paths that must commit together (rebuilds + ready flags, coupled index updates, etc.) should stay transactional.
+
+- **Bridge async internals back to callbacks deliberately.** Catch rejected Redis promises and route failures through existing callbacks so migrations do not introduce unhandled rejections.
+
+- **Update tests to assert behavior over internals.** Refresh doubles/spies for modern command names and promise-returning methods, and include failure-path checks for both direct commands and `multi().exec()` rejection handling.
 
 Entities
 --------
