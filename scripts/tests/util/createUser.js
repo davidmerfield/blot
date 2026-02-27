@@ -5,8 +5,6 @@ module.exports = function (done) {
   var context = this;
   var fakePassword = "XXX-" + Date.now();
   var fakeEmail = randomString(20) + "@example.com";
-  var started = Date.now();
-  console.log("[test.user.createUser] start", fakeEmail);
   var finished = false;
   var timeout = setTimeout(function () {
     finish(new Error("createUser timed out"));
@@ -16,11 +14,6 @@ module.exports = function (done) {
     if (finished) return;
     finished = true;
     clearTimeout(timeout);
-    console.log(
-      "[test.user.createUser] done",
-      err ? err.message : "ok",
-      Date.now() - started + "ms"
-    );
     done(err);
   }
 
@@ -36,7 +29,6 @@ module.exports = function (done) {
 
       context.user = user;
       context.user.fakePassword = fakePassword;
-      console.log("[test.user.createUser] created", user && user.uid);
       finish();
     });
   });

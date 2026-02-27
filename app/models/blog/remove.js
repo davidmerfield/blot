@@ -11,37 +11,23 @@ var flushCache = require("./flushCache");
 var START_CURSOR = "0";
 var SCAN_SIZE = 1000;
 var BLOG_ID_REGEX = /^blog_[a-f0-9]+$/;
-var TRACE_PREFIX = "[blog.remove]";
 
 function isValidBlogID(blogID) {
   return typeof blogID === "string" && BLOG_ID_REGEX.test(blogID);
 }
 
 function remove(blogID, callback) {
-  var started = Date.now();
-  var traceID = blogID + ":" + started;
-
-  function log() {
-    var args = Array.prototype.slice.call(arguments);
-    console.log.apply(console, [TRACE_PREFIX, traceID].concat(args));
-  }
-
-  log("start");
-
   if (!isValidBlogID(blogID)) return callback(new Error("Invalid blog id"));
 
   get({ id: blogID }, function (err, blog) {
-    log("get callback", err ? err.message : "ok", blog && blog.id);
     if (err || !blog || !blog.id) return callback(err || new Error("No blog"));
 
     // We need to enable the blog to disconnect the client
     // since we need to acquire a sync lock...
     set(blogID, { isDisabled: false }, function (err) {
-      log("set isDisabled:false callback", err ? err.message : "ok");
       if (err) return callback(err);
 
       flushCache(blogID, function (err) {
-        log("flushCache callback", err ? err.message : "ok");
         if (err) return callback(err);
 
         // The order of these tasks is important right now.
@@ -55,11 +41,6 @@ function remove(blogID, callback) {
         );
 
         async.series(tasks, function (err) {
-          log(
-            "async.series complete",
-            err ? err.message : "ok",
-            Date.now() - started + "ms"
-          );
           callback(err, blog);
         });
       });
@@ -68,7 +49,6 @@ function remove(blogID, callback) {
 }
 
 function wipeFolders(blog, callback) {
-  console.log(TRACE_PREFIX, blog.id, "wipeFolders start");
   if (!blog.id || typeof blog.id !== "string")
     return callback(new Error("Invalid blog id"));
 
@@ -81,12 +61,6 @@ function wipeFolders(blog, callback) {
       safelyRemove.bind(null, staticFolder, config.blog_static_files_dir),
     ],
     function (err) {
-      console.log(
-        TRACE_PREFIX,
-        blog.id,
-        "wipeFolders done",
-        err ? err.message : "ok"
-      );
       callback(err);
     }
   );
@@ -117,7 +91,6 @@ function wipeFolders(blog, callback) {
 }
 
 function deleteKeys(blog, callback) {
-  console.log(TRACE_PREFIX, blog.id, "deleteKeys start");
   var multi = client.multi();
 
   var patterns = ["template:" + blog.id + ":*", "blog:" + blog.id + ":*"];
@@ -139,7 +112,6 @@ function deleteKeys(blog, callback) {
     patterns,
     function (pattern, next) {
       var args = [START_CURSOR, "MATCH", pattern, "COUNT", SCAN_SIZE];
-      console.log(TRACE_PREFIX, blog.id, "scan pattern start", pattern);
 
       client.scan(args, function then(err, res) {
         if (err) return next(err);
@@ -153,40 +125,19 @@ function deleteKeys(blog, callback) {
 
         // Append the keys we matched in the last pass
         remove = remove.concat(res[1]);
-        console.log(
-          TRACE_PREFIX,
-          blog.id,
-          "scan chunk",
-          pattern,
-          "cursor",
-          res[0],
-          "keys",
-          Array.isArray(res[1]) ? res[1].length : "invalid"
-        );
 
         // There are more keys to check, so keep going
         if (res[0] !== START_CURSOR) return client.scan(args, then);
 
-        console.log(TRACE_PREFIX, blog.id, "scan pattern done", pattern);
         next();
       });
     },
     function (err) {
-      if (err) {
-        console.log(TRACE_PREFIX, blog.id, "deleteKeys scan error", err.message);
-        return callback(err);
-      }
+      if (err) return callback(err);
 
-      console.log(TRACE_PREFIX, blog.id, "deleteKeys multi.del size", remove.length);
       multi.del(remove);
       multi.srem(key.ids, blog.id);
       multi.exec(function (err) {
-        console.log(
-          TRACE_PREFIX,
-          blog.id,
-          "deleteKeys exec done",
-          err ? err.message : "ok"
-        );
         callback(err);
       });
     }
@@ -194,7 +145,6 @@ function deleteKeys(blog, callback) {
 }
 
 function disconnectClient(blog, callback) {
-  console.log(TRACE_PREFIX, blog.id, "disconnectClient start", blog.client || "none");
   var clients = require("clients");
 
   if (!blog.client || !clients[blog.client]) return callback(null);
@@ -206,23 +156,18 @@ function disconnectClient(blog, callback) {
       console.error('Error disconnecting client:', err);
     }
 
-    console.log(TRACE_PREFIX, blog.id, "disconnectClient done");
     callback(null);
   });
 }
 
 function updateUser(blog, callback) {
-  console.log(TRACE_PREFIX, blog.id, "updateUser start", blog.owner);
   var User = require("models/user");
   User.getById(blog.owner, function (err, user) {
     if (err) return callback(err);
 
     // If the user has already been deleted then
     // we don't need to worry about this.
-    if (!user || !user.blogs) {
-      console.log(TRACE_PREFIX, blog.id, "updateUser no-user-or-blogs");
-      return callback();
-    }
+    if (!user || !user.blogs) return callback();
 
     var changes = {};
 
@@ -237,12 +182,6 @@ function updateUser(blog, callback) {
     if (user.lastSession === blog.id) changes.lastSession = "";
 
     User.set(blog.owner, changes, function (err) {
-      console.log(
-        TRACE_PREFIX,
-        blog.id,
-        "updateUser done",
-        err ? err.message : "ok"
-      );
       callback(err);
     });
   });
