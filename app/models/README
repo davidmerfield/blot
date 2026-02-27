@@ -40,8 +40,14 @@ When migrating older `models/client`/`models/redis` usage, keep these compatibil
 Migration checklist (copy per module)
 -------------------------------------
 
-Use this checklist when updating a model:
+Use this short checklist when migrating any model from legacy Redis code:
 
+- [ ] Switch imports: `models/client` -> `models/client-new` (or `models/redis-new` only when the module owns connect/disconnect lifecycle).
+- [ ] Keep key names, write ordering, and transactional boundaries (`multi().exec()`) unchanged unless fixing a bug.
+- [ ] Convert Redis calls to promise-based command shapes (`hGetAll`, `sMembers`, `lRange`, etc.) and keep exported callback contracts stable.
+- [ ] Preserve return payloads and error flow expected by existing callers.
+- [ ] Update tests to spy/mock `models/client-new` methods and new command names/arguments (including `multi().exec()` rejection paths).
+- [ ] Re-run the migrated model test subset and any directly-coupled model paths.
 - [ ] Replace `require("models/client")` with `require("models/client-new")` unless the module needs an isolated client lifecycle.
 - [ ] If isolated lifecycle is required, switch to `const createRedisClient = require("models/redis-new")` and manage `connect()` + shutdown in that module.
 - [ ] Convert callback-last Redis calls to promise/`async`-`await` style where needed.
@@ -52,8 +58,12 @@ Use this checklist when updating a model:
 - [ ] Audit pub/sub code paths for explicit unsubscribe/cleanup on shutdown.
 - [ ] Verify tests cover connection lifecycle and module teardown behavior after the migration.
 
-Model migration guidance (reusable)
------------------------------------
+Common migration pitfalls
+-------------------------
+
+- Legacy callback-last command usage (`client.get(key, cb)`) does not carry over to `client-new`.
+- Some command names/argument shapes changed (`hmget` -> `hmGet(key, [fields])`, lowercase aliases -> camelCase).
+- The shared `models/client-new` singleton should not be explicitly disconnected by model code.
 
 
 Migration lessons for callback-based models
@@ -66,6 +76,7 @@ Migration lessons for callback-based models
 - **Keep `multi()` + `exec()` for atomic write paths only.** Use awaited direct commands for non-atomic reads and reserve transactions for grouped writes that must commit consistently.
 
 - **Update tests to mock `models/client-new` directly.** Adjust spies/stubs to the migrated method names/signatures and keep assertions behavior-focused.
+
 - **Keep callback contracts stable while migrating internals.** You can move Redis logic to `async`/`await` and promises internally, but preserve existing callback signatures, callback argument order, and output shapes at module boundaries.
 
 - **Modernize command names and argument forms explicitly.** Use `client-new` methods directly (`zRange`, `zCard`, `zRandMember`, `zAdd(key, { score, value })`, etc.) and remove assumptions about legacy lowercase aliases or callback-last overloads.

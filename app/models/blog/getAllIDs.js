@@ -1,9 +1,14 @@
-var client = require("models/client");
+var client = require("models/client-new");
 var ensure = require("helper/ensure");
 var key = require("./key");
 
 module.exports = function getAllIDs(callback) {
   ensure(callback, "function");
 
-  client.smembers(key.ids, callback);
+  client
+    .sMembers(key.ids)
+    .then(function (ids) {
+      callback(null, ids);
+    })
+    .catch(callback);
 };

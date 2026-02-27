@@ -1,5 +1,5 @@
 var async = require("async");
-var client = require("models/client");
+var client = require("models/client-new");
 var config = require("config");
 var fs = require("fs-extra");
 var get = require("./get");
@@ -91,57 +91,54 @@ function wipeFolders(blog, callback) {
 }
 
 function deleteKeys(blog, callback) {
-  var multi = client.multi();
+  (async function () {
+    try {
+      var multi = client.multi();
 
-  var patterns = ["template:" + blog.id + ":*", "blog:" + blog.id + ":*"];
+      var patterns = ["template:" + blog.id + ":*", "blog:" + blog.id + ":*"];
 
-  var remove = ["template:owned_by:" + blog.id];
+      var remove = ["template:owned_by:" + blog.id];
 
-  if (blog.handle) {
-    remove.push("handle:" + blog.handle);
-    remove.push("domain:" + blog.handle + "." + config.host);
-  }
+      if (blog.handle) {
+        remove.push("handle:" + blog.handle);
+        remove.push("domain:" + blog.handle + "." + config.host);
+      }
 
-  // TODO ALSO remove alternate key with/out 'www', e.g. www.example.com
-  if (blog.domain) {
-    remove.push("domain:" + blog.domain);
-    remove.push("domain:" + BackupDomain(blog.domain));
-  }
+      // TODO ALSO remove alternate key with/out 'www', e.g. www.example.com
+      if (blog.domain) {
+        remove.push("domain:" + blog.domain);
+        remove.push("domain:" + BackupDomain(blog.domain));
+      }
 
-  async.each(
-    patterns,
-    function (pattern, next) {
-      var args = [START_CURSOR, "MATCH", pattern, "COUNT", SCAN_SIZE];
+      for (const pattern of patterns) {
+        var cursor = START_CURSOR;
 
-      client.scan(args, function then(err, res) {
-        if (err) return next(err);
+        do {
+          var res = await client.scan(cursor, {
+            MATCH: pattern,
+            COUNT: SCAN_SIZE,
+          });
 
-        if (!res || !Array.isArray(res) || res.length < 2) {
-          return next(new Error("Unexpected SCAN reply: " + JSON.stringify(res)));
-        }
+          if (!res || typeof res !== "object") {
+            throw new Error("Unexpected SCAN reply: " + JSON.stringify(res));
+          }
 
-        // the cursor for the next pass
-        args[0] = res[0];
+          cursor = String(res.cursor);
 
-        // Append the keys we matched in the last pass
-        remove = remove.concat(res[1]);
-
-        // There are more keys to check, so keep going
-        if (res[0] !== START_CURSOR) return client.scan(args, then);
-
-        next();
-      });
-    },
-    function (err) {
-      if (err) return callback(err);
+          if (Array.isArray(res.keys)) {
+            remove = remove.concat(res.keys);
+          }
+        } while (cursor !== START_CURSOR);
+      }
 
       if (remove.length > 0) multi.del(remove);
-      multi.srem(key.ids, blog.id);
-      multi.exec(function (err) {
-        callback(err);
-      });
+      multi.sRem(key.ids, blog.id);
+      await multi.exec();
+      callback();
+    } catch (err) {
+      callback(err);
     }
-  );
+  })();
 }
 
 function disconnectClient(blog, callback) {
