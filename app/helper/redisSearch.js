@@ -1,6 +1,5 @@
-var redis = require("models/redis");
-var client = new redis();
-
+var client = require("models/client-new");
+ 
 function main(string, callback) {
   var types = {};
   var result = [];
