@@ -214,15 +214,15 @@ module.exports = (function () {
 
     async.eachSeries(
       lists,
-      async function (listName, nextList) {
+      function (listName, nextList) {
         var key = listKey(blogID, listName);
 
-        try {
-          var ids = await redis.zRange(key, 0, -1);
-          if (!ids || !ids.length) return nextList();
+        redis
+          .zRange(key, 0, -1)
+          .then(function (ids) {
+            if (!ids || !ids.length) return nextList();
 
-          Entry.get(blogID, ids, async function (entries) {
-            try {
+            Entry.get(blogID, ids, function (entries) {
               entries = entries || [];
 
               var existing = {};
@@ -237,15 +237,19 @@ module.exports = (function () {
 
               if (!missing.length) return nextList();
 
-              await redis.zRem.apply(redis, [key].concat(missing));
-              nextList();
-            } catch (err) {
-              nextList(err);
-            }
+              redis
+                .zRem.apply(redis, [key].concat(missing))
+                .then(function () {
+                  nextList();
+                })
+                .catch(function (err) {
+                  nextList(err);
+                });
+            });
+          })
+          .catch(function (err) {
+            nextList(err);
           });
-        } catch (err) {
-          nextList(err);
-        }
       },
       callback
     );
