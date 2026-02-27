@@ -1,4 +1,4 @@
-var client = require("models/client");
+var client = require("models/client-new");
 var ensure = require("helper/ensure");
 var key = require("./key");
 var getAllIDs = require("./getAllIDs");
@@ -15,7 +15,7 @@ module.exports = function getHosts(callback) {
 
     Promise.all(
       ids.map(function (id) {
-        return client.hmget(key.info(id), "domain", "handle");
+        return client.hmGet(key.info(id), ["domain", "handle"]);
       })
     )
       .then(function (res) {

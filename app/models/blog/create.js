@@ -1,7 +1,7 @@
 var ensure = require("helper/ensure");
 var extend = require("helper/extend");
 var defaults = require("./defaults");
-var client = require("models/client");
+var client = require("models/client-new");
 var key = require("./key");
 var set = require("./set");
 var fs = require("fs-extra");
@@ -62,19 +62,20 @@ module.exports = function create(uid, info, callback) {
       User.set(uid, { blogs: blogs, lastSession: blogID }, function (err) {
         if (err) return callback(err);
 
-        client.sadd(key.ids, blogID, function (err) {
-          if (err) return callback(err);
-
-          set(blogID, blog, function (err) {
-            if (err) return callback(err);
-
-            fs.emptyDir(localPath(blogID, "/"), function (err) {
+        client
+          .sAdd(key.ids, blogID)
+          .then(function () {
+            set(blogID, blog, function (err) {
               if (err) return callback(err);
 
-              return callback(err, blog);
+              fs.emptyDir(localPath(blogID, "/"), function (err) {
+                if (err) return callback(err);
+
+                return callback(err, blog);
+              });
             });
-          });
-        });
+          })
+          .catch(callback);
       });
     });
   });

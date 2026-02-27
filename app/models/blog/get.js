@@ -1,4 +1,4 @@
-var client = require("models/client");
+var client = require("models/client-new");
 var ensure = require("helper/ensure");
 var key = require("./key");
 var serial = require("./serial");
@@ -8,35 +8,37 @@ var applyConverters = require("./util/converters").apply;
 module.exports = function get(by, callback) {
   ensure(by, "object").and(callback, "function");
 
-  if (by.id) {
-    ensure(by.id, "string");
-    then(null, by.id);
-  } else if (by.domain) {
-    ensure(by.domain, "string");
-    client.get(key.domain(by.domain), then);
-  } else if (by.handle) {
-    ensure(by.handle, "string");
-    client.get(key.handle(by.handle), then);
-  } else {
-    console.log(by);
-    throw "Please specify a by property";
-  }
+  (async function () {
+    try {
+      var blogID;
 
-  function then(err, blogID) {
-    if (err) return callback(err);
+      if (by.id) {
+        ensure(by.id, "string");
+        blogID = by.id;
+      } else if (by.domain) {
+        ensure(by.domain, "string");
+        blogID = await client.get(key.domain(by.domain));
+      } else if (by.handle) {
+        ensure(by.handle, "string");
+        blogID = await client.get(key.handle(by.handle));
+      } else {
+        console.log(by);
+        throw "Please specify a by property";
+      }
 
-    if (!blogID) return callback(null);
+      if (!blogID) return callback(null);
 
-    client.hgetall(key.info(blogID), function (err, blog) {
-      if (err) return callback(err);
+      var blog = await client.hGetAll(key.info(blogID));
 
-      if (!blog) return callback(null);
+      if (!blog || !Object.keys(blog).length) return callback(null);
 
       blog = serial.de(blog);
       applyImageExif(blog);
       applyConverters(blog);
 
       callback(null, blog);
-    });
-  }
+    } catch (err) {
+      callback(err);
+    }
+  })();
 };

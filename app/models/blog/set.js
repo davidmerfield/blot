@@ -5,7 +5,7 @@ var TYPE = require("./scheme").TYPE;
 var validate = require("./validate");
 var get = require("./get");
 var serial = require("./serial");
-var client = require("models/client");
+var client = require("models/client-new");
 var config = require("config");
 var BackupDomain = require("./util/backupDomain");
 var flushCache = require("./flushCache");
@@ -172,14 +172,17 @@ module.exports = function (blogID, blog, callback) {
         return callback(null, changesList);
       }
 
-      multi.hset(key.info(blogID), serial(latest));
+      multi.hSet(key.info(blogID), serial(latest));
 
-      multi.exec(async function (err) {
+      try {
+        await multi.exec();
+      } catch (err) {
         // We didn't manage to apply any changes
         // to this blog, so empty the list of changes
-        if (err) return callback(err, []);
+        return callback(err, []);
+      }
 
-        const template = latest.template || former.template;
+      const template = latest.template || former.template;
 
         // Also update CDN manifest when plugin settings change, since
         // plugin changes (especially analytics) affect the rendered output
@@ -207,9 +210,8 @@ module.exports = function (blogID, blog, callback) {
           }
         }
 
-        flushCache(blogID, former, function (err) {
-          callback(err, changesList);
-        });
+      flushCache(blogID, former, function (err) {
+        callback(err, changesList);
       });
     });
   });

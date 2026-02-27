@@ -1,5 +1,5 @@
 const key = require("./key");
-const client = require("models/client");
+const client = require("models/client-new");
 const ensure = require("helper/ensure");
 
 module.exports = function getStatuses(blogID, options, callback) {
@@ -49,8 +49,8 @@ module.exports = function getStatuses(blogID, options, callback) {
   ensure(offset, "number").and(limit, "number");
 
   Promise.all([
-    client.lrange(key.status(blogID), offset, limit),
-    client.llen(key.status(blogID)),
+    client.lRange(key.status(blogID), offset, limit),
+    client.lLen(key.status(blogID)),
   ])
     .then(function ([statusesResult, total]) {
       const statuses = statusesResult.map(JSON.parse);
