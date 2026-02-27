@@ -1,6 +1,6 @@
 var ensure = require("helper/ensure");
 var key = require("./key");
-var client = require("models/client");
+var client = require("models/client-new");
 var validate = require("./validate");
 var generateId = require("./generateId");
 var scheduleSubscriptionEmail = require("./scheduleSubscriptionEmail");
@@ -18,63 +18,63 @@ module.exports = function create (
     .and(paypal, "object")
     .and(callback, "function");
 
-  var multi, userString;
-  var uid = generateId();
-
-  var user = {
-    uid: uid,
-    isDisabled: false,
-    blogs: [],
-    lastSession: "",
-    created: Date.now(),
-    welcomeEmailSent: false,
-    email: email,
-    subscription: subscription,
-    paypal: paypal,
-    passwordHash: passwordHash
-  };
-
-  validate({ uid: uid }, user, function (err, user) {
-    if (err) return callback(err);
-
+  (async function () {
     try {
-      userString = JSON.stringify(user);
-    } catch (e) {
-      return callback(e);
-    }
+      var uid = generateId();
 
-    // If I add or remove methods here
-    // also remove them from set.js
-    multi = client.multi();
-    multi.sadd(key.uids, uid);
-    multi.setnx(key.user(uid), userString);
-    multi.set(key.email(user.email), uid);
-    multi.set(key.user(uid), userString);
+      var user = {
+        uid: uid,
+        isDisabled: false,
+        blogs: [],
+        lastSession: "",
+        created: Date.now(),
+        welcomeEmailSent: false,
+        email: email,
+        subscription: subscription,
+        paypal: paypal,
+        passwordHash: passwordHash
+      };
 
-    // some users might not have stripe subscriptions
-    if (user.subscription && user.subscription.customer)
-      multi.set(key.customer(user.subscription.customer), uid);
+      user = await new Promise(function (resolve, reject) {
+        validate({ uid: uid }, user, function (err, validatedUser) {
+          if (err) return reject(err);
+          return resolve(validatedUser);
+        });
+      });
 
-    // some users might not have paypal subscriptions
-    if (user.paypal && user.paypal.id)
-      multi.set(key.paypal(user.paypal.id), uid);
+      var userString = JSON.stringify(user);
 
-    multi.exec(function (err) {
+      // If I add or remove methods here
+      // also remove them from set.js
+      var multi = client.multi();
+      multi.sAdd(key.uids, uid);
+      multi.setNX(key.user(uid), userString);
+      multi.set(key.email(user.email), uid);
+      multi.set(key.user(uid), userString);
+
+      // some users might not have stripe subscriptions
+      if (user.subscription && user.subscription.customer)
+        multi.set(key.customer(user.subscription.customer), uid);
+
+      // some users might not have paypal subscriptions
+      if (user.paypal && user.paypal.id)
+        multi.set(key.paypal(user.paypal.id), uid);
+
+      var results = await multi.exec();
+
       // Retry if generated ID was in use
-      if (err && err.code === "SETNX")
-        return create(email, passwordHash, subscription, callback);
-
-      // I need to handle uid collision gracefully
-      if (err) console.log(err);
-
-      if (err) return callback(err);
+      if (results && results[1] === 0)
+        return create(email, passwordHash, subscription, paypal, callback);
 
       // Schedule a notifcation email for their subscription renewal
       scheduleSubscriptionEmail(user.uid, function (err) {
         if (err) console.log(err);
       });
 
-      callback(null, user);
-    });
-  });
+      return callback(null, user);
+    } catch (err) {
+      console.log(err);
+      return callback(err);
+    }
+  })();
 };

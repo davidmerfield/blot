@@ -1,5 +1,5 @@
 var ensure = require("helper/ensure");
-var client = require("models/client");
+var client = require("models/client-new");
 var key = require("./key");
 var getById = require("./getById");
 
@@ -8,11 +8,15 @@ module.exports = function getBy(email, callback) {
 
   email = email.trim().toLowerCase();
 
-  client.get(key.email(email), function (err, uid) {
-    if (err) return callback(err);
+  (async function () {
+    try {
+      var uid = await client.get(key.email(email));
 
-    if (!uid) return callback(null, null);
+      if (!uid) return callback(null, null);
 
-    getById(uid, callback);
-  });
+      return getById(uid, callback);
+    } catch (err) {
+      return callback(err);
+    }
+  })();
 };
