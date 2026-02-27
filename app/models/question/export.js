@@ -22,7 +22,7 @@ function hgetallAsync(key) {
 
 function zrangeAsync(key, start, stop) {
   return new Promise((resolve, reject) => {
-    client.zrange(key, start, stop, (err, result) => {
+    client.ZRANGE(key, start, stop, (err, result) => {
       if (err) return reject(err);
       resolve(result);
     });

@@ -39,7 +39,7 @@ module.exports = async function getAll(blogID, options, callback) {
 
       if (pathPrefix) {
         const entries = await new Promise((resolve, reject) => {
-          client.zrange(key.sortedTag(blogID, tag), 0, -1, (err, result) => {
+          client.ZRANGE(key.sortedTag(blogID, tag), 0, -1, (err, result) => {
             if (err) return reject(err);
             resolve(filterEntryIDsByPathPrefix(result, pathPrefix));
           });
@@ -57,7 +57,7 @@ module.exports = async function getAll(blogID, options, callback) {
       }
 
       const count = await new Promise((resolve, reject) => {
-        client.zcard(key.sortedTag(blogID, tag), (err, result) => {
+        client.ZCARD(key.sortedTag(blogID, tag), (err, result) => {
           if (err) return reject(err);
           resolve(result || 0);
         });

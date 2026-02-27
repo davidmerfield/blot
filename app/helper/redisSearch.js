@@ -90,10 +90,25 @@ async function setSearch(string, keys, result) {
   }
 }
 
+<<<<<<< codex/find-and-replace-lowercase-sorted-set-commands
+function sortedSetSearch(string, keys, result, callback) {
+  async.each(
+    keys,
+    function (key, next) {
+      client.ZRANGE(key, 0, -1, function (err, members) {
+        if (err) return next(err);
+        if (!members) return next();
+
+        members.forEach(function (member) {
+          if (member.indexOf(string) > -1)
+            result.push({ key: key, type: "ZSET", value: member });
+        });
+=======
 async function sortedSetSearch(string, keys, result) {
   for (const key of keys) {
     const members = await client.zrange(key, 0, -1);
     if (!members) continue;
+>>>>>>> update-redis
 
     members.forEach(function (member) {
       if (member.indexOf(string) > -1)

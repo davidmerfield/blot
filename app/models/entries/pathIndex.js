@@ -16,7 +16,7 @@ function readyKey(blogID) {
 function backfillIndex(blogID, callback) {
   ensure(blogID, "string").and(callback, "function");
 
-  redis.zrange(entriesKey(blogID), 0, -1, function (err, ids) {
+  redis.ZRANGE(entriesKey(blogID), 0, -1, function (err, ids) {
     if (err) return callback(err);
 
     var multi = redis.multi();
@@ -25,7 +25,7 @@ function backfillIndex(blogID, callback) {
 
     if (ids && ids.length) {
       for (var i = 0; i < ids.length; i++) {
-        multi.zadd(lexKey(blogID), 0, ids[i]);
+        multi.ZADD(lexKey(blogID), 0, ids[i]);
       }
     }
 

@@ -8,7 +8,7 @@ module.exports = function (blogID, callback) {
 
   var redirects = key.redirects(blogID);
 
-  client.zrange(redirects, 0, -1, function (err, froms) {
+  client.ZRANGE(redirects, 0, -1, function (err, froms) {
     if (err) throw err;
 
     if (!froms.length) return callback(null, []);

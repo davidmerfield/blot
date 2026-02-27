@@ -29,7 +29,7 @@ module.exports = function main(blog, callback) {
                 if (!entry) {
                   report.push(["MISSING", entryID]);
                   const multi = client.multi();
-                  multi.zrem(tagKey, entryID);
+                  multi.ZREM(tagKey, entryID);
                   return multi.exec(next);
                 }
 
@@ -45,8 +45,8 @@ module.exports = function main(blog, callback) {
                 }
 
                 multi.rename(entryKeyForIncorrectID, entryKeyForCorrectID);
-                multi.zrem(tagKey, entryID);
-                multi.zadd(tagKey, score, entry.id);
+                multi.ZREM(tagKey, entryID);
+                multi.ZADD(tagKey, score, entry.id);
                 multi.exec(function (err) {
                   if (err) return next(err);
                   Entry.set(blog.id, entry.id, entry, next);

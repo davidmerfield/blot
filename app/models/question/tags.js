@@ -10,7 +10,7 @@ module.exports = ({ page = 1 } = {}) => {
     client.smembers(keys.all_tags, (err, tags) => {
       Promise.all(
         tags.map((tag) => {
-          return client.zcard(keys.by_tag(tag));
+          return client.ZCARD(keys.by_tag(tag));
         })
       ).then((counts) => {
         const tagsWithCounts = tags.map((tag, i) => {
