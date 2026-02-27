@@ -45,7 +45,9 @@ Use this checklist when updating a model:
 - [ ] Replace `require("models/client")` with `require("models/client-new")` unless the module needs an isolated client lifecycle.
 - [ ] If isolated lifecycle is required, switch to `const createRedisClient = require("models/redis-new")` and manage `connect()` + shutdown in that module.
 - [ ] Convert callback-last Redis calls to promise/`async`-`await` style where needed.
+- [ ] If module exports still use callbacks, keep the public callback contract and wrap awaited Redis calls so rejected promises are forwarded via `(err, result)` callbacks.
 - [ ] Re-validate Redis command names/arguments against the new client API (no dependence on legacy aliasing/shims).
+- [ ] Update tests/mocks/spies for renamed commands and promise-returning call style (including `multi().exec()` rejection paths).
 - [ ] Audit pub/sub code paths for explicit unsubscribe/cleanup on shutdown.
 - [ ] Verify tests cover connection lifecycle and module teardown behavior after the migration.
 
@@ -53,6 +55,8 @@ Model migration guidance (reusable)
 -----------------------------------
 
 - **Preserve public API contracts while modernizing internals.** Keep existing return shapes/callback signatures stable, but move Redis internals to `async`/`await` with promise-based `models/client-new` commands.
+
+- **Bridge callback APIs deliberately during migration.** For legacy modules that still expose callback signatures, keep the callback surface unchanged while converting internal Redis operations to awaited promises and explicit error forwarding.
 
 - **Reserve `multi()` for true atomic write paths.** For create/update flows that must commit several writes together, keep them inside `client.multi() ... await multi.exec()`. Use direct awaited calls for non-atomic reads.
 
