@@ -53,7 +53,7 @@ async function stringSearch(string, keys, result) {
 
 async function listSearch(string, keys, result) {
   for (const key of keys) {
-    const items = await client.lrange(key, 0, -1);
+    const items = await client.lRange(key, 0, -1);
     if (!items) continue;
 
     items.forEach(function (item) {
@@ -65,7 +65,7 @@ async function listSearch(string, keys, result) {
 
 async function hashSearch(string, keys, result) {
   for (const key of keys) {
-    const res = await client.hgetall(key);
+    const res = await client.hGetAll(key);
     if (!res) continue;
 
     for (var property in res)
@@ -80,7 +80,7 @@ async function hashSearch(string, keys, result) {
 
 async function setSearch(string, keys, result) {
   for (const key of keys) {
-    const members = await client.smembers(key);
+    const members = await client.sMembers(key);
     if (!members) continue;
 
     members.forEach(function (member) {
@@ -92,7 +92,7 @@ async function setSearch(string, keys, result) {
 
 async function sortedSetSearch(string, keys, result) {
   for (const key of keys) {
-    const members = await client.zrange(key, 0, -1);
+    const members = await client.zRange(key, 0, -1);
     if (!members) continue;
 
     members.forEach(function (member) {
@@ -107,13 +107,42 @@ async function redisKeys(pattern, fn) {
   var cursor = "0";
 
   while (!complete) {
-    const res = await client.scan(cursor, "match", pattern, "count", 1000);
+    const scanReply = await client.scan(cursor, {
+      MATCH: pattern,
+      COUNT: 1000,
+    });
+    const normalizedScanReply = normalizeScanReply(scanReply);
 
-    cursor = res[0];
-    await fn(res[1]);
+    cursor = normalizedScanReply.cursor;
+    await fn(normalizedScanReply.keys);
 
     complete = cursor === "0";
   }
+}
+
+function normalizeScanReply(reply) {
+  if (Array.isArray(reply)) {
+    return {
+      cursor: String(reply[0] || "0"),
+      keys: Array.isArray(reply[1]) ? reply[1] : [],
+    };
+  }
+
+  if (reply && typeof reply === "object") {
+    const cursor = Object.prototype.hasOwnProperty.call(reply, "cursor")
+      ? String(reply.cursor)
+      : "0";
+
+    const keys = Array.isArray(reply.keys)
+      ? reply.keys
+      : Array.isArray(reply.results)
+      ? reply.results
+      : [];
+
+    return { cursor, keys };
+  }
+
+  return { cursor: "0", keys: [] };
 }
 
 module.exports = main;
