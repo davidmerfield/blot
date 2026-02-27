@@ -116,18 +116,18 @@ function deleteKeys(blog, callback) {
       client.scan(args, function then(err, res) {
         if (err) return next(err);
 
-        if (!res || !Array.isArray(res) || res.length < 2) {
+        if (!res || typeof res !== "object" || !Object.prototype.hasOwnProperty.call(res, "cursor")) {
           return next(new Error("Unexpected SCAN reply: " + JSON.stringify(res)));
         }
 
         // the cursor for the next pass
-        args[0] = res[0];
+        args[0] = String(res.cursor);
 
         // Append the keys we matched in the last pass
-        remove = remove.concat(res[1]);
+        remove = remove.concat(res.keys || []);
 
         // There are more keys to check, so keep going
-        if (res[0] !== START_CURSOR) return client.scan(args, then);
+        if (String(res.cursor) !== START_CURSOR) return client.scan(args, then);
 
         next();
       });

@@ -37,62 +37,6 @@ module.exports = function () {
     return String(value);
   }
 
-  function normalizeScanReply(reply) {
-    if (!reply || Array.isArray(reply)) return reply;
-    if (
-      typeof reply === "object" &&
-      Object.prototype.hasOwnProperty.call(reply, "cursor")
-    ) {
-      return [String(reply.cursor), reply.keys || []];
-    }
-    return reply;
-  }
-
-  function normalizeSScanReply(reply) {
-    if (!reply || Array.isArray(reply)) return reply;
-    if (
-      typeof reply === "object" &&
-      Object.prototype.hasOwnProperty.call(reply, "cursor")
-    ) {
-      return [String(reply.cursor), reply.members || reply.keys || []];
-    }
-    return reply;
-  }
-
-  function normalizeHScanReply(reply) {
-    if (!reply || Array.isArray(reply)) return reply;
-    if (
-      typeof reply === "object" &&
-      Object.prototype.hasOwnProperty.call(reply, "cursor")
-    ) {
-      return [String(reply.cursor), reply.tuples || reply.map || reply.keys || []];
-    }
-    return reply;
-  }
-
-  function normalizeZScanReply(reply) {
-    if (!reply || Array.isArray(reply)) return reply;
-    if (
-      typeof reply === "object" &&
-      Object.prototype.hasOwnProperty.call(reply, "cursor")
-    ) {
-      const flattened = [];
-      const members = reply.members || reply.tuples || [];
-      members.forEach((member) => {
-        if (
-          member &&
-          typeof member === "object" &&
-          Object.prototype.hasOwnProperty.call(member, "value")
-        ) {
-          flattened.push(member.value, String(member.score));
-        } else {
-          flattened.push(member);
-        }
-      });
-      return [String(reply.cursor), flattened];
-    }
-    return reply;
-  }
 
   function normalizeHGetAll(reply) {
     if (!Array.isArray(reply)) {
@@ -148,28 +92,12 @@ module.exports = function () {
   createLegacyCommand("exists", "EXISTS");
   createLegacyCommand("hget", "HGET");
   createLegacyCommand("hdel", "HDEL");
-  createLegacyCommand(
-    "hscan",
-    "HSCAN",
-    flatArgs,
-    normalizeHScanReply
-  );
+  createLegacyCommand("hscan", "HSCAN", flatArgs);
   createLegacyCommand("sadd", "SADD", flatKeyedArgs);
   createLegacyCommand("srem", "SREM", flatKeyedArgs);
   createLegacyCommand("smembers", "SMEMBERS");
   createLegacyCommand("sismember", "SISMEMBER");
-  createLegacyCommand(
-    "sscan",
-    "SSCAN",
-    flatArgs,
-    function normalizeSScanReply(reply) {
-      if (!reply || Array.isArray(reply)) return reply;
-      if (typeof reply === "object" && Object.prototype.hasOwnProperty.call(reply, "cursor")) {
-        return [String(reply.cursor), reply.members || reply.keys || []];
-      }
-      return reply;
-    }
-  );
+  createLegacyCommand("sscan", "SSCAN", flatArgs);
   createLegacyCommand("zrem", "ZREM");
   createLegacyCommand("zrange", "ZRANGE");
   createLegacyCommand("zrevrange", "ZREVRANGE");
@@ -184,19 +112,9 @@ module.exports = function () {
   createLegacyCommand("zcount", "ZCOUNT");
   createLegacyCommand("zincrby", "ZINCRBY");
   createLegacyCommand("zrandmember", "ZRANDMEMBER");
-  createLegacyCommand(
-    "zscan",
-    "ZSCAN",
-    flatArgs,
-    normalizeZScanReply
-  );
+  createLegacyCommand("zscan", "ZSCAN", flatArgs);
   createLegacyCommand("zrangebylex", "ZRANGEBYLEX");
-  createLegacyCommand(
-    "scan",
-    "SCAN",
-    flatArgs,
-    normalizeScanReply
-  );
+  createLegacyCommand("scan", "SCAN", flatArgs);
   createLegacyCommand("incr", "INCR");
   createLegacyCommand("decr", "DECR");
   createLegacyCommand("lpush", "LPUSH");
@@ -340,10 +258,6 @@ module.exports = function () {
 
         let normalizeReply = null;
         if (name === "hgetall") normalizeReply = normalizeHGetAll;
-        if (name === "scan") normalizeReply = normalizeScanReply;
-        if (name === "sscan") normalizeReply = normalizeSScanReply;
-        if (name === "hscan") normalizeReply = normalizeHScanReply;
-        if (name === "zscan") normalizeReply = normalizeZScanReply;
 
         const hasNativeMultiCommand =
           typeof multi.addCommand === "function" ||

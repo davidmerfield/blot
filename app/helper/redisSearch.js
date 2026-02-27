@@ -167,9 +167,9 @@ function redisKeys(pattern, fn, callback) {
   client.scan(cursor, "match", pattern, "count", 1000, function then(err, res) {
     if (err) return callback(err);
 
-    cursor = res[0];
+    cursor = String(res.cursor);
 
-    fn(res[1], function (err) {
+    fn(res.keys || [], function (err) {
       if (err) return callback(err);
 
       complete = cursor === "0";

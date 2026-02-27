@@ -109,13 +109,19 @@ module.exports = ({ query, page = 1, page_size = PAGE_SIZE } = {}) => {
   return new Promise((resolve, reject) => {
     const key = keys.all_questions;
     const questions = [];
-    const cursor = 0;
+    const cursor = "0";
 
-    const iterate = async (err, [cursor, ids]) => {
+    const iterate = async (err, res) => {
       if (err) {
         return reject(err);
       }
 
+      if (!res || typeof res !== "object" || !Object.prototype.hasOwnProperty.call(res, "cursor")) {
+        return reject(new Error("Unexpected SSCAN reply: " + JSON.stringify(res)));
+      }
+
+      const cursor = String(res.cursor);
+      const ids = res.members || [];
       const candidates = await load(ids);
 
       candidates.forEach((result) => {

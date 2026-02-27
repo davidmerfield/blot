@@ -61,10 +61,10 @@ module.exports = async function (blogID, query, callback) {
 
       // we use the entries list rather than the 'all' list to skip deleted entries
       // this can badly affect performance if there are a lot of deleted entries
-      const [nextCursor, reply] = await zscan("blog:" + blogID + ":entries", cursor, 'COUNT', CHUNK_SIZE);
-      cursor = nextCursor;
-      
-      const ids = reply.filter((_, i) => i % 2 === 0);
+      const res = await zscan("blog:" + blogID + ":entries", cursor, 'COUNT', CHUNK_SIZE);
+      cursor = String(res.cursor);
+
+      const ids = (res.members || []).map((member) => (member && typeof member === "object" ? member.value : member));
       if (!ids.length) continue;
 
       const entries = await get(blogID, ids);
@@ -99,10 +99,10 @@ module.exports = async function (blogID, query, callback) {
         return callback(null, results);
       }
 
-      const [nextCursor, reply] = await zscan("blog:" + blogID + ":pages", cursor, 'COUNT', CHUNK_SIZE);
-      cursor = nextCursor;
-      
-      const ids = reply.filter((_, i) => i % 2 === 0);
+      const res = await zscan("blog:" + blogID + ":pages", cursor, 'COUNT', CHUNK_SIZE);
+      cursor = String(res.cursor);
+
+      const ids = (res.members || []).map((member) => (member && typeof member === "object" ? member.value : member));
       if (!ids.length) continue;
 
       const entries = await get(blogID, ids);
