@@ -12,7 +12,7 @@ module.exports = function (blogID, mappings, callback) {
   var redirects = key.redirects(blogID);
   var multi = client.multi();
 
-  client.zrange(redirects, 0, -1, function (err, all_keys) {
+  client.ZRANGE(redirects, 0, -1, function (err, all_keys) {
     if (err) return callback(err);
 
     all_keys = all_keys || [];
@@ -50,7 +50,7 @@ module.exports = function (blogID, mappings, callback) {
         .and(fromKey, "string")
         .and(redirects, "string");
 
-      multi.zadd(redirects, index, from);
+      multi.ZADD(redirects, index, from);
       multi.set(fromKey, to);
     });
 

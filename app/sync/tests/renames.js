@@ -214,7 +214,7 @@ describe("update", function () {
 
                       var deletedListKey = "blog:" + blogID + ":deleted";
 
-                      redis.zscore(deletedListKey, ghostEntryID, function (err, score) {
+                      redis.ZSCORE(deletedListKey, ghostEntryID, function (err, score) {
                         if (err) return next(err);
 
                         expect(score).not.toBeNull();

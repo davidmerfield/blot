@@ -33,7 +33,7 @@ module.exports = function getPopular(blogID, options, callback) {
   if (limit === 0) return callback(null, []);
 
   const popularityKey = key.popular(blogID);
-  client.zcard(popularityKey, function (err, total) {
+  client.ZCARD(popularityKey, function (err, total) {
     if (err) return callback(err);
 
     if (!total) return callback(null, []);
@@ -41,7 +41,7 @@ module.exports = function getPopular(blogID, options, callback) {
     var start = offset;
     var stop = offset + limit - 1;
 
-    client.zrevrange(
+    client.ZREVRANGE(
       popularityKey,
       start,
       stop,

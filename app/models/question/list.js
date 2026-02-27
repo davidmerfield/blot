@@ -24,8 +24,8 @@ module.exports = ({
 
     (async () => {
       const [total, question_ids] = await Promise.all([
-        client.zcard(key),
-        client.zrevrange(key, startIndex, endIndex),
+        client.ZCARD(key),
+        client.ZREVRANGE(key, startIndex, endIndex),
       ]);
 
       if (!question_ids.length) {
@@ -37,8 +37,8 @@ module.exports = ({
           question_ids.map(async (id) => {
             return Promise.all([
               client.hgetall(keys.item(id)),
-              client.zscore(keys.by_last_reply, id),
-              client.zscore(keys.by_number_of_replies, id),
+              client.ZSCORE(keys.by_last_reply, id),
+              client.ZSCORE(keys.by_number_of_replies, id),
             ]);
           })
         )

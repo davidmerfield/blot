@@ -133,13 +133,13 @@ describe("entries", function () {
       Entry.set(blogID, path, buildEntry(path), function (err) {
         if (err) return done.fail(err);
 
-        redis.zadd(listKey, Date.now(), ghostID, function (err) {
+        redis.ZADD(listKey, Date.now(), ghostID, function (err) {
           if (err) return done.fail(err);
 
           Entries.pruneMissing(blogID, function (err) {
             if (err) return done.fail(err);
 
-            redis.zrange(listKey, 0, -1, function (err, members) {
+            redis.ZRANGE(listKey, 0, -1, function (err, members) {
               if (err) return done.fail(err);
               expect(members).toContain(path);
               expect(members).not.toContain(ghostID);
@@ -155,7 +155,7 @@ describe("entries", function () {
     const key = `blog:${this.blog.id}:entries`;
 
     // Add mock entries in Redis
-    await redis.zadd(key, 1, "entry1", 2, "entry2", 3, "entry3");
+    await redis.ZADD(key, 1, "entry1", 2, "entry2", 3, "entry3");
 
     Entries.getTotal(this.blog.id, function (err, total) {
       expect(err).toBeNull();
@@ -176,7 +176,7 @@ describe("entries", function () {
     const key = `blog:${this.blog.id}:all`;
 
     // Add mock entries in Redis
-    await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
+    await redis.ZADD(key, 1, "id1", 2, "id2", 3, "id3");
 
     Entries.getAllIDs(this.blog.id, function (err, ids) {
       expect(err).toBeNull();
@@ -236,7 +236,7 @@ describe("entries", function () {
     const key = `blog:${this.blog.id}:entries`;
     const now = Date.now();
     // Add 6 mock entries in Redis
-    await redis.zadd(
+    await redis.ZADD(
       key,
       now,
       "/a.txt",
@@ -325,7 +325,7 @@ describe("entries", function () {
     const key = `blog:${this.blog.id}:entries`;
     const now = Date.now();
 
-    await redis.zadd(key, now, "/only.txt");
+    await redis.ZADD(key, now, "/only.txt");
 
     spyOn(Entry, "get").and.callFake((blogID, ids, callback) => {
       if (Array.isArray(ids)) return callback(ids.map((id) => ({ id })));
@@ -358,7 +358,7 @@ describe("entries", function () {
     const key = `blog:${this.blog.id}:entries`;
 
     // Add mock entries in Redis
-    await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
+    await redis.ZADD(key, 1, "id1", 2, "id2", 3, "id3");
 
     // Mock entries returned by Entry.get
     spyOn(Entry, "get").and.callFake((blogID, ids, callback) => {
@@ -397,16 +397,16 @@ describe("entries", function () {
       const readyKey = `blog:${blogID}:entries:lex:ready`;
       const now = Date.now();
 
-      redis.zadd(entriesKey, now, "/Blog/existing.txt", function (err) {
+      redis.ZADD(entriesKey, now, "/Blog/existing.txt", function (err) {
         if (err) return done.fail(err);
 
-        redis.multi().zadd(lexKey, 0, "/Blog/existing.txt").set(readyKey, "1").exec(function (err) {
+        redis.multi().ZADD(lexKey, 0, "/Blog/existing.txt").set(readyKey, "1").exec(function (err) {
           if (err) return done.fail(err);
 
           Entry.set(blogID, "/Blog/new.txt", buildEntry("/Blog/new.txt"), function (err) {
             if (err) return done.fail(err);
 
-            redis.zrange(lexKey, 0, -1, function (err, ids) {
+            redis.ZRANGE(lexKey, 0, -1, function (err, ids) {
               if (err) return done.fail(err);
 
               expect(ids).toContain("/Blog/existing.txt");
@@ -435,7 +435,7 @@ describe("entries", function () {
       const entriesKey = `blog:${blogID}:entries`;
       const now = Date.now();
 
-      await redis.zadd(
+      await redis.ZADD(
         entriesKey,
         now,
         "/Blog/a.txt",
@@ -449,10 +449,10 @@ describe("entries", function () {
 
       await redis
         .multi()
-        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/a.txt")
-        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/b.txt")
-        .zadd(`blog:${blogID}:entries:lex`, 0, "/Blog/c.txt")
-        .zadd(`blog:${blogID}:entries:lex`, 0, "/Notes/d.txt")
+        .ZADD(`blog:${blogID}:entries:lex`, 0, "/Blog/a.txt")
+        .ZADD(`blog:${blogID}:entries:lex`, 0, "/Blog/b.txt")
+        .ZADD(`blog:${blogID}:entries:lex`, 0, "/Blog/c.txt")
+        .ZADD(`blog:${blogID}:entries:lex`, 0, "/Notes/d.txt")
         .set(`blog:${blogID}:entries:lex:ready`, "1")
         .exec();
     }
@@ -507,7 +507,7 @@ describe("entries", function () {
       const tieScore = Date.now();
       const tieIDs = ["/Blog/a.txt", "/Blog/m.txt", "/Blog/z.txt"];
 
-      await redis.zadd(
+      await redis.ZADD(
         entriesKey,
         tieScore,
         tieIDs[0],
@@ -519,16 +519,16 @@ describe("entries", function () {
 
       await redis
         .multi()
-        .zadd(lexKey, 0, tieIDs[0])
-        .zadd(lexKey, 0, tieIDs[1])
-        .zadd(lexKey, 0, tieIDs[2])
+        .ZADD(lexKey, 0, tieIDs[0])
+        .ZADD(lexKey, 0, tieIDs[1])
+        .ZADD(lexKey, 0, tieIDs[2])
         .set(`blog:${blogID}:entries:lex:ready`, "1")
         .exec();
 
       const taggedSetKey = `blog:${blogID}:tags:sorted:redis-tie-check`;
 
       await redis.del(taggedSetKey);
-      await redis.zadd(
+      await redis.ZADD(
         taggedSetKey,
         tieScore,
         tieIDs[0],
@@ -538,10 +538,10 @@ describe("entries", function () {
         tieIDs[2]
       );
 
-      redis.zrevrange(taggedSetKey, 0, -1, function (err, expectedAsc) {
+      redis.ZREVRANGE(taggedSetKey, 0, -1, function (err, expectedAsc) {
         if (err) return done.fail(err);
 
-        redis.zrange(taggedSetKey, 0, -1, function (err, expectedDesc) {
+        redis.ZRANGE(taggedSetKey, 0, -1, function (err, expectedDesc) {
           if (err) return done.fail(err);
 
           Entries.getPage(
@@ -597,7 +597,7 @@ describe("entries", function () {
       const key = `blog:${this.blog.id}:entries`;
 
       // Add mock entries in Redis
-      await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
+      await redis.ZADD(key, 1, "id1", 2, "id2", 3, "id3");
 
       Entries.adjacentTo(this.blog.id, "id2", function (next, previous, rank) {
         expect(previous).toEqual({ id: "id1" });
@@ -611,7 +611,7 @@ describe("entries", function () {
       const key = `blog:${this.blog.id}:entries`;
 
       // Add mock entries in Redis
-      await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
+      await redis.ZADD(key, 1, "id1", 2, "id2", 3, "id3");
 
       Entries.adjacentTo(this.blog.id, "id1", function (next, previous, rank) {
         expect(previous).toBeUndefined();
@@ -625,7 +625,7 @@ describe("entries", function () {
       const key = `blog:${this.blog.id}:entries`;
 
       // Add mock entries in Redis
-      await redis.zadd(key, 1, "id1", 2, "id2", 3, "id3");
+      await redis.ZADD(key, 1, "id1", 2, "id2", 3, "id3");
 
       Entries.adjacentTo(this.blog.id, "id3", function (next, previous, rank) {
         expect(previous).toEqual({ id: "id2" });
@@ -732,7 +732,7 @@ describe("entries", function () {
 
       // Add mock entries in Redis
       const key = `blog:${this.blog.id}:all`;
-      await redis.zadd(key, 1, "id1", 2, "id2");
+      await redis.ZADD(key, 1, "id1", 2, "id2");
 
       // Mock Entry.get to return the entries
       spyOn(Entry, "get").and.callFake((blogID, id, callback) => {

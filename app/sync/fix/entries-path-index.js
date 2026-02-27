@@ -5,7 +5,7 @@ module.exports = function entriesPathIndex(blog, callback) {
   const entriesKey = "blog:" + blog.id + ":entries";
   const lexKey = pathIndex.lexKey(blog.id);
 
-  Promise.all([client.zcard(entriesKey), client.zcard(lexKey)])
+  Promise.all([client.ZCARD(entriesKey), client.ZCARD(lexKey)])
     .then(function ([entriesCountResult, lexCountResult]) {
       const entriesCount = parseInt(entriesCountResult, 10) || 0;
       const lexCount = parseInt(lexCountResult, 10) || 0;

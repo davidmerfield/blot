@@ -49,7 +49,7 @@ module.exports = function setMetadata(id, updates, callback) {
     client.sadd(key.blogTemplates(metadata.owner), id, function (err) {
       if (err) return callback(err);
 
-      client.hmset(key.metadata(id), metadata, function (err) {
+      client.hset(key.metadata(id), metadata, function (err) {
         if (err) return callback(err);
 
         if (!changes) {

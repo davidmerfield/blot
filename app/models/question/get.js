@@ -6,9 +6,9 @@ module.exports = id => {
   return new Promise((resolve, reject) => {
     (async () => {
       const [reply_ids, question, last_reply_created_at] = await Promise.all([
-        client.zrange(keys.children(id), 0, -1),
+        client.ZRANGE(keys.children(id), 0, -1),
         client.hgetall(keys.item(id)),
-        client.zscore(keys.by_last_reply, id),
+        client.ZSCORE(keys.by_last_reply, id),
       ]);
 
       if (!question) return resolve(null);
