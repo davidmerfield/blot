@@ -1,6 +1,5 @@
 async function main(callback) {
-  var redis = require("models/redis");
-  var client = new redis();
+  var client = require("models/client-new");
 
   try {
     const subscribers = await client.smembers("newsletter:list");
