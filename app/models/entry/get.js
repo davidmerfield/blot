@@ -50,6 +50,10 @@ module.exports = function (blogID, entryIDs, callback) {
       return callback(entries);
     })
     .catch(function (err) {
-      throw err;
+      console.error(err);
+
+      if (single) return callback();
+
+      return callback([]);
     });
 };
