@@ -7,7 +7,9 @@ Models are the data layer. They read and write to Redis. The Redis client is a s
 Redis conventions
 -----------------
 
-- **Use `client.batch()` for read-only pipelines.** Use `client.multi()` only when you need to write. `batch()` is cheaper for Redis when you're only reading.
+- **Use Redis 5-compatible command patterns.** For read fan-out, issue concurrent calls with `await Promise.all([...])` instead of `client.batch()`. Use `client.multi()...exec()` only when writes must be atomic across multiple commands.
+
+- **Migration note:** `batch()` recommendations were removed because our supported Redis 5 client/runtime paths should not rely on `batch`; contributors should replace read-only pipeline usage with `Promise.all` and reserve `multi` for true atomic write transactions.
 
 - **Key names live in `key.js`.** Each model that uses Redis has a `key.js` (or equivalent) that centralises key names (e.g. `blog:${blogID}:info`, `user:${uid}:info`). Use these instead of building keys inline.
 
