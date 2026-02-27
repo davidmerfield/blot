@@ -50,6 +50,13 @@ function render($, callback, { blogID, path }) {
 
   legacyWikilinks.each(function (_, node) {
     const $node = $(node);
+    const isLink = node && node.name === "a";
+    const isMedia = !isLink && $node.attr("src") !== undefined;
+
+    if (!isLink && !isMedia) {
+      return;
+    }
+
     const existingClasses = ($node.attr("class") || "")
       .split(/\s+/)
       .filter(Boolean);
@@ -61,7 +68,6 @@ function render($, callback, { blogID, path }) {
 
     $node.attr("data-wikilink-marker", "1");
 
-    const isLink = node && node.name === "a";
     if (isLink) {
       $node.removeAttr("title");
     }
