@@ -49,6 +49,7 @@ module.exports = function (request, response, next) {
     ) {
       delete blog.plugins.commento;
       delete blog.plugins.disqus;
+      delete blog.plugins.blueskyComments;
     }
 
     // Redirect this entry to the file from which it was generated
@@ -104,7 +105,7 @@ module.exports = function (request, response, next) {
         // Don't show plugin HTML on a preview subdomain.
         // This is to prevent Disqus getting stuck on one URL.
         if (entry.draft || request.preview) {
-          pluginHTML = "";
+          pluginHTML = !!pluginHTML ? "<p><em>Comments are hidden on site previews.</e></p>" : '';
         }
 
         response.locals.partials.pluginHTML = pluginHTML;
