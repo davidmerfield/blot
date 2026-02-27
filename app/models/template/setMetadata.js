@@ -7,6 +7,7 @@ var ensure = require("helper/ensure");
 var Blog = require("models/blog");
 var injectLocals = require("./injectLocals");
 var updateCdnManifest = require("./util/updateCdnManifest");
+var serializeRedisHashValues = require("models/redisHashSerializer");
 
 module.exports = function setMetadata(id, updates, callback) {
   try {
@@ -37,7 +38,7 @@ module.exports = function setMetadata(id, updates, callback) {
       console.log("error injecting locals:", e);
     }
 
-    metadata = serialize(metadata, metadataModel);
+    metadata = serializeRedisHashValues(serialize(metadata, metadataModel));
 
     (async function () {
       try {

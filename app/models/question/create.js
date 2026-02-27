@@ -1,4 +1,5 @@
 const client = require("models/client-new");
+const serializeRedisHashValues = require("models/redisHashSerializer");
 const keys = require("./keys");
 const get = require("./get");
 
@@ -57,7 +58,7 @@ module.exports = async function ({
     multi.zAdd(keys.by_number_of_replies, { score: 0, value: id });
   }
 
-  multi.hSet(keys.item(id), item);
+  multi.hSet(keys.item(id), serializeRedisHashValues(item));
 
   // ensure the multi command fails if the ID
   // is already in use
