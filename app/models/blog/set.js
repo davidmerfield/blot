@@ -172,7 +172,7 @@ module.exports = function (blogID, blog, callback) {
         return callback(null, changesList);
       }
 
-      multi.hmset(key.info(blogID), serial(latest));
+      multi.hset(key.info(blogID), serial(latest));
 
       multi.exec(async function (err) {
         // We didn't manage to apply any changes

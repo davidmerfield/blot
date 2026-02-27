@@ -1,4 +1,4 @@
-const { hmset, setnx } = require("../../client");
+const { hset, setnx } = require("../../client");
 
 describe("questions.create", function () {
   require("./setup")();
@@ -62,7 +62,7 @@ describe("questions.create", function () {
       zadd: () => {},
       sadd: () => {},
       zincrby: () => {},
-      hmset: () => {},
+      hset: () => {},
       setnx: () => {},
       exec: (cb) => cb(new Error("Oh no!")),
     });
