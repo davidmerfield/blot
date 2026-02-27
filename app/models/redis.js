@@ -59,17 +59,6 @@ module.exports = function () {
     return reply;
   }
 
-  function normalizeHScanReply(reply) {
-    if (!reply || Array.isArray(reply)) return reply;
-    if (
-      typeof reply === "object" &&
-      Object.prototype.hasOwnProperty.call(reply, "cursor")
-    ) {
-      return [String(reply.cursor), reply.tuples || reply.map || reply.keys || []];
-    }
-    return reply;
-  }
-
   function normalizeZScanReply(reply) {
     if (!reply || Array.isArray(reply)) return reply;
     if (
@@ -148,12 +137,6 @@ module.exports = function () {
   createLegacyCommand("exists", "EXISTS");
   createLegacyCommand("hget", "HGET");
   createLegacyCommand("hdel", "HDEL");
-  createLegacyCommand(
-    "hscan",
-    "HSCAN",
-    flatArgs,
-    normalizeHScanReply
-  );
   createLegacyCommand("sadd", "SADD", flatKeyedArgs);
   createLegacyCommand("srem", "SREM", flatKeyedArgs);
   createLegacyCommand("smembers", "SMEMBERS");
@@ -174,14 +157,10 @@ module.exports = function () {
   createLegacyCommand("zrange", "ZRANGE");
   createLegacyCommand("zrevrange", "ZREVRANGE");
   createLegacyCommand("zrangebyscore", "ZRANGEBYSCORE");
-  createLegacyCommand("zrevrangebyscore", "ZREVRANGEBYSCORE");
   createLegacyCommand("zremrangebyscore", "ZREMRANGEBYSCORE");
-  createLegacyCommand("zremrangebyrank", "ZREMRANGEBYRANK");
   createLegacyCommand("zcard", "ZCARD");
   createLegacyCommand("zscore", "ZSCORE");
   createLegacyCommand("zrank", "ZRANK");
-  createLegacyCommand("zrevrank", "ZREVRANK");
-  createLegacyCommand("zcount", "ZCOUNT");
   createLegacyCommand("zincrby", "ZINCRBY");
   createLegacyCommand("zrandmember", "ZRANDMEMBER");
   createLegacyCommand(
@@ -198,15 +177,10 @@ module.exports = function () {
     normalizeScanReply
   );
   createLegacyCommand("incr", "INCR");
-  createLegacyCommand("decr", "DECR");
   createLegacyCommand("lpush", "LPUSH");
-  createLegacyCommand("rpush", "RPUSH");
   createLegacyCommand("lrange", "LRANGE");
   createLegacyCommand("llen", "LLEN");
   createLegacyCommand("ltrim", "LTRIM");
-  createLegacyCommand("lrem", "LREM");
-  createLegacyCommand("lset", "LSET");
-  createLegacyCommand("lindex", "LINDEX");
   createLegacyCommand("ping", "PING");
   createLegacyCommand("publish", "PUBLISH");
   createLegacyCommand("ttl", "TTL");
@@ -305,14 +279,10 @@ module.exports = function () {
         "zrange",
         "zrevrange",
         "zrangebyscore",
-        "zrevrangebyscore",
         "zremrangebyscore",
-        "zremrangebyrank",
         "zcard",
         "zscore",
         "zrank",
-        "zrevrank",
-        "zcount",
         "zincrby",
         "zrandmember",
         "zrangebylex",
@@ -321,15 +291,10 @@ module.exports = function () {
         "mget",
         "mset",
         "incr",
-        "decr",
         "lpush",
-        "rpush",
         "lrange",
         "llen",
         "ltrim",
-        "lrem",
-        "lset",
-        "lindex",
         "expire",
         "persist",
         "rename",
@@ -342,7 +307,6 @@ module.exports = function () {
         if (name === "hgetall") normalizeReply = normalizeHGetAll;
         if (name === "scan") normalizeReply = normalizeScanReply;
         if (name === "sscan") normalizeReply = normalizeSScanReply;
-        if (name === "hscan") normalizeReply = normalizeHScanReply;
         if (name === "zscan") normalizeReply = normalizeZScanReply;
 
         const hasNativeMultiCommand =
