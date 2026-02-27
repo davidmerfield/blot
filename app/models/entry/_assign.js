@@ -1,7 +1,7 @@
 var Blog = require("models/blog");
 var ensure = require("helper/ensure");
 var debug = require("debug")("blot:entry:assign");
-var redis = require("models/client");
+var redis = require("models/client-new");
 var pathIndex = require("../entries/pathIndex");
 
 var model = require("./model");
@@ -118,15 +118,18 @@ module.exports = function (blogID, entry, callback) {
 
   multi.set(pathIndex.readyKey(blogID), "1");
 
-  multi.exec(function (err) {
-    if (err) return callback(err);
-
-    if (entry.menu) {
-      addToMenu(blogID, entry, callback);
-    } else {
-      dropFromMenu(blogID, entry, callback);
-    }
-  });
+  multi
+    .exec()
+    .then(function () {
+      if (entry.menu) {
+        addToMenu(blogID, entry, callback);
+      } else {
+        dropFromMenu(blogID, entry, callback);
+      }
+    })
+    .catch(function (err) {
+      return callback(err);
+    });
 };
 
 function addToMenu(blogID, entry, callback) {

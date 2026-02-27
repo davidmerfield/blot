@@ -58,26 +58,13 @@ Model migration guidance (reusable)
 Migration lessons for callback-based models
 -------------------------------------------
 
-- **Keep callback contracts stable while migrating internals.** You can move Redis logic to `async`/`await` and promises internally, but preserve existing callback signatures and output shapes at module boundaries.
+- **For callback-surface modules, migrate internals and keep API shape stable.** Move Redis usage to promise-based `models/client-new` calls internally, while preserving existing callback signatures and result shapes for callers.
 
-- **Prefer direct awaited Redis commands in read paths.** Replace callback wrapper shims with direct promise-based calls (`await client.sMembers(...)`, `await client.zCard(...)`) when atomicity is not required.
+- **Use modern command names and argument shapes explicitly.** Don’t rely on legacy lowercase/uppercase aliases or callback-last behavior; call the current Redis API directly.
 
-- **Keep `multi()` + `exec()` for atomic writes.** For write flows that must update several related keys consistently, keep transactional grouping and only update command names/argument shapes to the modern API.
+- **Keep `multi()` + `exec()` for atomic write paths only.** Use awaited direct commands for non-atomic reads and reserve transactions for grouped writes that must commit consistently.
 
-- **Update tests for API-surface changes, not implementation details.** When command names change (`zcard` -> `zCard`, etc.), adjust spies/stubs accordingly and keep assertions focused on behavior (filtering, pagination, counts, and callback results).
-- **Preserve public API contracts while modernizing internals.** Keep existing return shapes/callback signatures stable, but move Redis internals to `async`/`await` with promise-based `models/client-new` commands.
-
-- **Single-file to folder migration is allowed.** When it simplifies incremental migration, move `<model>.js` into `<model>/index.js` and keep `require("models/<model>")` stable via normal folder resolution or a thin shim.
-
-- **Bridge callback APIs deliberately during migration.** For legacy modules that still expose callback signatures, keep the callback surface unchanged while converting internal Redis operations to awaited promises and explicit error forwarding.
-
-- **Reserve `multi()` for true atomic write paths.** For create/update flows that must commit several writes together, keep them inside `client.multi() ... await multi.exec()`. Use direct awaited calls for non-atomic reads.
-
-- **Use modern command names and argument shapes explicitly.** Prefer methods like `sMembers`, `hGetAll`, `zRange(..., { REV: true })`, `zAdd(key, { score, value })`, and `sScan`; avoid legacy lowercase/callback alias assumptions.
-
-- **Keep migration patterns model-agnostic.** Apply the same approach whether you are migrating `question`, `redirects`, `404`, or any other model folder.
-
-- **Apply-per-model checklist note:** when command names or call styles change, update test doubles/spies to match the modern Redis methods used by `client-new` (including `multi().exec()` promise rejection assertions) before finalizing the migration.
+- **Update tests to mock `models/client-new` directly.** Adjust spies/stubs to the migrated method names/signatures and keep assertions behavior-focused.
 
 Entities
 --------
