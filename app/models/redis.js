@@ -468,10 +468,6 @@ module.exports = function () {
     };
   }
 
-  if (typeof client.batch !== "function") {
-    client.batch = client.multi.bind(client);
-  }
-
   if (typeof client.quit === "function") {
     const nativeQuit = client.quit.bind(client);
     client.quit = function compatQuit(callback) {
