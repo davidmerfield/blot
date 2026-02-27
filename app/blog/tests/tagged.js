@@ -13,9 +13,9 @@ describe("tags work on sites", function () {
       "tagged.html": "{{#entries}}{{title}} {{/entries}}",
     });
 
-    const res = await this.get(`/tagged/a`);
+    const body = await this.text(`/tagged/a`);
 
-    expect((await res.text()).trim().toLowerCase()).toEqual("second first");
+    expect(body.trim().toLowerCase()).toEqual("second first");
   });
 
   it("renders overlapping tag feeds independently", async function () {

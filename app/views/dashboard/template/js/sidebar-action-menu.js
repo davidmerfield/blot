@@ -6,7 +6,7 @@ function initSidebarActionMenu(options) {
   var container = options.container;
   var menuElement = options.menuElement;
   var rowSelector = options.rowSelector || ".template-row";
-  var triggerSelector = options.triggerSelector || ".template-row__menu-trigger";
+  var triggerSelector = options.triggerSelector || ".row-action-menu__trigger";
   var linkMap = options.linkMap || {};
   var initialFocusKey = options.initialFocusKey;
 
@@ -226,3 +226,7 @@ function initSidebarActionMenu(options) {
 }
 
 module.exports = initSidebarActionMenu;
+
+if (typeof window !== "undefined") {
+  window.initSidebarActionMenu = initSidebarActionMenu;
+}

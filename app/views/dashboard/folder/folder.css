@@ -341,3 +341,146 @@
 body.upload-modal-open {
   overflow: hidden;
 }
+
+
+.remove-entry-modal,
+.download-entry-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-entry-modal[hidden],
+.download-entry-modal[hidden] {
+  display: none !important;
+}
+
+.remove-entry-modal-backdrop,
+.download-entry-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.remove-entry-modal-dialog,
+.download-entry-modal-dialog {
+  position: relative;
+  width: min(480px, calc(100vw - 2rem));
+  max-height: calc(100vh - 4rem);
+  overflow: auto;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+
+.directory-row__name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.directory-row__link {
+  min-width: 0;
+  flex: 1;
+}
+
+.folder-box.directory {
+  --row-action-menu-right: 12px;
+  --row-action-menu-margin-top: 28px;
+  --row-action-menu-trigger-opacity: 1;
+  --row-action-menu-trigger-color: var(--light-text-color);
+}
+
+.directory-row__menu-trigger {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.directory-row:hover .directory-row__menu-trigger {
+  opacity: 1;
+}
+
+.directory-row__menu-trigger:hover,
+.directory-row__menu-trigger:focus-visible,
+.directory-row.menu-open .directory-row__menu-trigger {
+  background: var(--light-background-color);
+  color: var(--text-color);
+}
+
+/* Folder toasts — top center (download, upload, remove confirmations) */
+#folder-toast-root {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.folder-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  font-size: 14px;
+  color: var(--text-color);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.folder-toast--in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.folder-toast--out {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.folder-toast__icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.folder-toast__icon--success {
+  background-color: #0a7b0a;
+}
+
+.folder-toast__text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}

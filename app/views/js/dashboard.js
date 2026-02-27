@@ -1,4 +1,5 @@
 require('./localforage.js');
+require('./folder-toast.js');
 require('./new-template-files.js');
 require('./form-buttons.js');
 require('./focus-input.js');
@@ -18,3 +19,17 @@ require('./site-settings-autosubmit.js');
 require('./site-settings-links.js');
 require('./site-settings-images.js');
 require('./site-settings-redirects.js');
+var initSidebarActionMenu = require('../dashboard/template/js/sidebar-action-menu.js');
+
+if (typeof window !== 'undefined' && window.__folderFileActionMenuConfig) {
+  var folderConfig = window.__folderFileActionMenuConfig;
+  initSidebarActionMenu({
+    container: folderConfig.container,
+    menuElement: folderConfig.menuElement,
+    rowSelector: folderConfig.rowSelector,
+    triggerSelector: folderConfig.triggerSelector,
+    linkMap: folderConfig.linkMap,
+  });
+  delete window.__folderFileActionMenuConfig;
+}
+

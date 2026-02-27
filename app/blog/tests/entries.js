@@ -10,10 +10,7 @@ describe("entries", function () {
 
         await this.template({ "entries.html": "{{#entries}}{{{html}}}{{/entries}}" });
 
-        const res = await this.get('/');
-
-        expect(res.status).toEqual(200);
-        const body = await res.text();
+        const body = await this.text('/');
         expect(body).toContain('Hello, A!');
         expect(body).toContain('Hello, B!');
         expect(body).toContain('Hello, C!');
@@ -29,16 +26,12 @@ describe("entries", function () {
             locals: {page_size: 2}
         });
 
-        const res = await this.get('/');
-
-        expect(res.status).toEqual(200);
-        const body = await res.text();
+        const body = await this.text('/');
         expect(body).toContain('Hello, A!');
         expect(body).toContain('Hello, B!');
         expect(body).not.toContain('Hello, C!');
 
-        const res2 = await this.get('/page/2');
-        const body2 = await res2.text();
+        const body2 = await this.text('/page/2');
         expect(body2).not.toContain('Hello, A!');
         expect(body2).not.toContain('Hello, B!');
         expect(body2).toContain('Hello, C!');
@@ -54,8 +47,7 @@ describe("entries", function () {
             locals: {sort_order: 'desc'}
         });
 
-        const res = await this.get('/');
-        const body = await res.text();
+        const body = await this.text('/');
 
         expect(body).toEqual('<p>Hello, C!</p><p>Hello, B!</p><p>Hello, A!</p>');
 
@@ -63,8 +55,7 @@ describe("entries", function () {
             locals: {sort_order: 'asc'}
         });
 
-        const res2 = await this.get('/');
-        const body2 = await res2.text();
+        const body2 = await this.text('/');
         expect(body2).toEqual('<p>Hello, A!</p><p>Hello, B!</p><p>Hello, C!</p>');
     });
 
@@ -79,8 +70,7 @@ describe("entries", function () {
             locals: {sort_by: 'date'}
         });
 
-        const res = await this.get('/');
-        const body = await res.text();
+        const body = await this.text('/');
 
         expect(body).toEqual('<p>Hello, C!</p><p>Hello, B!</p><p>Hello, A!</p>');
 
@@ -88,8 +78,7 @@ describe("entries", function () {
             locals: {sort_by: 'id'}
         });
 
-        const res2 = await this.get('/');
-        const body2 = await res2.text();
+        const body2 = await this.text('/');
         expect(body2).toEqual('<p>Hello, A!</p><p>Hello, B!</p><p>Hello, C!</p>');
     });
 
@@ -115,9 +104,7 @@ describe("entries", function () {
             `}, { locals: {page_size} });
         
         for (let i = 1; i <= 4; i++) {
-            const res = await this.get(`/page/${i}`);
-            const body = await res.text();
-            expect(res.status).toEqual(200);
+            const body = await this.text(`/page/${i}`);
             expect(body).toContain('Page ' + i + ' of ' + Math.ceil(numberOfEntries / page_size));
             if (i === 4) {
                 expect(body).not.toContain('Next');
@@ -152,16 +139,10 @@ describe("entries", function () {
             locals: {page_size}
         });
 
-        const res = await this.get('/page/1');
-        const body = await res.text();
-
-        expect(res.status).toEqual(200);
+        const body = await this.text('/page/1');
         expect(body).toContain('1/3/2/5/2');
 
-        const res2 = await this.get('/page/3');
-        const body2 = await res2.text();
-
-        expect(res2.status).toEqual(200);
+        const body2 = await this.text('/page/3');
         expect(body2).toContain('3/3/2/5/2');
     });
 
@@ -173,10 +154,7 @@ describe("entries", function () {
             locals: {page_size: 10}
         });
 
-        const res = await this.get('/');
-        const body = await res.text();
-
-        expect(res.status).toEqual(200);
+        const body = await this.text('/');
         expect(body).toContain('1/1///10/1');
     });
 });
