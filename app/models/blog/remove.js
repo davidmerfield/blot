@@ -94,6 +94,8 @@ function deleteKeys(blog, callback) {
   (async function () {
     try {
       var multi = client.multi();
+      var ownedTemplates =
+        (await client.sMembers("template:owned_by:" + blog.id)) || [];
 
       var patterns = ["template:" + blog.id + ":*", "blog:" + blog.id + ":*"];
 
@@ -129,6 +131,10 @@ function deleteKeys(blog, callback) {
             remove = remove.concat(res.keys);
           }
         } while (cursor !== START_CURSOR);
+      }
+
+      if (ownedTemplates.length > 0) {
+        multi.sRem("template:public_templates", ownedTemplates);
       }
 
       if (remove.length > 0) multi.del(remove);
