@@ -376,7 +376,7 @@ module.exports = (function () {
   function validatePageNumber(pageNumber) {
     // Handle undefined/null/empty string
     if (pageNumber === undefined || pageNumber === null || pageNumber === "") {
-      return null;
+      return 1;
     }
 
     // Convert to string for validation
@@ -654,8 +654,7 @@ module.exports = (function () {
           ? redis.zRange(entriesKey, start, end, { REV: true })
           : redis.zRange(entriesKey, start, end);
 
-      redis
-        .all([rangePromise, redis.zCard(entriesKey)])
+      Promise.all([rangePromise, redis.zCard(entriesKey)])
         .then(function (results) {
           var entryIDs = results[0];
           var totalEntries = results[1];
