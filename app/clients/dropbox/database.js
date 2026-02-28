@@ -1,5 +1,5 @@
 var debug = require("debug")("blot:clients:dropbox:database");
-var redis = require("models/client");
+var redis = require("models/client-new");
 var Blog = require("models/blog");
 var ensure = require("helper/ensure");
 var Model;
@@ -103,7 +103,7 @@ async function setAccount(blogID, changes) {
   ensure(account, Model, true);
 
   debug("Saving this account");
-  multi.sAdd(blogsKey(changes.account_id), blogID);
+  multi.sAdd(blogsKey(account.account_id), blogID);
   multi.hSet(accountKey(blogID), account);
 
   return multi.exec();

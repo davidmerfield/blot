@@ -743,17 +743,10 @@ describe("folder module", function () {
 
   it("propagates client-new promise failures", async function () {
     const error = new Error("boom");
-    const fakeMulti = {
-      hDel: jasmine.createSpy("hDel").and.callFake(() => fakeMulti),
-      hSet: jasmine.createSpy("hSet").and.callFake(() => fakeMulti),
-      exec: jasmine.createSpy("exec").and.returnValue(Promise.reject(error)),
-    };
-
-    spyOn(client, "multi").and.returnValue(fakeMulti);
+    spyOn(client, "hGet").and.callFake(() => Promise.reject(error));
 
     await expectAsync(folder.set("file_failure", "/folder/failure.txt")).toBeRejectedWith(error);
-    expect(client.multi).toHaveBeenCalled();
-    expect(fakeMulti.exec).toHaveBeenCalled();
+    expect(client.hGet).toHaveBeenCalled();
   });
 
 });
