@@ -1,5 +1,5 @@
 const keys = require("../db/keys");
-const client = require("client");
+const client = require("models/client-new");
 
 const MATCH = "clients:google-drive:*";
 

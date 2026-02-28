@@ -102,9 +102,16 @@ async function setAccount(blogID, changes) {
   // matches the expected types declared in Model below.
   ensure(account, Model, true);
 
+  // Redis v5 does not accept booleans in hash writes.
+  // Store everything as strings; getAccount restores types.
+  var serialized = {};
+  for (var field in account) {
+    serialized[field] = String(account[field]);
+  }
+
   debug("Saving this account");
   multi.sAdd(blogsKey(account.account_id), blogID);
-  multi.hSet(accountKey(blogID), account);
+  multi.hSet(accountKey(blogID), serialized);
 
   return multi.exec();
 }

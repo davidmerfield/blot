@@ -2,7 +2,7 @@ const request = require("request");
 const fs = require("fs-extra");
 const CERT_DIR = "/etc/resty-auto-ssl/letsencrypt/certs";
 const get = require("../get/blog");
-const client = require("client");
+const client = require("models/client-new");
 const exec = require("child_process").exec;
 const nginx = "/usr/local/openresty/bin/openresty";
 var getConfirmation = require("../util/getConfirmation");
@@ -39,19 +39,17 @@ get(process.argv[2], function (err, user, blog) {
   console.log("Keys to drop:", certKeys);
   console.log("Directories to remove:", certDirs);
 
-  getConfirmation("Proceed? (y/n)", function (err, ok) {
+  getConfirmation("Proceed? (y/n)", async function (err, ok) {
     if (!ok) throw "Not ok!";
 
-    client.del(certKeys, function (err) {
-      if (err) throw err;
+    await client.del(certKeys);
 
-      console.log("removed redis keys", certKeys);
-      console.log("You need to remove the directories manually");
-      certDirs.forEach((dir) => {
-        console.log("rm -rf", dir);
-      });
-      console.log("You need to restart nginx manually");
-      console.log("sudo", nginx, "-s reload");
+    console.log("removed redis keys", certKeys);
+    console.log("You need to remove the directories manually");
+    certDirs.forEach((dir) => {
+      console.log("rm -rf", dir);
     });
+    console.log("You need to restart nginx manually");
+    console.log("sudo", nginx, "-s reload");
   });
 });
