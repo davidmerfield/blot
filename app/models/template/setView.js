@@ -288,34 +288,37 @@ module.exports = function setView(templateID, updates, callback) {
 							multi.hDel(viewKey, "urlPatterns");
 						}
 
-						multi.exec().then(() => {
+						// node-redis v5 multi.exec() returns a thenable; normalize to Promise so .then/.catch chain reliably
+						Promise.resolve(multi.exec())
+							.then(() => {
 
-							if (!changes) {
-								if (metadata.errors && metadata.errors[name]) {
-									delete metadata.errors[name];
-									return setMetadata(templateID, { errors: metadata.errors }, callback);
-								}
-
-								return callback();
-							}
-
-							Blog.set(metadata.owner, { cacheID: Date.now() }, (cacheErr) => {
-								if (cacheErr) return callback(cacheErr);
-
-								updateCdnManifest(templateID, (manifestErr) => {
-									if (manifestErr) return callback(manifestErr);
-
-									// Clear this view from template metadata.errors when saving
-									// via the dashboard so fixing a view clears its error state
+								if (!changes) {
 									if (metadata.errors && metadata.errors[name]) {
 										delete metadata.errors[name];
 										return setMetadata(templateID, { errors: metadata.errors }, callback);
 									}
 
-									callback();
+									return callback();
+								}
+
+								Blog.set(metadata.owner, { cacheID: Date.now() }, (cacheErr) => {
+									if (cacheErr) return callback(cacheErr);
+
+									updateCdnManifest(templateID, (manifestErr) => {
+										if (manifestErr) return callback(manifestErr);
+
+										// Clear this view from template metadata.errors when saving
+										// via the dashboard so fixing a view clears its error state
+										if (metadata.errors && metadata.errors[name]) {
+											delete metadata.errors[name];
+											return setMetadata(templateID, { errors: metadata.errors }, callback);
+										}
+
+										callback();
+									});
 								});
-							}).catch(callback);
-						});
+							})
+							.catch(callback);
 					},
 				);
 			});
