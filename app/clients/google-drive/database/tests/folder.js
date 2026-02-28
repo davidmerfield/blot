@@ -1,6 +1,6 @@
 describe("folder module", function () {
   const folderModule = require("clients/google-drive/database/folder");
-  const client = require("models/client");
+  const client = require("models/client-new");
   const prefix = require("clients/google-drive/database/prefix");
 
   let folder;
@@ -11,12 +11,11 @@ describe("folder module", function () {
   });
 
   // Clear Redis data after each test
-  afterEach(function (done) {
-    client.keys(`${prefix}*`, async function (err, keys) {
-      if (err) return done(err);
-      if (!keys.length) return done();
-      client.del(keys, done);
-    });
+  afterEach(async function () {
+    const keys = await client.keys(`${prefix}*`);
+    if (keys.length) {
+      await client.del(keys);
+    }
   });
 
   it("can set and get a mapping (ID → Path)", async function () {
@@ -395,7 +394,7 @@ describe("folder module", function () {
     const path = "/folder/file1.txt";
   
     // Corrupt metadata in Redis
-    await client.hset(`${prefix}test_folder:metadata`, id, "corrupted_metadata_string");
+    await client.hSet(`${prefix}test_folder:metadata`, id, "corrupted_metadata_string");
   
     try {
       await folder.getMetadata(id);
@@ -532,7 +531,7 @@ describe("folder module", function () {
     await folder.set(id2, path2);
   
     // Manually remove some Redis data
-    await client.hdel(`${prefix}test_folder:path`, path1);
+    await client.hDel(`${prefix}test_folder:path`, path1);
   
     await folder.reset();
   
@@ -740,4 +739,13 @@ describe("folder module", function () {
     const entriesLowerCase = await folder.readdir(basePath.toLowerCase());
     expect(entriesLowerCase).toEqual([]); // Should not match a case-sensitive path
   });
+
+
+  it("propagates client-new promise failures", async function () {
+    const error = new Error("boom");
+    spyOn(client, "hSet").and.returnValue(Promise.reject(error));
+
+    await expectAsync(folder.set("file_failure", "/folder/failure.txt")).toBeRejectedWith(error);
+  });
+
 });
