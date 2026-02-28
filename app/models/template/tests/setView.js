@@ -181,7 +181,7 @@ describe("template", () => {
 
 	it("forwards Redis url mapping failures to callback", function (done) {
 		const expectedError = new Error("redis set failed");
-		spyOn(client, "set").and.returnValue(Promise.reject(expectedError));
+		spyOn(client, "set").and.callFake(() => Promise.reject(expectedError));
 
 		setViewCallback(
 			this.template.id,
