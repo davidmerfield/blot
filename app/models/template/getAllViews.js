@@ -1,5 +1,5 @@
 var key = require("./key");
-var client = require("models/client-new");
+var client = require("models/client");
 var ensure = require("helper/ensure");
 var getMultipleViews = require("./getMultipleViews");
 var getMetadata = require("./getMetadata");

@@ -1,5 +1,5 @@
 module.exports = (function () {
-  var redis = require("models/client-new"),
+  var redis = require("models/client"),
     normalize = require("helper/pathNormalizer"),
     ensure = require("helper/ensure"),
     REASONS = {

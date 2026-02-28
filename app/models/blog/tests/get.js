@@ -1,7 +1,7 @@
 describe("Blog.get", function () {
   var get = require("../get");
   var key = require("../key");
-  var client = require("models/client-new");
+  var client = require("models/client");
 
   global.test.blog();
 

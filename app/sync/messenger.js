@@ -1,4 +1,4 @@
-const client = require("models/client-new");
+const client = require("models/client");
 const clfdate = require("helper/clfdate");
 const uuid = require("uuid/v4");
 const Blog = require("models/blog");

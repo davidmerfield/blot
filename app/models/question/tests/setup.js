@@ -1,7 +1,7 @@
 module.exports = function setup(options) {
   // remove all keys from the redis-db with the prefix 'blot:questions
   beforeEach(async function () {
-    const client = require("models/client-new");
+    const client = require("models/client");
 
     const keys = await client.keys("blot:questions:*");
     if (keys.length > 0) {
@@ -11,7 +11,7 @@ module.exports = function setup(options) {
 
   // remove all keys from the redis-db with the prefix 'blot:questions
   afterEach(async function () {
-    const client = require("models/client-new");
+    const client = require("models/client");
 
     const keys = await client.keys("blot:questions:*");
     if (keys.length > 0) {

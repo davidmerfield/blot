@@ -1,4 +1,4 @@
-var redis = require("models/client-new");
+var redis = require("models/client");
 var async = require("async");
 var ensure = require("helper/ensure");
 var Entry = require("../entry");

@@ -3,7 +3,7 @@ describe("template", function () {
 
   var createShareID = require("../index").createShareID;
   var dropShareID = require("../index").dropShareID;
-  var client = require("models/client-new");
+  var client = require("models/client");
 
   it("dropShareID works", function (done) {
     var test = this;

@@ -122,7 +122,7 @@ Exported for use by callers that need regex-awareness outside the standard CRUD 
 
 ## Dependencies
 
-- **`models/client-new`** — shared Redis singleton (`app/models/client-new.js` → `app/models/redis-new.js`).
+- **`models/client`** — shared Redis singleton (`app/models/client.js` → `app/models/redis.js`).
 - **`helper/ensure`** — runtime argument type validation used in every exported function.
 - **`lodash`** — used in `list.js` for `_.map` and `_.zip`.
 

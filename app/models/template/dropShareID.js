@@ -1,5 +1,5 @@
 var key = require("./key");
-var client = require("models/client-new");
+var client = require("models/client");
 var getByShareID = require("./getByShareID");
 var setMetadata = require("./setMetadata");
 

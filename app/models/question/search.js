@@ -1,4 +1,4 @@
-const client = require("models/client-new");
+const client = require("models/client");
 const keys = require("./keys");
 const PAGE_SIZE = 20;
 

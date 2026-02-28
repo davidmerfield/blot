@@ -1,6 +1,6 @@
 describe("google drive database.channel", function () {
   const database = require("clients/google-drive/database");
-  const client = require("models/client-new");
+  const client = require("models/client");
   const prefix = require("clients/google-drive/database/prefix");
 
   const channel = database.channel;
@@ -373,7 +373,7 @@ describe("google drive database.channel", function () {
   });
 
 
-  it("propagates client-new promise failures", async function () {
+  it("propagates client promise failures", async function () {
     const error = new Error("boom");
     spyOn(client, "hSet").and.callFake(() => Promise.reject(error));
 

@@ -3,7 +3,7 @@
 // return "blog:" + blogID + ":folder:" + pathNormalizer(path);
 
 const keys = require("../util/redisKeys");
-const client = require("models/client-new");
+const client = require("models/client");
 const del = function (redisKey) {
   return client.del(redisKey);
 };

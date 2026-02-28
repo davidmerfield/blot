@@ -3,7 +3,7 @@ const tags = require("../../tags");
 describe("exportQuestions", function () {
     require("./setup")();
   
-    const client = require("models/client-new"); // Ensure this client is correctly initialized
+    const client = require("models/client"); // Ensure this client is correctly initialized
     const exportQuestions = require('../export'); // Adjust the path as needed
     const create = require("../create"); // Function to create questions/replies
     
@@ -246,7 +246,7 @@ describe("exportQuestions", function () {
 
       it("will throw an error if you trigger an issue with redis sMembers", async function () {
         
-        spyOn(require("models/client-new"), "sMembers").and.callFake(function () {
+        spyOn(require("models/client"), "sMembers").and.callFake(function () {
           return Promise.reject(new Error("REDIS sMembers ISSUE"));
         });
         
@@ -262,7 +262,7 @@ describe("exportQuestions", function () {
         
         const question = await create({ title: 'How?', body: 'Yes' });
 
-        spyOn(require("models/client-new"), "hGetAll").and.callFake(function () {
+        spyOn(require("models/client"), "hGetAll").and.callFake(function () {
           return Promise.reject(new Error("REDIS hGetAll ISSUE"));
         });
         
@@ -278,7 +278,7 @@ describe("exportQuestions", function () {
         
         const question = await create({ title: 'How?', body: 'Yes' });
 
-        spyOn(require("models/client-new"), "zRange").and.callFake(function () {
+        spyOn(require("models/client"), "zRange").and.callFake(function () {
           return Promise.reject(new Error("REDIS zRange ISSUE"));
         });
         

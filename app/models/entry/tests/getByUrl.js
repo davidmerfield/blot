@@ -1,7 +1,7 @@
 describe("entry.getByUrl", function () {
   function withMocks(redisImpl, getImpl, run) {
     const modulePath = require.resolve("../getByUrl");
-    const redisPath = require.resolve("models/client-new");
+    const redisPath = require.resolve("models/client");
     const getPath = require.resolve("../get");
 
     const oldGetByUrl = require.cache[modulePath];

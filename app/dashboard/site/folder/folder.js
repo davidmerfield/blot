@@ -3,7 +3,7 @@ const path = require("path");
 const alphanum = require("helper/alphanum");
 const localPath = require("helper/localPath");
 const Stat = require("./stat");
-const client = require("models/client-new");
+const client = require("models/client");
 const pathNormalize = require("helper/pathNormalizer");
 
 async function getContents(blog, dir) {

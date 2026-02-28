@@ -1,4 +1,4 @@
-const redis = require("models/client-new");
+const redis = require("models/client");
 const Entries = require("./index"); // Replace with the correct path to the Entries module
 const Entry = require("../entry");
 const Blog = require("../blog");

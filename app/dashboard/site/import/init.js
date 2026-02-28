@@ -1,6 +1,6 @@
 const fs = require("fs-extra");
 const tempDir = require("helper/tempDir")();
-const client = require("models/client-new");
+const client = require("models/client");
 const { join } = require("path");
 const archiver = require("archiver");
 

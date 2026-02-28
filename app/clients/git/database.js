@@ -1,5 +1,5 @@
 var database = {};
-var client = require("models/client-new");
+var client = require("models/client");
 var debug = require("debug")("blot:clients:git:database");
 
 // I picked v4 from 5 possible versions

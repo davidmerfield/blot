@@ -2,7 +2,7 @@ var colors = require("colors/safe");
 var get = require("../../get/blog");
 var Keys = require("../../db/keys");
 var keysToDelete = [];
-var client = require("models/client-new");
+var client = require("models/client");
 var getConfirmation = require("../util/getConfirmation");
 
 if (require.main === module) {

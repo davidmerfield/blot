@@ -1,7 +1,7 @@
 const colors = require("colors/safe");
 const getBlog = require("../get/blog");
 const redisKeys = require("../util/redisKeys");
-const client = require("models/client-new");
+const client = require("models/client");
 const getConfirmation = require("../util/getConfirmation");
 
 const ENTRY_LISTS = [

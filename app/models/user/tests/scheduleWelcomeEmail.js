@@ -2,7 +2,7 @@ describe("user", function () {
   global.test.user();
 
   var User = require("models/user");
-  var client = require("models/client-new");
+  var client = require("models/client");
   var key = require("models/user/key");
 
   it("sends welcome email immediately when overdue", function (done) {

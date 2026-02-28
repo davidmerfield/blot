@@ -1,5 +1,5 @@
 const colors = require("colors/safe");
-const client = require("models/client-new");
+const client = require("models/client");
 const redisKeys = require("../util/redisKeys");
 const getConfirmation = require("../util/getConfirmation");
 

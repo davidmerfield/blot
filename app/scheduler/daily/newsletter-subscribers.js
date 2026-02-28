@@ -1,5 +1,5 @@
 async function main(callback) {
-  var client = require("models/client-new");
+  var client = require("models/client");
 
   try {
     const subscribers = await client.smembers("newsletter:list");

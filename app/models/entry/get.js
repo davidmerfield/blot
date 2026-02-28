@@ -1,7 +1,7 @@
 var ensure = require("helper/ensure");
 var type = require("helper/type");
 
-var redis = require("models/client-new");
+var redis = require("models/client");
 var entryKey = require("./key").entry;
 
 var Entry = require("./instance");

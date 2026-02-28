@@ -1,5 +1,5 @@
 const key = require("./key");
-const client = require("models/client-new");
+const client = require("models/client");
 const debug = require("debug")("blot:template:getViewByURLPattern");
 const { match } = require("path-to-regexp");
 const { parse } = require("url");

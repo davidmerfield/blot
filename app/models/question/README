@@ -207,7 +207,7 @@ Currently a no-op. The function accepts no arguments and returns nothing.
 
 ## Migration note
 
-This model now uses `models/client-new` for shared Redis access, with promise-based command calls (`hGetAll`, `sMembers`, `zRange`, `sScan`) and `multi().exec()` reserved for atomic writes in `create.js` and `update.js`.
+This model now uses `models/client` for shared Redis access, with promise-based command calls (`hGetAll`, `sMembers`, `zRange`, `sScan`) and `multi().exec()` reserved for atomic writes in `create.js` and `update.js`.
 
 When extending or migrating nearby modules, keep the exported function contracts stable and update tests to spy on the same modern command names used in production code.
 
@@ -215,7 +215,7 @@ When extending or migrating nearby modules, keep the exported function contracts
 
 ## Internal Structure
 
-`create.js`, `update.js`, `list.js`, `search.js`, and `tags.js` all depend on `keys.js` for Redis key construction and on `models/client-new` for the Redis connection. `get.js` is also used as a dependency by `create.js` and `update.js` to return a freshly read object after write operations complete. `import.js` depends on `create.js` exclusively.
+`create.js`, `update.js`, `list.js`, `search.js`, and `tags.js` all depend on `keys.js` for Redis key construction and on `models/client` for the Redis connection. `get.js` is also used as a dependency by `create.js` and `update.js` to return a freshly read object after write operations complete. `import.js` depends on `create.js` exclusively.
 
 `export.js` and `import.js` are not exported from `index.js` and are not part of the standard public interface. They are utility functions for bulk data migration.
 
@@ -225,7 +225,7 @@ When extending or migrating nearby modules, keep the exported function contracts
 
 **Internal:**
 
-- `models/client-new` — the shared Redis singleton (`app/models/client-new.js` → `app/models/redis-new.js`).
+- `models/client` — the shared Redis singleton (`app/models/client.js` → `app/models/redis.js`).
 
 **External:**
 

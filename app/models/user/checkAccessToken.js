@@ -1,4 +1,4 @@
-var client = require("models/client-new");
+var client = require("models/client");
 var key = require("./key");
 
 // You cannot check an access token multiple times

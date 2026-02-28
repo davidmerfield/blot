@@ -1,5 +1,5 @@
 const key = require("./key");
-const client = require("models/client-new");
+const client = require("models/client");
 const Blog = require("models/blog");
 const getMetadata = require("./getMetadata");
 const getView = require("./getView");

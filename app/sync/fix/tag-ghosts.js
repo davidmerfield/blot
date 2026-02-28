@@ -1,7 +1,7 @@
 var Tags = require("models/tags");
 var Entry = require("models/entry");
 var async = require("async");
-var client = require("models/client-new");
+var client = require("models/client");
 
 function execTransaction(multi, callback) {
   var done = false;

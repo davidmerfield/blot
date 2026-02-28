@@ -1,4 +1,4 @@
-const client = require("models/client-new");
+const client = require("models/client");
 const ensure = require("helper/ensure");
 const type = require("helper/type");
 const key = require("./key");

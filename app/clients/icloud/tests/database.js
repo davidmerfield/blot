@@ -1,4 +1,4 @@
-const client = require("models/client-new");
+const client = require("models/client");
 const database = require("clients/icloud/database");
 
 describe("icloud database", function () {

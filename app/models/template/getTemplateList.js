@@ -1,4 +1,4 @@
-var client = require("models/client-new");
+var client = require("models/client");
 var key = require("./key");
 var async = require("async");
 var getMetadata = require("./getMetadata");

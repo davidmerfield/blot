@@ -4,10 +4,10 @@
  * Lifecycle contract:
  * - This module owns the process-wide singleton connection.
  * - Consumers should NOT call `quit()`/`disconnect()` on this client.
- * - Use `redis-new` directly when you need a dedicated client with an
+ * - Use `redis` directly when you need a dedicated client with an
  *   independent lifecycle that can be explicitly closed.
  */
-const client = require("./redis-new")();
+const client = require("./redis")();
 
 client.connect().catch((err) => {
   console.log("Redis connect error:");

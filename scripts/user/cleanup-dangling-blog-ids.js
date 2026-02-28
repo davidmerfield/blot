@@ -11,7 +11,7 @@ var getConfirmation = require("../util/getConfirmation");
 var User = require("models/user");
 var Blog = require("models/blog");
 var blogKey = require("models/blog/key");
-var client = require("models/client-new");
+var client = require("models/client");
 
 if (require.main === module)
   main(function (err) {

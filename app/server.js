@@ -28,7 +28,7 @@ server.set("trust proxy", true);
 
 // Check if the database is healthy
 server.get("/redis-health", async function (req, res) {
-  const createRedisClient = require("models/redis-new");
+  const createRedisClient = require("models/redis");
   const client = createRedisClient();
 
   // do not cache response

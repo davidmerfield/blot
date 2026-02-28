@@ -1,5 +1,5 @@
 var async = require("async");
-var client = require("models/client-new");
+var client = require("models/client");
 var config = require("config");
 var fs = require("fs-extra");
 var get = require("./get");

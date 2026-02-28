@@ -1,7 +1,7 @@
 const { promisify } = require("util");
 const ensure = require("helper/ensure");
 const hash = require("helper/hash");
-const client = require("models/client-new");
+const client = require("models/client");
 const key = require("../key");
 const getMetadata = require("../getMetadata");
 const getView = require("../getView");

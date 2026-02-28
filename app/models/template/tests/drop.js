@@ -4,7 +4,7 @@ describe("template", function () {
   var drop = require("../index").drop;
   var setMetadata = require("../index").setMetadata;
   var getTemplateList = require("../index").getTemplateList;
-  var client = require("models/client-new");
+  var client = require("models/client");
   var Blog = require("models/blog");
   var key = require("../key");
   var config = require("config");

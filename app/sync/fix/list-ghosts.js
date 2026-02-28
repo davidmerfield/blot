@@ -1,6 +1,6 @@
 const Entry = require("models/entry");
 const Entries = require("models/entries");
-const client = require("models/client-new");
+const client = require("models/client");
 const { promisify } = require("util");
 
 var lists = ["all", "created", "entries", "drafts", "scheduled", "pages"];
