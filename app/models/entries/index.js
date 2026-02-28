@@ -238,7 +238,7 @@ module.exports = (function () {
               if (!missing.length) return nextList();
 
               redis
-                .zRem.apply(redis, [key].concat(missing))
+                .zRem(key, missing)
                 .then(function () {
                   nextList();
                 })
