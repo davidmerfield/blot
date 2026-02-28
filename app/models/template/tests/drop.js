@@ -97,7 +97,7 @@ describe("template", function () {
         client
           .sIsMember(key.blogTemplates(test.blog.id), test.template.id)
           .then(function (isMember) {
-            expect(isMember).toBe(0);
+            expect(isMember).toBe(false);
             done();
           })
           .catch(done.fail);

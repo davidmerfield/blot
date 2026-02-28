@@ -20,7 +20,6 @@ const MAX_VIEW_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
 module.exports = function setView(templateID, updates, callback) {
         ensure(templateID, "string").and(updates, "object").and(callback, "function");
-        const done = once(callback);
 
         if (updates.partials !== undefined && type(updates.partials) !== "object") {
 		updates.partials = {};
@@ -30,31 +29,31 @@ module.exports = function setView(templateID, updates, callback) {
 	var name = updates.name;
 
 	if (!name || !type(name, "string")) {
-		return done(new Error("The view's name is invalid"));
+		return callback(new Error("The view's name is invalid"));
 	}
 
 	// Validate that the name doesn't start with '.' or contain a slash
 	if (name.startsWith(".")) {
-		return done(new Error("View names cannot start with '.'"));
+		return callback(new Error("View names cannot start with '.'"));
 	}
 
 	// We don't support subdirectories in templates at the moment
         if (name.includes("/") || name.includes("\\")) {
-                return done(new Error("View names cannot contain slashes"));
+                return callback(new Error("View names cannot contain slashes"));
         }
 
         const serializedUpdates = JSON.stringify(updates);
         const payloadSize = Buffer.byteLength(serializedUpdates);
 
         if (payloadSize > MAX_VIEW_PAYLOAD_SIZE) {
-                return done(new Error("View payload exceeds maximum size of 2 MB"));
+                return callback(new Error("View payload exceeds maximum size of 2 MB"));
         }
 
         if (updates.content !== undefined) {
                 try {
                         Mustache.render(updates.content, {});
                 } catch (e) {
-                        return done(e);
+                        return callback(e);
 		}
 	}
 
@@ -62,16 +61,15 @@ module.exports = function setView(templateID, updates, callback) {
 	var viewKey = key.view(templateID, name);
 
 	getMetadata(templateID, (err, metadata) => {
-		if (err) return done(err);
+		if (err) return callback(err);
 
 		if (!metadata)
-			return done(new Error("There is no template called " + templateID));
+			return callback(new Error("There is no template called " + templateID));
 
 		client.sAdd(allViews, name).then(() => {
 
 			// Look up previous state of view if applicable
 			getView(templateID, name, (err, view) => {
-				if (err) return done(err);
 				view = view || {};
 				let redisWriteChain = Promise.resolve();
 
@@ -109,7 +107,7 @@ module.exports = function setView(templateID, updates, callback) {
 						updates.url = urlNormalizer(updates.url);
 						updates.urlPatterns = [updates.url];
 					} else {
-						return done(
+						return callback(
 							new Error("The provided `url` must be a string or an array"),
 						);
 					}
@@ -208,7 +206,7 @@ module.exports = function setView(templateID, updates, callback) {
 						"setView: short-circuit",
 						name,
 					);
-					return done();
+					return callback();
 				} else {
 					console.log(
 						clfdate(),
@@ -284,7 +282,7 @@ module.exports = function setView(templateID, updates, callback) {
 						view,
 						parseResult,
 						(infiniteError) => {
-						if (infiniteError) return done(infiniteError);
+						if (infiniteError) return callback(infiniteError);
 
 						// Merge parser-derived retrieve (e.g. {{title}}) into view.retrieve; do not overwrite user-provided retrieve (includeDraft, filters, etc.)
 						extend(view.retrieve || {}).and(parseResult.retrieve || {});
@@ -311,49 +309,39 @@ module.exports = function setView(templateID, updates, callback) {
 								if (!changes) {
 									if (metadata.errors && metadata.errors[name]) {
 										delete metadata.errors[name];
-										return setMetadata(templateID, { errors: metadata.errors }, done);
+										return setMetadata(templateID, { errors: metadata.errors }, callback);
 									}
 
-									return done();
+									return callback();
 								}
 
 								Blog.set(metadata.owner, { cacheID: Date.now() }, (cacheErr) => {
-									if (cacheErr) return done(cacheErr);
+									if (cacheErr) return callback(cacheErr);
 
 									updateCdnManifest(templateID, (manifestErr) => {
-										if (manifestErr) return done(manifestErr);
+										if (manifestErr) return callback(manifestErr);
 
 										// Clear this view from template metadata.errors when saving
 										// via the dashboard so fixing a view clears its error state
 										if (metadata.errors && metadata.errors[name]) {
 											delete metadata.errors[name];
-											return setMetadata(templateID, { errors: metadata.errors }, done);
+											return setMetadata(templateID, { errors: metadata.errors }, callback);
 										}
 
-										done();
+										callback();
 									});
 								});
 							})
-							.catch((chainErr) => done(chainErr));
+							.catch(callback);
 						},
 					);
 					})
-					.catch((chainErr) => done(chainErr));
-				}).catch((chainErr) => done(chainErr));
+					.catch(callback);
+				}).catch(callback);
 			});
-		}).catch((chainErr) => done(chainErr));
+		}).catch(callback);
 	});
 };
-
-function once(fn) {
-	var called = false;
-
-	return function () {
-		if (called) return;
-		called = true;
-		return fn.apply(null, arguments);
-	};
-}
 
 function detectInfinitePartialDependency(
 	templateID,
