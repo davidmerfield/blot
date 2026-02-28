@@ -219,8 +219,10 @@ global.test = {
   let hasKeys = false;
 
   for await (const _ of client.scanIterator({ MATCH: "*", COUNT: 1 })) {
-    hasKeys = true;
-    break;
+    if (_.length > 0) {
+      hasKeys = true;
+      break;
+    }
   }
 
   if (!hasKeys) {
