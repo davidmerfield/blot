@@ -1,6 +1,6 @@
 describe("google drive database.blog", function () {
   const database = require("clients/google-drive/database");
-  const client = require("models/client-new");
+  const client = require("models/client");
   const prefix = require("clients/google-drive/database/prefix");
 
   afterEach(async function () {
@@ -425,7 +425,7 @@ describe("google drive database.blog", function () {
 
 
 
-  it("propagates client-new promise failures", async function () {
+  it("propagates client promise failures", async function () {
     const error = new Error("boom");
     spyOn(client, "hSet").and.callFake(() => Promise.reject(error));
 

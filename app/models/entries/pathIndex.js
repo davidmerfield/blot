@@ -1,5 +1,5 @@
 var ensure = require("helper/ensure");
-var redis = require("models/client-new");
+var redis = require("models/client");
 
 function entriesKey(blogID) {
   return "blog:" + blogID + ":entries";

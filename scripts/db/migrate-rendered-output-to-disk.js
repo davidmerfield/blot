@@ -15,7 +15,7 @@
 const eachTemplate = require("../each/template");
 const getMetadata = require("models/template/getMetadata");
 const Blog = require("models/blog");
-const client = require("models/client-new");
+const client = require("models/client");
 const key = require("models/template/key");
 const redisKeys = require("../util/redisKeys");
 const { promisify } = require("util");

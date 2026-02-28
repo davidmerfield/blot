@@ -1,4 +1,4 @@
-const createRedisClient = require("models/redis-new");
+const createRedisClient = require("models/redis");
 const each = require("../each/blog");
 
 async function iterateBlogs(runForBlog) {

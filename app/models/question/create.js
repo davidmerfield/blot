@@ -1,4 +1,4 @@
-const client = require("models/client-new");
+const client = require("models/client");
 const serializeRedisHashValues = require("models/redisHashSerializer");
 const keys = require("./keys");
 const get = require("./get");

@@ -2,7 +2,7 @@ const config = require("config");
 const fs = require("fs-extra");
 const path = require("path");
 
-const client = require("models/client-new");
+const client = require("models/client");
 const documentation = require("./documentation/build");
 const templates = require("./templates");
 const folders = require("./templates/folders");

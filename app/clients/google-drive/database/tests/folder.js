@@ -1,6 +1,6 @@
 describe("folder module", function () {
   const folderModule = require("clients/google-drive/database/folder");
-  const client = require("models/client-new");
+  const client = require("models/client");
   const prefix = require("clients/google-drive/database/prefix");
 
   let folder;
@@ -741,7 +741,7 @@ describe("folder module", function () {
   });
 
 
-  it("propagates client-new promise failures", async function () {
+  it("propagates client promise failures", async function () {
     const error = new Error("boom");
     spyOn(client, "hGet").and.callFake(() => Promise.reject(error));
 

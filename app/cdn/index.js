@@ -3,7 +3,7 @@ const express = require("express");
 const cdn = new express.Router();
 const mime = require("mime-types");
 
-const client = require("models/client-new");
+const client = require("models/client");
 const key = require("models/template/key");
 const path = require("path");
 

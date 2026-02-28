@@ -1,4 +1,4 @@
-const createRedisClient = require("models/redis-new");
+const createRedisClient = require("models/redis");
 
 async function redisKeys(pattern, iterator) {
   const client = createRedisClient();

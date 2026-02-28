@@ -1,6 +1,6 @@
 var ensure = require("helper/ensure");
 var makeID = require("./util/makeID");
-var client = require("models/client-new");
+var client = require("models/client");
 var key = require("./key");
 var setMetadata = require("./setMetadata");
 

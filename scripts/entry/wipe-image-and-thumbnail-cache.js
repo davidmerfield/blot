@@ -1,5 +1,5 @@
 var get = require("../get/entry");
-var client = require("models/client-new");
+var client = require("models/client");
 var async = require("async");
 
 if (require.main === module) {

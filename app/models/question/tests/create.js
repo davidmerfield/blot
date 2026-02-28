@@ -53,7 +53,7 @@ describe("questions.create", function () {
   });
 
   it("will throw an error if you trigger an issue with redis multi.exec", async function () {
-    const client = require("models/client-new");
+    const client = require("models/client");
 
     spyOn(client, "multi").and.returnValue({
       zAdd: () => {},
@@ -73,7 +73,7 @@ describe("questions.create", function () {
   });
 
   it("will throw an error if you trigger an issue with redis exists", async function () {
-    const client = require("models/client-new");
+    const client = require("models/client");
 
     spyOn(client, "exists").and.returnValue(Promise.reject(new Error("REDIS EXISTS ISSUE")));
 
@@ -86,7 +86,7 @@ describe("questions.create", function () {
   });
 
   it("will throw an error if you trigger an issue with redis incr", async function () {
-    const client = require("models/client-new");
+    const client = require("models/client");
 
     spyOn(client, "incr").and.returnValue(Promise.reject(new Error("REDIS INCR ISSUE")));
 

@@ -1,6 +1,6 @@
 var Mustache = require("mustache");
 var type = require("helper/type");
-var client = require("models/client-new");
+var client = require("models/client");
 var key = require("./key");
 var urlNormalizer = require("helper/urlNormalizer");
 var ensure = require("helper/ensure");

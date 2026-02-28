@@ -2,7 +2,7 @@ describe("user", function () {
   global.test.user();
 
   var set = require("../index").set;
-  var client = require("models/client-new");
+  var client = require("models/client");
   var key = require("../key");
 
   it("set will remove key for old email when email changes", function (done) {

@@ -1,7 +1,7 @@
 var Jasmine = require("jasmine");
 var jasmine = new Jasmine();
 var colors = require("colors");
-var client = require("models/client-new");
+var client = require("models/client");
 var clfdate = require("helper/clfdate");
 var seedrandom = require("seedrandom");
 var async = require("async");

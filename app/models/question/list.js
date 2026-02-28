@@ -1,5 +1,5 @@
 const PAGE_SIZE = 10;
-const client = require("models/client-new");
+const client = require("models/client");
 const keys = require("./keys");
 const moment = require("moment");
 

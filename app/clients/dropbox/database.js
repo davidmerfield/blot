@@ -1,5 +1,5 @@
 var debug = require("debug")("blot:clients:dropbox:database");
-var redis = require("models/client-new");
+var redis = require("models/client");
 var Blog = require("models/blog");
 var ensure = require("helper/ensure");
 var Model;

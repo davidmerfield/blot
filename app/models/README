@@ -1,7 +1,7 @@
 Models
 ------
 
-Models are the data layer. They read and write to Redis. New code should use the new Redis client modules: `models/client-new` for the shared singleton connection, or `models/redis-new` when a module needs a dedicated client instance with its own lifecycle.
+Models are the data layer. They read and write to Redis. New code should use the new Redis client modules: `models/client` for the shared singleton connection, or `models/redis` when a module needs a dedicated client instance with its own lifecycle.
 
 
 Redis conventions
@@ -18,59 +18,59 @@ Redis conventions
 Choosing the Redis client module
 -------------------------------
 
-- **Use `models/client-new` by default.** It exports a process-wide singleton client and is the correct choice for almost all model reads and writes. Do not call `quit()`/`disconnect()` on this shared instance.
+- **Use `models/client` by default.** It exports a process-wide singleton client and is the correct choice for almost all model reads and writes. Do not call `quit()`/`disconnect()` on this shared instance.
 
-- **Use `models/redis-new` only when you need isolation.** `require("models/redis-new")()` creates a dedicated client with an independent lifecycle. Use this for scripts, one-off migrations, worker-style jobs, or module flows that must explicitly connect and close without affecting the app-wide singleton.
+- **Use `models/redis` only when you need isolation.** `require("models/redis")()` creates a dedicated client with an independent lifecycle. Use this for scripts, one-off migrations, worker-style jobs, or module flows that must explicitly connect and close without affecting the app-wide singleton.
 
-- **Rule of thumb:** if the code runs inside normal request/model flow, use `models/client-new`; if it needs explicit connect/teardown control, use a dedicated `models/redis-new` client.
+- **Rule of thumb:** if the code runs inside normal request/model flow, use `models/client`; if it needs explicit connect/teardown control, use a dedicated `models/redis` client.
 
 Legacy compatibility caveats
 ----------------------------
 
 When migrating older `models/client`/`models/redis` usage, keep these compatibility differences in mind:
 
-- **Callbacks:** `models/client-new` follows modern promise-based redis APIs. Legacy callback-last patterns (e.g. `client.get(key, cb)`) are not automatically shimmed.
+- **Callbacks:** `models/client` follows modern promise-based redis APIs. Legacy callback-last patterns (e.g. `client.get(key, cb)`) are not automatically shimmed.
 
 - **Command naming:** the legacy adapter exposed both lowercase and uppercase aliases and normalized some argument shapes. With the new client path, use the current redis command API and argument forms directly.
 
-- **Pub/Sub cleanup:** dedicated pub/sub clients created via `models/redis-new` should be unsubscribed and closed when done. Avoid long-lived subscriptions on the shared singleton unless that lifecycle is intentional and app-wide.
+- **Pub/Sub cleanup:** dedicated pub/sub clients created via `models/redis` should be unsubscribed and closed when done. Avoid long-lived subscriptions on the shared singleton unless that lifecycle is intentional and app-wide.
 
-- **Connect lifecycle:** `models/client-new` connects once on module load and is shared process-wide. Dedicated `models/redis-new` clients must be connected and then explicitly closed by the owning module.
+- **Connect lifecycle:** `models/client` connects once on module load and is shared process-wide. Dedicated `models/redis` clients must be connected and then explicitly closed by the owning module.
 
 Migration checklist (copy per module)
 -------------------------------------
 
 Use this short checklist when migrating any model from legacy Redis code:
 
-- [ ] Switch imports: `models/client` -> `models/client-new` (or `models/redis-new` only when the module owns connect/disconnect lifecycle).
-- [ ] Convert internal Redis calls to promise-based `client-new` command names/arguments (`hGetAll`, `sMembers`, `zAdd`, etc.).
+- [ ] Switch imports to `models/client` by default (or `models/redis` only when the module owns connect/disconnect lifecycle).
+- [ ] Convert internal Redis calls to promise-based `client` command names/arguments (`hGetAll`, `sMembers`, `zAdd`, etc.).
 - [ ] Keep exported callback signatures, result shapes, and error-first semantics unchanged.
 - [ ] Preserve key names, write ordering, and atomic `multi().exec()` boundaries unless intentionally fixing behavior.
-- [ ] Update tests/mocks/spies to target `models/client-new` (including promise rejections and `multi().exec()` failures).
+- [ ] Update tests/mocks/spies to target `models/client` (including promise rejections and `multi().exec()` failures).
 - [ ] Re-run the migrated model tests and directly-coupled model paths.
 
 Common migration pitfalls
 -------------------------
 
-- Legacy callback-last command usage (`client.get(key, cb)`) does not carry over to `client-new`.
+- Legacy callback-last command usage (`client.get(key, cb)`) does not carry over to `client`.
 - Some command names/argument shapes changed (`hmget` -> `hmGet(key, [fields])`, lowercase aliases -> camelCase).
-- The shared `models/client-new` singleton should not be explicitly disconnected by model code.
+- The shared `models/client` singleton should not be explicitly disconnected by model code.
 
 
 Migration lessons for callback-based models
 -------------------------------------------
 
-- **For callback-surface modules, migrate internals and keep API shape stable.** Move Redis usage to promise-based `models/client-new` calls internally, while preserving existing callback signatures and result shapes for callers.
+- **For callback-surface modules, migrate internals and keep API shape stable.** Move Redis usage to promise-based `models/client` calls internally, while preserving existing callback signatures and result shapes for callers.
 
 - **Use modern command names and argument shapes explicitly.** Don’t rely on legacy lowercase/uppercase aliases or callback-last behavior; call the current Redis API directly.
 
 - **Keep `multi()` + `exec()` for atomic write paths only.** Use awaited direct commands for non-atomic reads and reserve transactions for grouped writes that must commit consistently.
 
-- **Update tests to mock `models/client-new` directly.** Adjust spies/stubs to the migrated method names/signatures and keep assertions behavior-focused.
+- **Update tests to mock `models/client` directly.** Adjust spies/stubs to the migrated method names/signatures and keep assertions behavior-focused.
 
 - **Keep callback contracts stable while migrating internals.** You can move Redis logic to `async`/`await` and promises internally, but preserve existing callback signatures, callback argument order, and output shapes at module boundaries.
 
-- **Modernize command names and argument forms explicitly.** Use `client-new` methods directly (`zRange`, `zCard`, `zRandMember`, `zAdd(key, { score, value })`, etc.) and remove assumptions about legacy lowercase aliases or callback-last overloads.
+- **Modernize command names and argument forms explicitly.** Use `client` methods directly (`zRange`, `zCard`, `zRandMember`, `zAdd(key, { score, value })`, etc.) and remove assumptions about legacy lowercase aliases or callback-last overloads.
 
 - **Use `Promise.all` for independent reads; keep `multi().exec()` for atomic writes.** Read-only fan-out should run concurrently with promises, while write paths that must commit together (rebuilds + ready flags, coupled index updates, etc.) should stay transactional.
 
@@ -103,5 +103,5 @@ Adding or changing a model
 --------------------------
 
 1. Add a folder under `app/models` (or a single file like `ignoredFiles.js`).
-2. Export an object of functions (or a single function). Models that use Redis should default to `models/client-new` and use the key module pattern.
+2. Export an object of functions (or a single function). Models that use Redis should default to `models/client` and use the key module pattern.
 3. For new Redis keys, add them to the model’s `key.js` (or equivalent)

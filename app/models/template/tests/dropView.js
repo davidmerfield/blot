@@ -3,7 +3,7 @@ describe("template", function () {
 
   var dropView = require("../index").dropView;
   var getAllViews = require("../index").getAllViews;
-  var client = require("models/client-new");
+  var client = require("models/client");
 
   it("dropView removes a view", function (done) {
     dropView(this.template.id, this.view.name, done);
