@@ -85,17 +85,18 @@ function main(callback) {
         });
 
         function remove() {
-          client.srem(key.uids, dangling, function (err, removedCount) {
-            if (err) return callback(err);
+          client
+            .sRem(key.uids, dangling)
+            .then(function (removedCount) {
+              console.log(
+                colors.green(
+                  "Removed " + (removedCount || 0) + " dangling ID(s) from user index set."
+                )
+              );
 
-            console.log(
-              colors.green(
-                "Removed " + (removedCount || 0) + " dangling ID(s) from user index set."
-              )
-            );
-
-            callback();
-          });
+              callback();
+            })
+            .catch(callback);
         }
 
         if (YES_FLAG) return remove();

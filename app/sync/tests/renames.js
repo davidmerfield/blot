@@ -209,18 +209,18 @@ describe("update", function () {
                     });
                   },
                   function (next) {
-                    redis.del(entryKey(blogID, ghostPath), function (err) {
-                      if (err) return next(err);
+                    redis
+                      .del(entryKey(blogID, ghostPath))
+                      .then(function () {
+                        var deletedListKey = "blog:" + blogID + ":deleted";
 
-                      var deletedListKey = "blog:" + blogID + ":deleted";
-
-                      redis.zscore(deletedListKey, ghostEntryID, function (err, score) {
-                        if (err) return next(err);
-
+                        return redis.zScore(deletedListKey, ghostEntryID);
+                      })
+                      .then(function (score) {
                         expect(score).not.toBeNull();
                         next();
-                      });
-                    });
+                      })
+                      .catch(next);
                   },
                 ],
                 function (err) {

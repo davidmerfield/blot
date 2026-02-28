@@ -1,4 +1,5 @@
 const client = require("models/client");
+const serializeRedisHashValues = require("models/redisHashSerializer");
 const keys = require("./keys");
 const get = require("./get");
 
@@ -40,52 +41,39 @@ module.exports = async function ({
 
   // Handle replies
   if (parent) {
-    multi.zadd(keys.children(parent), parseInt(created_at), id);
-    multi.zadd(keys.by_last_reply, parseInt(created_at), parent);
-    multi.zincrby(keys.by_number_of_replies, 1, parent);
+    multi.zAdd(keys.children(parent), { score: parseInt(created_at, 10), value: id });
+    multi.zAdd(keys.by_last_reply, { score: parseInt(created_at, 10), value: parent });
+    multi.zIncrBy(keys.by_number_of_replies, 1, parent);
 
     // Handle questions
   } else {
-
     tags.forEach((tag) => {
-      multi.sadd(keys.all_tags, tag);
-      multi.zadd(keys.by_tag(tag),  parseInt(created_at), id);
+      multi.sAdd(keys.all_tags, tag);
+      multi.zAdd(keys.by_tag(tag), { score: parseInt(created_at, 10), value: id });
     });
 
-    multi.sadd(keys.all_questions, id);
-    multi.zadd(keys.by_last_reply,  parseInt(created_at), id);
-    multi.zadd(keys.by_created,  parseInt(created_at), id);
-    multi.zadd(keys.by_number_of_replies, 0, id);
+    multi.sAdd(keys.all_questions, id);
+    multi.zAdd(keys.by_last_reply, { score: parseInt(created_at, 10), value: id });
+    multi.zAdd(keys.by_created, { score: parseInt(created_at, 10), value: id });
+    multi.zAdd(keys.by_number_of_replies, { score: 0, value: id });
   }
 
-  multi.hmset(keys.item(id), item);
+  multi.hSet(keys.item(id), serializeRedisHashValues(item));
 
   // ensure the multi command fails if the ID
   // is already in use
-  multi.setnx(keys.item(id), id);
+  multi.setNX(keys.item(id), id);
 
-  return new Promise((resolve, reject) => {
-    multi.exec((err) => {
-      if (err) return reject(err);
-      get(id).then(resolve).catch(reject);
-    });
-  });
+  await multi.exec();
+
+  return get(id);
 };
 
-function checkIDisUnique(id) {
-  return new Promise((resolve, reject) => {
-    client.exists(keys.item(id), (err, exists) => {
-      if (err) return reject(err);
-      resolve(!exists);
-    });
-  });
+async function checkIDisUnique(id) {
+  return !(await client.exists(keys.item(id)));
 }
 
-function generateID() {
-  return new Promise((resolve, reject) => {
-    client.incr(keys.next_id, (err, id) => {
-      if (err) return reject(err);
-      resolve(id.toString());
-    });
-  });
+async function generateID() {
+  const id = await client.incr(keys.next_id);
+  return id.toString();
 }

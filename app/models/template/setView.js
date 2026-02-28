@@ -14,6 +14,7 @@ var Blog = require("models/blog");
 var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
 var updateCdnManifest = require("./util/updateCdnManifest");
+var serializeRedisHashValues = require("models/redisHashSerializer");
 var clfdate = require("helper/clfdate");
 const MAX_VIEW_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
@@ -65,8 +66,7 @@ module.exports = function setView(templateID, updates, callback) {
 		if (!metadata)
 			return callback(new Error("There is no template called " + templateID));
 
-		client.sadd(allViews, name, (err) => {
-			if (err) return callback(err);
+		client.sAdd(allViews, name).then(() => {
 
 			// Look up previous state of view if applicable
 			getView(templateID, name, (err, view) => {
@@ -236,7 +236,7 @@ module.exports = function setView(templateID, updates, callback) {
 				if (updates.urlPatterns) {
 					// Store `urlPatterns` in Redis
 					const urlPatternsKey = key.urlPatterns(templateID);
-					client.hset(
+					client.hSet(
 						urlPatternsKey,
 						name,
 						JSON.stringify(updates.urlPatterns),
@@ -244,7 +244,7 @@ module.exports = function setView(templateID, updates, callback) {
 				} else if (shouldRemoveUrlPatterns) {
 					// Delete urlPatterns from Redis if it was removed
 					const urlPatternsKey = key.urlPatterns(templateID);
-					client.hdel(urlPatternsKey, name);
+					client.hDel(urlPatternsKey, name);
 				}
 				view.locals = view.locals || {};
 				view.retrieve = view.retrieve || {};
@@ -271,56 +271,59 @@ module.exports = function setView(templateID, updates, callback) {
 					(infiniteError) => {
 						if (infiniteError) return callback(infiniteError);
 
-						view.retrieve = parseResult.retrieve || {};
+						// Merge parser-derived retrieve (e.g. {{title}}) into view.retrieve; do not overwrite user-provided retrieve (includeDraft, filters, etc.)
+						extend(view.retrieve || {}).and(parseResult.retrieve || {});
 
-						view = serialize(view, viewModel);
+						view = serializeRedisHashValues(serialize(view, viewModel));
 
 						// Delete url and urlPatterns from Redis hash if they were removed
 						var multi = client.multi();
-						multi.hmset(viewKey, view);
+						multi.hSet(viewKey, view);
 
 						if (shouldRemoveUrl) {
 							console.log("removing hdel", viewKey, "url");
-							multi.hdel(viewKey, "url");
+							multi.hDel(viewKey, "url");
 						}
 						if (shouldRemoveUrlPatterns) {
 							console.log("removing hdel", viewKey, "urlPatterns");
-							multi.hdel(viewKey, "urlPatterns");
+							multi.hDel(viewKey, "urlPatterns");
 						}
 
-						multi.exec((err) => {
-							if (err) return callback(err);
+						// node-redis v5 multi.exec() returns a thenable; normalize to Promise so .then/.catch chain reliably
+						Promise.resolve(multi.exec())
+							.then(() => {
 
-							if (!changes) {
-								if (metadata.errors && metadata.errors[name]) {
-									delete metadata.errors[name];
-									return setMetadata(templateID, { errors: metadata.errors }, callback);
-								}
-
-								return callback();
-							}
-
-							Blog.set(metadata.owner, { cacheID: Date.now() }, (cacheErr) => {
-								if (cacheErr) return callback(cacheErr);
-
-								updateCdnManifest(templateID, (manifestErr) => {
-									if (manifestErr) return callback(manifestErr);
-
-									// Clear this view from template metadata.errors when saving
-									// via the dashboard so fixing a view clears its error state
+								if (!changes) {
 									if (metadata.errors && metadata.errors[name]) {
 										delete metadata.errors[name];
 										return setMetadata(templateID, { errors: metadata.errors }, callback);
 									}
 
-									callback();
+									return callback();
+								}
+
+								Blog.set(metadata.owner, { cacheID: Date.now() }, (cacheErr) => {
+									if (cacheErr) return callback(cacheErr);
+
+									updateCdnManifest(templateID, (manifestErr) => {
+										if (manifestErr) return callback(manifestErr);
+
+										// Clear this view from template metadata.errors when saving
+										// via the dashboard so fixing a view clears its error state
+										if (metadata.errors && metadata.errors[name]) {
+											delete metadata.errors[name];
+											return setMetadata(templateID, { errors: metadata.errors }, callback);
+										}
+
+										callback();
+									});
 								});
-							});
-						});
+							})
+							.catch(callback);
 					},
 				);
 			});
-		});
+		}).catch(callback);
 	});
 };
 

@@ -46,9 +46,9 @@ module.exports = (function () {
   function adjacentTo(blogID, entryID, callback) {
     ensure(blogID, "string").and(entryID, "string").and(callback, "function");
 
-    // Get the index of the entry in the list of entries
-    redis.zrank(listKey(blogID, "entries"), entryID, function (error, rank) {
-      if (error) throw error;
+    (async function () {
+      // Get the index of the entry in the list of entries
+      var rank = await redis.zRank(listKey(blogID, "entries"), entryID);
 
       // If the entry has no rank its not got siblings
       // make sure you don't just bang rank, 0 is falsy in JS!
@@ -56,44 +56,55 @@ module.exports = (function () {
 
       var lowerBound = rank > 0 ? rank - 1 : 0;
 
-      redis.zrange(
+      var entryIDs = await redis.zRange(
         listKey(blogID, "entries"),
         lowerBound,
-        rank + 1,
-        function (error, entryIDs) {
-          if (error) throw error;
-
-          Entry.get(blogID, entryIDs, function (entries) {
-            // {skinny: true},
-
-            var next, previous;
-
-            if (entries.length) {
-              previous = entries[0].id != entryID ? entries[0] : undefined;
-              next =
-                entries[entries.length - 1].id != entryID
-                  ? entries[entries.length - 1]
-                  : undefined;
-            }
-
-            return callback(next, previous, ++rank);
-          });
-        }
+        rank + 1
       );
+
+      Entry.get(blogID, entryIDs, function (entries) {
+        var next, previous;
+
+        if (entries.length) {
+          previous = entries[0].id != entryID ? entries[0] : undefined;
+          next =
+            entries[entries.length - 1].id != entryID
+              ? entries[entries.length - 1]
+              : undefined;
+        }
+
+        return callback(next, previous, ++rank);
+      });
+    })().catch(function () {
+      return callback();
     });
   }
 
   function getTotal(blogID, callback) {
     var entriesKey = listKey(blogID, "entries");
 
-    redis.zcard(entriesKey, callback);
+    redis
+      .zCard(entriesKey)
+      .then(function (count) {
+        callback(null, count);
+      })
+      .catch(function (err) {
+        callback(err);
+      });
   }
 
   // includes deleted entries
   function getAllIDs(blogID, callback) {
     var allKey = listKey(blogID, "all");
 
-    redis.zrevrange(allKey, 0, -1, callback);
+    redis
+      .zRange(allKey, 0, -1, { REV: true })
+      .then(function (ids) {
+        callback(null, ids);
+      })
+      .catch(function (err) {
+        callback(err);
+      });
   }
 
   // includes deleted entries
@@ -163,31 +174,37 @@ module.exports = (function () {
       end = options.first - 1;
     }
 
-    redis.zrevrange(list, start, end, function (err, ids) {
-      if (err) throw err;
-
-      return callback(null, ids);
-    });
+    redis
+      .zRange(list, start, end, { REV: true })
+      .then(function (ids) {
+        return callback(null, ids);
+      })
+      .catch(function (err) {
+        return callback(err);
+      });
   }
 
   // includes deleted entries
   function each(blogID, dothis, callback) {
     ensure(blogID, "string").and(dothis, "function").and(callback, "function");
 
-    redis.zrevrange(listKey(blogID, "all"), 0, -1, function (error, ids) {
-      if (error) throw error;
-
-      async.eachSeries(
-        ids,
-        function (id, next) {
-          Entry.get(blogID, id, function (entry) {
-            if (!entry) return next();
-            dothis(entry, next);
-          });
-        },
-        callback
-      );
-    });
+    redis
+      .zRange(listKey(blogID, "all"), 0, -1, { REV: true })
+      .then(function (ids) {
+        async.eachSeries(
+          ids,
+          function (id, next) {
+            Entry.get(blogID, id, function (entry) {
+              if (!entry) return next();
+              dothis(entry, next);
+            });
+          },
+          callback
+        );
+      })
+      .catch(function (error) {
+        callback(error);
+      });
   }
 
   function pruneMissing(blogID, callback) {
@@ -200,34 +217,39 @@ module.exports = (function () {
       function (listName, nextList) {
         var key = listKey(blogID, listName);
 
-        redis.zrange(key, 0, -1, function (err, ids) {
-          if (err) return nextList(err);
-          if (!ids || !ids.length) return nextList();
+        redis
+          .zRange(key, 0, -1)
+          .then(function (ids) {
+            if (!ids || !ids.length) return nextList();
 
-          Entry.get(blogID, ids, function (entries) {
-            entries = entries || [];
+            Entry.get(blogID, ids, function (entries) {
+              entries = entries || [];
 
-            var existing = {};
+              var existing = {};
 
-            entries.forEach(function (entry) {
-              if (entry && entry.id) existing[entry.id] = true;
+              entries.forEach(function (entry) {
+                if (entry && entry.id) existing[entry.id] = true;
+              });
+
+              var missing = ids.filter(function (id) {
+                return !existing[id];
+              });
+
+              if (!missing.length) return nextList();
+
+              redis
+                .zRem.apply(redis, [key].concat(missing))
+                .then(function () {
+                  nextList();
+                })
+                .catch(function (err) {
+                  nextList(err);
+                });
             });
-
-            var missing = ids.filter(function (id) {
-              return !existing[id];
-            });
-
-            if (!missing.length) return nextList();
-
-            var args = [key].concat(missing);
-            args.push(function (err) {
-              if (err) return nextList(err);
-              nextList();
-            });
-
-            redis.zrem.apply(redis, args);
+          })
+          .catch(function (err) {
+            nextList(err);
           });
-        });
       },
       callback
     );
@@ -238,13 +260,16 @@ module.exports = (function () {
 
     var key = listKey(blogID, "created");
 
-    redis.ZRANGEBYSCORE(key, after, Date.now(), function (err, ids) {
-      if (err) return callback(err);
-
-      Entry.get(blogID, ids, function (entries) {
-        callback(null, entries || []);
+    redis
+      .zRangeByScore(key, after, Date.now())
+      .then(function (ids) {
+        Entry.get(blogID, ids, function (entries) {
+          callback(null, entries || []);
+        });
+      })
+      .catch(function (err) {
+        callback(err);
       });
-    });
   }
 
   function getDeleted(blogID, after, callback) {
@@ -252,13 +277,16 @@ module.exports = (function () {
 
     var key = listKey(blogID, "deleted");
 
-    redis.ZRANGEBYSCORE(key, after, Date.now(), function (err, ids) {
-      if (err) return callback(err);
-
-      Entry.get(blogID, ids, function (entries) {
-        callback(null, entries || []);
+    redis
+      .zRangeByScore(key, after, Date.now())
+      .then(function (ids) {
+        Entry.get(blogID, ids, function (entries) {
+          callback(null, entries || []);
+        });
+      })
+      .catch(function (err) {
+        callback(err);
       });
-    });
   }
 
   function getRange(blogID, start, end, options, callback) {
@@ -271,17 +299,18 @@ module.exports = (function () {
     var listName = options.list || "entries";
     var key = listKey(blogID, listName);
 
-    redis.zrevrange(key, start, end, function (err, entryIDs) {
-      // todo add err as first parameter of callback
-      if (err) return callback([]);
+    redis
+      .zRange(key, start, end, { REV: true })
+      .then(function (entryIDs) {
+        if (!options.full && !options.skinny) return callback(entryIDs);
 
-      if (!options.full && !options.skinny) return callback(entryIDs);
-
-      // options,
-      Entry.get(blogID, entryIDs, function (entries) {
-        return callback(entries);
+        Entry.get(blogID, entryIDs, function (entries) {
+          return callback(entries);
+        });
+      })
+      .catch(function () {
+        return callback([]);
       });
-    });
   }
 
   function random(blogID, callback) {
@@ -309,11 +338,14 @@ module.exports = (function () {
     }
 
     function pickRandomEntryID(done) {
-      redis.zrandmember(key, function (err, entryID) {
-        if (err) return done(err);
-
-        done(null, normalizeEntryID(entryID));
-      });
+      redis
+        .zRandMember(key)
+        .then(function (entryID) {
+          done(null, normalizeEntryID(entryID));
+        })
+        .catch(function (err) {
+          done(err);
+        });
     }
 
     function normalizeEntryID(entryID) {
@@ -342,8 +374,13 @@ module.exports = (function () {
    * @returns {number|null} - A valid page number, or null if invalid.
    */
   function validatePageNumber(pageNumber) {
-    // Handle undefined/null/empty string
-    if (pageNumber === undefined || pageNumber === null || pageNumber === "") {
+    // Missing page number defaults to page 1.
+    // Explicitly provided null/empty values are invalid user input.
+    if (pageNumber === undefined) {
+      return 1;
+    }
+
+    if (pageNumber === null || pageNumber === "") {
       return null;
     }
 
@@ -441,15 +478,12 @@ module.exports = (function () {
     if (!entryIDs.length) return callback(null, []);
 
     var key = listKey(blogID, "entries");
-    var batch = redis.batch();
 
-    entryIDs.forEach(function (entryID) {
-      batch.zscore(key, entryID);
-    });
-
-    batch.exec(function (err, rawScores) {
-      if (err) return callback(err);
-
+    Promise.all(
+      entryIDs.map(function (entryID) {
+        return redis.zScore(key, entryID);
+      })
+    ).then(function (rawScores) {
       var withScores = [];
 
       for (var i = 0; i < entryIDs.length; i++) {
@@ -463,7 +497,7 @@ module.exports = (function () {
       }
 
       callback(null, withScores);
-    });
+    }, callback);
   }
 
 
@@ -482,11 +516,9 @@ module.exports = (function () {
     var min = "[" + pathPrefix;
     var max = "[" + pathPrefix + "\xff";
 
-    redis.zrangebylex(pathIndex.lexKey(blogID), min, max, function (error, matchingIDs) {
-      if (error) {
-        console.error(error);
-        return callback(error, [], null);
-      }
+    redis
+      .zRangeByLex(pathIndex.lexKey(blogID), min, max)
+      .then(function (matchingIDs) {
 
       var totalEntries = matchingIDs.length;
 
@@ -520,7 +552,7 @@ module.exports = (function () {
         );
       }
 
-      fetchEntryScores(blogID, matchingIDs, function (error, scoredEntries) {
+        fetchEntryScores(blogID, matchingIDs, function (error, scoredEntries) {
         if (error) {
           console.error(error);
           return callback(error, [], null);
@@ -560,7 +592,11 @@ module.exports = (function () {
           callback
         );
       });
-    });
+      })
+      .catch(function (error) {
+        console.error(error);
+        return callback(error, [], null);
+      });
   }
   function getPage(
     blogID,
@@ -617,27 +653,18 @@ module.exports = (function () {
     }
 
     if (sortBy === "id") {
-      // Sort by entry ID (alphabetically)
-      const sortOptions = [
-        listKey(blogID, "entries"), // Base key
-        "ALPHA", // Sort alphabetically
-        order === "desc" ? "DESC" : "ASC", // Sorting order
-        "LIMIT",
-        start,
-        pageSize, // Apply pagination directly
-      ];
+      var entriesKey = listKey(blogID, "entries");
+      var entriesLexKey = pathIndex.lexKey(blogID);
+      var rangePromise =
+        order === "desc"
+          ? redis.zRange(entriesLexKey, start, end, { REV: true })
+          : redis.zRange(entriesLexKey, start, end);
 
-      redis.sort(sortOptions, function (error, entryIDs) {
-        if (error) {
-          console.error(error);
-          return callback(error, [], null);
-        }
+      Promise.all([rangePromise, redis.zCard(entriesKey)])
+        .then(function (results) {
+          var entryIDs = results[0];
+          var totalEntries = results[1];
 
-        redis.zcard(listKey(blogID, "entries"), function (error, totalEntries) {
-          if (error) {
-            console.error(error);
-            return callback(error, [], null);
-          }
           handlePaginationAndCallback(
             blogID,
             entryIDs,
@@ -649,48 +676,40 @@ module.exports = (function () {
             pageNo,
             callback
           );
+        })
+        .catch(function (error) {
+          console.error(error);
+          return callback(error, [], null);
         });
-      });
     } else {
       // Default sorting by date (Redis scores)
 
-      const rangeFn =
+      const rangePromise =
         order === "asc"
-          ? redis.zrevrange.bind(redis)
-          : redis.zrange.bind(redis);
+          ? redis.zRange(listKey(blogID, "entries"), start, end, { REV: true })
+          : redis.zRange(listKey(blogID, "entries"), start, end);
 
-      rangeFn(
-        listKey(blogID, "entries"),
-        start,
-        end,
-        function (error, entryIDs) {
-          if (error) {
-            console.error(error);
-            return callback(error, [], null);
-          }
-          redis.zcard(
-            listKey(blogID, "entries"),
-            function (error, totalEntries) {
-              if (error) {
-                console.error(error);
-                return callback(error, [], null);
-              }
+      Promise.all([rangePromise, redis.zCard(listKey(blogID, "entries"))])
+        .then(function (results) {
+          var entryIDs = results[0];
+          var totalEntries = results[1];
 
-              handlePaginationAndCallback(
-                blogID,
-                entryIDs,
-                totalEntries,
-                zeroIndexedPageNo,
-                pageSize,
-                start,
-                end,
-                pageNo,
-                callback
-              );
-            }
+          handlePaginationAndCallback(
+            blogID,
+            entryIDs,
+            totalEntries,
+            zeroIndexedPageNo,
+            pageSize,
+            start,
+            end,
+            pageNo,
+            callback
           );
-        }
-      );
+        })
+        .catch(function (error) {
+          console.error(error);
+          return callback(error, [], null);
+        });
     }
   }
 
@@ -755,22 +774,24 @@ module.exports = (function () {
 
   function getRecent(blogID, callback) {
     getRange(blogID, 0, 30, { skinny: true }, function (entries) {
-      redis.zcard(listKey(blogID, "entries"), function (error, totalEntries) {
-        // We need to add error handling
-        if (error) return callback([]);
+      redis
+        .zCard(listKey(blogID, "entries"))
+        .then(function (totalEntries) {
+          // The first entry published should have an index of 1
+          // The fifth entry published should have an index of 5
+          // The most recently published entry should have an index
+          // equal to the number of total entries published.
+          let index = totalEntries;
+          entries.forEach(function (entry) {
+            entry.index = index;
+            index--;
+          });
 
-        // The first entry published should have an index of 1
-        // The fifth entry published should have an index of 5
-        // The most recently published entry should have an index
-        // equal to the number of total entries published.
-        let index = totalEntries;
-        entries.forEach(function (entry) {
-          entry.index = index;
-          index--;
+          callback(entries);
+        })
+        .catch(function () {
+          callback([]);
         });
-
-        callback(entries);
-      });
     });
   }
 
