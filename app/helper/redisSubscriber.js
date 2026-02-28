@@ -23,6 +23,24 @@ module.exports = function redisSubscriber({
   const setupPromise = Promise.resolve()
     .then(async function () {
       await client.connect();
+
+      if (cleanedUp) {
+        try {
+          if (client.isOpen) {
+            await client.quit();
+          }
+        } catch (err) {
+          logRedisError(err);
+        }
+
+        return;
+      }
+
+      // Guard setup completion path so cleanup() cannot leave a late subscription active.
+      if (cleanedUp) {
+        return;
+      }
+
       await client.subscribe(channel, function (message, subscribedChannel) {
         try {
           messageHandler(message, subscribedChannel || channel);
