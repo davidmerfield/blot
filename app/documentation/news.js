@@ -118,7 +118,8 @@ news.post("/cancel", parse, async function (req, res, next) {
     locals = { email: email, cancel: cancel };
 
     var stat = await client.sIsMember(listKey, email);
-    if (!stat) throw new Error("No subscription found");
+    var isSubscribed = !!stat;
+    if (!isSubscribed) throw new Error("No subscription found");
 
     await client.setEx(cancellationKey(guid), TTL, email);
 
