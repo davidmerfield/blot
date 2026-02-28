@@ -223,17 +223,20 @@ describe("entries", function () {
   });
 
   describe("pruneMissing", function () {
-    it("removes orphaned IDs from entry lists", async function () {
+    it("removes all orphaned IDs from entry lists", async function () {
       const blogID = this.blog.id;
       const path = "/prune-entry.txt";
-      const ghostID = "/ghost-entry";
+      const ghostIDs = ["/ghost-entry-1", "/ghost-entry-2", "/ghost-entry-3"];
       const listKey = `blog:${blogID}:entries`;
 
       await new Promise((resolve, reject) => {
         Entry.set(blogID, path, buildEntry(path), (err) => (err ? reject(err) : resolve()));
       });
 
-      await redis.zAdd(listKey, { score: Date.now(), value: ghostID });
+      await redis.zAdd(
+        listKey,
+        ghostIDs.map((ghostID, index) => ({ score: Date.now() + index, value: ghostID }))
+      );
 
       await new Promise((resolve, reject) => {
         Entries.pruneMissing(blogID, (err) => (err ? reject(err) : resolve()));
@@ -241,7 +244,10 @@ describe("entries", function () {
 
       const members = await redis.zRange(listKey, 0, -1);
       expect(members).toContain(path);
-      expect(members).not.toContain(ghostID);
+
+      ghostIDs.forEach((ghostID) => {
+        expect(members).not.toContain(ghostID);
+      });
     });
   });
 
