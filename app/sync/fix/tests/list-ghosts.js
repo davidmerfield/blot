@@ -9,7 +9,7 @@ describe("sync/fix/list-ghosts", function () {
       callback(null);
     });
 
-    spyOn(client, "zRevRange").and.callFake(function (key) {
+    spyOn(client, "zRange").and.callFake(function (key) {
       if (key === "blog:blog-id:entries") {
         return Promise.resolve(["existing-id", "missing-id"]);
       }

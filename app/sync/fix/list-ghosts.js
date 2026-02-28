@@ -19,7 +19,7 @@ function main(blog, callback) {
 
     for (const list of lists) {
       const key = "blog:" + blog.id + ":" + list;
-      const ids = await client.zRevRange(key, 0, -1);
+      const ids = await client.zRange(key, 0, -1, { REV: true });
 
       for (const id of ids) {
         const entry = await getEntry(blog.id, id);
