@@ -85,40 +85,43 @@ describe("Blog.set", function () {
     var customDomain = "custom-domain.test";
     var customDomainKey = key.domain(customDomain);
 
-    client.set(preservedKey, "keep", function (err) {
-      if (err) return done.fail(err);
-
-      set(test.blog.id, { domain: customDomain }, function (err) {
-        if (err) return done.fail(err);
-
-        client.mget([oldHostKey, customDomainKey], function (
-          err,
-          valuesBefore
-        ) {
+    client
+      .set(preservedKey, "keep")
+      .then(function () {
+        set(test.blog.id, { domain: customDomain }, function (err) {
           if (err) return done.fail(err);
 
-          expect(valuesBefore[0]).toBe(test.blog.id);
-          expect(valuesBefore[1]).toBe(test.blog.id);
+          client
+            .mGet([oldHostKey, customDomainKey])
+            .then(function (valuesBefore) {
+              expect(valuesBefore[0]).toBe(test.blog.id);
+              expect(valuesBefore[1]).toBe(test.blog.id);
 
-          set(test.blog.id, { handle: newHandle }, function (err) {
-            if (err) return done.fail(err);
-
-            client.mget(
-              [oldHostKey, preservedKey, newHostKey, customDomainKey],
-              function (err, values) {
+              set(test.blog.id, { handle: newHandle }, function (err) {
                 if (err) return done.fail(err);
 
-                expect(values[0]).toBe(null);
-                expect(values[1]).toBe("keep");
-                expect(values[2]).toBe(test.blog.id);
-                expect(values[3]).toBe(test.blog.id);
-                done();
-              }
-            );
-          });
+                client
+                  .mGet([oldHostKey, preservedKey, newHostKey, customDomainKey])
+                  .then(function (values) {
+                    expect(values[0]).toBe(null);
+                    expect(values[1]).toBe("keep");
+                    expect(values[2]).toBe(test.blog.id);
+                    expect(values[3]).toBe(test.blog.id);
+                    done();
+                  })
+                  .catch(function (err) {
+                    done.fail(err);
+                  });
+              });
+            })
+            .catch(function (err) {
+              done.fail(err);
+            });
         });
+      })
+      .catch(function (err) {
+        done.fail(err);
       });
-    });
   });
 
   it("updates the cacheID when the menu changes", function (done) {
@@ -138,8 +141,6 @@ describe("Blog.set", function () {
       });
 
       var originalCacheID = before.cacheID;
-      var originalCssURL = before.cssURL;
-      var originalScriptURL = before.scriptURL;
 
       set(test.blog.id, { menu: updatedMenu }, function (err) {
         if (err) return done.fail(err);
@@ -148,10 +149,44 @@ describe("Blog.set", function () {
           if (err) return done.fail(err);
 
           expect(after.menu[0].label).toBe(updatedMenu[0].label);
-          expect(after.cacheID).not.toBe(originalCacheID);
-          expect(after.cssURL).not.toBe(originalCssURL);
-          expect(after.scriptURL).not.toBe(originalScriptURL);
+          expect(after.cacheID).toBeGreaterThan(originalCacheID);
+          expect(after.cssURL).toContain("cache=" + after.cacheID);
+          expect(after.scriptURL).toContain("cache=" + after.cacheID);
 
+          done();
+        });
+      });
+    });
+  });
+
+  it("increments cacheID monotonically when Date.now() would not advance", function (done) {
+    var test = this;
+    var frozenNow = 1000000000000;
+
+    get({ id: test.blog.id }, function (err, before) {
+      if (err) return done.fail(err);
+
+      var originalCacheID = Number(before.cacheID) || 0;
+      var dateNow = Date.now;
+      Date.now = function () {
+        return frozenNow;
+      };
+
+      var menuWithChange = before.menu.map(function (item, index) {
+        return index === 0
+          ? Object.assign({}, item, { label: item.label + " X" })
+          : item;
+      });
+
+      set(test.blog.id, { menu: menuWithChange }, function (err) {
+        Date.now = dateNow;
+        if (err) return done.fail(err);
+
+        get({ id: test.blog.id }, function (err, after) {
+          if (err) return done.fail(err);
+
+          expect(after.cacheID).toBeGreaterThan(originalCacheID);
+          expect(after.cacheID).toBeGreaterThanOrEqual(frozenNow);
           done();
         });
       });

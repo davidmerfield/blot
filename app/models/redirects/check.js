@@ -12,42 +12,42 @@ module.exports = function (blogID, input, callback) {
   var redirects = key.redirects(blogID);
 
   get(blogID, input, function (err, redirect) {
-    if (err) throw err;
+    if (err) return callback(err);
 
     if (redirect) return callback(null, redirect);
 
-    check(0);
+    (async function () {
+      try {
+        var cursor = "0";
 
-    function check(cursor) {
-      // SORTED SET, precedence is important
-      // SSCAN myset 0 match 'Wo*'
+        while (true) {
+          // SORTED SET, precedence is important
+          var response = await client.zScan(redirects, cursor);
 
-      client.ZSCAN(redirects, cursor, function (err, response) {
-        if (err) throw err;
+          if (!response) return callback();
 
-        if (!response || !response.length) {
-          return callback();
+          cursor = response.cursor;
+          var matches = response.members || [];
+
+          if (!matches.length && cursor === "0") {
+            return callback();
+          }
+
+          for (var i = 0; i < matches.length; i++) {
+            var from = matches[i].value;
+
+            if (isRegex(from) && is(input, from)) {
+              return get(blogID, from, callback, input);
+            }
+          }
+
+          if (cursor === "0") {
+            return callback();
+          }
         }
-
-        var cursor = response[0];
-        var matches = response[1];
-
-        if (!matches.length) return callback();
-
-        for (var i = 0; i < matches.length; i = i + 2)
-          if (isRegex(matches[i]) && is(input, matches[i]))
-            return get(blogID, matches[i], callback, input);
-
-        // Nothing found :(
-        if (cursor === "0") {
-          return callback();
-        }
-
-        // Nothing found here, but more to search
-        if (cursor !== "0") {
-          return check(cursor);
-        }
-      });
-    }
+      } catch (scanErr) {
+        return callback(scanErr);
+      }
+    })();
   });
 };

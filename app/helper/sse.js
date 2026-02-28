@@ -1,9 +1,7 @@
-const redis = require("models/redis");
+const redisSubscriber = require("helper/redisSubscriber");
 
 module.exports = function ({ channel }) {
   return function (req, res) {
-    var client = new redis();
-
     req.socket.setTimeout(2147483647);
 
     res.writeHead(200, {
@@ -20,22 +18,20 @@ module.exports = function ({ channel }) {
 
     res.write("\n");
 
-    client.subscribe(channel(req));
-
-    client.on("message", function (channel, message) {
-      res.write("\n");
-      res.write("data: " + message + "\n\n");
-      res.flushHeaders();
-    });
-
-    // In case we encounter an error...print it out to the console
-    client.on("error", function (err) {
-      console.log("Redis Error: " + err);
+    const subscription = redisSubscriber({
+      channel: channel(req),
+      onMessage: function (message) {
+        res.write("\n");
+        res.write("data: " + message + "\n\n");
+        res.flushHeaders();
+      },
+      onError: function (err) {
+        console.log("Redis Error: " + err);
+      },
     });
 
     req.on("close", function () {
-      client.unsubscribe();
-      client.quit();
+      subscription.cleanup();
     });
   };
 };

@@ -158,7 +158,7 @@ key.name(blogID, normalizedTag)        // → "blog:{blogID}:tags:name:{slug}"
 
 ## Dependencies
 
-- **`models/client`** — the shared Redis client instance. All reads and writes go through this client.
+- **`models/client`** — the shared Redis singleton. All reads and writes go through this client.
 - **`helper/ensure`** — runtime type validation. Used in `_get.js`, `set.js`, `list.js`, and `popular.js` to assert that arguments conform to expected types.
 - **`helper/type`** — type-checking predicate. Used in `_get.js` and `popular.js` to validate the `options` argument.
 - **`helper/makeSlug`** — the slug-generation function used by `normalize.js`.
