@@ -9,7 +9,7 @@ const join = require("path").join;
 const moment = require("moment");
 const { Dropbox } = require("dropbox");
 const views = __dirname + "/../views/";
-const client = require("models/client");
+const client = require("models/client-new");
 const Blog = require("models/blog");
 
 dashboard.use(function loadDropboxAccount (req, res, next) {
@@ -218,10 +218,12 @@ dashboard.post("/disconnect", function (req, res, next) {
     return res.redirect(res.locals.dashboardBase + "/client");
   }
 
-  client.publish(
-    "sync:status:" + req.blog.id,
-    "Attempting to disconnect from Dropbox"
-  );
+  client
+    .publish(
+      "sync:status:" + req.blog.id,
+      "Attempting to disconnect from Dropbox"
+    )
+    .catch((err) => console.error("failed to publish dropbox disconnect status", err));
   delete req.session.dropbox;
   disconnect(req.blog.id, next);
 });
