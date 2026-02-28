@@ -104,7 +104,7 @@ const channel = {
   // Iterate over all channels globally
   async iterate(callback) {
     const globalSetKey = this._globalSetKey();
-    let cursor = 0;
+    let cursor = "0";
     do {
       const { cursor: nextCursor, members: channelIds } = await client.sScan(globalSetKey, cursor);
       for (const channelId of channelIds) {
@@ -114,13 +114,13 @@ const channel = {
         }
       }
       cursor = nextCursor;
-    } while (cursor !== 0);
+    } while (cursor !== "0");
   },
 
   // Iterate over all channels associated with a serviceAccountId
   async iterateByServiceAccount(serviceAccountId, callback) {
     const serviceAccountKey = this._serviceAccountKey(serviceAccountId);
-    let cursor = 0;
+    let cursor = "0";
     do {
       const { cursor: nextCursor, members: channelIds } = await client.sScan(serviceAccountKey, cursor);
       for (const channelId of channelIds) {
@@ -130,13 +130,13 @@ const channel = {
         }
       }
       cursor = nextCursor;
-    } while (cursor !== 0);
+    } while (cursor !== "0");
   },
 
   // Iterate over all channels associated with a serviceAccountId and fileId
   async iterateByFile(serviceAccountId, fileId, callback) {
     const fileKey = this._fileKey(serviceAccountId, fileId);
-    let cursor = 0;
+    let cursor = "0";
     do {
       const { cursor: nextCursor, members: channelIds } = await client.sScan(fileKey, cursor);
       for (const channelId of channelIds) {
@@ -146,7 +146,7 @@ const channel = {
         }
       }
       cursor = nextCursor;
-    } while (cursor !== 0);
+    } while (cursor !== "0");
   },
 };
 

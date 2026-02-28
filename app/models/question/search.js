@@ -101,7 +101,7 @@ const load = async (ids) => {
 module.exports = async ({ query, page = 1, page_size = PAGE_SIZE } = {}) => {
   const key = keys.all_questions;
   const questions = [];
-  let cursor = 0;
+  let cursor = "0";
 
   do {
     const result = await client.sScan(key, cursor);
@@ -119,7 +119,7 @@ module.exports = async ({ query, page = 1, page_size = PAGE_SIZE } = {}) => {
         });
       }
     });
-  } while (questions.length < page_size * page && cursor !== 0);
+  } while (questions.length < page_size * page && cursor !== "0");
 
   return sortAndPaginate(questions, page_size, page);
 };
