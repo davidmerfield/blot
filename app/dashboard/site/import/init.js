@@ -1,6 +1,6 @@
 const fs = require("fs-extra");
 const tempDir = require("helper/tempDir")();
-const client = require("models/client");
+const client = require("models/client-new");
 const { join } = require("path");
 const archiver = require("archiver");
 
@@ -47,10 +47,12 @@ module.exports = ({ blogID, label }) => {
   function status(message) {
     console.log("reporting status", message);
     // should write to disk somehow
-    client.publish(
-      "import:status:" + blogID,
-      JSON.stringify({ status: message, importID })
-    );
+    client
+      .publish(
+        "import:status:" + blogID,
+        JSON.stringify({ status: message, importID })
+      )
+      .catch((err) => console.error("failed to publish import status", err));
     fs.outputFile(lastStatus, message);
   }
 

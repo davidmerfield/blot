@@ -3,7 +3,7 @@ const path = require("path");
 const alphanum = require("helper/alphanum");
 const localPath = require("helper/localPath");
 const Stat = require("./stat");
-const client = require("models/client");
+const client = require("models/client-new");
 const pathNormalize = require("helper/pathNormalizer");
 
 async function getContents(blog, dir) {
@@ -27,7 +27,16 @@ async function getContents(blog, dir) {
       )
         .then((res) => {
           if (!res || !res.length) return resolve([]);
-          resolve(filtered.filter((_, index) => res[index] === 1));
+          resolve(
+            filtered.filter((_, index) => {
+              const exists = res[index];
+              return (
+                exists === 1 ||
+                exists === "1" ||
+                exists === true
+              );
+            })
+          );
         })
         .catch(() => {
           resolve([]);
