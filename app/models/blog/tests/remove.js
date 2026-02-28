@@ -52,7 +52,7 @@ describe("Blog.remove", function () {
         client
           .sIsMember("template:public_templates", createdTemplate.id)
           .then(function (isMemberBeforeRemove) {
-            expect(isMemberBeforeRemove).toEqual(1);
+            expect(isMemberBeforeRemove).toBe(true);
 
             remove(test.blog.id, function (err) {
               if (err) return done.fail(err);
