@@ -1,7 +1,7 @@
 var send = require("helper/email").send;
 var letter = process.argv[2];
 var fs = require("fs");
-var client = require("models/client");
+var createRedisClient = require("../util/createRedisClient");
 var async = require("async");
 
 if (!letter) {
@@ -14,27 +14,37 @@ if (!letter) {
   process.exit();
 }
 
-main(letter, function (err) {
-  if (err) throw err;
+(async function () {
+  var redis = await createRedisClient();
+  main(redis.client, letter, async function (err) {
+    if (err) {
+      console.error(err);
+      await redis.close();
+      process.exit(1);
+    }
 
-  console.log("All emails delivered!");
-  process.exit();
-});
+    console.log("All emails delivered!");
+    await redis.close();
+    process.exit();
+  });
+})();
 
-function main(letter, callback) {
+function main(client, letter, callback) {
   var emailPath = __dirname + "/../../app/helper/email/newsletters/" + letter;
 
   if (!fs.statSync(emailPath).isFile())
     return callback(new Error("Not a file"));
 
-  getAllSubscribers(function (err, emails) {
+  getAllSubscribers(client, function (err, emails) {
     if (err) return callback(err);
 
     console.log(
       "Sending " + letter + " out to " + emails.length + " subscribers"
     );
 
-    async.filter(emails, alreadySent, function (err, emails) {
+    async.filter(emails, function (email, done) {
+      alreadySent(client, email, done);
+    }, function (err, emails) {
       if (err) return callback(err);
 
       // When we want to preview a newsletter before it goes out
@@ -60,11 +70,11 @@ function main(letter, callback) {
   });
 }
 
-function getAllSubscribers(callback) {
+function getAllSubscribers(client, callback) {
   client.smembers("newsletter:list", callback);
 }
 
-function alreadySent(email, done) {
+function alreadySent(client, email, done) {
   client.sismember("newsletter:letter:" + letter, email, function (
     err,
     member

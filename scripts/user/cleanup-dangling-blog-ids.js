@@ -11,15 +11,23 @@ var getConfirmation = require("../util/getConfirmation");
 var User = require("models/user");
 var Blog = require("models/blog");
 var blogKey = require("models/blog/key");
-var client = require("models/client");
+var createRedisClient = require("../util/createRedisClient");
 
 if (require.main === module)
-  main(function (err) {
-    if (err) throw err;
-    process.exit();
-  });
+  (async function () {
+    var redis = await createRedisClient();
+    main(redis.client, async function (err) {
+      if (err) {
+        console.error(err);
+        await redis.close();
+        process.exit(1);
+      }
+      await redis.close();
+      process.exit();
+    });
+  })();
 
-function main(callback) {
+function main(client, callback) {
   var usersScanned = 0;
   var usersFixed = 0;
   var idsRemovedFromUsers = 0;
@@ -79,7 +87,7 @@ function main(callback) {
       console.log("Users fixed:", usersFixed);
       console.log("Dangling IDs removed from users:", idsRemovedFromUsers);
 
-      cleanupDeadBlogIndexIDs(function (err, indexRemoved) {
+      cleanupDeadBlogIndexIDs(client, function (err, indexRemoved) {
         if (err) return callback(err);
 
         console.log("\nSecond pass complete");
@@ -91,7 +99,7 @@ function main(callback) {
   );
 }
 
-function cleanupDeadBlogIndexIDs(callback) {
+function cleanupDeadBlogIndexIDs(client, callback) {
   Blog.getAllIDs(function (err, ids) {
     if (err) return callback(err);
 

@@ -15,7 +15,7 @@
 const eachTemplate = require("../each/template");
 const getMetadata = require("models/template/getMetadata");
 const Blog = require("models/blog");
-const client = require("models/client");
+const createRedisClient = require("../util/createRedisClient");
 const key = require("models/template/key");
 const redisKeys = require("../util/redisKeys");
 const { promisify } = require("util");
@@ -27,8 +27,6 @@ const config = require("config");
 const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");
 
 const getMetadataAsync = promisify(getMetadata);
-const getAsync = promisify(client.get).bind(client);
-const delAsync = promisify(client.del).bind(client);
 const blogSetAsync = promisify(Blog.set);
 
 function getRenderedOutputPath(hash, viewName) {
@@ -58,14 +56,14 @@ async function readRenderedOutputFromDisk(hash, viewName) {
   return await fs.readFile(filePath, "utf8");
 }
 
-async function migrateHash(hash, viewName) {
+async function migrateHash(client, hash, viewName) {
   // Validate hash format (should be 32 hex characters)
   if (!/^[a-f0-9]{32}$/.test(hash)) {
     return false;
   }
 
   const redisKey = key.renderedOutput(hash);
-  const redisContent = await getAsync(redisKey);
+  const redisContent = await client.get(redisKey);
 
   if (redisContent == null) return false; // already migrated (null or undefined, but empty strings are valid)
 
@@ -78,7 +76,7 @@ async function migrateHash(hash, viewName) {
 
     if (diskContent === redisContent) {
       // Content matches, safe to delete from Redis
-      await delAsync(redisKey);
+      await client.del(redisKey);
       return false; // Already migrated, just cleaned up Redis
     } else {
       // Content differs, log warning but proceed with migration
@@ -99,12 +97,12 @@ async function migrateHash(hash, viewName) {
   }
 
   // Delete from Redis
-  await delAsync(redisKey);
+  await client.del(redisKey);
 
   return true; // Successfully migrated
 }
 
-async function migrate() {
+async function migrate(client) {
   console.log("Starting migration of rendered output from Redis to disk...");
   console.log("Iterating over all templates to find referenced hashes...\n");
 
@@ -152,7 +150,7 @@ async function migrate() {
             expectedHashes.add(hash);
 
             try {
-              const wasMigrated = await migrateHash(hash, viewName);
+              const wasMigrated = await migrateHash(client, hash, viewName);
               if (wasMigrated) {
                 migratedHashes++;
                 templateMigrated = true;
@@ -170,7 +168,9 @@ async function migrate() {
                 view: viewName,
                 hash: hash,
                 error: err.message,
-              });
+                },
+    client
+  );
             }
           }
 
@@ -191,7 +191,9 @@ async function migrate() {
                 template: template.id,
                 blog: blog.id,
                 error: `Failed to update cacheID: ${err.message}`,
-              });
+                },
+    client
+  );
             }
           }
 
@@ -253,8 +255,10 @@ async function migrate() {
   const remainingKeys = [];
   const unexpectedKeys = [];
   
-  await redisKeys("cdn:rendered:*", async (redisKey) => {
-    const hash = redisKey.replace("cdn:rendered:", "");
+  await redisKeys(
+    "cdn:rendered:*",
+    async (redisKey) => {
+      const hash = redisKey.replace("cdn:rendered:", "");
     
     if (expectedHashes.has(hash)) {
       // This hash should have been migrated but is still in Redis
@@ -282,7 +286,7 @@ async function migrate() {
     for (const hash of remainingKeys) {
       try {
         const redisKey = key.renderedOutput(hash);
-        const redisContent = await getAsync(redisKey);
+        const redisContent = await client.get(redisKey);
         if (redisContent === "") {
           // Find the viewName for this hash from the templates we processed
           // We need to search through templates to find which viewName this hash belongs to
@@ -313,7 +317,7 @@ async function migrate() {
     for (const hash of unexpectedKeys) {
       try {
         const redisKey = key.renderedOutput(hash);
-        await delAsync(redisKey);
+        await client.del(redisKey);
         orphanedPurged++;
         
         if (orphanedPurged % 100 === 0) {
@@ -350,14 +354,18 @@ async function migrate() {
 }
 
 if (require.main === module) {
-  migrate()
-    .then((exitCode) => {
+  (async () => {
+    const { client, close } = await createRedisClient();
+    try {
+      const exitCode = await migrate(client);
+      await close();
       process.exit(exitCode);
-    })
-    .catch((err) => {
+    } catch (err) {
       console.error("Migration failed:", err);
+      await close();
       process.exit(1);
-    });
+    }
+  })();
 }
 
 module.exports = migrate;

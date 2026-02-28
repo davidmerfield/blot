@@ -14,7 +14,7 @@ var async = require("async");
 var colors = require("colors/safe");
 var User = require("models/user");
 var key = require("models/user/key");
-var client = require("models/client");
+var createRedisClient = require("../util/createRedisClient");
 var getConfirmation = require("../util/getConfirmation");
 
 var argv = process.argv.slice(2);
@@ -27,10 +27,18 @@ if (HELP_FLAG) {
 }
 
 if (require.main === module)
-  main(function (err) {
-    if (err) throw err;
-    process.exit();
-  });
+  (async function () {
+    var redis = await createRedisClient();
+    main(redis.client, async function (err) {
+      if (err) {
+        console.error(err);
+        await redis.close();
+        process.exit(1);
+      }
+      await redis.close();
+      process.exit();
+    });
+  })();
 
 function printUsage() {
   console.log("Usage: node scripts/user/cleanup-dangling-users.js [--yes]");
@@ -40,7 +48,7 @@ function printUsage() {
   console.log("  -h, --help  show this help output");
 }
 
-function main(callback) {
+function main(client, callback) {
   User.getAllIds(function (err, uids) {
     if (err) return callback(err);
 

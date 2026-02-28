@@ -2,15 +2,13 @@ const { promisify } = require("util");
 const path = require("path");
 const fs = require("fs-extra");
 const config = require("config");
-const client = require("models/client");
+const createRedisClient = require("../util/createRedisClient");
 const key = require("models/template/key");
 const getMetadata = require("models/template/getMetadata");
 const updateCdnManifest = require("models/template/util/updateCdnManifest");
 
 const getMetadataAsync = promisify(getMetadata);
 const updateCdnManifestAsync = promisify(updateCdnManifest);
-const smembersAsync = promisify(client.smembers).bind(client);
-const hdelAsync = promisify(client.hdel).bind(client);
 
 // Base directory for rendered output storage (same as in updateCdnManifest.js)
 const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");
@@ -50,7 +48,7 @@ async function fileExistsOnDisk(hash, viewName) {
 /**
  * Process a single SITE template
  */
-async function processTemplate(templateID) {
+async function processTemplate(client, templateID) {
   try {
     const metadata = await getMetadataAsync(templateID);
     
@@ -97,7 +95,7 @@ async function processTemplate(templateID) {
       
       try {
         // Delete the 'cdn' field from the template metadata hash
-        await hdelAsync(key.metadata(templateID), "cdn");
+        await client.hDel(key.metadata(templateID), "cdn");
         console.log(`  ✓  Deleted CDN manifest for ${templateID}`);
       } catch (err) {
         console.error(`  ⚠️  Error deleting CDN manifest for ${templateID}:`, err);
@@ -127,16 +125,16 @@ async function processTemplate(templateID) {
 /**
  * Main function
  */
-async function main() {
+async function main(client) {
   console.log("Starting CDN file verification for SITE templates...\n");
 
   try {
     // Get all SITE templates
-    const siteTemplateIDs = await smembersAsync(key.blogTemplates("SITE"));
+    const siteTemplateIDs = await client.sMembers(key.blogTemplates("SITE"));
     
     if (!siteTemplateIDs || siteTemplateIDs.length === 0) {
       console.log("No SITE templates found.");
-      process.exit(0);
+      return;
     }
 
     console.log(`Found ${siteTemplateIDs.length} SITE template(s)\n`);
@@ -146,7 +144,7 @@ async function main() {
     // Process each template
     for (const templateID of siteTemplateIDs) {
       console.log(`Processing ${templateID}...`);
-      const result = await processTemplate(templateID);
+      const result = await processTemplate(client, templateID);
       results.push(result);
       console.log(); // Empty line for readability
     }
@@ -183,15 +181,24 @@ async function main() {
     }
 
     console.log("\nDone!");
-    process.exit(0);
   } catch (err) {
     console.error("Fatal error:", err);
-    process.exit(1);
+    throw err;
   }
 }
 
 if (require.main === module) {
-  main();
+  (async () => {
+    const { client, close } = await createRedisClient();
+    try {
+      await main(client);
+      await close();
+      process.exit(0);
+    } catch (err) {
+      await close();
+      process.exit(1);
+    }
+  })();
 }
 
 module.exports = main;

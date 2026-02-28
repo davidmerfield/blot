@@ -1,31 +1,39 @@
 var get = require("../get/entry");
-var client = require("models/client");
+var createRedisClient = require("../util/createRedisClient");
 var async = require("async");
 
 if (require.main === module) {
-  main(process.argv[2], function (err) {
-    if (err) throw err;
-    console.log("Done!");
-    process.exit();
-  });
+  (async function () {
+    var redis = await createRedisClient();
+    main(redis.client, process.argv[2], async function (err) {
+      if (err) {
+        console.error(err);
+        await redis.close();
+        process.exit(1);
+      }
+      console.log("Done!");
+      await redis.close();
+      process.exit();
+    });
+  })();
 }
 
-function main(url, callback) {
+function main(client, url, callback) {
   console.log("Looking up", url);
   get(url, function (err, user, blog, entry) {
     if (err) return callback(err);
 
     console.log("Wiping thumbnails for", entry.path);
-    thumbnails(blog, entry, function (err) {
+    thumbnails(client, blog, entry, function (err) {
       if (err) return callback(err);
 
       console.log("Wiping image cache for", entry.path);
-      imageCache(blog, entry, callback);
+      imageCache(client, blog, entry, callback);
     });
   });
 }
 
-function imageCache(blog, entry, callback) {
+function imageCache(client, blog, entry, callback) {
   if (!entry.thumbnail.small || !entry.thumbnail.small.name) return callback();
 
   var set = "blog:" + blog.id + ":store:image-cache:everything";
@@ -61,7 +69,7 @@ function imageCache(blog, entry, callback) {
   });
 }
 
-function thumbnails(blog, entry, callback) {
+function thumbnails(client, blog, entry, callback) {
   if (!entry.thumbnail.small || !entry.thumbnail.small.name) return callback();
 
   var set = "blog:" + blog.id + ":store:thumbnails:everything";

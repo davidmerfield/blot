@@ -1,22 +1,26 @@
-const { promisify } = require("util");
-const redis = require("models/redis");
-const client = new redis();
+const createRedisClient = require("./createRedisClient");
 
-const scan = promisify(client.scan.bind(client));
+async function redisKeys(pattern, iterator, redisClient) {
+  let ownClient = null;
+  let client = redisClient;
 
-async function redisKeys(pattern, iterator) {
+  if (!client) {
+    ownClient = await createRedisClient();
+    client = ownClient.client;
+  }
+
   let cursor = "0";
   let complete = false;
 
-  while (!complete) {
-    try {
-      const [nextCursor, results] = await scan(
-        cursor,
-        "match",
-        pattern,
-        "count",
-        1000
-      );
+  try {
+    while (!complete) {
+      const reply = await client.scan(cursor, {
+        MATCH: pattern,
+        COUNT: 1000,
+      });
+
+      const nextCursor = String(reply.cursor);
+      const results = Array.isArray(reply.keys) ? reply.keys : [];
       cursor = nextCursor;
 
       for (const result of results) {
@@ -24,8 +28,10 @@ async function redisKeys(pattern, iterator) {
       }
 
       complete = cursor === "0";
-    } catch (err) {
-      throw err;
+    }
+  } finally {
+    if (ownClient) {
+      await ownClient.close();
     }
   }
 }

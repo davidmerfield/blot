@@ -3,11 +3,9 @@
 // return "blog:" + blogID + ":folder:" + pathNormalizer(path);
 
 const keys = require("../util/redisKeys");
-const client = require("models/client");
-const { promisify } = require("util");
-const del = promisify(client.del).bind(client);
+const createRedisClient = require("../util/createRedisClient");
 
-const main = async () => {
+const main = async (client) => {
   const pattern = "blog:*:folder:*";
   await keys(pattern, async (key) => {
     // match alphanumieric characters and underscores between blog: and :folder
@@ -33,18 +31,22 @@ const main = async () => {
     }
 
     console.log("Deleting", key);
-    await del(key);
+    await client.del(key);
   });
 };
 
 if (require.main === module) {
-  main()
-    .then(() => {
+  (async () => {
+    const { client, close } = await createRedisClient();
+    try {
+      await main(client);
       console.log("Processed all keys");
+      await close();
       process.exit(0);
-    })
-    .catch((err) => {
+    } catch (err) {
       console.error(err);
+      await close();
       process.exit(1);
-    });
+    }
+  })();
 }
