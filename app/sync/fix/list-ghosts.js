@@ -1,18 +1,32 @@
 const Entry = require("models/entry");
 const Entries = require("models/entries");
 const client = require("models/client");
-const { promisify } = require("util");
 
 var lists = ["all", "created", "entries", "drafts", "scheduled", "pages"];
 
-const pruneMissing = promisify(Entries.pruneMissing);
-const getEntry = promisify((blogID, id, callback) =>
-  Entry.get(blogID, id, (entry) => callback(null, entry))
-);
-const setEntry = promisify(Entry.set);
-
 function main(blog, callback) {
   const report = [];
+
+  const pruneMissing = (blogID) =>
+    new Promise((resolve, reject) => {
+      Entries.pruneMissing(blogID, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+
+  const getEntry = (blogID, id) =>
+    new Promise((resolve) => {
+      Entry.get(blogID, id, (entry) => resolve(entry));
+    });
+
+  const setEntry = (blogID, id, entry) =>
+    new Promise((resolve, reject) => {
+      Entry.set(blogID, id, entry, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
 
   (async function () {
     await pruneMissing(blog.id);
