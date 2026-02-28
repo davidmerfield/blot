@@ -154,7 +154,9 @@ module.exports = function (blogID, blog, callback) {
       // We sometimes manually pass in a new cache ID when we want
       // to bust the cache, e.g. in ./flushCache
       if (changes.template || changes.plugins || changes.cacheID || changes.menu) {
-        latest.cacheID = Date.now();
+        const now = Date.now();
+        const previousCacheID = Number(former.cacheID) || 0;
+        latest.cacheID = Math.max(now, previousCacheID + 1);
         latest.cssURL = `/style.css?cache=${latest.cacheID}&amp;extension=.css`;
         latest.scriptURL = `/script.js?cache=${latest.cacheID}&amp;extension=.js`;
         changes.cacheID = true;
