@@ -5,11 +5,17 @@ const { promisify } = require("util");
 
 var lists = ["all", "created", "entries", "drafts", "scheduled", "pages"];
 
-const pruneMissing = promisify(Entries.pruneMissing);
-const getEntry = promisify((blogID, id, callback) =>
-  Entry.get(blogID, id, (entry) => callback(null, entry))
-);
-const setEntry = promisify(Entry.set);
+function pruneMissing(blogID) {
+  return promisify(Entries.pruneMissing.bind(Entries))(blogID);
+}
+
+function getEntry(blogID, id) {
+  return promisify((next) => Entry.get(blogID, id, (entry) => next(null, entry)))();
+}
+
+function setEntry(blogID, id, entry) {
+  return promisify(Entry.set.bind(Entry))(blogID, id, entry);
+}
 
 function main(blog, callback) {
   const report = [];
