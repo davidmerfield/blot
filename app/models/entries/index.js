@@ -374,9 +374,14 @@ module.exports = (function () {
    * @returns {number|null} - A valid page number, or null if invalid.
    */
   function validatePageNumber(pageNumber) {
-    // Handle undefined/null/empty string
-    if (pageNumber === undefined || pageNumber === null || pageNumber === "") {
+    // Missing page number defaults to page 1.
+    // Explicitly provided null/empty values are invalid user input.
+    if (pageNumber === undefined) {
       return 1;
+    }
+
+    if (pageNumber === null || pageNumber === "") {
+      return null;
     }
 
     // Convert to string for validation
