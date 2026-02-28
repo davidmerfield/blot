@@ -19,7 +19,12 @@ module.exports = function main(blog, callback) {
             const multi = client.multi();
             multi.sRem(Tags.key.all(blog.id), tag.slug);
             multi.del(tagKey);
-            return multi.exec(next);
+            return multi
+              .exec()
+              .then(function () {
+                next();
+              })
+              .catch(next);
           }
 
           async.each(
@@ -30,7 +35,12 @@ module.exports = function main(blog, callback) {
                   report.push(["MISSING", entryID]);
                   const multi = client.multi();
                   multi.zRem(tagKey, entryID);
-                  return multi.exec(next);
+                  return multi
+                    .exec()
+                    .then(function () {
+                      next();
+                    })
+                    .catch(next);
                 }
 
                 if (entry.id === entryID) return next();
@@ -47,10 +57,12 @@ module.exports = function main(blog, callback) {
                 multi.rename(entryKeyForIncorrectID, entryKeyForCorrectID);
                 multi.zRem(tagKey, entryID);
                 multi.zAdd(tagKey, { score: score, value: entry.id });
-                multi.exec(function (err) {
-                  if (err) return next(err);
-                  Entry.set(blog.id, entry.id, entry, next);
-                });
+                multi
+                  .exec()
+                  .then(function () {
+                    Entry.set(blog.id, entry.id, entry, next);
+                  })
+                  .catch(next);
               });
             },
             next
