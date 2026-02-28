@@ -1,6 +1,6 @@
 var async = require("async");
 var Entry = require("models/entry");
-var client = require("models/client");
+var client = require("models/client-new");
 var Blog = require("models/blog");
 var build = require("build");
 var dependentsKey = Entry.key.dependents;
@@ -23,46 +23,47 @@ module.exports = function (blogID, path, callback) {
   };
   Blog.get({ id: blogID }, function (err, blog) {
     if (err || !blog) return callback(err || new Error("No blog"));
-    client.SMEMBERS(dependentsKey(blogID, path), function (
-      err,
-      dependent_paths
-    ) {
-      if (err) return callback(err);
+    (async function () {
+      try {
+        const dependent_paths = await client.sMembers(dependentsKey(blogID, path));
 
-      async.eachSeries(
-        dependent_paths,
-        function (dependent_path, next) {
-          Entry.get(blogID, dependent_path, function (entry) {
-            if (!entry) {
-              log("No entry for dependent_path:", dependent_path);
-              return next();
-            }
-
-            build(blog, dependent_path, function (
-              err,
-              updated_dependent
-            ) {
-              if (err) {
-                log("Error rebuilding dependent_path:", dependent_path, err);
+        async.eachSeries(
+          dependent_paths,
+          function (dependent_path, next) {
+            Entry.get(blogID, dependent_path, function (entry) {
+              if (!entry) {
+                log("No entry for dependent_path:", dependent_path);
                 return next();
               }
 
-              Entry.set(
-                blogID,
-                dependent_path,
-                updated_dependent,
-                function (err) {
-                  if (err) log("Error saving dependent_path entry", err);
+              build(blog, dependent_path, function (
+                err,
+                updated_dependent
+              ) {
+                if (err) {
+                  log("Error rebuilding dependent_path:", dependent_path, err);
+                  return next();
+                }
 
-                  next();
-                },
-                false
-              );
+                Entry.set(
+                  blogID,
+                  dependent_path,
+                  updated_dependent,
+                  function (err) {
+                    if (err) log("Error saving dependent_path entry", err);
+
+                    next();
+                  },
+                  false
+                );
+              });
             });
-          });
-        },
-        callback
-      );
-    });
+          },
+          callback
+        );
+      } catch (err) {
+        callback(err);
+      }
+    })();
   });
 };

@@ -1,4 +1,4 @@
-const redis = require("models/redis");
+const createRedisClient = require("models/redis-new");
 
 module.exports = function redisSubscriber({
   channel,
@@ -6,7 +6,7 @@ module.exports = function redisSubscriber({
   onError,
   logger = console,
 }) {
-  const client = new redis();
+  const client = createRedisClient();
   const messageHandler = typeof onMessage === "function" ? onMessage : function () {};
   let cleanedUp = false;
 
@@ -20,28 +20,38 @@ module.exports = function redisSubscriber({
 
   client.on("error", logRedisError);
 
-  Promise.resolve(
-    client.subscribe(channel, function (message, subscribedChannel) {
-      try {
-        messageHandler(message, subscribedChannel || channel);
-      } catch (err) {
-        logRedisError(err);
-      }
+  const setupPromise = Promise.resolve()
+    .then(async function () {
+      await client.connect();
+      await client.subscribe(channel, function (message, subscribedChannel) {
+        try {
+          messageHandler(message, subscribedChannel || channel);
+        } catch (err) {
+          logRedisError(err);
+        }
+      });
     })
-  ).catch(logRedisError);
+    .catch(async function (err) {
+      logRedisError(err);
+      await cleanup();
+    });
 
   async function cleanup() {
     if (cleanedUp) return;
     cleanedUp = true;
 
     try {
-      await client.unsubscribe(channel);
+      if (client.isOpen) {
+        await client.unsubscribe(channel);
+      }
     } catch (err) {
       logRedisError(err);
     }
 
     try {
-      await client.quit();
+      if (client.isOpen) {
+        await client.quit();
+      }
     } catch (err) {
       logRedisError(err);
     }
@@ -50,5 +60,6 @@ module.exports = function redisSubscriber({
   return {
     client,
     cleanup,
+    setupPromise,
   };
 };

@@ -1,15 +1,14 @@
 describe("serviceAccount module", function () {
     const serviceAccount = require("clients/google-drive/database/serviceAccount");
-    const client = require("models/client");
+    const client = require("models/client-new");
     const prefix = require("clients/google-drive/database/prefix");
   
     // Before each test, clear all Redis data with the matching prefix
-    afterEach(function (done) {
-      client.keys(`${prefix}*`, async function (err, keys) {
-        if (err) return done(err);
-        if (!keys.length) return done();
-        client.del(keys, done);
-      });
+    afterEach(async function () {
+      const keys = await client.keys(`${prefix}*`);
+      if (keys.length) {
+        await client.del(keys);
+      }
     });
   
     it("can store and retrieve a service account", async function () {
@@ -83,4 +82,15 @@ describe("serviceAccount module", function () {
       const serviceAccounts = await serviceAccount.list();
       expect(serviceAccounts).not.toContain(nonExistentServiceAccountId);
     });
-  });
+  
+
+    it("propagates client-new promise failures", async function () {
+      const error = new Error("boom");
+      spyOn(client, "hSet").and.returnValue(Promise.reject(error));
+
+      await expectAsync(serviceAccount.store("service_account_failure", {
+        email: "service_account_failure@example.com",
+      })).toBeRejectedWith(error);
+    });
+
+});

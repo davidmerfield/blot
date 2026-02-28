@@ -1,17 +1,16 @@
 describe("google drive database.channel", function () {
   const database = require("clients/google-drive/database");
-  const client = require("models/client");
+  const client = require("models/client-new");
   const prefix = require("clients/google-drive/database/prefix");
 
   const channel = database.channel;
 
   // Before each test, clear all Redis data with the matching prefix
-  afterEach(function (done) {
-    client.keys(`${prefix}*`, async function (err, keys) {
-      if (err) return done(err);
-      if (!keys.length) return done();
-      client.del(keys, done);
-    });
+  afterEach(async function () {
+    const keys = await client.keys(`${prefix}*`);
+    if (keys.length) {
+      await client.del(keys);
+    }
   });
 
   it("can create and retrieve a changes.watch channel", async function () {
@@ -372,4 +371,18 @@ describe("google drive database.channel", function () {
     );
     expect(result).toEqual(expected);
   });
+
+
+  it("propagates client-new promise failures", async function () {
+    const error = new Error("boom");
+    spyOn(client, "hSet").and.returnValue(Promise.reject(error));
+
+    await expectAsync(channel.store("channel_failure", {
+      type: "changes.watch",
+      serviceAccountId: "service_account_1",
+      resourceId: "resource_failure",
+      url: "https://example.com",
+    })).toBeRejectedWith(error);
+  });
+
 });
