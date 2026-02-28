@@ -263,4 +263,3 @@ function folder(folderId) {
 }
 
 module.exports = folder;
-    const multi = client.multi(); // Start a Redis transaction
