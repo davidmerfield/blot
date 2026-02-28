@@ -38,17 +38,20 @@ module.exports = function setMetadata(id, updates, callback) {
       console.log("error injecting locals:", e);
     }
 
+    var isPublic = metadata.isPublic === true || metadata.isPublic === "true";
+    var owner = metadata.owner;
+
     metadata = serializeRedisHashValues(serialize(metadata, metadataModel));
 
     (async function () {
       try {
-        if (metadata.isPublic) {
+        if (isPublic) {
           await client.sAdd(key.publicTemplates(), id);
         } else {
           await client.sRem(key.publicTemplates(), id);
         }
 
-        await client.sAdd(key.blogTemplates(metadata.owner), id);
+        await client.sAdd(key.blogTemplates(owner), id);
         await client.hSet(key.metadata(id), metadata);
 
         if (!changes) {
@@ -58,7 +61,7 @@ module.exports = function setMetadata(id, updates, callback) {
           });
         }
 
-        var shouldBumpCache = !(metadata.isPublic || metadata.owner === "SITE");
+        var shouldBumpCache = !(isPublic || owner === "SITE");
         var regenerateManifest = function () {
           updateCdnManifest(id, function (manifestErr) {
             if (manifestErr) return callback(manifestErr);
@@ -68,7 +71,7 @@ module.exports = function setMetadata(id, updates, callback) {
 
         if (!shouldBumpCache) return regenerateManifest();
 
-        Blog.set(metadata.owner, { cacheID: Date.now() }, function (cacheErr) {
+        Blog.set(owner, { cacheID: Date.now() }, function (cacheErr) {
           if (cacheErr) return callback(cacheErr);
           regenerateManifest();
         });
