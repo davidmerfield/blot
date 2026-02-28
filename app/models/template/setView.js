@@ -271,7 +271,8 @@ module.exports = function setView(templateID, updates, callback) {
 					(infiniteError) => {
 						if (infiniteError) return callback(infiniteError);
 
-						view.retrieve = parseResult.retrieve || {};
+						// Merge parser-derived retrieve (e.g. {{title}}) into view.retrieve; do not overwrite user-provided retrieve (includeDraft, filters, etc.)
+						extend(view.retrieve || {}).and(parseResult.retrieve || {});
 
 						view = serializeRedisHashValues(serialize(view, viewModel));
 
