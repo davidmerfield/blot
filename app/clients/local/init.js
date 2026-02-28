@@ -4,19 +4,43 @@
 const async = require("async");
 const debug = require("debug")("blot:clients:local:setup");
 const setup = require("./setup");
-const redis = require("models/redis");
-const client = new redis();
+const createRedisClient = require("models/redis-new");
+const client = createRedisClient();
 const clfdate = require("helper/clfdate");
 const Blog = require("models/blog");
 const prefix = () => clfdate() + " Local folder client:";
 
-module.exports = () => {
+module.exports = async () => {
   // This communication channel allows us to load in and out
   // new blogs in external scripts. We send a message to this
   // channel in scripts/load/info.js
   var CHANNEL = "clients:local:new-folder";
   console.log(prefix(), "Listening");
-  client.subscribe(CHANNEL, function (message, channel) {
+
+  const cleanup = async function () {
+    try {
+      if (client.isOpen) {
+        await client.unsubscribe(CHANNEL);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
+    try {
+      if (client.isOpen) {
+        await client.quit();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  process.once("SIGTERM", cleanup);
+  process.once("SIGINT", cleanup);
+  process.once("exit", cleanup);
+
+  await client.connect();
+  await client.subscribe(CHANNEL, function (message, channel) {
     debug("recieved", message, "on", channel);
     if (channel !== CHANNEL) return;
     let { blogID } = JSON.parse(message);
