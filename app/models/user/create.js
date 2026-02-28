@@ -63,7 +63,7 @@ module.exports = function create (
       var results = await multi.exec();
 
       // Retry if generated ID was in use
-      if (results && results[1] === 0)
+      if (results && (results[1] === false || results[1] === 0))
         return create(email, passwordHash, subscription, paypal, callback);
 
       // Schedule a notifcation email for their subscription renewal
