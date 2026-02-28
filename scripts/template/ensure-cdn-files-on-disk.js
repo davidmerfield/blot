@@ -2,15 +2,19 @@ const { promisify } = require("util");
 const path = require("path");
 const fs = require("fs-extra");
 const config = require("config");
-const client = require("models/client");
+const client = require("models/client-new");
 const key = require("models/template/key");
 const getMetadata = require("models/template/getMetadata");
 const updateCdnManifest = require("models/template/util/updateCdnManifest");
 
 const getMetadataAsync = promisify(getMetadata);
 const updateCdnManifestAsync = promisify(updateCdnManifest);
-const smembersAsync = promisify(client.smembers).bind(client);
-const hdelAsync = promisify(client.hdel).bind(client);
+const smembersAsync = function (redisKey) {
+  return client.sMembers(redisKey);
+};
+const hdelAsync = function (redisKey, field) {
+  return client.hDel(redisKey, field);
+};
 
 // Base directory for rendered output storage (same as in updateCdnManifest.js)
 const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");
