@@ -654,10 +654,11 @@ module.exports = (function () {
 
     if (sortBy === "id") {
       var entriesKey = listKey(blogID, "entries");
+      var entriesLexKey = pathIndex.lexKey(blogID);
       var rangePromise =
         order === "desc"
-          ? redis.zRange(entriesKey, start, end, { REV: true })
-          : redis.zRange(entriesKey, start, end);
+          ? redis.zRange(entriesLexKey, start, end, { REV: true })
+          : redis.zRange(entriesLexKey, start, end);
 
       Promise.all([rangePromise, redis.zCard(entriesKey)])
         .then(function (results) {
