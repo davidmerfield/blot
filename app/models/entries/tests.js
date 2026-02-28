@@ -336,16 +336,24 @@ describe("entries", function () {
 
   it("getPage should return a page of entries sorted by date", async function (done) {
     const key = `blog:${this.blog.id}:entries`;
+    const lexKey = `blog:${this.blog.id}:entries:lex`;
+    const lexReadyKey = `blog:${this.blog.id}:entries:lex:ready`;
     const now = Date.now();
+    const ids = ["/a.txt", "/b.txt", "/c.txt", "/d.txt", "/e.txt", "/f.txt"];
     // Add 6 mock entries in Redis
     await redis.zAdd(key, [
-      { score: now, value: "/a.txt" },
-      { score: now + 1000, value: "/b.txt" },
-      { score: now + 2000, value: "/c.txt" },
-      { score: now + 3000, value: "/d.txt" },
-      { score: now + 4000, value: "/e.txt" },
-      { score: now + 5000, value: "/f.txt" },
+      { score: now, value: ids[0] },
+      { score: now + 1000, value: ids[1] },
+      { score: now + 2000, value: ids[2] },
+      { score: now + 3000, value: ids[3] },
+      { score: now + 4000, value: ids[4] },
+      { score: now + 5000, value: ids[5] },
     ]);
+
+    const pipeline = redis.multi();
+    ids.forEach((id) => pipeline.zAdd(lexKey, { score: 0, value: id }));
+    pipeline.set(lexReadyKey, "1");
+    await pipeline.exec();
 
     // spy on the Entry.get function
     // to return the full fake entry
@@ -419,16 +427,24 @@ describe("entries", function () {
   it("getPage should paginate ID sorting via Redis ranges for asc/desc without full-set fetch", async function (done) {
     const blogID = this.blog.id;
     const key = `blog:${blogID}:entries`;
+    const lexKey = `blog:${blogID}:entries:lex`;
+    const lexReadyKey = `blog:${blogID}:entries:lex:ready`;
     const now = Date.now();
+    const ids = ["/a.txt", "/b.txt", "/c.txt", "/d.txt", "/e.txt", "/f.txt"];
 
     await redis.zAdd(key, [
-      { score: now, value: "/a.txt" },
-      { score: now + 1000, value: "/b.txt" },
-      { score: now + 2000, value: "/c.txt" },
-      { score: now + 3000, value: "/d.txt" },
-      { score: now + 4000, value: "/e.txt" },
-      { score: now + 5000, value: "/f.txt" },
+      { score: now, value: ids[0] },
+      { score: now + 1000, value: ids[1] },
+      { score: now + 2000, value: ids[2] },
+      { score: now + 3000, value: ids[3] },
+      { score: now + 4000, value: ids[4] },
+      { score: now + 5000, value: ids[5] },
     ]);
+
+    const pipeline = redis.multi();
+    ids.forEach((id) => pipeline.zAdd(lexKey, { score: 0, value: id }));
+    pipeline.set(lexReadyKey, "1");
+    await pipeline.exec();
 
     spyOn(Entry, "get").and.callFake((blogID, ids, callback) => {
       if (Array.isArray(ids)) return callback(ids.map((id) => ({ id })));
@@ -445,8 +461,8 @@ describe("entries", function () {
         expect(entries.map((entry) => entry.id)).toEqual(["/a.txt", "/b.txt"]);
         expect(pagination.current).toBe(1);
 
-        expect(zRangeSpy).toHaveBeenCalledWith(key, 0, 1);
-        expect(zRangeSpy).not.toHaveBeenCalledWith(key, 0, -1);
+        expect(zRangeSpy).toHaveBeenCalledWith(lexKey, 0, 1);
+        expect(zRangeSpy).not.toHaveBeenCalledWith(lexKey, 0, -1);
 
         Entries.getPage(
           blogID,
@@ -454,7 +470,7 @@ describe("entries", function () {
           function (error, entries) {
             expect(error).toBeNull();
             expect(entries.map((entry) => entry.id)).toEqual(["/c.txt", "/d.txt"]);
-            expect(zRangeSpy).toHaveBeenCalledWith(key, 2, 3);
+            expect(zRangeSpy).toHaveBeenCalledWith(lexKey, 2, 3);
 
             Entries.getPage(
               blogID,
@@ -462,8 +478,8 @@ describe("entries", function () {
               function (error, entries) {
                 expect(error).toBeNull();
                 expect(entries.map((entry) => entry.id)).toEqual(["/d.txt", "/c.txt"]);
-                expect(zRangeSpy).toHaveBeenCalledWith(key, 2, 3, { REV: true });
-                expect(zRangeSpy).not.toHaveBeenCalledWith(key, 0, -1, { REV: true });
+                expect(zRangeSpy).toHaveBeenCalledWith(lexKey, 2, 3, { REV: true });
+                expect(zRangeSpy).not.toHaveBeenCalledWith(lexKey, 0, -1, { REV: true });
                 done();
               }
             );
