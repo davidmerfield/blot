@@ -1,33 +1,58 @@
-const { promisify } = require("util");
-const redis = require("models/redis");
-const client = new redis();
-
-const scan = promisify(client.scan.bind(client));
+const createRedisClient = require("models/redis-new");
 
 async function redisKeys(pattern, iterator) {
+  const client = createRedisClient();
+
   let cursor = "0";
   let complete = false;
 
-  while (!complete) {
-    try {
-      const [nextCursor, results] = await scan(
-        cursor,
-        "match",
-        pattern,
-        "count",
-        1000
-      );
-      cursor = nextCursor;
+  try {
+    await client.connect();
 
-      for (const result of results) {
+    while (!complete) {
+      const scanReply = await client.scan(cursor, {
+        MATCH: pattern,
+        COUNT: 1000,
+      });
+      const normalizedScanReply = normalizeScanReply(scanReply);
+      cursor = normalizedScanReply.cursor;
+
+      for (const result of normalizedScanReply.keys) {
         await iterator(result);
       }
 
       complete = cursor === "0";
-    } catch (err) {
-      throw err;
+    }
+  } finally {
+    if (client.isOpen) {
+      await client.quit();
     }
   }
+}
+
+function normalizeScanReply(reply) {
+  if (Array.isArray(reply)) {
+    return {
+      cursor: String(reply[0] || "0"),
+      keys: Array.isArray(reply[1]) ? reply[1] : [],
+    };
+  }
+
+  if (reply && typeof reply === "object") {
+    const cursor = Object.prototype.hasOwnProperty.call(reply, "cursor")
+      ? String(reply.cursor)
+      : "0";
+
+    const keys = Array.isArray(reply.keys)
+      ? reply.keys
+      : Array.isArray(reply.results)
+      ? reply.results
+      : [];
+
+    return { cursor, keys };
+  }
+
+  return { cursor: "0", keys: [] };
 }
 
 module.exports = redisKeys;
