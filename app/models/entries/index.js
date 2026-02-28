@@ -648,16 +648,14 @@ module.exports = (function () {
     }
 
     if (sortBy === "id") {
+      var entriesKey = listKey(blogID, "entries");
+      var rangePromise =
+        order === "desc"
+          ? redis.zRange(entriesKey, start, end, { REV: true })
+          : redis.zRange(entriesKey, start, end);
+
       redis
-        .zRange(listKey(blogID, "entries"), 0, -1)
-        .then(function (allIDs) {
-          var entryIDs = allIDs.slice().sort();
-          if (order === "desc") entryIDs.reverse();
-          return Promise.all([
-            entryIDs.slice(start, start + pageSize),
-            redis.zCard(listKey(blogID, "entries")),
-          ]);
-        })
+        .all([rangePromise, redis.zCard(entriesKey)])
         .then(function (results) {
           var entryIDs = results[0];
           var totalEntries = results[1];

@@ -416,6 +416,63 @@ describe("entries", function () {
     );
   });
 
+  it("getPage should paginate ID sorting via Redis ranges for asc/desc without full-set fetch", async function (done) {
+    const blogID = this.blog.id;
+    const key = `blog:${blogID}:entries`;
+    const now = Date.now();
+
+    await redis.zAdd(key, [
+      { score: now, value: "/a.txt" },
+      { score: now + 1000, value: "/b.txt" },
+      { score: now + 2000, value: "/c.txt" },
+      { score: now + 3000, value: "/d.txt" },
+      { score: now + 4000, value: "/e.txt" },
+      { score: now + 5000, value: "/f.txt" },
+    ]);
+
+    spyOn(Entry, "get").and.callFake((blogID, ids, callback) => {
+      if (Array.isArray(ids)) return callback(ids.map((id) => ({ id })));
+      return callback({ id: ids });
+    });
+
+    const zRangeSpy = spyOn(redis, "zRange").and.callThrough();
+
+    Entries.getPage(
+      blogID,
+      { pageNumber: 1, pageSize: 2, sortBy: "id", order: "asc" },
+      function (error, entries, pagination) {
+        expect(error).toBeNull();
+        expect(entries.map((entry) => entry.id)).toEqual(["/a.txt", "/b.txt"]);
+        expect(pagination.current).toBe(1);
+
+        expect(zRangeSpy).toHaveBeenCalledWith(key, 0, 1);
+        expect(zRangeSpy).not.toHaveBeenCalledWith(key, 0, -1);
+
+        Entries.getPage(
+          blogID,
+          { pageNumber: 2, pageSize: 2, sortBy: "id", order: "asc" },
+          function (error, entries) {
+            expect(error).toBeNull();
+            expect(entries.map((entry) => entry.id)).toEqual(["/c.txt", "/d.txt"]);
+            expect(zRangeSpy).toHaveBeenCalledWith(key, 2, 3);
+
+            Entries.getPage(
+              blogID,
+              { pageNumber: 2, pageSize: 2, sortBy: "id", order: "desc" },
+              function (error, entries) {
+                expect(error).toBeNull();
+                expect(entries.map((entry) => entry.id)).toEqual(["/d.txt", "/c.txt"]);
+                expect(zRangeSpy).toHaveBeenCalledWith(key, 2, 3, { REV: true });
+                expect(zRangeSpy).not.toHaveBeenCalledWith(key, 0, -1, { REV: true });
+                done();
+              }
+            );
+          }
+        );
+      }
+    );
+  });
+
   it("getPage should return object pagination on a single page", async function (done) {
     const key = `blog:${this.blog.id}:entries`;
     const now = Date.now();
