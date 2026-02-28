@@ -3,6 +3,19 @@ var Entry = require("models/entry");
 var async = require("async");
 var client = require("models/client-new");
 
+function execTransaction(multi, callback) {
+  if (multi.exec.length > 0) {
+    return multi.exec(callback);
+  }
+
+  Promise.resolve(multi.exec()).then(
+    function () {
+      callback();
+    },
+    callback
+  );
+}
+
 module.exports = function main(blog, callback) {
   const report = [];
   Tags.list(blog.id, function (err, tags) {
@@ -19,12 +32,7 @@ module.exports = function main(blog, callback) {
             const multi = client.multi();
             multi.sRem(Tags.key.all(blog.id), tag.slug);
             multi.del(tagKey);
-            return multi
-              .exec()
-              .then(function () {
-                next();
-              })
-              .catch(next);
+            return execTransaction(multi, next);
           }
 
           async.each(
@@ -35,12 +43,7 @@ module.exports = function main(blog, callback) {
                   report.push(["MISSING", entryID]);
                   const multi = client.multi();
                   multi.zRem(tagKey, entryID);
-                  return multi
-                    .exec()
-                    .then(function () {
-                      next();
-                    })
-                    .catch(next);
+                  return execTransaction(multi, next);
                 }
 
                 if (entry.id === entryID) return next();
@@ -57,12 +60,10 @@ module.exports = function main(blog, callback) {
                 multi.rename(entryKeyForIncorrectID, entryKeyForCorrectID);
                 multi.zRem(tagKey, entryID);
                 multi.zAdd(tagKey, { score: score, value: entry.id });
-                multi
-                  .exec()
-                  .then(function () {
-                    Entry.set(blog.id, entry.id, entry, next);
-                  })
-                  .catch(next);
+                execTransaction(multi, function (err) {
+                  if (err) return next(err);
+                  Entry.set(blog.id, entry.id, entry, next);
+                });
               });
             },
             next
