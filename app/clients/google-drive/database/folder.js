@@ -4,6 +4,10 @@ const PREFIX = require("./prefix");
 
 function folder(folderId) {
 
+  if (!(this instanceof folder)) {
+    return new folder(folderId);
+  }
+
   if (!folderId) {
     throw new Error("Folder ID is required");
   }
@@ -259,3 +263,4 @@ function folder(folderId) {
 }
 
 module.exports = folder;
+    const multi = client.multi(); // Start a Redis transaction
