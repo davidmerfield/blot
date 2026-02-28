@@ -1,7 +1,7 @@
 var Tags = require("models/tags");
 var Entry = require("models/entry");
 var async = require("async");
-var client = require("models/client");
+var client = require("models/client-new");
 
 module.exports = function main(blog, callback) {
   const report = [];
@@ -17,7 +17,7 @@ module.exports = function main(blog, callback) {
           if (!entryIDs.length) {
             report.push(["EMPTY TAG", tag]);
             const multi = client.multi();
-            multi.srem(Tags.key.all(blog.id), tag.slug);
+            multi.sRem(Tags.key.all(blog.id), tag.slug);
             multi.del(tagKey);
             return multi.exec(next);
           }
@@ -29,7 +29,7 @@ module.exports = function main(blog, callback) {
                 if (!entry) {
                   report.push(["MISSING", entryID]);
                   const multi = client.multi();
-                  multi.zrem(tagKey, entryID);
+                  multi.zRem(tagKey, entryID);
                   return multi.exec(next);
                 }
 
@@ -45,8 +45,8 @@ module.exports = function main(blog, callback) {
                 }
 
                 multi.rename(entryKeyForIncorrectID, entryKeyForCorrectID);
-                multi.zrem(tagKey, entryID);
-                multi.zadd(tagKey, score, entry.id);
+                multi.zRem(tagKey, entryID);
+                multi.zAdd(tagKey, { score: score, value: entry.id });
                 multi.exec(function (err) {
                   if (err) return next(err);
                   Entry.set(blog.id, entry.id, entry, next);
