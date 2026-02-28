@@ -1,6 +1,6 @@
 const Entry = require("models/entry");
 const Entries = require("models/entries");
-const client = require("models/client");
+const client = require("models/client-new");
 const { promisify } = require("util");
 
 var lists = ["all", "created", "entries", "drafts", "scheduled", "pages"];
@@ -17,14 +17,14 @@ function main(blog, callback) {
 
     for (const list of lists) {
       const key = "blog:" + blog.id + ":" + list;
-      const ids = await client.zrevrange(key, 0, -1);
+      const ids = await client.zRevRange(key, 0, -1);
 
       for (const id of ids) {
         const entry = await getEntry(blog.id, id);
         if (entry && entry.id === id) continue;
 
         report.push([list, "MISMATCH", id]);
-        await client.zrem(key, id);
+        await client.zRem(key, id);
 
         if (entry) await setEntry(blog.id, entry.id, entry);
       }
