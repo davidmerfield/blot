@@ -6,7 +6,9 @@ const { promisify } = require("util");
 var lists = ["all", "created", "entries", "drafts", "scheduled", "pages"];
 
 const pruneMissing = promisify(Entries.pruneMissing);
-const getEntry = promisify(Entry.get);
+const getEntry = promisify((blogID, id, callback) =>
+  Entry.get(blogID, id, (entry) => callback(null, entry))
+);
 const setEntry = promisify(Entry.set);
 
 function main(blog, callback) {
