@@ -4,16 +4,28 @@ var async = require("async");
 var client = require("models/client-new");
 
 function execTransaction(multi, callback) {
-  if (multi.exec.length > 0) {
-    return multi.exec(callback);
+  var done = false;
+  function onDone(err) {
+    if (done) return;
+    done = true;
+    callback(err);
   }
 
-  Promise.resolve(multi.exec()).then(
-    function () {
-      callback();
-    },
-    callback
-  );
+  var result;
+  try {
+    result = multi.exec(onDone);
+  } catch (err) {
+    return onDone(err);
+  }
+
+  if (result && typeof result.then === "function") {
+    Promise.resolve(result).then(
+      function () {
+        onDone();
+      },
+      onDone
+    );
+  }
 }
 
 module.exports = function main(blog, callback) {
