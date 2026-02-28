@@ -176,7 +176,8 @@ describe("entries", function () {
       expect(membership.deleted).not.toContain(path);
       expect(membership.lex).not.toContain(path);
 
-      await setEntry({ page: false, scheduled: true });
+      // Scheduling is derived from dateStamp in entry/set.js (entry.scheduled = entry.dateStamp > Date.now()).
+      await setEntry({ page: false, dateStamp: Date.now() + 60_000 });
 
       membership = await getMembership();
       expect(membership.created).toContain(path);
@@ -186,7 +187,7 @@ describe("entries", function () {
       expect(membership.deleted).not.toContain(path);
       expect(membership.lex).not.toContain(path);
 
-      await setEntry({ scheduled: false });
+      await setEntry({ dateStamp: Date.now() - 60_000 });
 
       membership = await getMembership();
       expect(membership.created).toContain(path);
