@@ -30,7 +30,7 @@ module.exports = (function () {
         await redis.hSet(ignoredFilesKey(blogID), path, reason);
         callback();
       } catch (err) {
-        throw err;
+        callback(err);
       }
     })();
   }
@@ -45,7 +45,7 @@ module.exports = (function () {
         await redis.hDel(ignoredFilesKey(blogID), path);
         callback();
       } catch (err) {
-        throw err;
+        callback(err);
       }
     })();
   }
