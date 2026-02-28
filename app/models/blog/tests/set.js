@@ -2,7 +2,7 @@ describe("Blog.set", function () {
   var set = require("../set");
   var get = require("../get");
   var key = require("../key");
-  var client = require("models/client-new");
+  var client = require("models/client");
   var config = require("config");
 
   global.test.blog();

@@ -88,7 +88,7 @@ describe("tags.list", function () {
 
     it("does not call zcard when filtering by pathPrefix", function (done) {
         const blogID = this.blog.id;
-        const client = require("models/client-new");
+        const client = require("models/client");
 
         set(blogID, {
             id: "/Blog/one",

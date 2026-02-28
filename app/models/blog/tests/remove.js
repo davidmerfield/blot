@@ -4,7 +4,7 @@ describe("Blog.remove", function () {
   var getAllIDs = require("../getAllIDs");
   var redisSearch = require("helper/redisSearch");
   var template = require("models/template");
-  var client = require("models/client-new");
+  var client = require("models/client");
 
   // Create a test user and blog before each spec
   global.test.user();

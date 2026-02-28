@@ -223,7 +223,7 @@ Validates and merges `updates` into `user`. Field types are checked against `mod
 
 ### Internal
 
-- `models/client-new` — Shared Redis singleton (`models/client-new.js` → `models/redis-new.js`)
+- `models/client` — Shared Redis singleton (`models/client.js` → `models/redis.js`)
 - `models/blog/set` — Used by `disable` and `enable` to propagate account state to blogs
 - `helper/ensure` — Runtime type assertion, used throughout for argument and schema validation
 - `helper/email` — Sends transactional emails (`WELCOME`, `UPCOMING_EXPIRY`, `UPCOMING_RENEWAL`, `UPCOMING_MONTHLY_FIRST_RENEWAL`)

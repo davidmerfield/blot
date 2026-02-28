@@ -1,5 +1,5 @@
 var key = require("./key");
-var client = require("models/client-new");
+var client = require("models/client");
 var getMetadata = require("./getMetadata");
 var setMetadata = require("./setMetadata");
 var uuid = require("uuid/v4");

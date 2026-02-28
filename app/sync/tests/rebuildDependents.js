@@ -2,7 +2,7 @@ describe("rebuildDependents", function () {
   var rebuildDependents = require("../update/rebuildDependents");
   var Blog = require("models/blog");
   var Entry = require("models/entry");
-  var client = require("models/client-new");
+  var client = require("models/client");
 
   it("uses sMembers and routes redis rejections to callback", function (done) {
     spyOn(Blog, "get").and.callFake(function (_, callback) {

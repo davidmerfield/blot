@@ -1,4 +1,4 @@
-const client = require("models/client-new");
+const client = require("models/client");
 const pathIndex = require("models/entries/pathIndex");
 
 module.exports = function entriesPathIndex(blog, callback) {

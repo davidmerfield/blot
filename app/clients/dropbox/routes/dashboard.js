@@ -9,7 +9,7 @@ const join = require("path").join;
 const moment = require("moment");
 const { Dropbox } = require("dropbox");
 const views = __dirname + "/../views/";
-const client = require("models/client-new");
+const client = require("models/client");
 const Blog = require("models/blog");
 
 dashboard.use(function loadDropboxAccount (req, res, next) {

@@ -1,6 +1,6 @@
 var ensure = require("helper/ensure");
 var validate = require("./validate");
-var client = require("models/client-new");
+var client = require("models/client");
 var updateBillingEmail = require("./updateBillingEmail");
 var key = require("./key");
 var getById = require("./getById");

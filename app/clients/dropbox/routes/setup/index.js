@@ -1,5 +1,5 @@
 const sync = require("sync");
-const createRedisClient = require("models/redis-new");
+const createRedisClient = require("models/redis");
 
 const promisify = require("util").promisify;
 const database = require("clients/dropbox/database");

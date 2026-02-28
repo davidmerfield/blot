@@ -14,7 +14,7 @@ var async = require("async");
 var colors = require("colors/safe");
 var User = require("models/user");
 var key = require("models/user/key");
-var client = require("models/client-new");
+var client = require("models/client");
 var getConfirmation = require("../util/getConfirmation");
 
 var argv = process.argv.slice(2);

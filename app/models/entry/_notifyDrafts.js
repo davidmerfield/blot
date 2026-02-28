@@ -1,5 +1,5 @@
 var ensure = require("helper/ensure");
-var redis = require("models/client-new");
+var redis = require("models/client");
 var model = require("./model");
 
 module.exports = function (blogID, entry, callback) {

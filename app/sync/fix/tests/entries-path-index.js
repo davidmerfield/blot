@@ -1,5 +1,5 @@
 describe("sync/fix/entries-path-index", function () {
-  var client = require("models/client-new");
+  var client = require("models/client");
   var pathIndex = require("models/entries/pathIndex");
   var fixEntriesPathIndex = require("../entries-path-index");
 

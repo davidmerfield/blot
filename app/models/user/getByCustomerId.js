@@ -1,5 +1,5 @@
 var ensure = require("helper/ensure");
-var client = require("models/client-new");
+var client = require("models/client");
 var key = require("./key");
 var getById = require("./getById");
 

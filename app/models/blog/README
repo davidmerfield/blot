@@ -255,7 +255,7 @@ The Redis key generator. Methods:
 
 | Dependency | Role |
 |---|---|
-| `models/client-new` | Shared Redis singleton (from `models/redis-new.js`) |
+| `models/client` | Shared Redis singleton (from `models/redis.js`) |
 | `models/user` | Used in `create` and `remove` to update the owner's blog list |
 | `helper/ensure` | Runtime type validation of all function arguments |
 | `helper/extend` | Merges objects; used in `create` to combine info and defaults |

@@ -2,7 +2,7 @@ describe("update", function () {
   var sync = require("../index");
   var fs = require("fs-extra");
   var async = require("async");
-  var redis = require("models/client-new");
+  var redis = require("models/client");
   var entryKey = require("models/entry/key").entry;
 
   it("detects a renamed file across multiple syncs", function (done) {

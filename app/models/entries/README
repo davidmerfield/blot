@@ -216,7 +216,7 @@ The lex index is only updated incrementally by `_assign.js` when the ready flag 
 
 | Module | Role |
 |--------|------|
-| `models/client-new` | Redis client singleton (default model client) |
+| `models/client` | Redis client singleton (default model client) |
 | `models/entry` | Individual entry retrieval (`get`) and write (`set`) |
 | `models/blog` | Blog record lookup, used by `resave` |
 | `helper/ensure` | Runtime argument type validation |

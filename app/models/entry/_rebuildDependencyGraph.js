@@ -1,4 +1,4 @@
-var client = require("models/client-new");
+var client = require("models/client");
 var dependentsKey = require("./key").dependents;
 var _ = require("lodash");
 

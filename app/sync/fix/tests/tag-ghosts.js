@@ -1,7 +1,7 @@
 describe("sync/fix/tag-ghosts", function () {
   var Tags = require("models/tags");
   var Entry = require("models/entry");
-  var client = require("models/client-new");
+  var client = require("models/client");
   var fixTagGhosts = require("../tag-ghosts");
 
   it("propagates transaction rejections for empty-tag cleanup", function (done) {

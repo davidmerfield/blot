@@ -1,6 +1,6 @@
 var async = require("async");
 var Entry = require("models/entry");
-var client = require("models/client-new");
+var client = require("models/client");
 var Blog = require("models/blog");
 var build = require("build");
 var dependentsKey = Entry.key.dependents;

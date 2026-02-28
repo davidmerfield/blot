@@ -1,4 +1,4 @@
-const createRedisClient = require("models/redis-new");
+const createRedisClient = require("models/redis");
 
 module.exports = function redisSubscriber({
   channel,

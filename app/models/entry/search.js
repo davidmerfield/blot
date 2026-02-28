@@ -1,5 +1,5 @@
 const ensure = require("helper/ensure");
-const client = require("models/client-new");
+const client = require("models/client");
 const { promisify } = require("util");
 const get = promisify((blogID, entryIDs, callback) =>
   require("./get")(blogID, entryIDs, function (entries) {

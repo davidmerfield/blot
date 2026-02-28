@@ -1,7 +1,7 @@
 var send = require("helper/email").send;
 var letter = process.argv[2];
 var fs = require("fs");
-var client = require("models/client-new");
+var client = require("models/client");
 var async = require("async");
 
 if (!letter) {

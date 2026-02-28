@@ -2,7 +2,7 @@ module.exports = function route(server) {
   var Entry = require("models/entry");
   var Entries = require("models/entries");
   var drafts = require("sync/update/drafts");
-  const createRedisClient = require("models/redis-new");
+  const createRedisClient = require("models/redis");
 
   // (node:73631) TimeoutOverflowWarning: 1.7976931348623157e+308 does not fit into a 32-bit signed integer.
   // Timer duration was truncated to 2147483647.

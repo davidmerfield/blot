@@ -1,6 +1,6 @@
 describe("serviceAccount module", function () {
     const serviceAccount = require("clients/google-drive/database/serviceAccount");
-    const client = require("models/client-new");
+    const client = require("models/client");
     const prefix = require("clients/google-drive/database/prefix");
   
     // Before each test, clear all Redis data with the matching prefix
@@ -84,7 +84,7 @@ describe("serviceAccount module", function () {
     });
   
 
-    it("propagates client-new promise failures", async function () {
+    it("propagates client promise failures", async function () {
       const error = new Error("boom");
       spyOn(client, "hSet").and.callFake(() => Promise.reject(error));
 

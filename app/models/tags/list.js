@@ -1,4 +1,4 @@
-const client = require("models/client-new");
+const client = require("models/client");
 const ensure = require("helper/ensure");
 const { normalizePathPrefix, filterEntryIDsByPathPrefix } = require("helper/pathPrefix");
 const key = require("./key");

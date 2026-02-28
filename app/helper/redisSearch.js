@@ -1,4 +1,4 @@
-var client = require("models/client-new");
+var client = require("models/client");
  
 function main(string, callback) {
   var types = {};

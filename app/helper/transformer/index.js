@@ -1,5 +1,5 @@
 var debug = require("debug")("blot:helper:transformer");
-var client = require("models/client-new");
+var client = require("models/client");
 var isURL = require("./isURL");
 var Keys = require("./keys");
 var HashFile = require("./hash");
