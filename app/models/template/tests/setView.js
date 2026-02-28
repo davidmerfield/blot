@@ -4,14 +4,15 @@ const { promisify } = require("util");
 describe("template", () => {
 	require("./setup")({ createTemplate: true });
 
-	const setView = promisify(require("../index").setView);
+	const setViewCallback = require("../index").setView;
+	const setView = promisify(setViewCallback);
 	const setMetadata = promisify(require("../index").setMetadata);
 	const getView = promisify(require("../index").getView);
 	const getMetadata = promisify(require("../index").getMetadata);
 	const Blog = require("models/blog");
 	const client = require("models/client");
-	const hdel = promisify(client.hdel).bind(client);
-	const get = promisify(client.get).bind(client);
+	const hdel = client.hDel.bind(client);
+	const get = client.get.bind(client);
 	const key = require("../key");
 
 	it("sets a view", async function () {
@@ -47,6 +48,55 @@ describe("template", () => {
 		savedView = await getView(test.template.id, view.name);
 
 		expect(savedView.content).toEqual(view.content);
+	});
+
+	it("handles boolean-heavy draft updates without Redis encoder errors", async function () {
+		const templateID = this.template.id;
+
+		await setMetadata(templateID, {
+			localEditing: true,
+			isPublic: false,
+			locals: {
+				featureFlags: {
+					livePreview: true,
+					showDraftBadge: false,
+				},
+			},
+		});
+
+		await setView(templateID, {
+			name: "draft.html",
+			content: "{{title}}",
+			locals: {
+				showHero: true,
+				rollout: [true, false],
+			},
+			retrieve: {
+				includeDraft: true,
+				filters: {
+					featured: false,
+				},
+			},
+		});
+
+		await setView(templateID, {
+			name: "draft.html",
+			content: "{{title}} updated",
+			locals: {
+				showHero: false,
+				rollout: [false, true],
+			},
+			retrieve: {
+				includeDraft: false,
+				filters: {
+					featured: true,
+				},
+			},
+		});
+
+		const view = await getView(templateID, "draft.html");
+		expect(view.locals.showHero).toBe(false);
+		expect(view.retrieve.includeDraft).toBe(false);
 	});
 
 	it("won't set a view with invalid mustache content", async function () {
@@ -127,6 +177,24 @@ describe("template", () => {
 		} catch (err) {
 			expect(err instanceof Error).toBe(true);
 		}
+	});
+
+	it("forwards Redis url mapping failures to callback", function (done) {
+		const expectedError = new Error("redis set failed");
+		spyOn(client, "set").and.callFake(() => Promise.reject(expectedError));
+
+		setViewCallback(
+			this.template.id,
+			{
+				name: "redis-error.html",
+				content: "hello",
+				url: "/redis-error",
+			},
+			(err) => {
+				expect(err).toBe(expectedError);
+				done();
+			},
+		);
 	});
 
 	it("updates the cache ID of the blog which owns a template after setting a view", async function () {

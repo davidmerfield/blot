@@ -59,10 +59,12 @@ describe("Blot configuration", function () {
   });
 
   it("can connect to redis", function (done) {
-    require("models/client").ping(function (err, res) {
-      expect(err).toBe(null);
-      expect(res).toBe("PONG");
-      done();
-    });
+    require("models/client")
+      .ping()
+      .then(function (res) {
+        expect(res).toBe("PONG");
+        done();
+      })
+      .catch(done.fail);
   });
 });

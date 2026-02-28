@@ -14,6 +14,7 @@ var normalizeConverters = require("./util/converters").normalize;
 var updateCdnManifest = require("../template/util/updateCdnManifest");
 var forkSiteTemplate = require("../template/util/forkSiteTemplate");
 var renameGitRepo = require("clients/git/renameRepo");
+var serializeRedisHashValues = require("models/redisHashSerializer");
 var promisify = require("util").promisify;
 var updateCdnManifestAsync = promisify(updateCdnManifest);
 
@@ -153,7 +154,9 @@ module.exports = function (blogID, blog, callback) {
       // We sometimes manually pass in a new cache ID when we want
       // to bust the cache, e.g. in ./flushCache
       if (changes.template || changes.plugins || changes.cacheID || changes.menu) {
-        latest.cacheID = Date.now();
+        const now = Date.now();
+        const previousCacheID = Number(former.cacheID) || 0;
+        latest.cacheID = Math.max(now, previousCacheID + 1);
         latest.cssURL = `/style.css?cache=${latest.cacheID}&amp;extension=.css`;
         latest.scriptURL = `/script.js?cache=${latest.cacheID}&amp;extension=.js`;
         changes.cacheID = true;
@@ -172,14 +175,17 @@ module.exports = function (blogID, blog, callback) {
         return callback(null, changesList);
       }
 
-      multi.hmset(key.info(blogID), serial(latest));
+      multi.hSet(key.info(blogID), serializeRedisHashValues(serial(latest)));
 
-      multi.exec(async function (err) {
+      try {
+        await multi.exec();
+      } catch (err) {
         // We didn't manage to apply any changes
         // to this blog, so empty the list of changes
-        if (err) return callback(err, []);
+        return callback(err, []);
+      }
 
-        const template = latest.template || former.template;
+      const template = latest.template || former.template;
 
         // Also update CDN manifest when plugin settings change, since
         // plugin changes (especially analytics) affect the rendered output
@@ -207,9 +213,8 @@ module.exports = function (blogID, blog, callback) {
           }
         }
 
-        flushCache(blogID, former, function (err) {
-          callback(err, changesList);
-        });
+      flushCache(blogID, former, function (err) {
+        callback(err, changesList);
       });
     });
   });
