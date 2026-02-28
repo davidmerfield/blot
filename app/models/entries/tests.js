@@ -729,7 +729,7 @@ describe("entries", function () {
 
   describe("random", function () {
     it("returns undefined when there are no published entries", function (done) {
-      spyOn(redis, "zRandMember").and.resolveTo(null);
+      spyOn(redis, "zRandMember").and.returnValue(Promise.resolve(null));
 
       Entries.random(this.blog.id, (entry) => {
         try {
@@ -773,7 +773,7 @@ describe("entries", function () {
     it("stops after the maximum attempts when entries have no public URL", function (done) {
       let calls = 0;
 
-      spyOn(redis, "zRandMember").and.resolveTo("missing");
+      spyOn(redis, "zRandMember").and.returnValue(Promise.resolve("missing"));
 
       spyOn(Entry, "get").and.callFake(function (blogID, entryID, callback) {
         calls++;
