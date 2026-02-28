@@ -112,10 +112,10 @@ function folder(folderId) {
     let cursor = START_CURSOR;
 
     do {
-      const { cursor: nextCursor, tuples } = await client.hScan(this.key, cursor);
+      const { cursor: nextCursor, entries } = await client.hScan(this.key, cursor);
       cursor = nextCursor;
 
-      for (const entry of tuples) {
+      for (const entry of entries) {
         const currentId = entry.field;
         const currentPath = entry.value;
 
@@ -159,10 +159,10 @@ function folder(folderId) {
     let cursor = START_CURSOR;
 
     do {
-      const { cursor: nextCursor, tuples } = await client.hScan(this.key, cursor);
+      const { cursor: nextCursor, entries } = await client.hScan(this.key, cursor);
       cursor = nextCursor;
 
-      for (const entry of tuples) {
+      for (const entry of entries) {
         const currentId = entry.field;
         const currentPath = entry.value;
 
@@ -209,10 +209,10 @@ function folder(folderId) {
 
     do {
       // Scan the folder key
-      const { cursor: nextCursor, tuples } = await client.hScan(this.key, cursor);
+      const { cursor: nextCursor, entries: scannedEntries } = await client.hScan(this.key, cursor);
       cursor = nextCursor;
 
-      for (const entry of tuples) {
+      for (const entry of scannedEntries) {
         const id = entry.field;
         const path = entry.value;
 
@@ -241,10 +241,10 @@ function folder(folderId) {
     let results = [];
 
     do {
-      const { cursor: nextCursor, tuples } = await client.hScan(this.key, cursor);
+      const { cursor: nextCursor, entries } = await client.hScan(this.key, cursor);
       cursor = nextCursor;
 
-      for (const entry of tuples) {
+      for (const entry of entries) {
         const id = entry.field;
         const path = entry.value;
         const metadata = await this.getMetadata(id);
