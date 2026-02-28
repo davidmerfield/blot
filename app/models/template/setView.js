@@ -71,6 +71,11 @@ module.exports = function setView(templateID, updates, callback) {
 			// Look up previous state of view if applicable
 			getView(templateID, name, (err, view) => {
 				view = view || {};
+				let redisWriteChain = Promise.resolve();
+
+				const enqueueRedisWrite = (writeFn) => {
+					redisWriteChain = redisWriteChain.then(() => Promise.resolve().then(writeFn));
+				};
 
 				// Normalize legacy views' urlPatterns for short-circuit comparison
 				// This ensures legacy views with only view.url can properly short-circuit
@@ -109,19 +114,22 @@ module.exports = function setView(templateID, updates, callback) {
 
 					// Only update Redis if url is still defined (not deleted due to empty array)
 					if (updates.url !== undefined) {
-						client.set(key.url(templateID, updates.url), name);
+						enqueueRedisWrite(() =>
+							client.set(key.url(templateID, updates.url), name),
+						);
 
 						if (updates.url !== view.url) {
-							client.del(key.url(templateID, view.url));
+							enqueueRedisWrite(() => client.del(key.url(templateID, view.url)));
 						}
 					} else {
 						// If url was deleted (empty array), remove the old URL mapping
 						if (view.url) {
-							client.del(key.url(templateID, view.url));
+							enqueueRedisWrite(() => client.del(key.url(templateID, view.url)));
 						}
 					}
 				}
 
+				redisWriteChain.then(() => {
 				// SHORT-CIRCUIT: Check if content and other critical fields are unchanged
 				// This avoids expensive operations (parsing, dependency detection, Redis writes, CDN updates)
 				var contentUnchanged =
@@ -236,21 +244,26 @@ module.exports = function setView(templateID, updates, callback) {
 				if (updates.urlPatterns) {
 					// Store `urlPatterns` in Redis
 					const urlPatternsKey = key.urlPatterns(templateID);
-					client.hSet(
-						urlPatternsKey,
-						name,
-						JSON.stringify(updates.urlPatterns),
+					enqueueRedisWrite(() =>
+						client.hSet(
+							urlPatternsKey,
+							name,
+							JSON.stringify(updates.urlPatterns),
+						),
 					);
 				} else if (shouldRemoveUrlPatterns) {
 					// Delete urlPatterns from Redis if it was removed
 					const urlPatternsKey = key.urlPatterns(templateID);
-					client.hDel(urlPatternsKey, name);
+					enqueueRedisWrite(() => client.hDel(urlPatternsKey, name));
 				}
-				view.locals = view.locals || {};
-				view.retrieve = view.retrieve || {};
-				view.partials = view.partials || {};
 
-				var parseResult = parseTemplate(view.content);
+				redisWriteChain
+					.then(() => {
+						view.locals = view.locals || {};
+						view.retrieve = view.retrieve || {};
+						view.partials = view.partials || {};
+
+						var parseResult = parseTemplate(view.content);
 
 				// TO DO REMOVE THIS
 				if (type(view.partials, "array")) {
@@ -264,11 +277,11 @@ module.exports = function setView(templateID, updates, callback) {
 
 				extend(view.partials).and(parseResult.partials);
 
-				detectInfinitePartialDependency(
-					templateID,
-					view,
-					parseResult,
-					(infiniteError) => {
+						detectInfinitePartialDependency(
+						templateID,
+						view,
+						parseResult,
+						(infiniteError) => {
 						if (infiniteError) return callback(infiniteError);
 
 						// Merge parser-derived retrieve (e.g. {{title}}) into view.retrieve; do not overwrite user-provided retrieve (includeDraft, filters, etc.)
@@ -320,8 +333,11 @@ module.exports = function setView(templateID, updates, callback) {
 								});
 							})
 							.catch(callback);
-					},
-				);
+						},
+					);
+					})
+					.catch(callback);
+				}).catch(callback);
 			});
 		}).catch(callback);
 	});
