@@ -18,7 +18,7 @@ module.exports = function (blogID, input, callback) {
 
     (async function () {
       try {
-        var cursor = "0";
+        var cursor = 0;
 
         while (true) {
           // SORTED SET, precedence is important
@@ -29,7 +29,7 @@ module.exports = function (blogID, input, callback) {
           cursor = response.cursor;
           var matches = response.members || [];
 
-          if (!matches.length && cursor === "0") {
+          if (!matches.length && cursor === 0) {
             return callback();
           }
 
@@ -41,7 +41,7 @@ module.exports = function (blogID, input, callback) {
             }
           }
 
-          if (cursor === "0") {
+          if (cursor === 0) {
             return callback();
           }
         }

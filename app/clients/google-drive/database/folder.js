@@ -112,7 +112,7 @@ function folder(folderId) {
     }
 
     // For folders, update all child paths
-    const START_CURSOR = "0";
+    const START_CURSOR = 0;
     let cursor = START_CURSOR;
 
     do {
@@ -159,7 +159,7 @@ function folder(folderId) {
     let removedPaths = [];
 
     // Scan and delete all affected paths
-    const START_CURSOR = "0";
+    const START_CURSOR = 0;
     let cursor = START_CURSOR;
 
     do {
@@ -207,7 +207,7 @@ function folder(folderId) {
     // Normalize the directory path to ensure it ends with a "/"
     const basePath = dir.endsWith("/") ? dir : dir + "/";
 
-    const START_CURSOR = "0";
+    const START_CURSOR = 0;
     let cursor = START_CURSOR;
     let entries = [];
 
@@ -240,7 +240,7 @@ function folder(folderId) {
 
   // List all files and folders with metadata
   this.listAll = async () => {
-    const START_CURSOR = "0";
+    const START_CURSOR = 0;
     let cursor = START_CURSOR;
     let results = [];
 
