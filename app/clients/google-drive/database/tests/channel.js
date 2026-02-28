@@ -375,7 +375,7 @@ describe("google drive database.channel", function () {
 
   it("propagates client-new promise failures", async function () {
     const error = new Error("boom");
-    spyOn(client, "hSet").and.returnValue(Promise.reject(error));
+    spyOn(client, "hSet").and.callFake(() => Promise.reject(error));
 
     await expectAsync(channel.store("channel_failure", {
       type: "changes.watch",
@@ -383,6 +383,7 @@ describe("google drive database.channel", function () {
       resourceId: "resource_failure",
       url: "https://example.com",
     })).toBeRejectedWith(error);
+    expect(client.hSet).toHaveBeenCalled();
   });
 
 });

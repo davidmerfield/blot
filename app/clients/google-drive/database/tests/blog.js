@@ -427,9 +427,10 @@ describe("google drive database.blog", function () {
 
   it("propagates client-new promise failures", async function () {
     const error = new Error("boom");
-    spyOn(client, "hSet").and.returnValue(Promise.reject(error));
+    spyOn(client, "hSet").and.callFake(() => Promise.reject(error));
 
     await expectAsync(database.blog.store("blog_failure", { foo: "bar" })).toBeRejectedWith(error);
+    expect(client.hSet).toHaveBeenCalled();
   });
 
 });

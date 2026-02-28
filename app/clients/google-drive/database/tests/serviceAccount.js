@@ -86,11 +86,12 @@ describe("serviceAccount module", function () {
 
     it("propagates client-new promise failures", async function () {
       const error = new Error("boom");
-      spyOn(client, "hSet").and.returnValue(Promise.reject(error));
+      spyOn(client, "hSet").and.callFake(() => Promise.reject(error));
 
       await expectAsync(serviceAccount.store("service_account_failure", {
         email: "service_account_failure@example.com",
       })).toBeRejectedWith(error);
+      expect(client.hSet).toHaveBeenCalled();
     });
 
 });
