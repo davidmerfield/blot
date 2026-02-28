@@ -1,7 +1,7 @@
 var send = require("helper/email").send;
 var letter = process.argv[2];
 var fs = require("fs");
-var client = require("models/client");
+var client = require("models/client-new");
 var async = require("async");
 
 if (!letter) {
@@ -51,7 +51,12 @@ function main(letter, callback) {
             if (err) return next(err);
 
             console.log(". Email sent to", email);
-            client.sadd("newsletter:letter:" + letter, email, next);
+            client
+              .sAdd("newsletter:letter:" + letter, email)
+              .then(function () {
+                next();
+              })
+              .catch(next);
           });
         },
         callback
@@ -61,15 +66,20 @@ function main(letter, callback) {
 }
 
 function getAllSubscribers(callback) {
-  client.smembers("newsletter:list", callback);
+  client
+    .sMembers("newsletter:list")
+    .then(function (emails) {
+      callback(null, emails);
+    })
+    .catch(callback);
 }
 
 function alreadySent(email, done) {
-  client.sismember("newsletter:letter:" + letter, email, function (
-    err,
-    member
-  ) {
-    if (member === 1) console.log("Email already sent to", email);
-    done(err, member === 0);
-  });
+  client
+    .sIsMember("newsletter:letter:" + letter, email)
+    .then(function (member) {
+      if (member) console.log("Email already sent to", email);
+      done(null, !member);
+    })
+    .catch(done);
 }

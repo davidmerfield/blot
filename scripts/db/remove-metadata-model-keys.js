@@ -3,9 +3,10 @@
 // return "blog:" + blogID + ":folder:" + pathNormalizer(path);
 
 const keys = require("../util/redisKeys");
-const client = require("models/client");
-const { promisify } = require("util");
-const del = promisify(client.del).bind(client);
+const client = require("models/client-new");
+const del = function (redisKey) {
+  return client.del(redisKey);
+};
 
 const main = async () => {
   const pattern = "blog:*:folder:*";

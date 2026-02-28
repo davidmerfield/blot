@@ -15,7 +15,7 @@
 const eachTemplate = require("../each/template");
 const getMetadata = require("models/template/getMetadata");
 const Blog = require("models/blog");
-const client = require("models/client");
+const client = require("models/client-new");
 const key = require("models/template/key");
 const redisKeys = require("../util/redisKeys");
 const { promisify } = require("util");
@@ -27,8 +27,12 @@ const config = require("config");
 const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");
 
 const getMetadataAsync = promisify(getMetadata);
-const getAsync = promisify(client.get).bind(client);
-const delAsync = promisify(client.del).bind(client);
+const getAsync = function (redisKey) {
+  return client.get(redisKey);
+};
+const delAsync = function (redisKey) {
+  return client.del(redisKey);
+};
 const blogSetAsync = promisify(Blog.set);
 
 function getRenderedOutputPath(hash, viewName) {

@@ -14,7 +14,7 @@ var async = require("async");
 var colors = require("colors/safe");
 var User = require("models/user");
 var key = require("models/user/key");
-var client = require("models/client");
+var client = require("models/client-new");
 var getConfirmation = require("../util/getConfirmation");
 
 var argv = process.argv.slice(2);
@@ -85,17 +85,18 @@ function main(callback) {
         });
 
         function remove() {
-          client.srem(key.uids, dangling, function (err, removedCount) {
-            if (err) return callback(err);
+          client
+            .sRem(key.uids, dangling)
+            .then(function (removedCount) {
+              console.log(
+                colors.green(
+                  "Removed " + (removedCount || 0) + " dangling ID(s) from user index set."
+                )
+              );
 
-            console.log(
-              colors.green(
-                "Removed " + (removedCount || 0) + " dangling ID(s) from user index set."
-              )
-            );
-
-            callback();
-          });
+              callback();
+            })
+            .catch(callback);
         }
 
         if (YES_FLAG) return remove();

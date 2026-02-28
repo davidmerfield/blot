@@ -11,7 +11,7 @@ var getConfirmation = require("../util/getConfirmation");
 var User = require("models/user");
 var Blog = require("models/blog");
 var blogKey = require("models/blog/key");
-var client = require("models/client");
+var client = require("models/client-new");
 
 if (require.main === module)
   main(function (err) {
@@ -124,11 +124,12 @@ function cleanupDeadBlogIndexIDs(callback) {
 
           if (!ok) return callback(null, 0);
 
-          client.srem(blogKey.ids, deadIDs, function (err, removedCount) {
-            if (err) return callback(err);
-
-            callback(null, removedCount || 0);
-          });
+          client
+            .sRem(blogKey.ids, deadIDs)
+            .then(function (removedCount) {
+              callback(null, removedCount || 0);
+            })
+            .catch(callback);
         });
       }
     );
