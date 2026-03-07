@@ -1,3 +1,11 @@
+Verify backups work and are easy to restore
+
+Add a link to how section on pages to menu links settings page to guide new users! 
+
+Merge in new redis client code
+
+Remove all the LRU cache stuff – redis now does this automatically!!!
+
 Hitting the save changes button under typeset settings spits you back out to homepage! Bug!
 
 Debug issue with warwickmostyn
