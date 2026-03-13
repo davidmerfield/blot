@@ -82,6 +82,33 @@ describe("entries", function () {
         expect(body2).toEqual('<p>Hello, A!</p><p>Hello, B!</p><p>Hello, C!</p>');
     });
 
+    it("paginates sort_by=id lexicographically when publish dates are out of order", async function () {
+
+        await this.write({path: '/b.txt', content: 'Hello, B!'});
+        await this.write({path: '/a.txt', content: 'Hello, A!'});
+        await this.write({path: '/c.txt', content: 'Hello, C!'});
+
+        await this.template({ "entries.html": "{{#entries}}{{{html}}}{{/entries}}" }, {
+            locals: {sort_by: 'id', sort_order: 'asc', page_size: 1}
+        });
+
+        const page1Asc = await this.text('/page/1');
+        const page2Asc = await this.text('/page/2');
+
+        expect(page1Asc).toEqual('<p>Hello, A!</p>');
+        expect(page2Asc).toEqual('<p>Hello, B!</p>');
+
+        await this.template({ "entries.html": "{{#entries}}{{{html}}}{{/entries}}" }, {
+            locals: {sort_by: 'id', sort_order: 'desc', page_size: 1}
+        });
+
+        const page1Desc = await this.text('/page/1');
+        const page2Desc = await this.text('/page/2');
+
+        expect(page1Desc).toEqual('<p>Hello, C!</p>');
+        expect(page2Desc).toEqual('<p>Hello, B!</p>');
+    });
+
     it("generates pagination properly", async function () {
 
         const numberOfEntries = 10;

@@ -149,36 +149,39 @@ function Candidates(blog, entry) {
 function check(blogID, candidate, entryID, callback) {
   var key = Key(blogID, candidate);
 
-  redis.get(key, function (err, existingID) {
-    if (err) return callback(err);
+  redis
+    .get(key)
+    .then(function (existingID) {
+      // This url is available and unused
+      if (!existingID) return callback(null, false, null);
 
-    // This url is available and unused
-    if (!existingID) return callback(null, false, null);
+      // This url points to this entry already
+      if (existingID === entryID) return callback(null, false, null);
 
-    // This url points to this entry already
-    if (existingID === entryID) return callback(null, false, null);
+      // This url points to a different entry
+      get(blogID, existingID, function (existingEntry) {
+        // For some reason (bug) the url key was
+        // set but the entry does not exist. Claim the url.
+        if (!existingEntry) return callback(null, false, null);
 
-    // This url points to a different entry
-    get(blogID, existingID, function (existingEntry) {
-      // For some reason (bug) the url key was
-      // set but the entry does not exist. Claim the url.
-      if (!existingEntry) return callback(null, false, null);
+        // The existing entry has since moved to a different url
+        // (perhaps the author modified its permalink etc...)
+        // so this entry can claim this url.
+        if (existingEntry.url !== candidate) return callback(null, false, null);
 
-      // The existing entry has since moved to a different url
-      // (perhaps the author modified its permalink etc...)
-      // so this entry can claim this url.
-      if (existingEntry.url !== candidate) return callback(null, false, null);
+        // The existing entry was deleted after claiming this
+        // url, so this entry can claim it.
+        if (existingEntry.deleted) return callback(null, false, null);
 
-      // The existing entry was deleted after claiming this
-      // url, so this entry can claim it.
-      if (existingEntry.deleted) return callback(null, false, null);
-
-      // If we reach this far down, it means the entry
-      // which has claimed this url is still visible and
-      // still uses this url, so we can't claim it.
-      return callback(null, true, existingEntry.path);
+        // If we reach this far down, it means the entry
+        // which has claimed this url is still visible and
+        // still uses this url, so we can't claim it.
+        return callback(null, true, existingEntry.path);
+      });
+    })
+    .catch(function (err) {
+      return callback(err);
     });
-  });
 }
 
 // this needs to return an error if something went wrong
@@ -242,17 +245,20 @@ function setUrl(blogID, entry, callback) {
 
           var key = Key(blogID, candidate);
 
-          redis.set(key, entry.id, function (err) {
-            if (err) return callback(err);
-
-            return callback(null, {
-              url: candidate,
-              conflictingEntryPath:
-                firstCandidateTaken && candidate !== firstCandidate
-                  ? firstCandidateConflictingPath
-                  : null,
+          redis
+            .set(key, entry.id)
+            .then(function () {
+              return callback(null, {
+                url: candidate,
+                conflictingEntryPath:
+                  firstCandidateTaken && candidate !== firstCandidate
+                    ? firstCandidateConflictingPath
+                    : null,
+              });
+            })
+            .catch(function (err) {
+              return callback(err);
             });
-          });
         });
       },
       function () {
