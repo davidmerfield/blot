@@ -6,7 +6,7 @@ module.exports = async (id) => {
   const [reply_ids, question, last_reply_created_at] = await Promise.all([
     client.zRange(keys.children(id), 0, -1),
     client.hGetAll(keys.item(id)),
-    client.zScore(keys.by_last_reply, id),
+    client.zScore(keys.by_last_reply, id.toString()),
   ]);
 
   if (!question || !Object.keys(question).length) return null;
