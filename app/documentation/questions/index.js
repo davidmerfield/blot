@@ -267,13 +267,10 @@ Questions.route("/:id/edit")
   .get(async (req, res) => {
     const id = parseInt(req.params.id);
     if (!req.session || !req.session.uid) {
-      req.log("Redirecting to login", id);
       return res.redirect(`/log-in?then=/questions`);
     }
 
-    req.log("Retrieving question", id);
     res.locals.topic = await get(id);
-    req.log("Retrieved question", id);
     res.render("questions/edit");
   })
   .post(async (req, res) => {

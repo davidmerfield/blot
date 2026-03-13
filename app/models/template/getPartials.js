@@ -31,18 +31,11 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
     async.eachOfSeries(
       partials,
       function (value, partial, next) {
-        var nextCalled = false;
-        var done = function () {
-          if (nextCalled) return;
-          nextCalled = true;
-          next();
-        };
-
         // Don't fetch a partial if we've got it already.
         // Partials which returned nothing are set as
         // empty strings to prevent any infinities.
         if (allPartials[partial] !== null && allPartials[partial] !== undefined)
-          return done();
+          return next();
 
         // If the partial's name starts with a slash,
         // it is a path to an entry.
@@ -58,16 +51,15 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
             }
 
             if (!entry || !entry.html) {
-              return done();
+              return next();
             }
 
             // Only allow access to entries which exist and are public
             if (!entry.deleted && !entry.draft && !entry.scheduled)
               allPartials[partial] = entry.html;
 
-            done();
+            next();
           });
-          return;
         }
 
         // If the partial's name doesn't start with a slash,
@@ -80,10 +72,10 @@ module.exports = function getPartials(blogID, templateID, partials, callback) {
               // Merge retrieve from partial (extend handles array merging)
               extend(retrieve).and(view.retrieve);
 
-              fetchList(view.partials, done);
+              fetchList(view.partials, next);
             } else {
               allPartials[partial] = "";
-              done();
+              next();
             }
           });
         }

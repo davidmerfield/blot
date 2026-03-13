@@ -1,4 +1,14 @@
+const { promisify } = require("util");
+
+// Redis client setup
 const client = require("models/client");
+
+const hsetAsync = promisify(client.hset).bind(client);
+const hgetallAsync = promisify(client.hgetall).bind(client);
+const delAsync = promisify(client.del).bind(client);
+const saddAsync = promisify(client.sadd).bind(client);
+const sremAsync = promisify(client.srem).bind(client);
+const smembersAsync = promisify(client.smembers).bind(client);
 
 const PREFIX = 'blot:clients:icloud-drive:'
 
@@ -23,18 +33,18 @@ module.exports = {
     // Serialize and save fields
     for (const [field, value] of Object.entries(data)) {
       const serializedValue = JSON.stringify(value);
-      await client.hSet(key, field, serializedValue);
+      await hsetAsync(key, field, serializedValue);
     }
 
     // Add blog ID to the global set
-    await client.sAdd(this._globalSetKey(), blogID);
+    await saddAsync(this._globalSetKey(), blogID);
   },
 
   async get(blogID) {
     const key = this._key(blogID);
-    const result = await client.hGetAll(key);
+    const result = await hgetallAsync(key);
 
-    if (!result || !Object.keys(result).length) {
+    if (!result) {
       return null;
     }
 
@@ -54,14 +64,14 @@ module.exports = {
     const key = this._key(blogID);
 
     // Remove the Redis hash
-    await client.del(key);
+    await delAsync(key);
 
     // Remove blog ID from the global set
-    await client.sRem(this._globalSetKey(), blogID);
+    await sremAsync(this._globalSetKey(), blogID);
   },
 
   async list() {
-    return await client.sMembers(this._globalSetKey());
+    return await smembersAsync(this._globalSetKey());
   },
 
   async iterate(callback) {

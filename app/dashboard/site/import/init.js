@@ -47,12 +47,10 @@ module.exports = ({ blogID, label }) => {
   function status(message) {
     console.log("reporting status", message);
     // should write to disk somehow
-    client
-      .publish(
-        "import:status:" + blogID,
-        JSON.stringify({ status: message, importID })
-      )
-      .catch((err) => console.error("failed to publish import status", err));
+    client.publish(
+      "import:status:" + blogID,
+      JSON.stringify({ status: message, importID })
+    );
     fs.outputFile(lastStatus, message);
   }
 

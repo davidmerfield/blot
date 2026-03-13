@@ -205,14 +205,6 @@ Currently a no-op. The function accepts no arguments and returns nothing.
 
 ---
 
-## Migration note
-
-This model now uses `models/client` for shared Redis access, with promise-based command calls (`hGetAll`, `sMembers`, `zRange`, `sScan`) and `multi().exec()` reserved for atomic writes in `create.js` and `update.js`.
-
-When extending or migrating nearby modules, keep the exported function contracts stable and update tests to spy on the same modern command names used in production code.
-
----
-
 ## Internal Structure
 
 `create.js`, `update.js`, `list.js`, `search.js`, and `tags.js` all depend on `keys.js` for Redis key construction and on `models/client` for the Redis connection. `get.js` is also used as a dependency by `create.js` and `update.js` to return a freshly read object after write operations complete. `import.js` depends on `create.js` exclusively.
@@ -225,7 +217,7 @@ When extending or migrating nearby modules, keep the exported function contracts
 
 **Internal:**
 
-- `models/client` — the shared Redis singleton (`app/models/client.js` → `app/models/redis.js`).
+- `models/client` — the shared Redis client instance (`app/models/client.js` → `app/models/redis.js`).
 
 **External:**
 

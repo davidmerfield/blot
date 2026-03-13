@@ -11,30 +11,34 @@ module.exports = function (blogID, callback) {
 
   ensure(everythingKey, "string").and(ignoreKey, "string");
 
-  (async function () {
-    try {
-      var data = await Promise.all([
-        client.sMembers(ignoreKey),
-        client.zRangeWithScores(everythingKey, 0, -1, { REV: true }),
-      ]);
+  client.SMEMBERS(ignoreKey, function (err, ignoreThese) {
+    if (err) throw err;
 
-      var ignoreThese = data[0];
-      var response = data[1];
+    ensure(ignoreThese, "array");
 
-      ensure(ignoreThese, "array").and(response, "array");
+    client.ZREVRANGE(everythingKey, 0, -1, "WITHSCORES", function (
+      err,
+      response
+    ) {
+      if (err) throw err;
+
+      ensure(response, "array");
 
       var list = [];
       var ignored = [];
 
-      for (var itemIndex in response) {
-        var entry = response[itemIndex];
+      for (var i in response) {
+        if (i % 2) continue;
+
+        var url = response[i];
+        var timeStamp = parseInt(response[++i]);
 
         var item = {
-          url: entry.value,
-          time: moment.utc(entry.score).fromNow(),
+          url: url,
+          time: moment.utc(timeStamp).fromNow(),
         };
 
-        if (ignoreThese.indexOf(entry.value) > -1) {
+        if (ignoreThese.indexOf(url) > -1) {
           ignored.push(item);
         } else {
           list.push(item);
@@ -42,8 +46,6 @@ module.exports = function (blogID, callback) {
       }
 
       return callback(null, list, ignored);
-    } catch (err) {
-      return callback(err);
-    }
-  })();
+    });
+  });
 };

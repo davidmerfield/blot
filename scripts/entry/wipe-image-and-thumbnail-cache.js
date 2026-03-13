@@ -30,45 +30,35 @@ function imageCache(blog, entry, callback) {
 
   var set = "blog:" + blog.id + ":store:image-cache:everything";
 
-  client
-    .sMembers(set)
-    .then(function (keys) {
-      async.each(
-        keys,
-        function (key, next) {
-          client
-            .get(key)
-            .then(function (res) {
-              if (!res) return next();
+  client.smembers(set, function (err, keys) {
+    if (err) return callback(err);
+    async.each(
+      keys,
+      function (key, next) {
+        client.get(key, function (err, res) {
+          if (err) return next(err);
 
-              try {
-                res = JSON.parse(res);
-              } catch (e) {
-                console.log(e.message);
-                return next();
-              }
+          if (!res) return next();
 
-              if (entry.html.indexOf(res.src) === -1) return next();
+          try {
+            res = JSON.parse(res);
+          } catch (e) {
+            console.log(e.message);
+            return next();
+          }
 
-              var multi = client.multi();
+          if (entry.html.indexOf(res.src) === -1) return next();
 
-              console.log(res.src, "wiped");
+          var multi = client.multi();
 
-              multi
-                .sRem(set, key)
-                .del(key)
-                .exec()
-                .then(function () {
-                  next();
-                })
-                .catch(next);
-            })
-            .catch(next);
+          console.log(res.src, "wiped");
+
+          multi.srem(set, key).del(key).exec(next);
+        });
       },
-        callback
-      );
-    })
-    .catch(callback);
+      callback
+    );
+  });
 }
 
 function thumbnails(blog, entry, callback) {
@@ -76,42 +66,33 @@ function thumbnails(blog, entry, callback) {
 
   var set = "blog:" + blog.id + ":store:thumbnails:everything";
 
-  client
-    .sMembers(set)
-    .then(function (keys) {
-      async.each(
-        keys,
-        function (key, next) {
-          client
-            .get(key)
-            .then(function (res) {
-              try {
-                res = JSON.parse(res);
-                if (res.small.name !== entry.thumbnail.small.name) return next();
-              } catch (e) {
-                console.log("Error", key, e.message);
-                return next();
-              }
+  client.smembers(set, function (err, keys) {
+    if (err) return callback(err);
 
-              var multi = client.multi();
+    async.each(
+      keys,
+      function (key, next) {
+        client.get(key, function (err, res) {
+          if (err) return next(err);
 
-              console.log(entry.thumbnail.small.url, "wiped");
+          try {
+            res = JSON.parse(res);
+            if (res.small.name !== entry.thumbnail.small.name) return next();
+          } catch (e) {
+            console.log("Error", key, e.message);
+            return next();
+          }
 
-              multi
-                .sRem(set, key)
-                .del(key)
-                .exec()
-                .then(function () {
-                  next();
-                })
-                .catch(next);
-            })
-            .catch(next);
+          var multi = client.multi();
+
+          console.log(entry.thumbnail.small.url, "wiped");
+
+          multi.srem(set, key).del(key).exec(next);
+        });
       },
-        callback
-      );
-    })
-    .catch(callback);
+      callback
+    );
+  });
 }
 
 module.exports = main;

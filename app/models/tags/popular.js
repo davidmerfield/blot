@@ -33,64 +33,69 @@ module.exports = function getPopular(blogID, options, callback) {
   if (limit === 0) return callback(null, []);
 
   const popularityKey = key.popular(blogID);
+  client.zcard(popularityKey, function (err, total) {
+    if (err) return callback(err);
 
-  (async function () {
-    try {
-      const total = await client.zCard(popularityKey);
+    if (!total) return callback(null, []);
 
-      if (!total) return callback(null, []);
+    var start = offset;
+    var stop = offset + limit - 1;
 
-      var start = offset;
-      var stop = offset + limit - 1;
+    client.zrevrange(
+      popularityKey,
+      start,
+      stop,
+      "WITHSCORES",
+      function (err, tagScores) {
+        if (err) return callback(err);
 
-      const tagScores = await client.zRangeWithScores(popularityKey, start, stop, {
-        REV: true,
-      });
+        if (!tagScores || tagScores.length === 0) {
+          return callback(null, []);
+        }
 
-      if (!tagScores || tagScores.length === 0) {
-        return callback(null, []);
-      }
+        const tagsWithCounts = [];
 
-      const tagsWithCounts = [];
+        for (var i = 0; i < tagScores.length; i += 2) {
+          const slug = tagScores[i];
+          const count = parseInt(tagScores[i + 1], 10) || 0;
 
-      tagScores.forEach(function (item) {
-        if (!item || !item.value) return;
+          if (!slug) continue;
 
-        tagsWithCounts.push({
-          slug: item.value,
-          count: parseInt(item.score, 10) || 0,
+          tagsWithCounts.push({ slug, count });
+        }
+
+        if (!tagsWithCounts.length) {
+          return callback(null, []);
+        }
+
+        const detailsBatch = client.batch();
+
+        tagsWithCounts.forEach(function ({ slug }) {
+          detailsBatch.get(key.name(blogID, slug));
         });
-      });
 
-      if (!tagsWithCounts.length) {
-        return callback(null, []);
-      }
+        detailsBatch.exec(function (err, details) {
+          if (err) return callback(err);
 
-      const details = await Promise.all(
-        tagsWithCounts.map(function ({ slug }) {
-          return client.get(key.name(blogID, slug));
-        })
-      );
+          const hydrated = [];
 
-      const hydrated = [];
+          tagsWithCounts.forEach(function ({ slug, count }, index) {
+            if (!count) return;
 
-      tagsWithCounts.forEach(function ({ slug, count }, index) {
-        if (!count) return;
+            const name = details[index] || slug;
+            const entries = Array.from({ length: count });
+            
+            hydrated.push({
+              name,
+              slug,
+              entries,
+              count,
+            });
+          });
 
-        const name = details[index] || slug;
-        const entries = Array.from({ length: count });
-
-        hydrated.push({
-          name,
-          slug,
-          entries,
-          count,
+          callback(null, hydrated);
         });
-      });
-
-      return callback(null, hydrated);
-    } catch (err) {
-      return callback(err);
-    }
-  })();
+      }
+    );
+  });
 };

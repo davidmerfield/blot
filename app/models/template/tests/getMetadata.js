@@ -11,13 +11,4 @@ describe("template", function () {
       done();
     });
   });
-
-  it("returns ENOENT when template does not exist", function (done) {
-    getMetadata("nonexistent:template", function (err, template) {
-      expect(err instanceof Error).toBe(true);
-      expect(err.code).toEqual("ENOENT");
-      expect(template).toBeNull();
-      done();
-    });
-  });
 });

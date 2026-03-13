@@ -28,32 +28,25 @@ module.exports = function (blogID, entryIDs, callback) {
 
   ensure(entryIDs, "array");
 
-  redis
-    .mGet(entryIDs)
-    .then(function (entries) {
-      entries = entries || [];
+  redis.mget(entryIDs, function (err, entries) {
+    if (err) throw err;
 
-      entries = entries.filter(function (entry) {
-        return entry;
-      });
+    entries = entries || [];
 
-      entries = entries.map(function (entry) {
-        return new Entry(JSON.parse(entry)); // return value
-      });
-
-      if (single) {
-        entries = entries[0];
-      }
-
-      if (single && !entries) return callback();
-
-      return callback(entries);
-    })
-    .catch(function (err) {
-      console.error(err);
-
-      if (single) return callback();
-
-      return callback([]);
+    entries = entries.filter(function (entry) {
+      return entry;
     });
+
+    entries = entries.map(function (entry) {
+      return new Entry(JSON.parse(entry)); // return value
+    });
+
+    if (single) {
+      entries = entries[0];
+    }
+
+    if (single && !entries) return callback();
+
+    return callback(entries);
+  });
 };

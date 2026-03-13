@@ -20,27 +20,14 @@ async function getContents(blog, dir) {
       const keys = filtered.map(
         (item) => `blog:${blog.id}:entry:${pathNormalize(path.join(dir, item))}`
       );
-      Promise.all(
-        keys.map((key) => {
-          return client.exists(key);
-        })
-      )
-        .then((res) => {
-          if (!res || !res.length) return resolve([]);
-          resolve(
-            filtered.filter((_, index) => {
-              const exists = res[index];
-              return (
-                exists === 1 ||
-                exists === "1" ||
-                exists === true
-              );
-            })
-          );
-        })
-        .catch(() => {
-          resolve([]);
-        });
+      const batch = client.batch();
+      keys.forEach((key) => {
+        batch.exists(key);
+      });
+      batch.exec((err, res) => {
+        if (err || !res || !res.length) resolve([]);
+        resolve(filtered.filter((_, index) => res[index] === 1));
+      });
     }),
     Promise.all(
       filtered.map(async (item) => {

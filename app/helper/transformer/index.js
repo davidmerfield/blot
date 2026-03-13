@@ -283,45 +283,37 @@ function Transformer(blogID, name) {
   function getURL(url, callback) {
     var info = [keys.url.headers(url), keys.url.content(url)];
 
-    (async function () {
+    client.mget(info, function (err, res) {
+      if (err) throw err;
+
+      var headers = null;
+      var hash = null;
+
       try {
-        const res = await client.mGet(info);
+        headers = JSON.parse(res[0]);
+        hash = res[1];
+      } catch (e) {}
 
-        var headers = null;
-        var hash = null;
+      if (hash === null) return callback(err, headers, hash, null);
 
-        try {
-          headers = JSON.parse(res[0]);
-          hash = res[1];
-        } catch (e) {}
-
-        if (hash === null) return callback(null, headers, hash, null);
-
-        get(hash, function (err, result) {
-          callback(err, headers, hash, result);
-        });
-      } catch (err) {
-        callback(err);
-      }
-    })();
+      get(hash, function (err, result) {
+        callback(err, headers, hash, result);
+      });
+    });
   }
 
   function get(hash, callback) {
-    (async function () {
+    client.get(keys.content(hash), function (err, stringifiedResult) {
+      if (err) throw err;
+
+      var res = null;
+
       try {
-        const stringifiedResult = await client.get(keys.content(hash));
+        res = JSON.parse(stringifiedResult);
+      } catch (e) {}
 
-        var res = null;
-
-        try {
-          res = JSON.parse(stringifiedResult);
-        } catch (e) {}
-
-        return callback(null, res);
-      } catch (err) {
-        callback(err);
-      }
-    })();
+      return callback(null, res);
+    });
   }
 
   function setURL(url, headers, hash, result, callback) {
@@ -340,21 +332,18 @@ function Transformer(blogID, name) {
     var stringifiedHeaders = JSON.stringify(headers);
     var stringifiedResult = JSON.stringify(result);
 
-    (async function () {
-      try {
-        const tx = client.multi();
-        tx.sAdd(keys.everything, [contentKey, urlContentKey, urlHeadersKey]);
-        tx.mSet({
-          [urlContentKey]: hash,
-          [urlHeadersKey]: stringifiedHeaders,
-          [contentKey]: stringifiedResult,
-        });
-        await tx.exec();
-        callback();
-      } catch (err) {
-        callback(err);
-      }
-    })();
+    client
+      .multi()
+      .sadd(keys.everything, contentKey, urlContentKey, urlHeadersKey)
+      .mset(
+        urlContentKey,
+        hash,
+        urlHeadersKey,
+        stringifiedHeaders,
+        contentKey,
+        stringifiedResult
+      )
+      .exec(callback);
   }
 
   function set(hash, result, callback) {
@@ -365,31 +354,19 @@ function Transformer(blogID, name) {
     var stringifiedResult = JSON.stringify(result);
     var contentKey = keys.content(hash);
 
-    (async function () {
-      try {
-        const tx = client.multi();
-        tx.sAdd(keys.everything, contentKey);
-        tx.set(contentKey, stringifiedResult);
-        await tx.exec();
-        callback();
-      } catch (err) {
-        callback(err);
-      }
-    })();
+    client
+      .multi()
+      .sadd(keys.everything, contentKey)
+      .set(contentKey, stringifiedResult)
+      .exec(callback);
   }
 
   function flush(callback) {
-    (async function () {
-      try {
-        const toDelete = await client.sMembers(keys.everything);
-        if (toDelete && toDelete.length) {
-          await client.del(toDelete);
-        }
+    client.smembers(keys.everything, function (err, keys) {
+      client.del(keys, function () {
         callback();
-      } catch (err) {
-        callback(err);
-      }
-    })();
+      });
+    });
   }
 
   return {

@@ -1,4 +1,14 @@
+const { promisify } = require("util");
+
+// Redis client setup
 const client = require("models/client");
+
+const hsetAsync = promisify(client.hset).bind(client);
+const hgetallAsync = promisify(client.hgetall).bind(client);
+const delAsync = promisify(client.del).bind(client);
+const saddAsync = promisify(client.sadd).bind(client);
+const sremAsync = promisify(client.srem).bind(client);
+const smembersAsync = promisify(client.smembers).bind(client);
 
 const PREFIX = require("./prefix");
 
@@ -28,31 +38,31 @@ const blog = {
     // Serialize and save fields
     for (const [field, value] of Object.entries(data)) {
       const serializedValue = JSON.stringify(value);
-      await client.hSet(key, field, serializedValue);
+      await hsetAsync(key, field, serializedValue);
     }
 
     // Add blog ID to the global set
-    await client.sAdd(this._globalSetKey(), blogID);
+    await saddAsync(this._globalSetKey(), blogID);
 
     // Manage serviceAccountId sets
     const newServiceAccountId = data.serviceAccountId;
     if (newServiceAccountId && newServiceAccountId !== currentServiceAccountId) {
       // Remove blog ID from the old serviceAccountId set
       if (currentServiceAccountId) {
-        await client.sRem(this._serviceAccountSetKey(currentServiceAccountId), blogID);
+        await sremAsync(this._serviceAccountSetKey(currentServiceAccountId), blogID);
       }
       // Add blog ID to the new serviceAccountId set
       if (newServiceAccountId) {
-        await client.sAdd(this._serviceAccountSetKey(newServiceAccountId), blogID);
+        await saddAsync(this._serviceAccountSetKey(newServiceAccountId), blogID);
       }
     }
   },
 
   async get(blogID) {
     const key = this._key(blogID);
-    const result = await client.hGetAll(key);
+    const result = await hgetallAsync(key);
 
-    if (!result || !Object.keys(result).length) {
+    if (!result) {
       return null;
     }
 
@@ -76,19 +86,19 @@ const blog = {
     const currentServiceAccountId = currentData?.serviceAccountId;
 
     // Remove the Redis hash
-    await client.del(key);
+    await delAsync(key);
 
     // Remove blog ID from the global set
-    await client.sRem(this._globalSetKey(), blogID);
+    await sremAsync(this._globalSetKey(), blogID);
 
     // Remove blog ID from the serviceAccountId set if it exists
     if (currentServiceAccountId) {
-      await client.sRem(this._serviceAccountSetKey(currentServiceAccountId), blogID);
+      await sremAsync(this._serviceAccountSetKey(currentServiceAccountId), blogID);
     }
   },
 
   async list() {
-    return await client.sMembers(this._globalSetKey());
+    return await smembersAsync(this._globalSetKey());
   },
 
   async iterate(callback) {
@@ -104,7 +114,7 @@ const blog = {
 
   async iterateByServiceAccountId(serviceAccountId, callback) {
     const setKey = this._serviceAccountSetKey(serviceAccountId);
-    const blogIDs = await client.sMembers(setKey);
+    const blogIDs = await smembersAsync(setKey);
 
 
     for (const blogID of blogIDs) {

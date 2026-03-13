@@ -11,13 +11,8 @@ var ensure = require("helper/ensure");
 module.exports = function getTemplateList(blogID, callback) {
   ensure(blogID, "string").and(callback, "function");
 
-  Promise.all([
-    client.sMembers(key.blogTemplates("SITE")),
-    client.sMembers(key.blogTemplates(blogID)),
-  ])
-    .then(function (results) {
-      var publicTemplates = results[0] || [];
-      var blogTemplates = results[1] || [];
+  client.smembers(key.blogTemplates('SITE'), function (err, publicTemplates) {
+    client.smembers(key.blogTemplates(blogID), function (err, blogTemplates) {
       var templateIDs = publicTemplates.concat(blogTemplates);
       var response = [];
 
@@ -25,14 +20,17 @@ module.exports = function getTemplateList(blogID, callback) {
         templateIDs,
         function (id, next) {
           getMetadata(id, function (err, info) {
-            if (!err && info) response.push(info);
+            if (err) return next();
+
+            if (info) response.push(info);
+
             next();
           });
         },
         function () {
-          callback(null, response);
+          callback(err, response);
         }
       );
-    })
-    .catch(callback);
+    });
+  });
 };

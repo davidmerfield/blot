@@ -1,5 +1,4 @@
 const client = require("models/client");
-const serializeRedisHashValue = require("models/redisHashSerializer").value;
 const keys = require("./keys");
 const get = require("./get");
 
@@ -14,19 +13,29 @@ module.exports = async (id, updates) => {
   const removedTags = [];
 
   for (const key in updates) {
-    multi.hSet(keys.item(id), key, serializeRedisHashValue(updates[key]));
+    let value = updates[key];
+
+    if (typeof value === "object" || Array.isArray(value)) {
+      value = JSON.stringify(value);
+    } else if (typeof value === "boolean") {
+      value = value ? "true" : "false";
+    } else if (typeof value === "number") {
+      value = value.toString();
+    }
+
+    multi.hset(keys.item(id), key, value);
   }
 
   // we need to update any tags
   if (updates.tags) {
     for (const tag of updates.tags) {
-      multi.sAdd(keys.all_tags, tag);
-      multi.zAdd(keys.by_tag(tag), { score: parseInt(created_at, 10), value: id });
+      multi.sadd(keys.all_tags, tag);
+      multi.zadd(keys.by_tag(tag),  parseInt(created_at), id);
     }
 
     for (const tag of existing.tags) {
       if (!updates.tags.includes(tag)) {
-        multi.zRem(keys.by_tag(tag), id);
+        multi.zrem(keys.by_tag(tag), id);
         removedTags.push(tag);
       }
     }
@@ -35,23 +44,43 @@ module.exports = async (id, updates) => {
   const tagsToRemove = await identifyTagsToRemove(removedTags);
 
   for (const tag of tagsToRemove) {
-    multi.sRem(keys.all_tags, tag);
+    multi.srem(keys.all_tags, tag);
   }
 
-  await multi.exec();
-
-  // get the latest version of the question
-  // and return it
-  return get(id);
+  return new Promise((resolve, reject) => {
+    multi.exec((err) => {
+      if (err) {
+        reject(err);
+      }
+      // get the latest version of the question
+      // and return it
+      get(id).then(resolve).catch(reject);
+    });
+  });
 };
 
 // clean up any tags that are no longer used
-async function identifyTagsToRemove(removedTags) {
-  const replies = await Promise.all(
-    removedTags.map((tag) => {
-      return client.zCard(keys.by_tag(tag));
-    })
-  );
+function identifyTagsToRemove(removedTags) {
+  const batch = client.batch();
+  const tagsToRemove = [];
 
-  return removedTags.filter((_, i) => replies[i] <= 1);
+  for (const tag of removedTags) {
+    batch.zcard(keys.by_tag(tag));
+  }
+
+  return new Promise((resolve, reject) => {
+    batch.exec(async (err, replies) => {
+      if (err) {
+        reject(err);
+      }
+
+      for (let i = 0; i < replies.length; i++) {
+        if (replies[i] <= 1) {
+          tagsToRemove.push(removedTags[i]);
+        }
+      }
+
+      resolve(tagsToRemove);
+    });
+  });
 }

@@ -48,18 +48,19 @@ module.exports = function getStatuses(blogID, options, callback) {
 
   ensure(offset, "number").and(limit, "number");
 
-  Promise.all([
-    client.lRange(key.status(blogID), offset, limit),
-    client.lLen(key.status(blogID)),
-  ])
-    .then(function ([statusesResult, total]) {
-      const statuses = statusesResult.map(JSON.parse);
+  const batch = client.batch();
 
-      // Work out if there are more pages of statuses
-      const next = total > limit - 1 ? options.page + 1 : null;
-      const previous = options.page > 1 ? options.page - 1 : null;
+  batch.lrange(key.status(blogID), offset, limit);
+  batch.llen(key.status(blogID));
 
-      callback(null, { statuses, next, previous });
-    })
-    .catch(callback);
+  batch.exec(function (err, [statuses, total]) {
+    if (err) return callback(err);
+    statuses = statuses.map(JSON.parse);
+
+    // Work out if there are more pages of statuses
+    const next = total > limit - 1 ? options.page + 1 : null;
+    const previous = options.page > 1 ? options.page - 1 : null;
+
+    callback(null, { statuses, next, previous });
+  });
 };

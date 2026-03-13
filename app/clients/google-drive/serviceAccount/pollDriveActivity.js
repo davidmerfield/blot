@@ -87,7 +87,5 @@ module.exports = async (serviceAccountId, driveactivity) => {
     } catch (err) {
       console.error("Error during iterateByServiceAccountId:", err);
     }
-    // wait 5 seconds and avoid blocking the event loop
-    await new Promise(resolve => setTimeout(resolve, 5000));
   }
 };

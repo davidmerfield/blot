@@ -95,7 +95,7 @@ describe("tags.list", function () {
             path: "/Blog/one",
             tags: ["TagA"],
         }, function () {
-            spyOn(client, "zCard").and.callThrough();
+            spyOn(client, "zcard").and.callThrough();
 
             list(blogID, { pathPrefix: "Blog" }, function (err, tags) {
                 expect(err).toBeNull();
@@ -106,7 +106,7 @@ describe("tags.list", function () {
                         entries: ["/Blog/one"],
                     },
                 ]);
-                expect(client.zCard).not.toHaveBeenCalled();
+                expect(client.zcard).not.toHaveBeenCalled();
                 done();
             });
         });

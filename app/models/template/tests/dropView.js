@@ -14,52 +14,84 @@ describe("template", function () {
     getAllViews(test.template.id, function (err, views) {
       if (err) return done.fail(err);
       expect(views[test.view.name].content).toEqual(test.view.content);
-      dropView(test.template.id, test.view.name, function (dropErr) {
-        if (dropErr) return done.fail(dropErr);
-        getAllViews(test.template.id, function (allErr, allViews) {
-          if (allErr) return done.fail(allErr);
-          expect(allViews).toEqual({});
+      dropView(test.template.id, test.view.name, function (err) {
+        if (err) return done.fail(err);
+        getAllViews(test.template.id, function (err, views) {
+          if (err) return done.fail(err);
+          expect(views).toEqual({});
           done();
         });
       });
     });
   });
 
-  function expectKeyDeleted(searchPattern, templateID, viewName, done) {
-    client
-      .keys(searchPattern)
-      .then(function (result) {
-        expect(result.length).toEqual(1);
-        dropView(templateID, viewName, function (err) {
-          if (err) return done.fail(err);
-
-          client
-            .keys(searchPattern)
-            .then(function (after) {
-              expect(after).toEqual([]);
-              done();
-            })
-            .catch(done.fail);
-        });
-      })
-      .catch(done.fail);
-  }
-
   it("dropView removes the key for the view", function (done) {
     var test = this;
-    expectKeyDeleted("template:" + test.template.id + ":view:*", test.template.id, test.view.name, done);
+    var searchPattern = "template:" + test.template.id + ":view:*";
+
+    client.keys(searchPattern, function (err, result) {
+      if (err) return done.fail(err);
+      expect(result.length).toEqual(1);
+
+      dropView(test.template.id, test.view.name, function (err) {
+        if (err) return done.fail(err);
+
+        client.keys(searchPattern, function (err, result) {
+          if (err) return done.fail(err);
+
+          expect(result).toEqual([]);
+          done();
+        });
+      });
+    });
   });
 
   it("dropView removes the URL key for the view", function (done) {
     var test = this;
-    expectKeyDeleted("template:" + test.template.id + ":url:*", test.template.id, test.view.name, done);
+    var searchPattern = "template:" + test.template.id + ":url:*";
+
+    client.keys(searchPattern, function (err, result) {
+      if (err) return done.fail(err);
+      expect(result.length).toEqual(1);
+
+      dropView(test.template.id, test.view.name, function (err) {
+        if (err) return done.fail(err);
+
+        client.keys(searchPattern, function (err, result) {
+          if (err) return done.fail(err);
+
+          expect(result).toEqual([]);
+          done();
+        });
+      });
+    });
   });
 
   it("dropView removes the URL patterns key for the view", function (done) {
     var test = this;
-    expectKeyDeleted("template:" + test.template.id + ":url_patterns", test.template.id, test.view.name, done);
+    var searchPattern = "template:" + test.template.id + ":url_patterns";
+
+    client.keys(searchPattern, function (err, result) {
+      if (err) return done.fail(err);
+      expect(result.length).toEqual(1);
+
+      dropView(test.template.id, test.view.name, function (err) {
+        if (err) return done.fail(err);
+
+        client.keys(searchPattern, function (err, result) {
+          if (err) return done.fail(err);
+
+          expect(result).toEqual([]);
+          done();
+        });
+      });
+    });
   });
 
+  // dropView does not remove the URL key for the view at the moment
+  // so it might be worth writing a check against this in future...
+
+  // This is not yet implemented
   it("dropView returns an error when the template does not exist", function (done) {
     var test = this;
     dropView("nonexistent:template", test.view.name, function (err) {

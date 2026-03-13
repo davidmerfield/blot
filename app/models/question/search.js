@@ -58,68 +58,107 @@ const hasNonEmptyBody = (body) =>
 const hasNonEmptyTitle = (title) =>
   typeof title === "string" && title.trim().length > 0;
 
-const load = async (ids) => {
-  const childIDs = await Promise.all(
-    ids.map((id) => {
-      return client.zRange(keys.children(id), 0, -1);
-    })
-  );
+const load = (ids) => {
+  return new Promise((resolve, reject) => {
+    const batch = client.batch();
 
-  const results = await Promise.all([
-    ...ids.map((id) => client.hGetAll(keys.item(id))),
-    ...childIDs.flat().map((id) => client.hGetAll(keys.item(id))),
-  ]);
-
-  const questions = results
-    .filter(
-      (result) =>
-        result &&
-        !result.parent &&
-        hasNonEmptyBody(result.body) &&
-        hasNonEmptyTitle(result.title)
-    )
-    .map((result) => {
-      result.replies = results
-        .filter(
-          (reply) => reply && reply.parent === result.id && hasNonEmptyBody(reply.body)
-        )
-        .map((reply) => {
-          return { body: reply.body };
-        });
-
-      return {
-        id: result.id,
-        title: result.title,
-        body: result.body,
-        replies: result.replies,
-      };
+    ids.forEach((id) => {
+      batch.zrange(keys.children(id), 0, -1);
     });
 
-  return questions;
+    batch.exec((err, results) => {
+      if (err) {
+        return reject(err);
+      }
+
+      const batch = client.batch();
+
+      ids.forEach((id) => {
+        batch.hgetall(keys.item(id));
+      });
+
+      results.forEach((ids) => {
+        ids.forEach((id) => {
+          batch.hgetall(keys.item(id));
+        });
+      });
+
+      batch.exec((err, results) => {
+        if (err) {
+          return reject(err);
+        }
+
+        const questions = results
+          .filter(
+            (result) =>
+              result &&
+              !result.parent &&
+              hasNonEmptyBody(result.body) &&
+              hasNonEmptyTitle(result.title)
+          )
+          .map((result) => {
+            result.replies = results
+              .filter(
+                (reply) =>
+                  reply &&
+                  reply.parent === result.id &&
+                  hasNonEmptyBody(reply.body)
+              )
+              .map((reply) => {
+                return { body: reply.body };
+              });
+
+            return {
+              id: result.id,
+              title: result.title,
+              body: result.body,
+              replies: result.replies,
+            };
+          });
+
+        resolve(questions);
+      });
+    });
+  });
 };
 
-module.exports = async ({ query, page = 1, page_size = PAGE_SIZE } = {}) => {
-  const key = keys.all_questions;
-  const questions = [];
-  let cursor = "0";
+module.exports = ({ query, page = 1, page_size = PAGE_SIZE } = {}) => {
+  return new Promise((resolve, reject) => {
+    const key = keys.all_questions;
+    const questions = [];
+    const cursor = 0;
 
-  do {
-    const result = await client.sScan(key, cursor);
-    cursor = result.cursor;
-
-    const candidates = await load(result.members);
-
-    candidates.forEach((entry) => {
-      const score = Score(query, entry);
-      if (score > 0) {
-        questions.push({
-          title: entry.title,
-          id: entry.id,
-          score,
-        });
+    const iterate = async (err, [cursor, ids]) => {
+      if (err) {
+        return reject(err);
       }
-    });
-  } while (questions.length < page_size * page && cursor !== "0");
 
-  return sortAndPaginate(questions, page_size, page);
+      const candidates = await load(ids);
+
+      candidates.forEach((result) => {
+        const score = Score(query, result);
+        if (score > 0) {
+          questions.push({
+            title: result.title,
+            id: result.id,
+            score,
+          });
+        }
+      });
+
+      // we have enough questions to fill a page
+      if (questions.length >= page_size * page) {
+        return resolve(sortAndPaginate(questions, page_size, page));
+
+        // we have reached the end of the questions and there are no more questions to retrieve
+      } else if (cursor === "0") {
+        return resolve(sortAndPaginate(questions, page_size, page));
+      } else {
+        return client.sscan(key, cursor, iterate);
+      }
+    };
+
+    // iterate over the question ids, retrieve the title, and body of each question and see if they contain the query
+    client.sscan(key, cursor, iterate);
+  });
 };

@@ -2,7 +2,7 @@ var colors = require("colors/safe");
 var get = require("../../get/blog");
 var Keys = require("../../db/keys");
 var keysToDelete = [];
-var client = require("models/client");
+var client = require("client");
 var getConfirmation = require("../util/getConfirmation");
 
 if (require.main === module) {
@@ -39,12 +39,7 @@ function main(blog, callback) {
         function (err, ok) {
           if (!ok) return callback();
           multi.del(keysToDelete);
-          multi.exec().then(
-            function () {
-              callback();
-            },
-            callback
-          );
+          multi.exec(callback);
         }
       );
     }

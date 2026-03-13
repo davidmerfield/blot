@@ -65,20 +65,19 @@ async function main(blog) {
     await new Promise((resolve, reject) => {
       const multi = client.multi();
       multi.del(keys);
-      multi
-        .exec()
-        .then((results) => {
-          const deleted = Array.isArray(results)
-            ? results.reduce((sum, value) => sum + (typeof value === "number" ? value : 0), 0)
-            : 0;
-          console.log(
-            colors.green(
-              `Deleted ${keys.length} keys for blog ${blog.id}. Redis removed ${deleted} keys.`
-            )
-          );
-          resolve();
-        })
-        .catch(reject);
+      multi.exec((err, results) => {
+        if (err) return reject(err);
+
+        const deleted = Array.isArray(results)
+          ? results.reduce((sum, value) => sum + (Array.isArray(value) ? value[1] : 0), 0)
+          : 0;
+        console.log(
+          colors.green(
+            `Deleted ${keys.length} keys for blog ${blog.id}. Redis removed ${deleted} keys.`
+          )
+        );
+        resolve();
+      });
     });
   } catch (err) {
     throw err;

@@ -10,51 +10,50 @@ module.exports = function (blogID, mappings, callback) {
   ensure(blogID, "string").and(mappings, "array").and(callback, "function");
 
   var redirects = key.redirects(blogID);
+  var multi = client.multi();
 
-  (async function () {
-    try {
-      var allKeys = await client.zRange(redirects, 0, -1);
-      var multi = client.multi();
+  client.zrange(redirects, 0, -1, function (err, all_keys) {
+    if (err) return callback(err);
 
-      allKeys = allKeys || [];
-      allKeys = allKeys.map(function (from) {
-        return key.redirect(blogID, from);
-      });
-      allKeys.push(redirects);
+    all_keys = all_keys || [];
 
-      multi.del(allKeys);
+    all_keys = all_keys.map(function (from) {
+      return key.redirect(blogID, from);
+    });
 
-      mappings.forEach(function (redirect, index) {
-        var from = redirect.from;
-        var to = redirect.to;
-        var fromKey = key.redirect(blogID, from);
+    all_keys.push(redirects);
 
-        index = parseInt(index);
+    multi.del(all_keys);
 
-        if (isNaN(index)) throw new Error("forEach returned a NaN index");
+    mappings.forEach(function (redirect, index) {
+      var from = redirect.from;
+      var to = redirect.to;
+      var fromKey = key.redirect(blogID, from);
 
-        var candidates = mappings.slice(0, index);
+      index = parseInt(index);
 
-        if (!from || !to || matches(to, candidates)) return;
+      if (isNaN(index)) throw new Error("forEach returned a NaN index");
 
-        ensure(from, "string")
-          .and(to, "string")
-          .and(index, "number")
-          .and(fromKey, "string")
-          .and(redirects, "string");
+      var candidates = mappings.slice(0, index);
 
-        multi.zAdd(redirects, {
-          score: index,
-          value: from,
-        });
-        multi.set(fromKey, to);
-      });
+      // If either the 'from' rule or the 'to' rule
+      // are empty strings then delete this rule.
+      // If the 'to' rule matches a 'from' rule which
+      // comes before it ('candidates') this would cause
+      // a re-direct loop, so drop this rule.
+      // drop(blogID, from, next);
+      if (!from || !to || matches(to, candidates)) return;
 
-      await multi.exec();
+      ensure(from, "string")
+        .and(to, "string")
+        .and(index, "number")
+        .and(fromKey, "string")
+        .and(redirects, "string");
 
-      return callback();
-    } catch (err) {
-      return callback(err);
-    }
-  })();
+      multi.zadd(redirects, index, from);
+      multi.set(fromKey, to);
+    });
+
+    multi.exec(callback);
+  });
 };

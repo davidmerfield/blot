@@ -28,20 +28,31 @@ module.exports = function get(blogID, tag, options, callback) {
   const tagKey = key.name(blogID, tag);
   const sortedTagKey = key.sortedTag(blogID, tag);
 
-  (async function () {
-    const pretty = (await client.get(tagKey)) || tag;
+  const batch = client.batch();
+
+  batch.get(tagKey);
+
+  batch.exec(function (err, results) {
+    if (err) return callback(err);
+
+    const pretty = results[0] || tag;
 
     var start = offset;
     var stop = limit === undefined ? -1 : offset + limit - 1;
 
-    const [totalResult, entryIDsResult] = await Promise.all([
-      client.zCard(sortedTagKey),
-      client.zRange(sortedTagKey, start, stop, { REV: true }),
-    ]);
+    const fetchBatch = client.batch();
 
-    const total = totalResult || 0;
-    const entryIDs = entryIDsResult || [];
+    fetchBatch.zcard(sortedTagKey);
+    fetchBatch.zrevrange(sortedTagKey, start, stop);
 
-    return callback(null, entryIDs, pretty, total);
-  })().catch(callback);
+    fetchBatch.exec(function (err, results) {
+      if (err) return callback(err);
+
+      const total = results[0] || 0;
+      const entryIDs = results[1] || [];
+
+      return callback(null, entryIDs, pretty, total);
+    });
+  });
 };
+

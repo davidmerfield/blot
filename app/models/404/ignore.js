@@ -9,12 +9,5 @@ module.exports = function (blogID, url, callback) {
 
   ensure(ignoreKey, "string");
 
-  (async function () {
-    try {
-      var result = await client.sAdd(ignoreKey, url);
-      return callback(null, result);
-    } catch (err) {
-      return callback(err);
-    }
-  })();
+  return client.SADD(ignoreKey, url, callback);
 };

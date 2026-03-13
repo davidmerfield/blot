@@ -15,7 +15,7 @@ var urlNormalizer = require("helper/urlNormalizer");
 var TEMPLATES_DIRECTORY = require("path").resolve(__dirname + "/source");
 var TEMPLATES_OWNER = "SITE";
 
-const redisSubscriber = require("helper/redisSubscriber");
+const redis = require("models/redis");
 
 var HIGHLIGHTER_THEMES = require("blog/static/syntax-highlighter");
 
@@ -61,11 +61,11 @@ if (require.main === module) {
 
   // Rebuilds templates when we load new states
   // using scripts/state/info.js
-  redisSubscriber({
-    channel: "templates:rebuild",
-    onMessage: function () {
-      main({}, function () {});
-    },
+  let redis = require("models/redis");
+  let client = new redis();
+  client.subscribe("templates:rebuild");
+  client.on("message", function () {
+    main({}, function () {});
   });
 }
 
@@ -83,11 +83,12 @@ function main(options, callback) {
 
         // Rebuilds templates when we load new states
         // using scripts/state/info.js
-        redisSubscriber({
-          channel: "templates:rebuild",
-          onMessage: function () {
-            main({}, function () {});
-          },
+        const templateClient = new redis();
+
+        templateClient.subscribe("templates:rebuild");
+
+        templateClient.on("message", function () {
+          main({}, function () {});
         });
 
         callback(null);

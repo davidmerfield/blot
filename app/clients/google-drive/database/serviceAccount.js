@@ -1,4 +1,13 @@
+const { promisify } = require("util");
+
+// Redis client setup
 const client = require("models/client");
+const hsetAsync = promisify(client.hset).bind(client);
+const hgetallAsync = promisify(client.hgetall).bind(client);
+const delAsync = promisify(client.del).bind(client);
+const saddAsync = promisify(client.sadd).bind(client);
+const sremAsync = promisify(client.srem).bind(client);
+const smembersAsync = promisify(client.smembers).bind(client);
 
 const PREFIX = require("./prefix");
 
@@ -24,21 +33,21 @@ const serviceAccount = {
     // Serialize each field of the data object and store it in the Redis hash
     for (const [field, value] of Object.entries(data)) {
       const serializedValue = JSON.stringify(value); // Serialize value
-      await client.hSet(key, field, serializedValue);
+      await hsetAsync(key, field, serializedValue);
     }
   
     // Track the service account in the global set
-    await client.sAdd(globalSetKey, serviceAccountId);
+    await saddAsync(globalSetKey, serviceAccountId);
   },
   
   async get(serviceAccountId) {
     const key = this._key(serviceAccountId);
   
     // Retrieve all fields from the hash
-    const result = await client.hGetAll(key);
+    const result = await hgetallAsync(key);
   
     // Return null if the key does not exist
-    if (!result || !Object.keys(result).length) {
+    if (!result) {
       return null;
     }
   
@@ -59,13 +68,13 @@ const serviceAccount = {
   async delete(serviceAccountId) {
     const key = this._key(serviceAccountId);
     const globalSetKey = this._globalSetKey();
-    await client.del(key);
-    await client.sRem(globalSetKey, serviceAccountId); // Remove from global service accounts set
+    await delAsync(key);
+    await sremAsync(globalSetKey, serviceAccountId); // Remove from global service accounts set
   },
 
   async list() {
     const globalSetKey = this._globalSetKey();
-    return await client.sMembers(globalSetKey); // Fetch all service accounts from the set
+    return await smembersAsync(globalSetKey); // Fetch all service accounts from the set
   },
 
 };

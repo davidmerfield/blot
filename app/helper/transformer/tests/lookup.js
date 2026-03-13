@@ -193,23 +193,23 @@ describe("transformer", function () {
     test.transformer.lookup(test.url, firstTransform, function (err, firstResult) {
       if (err) return done.fail(err);
 
-      client
-        .get(headersKey)
-        .then(function (stringifiedHeaders) {
-          var headers = {};
+      client.get(headersKey, function (err, stringifiedHeaders) {
+        if (err) return done.fail(err);
 
-          try {
-            headers = JSON.parse(stringifiedHeaders) || {};
-          } catch (e) {
-            headers = {};
-          }
+        var headers = {};
 
-          headers.expires = futureExpires;
-          headers.url = test.url;
+        try {
+          headers = JSON.parse(stringifiedHeaders) || {};
+        } catch (e) {
+          headers = {};
+        }
 
-          return client.set(headersKey, JSON.stringify(headers));
-        })
-        .then(function () {
+        headers.expires = futureExpires;
+        headers.url = test.url;
+
+        client.set(headersKey, JSON.stringify(headers), function (err) {
+          if (err) return done.fail(err);
+
           test.transformer.lookup(test.url, secondTransform, function (
             err,
             secondResult
@@ -221,10 +221,8 @@ describe("transformer", function () {
             expect(secondResult).toEqual(firstResult);
             done();
           });
-        })
-        .catch(function (error) {
-          done.fail(error);
         });
+      });
     });
   });
 

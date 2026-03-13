@@ -130,17 +130,8 @@ global.test = {
   fake: require("./util/fake"),
 
   user: function () {
-    beforeEach(function (done) {
-      require("./util/createUser").call(this, function (err) {
-        done(err);
-      });
-    });
-
-    afterEach(function (done) {
-      require("./util/removeUser").call(this, function (err) {
-        done(err);
-      });
-    });
+    beforeEach(require("./util/createUser"));
+    afterEach(require("./util/removeUser"));
   },
 
   server: require("./util/server"),
@@ -215,23 +206,15 @@ global.test = {
 };
 
 // get the number of keys in the database
-(async function ensureEmptyDatabase() {
-  let hasKeys = false;
-
-  for await (const _ of client.scanIterator({ MATCH: "*", COUNT: 1 })) {
-    if (_.length > 0) {
-      hasKeys = true;
-      break;
-    }
+client.keys("*", function (err, keys) {
+  if (err) {
+    throw err;
   }
-
-  if (!hasKeys) {
+  if (keys.length === 0) {
     // if there are no keys, we need to run the tests
     jasmine.execute();
   } else {
     // if there are keys, we need to throw an error
-    throw new Error("Database is not empty: keys found");
+    throw new Error("Database is not empty: " + keys.length + " keys found");
   }
-})().catch(function (err) {
-  throw err;
 });

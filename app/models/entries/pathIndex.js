@@ -16,24 +16,25 @@ function readyKey(blogID) {
 function backfillIndex(blogID, callback) {
   ensure(blogID, "string").and(callback, "function");
 
-  (async function () {
-    var ids = await redis.zRange(entriesKey(blogID), 0, -1);
+  redis.zrange(entriesKey(blogID), 0, -1, function (err, ids) {
+    if (err) return callback(err);
+
     var multi = redis.multi();
 
     multi.del(lexKey(blogID));
 
     if (ids && ids.length) {
       for (var i = 0; i < ids.length; i++) {
-        multi.zAdd(lexKey(blogID), { score: 0, value: ids[i] });
+        multi.zadd(lexKey(blogID), 0, ids[i]);
       }
     }
 
     multi.set(readyKey(blogID), "1");
-    await multi.exec();
 
-    callback(null, ids ? ids.length : 0);
-  })().catch(function (err) {
-    callback(err);
+    multi.exec(function (err) {
+      if (err) return callback(err);
+      callback(null, ids ? ids.length : 0);
+    });
   });
 }
 

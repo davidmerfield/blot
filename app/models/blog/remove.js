@@ -40,9 +40,7 @@ function remove(blogID, callback) {
           }
         );
 
-        async.series(tasks, function (err) {
-          callback(err, blog);
-        });
+        async.series(tasks, callback);
       });
     });
   });
@@ -60,9 +58,7 @@ function wipeFolders(blog, callback) {
       safelyRemove.bind(null, blogFolder, config.blog_folder_dir),
       safelyRemove.bind(null, staticFolder, config.blog_static_files_dir),
     ],
-    function (err) {
-      callback(err);
-    }
+    callback
   );
 
   // This could get messy if the blog.id is an empty
@@ -91,60 +87,49 @@ function wipeFolders(blog, callback) {
 }
 
 function deleteKeys(blog, callback) {
-  (async function () {
-    try {
-      var multi = client.multi();
-      var ownedTemplates =
-        (await client.sMembers("template:owned_by:" + blog.id)) || [];
+  var multi = client.multi();
 
-      var patterns = ["template:" + blog.id + ":*", "blog:" + blog.id + ":*"];
+  var patterns = ["template:" + blog.id + ":*", "blog:" + blog.id + ":*"];
 
-      var remove = ["template:owned_by:" + blog.id];
+  var remove = ["template:owned_by:" + blog.id];
 
-      if (blog.handle) {
-        remove.push("handle:" + blog.handle);
-        remove.push("domain:" + blog.handle + "." + config.host);
-      }
+  if (blog.handle) {
+    remove.push("handle:" + blog.handle);
+    remove.push("domain:" + blog.handle + "." + config.host);
+  }
 
-      // TODO ALSO remove alternate key with/out 'www', e.g. www.example.com
-      if (blog.domain) {
-        remove.push("domain:" + blog.domain);
-        remove.push("domain:" + BackupDomain(blog.domain));
-      }
+  // TODO ALSO remove alternate key with/out 'www', e.g. www.example.com
+  if (blog.domain) {
+    remove.push("domain:" + blog.domain);
+    remove.push("domain:" + BackupDomain(blog.domain));
+  }
 
-      for (const pattern of patterns) {
-        var cursor = START_CURSOR;
+  async.each(
+    patterns,
+    function (pattern, next) {
+      var args = [START_CURSOR, "MATCH", pattern, "COUNT", SCAN_SIZE];
 
-        do {
-          var res = await client.scan(cursor, {
-            MATCH: pattern,
-            COUNT: SCAN_SIZE,
-          });
+      client.scan(args, function then(err, res) {
+        if (err) throw err;
 
-          if (!res || typeof res !== "object") {
-            throw new Error("Unexpected SCAN reply: " + JSON.stringify(res));
-          }
+        // the cursor for the next pass
+        args[0] = res[0];
 
-          cursor = String(res.cursor);
+        // Append the keys we matched in the last pass
+        remove = remove.concat(res[1]);
 
-          if (Array.isArray(res.keys)) {
-            remove = remove.concat(res.keys);
-          }
-        } while (cursor !== START_CURSOR);
-      }
+        // There are more keys to check, so keep going
+        if (res[0] !== START_CURSOR) return client.scan(args, then);
 
-      if (ownedTemplates.length > 0) {
-        multi.sRem("template:public_templates", ownedTemplates);
-      }
-
-      if (remove.length > 0) multi.del(remove);
-      multi.sRem(key.ids, blog.id);
-      await multi.exec();
-      callback();
-    } catch (err) {
-      callback(err);
+        next();
+      });
+    },
+    function () {
+      multi.del(remove);
+      multi.srem(key.ids, blog.id);
+      multi.exec(callback);
     }
-  })();
+  );
 }
 
 function disconnectClient(blog, callback) {
@@ -170,7 +155,9 @@ function updateUser(blog, callback) {
 
     // If the user has already been deleted then
     // we don't need to worry about this.
-    if (!user || !user.blogs) return callback();
+    if (!user || !user.blogs) {
+      return callback();
+    }
 
     var changes = {};
 
@@ -184,9 +171,7 @@ function updateUser(blog, callback) {
 
     if (user.lastSession === blog.id) changes.lastSession = "";
 
-    User.set(blog.owner, changes, function (err) {
-      callback(err);
-    });
+    User.set(blog.owner, changes, callback);
   });
 }
 

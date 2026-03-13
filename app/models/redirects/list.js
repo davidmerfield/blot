@@ -8,21 +8,19 @@ module.exports = function (blogID, callback) {
 
   var redirects = key.redirects(blogID);
 
-  (async function () {
-    try {
-      var froms = await client.zRange(redirects, 0, -1);
+  client.zrange(redirects, 0, -1, function (err, froms) {
+    if (err) throw err;
 
-      if (!froms.length) return callback(null, []);
+    if (!froms.length) return callback(null, []);
 
-      var fromKeys = _.map(froms, function (from) {
-        return key.redirect(blogID, from);
-      });
+    var fromKeys = _.map(froms, function (from) {
+      return key.redirect(blogID, from);
+    });
 
-      var tos = await client.mGet(fromKeys);
+    client.mget(fromKeys, function (err, tos) {
+      if (err) throw err;
 
-      if (tos.length !== froms.length) {
-        throw new Error("Length mismatch");
-      }
+      if (tos.length !== froms.length) throw "Length mismatch";
 
       // console.log(tos);
 
@@ -41,8 +39,6 @@ module.exports = function (blogID, callback) {
       // console.log(allRedirects);
 
       callback(null, allRedirects);
-    } catch (err) {
-      return callback(err);
-    }
-  })();
+    });
+  });
 };

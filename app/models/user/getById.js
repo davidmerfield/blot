@@ -14,22 +14,18 @@ function applyUserDefaults(user) {
 module.exports = function getById(uid, callback) {
   ensure(uid, "string").and(callback, "function");
 
-  (async function () {
+  client.get(key.user(uid), function (err, user) {
+    if (err) return callback(err);
+
+    if (!user) return callback(null, null);
+
     try {
-      var user = await client.get(key.user(uid));
-
-      if (!user) return callback(null, null);
-
-      try {
-        user = JSON.parse(user);
-        ensure(user, "object");
-      } catch (err) {
-        return callback(new Error("BADJSON"));
-      }
-
-      return callback(null, applyUserDefaults(user));
+      user = JSON.parse(user);
+      ensure(user, "object");
     } catch (err) {
-      return callback(err);
+      return callback(new Error("BADJSON"));
     }
-  })();
+
+    return callback(null, applyUserDefaults(user));
+  });
 };

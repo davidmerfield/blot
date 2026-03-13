@@ -2,7 +2,9 @@
 // If there are users without a blog, log their information to the console
 // so we can investigate further as to why they haven't created a blog yet
 const User = require('models/user');
+const Blog = require('models/blog');
 const config = require("config");
+const s = require('connect-redis');
 const stripe = require("stripe")(config.stripe.secret);
 
 const getByCustomerId = async (customerId) => {

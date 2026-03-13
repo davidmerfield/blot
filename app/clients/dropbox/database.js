@@ -1,157 +1,116 @@
 var debug = require("debug")("blot:clients:dropbox:database");
 var redis = require("models/client");
 var Blog = require("models/blog");
+var async = require("async");
 var ensure = require("helper/ensure");
 var Model;
 
-async function getAccount(blogID) {
-  var account = await redis.hGetAll(accountKey(blogID));
-
-  if (!account || !Object.keys(account).length) return null;
-
-  // Restore the types of the properties
-  // of the account object before returning.
-  for (var i in Model) {
-    if (Model[i] === "number") account[i] = parseInt(account[i]);
-
-    if (Model[i] === "boolean") account[i] = account[i] === "true";
-  }
-
-  return account;
-}
-
 function get(blogID, callback) {
-  getAccount(blogID)
-    .then(function (account) {
-      return callback(null, account);
-    })
-    .catch(function (err) {
-      return callback(err, null);
-    });
+  redis.hgetall(accountKey(blogID), function (err, account) {
+    if (err) return callback(err, null);
+
+    if (!account) return callback(null, null);
+
+    // Restore the types of the properties
+    // of the account object before calling back.
+    for (var i in Model) {
+      if (Model[i] === "number") account[i] = parseInt(account[i]);
+
+      if (Model[i] === "boolean") account[i] = account[i] === "true";
+    }
+
+    return callback(null, account);
+  });
 }
 
-async function listAccountBlogs(account_id) {
+function listBlogs(account_id, callback) {
   var blogs = [];
 
   debug("Getting blogs conencted to Dropbox account", account_id);
 
-  var members = await redis.sMembers(blogsKey(account_id));
+  redis.SMEMBERS(blogsKey(account_id), function (err, members) {
+    if (err) return callback(err);
 
-  debug("Found these blog IDs", members);
+    debug("Found these blog IDs", members);
 
-  await Promise.all(
-    members.map(function (id) {
-      return new Promise(function (resolve) {
+    async.each(
+      members,
+      function (id, next) {
         Blog.get({ id: id }, function (err, blog) {
-          if (err) {
-            debug("Error loading blog", id, err);
-            return resolve();
-          }
-
           if (blog && blog.client === "dropbox") {
             blogs.push(blog);
           } else {
-            debug(id, "does not match an extant blog using the Dropbox client.");
+            debug(
+              id,
+              "does not match an extant blog using the Dropbox client."
+            );
           }
-
-          resolve();
+          next();
         });
-      });
-    })
-  );
-
-  return blogs;
+      },
+      function (err) {
+        callback(err, blogs);
+      }
+    );
+  });
 }
 
-function listBlogs(account_id, callback) {
-  listAccountBlogs(account_id)
-    .then(function (blogs) {
-      callback(null, blogs);
-    })
-    .catch(function (err) {
-      callback(err);
-    });
-}
-
-async function setAccount(blogID, changes) {
+function set(blogID, changes, callback) {
   var multi = redis.multi();
 
   debug("Setting dropbox account info for blog", blogID);
 
-  var account = await getAccount(blogID);
+  get(blogID, function (err, account) {
+    if (err) return callback(err);
 
-  // When saving account for the first time,
-  // this will be null so we make a fresh object.
-  account = account || {};
+    // When saving account for the first time,
+    // this will be null so we make a fresh object.
+    account = account || {};
 
-  // We need to do this to prevent bugs if
-  // the user switches from one account ID
-  // to another Dropbox account.
-  if (
-    account.account_id &&
-    changes.account_id &&
-    account.account_id !== changes.account_id
-  ) {
-    multi.sRem(blogsKey(account.account_id), blogID);
-  }
+    // We need to do this to prevent bugs if
+    // the user switches from one account ID
+    // to another Dropbox account.
+    if (
+      account.account_id &&
+      changes.account_id &&
+      account.account_id !== changes.account_id
+    ) {
+      multi.srem(blogsKey(account.account_id), blogID);
+    }
 
-  // Overwrite existing properties with any changes
-  for (var i in changes) account[i] = changes[i];
+    // Overwrite existing properties with any changes
+    for (var i in changes) account[i] = changes[i];
 
-  // Verify that the type of new account state
-  // matches the expected types declared in Model below.
-  ensure(account, Model, true);
+    // Verify that the type of new account state
+    // matches the expected types declared in Model below.
+    try {
+      ensure(account, Model, true);
+    } catch (e) {
+      return callback(e);
+    }
 
-  // Redis v5 does not accept booleans in hash writes.
-  // Store everything as strings; getAccount restores types.
-  var serialized = {};
-  for (var field in account) {
-    serialized[field] = String(account[field]);
-  }
-
-  debug("Saving this account");
-  multi.sAdd(blogsKey(account.account_id), blogID);
-  multi.hSet(accountKey(blogID), serialized);
-
-  return multi.exec();
-}
-
-function set(blogID, changes, callback) {
-  setAccount(blogID, changes)
-    .then(function (result) {
-      callback(null, result);
-    })
-    .catch(function (err) {
-      callback(err);
-    });
-}
-
-async function dropAccount(blogID) {
-  var multi = redis.multi();
-  var account = await getAccount(blogID);
-
-  // Deregister this blog from the set containing
-  // the blog IDs associated with a particular dropbox.
-  if (account && account.account_id) {
-    multi.sRem(blogsKey(account.account_id), blogID);
-  }
-
-  // Remove all the dangerous Dropbox account information
-  // including the OAUTH token used to interact with
-  // Dropbox's API.
-  multi.del(accountKey(blogID));
-
-  return multi.exec();
+    debug("Saving this account");
+    multi.sadd(blogsKey(changes.account_id), blogID);
+    multi.hmset(accountKey(blogID), account);
+    multi.exec(callback);
+  });
 }
 
 function drop(blogID, callback) {
-  dropAccount(blogID)
-    .then(function (result) {
-      callback(null, result);
-    })
-    .catch(function (err) {
-      callback(err);
-    });
+  var multi = redis.multi();
+
+  get(blogID, function (err, account) {
+    // Deregister this blog from the set containing
+    // the blog IDs associated with a particular dropbox.
+    if (account && account.account_id)
+      multi.srem(blogsKey(account.account_id), blogID);
+
+    // Remove all the dangerous Dropbox account information
+    // including the OAUTH token used to interact with
+    // Dropbox's API.
+    multi.del(accountKey(blogID));
+    multi.exec(callback);
+  });
 }
 
 // Redis Hash which stores the Dropbox account info

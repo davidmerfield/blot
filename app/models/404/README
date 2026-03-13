@@ -99,7 +99,7 @@ An object with two functions for generating Redis key strings. Consumed internal
 
 ## Dependencies
 
-- **`models/client`** — the shared Redis singleton for model reads and writes (`app/models/client.js` → `app/models/redis.js`).
+- **`models/client`** — the shared Redis client instance (`app/models/client.js`), which wraps `models/redis.js`.
 - **`helper/ensure`** — runtime argument type validation. All public functions call `ensure` before touching Redis.
 - **`moment`** (`list.js` only) — converts stored timestamps to human-readable relative strings via `moment.utc(ts).fromNow()`.
 

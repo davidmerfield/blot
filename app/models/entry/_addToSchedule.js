@@ -1,6 +1,5 @@
 const scheduler = require("node-schedule");
 const scheduled = new Map();
-const timeoutFallbacks = new Map();
 var ensure = require("helper/ensure");
 var model = require("./model");
 
@@ -31,44 +30,12 @@ module.exports = function (blogID, entry, callback) {
     scheduled.delete(key);
   }
 
-  var existingTimeout = timeoutFallbacks.get(key);
-
-  if (existingTimeout) {
-    clearTimeout(existingTimeout);
-    timeoutFallbacks.delete(key);
-  }
-
   // If the entry is scheduled for future publication,
   // register an event to update the entry. This is
   // neccessary to switch the 'scheduled' flag
   if (!entry.scheduled) return callback();
 
   var at = new Date(entry.dateStamp);
-  var delay = at.getTime() - Date.now();
-
-  if (delay <= 0) {
-    setImmediate(refresh);
-    return callback();
-  }
-
-  // node-schedule handles long delays; setTimeout fallback helps
-  // test environments using mocked timers reliably fire publication.
-  if (delay <= 0x7fffffff) {
-    var timeout = setTimeout(function () {
-      timeoutFallbacks.delete(key);
-      var existingJob = scheduled.get(key);
-      if (existingJob) {
-        existingJob.cancel();
-        scheduled.delete(key);
-      }
-      refresh();
-    }, delay);
-
-    if (typeof timeout.unref === "function") timeout.unref();
-
-    timeoutFallbacks.set(key, timeout);
-  }
-
   var job = scheduler.scheduleJob(at, refresh);
 
   if (job) {
@@ -76,22 +43,10 @@ module.exports = function (blogID, entry, callback) {
 
     job.on("run", function () {
       scheduled.delete(key);
-
-      var fallbackTimeout = timeoutFallbacks.get(key);
-      if (fallbackTimeout) {
-        clearTimeout(fallbackTimeout);
-        timeoutFallbacks.delete(key);
-      }
     });
 
     job.on("canceled", function () {
       scheduled.delete(key);
-
-      var fallbackTimeout = timeoutFallbacks.get(key);
-      if (fallbackTimeout) {
-        clearTimeout(fallbackTimeout);
-        timeoutFallbacks.delete(key);
-      }
     });
   }
 

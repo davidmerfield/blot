@@ -9,17 +9,29 @@ var setMetadata = require("./setMetadata");
 
 // Associates a theme with a UID owner
 // and an existing theme to clone if possible
-module.exports = function create(owner, name, metadata, callback) {
+module.exports = function create (owner, name, metadata, callback) {
+  // Owner represents the id of a blog
+  // who controls the template
+  // or the string 'SITE' which represents
+  // a BLOT template not editable by any blog
+  // ensure a blogID is always a number, never 'SITE'
   ensure(owner, "string")
     .and(metadata, "object")
     .and(name, "string")
     .and(callback, "function");
 
+  // Name is user input, it needs to be trimmed
   name = name.slice(0, 100);
+
+  // The slug cannot contain a slash, or it messes
+  // up the routing middleware.
   metadata.slug = metadata.slug || makeSlug(name).slice(0, 30);
   metadata.slug = metadata.slug.split("/").join("-");
+
+  // Each template has an ID which is namespaced under its owner
   metadata.id = makeID(owner, name);
 
+  // Defaults
   metadata.name = name;
   metadata.owner = owner;
   metadata.locals = metadata.locals || {};
@@ -32,39 +44,43 @@ module.exports = function create(owner, name, metadata, callback) {
 
   ensure(metadata, metadataModel);
 
-  var id = metadata.id;
+  let id = metadata.id;
 
-  (async function () {
-    try {
-      var stat = await client.exists(key.metadata(id));
+  client.exists(key.metadata(id), function (err, stat) {
+    if (err) throw err;
 
-      if (stat) {
-        var err = new Error("A template called " + name + " name already exists");
-        err.code = "EEXISTS";
-        return callback(err);
-      }
-
-      await client.sAdd(key.blogTemplates(owner), id);
-      if (metadata.isPublic) {
-        await client.sAdd(key.publicTemplates(), id);
-      } else {
-        await client.sRem(key.publicTemplates(), id);
-      }
-
-      setMetadata(id, metadata, function (setErr) {
-        if (setErr) return callback(setErr);
-
-        if (metadata.cloneFrom) {
-          return clone(metadata.cloneFrom, id, metadata, function (cloneErr) {
-            if (cloneErr) return callback(cloneErr);
-            callback(null, metadata);
-          });
-        }
-
-        callback(null, metadata);
-      });
-    } catch (err) {
-      callback(err);
+    // Don't overwrite an existing template
+    if (stat) {
+      err = new Error("A template called " + name + " name already exists");
+      err.code = "EEXISTS";
+      return callback(err);
     }
-  })();
+
+    client.sadd(key.blogTemplates(owner), id, function (err) {
+      if (err) throw err;
+
+      if (metadata.isPublic) {
+        client.sadd(key.publicTemplates(), id, then);
+      } else {
+        client.srem(key.publicTemplates(), id, then);
+      }
+
+      function then (err) {
+        if (err) throw err;
+
+        setMetadata(id, metadata, function (err) {
+          if (err) throw err;
+
+          if (metadata.cloneFrom) {
+            clone(metadata.cloneFrom, id, metadata, function (err) {
+              if (err) return callback(err);
+              callback(null, metadata);
+            });
+          } else {
+            callback(null, metadata);
+          }
+        });
+      }
+    });
+  });
 };

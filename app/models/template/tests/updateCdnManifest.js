@@ -10,7 +10,7 @@ const fs = require("fs-extra");
 const config = require("config");
 const renderView = require("blog/render/view");
 
-const getAsync = client.get.bind(client);
+const getAsync = promisify(client.get).bind(client);
 const getMetadataAsync = promisify(getMetadata).bind(getMetadata);
 const setViewAsync = promisify(setView).bind(setView);
 const blogSetAsync = promisify(Blog.set).bind(Blog);
@@ -185,7 +185,11 @@ describe("updateCdnManifest", function () {
       cdn: ["style.css", "../secrets.css", "/absolute.css"],
     };
 
-    await client.hSet(viewKey, "retrieve", JSON.stringify(invalidRetrieve));
+    await new Promise((resolve, reject) => {
+      client.hset(viewKey, "retrieve", JSON.stringify(invalidRetrieve), (err) =>
+        err ? reject(err) : resolve()
+      );
+    });
 
     await new Promise((resolve, reject) => {
       require("../util/updateCdnManifest")(test.template.id, (err) =>

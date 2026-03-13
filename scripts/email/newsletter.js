@@ -51,12 +51,7 @@ function main(letter, callback) {
             if (err) return next(err);
 
             console.log(". Email sent to", email);
-            client
-              .sAdd("newsletter:letter:" + letter, email)
-              .then(function () {
-                next();
-              })
-              .catch(next);
+            client.sadd("newsletter:letter:" + letter, email, next);
           });
         },
         callback
@@ -66,20 +61,15 @@ function main(letter, callback) {
 }
 
 function getAllSubscribers(callback) {
-  client
-    .sMembers("newsletter:list")
-    .then(function (emails) {
-      callback(null, emails);
-    })
-    .catch(callback);
+  client.smembers("newsletter:list", callback);
 }
 
 function alreadySent(email, done) {
-  client
-    .sIsMember("newsletter:letter:" + letter, email)
-    .then(function (member) {
-      if (member) console.log("Email already sent to", email);
-      done(null, !member);
-    })
-    .catch(done);
+  client.sismember("newsletter:letter:" + letter, email, function (
+    err,
+    member
+  ) {
+    if (member === 1) console.log("Email already sent to", email);
+    done(err, member === 0);
+  });
 }

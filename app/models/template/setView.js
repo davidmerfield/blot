@@ -14,7 +14,6 @@ var Blog = require("models/blog");
 var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
 var updateCdnManifest = require("./util/updateCdnManifest");
-var serializeRedisHashValues = require("models/redisHashSerializer");
 var clfdate = require("helper/clfdate");
 const MAX_VIEW_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
@@ -66,16 +65,12 @@ module.exports = function setView(templateID, updates, callback) {
 		if (!metadata)
 			return callback(new Error("There is no template called " + templateID));
 
-		client.sAdd(allViews, name).then(() => {
+		client.sadd(allViews, name, (err) => {
+			if (err) return callback(err);
 
 			// Look up previous state of view if applicable
 			getView(templateID, name, (err, view) => {
 				view = view || {};
-				let redisWriteChain = Promise.resolve();
-
-				const enqueueRedisWrite = (writeFn) => {
-					redisWriteChain = redisWriteChain.then(() => Promise.resolve().then(writeFn));
-				};
 
 				// Normalize legacy views' urlPatterns for short-circuit comparison
 				// This ensures legacy views with only view.url can properly short-circuit
@@ -114,22 +109,19 @@ module.exports = function setView(templateID, updates, callback) {
 
 					// Only update Redis if url is still defined (not deleted due to empty array)
 					if (updates.url !== undefined) {
-						enqueueRedisWrite(() =>
-							client.set(key.url(templateID, updates.url), name),
-						);
+						client.set(key.url(templateID, updates.url), name);
 
 						if (updates.url !== view.url) {
-							enqueueRedisWrite(() => client.del(key.url(templateID, view.url)));
+							client.del(key.url(templateID, view.url));
 						}
 					} else {
 						// If url was deleted (empty array), remove the old URL mapping
 						if (view.url) {
-							enqueueRedisWrite(() => client.del(key.url(templateID, view.url)));
+							client.del(key.url(templateID, view.url));
 						}
 					}
 				}
 
-				redisWriteChain.then(() => {
 				// SHORT-CIRCUIT: Check if content and other critical fields are unchanged
 				// This avoids expensive operations (parsing, dependency detection, Redis writes, CDN updates)
 				var contentUnchanged =
@@ -244,26 +236,21 @@ module.exports = function setView(templateID, updates, callback) {
 				if (updates.urlPatterns) {
 					// Store `urlPatterns` in Redis
 					const urlPatternsKey = key.urlPatterns(templateID);
-					enqueueRedisWrite(() =>
-						client.hSet(
-							urlPatternsKey,
-							name,
-							JSON.stringify(updates.urlPatterns),
-						),
+					client.hset(
+						urlPatternsKey,
+						name,
+						JSON.stringify(updates.urlPatterns),
 					);
 				} else if (shouldRemoveUrlPatterns) {
 					// Delete urlPatterns from Redis if it was removed
 					const urlPatternsKey = key.urlPatterns(templateID);
-					enqueueRedisWrite(() => client.hDel(urlPatternsKey, name));
+					client.hdel(urlPatternsKey, name);
 				}
+				view.locals = view.locals || {};
+				view.retrieve = view.retrieve || {};
+				view.partials = view.partials || {};
 
-				redisWriteChain
-					.then(() => {
-						view.locals = view.locals || {};
-						view.retrieve = view.retrieve || {};
-						view.partials = view.partials || {};
-
-						var parseResult = parseTemplate(view.content);
+				var parseResult = parseTemplate(view.content);
 
 				// TO DO REMOVE THIS
 				if (type(view.partials, "array")) {
@@ -277,69 +264,63 @@ module.exports = function setView(templateID, updates, callback) {
 
 				extend(view.partials).and(parseResult.partials);
 
-						detectInfinitePartialDependency(
-						templateID,
-						view,
-						parseResult,
-						(infiniteError) => {
+				detectInfinitePartialDependency(
+					templateID,
+					view,
+					parseResult,
+					(infiniteError) => {
 						if (infiniteError) return callback(infiniteError);
 
-						// Merge parser-derived retrieve (e.g. {{title}}) into view.retrieve; do not overwrite user-provided retrieve (includeDraft, filters, etc.)
-						extend(view.retrieve || {}).and(parseResult.retrieve || {});
+						view.retrieve = parseResult.retrieve || {};
 
-						view = serializeRedisHashValues(serialize(view, viewModel));
+						view = serialize(view, viewModel);
 
 						// Delete url and urlPatterns from Redis hash if they were removed
 						var multi = client.multi();
-						multi.hSet(viewKey, view);
+						multi.hmset(viewKey, view);
 
 						if (shouldRemoveUrl) {
 							console.log("removing hdel", viewKey, "url");
-							multi.hDel(viewKey, "url");
+							multi.hdel(viewKey, "url");
 						}
 						if (shouldRemoveUrlPatterns) {
 							console.log("removing hdel", viewKey, "urlPatterns");
-							multi.hDel(viewKey, "urlPatterns");
+							multi.hdel(viewKey, "urlPatterns");
 						}
 
-						// node-redis v5 multi.exec() returns a thenable; normalize to Promise so .then/.catch chain reliably
-						Promise.resolve(multi.exec())
-							.then(() => {
+						multi.exec((err) => {
+							if (err) return callback(err);
 
-								if (!changes) {
+							if (!changes) {
+								if (metadata.errors && metadata.errors[name]) {
+									delete metadata.errors[name];
+									return setMetadata(templateID, { errors: metadata.errors }, callback);
+								}
+
+								return callback();
+							}
+
+							Blog.set(metadata.owner, { cacheID: Date.now() }, (cacheErr) => {
+								if (cacheErr) return callback(cacheErr);
+
+								updateCdnManifest(templateID, (manifestErr) => {
+									if (manifestErr) return callback(manifestErr);
+
+									// Clear this view from template metadata.errors when saving
+									// via the dashboard so fixing a view clears its error state
 									if (metadata.errors && metadata.errors[name]) {
 										delete metadata.errors[name];
 										return setMetadata(templateID, { errors: metadata.errors }, callback);
 									}
 
-									return callback();
-								}
-
-								Blog.set(metadata.owner, { cacheID: Date.now() }, (cacheErr) => {
-									if (cacheErr) return callback(cacheErr);
-
-									updateCdnManifest(templateID, (manifestErr) => {
-										if (manifestErr) return callback(manifestErr);
-
-										// Clear this view from template metadata.errors when saving
-										// via the dashboard so fixing a view clears its error state
-										if (metadata.errors && metadata.errors[name]) {
-											delete metadata.errors[name];
-											return setMetadata(templateID, { errors: metadata.errors }, callback);
-										}
-
-										callback();
-									});
+									callback();
 								});
-							})
-							.catch(callback);
-						},
-					);
-					})
-					.catch(callback);
-				}).catch(callback);
+							});
+						});
+					},
+				);
 			});
-		}).catch(callback);
+		});
 	});
 };
 

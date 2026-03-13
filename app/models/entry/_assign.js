@@ -44,10 +44,10 @@ module.exports = function (blogID, entry, callback) {
 
     // Blot uses redis' sorted sets to
     // create lists of entries.
-    multi.zAdd(key, { score, value });
+    multi.zadd(key, score, value);
 
     if (list === ENTRIES) {
-      multi.zAdd(pathIndex.lexKey(blogID), { score: 0, value });
+      multi.zadd(pathIndex.lexKey(blogID), 0, value);
     }
   }
 
@@ -57,10 +57,10 @@ module.exports = function (blogID, entry, callback) {
 
     ensure(list, "string").and(value, "string");
 
-    multi.zRem(key, value);
+    multi.zrem(key, value);
 
     if (list === ENTRIES) {
-      multi.zRem(pathIndex.lexKey(blogID), value);
+      multi.zrem(pathIndex.lexKey(blogID), value);
     }
   }
 
@@ -118,18 +118,15 @@ module.exports = function (blogID, entry, callback) {
 
   multi.set(pathIndex.readyKey(blogID), "1");
 
-  multi
-    .exec()
-    .then(function () {
-      if (entry.menu) {
-        addToMenu(blogID, entry, callback);
-      } else {
-        dropFromMenu(blogID, entry, callback);
-      }
-    })
-    .catch(function (err) {
-      return callback(err);
-    });
+  multi.exec(function (err) {
+    if (err) return callback(err);
+
+    if (entry.menu) {
+      addToMenu(blogID, entry, callback);
+    } else {
+      dropFromMenu(blogID, entry, callback);
+    }
+  });
 };
 
 function addToMenu(blogID, entry, callback) {
@@ -143,9 +140,6 @@ function addToMenu(blogID, entry, callback) {
   };
 
   Blog.get({ id: blogID }, function (err, blog) {
-    if (err) return callback(err);
-    if (!blog) return callback(new Error("Blog not found"));
-
     var menu = blog.menu;
 
     if (!menu || !menu.length) {
@@ -173,8 +167,6 @@ function dropFromMenu(blogID, entry, callback) {
   debugEntry("removing from menu");
 
   Blog.get({ id: blogID }, function (err, blog) {
-    if (err) return callback(err);
-
     if (!blog || !blog.menu || !blog.menu.length) {
       debugEntry("this blog does not have a menu");
       return callback();
@@ -188,9 +180,9 @@ function dropFromMenu(blogID, entry, callback) {
     });
 
     if (menu.length === blog.menu.length) {
-      debugEntry("Warning! Did not find this on the menu");
-    } else {
       debugEntry("Was removed from the menu!");
+    } else {
+      debugEntry("Warning! Did not find this on the menu");
     }
 
     Blog.set(blogID, { menu: menu }, function (errors) {

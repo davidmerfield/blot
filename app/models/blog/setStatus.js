@@ -7,8 +7,6 @@ const { TYPE } = require("./scheme");
 const STATUS_LOG_MAX_LENGTH = 2000;
 
 module.exports = function (blogID, status, callback) {
-  callback = callback || function () {};
-
   ensure(blogID, "string").and(status, "object");
 
   // Default values
@@ -21,11 +19,9 @@ module.exports = function (blogID, status, callback) {
   const multi = client.multi();
   const statusString = JSON.stringify(status);
 
-  multi.hSet(key.info(blogID), "status", statusString);
-  multi.lPush(key.status(blogID), statusString);
-  multi.lTrim(key.status(blogID), 0, STATUS_LOG_MAX_LENGTH);
+  multi.hset(key.info(blogID), "status", statusString);
+  multi.lpush(key.status(blogID), statusString);
+  multi.ltrim(key.status(blogID), 0, STATUS_LOG_MAX_LENGTH);
 
-  multi.exec().then(function () {
-    callback();
-  }).catch(callback);
+  multi.exec(callback);
 };

@@ -156,24 +156,22 @@ function main(callback) {
         // Typically, domain keys like domain:example.com store a blog's ID
         // but since the homepage is not a blog, we just use a placeholder 'X'
         log("Creating SSL key for redis");
-        (async function () {
-          try {
-            await client.mSetNX({
-              ["domain:" + config.host]: "X",
-              ["domain:www." + config.host]: "X",
-            });
-          } catch (err) {
-            console.error(
-              "Unable to set domain flag for host" +
-                config.host +
-                ". SSL may not work on site."
-            );
-            console.error(err);
-          }
+        client.msetnx(
+          ["domain:" + config.host, "X", "domain:www." + config.host, "X"],
+          function (err) {
+            if (err) {
+              console.error(
+                "Unable to set domain flag for host" +
+                  config.host +
+                  ". SSL may not work on site."
+              );
+              console.error(err);
+            }
 
-          log("Created SSL key for redis");
-          callback();
-        })();
+            log("Created SSL key for redis");
+            callback();
+          }
+        );
       },
 
       function (callback) {

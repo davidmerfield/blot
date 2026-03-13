@@ -59,16 +59,16 @@ module.exports = function drop(owner, templateName, callback) {
       multi.del(key.renderedOutput(hash));
 
       diskCleanup.push(
-        fs.remove(getRenderedOutputPath(hash, target)).catch(function (removeErr) {
-          if (removeErr.code !== "ENOENT") {
-            console.error("Error removing CDN rendered output from disk:", removeErr);
+        fs.remove(getRenderedOutputPath(hash, target)).catch(function (err) {
+          if (err.code !== "ENOENT") {
+            console.error("Error removing CDN rendered output from disk:", err);
           }
         })
       );
     }
 
-    multi.sRem(key.blogTemplates(owner), templateID);
-    multi.sRem(key.publicTemplates(), templateID);
+    multi.srem(key.blogTemplates(owner), templateID);
+    multi.srem(key.publicTemplates(), templateID);
     multi.del(key.metadata(templateID));
     multi.del(key.urlPatterns(templateID));
     multi.del(key.allViews(templateID));
@@ -82,23 +82,20 @@ module.exports = function drop(owner, templateName, callback) {
       multi.del(key.url(templateID, views[i].url));
     }
 
-    Promise.allSettled(diskCleanup)
-      .then(function () {
-        return multi.exec();
-      })
-      .then(function () {
+    Promise.allSettled(diskCleanup).then(function () {
+      multi.exec(function (err) {
         const ownerID = metadata && metadata.owner ? metadata.owner : owner;
 
         if (purgeUrls.length) {
-          purgeCdnUrls(purgeUrls).catch(function (purgeErr) {
-            console.error("Error purging CDN URLs while dropping template:", purgeErr);
+          purgeCdnUrls(purgeUrls).catch(function (err) {
+            console.error("Error purging CDN URLs while dropping template:", err);
           });
         }
 
-        Blog.set(ownerID, { cacheID: Date.now() }, function (blogErr) {
-          callback(blogErr, "Deleted " + templateID);
+        Blog.set(ownerID, { cacheID: Date.now() }, function (err) {
+          callback(err, "Deleted " + templateID);
         });
-      })
-      .catch(callback);
+      });
+    });
   });
 };

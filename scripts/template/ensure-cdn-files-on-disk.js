@@ -9,12 +9,8 @@ const updateCdnManifest = require("models/template/util/updateCdnManifest");
 
 const getMetadataAsync = promisify(getMetadata);
 const updateCdnManifestAsync = promisify(updateCdnManifest);
-const smembersAsync = function (redisKey) {
-  return client.sMembers(redisKey);
-};
-const hdelAsync = function (redisKey, field) {
-  return client.hDel(redisKey, field);
-};
+const smembersAsync = promisify(client.smembers).bind(client);
+const hdelAsync = promisify(client.hdel).bind(client);
 
 // Base directory for rendered output storage (same as in updateCdnManifest.js)
 const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");

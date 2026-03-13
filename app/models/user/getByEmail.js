@@ -8,15 +8,11 @@ module.exports = function getBy(email, callback) {
 
   email = email.trim().toLowerCase();
 
-  (async function () {
-    try {
-      var uid = await client.get(key.email(email));
+  client.get(key.email(email), function (err, uid) {
+    if (err) return callback(err);
 
-      if (!uid) return callback(null, null);
+    if (!uid) return callback(null, null);
 
-      return getById(uid, callback);
-    } catch (err) {
-      return callback(err);
-    }
-  })();
+    getById(uid, callback);
+  });
 };

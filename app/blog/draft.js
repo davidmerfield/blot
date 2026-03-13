@@ -2,34 +2,16 @@ module.exports = function route(server) {
   var Entry = require("models/entry");
   var Entries = require("models/entries");
   var drafts = require("sync/update/drafts");
-  const createRedisClient = require("models/redis");
+  var redis = require("models/redis");
 
   // (node:73631) TimeoutOverflowWarning: 1.7976931348623157e+308 does not fit into a 32-bit signed integer.
   // Timer duration was truncated to 2147483647.
   const MAX_TIMEOUT = 2147483647;
 
-  server.get(drafts.streamRoute, async function (req, res, next) {
+  server.get(drafts.streamRoute, function (req, res, next) {
     var blogID = req.blog.id;
-    const client = createRedisClient();
+    var client = new redis();
     var path = drafts.getPath(req.url, drafts.streamRoute);
-    let cleanedUp = false;
-
-    const cleanup = async function () {
-      if (cleanedUp) return;
-      cleanedUp = true;
-
-      try {
-        if (client.isOpen) {
-          await client.unsubscribe(channel);
-        }
-      } catch (e) {}
-
-      try {
-        if (client.isOpen) {
-          await client.quit();
-        }
-      } catch (e) {}
-    };
 
     req.socket.setTimeout(MAX_TIMEOUT);
 
@@ -49,24 +31,21 @@ module.exports = function route(server) {
 
     var channel = "blog:" + blogID + ":draft:" + path;
 
-    try {
-      await client.connect();
-      await client.subscribe(channel, function (_message, _channel) {
-        renderDraft(req, res, next, path, function (html, bodyHTML) {
-          try {
-            res.write("\n");
-            res.write("data: " + JSON.stringify(bodyHTML.trim()) + "\n\n");
-            res.flushHeaders();
-          } catch (e) {}
-        });
-      });
-    } catch (err) {
-      await cleanup();
-      return next(err);
-    }
+    client.subscribe(channel);
 
-    req.on("close", async function () {
-      await cleanup();
+    client.on("message", function (_channel) {
+      renderDraft(req, res, next, path, function (html, bodyHTML) {
+        try {
+          res.write("\n");
+          res.write("data: " + JSON.stringify(bodyHTML.trim()) + "\n\n");
+          res.flushHeaders();
+        } catch (e) {}
+      });
+    });
+
+    req.on("close", function () {
+      client.unsubscribe();
+      client.quit();
     });
   });
 

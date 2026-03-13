@@ -62,20 +62,19 @@ module.exports = function create(uid, info, callback) {
       User.set(uid, { blogs: blogs, lastSession: blogID }, function (err) {
         if (err) return callback(err);
 
-        client
-          .sAdd(key.ids, blogID)
-          .then(function () {
-            set(blogID, blog, function (err) {
+        client.sadd(key.ids, blogID, function (err) {
+          if (err) return callback(err);
+
+          set(blogID, blog, function (err) {
+            if (err) return callback(err);
+
+            fs.emptyDir(localPath(blogID, "/"), function (err) {
               if (err) return callback(err);
 
-              fs.emptyDir(localPath(blogID, "/"), function (err) {
-                if (err) return callback(err);
-
-                return callback(err, blog);
-              });
+              return callback(err, blog);
             });
-          })
-          .catch(callback);
+          });
+        });
       });
     });
   });

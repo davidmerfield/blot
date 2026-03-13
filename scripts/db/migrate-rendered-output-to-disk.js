@@ -27,12 +27,8 @@ const config = require("config");
 const RENDERED_OUTPUT_BASE_DIR = path.join(config.data_directory, "cdn", "template");
 
 const getMetadataAsync = promisify(getMetadata);
-const getAsync = function (redisKey) {
-  return client.get(redisKey);
-};
-const delAsync = function (redisKey) {
-  return client.del(redisKey);
-};
+const getAsync = promisify(client.get).bind(client);
+const delAsync = promisify(client.del).bind(client);
 const blogSetAsync = promisify(Blog.set);
 
 function getRenderedOutputPath(hash, viewName) {

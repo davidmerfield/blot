@@ -4,7 +4,7 @@ var key = require("./key");
 
 var TOKEN_LENGTH = 16; // characters long
 
-// We can store anything against the generated access
+// We can store anything against the generated access 
 // token – in the case we want to use this token
 // to authenticate the log in of an existing user, we
 // might store that user's UID. In the case we want to use
@@ -21,13 +21,10 @@ module.exports = function generateAccessToken(options, callback) {
 
     token = token.toString("hex");
 
-    (async function () {
-      try {
-        await client.setEx(key.accessToken(token), seconds, value);
-        return callback(null, token);
-      } catch (err) {
-        return callback(err);
-      }
-    })();
+    client.SETEX(key.accessToken(token), seconds, value, function (err) {
+      if (err) return callback(err);
+
+      callback(null, token);
+    });
   });
 };

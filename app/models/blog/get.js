@@ -8,37 +8,35 @@ var applyConverters = require("./util/converters").apply;
 module.exports = function get(by, callback) {
   ensure(by, "object").and(callback, "function");
 
-  (async function () {
-    try {
-      var blogID;
+  if (by.id) {
+    ensure(by.id, "string");
+    then(null, by.id);
+  } else if (by.domain) {
+    ensure(by.domain, "string");
+    client.get(key.domain(by.domain), then);
+  } else if (by.handle) {
+    ensure(by.handle, "string");
+    client.get(key.handle(by.handle), then);
+  } else {
+    console.log(by);
+    throw "Please specify a by property";
+  }
 
-      if (by.id) {
-        ensure(by.id, "string");
-        blogID = by.id;
-      } else if (by.domain) {
-        ensure(by.domain, "string");
-        blogID = await client.get(key.domain(by.domain));
-      } else if (by.handle) {
-        ensure(by.handle, "string");
-        blogID = await client.get(key.handle(by.handle));
-      } else {
-        console.log(by);
-        throw "Please specify a by property";
-      }
+  function then(err, blogID) {
+    if (err) return callback(err);
 
-      if (!blogID) return callback(null);
+    if (!blogID) return callback(null);
 
-      var blog = await client.hGetAll(key.info(blogID));
+    client.hgetall(key.info(blogID), function (err, blog) {
+      if (err) return callback(err);
 
-      if (!blog || !Object.keys(blog).length) return callback(null);
+      if (!blog) return callback(null);
 
       blog = serial.de(blog);
       applyImageExif(blog);
       applyConverters(blog);
 
       callback(null, blog);
-    } catch (err) {
-      callback(err);
-    }
-  })();
+    });
+  }
 };

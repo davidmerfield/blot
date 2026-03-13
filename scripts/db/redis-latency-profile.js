@@ -134,7 +134,14 @@ function formatMs(value) {
 
 function pingSample(client) {
   const start = process.hrtime.bigint();
-  return client.ping().then(() => Number(process.hrtime.bigint() - start) / 1e6);
+
+  return new Promise((resolve, reject) => {
+    client.ping((err) => {
+      if (err) return reject(err);
+      const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
+      resolve(durationMs);
+    });
+  });
 }
 
 async function collectSamples(client, count) {
@@ -149,10 +156,9 @@ async function collectSamples(client, count) {
 async function main() {
   const args = parseArgs(process.argv);
   const client = redis.createClient({
-    url: `redis://${args.host}:${args.port}`,
-    socket: {
-      reconnectStrategy: () => 1000,
-    },
+    host: args.host,
+    port: args.port,
+    retry_strategy: () => 1000,
   });
 
   client.on("error", (err) => {
@@ -161,29 +167,14 @@ async function main() {
 
   const sampleWindow = [];
   let polls = 0;
-  let shuttingDown = false;
 
-  const stop = async () => {
-    if (shuttingDown) return;
-    shuttingDown = true;
+  const stop = () => {
     console.log("\n[redis-latency-profile] stopping...");
-    try {
-      await client.quit();
-      process.exit(0);
-    } catch (err) {
-      console.error(`[redis-latency-profile] shutdown failed: ${err.message}`);
-      process.exit(1);
-    }
+    client.quit(() => process.exit(0));
   };
 
-  process.on("SIGINT", () => {
-    void stop();
-  });
-  process.on("SIGTERM", () => {
-    void stop();
-  });
-
-  await client.connect();
+  process.on("SIGINT", stop);
+  process.on("SIGTERM", stop);
 
   console.log("[redis-latency-profile] started");
   console.log(
