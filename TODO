@@ -1,7 +1,3 @@
-Fix bug with multi-lingual code snippets on documentation template and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfCMrlGCjsWpCsQhcpPXkRCwxJ)
-
-Devise CDN plan for organizations
-
 Move GitHub repo to own organization
 
 Fix bug with git client which let large pushes overwhelm the main server, leading to downtime
