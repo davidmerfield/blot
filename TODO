@@ -1,18 +1,17 @@
 Move GitHub repo to own organization
 
+Redis caching:
+- Log redis cache stats
+- Remove LRU cache code from app/blog and elsewhere now we have the redis cache which does this automatically
+- Increase number of cached items?
+
 Fix bug with git client which let large pushes overwhelm the main server, leading to downtime
 
 Work out cause of bug with tags on darren's template when switching from {{#entries}} to {{#posts}} in https://blot.im/sites/darrencohen/template/text/source-code/entries.html/edit
 
 ---
 
-Verify backups work and are easy to restore
-
 Add a link to how section on pages to menu links settings page to guide new users! 
-
-Merge in new redis client code
-
-Remove all the LRU cache stuff – redis now does this automatically!!!
 
 Hitting the save changes button under typeset settings spits you back out to homepage! Bug!
 
