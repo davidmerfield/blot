@@ -156,21 +156,23 @@ function loadPackage (id, dir, callback) {
 function removeDeletedViews (templateID, contents, callback) {
   const viewsToRemove = [];
 
-  client.smembers(key.allViews(templateID), function (err, viewNames) {
-    if (err) return callback(err);
-    for (const viewName of viewNames) {
-      let found = contents.find(fileName => fileName.startsWith(viewName));
-      if (!found) viewsToRemove.push(viewName);
-    }
+  client
+    .sMembers(key.allViews(templateID))
+    .then(function (viewNames) {
+      for (const viewName of viewNames) {
+        let found = contents.find(fileName => fileName.startsWith(viewName));
+        if (!found) viewsToRemove.push(viewName);
+      }
 
-    async.eachSeries(
-      viewsToRemove,
-      function (viewName, next) {
-        dropView(templateID, viewName, next);
-      },
-      callback
-    );
-  });
+      async.eachSeries(
+        viewsToRemove,
+        function (viewName, next) {
+          dropView(templateID, viewName, next);
+        },
+        callback
+      );
+    })
+    .catch(callback);
 }
 
 // Maps 'at position 505' to

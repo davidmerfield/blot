@@ -1,18 +1,17 @@
-const { promisify } = require("util");
-
-// Redis client setup
 const client = require("models/client");
-const hgetAsync = promisify(client.hget).bind(client);
-const hscanAsync = promisify(client.hscan).bind(client);
 
 const PREFIX = require("./prefix");
 
 function folder(folderId) {
 
+  if (!(this instanceof folder)) {
+    return new folder(folderId);
+  }
+
   if (!folderId) {
     throw new Error("Folder ID is required");
   }
-  
+
   // Redis keys
   this.key = `${PREFIX}${folderId}:folder`; // ID ↔ Path mapping
   this.reverseKey = `${PREFIX}${folderId}:path`; // Path ↔ ID mapping
@@ -30,25 +29,25 @@ function folder(folderId) {
 
     const multi = client.multi(); // Start a Redis transaction
 
-    const previousPath = await hgetAsync(this.key, id);
+    const previousPath = await client.hGet(this.key, id);
     if (previousPath && previousPath !== path) {
       // Remove the old reverse mapping for the previous path
-      multi.hdel(this.reverseKey, previousPath);
+      multi.hDel(this.reverseKey, previousPath);
     }
 
-    const previousId = await hgetAsync(this.reverseKey, path);
+    const previousId = await client.hGet(this.reverseKey, path);
     if (previousId && previousId !== id) {
       // Remove the old mapping for the previous ID
-      multi.hdel(this.key, previousId);
+      multi.hDel(this.key, previousId);
     }
 
     // Add the new ID ↔ Path mapping
-    multi.hset(this.key, id, path);
-    multi.hset(this.reverseKey, path, id);
+    multi.hSet(this.key, id, path);
+    multi.hSet(this.reverseKey, path, id);
 
     // Update metadata if provided
     if (metadata && Object.keys(metadata).length > 0) {
-      multi.hset(this.metadataKey, id, JSON.stringify(metadata));
+      multi.hSet(this.metadataKey, id, JSON.stringify(metadata));
     }
 
     // Execute the transaction
@@ -58,18 +57,18 @@ function folder(folderId) {
   // Get the path for a given ID
   this.get = async (id) => {
     if (!id) return null;
-    return await hgetAsync(this.key, id);
+    return await client.hGet(this.key, id);
   };
 
   // Get the ID for a given path
   this.getByPath = async (path) => {
     if (!path) return null;
-    return await hgetAsync(this.reverseKey, path);
+    return await client.hGet(this.reverseKey, path);
   };
 
   // Get metadata for a given ID
   this.getMetadata = async (id) => {
-    const metadata = await hgetAsync(this.metadataKey, id);
+    const metadata = await client.hGet(this.metadataKey, id);
     return metadata ? JSON.parse(metadata) : null;
   };
 
@@ -100,10 +99,10 @@ function folder(folderId) {
       const metadata = (await this.getMetadata(id)) || {}; // Default to empty metadata
 
       // Remove old reverse mapping and add new mappings in transaction
-      multi.hdel(this.reverseKey, from);
-      multi.hset(this.reverseKey, to, id);
-      multi.hset(this.key, id, to);
-      multi.hset(this.metadataKey, id, JSON.stringify(metadata));
+      multi.hDel(this.reverseKey, from);
+      multi.hSet(this.reverseKey, to, id);
+      multi.hSet(this.key, id, to);
+      multi.hSet(this.metadataKey, id, JSON.stringify(metadata));
 
       movedPaths.push({ from, to });
 
@@ -117,12 +116,12 @@ function folder(folderId) {
     let cursor = START_CURSOR;
 
     do {
-      const [nextCursor, results] = await hscanAsync(this.key, cursor);
+      const { cursor: nextCursor, entries } = await client.hScan(this.key, cursor);
       cursor = nextCursor;
 
-      for (let i = 0; i < results.length; i += 2) {
-        const currentId = results[i];
-        const currentPath = results[i + 1];
+      for (const entry of entries) {
+        const currentId = entry.field;
+        const currentPath = entry.value;
 
         // Check if the current path is affected by the move
         if (currentPath === from || currentPath.startsWith(`${from}/`)) {
@@ -130,10 +129,10 @@ function folder(folderId) {
           const metadata = (await this.getMetadata(currentId)) || {}; // Default to empty metadata
 
           // Queue all changes in the transaction
-          multi.hdel(this.reverseKey, currentPath); // Remove old reverse mapping
-          multi.hset(this.reverseKey, newPath, currentId); // Add new reverse mapping
-          multi.hset(this.key, currentId, newPath); // Update the path mapping
-          multi.hset(this.metadataKey, currentId, JSON.stringify(metadata)); // Update metadata
+          multi.hDel(this.reverseKey, currentPath); // Remove old reverse mapping
+          multi.hSet(this.reverseKey, newPath, currentId); // Add new reverse mapping
+          multi.hSet(this.key, currentId, newPath); // Update the path mapping
+          multi.hSet(this.metadataKey, currentId, JSON.stringify(metadata)); // Update metadata
 
           movedPaths.push({ from: currentPath, to: newPath });
         }
@@ -150,8 +149,8 @@ function folder(folderId) {
   // Remove a file or folder and its children
   this.remove = async (id) => {
     const from = await this.get(id);
-    
-    if (!from) { 
+
+    if (!from) {
       console.log("Warning: No file or folder found for ID: ", id);
       return [];
     }
@@ -164,12 +163,12 @@ function folder(folderId) {
     let cursor = START_CURSOR;
 
     do {
-      const [nextCursor, results] = await hscanAsync(this.key, cursor);
+      const { cursor: nextCursor, entries } = await client.hScan(this.key, cursor);
       cursor = nextCursor;
 
-      for (let i = 0; i < results.length; i += 2) {
-        const currentId = results[i];
-        const currentPath = results[i + 1];
+      for (const entry of entries) {
+        const currentId = entry.field;
+        const currentPath = entry.value;
 
         // Check if the current path is affected by the removal
         if (
@@ -177,9 +176,9 @@ function folder(folderId) {
           currentPath === from ||
           currentPath.startsWith(`${from}/`)
         ) {
-          multi.hdel(this.key, currentId); // Delete ID ↔ Path mapping
-          multi.hdel(this.reverseKey, currentPath); // Delete Path ↔ ID mapping
-          multi.hdel(this.metadataKey, currentId); // Delete metadata
+          multi.hDel(this.key, currentId); // Delete ID ↔ Path mapping
+          multi.hDel(this.reverseKey, currentPath); // Delete Path ↔ ID mapping
+          multi.hDel(this.metadataKey, currentId); // Delete metadata
           removedPaths.push(currentPath);
         }
       }
@@ -214,12 +213,12 @@ function folder(folderId) {
 
     do {
       // Scan the folder key
-      const [nextCursor, results] = await hscanAsync(this.key, cursor);
+      const { cursor: nextCursor, entries: scannedEntries } = await client.hScan(this.key, cursor);
       cursor = nextCursor;
 
-      for (let i = 0; i < results.length; i += 2) {
-        const id = results[i];
-        const path = results[i + 1];
+      for (const entry of scannedEntries) {
+        const id = entry.field;
+        const path = entry.value;
 
         // Check if the path is an immediate child of the given directory
         if (
@@ -246,12 +245,12 @@ function folder(folderId) {
     let results = [];
 
     do {
-      const [nextCursor, entries] = await hscanAsync(this.key, cursor);
+      const { cursor: nextCursor, entries } = await client.hScan(this.key, cursor);
       cursor = nextCursor;
 
-      for (let i = 0; i < entries.length; i += 2) {
-        const id = entries[i];
-        const path = entries[i + 1];
+      for (const entry of entries) {
+        const id = entry.field;
+        const path = entry.value;
         const metadata = await this.getMetadata(id);
         results.push({ id, path, metadata });
       }

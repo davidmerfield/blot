@@ -53,22 +53,15 @@ describe("exportQuestions", function () {
       done();
     });
   
-    it("handles empty questions gracefully", async function (done) {
-        client.keys("blot:questions:*", async function (err, keys) {
-            if (err) return done(err);
-            if (keys.length > 0) {
-              client.del(keys, async function (err, response) {
-                if (err) return done(err);
-                const exportedData = await exportQuestions();
-                expect(exportedData).toEqual([]);
-                done();
-            });
-            } else {
-                const exportedData = await exportQuestions();
-                expect(exportedData).toEqual([]);
-                done();
-                    }
-          });
+    it("handles empty questions gracefully", async function () {
+      const questionKeys = await client.keys("blot:questions:*");
+
+      if (questionKeys.length > 0) {
+        await client.del(questionKeys);
+      }
+
+      const exportedData = await exportQuestions();
+      expect(exportedData).toEqual([]);
     });
   
     it("handles questions without replies", async function (done) {
@@ -251,43 +244,49 @@ describe("exportQuestions", function () {
         done();
       });
 
-      it("will throw an error if you trigger an issue with redis smembers", async function () {
+      it("will throw an error if you trigger an issue with redis sMembers", async function () {
         
-        spyOn(require("models/client"), "smembers").and.callFake((id, cb) => cb(new Error("REDIS smembers ISSUE")));
+        spyOn(require("models/client"), "sMembers").and.callFake(function () {
+          return Promise.reject(new Error("REDIS sMembers ISSUE"));
+        });
         
         try {
           await exportQuestions();
           fail("Should have thrown");
         } catch (e) {
-          expect(e.message).toEqual("REDIS smembers ISSUE");
+          expect(e.message).toEqual("REDIS sMembers ISSUE");
         }
       });
 
-      it("will throw an error if you trigger an issue with redis hgetall", async function () {
+      it("will throw an error if you trigger an issue with redis hGetAll", async function () {
         
         const question = await create({ title: 'How?', body: 'Yes' });
 
-        spyOn(require("models/client"), "hgetall").and.callFake((id, cb) => cb(new Error("REDIS hgetall ISSUE")));
+        spyOn(require("models/client"), "hGetAll").and.callFake(function () {
+          return Promise.reject(new Error("REDIS hGetAll ISSUE"));
+        });
         
         try {
           await exportQuestions();
           fail("Should have thrown");
         } catch (e) {
-          expect(e.message).toEqual("REDIS hgetall ISSUE");
+          expect(e.message).toEqual("REDIS hGetAll ISSUE");
         }
       });
 
-      it("will throw an error if you trigger an issue with redis zrange", async function () {
+      it("will throw an error if you trigger an issue with redis zRange", async function () {
         
         const question = await create({ title: 'How?', body: 'Yes' });
 
-        spyOn(require("models/client"), "zrange").and.callFake((id, start, end, cb) => cb(new Error("REDIS zrange ISSUE")));
+        spyOn(require("models/client"), "zRange").and.callFake(function () {
+          return Promise.reject(new Error("REDIS zRange ISSUE"));
+        });
         
         try {
           await exportQuestions();
           fail("Should have thrown");
         } catch (e) {
-          expect(e.message).toEqual("REDIS zrange ISSUE");
+          expect(e.message).toEqual("REDIS zRange ISSUE");
         }
       });
   });

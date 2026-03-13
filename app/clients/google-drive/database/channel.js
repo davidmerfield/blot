@@ -1,14 +1,4 @@
-const { promisify } = require("util");
-
-// Redis client setup
 const client = require("models/client");
-const hsetAsync = promisify(client.hset).bind(client);
-const hgetallAsync = promisify(client.hgetall).bind(client);
-const delAsync = promisify(client.del).bind(client);
-const saddAsync = promisify(client.sadd).bind(client);
-const sremAsync = promisify(client.srem).bind(client);
-const smembersAsync = promisify(client.smembers).bind(client);
-const sscanAsync = promisify(client.sscan).bind(client);
 
 const PREFIX = require("./prefix");
 
@@ -42,26 +32,27 @@ const channel = {
 
     // Store each field of the data object in the Redis hash
     for (const [field, value] of Object.entries(data)) {
-      await hsetAsync(key, field, value); // Ensure value is a string
+      await client.hSet(key, field, value);
     }
 
     // Track the channel globally
-    await saddAsync(globalSetKey, channelId);
+    await client.sAdd(globalSetKey, channelId);
 
     // Track the channel under the serviceAccountId
-    await saddAsync(serviceAccountKey, channelId);
+    await client.sAdd(serviceAccountKey, channelId);
 
     // If this is a `files.watch` channel, associate it with the fileId
     if (type === "files.watch" && fileId) {
       const fileKey = this._fileKey(serviceAccountId, fileId);
-      await saddAsync(fileKey, channelId);
+      await client.sAdd(fileKey, channelId);
     }
   },
 
   // Retrieve a channel by its ID
   async get(channelId) {
     const key = this._key(channelId);
-    return await hgetallAsync(key);
+    const data = await client.hGetAll(key);
+    return data && Object.keys(data).length ? data : null;
   },
 
   // Delete a channel by its ID, untracking it globally and from its associations
@@ -77,37 +68,37 @@ const channel = {
 
     if (serviceAccountId) {
       const serviceAccountKey = this._serviceAccountKey(serviceAccountId);
-      await sremAsync(serviceAccountKey, channelId);
+      await client.sRem(serviceAccountKey, channelId);
 
       if (type === "files.watch" && fileId) {
         const fileKey = this._fileKey(serviceAccountId, fileId);
-        await sremAsync(fileKey, channelId);
+        await client.sRem(fileKey, channelId);
       }
     }
 
     // Remove the channel from Redis
-    await delAsync(key);
+    await client.del(key);
 
     // Remove the channel from the global channel set
-    await sremAsync(globalSetKey, channelId);
+    await client.sRem(globalSetKey, channelId);
   },
 
   // List all channels globally
   async list() {
     const globalSetKey = this._globalSetKey();
-    return await smembersAsync(globalSetKey);
+    return await client.sMembers(globalSetKey);
   },
 
   // List all channels associated with a serviceAccountId
   async listByServiceAccount(serviceAccountId) {
     const serviceAccountKey = this._serviceAccountKey(serviceAccountId);
-    return await smembersAsync(serviceAccountKey);
+    return await client.sMembers(serviceAccountKey);
   },
 
   // List all channels associated with a serviceAccountId and fileId
   async listByFile(serviceAccountId, fileId) {
     const fileKey = this._fileKey(serviceAccountId, fileId);
-    return await smembersAsync(fileKey);
+    return await client.sMembers(fileKey);
   },
 
   // Iterate over all channels globally
@@ -115,10 +106,10 @@ const channel = {
     const globalSetKey = this._globalSetKey();
     let cursor = "0";
     do {
-      const [nextCursor, channelIds] = await sscanAsync(globalSetKey, cursor);
+      const { cursor: nextCursor, members: channelIds } = await client.sScan(globalSetKey, cursor);
       for (const channelId of channelIds) {
         const data = await this.get(channelId);
-        if (data) {
+        if (data && Object.keys(data).length) {
           await callback(data);
         }
       }
@@ -131,10 +122,10 @@ const channel = {
     const serviceAccountKey = this._serviceAccountKey(serviceAccountId);
     let cursor = "0";
     do {
-      const [nextCursor, channelIds] = await sscanAsync(serviceAccountKey, cursor);
+      const { cursor: nextCursor, members: channelIds } = await client.sScan(serviceAccountKey, cursor);
       for (const channelId of channelIds) {
         const data = await this.get(channelId);
-        if (data) {
+        if (data && Object.keys(data).length) {
           await callback(data);
         }
       }
@@ -147,10 +138,10 @@ const channel = {
     const fileKey = this._fileKey(serviceAccountId, fileId);
     let cursor = "0";
     do {
-      const [nextCursor, channelIds] = await sscanAsync(fileKey, cursor);
+      const { cursor: nextCursor, members: channelIds } = await client.sScan(fileKey, cursor);
       for (const channelId of channelIds) {
         const data = await this.get(channelId);
-        if (data) {
+        if (data && Object.keys(data).length) {
           await callback(data);
         }
       }
