@@ -1,3 +1,19 @@
+[Get site back online](https://mail.google.com/mail/u/0/#inbox/QgrcJHsbcTKdfNchKcJqWLdjCWRKnvFRxsB)
+
+Fix bug with multi-lingual code snippets on documentation template and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfCMrlGCjsWpCsQhcpPXkRCwxJ)
+
+Fix issue with 200 image requests and tell [Chris](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfCMpRXrFlxDjVgBgJJbMwbtMV)
+
+Devise CDN plan for organizations
+
+Move GitHub repo to own organization
+
+Fix bug with git client which let large pushes overwhelm the main server, leading to downtime
+
+Work out cause of bug with tags on darren's template when switching from {{#entries}} to {{#posts}} in https://blot.im/sites/darrencohen/template/text/source-code/entries.html/edit
+
+---
+
 Verify backups work and are easy to restore
 
 Add a link to how section on pages to menu links settings page to guide new users! 
