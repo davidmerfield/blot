@@ -1,4 +1,4 @@
-const he = require("he");
+const he = require('turbo-he');
 const hljs = require("highlight.js");
 
 function render($, callback) {

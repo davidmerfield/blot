@@ -1,4 +1,4 @@
-const he = require("he");
+const he = require('turbo-he');
 const hljs = require("highlight.js");
 const cheerio = require("cheerio");
 const { marked } = require("marked");

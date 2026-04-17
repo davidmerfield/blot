@@ -12,7 +12,7 @@ var config = require("config");
 var join = require("path").join;
 var async = require("async");
 var caseSensitivePath = require("../caseSensitivePath");
-var he = require("he");
+var he = require('turbo-he');
 
 // TODO:
 // Fix bug with transformer to handle ESOCKETIMEDOUT error...

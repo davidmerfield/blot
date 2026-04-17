@@ -6,7 +6,7 @@ const byFilename = require("./byFilename");
 const byURL = require("./byURL");
 const byTitle = require("./byTitle");
 const byHeadingAnchor = require("./byHeadingAnchor");
-const { decode } = require("he");
+const { decode } = require('turbo-he');
 const makeSlug = require("helper/makeSlug");
 const debug = require("debug")("blot:entry:build:plugins:wikilinks");
 

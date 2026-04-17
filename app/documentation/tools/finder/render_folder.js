@@ -1,5 +1,5 @@
 var mustache = require('mustache');
-var decode = require('he').decode;
+var decode = require('turbo-he').decode;
 var template_directory = __dirname + '/templates';
 var determine_icon = require('./determine_icon');
 

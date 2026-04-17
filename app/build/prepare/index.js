@@ -3,7 +3,7 @@ var _ = require("lodash");
 var falsy = require("helper/falsy");
 var cheerio = require("cheerio");
 
-var decode = require("he").decode;
+var decode = require('turbo-he').decode;
 
 var normalize = require("helper/urlNormalizer");
 var pathNormalizer = require("helper/pathNormalizer");

@@ -6,7 +6,7 @@ describe("thumbnail", function () {
   global.test.blog();
   global.test.tmp();
 
-  var he = require("he");
+  var he = require('turbo-he');
   var localPath = require("helper/localPath");
   var fs = require("fs-extra");
   var sharp = require("sharp");

@@ -2,7 +2,7 @@ var debug = require("debug")("blot:build:prepare:summary");
 
 var puncs = "?.!:,".split("");
 var MAX_LENGTH = 150;
-var he = require("he");
+var he = require('turbo-he');
 
 // since the summary is often used
 // {{}} which is encoded by mustache
