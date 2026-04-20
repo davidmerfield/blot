@@ -1,6 +1,7 @@
 const express = require('express');
 const config = require('config');
 const { parse } = require('tldts');
+const { domainToASCII } = require('url');
 const Blog = require('models/blog');
 const moment = require('moment');
 const verify = require('./verify');
@@ -17,7 +18,7 @@ Domain.use((req, res, next) => {
     
     const blogID = req.blog.id;
     const warning = req.session[`${blogID}:domainWarning`] || req.session[`${blogID}:domainError`];
-    const activeWarning = warning && warning.hostname === req.blog.domain ? warning : undefined;
+    const activeWarning = warning && normalizeHostname(warning.hostname) === normalizeHostname(req.blog.domain) ? warning : undefined;
     const customDomain = req.blog.pretty.domain || req.blog.domain || (activeWarning && activeWarning.hostname) || '';
     const { subdomain, domain } = parse(customDomain);
     
@@ -52,6 +53,18 @@ Domain.use((req, res, next) => {
 
     next();
 });
+
+function normalizeHostname(hostname) {
+    if (!hostname) {
+        return '';
+    }
+
+    const parsed = parse(hostname);
+    const normalized = parsed.hostname || hostname;
+    const asciiHostname = domainToASCII(normalized) || normalized;
+
+    return asciiHostname.toLowerCase();
+}
 
 Domain.route('/')
     .get((req, res) => {
