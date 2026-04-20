@@ -82,11 +82,20 @@ Domain.route('/')
 
         // Remove the existing domain if it is set and differs from the new one
         if (req.blog.domain && req.blog.domain !== hostname) {
-            await updateDomain(blogID, '');
+            try {
+                await updateDomain(blogID, '');
+            } catch (error) {
+                return res.message(res.locals.base + '/domain/custom', error);
+            }
         }
 
         try {
             await updateDomain(blogID, hostname);
+        } catch (error) {
+            return res.message(res.locals.base + '/domain/custom', error);
+        }
+
+        try {
             const isValid = await verify({ hostname, handle: req.blog.handle, ourIP: ip, ourIPv6: ipv6, ourHost: host });
 
             if (isValid) {
