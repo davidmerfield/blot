@@ -35,6 +35,24 @@ const VERIFICATION_TIMEOUT_LABEL = Number.isInteger(VERIFICATION_TIMEOUT_SECONDS
     ? `${VERIFICATION_TIMEOUT_SECONDS} seconds`
     : `${VERIFICATION_TIMEOUT_SECONDS.toFixed(2)} seconds`;
 
+function normalizeHostname(hostname) {
+    if (!hostname || typeof hostname !== 'string') return '';
+    return hostname.toLowerCase().replace(/\.$/, '');
+}
+
+function isValidCNAMETarget(cnameHost, ourHost) {
+    const normalizedCNAMEHost = normalizeHostname(cnameHost);
+    const normalizedOurHost = normalizeHostname(ourHost);
+
+    if (!normalizedCNAMEHost || !normalizedOurHost) return false;
+    if (normalizedCNAMEHost === normalizedOurHost) return true;
+
+    return (
+        normalizedCNAMEHost.endsWith(`.organization.${normalizedOurHost}`) ||
+        normalizedCNAMEHost.endsWith(`.organizations.${normalizedOurHost}`)
+    );
+}
+
 async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
     
     const parsed = parse(hostname);
@@ -105,7 +123,7 @@ async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
     ]);
 
     if (cnameHost) {
-        if (cnameHost === ourHost) {
+        if (isValidCNAMETarget(cnameHost, ourHost)) {
             // CNAME matches our host, return success
             return true;
         } else {
