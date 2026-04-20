@@ -16,11 +16,13 @@ Domain.use((req, res, next) => {
     res.locals.breadcrumbs.add('Domain', '/domain');
     
     const blogID = req.blog.id;
-    const error = req.session[`${blogID}:domainError`];
-    const customDomain = req.blog.pretty.domain || req.blog.domain || (error && error.hostname) || '';
+    const warning = req.session[`${blogID}:domainWarning`] || req.session[`${blogID}:domainError`];
+    const activeWarning = warning && warning.hostname === req.blog.domain ? warning : undefined;
+    const customDomain = req.blog.pretty.domain || req.blog.domain || (activeWarning && activeWarning.hostname) || '';
     const { subdomain, domain } = parse(customDomain);
     
-    res.locals.domainSuccess = !!req.blog.domain && error === undefined;
+    res.locals.domainSuccess = !!req.blog.domain;
+    res.locals.domainWarning = !!activeWarning;
     res.locals.subdomain = subdomain;
     res.locals.apexDomain = domain;
     res.locals.customDomain = customDomain;
@@ -28,13 +30,13 @@ Domain.use((req, res, next) => {
     res.locals.ip = ip;
     res.locals.ipv6 = ipv6;
         
-    if (error) {
-        res.locals.lastChecked = moment(error.lastChecked).fromNow();
-        res.locals.nameservers = error.nameservers;
-        res.locals.recordToRemove = error.recordToRemove;
-        res.locals.revalidation = error.revalidation;
+    if (activeWarning) {
+        res.locals.lastChecked = moment(activeWarning.lastChecked).fromNow();
+        res.locals.nameservers = activeWarning.nameservers;
+        res.locals.recordToRemove = activeWarning.recordToRemove;
+        res.locals.revalidation = activeWarning.revalidation;
 
-        const dnsProvider = identifyNameServers(error.nameservers);
+        const dnsProvider = identifyNameServers(activeWarning.nameservers);
 
         if (dnsProvider) {
             dnsProvider.is = {};
@@ -45,7 +47,7 @@ Domain.use((req, res, next) => {
         console.log(res.locals.dnsProvider);
 
         res.locals.code = {};
-        res.locals.code[error.code] = true;
+        res.locals.code[activeWarning.code] = true;
     }
 
     next();
@@ -73,6 +75,7 @@ Domain.route('/')
             await updateDomain(blogID, '');
             // Clear the domain error from the session
             delete req.session[`${blogID}:domainError`];
+            delete req.session[`${blogID}:domainWarning`];
             req.session.save();
             return res.message(res.locals.base + '/domain', 'Domain removed');
         }
@@ -83,15 +86,16 @@ Domain.route('/')
         }
 
         try {
+            await updateDomain(blogID, hostname);
             const isValid = await verify({ hostname, handle: req.blog.handle, ourIP: ip, ourIPv6: ipv6, ourHost: host });
 
             if (isValid) {
                 // Clear the blog session
                 delete req.session[`${blogID}:domainError`];
+                delete req.session[`${blogID}:domainWarning`];
                 req.session.save();
-                await updateDomain(blogID, hostname);
-                res.message(res.locals.base + '/domain', 'Domain added');
                 triggerAutoSSL(hostname);
+                return res.message(res.locals.base + '/domain', 'Domain added');
             } else {
                 throw new Error('Domain verification failed.');
             }
@@ -99,10 +103,11 @@ Domain.route('/')
             console.log(error);
 
             // if this is a re-attempt or not
-            const revalidation = req.session[`${blogID}:domainError`] && req.session[`${blogID}:domainError`].hostname === hostname;
+            const previousWarning = req.session[`${blogID}:domainWarning`] || req.session[`${blogID}:domainError`];
+            const revalidation = previousWarning && previousWarning.hostname === hostname;
 
-            // Store error details in the session
-            req.session[`${blogID}:domainError`] = {
+            // Store warning details in the session
+            req.session[`${blogID}:domainWarning`] = {
                 hostname,
                 code: error.message,
                 nameservers: error.nameservers || [],
@@ -110,9 +115,11 @@ Domain.route('/')
                 lastChecked: Date.now(),
                 revalidation
             };
+            delete req.session[`${blogID}:domainError`];
 
             req.session.save();
-            res.redirect(res.locals.base + '/domain/custom');
+            triggerAutoSSL(hostname);
+            return res.message(res.locals.base + '/domain/custom', 'Domain saved. Verification is still pending.');
         }
     });
 
