@@ -167,7 +167,7 @@
           }
           if (
             word == "async" &&
-            stream.match(/^(\s|\/\*.*?\*\/)*[\[\(\w]/, false)
+            stream.match(/^(\s|\/\*([^*]|\*(?!\/))*?\*\/)*[\[\(\w]/, false)
           )
             return ret("async", "keyword", word);
         }
