@@ -55,7 +55,7 @@
     "mime-types": "3.0.1",
     "moment": "2.29.4",
     "moment-timezone": "0.5.35",
-    "multiparty": "4.2.3",
+    "multiparty": "4.3.0",
     "mustache": "4.2.0",
     "node-addon-api": "7.0.0",
     "node-fetch": "2.6.7",
