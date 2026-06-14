@@ -35,7 +35,7 @@
     "datauri": "4.1.0",
     "debug": "3.1.0",
     "dropbox": "10.34.0",
-    "esbuild": "0.25.0",
+    "esbuild": "0.28.1",
     "eventsource": "2.0.2",
     "express": "4.20.0",
     "express-rate-limit": "8.2.1",
