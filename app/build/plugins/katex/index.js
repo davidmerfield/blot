@@ -91,6 +91,6 @@ function render($, callback) {
 module.exports = {
   category: "codemath",
   title: "Math",
-  description: "Render TeX equations wrapped in $$...$$ in text-based posts",
+  description: "Enable TeX equations",
   render,
 };
