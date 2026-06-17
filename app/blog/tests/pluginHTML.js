@@ -3,42 +3,6 @@ describe("pluginHTML", function () {
     require('./util/setup')();
     const config = require('config');
     
-    it("injects commento html", async function () {
-
-        // enable the commento plugin
-        const plugins = {...this.blog.plugins, commento: {enabled: true, options: {}}};
-        await this.blog.update({plugins})
-
-        await this.template({ "entry.html": "{{{entry.html}}} {{> pluginHTML}}" });
-        await this.write({path: '/a.txt', content: 'Link: /foo\n\nHello, world!'});        
-        await this.write({path: '/Pages/about.txt', content: 'Link: /about\n\nHello, page!'});        
-        await this.write({path: '/Drafts/test.txt', content: 'Hello, draft!'});        
-
-        const areThereComments = async (path) => {
-            const body = await this.text(path);
-            return body.includes('<script defer') && body.includes('src="https://cdn.commento.io/js/commento.js"');
-        }
-
-        expect(await areThereComments('/foo')).toBe(true, 'comments should appear on posts');
-
-        // but not on the preview subdomain
-        const res = await this.fetch(config.protocol + 'preview-of-my-local-on-' + this.blog.handle + '.' + config.host + '/foo');
-        const body = await res.text();
-        expect(body).not.toContain('src="https://cdn.commento.io/js/commento.js"');
-
-        expect(await areThereComments('/about')).toBe(false, 'comments should not appear on pages');
-        expect(await areThereComments('/draft/view/Drafts/test.txt')).toBe(false, 'comments should not appear on drafts');
-
-        // disable comments for the post
-        await this.write({path: '/a.txt', content: 'Link: /foo\nComments: No\n\nHello, world!'});
-        // enable comments for the page
-        await this.write({path: '/Pages/about.txt', content: 'Link: /about\nComments: Yes\n\nHello, world!'});
-
-        expect(await areThereComments('/about')).toBe(true, 'comments should appear on a pages with comments enabled');
-
-        expect(await areThereComments('/foo')).toBe(false, 'comments should not appear on posts with comments disabled');
-    });
-
     it("injects disqus html", async function () {
 
         // enable the disqus plugin
@@ -81,7 +45,7 @@ describe("pluginHTML", function () {
 
     it("normalizes comment metadata toggles", async function () {
 
-        const plugins = {...this.blog.plugins, commento: {enabled: true, options: {}}};
+        const plugins = {...this.blog.plugins, disqus: {enabled: true, options: {shortname: "test"}}};
         await this.blog.update({plugins})
 
         await this.template({ "entry.html": "{{{entry.html}}} {{> pluginHTML}}" });
@@ -92,7 +56,7 @@ describe("pluginHTML", function () {
 
         const areThereComments = async (path) => {
             const body = await this.text(path);
-            return body.includes('<script defer') && body.includes('src="https://cdn.commento.io/js/commento.js"');
+            return body.includes('<div id="disqus_thread"></div>') && body.includes('disqus.com/embed.js');
         }
 
         expect(await areThereComments('/post-no')).toBe(false, 'comments should not appear on posts with lowercase no');
