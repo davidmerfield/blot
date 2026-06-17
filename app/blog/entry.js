@@ -47,7 +47,6 @@ module.exports = function (request, response, next) {
       commentsToggle === "no" ||
       (commentsToggle !== "yes" && entry.page)
     ) {
-      delete blog.plugins.commento;
       delete blog.plugins.disqus;
     }
 

@@ -166,7 +166,7 @@ Registers two routes:
 
 Resolves the request URL (decoded, lowercased, trimmed) via `Entry.getByUrl()`. Skips deleted, draft, or scheduled (unless `?scheduled` is set) entries. Loads adjacent entries via `Entries.adjacentTo()`. Issues a 301 redirect if the canonical URL differs from the request URL. Loads plugin HTML via `build/plugins` and attaches it as `res.locals.partials.pluginHTML`. Renders `entry.html`.
 
-Comments (Commento/Disqus plugins) are suppressed when entry metadata sets `Comments: No`, or for pages that do not explicitly set `Comments: Yes`.
+Comments (Disqus plugin) are suppressed when entry metadata sets `Comments: No`, or for pages that do not explicitly set `Comments: Yes`.
 
 ### `entries.js`
 

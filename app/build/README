@@ -106,7 +106,6 @@ build/
 │   ├── mediaPreload/      Adds preload hints for media elements
 │   ├── linkScreenshot/    Generates screenshot thumbnails for links
 │   ├── analytics/         Injects analytics tracking code
-│   ├── commento/          Injects Commento comment threads
 │   └── disqus/            Injects Disqus comment threads
 ├── prepare/               Derives entry properties from HTML and metadata
 │   ├── index.js           Orchestrates all prepare steps; returns the enriched entry
