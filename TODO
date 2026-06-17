@@ -1,3 +1,11 @@
+Fix katek bug and follow up [with simon](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgMLxHpXsgrSgWgvHHkMZzvHJC)
+
+Fix bug with iCloud connections and tell [Justin](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgMCTvtzZlWJtGbLlDLxkRcTdG) and [Fede](https://mail.google.com/mail/u/1/#inbox/FMfcgzQfBZhzfKTPjqxsnDfDlTzmwnWT)
+
+Fix bug with adding second site on PayPal and tell [Des](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgMCXPJQBxssKXfFhRGfhxWnGX) and [Autumn](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgLjPWXMXdZtggsNjqjbhvbwhL)
+
+---
+
 Add self-deployment warning to README
 
 Move GitHub repo to own organization
@@ -198,6 +206,7 @@ iCloud:
   - instead, to sync folder tree, whenever readddir is called, it should maintain an internal map of the last time a blog's subfolder tree was recursively checked, and call it? or maybe just call ls and brctl download on the specific folder? or is this too slow?
 - Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
 - Investigate: can we modify app/clients/icloud/routes/site/upload.js and app/clients/icloud/macserver/httpClient/upload.js to exchange a content hash? to prevent needless re-upload?
+- Investigate setting up paralell server with 'Advanced Data Protection' enabled so users with this setting can sync to Blot as well
 
 ---
 
@@ -456,7 +465,7 @@ Make it possible to create a site for free then require subscription to make it 
 Improve markdown:
 - Turn on 'preserve linebreaks by default' for markdown 
 - Extend markdown parser to support [content blocks syntax](https://github.com/iainc/Markdown-Content-Blocks)
-- Extend markdown parser to support Obsidian Callouts and follow up with [questioner](https://blot.im/questions/3374)
+- Extend markdown parser to support Obsidian Callouts and follow up with [questioner](https://blot.im/questions/3374) and [Des](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgMCXPJQBxssKXfFhRGfhxWnGX)
 - Extend markdown parser to add a special class to a list of only images for targeting into an image grid or gallery?
   - `- ![Image](_image.jpg)...` -> `<ul class="image-list">`... could then be used in CSS?
 
