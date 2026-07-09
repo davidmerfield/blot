@@ -25,6 +25,7 @@ RUN apk add --no-cache --update \
     ca-certificates \
     ttf-freefont
 
+# Use tini as the init process so simple-git child processes are reaped instead of becoming zombies.
 ENTRYPOINT ["/sbin/tini", "--"]
 
 # Set the Puppeteer executable path
