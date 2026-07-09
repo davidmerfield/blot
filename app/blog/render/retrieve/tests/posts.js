@@ -140,6 +140,33 @@ describe("posts", function () {
     expect(text.trim()).toEqual("One");
   });
 
+
+  it("augments tags on posts across cached requests", async function () {
+    await this.write({
+      path: "/paris.txt",
+      content: "Title: Paris\nTags: Paris\n\nBonjour",
+    });
+
+    await this.template(
+      {
+        "foo.html": `{{#posts}}{{#tags}}{{name}}|{{slug}}|{{first}}|{{last}}{{/tags}}{{/posts}}`,
+      },
+      {
+        views: {
+          "foo.html": {
+            url: "/foo",
+          },
+        },
+      }
+    );
+
+    const first = await this.get("/foo");
+    expect((await first.text()).trim()).toEqual("Paris|paris|true|true");
+
+    const second = await this.get("/foo");
+    expect((await second.text()).trim()).toEqual("Paris|paris|true|true");
+  });
+
   describe("rejects invalid page numbers", function () {
     const cases = [
       ["zero", "/page/0"],
