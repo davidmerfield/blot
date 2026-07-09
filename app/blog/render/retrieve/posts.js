@@ -1,4 +1,5 @@
 const Entry = require("models/entry");
+const EntryInstance = require("models/entry/instance");
 const entriesModel = require("models/entries");
 const LRUCache = require("lru-cache").LRUCache;
 const fetchTaggedEntries = require("./helpers/fetchTaggedEntries");
@@ -13,7 +14,7 @@ function cloneDeep(value) {
   }
 
   if (value && typeof value === "object") {
-    const clone = {};
+    const clone = value instanceof EntryInstance ? new EntryInstance() : {};
 
     Object.keys(value).forEach((key) => {
       clone[key] = cloneDeep(value[key]);
