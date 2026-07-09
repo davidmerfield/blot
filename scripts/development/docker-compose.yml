@@ -13,8 +13,10 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - redis
-      - toxiproxy
+      redis:
+        condition: service_healthy
+      toxiproxy:
+        condition: service_started
     env_file:
       - ../../.env
     environment:
@@ -39,13 +41,20 @@ services:
       - "6379:6379" # Expose Redis port 6379 to host so we can run scripts if needed
     volumes:
       - "../../data:/data"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+      start_period: 15s
 
   toxiproxy:
     build:
       context: ./toxiproxy
       dockerfile: Dockerfile
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     cap_add:
       - NET_ADMIN
     ports:
