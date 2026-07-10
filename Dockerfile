@@ -16,6 +16,7 @@ WORKDIR /usr/src/app
 # Install necessary packages for Puppeteer, the git client, and HEIF-enabled libvips
 RUN apk add --no-cache --update \
     git \
+    tini \
     curl \
     chromium \
     nss \
@@ -23,6 +24,9 @@ RUN apk add --no-cache --update \
     harfbuzz \
     ca-certificates \
     ttf-freefont
+
+# Use tini as the init process so simple-git child processes are reaped instead of becoming zombies.
+ENTRYPOINT ["/sbin/tini", "--"]
 
 # Set the Puppeteer executable path
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
