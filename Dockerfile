@@ -25,6 +25,18 @@ RUN apk add --no-cache --update \
     ca-certificates \
     ttf-freefont
 
+# Configure git to handle lots of large binary files in memory-constrained environments.
+RUN git config --system pack.threads 1 \
+&& git config --system pack.windowMemory 32m \
+&& git config --system pack.deltaCacheSize 32m \
+&& git config --system pack.window 5
+
+# Disable background Git maintenance in app containers.
+RUN git config --system maintenance.auto false \
+ && git config --system gc.auto 0 \
+ && git config --system gc.autoDetach false \
+ && git config --system maintenance.autoDetach false
+ 
 # Use tini as the init process so simple-git child processes are reaped instead of becoming zombies.
 ENTRYPOINT ["/sbin/tini", "--"]
 

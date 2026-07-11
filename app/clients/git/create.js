@@ -8,6 +8,73 @@ const clfdate = require("helper/clfdate");
 const sync = require("sync");
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
+const GC_INTERVAL = 100;
+const COMMIT_INVALID_OBJECT_RETRIES = 3;
+const COMMIT_RETRY_DELAYS_MS = [1000, 2000, 3000];
+
+function delay(ms) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, ms);
+  });
+}
+
+function isTransientCommitError(err) {
+  const msg = String(err && err.message);
+  return (
+    /is not a valid object/i.test(msg) ||
+    /nonexistent object [0-9a-f]{40}/i.test(msg)
+  );
+}
+
+function commitFile(liveRepo) {
+  return new Promise(function (resolve, reject) {
+    liveRepo.raw(["commit", "--allow-empty", "-m", "Add file"], function (err) {
+      if (err) return reject(new Error(err));
+      resolve();
+    });
+  });
+}
+
+async function commitFileWithRetries(liveRepo, relativePath) {
+  const maxAttempts = COMMIT_INVALID_OBJECT_RETRIES + 1;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await commitFile(liveRepo);
+      if (attempt > 1) {
+        console.log(
+          clfdate() +
+            " Git: create: commit succeeded on attempt " +
+            attempt +
+            " " +
+            relativePath
+        );
+      }
+      return;
+    } catch (err) {
+      if (!isTransientCommitError(err) || attempt === maxAttempts) {
+        throw err;
+      }
+
+      const delayMs = COMMIT_RETRY_DELAYS_MS[attempt - 1];
+      console.log(
+        clfdate() +
+          " Git: create: commit retry " +
+          attempt +
+          "/" +
+          COMMIT_INVALID_OBJECT_RETRIES +
+          " in " +
+          delayMs +
+          "ms " +
+          relativePath +
+          " err=" +
+          err.message
+      );
+      await delay(delayMs);
+    }
+  }
+}
+
 module.exports = function create(blog, callback) {
   var bareRepo;
   var liveRepo;
@@ -39,7 +106,7 @@ module.exports = function create(blog, callback) {
           if (stats.uid !== process.getuid()) {
             return callback(
               new Error(
-                "The live repository directory is not owned by the current user."
+                "The live repository directory is not owned by the current user. uid: " + stats.uid + " process.getuid(): " + process.getuid() + " process.getgid(): " + process.getgid()
               )
             );
           }
@@ -57,8 +124,8 @@ module.exports = function create(blog, callback) {
 
       try {
         // Initialize bare repo first
-        bareRepo = Git(bareRepoDirectory);
-        liveRepo = Git(liveRepoDirectory);
+        bareRepo = Git(bareRepoDirectory, { maxConcurrentProcesses: 1 });
+        liveRepo = Git(liveRepoDirectory, { maxConcurrentProcesses: 1 });
       } catch (err) {
         return cleanupAndCallback(
           new Error("Failed to initialize Git repositories: " + err.message)
@@ -87,8 +154,15 @@ module.exports = function create(blog, callback) {
             );
 
             folder.status("Adding existing folder to live repository");
+            const repoContext = {
+              liveRepoDirectory: liveRepoDirectory,
+              bareRepoDirectory: bareRepoDirectory,
+              liveRepo: liveRepo,
+              bareRepo: bareRepo,
+              addFileCount: 0,
+            };
             try {
-              await addFolder(folder, liveRepo);
+              await addFolder(folder, liveRepo, repoContext);
             } catch (err) {
               return cleanupAndCallback(
                 new Error(
@@ -115,7 +189,7 @@ module.exports = function create(blog, callback) {
   });
 };
 
-async function addFolder(folder, liveRepo) {
+async function addFolder(folder, liveRepo, repoContext) {
   async function walk(dir) {
     const files = (await fs.readdir(dir))
       .filter((file) => !shouldIgnoreFile(file))
@@ -126,7 +200,7 @@ async function addFolder(folder, liveRepo) {
         clfdate() + " Git: addFolder: folder is empty, creating initial commit"
       );
       // If the folder is empty, create an initial commit
-      return handleEmptyFolder(folder, liveRepo);
+      return handleEmptyFolder(folder, liveRepo, repoContext);
     }
 
     for (const file of files) {
@@ -135,7 +209,7 @@ async function addFolder(folder, liveRepo) {
       if (stat.isDirectory()) {
         await walk(filePath);
       } else {
-        await addFile(folder, liveRepo, filePath);
+        await addFile(folder, liveRepo, repoContext, filePath);
       }
     }
   }
@@ -147,36 +221,129 @@ async function addFolder(folder, liveRepo) {
   }
 }
 
-async function handleEmptyFolder(folder, liveRepo) {
-  return new Promise((resolve, reject) => {
-    folder.status("Initial commit to repository");
+async function handleEmptyFolder(folder, liveRepo, repoContext) {
+  folder.status("Initial commit to repository");
+
+  await new Promise(function (resolve, reject) {
     liveRepo.commit(
       "Initial commit",
       { "--allow-empty": true },
       function (err) {
         if (err) return reject(new Error(err));
-        liveRepo.push(["-u", "origin", "master"], function (err) {
-          if (err) return reject(new Error(err));
-          folder.status("Created initial commit in empty repository");
-          resolve();
-        });
+        resolve();
       }
     );
   });
-}
-async function addFile(folder, liveRepo, path) {
-  return new Promise((resolve, reject) => {
-    const relativePath = path.replace(folder.path + "/", "");
-    folder.status("Adding " + relativePath + " to repository");
-    liveRepo.add(path, function (err) {
+
+  await new Promise(function (resolve, reject) {
+    liveRepo.push(["-u", "origin", "master"], function (err) {
       if (err) return reject(new Error(err));
-      liveRepo.commit("Add " + relativePath, function (err) {
-        if (err) return reject(new Error(err));
-        liveRepo.push(["-u", "origin", "master"], function (err) {
-          if (err) return reject(new Error(err));
-          resolve();
-        });
-      });
+      resolve();
     });
   });
+
+  folder.status("Created initial commit in empty repository");
+}
+
+async function addFile(folder, liveRepo, repoContext, path) {
+  const relativePath = path.replace(folder.path + "/", "");
+  const untilGc =
+    GC_INTERVAL - (repoContext.addFileCount % GC_INTERVAL || GC_INTERVAL);
+
+  console.log(
+    clfdate() +
+      " Git: create: starting file #" +
+      (repoContext.addFileCount + 1) +
+      " (" +
+      untilGc +
+      " successful files until gc)"
+  );
+
+  folder.status("Adding " + relativePath + " to repository");
+
+  try {
+    await new Promise((resolve, reject) => {
+      liveRepo.add(path, function (err) {
+        if (err) return reject(new Error(err));
+        resolve();
+      });
+    });
+  } catch (err) {
+    console.log(
+      "Failed to add file " + relativePath + " to repository: " + err.message
+    );
+    throw err;
+  }
+
+  folder.status("Added " + relativePath + " to repository");
+
+  try {
+    await commitFileWithRetries(liveRepo, relativePath);
+  } catch (err) {
+    console.log(
+      "Failed to commit file " +
+        relativePath +
+        " to repository: " +
+        err.message
+    );
+    throw err;
+  }
+
+  folder.status("Committed " + relativePath + " to repository");
+
+  try {
+    await new Promise(function (resolve, reject) {
+      liveRepo.push(["-u", "origin", "master"], function (err) {
+        if (err) return reject(new Error(err));
+        resolve();
+      });
+    });
+  } catch (err) {
+    console.log(
+      "Failed to push file " + relativePath + " to repository: " + err.message
+    );
+    throw err;
+  }
+
+  folder.status("Pushed " + relativePath + " to repository");
+
+  repoContext.addFileCount++;
+
+  if (repoContext.addFileCount % GC_INTERVAL === 0) {
+    folder.status("Running git gc after " + repoContext.addFileCount + " files");
+    console.log(
+      clfdate() +
+        " Git: create: git gc before (file #" +
+        repoContext.addFileCount +
+        ")"
+    );
+    await new Promise(function (resolve, reject) {
+      liveRepo.raw(["gc"], function (err) {
+        if (err) return reject(new Error(err));
+        resolve();
+      });
+    });
+    console.log(
+      clfdate() +
+        " Git: create: git gc after (file #" +
+        repoContext.addFileCount +
+        ")"
+    );
+    folder.status("Finished git gc after " + repoContext.addFileCount + " files");
+  } else {
+    const remaining = GC_INTERVAL - (repoContext.addFileCount % GC_INTERVAL);
+    console.log(
+      clfdate() +
+        " Git: create: " +
+        repoContext.addFileCount +
+        " files done, " +
+        remaining +
+        " until gc"
+    );
+    if (remaining <= 10) {
+      folder.status(
+        repoContext.addFileCount + " files done, " + remaining + " until git gc"
+      );
+    }
+  }
 }
