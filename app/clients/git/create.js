@@ -50,11 +50,26 @@ async function configureTemporaryGitGc(repo) {
 }
 
 async function unsetTemporaryGitGc(repo) {
-  await Promise.allSettled(
+  const results = await Promise.allSettled(
     TEMPORARY_GIT_GC_CONFIG.map(([key]) =>
       repo.raw(["config", "--local", "--unset", key])
     )
   );
+
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      const [key] = TEMPORARY_GIT_GC_CONFIG[index];
+      console.log(
+        clfdate() +
+          " Git: create: failed to unset temporary Git config " +
+          key +
+          ": " +
+          (result.reason && result.reason.message
+            ? result.reason.message
+            : result.reason)
+      );
+    }
+  });
 }
 
 async function commitFileWithRetries(repo, relativePath) {
@@ -129,21 +144,26 @@ async function createRepository(blog, folder) {
   report(folder, "Creating live repository", "initing liveRepo");
   await liveRepo.init();
 
-  report(folder, "Adding remote to live repository", "adding remote to liveRepo");
-  await liveRepo.addRemote("origin", bareDirectory);
-
-  report(folder, "Configuring temporary Git GC settings");
-  await configureTemporaryGitGc(liveRepo);
-
   try {
+    report(folder, "Configuring temporary Git GC settings");
+    await configureTemporaryGitGc(bareRepo);
+    await configureTemporaryGitGc(liveRepo);
+
+    report(
+      folder,
+      "Adding remote to live repository",
+      "adding remote to liveRepo"
+    );
+    await liveRepo.addRemote("origin", bareDirectory);
+
     report(folder, "Adding existing folder to live repository");
     const progress = { filesAdded: 0 };
     await addFolder(folder, liveRepo, progress);
-
-    await unsetTemporaryGitGc(liveRepo);
-  } catch (err) {
-    await unsetTemporaryGitGc(liveRepo);
-    throw err;
+  } finally {
+    await Promise.all([
+      unsetTemporaryGitGc(bareRepo),
+      unsetTemporaryGitGc(liveRepo),
+    ]);
   }
 
   await setStatus(blog.owner, "createComplete");
@@ -300,7 +320,7 @@ async function addFile(folder, liveRepo, progress, filePath) {
         progress.filesAdded +
         ")"
     );
-    await liveRepo.raw(["gc"]);
+    await liveRepo.raw(["gc", "--no-detach"]);
     console.log(
       clfdate() +
         " Git: create: git gc after (file #" +
