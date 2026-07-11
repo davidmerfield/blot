@@ -12,6 +12,9 @@ const path = require("path");
 const GC_INTERVAL = 100;
 const COMMIT_RETRY_DELAYS_MS = [1000, 2000, 3000];
 
+// We apply this configuration because there is a bug with git version 2.54.0 
+// which allows for multiple concurrent automatic git gc operations. This caused
+// memory issues and so to resolve, we manually gc during the create process.
 const TEMPORARY_GIT_GC_CONFIG = [
   ["gc.auto", "0"],
   ["gc.autoDetach", "false"],
@@ -283,8 +286,6 @@ async function addFile(folder, liveRepo, progress, filePath) {
     throw err;
   }
 
-  folder.status("Added " + relativePath + " to repository");
-
   try {
     await commitFileWithRetries(liveRepo, relativePath);
   } catch (err) {
@@ -297,8 +298,6 @@ async function addFile(folder, liveRepo, progress, filePath) {
     throw err;
   }
 
-  folder.status("Committed " + relativePath + " to repository");
-
   try {
     await pushMaster(liveRepo);
   } catch (err) {
@@ -308,12 +307,10 @@ async function addFile(folder, liveRepo, progress, filePath) {
     throw err;
   }
 
-  folder.status("Pushed " + relativePath + " to repository");
-
   progress.filesAdded++;
 
   if (progress.filesAdded % GC_INTERVAL === 0) {
-    folder.status("Running git gc after " + progress.filesAdded + " files");
+    folder.status("Cleaning up and optimizing the repository after adding " + progress.filesAdded + " files...");
     console.log(
       clfdate() +
         " Git: create: git gc before (file #" +
@@ -327,7 +324,6 @@ async function addFile(folder, liveRepo, progress, filePath) {
         progress.filesAdded +
         ")"
     );
-    folder.status("Finished git gc after " + progress.filesAdded + " files");
   } else {
     const remaining = GC_INTERVAL - (progress.filesAdded % GC_INTERVAL);
     console.log(
