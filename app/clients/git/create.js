@@ -11,6 +11,13 @@ const path = require("path");
 
 const GC_INTERVAL = 100;
 const COMMIT_RETRY_DELAYS_MS = [1000, 2000, 3000];
+
+const TEMPORARY_GIT_GC_CONFIG = [
+  ["gc.auto", "0"],
+  ["gc.autoDetach", "false"],
+  ["maintenance.auto", "false"],
+  ["maintenance.autoDetach", "false"],
+];
 const setStatus = promisify(database.setStatus.bind(database));
 const createToken = promisify(database.createToken.bind(database));
 
@@ -34,6 +41,20 @@ async function createEmptyCommit(repo, message) {
 
 async function pushMaster(repo) {
   await repo.push(["-u", "origin", "master"]);
+}
+
+async function configureTemporaryGitGc(repo) {
+  for (const [key, value] of TEMPORARY_GIT_GC_CONFIG) {
+    await repo.raw(["config", "--local", key, value]);
+  }
+}
+
+async function unsetTemporaryGitGc(repo) {
+  await Promise.allSettled(
+    TEMPORARY_GIT_GC_CONFIG.map(([key]) =>
+      repo.raw(["config", "--local", "--unset", key])
+    )
+  );
 }
 
 async function commitFileWithRetries(repo, relativePath) {
@@ -111,9 +132,19 @@ async function createRepository(blog, folder) {
   report(folder, "Adding remote to live repository", "adding remote to liveRepo");
   await liveRepo.addRemote("origin", bareDirectory);
 
-  report(folder, "Adding existing folder to live repository");
-  const progress = { filesAdded: 0 };
-  await addFolder(folder, liveRepo, progress);
+  report(folder, "Configuring temporary Git GC settings");
+  await configureTemporaryGitGc(liveRepo);
+
+  try {
+    report(folder, "Adding existing folder to live repository");
+    const progress = { filesAdded: 0 };
+    await addFolder(folder, liveRepo, progress);
+
+    await unsetTemporaryGitGc(liveRepo);
+  } catch (err) {
+    await unsetTemporaryGitGc(liveRepo);
+    throw err;
+  }
 
   await setStatus(blog.owner, "createComplete");
 
@@ -150,6 +181,10 @@ async function assertDirectoryOwnership(liveDirectory) {
 }
 
 async function cleanupFailedRepository(blog, liveDirectory, bareDirectory) {
+  const liveRepo = Git(liveDirectory, { maxConcurrentProcesses: 1 });
+
+  await unsetTemporaryGitGc(liveRepo);
+
   await Promise.allSettled([
     fs.remove(bareDirectory),
     fs.remove(`${liveDirectory}/.git`),
