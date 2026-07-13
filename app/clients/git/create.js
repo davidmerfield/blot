@@ -317,7 +317,7 @@ async function addFile(folder, liveRepo, progress, filePath) {
         progress.filesAdded +
         ")"
     );
-    await liveRepo.raw(["gc", "--no-detach"]);
+    await liveRepo.raw(["gc"]);
     console.log(
       clfdate() +
         " Git: create: git gc after (file #" +
