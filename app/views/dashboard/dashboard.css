@@ -1,3 +1,39 @@
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sync-status-body {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.sync-status-progress {
+  display: none;
+  width: 100%;
+  min-width: 8rem;
+  height: 0.35rem;
+  overflow: hidden;
+  background: var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.sync-status.has-progress .sync-status-progress {
+  display: block;
+}
+
+.sync-status-progress-bar {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: var(--border-radius);
+  transition: width 350ms ease-out;
+}
+
 .sites-list-container {
   min-height: calc(100vh - 7.8rem);
   display: flex;
