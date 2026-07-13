@@ -161,7 +161,7 @@ async function createRepository(blog, folder) {
 
     report(folder, "Adding existing folder to live repository");
     const progress = { filesAdded: 0 };
-    await addFolder(folder, liveRepo, progress);
+    await addFolder(folder, liveRepo, bareRepo, progress);
   } finally {
     await Promise.all([
       unsetTemporaryGitGc(bareRepo),
@@ -220,7 +220,7 @@ function report(folder, message, logMessage = message) {
   folder.status(message);
 }
 
-async function addFolder(folder, liveRepo, progress) {
+async function addFolder(folder, liveRepo, bareRepo, progress) {
   async function walk(dir) {
     const entries = (await fs.readdir(dir, { withFileTypes: true }))
       .filter((entry) => !shouldIgnoreFile(entry.name))
@@ -240,7 +240,7 @@ async function addFolder(folder, liveRepo, progress) {
       if (entry.isDirectory()) {
         await walk(filePath);
       } else if (entry.isFile()) {
-        await addFile(folder, liveRepo, progress, filePath);
+        await addFile(folder, liveRepo, bareRepo, progress, filePath);
       }
     }
   }
@@ -261,7 +261,7 @@ async function handleEmptyFolder(folder, liveRepo) {
   folder.status("Created initial commit in empty repository");
 }
 
-async function addFile(folder, liveRepo, progress, filePath) {
+async function addFile(folder, liveRepo, bareRepo, progress, filePath) {
   const relativePath = path.relative(folder.path, filePath);
   const untilGc =
     GC_INTERVAL - (progress.filesAdded % GC_INTERVAL || GC_INTERVAL);
@@ -318,6 +318,7 @@ async function addFile(folder, liveRepo, progress, filePath) {
         ")"
     );
     await liveRepo.raw(["gc"]);
+    await bareRepo.raw(["gc"]);
     console.log(
       clfdate() +
         " Git: create: git gc after (file #" +
