@@ -88,6 +88,15 @@ async function resetFromBlot(blogID, publish, signal) {
 
   abortIfRequested(signal);
 
+  const uploadProgress = await createUploadProgressTracker(
+    blogID,
+    client,
+    dropboxRoot,
+    localRoot,
+    signal,
+    publish
+  );
+
   const walk = async (dir) => {
     abortIfRequested(signal);
 
@@ -160,7 +169,7 @@ async function resetFromBlot(blogID, publish, signal) {
           remoteCounterpart.content_hash === localItem.content_hash;
 
         if (remoteCounterpart && !identicalOnRemote) {
-          publish("Transferring", path);
+          uploadProgress.publish(path);
           try {
             abortIfRequested(signal);
             await upload(
@@ -173,7 +182,7 @@ async function resetFromBlot(blogID, publish, signal) {
             publish("Failed to transfer", path);
           }
         } else if (!remoteCounterpart) {
-          publish("Transferring", path);
+          uploadProgress.publish(path);
           try {
             abortIfRequested(signal);
             await upload(
@@ -247,6 +256,97 @@ async function resetFromBlot(blogID, publish, signal) {
 //     }
 //   }
 // }
+
+const createUploadProgressTracker = async (
+  blogID,
+  client,
+  dropboxRoot,
+  localRoot,
+  signal,
+  publish
+) => {
+  let current = 0;
+  const total = await countFilesToUpload(
+    blogID,
+    client,
+    dropboxRoot,
+    localRoot,
+    signal
+  );
+
+  abortIfRequested(signal);
+
+  return {
+    publish(path) {
+      abortIfRequested(signal);
+
+      current += 1;
+
+      if (total > 0) {
+        publishProgress(publish, current, total, path);
+      }
+    },
+  };
+};
+
+const publishProgress = (publish, current, total, path) => {
+  const displayPath = path.startsWith("/") ? path : join("/", path);
+
+  publish(`(${current}/${total}) Syncing ${displayPath}`);
+};
+
+const countFilesToUpload = async (
+  blogID,
+  client,
+  dropboxRoot,
+  localRoot,
+  signal,
+  dir = "/"
+) => {
+  abortIfRequested(signal);
+
+  const [remoteContents, localContents] = await Promise.all([
+    remoteReaddir(client, join(dropboxRoot, dir), signal),
+    localReaddir(blogID, localRoot, dir, signal),
+  ]);
+
+  abortIfRequested(signal);
+
+  let total = 0;
+
+  for (const localItem of localContents) {
+    abortIfRequested(signal);
+
+    const path = join(dir, localItem.name);
+
+    if (isDotfileOrDotfolder(path)) continue;
+
+    const remoteCounterpart = remoteContents.find(
+      (remoteItem) => remoteItem.name === localItem.name
+    );
+
+    if (localItem.is_directory) {
+      total += await countFilesToUpload(
+        blogID,
+        client,
+        dropboxRoot,
+        localRoot,
+        signal,
+        path
+      );
+      continue;
+    }
+
+    if (
+      !remoteCounterpart ||
+      remoteCounterpart.content_hash !== localItem.content_hash
+    ) {
+      total += 1;
+    }
+  }
+
+  return total;
+};
 
 const localReaddir = async (blogID, localRoot, dir, signal) => {
   abortIfRequested(signal);
