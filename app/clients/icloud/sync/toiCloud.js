@@ -28,11 +28,42 @@ async function retry(fn, ...args) {
 }
 
 
-module.exports = async (blogID, publish, update, { skipDeletions = false, abortOnError = false } = {}) => {
+async function countLocalFiles(blogID, dir = "/") {
+  const localContents = await localReaddir(localPath(blogID, dir));
+  let total = 0;
+
+  for (const { name, isDirectory } of localContents) {
+    const path = join(dir, name);
+
+    if (isDirectory) {
+      total += await countLocalFiles(blogID, path);
+    } else {
+      total += 1;
+    }
+  }
+
+  return total;
+}
+
+module.exports = async (
+  blogID,
+  publish,
+  update,
+  { skipDeletions = false, abortOnError = false, progressVerb = "Syncing" } = {}
+) => {
   publish = publish || function () {};
   update = update || function () {};
 
   const checkWeCanContinue = CheckWeCanContinue(blogID);
+  const progress = {
+    current: 0,
+    total: 0,
+  };
+
+  const publishProgress = (path) => {
+    progress.current += 1;
+    publish(`(${progress.current}/${progress.total}) ${progressVerb}`, path);
+  };
 
   const walk = async (dir) => {
     const [remoteContents, localContents] = await Promise.all([
@@ -94,7 +125,7 @@ module.exports = async (blogID, publish, update, { skipDeletions = false, abortO
             if (abortOnError) throw new Error("File is too large: " + path);
             continue;
           }
-          publish("Transferring to iCloud", path);
+          publishProgress(path);
           try {
             await retry(remoteUpload, blogID, path);
           } catch (e) {
@@ -108,6 +139,7 @@ module.exports = async (blogID, publish, update, { skipDeletions = false, abortO
   };
 
   try {
+    progress.total = await countLocalFiles(blogID);
     await walk("/");
     publish("Sync complete");
   } catch (e) {

@@ -34,7 +34,32 @@ module.exports = async function (req, res) {
     return handle("Failed to store status in database", err);
   }
 
-  if (status.resyncRequested) {
+  if (status.message) {
+    try {
+      const { done, folder } = await establishSyncLock(blogID);
+
+      res.send("ok");
+
+      try {
+        folder.status(status.message, status.path || "");
+      } finally {
+        await done();
+      }
+    } catch (err) {
+      if (
+        handleSyncLockError({
+          err,
+          res,
+          blogID,
+          action: "status message",
+        })
+      ) {
+        return;
+      }
+
+      return handle("Error in status message", err);
+    }
+  } else if (status.resyncRequested) {
     const now = Date.now();
     const existingEntry = resyncDedupRegistry.get(blogID);
     if (existingEntry) {
