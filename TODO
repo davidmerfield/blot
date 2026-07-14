@@ -162,6 +162,13 @@ Dropbox:
    - How do we make errors sticky? To make sure users click through to clients page to re-connect to Dropbox, etc...
 
 Git:
+- Improve the performance of Git client initialization by either using batching of commits and increasing the interval for Git garbage collection
+- Surface progress of Git garbage collection command on dashboard through blog status updates
+- Create tests for large Git repo initialization
+- Gather the total number of files so we can add a status bar to the setting up repository page
+- Make git client setup resumable / handle server restart
+- Handle error out of space on blob server during git client setup
+- Surface errors with permissions on Git repo directory when setting up Git client
 - Add sync check
 - Add support for LFS and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVMcpnxGHqnxJHNdbMBSrglzg)
 - Backdate existing commits (perhaps set file ctime using info from git log?) This would sidestep the frustration experienced by [Gavin](https://mail.google.com/mail/u/0/#inbox/1669a8e621f9ef37) when he imported an existing repository.
