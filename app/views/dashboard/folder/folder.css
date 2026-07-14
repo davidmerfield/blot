@@ -50,8 +50,10 @@
   }
 
   .sync-status.has-progress {
+    display: flex;
     height: auto;
     overflow: visible;
+    width: 100%;
   }
 
   .folder-corner {

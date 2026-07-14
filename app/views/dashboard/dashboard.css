@@ -4,11 +4,18 @@
   gap: 0.25rem;
 }
 
+.sync-status.has-progress {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
 .sync-status-body {
   display: inline-flex;
   flex-direction: column;
+  flex: 1 1 auto;
   gap: 0.25rem;
   min-width: 0;
+  width: 100%;
 }
 
 .sync-status-progress {
@@ -41,8 +48,11 @@
 }
 
 .sync-status-center:has(.sync-status.has-progress) {
+  flex: 1 1 auto;
   height: auto;
+  min-width: 0;
   overflow: visible;
+  width: 100%;
 }
 
 .sites-list-container {
@@ -473,4 +483,3 @@ line-height: 48px;
   color: var(--success-text-color);
   background: var(--success-background-color);
 }
-

@@ -160,8 +160,7 @@ async function createRepository(blog, folder) {
     await liveRepo.addRemote("origin", bareDirectory);
 
     report(folder, "Adding existing folder to live repository");
-    const progress = { filesAdded: 0 };
-    await addFolder(folder, liveRepo, bareRepo, progress);
+    await addFolder(folder, liveRepo, bareRepo);
   } finally {
     await Promise.all([
       unsetTemporaryGitGc(bareRepo),
@@ -220,13 +219,14 @@ function report(folder, message, logMessage = message) {
   folder.status(message);
 }
 
-async function addFolder(folder, liveRepo, bareRepo, progress) {
-  async function walk(dir) {
-    const entries = (await fs.readdir(dir, { withFileTypes: true }))
-      .filter((entry) => !shouldIgnoreFile(entry.name))
-      .sort((a, b) => a.name.localeCompare(b.name));
+async function addFolder(folder, liveRepo, bareRepo) {
+  const progress = { filesAdded: 0, totalFiles: 0 };
 
-    if (!entries.length && dir === folder.path) {
+  try {
+    const files = await collectFiles(folder.path);
+    progress.totalFiles = files.length;
+
+    if (!files.length) {
       console.log(
         clfdate() + " Git: addFolder: folder is empty, creating initial commit"
       );
@@ -234,22 +234,36 @@ async function addFolder(folder, liveRepo, bareRepo, progress) {
       return handleEmptyFolder(folder, liveRepo);
     }
 
+    for (const [index, filePath] of files.entries()) {
+      await addFile(folder, liveRepo, bareRepo, progress, filePath, index + 1);
+    }
+  } catch (err) {
+    throw new Error("Error while adding files to repository: " + err.message);
+  }
+}
+
+async function collectFiles(rootDirectory) {
+  const files = [];
+
+  async function walk(dir) {
+    const entries = (await fs.readdir(dir, { withFileTypes: true }))
+      .filter((entry) => !shouldIgnoreFile(entry.name))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
     for (const entry of entries) {
       const filePath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
         await walk(filePath);
       } else if (entry.isFile()) {
-        await addFile(folder, liveRepo, bareRepo, progress, filePath);
+        files.push(filePath);
       }
     }
   }
 
-  try {
-    await walk(folder.path);
-  } catch (err) {
-    throw new Error("Error while adding files to repository: " + err.message);
-  }
+  await walk(rootDirectory);
+
+  return files;
 }
 
 async function handleEmptyFolder(folder, liveRepo) {
@@ -261,7 +275,14 @@ async function handleEmptyFolder(folder, liveRepo) {
   folder.status("Created initial commit in empty repository");
 }
 
-async function addFile(folder, liveRepo, bareRepo, progress, filePath) {
+async function addFile(
+  folder,
+  liveRepo,
+  bareRepo,
+  progress,
+  filePath,
+  currentFileIndex
+) {
   const relativePath = path.relative(folder.path, filePath);
   const untilGc =
     GC_INTERVAL - (progress.filesAdded % GC_INTERVAL || GC_INTERVAL);
@@ -275,7 +296,14 @@ async function addFile(folder, liveRepo, bareRepo, progress, filePath) {
       " successful files until gc)"
   );
 
-  folder.status("Adding " + relativePath + " to repository");
+  folder.status(
+    "(" +
+      currentFileIndex +
+      "/" +
+      progress.totalFiles +
+      ") Syncing /" +
+      relativePath
+  );
 
   try {
     await liveRepo.add(filePath);
