@@ -44,8 +44,11 @@
   }
 
   .sync-status {
+    align-items: center;
+    display: flex;
+    gap: 0.25rem;
     height: 1.5em;
-    display: block;
+    min-width: 0;
     overflow: hidden;
   }
 
@@ -54,6 +57,16 @@
     height: auto;
     overflow: visible;
     width: 100%;
+  }
+
+  .sync-status .sync-status-body {
+    min-width: 0;
+  }
+
+  .sync-status .sync-status-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .folder-corner {

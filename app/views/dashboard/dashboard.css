@@ -18,6 +18,14 @@
   width: 100%;
 }
 
+.sync-status.has-progress .sync-status-body {
+  flex: 1 1 auto;
+}
+
+.sync-status.has-progress .sync-status-body {
+  flex: 1 1 auto;
+}
+
 .sync-status-progress {
   display: none;
   width: 100%;
