@@ -10,6 +10,8 @@ const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 const path = require("path");
 
 const GC_INTERVAL = 100;
+const COMMIT_BATCH_SIZE = 25;
+const PUSH_COMMIT_BATCH_SIZE = 5;
 const COMMIT_RETRY_DELAYS_MS = [1000, 2000, 3000];
 
 // We apply this configuration because there is a bug with git version 2.54.0 
@@ -42,7 +44,11 @@ async function createEmptyCommit(repo, message) {
   await repo.commit(message, { "--allow-empty": true });
 }
 
-async function pushMaster(repo) {
+async function pushMaster(repo, folder, message) {
+  if (folder) {
+    folder.status(message || "Pushing commits to repository");
+  }
+
   await repo.push(["-u", "origin", "master"]);
 }
 
@@ -75,17 +81,18 @@ async function unsetTemporaryGitGc(repo) {
   });
 }
 
-async function commitFileWithRetries(repo, relativePath) {
+async function commitBatchWithRetries(repo, folder, label, message) {
   for (let attempt = 0; ; attempt++) {
     try {
-      await repo.raw(["commit", "--allow-empty", "-m", "Add file"]);
+      folder.status("Committing " + label + " to repository");
+      await repo.raw(["commit", "--allow-empty", "-m", message]);
       if (attempt > 0) {
         console.log(
           clfdate() +
             " Git: create: commit succeeded on attempt " +
             (attempt + 1) +
             " " +
-            relativePath
+            label
         );
       }
       return;
@@ -105,7 +112,7 @@ async function commitFileWithRetries(repo, relativePath) {
           " in " +
           delayMs +
           "ms " +
-          relativePath +
+          label +
           " err=" +
           err.message
       );
@@ -160,7 +167,8 @@ async function createRepository(blog, folder) {
     await liveRepo.addRemote("origin", bareDirectory);
 
     report(folder, "Adding existing folder to live repository");
-    await addFolder(folder, liveRepo, bareRepo);
+    const progress = { filesAdded: 0, pendingFiles: [], unpushedCommits: 0 };
+    await addFolder(folder, liveRepo, bareRepo, progress);
   } finally {
     await Promise.all([
       unsetTemporaryGitGc(bareRepo),
@@ -256,33 +264,38 @@ async function collectFiles(rootDirectory) {
       if (entry.isDirectory()) {
         await walk(filePath);
       } else if (entry.isFile()) {
-        files.push(filePath);
+        await stageFile(folder, liveRepo, bareRepo, progress, filePath);
+
+        if (progress.pendingFiles.length >= COMMIT_BATCH_SIZE) {
+          await commitPendingFiles(folder, liveRepo, progress);
+          await pushIfNeeded(folder, liveRepo, progress);
+        }
       }
     }
   }
 
-  await walk(rootDirectory);
+  try {
+    await walk(folder.path);
+    await commitPendingFiles(folder, liveRepo, progress);
 
-  return files;
+    if (progress.unpushedCommits > 0) {
+      await pushPendingCommits(folder, liveRepo, progress);
+    }
+  } catch (err) {
+    throw new Error("Error while adding files to repository: " + err.message);
+  }
 }
 
 async function handleEmptyFolder(folder, liveRepo) {
   folder.status("Initial commit to repository");
 
   await createEmptyCommit(liveRepo, "Initial commit");
-  await pushMaster(liveRepo);
+  await pushMaster(liveRepo, folder, "Pushing initial commit to repository");
 
   folder.status("Created initial commit in empty repository");
 }
 
-async function addFile(
-  folder,
-  liveRepo,
-  bareRepo,
-  progress,
-  filePath,
-  currentFileIndex
-) {
+async function stageFile(folder, liveRepo, bareRepo, progress, filePath) {
   const relativePath = path.relative(folder.path, filePath);
   const untilGc =
     GC_INTERVAL - (progress.filesAdded % GC_INTERVAL || GC_INTERVAL);
@@ -314,29 +327,54 @@ async function addFile(
     throw err;
   }
 
-  try {
-    await commitFileWithRetries(liveRepo, relativePath);
-  } catch (err) {
-    console.log(
-      "Failed to commit file " +
-        relativePath +
-        " to repository: " +
-        err.message
-    );
-    throw err;
-  }
-
-  try {
-    await pushMaster(liveRepo);
-  } catch (err) {
-    console.log(
-      "Failed to push file " + relativePath + " to repository: " + err.message
-    );
-    throw err;
-  }
-
+  progress.pendingFiles.push(relativePath);
   progress.filesAdded++;
 
+  await gcIfNeeded(folder, liveRepo, bareRepo, progress);
+}
+
+async function commitPendingFiles(folder, liveRepo, progress) {
+  const batchSize = progress.pendingFiles.length;
+
+  if (!batchSize) return;
+
+  const label = batchSize === 1 ? progress.pendingFiles[0] : batchSize + " files";
+  const message = batchSize === 1 ? "Add files" : "Add " + batchSize + " files";
+
+  try {
+    await commitBatchWithRetries(liveRepo, folder, label, message);
+  } catch (err) {
+    console.log("Failed to commit " + label + " to repository: " + err.message);
+    throw err;
+  }
+
+  progress.pendingFiles = [];
+  progress.unpushedCommits++;
+}
+
+async function pushIfNeeded(folder, liveRepo, progress) {
+  if (progress.unpushedCommits >= PUSH_COMMIT_BATCH_SIZE) {
+    await pushPendingCommits(folder, liveRepo, progress);
+  }
+}
+
+async function pushPendingCommits(folder, liveRepo, progress) {
+  const label =
+    progress.unpushedCommits === 1
+      ? "1 commit"
+      : progress.unpushedCommits + " commits";
+
+  try {
+    await pushMaster(liveRepo, folder, "Pushing " + label + " to repository");
+  } catch (err) {
+    console.log("Failed to push commits to repository: " + err.message);
+    throw err;
+  }
+
+  progress.unpushedCommits = 0;
+}
+
+async function gcIfNeeded(folder, liveRepo, bareRepo, progress) {
   if (progress.filesAdded % GC_INTERVAL === 0) {
     folder.status("Cleaning up and optimizing the repository after adding " + progress.filesAdded + " files...");
     console.log(
