@@ -34,6 +34,17 @@
   transition: width 350ms ease-out;
 }
 
+.sync-status-center {
+  height: 1.5em;
+  overflow: hidden;
+  text-wrap: nowrap;
+}
+
+.sync-status-center:has(.sync-status.has-progress) {
+  height: auto;
+  overflow: visible;
+}
+
 .sites-list-container {
   min-height: calc(100vh - 7.8rem);
   display: flex;
@@ -462,5 +473,4 @@ line-height: 48px;
   color: var(--success-text-color);
   background: var(--success-background-color);
 }
-
 

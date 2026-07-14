@@ -226,6 +226,5 @@ window.addEventListener("beforeunload", function () {
 
 // First attach on initial load
 document.addEventListener("DOMContentLoaded", function () {
-  renderSyncStatusMessage();
   attachSSE();
 });

@@ -49,6 +49,11 @@
     overflow: hidden;
   }
 
+  .sync-status.has-progress {
+    height: auto;
+    overflow: visible;
+  }
+
   .folder-corner {
     position: absolute;
     top: 5px;
