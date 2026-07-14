@@ -191,6 +191,7 @@ async function generateDockerCommand(container, platform, commitHash) {
     `-p ${portNum}:${INTERNAL_PORT}`,
     `--env-file ${ENV_FILE_ON_SERVER}`,
     `-e CONTAINER_NAME=${sanitizedName}`,
+    `-e BLOT_RELEASE_ID=${commitHash}`,
     // Configure the maximum memory usage for the node process
     `-e NODE_OPTIONS='--max-old-space-size=${oldSpaceSize}'`,
     // Mount the data directory on the host to the container
