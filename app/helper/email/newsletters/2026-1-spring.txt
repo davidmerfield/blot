@@ -20,6 +20,7 @@ Spring newsletter
 - Fixed uploads in subdirectories
 - Fixed date inputs on the template editor
 - Fixed image width on the documentation template
+- Fixed bug with multi-line [math equations](https://blot.im/how/guides/tex) in Markdown
 
 **Questions**
 
