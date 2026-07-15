@@ -1,10 +1,12 @@
+Fix katek bug and follow up [with simon](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgMLxHpXsgrSgWgvHHkMZzvHJC)
+
 Work out what's soaking up all the disk space on the server, then make sure it's freed up enough to reliably deploy. 
 - possible fail2ban logrotate config to remove large log files?
 - fix huge size of fail2ban db: https://serverfault.com/questions/1002315/fail2bans-database-is-too-large-over-500mb-how-do-i-get-it-to-a-reasonable-s  /var/lib/fail2ban/fail2ban.sqlite3
 
-Fix katek bug and follow up [with simon](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgMLxHpXsgrSgWgvHHkMZzvHJC)
+Do all /questions
 
-do all /questions
+Get Claude code working on the proxy containerization problem
 
 Fix bug with adding second site on PayPal and tell [Des](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgMCXPJQBxssKXfFhRGfhxWnGX) and [Autumn](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgLjPWXMXdZtggsNjqjbhvbwhL)
 
