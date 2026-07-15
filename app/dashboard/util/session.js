@@ -4,10 +4,13 @@ const session = require("express-session");
 const { RedisStore } = require("connect-redis");
 const redis = require("redis");
 
-// connect-redis 9 uses the promise API (get/set/del with options), so we need
-// a native redis 5 client, not the legacy-mode client from models/redis
+// connect-redis 9 uses the promise API (get/set/del with options), so use
+// a native redis client, not the shared application singleton from models/client.
 const sessionClient = redis.createClient({
   url: `redis://${config.redis.host}:${config.redis.port}`,
+  RESP: 2,
+  commandOptions: { timeout: undefined },
+  socket: { keepAliveInitialDelay: 5000 },
 });
 sessionClient.connect().catch((err) => {
   console.error("Session Redis connect error:", err);
