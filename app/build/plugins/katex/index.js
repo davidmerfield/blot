@@ -67,6 +67,11 @@ function eachTextNode(node, cb) {
 }
 
 function render($, callback) {
+
+  console.log('html');
+  console.log('--------------------------------');
+  console.log($.html());
+  console.log('--------------------------------');
   $("p").each(function () {
     const $p = $(this);
     if ($p.html().indexOf(delimiter) === -1 || $p.find("br").length === 0) return;
@@ -78,6 +83,10 @@ function render($, callback) {
   const rootNode = $("body")[0] || $.root()[0];
 
   eachTextNode(rootNode, (textNode) => {
+    console.log('running katex plugin:');
+    console.log('--------------------------------');
+    console.log(textNode.data);
+    console.log('--------------------------------');
     const converted = convertMathInText(textNode.data);
 
     if (converted !== textNode.data) {

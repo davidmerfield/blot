@@ -1,0 +1,21 @@
+# KaTeX plugin
+
+Converts `$$...$$` TeX in entry HTML into rendered KaTeX output.
+
+## Tests
+
+```bash
+npm test app/build/plugins/katex
+```
+
+Test fixtures live in `tests/examples/`. Each `.txt`, `.md`, `.gdoc`, or `.rtf` file is built through the plugin and compared to a matching `.html` expected output file.
+
+## Preview server
+
+To visually confirm KaTeX output for the test fixtures, run:
+
+```bash
+node app/build/plugins/katex/preview.js
+```
+
+Then open http://localhost:7843 (or the port set by `KATEX_PREVIEW_PORT`). The page shows each example's source, expected HTML, and actual build output side by side.

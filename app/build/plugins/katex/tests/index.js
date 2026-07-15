@@ -42,3 +42,10 @@ describe("katex plugin integration", function () {
       });
     });
 });
+
+afterAll(function () {
+  console.log(
+    "\nTo visually confirm KaTeX output for test fixtures, run the preview server:"
+  );
+  console.log("node app/build/plugins/katex/preview.js");
+});
