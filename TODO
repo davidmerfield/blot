@@ -148,10 +148,10 @@ Dropbox:
 - Modify setup flow:
   - Phase 1: RESET FROM BLOT (NON DESTRUCTIVE, deduplicate on conflict)
   - Phase 2: RESET TO BLOT (TWICE?) then sync/FIX then begin ordinary syncing
+  - Add a progress bar to the dashboard during initial client setup. Use the Google Drive and Git client progress bar implementations as reference.
 - Make Dropbox sync issue emails more useful with a script to compile the logs for a single site (including macserver)
   - Adjust full_folder to add a big warning to prevent confusion about where the new folder is when transitioning permissions
   - Add a step to authentication flow which says: 'there is already a folder called 'Your blog title' in your Dropbox, would you like to use that?' then overwrite the files inside. This prevents the proliferation of confusing 'Your blog title (1)' when you re-authenticate.
-  - Add a progress bar to the dashboard when writing existing files to Dropbox. It takes a while and confuses people. Perhaps leverage existing status message system with prefix of "(1/247)" to be parsed on front-end and turned into progress bar
   - Make the folder in Dropbox rename automatically when the customer changes the username for one of their multiple blogs?
   - When you switch from app folder to full folder, there should be a notification indicating that your folder location has changed
   - Check content hash for upload possible
@@ -204,6 +204,7 @@ iCloud:
 - Add stats on response time to iCloud server health check logging
   - maybe monitor response time average and email notify when it increases dramatically?
 - Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
+- Add a progress bar to the dashboard during initial client setup. Use the Google Drive and Git client progress bar implementations as reference.
 - Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
   - Add logging instrumentation of modified file paths to sync verification to aid in analysis of sync drift
 - Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
