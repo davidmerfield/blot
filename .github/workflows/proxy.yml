@@ -1,0 +1,138 @@
+name: openresty
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+    paths:
+      - ".github/workflows/openresty.yml"
+      - "config/openresty/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4 # Update to latest version
+
+      # Cache npm dependencies
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      # Cache luarocks
+      - name: Cache luarocks
+        uses: actions/cache@v4
+        with:
+          path: ~/.luarocks
+          key: ${{ runner.os }}-luarocks-${{ hashFiles('**/*.rockspec') }}
+          restore-keys: |
+            ${{ runner.os }}-luarocks-
+
+      - name: Install PCRE library
+        run: sudo apt-get install -y libpcre3 libpcre3-dev
+
+      # Debug: Show directory structure before cleanup
+      - name: Debug - Show initial directory structure
+        run: |
+          pwd
+          ls -la
+          ls -la ~/.openresty || echo "No ~/.openresty directory"
+          ls -la /usr/local/openresty || echo "No /usr/local/openresty directory"
+
+      # Clear previous installation
+      - name: Clean previous installation
+        run: |
+          sudo rm -rf ~/.openresty /usr/local/openresty
+          sudo mkdir -p /usr/local/openresty
+          sudo chown -R $USER:$USER /usr/local/openresty
+
+      # Install OpenResty without using cache
+      - name: Install OpenResty
+        uses: leafo/gh-actions-openresty@v1
+        with:
+          openrestyVersion: "1.21.4.2"
+          configureFlags: "--with-pcre-jit --with-ipv6 --with-http_v2_module"
+          buildCache: false
+
+      # Debug: Verify installation
+      - name: Debug - Verify OpenResty installation
+        run: |
+          echo "Directory structure after installation:"
+          ls -la /usr/local/openresty
+          echo "OpenResty version:"
+          /usr/local/openresty/bin/openresty -v || true
+          echo "LuaJIT directory contents:"
+          ls -la /usr/local/openresty/luajit || true
+
+      - uses: leafo/gh-actions-luarocks@v4
+        with:
+          withLuaPath: "/usr/local/openresty/luajit/"
+
+      - name: Install auto-ssl
+        run: |
+          which luarocks
+          sudo /home/runner/work/Blot/Blot/.luarocks/bin/luarocks install lua-resty-auto-ssl
+          sudo /home/runner/work/Blot/Blot/.luarocks/bin/luarocks list
+          luarocks show lua-resty-auto-ssl
+
+      - name: Set up Redis
+        uses: shogo82148/actions-setup-redis@v1
+        with:
+          redis-version: 6.2.6
+
+      - name: Set up Node
+        uses: actions/setup-node@v4 # Update to latest version
+        with:
+          node-version: 21.7.3
+          cache: 'npm' # Enable built-in npm caching
+
+      - name: Install Dependencies
+        run: npm ci # Use ci instead of install for more reliable builds
+
+      - name: Create required directories
+        run: |
+          sudo mkdir -p /var/instance-ssd/logs
+          mkdir -p /home/runner/work/Blot/Blot/config/openresty/data/latest
+
+      - name: Build openresty config
+        env:
+          NODE_PATH: /home/runner/work/Blot/Blot/app
+          NODE_SERVER_IP: 127.0.0.1
+          LUA_PACKAGE_PATH: /home/runner/work/Blot/Blot/.luarocks/share/lua/5.1/?.lua;/home/runner/work/Blot/Blot/config/openresty/conf/?.lua
+          REDIS_IP: 127.0.0.1
+          OPENRESTY_USER: runner
+          DISABLE_HTTP2: true
+          OPENRESTY_CACHE_DIRECTORY: /home/runner/work/Blot/Blot/config/openresty/data/latest/cache
+          OPENRESTY_CONFIG_DIRECTORY: /home/runner/work/Blot/Blot/config/openresty/data
+          SSL_CERTIFICATE: /home/runner/work/Blot/Blot/config/openresty/data/latest/selfsigned.crt
+          SSL_CERTIFICATE_KEY: /home/runner/work/Blot/Blot/config/openresty/data/latest/selfsigned.key
+        run: |
+          node config/openresty/build-config.js --skip-confirmation
+          cat config/openresty/data/latest/openresty.conf
+
+      - name: Generate self-signed SSL certs
+        run: |
+          openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout /home/runner/work/Blot/Blot/config/openresty/data/latest/selfsigned.key \
+            -out /home/runner/work/Blot/Blot/config/openresty/data/latest/selfsigned.crt \
+            -subj "/C=US/ST=Oregon/L=Portland/O=Company Name/OU=Org/CN=localhost"
+
+      - name: Run openresty
+        run: sudo /usr/local/openresty/bin/openresty -c /home/runner/work/Blot/Blot/config/openresty/data/latest/openresty.conf
+
+      - name: Verify openresty is running
+        run: |
+          curl -f localhost:80 || (sudo cat /var/instance-ssd/logs/* && exit 1)
+
+      - name: Run openresty tests
+        env:
+          NODE_PATH: /home/runner/work/Blot/Blot/app
+          BLOT_OPENRESTY_TEST_USER: runner
+          BLOT_OPENRESTY_TEST_GROUP: runner
+        run: node scripts/tests config/openresty
