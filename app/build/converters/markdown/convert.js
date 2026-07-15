@@ -33,6 +33,8 @@ module.exports = function (blog, text, options, callback) {
     // Leave $$...$$ untouched so the KaTeX plugin can
     // render math consistently across all text converters.
     "-tex_math_dollars" +
+    // Leaves raw TeX alone so the KaTeX plugin can render math consistently across all text converters.
+    "-raw_tex" +
     // This sometimes throws errors for some reason
     "-yaml_metadata_block" +
     // Don't generate figures automatically
