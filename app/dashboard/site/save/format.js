@@ -2,6 +2,31 @@ var Blog = require("models/blog");
 var formJSON = require("helper/formJSON");
 var extend = require("helper/extend");
 var normalizeImageExif = require("models/blog/util/imageExif").normalize;
+var normalizeConverters = require("models/blog/util/converters").normalize;
+
+function normalizeBooleanOption(value) {
+  if (value === null || value === undefined || value === false || value === 0)
+    return false;
+
+  if (value === true || value === 1) return true;
+
+  if (typeof value === "string") {
+    var normalized = value.trim().toLowerCase();
+
+    if (
+      normalized === "" ||
+      normalized === "false" ||
+      normalized === "off" ||
+      normalized === "0"
+    )
+      return false;
+
+    if (normalized === "true" || normalized === "on" || normalized === "1")
+      return true;
+  }
+
+  return Boolean(value);
+}
 
 module.exports = function (req, res, next) {
   try {
@@ -42,18 +67,40 @@ module.exports = function (req, res, next) {
   }
 
 
+  if (Object.prototype.hasOwnProperty.call(req.updates, "converters")) {
+    var converterUpdates = req.updates.converters;
+
+    if (
+      converterUpdates &&
+      typeof converterUpdates.img === "object" &&
+      Object.prototype.hasOwnProperty.call(converterUpdates.img, "enabled")
+    ) {
+      converterUpdates.img = converterUpdates.img.enabled;
+    }
+
+    req.updates.converters = normalizeConverters(converterUpdates, {
+      fallback: req.blog && req.blog.converters ? req.blog.converters : undefined,
+    });
+
+    extend(req.updates.converters).and(req.blog.converters || {});
+  }
+
+
   if (req.updates.plugins) {
     // this bullshit below is because I haven't properly declared
     // the model for blog.plugins so formJSON needs a little help...
     for (var i in req.updates.plugins) {
-      req.updates.plugins[i].enabled = req.updates.plugins[i].enabled === "on";
+      req.updates.plugins[i].enabled = normalizeBooleanOption(
+        req.updates.plugins[i].enabled
+      );
       if (!req.updates.plugins[i].options) req.updates.plugins[i].options = {};
     }
 
     if (req.updates.plugins.typeset) {
       for (var x in req.updates.plugins.typeset.options)
-        req.updates.plugins.typeset.options[x] =
-          req.updates.plugins.typeset.options[x] === "on";
+        req.updates.plugins.typeset.options[x] = normalizeBooleanOption(
+          req.updates.plugins.typeset.options[x]
+        );
     }
 
     extend(req.updates.plugins).and(req.blog.plugins);

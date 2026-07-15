@@ -1,4 +1,5 @@
 var defaultPlugins = require("build/plugins").defaultList;
+var _ = require("lodash");
 
 module.exports = {
   client: "",
@@ -7,6 +8,17 @@ module.exports = {
   avatar: "",
   roundAvatar: false,
   imageExif: "basic",
+  converters: {
+    html: true,
+    img: true,
+    webloc: true,
+    gdoc: true,
+    docx: true,
+    rtf: true,
+    odt: true,
+    org: true,
+    markdown: true,
+  },
   cssURL: "",
   scriptURL: "",
   template: "SITE:blog",
@@ -27,7 +39,10 @@ module.exports = {
   dateFormat: "M/D/YYYY",
   forceSSL: true,
   redirectSubdomain: true,
-  plugins: defaultPlugins,
+  plugins: _.cloneDeep(defaultPlugins),
   cacheID: 0,
-  flags: { google_drive_beta: false },
+  flags: {
+    google_drive_beta: false,
+    deleted_entries_sanitized: false,
+  },
 };

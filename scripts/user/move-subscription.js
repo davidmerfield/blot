@@ -19,7 +19,6 @@ get(from, function (err, oldUser) {
     var newSubscription = { subscription: oldUser.subscription };
     var oldSubscription = {
       subscription: newUser.subscription,
-      isDisabled: true,
     };
 
     console.log("Customer ID", customerID);
@@ -33,7 +32,7 @@ get(from, function (err, oldUser) {
     User.set(newUser.uid, newSubscription, function (err) {
       if (err) throw err;
 
-      User.set(oldUser.uid, oldSubscription, function (err) {
+      User.disable(oldUser, oldSubscription, function (err) {
         if (err) throw err;
 
         process.exit();

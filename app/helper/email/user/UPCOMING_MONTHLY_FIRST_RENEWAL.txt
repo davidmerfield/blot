@@ -1,0 +1,9 @@
+Your subscription renews next week
+
+Your [Blot]({{{site}}}) subscription will renew in 7 days.
+
+If you would like help setting up or improving your site, just reply to this email.
+
+You can manage your subscription at any time:
+- [Switch to annual billing]({{{site}}}/account/subscription/billing-interval)
+- [Cancel your subscription]({{{site}}}/account/subscription) 

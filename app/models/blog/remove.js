@@ -10,14 +10,21 @@ var flushCache = require("./flushCache");
 
 var START_CURSOR = "0";
 var SCAN_SIZE = 1000;
+var BLOG_ID_REGEX = /^blog_[a-f0-9]+$/;
+
+function isValidBlogID(blogID) {
+  return typeof blogID === "string" && BLOG_ID_REGEX.test(blogID);
+}
 
 function remove(blogID, callback) {
+  if (!isValidBlogID(blogID)) return callback(new Error("Invalid blog id"));
+
   get({ id: blogID }, function (err, blog) {
-    if (err || !blog) return callback(err || new Error("No blog"));
+    if (err || !blog || !blog.id) return callback(err || new Error("No blog"));
 
     // We need to enable the blog to disconnect the client
     // since we need to acquire a sync lock...
-    set(blog.id, { isDisabled: false }, function (err) {
+    set(blogID, { isDisabled: false }, function (err) {
       if (err) return callback(err);
 
       flushCache(blogID, function (err) {
@@ -33,7 +40,9 @@ function remove(blogID, callback) {
           }
         );
 
-        async.series(tasks, callback);
+        async.series(tasks, function (err) {
+          callback(err, blog);
+        });
       });
     });
   });
@@ -51,7 +60,9 @@ function wipeFolders(blog, callback) {
       safelyRemove.bind(null, blogFolder, config.blog_folder_dir),
       safelyRemove.bind(null, staticFolder, config.blog_static_files_dir),
     ],
-    callback
+    function (err) {
+      callback(err);
+    }
   );
 
   // This could get messy if the blog.id is an empty
@@ -80,46 +91,60 @@ function wipeFolders(blog, callback) {
 }
 
 function deleteKeys(blog, callback) {
-  var multi = client.multi();
+  (async function () {
+    try {
+      var multi = client.multi();
+      var ownedTemplates =
+        (await client.sMembers("template:owned_by:" + blog.id)) || [];
 
-  var patterns = ["template:" + blog.id + ":*", "blog:" + blog.id + ":*"];
+      var patterns = ["template:" + blog.id + ":*", "blog:" + blog.id + ":*"];
 
-  var remove = ["template:owned_by:" + blog.id, "handle:" + blog.handle];
+      var remove = ["template:owned_by:" + blog.id];
 
-  // TODO ALSO remove alternate key with/out 'www', e.g. www.example.com
-  if (blog.domain) {
-    remove.push("domain:" + blog.domain);
-    remove.push("domain:" + BackupDomain(blog.domain));
-  }
+      if (blog.handle) {
+        remove.push("handle:" + blog.handle);
+        remove.push("domain:" + blog.handle + "." + config.host);
+      }
 
-  remove.push("domain:" + blog.handle + "." + config.host);
+      // TODO ALSO remove alternate key with/out 'www', e.g. www.example.com
+      if (blog.domain) {
+        remove.push("domain:" + blog.domain);
+        remove.push("domain:" + BackupDomain(blog.domain));
+      }
 
-  async.each(
-    patterns,
-    function (pattern, next) {
-      var args = [START_CURSOR, "MATCH", pattern, "COUNT", SCAN_SIZE];
+      for (const pattern of patterns) {
+        var cursor = START_CURSOR;
 
-      client.scan(args, function then(err, res) {
-        if (err) throw err;
+        do {
+          var res = await client.scan(cursor, {
+            MATCH: pattern,
+            COUNT: SCAN_SIZE,
+          });
 
-        // the cursor for the next pass
-        args[0] = res[0];
+          if (!res || typeof res !== "object") {
+            throw new Error("Unexpected SCAN reply: " + JSON.stringify(res));
+          }
 
-        // Append the keys we matched in the last pass
-        remove = remove.concat(res[1]);
+          cursor = String(res.cursor);
 
-        // There are more keys to check, so keep going
-        if (res[0] !== START_CURSOR) return client.scan(args, then);
+          if (Array.isArray(res.keys)) {
+            remove = remove.concat(res.keys);
+          }
+        } while (cursor !== START_CURSOR);
+      }
 
-        next();
-      });
-    },
-    function () {
-      multi.del(remove);
-      multi.srem(key.ids, blog.id);
-      multi.exec(callback);
+      if (ownedTemplates.length > 0) {
+        multi.sRem("template:public_templates", ownedTemplates);
+      }
+
+      if (remove.length > 0) multi.del(remove);
+      multi.sRem(key.ids, blog.id);
+      await multi.exec();
+      callback();
+    } catch (err) {
+      callback(err);
     }
-  );
+  })();
 }
 
 function disconnectClient(blog, callback) {
@@ -145,9 +170,7 @@ function updateUser(blog, callback) {
 
     // If the user has already been deleted then
     // we don't need to worry about this.
-    if (!user || !user.blogs) {
-      return callback();
-    }
+    if (!user || !user.blogs) return callback();
 
     var changes = {};
 
@@ -161,7 +184,9 @@ function updateUser(blog, callback) {
 
     if (user.lastSession === blog.id) changes.lastSession = "";
 
-    User.set(blog.owner, changes, callback);
+    User.set(blog.owner, changes, function (err) {
+      callback(err);
+    });
   });
 }
 

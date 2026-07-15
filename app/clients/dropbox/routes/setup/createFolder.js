@@ -95,6 +95,15 @@ function moveExistingFiles(client, otherBlog) {
             };
           });
 
+        if (entries.length === 0) {
+          await set(otherBlog.id, {
+            folder,
+            folder_id,
+            cursor: "",
+          });
+          return done(null, resolve);
+        }
+
         const {
           result: { async_job_id },
         } = await client.filesMoveBatch({

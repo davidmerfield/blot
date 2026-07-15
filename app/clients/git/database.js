@@ -23,7 +23,18 @@ function createToken(user_id, callback) {
 
   debug("User:", user_id, "Creating token if none exists");
 
-  client.setnx(tokenKey(user_id), new_token, callback);
+  (async function () {
+    try {
+      var created = await client.setNX(tokenKey(user_id), new_token);
+
+      // Preserve legacy setnx callback semantics (1: created, 0: existed)
+      if (typeof created === "boolean") created = created ? 1 : 0;
+
+      callback(null, created);
+    } catch (err) {
+      callback(err);
+    }
+  })();
 }
 
 function refreshToken(user_id, callback) {
@@ -31,13 +42,17 @@ function refreshToken(user_id, callback) {
 
   debug("User:", user_id, "Refreshing token");
 
-  client.set(tokenKey(user_id), new_token, function (err) {
-    if (err) return callback(err);
+  (async function () {
+    try {
+      await client.set(tokenKey(user_id), new_token);
 
-    debug("User:", user_id, "Set token successfully");
+      debug("User:", user_id, "Set token successfully");
 
-    return callback(null, new_token);
-  });
+      return callback(null, new_token);
+    } catch (err) {
+      return callback(err);
+    }
+  })();
 }
 
 function checkToken(user_id, token, callback) {
@@ -53,31 +68,63 @@ function checkToken(user_id, token, callback) {
 function flush(user_id, callback) {
   debug("User:", user_id, "Getting token");
 
-  client.del(tokenKey(user_id), function (err) {
-    if (err) return callback(err);
+  (async function () {
+    try {
+      await client.del(tokenKey(user_id));
 
-    debug("User:", user_id, "Flushed token");
+      debug("User:", user_id, "Flushed token");
 
-    return callback(null);
-  });
+      return callback(null);
+    } catch (err) {
+      return callback(err);
+    }
+  })();
 }
 
 function getToken(user_id, callback) {
   debug("User:", user_id, "Getting token");
 
-  client.get(tokenKey(user_id), callback);
+  (async function () {
+    try {
+      var token = await client.get(tokenKey(user_id));
+      return callback(null, token);
+    } catch (err) {
+      return callback(err);
+    }
+  })();
 }
 
 function setStatus(blogID, status, callback) {
-  client.set(statusKey(blogID), status, callback);
+  (async function () {
+    try {
+      var result = await client.set(statusKey(blogID), status);
+      return callback(null, result);
+    } catch (err) {
+      return callback(err);
+    }
+  })();
 }
 
 function getStatus(blogID, callback) {
-  client.get(statusKey(blogID), callback);
+  (async function () {
+    try {
+      var status = await client.get(statusKey(blogID));
+      return callback(null, status);
+    } catch (err) {
+      return callback(err);
+    }
+  })();
 }
 
 function removeStatus(blogID, callback) {
-  client.del(statusKey(blogID), callback);
+  (async function () {
+    try {
+      var removed = await client.del(statusKey(blogID));
+      return callback(null, removed);
+    } catch (err) {
+      return callback(err);
+    }
+  })();
 }
 
 database.createToken = createToken;

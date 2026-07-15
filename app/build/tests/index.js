@@ -215,7 +215,7 @@ describe("build", function () {
 
   it("will handle empty metadata", function (done) {
     var path = "/Hello.txt";
-    var contents = "Menu: \n\nHey";
+    var contents = "menu: \n\nHey";
 
     fs.outputFileSync(this.blogDirectory + path, contents);
 

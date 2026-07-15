@@ -1,0 +1,29 @@
+{{> header}}
+
+<section class="pt5 pb4">
+  <h1 class="fw9 lh-title f1 measure-narrow black-90 mt0 mb3">All sections</h1>
+  <p class="measure lh-copy f4 black-60 mt0">
+    Browse every tag in the magazine and jump straight to the stories that interest you most.
+  </p>
+</section>
+
+{{#all_tags.length}}
+<section class="pb5">
+  <div class="cf nl3 nr3">
+    {{#all_tags}}
+    <a class="pa3 lh-title w-100 w-50-m w-third-l fl dim no-underline br1" href="/tagged/{{slug}}">
+      <span class="db f3 fw6 black-80">{{tag}}</span>
+      <span class="db mt2 f6 fw4 black-50">{{total}} posts</span>
+    </a>
+    {{/all_tags}}
+  </div>
+</section>
+{{/all_tags.length}}
+
+{{^all_tags.length}}
+<section class="pv5 tc">
+  <p class="f4 black-50 mv0">No sections available yet.</p>
+</section>
+{{/all_tags.length}}
+
+{{> footer}}

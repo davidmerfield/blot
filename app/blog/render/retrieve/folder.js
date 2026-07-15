@@ -5,7 +5,7 @@ const Path = require("path");
 const localPath = require("helper/localPath");
 const alphanum = require("helper/alphanum");
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   let path = "/";
   let parent;
 

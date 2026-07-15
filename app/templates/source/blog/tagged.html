@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+
+    {{> sidebar}}
+
+    <h1>{{tag}}</h1>
+
+    <div class="entry">
+
+      {{#entries}}
+      <a href="{{{url}}}">{{title}}</a>
+      <span class="light">{{date}}</span>
+      <br>
+      {{/entries}}
+
+    </div>
+
+    {{#pagination}}
+    <div class="pagination">
+      {{#previous}}
+      <a href="/tagged/{{slug}}/page/{{previous}}">&larr; Newer</a>
+      {{/previous}}
+      Page {{current}} of {{total}}
+      {{#next}}
+      <a href="/tagged/{{slug}}/page/{{next}}">Older &rarr;</a>
+      {{/next}}
+    </div>
+    {{/pagination}}
+
+    {{> footer}}
+  </body>
+</html>

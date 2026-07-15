@@ -1,0 +1,26 @@
+{{#entry.page}}
+
+{{> header}}
+
+{{#entry}}
+<div style="flex-grow:1">
+  <div class="entry" style="max-width:40rem;margin:0 auto;padding:0 1rem">
+    {{{html}}}
+    {{> pluginHTML}}
+  </div>
+</div>
+<div style="visibility:hidden">
+  <a href="/" style="display:block;font-weight:300;color:rgba(0,0,0,.4);text-decoration:none;padding:0rem 3rem;margin-right:6rem">
+      {{#avatar}}<img style="max-width:1.65rem;max-height:1.65rem;margin-right:1rem;vertical-align:middle" src="{{avatar}}">{{/avatar}}{{title}}</a>
+  {{! This blocks out the neccessary width for the sidebar so the grid lines up}}
+
+</div>
+
+{{/entry}}
+</div>
+
+{{/entry.page}}
+
+<style type="text/css">
+  .caption {font-size:0.85em;display: block;}
+</style>

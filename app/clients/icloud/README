@@ -1,30 +1,279 @@
-Guide to debugging issues on remote server:
+# iCloud Client
 
-ssh into the server:
+The iCloud client integrates Blot with Apple's iCloud Drive, enabling users to synchronize their blog content with a shared iCloud Drive folder. This client manages bidirectional synchronization between Blot's local file storage and a user's iCloud Drive, handling file uploads, downloads, deletions, and conflict resolution.
 
-ssh macserver
+## Purpose and Role
 
-use VNC viewer to log into remote server
+The iCloud client is one of several storage backends available to Blot users. It allows users to connect their blog to an iCloud Drive folder via a sharing link and synchronize content bidirectionally. The client coordinates with a macOS helper service (the "macserver") that monitors the iCloud folder for changes on the local macOS system where iCloud Drive resides.
 
-browse error logs:
+The architecture separates concerns:
+- The main Node.js process handles HTTP routes, database operations, and high-level sync orchestration.
+- A remote macOS service (macserver) provides file system watching, directory enumeration, and low-level file operations on iCloud Drive.
 
-pm2 logs -e macserver
+## Directory Structure
 
-Guide to running this client locally:
+### Root-Level Files
 
-use the script:
+- `index.js` - Main entry point exporting the public API: display name, description, and lifecycle hooks (`init`, `disconnect`, `remove`, `resync`, `write`, `site_routes`, `dashboard_routes`).
 
+- `database.js` - Redis-backed persistence layer for per-blog iCloud account metadata. Stores sharingLink, setupComplete state, transfer status, and error messages. Uses the key prefix `blot:clients:icloud-drive:`.
+
+- `init.js` - Initialization and background job orchestration. On startup, resumes any interrupted initial transfers. Exports functions for hourly validation syncs and daily full resyncs of connected accounts. Monitors macro server health.
+
+- `disconnect.js` - Handles client disconnection. Notifies the remote macserver to disconnect (best-effort), then locally removes the blog's database entry and clears the blog's client assignment.
+
+- `remove.js` - File removal handler. Deletes a file from both the local Blot storage and the remote iCloud folder.
+
+- `write.js` - File write handler. Writes content to local Blot storage and then uploads to the remote iCloud folder. Rejects writes to ignored files.
+
+### `/sync` - Synchronization Engine
+
+Core bidirectional sync logic. All sync operations acquire and hold a sync lock via `establishSyncLock()` to prevent concurrent modifications.
+
+- `initialTransfer.js` - Orchestrates the one-time setup flow when a user first connects an iCloud folder. Resolves case conflicts in the folder, syncs files to iCloud (skipDeletions mode), verifies the transfer, syncs back from iCloud, then signals the macserver to begin watching.
+
+- `fromiCloud.js` - Syncs remote iCloud folder state down to local Blot storage. Recursively walks the remote folder tree, comparing sizes to detect changes, downloading new/modified files, removing local files that don't exist remotely, and creating local directories as needed. Skips ignored files and oversized files (creating empty placeholders instead). Returns a summary of changes.
+
+- `toiCloud.js` - Syncs local Blot folder state up to remote iCloud. Recursively walks the local folder tree, comparing sizes, uploading new/modified files, creating remote directories, and removing remote files not present locally (unless skipDeletions is true). Implements retry logic with exponential backoff for failed operations. Can abort on error or continue.
+
+- `resolveCaseConflicts.js` - Detects and resolves case-sensitivity conflicts before initial transfer. iCloud Drive on macOS is case-preserving but case-insensitive; this prevents collisions.
+
+- `/util` - Helper utilities:
+  - `download.js` - Downloads a file from the macserver, preserves modification time.
+  - `remoteUpload.js` - Uploads a file to the macserver with modification time metadata.
+  - `remoteMkdir.js` - Creates a directory on the remote iCloud folder via the macserver.
+  - `remoteDelete.js` - Deletes a file or directory on the remote iCloud folder via the macserver.
+  - `remoteReaddir.js` - Lists directory contents from the remote iCloud folder.
+  - `remoteRecursiveList.js` - Recursively lists and caches the entire remote folder tree.
+  - `localReaddir.js` - Lists local directory contents with metadata (size, isDirectory).
+  - `checkWeCanContinue.js` - Returns a function that throws if the sync lock is lost during an operation, protecting against concurrent sync attempts.
+
+### `/routes` - HTTP API Routes
+
+#### `/routes/site` - Macserver-Facing Routes
+
+Authenticated endpoints called by the remote macserver to report status, upload/download files, and manage the synchronization state.
+
+- `index.js` - Route aggregator. Defines:
+  - `/started` - Ping endpoint for macserver startup notification (sends admin email, max 2 notifications).
+  - `/status` - POST endpoint to receive status updates and resync requests from macserver.
+  - `/upload` - POST endpoint to receive files from macserver (binary data, with placeholder support).
+  - `/delete` - POST endpoint to delete files locally on behalf of macserver.
+  - `/mkdir` - POST endpoint to create directories locally.
+
+- `status.js` - Handles macserver status updates. Processes resync requests (with deduplication to avoid duplicate in-flight syncs), acceptedSharingLink notifications (triggering initialTransfer), and general sync notifications. Deduplicates resync requests within a 10-second window.
+
+- `upload.js` - Binary file upload handler. Accepts raw binary data, validates headers, stores files locally, preserves modification times, and supports placeholder uploads for oversized files. Uses sync lock to coordinate with other operations.
+
+- `delete.js` - File deletion handler. Deletes files from local Blot storage.
+
+- `mkdir.js` - Directory creation handler. Creates directories locally.
+
+- `/middleware`:
+  - `authorize.js` - Validates the Authorization header against the macserver secret.
+  - `loadAccount.js` - Loads the iCloud account metadata for the blog from the database.
+  - `ensureTransferComplete.js` - Ensures the initial transfer is complete before allowing modifications (returns 409 if still transferring).
+
+#### `/routes/dashboard.js` - User-Facing Routes
+
+Web UI endpoints for dashboard and folder setup:
+
+- `GET /` - Main dashboard. Displays account status if connected, otherwise redirects to connect.
+- `GET /connect` - Connect form (displays sharing link prompt).
+- `GET /setup` - Setup progress page.
+- `GET /disconnect` - Disconnect confirmation page.
+- `POST /disconnect` - Processes disconnection.
+- `POST /set-up-folder` - Processes the sharing link submission, validates format, stores metadata, calls macserver /setup endpoint, and begins initialTransfer.
+- `POST /cancel` - Cancels setup before completion.
+
+#### `/routes/lock.js` - Sync Lock Utilities
+
+- `handleSyncLockError()` - Detects and handles sync lock acquisition failures, returning HTTP 423 with Retry-After header.
+
+### `/util`
+
+- `rateLimitedFetchWithRetriesAndTimeout.js` - HTTP client wrapper with rate limiting, retry logic, and timeout enforcement for macserver communication.
+
+- `monitorMacServerStats.js` - Health check for remote macserver.
+
+### `/macserver`
+
+Contains the remote macOS helper service (separate from this Node.js process). Includes its own `node_modules` and a separate README with deployment instructions.
+
+### `/views`
+
+HTML templates for the dashboard UI:
+- `index.html` - Main status page.
+- `connect.html` - Sharing link entry form.
+- `disconnect.html` - Disconnection confirmation.
+
+## Public API
+
+Exported from `index.js`:
+
+- `display_name` - String: "iCloud"
+- `description` - String: "A file storage and synchronization service"
+- `init(callback)` - Initialization function; resumes interrupted transfers and starts background jobs.
+- `disconnect(blogID, callback)` - Disconnects a blog from iCloud.
+- `remove(blogID, path, callback)` - Removes a file from Blot and iCloud.
+- `resync()` - Exported function for manual resync (maps to `fromiCloud`).
+- `write(blogID, path, contents, callback)` - Writes content to local storage and syncs to iCloud.
+- `site_routes` - Express router for macserver-facing API endpoints.
+- `dashboard_routes` - Express router for user-facing dashboard endpoints.
+
+## Sync and Authentication Flow
+
+### Initial Setup Flow
+
+1. User navigates to iCloud client dashboard and clicks "Connect."
+2. User enters an iCloud Drive sharing link (validated format: `https://www.icloud.com/iclouddrive/[code]#...`).
+3. The dashboard POST `/set-up-folder` validates the link, stores metadata (sharingLink, blotiCloudAccount), and sends a POST request to the remote macserver at `MACSERVER_URL/setup` with the blogID and sharingLink as headers.
+4. The macserver accepts the sharing link, accesses the iCloud folder, and notifies the Node.js process via POST `/status` with `acceptedSharingLink: true`.
+5. The Node.js process calls `initialTransfer()`:
+   - Acquires sync lock.
+   - Resolves case conflicts.
+   - Syncs Blot folder to iCloud (skipDeletions = true, allowing merge).
+   - Verifies the transfer (skipDeletions = true, abortOnError = true).
+   - Syncs from iCloud to pull any files added during transfer.
+   - Posts `/watch` to macserver to begin live monitoring.
+   - Sets `setupComplete: true` in database.
+
+### Ongoing Sync Flow
+
+1. **User modifies file on macOS iCloud folder**: macserver detects change, posts `/status` to Node.js with change metadata.
+2. **Macserver detects resync request (e.g., user resolves conflict)**: posts `/status` with `resyncRequested: true`.
+3. **Node.js process responds**: Acquires sync lock and runs `syncFromiCloud()` to pull all changes.
+4. **Blot user uploads/modifies file via web or API**: Blot calls the iCloud client's `write()` function, which syncs to iCloud via `remoteUpload()`.
+5. **File size limit**: Files exceeding `config.icloud.maxFileSize` are rejected on upload and skipped on download (empty placeholder created on download).
+
+### Disconnection Flow
+
+1. User clicks "Disconnect" on dashboard.
+2. POST `/disconnect` calls the iCloud client's `disconnect()` function.
+3. `disconnect()` attempts to notify macserver at `/disconnect` (best-effort).
+4. Locally deletes database entry and removes client assignment from blog.
+5. If macserver notification fails, a warning is logged for operator follow-up; local cleanup always succeeds.
+
+## Integration Points
+
+### Internal Dependencies
+
+- `models/blog` - Blog model for querying and updating blog metadata.
+- `models/client` - Redis client for persistent storage of iCloud account data.
+- `helper/localPath` - Computes local file paths given blogID and relative path.
+- `helper/email` - Sends notifications for server errors, resync requests, and sync issues.
+- `helper/clfdate` - Formats log timestamps.
+- `clients/util/shouldIgnoreFile` - Determines if a file should be excluded from sync (e.g., .DS_Store).
+- `sync/establishSyncLock` - Acquires exclusive folder lock to prevent concurrent syncs.
+- `sync/fix` - Runs post-sync validation/repair on blog folder.
+- `config` - Configuration object providing `config.icloud.server_address`, `config.icloud.secret`, `config.icloud.maxFileSize`, and `config.icloud.email`.
+
+### External Configuration
+
+- `config.icloud.server_address` - Base URL of the remote macserver (e.g., `https://macserver.local:3000`).
+- `config.icloud.secret` - Authorization token for macserver requests and macserver-to-Node.js requests.
+- `config.icloud.maxFileSize` - Maximum file size in bytes (e.g., 5 MB). Files exceeding this on upload are rejected; on download, an empty placeholder is created.
+- `config.icloud.email` - iCloud email address associated with the shared iCloud folder.
+
+### Remote Macserver API Contract
+
+The remote macserver exposes the following endpoints (called by Node.js):
+
+- `POST /setup` - Begin setup with sharing link. Headers: blogID, sharingLink, Authorization.
+- `POST /watch` - Begin monitoring folder for changes. Headers: blogID, Authorization.
+- `POST /disconnect` - Disconnect folder monitoring. Headers: blogID, Authorization.
+
+The macserver calls Node.js at the following endpoints:
+
+- `POST /status` - Report status/sync events. Headers: Authorization (macserver secret), blogID. Body: { resyncRequested?, acceptedSharingLink?, ...other fields }.
+- `POST /upload` - Upload file from macserver. Headers: Authorization, blogID, pathBase64, modifiedTime. Body: binary.
+- `POST /delete` - Delete file. Headers: blogID, pathBase64.
+- `POST /mkdir` - Create directory. Headers: blogID, pathBase64.
+- `GET /download` - Download file. Headers: Authorization, blogID, pathBase64. Response: binary with modifiedTime header.
+
+## Configuration and Deployment
+
+### Environment Variables
+
+Configured via `config/icloud.js`:
+
+- `server_address` - Macserver URL (required).
+- `secret` - Shared authorization secret (required).
+- `maxFileSize` - Maximum file size in bytes (required).
+- `email` - iCloud account email (required).
+
+### Macserver Setup
+
+The macserver is a separate Node.js process running on a macOS system with iCloud Drive configured. Deployment instructions and debugging guides are in `/macserver/README`.
+
+To deploy the macserver locally:
+```
 npm run deploy-localmacserver
+```
 
-if needed, ssh into the localmacserver:
+To check macserver logs:
+```
+pm2 logs macserver
+```
 
-ssh localmacserver
+Or via SSH:
+```
+ssh macserver
+pm2 logs -e macserver
+```
 
-and then start pm2:
+## Known Limitations and Constraints
 
-cd ~/blot/app/clients/icloud/macserver
+- **Case Sensitivity**: iCloud Drive on macOS is case-preserving but case-insensitive. The `resolveCaseConflicts()` utility detects and resolves collisions before initial transfer, but edge cases may exist.
 
-pm2 start ...
+- **File Size Limit**: Files exceeding `config.icloud.maxFileSize` cannot be transferred. Downloads create empty placeholder files; uploads are rejected. This is intentional to avoid resource exhaustion.
 
-when initially setting up the client, you need to switch users to press on the 'accept icloud sharing link' prompt manually since macos doesn't seem to allow a background gui process (required by the applescript). this can be fiddly to get right but once connected it's fairly smooth.
+- **Macserver Dependency**: All file operations on iCloud Drive depend on the remote macserver being online and accessible. Network failures and macserver crashes result in sync delays and error states.
 
+- **Shared Folder Only**: Only a single iCloud Drive sharing link can be associated with a blog at a time. Users cannot connect multiple folders.
+
+- **Modification Time Preservation**: The implementation attempts to preserve file modification times during sync, but local and remote system clock differences may cause discrepancies.
+
+- **Oversized File Handling**: On download, files exceeding the size limit are replaced with empty placeholders. This can lead to data loss if the file was expected to contain content.
+
+- **Resync Deduplication**: Resync requests are deduplicated within a 10-second window per blog per Node.js process. If multiple processes handle requests, this deduplication may not work across processes.
+
+- **Sync Lock**: Sync operations are serialized via a per-blog sync lock. If the lock holder crashes, the lock may expire, but this can leave the folder in an inconsistent state. Lock timeout is managed by the `establishSyncLock()` utility.
+
+- **Ignored Files**: Files matched by `shouldIgnoreFile()` (e.g., .DS_Store) are always removed during sync and never transferred.
+
+## Testing
+
+Tests are located in `/sync/tests/fromiCloud.js`. These are integration tests that exercise the sync from iCloud functionality with a bootstrapped test blog.
+
+To run tests:
+```
+npm test
+```
+
+Or run tests specific to iCloud:
+```
+npm test -- app/clients/icloud
+```
+
+## Internals: Sync Lock
+
+All mutable operations (upload, download, sync) acquire a sync lock via `establishSyncLock(blogID)`, which returns a `{ folder, done }` object. The `folder` object provides:
+
+- `folder.status(message)` - Updates the user-facing sync status message.
+- `folder.update(path)` - Registers a file change for blog indexing.
+
+Calling `await done()` releases the lock. If the lock expires during an operation, `checkWeCanContinue()` will throw and abort the operation. This prevents concurrent modifications and data loss.
+
+## Error Handling
+
+Errors during sync are captured and stored in the database under the `error` field. Users see these errors in the dashboard. On successful completion, the error field is cleared.
+
+The macserver failure flow:
+1. If macserver becomes unavailable, file operations fail.
+2. Errors are logged and reported to the user via email (max 2 server restart notifications; subsequent restarts trigger a panic notification).
+3. The sync lock prevents continued attempts until the server recovers.
+
+Disconnection failures:
+1. If macserver disconnection fails, a warning is logged in a structured format for operator follow-up.
+2. The blog is always disconnected locally, even if the remote cleanup fails.

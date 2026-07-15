@@ -39,10 +39,8 @@ function Metadata (html) {
         mixedCaseMetadata = {};
       }
 
-      // Map { Permalink } to { permalink }
-      // Blot uses lowercase metadata keys
+      // Preserve original metadata keys as parsed.
       Object.keys(mixedCaseMetadata).forEach(mixedCaseKey => {
-        let key = mixedCaseKey.toLowerCase();
         let value = mixedCaseMetadata[mixedCaseKey];
 
         // map 'null' values to empty strings
@@ -50,7 +48,7 @@ function Metadata (html) {
         // that are the string 'null' instead of simply empty
         if (value === null) value = "";
 
-        metadata[key] = value;
+        metadata[mixedCaseKey] = value;
       });
 
       // Remove the metadata from the returned HTML
@@ -114,8 +112,9 @@ function Metadata (html) {
       break;
     }
 
-    // The key is lowercased and trimmed
-    key = line.slice(0, firstColon).trim().toLowerCase();
+    // Preserve original metadata key casing
+    let originalKey = line.slice(0, firstColon).trim();
+    key = originalKey.toLowerCase();
 
     // The key contains non-alphanumeric characters, so reject it
     if (alphaNumericRegEx.test(key) === false) break;
@@ -138,7 +137,7 @@ function Metadata (html) {
       value = value.slice(0, -3).trim();
     }
 
-    metadata[key] = value;
+    metadata[originalKey] = value;
     debug("Line", i, "will be removed");
     linesToRemove.push(i);
   }

@@ -1,7 +1,6 @@
 // docker exec -it blot-node-app-1 node scripts/dropbox/fix-entry-dates.js
 
-const get = require("../get/blog");
-const each = require("../each/blog");
+const eachBlogOrOneBlog = require("../each/eachBlogOrOneBlog");
 const { promisify } = require("util");
 const Entries = require("models/entries");
 const Entry = require("models/entry");
@@ -15,7 +14,11 @@ const getEntry = (blogID, id) =>
     Entry.get(blogID, id, (entry) => resolve(entry))
   );
 
-const main = async (blogID) => {
+const processBlog = async (blog) => {
+  if (!blog || blog.isDisabled) return;
+  if (blog.client !== "dropbox") return;
+
+  const blogID = blog.id;
   const ids = await getAllIDs(blogID);
 
   for (const id of ids) {
@@ -85,52 +88,22 @@ const main = async (blogID) => {
   }
 };
 
-if (process.argv[2]) {
-  get(process.argv[2], async function (err, user, blog) {
-    if (err) throw err;
+if (require.main === module) {
+  const identifier = process.argv[2];
 
-    console.log("Resetting folder from Blot to Dropbox");
-    await main(blog.id);
-    console.log("Reset folder from Blot to Dropbox");
+  if (!identifier) {
+    console.log("Blogs to process: (will prompt for confirmation)");
+  }
 
-    process.exit();
-  });
-} else {
-  const blogIDs = [];
-  each(
-    (user, blog, next) => {
-      if (!blog || blog.isDisabled) return next();
-      if (blog.client !== "dropbox") return next();
-      blogIDs.push(blog.id);
-      next();
-    },
-    async (err) => {
-      if (err) throw err;
-
-      console.log("Blogs to process: ", blogIDs.length);
-
-      const confirmed = await getConfirmation(
-        "Are you sure you want to process all these blogs?"
-      );
-
-      if (!confirmed) {
-        console.log("Processing cancelled!");
-        process.exit();
-      }
-
-      for (let i = 0; i < blogIDs.length; i++) {
-        const blogID = blogIDs[i];
-        try {
-          await main(blogID);
-        } catch (e) {
-          console.log("Error processing blog", blogID, e);
-        }
-      }
-
+  eachBlogOrOneBlog(processBlog)
+    .then(() => {
       console.log("All blogs processed!");
-      process.exit();
-    }
-  );
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Error:", err);
+      process.exit(1);
+    });
 }
 
-module.exports = main;
+module.exports = processBlog;

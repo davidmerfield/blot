@@ -6,31 +6,28 @@ var viewModel = require("./viewModel");
 module.exports = function getView(templateID, viewID, callback) {
   var match;
 
-  client.hgetall(key.view(templateID, viewID), function (err, view) {
-    if (view) {
-      view = deserialize(view, viewModel);
-      return callback(err, view);
-    }
+  client
+    .hGetAll(key.view(templateID, viewID))
+    .then(function (view) {
+      if (view && Object.keys(view).length) {
+        return callback(null, deserialize(view, viewModel));
+      }
 
-    client.smembers(key.allViews(templateID), function (err, views) {
-      if (err) return callback(err);
+      return client.sMembers(key.allViews(templateID)).then(function (views) {
+        views.forEach(function (viewname) {
+          var name = viewname.slice(0, viewname.lastIndexOf("."));
+          if (name === viewID) match = viewname;
+        });
 
-      // goal is to find a view whose extension-less name matches
-      // so we can do. {{> head}} in templates and retrieve head.html
+        if (!match) return callback(new Error("No view: " + viewID));
 
-      views.forEach(function (viewname) {
-        var name = viewname.slice(0, viewname.lastIndexOf("."));
-        if (name === viewID) match = viewname;
+        return client.hGetAll(key.view(templateID, match)).then(function (matchedView) {
+          if (!matchedView || !Object.keys(matchedView).length)
+            return callback(new Error("No view: " + viewID));
+
+          callback(null, deserialize(matchedView, viewModel));
+        });
       });
-
-      if (!match) return callback(new Error("No view: " + viewID));
-
-      client.hgetall(key.view(templateID, match), function (err, view) {
-        if (!view) return callback(new Error("No view: " + viewID));
-
-        view = deserialize(view, viewModel);
-        callback(err, view);
-      });
-    });
-  });
+    })
+    .catch(callback);
 };

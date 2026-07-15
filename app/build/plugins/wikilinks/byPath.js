@@ -48,6 +48,25 @@ module.exports = function byPath(blogID, pathOfPost, href, isLink, callback) {
     rough.bind(null, blogID, resolvedHref),
   ];
 
+  // When the converter (e.g. Pandoc) resolves embed paths relative to the
+  // document, we get e.g. /Daily/Notes/Checklist for ![[Notes/Checklist]] in
+  // /Daily/Plan.txt. The file is at /Notes/Checklist.md. Try the path as if
+  // relative to blog root by stripping the current post's directory prefix.
+  if (
+    !isLink &&
+    href.startsWith("/") &&
+    dirOfPost !== "/" &&
+    href.startsWith(dirOfPost + "/")
+  ) {
+    const rootRelative = href.slice(dirOfPost.length).replace(/^\//, "");
+    if (rootRelative !== href) {
+      lookups.push(
+        exact.bind(null, blogID, rootRelative.startsWith("/") ? rootRelative : "/" + rootRelative),
+        rough.bind(null, blogID, rootRelative.startsWith("/") ? rootRelative : "/" + rootRelative)
+      );
+    }
+  }
+
   function exact(blogID, path, done) {
     getEntry(blogID, path, (entry) => {
       if (!entry || !entry.url || entry.deleted)

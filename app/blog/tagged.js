@@ -4,10 +4,10 @@ module.exports = function (server) {
   server.get(
     ["/tagged/:tag", "/tagged/:tag/page/:page"],
     function (request, response, next) {
-      retrieveTagged(request, function (err, result) {
+      retrieveTagged(request, response, function (err, result) {
         if (err) return next(err);
 
-        response.locals.slug = request.params.tag;
+        response.locals.slug = encodeURIComponent(request.params.tag);
         response.locals.tag = (result && result.tag) || request.params.tag;
         response.locals.entries = (result && result.entries) || [];
         response.locals.total = (result && result.total) || 0;

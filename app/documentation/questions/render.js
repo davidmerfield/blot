@@ -4,10 +4,12 @@ const cheerio = require("cheerio");
 const { marked } = require("marked");
 
 module.exports = function render (input) {
-  let html = input;
+  let html = { body: input, summary: "" };
 
   try {
-    html = highlight(marked.parse(input));
+    const parsed = marked.parse(input);
+    const sanitized = sanitizeHTML(parsed);
+    html = highlight(sanitized);
   } catch (e) {
     console.error(e);
   }
@@ -37,6 +39,38 @@ function highlight (html) {
   });
 
   return { body: removeXMLInvalidChars($.html()), summary: $.text() };
+}
+
+function sanitizeHTML (html) {
+  const $ = cheerio.load(html);
+  const executableTags = [
+    "script",
+    "iframe",
+    "object",
+    "embed",
+    "applet"
+  ];
+
+  executableTags.forEach(tag => {
+    $(tag).remove();
+  });
+
+  $("*").each((_, element) => {
+    const attributes = Object.keys(element.attribs || {});
+
+    attributes.forEach(attr => {
+      if (/^on/i.test(attr)) {
+        $(element).removeAttr(attr);
+        return;
+      }
+
+      if ((attr === "href" || attr === "src") && /^javascript:/i.test(element.attribs[attr])) {
+        $(element).removeAttr(attr);
+      }
+    });
+  });
+
+  return $.html();
 }
 
 // Removes everything forbidden by XML 1.0 specifications,

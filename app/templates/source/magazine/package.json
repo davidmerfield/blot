@@ -1,0 +1,69 @@
+{
+  "name": "Magazine",
+  "locals": {
+    "accent_color": "#0078D9",
+    "background_color": "#fff",
+    "text_color": "#000",
+    "page_size": 20,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
+    "relative_dates": false,
+    "syntax_highlighter": {
+      "id": "stackoverflow-light"
+    },
+    "body_font": {},
+    "demo_folder": "bjorn",
+    "template_categories": [
+      "writing"
+    ]
+  },
+  "isPublic": true,
+  "views": {
+    "style": {
+      "url": "/style.css"
+    },
+    "tags.html": {
+      "url": "/tags"
+    },
+    "js-barbra.js": {
+      "url": "/js-barba.js"
+    },
+    "archives.html": {
+      "url": "/archives",
+      "partials": {
+        "title": "Archives - {{{title}}}",
+        "description": "All the entries posted on {{{title}}}"
+      }
+    },
+    "tagged.html": {
+      "partials": {
+        "title": "{{{tag}}} - {{{title}}}",
+        "description": "All of the entries posted on {{{title}}} tagged {{{tag}}}"
+      }
+    },
+    "entries.html": {
+      "partials": {
+        "title": "{{{title}}}",
+        "description": "The latest entries posted on {{{title}}}"
+      }
+    },
+    "error.html": {
+      "partials": {
+        "title": "{{{error.title}}} - {{{title}}}",
+        "description": "Error on {{{title}}}"
+      }
+    },
+    "entry.html": {
+      "partials": {
+        "title": "{{{entry.title}}} - {{{title}}}",
+        "description": "{{{entry.summary}}}"
+      }
+    },
+    "search.html": {
+      "partials": {
+        "title": "Search - {{{title}}}",
+        "description": "Search all the entries posted on {{{title}}}"
+      }
+    }
+  }
+}

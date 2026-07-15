@@ -3,10 +3,10 @@ Autumn newsletter
 *You received this email because you subscribed to [Blot’s newsletter](https://blot.im/about/news). You can [unsubscribe](https://blot.im/about/news/cancel) if you like. Please reply directly to this email if you have any thoughts or questions.*
 
 **New features**
-- You can publish [Google Docs](https://blot.im/how/posts/google-docs), [RTF](https://blot.im/how/posts) and [Org mode](https://blot.im/how/posts/org) files as blog posts.
+- You can publish [Google Docs](https://blot.im/how/posts/google-docs), [RTF](https://blot.im/how/posts) and [Org mode](https://blot.im/how/posts/org) files as posts.
 - HTML files in your folder are accessible at [cleaner URLs](https://blot.im/how/posts/html#pretty-urls-for-html-files-in-your-folder).
 - Blot’s template editor has a point-and-click menu for font and syntax highlighting options.
-- You can import an Are.na channel directly with [Blot’s importer](https://blot.im/dashboard/settings/services/import).
+- You can import an Are.na channel directly with [Blot’s importer](https://blot.im/sites/default/import).
 
 **Changes**
 - Exact matches and queries in non-Latin alphabets now work more reliably in your site's search engine.

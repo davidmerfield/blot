@@ -9,6 +9,7 @@ var localPath = require("helper/localPath");
 var User = require("../user");
 var validate = require("./validate");
 var generateID = require("./generateID");
+var _ = require("lodash");
 
 var UID_PLACEHOLDER = "";
 
@@ -45,7 +46,9 @@ module.exports = function create(uid, info, callback) {
     dateFormat: info.dateFormat || "M/D/YYYY",
   };
 
-  extend(blog).and(info).and(defaults);
+  var blogDefaults = _.cloneDeep(defaults);
+
+  extend(blog).and(info).and(blogDefaults);
 
   validate(UID_PLACEHOLDER, blog, function (errors) {
     if (errors) return callback(errors);
@@ -59,19 +62,20 @@ module.exports = function create(uid, info, callback) {
       User.set(uid, { blogs: blogs, lastSession: blogID }, function (err) {
         if (err) return callback(err);
 
-        client.sadd(key.ids, blogID, function (err) {
-          if (err) return callback(err);
-
-          set(blogID, blog, function (err) {
-            if (err) return callback(err);
-
-            fs.emptyDir(localPath(blogID, "/"), function (err) {
+        client
+          .sAdd(key.ids, blogID)
+          .then(function () {
+            set(blogID, blog, function (err) {
               if (err) return callback(err);
 
-              return callback(err, blog);
+              fs.emptyDir(localPath(blogID, "/"), function (err) {
+                if (err) return callback(err);
+
+                return callback(err, blog);
+              });
             });
-          });
-        });
+          })
+          .catch(callback);
       });
     });
   });

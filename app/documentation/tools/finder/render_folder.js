@@ -1,6 +1,20 @@
 var mustache = require('mustache');
+var decode = require('he').decode;
 var template_directory = __dirname + '/templates';
 var determine_icon = require('./determine_icon');
+
+var MAX_NAME_LENGTH = 60;
+
+function truncateMiddle(name, maxLength) {
+  if (name.length <= maxLength) return name;
+
+  var ellipsis = '...';
+  var available = maxLength - ellipsis.length;
+  var front = Math.ceil(available / 2);
+  var back = Math.floor(available / 2);
+
+  return name.slice(0, front) + ellipsis + name.slice(name.length - back);
+}
 
 // Pre text is the content of the pre
 // tag containing the list of files and
@@ -13,7 +27,8 @@ module.exports = function render_folder (pre_text, classes, title) {
   for (var i = 0; i < files.length; i++) {
 
     file = {};
-    file.name = files[i].trim();
+    file.name = decode(files[i].trim());
+    file.displayName = truncateMiddle(file.name, MAX_NAME_LENGTH);
     file.depth = Math.floor(files[i].indexOf(files[i].trim()) / 2);
     file.nested = file.depth !== 0;
     file.open = false;

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+
+    <p class="entries">
+      {{#posts}}
+      <a href="{{{url}}}"
+        ><span>{{title}}</span>
+      </a>
+      <span class="light">{{date}} {{^last}}//{{/last}}</span>
+      {{/posts}}
+    </p>
+
+    <br><br>
+
+    {{#pagination}}
+      <div class="pagination small">
+        {{#previous}}
+        <a class="light" href="/page/{{previous}}">&larr; Previous page</a>
+        &nbsp; &nbsp; &nbsp;
+        {{/previous}}
+        {{#next}}
+        <a class="light" href="/page/{{next}}">Next page &rarr;</a>
+        {{/next}}
+      </div>
+      {{/pagination}}
+
+    {{> footer}}
+  </body>
+</html>

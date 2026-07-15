@@ -13,9 +13,9 @@ describe("tags work on sites", function () {
       "tagged.html": "{{#entries}}{{title}} {{/entries}}",
     });
 
-    const res = await this.get(`/tagged/a`);
+    const body = await this.text(`/tagged/a`);
 
-    expect((await res.text()).trim().toLowerCase()).toEqual("second first");
+    expect(body.trim().toLowerCase()).toEqual("second first");
   });
 
   it("renders overlapping tag feeds independently", async function () {
@@ -57,6 +57,7 @@ describe("tags work on sites", function () {
           params: {},
           template: {},
         },
+        { locals: {} },
         (err, data) => {
           if (err) return reject(err);
           resolve(data);
@@ -68,6 +69,30 @@ describe("tags work on sites", function () {
     expect(result.tag).toBe("Alpha + Beta");
     expect(result.tagged["Alpha + Beta"]).toBe(true);
     expect(result.tagged["alpha + beta"]).toBe(true);
+  });
+
+  it("lets you filter entries with a specific tag", async function () {
+    await this.publish({ path: "/first.txt", content: "Tags: A\n\nFoo" });
+    await this.publish({ path: "/second.txt", content: "Tags: A,B\n\nBar" });
+    await this.publish({ path: "/third.txt", content: "Tags: B,C\n\nBaz" });
+
+    await this.template(
+      {
+        "index.html": "{{#tagged}}{{#entries}}{{title}}{{/entries}}{{/tagged}}",
+      },
+      {
+        views: {
+          "index.html": {
+            url: ["/", "/page/:page"],
+            locals: { tag: "b" },
+          },
+        },
+        locals: { page_size: 1 },
+      }
+    );
+
+    expect(await this.text(`/`)).toEqual("third");
+    expect(await this.text(`/page/2`)).toEqual("second");
   });
 
   it("excludes entries without tags from tagged feeds", async function () {
@@ -315,6 +340,146 @@ describe("tags work on sites", function () {
     expect(parsedPage3.entries).toEqual([]);
   });
 
+  it("prefers tagged_page_size over default template page size", async function () {
+    await this.publish({
+      path: "/tag-one.txt",
+      content: "Title: Tag One\nTags: Special\n\nFirst",
+    });
+    await this.publish({
+      path: "/tag-two.txt",
+      content: "Title: Tag Two\nTags: Special\n\nSecond",
+    });
+    await this.publish({
+      path: "/tag-three.txt",
+      content: "Title: Tag Three\nTags: Special\n\nThird",
+    });
+
+    await this.template(
+      {
+        "entries.html": "{{#entries}}{{title}}\n{{/entries}}",
+        "tagged.html":
+          "page_size={{pagination.page_size}};pageSize={{pagination.pageSize}};current={{pagination.current}};entries={{#entries}}{{title}}|{{/entries}}",
+      },
+      { locals: { page_size: 1, tagged_page_size: 2 } }
+    );
+
+    const indexRes = await this.get(`/`);
+    expect(indexRes.status).toBe(200);
+    const indexTitles = (await indexRes.text())
+      .trim()
+      .split(/\n+/)
+      .filter(Boolean);
+    expect(indexTitles.length).toBe(1);
+
+    const res = await this.get(`/tagged/special`);
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    const [pageSizeSnakePart, pageSizePart, currentPart, entriesPart] = body.split(";");
+    expect(pageSizeSnakePart).toBe("page_size=2");
+    expect(pageSizePart).toBe("pageSize=2");
+    expect(currentPart).toBe("current=1");
+    const entries = entriesPart
+      .replace(/^entries=/, "")
+      .split("|")
+      .filter(Boolean)
+      .map((title) => title.toLowerCase());
+
+    expect(entries).toEqual(["tag three", "tag two"]);
+
+    const resPage2 = await this.get(`/tagged/special/page/2`);
+    expect(resPage2.status).toBe(200);
+    const bodyPage2 = await resPage2.text();
+    const [pageSizeSnakePart2, pageSizePart2, currentPart2, entriesPart2] = bodyPage2.split(";");
+
+    expect(pageSizeSnakePart2).toBe("page_size=2");
+    expect(pageSizePart2).toBe("pageSize=2");
+    expect(currentPart2).toBe("current=2");
+    const entriesPage2 = entriesPart2
+      .replace(/^entries=/, "")
+      .split("|")
+      .filter(Boolean)
+      .map((title) => title.toLowerCase());
+
+    expect(entriesPage2).toEqual(["tag one"]);
+  });
+
+  it("falls back to the default template page size when tagged_page_size is absent", async function () {
+    await this.publish({
+      path: "/fallback-one.txt",
+      content: "Title: Fallback One\nTags: Alt\n\nFirst",
+    });
+    await this.publish({
+      path: "/fallback-two.txt",
+      content: "Title: Fallback Two\nTags: Alt\n\nSecond",
+    });
+    await this.publish({
+      path: "/fallback-three.txt",
+      content: "Title: Fallback Three\nTags: Alt\n\nThird",
+    });
+    await this.publish({
+      path: "/fallback-four.txt",
+      content: "Title: Fallback Four\nTags: Alt\n\nFourth",
+    });
+
+    await this.template(
+      {
+        "tagged.html":
+          "page_size={{pagination.page_size}};pageSize={{pagination.pageSize}};current={{pagination.current}};entries={{#entries}}{{title}}|{{/entries}}",
+      },
+      { locals: { page_size: 3 } }
+    );
+
+    const res = await this.get(`/tagged/alt`);
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    const [pageSizeSnakePart, pageSizePart, currentPart, entriesPart] = body.split(";");
+
+    expect(pageSizeSnakePart).toBe("page_size=3");
+    expect(pageSizePart).toBe("pageSize=3");
+    expect(currentPart).toBe("current=1");
+    const entries = entriesPart
+      .replace(/^entries=/, "")
+      .split("|")
+      .filter(Boolean)
+      .map((title) => title.toLowerCase());
+
+    expect(entries).toEqual([
+      "fallback four",
+      "fallback three",
+      "fallback two",
+    ]);
+
+    const resPage2 = await this.get(`/tagged/alt/page/2`);
+    expect(resPage2.status).toBe(200);
+    const bodyPage2 = await resPage2.text();
+    const [pageSizeSnakePart2, pageSizePart2, currentPart2, entriesPart2] = bodyPage2.split(";");
+    expect(pageSizeSnakePart2).toBe("page_size=3");
+    expect(pageSizePart2).toBe("pageSize=3");
+    expect(currentPart2).toBe("current=2");
+    const entriesPage2 = entriesPart2
+      .replace(/^entries=/, "")
+      .split("|")
+      .filter(Boolean)
+      .map((title) => title.toLowerCase());
+    expect(entriesPage2).toEqual(["fallback one"]);
+  });
+
+  it("encodes the tagged route slug local", async function () {
+    await this.publish({
+      path: "/slash-tag-route.txt",
+      content: "Title: Slash\nTags: Design/UI\n\nBody",
+    });
+
+    await this.template({
+      "tagged.html": "slug={{slug}};tag={{{tag}}}",
+    });
+
+    const res = await this.getWithRawPath('/tagged/design%2Fui');
+    expect(res.status).toBe(200);
+    expect((await res.text()).trim()).toBe('slug=design%2Fui;tag=Design/UI');
+  });
+
+
   it("reports total count when pagination options are provided", async function () {
     await this.publish({
       path: "/page-a.txt",
@@ -333,6 +498,7 @@ describe("tags work on sites", function () {
           params: { tag: "counted", page: "1" },
           template: { locals: { page_size: 1 } },
         },
+        { locals: {} },
         (err, data) => {
           if (err) return reject(err);
           resolve(data);
@@ -347,6 +513,7 @@ describe("tags work on sites", function () {
       jasmine.objectContaining({
         current: 1,
         pageSize: 1,
+        page_size: 1,
         total: 2,
         totalEntries: 2,
         previous: null,

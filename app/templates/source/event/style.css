@@ -1,0 +1,364 @@
+/* GLOBAL STYLES AND RESETS */
+
+/* Injected styles from templates and external sources */
+{{{app_css}}}
+{{{body_font.styles}}}
+{{{syntax_highlighter.styles}}}
+{{> flickity.css}}
+
+/* Root variables for theme customization */
+:root {
+  {{#body_font}}
+  --font-family: {{{stack}}};
+  --font-size: {{{font_size}}}px;
+  --line-height: {{{line_height}}};
+  {{/body_font}}
+  --background-color: {{background_color}};
+  --text-color: {{text_color}};
+  --off-background-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.02);
+  --light-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
+  --medium-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6666);
+  --border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.06);
+  --link-color: {{link_color}};
+  --dots-height: 2.8rem;
+  --caption-height: 1.4rem;
+  --slides-width: 50vw;
+  --slides-height: 100vh;
+  --padding: 1.4rem;
+}
+
+/* Dark mode variables */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: {{dark_background_color}};
+    --off-background-color: rgba({{#rgb}}{{dark_text_color}}{{/rgb}}, 0.04);
+    --text-color: {{dark_text_color}};
+    --border-color: rgba({{#rgb}}{{dark_text_color}}{{/rgb}}, 0.08);
+    --light-text-color: rgba({{#rgb}}{{dark_text_color}}{{/rgb}}, 0.3333);
+    --medium-text-color: rgba({{#rgb}}{{dark_text_color}}{{/rgb}}, 0.6666);
+    --link-color: {{dark_link_color}};
+  }
+}
+
+/* General resets */
+html, body {
+  width: 100%; padding: 0; margin: 0 auto; -webkit-font-smoothing: antialiased;
+  color: var(--text-color); background: var(--background-color);
+  font-family: var(--font-family); font-size: var(--font-size); line-height: var(--line-height);
+}
+
+ul { list-style-type: circle; }
+a { color: var(--link-color); }
+a:hover { text-decoration: underline; }
+strong { font-weight: 600; }
+small { color: var(--light-text-color); }
+
+.main p,
+.main li,
+.main blockquote,
+.main figcaption {
+  orphans: 2;
+  widows: 2;
+}
+
+/* TYPOGRAPHY */
+h1 {
+  margin: 0; font-weight: 400; line-height: 1.2;
+}
+h1 + h2 {
+  opacity: 0.3333; margin: 0; line-height: 1.2; margin-bottom: clamp(2em, 3.5vw, 3em);
+}
+h1, h2 {
+  font-size: clamp(2em, 3.5vw, 3em);
+}
+h2 {
+  font-weight: 400; margin: 4em 0 0 0;
+}
+
+h3 {
+  color: var(--light-text-color); font-size: {{{body_font.font_size}}}px; font-weight: normal;
+  margin-top: 3em;
+}
+
+hr { border: none; border-bottom: 1px solid var(--border-color); clear: both; }
+
+/* LAYOUT */
+.main {
+  width: 50%; padding: 0em var(--padding) var(--padding); box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.collapse-on-mobile { display: flex; flex-direction: row; }
+
+
+/* NAVIGATION */
+.navigation {
+  display: flex; justify-content: flex-start; gap: 0.5em;
+  align-items: baseline; position: sticky; background: var(--background-color);
+  padding: 0.75em 0; top: 0; z-index: 1000;
+}
+.navigation a {
+  text-decoration: none; font-size: 0.9em; margin-bottom: -1px;
+  color: var(--light-text-color); background: var(--off-background-color);
+  border-radius: 2em; display: inline-block; padding: 0.25em 0.75em; text-wrap: nowrap;
+}
+.navigation a.active {
+  color: var(--text-color); background-color: var(--border-color);
+}
+.navigation a[href="{{{call_to_action}}}"] {
+  margin-left: auto; font-weight: 600; color: var(--background-color); background: var(--link-color);
+}
+
+/* IMAGE STYLING */
+p img, .entry img { max-width: 100%; width: 100%; height: auto; }
+
+/*
+
+L A Y O U T . C S S
+^^^^^^^^^^^^^^^^^^^
+
+All this depends on having a relatively positioned
+container, e.g. body {position: relative;} otherwise
+the absolutely positioned stuff is off the viewport.
+
+*/
+
+.clear {
+  clear: both;
+  /* clear floats */
+}
+
+.wide,
+.margin,
+.column {
+  overflow: auto;
+  /* collapse internal margins */
+  box-sizing: border-box;
+  /* be sane about sizing */
+}
+
+.margin,
+.inside {
+  width: 33%;
+}
+
+.margin.left,
+.inside.left {
+  float: left;
+}
+
+.margin.right,
+.inside.right {
+  float: right;
+}
+
+.column {
+  float: left;
+}
+
+.column.two {
+  width: 48.5%;
+  /* (100 - 3 * 1)/2 */
+  margin-right: 3%;
+}
+
+.column.three {
+  width: 31.333%;
+  /* (100 - 3 * 2)/3 */
+  margin-right: 3%;
+}
+
+.column.four {
+  width: 22.75%;
+  /* (100 - 3 * 3)/4 */
+  margin-right: 3%;
+}
+
+.column.two + .column.two,
+.column.three + .column.three + .column.three,
+.column.four + .column.four + .column.four + .column.four {
+  margin-right: 0;
+}
+
+@media screen and (min-width: 900px) {
+  /* For larger screens, we allow wide things to break out */
+
+  .wide {
+    width: 150%;
+  }
+
+  .wide.left,
+  .wide.right {
+    width: 125%;
+  }
+
+  .wide.left {
+    margin-left: -25%;
+  }
+
+  .wide.right {
+    margin-right: -25%;
+  }
+
+  /* For larger screens, we allow this to enter the margins */
+
+  .margin {
+    position: absolute;
+  }
+
+  .left.margin {
+    left: -33%;
+  }
+
+  .right.margin {
+    right: -33%;
+  }
+}
+
+.left.inside {
+  width: 20%;
+  max-width: 100px;
+  margin-right: var(--padding);
+  margin-bottom: var(--padding);
+}
+
+.left.inside img,
+.column img {
+  border-radius: 12px;
+}
+
+/* TABLE STYLING */
+table { border-collapse: collapse; }
+table th { text-align: left; padding: 4px 0; }
+table tr { border-top: 1px solid var(--border-color); }
+table tr td:first-child { min-width: 6em; color: var(--light-text-color); }
+table tr td:nth-child(2) { min-width: 12em; }
+table td { vertical-align: top; padding: 4px 8px; }
+table td:first-child { padding-left: 0; }
+table td:last-child { padding-right: 0; }
+
+/* UTILITY CLASSES */
+span.caption { display: none; }
+kbd {
+  background: var(--off-background-color); color: var(--medium-text-color);
+  padding: 0.1em 0.25em; border-radius: 0.25em; font-size: 0.9em;
+}
+.fade-in { animation: fadeIn 0.5s; }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* FLICKITY STYLES */
+
+.slides {
+  width: var(--slides-width); 
+  height: var(--slides-height);
+  position: sticky; top: 0; background: var(--off-background-color);
+  box-sizing: border-box;
+  border-right: 1px solid var(--border-color);
+}
+
+.main-carousel {
+  height: var(--slides-height); width: 100%;
+}
+.carousel-cell {
+  width: 100%; height: calc(var(--slides-height) - var(--dots-height));
+  padding-bottom: var(--caption-height); box-sizing: border-box;
+  position: relative; display: flex; justify-content: center; align-items: center;
+}
+.carousel-cell img {
+  max-width: calc(var(--slides-width) - (var(--padding) * 3)); 
+  max-height: calc(var(--slides-height) - var(--dots-height) - var(--caption-height) - (var(--padding) * 3));
+  height: auto; width: auto;
+}
+.slide-caption {
+  color: var(--text-color); position: absolute; height: var(--caption-height);
+  bottom: 0; left: 0; font-size: 0.85em; right: 0; text-align: center; cursor: auto;
+  margin: 0 2rem;
+}
+.slide-caption a {
+  color: var(--text-color); font-size: 0.75em; text-transform: uppercase; opacity: 0.5;
+}
+
+.flickity-page-dots {
+  top: auto; bottom: 0; height: var(--dots-height); font-size: 0.6em;
+}
+.flickity-page-dots .dot {
+  opacity: 1;
+  font-size: 0.9em;
+  background: transparent; margin: 0; width: 1em; height: 1em; padding: 1em 0.5em;
+}
+
+.flickity-page-dots .dot:first-child:last-child { display: none; }
+
+.flickity-page-dots .dot:after {
+  content: ''; display: block; width: 1em; height: 1em; 
+  background-color: var(--border-color);
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.flickity-page-dots .dot:hover:after { background-color: var(--light-text-color); }
+
+.flickity-page-dots .dot.is-selected:after {
+  background-color: var(--light-text-color);
+}
+
+.flickity-prev-next-button.previous, .flickity-prev-next-button.next {
+  top: 0; width: auto; height: auto; bottom: calc(var(--dots-height) + var(--caption-height)); background: transparent;
+  border: none; border-radius: 0; transform: none;
+}
+.flickity-prev-next-button.previous svg, .flickity-prev-next-button.next svg { display: none; }
+.flickity-prev-next-button.previous {
+  cursor: w-resize; left: 0; right: 50%;
+}
+.flickity-prev-next-button.next {
+  cursor: e-resize; right: 0; left: 50%;
+}
+
+/* ANNOUNCEMENT BLOCK */
+.announcement {
+  background-color: var(--off-background-color); border-radius: 12px;
+  padding: 12px; clear: both; margin: 12px 0 24px;
+  font-size: 0.9em; line-height: 1.4;
+}
+.announcement h1, .announcement h2 {
+  font-size: 1em; margin: 0; font-weight: 600;
+}
+
+.announcement strong {
+  font-weight: 400;
+}
+
+/* ICONS */
+#when, #where { margin: 1em 0 0; padding: 0; }
+#when + p, #where + p { margin: 0; padding: 0; }
+#when:before, #where:before {
+  margin-right: 0.3333em; content: ""; background-color: currentColor; mask-repeat: no-repeat;
+  mask-position: 0 0; width: 1em; height: 1em; mask-size: 1em; display: inline-block;
+  vertical-align: sub; position: relative; top: -0.03em;
+}
+#when:before { mask-image: url("data:image/svg+xml;base64,{{> icon-calendar.svg}}"); }
+#where:before { mask-image: url("data:image/svg+xml;base64,{{> icon-location.svg}}"); }
+
+/* RESPONSIVE STYLES */
+@media screen and (max-width: 1000px) {
+  .navigation {
+    position: fixed; left: 0; padding-left: var(--padding); padding-right: var(--padding); right: 0;
+  }
+  .collapse-on-mobile { flex-direction: column; }
+
+  :root {
+    --slides-width: 100vw;
+    --slides-height: 50vh;
+  }
+
+  .slides {
+    position: relative; 
+    margin: 3.5em 0 1em;
+    border-right: none; border-bottom: 1px solid var(--border-color); border-top: 1px solid var(--border-color);
+  }
+  
+  .main { width: 100%; }
+}

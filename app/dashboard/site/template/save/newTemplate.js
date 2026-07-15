@@ -1,15 +1,11 @@
 var Template = require("models/template");
 var makeSlug = require("helper/makeSlug");
 const Blog = require("models/blog");
+const { MAX_DEDUPLICATION_ATTEMPTS } = require("./constants");
 var NO_NAME = "Please choose a name for your new template.";
 var NO_CLONE = "Please choose a template to clone.";
 var SUCCESS = "Created your template succesfully!";
 var SUCCESS_FROM_SHARED_TEMPLATE = "Added template to your blog succesfully!";
-
-// How many times should we append an integer
-// to the name of a new template before giving up
-// and showing an error to the user?
-var MAX_DEDUPLICATION_ATTEMPTS = 999;
 
 module.exports = function (req, res, next) {
   var template, slug, name;

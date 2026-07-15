@@ -1,0 +1,34 @@
+<div style="display:flex;min-height:80vh;gap:2em">
+	  {{> source-code-sidebar}}
+      <div class="editor-container">
+      
+    <form action="{{{base}}}/local-editing" method="post" class="dashboard-form" style="padding:2rem">
+	<input type="hidden" name="_csrf" value="{{csrftoken}}" />
+	
+  {{^template.localEditing}}
+
+		<p>You can move the code for this template into your site's folder. Blot will create the following folder:</p>
+    <p><span class="icon-folder"></span> Templates/{{template.slug}}</p>
+
+  <div class="buttons">
+    <button type="submit">
+      Move template to folder
+    </button>
+  {{/template.localEditing}}
+
+    {{#template.localEditing}}
+    <p>The code for this template is located in your site's folder:</p>
+    <p><span class="icon-folder"></span> Templates/{{template.slug}}</p>
+
+    <p>Would you like to remove the template files from your folder?</p>
+    <div class="buttons">
+      <button type="submit">
+        Remove template from folder
+      </button>
+      {{/template.localEditing}}
+
+	<a href="{{{base}}}/source-code" >Cancel</a>
+  </div>
+</form>
+</div></div>
+{{> source-code-footer}}

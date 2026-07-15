@@ -4,20 +4,10 @@ describe("google drive database.blog", function () {
   const prefix = require("clients/google-drive/database/prefix");
 
   afterEach(async function () {
-    const keys = await new Promise((resolve, reject) => {
-      client.keys(`${prefix}*`, (err, keys) => {
-        if (err) reject(err);
-        else resolve(keys);
-      });
-    });
+    const keys = await client.keys(`${prefix}*`);
 
     if (keys.length) {
-      await new Promise((resolve, reject) => {
-        client.del(keys, (err) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
+      await client.del(keys);
     }
   });
 
@@ -398,15 +388,10 @@ describe("google drive database.blog", function () {
     await database.blog.store(blogID, { foo: "bar", serviceAccountId: null });
 
     // Ensure no serviceAccountId set contains the blog
-    const keys = await new Promise((resolve, reject) => {
-      client.keys(`${prefix}serviceAccountId:*`, (err, keys) => {
-        if (err) reject(err);
-        else resolve(keys);
-      });
-    });
+    const keys = await client.keys(`${prefix}serviceAccountId:*`);
 
     for (const key of keys) {
-      const serviceAccountBlogs = await client.smembers(key);
+      const serviceAccountBlogs = await client.sMembers(key);
       expect(serviceAccountBlogs).not.toContain(blogID);
     }
 
@@ -436,6 +421,16 @@ describe("google drive database.blog", function () {
     });
 
     expect(updatedBlogIDs).toContain(blogID);
+  });
+
+
+
+  it("propagates client promise failures", async function () {
+    const error = new Error("boom");
+    spyOn(client, "hSet").and.callFake(() => Promise.reject(error));
+
+    await expectAsync(database.blog.store("blog_failure", { foo: "bar" })).toBeRejectedWith(error);
+    expect(client.hSet).toHaveBeenCalled();
   });
 
 });

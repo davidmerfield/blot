@@ -1,0 +1,11 @@
+{
+  "name": "Courier New",
+  "tags": [
+    "mono",
+    "system"
+  ],
+  "stack": "'courier new', courier, consolas, monospace",
+  "line_height": 1.45,
+  "line_width": 38,
+  "font_size": 16
+}

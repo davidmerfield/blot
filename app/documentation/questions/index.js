@@ -236,6 +236,8 @@ Questions.route("/ask")
         res.send("OK");
       } else {
         const { id } = await create({ author, title, body, tags });
+        const questionURL = config.protocol + config.host + "/questions/" + id;
+        Email.QUESTION_PUBLISHED(author, { title, body, questionURL });
         flush();
         res.redirect("/questions/" + id);
       }
@@ -251,6 +253,11 @@ Questions.route("/:id/new").post(async (req, res) => {
   if (body.trim().length === 0) res.redirect("/questions/" + req.params.id);
   else {
     await create({ author, body, parent: req.params.id });
+    const question = await get(req.params.id);
+    if (question) {
+      const questionURL = config.protocol + config.host + "/questions/" + req.params.id;
+      Email.QUESTION_REPLY_PUBLISHED(null, { title: question.title, body, questionURL });
+    }
     flush();
     res.redirect("/questions/" + req.params.id);
   }
@@ -260,10 +267,13 @@ Questions.route("/:id/edit")
   .get(async (req, res) => {
     const id = parseInt(req.params.id);
     if (!req.session || !req.session.uid) {
+      req.log("Redirecting to login", id);
       return res.redirect(`/log-in?then=/questions`);
     }
 
+    req.log("Retrieving question", id);
     res.locals.topic = await get(id);
+    req.log("Retrieved question", id);
     res.render("questions/edit");
   })
   .post(async (req, res) => {

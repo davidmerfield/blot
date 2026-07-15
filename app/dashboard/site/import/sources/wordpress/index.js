@@ -51,11 +51,17 @@ function main(sourceFile, outputDirectory, status, options, callback) {
       if (err) return callback(err);
 
       try {
-        console.log(result.rss.channel[0].title[0]);
-        console.log(colors.dim("Site URL:"), result.rss.channel[0].link[0]);
+        var channel = result.rss.channel[0];
+        console.log('HERE with channel', channel);
+        var title = channel && channel.title && channel.title[0];
+        var link = channel && channel.link && channel.link[0];
+        var exportVersion = channel && channel["wp:wxr_version"] && channel["wp:wxr_version"][0];
+        
+        console.log(title);
+        console.log(colors.dim("Site URL:"), link);
         console.log(
           colors.dim("Export Version"),
-          result.rss.channel[0]["wp:wxr_version"][0]
+          exportVersion
         );
 
         // If you want to see other properties available,
@@ -64,7 +70,7 @@ function main(sourceFile, outputDirectory, status, options, callback) {
 
         if (options.filter) {
           console.log("filter by:", options.filter);
-          result.rss.channel[0].item = result.rss.channel[0].item.filter(
+          channel.item = channel.item.filter(
             function (item) {
               return (
                 item.title[0]
@@ -75,10 +81,11 @@ function main(sourceFile, outputDirectory, status, options, callback) {
           );
         }
 
-        var items = result.rss.channel[0].item;
+        var items = channel.item;
 
         var totalItems = items.length;
       } catch (e) {
+        console.log("HERE with err", e);
         return callback(new Error("Invalid XML"));
       }
 
@@ -95,7 +102,7 @@ function main(sourceFile, outputDirectory, status, options, callback) {
             colors.dim(++index + "/" + totalItems),
             item.title[0].trim()
           );
-          injectAttachedThumbnail(item, result.rss.channel[0].item);
+          injectAttachedThumbnail(item, channel.item);
           Item(item, outputDirectory, done);
         },
         callback

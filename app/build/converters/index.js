@@ -20,3 +20,9 @@ if (config.pandoc.bin) {
 }
 
 module.exports = converters;
+
+converters.forEach(function (converter) {
+  if (!converter.id || typeof converter.id !== "string") {
+    throw new Error("Converter missing stable id");
+  }
+});

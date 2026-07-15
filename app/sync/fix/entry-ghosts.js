@@ -100,7 +100,13 @@ function main (blog, callback) {
           async.eachSeries(
             missing,
             function (item, next) {
-              Entry.drop(blog.id, item.entry.path, next);
+              const dropID =
+                item.entry &&
+                item.entry.id &&
+                item.entry.id !== item.entry.path
+                  ? item.entry.id
+                  : item.entry.path;
+              Entry.drop(blog.id, dropID, next);
             },
             function (err) {
               if (err) return callback(err);

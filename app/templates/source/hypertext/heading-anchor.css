@@ -1,0 +1,87 @@
+/* Hover-only visibility, blue on hover */
+.heading-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.25em;
+  width: 15px;
+  height: 15px;
+  line-height: 0;
+  opacity: 0;
+  color: inherit;
+  vertical-align: middle;
+  text-decoration: none;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.entry h1:hover .heading-anchor,
+.entry h2:hover .heading-anchor,
+.entry h3:hover .heading-anchor,
+.entry h4:hover .heading-anchor,
+.entry h5:hover .heading-anchor,
+.entry h6:hover .heading-anchor
+ {
+  opacity: 1;
+  color: #aaa; 
+  outline: none;
+
+}
+
+.entry h1 .heading-anchor:hover,
+.entry h2 .heading-anchor:hover,
+.entry h3 .heading-anchor:hover,
+.entry h4 .heading-anchor:hover,
+.entry h5 .heading-anchor:hover,
+.entry h6 .heading-anchor:hover,
+.heading-anchor:focus-visible {
+  color: {{link_color}}; /* blue on hover */
+}
+
+/* Store the SVG in CSS via mask so it adopts currentColor */
+.heading-anchor::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask: no-repeat center / contain url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z'/></svg>");
+  mask: no-repeat center / contain url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z'/></svg>");
+}
+
+/* Toasts */
+#toast-root {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  min-width: 200px;
+  max-width: 320px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #111;
+  color: #fff;
+  font: 14px/1.3 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.toast--in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast--out {
+  opacity: 0;
+  transform: translateY(-6px);
+}

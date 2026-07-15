@@ -1,0 +1,11 @@
+{
+  "name": "Garamond",
+  "tags": [
+    "serif",
+    "system"
+  ],
+  "stack": "garamond, 'times new roman', times, serif",
+  "line_height": 1.6,
+  "line_width": 38,
+  "font_size": 16
+}

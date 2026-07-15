@@ -1,116 +1,35 @@
-// todo turn this into a github action? runs when changes made automatically?
-
 const screenshot = require("helper/screenshot");
 const config = require("config");
 const { dirname } = require("path");
 const root = require("helper/rootDir");
 const fs = require("fs-extra");
-const TEMPLATES_DIRECTORY = root + "/app/templates/latest";
-const TEMPLATE_ARCHIVE_DIRECTORY = root + "/app/templates/past";
-const FOLDERS_DIRECTORY = root + "/app/templates/folders";
+const TEMPLATES_DIRECTORY = root + "/app/templates/source";
 const IMAGE_DIRECTORY = root + "/app/views/images/examples";
+// Template gallery previews use a fixed 1060x780 viewport; this is independent
+// of entry thumbnail sizing or OG image dimensions.
+const TEMPLATE_SCREENSHOT_WIDTH = 1060;
+const TEMPLATE_SCREENSHOT_HEIGHT = 780;
 
-const templateOptions = {
-  blog: {
-    handle: "david"
-  },
-  magazine: {
-    handle: "plants"
-  },
-  grid: {
-    handle: "botanist"
-  },
-  photo: {
-    handle: "william"
-  },
-  portfolio: {
-    handle: "bjorn"
-  },
-  'photo-old': {
-    handle: "photographer"
-  },
-  scroll: {
-    handle: "illustrator",
-  },
-  terminal: {
-    handle: "photographer"
-  },
-  reference: {
-    handle: "bjorn"
-  },
-  blank: {
-    handle: "david"
-  },
-  isola: {
-    handle: "writer"
-  },
-  marfa: {
-    handle: "david"
-  }
-};
-
-// you don't need to do this for folders with
-// a template in the Templates folder
-const foldersOptions = {
-  bjorn: {
-    template: "portfolio"
-  },
-  david: {
-    template: "blog"
-  }
-};
 
 const templates = fs
   .readdirSync(TEMPLATES_DIRECTORY)
-  .filter(i => !i.startsWith(".") && !i.endsWith(".md"))
-  .concat(
-    fs
-      .readdirSync(TEMPLATE_ARCHIVE_DIRECTORY)
-      .filter(i => !i.startsWith(".") && !i.endsWith(".md"))
-  )
-  .map(i => {
-    const handle = templateOptions[i] ? templateOptions[i].handle : "david";
+  .filter((i) => !i.startsWith(".") && !i.endsWith(".md"))
+  .map((i) => {
     const template = i;
-    const pages =
-      templateOptions[i] && templateOptions[i].pages
-        ? templateOptions[i].pages
-        : ["/"];
+    const json = fs.readJSONSync(TEMPLATES_DIRECTORY + '/' + template + '/package.json');
+    const handle = json.locals.demo_folder || "david";
+    const pages = ["/"];
 
     return pages.map((page, index) => {
       return {
         url: `${config.protocol}preview-of-${template}-on-${handle}.${config.host}${page}`,
-        destination: `${IMAGE_DIRECTORY}/${template}/${index}`
+        destination: `${IMAGE_DIRECTORY}/${template}/${index}`,
       };
     });
   });
 
-const folders = fs
-  .readdirSync(FOLDERS_DIRECTORY)
-  .filter(i => !i.startsWith(".") && !i.endsWith(".md") && !i.endsWith(".js"))
-  .map(folder => {
-    const pages =
-      foldersOptions[folder] && foldersOptions[folder].pages
-        ? foldersOptions[folder].pages
-        : ["/"];
-    const template =
-      foldersOptions[folder] && foldersOptions[folder].template
-        ? foldersOptions[folder].template
-        : fs.existsSync(`${FOLDERS_DIRECTORY}/${folder}/Templates`)
-        ? `my-${
-            fs
-              .readdirSync(`${FOLDERS_DIRECTORY}/${folder}/Templates`)
-              .filter(i => !i.startsWith("."))[0]
-          }`
-        : "blog";
-    return pages.map((page, index) => {
-      return {
-        url: `${config.protocol}preview-of-${template}-on-${folder}.${config.host}${page}`,
-        destination: `${IMAGE_DIRECTORY}/${folder}/${index}`
-      };
-    });
-  });
 
-const screenshots = templates.concat(folders).flat();
+const screenshots = templates.flat();
 
 const main = async () => {
   console.log(screenshots);
@@ -127,7 +46,7 @@ const main = async () => {
         takeScreenshot(screenshot),
         new Promise((resolve, reject) => {
           setTimeout(() => reject("Timeout"), 15000);
-        })
+        }),
       ]);
     } catch (error) {
       console.error(error);
@@ -141,7 +60,10 @@ const takeScreenshot = async ({ url, destination }) => {
   const path = `${destination}.png`;
 
   console.log(`Taking screenshot of ${url} to ${path}`);
-  await screenshot(url, path, { width: 1060, height: 780 });
+  await screenshot(url, path, {
+    width: TEMPLATE_SCREENSHOT_WIDTH,
+    height: TEMPLATE_SCREENSHOT_HEIGHT,
+  });
 
   const mobilePath = `${destination}.mobile.png`;
   console.log(`Taking mobile screenshot of ${url} to ${mobilePath}`);

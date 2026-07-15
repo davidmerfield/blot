@@ -12,13 +12,15 @@ margin: 0;font-size:16px
     display:flex;padding:12px;align-items: center;
   }
   
-  #featured li a span.pic {
+  #featured li a .pic {
     transition: transform .1s ease;
     transform: scale(1);
     border-radius: 4em;
     margin: 4px 1em 0 0;
     box-shadow: inset 0 0 0 1px var(--inset-image-border-color);
     border-radius: 100%;display:block;flex-shrink:0;
+    object-fit: cover;
+    background-color: var(--light-background-color);
   }
 
   /* fade in the children of id="featured" one after the other */

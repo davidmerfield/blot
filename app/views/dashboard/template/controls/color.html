@@ -1,0 +1,13 @@
+<form method="post" id="{{key}}" class="color-picker">
+    <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+    <input class="name" placeholder="e.g. background" type="hidden" value="{{key}}" />
+    <input class="value" name="locals.{{key}}" placeholder="e.g. #FFFFFF" type="hidden" value="{{value}}" />
+    <div class="color-picker-popup">
+        <span class="previous" style="background:{{value}}"></span>
+        <span class="color-label">{{label}}</span>
+        <span class="pcr-color-preview">
+            <span class="pcr-current-color"></span>
+        </span>
+    </div>
+    <div class="clear"></div>
+</form>

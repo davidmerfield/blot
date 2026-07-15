@@ -1,0 +1,11 @@
+<form method="post" class="select">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+  <label for="select.{{key}}" style="flex-shrink: 0;">
+    {{label}}:
+  </label>
+  <select id="select.{{key}}" name="locals.{{key}}" style="flex-grow: 1;">
+    {{#options}}
+    <option value="{{value}}" {{selected}}>{{label}}</option>
+    {{/options}}
+  </select>
+</form>

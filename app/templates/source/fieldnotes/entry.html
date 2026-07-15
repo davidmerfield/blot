@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+	{{> head}}
+	<body
+		class="post-template-default single single-post postid-{{entry.index}} single-format-standard"
+	>
+		<div id="page" class="hfeed site">
+			{{> header}}
+			<div id="content" class="site-content">
+				<div id="primary" class="content-area">
+					<main id="main" class="site-main" role="main">
+						{{#entry}}
+						<article
+							id="post-{{entry.index}}"
+							class="post-{{entry.index}} post type-post status-publish format-standard hentry {{#tags}}tag-{{slug}} {{/tags}}"
+						>
+							<header class="entry-header">
+								<h1 class="entry-title">{{title}}</h1>
+							</header>
+							<!-- .entry-header -->
+							{{#metadata.thumbnail}}
+							<figure class="entry-thumbnail">
+								<a href="{{{url}}}"
+									><img
+										width="1200"
+										src="{{{metadata.thumbnail}}}"
+										class="attachment-isola-featured size-isola-featured wp-post-image"
+										alt=""
+								/></a>
+							</figure>
+							{{/metadata.thumbnail}}
+							<div class="entry-content">
+								{{{body}}}
+								<div
+									id="jp-relatedposts"
+									class="jp-relatedposts"
+									style="display: block;"
+								>
+									<h3 class="jp-relatedposts-headline"><em>Related</em></h3>
+									<div
+										class="jp-relatedposts-items jp-relatedposts-items-visual jp-relatedposts-grid "
+									>
+									{{/entry}}
+										{{#recent_entries}} {{> related}} {{/recent_entries}}
+									{{#entry}}
+									</div>
+									<script type="text/javascript">
+										var related = document.querySelector(
+											".jp-relatedposts-items"
+										);
+										for (var i = related.children.length; i >= 0; i--) {
+											related.appendChild(
+												related.children[(Math.random() * i) | 0]
+											);
+										}
+
+										while (related.children.length > 3) {
+											related.removeChild(related.lastChild);
+										}
+									</script>
+								</div>
+							</div>
+							<!-- .entry-content -->
+
+							<footer class="entry-footer">
+								<div class="entry-meta">
+									<span class="posted-on"
+										><a href="{{{url}}}" rel="bookmark"
+											><time
+												class="entry-date published"
+												datetime="{{#formatDate}}YYYY-MM-DD[T]HH:mm:ssZ{{/formatDate}}"
+												>{{#date}}{{date}}{{/date}}</time
+											><time
+												class="updated"
+												datetime="{{#formatUpdated}}YYYY-MM-DD[T]HH:mm:ssZ{{/formatUpdated}}"
+												>{{#formatUpdated}}MMMM D, YYYY{{/formatUpdated}}</time
+											></a
+										></span
+									>
+								</div>
+								{{#tags.length}}
+								<span class="tags-links">
+									{{#tags}}
+									<a href="/tagged/{{slug}}" rel="tag">{{tag}}</a>
+									{{/tags}} {{/tags.length}}
+								</span>
+							</footer>
+							<!-- .entry-footer -->
+						</article>
+						<!-- #post-## -->
+
+						<nav class="navigation post-navigation" role="navigation">
+							<h1 class="screen-reader-text">Post navigation</h1>
+							<div class="nav-links">
+								{{#previous}}
+								<div class="nav-previous">
+									<a href="{{{url}}}" rel="prev"
+										><span class="meta-nav">&larr;</span> {{title}}</a
+									>
+								</div>
+								{{/previous}} {{#next}}
+								<div class="nav-next">
+									<a href="{{{url}}}" rel="next"
+										>{{title}} <span class="meta-nav">&rarr;</span>
+									</a>
+								</div>
+								{{/next}}
+							</div>
+							<!-- .nav-links -->
+						</nav>
+						<!-- .navigation -->
+						{{/entry}}
+					</main>
+					<!-- #main -->
+				</div>
+				<!-- #primary -->
+			</div>
+			<!-- #content -->
+
+			{{> footer}}
+		</div>
+		<!-- #page -->
+	</body>
+</html>

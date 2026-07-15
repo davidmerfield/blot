@@ -1,0 +1,21 @@
+{{> header}}
+
+{{#pagination}}
+{{> toolbar}}
+{{/pagination}}
+
+{{^posts.length}}
+<div class="centered">
+  <p>No posts yet.</p>
+</div>
+{{/posts.length}}
+
+{{#posts.length}}
+<div class="posts">
+  {{#posts}}
+  {{> post}}
+  {{/posts}}
+</div>
+{{/posts.length}}
+
+{{> footer}}

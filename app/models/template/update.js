@@ -11,12 +11,11 @@ module.exports = function update(owner, name, metadata, callback) {
     .and(callback, "function");
 
   var id = makeID(owner, name);
+  var operation = metadata.isPublic
+    ? client.sAdd(key.publicTemplates(), id)
+    : client.sRem(key.publicTemplates(), id);
 
-  if (metadata.isPublic) {
-    client.sadd(key.publicTemplates(), id);
-  } else {
-    client.srem(key.publicTemplates(), id);
-  }
-
-  return setMetadata(id, metadata, callback);
+  operation.then(function () {
+    return setMetadata(id, metadata, callback);
+  }).catch(callback);
 };

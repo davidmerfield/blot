@@ -21,7 +21,7 @@ function render($, callback) {
 module.exports = {
   render: render,
   isDefault: false,
-  category: "Typography",
+  category: "headings",
   title: "Titlecase",
-  description: "Use Title Case for All Post Headings",
+  description: "Use title case for headings",
 };

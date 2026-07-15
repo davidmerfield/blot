@@ -3,40 +3,57 @@ module.exports = {
     title: "Björn Allard",
     template: "SITE:portfolio",
   },
-  botanist: {
-    title: "William Copeland McCalla",
-    template: "SITE:photo",
+  clara: {
+    title: "Clara Xiao",
+    template: "SITE:cv",
   },
   david: {
     title: "David",
     template: "SITE:blog",
   },
-  illustrator: {
-    title: "Thought-forms",
-    template: "SITE:portfolio",
+  documentation: {
+    title: "Documentation",
+    template: "SITE:documentation",
   },
-  manifesto: {
-    title: "Manifesto",
-    template: "SITE:blog",
-  },
-  painter: {
-    title: "Piet Mondrian",
-    template: "SITE:portfolio",
-  },
-  photographer: {
-    title: "Sergey Prokudin-Gorsky",
-    template: "SITE:portfolio",
-  },
-  plants: {
-    title: "Plants",
-    template: "SITE:magazine",
+  lecture: {
+    title: "The Cartography of Solitude",
+    template: "SITE:event",
+    menu: [
+      { url: "/", label: "Information",  id: "/Landing page.txt" },
+      { url: "/speakers", label: "Speakers",  id: "/Speakers.txt" },
+      { url: "/faqs", label: "FAQs", id: "/FAQs.txt" },
+      { url: "/page/1", label: "Announcements", id: "/Announcements.txt" },
+      { url: "/tickets", label: "Get tickets", id: "/Tickets.txt" },
+    ],
   },
   programmer: {
     title: "Programmer",
-    template: "SITE:blog",
+    template: "SITE:fieldnotes",
   },
-  writer: {
-    title: "Writer",
-    template: "SITE:blog",
+  sergey: {
+    title: "Sergey Prokudin-Gorsky",
+    template: "SITE:album",
+  },
+  thoughtforms: {
+    title: "Thought-forms",
+    template: "SITE:studio",
+  },
+  hypertext: {
+    title: "Richard Waller",
+    template: "SITE:hypertext",
+    plugins: {
+      injectTitle: {
+        enabled: true,
+        options: {}
+      },
+      linebreaks: {
+        enabled: true,
+        options: {}
+      },
+      zoom: {
+        enabled: true,
+        options: {}
+      }
+    }
   },
 };

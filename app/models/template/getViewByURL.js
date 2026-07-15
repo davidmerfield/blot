@@ -1,8 +1,5 @@
 const key = require("./key");
 const client = require("models/client");
-const { promisify } = require("util");
-const hgetall = promisify(client.hgetall).bind(client);
-const get = promisify(client.get).bind(client);
 const debug = require("debug")("blot:template:getViewByURLPattern");
 const { match } = require("path-to-regexp");
 const { parse } = require("url");
@@ -37,7 +34,7 @@ module.exports = async function getViewByURLPattern(templateID, url, callback) {
     debug("Normalized URL:", normalizedPathname);
 
     // Fetch all views and their patterns for the given template ID
-    const viewPatternStrings = await hgetall(key.urlPatterns(templateID));
+    const viewPatternStrings = await client.hGetAll(key.urlPatterns(templateID));
 
     if (viewPatternStrings) {
       const views = parseViewPatterns(viewPatternStrings);
@@ -72,7 +69,7 @@ module.exports = async function getViewByURLPattern(templateID, url, callback) {
     }
 
     // Fall back to matching the URL directly
-    const viewName = await get(key.url(templateID, urlNormalizer(url)));
+    const viewName = await client.get(key.url(templateID, urlNormalizer(url)));
 
     if (viewName) {
       debug("Found view by URL:", viewName);

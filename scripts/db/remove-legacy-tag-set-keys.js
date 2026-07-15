@@ -65,18 +65,19 @@ async function removeLegacyTagSetKeys(blogID) {
     const batchDeleted = await new Promise((resolve, reject) => {
       const multi = client.multi();
       batchKeys.forEach((key) => multi.del(key));
-      multi.exec((err, results) => {
-        if (err) return reject(err);
+      multi
+        .exec()
+        .then((results) => {
+          const deleted = Array.isArray(results)
+            ? results.reduce(
+                (sum, value) => sum + (typeof value === "number" ? value : 0),
+                0
+              )
+            : 0;
 
-        const deleted = Array.isArray(results)
-          ? results.reduce(
-              (sum, value) => sum + (typeof value === "number" ? value : 0),
-              0
-            )
-          : 0;
-
-        resolve(deleted);
-      });
+          resolve(deleted);
+        })
+        .catch(reject);
     });
 
     totalDeleted += batchDeleted;

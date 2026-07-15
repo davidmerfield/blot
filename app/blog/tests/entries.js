@@ -10,10 +10,7 @@ describe("entries", function () {
 
         await this.template({ "entries.html": "{{#entries}}{{{html}}}{{/entries}}" });
 
-        const res = await this.get('/');
-
-        expect(res.status).toEqual(200);
-        const body = await res.text();
+        const body = await this.text('/');
         expect(body).toContain('Hello, A!');
         expect(body).toContain('Hello, B!');
         expect(body).toContain('Hello, C!');
@@ -29,16 +26,12 @@ describe("entries", function () {
             locals: {page_size: 2}
         });
 
-        const res = await this.get('/');
-
-        expect(res.status).toEqual(200);
-        const body = await res.text();
+        const body = await this.text('/');
         expect(body).toContain('Hello, A!');
         expect(body).toContain('Hello, B!');
         expect(body).not.toContain('Hello, C!');
 
-        const res2 = await this.get('/page/2');
-        const body2 = await res2.text();
+        const body2 = await this.text('/page/2');
         expect(body2).not.toContain('Hello, A!');
         expect(body2).not.toContain('Hello, B!');
         expect(body2).toContain('Hello, C!');
@@ -54,8 +47,7 @@ describe("entries", function () {
             locals: {sort_order: 'desc'}
         });
 
-        const res = await this.get('/');
-        const body = await res.text();
+        const body = await this.text('/');
 
         expect(body).toEqual('<p>Hello, C!</p><p>Hello, B!</p><p>Hello, A!</p>');
 
@@ -63,8 +55,7 @@ describe("entries", function () {
             locals: {sort_order: 'asc'}
         });
 
-        const res2 = await this.get('/');
-        const body2 = await res2.text();
+        const body2 = await this.text('/');
         expect(body2).toEqual('<p>Hello, A!</p><p>Hello, B!</p><p>Hello, C!</p>');
     });
 
@@ -79,8 +70,7 @@ describe("entries", function () {
             locals: {sort_by: 'date'}
         });
 
-        const res = await this.get('/');
-        const body = await res.text();
+        const body = await this.text('/');
 
         expect(body).toEqual('<p>Hello, C!</p><p>Hello, B!</p><p>Hello, A!</p>');
 
@@ -88,9 +78,35 @@ describe("entries", function () {
             locals: {sort_by: 'id'}
         });
 
-        const res2 = await this.get('/');
-        const body2 = await res2.text();
+        const body2 = await this.text('/');
         expect(body2).toEqual('<p>Hello, A!</p><p>Hello, B!</p><p>Hello, C!</p>');
+    });
+
+    it("paginates sort_by=id lexicographically when publish dates are out of order", async function () {
+
+        await this.write({path: '/b.txt', content: 'Hello, B!'});
+        await this.write({path: '/a.txt', content: 'Hello, A!'});
+        await this.write({path: '/c.txt', content: 'Hello, C!'});
+
+        await this.template({ "entries.html": "{{#entries}}{{{html}}}{{/entries}}" }, {
+            locals: {sort_by: 'id', sort_order: 'asc', page_size: 1}
+        });
+
+        const page1Asc = await this.text('/page/1');
+        const page2Asc = await this.text('/page/2');
+
+        expect(page1Asc).toEqual('<p>Hello, A!</p>');
+        expect(page2Asc).toEqual('<p>Hello, B!</p>');
+
+        await this.template({ "entries.html": "{{#entries}}{{{html}}}{{/entries}}" }, {
+            locals: {sort_by: 'id', sort_order: 'desc', page_size: 1}
+        });
+
+        const page1Desc = await this.text('/page/1');
+        const page2Desc = await this.text('/page/2');
+
+        expect(page1Desc).toEqual('<p>Hello, C!</p>');
+        expect(page2Desc).toEqual('<p>Hello, B!</p>');
     });
 
     it("generates pagination properly", async function () {
@@ -115,9 +131,7 @@ describe("entries", function () {
             `}, { locals: {page_size} });
         
         for (let i = 1; i <= 4; i++) {
-            const res = await this.get(`/page/${i}`);
-            const body = await res.text();
-            expect(res.status).toEqual(200);
+            const body = await this.text(`/page/${i}`);
             expect(body).toContain('Page ' + i + ' of ' + Math.ceil(numberOfEntries / page_size));
             if (i === 4) {
                 expect(body).not.toContain('Next');
@@ -137,5 +151,37 @@ describe("entries", function () {
                 expect(body).toContain('Prev');
             }
         }
+    });
+
+    it("exposes totalEntries in pagination data", async function () {
+
+        const totalEntries = 5;
+        const page_size = 2;
+
+        for (let i = totalEntries; i > 0; i--) {
+            await this.write({path: `/${i}.txt`, content: `Hello, ${i}!`});
+        }
+
+        await this.template({ "entries.html": "{{pagination.current}}/{{pagination.total}}/{{pagination.page_size}}/{{pagination.total_entries}}/{{pagination.pageSize}}" }, {
+            locals: {page_size}
+        });
+
+        const body = await this.text('/page/1');
+        expect(body).toContain('1/3/2/5/2');
+
+        const body2 = await this.text('/page/3');
+        expect(body2).toContain('3/3/2/5/2');
+    });
+
+    it("keeps pagination object available on single-page blogs", async function () {
+
+        await this.write({path: '/only.txt', content: 'Hello, only!'});
+
+        await this.template({ "entries.html": "{{pagination.current}}/{{pagination.total}}/{{pagination.previous}}/{{pagination.next}}/{{pagination.page_size}}/{{pagination.total_entries}}" }, {
+            locals: {page_size: 10}
+        });
+
+        const body = await this.text('/');
+        expect(body).toContain('1/1///10/1');
     });
 });

@@ -1,0 +1,188 @@
+{{=[[ ]]=}}
+
+<h1>Convert a Jekyll template to Blot</h1>
+
+
+<p>This guide shows how to convert a <a href="https://jekyllrb.com/">Jekyll</a> template to Blot. It uses the base Jekyll theme <a href="https://jekyll.github.io/minima/">Minima</a> as an example. It helps to skim Minima’s source code first.</p>
+
+
+
+<h2>Before</h2>
+<ul>
+  <li><a href="https://github.com/jekyll/minima">Source code for Minima as Jekyll Template</a></li>
+  <li><a href="https://jekyll.github.io/minima">Demo of Minima on Jekyll</a></li>
+</ul>
+  <h2>After</h2>
+  <ul>
+  <li>Source code for Minima as Blot template</li>
+  <li>Demo of Minima on Blot</li>
+</ul>
+
+<h2>Get the source</h2>
+<p><a href="https://github.com/jekyll/minima">Download the code from GitHub and unzip the results</a>. Here is what I have:</p>
+<pre class="folder">_config.yml
+_includes
+_layouts
+_posts
+_sass
+404.html
+about.md
+assets
+CODE_OF_CONDUCT.md
+Gemfile
+History.markdown
+index.md
+LICENSE.txt
+minima.gemspec
+README.md
+screenshot.png
+script</pre>
+<h2>Clean up the files</h2>
+<p>Remove files and directories that are not relevant to Blot. The <code>_posts</code> directory is not needed because Blot posts do not live inside the template directory. The <code>script</code> directory is also not needed because it contains Jekyll-specific scripts:</p>
+<pre class="folder">_config.yml
+_includes
+_layouts
+_sass
+404.html
+assets
+LICENSE.txt</pre>
+
+<h2>Compile the Sass/SCSS files</h2>
+<p>Move <code>minima-social-icons.svg</code> out of the <code>assets</code> directory. Blot does not compile SCSS, so compile <code>assets/css/style.scss</code> to CSS and save it as <code>style.css</code> in the template root. You can then remove the <code>_sass</code> and <code>assets</code> directories. If needed, you can reference the compiled CSS from the <a href="https://jekyll.github.io/minima/assets/css/style.css">Minima demo</a>:</p>
+
+<pre class="folder">_config.yml
+_includes
+_layouts
+404.html
+minima-social-icons.svg
+LICENSE.txt
+style.css</pre>
+
+<h2>Layouts, includes and partial templates</h2>
+<p>The template systems used by Blot and Jekyll offer ways to avoid repeating the same code across different pages. For example, the Minima template has a header that is present on every page on your site. This header is stored in its own file <a href="https://github.com/jekyll/minima/blob/master/_includes/header.html">_includes/header.html</a>.</p>
+<p>Jekyll allows you to embed this file in another template file using the following syntax:</p>
+<pre class="window code html">
+{%- include head.html -%}
+</pre>
+<p>Jekyll also uses 'layouts', which specify a combination of included template files that are used to render the HTML sent to your readers. Here's the contents of <a href="https://github.com/jekyll/minima/blob/master/_layouts/default.html">layouts/default.html</a> which is used to render all the pages in the Minima template:</p>
+<pre class="window code html">
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: "en" }}">
+
+  {%- include head.html -%}
+
+  <body>
+
+    {%- include header.html -%}
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        {{ content }}
+      </div>
+    </main>
+
+    {%- include footer.html -%}
+
+  </body>
+
+</html>
+</pre>
+
+
+<h2>Flatten directory structure</h2>
+<p>Blot template files cannot exist in subdirectories, so move the files inside '_includes' and '_layouts' into the root directory.</p>
+<pre class="folder">_config.yml
+404.html
+default.html
+head.html
+footer.html
+home.html
+LICENSE.txt
+minima-social-icons.svg
+post.html
+page.html
+social.html
+header.html
+disqus_comments.html
+google-analytics.html</pre>
+
+
+
+
+<h2>Convert the index page</h2>
+<p>The homepage of this Jekyll template is inside 'home.html'. On Blot, this file must be called 'entries.html'. So rename it and open the file in your text editor:</p>
+
+<pre class="window code html">
+---
+layout: default
+---
+
+<div class="home">
+  {%- if page.title -%}
+    <h1 class="page-heading">{{ page.title }}</h1>
+  {%- endif -%}
+
+  {{ content }}
+
+  {%- if site.posts.size > 0 -%}
+    <h2 class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2>
+    <ul class="post-list">
+      {%- for post in site.posts -%}
+      <li>
+        {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
+        <span class="post-meta">{{ post.date | date: date_format }}</span>
+        <h3>
+          <a class="post-link" href="{{ post.url | relative_url }}">
+            {{ post.title | escape }}
+          </a>
+        </h3>
+        {%- if site.show_excerpts -%}
+          {{ post.excerpt }}
+        {%- endif -%}
+      </li>
+      {%- endfor -%}
+    </ul>
+
+    <p class="feed-subscribe"><svg class="svg-icon orange"><use xlink:href="{{ '/assets/minima-social-icons.svg#rss' | relative_url }}"></use></svg><a href="{{ "/feed.xml" | relative_url }}">Subscribe</a></p>
+  {%- endif -%}
+
+</div>
+</pre>
+
+
+
+<p>Here's how it should look using Blot's template system:</p>
+<pre class="window code html">
+{{> header}}
+<div class="home">
+  
+  <h2 class="post-list-heading">Posts</h2>
+  <ul class="post-list">
+    {{#entries}}
+    <li>
+      <span class="post-meta">{{date}}</span>
+      <h3>
+        <a class="post-link" href="{{{url}}}">
+          {{title}}
+        </a>
+      </h3>
+      {{#show_excerpts}}
+        {{summary}}
+      {{/show_excerpts}}
+    </li>
+    {{/entries}}
+  </ul>
+
+  <p class="feed-subscribe"><svg class="svg-icon orange"><use xlink:href="/minima-social-icons.svg#rss"></use></svg><a href="/feed.xml">Subscribe</a></p>
+
+</div>
+{{> footer}}
+</pre>
+
+<p>We have changed Jekyll's <code>{%- for post in site.posts -%}</code> syntax with Blot's <code>{{#entries}}</code> syntax.</p>
+
+<h2>Config.yml to Package.json</h2>
+
+<p>Jekyll stores information about the theme in a file called <a href="https://github.com/jekyll/minima/blob/master/_config.yml">_config.yml</a>. Blot uses a file called package.json. The "locals" property of package.json is passed to render your template.</p>
+
+[[={{ }}=]]

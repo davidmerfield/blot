@@ -17,11 +17,14 @@ list.sort(function (a, b) {
 });
 
 module.exports = function (req, res, next) {
-  res.locals.clients = list.slice()
+  res.locals.clients = list.slice();
 
-  if (req.blog.client) {
+  const selectedClient =
+    (req.params && req.params.client) || req.blog.client || res.locals.effectiveClient;
+
+  if (selectedClient) {
     res.locals.clients = res.locals.clients.map(function (client) {
-      client.checked = client.name === req.blog.client ? "checked" : "";
+      client.checked = client.name === selectedClient ? "checked" : "";
       return client;
     });
   } else {

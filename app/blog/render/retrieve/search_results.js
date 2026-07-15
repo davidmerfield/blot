@@ -1,6 +1,6 @@
 var Entry = require("models/entry");
 
-module.exports = function (req, callback) {
+module.exports = function (req, res, callback) {
   var blogID = req.blog.id;
 
   // We couldn't find a search query

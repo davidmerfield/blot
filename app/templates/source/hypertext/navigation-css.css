@@ -1,0 +1,199 @@
+/* ==============================
+   Columns / Main layout
+   ============================== */
+.column:first-child {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  min-width: var(--sidebar-width);
+  flex-basis: calc((100vw - var(--main-width)) / 1.8);
+  height: 100vh;
+  overflow: hidden;
+  padding: 42px 0 0;
+  font-size: var(--small-font-size);
+}
+
+.column a {
+  color: var(--text-color);
+  text-decoration: none;
+}
+
+.column a.active {
+  color: var(--link-color);
+}
+
+/* ==============================
+   Navigation shell
+   ============================== */
+.navigation {
+  /* Fixed sidebar column; inner .sidebar includes +scrollbar width */
+  width: var(--sidebar-width);
+  overflow: hidden;
+  margin-left: 12px;
+}
+
+.navigation a,
+.navigation button {
+  opacity: 1;
+  transition: opacity 0.1s ease-in;
+}
+
+.navigation a:hover,
+.navigation button:hover
+ {
+  opacity: 0.7;
+}
+
+.navigation > a {
+  margin: 12px 0 24px;
+}
+
+/* Title within navigation */
+.navigation h2 {
+  display: flex;
+  align-items: center;
+  color: var(--text-color);
+  font-weight: 600;
+  margin: 0;
+  font-size: inherit;
+}
+
+.navigation h2 img {
+  margin: 0 7px 0 1px;
+}
+
+/* Scrollable sidebar column. Extra 17px ensures no layout shift when scrollbar appears */
+.navigation .sidebar {
+  visibility: hidden;
+  width: calc(var(--sidebar-width) + 17px); /* keep to accommodate scrollbar */
+  height: 100vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+.navigation .sidebar > :last-child {
+  margin-bottom: 40px;
+}
+
+.sidebar.initialized {
+  visibility: visible;
+  transition: visibility 0s;
+}
+
+/* ==============================
+   Sidebar list reset and spacing
+   ============================== */
+.sidebar,
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar {
+  padding-left: 6px;
+}
+
+.sidebar ul {
+  margin-top: 3px;
+  margin-bottom: 3px;
+  padding-left: 16px;
+}
+
+.sidebar li {
+  margin: 0;
+  margin-right: 12px;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* ==============================
+   Sidebar items (links + buttons)
+   ============================== */
+.sidebar a,
+.sidebar button {
+  display: block;
+  width: 100%;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+  line-height: inherit;
+  box-sizing: border-box;
+  position: relative;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  border: none;
+  background: none;
+  line-height: 1.3;
+  padding: 6px 12px 6px 18px;
+}
+
+.sidebar a:hover {
+  color: var(--text-color);
+}
+
+.sidebar a.active {
+  color: var(--link-color);
+  opacity: 1;
+  transition: none;
+}
+
+.sidebar button {
+  font-weight: 500;
+}
+
+/* Caret icon before buttons (closed state rotated -90deg) */
+.sidebar button:before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  transform: rotate(0deg);
+  transform-origin: center center;
+  background: no-repeat center/contain
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" width="12" height="12"><path fill="{{text_color}}" d="M4.7 10c-.2 0-.4-.1-.5-.2-.3-.3-.3-.8 0-1.1L6.9 6 4.2 3.3c-.3-.3-.3-.8 0-1.1.3-.3.8-.3 1.1 0l3.3 3.2c.3.3.3.8 0 1.1L5.3 9.7c-.2.2-.4.3-.6.3Z"></path></svg>');
+  transition: transform 0.1s ease-in;
+}
+
+/* Rotate caret when the parent submenu is expanded */
+.sidebar [aria-expanded="true"] > button::before {
+  transform: rotate(90deg);
+  transition: transform 0.1s ease;
+}
+
+.sidebar .submenu a {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+/* Vertical guide line for submenu items */
+.sidebar .submenu a:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 1px;
+  background-color: var(--border-color);
+}
+
+.sidebar .submenu a:hover:before {
+  background-color: var(--text-color);
+}
+
+.sidebar .submenu a.active:before {
+  background-color: var(--link-color);
+}
+
+/* ==============================
+   Visual separators
+   ============================== */
+.sidebar > li.menu-separator {
+  border-top: 1px solid var(--border-color);
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+}

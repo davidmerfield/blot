@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+    <div class="container">
+
+      <form>
+        <input placeholder="Search for an entry..." value="{{#query}}{{query}}{{/query}}" name="q" id="search" type="text" /><input type="submit" value="Go"/>
+      </form>
+      <br>
+
+      {{#query}}
+        {{^entries}}
+        <p>Sorry, no results for “{{query}}”</p>
+        {{/entries}}
+      {{/query}}
+
+      {{#entries}}
+        <a href="{{{url}}}">{{title}}</a>
+        <span class="small">{{date}}</span>
+        <br>
+      {{/entries}}
+    </div>
+    {{> footer}}
+    <script type="text/javascript">document.getElementById('search').focus();</script>
+  </body>
+</html>

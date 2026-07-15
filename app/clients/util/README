@@ -1,0 +1,86 @@
+# app/clients/util
+
+Shared utility module providing common functionality across all client implementations (Dropbox, Google Drive, Git, iCloud, and Local).
+
+## Purpose
+
+This module contains cross-client utilities that normalize and centralize behavior needed by multiple file syncing implementations. Currently, it focuses on file filtering logic that determines which files and directories should be excluded from syncing operations.
+
+## Files
+
+### shouldIgnoreFile.js
+
+Determines whether a file or directory path should be ignored during sync operations based on its name or path components.
+
+**Export**: A single function `shouldIgnoreFile(inputPath: string | any): boolean`
+
+**Behavior**:
+
+The function analyzes each path component (separated by `/` or `\`) to detect files and directories that should be excluded from syncing. It returns `true` if a path should be ignored, `false` otherwise.
+
+Detection patterns applied:
+
+- **System files**: macOS (.DS_Store, .Spotlight-V100, .Trashes, .TemporaryItems), Windows (Thumbs.db, Desktop.ini, $Recycle.Bin), Linux (.Trash)
+- **Version control**: .git, .svn
+- **Editor/IDE temporary files**: .kate-swp
+- **Application-specific files**: .tmp.driveupload, .synologyworkingdirectory, .sync, .syncignore
+- **Cloud sync metadata**: .dropbox, .dropbox.attr, .dropbox.cache
+- **File suffixes**: .tmp, ~, .orig, .rej, .swp, .swo
+- **File prefixes**: ~$ (Office temp files), .# (Emacs lockfiles), ._ (AppleDouble), .trash- (macOS trash variants)
+- **macOS icon files**: Icon\r (with carriage return)
+
+The function normalizes input paths by:
+- Trimming whitespace
+- Converting to NFC Unicode normalization
+- Converting to lowercase for comparison
+- Skipping empty components, ".", and ".."
+
+**Return values**:
+- Returns `false` for falsy input values
+- Returns `true` if any path component matches ignored patterns
+- Returns `false` if no ignored patterns are detected
+
+## Usage Across Clients
+
+### Git Client
+
+`app/clients/git/write.js` and `app/clients/git/create.js` use `shouldIgnoreFile` to reject write operations on ignored files.
+
+```javascript
+if (shouldIgnoreFile(path)) {
+  return callback(new Error(`Cannot write ignored file: ${path}`));
+}
+```
+
+### Local Client
+
+`app/clients/local/write.js` uses `shouldIgnoreFile` to prevent writing to ignored paths.
+
+### Dropbox Client
+
+`app/clients/dropbox/util/constants.js` re-exports `shouldIgnoreFile` as `isDotfileOrDotfolder` for use in:
+- `app/clients/dropbox/sync/reset-to-blot.js`: Filtering files during sync operations
+- `app/clients/dropbox/write.js`: Blocking writes to ignored files
+
+### Google Drive Client
+
+- `app/clients/google-drive/sync/util/driveReaddir.js` filters remote directory listings to exclude ignored files before syncing
+- `app/clients/google-drive/write.js` prevents writes to ignored paths
+- `app/clients/google-drive/sync/sync.js` uses it during synchronization
+
+### iCloud Client
+
+- `app/clients/icloud/sync/fromiCloud.js` filters files during iCloud synchronization
+- `app/clients/icloud/write.js` prevents writes to ignored paths
+- `app/clients/icloud/routes/site/upload.js` and `mkdir.js` validate uploaded file paths
+- `app/clients/icloud/macserver/watcher/shouldIgnore.js` re-exports the function for use in the macOS server component
+
+## Dependencies
+
+- None (pure JavaScript module with no external dependencies)
+
+## Design Notes
+
+The utility is imported from all client implementations using the same require path: `require("clients/util/shouldIgnoreFile")`. This centralized location ensures consistent filtering behavior across all sync methods, preventing system and temporary files from being processed during blog synchronization regardless of which client is active.
+
+The function is defensive: it accepts any input type and returns safely rather than throwing errors, making it suitable for use in file path validation pipelines where malformed input may occur.

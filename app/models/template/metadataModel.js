@@ -12,4 +12,5 @@ module.exports = {
   localEditing: "boolean",
   thumb: "string",
   locals: "object",
+  cdn: "object",
 };

@@ -1,3 +1,5 @@
+const cdn = require("../../cdn");
+
 describe("asset middleware", function () {
   const config = require("config");
   const fs = require("fs-extra");
@@ -16,20 +18,20 @@ describe("asset middleware", function () {
 
   it("returns files with lower-case paths against upper-case URLs", async function () {
     await this.write({ path: "/pages/first.txt", content: "Foo" });
-    const res = await this.get(`/Pages/First.txt`);
-    expect(await res.text()).toEqual("Foo");
+    const body = await this.text(`/Pages/First.txt`);
+    expect(body).toEqual("Foo");
   });
 
   it("returns files with upper-case paths against lower-case URLs", async function () {
     await this.write({ path: "/Pages/First.txt", content: "Foo" });
-    const res = await this.get(`/pages/first.txt`);
-    expect(await res.text()).toEqual("Foo");
+    const body = await this.text(`/pages/first.txt`);
+    expect(body).toEqual("Foo");
   });
 
   it("returns files against URLs with incorrect case", async function () {
     await this.write({ path: "/Pages/First.xml", content: "123" });
-    const res = await this.get(`/pAgEs/FiRsT.xMl`);
-    expect(await res.text()).toEqual("123");
+    const body = await this.text(`/pAgEs/FiRsT.xMl`);
+    expect(body).toEqual("123");
   });
 
   it("returns the correct file if there are multiple with similar case", async function () {
@@ -38,7 +40,6 @@ describe("asset middleware", function () {
     expect(await this.text(`/pages/first.xml`)).toEqual("345");
     expect(await this.text(`/Pages/First.xml`)).toEqual("123");
   });
-
 
   it("sends a file with .html extension in the blog folder", async function () {
     const path = "/Foo/File.html";
@@ -91,7 +92,10 @@ describe("asset middleware", function () {
     for (const path of paths) {
       const content = global.test.fake.file();
       contents[path] = content;
-      await fs.outputFile(config.blog_static_files_dir + "/" + this.blog.id + path, content);
+      await fs.outputFile(
+        config.blog_static_files_dir + "/" + this.blog.id + path,
+        content
+      );
     }
 
     for (const path of paths) {
@@ -117,7 +121,6 @@ describe("asset middleware", function () {
     );
 
     expect(response1).toEqual(expected1);
-
   });
 
   // This test ensures that the middleware will pass
@@ -138,10 +141,26 @@ describe("asset middleware", function () {
     expect(body).not.toEqual(content);
   });
 
+  it("serves folder assets via the CDN", async function () {
+    const filePath = "/folder/cdn-test.txt";
+    const fileContents = "CDN integration test content";
+
+    await this.write({ path: filePath, content: fileContents });
+    await this.template({
+      "entries.html": '<a href="/folder/cdn-test.txt">Link</a>',
+    });
+
+    const cdnURL = (await this.text("/")).split('"')[1];
+    expect(await this.text(cdnURL)).toBe(fileContents);
+  });
+
   it("handles double slashes in URLs correctly", async function () {
     await this.write({ path: "/folder/file.txt", content: "Content" });
-    const res = await this.get("//folder//file.txt");
-    expect(await res.text()).toEqual("Content");
+    expect(
+      await this.text(
+        `https://${this.blog.handle}.${config.host}//folder//file.txt`
+      )
+    ).toEqual("Content");
   });
 
   it("sets correct Content-Type header for various file types", async function () {
@@ -186,9 +205,34 @@ describe("asset middleware", function () {
     expect(await res.text()).toEqual("# Documentation");
   });
 
-  it("returns 404 for paths containing null bytes", async function () {
-    const res = await this.get("/file.txt%00.jpg");
+  it("rejects traversal patterns and disallowed extensions", async function () {
+    const attempts = [
+      { request: "/../secret.txt", writePath: "/secret.txt" },
+      { request: "/file.php", writePath: "/file.php" },
+      { request: "/file.txt%00.jpg", writePath: "/file.txt" },
+    ];
+
+    for (const attempt of attempts) {
+      await this.write({ path: attempt.writePath, content: "Sensitive" });
+      // Use the raw path otherwise the path will be normalized to /secret.txt by the URL API before the request is sent.
+      const res = await this.getWithRawPath(attempt.request);
+      expect(res.status).toEqual(404);
+      expect(await res.text()).not.toEqual("Sensitive");
+    }
+  });
+
+  it("rejects URL-encoded traversal attempts", async function () {
+    await this.write({ path: "/secret.txt", content: "Top secret" });
+    const res = await this.getWithRawPath("/%2e%2e/secret.txt");
     expect(res.status).toEqual(404);
+    expect(await res.text()).not.toEqual("Top secret");
+  });
+
+  it("continues to serve valid assets", async function () {
+    await this.write({ path: "/public/ok.txt", content: "Allowed" });
+    const res = await this.get("/public/ok.txt");
+    expect(res.status).toEqual(200);
+    expect(await res.text()).toEqual("Allowed");
   });
 
   it("handles special characters in filenames beyond accents", async function () {
@@ -227,8 +271,8 @@ describe("asset middleware", function () {
 
   it("respects query string parameters while ignoring them for file matching", async function () {
     await this.write({ path: "/query.txt", content: "Query test" });
-    const res = await this.get("/query.txt?param1=value1&param2=value2");
-    expect(await res.text()).toEqual("Query test");
+    const body = await this.text("/query.txt?param1=value1&param2=value2");
+    expect(body).toEqual("Query test");
   });
 
   it("handles files with multiple dots correctly", async function () {
@@ -277,8 +321,8 @@ describe("asset middleware", function () {
 
   it("handles paths with repeating slashes", async function () {
     await this.write({ path: "/folder/file.txt", content: "Content" });
-    const res = await this.get("/folder////file.txt");
-    expect(await res.text()).toEqual("Content");
+    const body = await this.text("/folder////file.txt");
+    expect(body).toEqual("Content");
   });
 
   // Alternative test that checks if the content is readable regardless of BOM
@@ -311,8 +355,8 @@ describe("asset middleware", function () {
     for (const variant of variants) {
       await this.write({ path: variant, content: "Index content" });
       const folderPath = variant.substring(0, variant.lastIndexOf("/") + 1);
-      const res = await this.get(folderPath);
-      expect(await res.text()).toEqual("Index content");
+      const body = await this.text(folderPath);
+      expect(body).toEqual("Index content");
     }
   });
 

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+{{> head}}
+<body>
+    {{> navigation}}
+    <main>
+      <div class="entry">
+      {{{entry.html}}}
+      {{#entry.backlinks.length}}
+      <br>
+      <hr>
+      <h4>Links to this page</h4>
+      <p>
+      {{#entry.backlinks}}
+      <a href="{{{url}}}">{{title}}</a><br>
+      {{/entry.backlinks}}
+      </p>
+      {{/entry.backlinks.length}}
+      </div>
+    </main>
+    {{> footer}}
+</body>
+</html>

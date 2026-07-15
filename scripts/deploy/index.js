@@ -1,6 +1,5 @@
 // Utility functions
 const sshCommand = require("./util/sshCommand");
-const askForConfirmation = require("./util/askForConfirmation");
 const checkBranch = require("./util/checkBranch");
 const getGitCommit = require("./util/getGitCommit");
 const checkHealth = require("./util/checkHealth");
@@ -11,24 +10,13 @@ const constants = require("./constants");
 const { CONTAINERS } = constants;
 const { REGISTRY_URL, PLATFORM_OS } = constants;
 
-const MAX_REMOTE_LOGS = 5;
+const MAX_REMOTE_LOGS = 3;
 let remoteTempDirPromise;
 
 async function getRemoteTempDir() {
-  if (!remoteTempDirPromise) {
-    remoteTempDirPromise = sshCommand(
-      "(env | grep '^TMPDIR=' | head -n 1 | cut -d= -f2-) || true"
-    );
-  }
-
-  try {
-    const dir = (await remoteTempDirPromise).replace(/\s+$/g, "");
-    if (!dir) return "/tmp";
-    return dir.replace(/\/$/, "");
-  } catch (error) {
-    remoteTempDirPromise = null;
-    throw error;
-  }
+  // Use /tmp as the default temp directory for log archiving
+  // This avoids complex shell commands that are hard to secure
+  return "/tmp";
 }
 
 async function storeRemoteContainerLogs(containerName, reason) {
@@ -84,15 +72,22 @@ async function dumpFailedContainerLogs(containerName) {
   );
 
   console.log(`Stored failure logs on remote server: ${remotePath}`);
-  console.log(`Fetch them locally with: ${fetchCommand}`);
+  console.log(`Fetch them locally with:`);
+  console.log(fetchCommand);
 }
 
 async function archiveContainerLogs(containerName) {
-  const exists = await sshCommand(
-    `docker ps -a --format '{{.Names}}' | grep -q '^${containerName}$' && echo yes || echo no`
+  // Check if container exists by listing containers and checking in Node
+  const containers = await sshCommand(
+    `docker ps -a --format '{{.Names}}'`
   );
+  
+  const containerExists = containers
+    .split("\n")
+    .map((line) => line.trim())
+    .includes(containerName);
 
-  if (exists.trim() !== "yes") {
+  if (!containerExists) {
     return null;
   }
 
@@ -133,10 +128,19 @@ async function verifyImageManifest(commitHash, platform) {
 
 async function removeContainer(containerName) {
   console.log(`Removing container ${containerName}...`);
-  await sshCommand(
-    `docker ps -a --format '{{.Names}}' | grep -q '^${containerName}$' && ` +
-      `docker rm -f ${containerName} || true`
+  // Check if container exists first, then remove it
+  const containers = await sshCommand(
+    `docker ps -a --format '{{.Names}}'`
   );
+  
+  const containerExists = containers
+    .split("\n")
+    .map((line) => line.trim())
+    .includes(containerName);
+
+  if (containerExists) {
+    await sshCommand(`docker rm -f ${containerName}`);
+  }
 }
 
 async function getCurrentImageHash(containerName) {
@@ -225,14 +229,15 @@ async function main() {
       );
     }
 
-    const confirmed = await askForConfirmation(
-      "Are you sure you want to deploy this image? (y/n): "
-    );
+    // const askForConfirmation = require("./util/askForConfirmation");
+    // const confirmed = await askForConfirmation(
+    //   "Are you sure you want to deploy this image? (y/n): "
+    // );
 
-    if (!confirmed) {
-      console.log("Deployment canceled.");
-      process.exit(0);
-    }
+    // if (!confirmed) {
+    //   console.log("Deployment canceled.");
+    //   process.exit(0);
+    // }
 
     // validate that each container has a unique name and port
     const containerNames = Object.values(CONTAINERS).map(

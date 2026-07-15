@@ -1,4 +1,238 @@
-Local client
-------------
+# Local Folder Client
 
-A simple client which syncs a folder on Blot's server as the source folder for a blog. This is not available in production for obvious reasons. It's mostly used for testing and to help understand the responsibilities of a client.
+## Purpose
+
+The local folder client provides a minimal implementation of Blot's client interface for syncing a blog folder stored directly on the Blot server. This client is intended for development and testing environments only and is not available in production. It serves as a reference implementation that demonstrates the core responsibilities and contract that all clients must fulfill.
+
+## Architecture
+
+Blot supports multiple file synchronization sources (clients) such as Dropbox, Google Drive, Git, and iCloud. Each client implements a standard interface that allows Blot to write files, remove files, disconnect, and initialize folder watching. The local client is the simplest concrete implementation of this interface.
+
+## File Structure
+
+```
+app/clients/local/
+├── index.js              # Public API exports
+├── init.js               # Master process initialization
+├── setup.js              # Blog folder setup and file watching
+├── write.js              # Write files to blog folder
+├── remove.js             # Remove files from blog folder
+├── disconnect.js         # Disconnect blog from local client
+├── routes.js             # Dashboard routes for client UI
+└── views/
+    ├── index.html        # Dashboard page (mustache template)
+    └── disconnect.html   # Disconnect confirmation page
+```
+
+## Public API
+
+The module exports a standard Blot client interface with the following structure:
+
+### `display_name` (string)
+Display name shown on the dashboard client page. Value: `"Local folder"`.
+
+### `description` (string)
+User-facing description of the client. Value: `"Edit your blog folder directly"`.
+
+### `write(blogID, path, contents, callback)`
+Writes or overwrites a file in the blog's source folder on the server.
+
+- **blogID** (string): The blog identifier.
+- **path** (string): The file path within the blog folder (e.g., `"/posts/hello.md"`).
+- **contents** (string|Buffer): The file content to write.
+- **callback** (function): Called with `(err)` on completion.
+
+Returns an error if the path matches an ignored file pattern (see Dependencies section).
+
+### `remove(blogID, path, callback)`
+Removes a file or directory from the blog's source folder.
+
+- **blogID** (string): The blog identifier.
+- **path** (string): The file or folder path within the blog folder.
+- **callback** (function): Called with `(err)` on completion.
+
+### `disconnect(blogID, callback)`
+Disconnects a blog from the local client by clearing the client field in the Blog model.
+
+- **blogID** (string): The blog identifier.
+- **callback** (function): Called with `(err)` on completion.
+
+After disconnection, the master process will no longer watch the blog's folder.
+
+### `dashboard_routes` (Express Router)
+An Express router providing dashboard UI routes for client management:
+
+- `GET /`: Renders the main client page. If the blog is not already using the local client, sets it to local and initializes setup. Otherwise, just renders the page.
+- `GET /disconnect`: Renders a confirmation page for disconnecting the client.
+- `POST /disconnect`: Processes the disconnection and calls the `disconnect()` function.
+
+### `init()` (function)
+Invoked once by the master process during startup. Performs two operations:
+
+1. **Subscription to setup channel**: Listens to the Redis channel `clients:local:new-folder` for messages containing blog IDs that require setup (used by external scripts like `scripts/load/info.js`).
+2. **Initialization of all existing local blogs**: After a 5-second delay, fetches all blogs from the database, filters those with `client === "local"`, and runs setup on each.
+
+This function must be run in the master process; changes require a server restart, not just worker process restart.
+
+### `setup(blogID, callback)` (internal, exposed for testing)
+Sets up a blog folder for the local client and optionally starts file watching in development mode.
+
+- **blogID** (string): The blog identifier.
+- **callback** (function): Called with `(err)` on completion.
+
+**Note**: This is exposed as a public export for use by the test suite and scripts; it is not part of the standard client interface contract.
+
+## Internal Structure
+
+### init.js
+Establishes the local client's integration with the master process:
+- Subscribes to Redis channel for new blog setup requests
+- On startup, initializes all existing local blogs after a 5-second delay
+- Logs activities using timestamped prefix from `helper/clfdate`
+
+### setup.js
+The core initialization and watching logic:
+
+1. **Fix phase**: Calls `Sync/fix` to validate and repair the blog's internal state (entry ghosts, tag ghosts, etc.).
+2. **Watch phase** (development only): In development environment, starts watching the blog folder with `chokidar` for file system events.
+3. **Event queuing**: File system events are queued and processed sequentially via `async.queue` to ensure changes are applied in order.
+4. **Sync flow**: Each file change triggers `Sync(blogID, ...)`, which locks the blog folder, processes the update via `folder.update(path, ...)`, and releases the lock.
+5. **Watch lifecycle**: Watchers are stored in a per-blog registry and cleaned up when the blog is switched to a different client or deleted.
+
+### write.js
+Uses `fs-extra.outputFile()` to write files. Validates the path against `shouldIgnoreFile()` to prevent writing to system or temporary files.
+
+### remove.js
+Uses `fs-extra.remove()` to delete files or directories.
+
+### disconnect.js
+Sets the blog's `client` field to an empty string in the Blog model, causing the master process to stop watching the folder on next server start.
+
+### routes.js
+Express router managing dashboard user interactions:
+- Handles client selection by updating the Blog model
+- Provides UI templates for connection and disconnection workflows
+- Uses CSRF protection via request tokens
+
+## Sync Flow
+
+The sync flow coordinates changes between the file system and Blot's internal state:
+
+1. **Initialization** (`setup.js`): When a blog is added or the server restarts, `setup()` is called for each local blog.
+   - Runs `Sync/fix` to repair internal state.
+   - In development, starts watching the blog folder with `chokidar`.
+
+2. **File System Watch** (`setup.js` `watch()` function): When a file system event occurs on a watched path:
+   - The event is queued (path with leading slash).
+   - Queued events are processed sequentially to maintain order.
+
+3. **Sync Lock** (`app/sync/index.js`): Before processing any changes:
+   - Acquires an exclusive lock on the blog folder using `proper-lockfile`.
+   - If lock acquisition fails, the sync is abandoned.
+
+4. **Update Processing** (`app/sync/index.js`): Once locked:
+   - Creates a `folder` object with `update(path, callback)` method.
+   - Calls the update handler (passed via callback) which processes the specific file change.
+   - Updates are wrapped to track pending operations.
+
+5. **Lock Release**: After all changes are processed:
+   - Checks for file renames via `Sync/renames`.
+   - Builds/rebuilds templates from folder via `models/template.buildFromFolder()`.
+   - Releases the lock.
+   - Updates the blog's `cacheID` if changes were made.
+
+## Integration Points
+
+### Redis
+- **Channel**: `clients:local:new-folder` for asynchronous blog setup requests from scripts.
+- **Blog Model**: Reads/writes via `Blog.get()` and `Blog.set()` to store blog client type and metadata.
+
+### Sync Module (`app/sync`)
+- **Sync**: Main synchronization coordinator that acquires locks and processes file system updates.
+- **Fix**: Validates and repairs blog state (entry ghosts, menu ghosts, tag ghosts, entry path index).
+- **Renames**: Detects and registers file renames between sync operations.
+- **Template Builder**: Builds and rebuilds Handlebars templates from the blog folder.
+
+### Helper Utilities
+- **localPath**: Converts a blog ID and relative path to an absolute server file path.
+- **shouldIgnoreFile**: Checks whether a path matches ignored patterns (system files, temp files, etc.).
+- **clfdate**: Formats timestamped log prefixes.
+- **ensure**: Runtime type validation for function arguments.
+
+### File System Libraries
+- **chokidar**: Watches the blog folder for all file system events.
+- **fs-extra**: Performs file I/O operations (write, remove, check existence).
+- **proper-lockfile**: Manages exclusive locks on the blog folder during sync operations.
+
+## Dependencies
+
+### External NPM Modules
+- `chokidar`: File system event watching.
+- `fs-extra`: File system utilities with cross-platform support.
+- `proper-lockfile`: File-based locking mechanism.
+- `async`: Asynchronous flow control (queue, eachSeries).
+- `debug`: Conditional debug logging.
+- `express`: HTTP routing framework.
+
+### Internal Modules
+- `models/blog`: Blog data model and persistence.
+- `models/redis`: Redis client.
+- `models/template`: Template compilation and folder building.
+- `sync`: Synchronization coordinator and lock management.
+- `sync/fix`: Blog state validation and repair.
+- `sync/renames`: File rename detection.
+- `helper/localPath`: Path resolution from blog ID and relative path.
+- `helper/ensure`: Runtime type validation.
+- `helper/clfdate`: Timestamped logging.
+- `helper/pathNormalizer`: Path normalization.
+- `clients/util/shouldIgnoreFile`: File pattern matching for ignored files.
+- `config`: Application configuration (environment, blog folder directory).
+
+### Ignored File Patterns
+Files matching these patterns cannot be written or synced:
+
+- **System files**: `.DS_Store`, `.fseventsd`, `thumbs.db`, `desktop.ini`, etc.
+- **Version control**: `.git`, `.svn`
+- **Editor files**: `.kate-swp`, `.#` (Emacs), `.#*` (Vim), `._*` (AppleDouble)
+- **Temporary extensions**: `.tmp`, `~`, `.orig`, `.rej`, `.swp`, `.swo`
+- **Temporary prefixes**: `~$` (Office), `.trash-*` (macOS variants)
+- **Cloud sync artifacts**: `.dropbox*`, `.sync*`, `.synologyworkingdirectory`
+
+## Configuration
+
+### Environment
+The local client is only registered if `config.environment === "development"`. It is not available in production.
+
+### Blog Folder Directory
+The `blog_folder_dir` configuration specifies where blog folders are stored on the server. All local file paths are resolved relative to this directory.
+
+## Development and Testing
+
+The `setup` export is exposed as a public function to allow the test suite and scripts to programmatically initialize blogs. This function should not be relied upon by conventional clients and is unique to the local client implementation.
+
+### Example Usage (Internal)
+```javascript
+const localClient = require("app/clients/local");
+
+// Write a file
+localClient.write(blogID, "/posts/hello.md", "# Hello", (err) => {
+  // Handle write completion
+});
+
+// Remove a file
+localClient.remove(blogID, "/posts/hello.md", (err) => {
+  // Handle removal completion
+});
+
+// Disconnect the blog
+localClient.disconnect(blogID, (err) => {
+  // Blog is no longer synced by local client
+});
+```
+
+## Limitations
+
+- The local client is development-only and not available in production.
+- File watching only occurs in development environment; production deployments do not monitor changes.
+- The sync operation is single-threaded for a given blog (sequential queue per blog).
+- File locking is advisory (file-based) and relies on the `proper-lockfile` library; concurrent access from external processes is not protected.

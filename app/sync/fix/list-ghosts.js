@@ -1,48 +1,45 @@
 const Entry = require("models/entry");
 const Entries = require("models/entries");
 const client = require("models/client");
-const async = require("async");
+const { promisify } = require("util");
 
 var lists = ["all", "created", "entries", "drafts", "scheduled", "pages"];
+
+function pruneMissing(blogID) {
+  return promisify(Entries.pruneMissing.bind(Entries))(blogID);
+}
+
+function getEntry(blogID, id) {
+  return promisify((next) => Entry.get(blogID, id, (entry) => next(null, entry)))();
+}
+
+function setEntry(blogID, id, entry) {
+  return promisify(Entry.set.bind(Entry))(blogID, id, entry);
+}
 
 function main(blog, callback) {
   const report = [];
 
-  Entries.pruneMissing(blog.id, function (err) {
-    if (err) return callback(err);
+  (async function () {
+    await pruneMissing(blog.id);
 
-    async.each(
-      lists,
-      function (list, next) {
-        client.zrevrange("blog:" + blog.id + ":" + list, 0, -1, function (
-          err,
-          res
-        ) {
-          if (err) return next(err);
-          async.each(
-            res,
-            function (id, next) {
-              Entry.get(blog.id, id, function (entry) {
-                if (entry && entry.id === id) return next();
+    for (const list of lists) {
+      const key = "blog:" + blog.id + ":" + list;
+      const ids = await client.zRange(key, 0, -1, { REV: true });
 
-                report.push([list, "MISMATCH", id]);
-                client.zrem("blog:" + blog.id + ":" + list, id, function (err) {
-                  if (err) return next(err);
-                  if (!entry) return next();
-                  Entry.set(blog.id, entry.id, entry, next);
-                });
-              });
-            },
-            next
-          );
-        });
-      },
-      function (err) {
-        if (err) return callback(err);
-        callback(null, report);
+      for (const id of ids) {
+        const entry = await getEntry(blog.id, id);
+        if (entry && entry.id === id) continue;
+
+        report.push([list, "MISMATCH", id]);
+        await client.zRem(key, id);
+
+        if (entry) await setEntry(blog.id, entry.id, entry);
       }
-    );
-  });
+    }
+
+    callback(null, report);
+  })().catch(callback);
 }
 
 module.exports = main;

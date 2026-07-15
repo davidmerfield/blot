@@ -1,0 +1,11 @@
+{
+  "name": "Georgia",
+  "tags": [
+    "serif",
+    "system"
+  ],
+  "stack": "georgia, 'times new roman', times, serif",
+  "line_height": 1.55,
+  "line_width": 38,
+  "font_size": 16
+}

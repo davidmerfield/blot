@@ -1,0 +1,60 @@
+{
+  "name": "Blog",
+  "isPublic": false,
+  "locals": {
+    "page_size": 20,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
+    "background_color": "#FFFFFF",
+    "text_color": "#111111",
+    "links_color": "#111111",
+    "font": {
+      "id": "verdana",
+      "font_size": 11,
+      "line_height": 1.8
+    },
+    "title_font": {
+      "id": "gill-sans",
+      "font_size": 19
+    }
+  },
+  "views": {
+    "archives.html": {
+      "url": "/archives",
+      "partials": {
+        "title": "Archives - {{{title}}}",
+        "description": "All the entries posted on {{{title}}}"
+      }
+    },
+    "tagged.html": {
+      "partials": {
+        "title": "{{{tag}}} - {{{title}}}",
+        "description": "All of the entries posted on {{{title}}} tagged {{{tag}}}"
+      }
+    },
+    "entries.html": {
+      "partials": {
+        "title": "{{{title}}}",
+        "description": "The latest entries posted on {{{title}}}"
+      }
+    },
+    "error.html": {
+      "partials": {
+        "title": "{{{error.title}}} - {{{title}}}",
+        "description": "Error on {{{title}}}"
+      }
+    },
+    "entry.html": {
+      "partials": {
+        "title": "{{{entry.title}}} - {{{title}}}",
+        "description": "{{{entry.summary}}}"
+      }
+    },
+    "search.html": {
+      "partials": {
+        "title": "Search - {{{title}}}",
+        "description": "Search all the entries posted on {{{title}}}"
+      }
+    }
+  }
+}

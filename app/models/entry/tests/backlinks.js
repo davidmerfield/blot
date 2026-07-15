@@ -128,5 +128,49 @@ describe("entry.backlinks", function () {
     expect(entryAfterDrop.deleted).toEqual(true);
     expect(entryAfterRestore.backlinks).toEqual([]);
     done();
-  });  
+  });
+
+  it("tracks backlinks for unicode target URLs linked from ASCII linkers", async function (done) {
+    const pathTarget = "/unicode-target.txt";
+    const contentsTarget = "Permalink: grüße\n\nHey";
+
+    const pathLinker = "/ascii-linker.txt";
+    const contentsLinker = "Link: linker\n\n[grüße](/grüße)";
+
+    await this.set(pathTarget, contentsTarget);
+    await this.set(pathLinker, contentsLinker);
+
+    const entry = await this.get(pathTarget);
+
+    const updatedContentsLinker = "Link: linker\n\nNo internal link";
+    await this.set(pathLinker, updatedContentsLinker);
+
+    const entryAfterUpdate = await this.get(pathTarget);
+
+    expect(entry.backlinks).toEqual(["/linker"]);
+    expect(entryAfterUpdate.backlinks).toEqual([]);
+    done();
+  });
+
+  it("preserves unicode linker permalinks in backlinks", async function (done) {
+    const pathTarget = "/linked.txt";
+    const contentsTarget = "Link: linked\n\nHey";
+
+    const pathLinker = "/unicode-linker.txt";
+    const contentsLinker = "Permalink: über-uns\n\n[linked](/linked)";
+
+    await this.set(pathTarget, contentsTarget);
+    await this.set(pathLinker, contentsLinker);
+
+    const entry = await this.get(pathTarget);
+
+    const updatedContentsLinker = "Permalink: über-uns-neu\n\n[linked](/linked)";
+    await this.set(pathLinker, updatedContentsLinker);
+
+    const entryAfterUpdate = await this.get(pathTarget);
+
+    expect(entry.backlinks).toEqual(["/über-uns"]);
+    expect(entryAfterUpdate.backlinks).toEqual(["/über-uns-neu"]);
+    done();
+  });
 });

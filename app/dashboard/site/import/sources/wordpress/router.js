@@ -38,6 +38,8 @@ Importer.route("/wordpress")
 
     wordpress(inputXML, outputDirectory, status, {}, async function (err) {
       if (err) {
+        console.trace();
+        console.log('finally here with message', err);
         return fs.outputFile(join(importDirectory, "error.txt"), err.message);
       }
 

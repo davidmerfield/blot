@@ -18,14 +18,14 @@ function main (callback) {
   async.mapSeries(
     [
       log("Starting daily update"),
-      log("Checking number of hits"),
-      require("./hits"),
       log("Checking number of users"),
       require("./revenue"),
-      // log("Checking number of posts"),
-      // require("./entries"),
+      log("Checking for blogs with new posts"),
+      require("./new-posts"),
       log("Checking number of newsletter subscribers"),
       require("./newsletter-subscribers"),
+      log("Checking for new customers"),
+      require("./new-customers"),
       log("Finished daily update")
     ],
     function (fn, next) {

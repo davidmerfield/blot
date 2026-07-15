@@ -1,0 +1,240 @@
+{{{app_css}}}
+/*
+
+TO DO:
+
+- add :visited :hover states for links
+- consolidate and abstract colors to make this themeable
+- move from pixels to percent for font size
+
+*/
+
+/* Inserts the @font-face rules required to load whichever fonts are selected. */
+{{{font.styles}}}
+{{{title_font.styles}}}
+
+:root {
+  --background-color: {{background_color}};
+  --text-color: {{text_color}};
+  --light-text-color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.5);
+  --border-color: rgba({{#rgb}}{{text_color}}{{/rgb}},0.2);
+  --base-font-size: {{#font}}{{{font_size}}}{{/font}}px;
+}
+
+html, body {
+  {{#font}}
+  font-family: {{{stack}}};
+  font-size: var(--base-font-size);
+  line-height: {{{line_height}}};
+  {{/font}}
+}
+
+body {
+  word-wrap: break-word; /* for long words & urls */
+  position: relative;
+  width: calc(var(--base-font-size) * 38.636);
+  margin: 7em auto;
+  padding: 0 calc(var(--base-font-size) * 6.727) 0 calc(var(--base-font-size) * 20.182);
+  color: var(--text-color);
+  background-color: var(--background-color);
+}
+
+.sidebar {
+  width: calc(var(--base-font-size) * 14.545);
+  position:absolute;
+  left:0;
+  text-align:right;
+}
+
+.light {color: var(--light-text-color); }
+
+.entry + .light {margin: 1.7em 0}
+
+h1 + .light {margin-top: -1em}
+h1 + .light:empty {display: none;}
+
+.sidebar, h1, h2, h3, h4, h5, h6 {
+  font-weight: 400;
+  margin-bottom: 1em;
+  {{#title_font}}
+  font-family: {{{stack}}};
+  font-size: {{{font_size}}}px;
+  line-height: {{{line_height}}};
+  {{/title_font}}
+}
+
+.sidebar, h1 a, h2, h3, h4, h5, h6 {
+  font-size: calc(var(--base-font-size) * 1.091);
+  text-transform: uppercase;
+  letter-spacing: calc(var(--base-font-size) * 0.1575);
+}
+
+.sidebar a {display: block;}
+
+h1 a {font-size: calc(var(--base-font-size) * 1.182);position:relative}
+
+h1 a:after {
+  content: "→";
+  margin: 0 -1em 0 0;
+  line-height: 1.3;
+  position: relative;
+  left: 0.33em;
+}
+
+.adjacent {
+  font-size: .91em;
+  display: inline-block;
+  width: calc(var(--base-font-size) * 8.273);
+  text-align: right;
+  margin-right: var(--base-font-size);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: 1.55em;
+  line-height: 1.3;
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+h2, h3, h4, h5, h6 {
+  margin-top: 2em;
+  font-size: var(--base-font-size);
+  font-weight: 600;
+}
+
+a {color: inherit;text-decoration: none;}
+
+
+hr {
+  width: calc(var(--base-font-size) * 12.909);
+  margin: 2.55em auto;
+  border: none;
+  border-top: 1px solid var(--border-color);
+  display: block;
+}
+
+
+
+.logo {
+  display:block;
+  text-align: right;
+  margin-bottom: 3em;
+  margin-top:0.3em;
+}
+
+/* We want each word on its own
+   line if theres an image */
+.logo.hasAvatar {word-spacing:160px}
+
+.avatar {margin: -0.1em 0.1em 0 0}
+
+/* Make round avatars slightly bigger for balance */
+.avatar.round {
+  border-radius: 50%;
+  height: 50px;
+  width: 50px;
+  margin: -4px -4px 0;
+}
+
+
+
+
+
+
+/* This is used between articles in list view */
+hr.full {
+  color: var(--border-color);
+  margin: 7em 0 11em 1em; /* We add 1em to the left due to letter spacing*/
+  height: 0;
+  width: 100%;
+  text-align: center;
+  border: none;
+  letter-spacing: 2em;
+}
+
+hr.full:after {content: "··•··";}
+
+
+
+
+.caption, blockquote {color: var(--light-text-color)}
+
+ul, ol {padding-left: 1.5em;}
+
+ul {list-style-type: circle}
+
+blockquote {
+  margin: 0 1em 0 0.25em;
+  padding: 0 .75em 0 1em;
+  border-left: 1px solid var(--border-color)
+}
+
+
+/* Styles specific to entry content */
+
+.entry p,
+.entry li,
+.entry blockquote,
+.entry figcaption {
+  orphans: 2;
+  widows: 2;
+}
+
+.entry p, .entry > ul, .entry > ol {
+  margin: 1.6em 0;
+}
+
+.entry a {
+  text-decoration: underlink;
+  color: {{links_color}};
+}
+
+.entry a:hover {
+  text-decoration: none;
+}
+
+
+
+/* Tables */
+
+table {
+  word-break: normal;
+  word-break: keep-all;
+  border-collapse: collapse;
+  border-spacing: 0;
+  box-sizing: border-box;
+}
+
+tr {box-sizing: border-box;border-top: 1px solid var(--border-color);padding: 0}
+th, td {box-sizing: border-box;border: 1px solid var(--border-color);padding: 5px 12px 6px}
+
+/* Search box */
+
+input[type="text"],
+input[type="submit"] {
+  font:inherit;
+  font-size: calc(var(--base-font-size) * 1.091);
+  padding: 3px 6px;
+  margin: 1em 0;
+  border: 1px solid var(--border-color);
+}
+
+input[type="text"] {
+  background: none;
+  max-width: 100%;
+  min-width: calc(var(--base-font-size) * 18.182);
+  box-shadow: inset 0 1px 2px 0 rgba(0,0,0,.075);
+}
+
+input[type="submit"] {
+  padding: 3px 12px;
+  background: none;
+  color: var(--text-color);
+  border: 1px solid var(--text-color);
+  cursor: pointer;
+}
+
+{{> plugin}}

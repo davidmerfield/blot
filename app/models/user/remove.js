@@ -3,32 +3,41 @@ var ensure = require("helper/ensure");
 var client = require("models/client");
 var key = require("./key");
 
-module.exports = function remove (uid, callback) {
+module.exports = function remove(uid, callback) {
   ensure(uid, "string").and(callback, "function");
 
-  var multi = client.multi();
-
   getById(uid, function (err, user) {
-    if (err) throw err;
+    if (err) return callback(err);
+    if (!user) return callback(new Error("No user"));
 
     var keys = [
       key.user(uid),
       key.email(user.email),
       "sync:lease:" + uid,
-      "sync:again:" + uid
+      "sync:again:" + uid,
     ];
 
-    if (user.subscription.customer) {
+    if (user.subscription && user.subscription.customer) {
       keys.push(key.customer(user.subscription.customer));
     }
 
-    if (user.paypal.id) {
+    if (user.paypal && user.paypal.id) {
       keys.push(key.paypal(user.paypal.id));
     }
 
-    multi.srem(key.uids, uid);
-    multi.del(keys);
+    (async function () {
+      try {
+        var multi = client.multi();
 
-    multi.exec(callback);
+        multi.sRem(key.uids, uid);
+        multi.del(keys);
+
+        await multi.exec();
+
+        return callback(null);
+      } catch (err) {
+        return callback(err);
+      }
+    })();
   });
 };

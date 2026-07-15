@@ -1,4 +1,7 @@
 .plugin p {margin:0}
+.line.plugins + h2 {
+  margin-top: 24px;
+}
 .line.plugins .center {flex-grow: 1;}
 .line.plugins {border-bottom: none;padding: 0;}
 form.dashboard-form .plugin label {padding-top:0}
@@ -63,7 +66,7 @@ content: "";
 }
 
 form.dashboard-form .plugin input[type="checkbox"]:checked {
-  background-color: blue;
+  background-color: var(--accent-color);
 }
 
 form.dashboard-form .plugin input[type="checkbox"]:checked::before {

@@ -5,16 +5,24 @@ var makeSlug = require("helper/makeSlug");
 // should return a template owned by the blog, if it exists,
 // or a template owned by the site if it exists or null if neither exist
 const loadTemplate = async (blogID, templateSlug) => {
+  const slug = makeSlug(templateSlug);
+  const defaultTemplate = await getMetadata(Template.makeID("SITE", slug));
+  const blogTemplate = await getMetadata(Template.makeID(blogID, slug));
 
-  let template;
+  if (blogTemplate && defaultTemplate) {
+    // both templates exist, return the blog template
+    // but mark it as a mirror template
+    blogTemplate.isMirror = true;
+    return blogTemplate;
+  }
 
-  template = await getMetadata(Template.makeID(blogID, makeSlug(templateSlug)));
+  if (blogTemplate) {
+    return blogTemplate;
+  }
 
-  if (template) return template;
-
-  template = await getMetadata(Template.makeID("SITE", makeSlug(templateSlug)));
-
-  if (template) return template;
+  if (defaultTemplate) {
+    return defaultTemplate;
+  }
 
   return null;
 };
@@ -29,33 +37,59 @@ const getMetadata = (templateID) => {
 };
 
 module.exports = async function (req, res, next) {
-    
   try {
+    const slug = makeSlug(req.params.templateSlug);
+    const template = await loadTemplate(req.blog.id, slug);
+    const templateMissing = !template;
 
-    const template = await loadTemplate(req.blog.id, req.params.templateSlug);
-    
-    if (!template.slug) template.slug = req.params.templateSlug;
+    const hydrated = template || {
+      owner: req.blog.id,
+      slug,
+      id: Template.makeID(req.blog.id, slug),
+      locals: {},
+      partials: {},
+      previewPath: "",
+    };
 
-    if (!template.name) template.name = template.slug[0].toUpperCase() + template.slug.slice(1).replace(/-/g, " ");
+    hydrated.owner = hydrated.owner || req.blog.id;
+    hydrated.slug = hydrated.id.split(':').slice(1).join(':') || req.params.templateSlug || slug || "";
 
-    if (!template.id) template.id = Template.makeID(req.blog.id, template.slug);
+    const nameSource = hydrated.slug || req.params.templateSlug || "";
 
-    template.checked = template.id === req.blog.template ? "checked" : "";
+    if (!hydrated.name) {
+      hydrated.name = nameSource
+        ? nameSource[0].toUpperCase() + nameSource.slice(1).replace(/-/g, " ")
+        : "";
+    }
 
-    req.template = res.locals.template = template;
+    if (!hydrated.id) {
+      hydrated.id = Template.makeID(req.blog.id, hydrated.slug);
+    }
+
+    hydrated.locals = hydrated.locals || {};
+    hydrated.partials = hydrated.partials || {};
+    hydrated.previewPath = hydrated.previewPath || "";
+    hydrated.isMine = hydrated.owner === req.blog.id;
+
+    hydrated.checked = hydrated.id === req.blog.template ? "checked" : "";
+
+    res.locals.templateMissing = templateMissing;
+
+    req.template = res.locals.template = hydrated;
 
     res.locals.base = `${req.protocol}://${req.hostname}${req.baseUrl}/${req.params.templateSlug}`;
     // used to filter messages sent from the iframe which contains a preview of the
     // template in the template editor, such that we only save the pages which are
     // part of the template.
-    res.locals.previewOrigin = `https://preview-of${template.owner === req.blog.id ? '-my' : ''}-${template.slug}-on-${req.blog.handle}.${config.host}`;
-    // we persist the path of the page of the template
-    // last viewed by the user in the database
+    res.locals.previewOrigin = `https://preview-of${
+      hydrated.owner === req.blog.id ? "-my" : ""
+    }-${hydrated.slug}-on-${req.blog.handle}.${config.host}`;
+    // the preview iframe defaults to the template origin; the client stores
+    // the most recent path in localStorage and applies it on load
 
-    res.locals.preview =
-      res.locals.previewOrigin + (req.template.previewPath || "");
+    res.locals.preview = res.locals.previewOrigin;
 
-      res.locals.breadcrumbs.add(req.template.name, req.template.slug);
+    res.locals.breadcrumbs.add(req.template.name, req.template.slug);
 
     next();
   } catch (err) {

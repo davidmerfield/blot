@@ -15,6 +15,7 @@ module.exports = function (done) {
     blog
   ) {
     if (err) {
+      console.log('HERE',err);
       return done(new Error(err.handle));
     }
 

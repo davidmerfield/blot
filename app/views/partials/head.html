@@ -10,6 +10,10 @@
 {{#selected.dashboard}}
 <link rel="stylesheet" type="text/css" href="{{#cdn}}/dashboard.min.css{{/cdn}}" />
 {{/selected.dashboard}}
+<link rel="preload" as="style" href="{{#cdn}}/documentation.min.css{{/cdn}}" />
+{{#selected.dashboard}}
+<link rel="preload" as="style" href="{{#cdn}}/dashboard.min.css{{/cdn}}" />
+{{/selected.dashboard}}
 {{#cookie_redirect}}
 <meta http-equiv="refresh" content="0;URL='{{{cookie_redirect}}}'" />
 <script type="text/javascript">

@@ -1,5 +1,6 @@
 const { tryEach, eachOf } = require("async");
-const { resolve, dirname } = require("path");
+const path = require("path");
+const { resolve, dirname, extname } = path;
 const byPath = require("./byPath");
 const byFilename = require("./byFilename");
 const byURL = require("./byURL");
@@ -9,8 +10,70 @@ const { decode } = require("he");
 const makeSlug = require("helper/makeSlug");
 const debug = require("debug")("blot:entry:build:plugins:wikilinks");
 
+const basename = (path.posix || path).basename;
+
+
+// Helper function to check if a path is a markdown/text file
+function isMarkdownFile(path) {
+  if (!path) return false;
+  const ext = extname(path).toLowerCase();
+  return [".txt", ".text", ".md", ".markdown"].indexOf(ext) > -1;
+}
+
+
 function render($, callback, { blogID, path }) {
-  const wikilinks = $("[title='wikilink']");
+  const cleanupWikilinkMarker = ($node, { removeClass = false } = {}) => {
+    if (!$node || !$node.length) return;
+
+    if ($node.attr("data-wikilink-marker") === "1") {
+      const title = ($node.attr("title") || "").toLowerCase();
+      if (title === "wikilink") {
+        $node.removeAttr("title");
+      }
+      $node.removeAttr("data-wikilink-marker");
+    }
+
+    if (!removeClass) return;
+
+    const existingClasses = ($node.attr("class") || "")
+      .split(/\s+/)
+      .filter((className) => className && className !== "wikilink");
+
+    if (existingClasses.length) {
+      $node.attr("class", existingClasses.join(" "));
+    } else {
+      $node.removeAttr("class");
+    }
+  };
+
+  const legacyWikilinks = $("[title='wikilink']");
+
+  legacyWikilinks.each(function (_, node) {
+    const $node = $(node);
+    const isLink = node && node.name === "a";
+    const isMedia = !isLink && $node.attr("src") !== undefined;
+
+    if (!isLink && !isMedia) {
+      return;
+    }
+
+    const existingClasses = ($node.attr("class") || "")
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (!existingClasses.includes("wikilink")) {
+      existingClasses.push("wikilink");
+      $node.attr("class", existingClasses.join(" "));
+    }
+
+    $node.attr("data-wikilink-marker", "1");
+
+    if (isLink) {
+      $node.removeAttr("title");
+    }
+  });
+
+  const wikilinks = $(".wikilink[data-wikilink-marker='1']");
   let dependencies = [];
 
   eachOf(
@@ -36,6 +99,7 @@ function render($, callback, { blogID, path }) {
       const rawTarget = isLink ? $node.attr(attribute) : mediaSource;
 
       if (!rawTarget) {
+        cleanupWikilinkMarker($node, { removeClass: isMedia });
         debug("Skipping wikilink node with no target");
         return next();
       }
@@ -72,13 +136,48 @@ function render($, callback, { blogID, path }) {
           // resolvedHref is '/Posts/sub/Foo.txt'
           const resolvedHref = resolve(dirOfPost, href);
 
+          const strippedHref = href.split("|")[0].trim();
+          const sanitizedHref = strippedHref.split(/[?#]/)[0];
+
           const pathsToWatch = [
             resolvedHref,
             resolvedHref + ".md",
             resolvedHref + ".txt",
           ];
 
-          pathsToWatch.forEach((path) => dependencies.push(path));
+          const slugToken = makeSlug(strippedHref);
+          const filenameToken = basename(sanitizedHref || strippedHref);
+
+          const syntheticDependencies = [];
+
+          if (slugToken) {
+            syntheticDependencies.push(`/__wikilink_slug__/${slugToken}`);
+          }
+
+          if (filenameToken) {
+            syntheticDependencies.push(`/__wikilink_filename__/${filenameToken}`);
+          }
+
+          pathsToWatch
+            .concat(syntheticDependencies)
+            .forEach((path) => {
+              if (path && !dependencies.includes(path)) dependencies.push(path);
+            });
+
+          // For unresolved links, still rewrite display text to basename for absolute paths
+          const isUnresolvedAbsolutePath = strippedHref.startsWith("/");
+
+          if (isLink && !piped && isUnresolvedAbsolutePath) {
+            const displayTitle = filenameToken || strippedHref;
+            if (displayTitle) {
+              const withoutExt = extname(displayTitle)
+                ? displayTitle.slice(0, -extname(displayTitle).length)
+                : displayTitle;
+              $node.text(withoutExt || displayTitle);
+            }
+          }
+
+          cleanupWikilinkMarker($node, { removeClass: isMedia });
 
           debug("Wikilink target not found for", href);
           return next();
@@ -94,6 +193,43 @@ function render($, callback, { blogID, path }) {
             $node.text(title || url);
           }
         } else {
+          if (isMarkdownFile(linkedPath)) {
+            const { get } = require("models/entry");
+
+            return get(blogID, linkedPath, function (entry) {
+              if (!entry) {
+                debug(
+                  "No entry found for markdown media target, falling back to src",
+                  url || linkedPath
+                );
+                $node.attr("src", url || linkedPath);
+                cleanupWikilinkMarker($node, { removeClass: isMedia });
+                return next();
+              }
+
+              const html = entry && entry.html ? entry.html : "";
+              const embedded = $("<div class='embedded-markdown'></div>");
+              embedded.html(html);
+              
+              // if embedded has an h1 with a class of injected-title, remove it
+              // this is a hack to remove the injected title from the embedded markdown
+              const injectedTitle = embedded.find("h1.injected-title");
+              
+              if (injectedTitle && injectedTitle.length) {
+                injectedTitle.remove();
+              }
+
+              $node.replaceWith(embedded);
+
+              if (linkedPath && !dependencies.includes(linkedPath)) {
+                debug("Adding dependency on", linkedPath);
+                dependencies.push(linkedPath);
+              }
+
+              return next();
+            });
+          }
+
           debug("Setting media src to", url);
           $node.attr("src", linkedPath);
 
@@ -118,6 +254,12 @@ function render($, callback, { blogID, path }) {
             debug("Setting image caption to", altText);
             nextNode.text(altText || "");
           }
+
+          cleanupWikilinkMarker($node, { removeClass: isMedia });
+        }
+
+        if (isLink) {
+          cleanupWikilinkMarker($node);
         }
 
         if (linkedPath) {
@@ -129,14 +271,14 @@ function render($, callback, { blogID, path }) {
       });
     },
     function () {
-      callback(null, dependencies);
+      callback(null, { newDependencies: dependencies });
     }
   );
 }
 module.exports = {
   render,
-  category: "Typography",
+  category: "links",
   title: "Wikilinks",
-  description: "Convert Wikilinks into links",
+  description: "Convert wikilinks to standard links",
   first: true,
 };

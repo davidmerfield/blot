@@ -3,17 +3,68 @@ const ensure = require("helper/ensure");
 const LocalPath = require("helper/localPath");
 const extname = require("path").extname;
 const cheerio = require("cheerio");
-const hash = require("helper/hash");
-const fetch = require("node-fetch");
-const { join } = require("path");
-const config = require("config");
-const sharp = require("sharp");
 const Metadata = require("build/metadata");
 const extend = require("helper/extend");
 const yaml = require("yaml");
 
 const blockquotes = require("./blockquotes");
+const footnotes = require("./footnotes");
 const linebreaks = require("./linebreaks");
+const processImages = require("./images");
+const cleanupSpans = require("./cleanup-spans");
+
+function textWithLineBreaks($, node) {
+  const clonedNode = $(node).clone();
+  clonedNode.find("br").replaceWith("\n");
+  return clonedNode.text();
+}
+
+function extractTableCellCode($, cell) {
+  const paragraphs = $(cell).find("p");
+
+  if (paragraphs.length > 0) {
+    return paragraphs
+      .map(function () {
+        return textWithLineBreaks($, this);
+      })
+      .get()
+      .join("\n");
+  }
+
+  return textWithLineBreaks($, cell);
+}
+
+function convertCodeTables($) {
+  $("table").each(function () {
+    const table = $(this);
+    const rows = table.find("tr");
+    const cells = table.find("td");
+
+    // Single-cell table (1x1): convert the lone cell into code block
+    if (rows.length === 1 && cells.length === 1) {
+      const code = extractTableCellCode($, cells[0]);
+      const pre = $("<pre><code></code></pre>");
+      pre.find("code").text(code);
+      table.replaceWith(pre);
+      return;
+    }
+
+    // Two-cell vertical table (2x1): first cell is language, second is code
+    if (rows.length === 2 && cells.length === 2) {
+      const language = extractTableCellCode($, cells[0]).trim();
+      const code = extractTableCellCode($, cells[1]);
+      const pre = $("<pre><code></code></pre>");
+      const codeNode = pre.find("code");
+
+      if (language) {
+        pre.attr("class", language);
+      }
+
+      codeNode.text(code);
+      table.replaceWith(pre);
+    }
+  });
+}
 
 function is(path) {
   return [".gdoc"].indexOf(extname(path).toLowerCase()) > -1;
@@ -24,14 +75,12 @@ async function read(blog, path, callback) {
 
   try {
     const localPath = LocalPath(blog.id, path);
-    const blogDir = join(config.blog_static_files_dir, blog.id);
-    const assetDir = join(blogDir, "_assets", hash(path));
 
     const stat = await fs.stat(localPath);
 
     // Don't try and turn HTML exported from a google doc into posts
-    // if it's over 5MB in size
-    if (stat && stat.size > 5 * 1000 * 1000)
+    // if it's over 10MB in size
+    if (stat && stat.size > 10 * 1000 * 1000)
       return callback(new Error("Google Doc export HTML too big"));
 
     const contents = await fs.readFile(localPath, "utf-8");
@@ -110,6 +159,9 @@ async function read(blog, path, callback) {
       $(this).remove();
     });
 
+    // remove all empty spans
+    $('span:empty').remove();
+
     // replace italic inlines with em
     $('span[style*="font-style:italic"]').each(function (i, elem) {
       $(this).replaceWith("<em>" + $(this).html() + "</em>");
@@ -120,59 +172,54 @@ async function read(blog, path, callback) {
       $(this).replaceWith("<strong>" + $(this).html() + "</strong>");
     });
 
+    // replace superscript inlines with sup
+    $('span[style*="vertical-align:super"]').each(function (i, elem) {
+      $(this).replaceWith("<sup>" + $(this).html() + "</sup>");
+    });
+
+    // replace subscript inlines with sub
+    $('span[style*="vertical-align:sub"]').each(function (i, elem) {
+      $(this).replaceWith("<sub>" + $(this).html() + "</sub>");
+    });
+
+    // replace underline inlines with u
+    $('span[style*="text-decoration:underline"]').each(function (i, elem) {
+      // if this contains a link, skip
+      if ($(this).find('a').length > 0) {
+        return;
+      }
+      $(this).replaceWith("<u>" + $(this).html() + "</u>");
+    });
+
+    // replace strikethrough inlines with strike
+    $('span[style*="text-decoration:line-through"]').each(function (i, elem) {
+      $(this).replaceWith("<strike>" + $(this).html() + "</strike>");
+    });
+
+    // wrap contents of li with strike in <strike> tag
+    $('li[style*="text-decoration:line-through"]').each(function (i, elem) {
+      $(this).wrapInner("<strike>" + $(this).html() + "</strike>");
+    });
+    
     // remove all inline style attributes
     $("[style]").removeAttr("style");
 
-    console.log("HERE", blog.flags);
-    
+    cleanupSpans($);
+
     // handle line breaks
-    if (blog.flags.google_docs_preserve_linebreaks !== false) {
-      linebreaks($);
-    }
+    linebreaks($);
 
-    const images = [];
-
-    $("img").each(function (i, elem) {
-      images.push(elem);
-    });
-
-    for (const elem of images) {
-      const src = $(elem).attr("src");
-
-      try {
-        const res = await fetch(src);
-        const disposition = res.headers.get("content-disposition");
-        const buffer = await res.buffer();
-
-        let ext;
-
-        try {
-          ext = disposition
-            .split(";")
-            .find((i) => i.includes("filename"))
-            .split("=")
-            .pop()
-            .replace(/"/g, "")
-            .split(".")
-            .pop();
-        } catch (err) {}
-
-        if (!ext) {
-          // use sharp to determine the image type
-          const metadata = await sharp(buffer).metadata();
-          ext = metadata.format;
-        }
-
-        const filename = hash(src) + "." + ext;
-        await fs.outputFile(join(assetDir, filename), buffer);
-        $(elem).attr("src", "/_assets/" + hash(path) + "/" + filename);
-      } catch (err) {
-        console.log(err);
-      }
-    }
+    await processImages(blog.id, path, $);
 
     // handle blockquotes
     blockquotes($);
+
+    // handle footnotes
+    footnotes($);
+
+    // transform code tables before final serialization
+    convertCodeTables($);
+
 
     let html = $("body").html();
 

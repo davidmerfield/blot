@@ -9,14 +9,14 @@ describe("template", function () {
     var test = this;
 
     var header = {
-      name: "header " + test.fake.random.word(),
-      content: test.fake.random.word(),
+      name: "header.html",
+      content: "<header>Header content</header>",
     };
 
     var view = {
-      name: "main view " + test.fake.random.word(),
-      locals: { words: test.fake.random.word() },
-      content: test.fake.random.word() + " {{> " + header.name + "}}",
+      name: "page.html",
+      locals: { words: "test words" },
+      content: "Page content {{> " + header.name + "}}",
     };
 
     var views = [view, header];

@@ -22,5 +22,6 @@ module.exports = {
         extname(path).toLowerCase()
       ) > -1
     );
-  }
+  },
+  id: "markdown"
 };

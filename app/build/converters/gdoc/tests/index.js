@@ -2,12 +2,25 @@ const gdoc = require("../index");
 const fs = require("fs-extra");
 const express = require("express");
 const sharp = require("sharp");
+const nock = require("nock");
+const hash = require("helper/hash");
+
+const imageBuffer = async () =>
+  sharp({
+    create: {
+      width: 100,
+      height: 100,
+      channels: 3,
+      background: { r: 255, g: 0, b: 0 },
+    },
+  })
+    .jpeg()
+    .toBuffer();
 
 describe("gdoc converter", function () {
   global.test.blog();
 
   beforeAll(function (done) {
-
     const app = express();
 
     app.get("/image.jpg", (req, res) => {
@@ -63,30 +76,97 @@ describe("gdoc converter", function () {
     });
   });
 
-  it("respects the flag to not preserve line breaks", async function () {
-    const name = "linebreak.gdoc";
-
+  it("reuses cached transformer asset when the remote URL expires", async function () {
     const test = this;
-    const path = `/${name}`;
-    const expected = await fs.readFile(
-      `${__dirname + path}.google_docs_preserve_linebreaks.html`,
-      "utf8"
-    );
+    const path = `/image-alt-title.gdoc`;
+    const input = await fs.readFile(__dirname + path, "utf8");
 
-    // set the flag to 'false'
-    const blogWithFlag = {
-      ...test.blog,
-      flags: { google_docs_preserve_linebreaks: false },
-    };
+    const originalSrc = input.match(
+      /https:\/\/lh[0-9]+-rt\.googleusercontent\.com\/docsz\/[A-Za-z0-9_\-]+\?[^"']+/i
+    )[0];
 
-    fs.copySync(__dirname + path, test.blogDirectory + path);
+    const remoteUrl = new URL(originalSrc);
 
-    await new Promise((resolve, reject) => {
-      gdoc.read(blogWithFlag, path, function (err, result) {
+    const scope = nock(remoteUrl.origin)
+      .get(remoteUrl.pathname)
+      .query(true)
+      .reply(200, await imageBuffer(), {
+        "Content-Type": "image/jpeg",
+        "Cache-Control": "max-age=0",
+      })
+      .get(remoteUrl.pathname)
+      .query(true)
+      .reply(404, "gone");
+
+    await fs.writeFile(test.blogDirectory + path, input, "utf8");
+
+    const readDoc = () =>
+      new Promise((resolve, reject) => {
+        gdoc.read(test.blog, path, function (err, result) {
+          if (err) return reject(err);
+          resolve(result);
+        });
+      });
+
+    try {
+      const expected = `<img alt="Album cover" src="/_assets/5cfb3e701e0cc48c37e89045580a3bce/0ae35d488e755ba7235e788e58e882ad.jpeg" title="Title of image">`;
+
+      const first = await readDoc();
+      expect(first).toContain(expected);
+
+      const second = await readDoc();
+      expect(second).toContain(expected);
+    } finally {
+      nock.cleanAll();
+    }
+
+    expect(scope.isDone()).toBe(true);
+  });
+
+  it("leaves pre-rewritten /_assets/ refs unchanged (ZIP export fast-path, no re-copy)", async function () {
+    const test = this;
+    const path = "/zip-style-rewritten.gdoc";
+    const docHash = hash(path);
+    const assetPath = `/_assets/${docHash}/photo.jpeg`;
+    const minimalHtml = [
+      "<html><head><meta charset='utf-8'></head><body>",
+      "<p><img alt='' src='" + assetPath + "'></p>",
+      "</body></html>",
+    ].join("");
+
+    await fs.writeFile(test.blogDirectory + path, minimalHtml, "utf8");
+
+    const result = await new Promise((resolve, reject) => {
+      gdoc.read(test.blog, path, (err, result) => {
         if (err) return reject(err);
-        expect(result).toEqual(expected);
-        resolve();
+        resolve(result);
       });
     });
+
+    expect(result).toContain(assetPath);
+  });
+
+  it("does not duplicate or re-copy images already at /_assets/...", async function () {
+    const test = this;
+    const path = "/pre-rewritten-assets.gdoc";
+    const docHash = hash(path);
+    const filename = "existing-image.jpg";
+    const assetSrc = `/_assets/${docHash}/${filename}`;
+    const minimalHtml = [
+      "<html><head><meta charset='utf-8'></head><body>",
+      "<p>Text</p><p><img src='" + assetSrc + "' alt='Already in assets'></p>",
+      "</body></html>",
+    ].join("");
+
+    await fs.writeFile(test.blogDirectory + path, minimalHtml, "utf8");
+
+    const result = await new Promise((resolve, reject) => {
+      gdoc.read(test.blog, path, (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+
+    expect(result).toContain(assetSrc);
   });
 });

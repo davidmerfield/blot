@@ -3,7 +3,7 @@
          <span class="link">Dismiss</span>
         </a>
 
-<form method="POST" class="account" id="payment-form" >
+<form method="POST" class="account" id="payment-form" data-stripe-key="{{stripe_key}}" >
 
   <p>Please pay <b>{{user.pretty.price}}</b> to restart your subscription.</p>
 

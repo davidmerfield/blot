@@ -1,0 +1,6 @@
+.dashboard-form h2 {
+    font-size: 15px;
+    color: var(--medium-text-color);
+    padding-bottom: 11px;
+    border-bottom: 1px solid var(--border-color);
+}

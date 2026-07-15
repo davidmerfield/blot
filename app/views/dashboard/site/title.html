@@ -1,0 +1,18 @@
+{{> close-button}}
+
+{{> message}}
+
+<form class="dashboard-form" method="POST">
+    <div style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
+    <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+    <label>Title</label>
+    <input type="text" name="title" value="{{blog.title}}" autofocus placeholder="Title" />
+
+    <div class="buttons">
+        <button type="submit">
+            Save title
+        </button>
+        <a href="{{{base}}}">Cancel</a>
+    </div>
+    </div>
+</form>

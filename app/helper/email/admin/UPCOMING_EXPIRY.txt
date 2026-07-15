@@ -1,3 +1,3 @@
 User notified of subscription expiry in 7 days
 
-{{email}} ({{blogs.length}} blog{{s}} – {{pretty.price}} total) was notified that their subscription will expire next week and their account will close. They were offered a chance to restart their subscipriont.
+{{email}} ({{blogs.length}} site{{s}} – {{pretty.price}} total) was notified that their subscription will expire next week and their account will close. They were offered a chance to restart their subscipriont.

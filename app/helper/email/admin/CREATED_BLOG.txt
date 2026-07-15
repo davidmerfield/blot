@@ -1,3 +1,3 @@
-User created blog
+User created site
 
-{{email}} {{#isSubscribed}} now pays {{pretty.price}} per {{pretty.interval}} {{#paypal.status}}via PayPal{{/paypal.status}} for{{/isSubscribed}} {{pretty.amount}} blog{{pretty.s}} 
+{{email}} {{#isSubscribed}} now pays {{pretty.price}} per {{pretty.interval}} {{#paypal.status}}via PayPal{{/paypal.status}} for{{/isSubscribed}} {{pretty.amount}} site{{pretty.s}} 

@@ -1,0 +1,33 @@
+<h1>Run Blot locally</h1>
+
+<p>Use this guide to set up a local Blot development environment.</p>
+
+<h2>1. Install Docker</h2>
+<p>You will need <a href="https://www.docker.com/" target="_blank">Docker</a>. Ensure that Docker is installed and running on your machine before proceeding.</p>
+
+<h2>2. Clone the repository</h2>
+<p>Use <a href="https://git-scm.com/" target="_blank">Git</a> to clone Blot’s source code:</p>
+<pre class="bash"><code>git clone https://github.com/davidmerfield/blot</code></pre>
+
+<h2>3. Start the server</h2>
+<p>In the cloned repository, start the server:</p>
+<pre class="bash"><code>npm start</code></pre>
+
+<h2>4. Trust local SSL certificates</h2>
+<p>Before you start editing code, open these URLs and trust the self-signed certificates:</p>
+<ul>
+    <li><a href="https://localhost" target="_blank">https://localhost/</a></li>
+    <li><a href="https://cdn.localhost" target="_blank">https://cdn.localhost/</a></li>
+    <li><a href="https://example.localhost" target="_blank">https://example.localhost/</a></li>
+</ul>
+
+<h2>5. Open the dashboard and example site</h2>
+<p>After trusting the certificates, open:</p>
+<ul>
+    <li>The dashboard: <a href="https://localhost" target="_blank">https://localhost</a></li>
+    <li>The example site: <a href="https://example.localhost" target="_blank">https://example.localhost</a></li>
+</ul>
+
+<h2>6. Edit the example blog</h2>
+<p>The example blog folder is inside <code>data</code>:</p>
+<pre><code>./data/blogs/blog_$ID</code></pre>

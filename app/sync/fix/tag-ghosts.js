@@ -3,6 +3,31 @@ var Entry = require("models/entry");
 var async = require("async");
 var client = require("models/client");
 
+function execTransaction(multi, callback) {
+  var done = false;
+  function onDone(err) {
+    if (done) return;
+    done = true;
+    callback(err);
+  }
+
+  var result;
+  try {
+    result = multi.exec(onDone);
+  } catch (err) {
+    return onDone(err);
+  }
+
+  if (result && typeof result.then === "function") {
+    Promise.resolve(result).then(
+      function () {
+        onDone();
+      },
+      onDone
+    );
+  }
+}
+
 module.exports = function main(blog, callback) {
   const report = [];
   Tags.list(blog.id, function (err, tags) {
@@ -17,9 +42,9 @@ module.exports = function main(blog, callback) {
           if (!entryIDs.length) {
             report.push(["EMPTY TAG", tag]);
             const multi = client.multi();
-            multi.srem(Tags.key.all(blog.id), tag.slug);
+            multi.sRem(Tags.key.all(blog.id), tag.slug);
             multi.del(tagKey);
-            return multi.exec(next);
+            return execTransaction(multi, next);
           }
 
           async.each(
@@ -29,8 +54,8 @@ module.exports = function main(blog, callback) {
                 if (!entry) {
                   report.push(["MISSING", entryID]);
                   const multi = client.multi();
-                  multi.zrem(tagKey, entryID);
-                  return multi.exec(next);
+                  multi.zRem(tagKey, entryID);
+                  return execTransaction(multi, next);
                 }
 
                 if (entry.id === entryID) return next();
@@ -45,9 +70,9 @@ module.exports = function main(blog, callback) {
                 }
 
                 multi.rename(entryKeyForIncorrectID, entryKeyForCorrectID);
-                multi.zrem(tagKey, entryID);
-                multi.zadd(tagKey, score, entry.id);
-                multi.exec(function (err) {
+                multi.zRem(tagKey, entryID);
+                multi.zAdd(tagKey, { score: score, value: entry.id });
+                execTransaction(multi, function (err) {
                   if (err) return next(err);
                   Entry.set(blog.id, entry.id, entry, next);
                 });

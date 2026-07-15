@@ -6,11 +6,15 @@ var getById = require("./getById");
 module.exports = function getByCustomerId(customerId, callback) {
   ensure(customerId, "string").and(callback, "function");
 
-  client.get(key.customer(customerId), function (err, uid) {
-    if (err) return callback(err);
+  (async function () {
+    try {
+      var uid = await client.get(key.customer(customerId));
 
-    if (!uid) return callback(null, null);
+      if (!uid) return callback(null, null);
 
-    getById(uid, callback);
-  });
+      return getById(uid, callback);
+    } catch (err) {
+      return callback(err);
+    }
+  })();
 };

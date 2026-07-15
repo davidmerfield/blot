@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{{> head}}
+
+<body class=" {{^pagination.previous}}homefirstpage{{/pagination.previous}}">
+
+  {{> header}}
+
+  <!-- Content -->
+  <main role="main" class="site-content">
+    <div class="container">
+
+      
+      <div class="row mt-3">
+
+        <div class="col-md-8 main-loop">
+
+          <h4 class="font-weight-bold spanborder"><span>{{tag}}</span></h4>
+
+
+          {{#entries}}
+          <div class="mb-2 d-flex justify-content-between main-loop-card">
+            <div class="pr-3">
+  <a class="text-dark" href="{{{url}}}">{{title}} <small class="text-muted">
+            {{#date}}{{date}}{{/date}}
+  </small></a>
+
+
+  </small>
+
+            </div>
+
+          </div>
+          {{/entries}}
+
+          {{#pagination}}
+          <div class="pagination">
+            {{#previous}}
+            <a href="/tagged/{{slug}}/page/{{previous}}">&larr; Newer</a>
+            {{/previous}}
+            Page {{current}} of {{total}}
+            {{#next}}
+            <a href="/tagged/{{slug}}/page/{{next}}">Older &rarr;</a>
+            {{/next}}
+          </div>
+          {{/pagination}}
+
+
+        </div>
+
+        
+
+      </div>
+
+    </div>
+  </main>
+  {{> footer}}
+</body>
+
+</html>

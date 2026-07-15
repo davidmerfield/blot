@@ -19,6 +19,15 @@ describe("candidates", function () {
     ]);
   });
 
+
+  it("uses mixed-case thumbnail metadata", function () {
+    var metadata = { ThUmBnAiL: "http://example.com/mixed.jpg" };
+
+    expect(candidates(metadata, "<p>Hello</p>")).toEqual([
+      "http://example.com/mixed.jpg"
+    ]);
+  });
+
   it("does not find a thumbnail candidate", function () {
     var metadata = {};
     var html = "<p>Hello, World!</p>";

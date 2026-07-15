@@ -1,0 +1,22 @@
+{{> settings-form-header}}
+
+<h1>General</h1>
+
+<h2>Headings</h2>
+{{#categories.Headings}}
+{{> plugin-row}}
+{{/categories.Headings}}
+
+<h2>Code and math</h2>
+
+{{#categories.Codemath}}
+{{> plugin-row}}
+{{/categories.Codemath}}
+
+<h2>Typography</h2>
+{{#categories.Typography}}
+{{> plugin-row}}
+{{/categories.Typography}}
+
+
+{{> settings-form-footer}}

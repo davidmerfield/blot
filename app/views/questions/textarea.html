@@ -40,21 +40,3 @@ border-color: var(--border-color)}
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@devhau/md-editor@1.0.4/dist/md-editor.min.js"></script>
-<script>
-var editor = new mdEditor({ element: document.getElementById("body"),
-insertTexts: {
-  link: ["[", "](https://)"],
-  image: ["![](https://", ")"],
- }
-});
-
-// editor.setSize(200, 200);
-
-
-  // extract body from url query  and set it as the body of the question
-  var urlParams = new URLSearchParams(window.location.search);
-  var body = urlParams.get('body');
-  if (body) {
-    editor.value(body);
-  }
-</script>

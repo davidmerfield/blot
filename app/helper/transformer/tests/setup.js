@@ -6,6 +6,7 @@ module.exports = function setup(options) {
   var responseBody = "Hello, World!";
   var etag = '"test-etag"';
   var lastModified = new Date("2020-01-01T00:00:00Z").toUTCString();
+  var sequenceQueue = [];
 
   // Only server an image at this route if
   // the request passes the correct query
@@ -24,6 +25,37 @@ module.exports = function setup(options) {
     }
 
     res.send(responseBody);
+  });
+
+  server.get("/sequence", function (req, res) {
+    if (!sequenceQueue.length) {
+      return res.status(500).send("No queued response");
+    }
+
+    var config = sequenceQueue.shift() || {};
+    var status = config.status === undefined ? 200 : config.status;
+    var body = config.body === undefined ? responseBody : config.body;
+    var etagValue =
+      config.etag === undefined ? etag : config.etag;
+    var lastModifiedValue =
+      config.lastModified === undefined ? lastModified : config.lastModified;
+    var headers = Object.assign(
+      { "Cache-Control": "max-age=0, must-revalidate" },
+      config.headers || {}
+    );
+
+    if (etagValue) headers.ETag = etagValue;
+    if (lastModifiedValue) headers["Last-Modified"] = lastModifiedValue;
+
+    res.set(headers);
+
+    if (status === 304) return res.status(304).end();
+
+    res.status(status);
+
+    if (status >= 400) return res.send(config.body || "");
+
+    res.send(body);
   });
 
   // Create temporary blog before each test, clean up after
@@ -53,6 +85,12 @@ module.exports = function setup(options) {
     this.path = "foo.txt";
     this.localPath = this.blogDirectory + "/" + this.path;
     fs.outputFileSync(this.localPath, "Hello, World !" + Date.now());
+
+    sequenceQueue.length = 0;
+    this.sequenceUrl = this.origin + "/sequence";
+    this.queueRemoteResponse = function (config) {
+      sequenceQueue.push(config || {});
+    };
   });
 
   // Clean up the transformer used in each test

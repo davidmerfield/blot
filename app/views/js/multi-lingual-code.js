@@ -89,3 +89,142 @@ document.querySelectorAll('.lang-tabs a').forEach(function (tab) {
 document.querySelectorAll('.lang-tabs').forEach(function (tabs) {
     tabs.querySelector('a').click();
 });
+
+// Template output: Mustache input -> HTML output (with optional intermediate views)
+// Detect runs of adjacent <pre> elements that end with a <pre> having class "output"
+// (e.g. html template, json view, html output) and wrap them with a tab UI + copy button.
+(function () {
+    var groups = [];
+
+    function hasClass(el, name) {
+        return (' ' + (el.getAttribute('class') || '') + ' ').indexOf(' ' + name + ' ') !== -1;
+    }
+
+    function viewTypeForPre(pre) {
+        var classList = (pre.getAttribute('class') || '').split(/\s+/).filter(Boolean);
+        var generic = ['code', 'window', 'output'];
+
+        // Known language-ish classes → view types
+        if (classList.indexOf('html') !== -1) return 'HTML';
+        if (classList.indexOf('css') !== -1) return 'CSS';
+        if (classList.indexOf('json') !== -1) return 'JSON';
+        if (classList.indexOf('javascript') !== -1 || classList.indexOf('js') !== -1) return 'JS';
+
+        var candidate = classList.find(function (c) {
+            return generic.indexOf(c) === -1;
+        });
+        if (!candidate) return 'Code';
+        return candidate.charAt(0).toUpperCase() + candidate.slice(1);
+    }
+
+    function labelForPane(pre, i, total) {
+        // If a data-file attribute is present, prefer showing the filename
+        var file = pre.getAttribute('data-file');
+        if (file) {
+            return { html: '<span class="icon-file"></span> ' + file };
+        }
+
+        var viewType = viewTypeForPre(pre);
+
+        // First pane: "Template $VIEWTYPE"
+        if (i === 0) return { text: 'Template ' + viewType };
+
+        // Last pane (pre.output): "Output $VIEWTYPE"
+        if (i === total - 1) return { text: 'Output ' + viewType };
+
+        // Middle JSON pane(s): "View JSON"
+        if (hasClass(pre, 'json')) return { text: 'View JSON' };
+
+        // Fallback for any other middle pane
+        return { text: 'View ' + viewType };
+    }
+
+    document.querySelectorAll('pre.output').forEach(function (secondPre) {
+        var firstPre = secondPre.previousElementSibling;
+        if (!firstPre || firstPre.tagName !== 'PRE') return;
+        if (secondPre.closest('.code-block')) return;
+
+        // Walk backwards to collect all immediately preceding <pre> siblings
+        var pres = [];
+        var current = secondPre;
+        while (current && current.tagName === 'PRE') {
+            pres.unshift(current);
+            current = current.previousElementSibling;
+        }
+        if (pres.length < 2) return;
+
+        groups.push(pres);
+    });
+
+    groups.forEach(function (pres, index) {
+        var container = document.createElement('div');
+        container.className = 'code-block';
+
+        var toolbar = document.createElement('div');
+        toolbar.className = 'code-block-toolbar';
+
+        var tabs = document.createElement('ul');
+        tabs.className = 'code-block-tabs';
+
+        var ids = pres.map(function (_, i) {
+            return 'code-block-' + index + '-' + i;
+        });
+
+        pres.forEach(function (pre, i) {
+            var label = labelForPane(pre, i, pres.length);
+            var li = document.createElement('li');
+            var a = document.createElement('a');
+            a.setAttribute('href', '#' + ids[i]);
+            if (label && label.html) {
+                a.innerHTML = label.html;
+            } else if (label && label.text) {
+                a.textContent = label.text;
+            } else {
+                a.textContent = String(label);
+            }
+            li.appendChild(a);
+            tabs.appendChild(li);
+        });
+
+        var copy = document.createElement('button');
+        copy.innerHTML = '<span class="icon-copy"></span> Copy';
+        copy.classList.add('copy');
+        copy.setAttribute('data-copy', pres[0].textContent);
+
+        toolbar.appendChild(tabs);
+        toolbar.appendChild(copy);
+
+        pres[0].parentNode.insertBefore(container, pres[0]);
+        container.appendChild(toolbar);
+
+        pres.forEach(function (pre, i) {
+            var pane = document.createElement('div');
+            pane.className = 'code-block-wrapper' + (i === 0 ? ' active' : '');
+            pane.setAttribute('data-pane-id', ids[i]);
+            if (i > 0) pane.style.display = 'none';
+
+            pre.removeAttribute('id');
+            pane.appendChild(pre);
+            container.appendChild(pane);
+        });
+
+        tabs.querySelectorAll('a').forEach(function (a) {
+            a.addEventListener('click', function (e) {
+                e.preventDefault();
+                var id = a.getAttribute('href').slice(1);
+                container.querySelectorAll('.code-block-wrapper').forEach(function (pane) {
+                    pane.style.display = pane.getAttribute('data-pane-id') === id ? 'block' : 'none';
+                    pane.classList.toggle('active', pane.getAttribute('data-pane-id') === id);
+                });
+                tabs.querySelectorAll('a').forEach(function (link) {
+                    link.classList.toggle('active', link === a);
+                });
+                var activePane = container.querySelector('.code-block-wrapper.active');
+                var text = activePane ? activePane.textContent : '';
+                copy.setAttribute('data-copy', text.trim());
+            });
+        });
+
+        tabs.querySelector('a').classList.add('active');
+    });
+})();

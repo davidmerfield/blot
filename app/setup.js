@@ -1,5 +1,6 @@
 const config = require("config");
 const fs = require("fs-extra");
+const path = require("path");
 
 const client = require("models/client");
 const documentation = require("./documentation/build");
@@ -10,6 +11,7 @@ const clfdate = require("helper/clfdate");
 const scheduler = require("./scheduler");
 const flush = require("documentation/tools/flush-cache");
 const configureLocalBlogs = require("./configure-local-blogs");
+const purgeCdnUrls = require("helper/purgeCdnUrls");
 
 const log = (...args) =>
   console.log.apply(null, [clfdate(), "Setup:", ...args]);
@@ -104,16 +106,6 @@ async function runPostListenTasks() {
     });
   }
 
-  if (config.environment !== "production") {
-    log("Skipping CDN purge (not in production)");
-    return;
-  }
-
-  if (!config.bunny.secret) {
-    log("Skipping CDN purge (missing credentials)");
-    return;
-  }
-
   try {
     const cdnURL = require("documentation/tools/cdn-url-helper")({
       cacheID: new Date().getTime(),
@@ -125,24 +117,9 @@ async function runPostListenTasks() {
       "/dashboard.min.js",
       "/documentation.min.css",
       "/documentation.min.js",
-    ]
-      .map((path) => cdnURL(path, (p) => p))
-      .map((p) => encodeURIComponent(p));
+    ].map((path) => cdnURL(path, (p) => p));
 
-    for (const urlToPurge of urls) {
-      const url = `https://api.bunny.net/purge?url=${urlToPurge}&async=false`;
-      const options = {
-        method: "POST",
-        headers: { AccessKey: config.bunny.secret },
-      };
-      console.log("Purging Bunny CDN cache", url);
-      const res = await fetch(url, options);
-      if (res.status !== 200) {
-        console.error("Failed to purge Bunny CDN cache", res.status);
-      } else {
-        console.log("Purged Bunny CDN cache", res.status);
-      }
-    }
+    await purgeCdnUrls(urls);
   } catch (err) {
     logError("Failed to run function to purge Bunny CDN cache", err);
   }
@@ -151,6 +128,16 @@ async function runPostListenTasks() {
 function main(callback) {
   async.series(
     [
+      async function () {
+        const featuredDir = path.join(config.data_directory, "featured");
+        const featuredFile = path.join(featuredDir, "featured.json");
+
+        log("Clearing featured cache file");
+        await fs.ensureDir(featuredDir);
+        await fs.remove(featuredFile);
+        log("Cleared featured cache file");
+      },
+
       async function () {
         log("Creating required directories");
         await fs.ensureDir(config.blog_folder_dir);
@@ -169,22 +156,24 @@ function main(callback) {
         // Typically, domain keys like domain:example.com store a blog's ID
         // but since the homepage is not a blog, we just use a placeholder 'X'
         log("Creating SSL key for redis");
-        client.msetnx(
-          ["domain:" + config.host, "X", "domain:www." + config.host, "X"],
-          function (err) {
-            if (err) {
-              console.error(
-                "Unable to set domain flag for host" +
-                  config.host +
-                  ". SSL may not work on site."
-              );
-              console.error(err);
-            }
-
-            log("Created SSL key for redis");
-            callback();
+        (async function () {
+          try {
+            await client.mSetNX({
+              ["domain:" + config.host]: "X",
+              ["domain:www." + config.host]: "X",
+            });
+          } catch (err) {
+            console.error(
+              "Unable to set domain flag for host" +
+                config.host +
+                ". SSL may not work on site."
+            );
+            console.error(err);
           }
-        );
+
+          log("Created SSL key for redis");
+          callback();
+        })();
       },
 
       function (callback) {

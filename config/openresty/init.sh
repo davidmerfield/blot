@@ -1,17 +1,13 @@
-if [ ! -f /etc/ssl/private/wildcard.key ] || [ ! -f /etc/ssl/certs/wildcard.crt ]; then
-    mkdir -p /etc/ssl/private /etc/ssl/certs
+#!/bin/sh
+set -eu
 
-    openssl req \
-        -newkey rsa:2048 \
-        -x509 \
-        -nodes \
-        -keyout /etc/ssl/private/wildcard.key \
-        -new \
-        -out /etc/ssl/certs/wildcard.crt \
-        -config /etc/nginx/openssl.cnf \
-        -sha256 \
-        -days 3650
+CRT=/etc/ssl/certs/wildcard.crt
+KEY=/etc/ssl/private/wildcard.key
+
+if [ ! -s "$CRT" ] || [ ! -s "$KEY" ]; then
+  echo "TLS files missing: $CRT or $KEY"
+  echo "Generate them with: config/openresty/setup.sh on the host."
+  exit 1
 fi
 
-# Start nginx
 nginx -g "daemon off;"

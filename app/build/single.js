@@ -4,13 +4,13 @@ var Dependencies = require("./dependencies");
 var Plugins = require("./plugins").convert;
 var ensure = require("helper/ensure");
 var async = require("async");
-var converters = require("./converters");
+var enabledConverters = require("./converters/enabled");
 
 module.exports = function (blog, path, callback) {
   ensure(blog, "object").and(path, "string").and(callback, "function");
 
   async.each(
-    converters,
+    enabledConverters(blog),
     function (converter, next) {
       if (!converter.is(path)) return next();
 

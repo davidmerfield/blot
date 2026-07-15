@@ -4,7 +4,12 @@ const config = require("config");
 const SYNTAX_HIGHLIGHTER_THEMES = require("blog/static/syntax-highlighter");
 const clfdate = require("helper/clfdate");
 const FONT_PROTECTED_PROPS = ['styles', 'name', 'stack', 'id', 'svg', 'tags'];
-const SYNTAX_HIGHLIGHTER_PROPS_TO_DELETE = ['background', 'tags', 'name', 'colors'];
+const SYNTAX_HIGHLIGHTER_PROPS_TO_DELETE = [
+  'background',
+  'tags',
+  'name',
+  'colors'
+];
 
 // Cache for rendered font styles
 const fontStylesCache = new Map();
@@ -67,32 +72,41 @@ function processFonts(locals) {
   });
 }
 
+function updateSyntaxHighlighterProperties(target, source, key) {
+  try {
+    if (!source) {
+      console.warn(`No matching syntax highlighter theme found for ID: ${target.id}`);
+      return;
+    }
+
+    target.id = source.id;
+    target.styles = source.styles;
+
+    Object.entries(source).forEach(([prop, value]) => {
+      if (prop === 'id' || prop === 'styles') return;
+      target[prop] = value;
+    });
+
+    SYNTAX_HIGHLIGHTER_PROPS_TO_DELETE.forEach(prop => {
+      delete target[prop];
+    });
+  } catch (error) {
+    console.error(`Error updating syntax highlighter properties for key ${key}:`, error);
+  }
+}
+
 function processSyntaxHighlighter(locals) {
   Object.entries(locals).forEach(([key, value]) => {
     if (!key.includes('_syntax_highlighter') && key !== 'syntax_highlighter') return;
+    if (!value || !value.id) return;
 
-    try {
-      const match = SYNTAX_HIGHLIGHTER_THEMES.find(
-        theme => theme.id === locals.syntax_highlighter.id
-      );
-
-      if (!match) {
-        console.warn(`No matching syntax highlighter theme found for ID: ${locals.syntax_highlighter.id}`);
-        return;
-      }
-
-      // Merge properties
-      Object.entries(match).forEach(([prop, value]) => {
-        locals.syntax_highlighter[prop] = locals.syntax_highlighter[prop] || value;
-      });
-
-      // Remove unnecessary properties
-      SYNTAX_HIGHLIGHTER_PROPS_TO_DELETE.forEach(prop => {
-        delete locals.syntax_highlighter[prop];
-      });
-    } catch (error) {
-      console.error(`Error processing syntax highlighter for key ${key}:`, error);
+    const match = SYNTAX_HIGHLIGHTER_THEMES.find(theme => theme.id === value.id);
+    if (!match) {
+      console.warn(`No matching syntax highlighter theme found for ID: ${value.id}`);
+      return;
     }
+
+    updateSyntaxHighlighterProperties(locals[key], match, key);
   });
 }
 

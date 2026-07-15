@@ -5,7 +5,7 @@ Autumn newsletter
 **New features**
 - You can now share your custom templates with others. If you turn on *sharing* for a template, you’ll receive a private link which you can send to a friend who uses Blot. When your friend opens the link, they’ll have the option to add a copy of your template to their account.
 - The [Blog template](https://blot.im/templates/blog) now comes with a few point-and-click layout options. Please note that you will need to *fork* a fresh copy of the template then open the template editor to see these options.
-- Blot now stores a list of *backlinks* for each post. *Backlinks* are other posts on your blog which link to the post. The [Blog template](https://blot.im/templates/blog) now displays these, and you can add [the backlinks list](https://blot.im/templates/developers/reference#entry.backlinks) to your custom template.
+- Blot now stores a list of *backlinks* for each post. *Backlinks* are other posts on your site which link to the post. The [Blog template](https://blot.im/templates/blog) now displays these, and you can add [the backlinks list](https://blot.im/templates/developers/reference#entry.backlinks) to your custom template.
 
 **Changes**
 - Updated the [developer guide](https://blot.im/templates/developers) and added an [improved reference](https://blot.im/templates/developers/reference) which lists all of the properties you can use in your template.
@@ -14,14 +14,14 @@ Autumn newsletter
 - Updated the tools Blot depends upon to patch any known security vulnerabilities.
 
 **Bugs fixed**
-- The process which converts your files into blog posts is now limited in the amount of memory it can consume and the amount of time it can take. Previously, certain files triggered pathological behaviour in the converter and could consume enough of the server’s resources to make it unresponsive. This was a major flaw and it is now fixed.
+- The process which converts your files into posts is now limited in the amount of memory it can consume and the amount of time it can take. Previously, certain files triggered pathological behaviour in the converter and could consume enough of the server’s resources to make it unresponsive. This was a major flaw and it is now fixed.
 - You can now reference [bibliography files](https://blot.im/how/format/citations) whose filename includes uppercase characters.
 - The template renderer now properly extracts and fetches deeply nested properties in your template.
 - The list of entries associated with each tag is now properly sorted chronologically.
 
 **Mistakes**
 
-Blot’s server has been [up and working smoothly](https://status.blot.im/) all season. In late July we fixed a catastrophic bug with the process that converts your files into blog posts. Since then, we have provided consistent service.
+Blot’s server has been [up and working smoothly](https://status.blot.im/) all season. In late July we fixed a catastrophic bug with the process that converts your files into posts. Since then, we have provided consistent service.
 
 **Plans for this season**
 

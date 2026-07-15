@@ -16,6 +16,7 @@ WORKDIR /usr/src/app
 # Install necessary packages for Puppeteer, the git client, and HEIF-enabled libvips
 RUN apk add --no-cache --update \
     git \
+    tini \
     curl \
     chromium \
     nss \
@@ -23,6 +24,15 @@ RUN apk add --no-cache --update \
     harfbuzz \
     ca-certificates \
     ttf-freefont
+
+# Configure git to handle lots of large binary files in memory-constrained environments.
+RUN git config --system pack.threads 1 \
+ && git config --system pack.windowMemory 32m \
+ && git config --system pack.deltaCacheSize 32m \
+ && git config --system pack.window 5
+
+# Use tini as the init process so simple-git child processes are reaped instead of becoming zombies.
+ENTRYPOINT ["/sbin/tini", "--"]
 
 # Set the Puppeteer executable path
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
@@ -36,10 +46,7 @@ RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
   && rm -r pandoc-${PANDOC_VERSION}
 
 # Sharp Runtime libs
-RUN apk add --no-cache --update \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
+RUN apk add --no-cache \
     vips \
     vips-dev \
     vips-heif \

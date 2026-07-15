@@ -1,0 +1,9 @@
+Blot did not delete cancelled user account (safe mode)
+
+Blot would have deleted user {{email}} because they had cancelled their subscription and their subscription expired on {{subscriptionExpiredOn}}, but account deletion is currently running in safe mode as a no-op while we verify production behavior.
+
+To actually delete this account manually, run:
+
+ssh blot
+login
+node scripts/user/remove {{email}}

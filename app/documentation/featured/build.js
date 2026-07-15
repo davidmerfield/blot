@@ -5,19 +5,19 @@
 // about sites featured on the homepage, like template used...
 
 const THUMBNAIL_SIZE = 96;
+const JPEG_QUALITY = 100;
 const { toUnicode } = require("helper/punycode");
 
 const sharp = require("sharp");
-const spritesmith = require("spritesmith");
 const fs = require("fs-extra");
 const { parse } = require("url");
 const { join } = require("path");
 
 const config = require("config");
 const avatarDirectory = __dirname + "/avatars";
-const thumbnailDirectory = config.tmp_directory + "/featured/thumbnails";
-const spriteDestination = __dirname + "/../../views/images/featured.jpg";
+const outputDirectory = join(__dirname, "../../views/images/featured");
 const verifySiteIsOnline = require("./verifySiteIsOnline");
+const fetchSubscriptionDuration = require("./fetchSubscriptionDuration");
 
 if (require.main === module) {
   build(async (err, sites) => {
@@ -39,11 +39,17 @@ async function build(callback) {
     .filter((i) => i)
     .map((line) => {
       var words = line.split(" ");
-      var link = "https://" + words[1];
-      var name = words.slice(2).join(" ").split(",")[0];
-      var bio = tidy(
-        words.slice(2).join(" ").split(",").slice(1).join(",").trim()
-      );
+      var link = "https://" + words[0];
+      var rest = words.slice(1).join(" ");
+      var parts = rest.split(",").map((p) => p.trim());
+      var name = parts[0];
+      var tenureStartYear = null;
+      var bioPart = parts.slice(1).join(", ");
+      if (parts.length >= 2 && /^\d{4}$/.test(parts[parts.length - 1])) {
+        tenureStartYear = parseInt(parts[parts.length - 1], 10);
+        bioPart = parts.slice(1, -1).join(", ");
+      }
+      var bio = tidy(bioPart);
       var host = toUnicode(parse(link).host);
 
       if (!avatars.find((i) => i.startsWith(host)))
@@ -54,6 +60,7 @@ async function build(callback) {
         host,
         name,
         bio,
+        tenureStartYear,
         avatar: join(
           avatarDirectory,
           avatars.find((i) => i.startsWith(host))
@@ -77,13 +84,44 @@ async function build(callback) {
   sites = await Promise.all(
     sites.map(async (site) => {
       const isOnline = await verifySiteIsOnline(site.host);
-      return isOnline ? site : null;
+
+      if (!isOnline) return null;
+
+      let tenure = null;
+      if (site.tenureStartYear != null) {
+        const startMs = Date.UTC(site.tenureStartYear, 0, 1);
+        tenure = Date.now() - startMs;
+      } else {
+        tenure = await fetchSubscriptionDuration(site.host);
+      }
+
+      const { tenureStartYear, ...rest } = site;
+      return {
+        ...rest,
+        tenure,
+        tenure_label: formatTenureLabel(tenure),
+      };
     })
   ).then((sites) => sites.filter((i) => i));
 
-  sites = await generateSprite(sites);
+  const result = await generateImages(sites);
 
-  callback(null, sites);
+  callback(null, result);
+}
+
+function formatTenureLabel(durationMs) {
+  if (!Number.isFinite(durationMs) || durationMs <= 0) return null;
+
+  const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+  const completedMonths = Math.floor(durationMs / ONE_MONTH_MS);
+  const months = Math.max(1, completedMonths);
+
+  if (months < 12) {
+    return `this year`;
+  }
+
+  const years = Math.max(1, Math.floor(months / 12));
+  return `${years} year${years === 1 ? "" : "s"} ago`;
 }
 
 const tidy = (bio) => {
@@ -106,11 +144,18 @@ const tidy = (bio) => {
   return bio;
 };
 
-async function generateSprite(sites) {
-  await fs.emptyDir(thumbnailDirectory);
+async function generateImages(sites) {
+  await fs.ensureDir(outputDirectory);
+
+  const existingImages = new Set(
+    (await fs.readdir(outputDirectory).catch(() => []))
+      .filter((file) => file.endsWith(".jpg"))
+  );
+  const generatedImages = new Set();
 
   for (let site of sites) {
-    const path = join(thumbnailDirectory, site.host + ".jpg");
+    const filename = site.host + ".jpg";
+    const path = join(outputDirectory, filename);
     await sharp(site.avatar)
       .resize({
         width: THUMBNAIL_SIZE,
@@ -120,46 +165,19 @@ async function generateSprite(sites) {
       })
       .toFormat("jpeg")
       .jpeg({
-        quality: 90,
+        quality: JPEG_QUALITY,
       })
       .toFile(path);
 
-    site.thumbnail = path;
+    site.image = '/images/featured/' + filename;
+    generatedImages.add(filename);
+    delete site.avatar;
   }
 
-  // use spritesmith to generate a sprite and output it to thumbnailDirectory/sprite.jpg
-  // then append the coordinates to each site
-  const { width, height } = await new Promise((resolve, reject) => {
-    // how do we set the dest path of the sprite?
-    // we need to set the dest path of the sprite to thumbnailDirectory/sprite.jpg
-    spritesmith.run(
-      {
-        src: sites.map((site) => site.thumbnail),
-      },
-      (err, result) => {
-        if (err) return reject(err);
-
-        const { coordinates, properties } = result;
-        const { width, height } = properties;
-
-        sites.forEach((site) => {
-          const { x, y } = coordinates[site.thumbnail];
-          site.x = x / 2;
-          site.y = y / 2;
-          delete site.thumbnail;
-          delete site.avatar;
-        });
-
-        fs.outputFile(spriteDestination, result.image, "binary", (err) => {
-          if (err) return reject(err);
-          resolve({ width, height });
-        });
-      }
-    );
-  });
-
-  // return relative path to views directory of the sprite
-  const sprite = spriteDestination.replace(__dirname + "/../../views", "");
+  const obsolete = [...existingImages].filter((file) => !generatedImages.has(file));
+  for (const file of obsolete) {
+    await fs.remove(join(outputDirectory, file));
+  }
 
   await fs.outputFile(
     __dirname + "/sites.filtered.txt",
@@ -185,14 +203,8 @@ async function generateSprite(sites) {
     "utf-8"
   );
 
-  // empty the thumbnail directory
-  await fs.emptyDir(thumbnailDirectory);
-
   return {
-    width: width / 2,
-    height: height / 2,
-    sprite,
+    image_size: THUMBNAIL_SIZE / 2,
     sites,
-    thumbnail_width: THUMBNAIL_SIZE / 2,
   };
 }

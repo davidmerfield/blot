@@ -12,9 +12,15 @@ module.exports = async (req, res, next) => {
       query = req.query.q.join(" ");
     } 
 
-    // if the query variable is not a string, abort
+    // if the query variable is not a string, respond with 404 (don't fall through to view middleware)
     if (typeof query !== "string") {
-      return next();
+      res.status(404);
+      res.locals.error = {
+        title: "Page not found",
+        message: "There is no page with this URL.",
+        status: 404,
+      };
+      return res.renderView("error.html", next);
     }
 
     if (query) {

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow">
+  <meta property="og:site_name" content="{{title}}">
+  <meta content="{{author}}" name="author">
+  <meta name="description" content="{{description}}">
+  <title>{{> title}}</title>
+  {{#avatar}}<link rel="icon" href="{{{avatar}}}" type="image/x-icon">{{/avatar}}
+  <link rel="preconnect" href="{{{cdn}}}" />
+  <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
+  <link href="/feed.rss" title="RSS Feed for {{title}}" type="application/rss+xml" rel="alternate">
+
+  <meta property="og:type" content="website">
+  {{#url}}
+  <link rel="canonical" href="{{{url}}}">
+  <meta property="og:url" content="{{{url}}}">
+  {{/url}}
+  <meta property="og:title" content="{{> title}}">
+  <meta property="og:description" content="{{description}}">
+  {{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}
+</head>
+
+<body>
+  {{> navigation}}
+
+  <section id="wrapper">
+    <form method="get" id="search" action="/search">
+      <input style="display:block;margin:0 auto" class="field" type="text" name="q" autofocus value="{{query}}" maxlength="255" placeholder="To search, type and hit Enter&hellip;" />
+      <input type="submit" value="Search" style="display: none;" />
+    </form>
+
+    {{#query}}
+    {{^entries.length}}
+    <center>
+      <p><small>Nothing found.</small></p>
+    </center>
+    {{/entries.length}}
+    {{#entries.length}}
+    <center>
+      <p><small>{{entries.length}} entries found </small></p>
+    </center>
+
+    {{/entries.length}}
+    {{/query}} {{#entries}}
+    <p class="h-entry">
+      <a href="{{{url}}}" class="u-url"><span class="dt-published" datetime="{{date}}">{{date}}</span></a>:
+      <span class="p-name"><b></b></span>
+      <span class="p-summary">{{title}}</span>
+    </p>
+    {{/entries}}
+  </section>
+
+  <footer id="footer">
+    {{> footer}}
+  </footer>
+
+</body>
+
+</html>
