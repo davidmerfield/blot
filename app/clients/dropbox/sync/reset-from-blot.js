@@ -326,14 +326,23 @@ const countFilesToUpload = async (
     );
 
     if (localItem.is_directory) {
-      total += await countFilesToUpload(
-        blogID,
-        client,
-        dropboxRoot,
-        localRoot,
-        signal,
-        path
-      );
+      if (remoteCounterpart && remoteCounterpart.is_directory) {
+        total += await countFilesToUpload(
+          blogID,
+          client,
+          dropboxRoot,
+          localRoot,
+          signal,
+          path
+        );
+      } else {
+        total += await countLocalFilesToUpload(
+          blogID,
+          localRoot,
+          signal,
+          path
+        );
+      }
       continue;
     }
 
@@ -341,6 +350,32 @@ const countFilesToUpload = async (
       !remoteCounterpart ||
       remoteCounterpart.content_hash !== localItem.content_hash
     ) {
+      total += 1;
+    }
+  }
+
+  return total;
+};
+
+const countLocalFilesToUpload = async (blogID, localRoot, signal, dir) => {
+  abortIfRequested(signal);
+
+  const localContents = await localReaddir(blogID, localRoot, dir, signal);
+
+  abortIfRequested(signal);
+
+  let total = 0;
+
+  for (const localItem of localContents) {
+    abortIfRequested(signal);
+
+    const path = join(dir, localItem.name);
+
+    if (isDotfileOrDotfolder(path)) continue;
+
+    if (localItem.is_directory) {
+      total += await countLocalFilesToUpload(blogID, localRoot, signal, path);
+    } else {
       total += 1;
     }
   }
