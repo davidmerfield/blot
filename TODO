@@ -1,25 +1,24 @@
-Fix katek bug and follow up [with simon](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgMLxHpXsgrSgWgvHHkMZzvHJC)
-
 Work out what's soaking up all the disk space on the server, then make sure it's freed up enough to reliably deploy. 
 - possible fail2ban logrotate config to remove large log files?
 - fix huge size of fail2ban db: https://serverfault.com/questions/1002315/fail2bans-database-is-too-large-over-500mb-how-do-i-get-it-to-a-reasonable-s  /var/lib/fail2ban/fail2ban.sqlite3
 
 Do all /questions
 
-Get Claude code working on the proxy containerization problem
-
 Fix bug with adding second site on PayPal and tell [Des](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgMCXPJQBxssKXfFhRGfhxWnGX) and [Autumn](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgLjPWXMXdZtggsNjqjbhvbwhL)
+
+Get Claude working on the proxy containerization problem
+
+Redis caching:
+- Update redis to latest client library
+- Log redis cache stats
+- Remove LRU cache code from app/blog and elsewhere now we have the redis cache which does this automatically
+- Increase number of cached items?
 
 ---
 
 Add self-deployment warning to README
 
 Move GitHub repo to own organization
-
-Redis caching:
-- Log redis cache stats
-- Remove LRU cache code from app/blog and elsewhere now we have the redis cache which does this automatically
-- Increase number of cached items?
 
 Fix bug with hypertext template and follow up with [31](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLPVXLRDkJTLCsKnMBRZdTklb)
 
