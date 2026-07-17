@@ -69,6 +69,8 @@ function eachTextNode(node, cb) {
 function renderPandocMath($) {
   $("span.math.inline, span.math.display").each(function () {
     const $span = $(this);
+    if ($span.closest(SKIP_TAGS.join(",")).length) return;
+
     const display = $span.hasClass("display");
     const source = $span.text();
 
