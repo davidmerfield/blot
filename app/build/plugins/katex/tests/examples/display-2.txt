@@ -1,0 +1,4 @@
+
+$$
+\mathbf{v}_1^{\text{cm}} = \mathbf{v} - \mathbf{v}_{\text{cm}} = \frac{\mathbf{v}}{2}
+$$

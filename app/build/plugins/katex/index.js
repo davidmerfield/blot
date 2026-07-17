@@ -66,7 +66,19 @@ function eachTextNode(node, cb) {
   });
 }
 
+function renderPandocMath($) {
+  $("span.math.inline, span.math.display").each(function () {
+    const $span = $(this);
+    const display = $span.hasClass("display");
+    const source = $span.text();
+
+    $span.replaceWith(renderTex(source, display));
+  });
+}
+
 function render($, callback) {
+  renderPandocMath($);
+
   $("p").each(function () {
     const $p = $(this);
     if ($p.html().indexOf(delimiter) === -1 || $p.find("br").length === 0) return;

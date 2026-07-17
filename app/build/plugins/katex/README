@@ -1,6 +1,6 @@
 # KaTeX plugin
 
-Converts `$$...$$` TeX in entry HTML into rendered KaTeX output.
+Converts Pandoc `span.math` elements and literal `$$...$$` TeX in entry HTML into rendered KaTeX output. Markdown uses Pandoc delimiters: `$...$` for inline and `$$...$$` for display.
 
 ## Tests
 

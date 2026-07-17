@@ -1,1 +1,1 @@
-Inline $$a+b$$ math
+Inline $a+b$ math

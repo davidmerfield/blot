@@ -1,0 +1,3 @@
+$$
+\mathbf{v}_2^{\text{cm}} = 0 - \mathbf{v}_{\text{cm}} = -\frac{\mathbf{v}}{2}
+$$

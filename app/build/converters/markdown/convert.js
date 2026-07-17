@@ -30,9 +30,9 @@ module.exports = function (blog, text, options, callback) {
     // without blank lines between them.
     "-simple_tables" +
     "-multiline_tables" +
-    // Leave $$...$$ untouched so the KaTeX plugin can
-    // render math consistently across all text converters.
-    "-tex_math_dollars" +
+    // Let Pandoc parse $...$ / $$...$$ so math is not
+    // mangled by Markdown emphasis (e.g. underscores).
+    "+tex_math_dollars" +
     // Leaves raw TeX alone so the KaTeX plugin can render math consistently across all text converters.
     "-raw_tex" +
     // This sometimes throws errors for some reason
@@ -71,6 +71,10 @@ module.exports = function (blog, text, options, callback) {
 
     // we use our own highlighint library (hljs) later
     "--no-highlight",
+
+    // Emit span.math with raw TeX for the KaTeX plugin
+    // (without --standalone, no CDN script/link tags)
+    "--katex",
 
     // such a dumb default feature... sorry john!
     "--email-obfuscation=none",
