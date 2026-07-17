@@ -1,8 +1,0 @@
-$$
-\begin{aligned}
-\mathbf{v}_1 \cdot \mathbf{v}_2 
-&= \left( \mathbf{u} + \frac{\mathbf{v}}{2} \right) \cdot \left( -\mathbf{u} + \frac{\mathbf{v}}{2} \right) \\[10pt]
-&= -|\mathbf{u}|^2 + \mathbf{u} \cdot \frac{\mathbf{v}}{2} - \mathbf{u} \cdot \frac{\mathbf{v}}{2} + \frac{\mathbf{v}}{2} \cdot \frac{\mathbf{v}}{2} \\[10pt]
-&= -\left( \frac{v}{2} \right)^2 + \left( \frac{v}{2} \right)^2 = 0
-\end{aligned}
-$$
