@@ -1,6 +1,7 @@
 var spawn = require("child_process").spawn;
 var indentation = require("./indentation");
 var footnotes = require("./footnotes");
+var extractMathSources = require("../../plugins/katex/source").extractMathSources;
 var time = require("helper/time");
 var config = require("config");
 var Pandoc = config.pandoc.bin;
@@ -158,6 +159,9 @@ module.exports = function (blog, text, options, callback) {
   // for the contents of an HTML tag. This preserves
   // indentation in text! More discussion of this issue:
   // https://github.com/jgm/pandoc/issues/1841
+  debug("Pre-katex-source", text);
+  text = safely(extractMathSources, text);
+
   debug("Pre-indentation", text);
   time("indentation");
   text = safely(indentation, text);

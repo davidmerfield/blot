@@ -66,7 +66,16 @@ function eachTextNode(node, cb) {
   });
 }
 
+function renderSourcePlaceholders($) {
+  $(".blot-katex-source").each(function () {
+    const source = $(this).text();
+    const display = $(this).attr("data-display") === "true";
+    $(this).replaceWith(renderTex(source, display));
+  });
+}
+
 function render($, callback) {
+  renderSourcePlaceholders($);
   $("p").each(function () {
     const $p = $(this);
     if ($p.html().indexOf(delimiter) === -1 || $p.find("br").length === 0) return;
