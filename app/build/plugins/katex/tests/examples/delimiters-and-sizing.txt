@@ -1,0 +1,17 @@
+Inline delimiters: $$\langle x, y \rangle = \{x \in \mathbb{R} \mid x > 0\}$$
+
+$$
+\left( \frac{a+b}{c+d} \right)
+\left[ \frac{x-y}{x+y} \right]
+\left\{ \frac{1}{n} \right\}
+$$
+
+$$
+\left\lceil \frac{n}{2} \right\rceil
++
+\left\lfloor \frac{n}{2} \right\rfloor
+$$
+
+$$
+\left| x \right| + \left\Vert v \right\Vert
+$$

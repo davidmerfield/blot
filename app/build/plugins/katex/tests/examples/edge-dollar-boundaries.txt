@@ -1,0 +1,9 @@
+Currency should not render: The item costs $5 and the pair costs $10.
+
+Odd runs should stay stable: $$$$ and $$$ a+b $$$.
+
+Math next to punctuation: ($$x+y$$), [$$a-b$$]; and "$$c=d$$".
+
+Two adjacent expressions: $$a+b$$$$c+d$$
+
+Escaped-looking content: \\$$not math?\\$$ followed by real $$x^2$$.
