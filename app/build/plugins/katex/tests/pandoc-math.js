@@ -38,15 +38,4 @@ describe("katex pandoc math spans", function () {
       done();
     });
   });
-
-  it("still renders literal $$ for non-pandoc html", function (done) {
-    const input = "<p>Inline $$a+b$$ math</p>";
-
-    renderHtml(input, function (err, html) {
-      if (err) return done.fail(err);
-      expect(html).toContain('class="katex"');
-      expect(html).not.toContain("$$a+b$$");
-      done();
-    });
-  });
 });

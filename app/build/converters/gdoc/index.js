@@ -12,6 +12,7 @@ const footnotes = require("./footnotes");
 const linebreaks = require("./linebreaks");
 const processImages = require("./images");
 const cleanupSpans = require("./cleanup-spans");
+const { normalizeLiteralDollarMath } = require("build/math/normalizeLiteralDollars");
 
 function textWithLineBreaks($, node) {
   const clonedNode = $(node).clone();
@@ -220,6 +221,7 @@ async function read(blog, path, callback) {
     // transform code tables before final serialization
     convertCodeTables($);
 
+    normalizeLiteralDollarMath($);
 
     let html = $("body").html();
 
