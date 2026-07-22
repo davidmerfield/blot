@@ -1,5 +1,8 @@
 const cheerio = require("cheerio");
-const { normalizeLiteralDollarMath } = require("../../../math/normalizeLiteralDollars");
+const {
+  normalizeLiteralDollarMath,
+  normalizeMathInText,
+} = require("../../../math/normalizeLiteralDollars");
 const { render } = require("../index");
 
 describe("literal dollar math normalization", function () {
@@ -31,5 +34,36 @@ describe("literal dollar math normalization", function () {
       expect(html).toContain("$$a+b$$");
       done();
     });
+  });
+
+  it("normalizes single-dollar inline math", function () {
+    expect(normalizeMathInText("Inline $x$ math")).toBe(
+      'Inline <span class="math inline">x</span> math'
+    );
+  });
+
+  it("normalizes double-dollar math with existing inline/display semantics", function () {
+    expect(normalizeMathInText("Inline $$x$$ math")).toBe(
+      'Inline <span class="math inline">x</span> math'
+    );
+    expect(normalizeMathInText("$$x$$")).toBe(
+      '<span class="math display">x</span>'
+    );
+  });
+
+  it("normalizes adjacent single- and double-dollar math", function () {
+    expect(normalizeMathInText("$x$ and $$y$$")).toBe(
+      '<span class="math inline">x</span> and <span class="math inline">y</span>'
+    );
+  });
+
+  it("leaves currency text literal", function () {
+    expect(normalizeMathInText("Prices are $5 and $10 today")).toBe(
+      "Prices are $5 and $10 today"
+    );
+  });
+
+  it("leaves escaped dollars literal", function () {
+    expect(normalizeMathInText("Escaped \\$x\\$ math")).toBe("Escaped \\$x\\$ math");
   });
 });

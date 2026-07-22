@@ -1,0 +1,5 @@
+Inline single dollar: $x$.
+Inline double dollar: $$x$$.
+Adjacent math: $x$ and $$y$$.
+Currency stays literal: $5 and $10.
+Escaped dollars stay literal: \$x\$.
