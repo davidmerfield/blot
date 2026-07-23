@@ -65,4 +65,15 @@ describe("katex pandoc math spans", function () {
     });
   });
 
+  it("leaves user-authored math spans inside skipped tags untouched", function (done) {
+    const input =
+      '<pre><code><span class="math inline">a+b</span></code></pre>';
+
+    renderHtml(input, function (err, html) {
+      if (err) return done.fail(err);
+      expect(html).not.toContain('class="katex"');
+      expect(html).toContain('<span class="math inline">a+b</span>');
+      done();
+    });
+  });
 });
