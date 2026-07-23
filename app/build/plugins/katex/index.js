@@ -1,7 +1,15 @@
 const katex = require("katex");
 
-const delimiter = "$$";
 const SKIP_TAGS = ["script", "style", "code", "pre"];
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 function renderTex(source, display) {
   const original = source;
@@ -11,7 +19,8 @@ function renderTex(source, display) {
   try {
     return katex.renderToString(source.trim(), { displayMode: display });
   } catch (error) {
-    return delimiter + original + delimiter;
+    const delimiter = display ? "$$" : "$";
+    return delimiter + escapeHtml(original) + delimiter;
   }
 }
 
