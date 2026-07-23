@@ -1,3 +1,4 @@
+// Render span.math.inline and span.math.display, the normalized internal representation for TeX emitted by converters, into KaTeX HTML.
 const katex = require("katex");
 
 const SKIP_TAGS = ["script", "style", "code", "pre"];

@@ -1,3 +1,4 @@
+// Normalize literal dollar-delimited TeX into span.math.inline and span.math.display, the internal representation consumed before KaTeX rendering.
 const escapeHtml = require("escape-html");
 
 const SKIP_TAGS = ["script", "style", "code", "pre"];
