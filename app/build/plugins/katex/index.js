@@ -1,30 +1,15 @@
+// Render span.math.inline and span.math.display, the normalized internal representation for TeX emitted by converters, into KaTeX HTML.
 const katex = require("katex");
 
-const delimiter = "$$";
 const SKIP_TAGS = ["script", "style", "code", "pre"];
 
-function convertMathInText(text) {
-  if (!text || text.indexOf(delimiter) === -1) return text;
-
-  const tokens = text.split(delimiter);
-  if (tokens.length < 3) return text;
-
-  let remainder = "";
-
-  if (tokens.length % 2 === 0) {
-    remainder = delimiter + tokens.pop();
-  }
-
-  for (let i = 1; i < tokens.length; i += 2) {
-    const source = tokens[i];
-    const display =
-      /^\s*\n/.test(source) ||
-      (/^\s*$/.test(tokens[i - 1]) && /^\s*$/.test(tokens[i + 1] || ""));
-
-    tokens[i] = renderTex(source, display);
-  }
-
-  return tokens.join("") + remainder;
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function renderTex(source, display) {
@@ -35,55 +20,27 @@ function renderTex(source, display) {
   try {
     return katex.renderToString(source.trim(), { displayMode: display });
   } catch (error) {
-    return delimiter + original + delimiter;
+    const delimiter = display ? "$$" : "$";
+    return delimiter + escapeHtml(original) + delimiter;
   }
 }
 
-function textWithLineBreaks($, node) {
-  const clone = $(node).clone();
-  clone.find("br").replaceWith("\n");
-  return clone.text();
-}
+function renderPandocMath($) {
+  $("span.math.inline, span.math.display").each(function () {
+    const $span = $(this);
+    if ($span.closest(SKIP_TAGS.join(",")).length) return;
 
-function canFlattenLinebreakParagraph(node) {
-  if (!node || !node.children) return false;
+    const display = $span.hasClass("display");
+    const source = $span.text();
 
-  return node.children.every((child) => child.type === "text" || child.name === "br");
-}
-
-function eachTextNode(node, cb) {
-  if (!node || !node.children) return;
-
-  node.children.forEach((child) => {
-    if (child.type === "text") {
-      cb(child);
-      return;
-    }
-
-    if (SKIP_TAGS.includes(child.name)) return;
-
-    eachTextNode(child, cb);
+    $span.replaceWith(renderTex(source, display));
   });
 }
 
 function render($, callback) {
-  $("p").each(function () {
-    const $p = $(this);
-    if ($p.html().indexOf(delimiter) === -1 || $p.find("br").length === 0) return;
-    if (!canFlattenLinebreakParagraph(this)) return;
+  if (!$ || typeof $ !== "function") return callback(null);
 
-    $p.text(textWithLineBreaks($, this));
-  });
-
-  const rootNode = $("body")[0] || $.root()[0];
-
-  eachTextNode(rootNode, (textNode) => {
-    const converted = convertMathInText(textNode.data);
-
-    if (converted !== textNode.data) {
-      $(textNode).replaceWith(converted);
-    }
-  });
+  renderPandocMath($);
 
   callback(null);
 }

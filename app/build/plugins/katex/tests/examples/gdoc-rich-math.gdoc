@@ -1,0 +1,13 @@
+<html>
+  <head>
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type">
+  </head>
+  <body>
+    <p><span>Inline Greek $$\alpha + \beta = \gamma$$ inside Google Docs HTML.</span></p>
+    <p><span style="font-weight:700">Bold before</span><span> $$\frac{1}{2} + \frac{1}{3} = \frac{5}{6}$$ </span><span style="font-style:italic">italic after</span></p>
+    <p>Display equation follows:</p>
+    <p>$$</p>
+    <p>\int_0^\infty e^{-x}\,dx = 1</p>
+    <p>$$</p>
+  </body>
+</html>

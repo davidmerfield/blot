@@ -2,6 +2,8 @@ var fs = require("fs");
 var ensure = require("helper/ensure");
 var LocalPath = require("helper/localPath");
 var extname = require("path").extname;
+var cheerio = require("cheerio");
+var normalizeLiteralDollarMath = require("build/math/normalizeLiteralDollars").normalizeLiteralDollarMath;
 
 function is(path) {
   return [".html", ".htm"].indexOf(extname(path).toLowerCase()) > -1;
@@ -23,7 +25,10 @@ function read(blog, path, callback) {
     fs.readFile(localPath, "utf-8", function (err, contents) {
       if (err) return callback(err);
 
-      return callback(null, contents, stat);
+      var $ = cheerio.load(contents, { decodeEntities: false }, false);
+      normalizeLiteralDollarMath($);
+
+      return callback(null, $.html(), stat);
     });
   });
 }

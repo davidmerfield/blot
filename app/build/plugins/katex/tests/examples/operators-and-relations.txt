@@ -1,0 +1,17 @@
+Sums and products: $$\sum_{i=1}^{n} i^2$$ and $$\prod_{k=1}^{n} k$$.
+
+$$
+\int_{0}^{1} x^2\,dx = \frac{1}{3}
+$$
+
+$$
+\lim_{x \to 0} \frac{\sin x}{x} = 1
+$$
+
+$$
+a \le b \ne c \ge d \approx e \equiv f
+$$
+
+$$
+A \subseteq B \supset C \in D \notin E
+$$

@@ -1,0 +1,13 @@
+Spacing examples: $$a\,b\;c\quad d\qquad e$$
+
+$$
+\text{if } x > 0 \text{ then } f(x) = x^2
+$$
+
+$$
+a_1,a_2,\ldots,a_n
+$$
+
+$$
+x \cdot y \times z \div w
+$$

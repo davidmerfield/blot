@@ -81,12 +81,12 @@ describe("build", function () {
     {
       label: "txt",
       path: "/math.txt",
-      contents: "Inline $$a+b$$ math",
+      contents: "Inline $a+b$ math",
     },
     {
       label: "md",
       path: "/math.md",
-      contents: "Inline $$a+b$$ math",
+      contents: "Inline $a+b$ math",
     },
     // doesn't yet work because pandoc
     // processes the org file math directly
@@ -117,6 +117,7 @@ describe("build", function () {
         if (err) return done.fail(err);
         expect(entry.html).toContain('class="katex"');
         expect(entry.html).not.toContain("$$a+b$$");
+        expect(entry.html).not.toContain("$a+b$");
         done();
       });
     });
@@ -124,14 +125,15 @@ describe("build", function () {
 
   it("does not render katex when plugin is disabled", function (done) {
     const path = "/math-disabled.txt";
-    const contents = "Inline $$a+b$$ math";
+    const contents = "Inline $a+b$ math";
 
     fs.outputFileSync(this.blogDirectory + path, contents);
     this.blog.plugins.katex = { enabled: false, options: {} };
 
     build(this.blog, path, (err, entry) => {
       if (err) return done.fail(err);
-      expect(entry.html).toContain("$$a+b$$");
+      // Pandoc emits math spans; KaTeX plugin leaves them when disabled
+      expect(entry.html).toContain('class="math');
       expect(entry.html).not.toContain('class="katex"');
       done();
     });
