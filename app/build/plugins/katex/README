@@ -1,6 +1,11 @@
 # KaTeX plugin
 
-Converts Pandoc `span.math` elements and literal `$$...$$` TeX in entry HTML into rendered KaTeX output. Markdown uses Pandoc delimiters: `$...$` for inline and `$$...$$` for display.
+The KaTeX plugin renders math after a two-step conversion pipeline:
+
+1. Converters normalize dollar-delimited math into Pandoc-style `span.math.inline` and `span.math.display` elements.
+2. `app/build/plugins/katex/index.js` finds those spans and renders them with KaTeX.
+
+Markdown-with-Pandoc handles dollar-delimited TeX by enabling Pandoc's `+tex_math_dollars` extension and passing `--katex`, which produces the normalized math spans. HTML, Google Docs, and fallback Markdown do not rely on Pandoc for this normalization; they use `app/build/math/normalizeLiteralDollars.js` to convert literal `$...$` and `$$...$$` math into the same `span.math.inline` / `span.math.display` shape before this plugin runs.
 
 ## Tests
 
