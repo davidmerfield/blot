@@ -65,13 +65,25 @@ function isDisplayMath(source, before, after, delimiter) {
   return /^\s*\n/.test(source) || (/^\s*$/.test(before) && /^\s*$/.test(after || ""));
 }
 
-function normalizeMathInText(text) {
-  if (!text || text.indexOf("$") === -1) return text;
+function pushTextToken(tokens, value) {
+  if (!value) return;
 
-  const parts = [];
+  const previous = tokens[tokens.length - 1];
+
+  if (previous && previous.type === "text") {
+    previous.value += value;
+    return;
+  }
+
+  tokens.push({ type: "text", value });
+}
+
+function tokenizeDollarMath(text) {
+  if (!text || text.indexOf("$") === -1) return [{ type: "text", value: text }];
+
+  const tokens = [];
   let cursor = 0;
   let textStart = 0;
-  let converted = false;
 
   while (cursor < text.length) {
     const delimiter = delimiterAt(text, cursor);
@@ -94,19 +106,36 @@ function normalizeMathInText(text) {
     const before = text.slice(textStart, cursor);
     const after = text.slice(afterStart);
 
-    parts.push(escapeHtml(before));
-    parts.push(mathSpan(source, isDisplayMath(source, before, after, delimiter)));
+    pushTextToken(tokens, before);
+    tokens.push({
+      type: "math",
+      value: source,
+      display: isDisplayMath(source, before, after, delimiter),
+    });
 
-    converted = true;
     cursor = afterStart;
     textStart = cursor;
   }
 
-  if (!converted) return text;
+  pushTextToken(tokens, text.slice(textStart));
 
-  parts.push(escapeHtml(text.slice(textStart)));
+  if (tokens.length === 0) return [{ type: "text", value: text }];
 
-  return parts.join("");
+  return tokens;
+}
+
+function normalizeMathInText(text) {
+  const tokens = tokenizeDollarMath(text);
+
+  if (!tokens.some((token) => token.type === "math")) return text;
+
+  return tokens
+    .map((token) => {
+      if (token.type === "math") return mathSpan(token.value, token.display);
+
+      return escapeHtml(token.value);
+    })
+    .join("");
 }
 
 function textWithLineBreaks($, node) {
@@ -159,4 +188,5 @@ function normalizeLiteralDollarMath($) {
 module.exports = {
   normalizeLiteralDollarMath,
   normalizeMathInText,
+  tokenizeDollarMath,
 };

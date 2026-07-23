@@ -2,6 +2,7 @@ const cheerio = require("cheerio");
 const {
   normalizeLiteralDollarMath,
   normalizeMathInText,
+  tokenizeDollarMath,
 } = require("../../../math/normalizeLiteralDollars");
 const { render } = require("../index");
 
@@ -65,5 +66,30 @@ describe("literal dollar math normalization", function () {
 
   it("leaves escaped dollars literal", function () {
     expect(normalizeMathInText("Escaped \\$x\\$ math")).toBe("Escaped \\$x\\$ math");
+  });
+
+  it("tokenizes escaped dollars as text", function () {
+    expect(tokenizeDollarMath("Escaped \\$x\\$ math")).toEqual([
+      { type: "text", value: "Escaped \\$x\\$ math" },
+    ]);
+  });
+
+  it("tokenizes unmatched dollars as text", function () {
+    expect(tokenizeDollarMath("Unmatched $x math")).toEqual([
+      { type: "text", value: "Unmatched $x math" },
+    ]);
+  });
+
+  it("tokenizes currency as text", function () {
+    expect(tokenizeDollarMath("Prices are $5 and $10 today")).toEqual([
+      { type: "text", value: "Prices are $5 and $10 today" },
+    ]);
+  });
+
+  it("tokenizes adjacent delimiters", function () {
+    expect(tokenizeDollarMath("$x$$$y$$")).toEqual([
+      { type: "math", value: "x", display: false },
+      { type: "math", value: "y", display: true },
+    ]);
   });
 });
