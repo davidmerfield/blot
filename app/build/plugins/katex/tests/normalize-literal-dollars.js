@@ -39,22 +39,22 @@ describe("literal dollar math normalization", function () {
 
   it("normalizes single-dollar inline math", function () {
     expect(normalizeMathInText("Inline $x$ math")).toBe(
-      'Inline <span class="math inline">x</span> math'
+      'Inline <span class="math inline" data-math-source="tex">x</span> math'
     );
   });
 
   it("normalizes double-dollar math with existing inline/display semantics", function () {
     expect(normalizeMathInText("Inline $$x$$ math")).toBe(
-      'Inline <span class="math inline">x</span> math'
+      'Inline <span class="math inline" data-math-source="tex">x</span> math'
     );
     expect(normalizeMathInText("$$x$$")).toBe(
-      '<span class="math display">x</span>'
+      '<span class="math display" data-math-source="tex">x</span>'
     );
   });
 
   it("normalizes adjacent single- and double-dollar math", function () {
     expect(normalizeMathInText("$x$ and $$y$$")).toBe(
-      '<span class="math inline">x</span> and <span class="math inline">y</span>'
+      '<span class="math inline" data-math-source="tex">x</span> and <span class="math inline" data-math-source="tex">y</span>'
     );
   });
 

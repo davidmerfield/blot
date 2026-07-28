@@ -12,7 +12,7 @@ describe("katex pandoc math spans", function () {
 
   it("renders span.math.inline without markdown emphasis tags", function (done) {
     const input =
-      '<p>Inline <span class="math inline">a+b</span> math</p>';
+      '<p>Inline <span class="math inline" data-math-source="tex">a+b</span> math</p>';
 
     renderHtml(input, function (err, html) {
       if (err) return done.fail(err);
@@ -26,7 +26,7 @@ describe("katex pandoc math spans", function () {
   it("renders underscore-heavy display math without em tags", function (done) {
     const tex =
       "\\mathbf{v}_1^{\\text{cm}} = \\mathbf{v} - \\mathbf{v}_{\\text{cm}} = \\frac{\\mathbf{v}}{2}";
-    const input = `<p><span class="math display">${tex}</span></p>`;
+    const input = `<p><span class="math display" data-math-source="tex">${tex}</span></p>`;
 
     renderHtml(input, function (err, html) {
       if (err) return done.fail(err);
@@ -41,7 +41,7 @@ describe("katex pandoc math spans", function () {
 
   it("falls back to escaped inline TeX with inline delimiters", function (done) {
     const input =
-      '<p>Inline <span class="math inline">\\frac{&lt;img src=x onerror=alert(1)&gt;</span> math</p>';
+      '<p>Inline <span class="math inline" data-math-source="tex">\\frac{&lt;img src=x onerror=alert(1)&gt;</span> math</p>';
 
     renderHtml(input, function (err, html) {
       if (err) return done.fail(err);
@@ -54,7 +54,7 @@ describe("katex pandoc math spans", function () {
 
   it("falls back to escaped display TeX with display delimiters", function (done) {
     const input =
-      '<p><span class="math display">\\frac{&lt;script&gt;alert(1)&lt;/script&gt;</span></p>';
+      '<p><span class="math display" data-math-source="tex">\\frac{&lt;script&gt;alert(1)&lt;/script&gt;</span></p>';
 
     renderHtml(input, function (err, html) {
       if (err) return done.fail(err);
@@ -73,6 +73,17 @@ describe("katex pandoc math spans", function () {
       if (err) return done.fail(err);
       expect(html).not.toContain('class="katex"');
       expect(html).toContain('<span class="math inline">a+b</span>');
+      done();
+    });
+  });
+
+  it("leaves untrusted user-authored math spans untouched", function (done) {
+    const input = '<p><span class="math inline">not raw TeX</span></p>';
+
+    renderHtml(input, function (err, html) {
+      if (err) return done.fail(err);
+      expect(html).not.toContain('class="katex"');
+      expect(html).toContain('<span class="math inline">not raw TeX</span>');
       done();
     });
   });
