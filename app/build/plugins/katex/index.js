@@ -26,7 +26,9 @@ function renderTex(source, display) {
 }
 
 function renderPandocMath($) {
-  $("span.math.inline, span.math.display").each(function () {
+  $(
+    'span.math.inline[data-math-source="tex"], span.math.display[data-math-source="tex"]'
+  ).each(function () {
     const $span = $(this);
     if ($span.closest(SKIP_TAGS.join(",")).length) return;
 

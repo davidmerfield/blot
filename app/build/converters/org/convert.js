@@ -26,6 +26,9 @@ module.exports = function (blog, text, callback) {
     // we use our own highlighint library (hljs) later
     "--no-highlight",
 
+    // Emit span.math with raw TeX for the KaTeX plugin.
+    "--katex",
+
     "--email-obfuscation=none"
   ];
 
@@ -76,6 +79,11 @@ module.exports = function (blog, text, callback) {
       },
       false
     );
+
+    // Pandoc's --katex writer leaves the original TeX in these spans. Mark
+    // that provenance so the KaTeX plugin never interprets an arbitrary
+    // user-authored span.math as TeX.
+    $("span.math.inline, span.math.display").attr("data-math-source", "tex");
 
     // if there is a pre tag with class="yaml"
     // at the very start of the document then extract its contents,

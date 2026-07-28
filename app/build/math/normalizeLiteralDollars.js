@@ -5,7 +5,13 @@ const SKIP_TAGS = ["script", "style", "code", "pre"];
 
 function mathSpan(source, display) {
   const mode = display ? "display" : "inline";
-  return '<span class="math ' + mode + '">' + escapeHtml(source.trim()) + '</span>';
+  return (
+    '<span class="math ' +
+    mode +
+    '" data-math-source="tex">' +
+    escapeHtml(source.trim()) +
+    "</span>"
+  );
 }
 
 function isEscaped(text, index) {
