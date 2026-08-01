@@ -1,4 +1,4 @@
-Spacing examples: $$a\,b\;c\quad d\qquad e$$
+Spacing examples $$a\,b\;c\quad d\qquad e$$
 
 $$
 \text{if } x > 0 \text{ then } f(x) = x^2
