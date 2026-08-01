@@ -34,7 +34,17 @@ function isDigit(char) {
 
 function delimiterAt(text, index) {
   if (text[index] !== "$" || isEscaped(text, index)) return null;
-  return text[index + 1] === "$" ? "$$" : "$";
+
+  // A delimiter must comprise the entire run. In particular, do not treat a
+  // portion of $$$ (or a longer run) as a supported one- or two-dollar
+  // delimiter.
+  if (text[index - 1] === "$") return null;
+
+  let runLength = 1;
+  while (text[index + runLength] === "$") runLength += 1;
+  if (runLength > 2) return null;
+
+  return runLength === 2 ? "$$" : "$";
 }
 
 function canOpen(text, index, delimiter) {
@@ -56,9 +66,28 @@ function canClose(text, index, delimiter) {
 
 function findClosingDelimiter(text, start, delimiter) {
   for (let i = start; i < text.length; i += 1) {
-    if (text.slice(i, i + delimiter.length) !== delimiter) continue;
-    if (isEscaped(text, i)) continue;
+    if (delimiter === "$" && text[i] === "\n") return -1;
+
+    if (text[i] === "$" && text[i - 1] !== "$" && !isEscaped(text, i)) {
+      let runLength = 1;
+      while (text[i + runLength] === "$") runLength += 1;
+      if (runLength > 2) return -1;
+    }
+
+    if (delimiterAt(text, i) !== delimiter) continue;
     if (!canClose(text, i, delimiter)) continue;
+
+    const source = text.slice(start, i);
+
+    // Multiline display math is supported when both delimiters occupy their
+    // own lines. This prevents otherwise unrelated dollars on separate lines
+    // from being paired merely because they share a text node.
+    if (
+      source.includes("\n") &&
+      (delimiter !== "$$" || !/^\s*\n[\s\S]*\n\s*$/.test(source))
+    ) {
+      return -1;
+    }
 
     return i;
   }
