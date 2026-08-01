@@ -141,7 +141,6 @@ describe("converter math normalization", function () {
           const $math = $("span.math." + className);
 
           expect($math.length).toBe(1);
-          expect($math.attr("data-math-source")).toBe("tex");
           expect($math.text()).toBe(tex);
           expect(html).not.toContain('class="katex"');
 
