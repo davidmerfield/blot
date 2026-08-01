@@ -133,13 +133,6 @@ module.exports = function (blog, text, options, callback) {
 
     if (err) return callback(err);
 
-    // --katex guarantees that the text in Pandoc math spans is raw TeX.
-    // Preserve that provenance for the KaTeX rendering boundary.
-    result = result.replace(
-      /<span class="math (inline|display)">/g,
-      '<span class="math $1" data-math-source="tex">'
-    );
-
     debug("Pre-footnotes", result);
     time("footnotes");
     result = safely(footnotes, result);

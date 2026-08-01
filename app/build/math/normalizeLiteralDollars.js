@@ -8,7 +8,7 @@ function mathSpan(source, display) {
   return (
     '<span class="math ' +
     mode +
-    '" data-math-source="tex">' +
+    '">' +
     escapeHtml(source.trim()) +
     "</span>"
   );
