@@ -1,4 +1,4 @@
-Greek letters: $$\alpha \beta \gamma \Gamma \delta \Delta \theta \Theta \lambda \Lambda \pi \Pi \omega \Omega$$
+Greek letters $$\alpha \beta \gamma \Gamma \delta \Delta \theta \Theta \lambda \Lambda \pi \Pi \omega \Omega$$
 
 Blackboard and calligraphic:
 

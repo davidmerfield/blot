@@ -1,6 +1,6 @@
-Inline accents: $$\hat{\theta} + \bar{y} + \vec{F} + \dot{x} + \ddot{y}$$
+Inline accents $$\hat{\theta} + \bar{y} + \vec{F} + \dot{x} + \ddot{y}$$
 
-Display accents:
+Display accents
 
 $$
 \overrightarrow{AB} + \overleftarrow{CD} + \overleftrightarrow{EF}

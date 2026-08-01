@@ -1,4 +1,4 @@
-Inline delimiters: $$\langle x, y \rangle = \{x \in \mathbb{R} \mid x > 0\}$$
+Inline delimiters $$\langle x, y \rangle = \{x \in \mathbb{R} \mid x > 0\}$$
 
 $$
 \left( \frac{a+b}{c+d} \right)
