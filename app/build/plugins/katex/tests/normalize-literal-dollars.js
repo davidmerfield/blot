@@ -59,7 +59,7 @@ describe("literal dollar math normalization", function () {
   });
 
   it("leaves empty dollar-delimited runs literal", function () {
-    ["$$$$", "Text $$$$ text", "$$ $$"].forEach((input) => {
+    ["$$$$", "$$ $$", "Text $$$$ text", "$$$ a+b $$$"].forEach((input) => {
       expect(normalizeMathInText(input)).toBe(input);
       expect(tokenizeDollarMath(input)).toEqual([
         { type: "text", value: input },
@@ -68,13 +68,14 @@ describe("literal dollar math normalization", function () {
   });
 
   it("preserves empty dollar-delimited runs through KaTeX rendering", function (done) {
-    const input = "<p>$$$$</p><p>Text $$$$ text</p><p>$$ $$</p>";
+    const inputs = ["$$$$", "$$ $$", "Text $$$$ text", "$$$ a+b $$$"];
+    const input = inputs.map((value) => "<p>" + value + "</p>").join("");
 
     normalizeAndRender(input, function (err, html) {
       if (err) return done.fail(err);
-      expect(html).toContain("<p>$$$$</p>");
-      expect(html).toContain("<p>Text $$$$ text</p>");
-      expect(html).toContain("<p>$$ $$</p>");
+      inputs.forEach((value) => {
+        expect(html).toContain("<p>" + value + "</p>");
+      });
       expect(html).not.toContain('class="katex"');
       expect(html).not.toContain('class="math');
       done();
@@ -109,10 +110,27 @@ describe("literal dollar math normalization", function () {
     ]);
   });
 
-  it("tokenizes adjacent delimiters", function () {
+  it("does not split an overlong run into adjacent delimiters", function () {
     expect(tokenizeDollarMath("$x$$$y$$")).toEqual([
-      { type: "math", value: "x", display: false },
-      { type: "math", value: "y", display: true },
+      { type: "text", value: "$x$$$y$$" },
     ]);
+    expect(normalizeMathInText("$$a+b$$$$c+d$$")).toBe(
+      "$$a+b$$$$c+d$$"
+    );
+  });
+
+  it("does not pair inline delimiters across lines", function () {
+    expect(normalizeMathInText("First $x\nsecond line $10")).toBe(
+      "First $x\nsecond line $10"
+    );
+  });
+
+  it("only pairs multiline display delimiters on their own lines", function () {
+    expect(normalizeMathInText("First $$x\nsecond line $$y")).toBe(
+      "First $$x\nsecond line $$y"
+    );
+    expect(normalizeMathInText("$$\nx+y\n$$")).toBe(
+      '<span class="math display">x+y</span>'
+    );
   });
 });
