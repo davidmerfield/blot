@@ -2,6 +2,8 @@ const fs = require("fs-extra");
 const build = require("build");
 const templates = require("templates");
 
+const SINGLE_SPEC="";
+
 // Build the templates
 beforeAll(function (done) {
   templates({ watch: false }, done);
@@ -15,6 +17,7 @@ describe("katex plugin integration", function () {
 
   fs.readdirSync(dir)
     .filter((file) => supportedExtensions.some((ext) => file.endsWith(ext)))
+    .filter((file) => SINGLE_SPEC ? file === SINGLE_SPEC : true)
     .forEach((file) => {
       it("handles " + file.split("-").join(" "), function (done) {
         const path = "/" + file;
