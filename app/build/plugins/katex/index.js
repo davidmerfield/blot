@@ -25,12 +25,43 @@ function renderTex(source, display) {
   }
 }
 
+function hasSiblingContent($parent, $exclude) {
+  return $parent.contents().toArray().some(function (node) {
+    if (node === $exclude[0]) return false;
+    if (node.type === "text") return /\S/.test(node.data || "");
+    return true;
+  });
+}
+
+// Display math inside a paragraph with other content (or nested in em/strong/etc.)
+// should render inline so it doesn't break out of the line.
+function isMixedParagraphDisplay($span) {
+  let $node = $span;
+  let $parent = $node.parent();
+
+  while ($parent.length && !$parent.is("p")) {
+    $node = $parent;
+    $parent = $node.parent();
+  }
+
+  if (!$parent.is("p")) return false;
+
+  // Nested under an inline wrapper inside the paragraph
+  if ($node[0] !== $span[0]) return true;
+
+  return hasSiblingContent($parent, $span);
+}
+
 function renderPandocMath($) {
   $("span.math.inline, span.math.display").each(function () {
     const $span = $(this);
     if ($span.closest(SKIP_TAGS.join(",")).length) return;
 
-    const display = $span.hasClass("display");
+    let display = $span.hasClass("display");
+    if (display && isMixedParagraphDisplay($span)) {
+      display = false;
+    }
+
     const source = $span.text();
 
     $span.replaceWith(renderTex(source, display));
