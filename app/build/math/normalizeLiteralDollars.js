@@ -109,6 +109,12 @@ function tokenizeDollarMath(text) {
     }
 
     const source = text.slice(sourceStart, close);
+
+    if (source.trim() === "") {
+      cursor += delimiter.length;
+      continue;
+    }
+
     const afterStart = close + delimiter.length;
     const before = text.slice(textStart, cursor);
     const after = text.slice(afterStart);

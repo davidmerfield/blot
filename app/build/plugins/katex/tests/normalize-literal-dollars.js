@@ -58,6 +58,29 @@ describe("literal dollar math normalization", function () {
     );
   });
 
+  it("leaves empty dollar-delimited runs literal", function () {
+    ["$$$$", "Text $$$$ text", "$$ $$"].forEach((input) => {
+      expect(normalizeMathInText(input)).toBe(input);
+      expect(tokenizeDollarMath(input)).toEqual([
+        { type: "text", value: input },
+      ]);
+    });
+  });
+
+  it("preserves empty dollar-delimited runs through KaTeX rendering", function (done) {
+    const input = "<p>$$$$</p><p>Text $$$$ text</p><p>$$ $$</p>";
+
+    normalizeAndRender(input, function (err, html) {
+      if (err) return done.fail(err);
+      expect(html).toContain("<p>$$$$</p>");
+      expect(html).toContain("<p>Text $$$$ text</p>");
+      expect(html).toContain("<p>$$ $$</p>");
+      expect(html).not.toContain('class="katex"');
+      expect(html).not.toContain('class="math');
+      done();
+    });
+  });
+
   it("leaves currency text literal", function () {
     expect(normalizeMathInText("Prices are $5 and $10 today")).toBe(
       "Prices are $5 and $10 today"
