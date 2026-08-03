@@ -1,0 +1,3 @@
+This snapshot documents a known upstream Pandoc Markdown conversion bug, not the desired behavior: the valid TeX control-symbol accents `\'{a}` and `\"{o}` lose their backslashes before reaching KaTeX, changing an acute accent into an apostrophe/prime and an umlaut into a literal quotation mark.
+
+$\'{a} + \"{o}$
