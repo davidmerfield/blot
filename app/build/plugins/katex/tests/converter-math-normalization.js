@@ -15,7 +15,10 @@ const { render } = require("../index");
 describe("converter math normalization", function () {
   const blog = {
     id: "math-normalization-test",
-    plugins: { linebreaks: { enabled: false } },
+    plugins: {
+      linebreaks: { enabled: false },
+      katex: { enabled: true, options: {} },
+    },
   };
   const blogDirectory = LocalPath(blog.id, "/");
 
