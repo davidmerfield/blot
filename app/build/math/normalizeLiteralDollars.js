@@ -180,16 +180,81 @@ function normalizeMathInText(text) {
     .join("");
 }
 
-function textWithLineBreaks($, node) {
-  const clone = $(node).clone();
-  clone.find("br").replaceWith("\n");
-  return clone.text();
-}
-
 function canFlattenLinebreakParagraph(node) {
   if (!node || !node.children) return false;
 
   return node.children.every((child) => child.type === "text" || child.name === "br");
+}
+
+// Find display math without first flattening the paragraph. Flattening is
+// tempting here, but it destroys every <br> in the paragraph even when the
+// dollars do not form a display expression.
+function displayMathRanges(node) {
+  let text = "";
+  const textNodes = [];
+
+  node.children.forEach((child) => {
+    if (child.type === "text") {
+      textNodes.push({
+        node: child,
+        start: text.length,
+        end: text.length + child.data.length,
+      });
+      text += child.data;
+    } else if (child.name === "br") {
+      text += "\n";
+    }
+  });
+
+  const lines = [];
+  let start = 0;
+  for (let i = 0; i <= text.length; i += 1) {
+    if (i === text.length || text[i] === "\n") {
+      lines.push({ start, end: i, value: text.slice(start, i) });
+      start = i + 1;
+    }
+  }
+
+  const ranges = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!/^\s*\$\$\s*$/.test(lines[i].value)) continue;
+
+    for (let close = i + 1; close < lines.length; close += 1) {
+      if (!/^\s*\$\$\s*$/.test(lines[close].value)) continue;
+
+      const source = text.slice(lines[i].end + 1, lines[close].start);
+      if (source.trim()) {
+        ranges.push({
+          start: lines[i].start,
+          end: lines[close].end,
+          source,
+          textNodes,
+        });
+        i = close;
+      }
+      break;
+    }
+  }
+
+  return ranges;
+}
+
+function replaceDisplayRange($, range) {
+  const affected = range.textNodes.filter(
+    (entry) => entry.end > range.start && entry.start < range.end
+  );
+  if (!affected.length) return;
+
+  const first = affected[0];
+  // The opening delimiter occupies its whole visual line, so replacing its
+  // text node cannot consume any surrounding content.
+  $(first.node).replaceWith(mathSpan(range.source, true));
+
+  affected.slice(1).forEach((entry) => {
+    const from = Math.max(range.start, entry.start) - entry.start;
+    const to = Math.min(range.end, entry.end) - entry.start;
+    entry.node.data = entry.node.data.slice(0, from) + entry.node.data.slice(to);
+  });
 }
 
 function eachTextNode(node, cb) {
@@ -213,7 +278,9 @@ function normalizeLiteralDollarMath($) {
     if ($p.html().indexOf("$$") === -1 || $p.find("br").length === 0) return;
     if (!canFlattenLinebreakParagraph(this)) return;
 
-    $p.text(textWithLineBreaks($, this));
+    displayMathRanges(this)
+      .reverse()
+      .forEach((range) => replaceDisplayRange($, range));
   });
 
   const rootNode = $("body")[0] || $.root()[0];

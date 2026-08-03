@@ -133,4 +133,59 @@ describe("literal dollar math normalization", function () {
       '<span class="math display">x+y</span>'
     );
   });
+
+  it("keeps the line break after inline double-dollar math", function (done) {
+    normalizeAndRender("<p>$$x$$<br>next</p>", function (err, html) {
+      if (err) return done.fail(err);
+      const $ = cheerio.load(html, { decodeEntities: false }, false);
+      expect($(".katex").length).toBe(1);
+      expect($(".katex-display").length).toBe(0);
+      expect($("br").length).toBe(1);
+      expect($("p").text()).toContain("next");
+      done();
+    });
+  });
+
+  it("does not consume line breaks for an unfinished delimiter", function (done) {
+    normalizeAndRender("<p>Unfinished $$x<br>next</p>", function (err, html) {
+      if (err) return done.fail(err);
+      const $ = cheerio.load(html, { decodeEntities: false }, false);
+      expect($(".katex").length).toBe(0);
+      expect($("br").length).toBe(1);
+      expect($("p").html()).toBe("Unfinished $$x<br>next");
+      done();
+    });
+  });
+
+  it(
+    "normalizes a bounded three-line display and preserves surrounding content",
+    function (done) {
+      const input = "<p>before<br>$$<br>x+y<br>$$<br>after</p>";
+      normalizeAndRender(input, function (err, html) {
+        if (err) return done.fail(err);
+        const $ = cheerio.load(html, { decodeEntities: false }, false);
+        // Display tokens mixed with other paragraph content render inline.
+        expect($(".katex").length).toBe(1);
+        expect($(".katex-display").length).toBe(0);
+        expect($("br").length).toBe(4);
+        expect($("p").text()).toContain("before");
+        expect($("p").text()).toContain("after");
+        done();
+      });
+    }
+  );
+
+  it("preserves unrelated line breaks around display math", function (done) {
+    const input = "<p>one<br>two<br>$$<br>z<br>$$<br>three<br>four</p>";
+    normalizeAndRender(input, function (err, html) {
+      if (err) return done.fail(err);
+      const $ = cheerio.load(html, { decodeEntities: false }, false);
+      expect($(".katex").length).toBe(1);
+      expect($(".katex-display").length).toBe(0);
+      expect($("br").length).toBe(6);
+      expect($("p").text()).toContain("onetwo");
+      expect($("p").text()).toContain("threefour");
+      done();
+    });
+  });
 });
