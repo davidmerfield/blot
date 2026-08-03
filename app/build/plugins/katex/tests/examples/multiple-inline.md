@@ -1,1 +1,1 @@
-Multiple equations $$x$$ and $$y$$ in one paragraph.
+Multiple equations $x$ and $y$ in one paragraph.

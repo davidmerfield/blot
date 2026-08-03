@@ -10,6 +10,9 @@ var debug = require("debug")("blot:converters:markdown");
 // '+hard_line_breaks' +
 
 module.exports = function (blog, text, options, callback) {
+  var katexEnabled = Boolean(
+    blog.plugins && blog.plugins.katex && blog.plugins.katex.enabled
+  );
   var extensions =
 
     // handles highlights ==e.g.==
@@ -30,10 +33,8 @@ module.exports = function (blog, text, options, callback) {
     // without blank lines between them.
     "-simple_tables" +
     "-multiline_tables" +
-    // Leave $$...$$ untouched so the KaTeX plugin can
-    // render math consistently across all text converters.
-    "-tex_math_dollars" +
-    // Leaves raw TeX alone so the KaTeX plugin can render math consistently across all text converters.
+    // Leave raw TeX alone so the KaTeX plugin can render math consistently
+    // across all text converters.
     "-raw_tex" +
     // This sometimes throws errors for some reason
     "-yaml_metadata_block" +
@@ -43,6 +44,15 @@ module.exports = function (blog, text, options, callback) {
     "+lists_without_preceding_blankline" +
     "-blank_before_header" +
     "-blank_before_blockquote";
+
+  // Only consume dollar-delimited math when it will be rendered server-side.
+  // Otherwise Pandoc treats the dollars as ordinary text, preserving them for
+  // client-side renderers such as MathJax.
+  if (katexEnabled) { 
+    extensions += "+tex_math_dollars";
+  } else {
+    extensions += "-tex_math_dollars";
+  }
 
   // This feature fucks with [@twitter]() links
   // perhaps make it an option in future?
@@ -75,6 +85,10 @@ module.exports = function (blog, text, options, callback) {
     // such a dumb default feature... sorry john!
     "--email-obfuscation=none",
   ];
+
+  // Emit span.math with raw TeX for the KaTeX plugin. Without --standalone,
+  // this does not add CDN script or link tags.
+  if (katexEnabled) args.push("--katex");
 
   if (options.bib) {
     args.push("-M");

@@ -92,8 +92,16 @@ function renderPage(examples) {
         .filter(Boolean)
         .join("\n");
 
+      const markCorrect =
+        ex.actual !== null
+          ? `<form method="POST" action="/mark-correct" style="display:inline">
+              <input type="hidden" name="file" value="${escapeHtml(ex.file)}">
+              <button type="submit">Mark as correct</button>
+            </form>`
+          : "";
+
       return `<section class="example" id="${escapeHtml(ex.id)}">
-        <h2>${escapeHtml(ex.file)}</h2>
+        <h2>${escapeHtml(ex.file)} ${markCorrect}</h2>
         <div class="columns${ex.actual ? " has-actual" : ""}">${columns.join("")}</div>
         ${details}
       </section>`;
@@ -162,6 +170,13 @@ function renderPage(examples) {
       margin: 0 0 1rem;
       font-size: 1.1rem;
       font-weight: 600;
+    }
+    .example h2 button {
+      margin-left: 0.5rem;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
     }
     .columns {
       display: grid;
@@ -263,9 +278,52 @@ function serveKatexAsset(urlPath, res) {
   });
 }
 
+function markCorrect(file) {
+  if (
+    !file ||
+    path.basename(file) !== file ||
+    !SUPPORTED_EXTENSIONS.some((ext) => file.endsWith(ext))
+  ) {
+    throw new Error("Invalid file");
+  }
+
+  const expectedPath = path.join(EXAMPLES_DIR, file + ".html");
+  const actualPath = expectedPath + ".expected.html";
+
+  if (!fs.existsSync(actualPath)) {
+    throw new Error("No .expected.html for " + file);
+  }
+
+  if (fs.existsSync(expectedPath)) fs.unlinkSync(expectedPath);
+  fs.renameSync(actualPath, expectedPath);
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", (chunk) => (data += chunk));
+    req.on("end", () => resolve(data));
+    req.on("error", reject);
+  });
+}
+
 http
-  .createServer((req, res) => {
+  .createServer(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
+
+    if (req.method === "POST" && url.pathname === "/mark-correct") {
+      try {
+        const body = await readBody(req);
+        const file = new URLSearchParams(body).get("file");
+        markCorrect(file);
+        res.statusCode = 302;
+        res.setHeader("Location", "/#" + slug(file));
+        return res.end();
+      } catch (err) {
+        res.statusCode = 400;
+        return res.end(String(err.message || err));
+      }
+    }
 
     if (req.method !== "GET") {
       res.statusCode = 405;

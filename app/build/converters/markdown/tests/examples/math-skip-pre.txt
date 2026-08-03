@@ -1,0 +1,3 @@
+Pre-formatted should stay literal.
+
+<pre>$$a+b$$</pre>
