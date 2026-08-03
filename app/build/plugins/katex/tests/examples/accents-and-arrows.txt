@@ -6,4 +6,4 @@ $$
 \overbrace{\`{b}+\^{c}}^{\text{sum}} + \underbrace{\dot{x}+\bar{y}+\ddot{z}}_{\text{terms}}
 $$
 
-Text accents: $$\text{\`{e} \~{n} \^{u} \v{s}}$$
+Text accents: $$\text{\'{a} + \"{o} + \`{e} \~{n} \^{u} \v{s}}$$
