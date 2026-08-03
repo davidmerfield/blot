@@ -25,6 +25,20 @@ describe("literal dollar math normalization", function () {
     });
   });
 
+  it("normalizes math in original siblings after an expanding replacement", function (done) {
+    const input = "<p>First $x$ then <em>$y$</em><strong>after</strong></p>";
+
+    normalizeAndRender(input, function (err, html) {
+      if (err) return done.fail(err);
+      const $ = cheerio.load(html, { decodeEntities: false }, false);
+      expect($(".katex").length).toBe(2);
+      expect(html).not.toContain("$x$");
+      expect(html).not.toContain("$y$");
+      expect($("strong").text()).toBe("after");
+      done();
+    });
+  });
+
   it("leaves literal $$ untouched during the KaTeX render phase", function (done) {
     const $ = cheerio.load("<p>Inline $$a+b$$ math</p>", { decodeEntities: false }, false);
 

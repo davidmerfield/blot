@@ -260,7 +260,7 @@ function replaceDisplayRange($, range) {
 function eachTextNode(node, cb) {
   if (!node || !node.children) return;
 
-  node.children.forEach((child) => {
+  node.children.slice().forEach((child) => {
     if (child.type === "text") {
       cb(child);
       return;
