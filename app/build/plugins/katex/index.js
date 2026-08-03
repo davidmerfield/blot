@@ -2,6 +2,22 @@
 const katex = require("katex");
 
 const SKIP_TAGS = ["script", "style", "code", "pre"];
+const BLOCK_BOUNDARY_TAGS = [
+  "p",
+  "li",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "blockquote",
+  "td",
+  "th",
+  "dt",
+  "dd",
+];
+const BLOCK_BOUNDARY_SELECTOR = BLOCK_BOUNDARY_TAGS.join(",");
 
 function escapeHtml(value) {
   return value
@@ -26,30 +42,33 @@ function renderTex(source, display) {
 }
 
 function hasSiblingContent($parent, $exclude) {
-  return $parent.contents().toArray().some(function (node) {
-    if (node === $exclude[0]) return false;
-    if (node.type === "text") return /\S/.test(node.data || "");
-    return true;
-  });
+  return $parent
+    .contents()
+    .toArray()
+    .some(function (node) {
+      if (node === $exclude[0]) return false;
+      if (node.type === "text") return /\S/.test(node.data || "");
+      return node.type === "tag";
+    });
 }
 
-// Display math inside a paragraph with other content (or nested in em/strong/etc.)
-// should render inline so it doesn't break out of the line.
-function isMixedParagraphDisplay($span) {
+// Display math sharing its nearest text-content block with other content should
+// render inline so it doesn't break out of the line.
+function isMixedBlockDisplay($span) {
   let $node = $span;
   let $parent = $node.parent();
+  let mixed = false;
 
-  while ($parent.length && !$parent.is("p")) {
+  while ($parent.length) {
+    if (hasSiblingContent($parent, $node)) mixed = true;
+
+    if ($parent.is(BLOCK_BOUNDARY_SELECTOR)) return mixed;
+
     $node = $parent;
     $parent = $node.parent();
   }
 
-  if (!$parent.is("p")) return false;
-
-  // Nested under an inline wrapper inside the paragraph
-  if ($node[0] !== $span[0]) return true;
-
-  return hasSiblingContent($parent, $span);
+  return false;
 }
 
 function renderPandocMath($) {
@@ -58,7 +77,7 @@ function renderPandocMath($) {
     if ($span.closest(SKIP_TAGS.join(",")).length) return;
 
     let display = $span.hasClass("display");
-    if (display && isMixedParagraphDisplay($span)) {
+    if (display && isMixedBlockDisplay($span)) {
       display = false;
     }
 
