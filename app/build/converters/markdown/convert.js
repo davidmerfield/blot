@@ -48,7 +48,11 @@ module.exports = function (blog, text, options, callback) {
   // Only consume dollar-delimited math when it will be rendered server-side.
   // Otherwise Pandoc treats the dollars as ordinary text, preserving them for
   // client-side renderers such as MathJax.
-  if (katexEnabled) extensions += "+tex_math_dollars";
+  if (katexEnabled) { 
+    extensions += "+tex_math_dollars";
+  } else {
+    extensions += "-tex_math_dollars";
+  }
 
   // This feature fucks with [@twitter]() links
   // perhaps make it an option in future?
