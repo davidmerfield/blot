@@ -12,6 +12,7 @@ Spring newsletter
 - Support Wikilink lookup by title for pages as well as posts
 - Tag index and tag list pages can now be filtered by path
 - The [Git client](https://blot.im/how/sync/git) now supports changes to your site username
+- Katex can be written inline in single dollar signs (previously we required you use two dollar signs)
 
 **Bug fixes**
 - Fix bug with URL settings in package.json
