@@ -11,8 +11,7 @@ describe("katex pandoc math spans", function () {
   }
 
   it("renders span.math.inline without markdown emphasis tags", function (done) {
-    const input =
-      '<p>Inline <span class="math inline">a+b</span> math</p>';
+    const input = '<p>Inline <span class="math inline">a+b</span> math</p>';
 
     renderHtml(input, function (err, html) {
       if (err) return done.fail(err);
@@ -58,7 +57,9 @@ describe("katex pandoc math spans", function () {
 
     renderHtml(input, function (err, html) {
       if (err) return done.fail(err);
-      expect(html).toContain("$$\\frac{&lt;script&gt;alert(1)&lt;/script&gt;$$");
+      expect(html).toContain(
+        "$$\\frac{&lt;script&gt;alert(1)&lt;/script&gt;$$",
+      );
       expect(html).not.toContain("<script>");
       expect(html).not.toContain('class="math');
       done();
@@ -84,7 +85,92 @@ describe("katex pandoc math spans", function () {
       if (err) return done.fail(err);
       expect(html).toContain('class="katex"');
       expect(html).not.toContain('class="math');
-      expect(html).toContain('>not raw TeX</annotation>');
+      expect(html).toContain(">not raw TeX</annotation>");
+      done();
+    });
+  });
+
+  it("renders display-class math mixed directly with list-item text inline", function (done) {
+    const input = '<ul><li>Value <span class="math display">x</span></li></ul>';
+
+    renderHtml(input, function (err, html) {
+      if (err) return done.fail(err);
+      expect(html).toContain('class="katex"');
+      expect(html).not.toContain('class="katex-display"');
+      done();
+    });
+  });
+
+  ["em", "strong"].forEach(function (tag) {
+    it(
+      "renders mixed list-item math nested inside " + tag + " inline",
+      function (done) {
+        const input = `<ul><li><${tag}>Value <span class="math display">x</span></${tag}></li></ul>`;
+
+        renderHtml(input, function (err, html) {
+          if (err) return done.fail(err);
+          expect(html).not.toContain('class="katex-display"');
+          done();
+        });
+      },
+    );
+  });
+
+  it("keeps math that is the sole meaningful list-item child displayed", function (done) {
+    const input = '<ul><li><span class="math display">x</span></li></ul>';
+
+    renderHtml(input, function (err, html) {
+      if (err) return done.fail(err);
+      expect(html).toContain('class="katex-display"');
+      done();
+    });
+  });
+
+  ["p", "li"].forEach(function (boundary) {
+    it(
+      "keeps math in an empty inline wrapper displayed in " + boundary,
+      function (done) {
+        const input = `<${boundary}><em><span class="math display">x</span></em></${boundary}>`;
+
+        renderHtml(input, function (err, html) {
+          if (err) return done.fail(err);
+          expect(html).toContain('class="katex-display"');
+          done();
+        });
+      },
+    );
+  });
+
+  it("renders mixed display-class math in headings and table cells inline", function (done) {
+    const input =
+      '<h2>Heading <span class="math display">x</span></h2><table><tr><td><span class="math display">y</span> cell</td></tr></table>';
+
+    renderHtml(input, function (err, html) {
+      if (err) return done.fail(err);
+      expect((html.match(/class="katex"/g) || []).length).toBe(2);
+      expect(html).not.toContain('class="katex-display"');
+      done();
+    });
+  });
+
+  it("ignores whitespace-only siblings when choosing display mode", function (done) {
+    const input =
+      '<p> \n <strong>\t<span class="math display">x</span> </strong> \n </p>';
+
+    renderHtml(input, function (err, html) {
+      if (err) return done.fail(err);
+      expect(html).toContain('class="katex-display"');
+      done();
+    });
+  });
+
+  it("does not use structure outside the nearest boundary in nested lists", function (done) {
+    const input =
+      '<ul><li>Outer text<ul><li> \n <em><span class="math display">x</span></em> \n </li></ul></li></ul>';
+
+    renderHtml(input, function (err, html) {
+      if (err) return done.fail(err);
+      expect(html).toContain('class="katex-display"');
       done();
     });
   });
