@@ -23,6 +23,17 @@ function permalinkSlug(permalink) {
   }
 }
 
+function permalinkBasename(permalink) {
+  try {
+    const component = new URL(permalink).pathname.split("/").filter(Boolean).pop();
+    return component
+      ? decodeURIComponent(component).replace(/\.(?:html?|xhtml)$/i, "")
+      : "";
+  } catch (err) {
+    return "";
+  }
+}
+
 module.exports = async function parse(xml) {
   const document = await parseStringPromise(xml);
   const atomEntries = (document.feed && document.feed.entry) || [];
@@ -52,7 +63,7 @@ module.exports = async function parse(xml) {
 
     entries.push({
       id: value(atomEntry.id && atomEntry.id[0]),
-      title: rawTitle || slug.split("-").pop() || "Untitled",
+      title: rawTitle || permalinkBasename(permalink) || "Untitled",
       html: value(atomEntry.content && atomEntry.content[0]),
       permalink,
       slug,
