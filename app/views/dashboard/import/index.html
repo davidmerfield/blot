@@ -72,7 +72,17 @@
 
 {{^complete}}
 
-<td style="width:100%" colspan="2"><span style="color:rgba(0,0,0,0.5)">{{identifier}}</span><span id="status-{{id}}" style="width:100%" class="truncate">{{lastStatus}}</span></td> 
+<td style="width:100%" colspan="2">
+  <span style="color:rgba(0,0,0,0.5)">{{identifier}}</span>
+  <span class="sync-status">
+    <span class="sync-status-body">
+      <span id="status-{{id}}" class="sync-status-text truncate">{{lastStatus}}</span>
+      <span class="sync-status-progress">
+        <span class="sync-status-progress-bar"></span>
+      </span>
+    </span>
+  </span>
+</td>
 
 
 <td>

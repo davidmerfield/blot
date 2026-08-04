@@ -1,6 +1,39 @@
 const importContainer = document.querySelector("[data-import-base]");
 const liveUpdatesContainer = document.querySelector(".live-updates");
 const importStatusContainer = document.querySelector('[id^="status-"]');
+const PROGRESS_MESSAGE_RE = /^\((\d+)\/(\d+)\)\s*(.*)$/;
+
+function renderImportStatus(statusNode, message) {
+  const match = (message || "").match(PROGRESS_MESSAGE_RE);
+  const statusContainer = statusNode.closest(".sync-status");
+  const progressBar = statusContainer
+    ? statusContainer.querySelector(".sync-status-progress-bar")
+    : null;
+
+  statusNode.textContent = match ? match[3] : message || "";
+
+  if (statusContainer && match) {
+    const current = parseInt(match[1], 10);
+    const total = parseInt(match[2], 10);
+    const percent = total > 0 ? (current / total) * 100 : 0;
+
+    statusContainer.classList.add("has-progress");
+    if (progressBar) {
+      progressBar.style.width = Math.max(0, Math.min(100, percent)) + "%";
+    }
+  } else if (statusContainer) {
+    statusContainer.classList.remove("has-progress");
+    if (progressBar) progressBar.style.width = "0%";
+  }
+
+  truncate(statusNode);
+}
+
+function renderImportStatuses() {
+  document.querySelectorAll('[id^="status-"]').forEach(function (statusNode) {
+    renderImportStatus(statusNode, statusNode.textContent);
+  });
+}
 
 if (importContainer && (liveUpdatesContainer || importStatusContainer)) {
   const ReconnectingEventSource = require("./reconnecting-event-source.js");
@@ -12,6 +45,8 @@ if (importContainer && (liveUpdatesContainer || importStatusContainer)) {
 
     let currentlyLoading = false;
     let checkAgain = false;
+
+    renderImportStatuses();
 
     evtSource.onmessage = function (event) {
       const { status, importID } = JSON.parse(event.data);
@@ -72,6 +107,7 @@ if (importContainer && (liveUpdatesContainer || importStatusContainer)) {
             if (newState === currentState) return callback();
 
             currentNode.innerHTML = newState;
+            renderImportStatuses();
           }
 
           callback();

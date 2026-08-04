@@ -9,7 +9,7 @@ async function parse({ outputDirectory, posts, status, isCancelled }) {
 
   for (const item of posts) {
     if (isCancelled && await isCancelled()) return;
-    status(`Processing ${++done} of ${posts.length} ${item.title}`);
+    status(`(${++done}/${posts.length}) Processing ${item.title}`);
     try {
       if (item.class === "Image") {
         await image(item, outputDirectory, isCancelled);

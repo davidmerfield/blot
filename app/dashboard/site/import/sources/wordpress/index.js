@@ -49,7 +49,9 @@ function main(sourceFile, outputDirectory, status, options, callback) {
       result
     ) {
       if (err) return callback(err);
-
+      
+      var totalItems;
+      
       try {
         var channel = result.rss.channel[0];
         console.log('HERE with channel', channel);
@@ -83,7 +85,7 @@ function main(sourceFile, outputDirectory, status, options, callback) {
 
         var items = channel.item;
 
-        var totalItems = items.length;
+        totalItems = items.length;
       } catch (e) {
         console.log("HERE with err", e);
         return callback(new Error("Invalid XML"));
@@ -108,16 +110,12 @@ function main(sourceFile, outputDirectory, status, options, callback) {
       );
 
       function processItem(item, index, done) {
-        status(
-          "Processing " +
-            (++index + " of " + totalItems) +
-            " " +
-            item.title[0].trim()
-        );
-        console.log(
-          colors.dim(++index + "/" + totalItems),
-          item.title[0].trim()
-        );
+        var current = Number(index) + 1;
+        var title = item.title[0].trim();
+
+        status("(" + current + "/" + totalItems + ") Processing " + title);
+        console.log(colors.dim(current + "/" + totalItems), title);
+
         injectAttachedThumbnail(item, channel.item);
         Item(item, outputDirectory, options.context, done);
       }
