@@ -1,5 +1,6 @@
 const { parseStringPromise } = require("xml2js");
 const { URL } = require("url");
+const cheerio = require("cheerio");
 
 const KIND_PREFIX = "http://schemas.google.com/blogger/2008/kind#";
 const LABEL_SCHEME = "http://www.blogger.com/atom/ns#";
@@ -9,6 +10,38 @@ function value(node) {
   if (Array.isArray(node)) return value(node[0]);
   if (typeof node === "string") return node;
   return node._ || "";
+}
+
+function normalizeHost(hostname) {
+  return String(hostname || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^www\./, "");
+}
+
+// Accepts a full URL or bare hostname and returns a normalized hostname, or ""
+// when the input is empty. Throws for values that are present but invalid.
+function parseSiteHost(input) {
+  const raw = String(input || "").trim();
+  if (!raw) return "";
+
+  let url;
+  try {
+    url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+  } catch (err) {
+    throw new Error(
+      "Please enter a valid site URL, like https://example.blogspot.com"
+    );
+  }
+
+  const host = normalizeHost(url.hostname);
+  if (!host || !host.includes(".")) {
+    throw new Error(
+      "Please enter a valid site URL, like https://example.blogspot.com"
+    );
+  }
+
+  return host;
 }
 
 // Older Blogger backups expose the post URL on link[rel=alternate]. Current
@@ -102,10 +135,47 @@ function entryTags(categories) {
     .map(({ $ }) => $.term);
 }
 
-module.exports = async function parse(xml) {
+function relativeBlogPath(urlString, siteHost) {
+  if (!urlString || !siteHost || !/^https?:\/\//i.test(urlString)) return;
+  try {
+    const url = new URL(urlString);
+    if (normalizeHost(url.hostname) !== normalizeHost(siteHost)) return;
+    return (url.pathname || "/") + (url.hash || "");
+  } catch (err) {
+    return;
+  }
+}
+
+function relativizeHtml(html, siteHost) {
+  if (!html || !siteHost) return html;
+
+  const $ = cheerio.load(html, { decodeEntities: false });
+  $("[href]").each(function () {
+    const href = $(this).attr("href");
+    const relative = relativeBlogPath(href, siteHost);
+    if (relative) $(this).attr("href", relative);
+  });
+
+  return $("body").length ? $("body").html() : $.html();
+}
+
+function rebaseEntries(entries, siteHost) {
+  if (!siteHost) return entries;
+
+  for (const entry of entries) {
+    entry.html = relativizeHtml(entry.html, siteHost);
+    const relativePermalink = relativeBlogPath(entry.permalink, siteHost);
+    if (relativePermalink) entry.permalink = relativePermalink;
+  }
+
+  return entries;
+}
+
+module.exports = async function parse(xml, siteHost) {
   const document = await parseStringPromise(xml);
   const atomEntries = (document.feed && document.feed.entry) || [];
   const entries = [];
+  const host = parseSiteHost(siteHost || "");
 
   for (const atomEntry of atomEntries) {
     const kind = entryKind(atomEntry);
@@ -135,6 +205,8 @@ module.exports = async function parse(xml) {
     });
   }
 
+  rebaseEntries(entries, host);
+
   // determine_path uses the slug as the filename. Suffix repeated slugs in source
   // order so no entry can silently overwrite another and repeat imports are stable.
   const occurrences = new Map();
@@ -149,3 +221,5 @@ module.exports = async function parse(xml) {
 };
 
 module.exports.permalinkSlug = permalinkSlug;
+module.exports.parseSiteHost = parseSiteHost;
+module.exports.relativizeHtml = relativizeHtml;

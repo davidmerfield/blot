@@ -74,6 +74,14 @@ Importer.route("/blogger")
       );
     }
 
+    let siteHost = "";
+    try {
+      siteHost = blogger.parseSiteHost(req.body && req.body.siteURL);
+    } catch (error) {
+      fs.remove(upload.path).catch(() => {});
+      return res.message(req.baseUrl, error);
+    }
+
     const job = init({ blogID: req.blog.id, label: "Blogger" });
     res.message(req.baseUrl, "Began import");
 
@@ -86,7 +94,9 @@ Importer.route("/blogger")
           identifierFor(upload.originalFilename),
           "utf8"
         );
-        await blogger(upload.path, job.outputDirectory, job.status);
+        await blogger(upload.path, job.outputDirectory, job.status, {
+          siteHost,
+        });
         await job.finish();
       } catch (error) {
         await fs

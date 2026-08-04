@@ -20,17 +20,19 @@ function processEntry(entry, outputDirectory) {
   });
 }
 
-async function importBlogger(sourceFile, outputDirectory, status) {
+async function importBlogger(sourceFile, outputDirectory, status, siteHost) {
   status = typeof status === "function" ? status : () => {};
   await fs.emptyDir(outputDirectory);
   status("Reading Blogger export");
-  const entries = await parse(await fs.readFile(sourceFile, "utf8"));
+  const entries = await parse(await fs.readFile(sourceFile, "utf8"), siteHost);
 
   if (!entries.length) {
     throw new Error("No published posts or pages found in this Blogger export.");
   }
   for (let index = 0; index < entries.length; index++) {
-    status(`Processing ${index + 1} of ${entries.length} ${entries[index].title}`);
+    status(
+      `(${index + 1}/${entries.length}) Processing ${entries[index].title}`
+    );
     await processEntry(entries[index], outputDirectory);
   }
 
@@ -38,8 +40,20 @@ async function importBlogger(sourceFile, outputDirectory, status) {
 }
 
 // Supports both the dashboard's callback lifecycle and direct Promise use.
-module.exports = function main(sourceFile, outputDirectory, status, callback) {
-  const promise = importBlogger(sourceFile, outputDirectory, status);
+// Options: { siteHost } — optional hostname used to rebase same-site links.
+module.exports = function main(sourceFile, outputDirectory, status, options, callback) {
+  if (typeof options === "function") {
+    callback = options;
+    options = {};
+  }
+  options = options || {};
+
+  const promise = importBlogger(
+    sourceFile,
+    outputDirectory,
+    status,
+    options.siteHost
+  );
   if (typeof callback === "function") {
     promise.then((count) => callback(null, count), callback);
     return;
@@ -48,3 +62,4 @@ module.exports = function main(sourceFile, outputDirectory, status, callback) {
 };
 
 module.exports.parse = parse;
+module.exports.parseSiteHost = parse.parseSiteHost;

@@ -13,6 +13,10 @@
       <input type="file" id="exportUpload" name="exportUpload" accept=".atom,.xml,application/atom+xml,application/xml,text/xml" required style="display:inline;margin:0;cursor:pointer;">
     </label>
 
+    <label style="display:block;margin:16px 0 6px">Site URL <span style="color:rgb(158, 154, 152)">(optional)</span></label>
+    <p style="max-width: 600px;margin-top:0;color:rgb(158, 154, 152);font-size:14px">If set, links to this site inside posts are rewritten as root-relative paths (e.g. <code>/2025/07/post.html</code>).</p>
+    <input type="text" name="siteURL" placeholder="https://example.blogspot.com" style="width:100%;max-width:600px;box-sizing:border-box;">
+
     <div class="buttons">
       <button type="submit">Upload export file</button>
       <a href="{{{importBase}}}">Cancel</a>

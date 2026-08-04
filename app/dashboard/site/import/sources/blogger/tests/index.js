@@ -19,6 +19,9 @@ describe("Blogger importer", function () {
     ]);
     expect(entries[0].tags).toEqual(["News", "Two Words"]);
     expect(entries[0].html).toContain('<img src="data:image/png;base64,AAAA"');
+    expect(entries[0].html).toContain(
+      'href="https://example.blogspot.com/2020/01/hello-world.html"'
+    );
     expect(entries[0].permalink).toBe("https://example.blogspot.com/2020/01/shared.html");
     expect(entries[0].dateStamp).toBe(Date.parse("2020-01-02T03:04:05Z"));
     expect(entries[1].page).toBe(true);
@@ -41,10 +44,48 @@ describe("Blogger importer", function () {
     expect(entries[0].slug).toBe("2014-07-kinship-terms");
     expect(entries[0].dateStamp).toBe(Date.parse("2014-07-28T03:35:00Z"));
     expect(entries[0].html).toContain("<strong>world</strong>");
+    expect(entries[0].html).toContain(
+      'href="https://koalanguage.blogspot.com/2021/11/kion-fari.html"'
+    );
     expect(entries[1].page).toBe(true);
     expect(entries[1].slug).toBe("p-about");
     expect(entries[2].title).toBe("kion-fari");
     expect(entries[2].slug).toBe("2021-11-kion-fari");
+  });
+
+  it("parses site URL input into a hostname", function () {
+    expect(blogger.parseSiteHost("")).toBe("");
+    expect(blogger.parseSiteHost("  ")).toBe("");
+    expect(blogger.parseSiteHost("https://koalanguage.blogspot.com/")).toBe(
+      "koalanguage.blogspot.com"
+    );
+    expect(blogger.parseSiteHost("http://www.Example.Blogspot.com/path")).toBe(
+      "example.blogspot.com"
+    );
+    expect(blogger.parseSiteHost("koalanguage.blogspot.com")).toBe(
+      "koalanguage.blogspot.com"
+    );
+    expect(function () {
+      blogger.parseSiteHost("not a url");
+    }).toThrow();
+  });
+
+  it("rebases same-site links when a site host is provided", async function () {
+    const xml = await fs.readFile(legacyFixture, "utf8");
+    const entries = await blogger.parse(xml, "example.blogspot.com");
+    expect(entries[0].permalink).toBe("/2020/01/shared.html");
+    expect(entries[0].html).toContain('href="/2020/01/hello-world.html"');
+    expect(entries[0].html).toContain('href="https://other.example/page"');
+    expect(entries[1].permalink).toBe("/p/about.html");
+
+    const atom = await blogger.parse(
+      await fs.readFile(atomFixture, "utf8"),
+      "https://www.koalanguage.blogspot.com"
+    );
+    expect(atom[0].html).toContain('href="/2021/11/kion-fari.html"');
+    expect(atom[0].html).toContain(
+      'href="https://seadilanguage.blogspot.com/other.html"'
+    );
   });
 
   it("writes Markdown, metadata, pages, and collision-safe paths", async function () {
@@ -57,8 +98,27 @@ describe("Blogger importer", function () {
     expect(first).toContain("Tags: News, Two Words");
     expect(first).toContain("Link: https://example.blogspot.com/2020/01/shared.html");
     expect(first).toContain("Hello **world**.");
+    expect(first).toContain(
+      "[other post](https://example.blogspot.com/2020/01/hello-world.html)"
+    );
     expect(await fs.pathExists(duplicate)).toBe(true);
     expect(page).toContain("# About");
+    await fs.remove(output);
+  });
+
+  it("writes Markdown with rebased links when siteHost is set", async function () {
+    const output = await fs.mkdtemp(path.join(os.tmpdir(), "blogger-rebase-"));
+    await blogger(atomFixture, output, () => {}, {
+      siteHost: "koalanguage.blogspot.com",
+    });
+
+    const post = await fs.readFile(
+      path.join(output, "2014", "07-28-2014-07-kinship-terms.txt"),
+      "utf8"
+    );
+    expect(post).toContain("Link: /2014/07/kinship-terms.html");
+    expect(post).toContain("[post](/2021/11/kion-fari.html)");
+    expect(post).toContain("[elsewhere](https://seadilanguage.blogspot.com/other.html)");
     await fs.remove(output);
   });
 
@@ -73,6 +133,9 @@ describe("Blogger importer", function () {
     const page = await fs.readFile(path.join(output, "Pages", "p-about.txt"), "utf8");
     expect(post).toContain("Link: /2014/07/kinship-terms.html");
     expect(post).toContain("Hello **world**.");
+    expect(post).toContain(
+      "[post](https://koalanguage.blogspot.com/2021/11/kion-fari.html)"
+    );
     expect(page).toContain("# About");
     expect(page).toContain("Link: /p/about.html");
     await fs.remove(output);

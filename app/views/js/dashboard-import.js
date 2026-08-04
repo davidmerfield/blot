@@ -6,8 +6,11 @@ const PROGRESS_MESSAGE_RE = /^\((\d+)\/(\d+)\)\s*(.*)$/;
 function renderImportStatus(statusNode, message) {
   const match = (message || "").match(PROGRESS_MESSAGE_RE);
   const statusContainer = statusNode.closest(".sync-status");
-  const progressBar = statusContainer
-    ? statusContainer.querySelector(".sync-status-progress-bar")
+  const progress = statusContainer
+    ? statusContainer.querySelector(".sync-status-progress")
+    : null;
+  const progressBar = progress
+    ? progress.querySelector(".sync-status-progress-bar")
     : null;
 
   statusNode.textContent = match ? match[3] : message || "";
@@ -18,14 +21,15 @@ function renderImportStatus(statusNode, message) {
     const percent = total > 0 ? (current / total) * 100 : 0;
 
     statusContainer.classList.add("has-progress");
+    if (progress) progress.style.display = "block";
     if (progressBar) {
       progressBar.style.width = Math.max(0, Math.min(100, percent)) + "%";
     }
   } else if (statusContainer) {
     statusContainer.classList.remove("has-progress");
+    if (progress) progress.style.display = "none";
     if (progressBar) progressBar.style.width = "0%";
   }
-
 }
 
 function renderImportStatuses() {
