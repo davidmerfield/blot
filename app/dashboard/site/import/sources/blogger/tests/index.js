@@ -8,8 +8,14 @@ describe("Blogger importer", function () {
 
   it("selects published posts and pages and maps Atom fields", async function () {
     const entries = await blogger.parse(await fs.readFile(fixture, "utf8"));
-    expect(entries.length).toBe(4);
-    expect(entries.map(({ id }) => id)).toEqual(["post-1", "page-1", "post-2", "post-3"]);
+    expect(entries.length).toBe(5);
+    expect(entries.map(({ id }) => id)).toEqual([
+      "post-1",
+      "page-1",
+      "post-2",
+      "post-3",
+      "post-4",
+    ]);
     expect(entries[0].tags).toEqual(["News", "Two Words"]);
     expect(entries[0].html).toContain('<img src="data:image/png;base64,AAAA"');
     expect(entries[0].permalink).toBe("https://example.blogspot.com/2020/01/shared.html");
@@ -18,6 +24,8 @@ describe("Blogger importer", function () {
     expect(entries[2].title).toBe("shared");
     expect(entries[2].slug).toBe("2020-01-shared-2");
     expect(entries[3].slug).toBe("a-☃-weird.name");
+    expect(entries[4].title).toBe("hello-world");
+    expect(entries[4].slug).toBe("2020-01-hello-world");
   });
 
   it("writes Markdown, metadata, pages, and collision-safe paths", async function () {
