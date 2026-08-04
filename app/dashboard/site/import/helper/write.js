@@ -93,6 +93,11 @@ function moveAssets(source, destination, callback) {
 }
 
 // Retain the single-entry middleware API for callers outside the batch import.
-var write = createWriter();
+// Each standalone write gets its own allocation state; batch imports should use
+// createWriter() to share reservations across entries in the same import.
+function write(post, callback) {
+  return createWriter()(post, callback);
+}
+
 module.exports = write;
 module.exports.createWriter = createWriter;

@@ -2,7 +2,8 @@ var fs = require("fs-extra");
 var os = require("os");
 var path = require("path");
 var determinePath = require("../determine_path");
-var createWriter = require("../write").createWriter;
+var write = require("../write");
+var createWriter = write.createWriter;
 
 describe("import writer path allocation", function () {
   var output;
@@ -33,6 +34,24 @@ describe("import writer path allocation", function () {
 
     next();
   }
+
+  it("does not reserve paths across standalone default writer calls", function (done) {
+    var requestedPath = path.join(output, "name");
+
+    write({ path: requestedPath, content: "first" }, function (err) {
+      if (err) return done.fail(err);
+
+      fs.removeSync(path.join(output, "name.txt"));
+
+      write({ path: requestedPath, content: "second" }, function (err) {
+        if (err) return done.fail(err);
+
+        expect(fs.readFileSync(path.join(output, "name.txt"), "utf8")).toBe("second");
+        expect(fs.existsSync(path.join(output, "name-2.txt"))).toBe(false);
+        done();
+      });
+    });
+  });
 
   it("deduplicates titles which collide after punctuation normalization", function (done) {
     writeAll([{ title: "Hello!" }, { title: "Hello?" }], function () {
