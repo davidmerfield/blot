@@ -92,16 +92,11 @@ function main(sourceFile, outputDirectory, status, options, callback) {
       async.eachOfSeries(
         items,
         function (item, index, done) {
-          status(
-            "Processing " +
-              (++index + " of " + totalItems) +
-              " " +
-              item.title[0].trim()
-          );
-          console.log(
-            colors.dim(++index + "/" + totalItems),
-            item.title[0].trim()
-          );
+          var current = Number(index) + 1;
+          var title = item.title[0].trim();
+
+          status("(" + current + "/" + totalItems + ") Processing " + title);
+          console.log(colors.dim(current + "/" + totalItems), title);
           injectAttachedThumbnail(item, channel.item);
           Item(item, outputDirectory, done);
         },
