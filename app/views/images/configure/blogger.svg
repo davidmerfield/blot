@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title">
+  <title>Blogger</title>
+  <rect width="100" height="100" rx="18" fill="#f57d00"/>
+  <path fill="#fff" d="M28 24h27c12 0 21 9 21 21v5h4v15c0 7-6 13-13 13H38c-10 0-18-8-18-18V32c0-4 4-8 8-8Zm10 15v11h17a5.5 5.5 0 0 0 0-11H38Zm0 25h27v-9H38v9Z"/>
+</svg>
