@@ -66,16 +66,26 @@ function moveAssets(source, destination, callback) {
     fs.readdir(source, function (err, names) {
       if (err) return callback(err);
       var remaining = names.length;
-      if (!remaining) return fs.remove(source, callback);
-      var failed;
+      var moveError;
+      var finished = false;
+
+      function finish(err) {
+        if (finished) return;
+        finished = true;
+        callback(err);
+      }
+
+      if (!remaining) return fs.remove(source, finish);
+
       names.forEach(function (name) {
         fs.move(path.join(source, name), path.join(destination, name), function (moveErr) {
-          if (failed) return;
-          if (moveErr) {
-            failed = true;
-            return callback(moveErr);
-          }
-          if (!--remaining) fs.remove(source, callback);
+          if (moveErr && !moveError) moveError = moveErr;
+
+          remaining -= 1;
+
+          if (remaining) return;
+          if (moveError) return finish(moveError);
+          fs.remove(source, finish);
         });
       });
     });
@@ -83,6 +93,11 @@ function moveAssets(source, destination, callback) {
 }
 
 // Retain the single-entry middleware API for callers outside the batch import.
-var write = createWriter();
+// Each standalone write gets its own allocation state; batch imports should use
+// createWriter() to share reservations across entries in the same import.
+function write(post, callback) {
+  return createWriter()(post, callback);
+}
+
 module.exports = write;
 module.exports.createWriter = createWriter;
