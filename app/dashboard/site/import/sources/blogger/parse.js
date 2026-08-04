@@ -1,4 +1,5 @@
 const { parseStringPromise } = require("xml2js");
+const { basename } = require("path");
 const { URL } = require("url");
 const cheerio = require("cheerio");
 
@@ -146,6 +147,10 @@ function relativeBlogPath(urlString, siteHost) {
   }
 }
 
+function htmlString($) {
+  return $("body").length ? $("body").html() : $.html();
+}
+
 function relativizeHtml(html, siteHost) {
   if (!html || !siteHost) return html;
 
@@ -156,13 +161,47 @@ function relativizeHtml(html, siteHost) {
     if (relative) $(this).attr("href", relative);
   });
 
-  return $("body").length ? $("body").html() : $.html();
+  return htmlString($);
+}
+
+function pathnameBasename(urlString) {
+  try {
+    return decodeURIComponent(
+      basename(new URL(urlString, "https://blogger.invalid").pathname)
+    ).toLowerCase();
+  } catch (err) {
+    return "";
+  }
+}
+
+// Blogger wraps display thumbnails in a link to the full-size file
+// (.../s320/photo.jpg inside .../s1600/photo.jpg). Promote the src so
+// download_images fetches the full image and can rewrite both URLs.
+function preferFullSizeImages(html) {
+  if (!html) return html;
+
+  const $ = cheerio.load(html, { decodeEntities: false });
+  $("img").each(function () {
+    const $img = $(this);
+    const src = $img.attr("src");
+    if (!src) return;
+
+    const href = $img.closest("a").attr("href");
+    if (!href || href === src) return;
+
+    const srcName = pathnameBasename(src);
+    const hrefName = pathnameBasename(href);
+    if (srcName && srcName === hrefName) $img.attr("src", href);
+  });
+
+  return htmlString($);
 }
 
 function rebaseEntries(entries, siteHost) {
-  if (!siteHost) return entries;
-
   for (const entry of entries) {
+    entry.html = preferFullSizeImages(entry.html);
+    if (!siteHost) continue;
+
     entry.html = relativizeHtml(entry.html, siteHost);
     const relativePermalink = relativeBlogPath(entry.permalink, siteHost);
     if (relativePermalink) entry.permalink = relativePermalink;
@@ -223,3 +262,4 @@ module.exports = async function parse(xml, siteHost) {
 module.exports.permalinkSlug = permalinkSlug;
 module.exports.parseSiteHost = parseSiteHost;
 module.exports.relativizeHtml = relativizeHtml;
+module.exports.preferFullSizeImages = preferFullSizeImages;

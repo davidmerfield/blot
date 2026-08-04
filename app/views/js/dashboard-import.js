@@ -2,6 +2,25 @@ const importContainer = document.querySelector("[data-import-base]");
 const liveUpdatesContainer = document.querySelector(".live-updates");
 const importStatusContainer = document.querySelector('[id^="status-"]');
 const PROGRESS_MESSAGE_RE = /^\((\d+)\/(\d+)\)\s*(.*)$/;
+const BLOGGER_SITE_URL_KEY = "blot-blogger-import-site-url";
+
+(function rememberBloggerSiteURL() {
+  const input = document.getElementById("blogger-site-url");
+  if (!input || !input.form) return;
+
+  try {
+    const saved = localStorage.getItem(BLOGGER_SITE_URL_KEY);
+    if (saved && !input.value) input.value = saved;
+  } catch (e) {}
+
+  input.form.addEventListener("submit", function () {
+    const value = (input.value || "").trim();
+    try {
+      if (value) localStorage.setItem(BLOGGER_SITE_URL_KEY, value);
+      else localStorage.removeItem(BLOGGER_SITE_URL_KEY);
+    } catch (e) {}
+  });
+})();
 
 function renderImportStatus(statusNode, message) {
   const match = (message || "").match(PROGRESS_MESSAGE_RE);

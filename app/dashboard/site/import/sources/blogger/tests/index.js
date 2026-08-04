@@ -18,6 +18,13 @@ describe("Blogger importer", function () {
       "post-4",
     ]);
     expect(entries[0].tags).toEqual(["News", "Two Words"]);
+    expect(entries[0].html).toContain(
+      'src="https://blogger.googleusercontent.com/img/b/ABC/s3093/IMG_4534.jpg"'
+    );
+    expect(entries[0].html).toContain(
+      'href="https://blogger.googleusercontent.com/img/b/ABC/s3093/IMG_4534.jpg"'
+    );
+    expect(entries[0].html).not.toContain("/s320/");
     expect(entries[0].html).toContain('<img src="data:image/png;base64,AAAA"');
     expect(entries[0].html).toContain(
       'href="https://example.blogspot.com/2020/01/hello-world.html"'
@@ -68,6 +75,34 @@ describe("Blogger importer", function () {
     expect(function () {
       blogger.parseSiteHost("not a url");
     }).toThrow();
+  });
+
+  it("promotes linked Blogger thumbnails to the full-size image URL", function () {
+    const parse = require("../parse");
+    const full =
+      "https://blogger.googleusercontent.com/img/b/ABC/s3093/IMG_4534.jpg";
+    const thumb =
+      "https://blogger.googleusercontent.com/img/b/ABC/s320/IMG_4534.jpg";
+    const other =
+      "https://blogger.googleusercontent.com/img/b/ABC/s1600/other.jpg";
+
+    expect(
+      parse.preferFullSizeImages(
+        `<a href="${full}"><img src="${thumb}"></a>`
+      )
+    ).toContain(`src="${full}"`);
+
+    expect(
+      parse.preferFullSizeImages(
+        `<a href="${other}"><img src="${thumb}"></a>`
+      )
+    ).toContain(`src="${thumb}"`);
+
+    expect(
+      parse.preferFullSizeImages(
+        `<a href="https://example.blogspot.com/post.html"><img src="${thumb}"></a>`
+      )
+    ).toContain(`src="${thumb}"`);
   });
 
   it("rebases same-site links when a site host is provided", async function () {
