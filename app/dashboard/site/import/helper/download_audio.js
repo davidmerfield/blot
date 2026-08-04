@@ -4,6 +4,7 @@ var parse = require("url").parse;
 var download = require("download");
 var each_el = require("./each_el");
 var fs = require("fs-extra");
+var assetDirectory = require("./asset_directory");
 
 module.exports = function download_pdfs(post, callback) {
   var $ = cheerio.load(post.html, { decodeEntities: false });
@@ -25,7 +26,7 @@ module.exports = function download_pdfs(post, callback) {
 
       download(href)
         .then(function (data) {
-          fs.outputFile(post.path + "/" + name, data, function (err) {
+          fs.outputFile(assetDirectory(post) + "/" + name, data, function (err) {
             if (err) return next();
 
             $(el).attr("src", name);
