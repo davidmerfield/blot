@@ -18,11 +18,16 @@ Importer.route("/wordpress")
     res.locals.breadcrumbs.add("Wordpress", "wordpress");
     res.render("dashboard/import/wordpress");
   })
-  .post(function (req, res) {
-    const { importDirectory, outputDirectory, finish, status } = init({
-      blogID: req.blog.id,
-      label: "Wordpress",
-    });
+  .post(async function (req, res) {
+    let context;
+
+    try {
+      context = await init({ blogID: req.blog.id, label: "Wordpress" });
+    } catch (err) {
+      return res.message(req.baseUrl, err);
+    }
+
+    const { importDirectory, outputDirectory, finish, status } = context;
 
     res.message(req.baseUrl, "Began import");
 
@@ -36,19 +41,26 @@ Importer.route("/wordpress")
       "utf-8"
     );
 
-    wordpress(inputXML, outputDirectory, status, {}, async function (err) {
-      if (err) {
-        console.trace();
-        console.log('finally here with message', err);
-        return fs.outputFile(join(importDirectory, "error.txt"), err.message);
-      }
+    wordpress(
+      inputXML,
+      outputDirectory,
+      status,
+      { context },
+      async function (err) {
+        if (err) {
+          if (err.cancelled) return;
+          console.trace();
+          console.log("finally here with message", err);
+          return fs.outputFile(join(importDirectory, "error.txt"), err.message);
+        }
 
-      try {
-        await finish();
-      } catch (err) {
-        fs.outputFile(join(importDirectory, "error.txt"), err.message);
+        try {
+          await finish();
+        } catch (err) {
+          await fs.outputFile(join(importDirectory, "error.txt"), err.message);
+        }
       }
-    });
+    );
   });
 
 module.exports = Importer;

@@ -87,28 +87,39 @@ module.exports = function download_pdfs(post, callback) {
 
       console.log("Attempting to download", href);
 
-      download(href, function (err, data) {
-        if (err) {
-          console.log("PDF error:", href, err.name, err.statusCode);
-          return next();
-        }
-
-        fs.outputFile(post.path + "/" + name, data, function (err) {
-          if (err) return next();
-
-          if ($(el).text() === href) {
-            $(el).text(name);
+      var startDownload = function () {
+        download(href, function (err, data) {
+          if (err) {
+            console.log("PDF error:", href, err.name, err.statusCode);
+            return next();
           }
 
-          changes = true;
+          fs.outputFile(post.path + "/" + name, data, function (err) {
+            if (err) return next();
 
-          $(el).attr("href", name);
+            if ($(el).text() === href) {
+              $(el).text(name);
+            }
 
-          next();
+            changes = true;
+
+            $(el).attr("href", name);
+
+            next();
+          });
         });
-      });
+      };
+
+      if (!post.importContext) return startDownload();
+      post.importContext.isCancelled().then(function (cancelled) {
+        if (!cancelled) return startDownload();
+        var err = new Error("Import cancelled");
+        err.cancelled = true;
+        next(err);
+      }, next);
     },
-    function () {
+    function (err) {
+      if (err) return callback(err);
       post.html = $.html();
       callback(null, post);
     }

@@ -4,14 +4,15 @@ const fs = require("fs-extra");
 const sharp = require("sharp");
 const sanitize = require("./sanitize");
 
-async function parse({ outputDirectory, posts, status }) {
+async function parse({ outputDirectory, posts, status, isCancelled }) {
   let done = 0;
 
   for (const item of posts) {
+    if (isCancelled && await isCancelled()) return;
     status(`Processing ${++done} of ${posts.length} ${item.title}`);
     try {
       if (item.class === "Image") {
-        await image(item, outputDirectory);
+        await image(item, outputDirectory, isCancelled);
       } else if (item.class === "Link") {
         await link(item, outputDirectory);
       } else {
@@ -44,7 +45,8 @@ async function link(item, outputDirectory) {
   await fs.utimes(path, createdDate, createdDate);
 }
 
-async function image(item, outputDirectory) {
+async function image(item, outputDirectory, isCancelled) {
+  if (isCancelled && await isCancelled()) return;
   const response = await fetch(item.image.original.url);
   const data = await response.buffer();
   const title = item.title || item.generated_title || "Untitled";

@@ -92,21 +92,35 @@ function main(sourceFile, outputDirectory, status, options, callback) {
       async.eachOfSeries(
         items,
         function (item, index, done) {
-          status(
-            "Processing " +
-              (++index + " of " + totalItems) +
-              " " +
-              item.title[0].trim()
-          );
-          console.log(
-            colors.dim(++index + "/" + totalItems),
-            item.title[0].trim()
-          );
-          injectAttachedThumbnail(item, channel.item);
-          Item(item, outputDirectory, done);
+          if (options.context) {
+            return options.context.isCancelled().then(function (cancelled) {
+              if (cancelled) {
+                var error = new Error("Import cancelled");
+                error.cancelled = true;
+                return done(error);
+              }
+              processItem(item, index, done);
+            }, done);
+          }
+          processItem(item, index, done);
         },
         callback
       );
+
+      function processItem(item, index, done) {
+        status(
+          "Processing " +
+            (++index + " of " + totalItems) +
+            " " +
+            item.title[0].trim()
+        );
+        console.log(
+          colors.dim(++index + "/" + totalItems),
+          item.title[0].trim()
+        );
+        injectAttachedThumbnail(item, channel.item);
+        Item(item, outputDirectory, options.context, done);
+      }
     });
   });
 }

@@ -1,12 +1,13 @@
 const fetch = require("node-fetch");
 const PAGE_SIZE = 100;
 
-module.exports = async function posts ({ slug, status }) {
+module.exports = async function posts ({ slug, status, isCancelled }) {
   let page = 0;
   let posts = [];
   let new_posts;
 
   async function fetchPage (page) {
+    if (isCancelled && await isCancelled()) return null;
     const url = base(slug, page);
     status(`Fetching page ${page + 1} of channel`);
     const response = await fetch(url);
@@ -18,10 +19,12 @@ module.exports = async function posts ({ slug, status }) {
   }
 
   new_posts = await fetchPage(page);
+  if (new_posts === null) return posts;
   posts = posts.concat(new_posts);
   page++;
   while (new_posts.length === PAGE_SIZE) {
     new_posts = await fetchPage(page);
+    if (new_posts === null) return posts;
     posts = posts.concat(new_posts);
     page++;
   }

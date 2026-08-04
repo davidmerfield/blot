@@ -14,12 +14,11 @@ Importer.route("/are.na")
     res.render("dashboard/import/arena");
   })
   .post(async (req, res) => {
-    const { importDirectory, outputDirectory, finish, status } = init({
-      blogID: req.blog.id,
-      label: "Are.na",
-    });
+    let context;
 
     try {
+      context = await init({ blogID: req.blog.id, label: "Are.na" });
+      const { importDirectory, outputDirectory, finish, status } = context;
       const slug = URL.parse(req.body.channel).path.split("/").pop();
 
       const response = await fetch(`https://api.are.na/v2/channels/${slug}`);
@@ -33,11 +32,23 @@ Importer.route("/are.na")
       );
       res.message(req.baseUrl, "Began import");
 
-      await arena({ slug, outputDirectory, status });
+      await arena({
+        slug,
+        outputDirectory,
+        status,
+        isCancelled: context.isCancelled,
+      });
       await finish();
     } catch (err) {
       console.error(err);
-      fs.outputFile(join(importDirectory, "error.txt"), err.message);
+      if (context) {
+        await fs.outputFile(
+          join(context.importDirectory, "error.txt"),
+          err.message
+        );
+      } else {
+        res.message(req.baseUrl, err);
+      }
     }
   });
 

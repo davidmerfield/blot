@@ -23,7 +23,7 @@ if (importContainer && (liveUpdatesContainer || importStatusContainer)) {
       }
 
       statusNode.removeAttribute("data-text");
-      statusNode.innerHTML = status;
+      statusNode.textContent = status;
       truncate(statusNode);
 
       if (status === "Finished") {

@@ -4,44 +4,80 @@ const client = require("models/client");
 const { join } = require("path");
 const archiver = require("archiver");
 
-module.exports = ({ blogID, label }) => {
+module.exports = async ({ blogID, label }) => {
   const importID = label + "-" + Date.now();
 
   const importDirectory = join(tempDir, "import", blogID, importID);
   const outputDirectory = join(importDirectory, "output");
 
-  fs.ensureDir(importDirectory);
-  fs.ensureDir(outputDirectory);
+  await fs.ensureDir(importDirectory);
+  await fs.ensureDir(outputDirectory);
 
   const lastStatus = join(importDirectory, "status.txt");
 
   async function finish() {
-    return new Promise(async (resolve, reject) => {
-      const archive = archiver("zip");
-      const resultWS = fs.createWriteStream(
-        join(importDirectory, "result.zip")
+    if (await isCancelled()) return false;
+
+    const resultPath = join(importDirectory, "result.zip");
+
+    let identifier;
+
+    try {
+      identifier = await fs.readFile(
+        join(importDirectory, "identifier.txt"),
+        "utf-8"
       );
+    } catch (e) {
+      identifier = importID;
+    }
 
-      let identifier;
+    try {
+      await new Promise((resolve, reject) => {
+        const archive = archiver("zip");
+        const resultWS = fs.createWriteStream(resultPath);
+        let settled = false;
 
-      try {
-        identifier = await fs.readFile(
-          join(importDirectory, "identifier.txt"),
-          "utf-8"
-        );
-      } catch (e) {
-        identifier = importID;
-      }
-      archive.on("end", () => {
-        status("Finished");
-        resolve();
+        const fail = (err) => {
+          if (settled) return;
+          settled = true;
+          archive.abort();
+          resultWS.destroy();
+          reject(err);
+        };
+
+        resultWS.on("close", () => {
+          if (settled) return;
+          settled = true;
+          resolve();
+        });
+        resultWS.on("error", fail);
+        archive.on("error", fail);
+        archive.on("warning", fail);
+        try {
+          archive.pipe(resultWS);
+          archive.directory(outputDirectory, identifier);
+          archive.finalize().catch(fail);
+        } catch (err) {
+          fail(err);
+        }
       });
+    } catch (err) {
+      await fs.remove(resultPath);
+      throw err;
+    }
 
-      archive.on("error", reject);
-      archive.pipe(resultWS);
-      archive.directory(outputDirectory, identifier);
-      archive.finalize();
-    });
+    // Cancellation may have arrived while the archive was being written.
+    if (await isCancelled()) {
+      await fs.remove(resultPath);
+      return false;
+    }
+
+    status("Finished");
+    return true;
+  }
+
+  async function isCancelled() {
+    return fs.pathExists(join(importDirectory, "cancelled.txt"));
   }
 
   function status(message) {
@@ -56,5 +92,12 @@ module.exports = ({ blogID, label }) => {
     fs.outputFile(lastStatus, message);
   }
 
-  return { importID, finish, outputDirectory, importDirectory, status };
+  return {
+    importID,
+    finish,
+    outputDirectory,
+    importDirectory,
+    status,
+    isCancelled,
+  };
 };

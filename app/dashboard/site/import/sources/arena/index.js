@@ -9,7 +9,7 @@ const fetch = require("node-fetch");
 const fs = require("fs-extra");
 const { join } = require("path");
 
-async function main({ slug, outputDirectory, status }) {
+async function main({ slug, outputDirectory, status, isCancelled }) {
   status("Fetching posts from Are.na channel " + slug);
   const response = await fetch(`https://api.are.na/v2/channels/${slug}`);
   const json = await response.json();
@@ -26,8 +26,8 @@ async function main({ slug, outputDirectory, status }) {
 https://www.are.na/${owner.slug}/${slug}`
   );
 
-  const posts = await Posts({ slug, status });
-  await parse({ outputDirectory, posts, status });
+  const posts = await Posts({ slug, status, isCancelled });
+  await parse({ outputDirectory, posts, status, isCancelled });
 }
 
 module.exports = main;

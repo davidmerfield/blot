@@ -73,17 +73,29 @@ function download_thumbnail(post, path, callback) {
 
   if (name.charAt(0) !== "_") name = "_" + name;
 
-  download(thumbnail, function (err, data, format) {
-    if (err || !data) return callback(err);
+  beforeDownload(post, callback, function () {
+    download(thumbnail, function (err, data, format) {
+      if (err || !data) return callback(err);
 
-    if (format && !name.toLowerCase().endsWith(format.toLowerCase()))
-      name = name + "." + format;
+      if (format && !name.toLowerCase().endsWith(format.toLowerCase()))
+        name = name + "." + format;
 
-    fs.outputFile(path + "/" + name, data, function (err) {
-      if (err) return callback(err);
-      callback(null, name);
+      fs.outputFile(path + "/" + name, data, function (err) {
+        if (err) return callback(err);
+        callback(null, name);
+      });
     });
   });
+}
+
+function beforeDownload(post, callback, proceed) {
+  if (!post.importContext) return proceed();
+  post.importContext.isCancelled().then(function (cancelled) {
+    if (!cancelled) return proceed();
+    var err = new Error("Import cancelled");
+    err.cancelled = true;
+    callback(err);
+  }, callback);
 }
 
 module.exports = function download_images(post, callback) {
@@ -91,6 +103,7 @@ module.exports = function download_images(post, callback) {
   var $ = cheerio.load(post.html, { decodeEntities: false });
 
   download_thumbnail(post, post.path, function (err, thumbnail) {
+    if (err && err.cancelled) return callback(err);
     if (!err && thumbnail) {
       changes = true;
       post.metadata.thumbnail = thumbnail;
@@ -108,28 +121,31 @@ module.exports = function download_images(post, callback) {
 
         if (name.charAt(0) !== "_") name = "_" + name;
 
-        download(src, function (err, data, format) {
-          if (err || !data) {
-            return next();
-          }
+        beforeDownload(post, next, function () {
+          download(src, function (err, data, format) {
+            if (err || !data) {
+              return next();
+            }
 
-          if (format && !name.toLowerCase().endsWith(format.toLowerCase()))
-            name = name + "." + format;
+            if (format && !name.toLowerCase().endsWith(format.toLowerCase()))
+              name = name + "." + format;
 
-          fs.outputFile(post.path + "/" + name, data, function (err) {
-            if (err) return next();
-            changes = true;
+            fs.outputFile(post.path + "/" + name, data, function (err) {
+              if (err) return next();
+              changes = true;
 
-            $(el).attr("src", name);
+              $(el).attr("src", name);
 
-            if ($(el).parent().attr("href") === src)
-              $(el).parent().attr("href", name);
+              if ($(el).parent().attr("href") === src)
+                $(el).parent().attr("href", name);
 
-            next();
+              next();
+            });
           });
         });
       },
-      function () {
+      function (err) {
+        if (err) return callback(err);
         post.html = $.html();
 
         callback(null, post);
