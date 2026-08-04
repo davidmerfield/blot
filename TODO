@@ -1,12 +1,10 @@
-Improve blogger importer and tell [Julie](https://mail.google.com/mail/u/0/#inbox/FMfcgzQhVhcpXFpKNvmppWsXBZlwCwXz)
+Make blogger importer public on dashboard
+
+Transfer Juliet's site and theme from blogger
 
 Work out what's soaking up all the disk space on the server, then make sure it's freed up enough to reliably deploy. 
 - possible fail2ban logrotate config to remove large log files?
 - fix huge size of fail2ban db: https://serverfault.com/questions/1002315/fail2bans-database-is-too-large-over-500mb-how-do-i-get-it-to-a-reasonable-s  /var/lib/fail2ban/fail2ban.sqlite3
-
-Transfer Juliet's site and theme from blogger
-
-Make blogger importer public on dashboard
 
 Fix bug with adding second site on PayPal and tell [Des](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgMCXPJQBxssKXfFhRGfhxWnGX) and [Autumn](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgLjPWXMXdZtggsNjqjbhvbwhL)
 
