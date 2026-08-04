@@ -5,10 +5,15 @@ const sharp = require("sharp");
 const sanitize = require("./sanitize");
 
 async function parse({ outputDirectory, posts, status }) {
+  if (posts.length === 0) {
+    status("No channel items were found");
+    return;
+  }
+
   let done = 0;
 
   for (const item of posts) {
-    status(`Processing ${++done} of ${posts.length} ${item.title}`);
+    status(`(${++done}/${posts.length}) Processing ${item.title}`);
     try {
       if (item.class === "Image") {
         await image(item, outputDirectory);
