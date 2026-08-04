@@ -37,19 +37,19 @@ function allocate(post, reserved) {
   var originalPath = post.path;
   var originalName = path.basename(originalPath);
   var directory = path.dirname(originalPath);
-  var hasAssets = Boolean(
-    post.asset_directory && fs.existsSync(post.asset_directory)
-  );
   var number = 1;
 
   while (true) {
     var suffix = number === 1 ? "" : "-" + number;
     var name = originalName.slice(0, MAX_NAME_LENGTH - suffix.length) + suffix;
     var candidate = path.join(directory, name);
-    var finalPath = hasAssets ? path.join(candidate, "post.txt") : candidate + ".txt";
-    var key = path.normalize(finalPath);
+    var key = path.normalize(candidate);
 
-    if (!reserved.has(key) && !fs.existsSync(finalPath)) {
+    if (
+      !reserved.has(key) &&
+      !fs.existsSync(candidate) &&
+      !fs.existsSync(candidate + ".txt")
+    ) {
       reserved.add(key);
       return candidate;
     }

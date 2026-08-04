@@ -16,6 +16,12 @@ describe("import writer path allocation", function () {
     fs.removeSync(output);
   });
 
+  function createAssets(name) {
+    var assets = fs.mkdtempSync(path.join(os.tmpdir(), name));
+    fs.writeFileSync(path.join(assets, "_image.png"), "image");
+    return assets;
+  }
+
   function writeAll(entries, done) {
     var determine = determinePath(output);
     var write = createWriter();
@@ -97,5 +103,74 @@ describe("import writer path allocation", function () {
       expect(fs.existsSync(assets)).toBe(false);
       done();
     });
+  });
+
+  it("allocates asset-backed posts away from an existing logical directory", function (done) {
+    var original = path.join(output, "Undated", "Existing");
+    var assets = createAssets("import-assets-existing-dir-");
+
+    fs.ensureDirSync(original);
+    fs.writeFileSync(path.join(original, "keep.txt"), "keep");
+
+    writeAll([{ title: "Existing", asset_directory: assets }], function () {
+      var destination = path.join(output, "Undated", "Existing-2");
+
+      expect(fs.readFileSync(path.join(original, "keep.txt"), "utf8")).toBe("keep");
+      expect(fs.existsSync(path.join(original, "post.txt"))).toBe(false);
+      expect(fs.readFileSync(path.join(destination, "_image.png"), "utf8")).toBe("image");
+      expect(fs.existsSync(path.join(destination, "post.txt"))).toBe(true);
+      done();
+    });
+  });
+
+  it("allocates asset-backed posts away from an existing logical text file", function (done) {
+    var assets = createAssets("import-assets-existing-file-");
+
+    fs.ensureDirSync(path.join(output, "Undated"));
+    fs.writeFileSync(path.join(output, "Undated", "Existing.txt"), "existing");
+
+    writeAll([{ title: "Existing", asset_directory: assets }], function () {
+      var destination = path.join(output, "Undated", "Existing-2");
+
+      expect(fs.readFileSync(path.join(output, "Undated", "Existing.txt"), "utf8")).toBe("existing");
+      expect(fs.readFileSync(path.join(destination, "_image.png"), "utf8")).toBe("image");
+      expect(fs.existsSync(path.join(destination, "post.txt"))).toBe(true);
+      done();
+    });
+  });
+
+  it("allocates file-backed posts away from an existing logical directory", function (done) {
+    var original = path.join(output, "Undated", "Existing");
+
+    fs.ensureDirSync(original);
+    fs.writeFileSync(path.join(original, "keep.txt"), "keep");
+
+    writeAll([{ title: "Existing" }], function () {
+      expect(fs.readFileSync(path.join(original, "keep.txt"), "utf8")).toBe("keep");
+      expect(fs.existsSync(path.join(output, "Undated", "Existing-2.txt"))).toBe(true);
+      expect(fs.existsSync(path.join(output, "Undated", "Existing.txt"))).toBe(false);
+      done();
+    });
+  });
+
+  it("deduplicates file-backed and asset-backed posts with the same logical base in a batch", function (done) {
+    var firstAssets = createAssets("import-assets-same-base-first-");
+    var secondAssets = createAssets("import-assets-same-base-second-");
+
+    writeAll(
+      [
+        { title: "Same Base" },
+        { title: "Same Base", asset_directory: firstAssets },
+        { title: "Reverse", asset_directory: secondAssets },
+        { title: "Reverse" }
+      ],
+      function () {
+        expect(fs.existsSync(path.join(output, "Undated", "Same-Base.txt"))).toBe(true);
+        expect(fs.existsSync(path.join(output, "Undated", "Same-Base-2", "post.txt"))).toBe(true);
+        expect(fs.existsSync(path.join(output, "Undated", "Reverse", "post.txt"))).toBe(true);
+        expect(fs.existsSync(path.join(output, "Undated", "Reverse-2.txt"))).toBe(true);
+        done();
+      }
+    );
   });
 });
