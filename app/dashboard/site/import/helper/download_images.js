@@ -5,6 +5,7 @@ var each_el = require("./each_el");
 var fs = require("fs-extra");
 var sharp = require("sharp");
 var callOnce = require("helper/callOnce");
+var assetDirectory = require("./asset_directory");
 
 // Consider using this algorithm to determine best part of alt tag or caption to use
 // as the file's name:
@@ -62,7 +63,7 @@ function download(url, _callback) {
     });
 }
 
-function download_thumbnail(post, path, callback) {
+function download_thumbnail(post, callback) {
   if (!post || !post.metadata || !post.metadata.thumbnail) return callback();
 
   var thumbnail = post.metadata.thumbnail;
@@ -79,7 +80,7 @@ function download_thumbnail(post, path, callback) {
     if (format && !name.toLowerCase().endsWith(format.toLowerCase()))
       name = name + "." + format;
 
-    fs.outputFile(path + "/" + name, data, function (err) {
+    fs.outputFile(assetDirectory(post) + "/" + name, data, function (err) {
       if (err) return callback(err);
       callback(null, name);
     });
@@ -90,7 +91,8 @@ module.exports = function download_images(post, callback) {
   var changes = false;
   var $ = cheerio.load(post.html, { decodeEntities: false });
 
-  download_thumbnail(post, post.path, function (err, thumbnail) {
+  // The directory is created lazily only if a download succeeds.
+  download_thumbnail(post, function (err, thumbnail) {
     if (!err && thumbnail) {
       changes = true;
       post.metadata.thumbnail = thumbnail;
@@ -116,7 +118,7 @@ module.exports = function download_images(post, callback) {
           if (format && !name.toLowerCase().endsWith(format.toLowerCase()))
             name = name + "." + format;
 
-          fs.outputFile(post.path + "/" + name, data, function (err) {
+          fs.outputFile(assetDirectory(post) + "/" + name, data, function (err) {
             if (err) return next();
             changes = true;
 
