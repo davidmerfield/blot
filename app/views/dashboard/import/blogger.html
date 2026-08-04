@@ -1,0 +1,20 @@
+{{> close-button}}
+
+<div style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
+  <h1>Blogger import</h1>
+  <p style="max-width: 600px">The importer turns a Blogger export XML file into an archive containing Markdown files and downloaded assets.</p>
+  <br>
+
+  <form method="POST" enctype="multipart/form-data" action="{{{importBase}}}/blogger">
+    <input type="hidden" name="_csrf" value="{{csrftoken}}">
+    <label style="border-radius:4px;border:1px solid rgba(0,0,0,0.05);display:block;padding:11px 20px;margin-bottom:6px;cursor:pointer;box-sizing:border-box;">
+      <span style="margin-top:0;color:rgb(158, 154, 152);font-size:14px;display:inline;margin-right:10px">Select XML file: </span>
+      <input type="file" id="exportUpload" name="exportUpload" accept=".xml,application/xml,text/xml" required style="display:inline;margin:0;cursor:pointer;">
+    </label>
+
+    <div class="buttons">
+      <button type="submit">Upload XML file</button>
+      <a href="{{{importBase}}}">Cancel</a>
+    </div>
+  </form>
+</div>
