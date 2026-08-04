@@ -23,9 +23,12 @@ function processEntry(entry, outputDirectory) {
 async function importBlogger(sourceFile, outputDirectory, status) {
   status = typeof status === "function" ? status : () => {};
   await fs.emptyDir(outputDirectory);
-  status("Reading Blogger XML file");
+  status("Reading Blogger export");
   const entries = await parse(await fs.readFile(sourceFile, "utf8"));
 
+  if (!entries.length) {
+    throw new Error("No published posts or pages found in this Blogger export.");
+  }
   for (let index = 0; index < entries.length; index++) {
     status(`Processing ${index + 1} of ${entries.length} ${entries[index].title}`);
     await processEntry(entries[index], outputDirectory);

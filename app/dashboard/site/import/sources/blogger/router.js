@@ -19,7 +19,8 @@ function identifierFor(filename) {
     : "Blogger export";
 }
 
-function isXML(upload) {
+function isBloggerExport(upload) {
+  const extension = extname(upload.originalFilename || "").toLowerCase();
   const contentType = String(
     upload.headers && upload.headers["content-type"]
       ? upload.headers["content-type"]
@@ -30,9 +31,11 @@ function isXML(upload) {
     .toLowerCase();
 
   return (
-    extname(upload.originalFilename || "").toLowerCase() === ".xml" ||
+    extension === ".xml" ||
+    extension === ".atom" ||
     contentType === "application/xml" ||
     contentType === "text/xml" ||
+    contentType === "application/atom+xml" ||
     contentType.endsWith("+xml")
   );
 }
@@ -59,15 +62,15 @@ Importer.route("/blogger")
     if (!upload || !upload.path) {
       return res.message(
         req.baseUrl,
-        new Error("Please select a Blogger XML export file.")
+        new Error("Please select a Blogger export file.")
       );
     }
 
-    if (!isXML(upload)) {
+    if (!isBloggerExport(upload)) {
       fs.remove(upload.path).catch(() => {});
       return res.message(
         req.baseUrl,
-        new Error("Please upload an XML file exported from Blogger.")
+        new Error("Please upload an XML or Atom file exported from Blogger.")
       );
     }
 

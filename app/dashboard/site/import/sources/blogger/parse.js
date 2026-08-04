@@ -11,9 +11,21 @@ function value(node) {
   return node._ || "";
 }
 
-function permalinkSlug(permalink) {
+// Older Blogger backups expose the post URL on link[rel=alternate]. Current
+// exports use blogger:filename with a path like /2020/01/post.html.
+function permalinkPath(permalink) {
+  if (!permalink) return "";
   try {
-    const pathname = new URL(permalink).pathname;
+    return new URL(permalink, "https://blogger.invalid").pathname;
+  } catch (err) {
+    return "";
+  }
+}
+
+function permalinkSlug(permalink) {
+  const pathname = permalinkPath(permalink);
+  if (!pathname) return "";
+  try {
     return decodeURIComponent(pathname)
       .replace(/\.(?:html?|xhtml)$/i, "")
       .replace(/^\/+|\/+$/g, "")
@@ -24,8 +36,10 @@ function permalinkSlug(permalink) {
 }
 
 function permalinkBasename(permalink) {
+  const pathname = permalinkPath(permalink);
+  if (!pathname) return "";
   try {
-    const component = new URL(permalink).pathname.split("/").filter(Boolean).pop();
+    const component = pathname.split("/").filter(Boolean).pop();
     return component
       ? decodeURIComponent(component).replace(/\.(?:html?|xhtml)$/i, "")
       : "";
@@ -34,28 +48,73 @@ function permalinkBasename(permalink) {
   }
 }
 
+function entryKind(atomEntry) {
+  const bloggerType = value(atomEntry["blogger:type"]).toLowerCase();
+  if (bloggerType === "post" || bloggerType === "page") return bloggerType;
+
+  const categories = atomEntry.category || [];
+  const kindCategory = categories.find(
+    (category) =>
+      category &&
+      category.$ &&
+      category.$.term &&
+      category.$.term.indexOf(KIND_PREFIX) === 0
+  );
+  return kindCategory
+    ? kindCategory.$.term.slice(KIND_PREFIX.length).toLowerCase()
+    : "";
+}
+
+function isDraft(atomEntry) {
+  const status = value(atomEntry["blogger:status"]).toLowerCase();
+  if (status === "draft") return true;
+
+  return (
+    value(
+      atomEntry["app:control"] && atomEntry["app:control"][0]["app:draft"]
+    ).toLowerCase() === "yes"
+  );
+}
+
+function isTrashed(atomEntry) {
+  return Boolean(value(atomEntry["blogger:trashed"]));
+}
+
+function entryPermalink(atomEntry) {
+  const alternate = (atomEntry.link || []).find(
+    (link) => link && link.$ && link.$.rel === "alternate" && link.$.href
+  );
+  if (alternate) return alternate.$.href;
+
+  const filename = value(atomEntry["blogger:filename"]).trim();
+  return filename || undefined;
+}
+
+function entryTags(categories) {
+  return (categories || [])
+    .filter(
+      (category) =>
+        category &&
+        category.$ &&
+        category.$.scheme === LABEL_SCHEME &&
+        category.$.term
+    )
+    .map(({ $ }) => $.term);
+}
+
 module.exports = async function parse(xml) {
   const document = await parseStringPromise(xml);
   const atomEntries = (document.feed && document.feed.entry) || [];
   const entries = [];
 
   for (const atomEntry of atomEntries) {
-    const categories = atomEntry.category || [];
-    const kindCategory = categories.find(
-      ({ $ = {} }) => $.term && $.term.indexOf(KIND_PREFIX) === 0
-    );
-    const kind = kindCategory && kindCategory.$.term.slice(KIND_PREFIX.length);
-    const draft = value(
-      atomEntry["app:control"] && atomEntry["app:control"][0]["app:draft"]
-    ).toLowerCase() === "yes";
+    const kind = entryKind(atomEntry);
 
     // An export also contains comments and Blogger's internal configuration.
-    if ((kind !== "post" && kind !== "page") || draft) continue;
+    if ((kind !== "post" && kind !== "page") || isDraft(atomEntry) || isTrashed(atomEntry))
+      continue;
 
-    const alternate = (atomEntry.link || []).find(
-      ({ $ = {} }) => $.rel === "alternate" && $.href
-    );
-    const permalink = alternate && alternate.$.href;
+    const permalink = entryPermalink(atomEntry);
     const rawTitle = value(atomEntry.title && atomEntry.title[0]).trim();
     const slug = permalinkSlug(permalink);
     const published = Date.parse(value(atomEntry.published && atomEntry.published[0]));
@@ -72,9 +131,7 @@ module.exports = async function parse(xml) {
       dateStamp: Number.isNaN(published) ? undefined : published,
       created: Number.isNaN(published) ? undefined : published,
       updated: Number.isNaN(updated) ? undefined : updated,
-      tags: categories
-        .filter(({ $ = {} }) => $.scheme === LABEL_SCHEME && $.term)
-        .map(({ $ }) => $.term),
+      tags: entryTags(atomEntry.category),
     });
   }
 
