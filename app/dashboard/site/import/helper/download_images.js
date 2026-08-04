@@ -75,14 +75,18 @@ function download_thumbnail(post, callback) {
   if (name.charAt(0) !== "_") name = "_" + name;
 
   download(thumbnail, function (err, data, format) {
-    if (err || !data) return callback(err);
+    if (err || !data) return callback();
 
     if (format && !name.toLowerCase().endsWith(format.toLowerCase()))
       name = name + "." + format;
 
-    fs.outputFile(assetDirectory(post) + "/" + name, data, function (err) {
+    assetDirectory(post, function (err, directory) {
       if (err) return callback(err);
-      callback(null, name);
+
+      fs.outputFile(directory + "/" + name, data, function (err) {
+        if (err) return callback(err);
+        callback(null, name);
+      });
     });
   });
 }
@@ -93,7 +97,9 @@ module.exports = function download_images(post, callback) {
 
   // The directory is created lazily only if a download succeeds.
   download_thumbnail(post, function (err, thumbnail) {
-    if (!err && thumbnail) {
+    if (err) return callback(err);
+
+    if (thumbnail) {
       changes = true;
       post.metadata.thumbnail = thumbnail;
     }
@@ -118,16 +124,20 @@ module.exports = function download_images(post, callback) {
           if (format && !name.toLowerCase().endsWith(format.toLowerCase()))
             name = name + "." + format;
 
-          fs.outputFile(assetDirectory(post) + "/" + name, data, function (err) {
+          assetDirectory(post, function (err, directory) {
             if (err) return next();
-            changes = true;
 
-            $(el).attr("src", name);
+            fs.outputFile(directory + "/" + name, data, function (err) {
+              if (err) return next();
+              changes = true;
 
-            if ($(el).parent().attr("href") === src)
-              $(el).parent().attr("href", name);
+              $(el).attr("src", name);
 
-            next();
+              if ($(el).parent().attr("href") === src)
+                $(el).parent().attr("href", name);
+
+              next();
+            });
           });
         });
       },

@@ -26,12 +26,16 @@ module.exports = function download_pdfs(post, callback) {
 
       download(href)
         .then(function (data) {
-          fs.outputFile(assetDirectory(post) + "/" + name, data, function (err) {
+          assetDirectory(post, function (err, directory) {
             if (err) return next();
 
-            $(el).attr("src", name);
+            fs.outputFile(directory + "/" + name, data, function (err) {
+              if (err) return next();
 
-            next();
+              $(el).attr("src", name);
+
+              next();
+            });
           });
         })
         .catch(function (err) {
