@@ -26,7 +26,6 @@ function renderImportStatus(statusNode, message) {
     if (progressBar) progressBar.style.width = "0%";
   }
 
-  truncate(statusNode);
 }
 
 function renderImportStatuses() {
