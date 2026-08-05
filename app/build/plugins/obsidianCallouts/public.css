@@ -12,9 +12,12 @@
 .callout-content { margin-top: 0.5rem; }
 .callout-content > :first-child { margin-top: 0; }
 .callout-content > :last-child { margin-bottom: 0; }
-.callout[data-callout-fold="+"] .callout-title::after { content: "⌄"; margin-left: auto; }
-.callout[data-callout-fold="-"] .callout-title::after { content: "›"; margin-left: auto; }
-.callout[data-callout-fold="-"] .callout-content { display: none; }
+summary.callout-title { cursor: pointer; list-style: none; }
+summary.callout-title::marker { display: none; content: ""; }
+summary.callout-title::-webkit-details-marker { display: none; }
+.callout[data-callout-fold] .callout-title::after { margin-left: auto; }
+details.callout[data-callout-fold][open] .callout-title::after { content: "⌄"; }
+details.callout[data-callout-fold]:not([open]) .callout-title::after { content: "›"; }
 .callout[data-callout="abstract"] { --callout-color: 0, 191, 188; }
 .callout[data-callout="info"] { --callout-color: 8, 109, 221; }
 .callout[data-callout="todo"] { --callout-color: 8, 109, 221; }

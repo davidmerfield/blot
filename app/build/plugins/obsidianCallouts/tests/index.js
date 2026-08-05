@@ -52,6 +52,19 @@ describe("obsidianCallouts plugin integration", function () {
           }
 
           expect(expected).toEqual(html);
+
+          if (file === "markdown-callouts.md") {
+            expect(html).toContain(
+              '<details class="callout" data-callout="info" data-callout-original="info" data-callout-fold="+" open=""><summary class="callout-title">'
+            );
+            expect(html).toContain(
+              '<details class="callout" data-callout="danger" data-callout-original="danger" data-callout-fold="-"><summary class="callout-title">'
+            );
+            expect(html).toContain(
+              '<span class="callout-title-inner">Danger</span></summary><div class="callout-content"><p>Hidden content.</p></div></details>'
+            );
+          }
+
           done();
         });
       });
@@ -62,6 +75,11 @@ describe("obsidianCallouts plugin integration", function () {
       if (err) return done.fail(err);
       expect(css).toContain('.callout[data-callout="warning"]');
       expect(css).toContain("data:image/svg+xml;base64");
+      expect(css).toContain("details.callout[data-callout-fold][open]");
+      expect(css).toContain("summary.callout-title::marker");
+      expect(css).not.toContain(
+        '.callout[data-callout-fold="-"] .callout-content { display: none; }'
+      );
       done();
     });
   });

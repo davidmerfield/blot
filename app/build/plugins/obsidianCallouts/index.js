@@ -180,12 +180,19 @@ function transformBlockquote($, blockquote) {
 
   textNode.data = (textNode.data || "").slice(markerLength).replace(/^\s+/, "");
 
-  const $callout = $('<div class="callout"></div>');
+  const $callout = fold
+    ? $('<details class="callout"></details>')
+    : $('<div class="callout"></div>');
   $callout.attr("data-callout", canonicalType);
   $callout.attr("data-callout-original", originalType);
-  if (fold) $callout.attr("data-callout-fold", fold);
+  if (fold) {
+    $callout.attr("data-callout-fold", fold);
+    if (fold === "+") $callout.attr("open", "");
+  }
 
-  const $title = $('<div class="callout-title"></div>');
+  const $title = fold
+    ? $('<summary class="callout-title"></summary>')
+    : $('<div class="callout-title"></div>');
   $title.append('<span class="callout-icon" aria-hidden="true"></span>');
   const $titleInner = $('<span class="callout-title-inner"></span>');
   let firstContainer = $(textNode).parent().is($blockquote) ? textNode : $(textNode).parent()[0];
