@@ -51,6 +51,8 @@ describe("Blogger importer", function () {
     expect(entries[0].slug).toBe("2014-07-kinship-terms");
     expect(entries[0].dateStamp).toBe(Date.parse("2014-07-28T03:35:00Z"));
     expect(entries[0].html).toContain("<strong>world</strong>");
+    expect(entries[0].html).toContain("<em>friends</em>");
+    expect(entries[0].html).toContain("<table>");
     expect(entries[0].html).toContain(
       'href="https://koalanguage.blogspot.com/2021/11/kion-fari.html"'
     );
@@ -167,12 +169,32 @@ describe("Blogger importer", function () {
     );
     const page = await fs.readFile(path.join(output, "Pages", "p-about.txt"), "utf8");
     expect(post).toContain("Link: /2014/07/kinship-terms.html");
-    expect(post).toContain("Hello **world**.");
+    expect(post).toContain("Hello **world** and *friends*.");
+    expect(post).toContain("| Term | Meaning |");
+    expect(post).toContain("| --- | --- |");
+    expect(post).toContain("| ama | mother |");
     expect(post).toContain(
       "[post](https://koalanguage.blogspot.com/2021/11/kion-fari.html)"
     );
     expect(page).toContain("# About");
     expect(page).toContain("Link: /p/about.html");
+    await fs.remove(output);
+  });
+
+  it("formats emphasis with asterisks and tables as Markdown tables", async function () {
+    const output = await fs.mkdtemp(path.join(os.tmpdir(), "blogger-md-format-"));
+    await blogger(atomFixture, output, () => {});
+
+    const post = await fs.readFile(
+      path.join(output, "2014", "07-28-2014-07-kinship-terms.txt"),
+      "utf8"
+    );
+
+    expect(post).toContain("*friends*");
+    expect(post).not.toContain("_friends_");
+    expect(post).toMatch(/\| Term \| Meaning \|/);
+    expect(post).toMatch(/\| --- \| --- \|/);
+    expect(post).toMatch(/\| ama \| mother \|/);
     await fs.remove(output);
   });
 });
