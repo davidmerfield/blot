@@ -49,8 +49,21 @@ function parseSiteHost(input) {
 // exports use blogger:filename with a path like /2020/01/post.html.
 function permalinkPath(permalink) {
   if (!permalink) return "";
+
+  const raw = String(permalink).trim();
+  if (!raw) return "";
+
   try {
-    return new URL(permalink, "https://blogger.invalid").pathname;
+    const url = new URL(raw, "https://blogger.invalid");
+    const query = new URLSearchParams(url.search);
+
+    // Blogger appends ?m=1 for mobile views; Blot metadata should store the
+    // canonical post path rather than a mobile-display variant. Preserve other
+    // query parameters because they may identify distinct pages.
+    query.delete("m");
+
+    const search = query.toString();
+    return (url.pathname || "/") + (search ? `?${search}` : "");
   } catch (err) {
     return "";
   }
@@ -118,7 +131,7 @@ function entryPermalink(atomEntry) {
   const alternate = (atomEntry.link || []).find(
     (link) => link && link.$ && link.$.rel === "alternate" && link.$.href
   );
-  if (alternate) return alternate.$.href;
+  if (alternate) return permalinkPath(alternate.$.href);
 
   const filename = value(atomEntry["blogger:filename"]).trim();
   return filename || undefined;

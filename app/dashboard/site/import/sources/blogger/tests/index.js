@@ -29,9 +29,10 @@ describe("Blogger importer", function () {
     expect(entries[0].html).toContain(
       'href="https://example.blogspot.com/2020/01/hello-world.html"'
     );
-    expect(entries[0].permalink).toBe("https://example.blogspot.com/2020/01/shared.html");
+    expect(entries[0].permalink).toBe("/2020/01/shared.html");
     expect(entries[0].dateStamp).toBe(Date.parse("2020-01-02T03:04:05Z"));
     expect(entries[1].page).toBe(true);
+    expect(entries[2].permalink).toBe("/2020/01/shared.html");
     expect(entries[2].title).toBe("shared");
     expect(entries[2].slug).toBe("2020-01-shared-2");
     expect(entries[3].slug).toBe("a-☃-weird.name");
@@ -131,7 +132,7 @@ describe("Blogger importer", function () {
     const duplicate = path.join(output, "2020", "01-02-2020-01-shared-2.txt");
     const page = await fs.readFile(path.join(output, "Pages", "p-about.txt"), "utf8");
     expect(first).toContain("Tags: News, Two Words");
-    expect(first).toContain("Link: https://example.blogspot.com/2020/01/shared.html");
+    expect(first).toContain("Link: /2020/01/shared.html");
     expect(first).toContain("Hello **world**.");
     expect(first).toContain(
       "[other post](https://example.blogspot.com/2020/01/hello-world.html)"
