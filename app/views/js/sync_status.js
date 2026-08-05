@@ -187,15 +187,16 @@ function loadFolder(callback) {
 }
 
 function attachSSE() {
-  // Skip pages that reuse .sync-status markup without a sync SSE endpoint
-  // (e.g. import) — otherwise we strip has-progress set by dashboard-import.js.
-  var statusContainer = q(".sync-status[data-sync-status-url]");
+  var statusContainer = q(".sync-status");
   if (!statusContainer) return;
 
-  var syncStatusURL = statusContainer.getAttribute("data-sync-status-url");
-  if (!syncStatusURL) return;
-
   renderSyncStatusMessage();
+
+  var syncStatusURL = statusContainer.getAttribute("data-sync-status-url");
+  if (!syncStatusURL) {
+    console.error("No sync status URL provided.");
+    return;
+  }
 
   if (evtSource) evtSource.close();
   evtSource = new ReconnectingEventSource(syncStatusURL);
