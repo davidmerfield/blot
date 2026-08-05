@@ -34,6 +34,13 @@ describe("obsidianCallouts plugin integration", function () {
           expected = fs.readFileSync(expectedPath, "utf8");
         } catch (e) {}
 
+        if (file === "html-blockquote.html") {
+          this.blog.plugins.typeset = {
+            enabled: true,
+            options: { smallCaps: true },
+          };
+        }
+
         fs.outputFileSync(this.blogDirectory + path, contents);
 
         build(this.blog, path, (err, entry) => {

@@ -96,6 +96,69 @@ function trimEmptyLeadingNodes($, $container) {
   }
 }
 
+function appendTitleTextNode($titleInner, node, isFirstTitleNode) {
+  if (node.type === "text") {
+    if (isFirstTitleNode) node.data = (node.data || "").replace(/^\s+/, "");
+    node.data = (node.data || "").replace(/\s+$/, "");
+    if (!node.data) return false;
+  }
+
+  $titleInner.append(node);
+  return true;
+}
+
+function extractTitleLine($, $firstContainer, $titleInner, defaultTitle) {
+  const bodyNodes = [];
+  const titleNodes = [];
+  let inBody = false;
+  let sawBoundary = false;
+
+  $firstContainer.contents().toArray().forEach(function (node) {
+    if (inBody) {
+      if (!bodyNodes.length && node.type === "text") {
+        node.data = (node.data || "").replace(/^\s+/, "");
+      }
+      bodyNodes.push(node);
+      return;
+    }
+
+    if (node.type === "text" && /[\n\r]/.test(node.data || "")) {
+      const parts = (node.data || "").split(/\r?\n/);
+      node.data = parts.shift();
+      titleNodes.push(node);
+
+      const bodyText = parts.join("\n").replace(/^\s+/, "");
+      if (bodyText) bodyNodes.push({ type: "text", data: bodyText });
+      inBody = true;
+      sawBoundary = true;
+      return;
+    }
+
+    if (node.type === "tag" && (node.name || "").toLowerCase() === "br") {
+      $(node).remove();
+      inBody = true;
+      sawBoundary = true;
+      return;
+    }
+
+    titleNodes.push(node);
+  });
+
+  let appendedTitleNode = false;
+  titleNodes.forEach(function (node) {
+    appendedTitleNode =
+      appendTitleTextNode($titleInner, node, !appendedTitleNode) ||
+      appendedTitleNode;
+  });
+
+  if (!$titleInner.text().trim() && !$titleInner.children().length) {
+    $titleInner.text(defaultTitle);
+    return { bodyNodes: bodyNodes, consumedFirstContainer: sawBoundary };
+  }
+
+  return { bodyNodes: bodyNodes, consumedFirstContainer: true };
+}
+
 function transformBlockquote($, blockquote) {
   const $blockquote = $(blockquote);
   if ($blockquote.closest(SKIP_SELECTOR).length) return;
@@ -112,11 +175,10 @@ function transformBlockquote($, blockquote) {
   const originalType = match[1].toLowerCase();
   const canonicalType = TYPE_ALIASES[originalType] || "note";
   const fold = match[2] || "";
-  const customTitle = match[3] || "";
   const defaultTitle = titleCase(originalType);
-  const remainder = (textNode.data || "").slice(match[0].length);
+  const markerLength = match[0].length - (match[3] || "").length;
 
-  textNode.data = remainder.replace(/^\s+/, "");
+  textNode.data = (textNode.data || "").slice(markerLength).replace(/^\s+/, "");
 
   const $callout = $('<div class="callout"></div>');
   $callout.attr("data-callout", canonicalType);
@@ -133,79 +195,19 @@ function transformBlockquote($, blockquote) {
   }
 
   const $firstContainer = $(firstContainer);
-
-  const bodyNodesFromTitleLine = [];
-  const hasCustomTitle = customTitle.trim();
-  let skipFirstContainer = false;
-
-  if (hasCustomTitle) {
-    skipFirstContainer = true;
-    textNode.data = customTitle;
-    const titleLineNodes = $firstContainer.contents().toArray();
-    let inBody = false;
-
-    titleLineNodes.forEach(function (node) {
-      if (inBody) {
-        if (!bodyNodesFromTitleLine.length && node.type === "text") {
-          node.data = (node.data || "").replace(/^\s+/, "");
-        }
-        bodyNodesFromTitleLine.push(node);
-        return;
-      }
-
-      if (node.type === "text" && /[\n\r]/.test(node.data || "")) {
-        const parts = (node.data || "").split(/\r?\n/);
-        node.data = parts.shift();
-        $titleInner.append(node);
-
-        const bodyText = parts.join("\n").replace(/^\s+/, "");
-        if (bodyText) bodyNodesFromTitleLine.push({ type: "text", data: bodyText });
-        inBody = true;
-        return;
-      }
-
-      if (node.type === "tag" && (node.name || "").toLowerCase() === "br") {
-        $(node).remove();
-        inBody = true;
-        return;
-      }
-
-      $titleInner.append(node);
-    });
-  } else {
-    $titleInner.text(defaultTitle);
-
-    const titleLineNodes = $firstContainer.contents().toArray();
-    let inBody = false;
-
-    titleLineNodes.forEach(function (node) {
-      if (inBody) {
-        if (!bodyNodesFromTitleLine.length && node.type === "text") {
-          node.data = (node.data || "").replace(/^\s+/, "");
-        }
-        bodyNodesFromTitleLine.push(node);
-        return;
-      }
-
-      if (node.type === "tag" && (node.name || "").toLowerCase() === "br") {
-        $(node).remove();
-        inBody = true;
-        skipFirstContainer = true;
-      }
-    });
-  }
+  const titleLine = extractTitleLine($, $firstContainer, $titleInner, defaultTitle);
   $title.append($titleInner);
 
   const $content = $('<div class="callout-content"></div>');
-  if (bodyNodesFromTitleLine.length) {
+  if (titleLine.bodyNodes.length) {
     const $bodyParagraph = $("<p></p>");
-    bodyNodesFromTitleLine.forEach(function (node) {
+    titleLine.bodyNodes.forEach(function (node) {
       $bodyParagraph.append(node);
     });
     $content.append($bodyParagraph);
   }
   children.forEach(function (node) {
-    if (skipFirstContainer && node === $firstContainer[0]) return;
+    if (titleLine.consumedFirstContainer && node === $firstContainer[0]) return;
     $content.append(node);
   });
   trimEmptyLeadingNodes($, $content);
