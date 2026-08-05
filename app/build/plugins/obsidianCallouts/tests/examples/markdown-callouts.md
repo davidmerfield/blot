@@ -4,6 +4,9 @@
 > [!warning] Custom **Warning**
 > Be careful with *formatting*.
 
+> [!warning] Plain Custom Warning
+> Plain body stays body.
+
 > [!todo] Task List
 
 > [!warning] **Critical**
