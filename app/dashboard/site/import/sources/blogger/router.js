@@ -99,12 +99,11 @@ Importer.route("/blogger")
         });
         await job.finish();
       } catch (error) {
+        const message = errorMessage(error);
+
         await fs
-          .outputFile(
-            join(job.importDirectory, "error.txt"),
-            errorMessage(error),
-            "utf8"
-          )
+          .outputFile(join(job.importDirectory, "error.txt"), message, "utf8")
+          .then(() => job.status("Failed"))
           .catch((writeError) =>
             console.error("Failed to record import error", writeError)
           );
