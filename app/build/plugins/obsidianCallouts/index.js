@@ -114,9 +114,13 @@ function transformBlockquote($, blockquote) {
   const $title = $('<div class="callout-title"></div>');
   $title.append('<span class="callout-icon" aria-hidden="true"></span>');
   const $titleInner = $('<span class="callout-title-inner"></span>');
-  const $firstContainer = $(textNode).parent().is($blockquote)
-    ? $(textNode)
-    : $(textNode).parent();
+  let firstContainer = $(textNode).parent().is($blockquote) ? textNode : $(textNode).parent()[0];
+
+  while (firstContainer.parent && firstContainer.parent !== $blockquote[0]) {
+    firstContainer = firstContainer.parent;
+  }
+
+  const $firstContainer = $(firstContainer);
 
   const bodyNodesFromTitleLine = [];
 
