@@ -57,6 +57,10 @@ function renderImportStatuses() {
   });
 }
 
+function isTerminalImportStatus(status) {
+  return status === "Finished" || status === "Failed";
+}
+
 if (importContainer && (liveUpdatesContainer || importStatusContainer)) {
   const ReconnectingEventSource = require("./reconnecting-event-source.js");
 
@@ -82,7 +86,7 @@ if (importContainer && (liveUpdatesContainer || importStatusContainer)) {
       statusNode.removeAttribute("data-text");
       renderImportStatus(statusNode, status);
 
-      if (status === "Finished") {
+      if (isTerminalImportStatus(status)) {
         refreshFolder();
       }
     };
