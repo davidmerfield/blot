@@ -127,6 +127,9 @@ function transformBlockquote($, blockquote) {
 
     titleLineNodes.forEach(function (node) {
       if (inBody) {
+        if (!bodyNodesFromTitleLine.length && node.type === "text") {
+          node.data = (node.data || "").replace(/^\s+/, "");
+        }
         bodyNodesFromTitleLine.push(node);
         return;
       }
@@ -138,6 +141,12 @@ function transformBlockquote($, blockquote) {
 
         const bodyText = parts.join("\n").replace(/^\s+/, "");
         if (bodyText) bodyNodesFromTitleLine.push({ type: "text", data: bodyText });
+        inBody = true;
+        return;
+      }
+
+      if (node.type === "tag" && (node.name || "").toLowerCase() === "br") {
+        $(node).remove();
         inBody = true;
         return;
       }
