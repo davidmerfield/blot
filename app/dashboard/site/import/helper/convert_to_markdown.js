@@ -1,5 +1,14 @@
 var Turndown = require("turndown");
-var turndown = new Turndown();
+var turndownPluginGfm = require('turndown-plugin-gfm');
+var gfm = turndownPluginGfm.gfm;
+
+var turndown = new Turndown({
+  bulletListMarker: '-', // defaults to *
+  codeBlockStyle: 'fenced', // defaults to indented
+  emDelimiter: '*', // defaults to _
+});
+
+turndown.use(gfm);
 
 // We override Turndown's HTML escaping function. Wordpress
 // sometimes includes Markdown inside the HTML content of

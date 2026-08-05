@@ -2,12 +2,34 @@ const importContainer = document.querySelector("[data-import-base]");
 const liveUpdatesContainer = document.querySelector(".live-updates");
 const importStatusContainer = document.querySelector('[id^="status-"]');
 const PROGRESS_MESSAGE_RE = /^\((\d+)\/(\d+)\)\s*(.*)$/;
+const BLOGGER_SITE_URL_KEY = "blot-blogger-import-site-url";
+
+(function rememberBloggerSiteURL() {
+  const input = document.getElementById("blogger-site-url");
+  if (!input || !input.form) return;
+
+  try {
+    const saved = localStorage.getItem(BLOGGER_SITE_URL_KEY);
+    if (saved && !input.value) input.value = saved;
+  } catch (e) {}
+
+  input.form.addEventListener("submit", function () {
+    const value = (input.value || "").trim();
+    try {
+      if (value) localStorage.setItem(BLOGGER_SITE_URL_KEY, value);
+      else localStorage.removeItem(BLOGGER_SITE_URL_KEY);
+    } catch (e) {}
+  });
+})();
 
 function renderImportStatus(statusNode, message) {
   const match = (message || "").match(PROGRESS_MESSAGE_RE);
   const statusContainer = statusNode.closest(".sync-status");
-  const progressBar = statusContainer
-    ? statusContainer.querySelector(".sync-status-progress-bar")
+  const progress = statusContainer
+    ? statusContainer.querySelector(".sync-status-progress")
+    : null;
+  const progressBar = progress
+    ? progress.querySelector(".sync-status-progress-bar")
     : null;
 
   statusNode.textContent = match ? match[3] : message || "";
@@ -18,20 +40,25 @@ function renderImportStatus(statusNode, message) {
     const percent = total > 0 ? (current / total) * 100 : 0;
 
     statusContainer.classList.add("has-progress");
+    if (progress) progress.style.display = "block";
     if (progressBar) {
       progressBar.style.width = Math.max(0, Math.min(100, percent)) + "%";
     }
   } else if (statusContainer) {
     statusContainer.classList.remove("has-progress");
+    if (progress) progress.style.display = "none";
     if (progressBar) progressBar.style.width = "0%";
   }
-
 }
 
 function renderImportStatuses() {
   document.querySelectorAll('[id^="status-"]').forEach(function (statusNode) {
     renderImportStatus(statusNode, statusNode.textContent);
   });
+}
+
+function isTerminalImportStatus(status) {
+  return status === "Finished" || status === "Failed";
 }
 
 if (importContainer && (liveUpdatesContainer || importStatusContainer)) {
@@ -59,7 +86,7 @@ if (importContainer && (liveUpdatesContainer || importStatusContainer)) {
       statusNode.removeAttribute("data-text");
       renderImportStatus(statusNode, status);
 
-      if (status === "Finished") {
+      if (isTerminalImportStatus(status)) {
         refreshFolder();
       }
     };
