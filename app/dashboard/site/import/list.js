@@ -13,6 +13,7 @@ module.exports = async function (req, res, next) {
       .map((i) => {
         let size;
         let started;
+        let importedOn;
         let identifier;
         let name;
         let lastStatus;
@@ -29,8 +30,11 @@ module.exports = async function (req, res, next) {
         } catch (e) {}
 
         try {
-          name = i.split("-")[0];
-          started = moment(parseInt(i.split("-")[1])).fromNow();
+          const lastDash = i.lastIndexOf("-");
+          name = i.slice(0, lastDash);
+          const timestamp = parseInt(i.slice(lastDash + 1), 10);
+          started = moment(timestamp).fromNow();
+          importedOn = moment(timestamp).format("MMM D, YYYY");
         } catch (e) {}
 
         try {
@@ -64,12 +68,19 @@ module.exports = async function (req, res, next) {
         return {
           id: i,
           name,
+          icon: name
+            ? "/images/configure/" +
+                (name.toLowerCase() === "blogger"
+                  ? "blogger.svg"
+                  : name.toLowerCase() + ".png")
+            : undefined,
           identifier,
           cancelled,
           size,
           error,
           lastStatus: !!error ? error : lastStatus,
           started,
+          importedOn,
           complete: !!size || !!error,
         };
       })
