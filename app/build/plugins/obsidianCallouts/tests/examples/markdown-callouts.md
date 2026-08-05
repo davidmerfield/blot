@@ -6,6 +6,9 @@
 
 > [!todo] Task List
 
+> [!warning] **Critical**
+> Treat inline markup as the title.
+
 > [!info]+
 > Expanded content.
 
