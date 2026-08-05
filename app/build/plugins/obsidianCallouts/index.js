@@ -1,4 +1,5 @@
 const SKIP_SELECTOR = "script,style,pre,code";
+const VISIBLE_LEADING_SELECTOR = "img,video,audio,iframe,object,embed";
 
 const TYPE_ALIASES = {
   note: "note",
@@ -50,15 +51,26 @@ function meaningfulChildren($blockquote) {
 
 function firstTextNode(node) {
   if (!node) return null;
-  if (node.type === "text") return node;
+
+  if (node.type === "text") {
+    return /\S/.test(node.data || "") ? node : null;
+  }
+
   if (node.type !== "tag") return null;
-  if (SKIP_SELECTOR.split(",").indexOf((node.name || "").toLowerCase()) !== -1) return null;
+
+  const tagName = (node.name || "").toLowerCase();
+
+  if (SKIP_SELECTOR.split(",").indexOf(tagName) !== -1) return null;
+  if (VISIBLE_LEADING_SELECTOR.split(",").indexOf(tagName) !== -1) return false;
+
   let child = node.children && node.children[0];
   while (child) {
     const found = firstTextNode(child);
+    if (found === false) return false;
     if (found) return found;
     child = child.next;
   }
+
   return null;
 }
 
