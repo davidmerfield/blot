@@ -1,0 +1,3 @@
+# Obsidian Callouts
+
+Converts blockquotes beginning with Obsidian callout markers such as `[!note]`, `[!warning]+`, or `[!tip]-` into scoped callout HTML after converter output has been produced.

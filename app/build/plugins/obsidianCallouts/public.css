@@ -1,0 +1,29 @@
+.callout {
+  --callout-color: 8, 109, 221;
+  --callout-icon: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDg2ZGRkIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTEyIDE2di00TTEyIDhoLjAxIi8+PC9zdmc+");
+  border-left: 0.25rem solid rgb(var(--callout-color));
+  background: rgba(var(--callout-color), 0.08);
+  border-radius: 0.35rem;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+}
+.callout-title { align-items: center; color: rgb(var(--callout-color)); display: flex; font-weight: 700; gap: 0.5rem; }
+.callout-icon { background-color: currentColor; height: 1.1em; width: 1.1em; mask: var(--callout-icon) center / contain no-repeat; -webkit-mask: var(--callout-icon) center / contain no-repeat; }
+.callout-content { margin-top: 0.5rem; }
+.callout-content > :first-child { margin-top: 0; }
+.callout-content > :last-child { margin-bottom: 0; }
+.callout[data-callout-fold="+"] .callout-title::after { content: "⌄"; margin-left: auto; }
+.callout[data-callout-fold="-"] .callout-title::after { content: "›"; margin-left: auto; }
+.callout[data-callout-fold="-"] .callout-content { display: none; }
+.callout[data-callout="abstract"] { --callout-color: 0, 191, 188; }
+.callout[data-callout="info"] { --callout-color: 8, 109, 221; }
+.callout[data-callout="todo"] { --callout-color: 8, 109, 221; }
+.callout[data-callout="tip"] { --callout-color: 0, 191, 188; }
+.callout[data-callout="success"] { --callout-color: 8, 185, 78; }
+.callout[data-callout="question"] { --callout-color: 236, 117, 0; }
+.callout[data-callout="warning"] { --callout-color: 236, 117, 0; }
+.callout[data-callout="failure"] { --callout-color: 233, 49, 71; }
+.callout[data-callout="danger"] { --callout-color: 233, 49, 71; }
+.callout[data-callout="bug"] { --callout-color: 233, 49, 71; }
+.callout[data-callout="example"] { --callout-color: 120, 82, 238; }
+.callout[data-callout="quote"] { --callout-color: 158, 158, 158; }
