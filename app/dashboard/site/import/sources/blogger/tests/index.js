@@ -107,6 +107,29 @@ describe("Blogger importer", function () {
     ).toContain(`src="${thumb}"`);
   });
 
+  it("moves trailing breaks outside bold tags before Markdown conversion", function () {
+    const parse = require("../parse");
+
+    expect(
+      parse.hoistTrailingBreaks(
+        `<b>
+    1.1.2 Particle Categories
+    <br />
+    <br />
+  </b>`
+      )
+    ).toBe("<b>\n    1.1.2 Particle Categories\n    </b><br><br>");
+
+    expect(
+      parse.hoistTrailingBreaks("<strong>Title<br/><br/></strong><p>Next</p>")
+    ).toBe("<strong>Title</strong><br><br><p>Next</p>");
+
+    // Breaks that separate content inside the tag stay put.
+    expect(parse.hoistTrailingBreaks("<b>keep<br/>middle<br/><br/></b>")).toBe(
+      "<b>keep<br>middle</b><br><br>"
+    );
+  });
+
   it("rebases same-site links when a site host is provided", async function () {
     const xml = await fs.readFile(legacyFixture, "utf8");
     const entries = await blogger.parse(xml, "example.blogspot.com");
@@ -192,6 +215,7 @@ describe("Blogger importer", function () {
 
     expect(post).toContain("*friends*");
     expect(post).not.toContain("_friends_");
+    expect(post).toContain("**1.1.2 Particle Categories**");
     expect(post).toMatch(/\| Term \| Meaning \|/);
     expect(post).toMatch(/\| --- \| --- \|/);
     expect(post).toMatch(/\| ama \| mother \|/);

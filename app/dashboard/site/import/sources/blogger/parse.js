@@ -197,9 +197,49 @@ function preferFullSizeImages(html) {
   return htmlString($);
 }
 
+// Blogger often pads headings with trailing <br>s inside <b>/<strong>:
+//   <b>Title<br /><br /></b>
+// Turndown then emits broken emphasis (**Title  \n  \n**). Moving the
+// trailing breaks after the bold tag keeps the bold span tidy.
+function hoistTrailingBreaks(html) {
+  if (!html) return html;
+
+  const $ = cheerio.load(html, { decodeEntities: false });
+  $("b, strong").each(function () {
+    const $el = $(this);
+    const moved = [];
+
+    while ($el.contents().length) {
+      const $last = $el.contents().last();
+      const node = $last[0];
+
+      if (node.type === "tag" && node.name === "br") {
+        moved.unshift($last.remove());
+        continue;
+      }
+
+      if (node.type === "text" && !/\S/.test(node.data || "")) {
+        $last.remove();
+        continue;
+      }
+
+      break;
+    }
+
+    let $cursor = $el;
+    for (const $br of moved) {
+      $cursor.after($br);
+      $cursor = $br;
+    }
+  });
+
+  return htmlString($);
+}
+
 function rebaseEntries(entries, siteHost) {
   for (const entry of entries) {
     entry.html = preferFullSizeImages(entry.html);
+    entry.html = hoistTrailingBreaks(entry.html);
     if (!siteHost) continue;
 
     entry.html = relativizeHtml(entry.html, siteHost);
@@ -263,3 +303,4 @@ module.exports.permalinkSlug = permalinkSlug;
 module.exports.parseSiteHost = parseSiteHost;
 module.exports.relativizeHtml = relativizeHtml;
 module.exports.preferFullSizeImages = preferFullSizeImages;
+module.exports.hoistTrailingBreaks = hoistTrailingBreaks;
