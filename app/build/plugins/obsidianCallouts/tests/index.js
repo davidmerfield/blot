@@ -17,8 +17,12 @@ describe("obsidianCallouts plugin integration", function () {
   const dir = __dirname + "/examples";
   const supportedExtensions = [".txt", ".md", ".html", ".gdoc"];
 
+  const isSupportedSourceFixture = (file) =>
+    supportedExtensions.some((ext) => file.endsWith(ext)) &&
+    !supportedExtensions.some((ext) => file.endsWith(`${ext}.html`));
+
   fs.readdirSync(dir)
-    .filter((file) => supportedExtensions.some((ext) => file.endsWith(ext)))
+    .filter(isSupportedSourceFixture)
     .forEach((file) => {
       it("handles " + file.split("-").join(" "), function (done) {
         const path = "/" + file;
