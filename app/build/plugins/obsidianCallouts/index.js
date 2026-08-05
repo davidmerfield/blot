@@ -123,8 +123,11 @@ function transformBlockquote($, blockquote) {
   const $firstContainer = $(firstContainer);
 
   const bodyNodesFromTitleLine = [];
+  const hasCustomTitle = customTitle.trim();
+  let skipFirstContainer = false;
 
-  if (customTitle.trim()) {
+  if (hasCustomTitle) {
+    skipFirstContainer = true;
     textNode.data = customTitle;
     const titleLineNodes = $firstContainer.contents().toArray();
     let inBody = false;
@@ -159,6 +162,25 @@ function transformBlockquote($, blockquote) {
     });
   } else {
     $titleInner.text(defaultTitle);
+
+    const titleLineNodes = $firstContainer.contents().toArray();
+    let inBody = false;
+
+    titleLineNodes.forEach(function (node) {
+      if (inBody) {
+        if (!bodyNodesFromTitleLine.length && node.type === "text") {
+          node.data = (node.data || "").replace(/^\s+/, "");
+        }
+        bodyNodesFromTitleLine.push(node);
+        return;
+      }
+
+      if (node.type === "tag" && (node.name || "").toLowerCase() === "br") {
+        $(node).remove();
+        inBody = true;
+        skipFirstContainer = true;
+      }
+    });
   }
   $title.append($titleInner);
 
@@ -171,7 +193,7 @@ function transformBlockquote($, blockquote) {
     $content.append($bodyParagraph);
   }
   children.forEach(function (node) {
-    if (customTitle.trim() && node === $firstContainer[0]) return;
+    if (skipFirstContainer && node === $firstContainer[0]) return;
     $content.append(node);
   });
   trimEmptyLeadingNodes($, $content);
