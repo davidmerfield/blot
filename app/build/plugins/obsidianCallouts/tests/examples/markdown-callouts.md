@@ -41,3 +41,9 @@
 
 <pre><code>&gt; [!warning]
 &gt; Pre should not change.</code></pre>
+
+> ![x](y)[!note]
+> Image before marker should remain quoted.
+
+>    [!note]
+> Leading whitespace still works.
