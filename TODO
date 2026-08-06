@@ -480,7 +480,6 @@ Make it possible to create a site for free then require subscription to make it 
 Improve markdown:
 - Turn on 'preserve linebreaks by default' for markdown 
 - Extend markdown parser to support [content blocks syntax](https://github.com/iainc/Markdown-Content-Blocks)
-- Extend markdown parser to support Obsidian Callouts and follow up with [questioner](https://blot.im/questions/3374) and [Des](https://mail.google.com/mail/u/1/#inbox/FMfcgzQgMCXPJQBxssKXfFhRGfhxWnGX)
 - Extend markdown parser to add a special class to a list of only images for targeting into an image grid or gallery?
   - `- ![Image](_image.jpg)...` -> `<ul class="image-list">`... could then be used in CSS?
 
