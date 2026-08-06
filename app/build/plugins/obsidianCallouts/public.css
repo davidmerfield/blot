@@ -12,12 +12,12 @@
 .callout[data-callout] .callout-content { margin-top: 0.5rem; }
 .callout[data-callout] .callout-content > :first-child { margin-top: 0; }
 .callout[data-callout] .callout-content > :last-child { margin-bottom: 0; }
-.callout[data-callout] summary.callout-title { cursor: pointer; list-style: none; }
-.callout[data-callout] summary.callout-title::marker { display: none; content: ""; }
-.callout[data-callout] summary.callout-title::-webkit-details-marker { display: none; }
+.callout[data-callout-fold] > .callout-title { cursor: pointer; }
+.callout[data-callout-fold] > .callout-title:focus-visible { outline: 2px solid rgb(var(--callout-color)); outline-offset: 0.25rem; border-radius: 0.15rem; }
 .callout[data-callout-fold] .callout-title::after { margin-left: auto; }
-details.callout[data-callout-fold][open] .callout-title::after { content: "⌄"; }
-details.callout[data-callout-fold]:not([open]) .callout-title::after { content: "›"; }
+.callout[data-callout-fold].is-expanded > .callout-title::after { content: "⌄"; }
+.callout[data-callout-fold].is-collapsed > .callout-title::after { content: "›"; }
+.callout[data-callout-fold].callout-fold-ready.is-collapsed > .callout-content { display: none; }
 .callout[data-callout="abstract"] { --callout-color: 0, 191, 188; }
 .callout[data-callout="info"] { --callout-color: 8, 109, 221; }
 .callout[data-callout="todo"] { --callout-color: 8, 109, 221; }

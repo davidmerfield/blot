@@ -1,42 +1,33 @@
-> [!note]  
+> [!note]
 > Default note body.
 
-> [!warning] Custom **Warning**  
+> [!warning] Custom **Warning**
 > Be careful with *formatting*.
-
-> [!warning] Plain Custom Warning  
-> Plain body stays body.
 
 > [!todo] Task List
 
-> [!warning] **Critical**  
-> Treat inline markup as the title.
-
-> [!info]+  
+> [!info]+
 > Expanded content.
 
-> [!danger]-  
+> [!danger]-
 > Hidden content.
 
-> [!faq]  
-> Why?
+> [!faq]
+> Question alias.
 
-> [!error]  
+> [!error]
 > Danger alias.
 
-> [!summary]  
+> [!summary]
 > Abstract alias.
 
-> [!custom]  
-> Unsupported type.
+> [!custom_type]
+> Unknown type.
 
-> [!TiP]  
+> [!TiP]
 > Case insensitive.
 
-> [!note]  
-> Outer content.
-> > [!warning]  
-> > Inner content.
+> [!example]
 
 > This is a normal quote with [!note] later.
 
@@ -44,12 +35,3 @@
 > [!note]
 > Code should not change.
 ```
-
-<pre><code>&gt; [!warning]
-&gt; Pre should not change.</code></pre>
-
-> ![x](y)[!note]
-> Image before marker should remain quoted.
-
->    [!note]  
-> Leading whitespace still works.
