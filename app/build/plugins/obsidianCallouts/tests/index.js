@@ -1,6 +1,7 @@
 const fs = require("fs-extra");
 const build = require("build");
 const plugins = require("build/plugins");
+const markdown = require("build/converters/markdown");
 const templates = require("templates");
 
 beforeAll(function (done) {
@@ -10,79 +11,83 @@ beforeAll(function (done) {
 describe("obsidianCallouts plugin integration", function () {
   require("build/tests/plugins/util/setup")();
 
-  beforeEach(function () {
-    this.blog.plugins.obsidianCallouts = { enabled: true, options: {} };
+  const fixture = __dirname + "/examples/markdown-callouts.md";
+
+  function buildFixture(context, enabled, done) {
+    context.blog.plugins.obsidianCallouts = { enabled, options: {} };
+    const contents = fs.readFileSync(fixture, "utf8");
+    fs.outputFileSync(context.blogDirectory + "/callouts.md", contents);
+    build(context.blog, "/callouts.md", done);
+  }
+
+  it("converts callouts through the Markdown build path when enabled", function (done) {
+    buildFixture(this, true, function (err, entry) {
+      if (err) return done.fail(err);
+      const html = entry.html;
+
+      expect(html).toContain('<div class="callout" data-callout="note" data-callout-original="note">');
+      expect(html).toContain('<span class="callout-title-inner">Custom <strong>Warning</strong></span>');
+      expect(html).toContain('<span class="callout-title-inner">Task List</span>');
+      expect(html).toContain('class="callout is-expanded" data-callout="info" data-callout-original="info" data-callout-fold="+"');
+      expect(html).toContain('class="callout is-collapsed" data-callout="danger" data-callout-original="danger" data-callout-fold="-"');
+      expect(html).toContain('class="callout-title" role="button" tabindex="0" aria-expanded="true"');
+      expect(html).toContain('class="callout-title" role="button" tabindex="0" aria-expanded="false"');
+      expect(html).toContain('data-callout="question" data-callout-original="faq"');
+      expect(html).toContain('data-callout="danger" data-callout-original="error"');
+      expect(html).toContain('data-callout="abstract" data-callout-original="summary"');
+      expect(html).toContain('data-callout="note" data-callout-original="custom_type"');
+      expect(html).toContain('data-callout="tip" data-callout-original="tip"');
+      expect(html).toContain('<span class="callout-title-inner">Custom Type</span>');
+      expect(html).toMatch(/<div class="callout-content">\s*<\/div>/);
+      expect(html).toContain('<blockquote>\n<p>This is a normal quote with [!note] later.</p>\n</blockquote>');
+      expect(html).toContain('<code>&gt; [!note]\n&gt; Code should not change.</code>');
+      expect(html).not.toContain("<details");
+      expect(html).not.toContain("<summary");
+      done();
+    });
   });
 
-  const dir = __dirname + "/examples";
-  const supportedExtensions = [".txt", ".md", ".html", ".gdoc"];
-
-  const isSupportedSourceFixture = (file) =>
-    supportedExtensions.some((ext) => file.endsWith(ext)) &&
-    !supportedExtensions.some((ext) => file.endsWith(`${ext}.html`)) &&
-    !file.endsWith(".expected.html");
-
-  fs.readdirSync(dir)
-    .filter(isSupportedSourceFixture)
-    .forEach((file) => {
-      it("handles " + file.split("-").join(" "), function (done) {
-        const path = "/" + file;
-        const contents = fs.readFileSync(dir + path, "utf8");
-        const expectedPath = dir + path + ".html";
-        let expected;
-
-        try {
-          expected = fs.readFileSync(expectedPath, "utf8");
-        } catch (e) {}
-
-        if (file === "html-blockquote.html") {
-          this.blog.plugins.typeset = {
-            enabled: true,
-            options: { smallCaps: true },
-          };
-        }
-
-        fs.outputFileSync(this.blogDirectory + path, contents);
-
-        build(this.blog, path, (err, entry) => {
-          if (err) return done.fail(err);
-          const html = entry.html;
-
-          if (html !== expected) {
-            fs.outputFileSync(expectedPath + ".expected.html", html);
-          }
-
-          expect(expected).toEqual(html);
-
-          if (file === "markdown-callouts.md") {
-            expect(html).toContain(
-              '<details class="callout" data-callout="info" data-callout-original="info" data-callout-fold="+" open=""><summary class="callout-title">'
-            );
-            expect(html).toContain(
-              '<details class="callout" data-callout="danger" data-callout-original="danger" data-callout-fold="-"><summary class="callout-title">'
-            );
-            expect(html).toContain(
-              '<span class="callout-title-inner">Danger</span></summary><div class="callout-content"><p>Hidden content.</p></div></details>'
-            );
-          }
-
-          done();
-        });
-      });
+  it("leaves the same Markdown as blockquotes when disabled", function (done) {
+    buildFixture(this, false, function (err, entry) {
+      if (err) return done.fail(err);
+      expect(entry.html).toContain("<blockquote>");
+      expect(entry.html).toContain("[!note]");
+      expect(entry.html).not.toContain('class="callout"');
+      done();
     });
+  });
 
-  it("loads public CSS when enabled", function (done) {
-    plugins.load("css", this.blog.plugins, function (err, css) {
+  it("loads both public assets only when enabled", function (done) {
+    this.blog.plugins.obsidianCallouts = { enabled: true, options: {} };
+    plugins.load("css", this.blog.plugins, (err, css) => {
       if (err) return done.fail(err);
       expect(css).toContain(".callout[data-callout]");
-      expect(css).not.toContain(".callout {");
       expect(css).toContain('.callout[data-callout="warning"]');
       expect(css).toContain("data:image/svg+xml;base64");
-      expect(css).toContain("details.callout[data-callout-fold][open]");
-      expect(css).toContain("summary.callout-title::marker");
-      expect(css).not.toContain(
-        '.callout[data-callout-fold="-"] .callout-content { display: none; }'
-      );
+      expect(css).toContain(".callout-fold-ready.is-collapsed");
+      expect(css).not.toContain("details.callout");
+      expect(css).not.toContain("summary.callout-title");
+      plugins.load("js", this.blog.plugins, (jsErr, js) => {
+        if (jsErr) return done.fail(jsErr);
+        expect(js).toContain("data-callout-fold");
+        expect(js).toContain("aria-expanded");
+        done();
+      });
+    });
+  });
+
+  it("retains all Markdown converter source extensions", function () {
+    [".md", ".markdown", ".txt", ".text"].forEach(function (extension) {
+      expect(markdown.is("/post" + extension)).toBe(true);
+    });
+  });
+
+  it("does not post-process HTML from non-Markdown converters", function (done) {
+    this.blog.plugins.obsidianCallouts = { enabled: true, options: {} };
+    const html = "<blockquote><p>[!note] HTML title</p></blockquote>";
+    plugins.convert(this.blog, "/post.html", html, function (err, result) {
+      if (err) return done.fail(err);
+      expect(result).toBe(html);
       done();
     });
   });
