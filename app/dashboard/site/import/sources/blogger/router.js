@@ -89,6 +89,7 @@ Importer.route("/blogger")
     // promise resolves only after its Markdown and asset-writing pipeline ends.
     setImmediate(async () => {
       try {
+        await job.ready;
         await fs.outputFile(
           join(job.importDirectory, "identifier.txt"),
           identifierFor(upload.originalFilename),

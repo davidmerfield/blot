@@ -7,7 +7,7 @@ const sanitize = require("./sanitize");
 async function parse({ outputDirectory, posts, status }) {
   if (posts.length === 0) {
     status("No channel items were found");
-    return;
+    throw new Error("No importable items were found in this Are.na channel.");
   }
 
   let done = 0;
@@ -22,7 +22,22 @@ async function parse({ outputDirectory, posts, status }) {
       } else {
         console.log("Cannot process", item);
       }
-    } catch (e) {}
+    } catch (e) {
+      // A failed image download must not discard the source. Preserve it as a
+      // web location so the user can retry or visit the externally hosted asset.
+      if (item.class === "Image" && item.image && item.image.original) {
+        await link(
+          {
+            ...item,
+            source: {
+              title: item.title || item.generated_title || "Untitled",
+              url: item.image.original.url,
+            },
+          },
+          outputDirectory
+        );
+      }
+    }
   }
 }
 
@@ -44,13 +59,16 @@ async function link(item, outputDirectory) {
 </plist>
 `;
 
-  const path = getPath({ outputDirectory, draft, name, created });
+  const path = await getPath({ outputDirectory, draft, name, created });
   await fs.outputFile(path, content, "utf-8");
   await fs.utimes(path, createdDate, createdDate);
 }
 
 async function image(item, outputDirectory) {
   const response = await fetch(item.image.original.url);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
   const data = await response.buffer();
   const title = item.title || item.generated_title || "Untitled";
 
@@ -65,16 +83,24 @@ async function image(item, outputDirectory) {
 
   const name = sanitize(title) + extension;
 
-  const path = getPath({ outputDirectory, draft, name, created });
+  const path = await getPath({ outputDirectory, draft, name, created });
   await fs.outputFile(path, data);
   await fs.utimes(path, createdDate, createdDate);
 }
 
-function getPath({ outputDirectory, draft, name, created }) {
-  return join(
+async function getPath({ outputDirectory, draft, name, created }) {
+  const initial = join(
     outputDirectory,
     (draft ? "[draft]" : "") + moment(created).format("YYYY-MM-DD") + " " + name
   );
+  const extension = extname(initial);
+  const stem = initial.slice(0, -extension.length || undefined);
+  let candidate = initial;
+  let suffix = 2;
+  while (await fs.pathExists(candidate)) {
+    candidate = `${stem}-${suffix++}${extension}`;
+  }
+  return candidate;
 }
 
 module.exports = parse;

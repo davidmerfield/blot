@@ -14,15 +14,17 @@ Importer.route("/are.na")
     res.render("dashboard/import/arena");
   })
   .post(async (req, res) => {
-    const { importDirectory, outputDirectory, finish, status } = init({
+    const { importDirectory, outputDirectory, finish, status, ready } = init({
       blogID: req.blog.id,
       label: "Are.na",
     });
 
     try {
+      await ready;
       const slug = URL.parse(req.body.channel).path.split("/").pop();
 
       const response = await fetch(`https://api.are.na/v2/channels/${slug}`);
+      if (!response.ok) throw new Error(`Are.na returned ${response.status}`);
       const json = await response.json();
       const { title } = json;
 
@@ -37,7 +39,8 @@ Importer.route("/are.na")
       await finish();
     } catch (err) {
       console.error(err);
-      fs.outputFile(join(importDirectory, "error.txt"), err.message);
+      await fs.outputFile(join(importDirectory, "error.txt"), err.message);
+      await status("Failed");
     }
   });
 

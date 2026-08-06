@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:blogger="http://schemas.google.com/blogger/2018">
+  <entry><id>post-1</id><published>2024-01-02T03:04:05Z</published><title>Hello</title><content type="html">&lt;p&gt;Hello world.&lt;/p&gt;</content><category term="http://schemas.google.com/blogger/2018/kind#post"/><blogger:type>POST</blogger:type><blogger:status>LIVE</blogger:status><blogger:filename>2024/01/hello.html</blogger:filename></entry>
+</feed>

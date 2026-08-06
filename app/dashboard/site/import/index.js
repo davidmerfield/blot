@@ -13,20 +13,25 @@ Import.use((req, res, next) => {
 });
 
 Import.param("importID", async (req, res, next) => {
-  const blogImportDirectory = await fs.realpath(
-    join(tempDir, "import", req.blog.id)
-  );
-
-  const userSuppliedImportDirectory = await fs.realpath(
-    join(tempDir, "import", req.blog.id, req.params.importID)
-  );
-
-  if (!userSuppliedImportDirectory.startsWith(blogImportDirectory)) {
+  try {
+    const blogImportDirectory = await fs.realpath(
+      join(tempDir, "import", req.blog.id)
+    );
+    const userSuppliedImportDirectory = await fs.realpath(
+      join(tempDir, "import", req.blog.id, req.params.importID)
+    );
+    const relative = require("path").relative(
+      blogImportDirectory,
+      userSuppliedImportDirectory
+    );
+    if (relative.startsWith("..") || require("path").isAbsolute(relative)) {
+      return next(new Error("Invalid import"));
+    }
+    req.importDirectory = userSuppliedImportDirectory;
+    next();
+  } catch (error) {
     return next(new Error("Invalid import"));
   }
-
-  req.importDirectory = userSuppliedImportDirectory;
-  next();
 });
 
 Import.get("/", list, (req, res) => {

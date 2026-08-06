@@ -10,8 +10,10 @@ const fs = require("fs-extra");
 const { join } = require("path");
 
 async function main({ slug, outputDirectory, status }) {
+  status = typeof status === "function" ? status : () => {};
   status("Fetching posts from Are.na channel " + slug);
   const response = await fetch(`https://api.are.na/v2/channels/${slug}`);
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
   const json = await response.json();
   
   const {
@@ -19,7 +21,7 @@ async function main({ slug, outputDirectory, status }) {
     owner,
   } = json;
 
-  fs.outputFile(
+  await fs.outputFile(
     join(outputDirectory, "_description.txt"),
     `${description}
 

@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wp="http://wordpress.org/export/1.2/"><channel><title>Example</title><link>https://example.com</link><wp:wxr_version>1.2</wp:wxr_version><item><title>Hello</title><link>https://example.com/hello</link><wp:post_date>2024-01-02 03:04:05</wp:post_date><wp:post_type>post</wp:post_type><wp:status>publish</wp:status><content:encoded><![CDATA[<p>Hello world.</p>]]></content:encoded></item></channel></rss>
