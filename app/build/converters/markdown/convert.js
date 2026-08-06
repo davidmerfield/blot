@@ -1,4 +1,5 @@
 var spawn = require("child_process").spawn;
+var path = require("path");
 var indentation = require("./indentation");
 var footnotes = require("./footnotes");
 var time = require("helper/time");
@@ -89,6 +90,17 @@ module.exports = function (blog, text, options, callback) {
   // Emit span.math with raw TeX for the KaTeX plugin. Without --standalone,
   // this does not add CDN script or link tags.
   if (katexEnabled) args.push("--katex");
+
+  if (
+    blog.plugins &&
+    blog.plugins.callouts &&
+    blog.plugins.callouts.enabled === true
+  ) {
+    args.push("--lua-filter");
+    args.push(
+      path.resolve(__dirname, "../../plugins/callouts/callouts.lua")
+    );
+  }
 
   if (options.bib) {
     args.push("-M");
