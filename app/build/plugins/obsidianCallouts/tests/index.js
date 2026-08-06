@@ -84,7 +84,7 @@ describe("obsidianCallouts plugin integration", function () {
 
   it("does not post-process HTML from non-Markdown converters", function (done) {
     this.blog.plugins.obsidianCallouts = { enabled: true, options: {} };
-    const html = "<blockquote><p>[!note] HTML title</p></blockquote>";
+    const html = "<blockquote><p>[!note] Title</p></blockquote>";
     plugins.convert(this.blog, "/post.html", html, function (err, result) {
       if (err) return done.fail(err);
       expect(result).toBe(html);
