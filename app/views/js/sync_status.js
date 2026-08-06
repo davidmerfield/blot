@@ -66,15 +66,20 @@ function renderSyncStatusMessage(message) {
   var parsed = parseSyncStatusMessage(message);
   var visibleMessage = shortenSyncingFilename(parsed.text);
   var progressBar = q(".sync-status-progress-bar");
+  var progressLabel = q(".sync-status-progress-label");
 
   statusText.innerText = visibleMessage;
 
   if (parsed.hasProgress) {
+    var roundedPercent = Math.round(Math.max(0, Math.min(100, parsed.percent)));
+
     statusContainer.classList.add("has-progress");
-    if (progressBar) progressBar.style.width = parsed.percent + "%";
+    if (progressBar) progressBar.style.width = roundedPercent + "%";
+    if (progressLabel) progressLabel.innerText = roundedPercent + "% complete";
   } else {
     statusContainer.classList.remove("has-progress");
     if (progressBar) progressBar.style.width = "0%";
+    if (progressLabel) progressLabel.innerText = "";
   }
 
   updateContainerClass();

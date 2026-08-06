@@ -40,6 +40,16 @@
   display: block;
 }
 
+.sync-status-progress-label {
+  display: none;
+  color: var(--light-text-color);
+  font-size: var(--small-font-size);
+}
+
+.sync-status.has-progress .sync-status-progress-label {
+  display: inline;
+}
+
 .sync-status-progress-bar {
   display: block;
   width: 0%;

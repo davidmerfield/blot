@@ -31,6 +31,9 @@ function renderImportStatus(statusNode, message) {
   const progressBar = progress
     ? progress.querySelector(".sync-status-progress-bar")
     : null;
+  const progressLabel = statusContainer
+    ? statusContainer.querySelector(".sync-status-progress-label")
+    : null;
 
   statusNode.textContent = match ? match[3] : message || "";
 
@@ -38,16 +41,18 @@ function renderImportStatus(statusNode, message) {
     const current = parseInt(match[1], 10);
     const total = parseInt(match[2], 10);
     const percent = total > 0 ? (current / total) * 100 : 0;
+    const clampedPercent = Math.max(0, Math.min(100, percent));
+    const roundedPercent = Math.round(clampedPercent);
 
     statusContainer.classList.add("has-progress");
     if (progress) progress.style.display = "block";
-    if (progressBar) {
-      progressBar.style.width = Math.max(0, Math.min(100, percent)) + "%";
-    }
+    if (progressBar) progressBar.style.width = roundedPercent + "%";
+    if (progressLabel) progressLabel.textContent = roundedPercent + "% complete";
   } else if (statusContainer) {
     statusContainer.classList.remove("has-progress");
     if (progress) progress.style.display = "none";
     if (progressBar) progressBar.style.width = "0%";
+    if (progressLabel) progressLabel.textContent = "";
   }
 }
 
