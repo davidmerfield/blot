@@ -1,8 +1,7 @@
 const paypalButtonContainer = document.getElementById('paypal-button-container');
 const createSitePaypalContainer = document.getElementById('create-site-paypal');
-const form = document.querySelector('form');
 
-if (paypalButtonContainer && createSitePaypalContainer && form && window.paypal && window.paypal.Buttons) {
+if (paypalButtonContainer && createSitePaypalContainer && window.paypal && window.paypal.Buttons) {
   const subscriptionId = createSitePaypalContainer.dataset.paypalSubscriptionId;
   const planId = createSitePaypalContainer.dataset.paypalPlanId;
   const newQuantity = createSitePaypalContainer.dataset.paypalNewQuantity;
@@ -18,7 +17,7 @@ if (paypalButtonContainer && createSitePaypalContainer && form && window.paypal 
           });
         },
         onApprove: function () {
-          form.innerHTML = '<p>Loading...</p>';
+          createSitePaypalContainer.innerHTML = '<p>Loading...</p>';
           window.location.href = redirectUrl;
         },
       })
