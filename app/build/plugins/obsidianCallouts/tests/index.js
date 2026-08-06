@@ -73,6 +73,8 @@ describe("obsidianCallouts plugin integration", function () {
   it("loads public CSS when enabled", function (done) {
     plugins.load("css", this.blog.plugins, function (err, css) {
       if (err) return done.fail(err);
+      expect(css).toContain(".callout[data-callout]");
+      expect(css).not.toContain(".callout {");
       expect(css).toContain('.callout[data-callout="warning"]');
       expect(css).toContain("data:image/svg+xml;base64");
       expect(css).toContain("details.callout[data-callout-fold][open]");

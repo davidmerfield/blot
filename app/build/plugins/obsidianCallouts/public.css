@@ -1,4 +1,4 @@
-.callout {
+.callout[data-callout] {
   --callout-color: 8, 109, 221;
   --callout-icon: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDg2ZGRkIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTEyIDE2di00TTEyIDhoLjAxIi8+PC9zdmc+");
   border-left: 0.25rem solid rgb(var(--callout-color));
@@ -7,14 +7,14 @@
   margin: 1rem 0;
   padding: 0.75rem 1rem;
 }
-.callout-title { align-items: center; color: rgb(var(--callout-color)); display: flex; font-weight: 700; gap: 0.5rem; }
-.callout-icon { background-color: currentColor; height: 1.1em; width: 1.1em; mask: var(--callout-icon) center / contain no-repeat; -webkit-mask: var(--callout-icon) center / contain no-repeat; }
-.callout-content { margin-top: 0.5rem; }
-.callout-content > :first-child { margin-top: 0; }
-.callout-content > :last-child { margin-bottom: 0; }
-summary.callout-title { cursor: pointer; list-style: none; }
-summary.callout-title::marker { display: none; content: ""; }
-summary.callout-title::-webkit-details-marker { display: none; }
+.callout[data-callout] .callout-title { align-items: center; color: rgb(var(--callout-color)); display: flex; font-weight: 700; gap: 0.5rem; }
+.callout[data-callout] .callout-icon { background-color: currentColor; height: 1.1em; width: 1.1em; mask: var(--callout-icon) center / contain no-repeat; -webkit-mask: var(--callout-icon) center / contain no-repeat; }
+.callout[data-callout] .callout-content { margin-top: 0.5rem; }
+.callout[data-callout] .callout-content > :first-child { margin-top: 0; }
+.callout[data-callout] .callout-content > :last-child { margin-bottom: 0; }
+.callout[data-callout] summary.callout-title { cursor: pointer; list-style: none; }
+.callout[data-callout] summary.callout-title::marker { display: none; content: ""; }
+.callout[data-callout] summary.callout-title::-webkit-details-marker { display: none; }
 .callout[data-callout-fold] .callout-title::after { margin-left: auto; }
 details.callout[data-callout-fold][open] .callout-title::after { content: "⌄"; }
 details.callout[data-callout-fold]:not([open]) .callout-title::after { content: "›"; }
