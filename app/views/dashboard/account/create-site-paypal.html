@@ -26,13 +26,3 @@
       <script src="https://www.paypal.com/sdk/js?client-id={{paypal_client_id}}&vault=true&intent=subscription&disable-funding=card"></script>
 
     {{/user.paypal.status}}
-
-     
-
-
-  <div class="buttons" style="width:100%">
-    <button type="submit" >{{#user.isMonthly}}Create site{{/user.isMonthly}}{{^user.isMonthly}}Submit payment{{/user.isMonthly}}</button>
-    <a href="/sites">Cancel</a>
-  </div>
-</div></div>
-</form>
