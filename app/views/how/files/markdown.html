@@ -159,6 +159,21 @@ var foo = "bar";
 >
 > This is the second paragraph. Vestibulum enim wisi.</code></pre>
 
+<h2>Obsidian callouts</h2>
+
+<p>Blot supports <a href="https://help.obsidian.md/callouts">Obsidian callouts</a>. Start a blockquote with <code>[!type]</code>; you can add a title after the marker and use <code>+</code> or <code>-</code> to make the callout collapsible (initially expanded or collapsed, respectively).</p>
+
+<pre class="md"><code>> [!note]
+> This is a note.
+
+> [!warning] Check this first
+> Callout titles can be customized.
+
+> [!tip]- Optional detail
+> This callout is initially collapsed.</code></pre>
+
+<p>Common types include <code>note</code>, <code>info</code>, <code>tip</code>, <code>warning</code>, <code>danger</code>, <code>example</code>, and <code>quote</code>. Markdown formatting works in callout titles and content. Nested callouts are not supported.</p>
+
 <h2>Tables</h2>
 
 <p>You can use the following syntax to create tables:</p>
