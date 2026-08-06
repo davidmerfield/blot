@@ -37,7 +37,10 @@ const mergeCSSFiles = async (files) => {
     files.map(file => fs.readFile(file, "utf-8"))
   );
 
-  const mergedCSS = cssContents.join("\n\n");
+  // pull in callouts.css from app/build/plugins/obsidianCallouts
+  const calloutsCSS = await fs.readFile(join(__dirname, "../../../app/build/plugins/obsidianCallouts/public.css"), "utf-8");
+
+  const mergedCSS = cssContents.join("\n\n") + "\n" + calloutsCSS;
 
   const minifiedCSS = new CleanCSS({ level: 2 }).minify(mergedCSS);
 

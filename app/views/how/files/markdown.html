@@ -159,20 +159,25 @@ var foo = "bar";
 >
 > This is the second paragraph. Vestibulum enim wisi.</code></pre>
 
-<h2>Obsidian callouts</h2>
+<h2>Callouts</h2>
 
-<p>Blot supports <a href="https://help.obsidian.md/callouts">Obsidian callouts</a>. Start a blockquote with <code>[!type]</code>; you can add a title after the marker and use <code>+</code> or <code>-</code> to make the callout collapsible (initially expanded or collapsed, respectively).</p>
+<p>Start a blockquote with <code>[!type]</code>; you can add a title after the marker and use <code>+</code> or <code>-</code> to make the callout collapsible (initially expanded or collapsed, respectively).</p>
 
-<pre class="md"><code>> [!note]
-> This is a note.
+<pre class="md"><code>> [!info] Here's a callout title
+> Here's a callout block.
+> It supports **Markdown**, etc.</code></pre>
 
-> [!warning] Check this first
-> Callout titles can be customized.
+<div class="callout" data-callout="info" data-callout-original="info">
+    <div class="callout-title">
+    <span class="callout-icon" aria-hidden="true"></span><span class="callout-title-inner">Here’s a callout title</span>
+    </div>
+    <div class="callout-content">
+    <p>Here’s a callout block.<br>
+    It supports <strong>Markdown</strong>, etc.</p>
+    </div>
+    </div>
 
-> [!tip]- Optional detail
-> This callout is initially collapsed.</code></pre>
-
-<p>Common types include <code>note</code>, <code>info</code>, <code>tip</code>, <code>warning</code>, <code>danger</code>, <code>example</code>, and <code>quote</code>. Markdown formatting works in callout titles and content. Nested callouts are not supported.</p>
+<p>Common types include <code>note</code>, <code>info</code>, <code>tip</code>, <code>warning</code>, <code>danger</code>, <code>example</code>, and <code>quote</code>. Markdown formatting works in callout titles and content. Nested callouts are not supported. The syntax is based on <a href="https://help.obsidian.md/callouts">Obsidian callouts</a>.</p>
 
 <h2>Tables</h2>
 
