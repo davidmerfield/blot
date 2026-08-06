@@ -63,10 +63,12 @@ describe("obsidianCallouts plugin integration", function () {
       if (err) return done.fail(err);
       expect(css).toContain(".callout[data-callout]");
       expect(css).toContain('.callout[data-callout="warning"]');
-      expect(css).toContain("data:image/svg+xml;base64");
+      expect(css).not.toContain("data:image/svg+xml;base64");
       expect(css).toContain(".callout-fold-ready.is-collapsed");
       expect(css).not.toContain("details.callout");
       expect(css).not.toContain("summary.callout-title");
+      expect(css).not.toContain("--callout-icon");
+      expect(css).not.toContain(".callout-icon {");
       plugins.load("js", this.blog.plugins, (jsErr, js) => {
         if (jsErr) return done.fail(jsErr);
         expect(js).toContain("data-callout-fold");
