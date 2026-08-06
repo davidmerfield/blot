@@ -161,23 +161,35 @@ var foo = "bar";
 
 <h2>Callouts</h2>
 
-<p>Start a blockquote with <code>[!type]</code>; you can add a title after the marker and use <code>+</code> or <code>-</code> to make the callout collapsible (initially expanded or collapsed, respectively).</p>
+<p>Start a blockquote with <code>[!info]</code> to create a callout:</p>
 
 <pre class="md"><code>> [!info] Here's a callout title
-> Here's a callout block.
-> It supports **Markdown**, etc.</code></pre>
+> Here's a callout block. It supports **Markdown**, etc.</code></pre>
 
 <div class="callout" data-callout="info" data-callout-original="info">
     <div class="callout-title">
     <span class="callout-icon" aria-hidden="true"></span><span class="callout-title-inner">Here’s a callout title</span>
     </div>
     <div class="callout-content">
-    <p>Here’s a callout block.<br>
-    It supports <strong>Markdown</strong>, etc.</p>
+    <p>Here’s a callout block. It supports <strong>Markdown</strong>, etc.</p>
     </div>
     </div>
 
-<p>Common types include <code>note</code>, <code>info</code>, <code>tip</code>, <code>warning</code>, <code>danger</code>, <code>example</code>, and <code>quote</code>. Markdown formatting works in callout titles and content. Nested callouts are not supported. The syntax is based on <a href="https://help.obsidian.md/callouts">Obsidian callouts</a>. You can also <a href="/developers/guides/customize-callouts">customize the appearance and icons of callouts</a> in your template.</p>
+<p>Use <code>+</code> or <code>-</code> to make the callout collapsible (initially expanded or collapsed, respectively):</p>
+
+<pre class="md"><code>> [!info]- Here's a collapsible callout
+> Here's the collapsible content.</code></pre>
+
+<div class="callout is-collapsed callout-fold-ready" data-callout="info" data-callout-original="info" data-callout-fold="-" style="max-height: none">
+    <div class="callout-title" role="button" tabindex="0" aria-expanded="false">
+    <span class="callout-icon" aria-hidden="true"></span><span class="callout-title-inner">Here’s a collapsible callout</span>
+    </div>
+    <div class="callout-content">
+    <p>Here’s the initially-collapsed content.</p>
+    </div>
+    </div>
+
+<p>Supported callout types are <code>note</code>, <code>abstract</code>, <code>info</code>, <code>todo</code>, <code>tip</code>, <code>success</code>, <code>question</code>, <code>warning</code>, <code>failure</code>, <code>danger</code>, <code>bug</code>, <code>example</code>, and <code>quote</code>. The syntax is based on <a href="https://help.obsidian.md/callouts">Obsidian callouts</a>. You can <a href="/developers/guides/customize-callouts">customize the appearance</a> of callouts in your template.</p>
 
 <h2>Tables</h2>
 
