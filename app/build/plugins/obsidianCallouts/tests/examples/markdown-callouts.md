@@ -1,41 +1,41 @@
-> [!note]
+> [!note]  
 > Default note body.
 
-> [!warning] Custom **Warning**
+> [!warning] Custom **Warning**  
 > Be careful with *formatting*.
 
-> [!warning] Plain Custom Warning
+> [!warning] Plain Custom Warning  
 > Plain body stays body.
 
 > [!todo] Task List
 
-> [!warning] **Critical**
+> [!warning] **Critical**  
 > Treat inline markup as the title.
 
-> [!info]+
+> [!info]+  
 > Expanded content.
 
-> [!danger]-
+> [!danger]-  
 > Hidden content.
 
-> [!faq]
+> [!faq]  
 > Why?
 
-> [!error]
+> [!error]  
 > Danger alias.
 
-> [!summary]
+> [!summary]  
 > Abstract alias.
 
-> [!custom]
+> [!custom]  
 > Unsupported type.
 
-> [!TiP]
+> [!TiP]  
 > Case insensitive.
 
-> [!note]
+> [!note]  
 > Outer content.
-> > [!warning]
+> > [!warning]  
 > > Inner content.
 
 > This is a normal quote with [!note] later.
@@ -51,5 +51,5 @@
 > ![x](y)[!note]
 > Image before marker should remain quoted.
 
->    [!note]
+>    [!note]  
 > Leading whitespace still works.

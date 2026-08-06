@@ -19,7 +19,8 @@ describe("obsidianCallouts plugin integration", function () {
 
   const isSupportedSourceFixture = (file) =>
     supportedExtensions.some((ext) => file.endsWith(ext)) &&
-    !supportedExtensions.some((ext) => file.endsWith(`${ext}.html`));
+    !supportedExtensions.some((ext) => file.endsWith(`${ext}.html`)) &&
+    !file.endsWith(".expected.html");
 
   fs.readdirSync(dir)
     .filter(isSupportedSourceFixture)
