@@ -96,10 +96,10 @@ function trimEmptyLeadingNodes($, $container) {
   }
 }
 
-function appendTitleTextNode($titleInner, node, isFirstTitleNode) {
+function appendTitleTextNode($titleInner, node, isFirstTitleNode, isLastTitleNode) {
   if (node.type === "text") {
     if (isFirstTitleNode) node.data = (node.data || "").replace(/^\s+/, "");
-    node.data = (node.data || "").replace(/\s+$/, "");
+    if (isLastTitleNode) node.data = (node.data || "").replace(/\s+$/, "");
     if (!node.data) return false;
   }
 
@@ -144,10 +144,23 @@ function extractTitleLine($, $firstContainer, $titleInner, defaultTitle) {
     titleNodes.push(node);
   });
 
+  while (
+    titleNodes.length &&
+    titleNodes[titleNodes.length - 1].type === "text" &&
+    !/\S/.test(titleNodes[titleNodes.length - 1].data || "")
+  ) {
+    titleNodes.pop();
+  }
+
   let appendedTitleNode = false;
-  titleNodes.forEach(function (node) {
+  titleNodes.forEach(function (node, index) {
     appendedTitleNode =
-      appendTitleTextNode($titleInner, node, !appendedTitleNode) ||
+      appendTitleTextNode(
+        $titleInner,
+        node,
+        !appendedTitleNode,
+        index === titleNodes.length - 1
+      ) ||
       appendedTitleNode;
   });
 
