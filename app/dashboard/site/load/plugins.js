@@ -18,12 +18,10 @@ module.exports = function (req, res, next) {
       continue;
     }
 
-    const pluginState = blog.plugins[i] || defaultList[i];
-
-    if (!pluginState) {
-      console.log("Plugin not found: " + i);
-      continue;
-    }
+    const pluginState = blog.plugins[i] || {
+      enabled: false,
+      options: defaultList[i]?.options || {},
+    };
 
     let formHTML = plugins[i].formHTML;
     let options = pluginState.options;
