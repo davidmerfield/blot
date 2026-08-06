@@ -9,7 +9,7 @@ require('./questions-ask.js');
 require('./questions-textarea.js');
 require('./questions-edit.js');
 
-require('../../build/plugins/obsidianCallouts/public.js');
+require('../../build/plugins/callouts/public.js');
 
 // must come before copy-buttons.js so that the copy buttons are generated
 require('./multi-lingual-code.js');

@@ -33,7 +33,7 @@ var loaded = loadPlugins({
   katex: require("./katex"),
   linebreaks: require("./linebreaks"),
   mediaPreload: require("./mediaPreload"),
-  obsidianCallouts: require("./obsidianCallouts"),
+  callouts: require("./callouts"),
   linkScreenshot: require("./linkScreenshot"),
   titlecase: require("./titlecase"),
   twitter: require("./twitter"),

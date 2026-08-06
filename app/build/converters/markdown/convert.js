@@ -93,12 +93,12 @@ module.exports = function (blog, text, options, callback) {
 
   if (
     blog.plugins &&
-    blog.plugins.obsidianCallouts &&
-    blog.plugins.obsidianCallouts.enabled === true
+    blog.plugins.callouts &&
+    blog.plugins.callouts.enabled === true
   ) {
     args.push("--lua-filter");
     args.push(
-      path.resolve(__dirname, "../../plugins/obsidianCallouts/callouts.lua")
+      path.resolve(__dirname, "../../plugins/callouts/callouts.lua")
     );
   }
 

@@ -37,8 +37,8 @@ const mergeCSSFiles = async (files) => {
     files.map(file => fs.readFile(file, "utf-8"))
   );
 
-  // pull in callouts.css from app/build/plugins/obsidianCallouts
-  const calloutsCSS = await fs.readFile(join(__dirname, "../../../app/build/plugins/obsidianCallouts/public.css"), "utf-8");
+  // pull in callouts.css from app/build/plugins/callouts
+  const calloutsCSS = await fs.readFile(join(__dirname, "../../../app/build/plugins/callouts/public.css"), "utf-8");
 
   const mergedCSS = cssContents.join("\n\n") + "\n" + calloutsCSS;
 

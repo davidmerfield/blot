@@ -8,13 +8,13 @@ beforeAll(function (done) {
   templates({ watch: false }, done);
 }, 10 * 1000);
 
-describe("obsidianCallouts plugin integration", function () {
+describe("callouts plugin integration", function () {
   require("build/tests/plugins/util/setup")();
 
   const fixture = __dirname + "/examples/markdown-callouts.md";
 
   function buildFixture(context, enabled, done) {
-    context.blog.plugins.obsidianCallouts = { enabled, options: {} };
+    context.blog.plugins.callouts = { enabled, options: {} };
     const contents = fs.readFileSync(fixture, "utf8");
     fs.outputFileSync(context.blogDirectory + "/callouts.md", contents);
     build(context.blog, "/callouts.md", done);
@@ -58,7 +58,7 @@ describe("obsidianCallouts plugin integration", function () {
   });
 
   it("loads both public assets only when enabled", function (done) {
-    this.blog.plugins.obsidianCallouts = { enabled: true, options: {} };
+    this.blog.plugins.callouts = { enabled: true, options: {} };
     plugins.load("css", this.blog.plugins, (err, css) => {
       if (err) return done.fail(err);
       expect(css).toContain(".callout[data-callout]");
@@ -85,7 +85,7 @@ describe("obsidianCallouts plugin integration", function () {
   });
 
   it("does not post-process HTML from non-Markdown converters", function (done) {
-    this.blog.plugins.obsidianCallouts = { enabled: true, options: {} };
+    this.blog.plugins.callouts = { enabled: true, options: {} };
     const html = "<blockquote><p>[!note] Title</p></blockquote>";
     plugins.convert(this.blog, "/post.html", html, function (err, result) {
       if (err) return done.fail(err);
