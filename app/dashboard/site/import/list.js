@@ -19,6 +19,7 @@ module.exports = async function (req, res, next) {
         let lastStatus;
         let error;
         let cancelled;
+        let timestamp;
 
         try {
           size = prettySize(
@@ -26,13 +27,13 @@ module.exports = async function (req, res, next) {
               fs.statSync(join(tempDir, "import", req.blog.id, i, "result.zip"))
                 .size / 1000
             )
-          );
+          , 0); // no decimals
         } catch (e) {}
 
         try {
           const lastDash = i.lastIndexOf("-");
           name = i.slice(0, lastDash);
-          const timestamp = parseInt(i.slice(lastDash + 1), 10);
+          timestamp = parseInt(i.slice(lastDash + 1), 10);
           started = moment(timestamp).fromNow();
           importedOn = moment(timestamp).format("MMM D, YYYY");
         } catch (e) {}
@@ -81,10 +82,16 @@ module.exports = async function (req, res, next) {
           lastStatus: !!error ? error : lastStatus,
           started,
           importedOn,
+          timestamp,
           complete: !!size || !!error,
         };
       })
       .filter((i) => !!i && !!i.name && i.cancelled === undefined);
+
+      // sort by timestamp
+      res.locals.imports.sort((a, b) => {
+        return b.timestamp - a.timestamp;
+      });
   } catch (e) {
     //
   }

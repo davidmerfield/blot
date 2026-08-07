@@ -1,7 +1,7 @@
 <style>
     
-  .imports {padding: 24px 0;display: flex;flex-wrap: wrap;list-style: none;gap: 1em;max-width: 800px;}
-  .imports li {flex-basis: 33%;}
+  .imports {padding: 24px 0 24px 0;display: flex;flex-wrap: wrap;list-style: none;gap: 1em;max-width: none;border-top: 1px solid var(--border-color);}
+  .imports li {flex-basis: 32%;}
   .imports li a {
     padding:11px 20px;
     color:var(--text-color);
@@ -32,12 +32,16 @@
 <div data-import-base="{{{importBase}}}" style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
         <h1>Import</h1>
 
+        <p>Migrate your posts from other apps. The importer generates an archive of files which you can add to your site's folder. <a href="/how/configure/import">Learn more</a></p>
+
+        <br>
 {{#imports.length}}
 <div class="live-updates">
-<p><strong>Your imports:</strong></h2>
+<p><strong>Your imports</strong></h2>
 
 <style type="text/css">
   .import-list {list-style: none;padding: 0;margin: 0;max-width: none;}
+  .import-list li {padding: var(--spacing) var(--spacing);}
   .import-row {display: flex;align-items: center;justify-content: space-between;gap: 1em;padding: 12px 0;border-top: 1px solid rgba(0,0,0,0.05);font-size: 14px;}
   .import-row:hover {background: rgba(0,0,0,0.02);}
   .import-row__info {min-width: 0;flex: 1;}
@@ -76,7 +80,7 @@
       <span>{{name}}</span>
       {{#complete}}
         {{^error}}
-        <span>&bull; Imported on {{importedOn}}</span>
+        <span>&bull; {{started}}</span>
         {{#size}}<span>&bull; {{size}}</span>{{/size}}
         {{/error}}
         {{#error}}
@@ -105,7 +109,7 @@
     {{/error}}
     <form method="post" action="{{{importBase}}}/delete/{{id}}">
       <input type="hidden" name="_csrf" value="{{csrftoken}}">
-      <button type="submit">Remove</button>
+      <button type="submit">Delete</button>
     </form>
   {{/complete}}
   {{^complete}}
@@ -124,12 +128,14 @@
 {{/imports.length}}
 
 
+{{#imports.length}}
+<p><strong>New import</strong></p>
+{{/imports.length}}
+
 <ul class="imports">
   <li><a href="{{{importBase}}}/wordpress"><img width="100" height="100" src="/images/configure/wordpress.png"> <span class="a">Wordpress</span></a></li>
   <li><a href="{{{importBase}}}/blogger"><img width="100" height="100" src="/images/configure/blogger.svg"> <span class="a">Blogger</span></a></li>
   <li><a href="{{{importBase}}}/are.na"><img width="250" height="149" src="/images/configure/are.na.png">  <span class="a">Are.na</span></a></li>
 </ul>
-
-<p style="max-width: 500px">Need an importer for another source? <a href="/contact">Request a new importer</a>.</p>
 
 </div>
