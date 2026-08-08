@@ -1,0 +1,67 @@
+.import-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--border-radius);
+  background: var(--light-background-color);
+  box-sizing: border-box;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.15s;
+}
+
+.import-info:hover {
+  background: var(--medium-background-color);
+  color: inherit;
+}
+
+.import-info:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
+.import-info__logo {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.import-info__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.import-info__title {
+  margin: 0 0 0.15rem;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.import-info__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--medium-text-color);
+}
+
+.import-info__action {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--background-color);
+  color: var(--text-color);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.import-info:hover .import-info__action {
+  border-color: var(--dark-border-color);
+}

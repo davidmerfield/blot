@@ -153,6 +153,12 @@ function nameFrom(src, headers, format) {
     basename(parse(src).pathname) ||
     "image";
 
+  try {
+    name = decodeURIComponent(name);
+  } catch (e) {
+    // keep the raw name if it isn't valid percent-encoding
+  }
+
   name = sanitizeFilename(name);
 
   if (name.charAt(0) !== "_") name = "_" + name;
@@ -185,7 +191,8 @@ function sanitizeFilename(name) {
   return String(name)
     .replace(/[/\\?%*:|"<>]/g, "-")
     .replace(/\0/g, "")
-    .trim();
+    .trim()
+    .replace(/\s+/g, "_");
 }
 
 function ensureExtension(name, headers, format) {

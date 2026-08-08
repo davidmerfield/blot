@@ -35,7 +35,9 @@ function renderImportStatus(statusNode, message) {
     ? statusContainer.querySelector(".sync-status-progress-label")
     : null;
 
-  statusNode.textContent = match ? match[3] : message || "";
+  statusNode.textContent = match
+    ? match[3] || "Processing..."
+    : "Processing...";
 
   if (statusContainer && match) {
     const current = parseInt(match[1], 10);

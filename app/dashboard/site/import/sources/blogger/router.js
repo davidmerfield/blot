@@ -1,24 +1,14 @@
 const express = require("express");
 const fs = require("fs-extra");
-const { basename, extname, join } = require("path");
+const { extname, join } = require("path");
 
 const init = require("dashboard/site/import/init");
+const normalizeIdentifier = require(
+  "dashboard/site/import/helper/normalize_identifier"
+);
 const blogger = require("./index");
 
 const Importer = express.Router();
-const MAX_IDENTIFIER_LENGTH = 120;
-
-function identifierFor(filename) {
-  const identifier = basename(String(filename || "").replace(/\\/g, "/"))
-    .replace(/[\u0000-\u001f\u007f]/g, "")
-    .trim()
-    .slice(0, MAX_IDENTIFIER_LENGTH);
-
-  return identifier && identifier !== "." && identifier !== ".."
-    ? identifier
-    : "Blogger export";
-}
-
 function isBloggerExport(upload) {
   const extension = extname(upload.originalFilename || "").toLowerCase();
   const contentType = String(
@@ -30,14 +20,7 @@ function isBloggerExport(upload) {
     .trim()
     .toLowerCase();
 
-  return (
-    extension === ".xml" ||
-    extension === ".atom" ||
-    contentType === "application/xml" ||
-    contentType === "text/xml" ||
-    contentType === "application/atom+xml" ||
-    contentType.endsWith("+xml")
-  );
+  return extension === ".atom" || contentType === "application/atom+xml";
 }
 
 function errorMessage(error) {
@@ -61,7 +44,7 @@ Importer.route("/blogger")
 
     if (!upload || !upload.path) {
       return res.message(
-        req.baseUrl,
+        req.baseUrl + "/blogger",
         new Error("Please select a Blogger export file.")
       );
     }
@@ -69,8 +52,8 @@ Importer.route("/blogger")
     if (!isBloggerExport(upload)) {
       fs.remove(upload.path).catch(() => {});
       return res.message(
-        req.baseUrl,
-        new Error("Please upload an XML or Atom file exported from Blogger.")
+        req.baseUrl + "/blogger",
+        new Error("Please upload an Atom file exported from Blogger.")
       );
     }
 
@@ -79,7 +62,7 @@ Importer.route("/blogger")
       siteHost = blogger.parseSiteHost(req.body && req.body.siteURL);
     } catch (error) {
       fs.remove(upload.path).catch(() => {});
-      return res.message(req.baseUrl, error);
+      return res.message(req.baseUrl + "/blogger", error);
     }
 
     const job = init({ blogID: req.blog.id, label: "Blogger" });
@@ -91,7 +74,10 @@ Importer.route("/blogger")
       try {
         await fs.outputFile(
           join(job.importDirectory, "identifier.txt"),
-          identifierFor(upload.originalFilename),
+          normalizeIdentifier(upload.originalFilename, {
+            extension: ".atom",
+            fallback: "Blogger export",
+          }),
           "utf8"
         );
         await blogger(upload.path, job.outputDirectory, job.status, {

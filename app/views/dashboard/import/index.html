@@ -1,7 +1,7 @@
 <style>
     
-  .imports {padding: 24px 0;display: flex;flex-wrap: wrap;list-style: none;gap: 1em;max-width: 800px;}
-  .imports li {flex-basis: 33%;}
+  .imports {padding: 24px 0 24px 0;display: flex;flex-wrap: wrap;list-style: none;gap: 1em;max-width: none;border-top: 1px solid var(--border-color);}
+  .imports li {flex-basis: 32%;}
   .imports li a {
     padding:11px 20px;
     color:var(--text-color);
@@ -17,6 +17,10 @@
    .imports li a:hover {
     background-color: var(--light-background-color);
     color: var(--accent-color);
+   }
+   .imports li a:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 3px;
    }
 
    .imports li img {
@@ -34,17 +38,47 @@
 
 {{#imports.length}}
 <div class="live-updates">
-<p><strong>Your imports:</strong></h2>
+<p><span style="color:var(--medium-text-color);font-size:var(--small-font-size)">Your imports</strong></p>
 
 <style type="text/css">
   .import-list {list-style: none;padding: 0;margin: 0;max-width: none;}
-  .import-row {display: flex;align-items: center;justify-content: space-between;gap: 1em;padding: 12px 0;border-top: 1px solid rgba(0,0,0,0.05);font-size: 14px;}
+  .import-list li {padding: var(--spacing) var(--spacing);}
+  .import-row {display: flex;align-items: flex-start;justify-content: space-between;gap: 1em;padding: 12px 0;border-top: 1px solid rgba(0,0,0,0.05);font-size: 14px;}
   .import-row:hover {background: rgba(0,0,0,0.02);}
   .import-row__info {min-width: 0;flex: 1;}
   .import-row__filename {font-weight: 600;word-break: break-word;}
   .import-row__meta {display: flex;align-items: center;flex-wrap: wrap;gap: 0.35em;margin-top: 4px;color: rgba(0,0,0,0.5);font-size: 13px;}
   .import-row__meta img {height: 14px;width: auto;max-width: 20px;flex-shrink: 0;}
-  .import-row__meta .sync-status {min-width: 0;flex: 1 1 12rem;}
+  .import-row__sync.sync-status {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5em;
+    width: 100%;
+    margin-top: 4px;
+    color: rgba(0,0,0,0.5);
+    font-size: 13px;
+  }
+  .import-row__sync .import-row__meta {
+    margin-top: 0;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+  .import-row__sync .import-row__meta > :not(.sync-status-text) {flex-shrink: 0;}
+  .import-row__pct {display: none;}
+  .import-row__sync.has-progress .import-row__pct {display: contents;}
+  .import-row__pct > span {flex-shrink: 0;}
+  .import-row__sync .sync-status-progress-label {
+    color: inherit;
+    font-size: inherit;
+  }
+  .import-row__sync .sync-status-text {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .import-row__sync .sync-status-progress {
+    max-width: 560px;
+  }
   .import-row__actions {display: flex;align-items: center;gap: 8px;flex-shrink: 0;}
   .import-row__actions a,
   .import-row__actions button {
@@ -71,31 +105,36 @@
 
   <div class="import-row__info">
     <div class="import-row__filename">{{identifier}}</div>
+    {{#complete}}
     <div class="import-row__meta">
       {{#icon}}<img width="14" height="14" src="{{icon}}" alt="">{{/icon}}
       <span>{{name}}</span>
-      {{#complete}}
-        {{^error}}
-        <span>&bull; Imported on {{importedOn}}</span>
-        {{#size}}<span>&bull; {{size}}</span>{{/size}}
-        {{/error}}
-        {{#error}}
-        <span class="error" style="padding:2px 8px;line-height: 1.4;">{{error}}</span>
-        {{/error}}
-      {{/complete}}
-      {{^complete}}
-        <span>&bull;</span>
-        <span class="sync-status">
-          <span class="sync-status-body">
-            <span id="status-{{id}}" class="sync-status-text truncate">{{lastStatus}}</span>
-            <span class="sync-status-progress">
-              <span class="sync-status-progress-bar"></span>
-            </span>
-            <span class="sync-status-progress-label"></span>
-          </span>
-        </span>
-      {{/complete}}
+      {{^error}}
+      {{#started}}<span>&bull; {{started}}</span>{{/started}}
+      {{#size}}<span>&bull; {{size}}</span>{{/size}}
+      {{/error}}
+      {{#error}}
+      <span class="error" style="padding:2px 8px;line-height: 1.4;">{{error}}</span>
+      {{/error}}
     </div>
+    {{/complete}}
+    {{^complete}}
+    <div class="sync-status import-row__sync">
+      <div class="import-row__meta">
+        {{#icon}}<img width="14" height="14" src="{{icon}}" alt="">{{/icon}}
+        <span>{{name}}</span>
+        <span class="import-row__pct">
+          <span>&bull;</span>
+          <span class="sync-status-progress-label"></span>
+        </span>
+        <span>&bull;</span>
+        <span id="status-{{id}}" class="sync-status-text truncate">{{lastStatus}}</span>
+      </div>
+      <span class="sync-status-progress">
+        <span class="sync-status-progress-bar"></span>
+      </span>
+    </div>
+    {{/complete}}
   </div>
 
   <div class="import-row__actions">
@@ -105,7 +144,7 @@
     {{/error}}
     <form method="post" action="{{{importBase}}}/delete/{{id}}">
       <input type="hidden" name="_csrf" value="{{csrftoken}}">
-      <button type="submit">Remove</button>
+      <button type="submit">Delete</button>
     </form>
   {{/complete}}
   {{^complete}}
@@ -124,12 +163,15 @@
 {{/imports.length}}
 
 
-<ul class="imports">
-  <li><a href="{{{importBase}}}/wordpress"><img width="100" height="100" src="/images/configure/wordpress.png"> <span class="a">Wordpress</span></a></li>
-  <li><a href="{{{importBase}}}/blogger"><img width="100" height="100" src="/images/configure/blogger.svg"> <span class="a">Blogger</span></a></li>
-  <li><a href="{{{importBase}}}/are.na"><img width="250" height="149" src="/images/configure/are.na.png">  <span class="a">Are.na</span></a></li>
-</ul>
+{{#imports.length}}
+<p><span style="color:var(--medium-text-color);font-size:var(--small-font-size)">New import</strong></p>
+  {{/imports.length}}
 
-<p style="max-width: 500px">Need an importer for another source? <a href="/contact">Request a new importer</a>.</p>
+<ul class="imports">
+  <li><a href="{{{importBase}}}/wordpress"><img width="100" height="100" src="/images/configure/wordpress.svg" alt=""> <span class="a">WordPress</span></a></li>
+  <li><a href="{{{importBase}}}/squarespace"><img width="100" height="100" src="/images/configure/squarespace.svg" alt=""> <span class="a">Squarespace</span></a></li>
+  <li><a href="{{{importBase}}}/blogger"><img width="100" height="100" src="/images/configure/blogger.svg" alt=""> <span class="a">Blogger</span></a></li>
+  <li><a href="{{{importBase}}}/arena"><img width="100" height="100" src="/images/configure/are.na.svg" alt="">  <span class="a">Are.na</span></a></li>
+</ul>
 
 </div>

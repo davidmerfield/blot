@@ -1,24 +1,30 @@
 {{> close-button}}
 
 <div style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
-        <h1>Are.na import</h1>
-  <p style="max-width: 600px;">
-    The importer can turn an <a href="https://www.are.na/" rel="nofollow">Are.na channel</a> into an archive (.zip) containing
-    markdown files. The importer downloads images and stores them with the
-    markdown files.
-  </p>
-  <br />
+  <h1>Import from Are.na</h1>
+
+  <a class="import-info" href="/how/configure/import/arena">
+    <img class="import-info__logo" src="/images/configure/are.na.svg" alt="">
+    <div class="import-info__body">
+      <p class="import-info__title">How do I export from Are.na?</p>
+      <p class="import-info__text">Paste a public channel URL. Blot turns the channel into Markdown and images.</p>
+    </div>
+    <span class="import-info__action">View guide</span>
+  </a>
 
   <form method="POST">
     <input type="hidden" name="_csrf" value="{{csrftoken}}" />
 
-    <label>Are.na channel URL:</label>
+    <label for="arena-channel">Are.na channel URL</label><br>
     <input
-      type="text"
+      type="url"
+      id="arena-channel"
       name="channel"
-      placeholder="https://www.are.na/..."
+      placeholder="https://www.are.na/username/channel-name"
+      autocomplete="url"
+      style="width:100%;box-sizing:border-box;max-width:600px;"
+      required
     />
-
     <div class="buttons">
       <button type="submit">Start import</button>
       <a href="{{{importBase}}}">Cancel</a>
