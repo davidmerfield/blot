@@ -15,6 +15,7 @@ const internal = {
   "/how/pages": "/how/posts/pages",
   "/how/metadata": "/how/posts/metadata",
   "/how/import": "/how/configure/import",
+  "/how/configure/import/are.na": "/how/configure/import/aredotna",
   "/how/tags": "/how/posts/metadata",
   "/how/files/embedding": "/how/formatting/embedding",
   "/how/files/citations": "/how/formatting/citations",

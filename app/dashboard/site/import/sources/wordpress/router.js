@@ -6,11 +6,6 @@ const { join } = require("path");
 
 const init = require("dashboard/site/import/init");
 
-const multiparty = require("multiparty");
-
-const maxFieldsSize = 4 * 1024 * 1024; // 4mb
-const maxFilesSize = 30 * 1024 * 1024; // 30mb
-
 const wordpress = require("./index");
 
 Importer.route("/wordpress")
@@ -19,6 +14,18 @@ Importer.route("/wordpress")
     res.render("dashboard/import/wordpress");
   })
   .post(function (req, res) {
+    const exportUpload =
+      req.files &&
+      Array.isArray(req.files.exportUpload) &&
+      req.files.exportUpload[0];
+
+    if (!exportUpload || !exportUpload.path) {
+      return res.message(
+        req.baseUrl + "/wordpress",
+        new Error("Please select a Wordpress export file.")
+      );
+    }
+
     const { importDirectory, outputDirectory, finish, status } = init({
       blogID: req.blog.id,
       label: "Wordpress",
@@ -26,7 +33,6 @@ Importer.route("/wordpress")
 
     res.message(req.baseUrl, "Began import");
 
-    const exportUpload = req.files.exportUpload[0];
     const identifier = exportUpload.originalFilename;
     const inputXML = exportUpload.path;
 
@@ -39,7 +45,7 @@ Importer.route("/wordpress")
     wordpress(inputXML, outputDirectory, status, {}, async function (err) {
       if (err) {
         console.trace();
-        console.log('finally here with message', err);
+        console.log("finally here with message", err);
         return fs.outputFile(join(importDirectory, "error.txt"), err.message);
       }
 

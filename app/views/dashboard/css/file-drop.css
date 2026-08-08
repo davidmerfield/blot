@@ -1,0 +1,130 @@
+.file-drop {
+  margin-bottom: 6px;
+}
+
+.file-drop__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.file-drop__empty[hidden],
+.file-drop__selected[hidden] {
+  display: none;
+}
+
+.file-drop__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem 1.5rem;
+  border: 1px dashed var(--accent-color);
+  border-radius: var(--border-radius);
+  background: var(--light-background-color);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.file-drop.is-dragover .file-drop__empty {
+  background: var(--medium-background-color);
+}
+
+.file-drop__icon {
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 0.75rem;
+  color: var(--accent-color);
+}
+
+.file-drop__title {
+  margin: 0 0 0.35rem;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.file-drop__action {
+  margin: 0 0 0.75rem;
+  font-size: 14px;
+  color: var(--medium-text-color);
+}
+
+.file-drop__choose {
+  color: var(--accent-color);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.file-drop__hints {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--light-text-color);
+}
+
+.file-drop__selected-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 14px;
+  color: var(--medium-text-color);
+}
+
+.file-drop__chip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--large-border-radius);
+  background: var(--light-background-color);
+  box-sizing: border-box;
+}
+
+.file-drop__file-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: var(--medium-text-color);
+}
+
+.file-drop__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-drop__clear {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin: 0;
+  border: none;
+  background: none;
+  color: var(--medium-text-color);
+  cursor: pointer;
+  line-height: 0;
+}
+
+.file-drop__clear:hover {
+  color: var(--text-color);
+}
+
+.file-drop__clear svg {
+  width: 14px;
+  height: 14px;
+}

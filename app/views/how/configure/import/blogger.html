@@ -1,0 +1,29 @@
+<h1>Blogger</h1>
+
+<p>
+  You can import a Blogger blog by downloading a content backup from Blogger, then using Blot’s <a href="/sites/default/import/blogger"><span class="ui-action"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="14" ><path d="m12.687 9 1.173-1.233a.75.75 0 0 0-1.087-1.034l-2.378 2.5a.75.75 0 0 0 0 1.034l2.378 2.5a.75.75 0 1 0 1.087-1.034L12.687 10.5h3.25a.75.75 0 0 0 0-1.5h-3.25Z"/><path d="M1.75 0A1.75 1.75 0 0 0 0 1.75v10.5A1.75 1.75 0 0 0 1.75 14H9c1 0 1-1.5 0-1.5H1.75a.25.25 0 0 1-.25-.25V1.75a.25.25 0 0 1 .25-.25H5a.25.25 0 0 1 .2.1l.9 1.2c.33.44.85.7 1.4.7h6.75a.25.25 0 0 1 .25.25v.75c0 1 1.5 1 1.5 0v-.75A1.75 1.75 0 0 0 14.25 2H7.5a.25.25 0 0 1-.2-.1L6.4.7C6.07.26 5.55 0 5 0H1.75Z"/></svg> Import from Blogger</span></a> tool on the dashboard.
+</p>
+
+<h2>Export your blog</h2>
+
+<p>
+  In Blogger, open <strong>Settings</strong>, scroll to <strong>Manage blog</strong>, choose <strong>Back up content</strong>, then select <strong>Download</strong> to get an <code>.atom</code> export file.
+</p>
+
+<h2>Run the importer</h2>
+
+<p>
+  On your dashboard, open <a href="/sites/default/import"><span class="ui-action"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="14" ><path d="m12.687 9 1.173-1.233a.75.75 0 0 0-1.087-1.034l-2.378 2.5a.75.75 0 0 0 0 1.034l2.378 2.5a.75.75 0 1 0 1.087-1.034L12.687 10.5h3.25a.75.75 0 0 0 0-1.5h-3.25Z"/><path d="M1.75 0A1.75 1.75 0 0 0 0 1.75v10.5A1.75 1.75 0 0 0 1.75 14H9c1 0 1-1.5 0-1.5H1.75a.25.25 0 0 1-.25-.25V1.75a.25.25 0 0 1 .25-.25H5a.25.25 0 0 1 .2.1l.9 1.2c.33.44.85.7 1.4.7h6.75a.25.25 0 0 1 .25.25v.75c0 1 1.5 1 1.5 0v-.75A1.75 1.75 0 0 0 14.25 2H7.5a.25.25 0 0 1-.2-.1L6.4.7C6.07.26 5.55 0 5 0H1.75Z"/></svg> Import</span></a>, choose Blogger, and upload the Atom export. You can optionally enter your site’s URL so same-site links are rewritten as root-relative paths. When the import finishes, download the ZIP archive, extract it, and place the files in your site’s folder.
+</p>
+
+<h2>What Blot imports</h2>
+
+<p>
+  The importer converts published <a href="/how/files">posts</a> and <a href="/how/sub-folders/pages">pages</a> into <a href="/how/files/markdown">Markdown</a> files. It downloads <a href="/how/files/images">images</a> and linked PDF files alongside the Markdown. Original URLs, publication dates, and labels are preserved.
+</p>
+
+<h2>Other importers</h2>
+
+<p>Blot can also import from:</p>
+
+{{> import_list}}

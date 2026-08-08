@@ -31,6 +31,9 @@ var TITLES = {
   "ifttt": "IFTTT",
   "soundcloud": "SoundCloud",
   "youtube": "YouTube",
+  "wordpress": "WordPress",
+  "blogger": "Blogger",
+  "aredotna": "Are.na",
 };
 
 module.exports = function (req, res, next) {

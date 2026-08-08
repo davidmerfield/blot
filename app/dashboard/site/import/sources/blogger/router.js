@@ -30,14 +30,7 @@ function isBloggerExport(upload) {
     .trim()
     .toLowerCase();
 
-  return (
-    extension === ".xml" ||
-    extension === ".atom" ||
-    contentType === "application/xml" ||
-    contentType === "text/xml" ||
-    contentType === "application/atom+xml" ||
-    contentType.endsWith("+xml")
-  );
+  return extension === ".atom" || contentType === "application/atom+xml";
 }
 
 function errorMessage(error) {
@@ -61,7 +54,7 @@ Importer.route("/blogger")
 
     if (!upload || !upload.path) {
       return res.message(
-        req.baseUrl,
+        req.baseUrl + "/blogger",
         new Error("Please select a Blogger export file.")
       );
     }
@@ -69,8 +62,8 @@ Importer.route("/blogger")
     if (!isBloggerExport(upload)) {
       fs.remove(upload.path).catch(() => {});
       return res.message(
-        req.baseUrl,
-        new Error("Please upload an XML or Atom file exported from Blogger.")
+        req.baseUrl + "/blogger",
+        new Error("Please upload an Atom file exported from Blogger.")
       );
     }
 
@@ -79,7 +72,7 @@ Importer.route("/blogger")
       siteHost = blogger.parseSiteHost(req.body && req.body.siteURL);
     } catch (error) {
       fs.remove(upload.path).catch(() => {});
-      return res.message(req.baseUrl, error);
+      return res.message(req.baseUrl + "/blogger", error);
     }
 
     const job = init({ blogID: req.blog.id, label: "Blogger" });

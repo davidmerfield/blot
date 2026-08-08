@@ -1,0 +1,26 @@
+<ul class="clients">
+  {{^selected.wordpress}}
+  <li>
+    <a href="/how/configure/import/wordpress">
+      <img src="{{#cdn}}/images/configure/wordpress.svg{{/cdn}}" />
+      <span class="a">WordPress</span>{{> chevron}}
+    </a>
+  </li>
+  {{/selected.wordpress}}
+  {{^selected.blogger}}
+  <li>
+    <a href="/how/configure/import/blogger">
+      <img src="{{#cdn}}/images/configure/blogger.svg{{/cdn}}" />
+      <span class="a">Blogger</span>{{> chevron}}
+    </a>
+  </li>
+  {{/selected.blogger}}
+  {{^selected.aredotna}}
+  <li>
+    <a href="/how/configure/import/aredotna">
+      <img src="{{#cdn}}/images/configure/are.na.svg{{/cdn}}" />
+      <span class="a">Are.na</span>{{> chevron}}
+    </a>
+  </li>
+  {{/selected.aredotna}}
+</ul>
