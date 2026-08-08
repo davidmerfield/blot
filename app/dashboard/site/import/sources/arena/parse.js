@@ -1,3 +1,4 @@
+const fetch = require("node-fetch");
 const { join, extname } = require("path");
 const moment = require("moment");
 const fs = require("fs-extra");
@@ -106,8 +107,22 @@ async function link(item, outputDirectory) {
 }
 
 async function image(item, outputDirectory) {
-  const response = await fetch(item.image.original.url);
+  const response = await fetch(item.image.original.url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (compatible; Blot/1.0; +https://blot.im)",
+      Referer: "https://www.are.na/",
+      Accept: "image/*,*/*;q=0.8",
+    },
+  });
   const data = await response.buffer();
+
+  if (!response.ok || !data.length) {
+    throw new Error(
+      `Failed to download image (${response.status}, ${data.length} bytes)`
+    );
+  }
+
   const title = item.title || item.generated_title || "Untitled";
 
   // TODO, take advantage of item.source to show where the
@@ -117,7 +132,8 @@ async function image(item, outputDirectory) {
   const draft = item.visibility !== "public";
 
   const extension =
-    extname(item.image.filename) || "." + (await sharp(data).metadata).format;
+    extname(item.image.filename) ||
+    "." + (await sharp(data).metadata()).format;
 
   const name = sanitize(title) + extension;
 

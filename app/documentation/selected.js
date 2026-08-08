@@ -34,7 +34,7 @@ var TITLES = {
   "wordpress": "WordPress",
   "squarespace": "Squarespace",
   "blogger": "Blogger",
-  "aredotna": "Are.na",
+  "arena": "Are.na",
 };
 
 module.exports = function (req, res, next) {

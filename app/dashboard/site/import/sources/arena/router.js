@@ -10,9 +10,13 @@ const { join } = require("path");
 const URL = require("url");
 const fetch = require("node-fetch");
 
-Importer.route("/are.na")
+Importer.get("/are.na", function (req, res) {
+  res.redirect(req.baseUrl + "/arena");
+});
+
+Importer.route("/arena")
   .get(function (req, res) {
-    res.locals.breadcrumbs.add("Are.na", "are.na");
+    res.locals.breadcrumbs.add("Are.na", "arena");
     res.render("dashboard/import/arena");
   })
   .post(async (req, res) => {
@@ -33,7 +37,7 @@ Importer.route("/are.na")
       slug = parts[parts.length - 1];
     } catch (error) {
       return res.message(
-        req.baseUrl + "/are.na",
+        req.baseUrl + "/arena",
         new Error("Enter a valid public Are.na channel URL.")
       );
     }
