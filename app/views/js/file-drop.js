@@ -49,11 +49,6 @@ document.querySelectorAll("[data-file-drop]").forEach(function (root) {
     sync();
   }
 
-  empty.addEventListener("click", function (event) {
-    if (event.target.closest("[data-file-drop-clear]")) return;
-    input.click();
-  });
-
   input.addEventListener("change", sync);
 
   if (clear) {

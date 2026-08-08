@@ -1,4 +1,5 @@
 .file-drop {
+  position: relative;
   margin-bottom: 6px;
 }
 
@@ -36,6 +37,12 @@
   background: var(--medium-background-color);
 }
 
+.file-drop:focus-within .file-drop__empty,
+.file-drop:focus-within .file-drop__selected {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
 .file-drop__icon {
   display: block;
   width: 32px;
@@ -45,6 +52,7 @@
 }
 
 .file-drop__title {
+  display: block;
   margin: 0 0 0.35rem;
   font-size: 15px;
   font-weight: 600;
@@ -52,6 +60,7 @@
 }
 
 .file-drop__action {
+  display: block;
   margin: 0 0 0.75rem;
   font-size: 14px;
   color: var(--medium-text-color);
@@ -65,6 +74,7 @@
 }
 
 .file-drop__hints {
+  display: block;
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
