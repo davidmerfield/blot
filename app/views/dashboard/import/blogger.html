@@ -3,14 +3,14 @@
 <div style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
   <h1>Import from Blogger</h1>
 
-  <div class="import-info">
+  <a class="import-info" href="/how/configure/import/blogger">
     <img class="import-info__logo" src="/images/configure/blogger.svg" alt="">
     <div class="import-info__body">
       <p class="import-info__title">How do I export from Blogger?</p>
-      <p class="import-info__text">Go to Settings → Manage blog → Back up content, then download your <code>.atom</code> export file.</p>
+      <p class="import-info__text">Go to Settings → Manage blog → Back up content then download the export file.</p>
     </div>
-    <a class="import-info__action" href="/how/configure/import/blogger">View guide</a>
-  </div>
+    <span class="import-info__action">View guide</span>
+  </a>
 
   <form method="POST" enctype="multipart/form-data" action="{{{importBase}}}/blogger">
     <input type="hidden" name="_csrf" value="{{csrftoken}}">
@@ -45,8 +45,7 @@
       </div>
     </div>
 
-    <label style="display:block;margin:16px 0 6px">Site URL <span style="color:var(--light-text-color)">(optional)</span></label>
-    <p style="max-width: 600px;margin-top:0;color:var(--medium-text-color);font-size:14px">If set, links to this site inside posts are rewritten as root-relative paths (e.g. <code>/2025/07/post.html</code>).</p>
+    <label style="display:block;margin:16px 0 6px">Blogger site URL <span style="color:var(--light-text-color)">(optional)</span></label>
     <input type="text" name="siteURL" id="blogger-site-url" placeholder="https://example.blogspot.com" style="width:100%;max-width:600px;box-sizing:border-box;" autocomplete="url">
 
     <div class="buttons">

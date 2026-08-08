@@ -3,14 +3,14 @@
 <div style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
   <h1>Import from Wordpress</h1>
 
-  <div class="import-info">
+  <a class="import-info" href="/how/configure/import/wordpress">
     <img class="import-info__logo" src="/images/configure/wordpress.svg" alt="">
     <div class="import-info__body">
       <p class="import-info__title">How do I export from WordPress?</p>
-      <p class="import-info__text">Go to Tools → Export in your WordPress dashboard and download an XML file of your content.</p>
+      <p class="import-info__text">Go to Tools → Export on WordPress and download the XML file</p>
     </div>
-    <a class="import-info__action" href="/how/configure/import/wordpress">View guide</a>
-  </div>
+    <span class="import-info__action">View guide</span>
+  </a>
 
   <form method="POST" enctype="multipart/form-data" action="{{{importBase}}}/wordpress">
     <input type="hidden" name="_csrf" value="{{csrftoken}}">

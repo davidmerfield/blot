@@ -7,6 +7,14 @@
   border-radius: var(--border-radius);
   background: var(--light-background-color);
   box-sizing: border-box;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.15s;
+}
+
+.import-info:hover {
+  background: var(--medium-background-color);
+  color: inherit;
 }
 
 .import-info__logo {
@@ -46,11 +54,9 @@
   color: var(--text-color);
   font-size: 13px;
   font-weight: 600;
-  text-decoration: none;
   white-space: nowrap;
 }
 
-.import-info__action:hover {
-  background: var(--medium-background-color);
-  color: var(--text-color);
+.import-info:hover .import-info__action {
+  border-color: var(--dark-border-color);
 }
