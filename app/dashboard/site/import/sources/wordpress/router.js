@@ -10,7 +10,7 @@ const wordpress = require("./index");
 
 Importer.route("/wordpress")
   .get(function (req, res) {
-    res.locals.breadcrumbs.add("Wordpress", "wordpress");
+    res.locals.breadcrumbs.add("WordPress", "wordpress");
     res.render("dashboard/import/wordpress");
   })
   .post(function (req, res) {
@@ -22,13 +22,13 @@ Importer.route("/wordpress")
     if (!exportUpload || !exportUpload.path) {
       return res.message(
         req.baseUrl + "/wordpress",
-        new Error("Please select a Wordpress export file.")
+        new Error("Please select a WordPress export file.")
       );
     }
 
     const { importDirectory, outputDirectory, finish, status } = init({
       blogID: req.blog.id,
-      label: "Wordpress",
+      label: "WordPress",
     });
 
     res.message(req.baseUrl, "Began import");

@@ -21,7 +21,7 @@ if (require.main === module) {
     );
   }
 
-  console.log(colors.dim("Starting Wordpress import from"), sourceFile);
+  console.log(colors.dim("Starting WordPress import from"), sourceFile);
   console.log(colors.dim("Output directory:"), outputDirectory);
 
   main(sourceFile, outputDirectory, console.log, options, function (err) {
@@ -36,7 +36,7 @@ if (require.main === module) {
 function main(sourceFile, outputDirectory, status, options, callback) {
   fs.emptyDirSync(outputDirectory);
 
-  status("Reading Wordpress XML file");
+  status("Reading WordPress XML file");
 
   fs.readFile(sourceFile, "utf-8", function (err, xml) {
     if (err) return callback(err);
