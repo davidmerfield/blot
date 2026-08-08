@@ -48,16 +48,27 @@ Importer.route("/squarespace")
     );
 
     wordpress(inputXML, outputDirectory, status, {}, async function (err) {
-      if (err) {
-        console.trace();
-        console.log("finally here with message", err);
-        return fs.outputFile(join(importDirectory, "error.txt"), err.message);
-      }
-
       try {
-        await finish();
-      } catch (err) {
-        fs.outputFile(join(importDirectory, "error.txt"), err.message);
+        if (err) {
+          console.trace();
+          console.log("finally here with message", err);
+          return await fs.outputFile(
+            join(importDirectory, "error.txt"),
+            err.message
+          );
+        }
+
+        try {
+          await finish();
+        } catch (err) {
+          await fs.outputFile(join(importDirectory, "error.txt"), err.message);
+        }
+      } finally {
+        await fs
+          .remove(inputXML)
+          .catch((removeError) =>
+            console.error("Failed to remove Squarespace upload", removeError)
+          );
       }
     });
   });
