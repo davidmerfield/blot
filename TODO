@@ -69,7 +69,7 @@ Move to redis hashes for entry storage
 * Add a serializer/deserializer utility (new module under `app/models/entry/`, e.g., `format.js`) that can translate between `Entry` objects and hash field payloads (strings stay raw; other types use `JSON.stringify`/`JSON.parse`).
 * Refactor `app/models/entry/get.js` to accept an optional `fields` argument (string or array). Use `multi` to `HMGET`/`HGETALL` from the hash key and fall back to the JSON key when the hash is missing, reusing the serializer to coerce types. Ensure single-field calls return the scalar when only one entry is requested, while preserving existing behaviors for callers expecting full `Entry` objects.
 * Cover the new pathways with unit coverage (or targeted integration coverage) once tests are runnable, verifying full-entry fetches, hash fallback to legacy JSON, and single-field lookups.
-
+* does this fix slow pages like the archives page on www.jaysjay.com?
 ---
 
 Google Drive:
