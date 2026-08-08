@@ -10,6 +10,21 @@ const normalizeIdentifier = require(
 );
 const wordpress = require("../wordpress");
 
+async function recordFailure(importDirectory, status, err) {
+  try {
+    await fs.outputFile(join(importDirectory, "error.txt"), err.message);
+  } catch (writeError) {
+    console.error("Failed to record Squarespace import error", writeError);
+    return;
+  }
+
+  try {
+    await status("Failed");
+  } catch (statusError) {
+    console.error("Failed to update Squarespace import status", statusError);
+  }
+}
+
 Importer.route("/squarespace")
   .get(function (req, res) {
     res.locals.breadcrumbs.add("Squarespace", "squarespace");
@@ -50,18 +65,14 @@ Importer.route("/squarespace")
     wordpress(inputXML, outputDirectory, status, {}, async function (err) {
       try {
         if (err) {
-          console.trace();
-          console.log("finally here with message", err);
-          return await fs.outputFile(
-            join(importDirectory, "error.txt"),
-            err.message
-          );
+          await recordFailure(importDirectory, status, err);
+          return;
         }
 
         try {
           await finish();
         } catch (err) {
-          await fs.outputFile(join(importDirectory, "error.txt"), err.message);
+          await recordFailure(importDirectory, status, err);
         }
       } finally {
         await fs
