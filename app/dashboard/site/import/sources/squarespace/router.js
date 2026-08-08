@@ -5,6 +5,9 @@ const fs = require("fs-extra");
 const { join } = require("path");
 
 const init = require("dashboard/site/import/init");
+const normalizeIdentifier = require(
+  "dashboard/site/import/helper/normalize_identifier"
+);
 const wordpress = require("../wordpress");
 
 Importer.route("/squarespace")
@@ -32,7 +35,10 @@ Importer.route("/squarespace")
 
     res.message(req.baseUrl, "Began import");
 
-    const identifier = exportUpload.originalFilename;
+    const identifier = normalizeIdentifier(exportUpload.originalFilename, {
+      extension: ".xml",
+      fallback: "Squarespace export",
+    });
     const inputXML = exportUpload.path;
 
     fs.outputFileSync(

@@ -5,6 +5,9 @@ const fs = require("fs-extra");
 const { join } = require("path");
 
 const init = require("dashboard/site/import/init");
+const normalizeIdentifier = require(
+  "dashboard/site/import/helper/normalize_identifier"
+);
 
 const wordpress = require("./index");
 
@@ -33,7 +36,10 @@ Importer.route("/wordpress")
 
     res.message(req.baseUrl, "Began import");
 
-    const identifier = exportUpload.originalFilename;
+    const identifier = normalizeIdentifier(exportUpload.originalFilename, {
+      extension: ".xml",
+      fallback: "WordPress export",
+    });
     const inputXML = exportUpload.path;
 
     fs.outputFileSync(

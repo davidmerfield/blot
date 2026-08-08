@@ -2,11 +2,13 @@ const express = require("express");
 const Importer = express.Router();
 const arena = require("./index");
 const init = require("dashboard/site/import/init");
+const normalizeIdentifier = require(
+  "dashboard/site/import/helper/normalize_identifier"
+);
 const fs = require("fs-extra");
 const { join } = require("path");
 const URL = require("url");
 const fetch = require("node-fetch");
-const sanitize = require("./sanitize");
 
 Importer.route("/are.na")
   .get(function (req, res) {
@@ -28,7 +30,7 @@ Importer.route("/are.na")
 
       fs.outputFileSync(
         join(importDirectory, "identifier.txt"),
-        sanitize(title),
+        normalizeIdentifier(title, { fallback: "Are.na channel" }),
         "utf-8"
       );
       res.message(req.baseUrl, "Began import");

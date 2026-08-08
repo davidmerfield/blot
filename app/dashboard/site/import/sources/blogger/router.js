@@ -1,24 +1,14 @@
 const express = require("express");
 const fs = require("fs-extra");
-const { basename, extname, join } = require("path");
+const { extname, join } = require("path");
 
 const init = require("dashboard/site/import/init");
+const normalizeIdentifier = require(
+  "dashboard/site/import/helper/normalize_identifier"
+);
 const blogger = require("./index");
 
 const Importer = express.Router();
-const MAX_IDENTIFIER_LENGTH = 120;
-
-function identifierFor(filename) {
-  const identifier = basename(String(filename || "").replace(/\\/g, "/"))
-    .replace(/[\u0000-\u001f\u007f]/g, "")
-    .trim()
-    .slice(0, MAX_IDENTIFIER_LENGTH);
-
-  return identifier && identifier !== "." && identifier !== ".."
-    ? identifier
-    : "Blogger export";
-}
-
 function isBloggerExport(upload) {
   const extension = extname(upload.originalFilename || "").toLowerCase();
   const contentType = String(
@@ -84,7 +74,10 @@ Importer.route("/blogger")
       try {
         await fs.outputFile(
           join(job.importDirectory, "identifier.txt"),
-          identifierFor(upload.originalFilename),
+          normalizeIdentifier(upload.originalFilename, {
+            extension: ".atom",
+            fallback: "Blogger export",
+          }),
           "utf8"
         );
         await blogger(upload.path, job.outputDirectory, job.status, {
