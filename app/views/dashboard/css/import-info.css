@@ -17,6 +17,11 @@
   color: inherit;
 }
 
+.import-info:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
 .import-info__logo {
   flex-shrink: 0;
   width: 28px;

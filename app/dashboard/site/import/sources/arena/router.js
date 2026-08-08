@@ -16,14 +16,34 @@ Importer.route("/are.na")
     res.render("dashboard/import/arena");
   })
   .post(async (req, res) => {
+    let slug;
+
+    try {
+      const channelURL = new URL.URL(req.body && req.body.channel);
+      const parts = channelURL.pathname.split("/").filter(Boolean);
+
+      if (
+        channelURL.protocol !== "https:" ||
+        !["are.na", "www.are.na"].includes(channelURL.hostname) ||
+        parts.length < 2
+      ) {
+        throw new Error("Invalid Are.na channel URL");
+      }
+
+      slug = parts[parts.length - 1];
+    } catch (error) {
+      return res.message(
+        req.baseUrl + "/are.na",
+        new Error("Enter a valid public Are.na channel URL.")
+      );
+    }
+
     const { importDirectory, outputDirectory, finish, status } = init({
       blogID: req.blog.id,
       label: "Are.na",
     });
 
     try {
-      const slug = URL.parse(req.body.channel).path.split("/").pop();
-
       const response = await fetch(`https://api.are.na/v2/channels/${slug}`);
       const json = await response.json();
       const { title } = json;

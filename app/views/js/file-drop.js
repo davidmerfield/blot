@@ -4,8 +4,6 @@ document.querySelectorAll("[data-file-drop]").forEach(function (root) {
   const selected = root.querySelector("[data-file-drop-selected]");
   const nameNode = root.querySelector("[data-file-drop-name]");
   const clear = root.querySelector("[data-file-drop-clear]");
-  const form = root.closest("form");
-  const submit = form && form.querySelector('.buttons button[type="submit"]');
 
   if (!input || !empty || !selected || !nameNode) return;
 
@@ -22,12 +20,10 @@ document.querySelectorAll("[data-file-drop]").forEach(function (root) {
       empty.hidden = true;
       selected.hidden = false;
       nameNode.textContent = file.name;
-      if (submit) submit.disabled = false;
     } else {
       empty.hidden = false;
       selected.hidden = true;
       nameNode.textContent = "";
-      if (submit) submit.disabled = true;
     }
   }
 

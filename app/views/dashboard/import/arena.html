@@ -12,12 +12,17 @@
   <form method="POST">
     <input type="hidden" name="_csrf" value="{{csrftoken}}" />
 
-    <label>Are.na channel URL:</label>
+    <label for="arena-channel">Are.na channel URL</label>
     <input
-      type="text"
+      type="url"
+      id="arena-channel"
       name="channel"
-      placeholder="https://www.are.na/..."
+      placeholder="https://www.are.na/username/channel-name"
+      autocomplete="url"
+      aria-describedby="arena-channel-hint"
+      required
     />
+    <p id="arena-channel-hint">Enter the URL of a public Are.na channel.</p>
 
     <div class="buttons">
       <button type="submit">Start import</button>
