@@ -10,7 +10,7 @@ module.exports = function metadataCaseInsensitive (metadata) {
     .forEach(key => {
       const lowered = String(key).toLowerCase();
 
-      if (!(lowered in view)) {
+      if (!Object.prototype.hasOwnProperty.call(view, lowered)) {
         view[lowered] = metadata[key];
       }
     });
