@@ -106,8 +106,9 @@ async function link(item, outputDirectory) {
 }
 
 async function image(item, outputDirectory) {
-  const response = await fetch(item.image.original.url);
-  const data = await response.buffer();
+  const { data } = await helper.safe_download(item.image.original.url, {
+    contentTypes: ["image/"],
+  });
   const title = item.title || item.generated_title || "Untitled";
 
   // TODO, take advantage of item.source to show where the
