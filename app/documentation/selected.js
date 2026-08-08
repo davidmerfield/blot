@@ -32,6 +32,7 @@ var TITLES = {
   "soundcloud": "SoundCloud",
   "youtube": "YouTube",
   "wordpress": "WordPress",
+  "squarespace": "Squarespace",
   "blogger": "Blogger",
   "aredotna": "Are.na",
 };

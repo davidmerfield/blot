@@ -71,7 +71,9 @@ module.exports = async function (req, res, next) {
           name,
           icon: name
             ? "/images/configure/" +
-                (["blogger", "wordpress", "are.na"].includes(name.toLowerCase())
+                (["blogger", "wordpress", "are.na", "squarespace"].includes(
+                  name.toLowerCase()
+                )
                   ? name.toLowerCase() + ".svg"
                   : name.toLowerCase() + ".png")
             : undefined,
