@@ -42,13 +42,14 @@
 <style type="text/css">
   .import-list {list-style: none;padding: 0;margin: 0;max-width: none;}
   .import-list li {padding: var(--spacing) var(--spacing);}
-  .import-row {display: flex;align-items: center;justify-content: space-between;gap: 1em;padding: 12px 0;border-top: 1px solid rgba(0,0,0,0.05);font-size: 14px;}
+  .import-row {display: flex;align-items: flex-start;justify-content: space-between;gap: 1em;padding: 12px 0;border-top: 1px solid rgba(0,0,0,0.05);font-size: 14px;}
   .import-row:hover {background: rgba(0,0,0,0.02);}
   .import-row__info {min-width: 0;flex: 1;}
   .import-row__filename {font-weight: 600;word-break: break-word;}
   .import-row__meta {display: flex;align-items: center;flex-wrap: wrap;gap: 0.35em;margin-top: 4px;color: rgba(0,0,0,0.5);font-size: 13px;}
   .import-row__meta img {height: 14px;width: auto;max-width: 20px;flex-shrink: 0;}
-  .import-row__meta .sync-status {min-width: 0;flex: 1 1 12rem;}
+  .import-row__progress {margin-top: 8px;color: rgba(0,0,0,0.5);font-size: 13px;}
+  .import-row__progress .sync-status {display: block;width: 100%;}
   .import-row__actions {display: flex;align-items: center;gap: 8px;flex-shrink: 0;}
   .import-row__actions a,
   .import-row__actions button {
@@ -80,7 +81,7 @@
       <span>{{name}}</span>
       {{#complete}}
         {{^error}}
-        <span>&bull; {{started}}</span>
+        {{#started}}<span>&bull; {{started}}</span>{{/started}}
         {{#size}}<span>&bull; {{size}}</span>{{/size}}
         {{/error}}
         {{#error}}
@@ -88,18 +89,22 @@
         {{/error}}
       {{/complete}}
       {{^complete}}
-        <span>&bull;</span>
-        <span class="sync-status">
-          <span class="sync-status-body">
-            <span id="status-{{id}}" class="sync-status-text truncate">{{lastStatus}}</span>
-            <span class="sync-status-progress">
-              <span class="sync-status-progress-bar"></span>
-            </span>
-            <span class="sync-status-progress-label"></span>
-          </span>
-        </span>
+        {{#started}}<span>&bull; {{started}}</span>{{/started}}
       {{/complete}}
     </div>
+    {{^complete}}
+    <div class="import-row__progress">
+      <span class="sync-status">
+        <span class="sync-status-body">
+          <span id="status-{{id}}" class="sync-status-text truncate">{{lastStatus}}</span>
+          <span class="sync-status-progress">
+            <span class="sync-status-progress-bar"></span>
+          </span>
+          <span class="sync-status-progress-label"></span>
+        </span>
+      </span>
+    </div>
+    {{/complete}}
   </div>
 
   <div class="import-row__actions">
