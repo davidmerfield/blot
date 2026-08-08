@@ -6,22 +6,68 @@ var each_el = require("./each_el");
 var fs = require("fs-extra");
 var sharp = require("sharp");
 var mime = require("mime-types");
+var callOnce = require("helper/callOnce");
 var assetDirectory = require("./asset_directory");
 
 // Consider using this algorithm to determine best part of alt tag or caption to use
 // as the file's name:
 // http://www.bearcave.com/misl/misl_tech/wavelets/compression/shannon.html
-var safeDownload = require("./safe_download");
+var TIMEOUT = 5 * 1000; // 10s
 
-function download(url, callback) {
+function download(url, _callback) {
   console.log("Attempting to download", url);
-  safeDownload(url, { contentTypes: ["image/"] })
-    .then(function (result) {
-      sharp(result.data).metadata(function (err, metadata) {
-        callback(err, result.data, metadata && metadata.format, result.headers);
+
+  var time;
+
+  var callback = callOnce(function (err, data, format, headers) {
+    console.log("Finishing attempt to download", url);
+    clearTimeout(time);
+    _callback(err, data, format, headers);
+  });
+
+  if (!require("url").parse(url).hostname)
+    return callback(new Error("Failed to parse hostname: " + url));
+
+  if (!url || url.indexOf("data:") === 0)
+    return callback(new Error("Invalid URL: " + url));
+
+  time = setTimeout(function () {
+    console.log("Timing out downloading", url);
+    callback(new Error("Timeout: >10s downloading " + url));
+  }, TIMEOUT);
+
+  fetch(url)
+    .then(function (res) {
+      if (!res.ok) {
+        throw new Error("Bad status code: " + res.status);
+      }
+
+      console.log("Successfully downloaded", url);
+
+      var headers = {
+        contentType: res.headers.get("content-type"),
+        contentDisposition: res.headers.get("content-disposition"),
+      };
+
+      return res.arrayBuffer().then(function (arrayBuffer) {
+        return { arrayBuffer: arrayBuffer, headers: headers };
       });
     })
-    .catch(callback);
+    .then(function (result) {
+      const buffer = Buffer.from(result.arrayBuffer);
+      sharp(buffer).metadata(function (err, metadata) {
+        var format;
+        if (metadata && metadata.format) {
+          format = metadata.format;
+        }
+
+        callback(null, buffer, format, result.headers);
+      });
+    })
+    .catch(function (err) {
+      console.log("Failed to download", url, err);
+      callback(err);
+    });
 }
 
 function download_thumbnail(post, callback) {

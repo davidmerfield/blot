@@ -14,7 +14,6 @@ module.exports = {
   process: require("./process"),
   replace_embeds: require("./replace_embeds"),
   resolve_url: require("./resolve_url"),
-  safe_download: require("./safe_download"),
   slugify: require("./slugify"),
   to_markdown: require("./to_markdown"),
   write: require("./write"),

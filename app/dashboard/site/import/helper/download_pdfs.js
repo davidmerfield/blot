@@ -3,14 +3,49 @@ var basename = require("path").basename;
 var parse = require("url").parse;
 var each_el = require("./each_el");
 var fs = require("fs-extra");
+var callOnce = require("helper/callOnce");
 var assetDirectory = require("./asset_directory");
 
-var safeDownload = require("./safe_download");
+var TIMEOUT = 5 * 1000; // 10s
 
-function download(url, callback) {
-  safeDownload(url, { contentTypes: ["application/pdf"] })
-    .then(function (result) { callback(null, result.data); })
-    .catch(callback);
+function download(url, _callback) {
+  console.log("Attempting to download", url);
+
+  var time;
+
+  var callback = callOnce(function (err, data) {
+    console.log("Finishing attempt to download", url);
+    clearTimeout(time);
+    _callback(err, data);
+  });
+
+  if (!require("url").parse(url).hostname)
+    return callback(new Error("Failed to parse hostname: " + url));
+
+  if (!url || url.indexOf("data:") === 0)
+    return callback(new Error("Invalid URL: " + url));
+
+  time = setTimeout(function () {
+    console.log("Timing out downloading", url);
+    callback(new Error("Timeout: >10s downloading " + url));
+  }, TIMEOUT);
+
+  fetch(url)
+    .then(function (res) {
+      if (!res.ok) {
+        return callback(new Error("Bad status code: " + res.status));
+      }
+      console.log("Successfully downloaded", url);
+
+      return res.buffer();
+    })
+    .then(function (data) {
+      callback(null, data);
+    })
+    .catch(function (err) {
+      console.log("Failed to download", url, err);
+      callback(err);
+    });
 }
 
 module.exports = function download_pdfs(post, callback) {
