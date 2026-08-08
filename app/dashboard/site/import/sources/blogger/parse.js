@@ -174,8 +174,16 @@ function pathnameBasename(urlString) {
   }
 }
 
+// Newer /img/a/ URLs encode display size as a suffix on the opaque id
+// (.../AVvXsEg...=w320-h269) rather than an /s320/ path segment. Strip
+// that so thumb and full-size basenames compare equal.
+function imageAssetKey(urlString) {
+  return pathnameBasename(urlString).replace(/=\w[\w-]*$/, "");
+}
+
 // Blogger wraps display thumbnails in a link to the full-size file
-// (.../s320/photo.jpg inside .../s1600/photo.jpg). Promote the src so
+// (.../s320/photo.jpg inside .../s1600/photo.jpg, or
+// .../img/a/{id}=w320-h269 inside .../img/a/{id}). Promote the src so
 // download_images fetches the full image and can rewrite both URLs.
 function preferFullSizeImages(html) {
   if (!html) return html;
@@ -189,9 +197,9 @@ function preferFullSizeImages(html) {
     const href = $img.closest("a").attr("href");
     if (!href || href === src) return;
 
-    const srcName = pathnameBasename(src);
-    const hrefName = pathnameBasename(href);
-    if (srcName && srcName === hrefName) $img.attr("src", href);
+    const srcKey = imageAssetKey(src);
+    const hrefKey = imageAssetKey(href);
+    if (srcKey && srcKey === hrefKey) $img.attr("src", href);
   });
 
   return htmlString($);

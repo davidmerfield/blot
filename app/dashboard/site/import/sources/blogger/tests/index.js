@@ -87,6 +87,11 @@ describe("Blogger importer", function () {
       "https://blogger.googleusercontent.com/img/b/ABC/s320/IMG_4534.jpg";
     const other =
       "https://blogger.googleusercontent.com/img/b/ABC/s1600/other.jpg";
+    const opaqueFull =
+      "https://blogger.googleusercontent.com/img/a/AVvXsEgFVMWOiw9WlUf_pZvWu1U3iko0IikKVMN_yg79hHGSISG9NmEpmKXUHSF1cgb3HnaUGwLSamO0Lrfk93DWBjrjofgY-eO_fSUpL_xRnoByt0VBxPByLREtqG_4LFaItKLclPTyAloonludCg5_aIJ3nGBO9BWK2RHg5GQVN2hmUkwitGVjNFNdmzTRjCI";
+    const opaqueThumb = opaqueFull + "=w320-h269";
+    const opaqueOther =
+      "https://blogger.googleusercontent.com/img/a/AVvXsEioelOHnuW_OMF24Sw2jt4PBuTvhF2-jhbFOGTL2YnmkSjtXiDXGrv6IWFKvtZA696TRWDRBVpiN7ujjtlXBJXqtvZzSWCE7Dd70mY4ja-jfhV7ZtAOjusjibOdzCzMuSrlckggHFlIAAXWIyrzfzfEQ_LdLfhP_3KxM7N5XGbPzrdQpJwlYj5Hy2zY2Qw";
 
     expect(
       parse.preferFullSizeImages(
@@ -96,9 +101,21 @@ describe("Blogger importer", function () {
 
     expect(
       parse.preferFullSizeImages(
+        `<a href="${opaqueFull}"><img src="${opaqueThumb}"></a>`
+      )
+    ).toContain(`src="${opaqueFull}"`);
+
+    expect(
+      parse.preferFullSizeImages(
         `<a href="${other}"><img src="${thumb}"></a>`
       )
     ).toContain(`src="${thumb}"`);
+
+    expect(
+      parse.preferFullSizeImages(
+        `<a href="${opaqueOther}"><img src="${opaqueThumb}"></a>`
+      )
+    ).toContain(`src="${opaqueThumb}"`);
 
     expect(
       parse.preferFullSizeImages(

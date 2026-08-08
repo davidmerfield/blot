@@ -30,7 +30,20 @@ describe("download_images naming", function () {
         contentType: "image/jpeg",
         contentDisposition: 'inline;filename="Koa Etymology Pie Chart.jpg"',
       })
-    ).toEqual("_Koa Etymology Pie Chart.jpg");
+    ).toEqual("_Koa_Etymology_Pie_Chart.jpg");
+  });
+
+  it("collapses whitespace in filenames to underscores", function () {
+    expect(
+      nameFrom("https://example.com/photos/Vocab%20Tracker.jpg", {})
+    ).toEqual("_Vocab_Tracker.jpg");
+
+    expect(
+      nameFrom("https://example.com/img/a/opaque", {
+        contentType: "image/jpeg",
+        contentDisposition: 'inline;filename="Koa  Posts\tper Month.jpg"',
+      })
+    ).toEqual("_Koa_Posts_per_Month.jpg");
   });
 
   it("uses Content-Type when the URL and disposition lack an extension", function () {
