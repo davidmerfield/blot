@@ -1,7 +1,7 @@
 var key = require("./key");
 var _ = require("lodash");
 var ensure = require("helper/ensure");
-var { TYPE, WRITEABLE } = require("./scheme");
+var TYPE = require("./scheme").TYPE;
 var validate = require("./validate");
 var get = require("./get");
 var serial = require("./serial");
@@ -29,8 +29,6 @@ function Changes(latest, former) {
 }
 
 module.exports = function (blogID, blog, callback) {
-  blog = _.pick(blog || {}, WRITEABLE);
-
   ensure(blogID, "string").and(callback, "function");
 
   var multi = client.multi();
