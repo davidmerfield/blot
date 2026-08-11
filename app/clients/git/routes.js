@@ -108,7 +108,7 @@ dashboard.post("/disconnect", function (req, res, next) {
 // /end//handle.git indistinguishable from /end/handle.git. Blog handles are
 // canonical lowercase alphanumerics between 2 and 70 characters (the same
 // shape stored by the blog model).
-var GIT_REQUEST = /^\/end(\/([a-z0-9]{2,70})\.git\/(?:info\/refs|HEAD|git-(?:upload|receive)-pack)(?:\?[^#]*)?)$/;
+var GIT_REQUEST = /^(?![^#]*%(?:2[fF]|5[cC]))\/end(\/([a-z0-9]{2,70})\.git\/(?:info\/refs|HEAD|git-(?:upload|receive)-pack)(?:\?[^#]*)?)$/;
 
 function parseGitRequest(req, res, next) {
   var match = GIT_REQUEST.exec(req.url);

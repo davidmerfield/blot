@@ -4,7 +4,7 @@ describe("git client authenticate", function () {
   // a test server with the git client's routes exposed, then
   // cleans everything up when each test has finished.
   require("./setup")({
-    clone: false // dont clone repo into tmp dir
+    clone: false, // dont clone repo into tmp dir
   });
 
   var fs = require("fs-extra");
@@ -40,35 +40,75 @@ describe("git client authenticate", function () {
         otherBlog = null;
         otherUser = null;
         done(err);
-      }
+      },
     );
   });
 
-  function expectRejectedBeforePushover(context, path, done, repository) {
+  function expectRejectedBeforePushover(
+    context,
+    path,
+    done,
+    repository,
+    withCredentials,
+  ) {
     var dataDir = require("clients/git/dataDir");
     var repos = require("clients/git/routes").repos;
     var handleSpy = spyOn(repos, "handle").and.callThrough();
-    var req = http.request(
-      {
-        hostname: "127.0.0.1",
-        port: context.server.port,
-        path: path,
-      },
-      function (res) {
-        res.resume();
-        res.on("end", function () {
-          expect(res.statusCode).toBe(404, path);
+    var requestOptions = {
+      hostname: "127.0.0.1",
+      port: context.server.port,
+      path: path,
+    };
+
+    if (withCredentials) {
+      requestOptions.auth = url.parse(context.repoUrl).auth;
+    }
+
+    var req = http.request(requestOptions, function (res) {
+      res.resume();
+      res.on("end", function () {
+        expect(res.statusCode).toBe(404, path);
+        expect(handleSpy).not.toHaveBeenCalled();
+        if (repository) {
+          expect(fs.existsSync(dataDir + "/" + repository + ".git")).toBe(
+            false,
+            path,
+          );
+        }
+        done();
+      });
+    });
+
+    req.on("error", done.fail);
+    req.end();
+  }
+
+  function requestGitEndpoint(context, options, done) {
+    var repos = require("clients/git/routes").repos;
+    var handleSpy = spyOn(repos, "handle").and.callThrough();
+    var requestOptions = {
+      hostname: "127.0.0.1",
+      port: context.server.port,
+      path: options.path,
+      method: options.method,
+    };
+
+    if (options.withCredentials) {
+      requestOptions.auth = url.parse(context.repoUrl).auth;
+    }
+
+    var req = http.request(requestOptions, function (res) {
+      res.resume();
+      res.on("end", function () {
+        expect(res.statusCode).toBe(options.status, options.path);
+        if (options.handled) {
+          expect(handleSpy).toHaveBeenCalled();
+        } else {
           expect(handleSpy).not.toHaveBeenCalled();
-          if (repository) {
-            expect(fs.existsSync(dataDir + "/" + repository + ".git")).toBe(
-              false,
-              path
-            );
-          }
-          done();
-        });
-      }
-    );
+        }
+        done();
+      });
+    });
 
     req.on("error", done.fail);
     req.end();
@@ -98,11 +138,14 @@ describe("git client authenticate", function () {
         },
         function (res) {
           res.resume();
-          res.on("end", function () {
-            expect(res.statusCode).toBe(401, path);
-            next.call(this);
-          }.bind(this));
-        }.bind(this)
+          res.on(
+            "end",
+            function () {
+              expect(res.statusCode).toBe(401, path);
+              next.call(this);
+            }.bind(this),
+          );
+        }.bind(this),
       );
 
       req.on("error", done.fail);
@@ -112,63 +155,92 @@ describe("git client authenticate", function () {
     next.call(this);
   });
 
-  it("rejects a doubled slash immediately after /end without creating a repository", function (done) {
-    expectRejectedBeforePushover(
-      this,
+  var malformedPathCases = [
+    [
+      "a doubled slash after /end",
       "/clients/git/end//doubleslash.git/info/refs",
-      done,
-      "doubleslash"
-    );
-  });
-
-  it("rejects a doubled slash within the repository endpoint without creating a repository", function (done) {
-    expectRejectedBeforePushover(
-      this,
+      "doubleslash",
+    ],
+    [
+      "a doubled slash in the endpoint",
       "/clients/git/end/doubleslash.git//info/refs",
-      done,
-      "doubleslash"
-    );
+      "doubleslash",
+    ],
+    ["a dot segment", "/clients/git/end/./HANDLE.git/info/refs"],
+    ["a traversal segment", "/clients/git/end/../HANDLE.git/info/refs"],
+    ["an encoded dot segment", "/clients/git/end/%2e/HANDLE.git/info/refs"],
+    [
+      "an encoded traversal segment",
+      "/clients/git/end/%2E%2e/HANDLE.git/info/refs",
+    ],
+    ["a path prefix", "/clients/git/end/prefix/HANDLE.git/info/refs", "prefix"],
+    [
+      "traversal inside the endpoint",
+      "/clients/git/end/HANDLE.git/../info/refs",
+    ],
+    ["an encoded forward slash", "/clients/git/end/%2fHANDLE.git/info/refs"],
+    [
+      "a mixed-case encoded forward slash",
+      "/clients/git/end/HANDLE.git%2Finfo/refs",
+    ],
+    ["a literal backslash", "/clients/git/end/HANDLE.git\\info/refs"],
+    ["an encoded backslash", "/clients/git/end/HANDLE.git%5cinfo/refs"],
+    [
+      "a mixed-case encoded backslash",
+      "/clients/git/end/HANDLE.git%5Cinfo/refs",
+    ],
+    ["a suffix after info/refs", "/clients/git/end/HANDLE.git/info/refs/extra"],
+    [
+      "a suffix after git-receive-pack",
+      "/clients/git/end/HANDLE.git/git-receive-pack/extra",
+    ],
+    [
+      "an encoded separator in the query",
+      "/clients/git/end/HANDLE.git/info/refs?service=git-upload-pack%2Fextra",
+    ],
+    [
+      "an encoded backslash in the query",
+      "/clients/git/end/HANDLE.git/info/refs?service=git-upload-pack%5cextra",
+    ],
+  ];
+
+  [false, true].forEach(function (withCredentials) {
+    malformedPathCases.forEach(function (testCase) {
+      it(
+        "rejects " +
+          testCase[0] +
+          " before Pushover " +
+          (withCredentials ? "with valid credentials" : "without credentials"),
+        function (done) {
+          expectRejectedBeforePushover(
+            this,
+            testCase[1].replace("HANDLE", this.blog.handle),
+            done,
+            testCase[2],
+            withCredentials,
+          );
+        },
+      );
+    });
   });
 
-  it("rejects dot segments in front of the repository", function (done) {
-    expectRejectedBeforePushover(
-      this,
-      "/clients/git/end/./" + this.blog.handle + ".git/info/refs",
-      done
-    );
-  });
-
-  it("rejects encoded separators", function (done) {
-    expectRejectedBeforePushover(
-      this,
-      "/clients/git/end/%2f" + this.blog.handle + ".git/info/refs",
-      done
-    );
-  });
-
-  it("rejects traversal in front of the repository", function (done) {
-    expectRejectedBeforePushover(
-      this,
-      "/clients/git/end/../" + this.blog.handle + ".git/info/refs",
-      done
-    );
-  });
-
-  it("rejects extra path prefixes", function (done) {
-    expectRejectedBeforePushover(
-      this,
-      "/clients/git/end/prefix/" + this.blog.handle + ".git/info/refs",
-      done,
-      "prefix"
-    );
-  });
-
-  it("rejects traversal within the repository endpoint", function (done) {
-    expectRejectedBeforePushover(
-      this,
-      "/clients/git/end/" + this.blog.handle + ".git/../info/refs",
-      done
-    );
+  [
+    ["rejects an unsupported method during authentication", false, 401, false],
+    ["answers an authenticated unsupported method", true, 405, true],
+  ].forEach(function (testCase) {
+    it(testCase[0], function (done) {
+      requestGitEndpoint(
+        this,
+        {
+          path: "/clients/git/end/" + this.blog.handle + ".git/info/refs",
+          method: "DELETE",
+          withCredentials: testCase[1],
+          status: testCase[2],
+          handled: testCase[3],
+        },
+        done,
+      );
+    });
   });
 
   it("allows a user with good credentials to clone a repo", function (done) {
