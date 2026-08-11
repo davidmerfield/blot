@@ -56,7 +56,7 @@ function refreshToken(user_id, callback) {
 }
 
 function checkToken(user_id, token, callback) {
-  debug("User:", user_id, "Checking token", token);
+  debug("User:", user_id, "Checking token");
 
   getToken(user_id, function (err, valid_token) {
     if (err) return callback(err);
