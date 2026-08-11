@@ -25,7 +25,7 @@ const internal = {
   "/how/files/wikilinks": "/how/formatting/wikilinks",
   "/how/files/layout-tags": "/how/formatting/layout-tags",
   "/how/posts": "/how/files",
-  "/about/contact": "/contct",
+  "/about/contact": "/contact",
   "/about/notes/business/unlimited-bandwidth":
     "/about/notes/business/principles",
   "/about/notes/business/technique": "/about/notes/business/tools",
