@@ -7,6 +7,9 @@ module.exports = function () {
   const client = redis.createClient({
     url,
     RESP: 3,
+    maintNotifications: "disabled",
+    commandOptions: { timeout: undefined },
+    socket: { keepAliveInitialDelay: 5000 },
     clientSideCache: {
       ttl: 0,
       maxEntries: 3333,
