@@ -61,4 +61,31 @@ describe("formJSON ", function () {
 
     expect(formJSON(field2, model2)).toEqual(expected2);
   });
+
+  it("rejects fields containing prototype-polluting path segments", function () {
+    var dangerousSegments = ["__proto__", "constructor", "prototype"];
+    var injectedProperty = "formJSONPolluted";
+
+    dangerousSegments.forEach(function (segment) {
+      var fields = {
+        "ordinary.dotted": "safe",
+      };
+      fields["target." + segment + "." + injectedProperty] = "injected";
+
+      try {
+        var result = formJSON(fields, {
+          ordinary: { dotted: "string" },
+          target: "object",
+        });
+        var unrelated = {};
+
+        expect(Object.prototype[injectedProperty]).toBeUndefined();
+        expect(unrelated[injectedProperty]).toBeUndefined();
+        expect(result.ordinary.dotted).toBe("safe");
+        expect(result.target).toBeUndefined();
+      } finally {
+        delete Object.prototype[injectedProperty];
+      }
+    });
+  });
 });
