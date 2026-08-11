@@ -26,10 +26,52 @@ function abortIfRequested(signal) {
   }
 }
 
+function log() {
+  const args = Array.prototype.slice.call(arguments);
+  console.log(clfdate() + " Dropbox:", args.join(" "));
+}
+
+// Counts every local file and subdirectory (not the root) so folder
+// creation and file transfers both advance the progress bar.
+async function countLocalItems(localRoot, dir, signal) {
+  abortIfRequested(signal);
+
+  const contents = await fs.readdir(join(localRoot, dir));
+  let total = 0;
+
+  for (const name of contents) {
+    abortIfRequested(signal);
+
+    const path = join(dir, name);
+    if (isDotfileOrDotfolder(path)) continue;
+
+    const stat = await fs.stat(join(localRoot, path));
+    total += 1;
+
+    if (stat.isDirectory()) {
+      total += await countLocalItems(localRoot, path, signal);
+    }
+  }
+
+  return total;
+}
+
+function publishTransferStatus(progress, publish, path) {
+  if (!progress) {
+    publish("Transferring " + path);
+    return;
+  }
+
+  progress.current += 1;
+  publish(
+    "(" + progress.current + "/" + progress.total + ") Transferring " + path
+  );
+}
+
 async function resetFromBlot(blogID, publish, signal) {
   if (!publish)
-    publish = (...args) => {
-      console.log(clfdate() + " Dropbox:", args.join(" "));
+    publish = function () {
+      log.apply(null, arguments);
     };
 
   abortIfRequested(signal);
@@ -58,7 +100,7 @@ async function resetFromBlot(blogID, publish, signal) {
     });
 
     abortIfRequested(signal);
-    const {  path_display } = result;
+    const { path_display } = result;
     if (path_display) {
       dropboxRoot = path_display;
       abortIfRequested(signal);
@@ -88,10 +130,15 @@ async function resetFromBlot(blogID, publish, signal) {
 
   abortIfRequested(signal);
 
+  publish("Counting files...");
+  const total = await countLocalItems(localRoot, "/", signal);
+  const progress = total > 0 ? { current: 0, total: total } : null;
+  log("counted " + total + " local files and folders to transfer");
+
   const walk = async (dir) => {
     abortIfRequested(signal);
 
-    publish("Checking", dir);
+    log("Checking", dir);
 
     const [remoteContents, localContents] = await Promise.all([
       remoteReaddir(client, join(dropboxRoot, dir), signal),
@@ -105,13 +152,13 @@ async function resetFromBlot(blogID, publish, signal) {
 
       const path = join(dir, name);
       if (!localContents.find((localItem) => localItem.name === name)) {
-        publish("Removing", path);
+        log("Removing", path);
         try {
           abortIfRequested(signal);
           await client.filesDelete({ path: join(dropboxRoot, path) });
           abortIfRequested(signal);
         } catch (e) {
-          publish("Failed to remove", path, e.message);
+          log("Failed to remove", path, e.message);
         }
       }
     }
@@ -129,12 +176,15 @@ async function resetFromBlot(blogID, publish, signal) {
       if (localItem.is_directory) {
         abortIfRequested(signal);
 
+        // Counted in the pre-walk — bump even if the folder already exists.
+        publishTransferStatus(progress, publish, path);
+
         if (remoteCounterpart && !remoteCounterpart.is_directory) {
-          publish("Removing", path);
+          log("Removing", path);
           abortIfRequested(signal);
           await client.filesDelete({ path: join(dropboxRoot, path) });
           abortIfRequested(signal);
-          publish("Creating directory", path);
+          log("Creating directory", path);
           abortIfRequested(signal);
           await client.filesCreateFolder({
             path: join(dropboxRoot, path),
@@ -142,7 +192,7 @@ async function resetFromBlot(blogID, publish, signal) {
           });
           abortIfRequested(signal);
         } else if (!remoteCounterpart) {
-          publish("Creating directory", path);
+          log("Creating directory", path);
           abortIfRequested(signal);
           await client.filesCreateFolder({
             path: join(dropboxRoot, path),
@@ -159,8 +209,10 @@ async function resetFromBlot(blogID, publish, signal) {
           remoteCounterpart &&
           remoteCounterpart.content_hash === localItem.content_hash;
 
+        // Counted in the pre-walk — bump even when the file is already identical.
+        publishTransferStatus(progress, publish, path);
+
         if (remoteCounterpart && !identicalOnRemote) {
-          publish("Transferring", path);
           try {
             abortIfRequested(signal);
             await upload(
@@ -170,10 +222,9 @@ async function resetFromBlot(blogID, publish, signal) {
             );
             abortIfRequested(signal);
           } catch (e) {
-            publish("Failed to transfer", path);
+            log("Failed to transfer", path);
           }
         } else if (!remoteCounterpart) {
-          publish("Transferring", path);
           try {
             abortIfRequested(signal);
             await upload(
@@ -183,7 +234,7 @@ async function resetFromBlot(blogID, publish, signal) {
             );
             abortIfRequested(signal);
           } catch (e) {
-            publish("Failed to transfer", path);
+            log("Failed to transfer", path);
           }
         }
       }
@@ -207,7 +258,7 @@ async function resetFromBlot(blogID, publish, signal) {
 
   abortIfRequested(signal);
 
-  publish("Finished processing folder");
+  log("Finished processing folder");
 
   // reset sync cursor
   // await set(blogID, {cursor: ''});
@@ -217,9 +268,9 @@ async function resetFromBlot(blogID, publish, signal) {
 
 // async function uploadAllFiles(account, folder, signal, dir = "/") {
 //   if (signal.aborted) return;
-
+//
 //   const items = await fs.readdir(localPath(account.blog.id, dir));
-
+//
 //   for (const item of items) {
 //     if (signal.aborted) return;
 //     const stat = await fs.stat(localPath(account.blog.id, join(dir, item)));
@@ -229,7 +280,7 @@ async function resetFromBlot(blogID, publish, signal) {
 //       folder.status("Transferring " + join(dir, item));
 //       const source = localPath(account.blog.id, join(dir, item));
 //       const destination = join(account.folder, dir, item);
-
+//
 //       try {
 //         await upload(account.client, source, destination);
 //       } catch (err) {

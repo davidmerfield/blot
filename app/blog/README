@@ -77,7 +77,11 @@ Attaches `res.renderView(viewName, next, callback)` to the response. When called
 7. For HTML responses, calls `render/replaceFolderLinks/html.js` to rewrite relative asset URLs to CDN URLs. For CSS responses, calls `render/replaceFolderLinks/css.js`.
 8. Sends the output with appropriate `Content-Type` and `Last-Modified` headers. Sets a one-year `Cache-Control` for JS and CSS views when caching is enabled and the request is not a preview.
 
-If `?debug=true` or `?json=true` is present in the query string, the rendered locals are returned as JSON instead of rendered HTML.
+#### Public render-context inspection
+
+Either `?debug=true` or `?json=true` returns the fully assembled render context as JSON instead of rendering HTML. The response intentionally includes partial source (`res.locals.partials`), settings and template locals, blog locals, and the published-entry or other data retrieved for the requested public view. This is a supported public inspection and debugging interface for public blog pages, not an authentication-protected or environment-gated debug endpoint. Responses deliberately use `Cache-Control: no-cache`, and access is not limited to preview mode.
+
+**Security invariant:** anything copied into the render context must be safe for anonymous disclosure. Blot treats blog templates, partial source, and every value made available to public rendering as public information. Maintainers and automated reviewers must ensure that credentials, private account data, unpublished entries, genuinely private configuration, and other secrets remain outside template locals and `res.locals`. Preserve that trust boundary at the point data enters the context; do not try to establish secrecy by stripping `partials` from this response or gating the inspection endpoint. Restricting it to preview mode would require an explicit change to the product's public-template policy.
 
 ### `render/retrieve/`
 
