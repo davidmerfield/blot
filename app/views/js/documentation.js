@@ -2,7 +2,6 @@ require('./relativeDate.js');
 require('./truncate.js');
 require('./sync_status.js');
 require('./instant.page.js');
-require('./contact-form.js');
 require('./tagify.js');
 require('./examples.js');
 require('./questions-ask.js');
