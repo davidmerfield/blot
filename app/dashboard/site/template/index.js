@@ -67,7 +67,22 @@ TemplateEditor.route("/:templateSlug/install")
   })
   .post(function (req, res, next) {
     var templateID = req.body.template;
-    if (!templateID) return next(new Error("No template ID"));
+    if (typeof templateID !== "string") {
+      const err = new TypeError("Invalid template ID");
+      err.status = 400;
+      return next(err);
+    }
+
+    const ownerPrefix = `${req.blog.id}:`;
+    if (
+      !templateID.startsWith("SITE:") &&
+      !templateID.startsWith(ownerPrefix)
+    ) {
+      const err = new Error("No permission to install template");
+      err.status = 403;
+      return next(err);
+    }
+
     var updates = { template: templateID };
     Blog.set(req.blog.id, updates, function (err) {
       if (err) return next(err);
