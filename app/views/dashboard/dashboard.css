@@ -9,6 +9,11 @@
   width: 100%;
 }
 
+/* Progress bar already shows activity — hide the blinking syncing dot. */
+.sync-status.has-progress .sync-status-icon {
+  display: none;
+}
+
 .sync-status-body {
   display: inline-flex;
   flex-direction: column;

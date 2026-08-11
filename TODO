@@ -1,5 +1,3 @@
-Work out why progress bar is not working on git client any more. sortTable is not defined?
-
 Transfer Juliet's site and theme from blogger
 
 Work out what's soaking up all the disk space on the server, then make sure it's freed up enough to reliably deploy. 

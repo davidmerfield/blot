@@ -221,5 +221,5 @@ const publishTransferStatus = (progress, publish, message, path) => {
   }
 
   progress.current += 1;
-  publish(`(${progress.current}/${progress.total}) Syncing ${path}`);
+  publish(`(${progress.current}/${progress.total}) Transferring ${path}`);
 };

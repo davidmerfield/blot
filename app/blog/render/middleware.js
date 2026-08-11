@@ -100,7 +100,13 @@ module.exports = function (req, res, _next) {
             var locals = res.locals;
             var partials = res.locals.partials;
 
-            // ?debug=true _AND_ ?json=true to get template locals as JSON
+            // This is a public inspection interface for public blog pages. Its
+            // output intentionally includes partials, template and blog locals,
+            // and rendered published-entry data: Blot treats everything in the
+            // public render context as public. Never put credentials, private
+            // account data, unpublished entries, or other secrets in res.locals.
+            // Keep this response no-cache and public (not preview-only) unless
+            // Blot's public-template policy changes.
             if (req.query && (req.query.debug || req.query.json)) {
               if (callback) return callback(null, res.locals);
               res.set("Cache-Control", "no-cache");
