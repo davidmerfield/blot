@@ -55,33 +55,45 @@ describe("git client handle changes", function () {
             expect(oldExists).toBe(false);
 
             assertRedirect(
-              "/clients/git/end/" + oldHandle + ".git",
+              "/clients/git/end/" + oldHandle + ".git/HEAD",
               "http://127.0.0.1:" +
                 context.server.port +
                 "/clients/git/end/" +
                 newHandle +
-                ".git",
+                ".git/HEAD",
               function () {
                 assertRedirect(
                   "/clients/git/end/" +
                     oldHandle +
-                    ".git/info/refs?service=git-receive-pack",
+                    ".git/git-upload-pack",
                   "http://127.0.0.1:" +
                     context.server.port +
                     "/clients/git/end/" +
                     newHandle +
-                    ".git/info/refs?service=git-receive-pack",
+                    ".git/git-upload-pack",
                   function () {
                     assertRedirect(
                       "/clients/git/end/" +
                         oldHandle +
-                        ".git/git-receive-pack",
+                        ".git/info/refs?service=git-receive-pack",
                       "http://127.0.0.1:" +
                         context.server.port +
                         "/clients/git/end/" +
                         newHandle +
-                        ".git/git-receive-pack",
-                      done
+                        ".git/info/refs?service=git-receive-pack",
+                      function () {
+                        assertRedirect(
+                          "/clients/git/end/" +
+                            oldHandle +
+                            ".git/git-receive-pack",
+                          "http://127.0.0.1:" +
+                            context.server.port +
+                            "/clients/git/end/" +
+                            newHandle +
+                            ".git/git-receive-pack",
+                          done
+                        );
+                      }
                     );
                   }
                 );

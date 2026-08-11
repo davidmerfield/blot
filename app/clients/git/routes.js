@@ -118,6 +118,27 @@ function parseGitRequest(req, res, next) {
   next();
 }
 
+function redirectRenamedGitHandle(req, res, next) {
+  Blog.get({ handle: req.gitHandle }, function (err, blog) {
+    if (err || !blog || blog.handle === req.gitHandle) return next();
+
+    var oldRepository = "/" + req.gitHandle + ".git";
+    var trailingPathAndQuery = req.url.slice(oldRepository.length);
+
+    res.redirect(
+      308,
+      req.protocol +
+        "://" +
+        req.get("host") +
+        req.baseUrl +
+        "/" +
+        blog.handle +
+        ".git" +
+        trailingPathAndQuery
+    );
+  });
+}
+
 // We keep a dictionary of synced blogs for testing
 // purposes. There isn't an easy way to determine
 // after pushing whether or not Blot has completed the
@@ -224,7 +245,7 @@ repos.on("push", function (push) {
 // We need to pause then resume for some strange reason. See Pushover issue #30.
 // Keep req.url untouched: Pushover uses the canonical repository path parsed
 // and authenticated above to select the repository.
-site.use("/end", parseGitRequest, authenticate, function (req, res) {
+site.use("/end", parseGitRequest, redirectRenamedGitHandle, authenticate, function (req, res) {
   function endResponse() {
     if (res && !res.headersSent && !res.finished && !res.writableEnded) {
       try {
