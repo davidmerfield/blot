@@ -8,6 +8,7 @@ var timerId = null;
 var pendingWhileHidden = false;
 var evtSource = null;
 var shouldReload = false;
+var lastRawMessage = null;
 var PROGRESS_MESSAGE_RE = /^\((\d+)\/(\d+)\)\s*(.*)$/;
 
 function q(sel) {
@@ -60,8 +61,18 @@ function renderSyncStatusMessage(message) {
   if (!statusText) return;
 
   if (typeof message === "undefined") {
-    message = statusText.innerText || "";
+    // Re-apply the last raw status we were given. We must not read it back
+    // from statusText.innerText, because the render below replaces that with
+    // the shortened text (the "(current/total)" progress prefix stripped).
+    // Re-parsing the shortened text would report no progress and reset the
+    // bar to 0% on every subsequent no-argument render.
+    message =
+      lastRawMessage !== null ? lastRawMessage : statusText.innerText || "";
   }
+
+  // Remember the raw, unshortened status so later no-argument renders can
+  // recover the progress prefix.
+  lastRawMessage = message;
 
   var parsed = parseSyncStatusMessage(message);
   var visibleMessage = shortenSyncingFilename(parsed.text);
