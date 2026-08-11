@@ -4,6 +4,12 @@ var extend = require("helper/extend");
 var normalizeImageExif = require("models/blog/util/imageExif").normalize;
 var normalizeConverters = require("models/blog/util/converters").normalize;
 
+var WRITEABLE_SCHEME = {};
+
+for (var i of Blog.scheme.WRITEABLE) {
+  WRITEABLE_SCHEME[i] = Blog.scheme.TYPE[i];
+}
+
 function normalizeBooleanOption(value) {
   if (value === null || value === undefined || value === false || value === 0)
     return false;
@@ -30,7 +36,7 @@ function normalizeBooleanOption(value) {
 
 module.exports = function (req, res, next) {
   try {
-    req.updates = formJSON(req.body, Blog.scheme.TYPE);
+    req.updates = formJSON(req.body, WRITEABLE_SCHEME);
   } catch (e) {
     return next(e);
   }
