@@ -7,7 +7,7 @@ var sync = require("./sync");
 var dataDir = require("./dataDir");
 var Blog = require("models/blog");
 var debug = require("debug")("blot:clients:git:routes");
-var repos = pushover(dataDir, { autoCreate: true });
+var repos = pushover(dataDir, { autoCreate: false });
 repos.on("error", function (err) {
   if (err && (err.code === "ECONNRESET" || err.code === "EPIPE")) {
     return debug("Git repos connection error", err.message || err);
@@ -20,7 +20,6 @@ var dashboard = Express.Router();
 var site = Express.Router();
 var clfdate = require("helper/clfdate");
 var host = require("config").host;
-var Blog = require("models/blog");
 
 dashboard.get("/", function (req, res, next) {
   repos.exists(req.blog.handle + ".git", function (exists) {
@@ -104,39 +103,20 @@ dashboard.post("/disconnect", function (req, res, next) {
   disconnect(req.blog.id, next);
 });
 
-site.use("/end/:gitHandle.git", function (req, res, next) {
-  Blog.get({ handle: req.params.gitHandle }, function (err, blog) {
-    if (err || !blog) return next();
+// Express leaves the portion after /end in req.url. Parse that raw value before
+// authentication so encoded separators and normalization cannot change which
+// repository is authorized. Blog handles are canonical lowercase alphanumerics
+// between 2 and 70 characters (the same shape stored by the blog model).
+var GIT_REQUEST = /^\/([a-z0-9]{2,70})\.git\/(?:info\/refs|HEAD|git-(?:upload|receive)-pack)(?:\?[^#]*)?$/;
 
-    if (blog.handle !== req.params.gitHandle) {
-      var oldPathPrefix =
-        "/clients/git/end/" + req.params.gitHandle + ".git";
-      var originalUrl = req.originalUrl || "";
-      var trailingPathAndQuery = "";
+function parseGitRequest(req, res, next) {
+  var match = GIT_REQUEST.exec(req.url);
 
-      if (originalUrl.indexOf(oldPathPrefix) === 0) {
-        trailingPathAndQuery = originalUrl.slice(oldPathPrefix.length);
-      } else {
-        trailingPathAndQuery = req.url || "";
-      }
+  if (!match) return res.sendStatus(404);
 
-      return res
-        .redirect(308,
-          req.protocol +
-            "://" +
-            req.get("host") +
-            "/clients/git/end/" +
-            blog.handle +
-            ".git" +
-            trailingPathAndQuery
-        );
-    }
-
-    return next();
-  });
-});
-
-site.use("/end/:gitHandle.git", authenticate);
+  req.gitHandle = match[1];
+  next();
+}
 
 // We keep a dictionary of synced blogs for testing
 // purposes. There isn't an easy way to determine
@@ -241,14 +221,10 @@ repos.on("push", function (push) {
   });
 });
 
-// We need to pause then resume for some
-// strange reason. Read pushover's issue #30
-// For another strange reason, this doesn't work
-// when I try and mount it at the same path as
-// the authentication middleware, e.g:
-// site.use("/end/:gitHandle.git", function(req, res) {
-// I would feel more comfortable if I could.
-site.use("/end", function (req, res) {
+// We need to pause then resume for some strange reason. See Pushover issue #30.
+// Keep req.url untouched: Pushover uses the canonical repository path parsed
+// and authenticated above to select the repository.
+site.use("/end", parseGitRequest, authenticate, function (req, res) {
   function endResponse() {
     if (res && !res.headersSent && !res.finished && !res.writableEnded) {
       try {
@@ -287,4 +263,4 @@ site.use("/end", function (req, res) {
   req.resume();
 });
 
-module.exports = { dashboard: dashboard, site: site };
+module.exports = { dashboard: dashboard, site: site, repos: repos };

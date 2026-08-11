@@ -9,7 +9,56 @@ describe("git client authenticate", function () {
 
   var fs = require("fs-extra");
   var Git = require("simple-git");
+  var http = require("http");
   var url = require("url");
+
+  it("rejects unauthenticated and noncanonical Git endpoints before Pushover", function (done) {
+    var dataDir = require("clients/git/dataDir");
+    var repos = require("clients/git/routes").repos;
+    var handle = this.blog.handle;
+    var handleSpy = spyOn(repos, "handle").and.callThrough();
+    var requests = [
+      { path: "/clients/git/end/" + handle + ".git/info/refs?service=git-upload-pack", status: 401 },
+      { path: "/clients/git/end/" + handle + ".git/git-receive-pack", method: "POST", status: 401 },
+      { path: "/clients/git/end//" + handle + ".git/info/refs", status: 404 },
+      { path: "/clients/git/end/./" + handle + ".git/info/refs", status: 404 },
+      { path: "/clients/git/end/%2f" + handle + ".git/info/refs", status: 404 },
+      { path: "/clients/git/end/../" + handle + ".git/info/refs", status: 404 },
+      { path: "/clients/git/end/prefix/" + handle + ".git/info/refs", status: 404 },
+      { path: "/clients/git/end/" + handle + ".git/../info/refs", status: 404 },
+    ];
+
+    function next() {
+      var request = requests.shift();
+
+      if (!request) {
+        expect(handleSpy).not.toHaveBeenCalled();
+        expect(fs.existsSync(dataDir + "/prefix.git")).toBe(false);
+        return done();
+      }
+
+      var req = http.request(
+        {
+          hostname: "127.0.0.1",
+          port: this.server.port,
+          method: request.method || "GET",
+          path: request.path,
+        },
+        function (res) {
+          res.resume();
+          res.on("end", function () {
+            expect(res.statusCode).toBe(request.status);
+            next.call(this);
+          }.bind(this));
+        }.bind(this)
+      );
+
+      req.on("error", done.fail);
+      req.end();
+    }
+
+    next.call(this);
+  });
 
   it("allows a user with good credentials to clone a repo", function (done) {
     var tmp = this.tmp;
