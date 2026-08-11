@@ -30,7 +30,7 @@ var DECLARATION = {
   permalink: [PERMALINK, true, true],
   menu: [[LINK], true, true],
   dateFormat: ["string", true, true],
-  cacheID: ["number", true, true],
+  cacheID: ["number", false, true],
 
   // Flags
   flags: [FLAGS, true, false],

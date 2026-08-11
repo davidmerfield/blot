@@ -24,6 +24,7 @@ describe("Blog.set", function () {
     get({ id: test.blog.id }, function (err, before) {
       if (err) return done.fail(err);
 
+      var suppliedCacheID = 123;
       var updatedTitle = before.title + " Updated";
 
       set(
@@ -31,6 +32,7 @@ describe("Blog.set", function () {
         {
           id: "another-blog-id",
           owner: "another-owner-id",
+          cacheID: suppliedCacheID,
           title: updatedTitle,
         },
         function (err) {
@@ -41,38 +43,13 @@ describe("Blog.set", function () {
 
             expect(after.id).toBe(before.id);
             expect(after.owner).toBe(before.owner);
+            expect(after.cacheID).not.toBe(suppliedCacheID);
+            expect(after.cacheID).toBeGreaterThanOrEqual(before.cacheID);
             expect(after.title).toBe(updatedTitle);
             done();
           });
         }
       );
-    });
-  });
-
-  it("accepts cacheID updates and flushes the cache", function (done) {
-    var test = this;
-
-    get({ id: test.blog.id }, function (err, before) {
-      if (err) return done.fail(err);
-
-      var suppliedCacheID = Date.now();
-
-      set(test.blog.id, { cacheID: suppliedCacheID }, function (err, changes) {
-        if (err) return done.fail(err);
-
-        // Blog.set invokes its callback from the cache-flushing path.
-        expect(changes).toContain("cacheID");
-
-        get({ id: test.blog.id }, function (err, after) {
-          if (err) return done.fail(err);
-
-          expect(after.cacheID).toBeGreaterThan(before.cacheID);
-          expect(after.cacheID).toBeGreaterThanOrEqual(suppliedCacheID);
-          expect(after.cssURL).toContain("cache=" + after.cacheID);
-          expect(after.scriptURL).toContain("cache=" + after.cacheID);
-          done();
-        });
-      });
     });
   });
 
