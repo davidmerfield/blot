@@ -75,7 +75,6 @@ describe("install template route", function () {
   it("rejects an existing template owned by a different blog", async function () {
     const blog = this.blogs[0];
     const otherBlog = this.blogs[1];
-    const originalTemplate = blog.template;
     const otherTemplate = await new Promise(function (resolve, reject) {
       Template.create(otherBlog.id, "Existing template", {}, function (
         err,
@@ -85,6 +84,14 @@ describe("install template route", function () {
         resolve(template);
       });
     });
+
+    const originalTemplate = await new Promise(function (resolve, reject) {
+      Blog.get({ id: blog.id }, function (err, value) {
+        if (err) return reject(err);
+        resolve(value.template);
+      });
+    });
+    Blog.set.calls.reset();
 
     const result = await runInstall(blog, otherTemplate.id);
 
@@ -109,6 +116,8 @@ describe("install template route", function () {
     ];
 
     const expectedStatuses = [400, 403];
+
+    Blog.set.calls.reset();
 
     for (let index = 0; index < malformedValues.length; index++) {
       const value = malformedValues[index];
