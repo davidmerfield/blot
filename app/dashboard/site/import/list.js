@@ -13,11 +13,13 @@ module.exports = async function (req, res, next) {
       .map((i) => {
         let size;
         let started;
+        let importedOn;
         let identifier;
         let name;
         let lastStatus;
         let error;
         let cancelled;
+        let timestamp;
 
         try {
           size = prettySize(
@@ -25,12 +27,15 @@ module.exports = async function (req, res, next) {
               fs.statSync(join(tempDir, "import", req.blog.id, i, "result.zip"))
                 .size / 1000
             )
-          );
+          , 0); // no decimals
         } catch (e) {}
 
         try {
-          name = i.split("-")[0];
-          started = moment(parseInt(i.split("-")[1])).fromNow();
+          const lastDash = i.lastIndexOf("-");
+          name = i.slice(0, lastDash);
+          timestamp = parseInt(i.slice(lastDash + 1), 10);
+          started = moment(timestamp).fromNow();
+          importedOn = moment(timestamp).format("MMM D, YYYY");
         } catch (e) {}
 
         try {
@@ -64,16 +69,31 @@ module.exports = async function (req, res, next) {
         return {
           id: i,
           name,
+          icon: name
+            ? "/images/configure/" +
+                (["blogger", "wordpress", "are.na", "squarespace"].includes(
+                  name.toLowerCase()
+                )
+                  ? name.toLowerCase() + ".svg"
+                  : name.toLowerCase() + ".png")
+            : undefined,
           identifier,
           cancelled,
           size,
           error,
           lastStatus: !!error ? error : lastStatus,
           started,
+          importedOn,
+          timestamp,
           complete: !!size || !!error,
         };
       })
       .filter((i) => !!i && !!i.name && i.cancelled === undefined);
+
+      // sort by timestamp
+      res.locals.imports.sort((a, b) => {
+        return b.timestamp - a.timestamp;
+      });
   } catch (e) {
     //
   }

@@ -67,39 +67,57 @@ module.exports = function (options = {}) {
 
   // Add this beforeEach hook to define the fetch function
   beforeEach(function () {
-    this.fetch = (input, options = {}) => {
+    this.cookies = {};
+
+    this.cookieHeader = () =>
+      Object.entries(this.cookies)
+        .map(([name, value]) => `${name}=${value}`)
+        .join("; ");
+
+    this.storeCookies = (res) => {
+      const setCookies =
+        typeof res.headers.getSetCookie === "function"
+          ? res.headers.getSetCookie()
+          : [];
+
+      for (const raw of setCookies) {
+        const pair = raw.split(";")[0];
+        const eq = pair.indexOf("=");
+        if (eq === -1) continue;
+
+        const name = pair.slice(0, eq).trim();
+        const value = pair.slice(eq + 1);
+        if (!name) continue;
+
+        this.cookies[name] = value;
+      }
+
+      // Keep a serialized Cookie string for any legacy readers
+      this.Cookie = this.cookieHeader();
+    };
+
+    this.fetch = async (input, options = {}) => {
       const url = new URL(input, this.origin);
 
+      options.headers = options.headers || {};
+
       if (url.hostname !== "localhost") {
-        options.headers = options.headers || {};
         options.headers["Host"] = url.hostname;
         options.headers["x-forwarded-host"] = url.hostname;
         url.hostname = "localhost";
       }
 
-      // Now this.Cookie will be available from the current context
-      if (this.Cookie) {
-        options.headers = options.headers || {};
-
-        // if there is a csrf token in the cookie header already
-        // extract it and include it to this.Cookie
-        if (
-          options.headers.Cookie &&
-          /csrf=([^;]+)/.test(options.headers.Cookie)
-        ) {
-          const existingCsrf = options.headers.Cookie.match(/csrf=([^;]+)/)[0];
-          options.headers.Cookie = `${existingCsrf}; ${this.Cookie}`;
-        } else {
-          options.headers.Cookie = this.Cookie;
-        }
+      const cookieHeader = this.cookieHeader();
+      if (cookieHeader) {
+        options.headers.Cookie = cookieHeader;
       }
 
       url.protocol = "http:";
       url.port = port;
 
-      const modifiedURL = url.toString();
-
-      return fetch(modifiedURL, options);
+      const res = await fetch(url.toString(), options);
+      this.storeCookies(res);
+      return res;
     };
 
     this.checkBrokenLinks = (url = this.origin, options = {}) =>
@@ -146,28 +164,31 @@ module.exports = function (options = {}) {
             redirect: "manual",
           });
 
-          
-          const headers = Object.fromEntries(page.headers);
-          const cookies = headers["set-cookie"];
-          const csrfCookie = cookies.match(/csrf=([^;]+)/);
-
           // the response status should be 200
           expect(page.status).toEqual(200);
 
           const pageText = await page.text();
           const csrfTokenMatch = pageText.match(/name="_csrf" value="([^"]+)"/);
-          
+
           let formPath = path;
 
           // determine the form path in case it is different
-          const formMatch = cheerio.load(pageText)('form[action][method="post"]').attr('action');
-          
+          const formMatch = cheerio
+            .load(pageText)('form[action][method="post"]')
+            .attr("action");
+
           if (formMatch) {
             formPath = formMatch;
           }
 
           if (!csrfTokenMatch) {
             return reject(new Error("CSRF token not found in form"));
+          }
+
+          if (this.cookies.csrf !== csrfTokenMatch[1]) {
+            return reject(
+              new Error("CSRF token mismatch between form and cookie")
+            );
           }
 
           const params = new URLSearchParams();
@@ -182,7 +203,6 @@ module.exports = function (options = {}) {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
-              Cookie: cookies, // Send the CSRF cookie along with the request
             },
             body: params.toString(),
           });
@@ -210,10 +230,6 @@ module.exports = function (options = {}) {
         redirect: "manual",
       });
 
-      const loginHeaders = Object.fromEntries(loginPage.headers);
-      const loginCookies = loginHeaders["set-cookie"];
-      const csrfCookie = loginCookies.match(/csrf=([^;]+)/);
-
       // the response status should be 200
       expect(loginPage.status).toEqual(200);
 
@@ -224,6 +240,12 @@ module.exports = function (options = {}) {
 
       if (!csrfTokenMatch) {
         return done(new Error("CSRF token not found in login page"));
+      }
+
+      if (this.cookies.csrf !== csrfTokenMatch[1]) {
+        return done(
+          new Error("CSRF token mismatch between login form and cookie")
+        );
       }
 
       const email = this.user.email;
@@ -239,16 +261,12 @@ module.exports = function (options = {}) {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          Cookie: loginCookies, // Send the CSRF cookie along with the request
         },
         body: params.toString(),
         redirect: "manual",
       });
 
-      const headers = Object.fromEntries(res.headers);
-
-      const location = headers.location;
-      const Cookie = headers["set-cookie"];
+      const location = res.headers.get("location");
 
       // the response status should be 302
       // and redirect to the dashboard
@@ -260,11 +278,8 @@ module.exports = function (options = {}) {
         );
       }
 
-      expect(Cookie).toMatch(/connect.sid/);
+      expect(this.cookies["connect.sid"]).toBeDefined();
       expect(location).toEqual("/sites");
-
-      // Expose the cookie to the test context so this.fetch can use it
-      this.Cookie = Cookie;
 
       // Check that we are logged in by requesting /sites and checking the response
       // for the user's email address

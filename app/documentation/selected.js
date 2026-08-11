@@ -31,6 +31,10 @@ var TITLES = {
   "ifttt": "IFTTT",
   "soundcloud": "SoundCloud",
   "youtube": "YouTube",
+  "wordpress": "WordPress",
+  "squarespace": "Squarespace",
+  "blogger": "Blogger",
+  "arena": "Are.na",
 };
 
 module.exports = function (req, res, next) {

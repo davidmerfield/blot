@@ -6,12 +6,16 @@ Spring newsletter
 - You can now drag-and-drop files directly into a folder on the dashboard
 - [Markdown](https://blot.im/how/files/markdown) now supports embeds
 - You can disable processing of images into posts from the [image settings](https://blot.im/sites/default/settings/images)
+- You can now import sites from Blogger on the importer
+- Obsidian callout support: /how/files/markdown#callouts
 
 **Changes**
 - Google Docs now support superscript, subscript, strike, underline
 - Support Wikilink lookup by title for pages as well as posts
 - Tag index and tag list pages can now be filtered by path
 - The [Git client](https://blot.im/how/sync/git) now supports changes to your site username
+- Katex can be written inline in single dollar signs (previously we required you use two dollar signs)
+- The Wordpress importer can now process and generate markdown tables
 
 **Bug fixes**
 - Fix bug with URL settings in package.json
@@ -20,6 +24,13 @@ Spring newsletter
 - Fixed uploads in subdirectories
 - Fixed date inputs on the template editor
 - Fixed image width on the documentation template
+- Fixed bug with multi-line [math equations](https://blot.im/how/guides/tex) in Markdown
+- Fixed a security flaw that let anyone with access to your dashboard session change your password without knowing the current one
+- Fixed a remote code execution bug in the conversion of Word and OpenDocument files triggered by a crafted filename
+- Fixed an authentication bypass in the [Git client](https://blot.im/how/sync/git) that allowed unauthorized read and write access to any site’s repository
+- Fixed a prototype pollution vulnerability in how the dashboard processes form fields
+- Fixed a bug that allowed unauthorized access to another site’s files by submitting a crafted site ID
+- Fixed an authorization bug that let you install and view another site’s private template
 
 **Questions**
 

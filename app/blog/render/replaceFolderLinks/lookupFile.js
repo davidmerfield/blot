@@ -93,7 +93,7 @@ async function lookupFile(blogID, cacheID, value) {
         resolve("/", pathFromValue)
       );
 
-      version = hash(`${stat.mtime}${stat.ctime}${stat.size}`).slice(0, 8);
+      const version = hash(`${stat.mtime}${stat.ctime}${stat.size}`).slice(0, 8);
 
       // we need to include the path in the result since if there is a case-sensitive
       // issue, the path will be different after resolution
