@@ -18,6 +18,41 @@ describe("Blog.set", function () {
     });
   });
 
+  it("only updates writeable fields", function (done) {
+    var test = this;
+
+    get({ id: test.blog.id }, function (err, before) {
+      if (err) return done.fail(err);
+
+      var suppliedCacheID = 123;
+      var updatedTitle = before.title + " Updated";
+
+      set(
+        test.blog.id,
+        {
+          id: "another-blog-id",
+          owner: "another-owner-id",
+          cacheID: suppliedCacheID,
+          title: updatedTitle,
+        },
+        function (err) {
+          if (err) return done.fail(err);
+
+          get({ id: test.blog.id }, function (err, after) {
+            if (err) return done.fail(err);
+
+            expect(after.id).toBe(before.id);
+            expect(after.owner).toBe(before.owner);
+            expect(after.cacheID).not.toBe(suppliedCacheID);
+            expect(after.cacheID).toBeGreaterThanOrEqual(before.cacheID);
+            expect(after.title).toBe(updatedTitle);
+            done();
+          });
+        }
+      );
+    });
+  });
+
   it("disables image metadata when turned off", function (done) {
     var test = this;
 
