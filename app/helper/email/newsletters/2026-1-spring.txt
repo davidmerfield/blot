@@ -25,6 +25,12 @@ Spring newsletter
 - Fixed date inputs on the template editor
 - Fixed image width on the documentation template
 - Fixed bug with multi-line [math equations](https://blot.im/how/guides/tex) in Markdown
+- Fixed a security flaw that let anyone with access to your dashboard session change your password without knowing the current one
+- Fixed a remote code execution bug in the conversion of Word and OpenDocument files triggered by a crafted filename
+- Fixed an authentication bypass in the [Git client](https://blot.im/how/sync/git) that allowed unauthorized read and write access to any site’s repository
+- Fixed a prototype pollution vulnerability in how the dashboard processes form fields
+- Fixed a bug that allowed unauthorized access to another site’s files by submitting a crafted site ID
+- Fixed an authorization bug that let you install and view another site’s private template
 
 **Questions**
 
