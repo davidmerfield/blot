@@ -56,7 +56,7 @@ module.exports = function getStatuses(blogID, options, callback) {
       const statuses = statusesResult.map(JSON.parse);
 
       // Work out if there are more pages of statuses
-      const next = total > limit - 1 ? options.page + 1 : null;
+      const next = total > limit + 1 ? options.page + 1 : null;
       const previous = options.page > 1 ? options.page - 1 : null;
 
       callback(null, { statuses, next, previous });

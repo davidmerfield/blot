@@ -3,7 +3,7 @@ var ensure = require("helper/ensure");
 var makeUid = require("helper/makeUid");
 var LocalPath = require("helper/localPath");
 var extname = require("path").extname;
-var exec = require("child_process").exec;
+var execFile = require("child_process").execFile;
 var cheerio = require("cheerio");
 var Metadata = require("build/metadata");
 var extend = require("helper/extend");
@@ -40,9 +40,9 @@ function read (blog, path, callback) {
       if (err) return callback(err);
 
       var args = [
-        '"' + localPath + '"',
+        localPath,
         "-o",
-        '"' + outPath + '"',
+        outPath,
         "--extract-media=" + assetDir,
         "-f",
         "odt",
@@ -54,12 +54,13 @@ function read (blog, path, callback) {
         // memory in corner cases
         "+RTS",
         "-M" + config.pandoc.maxmemory,
-        " -RTS"
-      ].join(" ");
+        "-RTS"
+      ];
 
       var startTime = Date.now();
-      exec(
-        Pandoc + " " + args,
+      execFile(
+        Pandoc,
+        args,
         { timeout: config.pandoc.timeout },
         function (err, stdout, stderr) {
           if (err) {
