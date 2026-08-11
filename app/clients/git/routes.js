@@ -121,6 +121,8 @@ function parseGitRequest(req, res, next) {
 }
 
 function redirectRenamedGitHandle(req, res, next) {
+  // Historical-to-current handle mappings are public. Resolve them before
+  // authentication so old Git remotes can discover their canonical URL.
   Blog.get({ handle: req.gitHandle }, function (err, blog) {
     if (err || !blog || blog.handle === req.gitHandle) return next();
 
@@ -129,9 +131,8 @@ function redirectRenamedGitHandle(req, res, next) {
 
     res.redirect(
       308,
-      req.protocol +
-        "://" +
-        req.get("host") +
+      "https://" +
+        host +
         req.baseUrl +
         "/end" +
         "/" +
