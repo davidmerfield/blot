@@ -103,18 +103,20 @@ dashboard.post("/disconnect", function (req, res, next) {
   disconnect(req.blog.id, next);
 });
 
-// Express leaves the portion after /end in req.url. Parse that raw value before
-// authentication so encoded separators and normalization cannot change which
-// repository is authorized. Blog handles are canonical lowercase alphanumerics
-// between 2 and 70 characters (the same shape stored by the blog model).
-var GIT_REQUEST = /^\/([a-z0-9]{2,70})\.git\/(?:info\/refs|HEAD|git-(?:upload|receive)-pack)(?:\?[^#]*)?$/;
+// Parse the literal /end prefix while this router can still see it. Mounting a
+// handler at /end first would let Express consume one optional slash, making
+// /end//handle.git indistinguishable from /end/handle.git. Blog handles are
+// canonical lowercase alphanumerics between 2 and 70 characters (the same
+// shape stored by the blog model).
+var GIT_REQUEST = /^\/end(\/([a-z0-9]{2,70})\.git\/(?:info\/refs|HEAD|git-(?:upload|receive)-pack)(?:\?[^#]*)?)$/;
 
 function parseGitRequest(req, res, next) {
   var match = GIT_REQUEST.exec(req.url);
 
   if (!match) return res.sendStatus(404);
 
-  req.gitHandle = match[1];
+  req.url = match[1];
+  req.gitHandle = match[2];
   next();
 }
 
@@ -131,6 +133,7 @@ function redirectRenamedGitHandle(req, res, next) {
         "://" +
         req.get("host") +
         req.baseUrl +
+        "/end" +
         "/" +
         blog.handle +
         ".git" +
@@ -245,7 +248,7 @@ repos.on("push", function (push) {
 // We need to pause then resume for some strange reason. See Pushover issue #30.
 // Keep req.url untouched: Pushover uses the canonical repository path parsed
 // and authenticated above to select the repository.
-site.use("/end", parseGitRequest, redirectRenamedGitHandle, authenticate, function (req, res) {
+site.use(parseGitRequest, redirectRenamedGitHandle, authenticate, function (req, res) {
   function endResponse() {
     if (res && !res.headersSent && !res.finished && !res.writableEnded) {
       try {
