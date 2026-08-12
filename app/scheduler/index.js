@@ -14,6 +14,9 @@ const exec = require("child_process").exec;
 const zombies = require("./zombies");
 const checkCardTesters = require("./check-card-testers");
 const subscriptionLifecycleJob = require("./subscription-lifecycle");
+const redisClient = require("models/client");
+const getClientSideCacheStats =
+  require("models/redis").getClientSideCacheStats;
 
 // If any disk has less than 2GB of space, we should notify the admin
 const MINIMUM_DISK_SPACE_IN_K = 2 * 1024 * 1024;
@@ -26,6 +29,38 @@ let NOTIFIED_LOW_DISK_SPACE = false;
 module.exports = function () {
   // Log useful system information, once per minute
   scheduler.scheduleJob("* * * * *", function () {
+    // These metrics are cumulative for this process's Redis cache lifetime.
+    // Reading them does not reset the cache's counters.
+    try {
+      const cacheStats = getClientSideCacheStats(redisClient);
+
+      if (!cacheStats) {
+        console.error(
+          clfdate(),
+          "[STATS]",
+          "redis_cache_stats_error=cache_unavailable"
+        );
+      } else {
+        console.log(
+          clfdate(),
+          "[STATS]",
+          "redis_cache_hitCount=" + cacheStats.hitCount,
+          "redis_cache_missCount=" + cacheStats.missCount,
+          "redis_cache_hitRate=" + cacheStats.hitRate(),
+          "redis_cache_requestCount=" + cacheStats.requestCount(),
+          "redis_cache_loadSuccessCount=" + cacheStats.loadSuccessCount,
+          "redis_cache_averageLoadPenalty=" + cacheStats.averageLoadPenalty()
+        );
+      }
+    } catch (err) {
+      console.error(
+        clfdate(),
+        "[STATS]",
+        "redis_cache_stats_error=metric_access_failed",
+        "error=" + JSON.stringify(err && err.message ? err.message : String(err))
+      );
+    }
+
     // Detect any zombie processes
     zombies(function (err) {
       if (err) throw err;
