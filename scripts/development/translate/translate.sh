@@ -225,6 +225,16 @@ for dates to be meaningful — Blot does not read the file's modified time.
 EOF
 }
 
+# Content may already be present from an earlier run, or dropped in while this
+# script was provisioning. Either way the watcher may not have seen it.
+echo "[translate] Reading the folder"
+# Let the watcher drain first: it takes the same folder lock for every event, and
+# a directory of content can keep it busy longer than sync is willing to retry.
+docker exec "$CONTAINER" \
+  node scripts/development/translate/settle "$BLOG_ID" >/dev/null 2>&1 || true
+docker exec "$CONTAINER" \
+  node scripts/development/translate/rescan "$BLOG_ID" >/dev/null 2>&1 || true
+
 CONTENT_OK=false
 
 while [ "$CONTENT_OK" != true ]; do
@@ -253,7 +263,14 @@ while [ "$CONTENT_OK" != true ]; do
       ;;
   esac
 
-  echo "[translate] Waiting for Blot to finish reading the folder"
+  # Read the folder explicitly rather than waiting on the watcher. Content copied
+  # in before the watcher started listening is invisible to it: chokidar runs with
+  # ignoreInitial, and setup only begins after sync/fix finishes.
+  echo "[translate] Reading the folder"
+  docker exec "$CONTAINER" \
+    node scripts/development/translate/settle "$BLOG_ID" >/dev/null 2>&1 || true
+  docker exec "$CONTAINER" \
+    node scripts/development/translate/rescan "$BLOG_ID" >/dev/null 2>&1 || true
   docker exec "$CONTAINER" \
     node scripts/development/translate/settle "$BLOG_ID" >/dev/null 2>&1 || true
 
@@ -293,9 +310,87 @@ if [ -d "$FOLDER/.git" ]; then
   fi
 fi
 
+# --------------------------------------------------------------- screenshots
+
+VERIFICATION="$FOLDER/.verification"
+TARGETS_FILE="$VERIFICATION/targets.json"
+
+mkdir -p "$VERIFICATION"
+
+# Settle before shooting, not after: .verification/ is not ignored by the folder
+# watcher, so writing screenshots bumps cacheID too. Shooting first would leave
+# the two chasing each other.
+echo "[translate] Waiting for the site to finish rebuilding"
+docker exec "$CONTAINER" \
+  node scripts/development/translate/settle "$BLOG_ID" >/dev/null 2>&1 || true
+
+echo "[translate] Working out which pages to compare"
+if ! docker exec "$CONTAINER" \
+  node scripts/development/translate/targets "$BLOG_ID" "$URL" > "$TARGETS_FILE" 2>/dev/null; then
+  die "Could not work out which pages to screenshot."
+fi
+
+# Screenshots run on the host: the container resolves *.local.blot to itself and
+# cannot reach the site (verified — connection refused).
+echo "[translate] Taking screenshots"
+CAPTURE_OUTPUT="$(node "$DIR/capture.js" "$TARGETS_FILE" "$VERIFICATION" 2>&1 || true)"
+
+echo "$CAPTURE_OUTPUT" | grep '^captured=' | sed 's/^captured=/[translate]   captured /' || true
+
+CAPTURE_FAILURES="$(echo "$CAPTURE_OUTPUT" | grep '^failed=' || true)"
+
+if [ -n "$CAPTURE_FAILURES" ]; then
+  echo ""
+  echo "$CAPTURE_FAILURES" | sed 's/^failed=/[translate]   could not capture /'
+  echo "[translate]   (source pages are captured on a best guess of the original"
+  echo "[translate]   URL, so a miss here is normal unless permalinks were kept)"
+fi
+
+# ----------------------------------------------------------- comparison UI
+
+COMPARE_PORT="${TRANSLATE_COMPARE_PORT:-3021}"
+COMPARE_PID=""
+COMPARE_URL=""
+
+stop_compare() {
+  if [ -n "$COMPARE_PID" ] && kill -0 "$COMPARE_PID" 2>/dev/null; then
+    kill "$COMPARE_PID" 2>/dev/null || true
+    wait "$COMPARE_PID" 2>/dev/null || true
+  fi
+}
+
+trap stop_compare EXIT INT TERM
+
+node "$DIR/compare-server.js" "$VERIFICATION" "$COMPARE_PORT" \
+  > "$VERIFICATION/compare.log" 2>&1 &
+COMPARE_PID=$!
+
+sleep 1
+
+if kill -0 "$COMPARE_PID" 2>/dev/null; then
+  COMPARE_URL="http://localhost:$COMPARE_PORT"
+  echo "[translate] Comparison UI at $COMPARE_URL"
+  command -v open >/dev/null 2>&1 && open "$COMPARE_URL" >/dev/null 2>&1 || true
+else
+  COMPARE_PID=""
+  echo "[translate] Could not start the comparison UI:"
+  sed 's/^/[translate]   /' "$VERIFICATION/compare.log" 2>/dev/null || true
+fi
+
 echo ""
 echo "[translate] Ready."
 echo "[translate]   Folder:    $FOLDER"
 echo "[translate]   Site:      $SITE_URL"
 echo "[translate]   Preview:   $PREVIEW_URL"
 echo "[translate]   Dashboard: $DASHBOARD_URL"
+echo "[translate]   Shots:     $VERIFICATION"
+[ -n "$COMPARE_URL" ] && echo "[translate]   Compare:   $COMPARE_URL"
+
+# The agent loop lands here next (milestone E/F). Until then, hold the comparison
+# server open so the operator can actually look at it, rather than tearing it
+# down the instant the script finishes.
+if [ -n "$COMPARE_URL" ]; then
+  echo ""
+  printf "Press enter to stop the comparison server and exit: "
+  ask >/dev/null || true
+fi
