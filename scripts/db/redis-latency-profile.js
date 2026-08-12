@@ -150,7 +150,10 @@ async function main() {
   const args = parseArgs(process.argv);
   const client = redis.createClient({
     url: `redis://${args.host}:${args.port}`,
+    RESP: 2,
+    commandOptions: { timeout: undefined },
     socket: {
+      keepAliveInitialDelay: 5000,
       reconnectStrategy: () => 1000,
     },
   });
