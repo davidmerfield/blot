@@ -9,6 +9,7 @@ const folders = require("./templates/folders");
 const async = require("async");
 const clfdate = require("helper/clfdate");
 const scheduler = require("./scheduler");
+const logRedisCacheStats = require("./scheduler/redis-cache-stats");
 const flush = require("documentation/tools/flush-cache");
 const configureLocalBlogs = require("./configure-local-blogs");
 const purgeCdnUrls = require("helper/purgeCdnUrls");
@@ -40,6 +41,14 @@ async function runPostListenTasks() {
     }
   } else {
     log("Skipping template build after listen (not master)");
+  }
+
+  try {
+    // Each application process owns an independent client-side Redis cache.
+    log("Starting Redis cache stats logging asynchronously");
+    setInterval(logRedisCacheStats, 60 * 1000);
+  } catch (err) {
+    logError("Failed to start Redis cache stats logging", err);
   }
 
   try {
