@@ -1,10 +1,5 @@
 Transfer Juliet's site and theme from blogger
 
-Redis caching:
-- Log redis cache stats
-- Remove LRU cache code from app/blog and elsewhere now we have the redis cache which does this automatically
-- Increase number of cached items?
-
 Do all /questions
 
 Get Claude working on the proxy containerization problem
