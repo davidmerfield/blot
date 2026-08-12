@@ -47,6 +47,16 @@ if [ $# -eq 0 ]; then
 fi
 
 URL="$1"
+shift || true
+
+RECONFIGURE=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --reconfigure) RECONFIGURE=true ;;
+    *) die "Unknown option: $arg" "Usage: npm run translate <url> [--reconfigure]" ;;
+  esac
+done
 
 case "$URL" in
   -h|--help|help)
@@ -59,6 +69,43 @@ case "$URL" in
     die "Not a URL: '$URL'" "Pass a full URL, e.g. npm run translate https://example.com"
     ;;
 esac
+
+# Read a line from the terminal even when stdin is a pipe. Returns non-zero when
+# there is no terminal at all, so callers can fail loudly instead of blocking
+# forever on a read that will never be answered.
+# Exit status: 0 read a line (possibly empty), 1 no terminal at all,
+# 2 end of input. Distinguishing 2 matters — swallowing it would spin this
+# loop forever against a closed stdin.
+ask() {
+  local reply=""
+  if [ -t 0 ]; then
+    read -r reply || return 2
+  elif [ -r /dev/tty ] && exec 3</dev/tty 2>/dev/null; then
+    if ! read -r reply <&3; then
+      exec 3<&-
+      return 2
+    fi
+    exec 3<&-
+  else
+    return 1
+  fi
+  echo "$reply"
+}
+
+require_tty() {
+  if [ ! -t 0 ] && { [ ! -r /dev/tty ] || ! (exec 3</dev/tty) 2>/dev/null; }; then
+    die "This step needs a terminal to prompt for input." \
+"Run it directly rather than through a pipe or a non-interactive shell:
+
+  npm run translate $URL
+${FOLDER:+
+Nothing is lost — the site is already provisioned and will be reused. Its
+folder is:
+
+  $FOLDER}"
+  fi
+}
+
 
 # ---------------------------------------------------------------- preflight
 
@@ -113,6 +160,15 @@ fi
 
 echo "[translate] Server is up at https://$BLOT_HOST"
 
+# Which agent, and which model. Discovered from what is installed on this
+# machine, chosen once, and remembered. See agents/README for the contract.
+# shellcheck source=/dev/null
+. "$DIR/agent-config.sh"
+
+configure_agent "$RECONFIGURE"
+
+echo "[translate] Agent: $AGENT ($MODEL)"
+
 # ---------------------------------------------------------------- provision
 
 HANDLE="$(node "$DIR/handle.js" "$URL")"
@@ -157,42 +213,6 @@ echo "[translate] Site:     $SITE_URL"
 echo "[translate] Template: $TEMPLATE_SLUG"
 
 # ------------------------------------------------------------- content gate
-
-# Read a line from the terminal even when stdin is a pipe. Returns non-zero when
-# there is no terminal at all, so callers can fail loudly instead of blocking
-# forever on a read that will never be answered.
-# Exit status: 0 read a line (possibly empty), 1 no terminal at all,
-# 2 end of input. Distinguishing 2 matters — swallowing it would spin this
-# loop forever against a closed stdin.
-ask() {
-  local reply=""
-  if [ -t 0 ]; then
-    read -r reply || return 2
-  elif [ -r /dev/tty ] && exec 3</dev/tty 2>/dev/null; then
-    if ! read -r reply <&3; then
-      exec 3<&-
-      return 2
-    fi
-    exec 3<&-
-  else
-    return 1
-  fi
-  echo "$reply"
-}
-
-require_tty() {
-  if [ ! -t 0 ] && { [ ! -r /dev/tty ] || ! (exec 3</dev/tty) 2>/dev/null; }; then
-    die "This step needs a terminal to prompt for input." \
-"Run it directly rather than through a pipe or a non-interactive shell:
-
-  npm run translate $URL
-
-The site is already provisioned, so nothing is lost — it will be reused.
-Its folder is:
-
-  $FOLDER"
-  fi
-}
 
 content_summary() {
   docker exec "$CONTAINER" \
@@ -392,28 +412,6 @@ BLOCKED_FILE="$VERIFICATION/BLOCKED.txt"
 SESSION_FILE="$VERIFICATION/session-id"
 TRANSCRIPT="$VERIFICATION/agent.jsonl"
 AGENT_LOG="$VERIFICATION/agent.log"
-
-# Which agent, and which model. The adapter layer is in agents/ — see its README
-# for the contract if you want to add another.
-AGENT="${TRANSLATE_AGENT:-claude}"
-AGENT_FILE="$DIR/agents/$AGENT.sh"
-AGENT_DIR="$DIR"
-
-if [ ! -f "$AGENT_FILE" ]; then
-  AVAILABLE="$(ls "$DIR/agents"/*.sh 2>/dev/null | xargs -n1 basename 2>/dev/null | sed 's/\.sh$//' | tr '\n' ' ')"
-  die "No agent adapter called '$AGENT'." "Available: ${AVAILABLE:-none}
-
-  TRANSLATE_AGENT=claude npm run translate $URL"
-fi
-
-# shellcheck source=/dev/null
-. "$AGENT_FILE"
-
-MODEL="${TRANSLATE_MODEL:-$AGENT_DEFAULT_MODEL}"
-
-if ! agent_available; then
-  die "The '$AGENT' agent is not available." "$(agent_install_hint)"
-fi
 
 # A stale marker from an earlier run would abort this one immediately.
 rm -f "$BLOCKED_FILE"

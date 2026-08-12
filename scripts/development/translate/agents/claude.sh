@@ -23,6 +23,16 @@ Or choose a different agent:
 EOF
 }
 
+# claude has no command to enumerate models, so this is a curated list of the
+# aliases it accepts. The operator can always type a full model name instead.
+agent_models() {
+  cat <<'EOF'
+sonnet	Sonnet (default)
+opus	Opus
+haiku	Haiku
+EOF
+}
+
 # agent_run <instruction> <mode: new|resume> <session-id> <model> <transcript>
 #
 # Must stream a readable commentary to stdout, append the raw transcript to

@@ -1022,7 +1022,7 @@ Relevant flags from `claude --help` (verified against 2.1.47):
 | `--permission-mode acceptEdits` | let it write files without prompting. `bypassPermissions` is broader; `plan` is read-only |
 | `--allowedTools` / `--disallowedTools` | scope it, e.g. allow `Edit`, `Write`, `Read`, `Bash(curl:*)` |
 | `--add-dir` | grant access outside cwd — needed if the prompt and helper scripts live in `scripts/development/translate/` while cwd is the blog folder |
-| `--max-budget-usd` | hard spend ceiling; `--print` only. A sensible guard on an autonomous loop |
+| `--model` | which model to use; `sonnet` is the default here |
 | `--model`, `--effort` | model and effort selection |
 | `--session-id <uuid>` / `--resume` | run the content phase and the template phase as separate invocations that share context |
 | `--append-system-prompt` | inject the Blot constraints without displacing the default system prompt |
@@ -1040,8 +1040,9 @@ bubble out and stop the whole script. Three layers:
    wrapper checks for that file after the CLI returns and aborts with the reason
    as the error message. A `--json-schema` structured result would work too, but a
    file is simpler and it is also visible to the human operator.
-3. **Budget and wall-clock ceilings.** `--max-budget-usd` plus a timeout on the
-   spawned process, so a loop that will not converge cannot run indefinitely.
+3. **Wall-clock ceiling.** A timeout on the spawned process, so a loop that will
+   not converge cannot run indefinitely. Spend ceilings are deliberately *not*
+   imposed here — see "Local CLIs only" below.
 
 **Do not use `--dangerously-skip-permissions`** here. The agent is fetching and
 processing untrusted third-party HTML, which is exactly the situation where
@@ -1054,6 +1055,69 @@ letting the wrapper checkpoint between them: read the folder and the target →
 propose a structure → build the template → verify visually. If an early phase
 fails there is no point starting the next.
 
+
+#### Local CLIs only, and which one is the operator's choice
+
+**Nothing here talks to a model API directly.** The script drives a coding-agent
+CLI that is already installed and signed in on the operator's machine. That keeps
+credentials, billing and rate limits entirely outside this codebase, and means
+the operator's existing setup just works.
+
+Three are supported, discovered at preflight by testing whether the command
+exists: `claude`, `codex` and `cursor-agent`. Each lives behind an adapter in
+`scripts/development/translate/agents/` defining `agent_available`,
+`agent_install_hint`, `agent_models` and `agent_run`; the contract is documented
+in that directory's `README`.
+
+**Model discovery is only partly possible, and this is worth knowing before
+designing around it:**
+
+| CLI | Enumerate models? |
+|---|---|
+| `cursor-agent` | **Yes** — `cursor-agent --list-models` prints `id - Label` |
+| `claude` | No such command. Accepts aliases (`sonnet`, `opus`, `haiku`) or full model names |
+| `codex` | No such command. `-m/--model` accepts a name |
+
+So the adapter interface asks for a *list*, and lets each adapter satisfy it
+however it can — live for cursor-agent, curated for the other two. The selector
+always accepts a typed name as well, so a curated list never becomes a ceiling.
+
+**The choice is remembered** in `data/tmp/translate/agent.conf` (`data/` is
+gitignored). It is a machine preference rather than a per-site one, so it lives
+outside the per-run state file. `--reconfigure` re-asks; `TRANSLATE_AGENT` and
+`TRANSLATE_MODEL` override for a single run without being saved.
+
+**No spend ceiling is imposed.** Only one of the three CLIs has a budget flag,
+and each has its own account-level controls; an abstraction that works for one
+agent out of three is not worth having. Cost stays where the credentials are.
+
+**Non-interactive invocation differs per CLI**, which is most of what an adapter
+exists to absorb:
+
+```
+claude       claude -p "<prompt>" --output-format stream-json --model <m>
+codex        codex exec --json --full-auto --model <m> "<prompt>"
+cursor-agent cursor-agent -p "<prompt>" --output-format stream-json --model <m> --force
+```
+
+Session resumption also differs: `claude` takes a session id we generate,
+while `codex exec resume --last` and `cursor-agent --resume` continue the most
+recent session in the working directory rather than one we name.
+
+**Portability note:** macOS ships bash 3.2, so the shell layer avoids `mapfile`
+and associative arrays.
+
+#### The transcript
+
+The agent's output is captured twice: raw streaming events appended to
+`.verification/agent.jsonl`, and a readable commentary in `.verification/agent.log`.
+`agent-log.js` does the conversion, rendering assistant text, tool calls as
+`→ tool: target`, and errors as `✗ …`. Both paths are printed by the script and
+repeated in any abort message, so there is never a question of where to look.
+
+Append rather than overwrite, so a resumed turn extends the record. And check
+`PIPESTATUS` when piping an agent through the formatter — otherwise a failing
+agent is masked by a succeeding formatter.
 
 ### 6.4 The verification loop and the `.verification/` folder
 
@@ -1499,7 +1563,10 @@ legible as a diff.
 | Content handoff | Operator moves content in; the script **verifies entries built** rather than trusting a keypress | §3.2 |
 | Agent may edit content | Yes — some design mismatches are content problems, and git makes the edits reviewable | §3.3, §6.4 |
 | Template scaffold | Clone `SITE:blog` — take the working boilerplate, instruct the agent to treat it as structure, not as a look | §6.2 |
-| Invoking Claude | `claude -p` on the host; non-zero exit or `.verification/BLOCKED.txt` aborts the run | §6.3 |
+| Invoking the agent | A **local CLI only** — `claude`, `codex` or `cursor-agent` — run on the host. Discovered at preflight, chosen once, remembered in `data/tmp/translate/agent.conf`. Non-zero exit or `.verification/BLOCKED.txt` aborts the run | §6.3 |
+| Default agent | `claude` with `sonnet` | §6.3 |
+| Spend ceilings | Not imposed. Only one of the three CLIs has a budget flag; cost stays with the credentials | §6.3 |
+| Agent transcript | `.verification/agent.log` (readable) and `agent.jsonl` (raw), both named in the script output | §6.3 |
 | Verification folder | `.verification/` — dot-named so Finder select-all excludes it; still served over HTTP for the operator | §6.4 |
 | READMEs | Two, both named `README`, no extension, Markdown inside. Ignored at the folder root; becomes a `/readme` view in the template, which is accepted and matches seven shipped templates | §6.5 |
 | Comparison UI | Screenshot pairs + opacity-blend slider + open-in-tab links + feedback textarea, served on port 3021 | §6.6.2 |
@@ -1516,7 +1583,7 @@ legible as a diff.
 | 2 | Handle derivation | Deterministic from the URL: strip scheme, `www.` and TLD, lowercase, strip to alnum, numeric suffix on collision. Must be stable across runs or re-run detection breaks |
 | 3 | Rebuild wait | Poll `blog.cacheID` until it stops changing — it is bumped at the end of every sync. **Order matters:** `.verification/` is not ignored by the watcher, so writing screenshots itself bumps `cacheID`. Settle first, *then* screenshot |
 | 4 | Screenshot helper | Standalone host-side wrapper, copying the viewports (`1260×778` / `400×650`), `networkidle0` wait and retry/throttle behaviour from `app/helper/screenshot` rather than importing it — its `args.js` is tuned for Alpine |
-| 5 | Iteration cap | Agent inner loop capped around 5 rounds, plus `--max-budget-usd`. The operator is the real stop condition |
+| 5 | Iteration cap | Agent inner loop capped around 5 rounds. The operator is the real stop condition; no spend ceiling is imposed by this script |
 | 6 | Tool allowlist | `Read, Write, Edit, Glob, Grep, WebFetch, Bash(node:*)` — no unrestricted `Bash` |
 
 ### 7.3 Resolved externally

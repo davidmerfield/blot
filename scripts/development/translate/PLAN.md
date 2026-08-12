@@ -20,12 +20,11 @@ scaffolded site and the whole pipeline is exercisable before any crawler exists.
 
 **Prerequisite for every task:** `npm start` running in another window.
 
-**Status:** Milestones A–D complete. Milestone E is built and its plumbing
-is verified, but **the brief has never been exercised by a real agent** — see the
-note under milestone E. `npm run translate <url>` provisions a
-site, scaffolds a locally-edited template cloned from `SITE:blog`, initialises a
-git repo, then waits for content and verifies it built before committing it.
-Next: run milestone E for real, then milestone F (the loop).
+**Status:** Milestones A–E complete, including one real agent run. `npm run
+translate <url>` provisions a site, scaffolds a template cloned from `SITE:blog`,
+initialises a git repo, waits for content and verifies it built, screenshots both
+sites, serves a comparison UI, and hands the job to a local agent CLI of the
+operator's choosing. Next: milestone F (the feedback loop).
 
 Two findings worth carrying forward:
 
@@ -234,19 +233,9 @@ hand.*
 
 ---
 
-## Milestone E — First agent turn  ⚠️ BUILT, NOT YET RUN FOR REAL
+## Milestone E — First agent turn  ✅ COMPLETE
 
 *Done when: one `claude -p` invocation produces a template that renders.*
-
-> **Outstanding.** The plumbing is verified end to end with a stubbed `claude`:
-> a non-zero exit aborts with the error, a `.verification/BLOCKED.txt` aborts and
-> prints the agent's reason, and a successful turn commits. But a **real** agent
-> run has not happened: the `claude` CLI refuses to start inside another Claude
-> Code session ("Claude Code cannot be launched inside another Claude Code
-> session"), which is a constraint of the development session this was built in,
-> not of the script. Running `npm run translate <url>` from an ordinary terminal
-> is the outstanding check, and it is the only way to find out whether the brief
-> in `prompt.md` actually produces a good template.
 
 ### E1. The two READMEs (§6.5)  ✅
 - `README.folder.md` and `README.template.md` as templates, interpolated at
@@ -275,13 +264,14 @@ hand.*
 - **Done when:** the brief is complete enough that a human could follow it.
 
 ### E3. Invoke the CLI (§6.3)  ✅
-- On the **host** (no `claude` binary or credentials in the container).
+- On the **host** (no agent binary or credentials in the container).
+- Goes through the adapter layer (E6) rather than calling `claude` directly.
 - `claude -p --output-format json --permission-mode acceptEdits`, cwd
   `data/blogs/<blogID>/`, `--add-dir` for the brief so it stays out of the folder.
 - Tool allowlist `Read, Write, Edit, Glob, Grep, WebFetch, Bash(node:*)` — **not**
   unrestricted `Bash`; the agent is processing untrusted third-party HTML.
 - `--session-id <uuid>` pinned on the first run.
-- `--max-budget-usd` plus a process timeout.
+- A process timeout. No spend ceiling — see E6.
 - **Done when:** one invocation edits the template and the site still renders.
 
 ### E4. Abort handling (§6.3)  ✅
@@ -292,6 +282,45 @@ hand.*
 - Commit after the turn.
 - **Done when:** a deliberately-written `BLOCKED.txt` aborts the run with its
   message.
+
+### E5. Stream and store the agent transcript  ✅
+- `agent-log.js` reads the agent's streaming JSON on stdin, appends every event
+  verbatim to `.verification/agent.jsonl`, and prints a readable commentary
+  (assistant text, `→ tool: target`, `✗ errors`) to stdout.
+- `translate.sh` tees that through to `.verification/agent.log`, so the operator
+  watches it live and keeps the readable record.
+- Both paths are named in the script's output, and in the abort messages.
+- Appends rather than overwrites: a resumed turn extends the record.
+- Propagates the agent's failure via `PIPESTATUS` so a succeeding formatter
+  cannot mask a failing agent.
+- **Done when:** a synthetic event stream renders correctly, an error result
+  exits non-zero, non-JSON lines pass through, and a second turn appends.
+
+### E6. Local agent CLIs, discovered and remembered  ✅
+**Only local CLIs.** Nothing talks to an API directly; everything runs through a
+command already installed and signed in on the operator's machine.
+
+- Adapters in `agents/`, one per CLI, each defining `agent_available`,
+  `agent_install_hint`, `agent_models` and `agent_run`. Contract in
+  `agents/README`. Shipped: `claude`, `codex`, `cursor-agent`.
+- `agent-config.sh` discovers which adapters have their CLI installed, asks the
+  operator to choose when there is more than one, then asks for a model.
+- **Model discovery is only partly possible**, and the design reflects that:
+  `cursor-agent --list-models` returns a live list; `claude` and `codex` have no
+  such command, so their adapters carry a curated list of aliases. Either way the
+  operator can type a name that is not on the list.
+- Choice is remembered in `data/tmp/translate/agent.conf` (gitignored). Re-ask
+  with `--reconfigure`. `TRANSLATE_AGENT` / `TRANSLATE_MODEL` override for a
+  single run and are never saved.
+- Runs in preflight, so a missing or misconfigured agent fails before any site is
+  provisioned.
+- **No budget flag.** Cost is the operator's business and each CLI has its own
+  controls; a `--max-budget-usd` that only one of three agents understands is not
+  worth the abstraction.
+- macOS ships bash 3.2, so no `mapfile` and no associative arrays.
+- **Done when:** discovery lists installed CLIs, selection persists, an env
+  override wins without being saved, and an unknown agent name is rejected with
+  the available ones listed.
 
 ---
 
@@ -378,6 +407,6 @@ restarts.*
 |---|---|
 | Anchoring on the `SITE:blog` clone — output looks like Blot's default rather than the source | Explicit anti-anchoring instructions in E2; check for it during verification (§6.2) |
 | Source site blocks headless browsers or times out | C2 tolerates source failures; fall back to an operator-supplied screenshot |
-| Agent thrashes without converging | Inner-round cap, `--max-budget-usd`, operator stop condition (F3) |
+| Agent thrashes without converging | Inner-round cap and the operator stop condition (F3). Spend limits stay with the agent CLI's own account controls |
 | `"enabled": true` silently lost | Asserted last, every run (G1), and stated in the folder README so a human can restore it |
 | Prompt injection via crawled/rendered HTML | Scoped tool allowlist, `acceptEdits` rather than `bypassPermissions` (E3) |
