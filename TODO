@@ -5,7 +5,6 @@ Work out what's soaking up all the disk space on the server, then make sure it's
 - fix huge size of fail2ban db: https://serverfault.com/questions/1002315/fail2bans-database-is-too-large-over-500mb-how-do-i-get-it-to-a-reasonable-s  /var/lib/fail2ban/fail2ban.sqlite3
 
 Redis caching:
-- Update redis to latest client library
 - Log redis cache stats
 - Remove LRU cache code from app/blog and elsewhere now we have the redis cache which does this automatically
 - Increase number of cached items?
