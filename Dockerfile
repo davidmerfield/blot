@@ -67,6 +67,9 @@ RUN apk add exiftool
 RUN exiftool -ver
 
 # Copy package file and any install hooks required during npm install
+# We don't create a package-lock.json because we ran into issues
+# with sharp on different architectures. If we can solve this, then
+# we can commit the package-lock.json and edit this step.
 COPY package.json ./
 
 RUN npm install --no-package-lock && npm cache clean --force

@@ -6,10 +6,6 @@ Get Claude working on the proxy containerization problem
 
 ---
 
-Add self-deployment warning to README
-
-Move GitHub repo to own organization
-
 Fix bug with hypertext template and follow up with [31](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLPVXLRDkJTLCsKnMBRZdTklb)
 
 Fix bug with studio template and tell [Metta](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLXxhzdkjnSDVQSCnzLsSWmJK)
@@ -33,6 +29,8 @@ Add a link to how section on pages to menu links settings page to guide new user
 Hitting the save changes button under typeset settings spits you back out to homepage! Bug!
 
 Debug issue with warwickmostyn
+
+Move GitHub repo to own organization
 
 Check in that fail2ban is now correctly purging the db of old bans:
 - sudo sqlite3 /var/lib/fail2ban/fail2ban.sqlite3 \
