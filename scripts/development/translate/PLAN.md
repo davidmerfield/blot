@@ -20,10 +20,12 @@ scaffolded site and the whole pipeline is exercisable before any crawler exists.
 
 **Prerequisite for every task:** `npm start` running in another window.
 
-**Status:** Milestones A, B, C and D complete. `npm run translate <url>` provisions a
+**Status:** Milestones A–D complete. Milestone E is built and its plumbing
+is verified, but **the brief has never been exercised by a real agent** — see the
+note under milestone E. `npm run translate <url>` provisions a
 site, scaffolds a locally-edited template cloned from `SITE:blog`, initialises a
 git repo, then waits for content and verifies it built before committing it.
-Next: milestone E (first agent turn).
+Next: run milestone E for real, then milestone F (the loop).
 
 Two findings worth carrying forward:
 
@@ -232,11 +234,21 @@ hand.*
 
 ---
 
-## Milestone E — First agent turn
+## Milestone E — First agent turn  ⚠️ BUILT, NOT YET RUN FOR REAL
 
 *Done when: one `claude -p` invocation produces a template that renders.*
 
-### E1. The two READMEs (§6.5)
+> **Outstanding.** The plumbing is verified end to end with a stubbed `claude`:
+> a non-zero exit aborts with the error, a `.verification/BLOCKED.txt` aborts and
+> prints the agent's reason, and a successful turn commits. But a **real** agent
+> run has not happened: the `claude` CLI refuses to start inside another Claude
+> Code session ("Claude Code cannot be launched inside another Claude Code
+> session"), which is a constraint of the development session this was built in,
+> not of the script. Running `npm run translate <url>` from an ordinary terminal
+> is the outstanding check, and it is the only way to find out whether the brief
+> in `prompt.md` actually produces a good template.
+
+### E1. The two READMEs (§6.5)  ✅
 - `README.folder.md` and `README.template.md` as templates, interpolated at
   scaffold time.
 - Both land as a file named `README`, **no extension**, Markdown inside. At the
@@ -247,7 +259,7 @@ hand.*
   brief for whoever (or whatever) edits the design next.
 - **Done when:** both are written at scaffold time with the right substitutions.
 
-### E2. `prompt.md` — the agent brief (§6.8)
+### E2. `prompt.md` — the agent brief (§6.8)  ✅
 - Extend `/developers/guides/working-with-ai` with: retrievable locals (§4.6),
   entry properties (§3.4), the folder conventions that shape a template (§3.3),
   the `package.json` schema (§4.3), **the default-route gotcha** (§4.4 — a view's
@@ -262,7 +274,7 @@ hand.*
 - Say that content edits are permitted and when they are the right fix (§3.3).
 - **Done when:** the brief is complete enough that a human could follow it.
 
-### E3. Invoke the CLI (§6.3)
+### E3. Invoke the CLI (§6.3)  ✅
 - On the **host** (no `claude` binary or credentials in the container).
 - `claude -p --output-format json --permission-mode acceptEdits`, cwd
   `data/blogs/<blogID>/`, `--add-dir` for the brief so it stays out of the folder.
@@ -272,7 +284,7 @@ hand.*
 - `--max-budget-usd` plus a process timeout.
 - **Done when:** one invocation edits the template and the site still renders.
 
-### E4. Abort handling (§6.3)
+### E4. Abort handling (§6.3)  ✅
 - Non-zero exit is fatal and propagates through `set -euo pipefail`.
 - Check for `.verification/BLOCKED.txt` after the turn; if present, print its
   contents as the abort reason. Exit code alone cannot distinguish "finished" from

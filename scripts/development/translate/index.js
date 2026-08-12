@@ -18,6 +18,9 @@ const Template = require("models/template");
 const client = require("models/client");
 const localPath = require("helper/localPath");
 const nsv = require("helper/nsv");
+const determineTemplateFolder = promisify(
+  require("models/template/determineTemplateFolder")
+);
 
 const { resolve: resolveHandle } = require("./handle");
 
@@ -142,6 +145,67 @@ async function establishTemplate(blog, name) {
   return promisify(Template.getMetadata)(template.id);
 }
 
+// --------------------------------------------------------------- readmes
+
+// Both are named README with no extension, deliberately:
+//   * at the folder root an extensionless file matches no converter, so Blot
+//     ignores it rather than publishing it as a post;
+//   * inside the template it becomes a view served at /readme, which is
+//     accepted — seven of Blot's own templates ship a README the same way.
+function fill(template, values) {
+  return template.replace(/\{\{(\w+)\}\}/g, (match, key) =>
+    Object.prototype.hasOwnProperty.call(values, key) ? values[key] : match
+  );
+}
+
+async function writeReadme(source, destination, values) {
+  // Never clobber: the agent and the operator both edit these, and a re-run
+  // must not throw that away.
+  if (await fs.pathExists(destination)) return false;
+
+  const template = await fs.readFile(join(__dirname, source), "utf-8");
+
+  await fs.outputFile(destination, fill(template, values));
+
+  return true;
+}
+
+async function establishReadmes(blog, template, url) {
+  const folder = localPath(blog.id, "/");
+  const slug = template.id.split(":").slice(1).join(":");
+  const date = new Date().toISOString().slice(0, 10);
+
+  const wroteFolder = await writeReadme(
+    "README.folder.md",
+    join(folder, "README"),
+    {
+      title: blog.title || blog.handle,
+      sourceURL: url,
+      date,
+      templateSlug: slug,
+      notes:
+        "_Nothing recorded yet. Anything the translation could not reproduce " +
+        "should be written down here._",
+    }
+  );
+
+  const templateFolder = await determineTemplateFolder(blog.id);
+
+  const wroteTemplate = await writeReadme(
+    "README.template.md",
+    localPath(blog.id, join(templateFolder, slug, "README")),
+    {
+      templateName: template.name || slug,
+      sourceURL: url,
+      date,
+      locals:
+        "_See `package.json`. Document anything non-obvious here as you add it._",
+    }
+  );
+
+  return wroteFolder || wroteTemplate;
+}
+
 // ------------------------------------------------------------------- git
 
 async function git(folder, args) {
@@ -193,6 +257,10 @@ async function main(url, requestedHandle) {
   await useLocalClient(blog);
 
   const template = await establishTemplate(blog, "Translated");
+
+  // Before the repository, so the first commit includes them.
+  await establishReadmes(blog, template, url);
+
   const repositoryCreated = await establishRepository(blog);
 
   const token = await generateAccessToken({ uid: user.uid });

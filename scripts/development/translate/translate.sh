@@ -386,11 +386,146 @@ echo "[translate]   Dashboard: $DASHBOARD_URL"
 echo "[translate]   Shots:     $VERIFICATION"
 [ -n "$COMPARE_URL" ] && echo "[translate]   Compare:   $COMPARE_URL"
 
-# The agent loop lands here next (milestone E/F). Until then, hold the comparison
-# server open so the operator can actually look at it, rather than tearing it
-# down the instant the script finishes.
+# ---------------------------------------------------------------- the agent
+
+BLOCKED_FILE="$VERIFICATION/BLOCKED.txt"
+SESSION_FILE="$VERIFICATION/session-id"
+TRANSCRIPT="$VERIFICATION/agent.jsonl"
+AGENT_LOG="$VERIFICATION/agent.log"
+
+# Which agent, and which model. The adapter layer is in agents/ — see its README
+# for the contract if you want to add another.
+AGENT="${TRANSLATE_AGENT:-claude}"
+AGENT_FILE="$DIR/agents/$AGENT.sh"
+AGENT_DIR="$DIR"
+
+if [ ! -f "$AGENT_FILE" ]; then
+  AVAILABLE="$(ls "$DIR/agents"/*.sh 2>/dev/null | xargs -n1 basename 2>/dev/null | sed 's/\.sh$//' | tr '\n' ' ')"
+  die "No agent adapter called '$AGENT'." "Available: ${AVAILABLE:-none}
+
+  TRANSLATE_AGENT=claude npm run translate $URL"
+fi
+
+# shellcheck source=/dev/null
+. "$AGENT_FILE"
+
+MODEL="${TRANSLATE_MODEL:-$AGENT_DEFAULT_MODEL}"
+
+if ! agent_available; then
+  die "The '$AGENT' agent is not available." "$(agent_install_hint)"
+fi
+
+# A stale marker from an earlier run would abort this one immediately.
+rm -f "$BLOCKED_FILE"
+
+# Pin a session so later turns can resume it with the operator's feedback and
+# keep the context of what was already built.
+if [ -f "$SESSION_FILE" ]; then
+  SESSION_ID="$(cat "$SESSION_FILE")"
+else
+  SESSION_ID="$(uuidgen | tr "[:upper:]" "[:lower:]")"
+  echo "$SESSION_ID" > "$SESSION_FILE"
+fi
+
+check_blocked() {
+  if [ -f "$BLOCKED_FILE" ]; then
+    echo ""
+    echo "[translate] The agent stopped and reported:"
+    echo ""
+    sed "s/^/  /" "$BLOCKED_FILE"
+    echo ""
+    die "Stopped at the agent's request." \
+"Nothing is lost. The site, its content and the work so far are in:
+
+  $FOLDER
+
+The full agent transcript is in:
+
+  $AGENT_LOG"
+  fi
+}
+
+commit_turn() {
+  local message="$1"
+
+  git -C "$FOLDER" add -A >/dev/null 2>&1 || true
+
+  if ! git -C "$FOLDER" diff --cached --quiet 2>/dev/null; then
+    git -C "$FOLDER" \
+      -c user.name=translate -c user.email=translate@local \
+      commit --quiet -m "$message" >/dev/null 2>&1 || true
+    return 0
+  fi
+
+  return 1
+}
+
+BRIEF="$(cat "$DIR/prompt.md")"
+
+FIRST_INSTRUCTION="$BRIEF
+
+---
+
+## This run
+
+- Target design: $URL
+- Site folder: $FOLDER (you are in it)
+- Template directory: Templates/$TEMPLATE_SLUG
+- Content in the folder: $SUMMARY
+- Screenshots: .verification/input-*.png (target) and output-*.png (yours)
+- Preview the result at: $PREVIEW_URL
+- Inspect render data by appending ?json=true to any page on that preview
+
+Build the template now."
+
+echo ""
+echo "[translate] Handing over to $AGENT ($MODEL)"
+echo "[translate] Transcript: $AGENT_LOG"
+echo ""
+
+# tee so the operator watches it live and the readable log survives the run.
+if ( cd "$FOLDER" && agent_run "$FIRST_INSTRUCTION" new "$SESSION_ID" "$MODEL" "$TRANSCRIPT" ) \
+     2>&1 | tee -a "$AGENT_LOG"; then
+  AGENT_OK=true
+else
+  AGENT_OK=false
+fi
+
+check_blocked
+
+if [ "$AGENT_OK" != true ]; then
+  die "The $AGENT agent exited with an error." \
+"The full transcript is in:
+
+  $AGENT_LOG
+
+The site and everything built so far are in:
+
+  $FOLDER"
+fi
+
+echo ""
+
+if commit_turn "Agent: build template from $URL"; then
+  echo "[translate] Committed the agent's changes"
+else
+  echo "[translate] The agent made no changes"
+fi
+
+# --------------------------------------------------------------------- done
+
+echo ""
+echo "[translate] Done for now."
+echo "[translate]   Preview:    $PREVIEW_URL"
+echo "[translate]   Transcript: $AGENT_LOG"
+echo "[translate]   Raw events: $TRANSCRIPT"
+[ -n "$COMPARE_URL" ] && echo "[translate]   Compare:    $COMPARE_URL"
+echo ""
+echo "The feedback loop lands in the next milestone. For now, look at the result"
+echo "and re-run to continue."
+echo ""
+
 if [ -n "$COMPARE_URL" ]; then
-  echo ""
   printf "Press enter to stop the comparison server and exit: "
   ask >/dev/null || true
 fi
