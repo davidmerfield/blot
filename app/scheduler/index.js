@@ -49,6 +49,12 @@ module.exports = function () {
           "redis_cache_hitRate=" + cacheStats.hitRate(),
           "redis_cache_requestCount=" + cacheStats.requestCount(),
           "redis_cache_loadSuccessCount=" + cacheStats.loadSuccessCount,
+          "redis_cache_loadFailureCount=" + cacheStats.loadFailureCount,
+          "redis_cache_totalLoadTime=" + cacheStats.totalLoadTime,
+          "redis_cache_evictionCount=" + cacheStats.evictionCount,
+          "redis_cache_missRate=" + cacheStats.missRate(),
+          "redis_cache_loadCount=" + cacheStats.loadCount(),
+          "redis_cache_loadFailureRate=" + cacheStats.loadFailureRate(),
           "redis_cache_averageLoadPenalty=" + cacheStats.averageLoadPenalty()
         );
       }
