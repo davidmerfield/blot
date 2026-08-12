@@ -20,9 +20,20 @@ scaffolded site and the whole pipeline is exercisable before any crawler exists.
 
 **Prerequisite for every task:** `npm start` running in another window.
 
-**Status:** Milestone A complete — `npm run translate <url>` provisions a site,
-scaffolds a locally-edited template cloned from `SITE:blog`, and initialises a git
-repo. Verified idempotent. Next: milestone B (content gate).
+**Status:** Milestones A and B complete. `npm run translate <url>` provisions a
+site, scaffolds a locally-edited template cloned from `SITE:blog`, initialises a
+git repo, then waits for content and verifies it built before committing it.
+Next: milestone C (screenshots).
+
+Two findings worth carrying forward:
+
+- **A post's date does not come from the file's mtime.** With no `Date:` metadata
+  and no date in the path, `build/prepare/dateStamp` returns undefined and
+  `models/entry/set.js:70` falls back to `entry.created` — when the file was
+  *added to Blot*. `content-check.js` detects the symptom (every post sharing
+  today's date) and explains it.
+- **`.verification/` is not watcher-ignored**, but `content-check` reads the
+  database rather than the filesystem, so this does not affect the gate.
 
 ---
 
@@ -106,12 +117,12 @@ locally-edited template installed.*
 
 ---
 
-## Milestone B — Content gate
+## Milestone B — Content gate  ✅ COMPLETE
 
 *Done when: the script waits for content and refuses to continue until entries
 actually exist.*
 
-### B1. `content-check.js` (§3.2)
+### B1. `content-check.js` (§3.2)  ✅
 - In container. `Entries.getAllIDs(blogID)` → **filter on `deleted`**; the ID index
   retains soft-deleted paths (verified).
 - Report a breakdown: posts, pages, tags, date range.
@@ -119,7 +130,7 @@ actually exist.*
 - **Done when:** it reports 0 on an empty folder, and correct counts after copying
   `app/templates/folders/david` in.
 
-### B2. The wait-and-verify prompt (§3.1)
+### B2. The wait-and-verify prompt (§3.1)  ✅
 - Print the absolute host path (`data/blogs/<blogID>/`) and the three routes for
   getting content in: dashboard importer, `dynamic-importer`, or by hand.
 - Optionally open the folder — `open -R`, or reuse the host-side opener already
@@ -130,7 +141,7 @@ actually exist.*
 - **Done when:** pressing Enter with an empty folder re-prompts; pressing Enter
   after copying a demo folder proceeds and commits.
 
-### B3. Settle helper (§7.2 default 3)
+### B3. Settle helper (§7.2 default 3)  ✅
 - Poll `blog.cacheID` until it stops changing (bumped at the end of every sync).
 - Needed because sync latency is variable — creates were instant in testing, a
   delete took ~30s.

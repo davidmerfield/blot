@@ -117,6 +117,185 @@ echo "[translate] Server is up at https://$BLOT_HOST"
 
 HANDLE="$(node "$DIR/handle.js" "$URL")"
 
+if [ -z "$HANDLE" ]; then
+  die "Could not derive a site handle from '$URL'."
+fi
+
 echo "[translate] Handle: $HANDLE"
 
-docker exec "$CONTAINER" node scripts/development/translate "$URL" "$HANDLE"
+# index.js prints key=value lines on stdout and progress on stderr.
+PROVISION_OUTPUT="$(docker exec "$CONTAINER" node scripts/development/translate "$URL" "$HANDLE")"
+
+# Pull a key=value field out of a script's output. Must tolerate a missing key:
+# grep exits 1 when it matches nothing, and with `set -o pipefail` that would
+# otherwise abort the whole script mid-pipeline.
+extract() {
+  local key="$1"
+  local text="$2"
+  echo "$text" | grep "^$key=" | head -n1 | cut -d= -f2- || true
+}
+
+field() {
+  extract "$1" "$PROVISION_OUTPUT"
+}
+
+BLOG_ID="$(field blogID)"
+HANDLE="$(field handle)"
+SITE_URL="$(field siteURL)"
+PREVIEW_URL="$(field previewURL)"
+DASHBOARD_URL="$(field dashboardURL)"
+TEMPLATE_SLUG="$(field templateSlug)"
+
+if [ -z "$BLOG_ID" ]; then
+  die "Provisioning did not report a blog ID." "$PROVISION_OUTPUT"
+fi
+
+# The container reports its own path; the operator needs the host equivalent.
+FOLDER="$ROOT/data/blogs/$BLOG_ID"
+
+echo "[translate] Site:     $SITE_URL"
+echo "[translate] Template: $TEMPLATE_SLUG"
+
+# ------------------------------------------------------------- content gate
+
+# Read a line from the terminal even when stdin is a pipe. Returns non-zero when
+# there is no terminal at all, so callers can fail loudly instead of blocking
+# forever on a read that will never be answered.
+# Exit status: 0 read a line (possibly empty), 1 no terminal at all,
+# 2 end of input. Distinguishing 2 matters — swallowing it would spin this
+# loop forever against a closed stdin.
+ask() {
+  local reply=""
+  if [ -t 0 ]; then
+    read -r reply || return 2
+  elif [ -r /dev/tty ] && exec 3</dev/tty 2>/dev/null; then
+    if ! read -r reply <&3; then
+      exec 3<&-
+      return 2
+    fi
+    exec 3<&-
+  else
+    return 1
+  fi
+  echo "$reply"
+}
+
+require_tty() {
+  if [ ! -t 0 ] && { [ ! -r /dev/tty ] || ! (exec 3</dev/tty) 2>/dev/null; }; then
+    die "This step needs a terminal to prompt for input." \
+"Run it directly rather than through a pipe or a non-interactive shell:
+
+  npm run translate $URL
+
+The site is already provisioned, so nothing is lost — it will be reused.
+Its folder is:
+
+  $FOLDER"
+  fi
+}
+
+content_summary() {
+  docker exec "$CONTAINER" \
+    node scripts/development/translate/content-check "$BLOG_ID" 2>/dev/null || true
+}
+
+print_content_routes() {
+  cat <<EOF
+
+This script does not fetch content. Move the site's content into:
+
+  $FOLDER
+
+Ways to get it there:
+
+  * WordPress, Squarespace, Blogger or Are.na
+      Use Blot's dashboard importer, then unzip the result into the folder.
+      $DASHBOARD_URL
+
+  * Any other live site
+      npm run dynamic-importer $URL
+
+  * Anything else
+      Copy files in by hand, or try one of the demo folders in
+      app/templates/folders/ to exercise the template loop.
+
+Posts need a 'Date:' line in their metadata or a dated path (2024/03-12-name.txt)
+for dates to be meaningful — Blot does not read the file's modified time.
+
+EOF
+}
+
+CONTENT_OK=false
+
+while [ "$CONTENT_OK" != true ]; do
+  SUMMARY_OUTPUT="$(content_summary)"
+  PUBLISHABLE="$(extract publishable "$SUMMARY_OUTPUT")"
+
+  if [ "${PUBLISHABLE:-0}" -gt 0 ] 2>/dev/null; then
+    CONTENT_OK=true
+    break
+  fi
+
+  print_content_routes
+  require_tty
+  printf "Press enter once the content is in place (or q to quit): "
+
+  if ! REPLY_TEXT="$(ask)"; then
+    die "No more input — stopping rather than looping." \
+"The site is provisioned and will be reused if you run this again. Its folder is:
+
+  $FOLDER"
+  fi
+
+  case "$REPLY_TEXT" in
+    q|Q|quit|exit)
+      die "Stopped. The site is provisioned and will be reused if you run this again."
+      ;;
+  esac
+
+  echo "[translate] Waiting for Blot to finish reading the folder"
+  docker exec "$CONTAINER" \
+    node scripts/development/translate/settle "$BLOG_ID" >/dev/null 2>&1 || true
+
+  SUMMARY_OUTPUT="$(content_summary)"
+  PUBLISHABLE="$(extract publishable "$SUMMARY_OUTPUT")"
+
+  if [ "${PUBLISHABLE:-0}" -gt 0 ] 2>/dev/null; then
+    CONTENT_OK=true
+  else
+    echo ""
+    echo "[translate] Still nothing published from that folder."
+    echo "[translate] Blot ignores files it cannot convert, anything starting with"
+    echo "[translate] an underscore or a dot, and the Templates directory."
+  fi
+done
+
+SUMMARY="$(extract summary "$SUMMARY_OUTPUT")"
+WARNING="$(extract warning "$SUMMARY_OUTPUT")"
+
+echo "[translate] Content: $SUMMARY"
+
+if [ -n "$WARNING" ]; then
+  echo ""
+  echo "[translate] Note: $WARNING"
+  echo ""
+fi
+
+# Commit the content exactly as it was supplied, so that everything the agent
+# changes later shows up as a reviewable diff against it.
+if [ -d "$FOLDER/.git" ]; then
+  git -C "$FOLDER" add -A >/dev/null 2>&1 || true
+  if ! git -C "$FOLDER" diff --cached --quiet 2>/dev/null; then
+    git -C "$FOLDER" \
+      -c user.name=translate -c user.email=translate@local \
+      commit --quiet -m "Add content as supplied" >/dev/null 2>&1 || true
+    echo "[translate] Committed the content as supplied"
+  fi
+fi
+
+echo ""
+echo "[translate] Ready."
+echo "[translate]   Folder:    $FOLDER"
+echo "[translate]   Site:      $SITE_URL"
+echo "[translate]   Preview:   $PREVIEW_URL"
+echo "[translate]   Dashboard: $DASHBOARD_URL"
