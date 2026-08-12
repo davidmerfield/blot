@@ -1,17 +1,32 @@
 # `npm run translate <url>` — Research
 
-Research notes gathered before implementing a development script that:
+Research notes for a development script that builds a **Blot template** which
+reproduces the design of an existing website, working against content that is
+already sitting in the site's folder.
+
+The script:
 
 1. Verifies the development server is already running, and aborts if it is not.
-2. Creates a new site on the local development account.
-3. Configures it for local folder editing.
-4. Creates a new locally-edited template in that site's folder.
-5. Acquires the content — by running an existing importer against a supplied
-   platform export where one is available, otherwise by crawling `<url>`.
-6. Invokes the Claude Code CLI to turn that into a **folder of content** + a
-   **template** that together reproduce the source site on Blot.
-7. Leaves that folder ready for the operator to review and zip by hand, so it can
-   be handed to a customer who drops it into their own site folder.
+2. Creates (or reuses) a site on the local development account.
+3. Configures it for local folder editing and scaffolds a locally-edited template.
+4. **Pauses for the operator to move content into the folder**, and verifies it
+   arrived.
+5. Invokes the Claude Code CLI to build the template against that content and the
+   design at `<url>`, iterating against screenshots with operator feedback.
+6. Leaves the folder ready for the operator to review and zip by hand, so it can be
+   handed to a customer who drops it into their own site folder.
+
+**Content acquisition is explicitly not this script's problem.** Getting a site's
+writing out of WordPress, Squarespace, Blogger or a bare HTML site is a separate
+concern with different failure modes, and it lives in
+`scripts/development/dynamic-importer` (crawling) or in Blot's existing dashboard
+importers (platform exports). This script assumes content exists and concentrates
+entirely on the design.
+
+That separation buys something practical: the template half can be built and
+tested **today**, against the demo folders already in the repo (`david`, `bjorn`,
+`clara`, `lecture`, `thoughtforms`), using a real site URL purely as the visual
+target. The whole verification loop is exercisable before any crawler exists.
 
 Everything below was verified against the code in this repository. File paths are
 repo-relative. Where the shipped documentation disagrees with the code, the code
@@ -30,15 +45,16 @@ result and zips the folder by hand when they are happy with it.
 ```
 data/blogs/<blogID>/
 ├── README                          ← handover notes (ignored by Blot, §6.5)
-├── 2024/03-12-a-post.txt           ← content, at the folder root
+├── 2024/03-12-a-post.txt           ← content, supplied by the operator
 ├── 2024/03-12-a-post/              ← (directory form when the post has assets)
 │   ├── post.txt
 │   └── _hero.jpg
 ├── Pages/
 │   └── About.txt
 ├── .verification/                  ← screenshots + agent notes; scaffolding only
+├── .git/                           ← history stays local (§6.10)
 └── Templates/
-    └── <slug>/
+    └── <slug>/                     ← what this script actually produces
         ├── package.json            ← needs "enabled": true  (see §5.1)
         ├── README
         ├── entries.html
@@ -48,31 +64,28 @@ data/blogs/<blogID>/
 ```
 
 Dropped into a customer's own folder, that tree reproduces the site — including
-installing the template, via the `"enabled": true` mechanism in §5.1. The local
-dev site exists so the crawl and the template can be rendered, inspected via
-`?json=true`, screenshotted and iterated on.
+installing the template, via the `"enabled": true` mechanism in §5.1.
 
-The two things the script still owes the operator, because they are easy to get
-wrong by hand: the template's `package.json` must carry `"enabled": true` (§5.1),
-and the folder must contain nothing host-specific (§5.2). `.verification/` is
-scaffolding and should be deleted before zipping.
+Because both `.git/` and `.verification/` are dot-directories, macOS Finder's
+select-all-then-compress excludes them automatically. That is deliberate (§6.4,
+§6.10): the operator's zip contains the site and nothing else, with nothing to
+remember.
 
 ### 0.2 Phases
 
 | Phase | What happens | Reuse | New work |
 |---|---|---|---|
 | A. Preflight | Confirm the dev server is up at `config.host`; abort with instructions if not | `/health` endpoints (§1.5) | reachability check |
-| B. Provision | Create or reuse the blog on the local dev account, set `client: "local"`, `forceSSL: false` | `app/templates/folders/setupUser.js`, `setupBlogs.js`, `app/configure-local-blogs.js` | thin wrapper |
+| B. Provision | Create or reuse the blog on the local dev account, set `client: "local"`, `forceSSL: false`, `git init` | `app/templates/folders/setupUser.js`, `setupBlogs.js`, `app/configure-local-blogs.js` | thin wrapper |
 | C. Template scaffold | `Template.create` → `setMetadata({localEditing:true})` → `writeToFolder` → ensure `"enabled": true` | `scripts/test/setup-restore-git-test.js` is a working example | the `enabled` injection (§5.1) |
-| D. Acquisition | Either run an existing importer against a supplied WordPress/Squarespace/Blogger export, or crawl `<url>` and convert HTML → Markdown + local image files | `sources/wordpress`, `sources/blogger` run directly (§3.5.2); `helper/*` waterfall for both paths | the crawler (no URL-crawl source exists yet; Are.na is the only network-sourced importer and it uses a JSON API) |
+| D. Content handoff | Prompt the operator to move content in; **verify entries actually built** before continuing | — | the wait-and-verify gate (§3) |
 | E. Template authoring | Claude Code writes Mustache views + `package.json` + CSS into `Templates/<slug>/` | — | prompt design |
 | F. Verify & iterate | Screenshot both sides, compare in a local UI, take operator feedback, resume the agent | `app/helper/screenshot`, `scripts/development/open-folder-server.js` | comparison UI + feedback loop |
 
-The single biggest architectural fact: **both halves of the deliverable are just
-files in `data/blogs/<blogID>/`**. Content files at the root, template files under
-`Templates/<slug>/`. A chokidar watcher picks up every change and rebuilds —
-verified end to end in §1.2. So the Claude Code CLI never needs an API; it edits a
-directory, and that directory *is* the product.
+The single biggest architectural fact: **the template is just files in
+`data/blogs/<blogID>/Templates/<slug>/`**. A chokidar watcher picks up every change
+and rebuilds — verified end to end in §1.2. So the Claude Code CLI never needs an
+API; it edits a directory.
 
 ---
 
@@ -240,6 +253,7 @@ The second form is authoritative and worth preferring.
 
 ---
 
+
 ## 2. Provisioning a site on the local development account
 
 ### 2.1 Where `example@example.com` comes from — investigated
@@ -400,425 +414,73 @@ same code path.
 
 ---
 
-## 3. Content side — folder → entries
 
-### 3.1 The build pipeline
+## 3. The content stage
 
-`app/build/README` is thorough; summary of `build(blog, path, callback)`:
+This script does not acquire content. It waits for it, checks it arrived, and then
+tells the agent what it is looking at.
 
-1. **Type check** — extension must match an enabled converter, else `WRONGTYPE`.
-2. **Draft check** — is the file under a `Drafts` folder.
-3. **Conversion** — `app/build/converters/`:
-   - always available: `html` (.html/.htm), `img`, `webloc`/.url, `gdoc`
-   - Pandoc-dependent (needs `config.pandoc.bin`): `markdown` (.txt/.text/.md/.markdown),
-     `docx`, `odt`, `org`, `rtf`. Without Pandoc a `markdown-without-pandoc`
-     fallback is used.
-4. **Metadata extraction** — `app/build/metadata.js`, three accepted formats
-   (§3.3).
-5. **Dependency resolution** — rewrites relative `src`/`href` to blog-absolute.
-6. **Plugins** — `app/build/plugins/` in series (image, wikilinks, videoEmbeds,
-   codeHighlighting, imageCaption, autoImage, externalLinks, linebreaks,
-   titlecase, injectTitle, typeset, katex, twitter, bluesky, flickr, zoom,
-   mediaPreload, linkScreenshot, analytics, disqus).
-7. **Thumbnails** — first image ≥64px; variants small/medium/large/square.
-8. **Entry assembly** + `prepare/` — title, summary, teaser, slug, tags, flags,
-   permalink, internal links.
+### 3.1 How content gets into the folder
 
-`npm start` prints which converters are live:
+Three routes, all the operator's choice, none of them this script's code:
 
-```
-- markdown with pandoc  true/false
-- .docx conversion ...
-```
-
-Pandoc **is** installed in the dev image (Dockerfile installs 3.6.1), so full
-Markdown is available.
-
-### 3.2 Folder conventions (what the crawler must emit)
-
-| Convention | Effect | Source |
-|---|---|---|
-| `Pages/` sub-folder | file becomes a **page**, appears on the menu | `how/sub-folders/pages.html` |
-| `Drafts/` sub-folder | not published; a `.html` preview file is written next to it | `how/sub-folders/drafts.html` |
-| `Templates/` (or `templates/`) sub-folder | never published; holds locally-edited templates | `app/sync/update/set.js:35` (`isTemplate`) |
-| `Public/` sub-folder | served statically, never a post | `app/sync/update/set.js` (`isPublic`) |
-| name starts with `_` (file *or* any path segment) | not published, still served as a static asset | `app/build/prepare/isHidden.js`, `how/ignore_file.html` |
-| name starts with `.` | ignored | same |
-| `[Tag]` in file name or any parent directory | adds that tag; brackets are stripped from the URL | `how/metadata.html`, `build/prepare/tags.js` |
-| `YYYY/MM/DD-Name.txt`, `YYYY/MM-DD-Name.txt`, `YYYY-MM-DD-Name.txt`, `YYYY/MM/DD/Name.txt` | sets the publication date | `build/prepare/dateStamp/fromPath.js` |
-| date in metadata | **overrides** any date from the path | `how/metadata.html` |
-| future date | scheduled post | same |
-
-Note the importer's own path scheme, `app/dashboard/site/import/helper/determine_path.js`:
-
-```
-page   → Pages/<slug>
-draft  → Drafts/<slug>
-dated  → YYYY/MM-DD-<slug>
-else   → Undated/<slug>
-```
-
-slug via `helper/slugify.js` (spaces → `-`, `&` → `and`, strips `’'.,"”“#?:!`),
-truncated to 150 chars, `/` → `-`.
-
-**Adopt this scheme for the translate script** — it is already proven against
-WordPress/Squarespace/Blogger/Are.na exports and lines up with Blot's date parsing.
-
-### 3.3 Metadata block formats
-
-All three are accepted (`app/build/metadata.js`, documented in
-`app/views/how/metadata.html`):
-
-**Bare key/value at the top of a text file** (must be followed by a blank line,
-space required after the colon):
-
-```
-Date: January 1st, 2024
-Tags: Getting started, Documentation
-Link: /introduction
-
-# The post title
-```
-
-**HTML comment — must start on line 1 of an `.html` file:**
-
-```html
-<!--
-Date: January 1st, 2024
-Link: /metadata
--->
-```
-
-**YAML front matter:**
-
-```
----
-Date: January 1st, 2024
-Link: Apple
----
-```
-
-Recognised keys: `Title`, `Date`, `Link`, `Tags`, `Comments`, `Summary`,
-`Search`, `Thumbnail`, `Draft`, `Page`, `Menu`, `Slug`. Anything else becomes
-custom metadata available at `{{entry.metadata.<key>}}` (`/developers/guides/custom-metadata`).
-
-`app/dashboard/site/import/helper/insert_metadata.js` shows the exact emission
-order used by the existing importers:
-
-```js
-Date: YYYY-MM-DD
-Tags: a, b
-Link: <permalink>
-Summary: <summary>
-<Capitalized custom keys>: <value>
-
-# <title>
-
-<content>
-```
-
-### 3.4 Reusable importer helpers
-
-`app/dashboard/site/import/helper/index.js` exports the whole toolkit. The
-canonical pipeline is `helper/process.js`:
-
-```js
-async.waterfall([
-  determine_path(output_directory),
-  download_audio,
-  download_pdfs,
-  download_images,
-  convert_to_markdown,
-  insert_metadata,
-  write,
-], next)
-```
-
-Each step operates on a mutable `post` object with these fields:
-
-`title`, `html`, `content`, `dateStamp`, `created`, `updated`, `tags[]`,
-`permalink`, `summary`, `metadata{}`, `draft`, `page`, `slug`, `path`,
-`asset_directory`.
-
-Notable helpers:
-
-- **`convert_to_markdown.js`** — Turndown + `turndown-plugin-gfm`, bullet `-`,
-  fenced code, `*` emphasis, `turndown.escape` overridden to a no-op (so Markdown
-  already embedded in HTML survives), keeps `audio`/`video`/`iframe`. Only runs
-  when `post.content === undefined`.
-- **`to_markdown.js`** — an older/alternative Turndown config that keeps
-  `<figure>`, reverses footnotes into `[^n]` syntax, and has an
-  `isAlreadyMarkdown()` heuristic. Not in the standard waterfall.
-- **`download_images.js`** — cheerio-walks `img[src]`, `fetch`es each (actual
-  timeout is 5 s; the constant's comment and the error message both say 10 s and
-  are wrong), sniffs format with `sharp`,
-  names the file from `Content-Disposition` → URL basename → `"image"`,
-  sanitises, **prefixes with `_`** so the asset is not published as its own post,
-  ensures an extension, writes into the staged asset directory, and rewrites
-  `src` to the bare filename. Also handles `post.metadata.thumbnail`.
-- **`asset_directory.js`** — stages assets in `os.tmpdir()/blot-import-*` so they
-  do not influence final path allocation.
-- **`write.js` / `write.createWriter()`** — the important one. If the post has any
-  assets, it writes `<basePath>/post.txt` and moves the assets in beside it;
-  otherwise `<basePath>.txt`. Reserves paths across a batch so two posts with the
-  same title do not clobber each other (`-2`, `-3` suffixes). Sets `mtime` from
-  `post.updated || post.created || post.dateStamp`.
-- **`resolve_url.js`** — resolves all relative `href`/`src` against a base URL.
-  Directly useful for a crawler.
-- **`insert_video_embeds.js`**, **`replace_embeds.js`** — WordPress shortcodes and
-  iframes → bare YouTube/Vimeo URLs (Blot's `videoEmbeds` plugin re-embeds them).
-- **`normalize_identifier.js`** — safe human-facing names (120 chars / 240 bytes,
-  strips control and unsafe chars, rejects Windows reserved names).
-
-### 3.5 Existing importer sources (what to model the crawler on)
-
-```
-sources/wordpress   XML (WXR) → items → extract_entry → tidy → …
-sources/squarespace delegates entirely to the WordPress converter
-sources/blogger     Atom export
-sources/arena       Are.na HTTP JSON API  ← the only network-sourced importer
-```
-
-`sources/arena/router.js` + `index.js` + `posts.js` + `parse.js` is the closest
-model for a URL-driven import: validate the URL, page through a remote source,
-and funnel each item through the same waterfall.
-
-**There is no HTML-crawling importer today.** This is genuinely new work.
-
-### 3.5.1 The HTML importer: mechanical in Node, judgement in Claude
-
-**Design decision: the importer fetches and cleans HTML, then hands it to the
-existing pipeline. Claude does the extraction and the editorial judgement.**
-
-The split follows the existing sources exactly. Every source in the tree does the
-same two things — produce a `post` object, then run it through the shared
-waterfall. The HTML importer is no different; only the "produce a `post` object"
-half is novel, and that half is where a model earns its keep.
-
-**The `post` contract** (the interface between the two halves). Every field the
-waterfall consumes, gathered from `extract_entry.js`, `arena/parse.js#normalizeText`
-and `insert_metadata.js`:
-
-```js
-{
-  title:      String,          // → "# title" appended after the metadata block
-  html:       String,          // → converted to Markdown by convert_to_markdown
-  content:    String,          // optional; if set, convert_to_markdown is a no-op
-  dateStamp:  Number,          // ms → "Date: YYYY-MM-DD" and the YYYY/MM-DD- path
-  created:    Number,          // ms
-  updated:    Number,          // ms → the written file's mtime
-  tags:       [String],        // → "Tags: a, b"
-  permalink:  String,          // → "Link: /original/path"  (preserves inbound links)
-  summary:    String,          // → "Summary: …"
-  metadata:   { key: value },  // → "Key: value" per entry, capitalized
-  draft:      Boolean,         // → Drafts/<slug>
-  page:       Boolean,         // → Pages/<slug>
-  slug:       String,          // → overrides the title when deriving the filename
-}
-```
-
-Note `convert_to_markdown` only runs when `post.content === undefined`. So Claude
-can hand back either raw HTML (let Turndown convert it) or finished Markdown
-(set `content` directly and the pipeline passes it through). Prefer handing back
-`html` — Turndown's configuration is shared with every other importer, which is
-the whole point of routing through the pipeline.
-
-**Node's half — fetch and clean:**
-
-1. **Discovery.** Try `/sitemap.xml`, then `/feed`, `/feed.rss`, `/rss`,
-   `/atom.xml`, `/index.xml`, `/feed.json`; fall back to following same-origin
-   links from the homepage with a depth/page cap. `xml2js` is already a
-   dependency (the WordPress and Blogger importers use it).
-2. **Fetch — decided: puppeteer for every page, no fetch-first path.** Rendering
-   in a real browser means the crawler sees the same DOM a reader does: JS-rendered
-   content, lazy-loaded images resolved, client-side routing followed. The failure
-   mode it avoids — silently capturing an empty app shell and producing a folder
-   of blank posts — is the worst one available here, because it looks like success.
-
-   **Implementation notes.** Launch **one** browser and reuse it across pages
-   (`browser.newPage()` per page, close the page after), as `app/helper/screenshot`
-   does; launching per page would be pathologically slow. Reuse
-   `app/helper/screenshot/args.js` for the launch flags — they are already tuned
-   for the Alpine container (`--no-sandbox`, `--disable-gpu`, `--disable-dev-shm`
-   family). The container has Chromium at `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser`
-   (Dockerfile), so `crawl.js` can run in-container; **verify outbound internet
-   from the container works** before relying on it, since nothing else in the tree
-   fetches arbitrary external sites from there. Wait on `networkidle0` with a
-   bounded timeout and treat a timeout as a soft failure — capture what rendered
-   rather than dropping the page.
-
-   Combined with serial fetching (below) this is deliberately slow. That is
-   acceptable: a translation is a one-off, and correctness beats throughput.
-
-   **Decided limits: one request at a time, no page cap, warn at 1000 pages.**
-   Serial fetching is the politeness mechanism — it needs no delay tuning, it is
-   trivially correct, and it keeps the load on someone else's live server to
-   roughly what a single reader generates. No page cap means large archives
-   translate in one pass rather than silently truncating, which is the failure
-   mode that would be hardest to notice. The warning at 1000 pages is the
-   backstop against a crawler that has escaped its boundary (a calendar,
-   a paginated tag index, an infinite filter permutation) — print it, keep going,
-   and let the operator interrupt. Consider also logging progress every N pages so
-   a long crawl does not look hung.
-
-   None of the existing importers rate-limit at all, because they consume
-   user-supplied export files rather than hitting a live server; this is the first
-   code in the tree that needs to be a well-behaved client.
-3. **Clean.** `resolve_url.js` first (absolutises every `href`/`src` against the
-   page URL — otherwise `download_images` cannot fetch anything), then strip
-   scripts, styles, tracking pixels and obvious chrome with `cheerio`. Keep this
-   conservative: over-stripping destroys content, and Claude can prune further.
-4. **Hand off.** Emit one JSON record per page — URL, title candidates, publish
-   date candidates, the cleaned HTML, and any `<meta>`/JSON-LD/microdata found.
-
-**Claude's half — extraction and editorial judgement.** Per page: which subtree is
-the actual content, what the real title and date are, whether it is a post or a
-page (`Pages/`), and what tags apply. Across the whole site: the structural
-decisions that a heuristic cannot make —
-
-- **Tag strategy.** Does the source have categories, a tag cloud, section
-  directories, or a topic structure implied by URLs? Blot tags can be set in
-  metadata *or* in the path via `[Brackets]` (and the two are merged), so a
-  section-per-directory source can become `[Section]/post.txt` and get tag pages
-  at `/tagged/section` for free. This is exactly the kind of mapping worth
-  spending a model on.
-- **Pages vs posts.** Sites usually mix a handful of standing pages with a dated
-  stream. Getting the split right drives the menu, the archives, and the homepage.
-- **Landing page.** If the source homepage is bespoke rather than a post list, it
-  becomes a page with `Link: /` (`how/sub-folders/pages.html`), and the post list
-  moves to `/page/1`.
-- **Dates.** Prefer a real publication date from the page; fall back to
-  `Undated/` (`determine_path.js`) rather than inventing one.
-- **Permalink preservation.** Setting `permalink` to the source path keeps inbound
-  links and old URLs working. Cheap, and easy to forget.
-
-**Why route through the pipeline rather than writing files directly:** consistency
-is the point. `write.createWriter()` handles the `post.txt`-in-a-directory form
-when a post has assets and reserves paths across the batch so same-titled posts do
-not clobber each other; `download_images` handles `Content-Disposition` filenames,
-format sniffing and the `_` asset prefix; `determine_path` produces the date-path
-scheme Blot parses back out. Reimplementing any of that would drift.
-
-**Suggested module split:**
-
-```
-crawl.js     discovery + fetch + clean → JSON records        (Node, in container)
-extract.js   JSON records → post objects                     (Claude)
-build.js     post objects → helper/process waterfall → files (Node, in container)
-```
-
-`app/dashboard/site/import/helper/process.js` is `build.js` almost verbatim; it
-needs `preserve_output_directory: true` (it calls `fs.emptyDirSync` otherwise) and
-its `process.exit()` on completion removed.
-
-### 3.5.2 Platform exports: skip the crawl entirely
-
-**When the source is WordPress, Squarespace or Blogger, the operator can supply
-the export file and the script runs the existing importer instead of crawling.**
-This is strictly better than crawling those platforms: the export carries real
-publication dates, tags/categories, draft status, page-vs-post, and original
-permalinks as structured data, none of which has to be inferred from rendered
-HTML. Use it whenever it is available.
-
-**Importer entry points**, all callable directly from a script — they are plain
-functions and none of them depend on Express:
-
-```js
-// sources/wordpress/index.js   (also serves Squarespace — see below)
-wordpress(sourceFile, outputDirectory, status, options, callback)
-//   options.filter — substring match on title, useful for testing
-//   status — any function; the dashboard passes an SSE publisher, a script can
-//            pass console.log
-
-// sources/blogger/index.js     async, resolves to the entry count
-await blogger(sourceFile, outputDirectory, status, siteHost)
-//   siteHost — used to resolve relative links in the export
-```
-
-**Squarespace needs no separate code path.** Its router
-(`sources/squarespace/router.js`) does `require("../wordpress")` and calls it
-unchanged — Squarespace exports WordPress WXR XML. The only difference in the
-dashboard is the label and the upload copy.
-
-**Detection.** The dashboard makes the operator pick the platform, but a script
-can sniff the file, which is friendlier:
-
-| Format | Cue |
+| Source | Route |
 |---|---|
-| Blogger | `.atom` extension or `application/atom+xml`; content is an Atom `<feed>`. `sources/blogger/router.js#isBloggerExport` is the existing check |
-| WordPress / Squarespace | `.xml`; content is `<rss>` with a `wp:wxr_version` element — `sources/wordpress/index.js` already reads `channel["wp:wxr_version"]` and logs it |
+| WordPress, Squarespace, Blogger, Are.na | Blot's existing dashboard importer — open the site's dashboard, **Import**, upload the export, download the resulting ZIP |
+| Any other live site | `scripts/development/dynamic-importer` — agent-driven crawl, see its own `RESEARCH.md` |
+| Anything else | Hand-made files, an existing folder, or one of the repo's demo folders under `app/templates/folders/` |
 
-A further nicety: `crawl.js` fetches the homepage anyway, so it can read
-`<meta name="generator" content="WordPress 6.x">` and *prompt* — "this looks like
-WordPress, do you have an export file? [path / press enter to crawl]". Nothing in
-the tree does generator sniffing today, so this is new but trivial.
+The script prints the target path (`data/blogs/<blogID>/`), opens it if useful —
+`scripts/development/open-folder-server.js` already runs a host-side opener on port
+3020 that `spawn`s `open -R` — and waits.
 
-**The trap: both importers wipe their output directory.**
+### 3.2 Verify, do not trust
+
+"Press enter when ready" is not good enough on its own, because the folder watcher
+is asynchronous: files can be present on disk while entries have not been built
+yet, and sync latency is variable (§1.2). Check the database, not the filesystem:
 
 ```js
-sources/wordpress/index.js:9    fs.emptyDirSync(outputDirectory);
-sources/blogger/index.js:25     await fs.emptyDir(outputDirectory);
+Entries.getAllIDs(blogID, (err, ids) => { … })
 ```
 
-So they **cannot** be pointed at the blog folder root — that would destroy
-`Templates/`, the `README`, and `.verification/`. Import into a staging directory
-and then merge:
+**`getAllIDs` includes soft-deleted entries** — verified: a removed file leaves its
+path in the index with `deleted: true` on the entry. So filter on the flag rather
+than counting IDs.
 
-```
-data/tmp/translate/<handle>/export.xml    ← the operator's file, copied in
-data/tmp/translate/<handle>/output/       ← importer output directory
-                    ↓ merge (content only, leaving Templates/ alone)
-data/blogs/<blogID>/
-```
+A reasonable gate: at least one non-deleted entry exists, `blog.cacheID` has
+settled (§1.2), and no template errors are present in `metadata.errors`. Report
+what was found — "42 posts, 3 pages, 6 tags" — so the operator can spot a partial
+copy before the agent spends a turn on it.
 
-`data/tmp` is the repo convention (`helper/tempDir()` → `config.tmp_directory` →
-`data/tmp`), it is where the dashboard importers already stage their work, and
-because `data/` is bind-mounted the operator can drop the export file in from the
-host while the importer runs in the container.
+### 3.3 What the agent needs to know about the content
 
-**Copy the operator's file rather than reading it in place**, as the user
-suggested — the dashboard does the same thing with uploads, and it means an
-operator pointing at a file in `~/Downloads` does not have the run depend on that
-file surviving.
+The agent is building a template *for this specific folder*, so it should inspect
+what is there rather than assume. The conventions that shape a template:
 
-**The agent still edits the output.** This is the important part: importers are
-imperfect. WordPress exports carry shortcodes, inline styles, `[caption]` blocks,
-and Gutenberg comment markup; `sources/wordpress/item/tidy.js` strips some of it
-(`remove_caption`, `remove_embed`, `remove_inline_images`, `fix_missing_p_tags`)
-but not all. The Markdown that lands in the folder is a starting point.
+| Convention | Effect on the template |
+|---|---|
+| `Pages/` sub-folder | entries become pages and appear in `{{#menu}}`; usually needs distinct styling from posts |
+| `[Bracket]` tags in paths, or `Tags:` metadata | drives `/tagged/:tag`, `tagged.html`, and any tag navigation |
+| Date in the path (`YYYY/MM-DD-name.txt`) or `Date:` metadata | whether `{{date}}` is meaningful, and whether `archives.html` is worth building well |
+| A page with `Link: /` | the homepage is a bespoke landing page, not a post list — `entries.html` moves to `/page/1` |
+| `_`-prefixed files | assets, not posts; referenced from within entries |
+| Custom metadata keys | available as `{{entry.metadata.<key>}}` and may deserve template support |
 
-**Decided review depth: sample deeply, fix class-wide, re-sample.** Reading every
-post scales linearly with archive size and is unaffordable on a large blog;
-spot-checking misses systematic damage that never appears on a screenshotted page.
-The middle path targets the actual failure shape, which is that importer artefacts
-are *recurring* rather than random:
+Full user-facing reference: `app/views/how/metadata.html`,
+`app/views/how/sub-folders/*.html`. The mechanics of how files become entries live
+in `app/build/README` and in the dynamic-importer research; the template only needs
+the resulting shape, which is §3.4.
 
-```
-1. sample ~10 posts spanning types (post/page), eras, and formats
-   (image-heavy, code, embeds, tables)
-2. identify recurring artefacts — leftover Gutenberg comments, inline styles,
-   stray shortcodes, mangled captions, broken relative links
-3. write and apply a fix pass across every post
-4. re-sample a different set to confirm the pass worked and introduced nothing
-```
+**The agent may edit content.** Some mismatches with the source design are content
+problems, not CSS problems — a bespoke homepage needs `Link: /` metadata, a section
+needs `[Bracket]` tags before tag pages can exist, a post needs a `Summary:` for a
+teaser to read well. Constraining the agent to `Templates/` would force bad
+workarounds. Content edits are in scope during the verification loop (§6.4), and
+git makes them reviewable (§6.10).
 
-Step 3 is where committing the raw import first (§6.10) pays off: the fix pass
-becomes a reviewable diff over known-original input, and a bad pass is a revert
-rather than a re-import. The same procedure applies to crawler output — the phase
-after acquisition is identical either way.
 
-**So the acquisition step has three modes, converging on the same folder:**
-
-```
-                      ┌─ export file supplied → wordpress() / blogger()  ─┐
-translate <url> ──────┼─ platform sniffed, operator supplies path ────────┼──→ folder
-                      └─ no export → crawl.js + agent extraction ─────────┘
-```
-
-Everything downstream — agent review, template authoring, verification, the
-operator's manual zip — is unchanged.
-
-### 3.6 Entry properties available to templates
+### 3.4 Entry properties available to templates
 
 Full list in `app/views/developers/reference.yml` (rendered at `/developers/reference`).
 Condensed:
@@ -845,6 +507,7 @@ upscaled), `exif` (`off`/`basic`/`full` per site setting).
 **Other:** `metadata` (custom keys, also mirrored lowercase).
 
 ---
+
 
 ## 4. Template side
 
@@ -1147,6 +810,7 @@ hydration happens for blog templates via `injectLocals.js` on every metadata sav
 
 ---
 
+
 ## 5. Keeping the folder portable
 
 The script no longer produces an archive — **the operator zips the folder by hand
@@ -1237,6 +901,7 @@ the comparison UI covers the common case.
 
 ---
 
+
 ## 6. Wiring it together
 
 ### 6.1 Proposed shape
@@ -1245,55 +910,50 @@ the comparison UI covers the common case.
 scripts/development/translate/
   RESEARCH.md          ← this file
   index.js             ← IN container: provision blog + template (idempotent)
-  crawl.js             ← IN container: discovery, fetch, clean → JSON records.
-                          Accepts an optional path prefix for scoped re-crawl (§6.7)
-  import.js            ← IN container: detect export format, stage it, run the
-                          existing wordpress/blogger importer, merge in (§3.5.2)
-  build.js             ← IN container: post objects → import waterfall → files
   finalize.js          ← IN container: re-assert "enabled": true, grep for
                           host-specific strings (§5.1, §5.2)
+  content-check.js     ← IN container: has content arrived and built? (§3.2)
   screenshot.js        ← ON host: puppeteer (container cannot reach *.local.blot)
   compare-server.js    ← ON host: comparison UI + feedback intake (§6.6.2)
   state.js             ← run-state read/write for idempotent re-runs (§6.7)
   translate.sh         ← host entrypoint referenced by package.json
-  prompt.md            ← the Claude Code brief (content + template rules)
+  prompt.md            ← the Claude Code brief (template rules)
   README.folder.md     ← template for the folder-root README   (§6.5)
   README.template.md   ← template for the in-template README   (§6.5)
 ```
 
-No packaging module: the operator zips the reviewed folder by hand (§0.1, §5).
+No crawler, no importer, no packaging module: content arrives from elsewhere (§3.1)
+and the operator zips the reviewed folder by hand (§0.1).
 
 ```json
 "translate": "./scripts/development/translate/translate.sh"
 ```
 
-`translate.sh` — note steps 4–7 form the operator loop:
+`translate.sh` — steps 5–8 form the operator loop:
 
 1. **preflight** — `docker ps` for `blot-node-app-1`, then
    `GET https://<host>/health`; abort with "run `npm start` in another window"
    (§1.5). Resolve the host via
    `docker exec blot-node-app-1 node -e 'console.log(require("config").host)'`.
-2. validate `<url>`, derive an alnum handle, **load run state** (§6.7). On a
+2. validate `<url>`, derive a stable alnum handle, **load run state** (§6.7). On a
    re-run: print the summary and prompt immediately for optional guidance.
 3. `docker exec blot-node-app-1 node scripts/development/translate <url> <handle>`
-   → provisions or reuses; `git init`s the folder (§6.10); prints `blogID`,
-   template slug, site URL, dashboard URL as parseable output (the existing
-   `preview-newsletter.sh` greps script output the same way)
-3b. **acquisition** (first run only, or on `--recrawl`) — sniff the homepage for a
-   `generator` meta tag; if it looks like WordPress/Squarespace/Blogger, offer to
-   take an export file path and run the existing importer, else crawl (§3.5.2).
-   Commit the raw result before the agent touches it.
-4. `cd data/blogs/<blogID>` and exec `claude -p …` — `--session-id` on a first run,
+   → provisions or reuses the blog, scaffolds the template, `git init`s the folder;
+   prints `blogID`, template slug, site URL, dashboard URL as parseable output
+   (the existing `preview-newsletter.sh` greps script output the same way)
+4. **content gate** — print the folder path, wait, then verify entries actually
+   built (§3.2). Skipped on a re-run where content is already present.
+5. `cd data/blogs/<blogID>` and exec `claude -p …` — `--session-id` on a first run,
    `--resume` with the operator's feedback on subsequent turns (§6.3, §6.6.1).
    Non-zero exit or a `.verification/BLOCKED.txt` aborts the run.
-5. wait for the rebuild to settle — poll `blog.cacheID` until stable (§1.2)
-6. screenshot both sides into `.verification/` (host-side, §6.4)
-7. start the comparison server on 3021 and `open` it (§6.6.2)
-8. prompt: Enter accepts, text becomes feedback → back to step 4, `q` aborts
+6. wait for the rebuild to settle — poll `blog.cacheID` until stable (§1.2)
+7. screenshot both sides into `.verification/` (host-side, §6.4); start the
+   comparison server on 3021 and `open` it (§6.6.2)
+8. prompt: Enter accepts, text becomes feedback → back to step 5, `q` aborts
 9. `docker exec blot-node-app-1 node scripts/development/translate/finalize <blogID>`
    → re-asserts `"enabled": true` (§5.1), greps for host-specific strings (§5.2)
-10. persist run state; print the folder path, the site URL, the preview URL, and a
-    reminder to delete `.verification/` before zipping
+10. persist run state; print the folder path, the site URL and the preview URL
+
 
 ### 6.2 What `index.js` does (all inside the container)
 
@@ -1333,6 +993,7 @@ site's. Mitigate in the brief, explicitly:
 Worth checking during verification: if the output still looks recognisably like
 Blot's default `blog` template, the anchoring happened and the brief needs
 sharpening.
+
 
 ### 6.3 Invoking the Claude Code CLI from the Node script
 
@@ -1378,9 +1039,10 @@ tool-use guardrails matter. `--permission-mode acceptEdits` with a scoped
 
 **Phasing.** Content and template are different jobs with different failure modes.
 Running them as two `-p` invocations sharing a `--session-id` keeps context while
-letting the wrapper checkpoint between them: crawl → verify content built (entries
-exist, no build errors) → template → verify visually. If phase one fails there is
-no point starting phase two.
+letting the wrapper checkpoint between them: read the folder and the target →
+propose a structure → build the template → verify visually. If an early phase
+fails there is no point starting the next.
+
 
 ### 6.4 The verification loop and the `.verification/` folder
 
@@ -1478,6 +1140,7 @@ Each iteration: screenshot both sides → compare → edit → wait for the rebu
 template's `metadata.errors` — a Mustache error surfaces there rather than as a
 visual difference.
 
+
 ### 6.5 The two README files
 
 **Decision: a file named `README` — no extension — in both places, with Markdown
@@ -1526,6 +1189,7 @@ exactly this purpose. Contents:
 Both stay in the folder and go to the customer. Note the template `README` also
 serves as the brief for the *next* agent that edits the folder, which is the point
 — the deliverable carries its own onboarding.
+
 
 ### 6.6 Operator guidance: feedback and a comparison UI
 
@@ -1624,6 +1288,7 @@ That last point makes the UI and the feedback loop one mechanism rather than two
 the server holds the pending feedback, the shell loop reads it, and the operator
 never has to switch windows.
 
+
 ### 6.7 Idempotency and re-runs
 
 **Goal: re-running `translate <url>` continues rather than starts over, and asks
@@ -1636,8 +1301,6 @@ for guidance up front.**
    count and timestamps. **Decided: `data/tmp/translate/<handle>.json`** via
    `helper/tempDir()` — where the importers already stage working state, and
    safely outside the blog folder, so it can never end up in the operator's zip.
-   (`.verification/state.json` would be more discoverable to the operator and the
-   agent, but it lives in the deliverable.)
 2. **Handle lookup.** `Blog.get({ handle })` — `app/templates/folders/setupBlogs.js`
    is the precedent: reuse the blog if it exists, throw if it is owned by another
    user, otherwise create. That alone makes provisioning idempotent even with no
@@ -1649,8 +1312,9 @@ for guidance up front.**
 translate <url>
   ├─ preflight (§1.5)
   ├─ state found for <url>?
-  │    ├─ no  → provision, scaffold, run agent fresh with a new --session-id
+  │    ├─ no  → provision, scaffold, content gate, run agent with a new --session-id
   │    └─ yes → print a summary (site URL, run count, last run time)
+  │             skip the content gate — content is already there
   │             prompt immediately for optional feedback  ← the ask
   │             claude --resume <session-id> with that feedback prepended
   └─ verify → finalize (§5.1) → print folder path
@@ -1665,81 +1329,57 @@ rediscovering it.
 - **Provisioning** — reuse the blog by handle rather than creating a second one
   (`setupBlogs.js` pattern). Same for the template: `Template.create` returns
   `err.code === "EEXISTS"` if the ID already exists, so catch and reuse.
-- **Content — decided: skip the crawl on re-runs by default, but support a scoped
-  re-crawl when the feedback calls for one.** Most feedback is about presentation,
-  and re-fetching an entire site to fix a font is waste. But some feedback is
-  genuinely "the /essays section came through wrong" — so the re-crawl must be
-  targetable at a subsection rather than being all-or-nothing.
-
-  Shape:
-
-  ```
-  translate <url>                     → no crawl; agent edits content + template
-  translate <url> --recrawl           → full re-crawl, content dirs cleared first
-  translate <url> --recrawl /essays   → re-crawl only URLs under that path
-  ```
-
-  The agent should also be able to trigger a scoped re-crawl itself when the
-  operator's feedback implies one, rather than the operator having to know to pass
-  the flag. Exposing `crawl.js` as something the agent can invoke with a path
-  prefix — and telling it so in the brief — covers that.
-
-  **The mechanical trap this avoids:** `helper/process.js` calls
-  `fs.emptyDirSync(output_directory)` unless `options.preserve_output_directory`
-  is set, and `write.createWriter()` reserves paths and appends `-2`/`-3` suffixes
-  when a target already exists. So re-crawling into a populated folder with the
-  preserve flag set **duplicates every post**, while re-crawling without it
-  **wipes the agent's content edits**. A scoped re-crawl must therefore delete
-  exactly the paths it is about to rewrite, then run the waterfall over just those
-  pages — neither of the two default behaviours is right on its own.
-
-- **A diff-and-update precedent exists if the scoping proves fiddly**:
-  `app/templates/folders/index.js` hashes every file with `helper/hashFile`,
-  computes `{added, modified, removed}` against the destination, copies only the
-  differences, then calls `folder.update()` for exactly those paths. Heavier than
-  path-scoped deletion, but already written and known to work.
+- **Content is not touched on a re-run.** This is the big simplification from
+  splitting acquisition out: there is no re-crawl, no output directory to clear,
+  and none of the duplicate-or-wipe hazards that come with re-running an importer
+  into a populated folder. Content changes are the operator's business — they can
+  copy in an updated folder, or re-run `dynamic-importer` separately.
 - **Templates** — `writeToFolder` removes orphaned files and skips writes whose
   content is byte-identical, so it is naturally idempotent. `buildFromFolder`
   drops locally-edited templates whose directory has disappeared.
-- **Screenshots** — overwrite in place so `.verification/` always reflects the
-  latest run; if history is wanted, add a run-numbered subdirectory.
+- **Screenshots** overwrite in place so `.verification/` always reflects the latest
+  run; if history is wanted, add a run-numbered subdirectory.
 
-**Cleanup interacts with this.** If re-runs reuse the site, sites stop
-accumulating and the cleanup question (§7) mostly dissolves — one dev site per
-translated URL, reused indefinitely.
+Because re-runs reuse the site, dev sites do not accumulate — one per translated
+URL, reused indefinitely.
+
 
 ### 6.8 What the Claude Code CLI is asked to do
 
 Working directory: `data/blogs/<blogID>/`.
 
-**Step 1 — content.** Crawl `<url>` and write Blot-compatible files at the folder
-root following §3.2/§3.3, routing every page through the shared import waterfall
-(§3.5.1) rather than writing files by hand. Make the structural calls: pages vs
-posts, tag strategy, landing page, permalink preservation.
+**Step 1 — read the content.** Inspect what is actually in the folder before
+designing for it (§3.3): how many posts, whether they are dated, whether `Pages/`
+exists, which tags are in use, whether a page claims `Link: /`. The template is
+built for *this* folder, not for a generic Blot site.
 
-**Step 2 — template.** Edit `Templates/<slug>/*` so the rendered site matches the
+**Step 2 — study the target.** Fetch `<url>` and work out its structure: layout,
+type, colour, navigation, how the index presents posts, what a single post looks
+like.
+
+**Step 3 — template.** Edit `Templates/<slug>/*` so the rendered site matches the
 source design, using only the locals in §4.6 and respecting §4.10.
 
-**Step 3 — verify and iterate.** Screenshot both sides into `.verification/`,
-compare, and fix — in either the content or the template (§6.4). Write
+**Step 4 — verify and iterate.** Screenshot both sides into `.verification/`,
+compare, and fix — in either the template or the content (§6.4, §3.3). Write
 `.verification/BLOCKED.txt` and stop if genuinely stuck.
 
 The brief handed to the CLI should extend `/developers/guides/working-with-ai`
 with:
 - the retrievable-locals list (§4.6)
-- the entry-property list (§3.6)
-- the folder conventions (§3.2) and metadata formats (§3.3)
+- the entry-property list (§3.4)
+- the folder conventions that shape a template (§3.3)
 - the `package.json` schema (§4.3) and the default-route gotcha (§4.4)
 - the dashboard-control naming conventions (§4.9)
-- the `post`-object contract (§3.5.1), so it feeds the pipeline rather than
-  writing files directly
 - **the portability rules from §5.2** — since the output ships to a customer, the
   agent must not hardcode the dev CDN origin, the dev host, or the blog ID
   anywhere in the template or content
+- that content edits are permitted and when they are the right fix (§3.3)
 
 Keep the brief in `scripts/development/translate/` and pass `--add-dir` rather
 than writing it into the blog folder — otherwise it becomes part of the
 deliverable the customer receives.
+
 
 ### 6.9 Forcing a rebuild if the watcher misses changes
 
@@ -1757,6 +1397,7 @@ that also calls `sync/fix`. Templates specifically can be rebuilt with
 `Template.buildFromFolder(blogID, cb)` — and `sync()` already calls it on lock
 release.
 
+
 ### 6.10 Version-controlling the folder
 
 **Making the blog folder a git repo and having the agent commit as it goes is a
@@ -1766,14 +1407,15 @@ inits a git repo *inside a blog's template directory*. The value here is concret
 - every agent turn becomes a reviewable diff, so the operator can see exactly what
   changed between iterations rather than inferring it from screenshots;
 - a bad iteration is `git revert`, not a re-run;
-- the crawl/import output can be committed *before* the agent touches it, which
-  cleanly separates "what the importer produced" from "what the agent fixed" —
-  directly useful given §3.5.2's point that importers are imperfect;
+- the content can be committed *as the operator supplied it*, before the agent
+  touches anything, which cleanly separates "what arrived" from "what the agent
+  changed" — valuable precisely because the agent is allowed to edit content
+  (§3.3);
 - `git status` is a precise answer to "did the agent actually change anything".
 
-Suggested commit points: after provisioning, after acquisition (crawl or import),
-after each agent turn, and after each operator-feedback round — with the feedback
-text as the commit message, which makes the log a record of the conversation.
+Suggested commit points: after provisioning, after the content gate (§3.2), after
+each agent turn, and after each operator-feedback round — with the feedback text as
+the commit message, which makes the log a record of the conversation.
 
 **Blot ignores `.git` as content**, so nothing gets published:
 `clients/util/shouldIgnoreFile` lists `.git` in `IGNORED_SYSTEM_FILES` (verified:
@@ -1829,45 +1471,42 @@ Create the repo at provisioning time so the very first acquisition is committed
 against an empty tree — that is what makes "importer output vs agent fixes"
 legible as a diff.
 
+
+---
+
 ## 7. Decisions and remaining questions
 
 ### 7.1 Settled
 
 | Question | Decision | Where |
 |---|---|---|
+| Scope | Template only. Content acquisition lives in `dynamic-importer` or the dashboard importers | intro, §3.1 |
 | Dev account | `example@example.com` — a hardcoded literal, not config | §2.1 |
 | Starting the stack | No. Preflight against `/health` and abort telling the operator to run `npm start` | §1.5 |
 | Deliverable | The folder itself. **No zipping in the script** — the operator zips manually after review | §0.1, §5 |
 | Customer install | `"enabled": true` in the template's `package.json`, written to disk and re-asserted at the end of every run | §5.1 |
-| Content extraction | Node fetches and cleans, Claude extracts and makes editorial calls; they meet at the `post` object and go through the shared import waterfall | §3.5.1 |
-| Crawl limits | One request at a time, no page cap, warn at 1000 pages | §3.5.1 |
+| Content handoff | Operator moves content in; the script **verifies entries built** rather than trusting a keypress | §3.2 |
+| Agent may edit content | Yes — some design mismatches are content problems, and git makes the edits reviewable | §3.3, §6.4 |
+| Template scaffold | Clone `SITE:blog` — take the working boilerplate, instruct the agent to treat it as structure, not as a look | §6.2 |
 | Invoking Claude | `claude -p` on the host; non-zero exit or `.verification/BLOCKED.txt` aborts the run | §6.3 |
-| `.verification/` | Works as-is — `/_` paths are static files, never posts, and browsable at `/.verification/…` | §6.4 |
+| Verification folder | `.verification/` — dot-named so Finder select-all excludes it; still served over HTTP for the operator | §6.4 |
 | READMEs | Two, both named `README`, no extension, Markdown inside. Ignored at the folder root; becomes a `/readme` view in the template, which is accepted and matches seven shipped templates | §6.5 |
 | Comparison UI | Screenshot pairs + opacity-blend slider + open-in-tab links + feedback textarea, served on port 3021 | §6.6.2 |
 | Feedback channel | Both — browser textarea and terminal prompt, with the server holding pending feedback the shell loop reads | §6.6 |
-| Re-runs | Reuse the site by handle; prompt for guidance up front; resume the Claude session | §6.7 |
-| Re-crawling | Skipped by default; `--recrawl [path]` for full or scoped re-crawl, and the agent can trigger a scoped one when feedback implies it | §6.7 |
+| Re-runs | Reuse the site by handle; skip the content gate; prompt for guidance up front; resume the Claude session | §6.7 |
+| Version control | Plain `git init` in the blog folder, **history stays local** — Finder's select-all zip excludes dotfiles | §6.10 |
 | Watcher reliability | **Tested — works** for creates, nested creates and deletes. No `--rebuild` fallback needed | §1.2 |
-| Content acquisition | Three modes converging on the same folder: supplied platform export → existing importer; sniffed platform → prompt for a path; otherwise crawl. The agent reviews and fixes the output either way | §3.5.2 |
-| Version control | Yes — a **plain `git init` in the blog folder**, but **history stays local**: Finder's select-all zip excludes dotfiles, so `.git` never reaches the customer. Commit after acquisition and after every agent turn / feedback round | §6.10 |
-| Verification folder | `.verification/` — dot-named so Finder select-all excludes it; still served over HTTP for the operator | §6.4 |
-| Template scaffold | Clone `SITE:blog` — take the working boilerplate, and instruct the agent to treat it as structure, not as a look | §6.2 |
-| Crawler rendering | Puppeteer for every page; no fetch-first path | §3.5.1 |
-| Importer review | Sample deeply, fix class-wide, re-sample — not per-post reading | §3.5.2 |
-| Site accumulation | Not a problem; re-runs reuse the site | §6.7 |
 
 ### 7.2 Defaults taken (say so if you disagree)
 
 | # | Question | Default |
 |---|---|---|
-| 1 | Run-state location | `data/tmp/translate/<handle>.json` via `helper/tempDir()` — outside the blog folder so it can never end up in the operator's zip |
+| 1 | Run-state location | `data/tmp/translate/<handle>.json` via `helper/tempDir()` — outside the blog folder |
 | 2 | Handle derivation | Deterministic from the URL: strip scheme, `www.` and TLD, lowercase, strip to alnum, numeric suffix on collision. Must be stable across runs or re-run detection breaks |
-| 3 | Rebuild wait | Poll `blog.cacheID` until it stops changing — it is bumped at the end of every sync, so it is the natural settled marker. **Order matters:** `.verification/` is not ignored by the watcher, so writing screenshots itself bumps `cacheID`. Settle first, *then* screenshot, or the two chase each other |
+| 3 | Rebuild wait | Poll `blog.cacheID` until it stops changing — it is bumped at the end of every sync. **Order matters:** `.verification/` is not ignored by the watcher, so writing screenshots itself bumps `cacheID`. Settle first, *then* screenshot |
 | 4 | Screenshot helper | Standalone host-side wrapper, copying the viewports (`1260×778` / `400×650`), `networkidle0` wait and retry/throttle behaviour from `app/helper/screenshot` rather than importing it — its `args.js` is tuned for Alpine |
 | 5 | Iteration cap | Agent inner loop capped around 5 rounds, plus `--max-budget-usd`. The operator is the real stop condition |
-| 6 | Tool allowlist | `Read, Write, Edit, Glob, Grep, WebFetch, Bash(node:*)` — no unrestricted `Bash`, since the agent is processing untrusted third-party HTML |
-| 7 | Screenshot for the operator | `.verification/` already holds them; no separate export step |
+| 6 | Tool allowlist | `Read, Write, Edit, Glob, Grep, WebFetch, Bash(node:*)` — no unrestricted `Bash` |
 
 ### 7.3 Resolved externally
 
@@ -1885,20 +1524,21 @@ legible as a diff.
   hook: it splits on both separators and tests every path component against the
   same ignore sets the write path already uses, so it works on relative and
   absolute paths and sweeps up `.DS_Store`, `._*`, `~$*` and `.swp` at the same
-  time. `git init --separate-git-dir` is no longer needed as a workaround.
+  time.
 
 ### 7.4 Still genuinely open
 
 Nothing blocking remains. Both items below were resolved by taking a default
 rather than a deliberate choice — flag them if you disagree:
 
-1. **How the agent signals a scoped re-crawl** (§6.7) — taken as: a request file
-   the wrapper reads after the turn, the same mechanism as `BLOCKED.txt`. Keeps
-   the tool allowlist tight and gives one uniform "the agent wants something"
-   channel, rather than letting it shell out to `crawl.js` directly.
-2. **What "converged" means for the agent's inner loop** (§6.4) — taken as: the
+1. **What "converged" means for the agent's inner loop** (§6.4) — taken as: the
    agent declares itself done and the operator decides for real. Image diffing is
    a weak proxy for design fidelity, and a human is in the loop anyway.
+2. **Whether the content gate should offer to run `dynamic-importer` for the
+   operator** (§3.1) — taken as: no, it only prints the routes and waits. Keeping
+   the two tools uncoupled was the point of splitting them, and the operator may
+   well be using the dashboard importer or an existing folder instead.
+
 ### 7.5 Not a question — just must not be forgotten
 
 **Non-goals to state explicitly in the agent's brief.** Blot has no Sass, no view
@@ -1920,33 +1560,6 @@ app/clients/local/{README,setup.js,init.js,write.js}
 app/templates/folders/{index.js,setupUser.js,setupBlogs.js,config.js}
 scripts/blog/create.js                    CLI blog creation
 scripts/test/setup-restore-git-test.js    create template + enable local editing
-```
-
-**Content**
-```
-app/build/README                          the whole build pipeline
-app/build/metadata.js                     metadata block parsing
-app/build/prepare/{title,tags,teaser,summary,isHidden,permalink}.js
-app/build/prepare/dateStamp/{index,fromPath,fromMetadata}.js
-app/sync/{index.js,update/set.js}         sync + Public/Templates/_ exclusions
-app/dashboard/site/import/helper/*        the importer toolkit
-app/dashboard/site/import/sources/wordpress/index.js
-                                          wordpress(src,out,status,opts,cb)
-                                          — emptyDirSync's the output dir
-app/dashboard/site/import/sources/blogger/index.js
-                                          blogger(src,out,status,siteHost) async
-app/dashboard/site/import/sources/blogger/router.js#isBloggerExport
-                                          .atom / application/atom+xml detection
-app/dashboard/site/import/sources/squarespace/router.js
-                                          delegates wholesale to wordpress
-app/dashboard/site/import/sources/arena/  network-sourced importer, for shape
-app/clients/util/shouldIgnoreFile.js      .git ignored as content (§6.10)
-app/clients/local/setup.js:68             chokidar with NO ignore patterns
-scripts/test/setup-restore-git-test.js    existing git-in-a-blog-folder precedent
-app/views/how/metadata.html               user-facing metadata reference
-app/views/how/sub-folders/*.html          Pages / Drafts / Templates
-app/views/how/ignore_file.html            underscore convention
-app/views/how/formatting/layout-tags.html {<} {>} {<<} etc.
 ```
 
 **Templates**
@@ -2015,7 +1628,7 @@ app/views/dashboard/template/js/
 app/templates/folders/index.js               hashFile diff → {added,modified,removed}
 app/templates/folders/setupBlogs.js          reuse-blog-by-handle idempotency
 app/dashboard/site/import/helper/process.js  preserve_output_directory flag
-app/dashboard/site/import/helper/write.js    path reservation → duplicates on re-crawl
+scripts/development/dynamic-importer/RESEARCH.md   the content-acquisition companion
 ```
 
 **Docs to hand to the agent**
