@@ -20,10 +20,12 @@ scaffolded site and the whole pipeline is exercisable before any crawler exists.
 
 **Prerequisite for every task:** `npm start` running in another window.
 
-**Status:** Milestones A and B complete. `npm run translate <url>` provisions a
+**Status:** Milestones A–D complete. Milestone E is built and its plumbing
+is verified, but **the brief has never been exercised by a real agent** — see the
+note under milestone E. `npm run translate <url>` provisions a
 site, scaffolds a locally-edited template cloned from `SITE:blog`, initialises a
 git repo, then waits for content and verifies it built before committing it.
-Next: milestone C (screenshots).
+Next: run milestone E for real, then milestone F (the loop).
 
 Two findings worth carrying forward:
 
@@ -33,7 +35,12 @@ Two findings worth carrying forward:
   *added to Blot*. `content-check.js` detects the symptom (every post sharing
   today's date) and explains it.
 - **`.verification/` is not watcher-ignored**, but `content-check` reads the
-  database rather than the filesystem, so this does not affect the gate.
+  database rather than the filesystem, so this does not affect the gate. The
+  capture step settles *before* shooting for the same reason.
+- **Source-page pairing is best-effort.** A local post's source URL is guessed by
+  reusing its path, which only holds when permalinks were preserved. `capture.js`
+  drops any source shot returning 4xx rather than pairing a 404 against a real
+  page, and says so.
 
 ---
 
@@ -142,6 +149,26 @@ actually exist.*
   after copying a demo folder proceeds and commits.
 
 ### B3. Settle helper (§7.2 default 3)  ✅
+
+### B4. `rescan.js` — not in the original plan, but required  ✅
+The watcher cannot be relied on for content the operator drops in.
+`app/clients/local/setup.js` starts chokidar with `ignoreInitial: true`, and only
+after `sync/fix` completes — so anything already in the folder when the watcher
+starts is invisible to it, permanently. `sync/fix` does not rescue this: it only
+removes ghosts of files that have gone, it never discovers new ones.
+
+`rescan.js` walks the folder and calls `folder.update()` per path, the same
+mechanism `app/templates/folders/index.js` uses to load the demo folders. Two
+details it needs:
+
+- **Retry on lock contention.** The watcher takes the same folder lock for every
+  event it processes, and `sync` gives up after ~11s. Dropping in a directory can
+  keep it busy far longer, so `rescan` retries (10 × 4s) rather than failing.
+- **Settle first.** The gate settles before rescanning so the watcher's queue has
+  drained and the lock is free.
+
+**Done when:** content copied in with *zero* delay after provisioning is still
+found on the first pass. Verified.
 - Poll `blog.cacheID` until it stops changing (bumped at the end of every sync).
 - Needed because sync latency is variable — creates were instant in testing, a
   delete took ~30s.
@@ -151,12 +178,12 @@ actually exist.*
 
 ---
 
-## Milestone C — Screenshots
+## Milestone C — Screenshots  ✅ COMPLETE
 
 *Done when: you can produce `.verification/input-*.png` and `output-*.png` pairs by
 hand.*
 
-### C1. `screenshot.js` — host-side wrapper (§7.2 default 4)
+### C1. `screenshot.js` — host-side wrapper (§7.2 default 4)  ✅
 - Runs **on the host**: the container resolves `*.local.blot` to `127.0.0.1`, which
   is itself, so it cannot reach the site (verified — connection refused).
 - Standalone rather than importing `app/helper/screenshot` (its `args.js` is tuned
@@ -166,7 +193,7 @@ hand.*
 - Host puppeteer is already installed (24.1.1, browser in `~/.cache/puppeteer/chrome`).
 - **Done when:** it captures any URL to a path at both viewports.
 
-### C2. Capture the pair
+### C2. Capture the pair  ✅
 - Source URL and the local site, at matching viewports, into `.verification/`.
 - Naming: `input-<page>.png` / `output-<page>.png` so pairs are matchable by suffix.
 - Page set: homepage plus one representative entry. Resolve the entry URL from the
@@ -179,17 +206,17 @@ hand.*
 
 ---
 
-## Milestone D — Comparison UI
+## Milestone D — Comparison UI  ✅ COMPLETE
 
 *Done when: `open http://localhost:3021` shows the pairs and accepts feedback.*
 
-### D1. `compare-server.js` (§6.6.2)
+### D1. `compare-server.js` (§6.6.2)  ✅
 - Plain `http.createServer` on **3021** (verified free; 3020 is the folder opener).
 - Model it on `scripts/development/open-folder-server.js`.
 - Serve the `.verification/` PNGs and a single self-contained HTML page.
 - **Done when:** the page loads and shows the images.
 
-### D2. The comparison view
+### D2. The comparison view  ✅
 - Side-by-side pairs, plus an **opacity-blend slider** — far better than
   side-by-side for spotting layout drift.
 - Links that open the source and the local site in real tabs (always works, no
@@ -199,7 +226,7 @@ hand.*
   usually cannot be framed, so never depend on it.
 - **Done when:** blending between input and output works for the homepage pair.
 
-### D3. Feedback intake
+### D3. Feedback intake  ✅
 - A textarea that POSTs back to the server, which holds the pending feedback for
   the shell loop to read.
 - Makes the UI and the feedback loop one mechanism instead of two.
@@ -207,11 +234,21 @@ hand.*
 
 ---
 
-## Milestone E — First agent turn
+## Milestone E — First agent turn  ⚠️ BUILT, NOT YET RUN FOR REAL
 
 *Done when: one `claude -p` invocation produces a template that renders.*
 
-### E1. The two READMEs (§6.5)
+> **Outstanding.** The plumbing is verified end to end with a stubbed `claude`:
+> a non-zero exit aborts with the error, a `.verification/BLOCKED.txt` aborts and
+> prints the agent's reason, and a successful turn commits. But a **real** agent
+> run has not happened: the `claude` CLI refuses to start inside another Claude
+> Code session ("Claude Code cannot be launched inside another Claude Code
+> session"), which is a constraint of the development session this was built in,
+> not of the script. Running `npm run translate <url>` from an ordinary terminal
+> is the outstanding check, and it is the only way to find out whether the brief
+> in `prompt.md` actually produces a good template.
+
+### E1. The two READMEs (§6.5)  ✅
 - `README.folder.md` and `README.template.md` as templates, interpolated at
   scaffold time.
 - Both land as a file named `README`, **no extension**, Markdown inside. At the
@@ -222,7 +259,7 @@ hand.*
   brief for whoever (or whatever) edits the design next.
 - **Done when:** both are written at scaffold time with the right substitutions.
 
-### E2. `prompt.md` — the agent brief (§6.8)
+### E2. `prompt.md` — the agent brief (§6.8)  ✅
 - Extend `/developers/guides/working-with-ai` with: retrievable locals (§4.6),
   entry properties (§3.4), the folder conventions that shape a template (§3.3),
   the `package.json` schema (§4.3), **the default-route gotcha** (§4.4 — a view's
@@ -237,7 +274,7 @@ hand.*
 - Say that content edits are permitted and when they are the right fix (§3.3).
 - **Done when:** the brief is complete enough that a human could follow it.
 
-### E3. Invoke the CLI (§6.3)
+### E3. Invoke the CLI (§6.3)  ✅
 - On the **host** (no `claude` binary or credentials in the container).
 - `claude -p --output-format json --permission-mode acceptEdits`, cwd
   `data/blogs/<blogID>/`, `--add-dir` for the brief so it stays out of the folder.
@@ -247,7 +284,7 @@ hand.*
 - `--max-budget-usd` plus a process timeout.
 - **Done when:** one invocation edits the template and the site still renders.
 
-### E4. Abort handling (§6.3)
+### E4. Abort handling (§6.3)  ✅
 - Non-zero exit is fatal and propagates through `set -euo pipefail`.
 - Check for `.verification/BLOCKED.txt` after the turn; if present, print its
   contents as the abort reason. Exit code alone cannot distinguish "finished" from

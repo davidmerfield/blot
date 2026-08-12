@@ -91,7 +91,7 @@ async function countTags(blogID) {
   }
 }
 
-function describe(counts, tags, range) {
+function describer(counts, tags, range) {
   const parts = [];
   const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -135,7 +135,7 @@ async function main(blogID) {
   emit("tags", tags);
   emit("publishable", publishable);
   emit("cacheID", blog.cacheID || 0);
-  emit("summary", publishable ? describe(counts, tags, range) : "no content");
+  emit("summary", publishable ? describer(counts, tags, range) : "no content");
 
   if (range && range.suspicious) {
     emit(
