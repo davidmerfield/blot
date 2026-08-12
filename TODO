@@ -1,9 +1,5 @@
 Transfer Juliet's site and theme from blogger
 
-Work out what's soaking up all the disk space on the server, then make sure it's freed up enough to reliably deploy. 
-- possible fail2ban logrotate config to remove large log files?
-- fix huge size of fail2ban db: https://serverfault.com/questions/1002315/fail2bans-database-is-too-large-over-500mb-how-do-i-get-it-to-a-reasonable-s  /var/lib/fail2ban/fail2ban.sqlite3
-
 Redis caching:
 - Log redis cache stats
 - Remove LRU cache code from app/blog and elsewhere now we have the redis cache which does this automatically
@@ -43,7 +39,10 @@ Hitting the save changes button under typeset settings spits you back out to hom
 
 Debug issue with warwickmostyn
 
-
+Check in that fail2ban is now correctly purging the db of old bans:
+- sudo sqlite3 /var/lib/fail2ban/fail2ban.sqlite3 \
+  "SELECT COUNT(*) FROM bans WHERE timeofban < $(date -d 'now -1 day' +%s);"
+- output of command above should be 0
 
 Write useful benchmark tool for Blot
 - Add performance tests which output something like this for PRs (compare against master branch, fail if over threshold):

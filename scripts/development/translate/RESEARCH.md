@@ -36,7 +36,7 @@ data/blogs/<blogID>/
 │   └── _hero.jpg
 ├── Pages/
 │   └── About.txt
-├── _verification/                  ← screenshots + agent notes; scaffolding only
+├── .verification/                  ← screenshots + agent notes; scaffolding only
 └── Templates/
     └── <slug>/
         ├── package.json            ← needs "enabled": true  (see §5.1)
@@ -54,7 +54,7 @@ dev site exists so the crawl and the template can be rendered, inspected via
 
 The two things the script still owes the operator, because they are easy to get
 wrong by hand: the template's `package.json` must carry `"enabled": true` (§5.1),
-and the folder must contain nothing host-specific (§5.2). `_verification/` is
+and the folder must contain nothing host-specific (§5.2). `.verification/` is
 scaffolding and should be deleted before zipping.
 
 ### 0.2 Phases
@@ -761,7 +761,7 @@ sources/blogger/index.js:25     await fs.emptyDir(outputDirectory);
 ```
 
 So they **cannot** be pointed at the blog folder root — that would destroy
-`Templates/`, the `README`, and `_verification/`. Import into a staging directory
+`Templates/`, the `README`, and `.verification/`. Import into a staging directory
 and then merge:
 
 ```
@@ -1211,11 +1211,11 @@ the `README`) and partly a constraint on what the agent is allowed to create.
 
 | Item | Why | Action |
 |---|---|---|
-| `_verification/` | screenshots and agent notes — scaffolding, not the customer's content (§6.4) | delete before zipping; say so in the `README` |
+| `.verification/` | screenshots and agent notes — scaffolding, not the customer's content (§6.4) | delete before zipping; say so in the `README` |
 | the agent brief, if kept in the folder | instructions to the translating agent, not to the customer | keep it in `scripts/development/translate/` and pass `--add-dir` instead (§6.8) |
 | `Drafts/*.html` preview files | Blot writes a `.html` preview beside every draft (`app/sync/update/set.js` → `Preview.write`); generated artefacts | delete, or avoid creating drafts at all |
 | `.DS_Store`, `._*`, `*.swp`, `~$*` | noise; some are silently skipped by Blot anyway | `clients/util/shouldIgnoreFile` already encodes the full list if you want to script the cleanup |
-| `.git` — **keep it** | history travels with the deliverable by decision (§6.10); Blot never publishes it | leave in place; ensure `.gitignore` excludes `_verification/` so screenshots are not in the shipped history |
+| `.git` and `.verification/` | both are dotfiles; Finder's select-all-then-compress excludes them automatically (§6.4, §6.10) | **nothing to do** — this is why both are dot-named. Blot also never publishes `.git`, and `/.git` is in `BLOCKED_PATTERNS` so it 404s over HTTP |
 | CDN-absolute URLs (`https://cdn.local.blot/…`) | the dev host is baked in; the customer's CDN origin differs | template markup must use `{{#cdn}}/style.css{{/cdn}}` and folder-relative asset paths only, never a literal origin. `{{{cdn}}}` for `preconnect` is fine — it resolves per-blog at render time |
 | Any absolute `data/blogs/<blogID>/` path | blog-ID specific | none should exist; worth grepping for before handing over |
 | `Templates` vs `templates` casing | `determineTemplateFolder` prefers whichever already exists in the target folder, defaulting to `Templates` (or `templates` if every visible root entry is lowercase) | use `Templates/`. `buildFromFolder` scans **both** spellings, so either works on import |
@@ -1285,15 +1285,15 @@ No packaging module: the operator zips the reviewed folder by hand (§0.1, §5).
    Commit the raw result before the agent touches it.
 4. `cd data/blogs/<blogID>` and exec `claude -p …` — `--session-id` on a first run,
    `--resume` with the operator's feedback on subsequent turns (§6.3, §6.6.1).
-   Non-zero exit or a `_verification/BLOCKED.txt` aborts the run.
+   Non-zero exit or a `.verification/BLOCKED.txt` aborts the run.
 5. wait for the rebuild to settle — poll `blog.cacheID` until stable (§1.2)
-6. screenshot both sides into `_verification/` (host-side, §6.4)
+6. screenshot both sides into `.verification/` (host-side, §6.4)
 7. start the comparison server on 3021 and `open` it (§6.6.2)
 8. prompt: Enter accepts, text becomes feedback → back to step 4, `q` aborts
 9. `docker exec blot-node-app-1 node scripts/development/translate/finalize <blogID>`
    → re-asserts `"enabled": true` (§5.1), greps for host-specific strings (§5.2)
 10. persist run state; print the folder path, the site URL, the preview URL, and a
-    reminder to delete `_verification/` before zipping
+    reminder to delete `.verification/` before zipping
 
 ### 6.2 What `index.js` does (all inside the container)
 
@@ -1364,7 +1364,7 @@ bubble out and stop the whole script. Three layers:
    propagates.
 2. **A structured refusal channel.** Exit code alone cannot distinguish "finished"
    from "gave up". Give the agent an explicit way to signal being stuck: instruct
-   it to write `_verification/BLOCKED.txt` with a reason and stop. The Node
+   it to write `.verification/BLOCKED.txt` with a reason and stop. The Node
    wrapper checks for that file after the CLI returns and aborts with the reason
    as the error message. A `--json-schema` structured result would work too, but a
    file is simpler and it is also visible to the human operator.
@@ -1382,19 +1382,31 @@ letting the wrapper checkpoint between them: crawl → verify content built (ent
 exist, no build errors) → template → verify visually. If phase one fails there is
 no point starting phase two.
 
-### 6.4 The verification loop and the `_verification/` folder
+### 6.4 The verification loop and the `.verification/` folder
 
-**The proposal is sound and the folder name works as-is.** `app/sync/update/set.js#isPublic`
-treats any path containing `/_` as a public static file rather than a post, so
-`_verification/input-homepage.png` is never published as an entry — but it *is*
-served, at `https://<handle>.local.blot/_verification/input-homepage.png`. The
-operator can open the screenshots in a browser, and the agent can read them off
-disk. `app/build/prepare/isHidden.js` applies the same rule at build time.
+**Named `.verification/` — a dot-directory, deliberately.** The decisive reason is
+the operator's packaging workflow: macOS Finder hides dotfiles, so opening the site
+folder, pressing Cmd+A and choosing *Compress* silently excludes it. Since the
+operator zips by hand (§0.1), that removes the one manual step most likely to be
+forgotten. A `_verification/` name would show up in Finder and have to be deleted
+every time.
+
+Verified it behaves correctly everywhere that matters:
+
+| Check | Result |
+|---|---|
+| Published as a post? | **No** — `isHidden()` returns `true` for `.verification/out.png` (it tests each path segment for a leading `_` or `.`), and `isPublic()` in `sync/update/set.js` catches any path containing `/.` |
+| Served over HTTP? | **Yes** — `app/blog/assets.js` sets `dotfiles: "allow"`, and `.verification` is not in `BLOCKED_PATTERNS` (`..`, `.php`, `/.git`, `\0`). So `https://<handle>.local.blot/.verification/input-homepage.png` still works for the operator |
+| Ignored by the folder watcher? | **No** — `shouldIgnoreFile(".verification/out.png")` is `false`, so writing a screenshot still triggers one sync. Harmless, but see the `cacheID` note below |
+| Hidden from Finder select-all? | **Yes** — which is the point |
+
+Note `/.git` *is* in `BLOCKED_PATTERNS`, so a shipped git repo is never exposed
+over HTTP on the customer's site even though `.verification` is.
 
 **Suggested contents:**
 
 ```
-_verification/
+.verification/
   input-homepage.png     source site, desktop
   output-homepage.png    translated site, desktop
   input-post.png         a representative post on the source
@@ -1594,7 +1606,7 @@ new one.
 way around that from a browser. So a live-vs-live iframe comparison will fail on a
 large fraction of source sites.
 
-**Therefore: make the UI screenshot-first.** Serve the `_verification/` PNG pairs
+**Therefore: make the UI screenshot-first.** Serve the `.verification/` PNG pairs
 side by side — they always work, they are what the agent itself is comparing, and
 they capture the state at the moment of the last run. Layer extras on top where
 possible:
@@ -1624,7 +1636,7 @@ for guidance up front.**
    count and timestamps. **Decided: `data/tmp/translate/<handle>.json`** via
    `helper/tempDir()` — where the importers already stage working state, and
    safely outside the blog folder, so it can never end up in the operator's zip.
-   (`_verification/state.json` would be more discoverable to the operator and the
+   (`.verification/state.json` would be more discoverable to the operator and the
    agent, but it lives in the deliverable.)
 2. **Handle lookup.** `Blog.get({ handle })` — `app/templates/folders/setupBlogs.js`
    is the precedent: reuse the blog if it exists, throw if it is owned by another
@@ -1689,7 +1701,7 @@ rediscovering it.
 - **Templates** — `writeToFolder` removes orphaned files and skips writes whose
   content is byte-identical, so it is naturally idempotent. `buildFromFolder`
   drops locally-edited templates whose directory has disappeared.
-- **Screenshots** — overwrite in place so `_verification/` always reflects the
+- **Screenshots** — overwrite in place so `.verification/` always reflects the
   latest run; if history is wanted, add a run-numbered subdirectory.
 
 **Cleanup interacts with this.** If re-runs reuse the site, sites stop
@@ -1708,9 +1720,9 @@ posts, tag strategy, landing page, permalink preservation.
 **Step 2 — template.** Edit `Templates/<slug>/*` so the rendered site matches the
 source design, using only the locals in §4.6 and respecting §4.10.
 
-**Step 3 — verify and iterate.** Screenshot both sides into `_verification/`,
+**Step 3 — verify and iterate.** Screenshot both sides into `.verification/`,
 compare, and fix — in either the content or the template (§6.4). Write
-`_verification/BLOCKED.txt` and stop if genuinely stuck.
+`.verification/BLOCKED.txt` and stop if genuinely stuck.
 
 The brief handed to the CLI should extend `/developers/guides/working-with-ai`
 with:
@@ -1769,72 +1781,49 @@ text as the commit message, which makes the log a record of the conversation.
 `sync/update/set.js#isPublic` treats any path containing `/.` as a static file
 rather than an entry.
 
-**But there is a measured performance problem.** `app/clients/local/setup.js:68`
-watches the folder with **no ignore patterns**:
+**Decided: a plain `git init` in the blog folder, and the history stays local.**
+The repo is a working tool for the run — diffing agent turns, separating importer
+output from agent fixes, rolling back a bad iteration — not part of the handover.
+The customer receives the site; the provenance stays on the operator's machine.
 
-```js
-const watcher = chokidar.watch(localPath(blogID, "/"), {
-  cwd: localPath(blogID, "/"),
-  ignoreInitial: true,
-});
-```
+**This falls out of the packaging workflow for free.** The operator zips by opening
+the folder in Finder, selecting all, and compressing. Finder hides dotfiles, so
+`.git` is excluded by the same mechanism that excludes `.verification/` (§6.4).
+Nothing to remember and nothing to clean up — the default behaviour is the correct
+behaviour. (If history ever *should* be handed over, zip the folder itself rather
+than its contents, and delete `.verification/` first.)
 
-so every `.git` internal write fires an event, gets queued, and runs a **full sync
-cycle** — lockfile acquisition, `folder.update`, rename check,
-`Template.buildFromFolder`, `cacheID` bump. The files are correctly skipped as
-*posts*, but the machinery still spins.
+**The sync-churn problem this used to have is fixed.** `app/clients/local/setup.js`
+previously watched the folder with no ignore patterns, so every `.git` internal
+write ran a full sync cycle — lock, `folder.update`, rename check,
+`Template.buildFromFolder`, `cacheID` bump. Commit `4d276a06a` added
+`ignored: shouldIgnoreFile` to the `chokidar.watch` call. Measured before and
+after on this machine:
 
-Measured on this machine, `git init` + `git add` + one commit of a single file:
+| Operation | Before | After |
+|---|---|---|
+| `git init` + `add` + commit (1 file) | 42 syncs | **1** (the content file) |
+| New file + commit | — | **1** |
+| Empty commit, no content change | — | **0** |
 
-| Setup | Sync cycles triggered |
-|---|---|
-| `.git` inside the blog folder | **42** |
-| `--separate-git-dir`, `.git` is a pointer file | **1** |
+The 42 were `/.git/objects/**`, `/.git/refs/**`, `/.git/logs/**`, `/.git/index`
+and so on, one full cycle each. Git operations are now invisible to the watcher,
+and `git init --separate-git-dir` is no longer needed as a workaround.
 
-The 42 syncs were `/.git/objects/**`, `/.git/refs/**`, `/.git/logs/**`,
-`/.git/index` and so on, one full cycle each. On a real translation — hundreds of
-content files, a commit per turn — this would be materially worse, and every cycle
-bumps `cacheID`, invalidating the render cache the verification loop depends on.
+**Notes:**
 
-**Decided: a plain `git init` in the blog folder, and the history travels with the
-deliverable.** The customer receives the full log, so they can see what was
-generated by the importer or crawler versus what was hand-fixed afterwards. That
-provenance is worth more than the tidiness of shipping a bare site.
-
-**This makes the chokidar fix a dependency, not a nice-to-have.** With `.git`
-inside the watched folder and no ignore patterns, every commit costs dozens of
-full sync cycles (42 measured for a trivial one), each bumping `cacheID` and
-invalidating the render cache the verification loop depends on. The fix is small
-— add `ignored` to the `chokidar.watch` call in `app/clients/local/setup.js`:
-
-```js
-chokidar.watch(localPath(blogID, "/"), {
-  cwd: localPath(blogID, "/"),
-  ignoreInitial: true,
-  ignored: /(^|[\/\\])\../,        // dotfiles and dot-directories
-});
-```
-
-It is development-only code and it benefits anyone keeping dotfiles in a blog
-folder, not just this script. **Until it lands**, either accept the churn (it is
-correctness-neutral, just slow and cache-thrashing) or develop against
-`git init --separate-git-dir data/tmp/translate/<handle>.git data/blogs/<blogID>`,
-which leaves only a one-line `.git` pointer file in the folder and was measured to
-reduce a full commit to a single sync. Converting a separate git dir back into a
-normal one later is just moving the directory and rewriting the `.git` file.
-
-**Consequences of history travelling:**
-
-- **`.git` stays in the folder when the operator zips** — remove it from the §5.2
-  cleanup list. `shouldIgnoreFile` means Blot never publishes it, so it is inert
-  on the customer's site.
-- **Add a `.gitignore` excluding `_verification/`.** The screenshots are large
+- **Add a `.gitignore` excluding `.verification/`.** The screenshots are large
   PNGs at `deviceScaleFactor: 2`, regenerated every iteration; committing them
-  would bloat a history that now ships to a customer, permanently. A dotfile at
-  the folder root is ignored as content by `isPublic` (any path containing `/.`),
-  so it costs nothing.
-- **Commit messages become customer-visible.** Worth saying in the brief: write
-  them for someone who did not watch the run.
+  churns the repo for no benefit, since the operator compares them live rather
+  than historically. A dotfile at the folder root is ignored as content by
+  `isPublic` (any path containing `/.`), so it costs nothing.
+- **Blot never publishes or serves `.git`.** `shouldIgnoreFile` lists it in
+  `IGNORED_SYSTEM_FILES` (verified for `/.git/objects/…`, `/.git/index`,
+  `/.git/HEAD`), and `/.git` is in `BLOCKED_PATTERNS` in `app/blog/assets.js`, so
+  it 404s over HTTP. Harmless even in the unlikely case a repo does reach a live
+  site.
+- **Commit messages are for the operator, not a customer** — optimise them for
+  reviewing what changed between turns.
 
 Create the repo at provisioning time so the very first acquisition is committed
 against an empty tree — that is what makes "importer output vs agent fixes"
@@ -1852,8 +1841,8 @@ legible as a diff.
 | Customer install | `"enabled": true` in the template's `package.json`, written to disk and re-asserted at the end of every run | §5.1 |
 | Content extraction | Node fetches and cleans, Claude extracts and makes editorial calls; they meet at the `post` object and go through the shared import waterfall | §3.5.1 |
 | Crawl limits | One request at a time, no page cap, warn at 1000 pages | §3.5.1 |
-| Invoking Claude | `claude -p` on the host; non-zero exit or `_verification/BLOCKED.txt` aborts the run | §6.3 |
-| `_verification/` | Works as-is — `/_` paths are static files, never posts, and browsable at `/_verification/…` | §6.4 |
+| Invoking Claude | `claude -p` on the host; non-zero exit or `.verification/BLOCKED.txt` aborts the run | §6.3 |
+| `.verification/` | Works as-is — `/_` paths are static files, never posts, and browsable at `/.verification/…` | §6.4 |
 | READMEs | Two, both named `README`, no extension, Markdown inside. Ignored at the folder root; becomes a `/readme` view in the template, which is accepted and matches seven shipped templates | §6.5 |
 | Comparison UI | Screenshot pairs + opacity-blend slider + open-in-tab links + feedback textarea, served on port 3021 | §6.6.2 |
 | Feedback channel | Both — browser textarea and terminal prompt, with the server holding pending feedback the shell loop reads | §6.6 |
@@ -1861,7 +1850,8 @@ legible as a diff.
 | Re-crawling | Skipped by default; `--recrawl [path]` for full or scoped re-crawl, and the agent can trigger a scoped one when feedback implies it | §6.7 |
 | Watcher reliability | **Tested — works** for creates, nested creates and deletes. No `--rebuild` fallback needed | §1.2 |
 | Content acquisition | Three modes converging on the same folder: supplied platform export → existing importer; sniffed platform → prompt for a path; otherwise crawl. The agent reviews and fixes the output either way | §3.5.2 |
-| Version control | Yes — a **plain `git init` in the blog folder**; history travels with the deliverable. Commit after acquisition and after every agent turn / feedback round | §6.10 |
+| Version control | Yes — a **plain `git init` in the blog folder**, but **history stays local**: Finder's select-all zip excludes dotfiles, so `.git` never reaches the customer. Commit after acquisition and after every agent turn / feedback round | §6.10 |
+| Verification folder | `.verification/` — dot-named so Finder select-all excludes it; still served over HTTP for the operator | §6.4 |
 | Template scaffold | Clone `SITE:blog` — take the working boilerplate, and instruct the agent to treat it as structure, not as a look | §6.2 |
 | Crawler rendering | Puppeteer for every page; no fetch-first path | §3.5.1 |
 | Importer review | Sample deeply, fix class-wide, re-sample — not per-post reading | §3.5.2 |
@@ -1873,29 +1863,34 @@ legible as a diff.
 |---|---|---|
 | 1 | Run-state location | `data/tmp/translate/<handle>.json` via `helper/tempDir()` — outside the blog folder so it can never end up in the operator's zip |
 | 2 | Handle derivation | Deterministic from the URL: strip scheme, `www.` and TLD, lowercase, strip to alnum, numeric suffix on collision. Must be stable across runs or re-run detection breaks |
-| 3 | Rebuild wait | Poll `blog.cacheID` until it stops changing. It is bumped at the end of every sync, so it is the natural settled marker |
+| 3 | Rebuild wait | Poll `blog.cacheID` until it stops changing — it is bumped at the end of every sync, so it is the natural settled marker. **Order matters:** `.verification/` is not ignored by the watcher, so writing screenshots itself bumps `cacheID`. Settle first, *then* screenshot, or the two chase each other |
 | 4 | Screenshot helper | Standalone host-side wrapper, copying the viewports (`1260×778` / `400×650`), `networkidle0` wait and retry/throttle behaviour from `app/helper/screenshot` rather than importing it — its `args.js` is tuned for Alpine |
 | 5 | Iteration cap | Agent inner loop capped around 5 rounds, plus `--max-budget-usd`. The operator is the real stop condition |
 | 6 | Tool allowlist | `Read, Write, Edit, Glob, Grep, WebFetch, Bash(node:*)` — no unrestricted `Bash`, since the agent is processing untrusted third-party HTML |
-| 7 | Screenshot for the operator | `_verification/` already holds them; no separate export step |
+| 7 | Screenshot for the operator | `.verification/` already holds them; no separate export step |
 
-### 7.3 Deferred to a separate task — but now a dependency
+### 7.3 Resolved externally
 
-- **Chokidar ignore patterns in `app/clients/local/setup.js`.** The watcher has no
-  `ignored` option, so `.git` writes trigger full sync cycles — measured at 42 for
-  a single `git init` + commit (§6.10). The user is tracking a fix separately.
+- **Chokidar ignore patterns in `app/clients/local/setup.js` — DONE**, commit
+  `4d276a06a` "Ignore file events in local client". Adds `ignored: shouldIgnoreFile`
+  to the `chokidar.watch` call. Re-measured against the running stack:
 
-  **The decision to keep a plain git repo in the blog folder (§6.10) promotes this
-  from an optimisation to a dependency.** Without it every commit thrashes the
-  render cache the verification loop relies on. It is not a correctness problem, so
-  development can proceed in the meantime by either accepting the churn or using
-  `git init --separate-git-dir` (measured: 42 syncs → 1) and converting to a normal
-  repo once the fix lands.
+  | Operation | Before | After |
+  |---|---|---|
+  | `git init` + `add` + commit (1 file) | 42 syncs | **1** (for the content file) |
+  | New file + commit | — | **1** |
+  | Empty commit, no content change | — | **0** |
+
+  Reusing `shouldIgnoreFile` rather than a `.git`-specific regex is the better
+  hook: it splits on both separators and tests every path component against the
+  same ignore sets the write path already uses, so it works on relative and
+  absolute paths and sweeps up `.DS_Store`, `._*`, `~$*` and `.swp` at the same
+  time. `git init --separate-git-dir` is no longer needed as a workaround.
 
 ### 7.4 Still genuinely open
 
-Nothing blocking remains. Two items were resolved by taking a default rather than
-a deliberate choice, so flag them if you disagree:
+Nothing blocking remains. Both items below were resolved by taking a default
+rather than a deliberate choice — flag them if you disagree:
 
 1. **How the agent signals a scoped re-crawl** (§6.7) — taken as: a request file
    the wrapper reads after the turn, the same mechanism as `BLOCKED.txt`. Keeps
@@ -2003,8 +1998,8 @@ app/helper/screenshot/index.js               screenshot(site, path, options)
 app/helper/screenshot/args.js                Alpine-tuned chromium flags
 app/helper/screenshot/retry.js
 app/templates/screenshots.js                 the existing caller; timeout pattern
-app/sync/update/set.js#isPublic              why /_verification/ is never a post
-app/blog/assets.js                           why /_verification/*.png is served
+app/sync/update/set.js#isPublic              why /.verification/ is never a post
+app/blog/assets.js                           why /.verification/*.png is served
 node_modules/puppeteer (host, 24.1.1)        + ~/.cache/puppeteer/chrome
 ```
 
