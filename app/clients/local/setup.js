@@ -3,6 +3,7 @@ const Blog = require("models/blog");
 const async = require("async");
 const config = require("config");
 const chokidar = require("chokidar");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 const localPath = require("helper/localPath");
 const Fix = require("sync/fix");
 const clfdate = require("helper/clfdate");
@@ -67,6 +68,7 @@ function watch(blogID) {
     // To stop this watcher, call watcher.close();
     const watcher = chokidar.watch(localPath(blogID, "/"), {
       cwd: localPath(blogID, "/"),
+      ignored: shouldIgnoreFile,
       ignoreInitial: true,
     });
 
