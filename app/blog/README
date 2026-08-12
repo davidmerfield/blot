@@ -108,7 +108,7 @@ Each file in this directory is a named retriever. The retrieve system (`render/r
 | `is` / `is_active` / `isActive` | `is.js`, `is_active.js` | Boolean helpers for conditional rendering. |
 | `latest_entry` / `latestEntry` | `latest_entry.js` | The most recently published entry. |
 | `plugin` | `plugin.js` | CSS and JS URLs for individually requested plugins. |
-| `popular_tags` | `popular_tags.js` | Tags sorted by entry count (top 100), cached with an LRU cache keyed by `blogID` and `cacheID`. |
+| `popular_tags` | `popular_tags.js` | Tags fetched directly through `Tags.popular` on each invocation, formatted for rendering, sorted by entry count, and limited to 100. |
 | `posts` | `posts.js` | A paginated page of entries, respecting template `sort_by`, `sort_order`, `page_size`, and `path_prefix` locals. |
 | `recent_entries` / `recentEntries` | `recent_entries.js` | A small list of recent entries (`Entries.getRecent`). |
 | `rgb` | `rgb.js` | Lambda that converts a CSS color value to an RGB component string (e.g. `255, 128, 0`) for use in `rgba()`. |
