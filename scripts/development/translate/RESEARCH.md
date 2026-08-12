@@ -138,7 +138,18 @@ Procedure and results, run against this machine's stack:
 So Docker Desktop's bind mount propagates inotify events for creates, nested
 creates and deletes. **No `--rebuild` fallback is required for correctness.**
 
-**Two caveats that do affect the design:**
+**Three caveats that do affect the design:**
+
+- **The watcher only sees changes made while it is listening.** It is started
+  with `ignoreInitial: true`, and only after `sync/fix` has finished, so content
+  already sitting in the folder when the watcher starts is invisible to it —
+  permanently, not just late. `sync/fix` does not compensate: it removes ghosts
+  of deleted files, it never discovers new ones. Anything that puts content into
+  a folder out-of-band must therefore walk it and call `folder.update()` per path
+  (as `app/templates/folders/index.js` does) rather than waiting for a sync that
+  will never come. Note also that the watcher holds the folder lock for each
+  event it processes, so an explicit rescan has to retry: `sync` itself gives up
+  after roughly eleven seconds.
 
 - **Latency is variable.** Creates landed instantly, but the delete sync landed
   roughly half a minute after the `rm` — file events go onto a per-blog
