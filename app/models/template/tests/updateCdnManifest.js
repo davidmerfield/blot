@@ -66,7 +66,7 @@ describe("updateCdnManifest", function () {
     expect(renderedOutput).toBe("body{color:red}");
   });
 
-  it("regenerates manifest hashes after cache-busting to avoid stale full-view cache", async function () {
+  it("regenerates manifest hashes after cache-busting", async function () {
     const test = this;
 
     await setViewAsync(test.template.id, {
@@ -82,7 +82,7 @@ describe("updateCdnManifest", function () {
     const metadata1 = await getMetadataAsync(test.template.id);
     const oldHash = metadata1.cdn["style.css"];
 
-    // Prime full-view-cache for the current blog cacheID
+    // Render the view before updating its CDN manifest
     await renderView(test.template.id, "style.css");
 
     // Ensure Date.now() advances so Blog.set writes a new cacheID.
