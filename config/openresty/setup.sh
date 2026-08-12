@@ -37,7 +37,7 @@ echo "[start] Certificates generated"
 
 
 # TODO
-# we need to install a newer version of fail2ban from source
+# we need to install a newer version of fail2ban (e.g. 1.1.0) from source
 # the old version has a bug which doesn't purge the db of old bans
 # we need to remove any existing installation and install the latest version from source to fix this
 
