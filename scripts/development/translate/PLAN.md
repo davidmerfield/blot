@@ -20,14 +20,18 @@ scaffolded site and the whole pipeline is exercisable before any crawler exists.
 
 **Prerequisite for every task:** `npm start` running in another window.
 
+**Status:** Milestone A complete — `npm run translate <url>` provisions a site,
+scaffolds a locally-edited template cloned from `SITE:blog`, and initialises a git
+repo. Verified idempotent. Next: milestone B (content gate).
+
 ---
 
-## Milestone A — Provision and scaffold
+## Milestone A — Provision and scaffold  ✅ COMPLETE
 
 *Done when: `npm run translate <url>` leaves you a working site with an empty,
 locally-edited template installed.*
 
-### A1. Script skeleton and npm entry point
+### A1. Script skeleton and npm entry point  ✅
 - Create `translate.sh` with `set -euo pipefail` (matches every other script in
   `scripts/development/`).
 - Add `"translate": "./scripts/development/translate/translate.sh"` to
@@ -37,7 +41,7 @@ locally-edited template installed.*
 - **Done when:** `npm run translate` prints usage; `npm run translate https://x.com`
   gets past argument parsing.
 
-### A2. Preflight (§1.5)
+### A2. Preflight (§1.5)  ✅
 - `docker ps` must list `blot-node-app-1`.
 - Resolve the host authoritatively:
   `docker exec blot-node-app-1 node -e 'console.log(require("config").host)'`
@@ -52,7 +56,7 @@ locally-edited template installed.*
 - **Done when:** it passes with the stack up, and fails fast with a clear message
   when you stop the container.
 
-### A3. Handle derivation (§7.2 default 2)
+### A3. Handle derivation (§7.2 default 2)  ✅
 - Pure function, its own module: URL → handle. Strip scheme, `www.`, TLD;
   lowercase; strip to `[a-z0-9]`; 2–70 chars; numeric suffix on collision.
 - Must be **deterministic** — re-run detection (G2) depends on the same URL
@@ -61,7 +65,7 @@ locally-edited template installed.*
 - **Done when:** unit-tested against a table of URLs including punycode, deep
   paths, ports and `www.`.
 
-### A4. `index.js` — provision the blog (in container)
+### A4. `index.js` — provision the blog (in container)  ✅
 - Runs via `docker exec blot-node-app-1 node scripts/development/translate …`
   (module resolution needs the container's `NODE_PATH=/usr/src/app/app`).
 - Get-or-create user `example@example.com` (hardcoded in
@@ -80,7 +84,7 @@ locally-edited template installed.*
 - **Done when:** running it twice produces one blog, and
   `https://<handle>.local.blot` responds.
 
-### A5. Template scaffold
+### A5. Template scaffold  ✅
 - `Template.create(blogID, name, { cloneFrom: "SITE:blog" })` — catch
   `err.code === "EEXISTS"` and reuse (§6.2).
 - `Template.setMetadata(id, { localEditing: true })` then
@@ -90,7 +94,7 @@ locally-edited template installed.*
 - **Done when:** `data/blogs/<blogID>/Templates/<slug>/` contains the cloned views
   and the site renders with them.
 
-### A6. `git init` the folder (§6.10)
+### A6. `git init` the folder (§6.10)  ✅
 - Plain `git init` at provisioning, before anything else is written, so the first
   content commit has an empty baseline.
 - Write `.gitignore` containing `.verification/`.

@@ -17,6 +17,7 @@
     "login": "docker exec -it blot-node-app-1 /bin/sh",
     "featured": "docker exec blot-node-app-1 node app/documentation/featured/build",
     "folder": "./scripts/development/folder.sh",
+    "translate": "./scripts/development/translate/translate.sh",
     "preview-newsletter": "./scripts/development/preview-newsletter.sh"
   },
   "version": "0.0.0",
