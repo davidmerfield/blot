@@ -12,6 +12,23 @@ describe("questions.update", function () {
     expect(question.body).toBe("No");
   });
 
+  it("accepts a numeric id when updating tags", async function () {
+    const { id } = await create({
+      title: "How?",
+      body: "Yes",
+      tags: ["a"],
+    });
+
+    const question = await update(parseInt(id, 10), {
+      title: "How?",
+      body: "No",
+      tags: ["a", "b"],
+    });
+
+    expect(question.body).toBe("No");
+    expect(question.tags).toEqual(["a", "b"]);
+  });
+
   it("should throw an error if you update a question that does not exist", async function () {
     await expectAsync(
       update("123", { title: "How?", body: "No" })

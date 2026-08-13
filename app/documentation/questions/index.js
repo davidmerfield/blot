@@ -265,7 +265,7 @@ Questions.route("/:id/new").post(async (req, res) => {
 
 Questions.route("/:id/edit")
   .get(async (req, res) => {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     if (!req.session || !req.session.uid) {
       req.log("Redirecting to login", id);
       return res.redirect(`/log-in?then=/questions`);
@@ -277,7 +277,7 @@ Questions.route("/:id/edit")
     res.render("questions/edit");
   })
   .post(async (req, res) => {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
 
     if (!req.session || !req.session.uid)
       return res.redirect(`/log-in?then=/questions/${id}/edit`);
@@ -296,7 +296,7 @@ Questions.route("/:id/edit")
   });
 
 Questions.route("/:id").get(async (req, res, next) => {
-  const id = parseInt(req.params.id);
+  const id = req.params.id;
   const topic = await get(id);
 
   if (!topic) return next();

@@ -4,6 +4,9 @@ const keys = require("./keys");
 const get = require("./get");
 
 module.exports = async (id, updates) => {
+  // node-redis requires sorted-set members to be strings
+  id = String(id);
+
   const existing = await get(id);
 
   if (!existing) throw new Error("Question with ID " + id + " does not exist");
