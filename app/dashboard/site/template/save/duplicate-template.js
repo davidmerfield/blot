@@ -45,16 +45,15 @@ async function duplicateTemplate({ owner, template }) {
   }
 
   const { base: nameBase, counter: nameCounter } = parseCopyName(template.name);
-  const { base: slugBase, counter: slugCounter } = parseCopySlug(template.slug);
+  // Only the counter: the slug now follows whatever name we settle on
+  const { counter: slugCounter } = parseCopySlug(template.slug);
 
   const baseName = `${nameBase} copy`.trim();
-  const baseSlug = `${slugBase}-copy`;
 
   return createTemplateWithUniqueName({
     isPublic: false,
     owner,
     name: baseName,
-    slug: baseSlug,
     cloneFrom: template.id,
     // 'Original copy 3' starts counting from 3, so the next free name is 4
     startCounter: Math.max(nameCounter, slugCounter, 1),

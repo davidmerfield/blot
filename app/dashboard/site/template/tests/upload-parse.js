@@ -199,6 +199,20 @@ describe("parseUploadedTemplate", function () {
       expect(result.views.map((v) => v.name)).toEqual(["index.html"]);
     });
 
+    it("rejects an upload holding two manifests", function () {
+      // A zip can carry two entries of the same name. Taking whichever came
+      // first would build the template from a stale manifest without saying so.
+      const problems = problemsFrom([
+        entry("index.html", "<h1>Hi</h1>"),
+        entry("package.json", JSON.stringify({ name: "Old" })),
+        entry("package.json", JSON.stringify({ name: "New" })),
+      ]);
+
+      expect(problems.length).toEqual(1);
+      expect(problems[0].reason).toEqual("duplicate");
+      expect(problems[0].path).toEqual("package.json");
+    });
+
     it("reports malformed JSON with a line number", function () {
       const problems = problemsFrom([
         entry("index.html", "<h1>Hi</h1>"),
@@ -487,6 +501,30 @@ describe("parseUploadedTemplate", function () {
 
     it("falls back to a fixed name for loose files", function () {
       const result = parse([entry("index.html", "<h1>Hi</h1>")]);
+
+      expect(result.name).toEqual(UPLOAD_FALLBACK_NAME);
+    });
+
+    it("skips a name which slugs to nothing", function () {
+      // The template's id, and so every url in its editor, comes from the
+      // name. '!!!' leaves nothing behind, which would create a template at
+      // an id of just the owner.
+      const result = parse([
+        entry("my-theme/index.html", "<h1>Hi</h1>"),
+        entry("my-theme/package.json", JSON.stringify({ name: "!!!" })),
+      ]);
+
+      expect(result.name).toEqual("my-theme");
+    });
+
+    it("falls back to a usable name when nothing else slugs", function () {
+      const result = parse(
+        [
+          entry("---/index.html", "<h1>Hi</h1>"),
+          entry("---/package.json", JSON.stringify({ name: "!!!" })),
+        ],
+        { fallbackName: "???" }
+      );
 
       expect(result.name).toEqual(UPLOAD_FALLBACK_NAME);
     });

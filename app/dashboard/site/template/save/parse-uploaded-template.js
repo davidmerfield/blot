@@ -1,4 +1,5 @@
 const Mustache = require("mustache");
+const makeSlug = require("helper/makeSlug");
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 const improveJSONErrorMessage = require("models/template/util/improveJSONErrorMessage");
 const improveMustacheErrorMessage = require("models/template/util/improveMustacheErrorMessage");
@@ -287,8 +288,23 @@ module.exports = function parseUploadedTemplate (entries = [], options = {}) {
     roots.push(entry);
   }
 
-  // 5. The manifest describes the views but is never a view itself
-  const manifestEntry = roots.find((entry) => entry.path === PACKAGE);
+  // 5. The manifest describes the views but is never a view itself.
+  //
+  // A zip may hold two entries of the same name — append and update workflows
+  // keep the older one — and taking whichever comes first would quietly build
+  // the template from a stale manifest. Duplicate view names are caught below,
+  // but package.json is filtered out before that runs, so check it here.
+  const manifestEntries = roots.filter((entry) => entry.path === PACKAGE);
+
+  if (manifestEntries.length > 1) {
+    problems.push({
+      path: PACKAGE,
+      reason: "duplicate",
+      message: `This upload contains ${manifestEntries.length} package.json files, so there is no way to tell which describes the template`,
+    });
+  }
+
+  const manifestEntry = manifestEntries[0];
   const manifest = manifestEntry
     ? parsePackage(manifestEntry.buffer, problems, warnings)
     : {};
@@ -415,10 +431,18 @@ module.exports = function parseUploadedTemplate (entries = [], options = {}) {
 
   // The manifest is the template's own idea of its name. Failing that, the
   // folder it was dropped in, then the zip file it arrived in.
+  //
+  // A name has to survive makeSlug to be usable: the template's id, and so the
+  // address of every page of its editor, is derived from it. '!!!' slugs to
+  // nothing, which would create a template at an id of just the owner and
+  // redirect to the template index rather than the new template. Skip past any
+  // name which leaves nothing behind.
   const name =
-    manifest.name ||
-    wrapperName ||
-    (typeof options.fallbackName === "string" && options.fallbackName.trim()) ||
+    [manifest.name, wrapperName, options.fallbackName, UPLOAD_FALLBACK_NAME]
+      .map((candidate) =>
+        typeof candidate === "string" ? candidate.trim().slice(0, 100) : ""
+      )
+      .find((candidate) => candidate && makeSlug(candidate)) ||
     UPLOAD_FALLBACK_NAME;
 
   return {
