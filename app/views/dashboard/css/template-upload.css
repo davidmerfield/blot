@@ -1,0 +1,94 @@
+.template-upload {
+  margin-bottom: 2rem;
+}
+
+.template-upload__dropzone {
+  border: 1px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 2rem 1rem;
+  text-align: center;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.template-upload__dropzone.is-dragover {
+  border-color: var(--accent-color);
+  background: var(--hover-background-color, #f8faff);
+}
+
+.template-upload__hint {
+  color: var(--muted-text-color);
+  margin: 0 0 1rem;
+}
+
+.template-upload__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+/* The inputs stay in the document and keep their labels, so the panel works
+   without a pointer. Only their default appearance is replaced. */
+.template-upload__button {
+  display: inline-block;
+  cursor: pointer;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 14px;
+}
+
+.template-upload__button:focus-within {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.template-upload__button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.template-upload__name {
+  margin: 1rem 0 0;
+}
+
+.template-upload__name span {
+  color: var(--muted-text-color);
+}
+
+.template-upload__name input {
+  display: block;
+  width: 100%;
+  max-width: 24rem;
+}
+
+.template-upload__status:empty {
+  display: none;
+}
+
+.template-upload__status {
+  margin: 1rem 0 0;
+}
+
+.template-upload__problems {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--warning-text-color, #a5292a);
+}
+
+.template-upload__problems code {
+  font-size: 13px;
+}
+
+.template-upload.is-working .template-upload__dropzone {
+  opacity: 0.6;
+  pointer-events: none;
+}
