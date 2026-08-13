@@ -358,6 +358,27 @@ describe("upload template route", function () {
     expect(await client.exists(key.url(templateID, "/second.html"))).toEqual(0);
   });
 
+  it("answers rather than hangs on a url which is not text", async function () {
+    // setView maps urlNormalizer over a url array inside an asynchronous
+    // callback nothing catches. A number there used to throw where no
+    // callback could see it, so the request never finished and its temporary
+    // files were never removed. This test would time out if that returned.
+    const { req, paths } = await folderRequest(this.blog, {
+      "index.html": "<h1>Hi</h1>",
+      "package.json": JSON.stringify({
+        name: "Bad urls",
+        views: { "index.html": { url: ["/", 42] } },
+      }),
+    });
+
+    const result = await run(req);
+
+    expect(result.status).toEqual(422);
+    expect(result.body.problems[0].path).toEqual("index.html");
+
+    for (const path of paths) expect(await fs.pathExists(path)).toBe(false);
+  });
+
   it("rejects a request with no files", async function () {
     const result = await run({ blog: this.blog, files: {}, body: {} });
 

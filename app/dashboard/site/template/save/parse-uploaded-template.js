@@ -110,6 +110,22 @@ const isValidUTF8 = (buffer) => {
   return Buffer.compare(Buffer.from(buffer.toString("utf8"), "utf8"), buffer) === 0;
 };
 
+// A view's url may be a single path or a list of them, but every one of them
+// has to be text before it reaches setView
+const invalidUrlReason = (value) => {
+  if (value === undefined || value === null) return null;
+
+  if (typeof value === "string") return null;
+
+  if (Array.isArray(value)) {
+    return value.every((item) => typeof item === "string")
+      ? null
+      : "a list of urls may only contain text";
+  }
+
+  return "a url must be text, or a list of text";
+};
+
 const parsePackage = (buffer, problems, warnings) => {
   const contents = buffer.toString("utf8");
   let parsed;
@@ -338,6 +354,21 @@ module.exports = function parseUploadedTemplate (entries = [], options = {}) {
 
     const settings = (manifest.views && manifest.views[name]) || {};
     const view = { ...settings, name, content };
+
+    // setView normalizes every url it is given, and urlNormalizer requires a
+    // string. It does that inside an asynchronous callback which nothing
+    // catches, so a number in this array would leave the request hanging
+    // rather than failing. Refuse it here instead.
+    const badUrl = invalidUrlReason(view.url) || invalidUrlReason(view.urlPatterns);
+
+    if (badUrl) {
+      problems.push({
+        path: name,
+        reason: "manifest",
+        message: `package.json gives this file an invalid url: ${badUrl}`,
+      });
+      continue;
+    }
 
     // setView accepts an array of urls and derives urlPatterns from it
     if (Array.isArray(view.urlPatterns) && view.urlPatterns.length) {

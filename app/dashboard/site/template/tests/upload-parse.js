@@ -328,6 +328,62 @@ describe("parseUploadedTemplate", function () {
       expect(problems[0].message).toContain("line");
     });
 
+    it("rejects a url which is not text", function () {
+      const problems = problemsFrom([
+        entry("index.html", "<h1>Hi</h1>"),
+        entry(
+          "package.json",
+          JSON.stringify({ views: { "index.html": { url: 42 } } })
+        ),
+      ]);
+
+      expect(problems.length).toEqual(1);
+      expect(problems[0].reason).toEqual("manifest");
+      expect(problems[0].path).toEqual("index.html");
+    });
+
+    it("rejects a url list containing something which is not text", function () {
+      // urlNormalizer requires a string, and setView maps it over this array
+      // inside a callback nothing catches, so this has to be caught here
+      const problems = problemsFrom([
+        entry("index.html", "<h1>Hi</h1>"),
+        entry(
+          "package.json",
+          JSON.stringify({ views: { "index.html": { url: ["/", 42] } } })
+        ),
+      ]);
+
+      expect(problems.length).toEqual(1);
+      expect(problems[0].reason).toEqual("manifest");
+    });
+
+    it("rejects a urlPatterns list containing something which is not text", function () {
+      const problems = problemsFrom([
+        entry("index.html", "<h1>Hi</h1>"),
+        entry(
+          "package.json",
+          JSON.stringify({
+            views: { "index.html": { urlPatterns: ["/", null] } },
+          })
+        ),
+      ]);
+
+      expect(problems.length).toEqual(1);
+      expect(problems[0].reason).toEqual("manifest");
+    });
+
+    it("still accepts a list of urls which are all text", function () {
+      const result = parse([
+        entry("feed.rss", "<rss></rss>"),
+        entry(
+          "package.json",
+          JSON.stringify({ views: { "feed.rss": { url: ["/feed.rss", "/rss"] } } })
+        ),
+      ]);
+
+      expect(viewNamed(result, "feed.rss").url).toEqual(["/feed.rss", "/rss"]);
+    });
+
     it("rejects names which differ only by case", function () {
       const problems = problemsFrom([
         entry("Index.html", "<h1>Hi</h1>"),
