@@ -31,6 +31,7 @@ Spring newsletter
 - Fixed a prototype pollution vulnerability in how the dashboard processes form fields
 - Fixed a bug that allowed unauthorized access to another site’s files by submitting a crafted site ID
 - Fixed an authorization bug that let you install and view another site’s private template
+- Fixed the HTML produced for blockquotes in [Google Docs](https://blot.im/how/files/google-docs), which could make quoted text wider than the rest of your writing
 
 **Questions**
 
