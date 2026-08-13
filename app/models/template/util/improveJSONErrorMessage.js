@@ -1,5 +1,9 @@
 // Maps 'Unexpected token } in JSON at position 505' to
 // 'Unexpected token } in JSON at position 12 on line 31'
+//
+// Newer versions of V8 append '(line 31 column 12)' themselves, which stops
+// this matching. In that case we return the error untouched rather than a
+// message about our own failure to rewrite it.
 module.exports = function improveJSONErrorMessage (err, contents) {
   try {
     const regex = /at position (\d+)$/gm;
@@ -11,6 +15,6 @@ module.exports = function improveJSONErrorMessage (err, contents) {
     const linePosition = lines[lineNumber - 1].length;
     return `${messageWithoutLocation} at position ${linePosition} on line ${lineNumber}`;
   } catch (e) {
-    return e.message;
+    return err.message;
   }
 };

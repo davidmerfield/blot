@@ -11,6 +11,6 @@ module.exports = function improveMustacheErrorMessage (err, contents) {
     const linePosition = lines[lineNumber - 1].length;
     return `${messageWithoutLocation} at position ${linePosition} on line ${lineNumber}`;
   } catch (e) {
-    return e.message;
+    return err.message;
   }
 };
