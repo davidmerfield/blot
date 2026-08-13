@@ -59,7 +59,42 @@ module.exports = ($) => {
     return null;
   };
 
-  // Split a paragraph's children into lines at each top-level <br>
+  // Google Docs emits a line break inside the formatting element it falls in,
+  // e.g. <em>&gt; first<br>&gt; second</em>. Lift those breaks out so every
+  // break is a direct child of the paragraph, splitting the element around
+  // each one so both lines keep their formatting.
+  const liftBreaks = ($paragraph) => {
+    const nested = () =>
+      $paragraph
+        .find("br")
+        .toArray()
+        .find((br) => br.parent !== $paragraph[0]);
+
+    let br;
+
+    while ((br = nested())) {
+      const $wrapper = $(br.parent);
+      const $rest = $wrapper.clone().empty();
+
+      let sibling = br.next;
+
+      while (sibling) {
+        const next = sibling.next;
+        $rest.append(sibling);
+        sibling = next;
+      }
+
+      $wrapper.after($rest);
+      $wrapper.after($(br));
+
+      if (!$rest.contents().length) $rest.remove();
+      if (!$wrapper.contents().length) $wrapper.remove();
+    }
+
+    return $paragraph;
+  };
+
+  // Split a paragraph's children into lines at each <br>
   const toLines = (nodes) => {
     const lines = [[]];
 
@@ -73,15 +108,46 @@ module.exports = ($) => {
 
       return {
         nodes,
-        isQuote: !!leading && LEADING_MARKER.test(leading.data),
+        // Test the line's whole text rather than the leading node's, so that
+        // the end of a node is not mistaken for the end of the line, e.g. in
+        // '<strong>&gt;</strong>50% of users'
+        isQuote: !!leading && LEADING_MARKER.test(nodes.map(text).join("")),
         leading,
       };
     });
   };
 
   // Remove the marker from the line, so '> Hello' becomes 'Hello'
-  const stripMarker = (line) => {
-    line.leading.data = line.leading.data.replace(STRIP_MARKER, "");
+  const stripMarker = (line, paragraph) => {
+    const node = line.leading;
+
+    node.data = node.data.replace(STRIP_MARKER, "");
+
+    if (node.data !== "") return line;
+
+    // Drop whatever the marker leaves empty behind, such as the <strong> in
+    // '<strong>&gt;</strong> Hello'
+    let empty = node;
+
+    while (
+      empty.parent &&
+      empty.parent !== paragraph &&
+      $(empty.parent).contents().length === 1
+    ) {
+      empty = empty.parent;
+    }
+
+    const index = line.nodes.indexOf(empty);
+
+    if (index > -1) line.nodes.splice(index, 1);
+
+    $(empty).remove();
+
+    // The space which separated the marker from the text is in the next node
+    const next = firstTextNode(line.nodes);
+
+    if (next) next.data = next.data.replace(new RegExp("^" + BLANK), "");
+
     return line;
   };
 
@@ -122,7 +188,7 @@ module.exports = ($) => {
 
   // Turn a run of quoted lines into a blockquote whose paragraphs are
   // delimited by marker-only lines
-  const toBlockquote = (lines) => {
+  const toBlockquote = (lines, source) => {
     const $blockquote = $("<blockquote></blockquote>");
     let paragraph = [];
 
@@ -133,7 +199,7 @@ module.exports = ($) => {
 
     lines.forEach((line) => {
       if (isSeparator(line)) flush();
-      else paragraph.push(stripMarker(line));
+      else paragraph.push(stripMarker(line, source));
     });
 
     flush();
@@ -146,13 +212,17 @@ module.exports = ($) => {
 
   $("p").each(function () {
     const $p = $(this);
-    const lines = toLines($p.contents().toArray());
 
-    // Leave every other paragraph exactly as it was
+    // Work against a copy, so that a paragraph which turns out to hold no
+    // quote at all is left exactly as it was, breaks and all
+    const $source = liftBreaks($p.clone());
+    const lines = toLines($source.contents().toArray());
+
     if (!lines.some((line) => line.isQuote)) return;
 
     // Group the lines into alternating runs of quoted and ordinary lines,
     // then replace the paragraph with the elements they produce
+    let attributes = $p.attr();
     let run = [];
 
     const flush = () => {
@@ -165,9 +235,19 @@ module.exports = ($) => {
         return;
       }
 
-      const $el = run[0].isQuote
-        ? toBlockquote(run)
-        : wrap("p", $p.attr(), run);
+      let $el;
+
+      if (run[0].isQuote) {
+        $el = toBlockquote(run, $source[0]);
+      } else {
+        $el = wrap("p", attributes, run);
+
+        // A paragraph split in two may only use the id once
+        if (attributes && attributes.id) {
+          attributes = Object.assign({}, attributes);
+          delete attributes.id;
+        }
+      }
 
       if ($el) $p.before($el);
       run = [];
