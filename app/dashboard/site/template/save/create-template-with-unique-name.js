@@ -1,5 +1,27 @@
+const makeSlug = require("helper/makeSlug");
 const createTemplate = require("./create-template");
 const { MAX_DEDUPLICATION_ATTEMPTS } = require("./constants");
+
+// Template.create derives the id from makeSlug(name).slice(0, 30)
+const MAX_SLUG_LENGTH = 30;
+
+// Appending a counter to a name whose slug is already 30 characters leaves
+// the first 30 unchanged, so every attempt derives the same id, collides
+// again, and the retry loop burns all its attempts before giving up on a
+// name that should simply have become 'name 2'. Trim the base until the
+// counter survives into the slug.
+const withCounter = (base, counter, formatName) => {
+  let trimmed = base;
+
+  while (
+    trimmed.length > 1 &&
+    makeSlug(formatName(trimmed, counter)).length > MAX_SLUG_LENGTH
+  ) {
+    trimmed = trimmed.slice(0, -1).trim();
+  }
+
+  return formatName(trimmed, counter);
+};
 
 // Template.create() has no collision handling of its own: it returns an error
 // with code EEXISTS when a template with the same derived ID already exists.
@@ -51,7 +73,7 @@ async function createTemplateWithUniqueName ({
         attempts < MAX_DEDUPLICATION_ATTEMPTS
       ) {
         counter = Math.max(counter, 1) + 1;
-        attemptName = formatName(name, counter);
+        attemptName = withCounter(name, counter, formatName);
         // Template.create derives the slug from the name when none is given
         attemptSlug = slug ? formatSlug(slug, counter) : slug;
         continue;

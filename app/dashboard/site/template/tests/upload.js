@@ -87,7 +87,15 @@ describe("upload template route", function () {
     return {
       req: {
         blog,
-        files: { zip: [{ path, size: (await fs.stat(path)).size }] },
+        files: {
+          zip: [
+            {
+              path,
+              size: (await fs.stat(path)).size,
+              originalFilename: "template.zip",
+            },
+          ],
+        },
         body,
       },
       paths: [path],
@@ -319,6 +327,37 @@ describe("upload template route", function () {
     for (const path of paths) expect(await fs.pathExists(path)).toBe(false);
   });
 
+  it("leaves no url lookups behind after a rollback", async function () {
+    const client = require("models/client");
+    const key = require("models/template/key");
+    const setView = Template.setView;
+
+    // setView writes the exact-url key before the view hash, so the failing
+    // view leaves a mapping Template.drop cannot find: drop reads urls from
+    // view hashes and this view never got one
+    spyOn(Template, "setView").and.callFake(function (id, view, callback) {
+      if (view.name === "second.html") {
+        return client
+          .set(key.url(id, "/second.html"), view.name)
+          .then(() => callback(new Error("Could not save this view")));
+      }
+      return setView(id, view, callback);
+    });
+
+    const { req } = await folderRequest(this.blog, {
+      "first.html": "<h1>Hi</h1>",
+      "second.html": "<h1>There</h1>",
+      "package.json": JSON.stringify({ name: "Urls" }),
+    });
+
+    await run(req);
+
+    const templateID = `${this.blog.id}:urls`;
+
+    expect(await client.exists(key.url(templateID, "/first.html"))).toEqual(0);
+    expect(await client.exists(key.url(templateID, "/second.html"))).toEqual(0);
+  });
+
   it("rejects a request with no files", async function () {
     const result = await run({ blog: this.blog, files: {}, body: {} });
 
@@ -334,19 +373,36 @@ describe("upload template route", function () {
     expect(result.status).toEqual(400);
   });
 
-  it("prefers a name typed by the user", async function () {
-    const { req } = await folderRequest(
-      this.blog,
-      {
-        "my-theme/index.html": "<h1>Hi</h1>",
-        "my-theme/package.json": JSON.stringify({ name: "From manifest" }),
-      },
-      { name: "From the form" }
-    );
+  it("names a zip after its file when nothing else says", async function () {
+    const { req } = await zipRequest(this.blog, {
+      "index.html": "<h1>Hi</h1>",
+    });
 
     const result = await run(req);
 
-    expect(result.body.name).toEqual("From the form");
+    expect(result.status).toEqual(200);
+    // zipRequest writes the archive as template.zip
+    expect(result.body.name).toEqual("template");
+  });
+
+  it("deduplicates a name whose slug already fills the id", async function () {
+    // Template.create derives the id from makeSlug(name).slice(0, 30), so a
+    // counter appended to a long name would be cut off and every attempt
+    // would collide with the first
+    const name = "My extremely long template name for testing";
+    const files = {
+      "index.html": "<h1>Hi</h1>",
+      "package.json": JSON.stringify({ name }),
+    };
+
+    const first = await run((await folderRequest(this.blog, files)).req);
+    const second = await run((await folderRequest(this.blog, files)).req);
+
+    expect(first.status).toEqual(200);
+    expect(second.status).toEqual(200);
+    expect(second.body.name).not.toEqual(first.body.name);
+    expect(second.body.redirect).not.toEqual(first.body.redirect);
+    expect(second.body.name).toMatch(/ 2$/);
   });
 
   it("reports ignored files", async function () {

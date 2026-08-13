@@ -110,7 +110,14 @@ module.exports = async function collectUploadEntries (req) {
       ]);
     }
 
-    return unzipUpload(zipFiles[0].path);
+    return {
+      entries: await unzipUpload(zipFiles[0].path),
+      // A zip need not contain a wrapper directory, so its own name is the
+      // last thing left to name the template after
+      fallbackName: String(zipFiles[0].originalFilename || "")
+        .replace(/\.zip$/i, "")
+        .trim(),
+    };
   }
 
   if (otherFiles.length > UPLOAD_MAX_FILES) {
@@ -155,5 +162,5 @@ module.exports = async function collectUploadEntries (req) {
     });
   }
 
-  return entries;
+  return { entries, fallbackName: "" };
 };

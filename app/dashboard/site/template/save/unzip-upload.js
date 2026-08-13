@@ -1,6 +1,9 @@
 const yauzl = require("yauzl");
 const UploadValidationError = require("./upload-validation-error");
-const { UPLOAD_MAX_FILES, UPLOAD_MAX_TOTAL_BYTES } = require("./constants");
+const {
+  UPLOAD_MAX_RAW_FILES,
+  UPLOAD_MAX_TOTAL_BYTES,
+} = require("./constants");
 
 // Reads an uploaded zip into the same { relativePath, buffer } records a
 // folder drop produces, so everything downstream is identical.
@@ -60,6 +63,7 @@ module.exports = function unzipUpload (zipPath) {
 
       const entries = [];
       let declaredBytes = 0;
+      let scanned = 0;
       let settled = false;
 
       const fail = (error) => {
@@ -81,19 +85,25 @@ module.exports = function unzipUpload (zipPath) {
       );
 
       zipfile.on("entry", async (entry) => {
-        // Directory entries carry no content of their own
-        if (entry.fileName.endsWith("/")) return zipfile.readEntry();
+        // Count every record, not only the ones which become files. A
+        // directory-only tree costs almost nothing to store but still has to
+        // be walked, so skipping the count here would leave the cap
+        // bypassable by an archive well inside the size limit.
+        scanned++;
 
-        if (entries.length >= UPLOAD_MAX_FILES) {
+        if (scanned > UPLOAD_MAX_RAW_FILES) {
           return fail(
             new UploadValidationError([
               {
                 reason: "count",
-                message: `A template cannot contain more than ${UPLOAD_MAX_FILES} files`,
+                message: "This zip file contains far more than a template can use",
               },
             ])
           );
         }
+
+        // Directory entries carry no content of their own
+        if (entry.fileName.endsWith("/")) return zipfile.readEntry();
 
         declaredBytes += entry.uncompressedSize || 0;
 

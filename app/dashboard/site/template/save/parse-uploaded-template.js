@@ -5,6 +5,7 @@ const improveMustacheErrorMessage = require("models/template/util/improveMustach
 const UploadValidationError = require("./upload-validation-error");
 const {
   UPLOAD_MAX_FILES,
+  UPLOAD_MAX_RAW_FILES,
   UPLOAD_MAX_TOTAL_BYTES,
   UPLOAD_MAX_VIEW_BYTES,
   UPLOAD_MAX_WRAPPER_DEPTH,
@@ -182,10 +183,12 @@ module.exports = function parseUploadedTemplate (entries = [], options = {}) {
     throw new UploadValidationError(problems);
   }
 
-  if (entries.length > UPLOAD_MAX_FILES) {
+  // Only a guard against walking something enormous. The limit users actually
+  // meet is applied further down, once we know which files are usable.
+  if (entries.length > UPLOAD_MAX_RAW_FILES) {
     problems.push({
       reason: "count",
-      message: `A template cannot contain more than ${UPLOAD_MAX_FILES} files — you dropped ${entries.length}`,
+      message: `This folder contains ${entries.length} files, which is far more than a template can use`,
     });
     throw new UploadValidationError(problems);
   }
@@ -233,6 +236,17 @@ module.exports = function parseUploadedTemplate (entries = [], options = {}) {
       reason: "empty",
       message: "None of the files you dropped can be used in a template",
     });
+  }
+
+  // Now that the noise is out of the way, count what would actually become
+  // views. Dropping a template kept in a git working tree should not fail
+  // because .git contributed hundreds of entries we already discarded.
+  if (kept.length > UPLOAD_MAX_FILES) {
+    problems.push({
+      reason: "count",
+      message: `A template cannot contain more than ${UPLOAD_MAX_FILES} files — this one has ${kept.length}`,
+    });
+    throw new UploadValidationError(problems);
   }
 
   // 3. Strip the directory the files share, if any
@@ -368,10 +382,12 @@ module.exports = function parseUploadedTemplate (entries = [], options = {}) {
 
   if (problems.length) throw new UploadValidationError(problems);
 
+  // The manifest is the template's own idea of its name. Failing that, the
+  // folder it was dropped in, then the zip file it arrived in.
   const name =
-    (typeof options.name === "string" && options.name.trim()) ||
     manifest.name ||
     wrapperName ||
+    (typeof options.fallbackName === "string" && options.fallbackName.trim()) ||
     UPLOAD_FALLBACK_NAME;
 
   return {

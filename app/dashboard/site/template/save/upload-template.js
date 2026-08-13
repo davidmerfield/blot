@@ -12,11 +12,11 @@ const createTemplateFromUpload = require("./create-template-from-upload");
 
 module.exports = async function uploadTemplate (req, res) {
   try {
-    const entries = await collectUploadEntries(req);
+    const { entries, fallbackName } = await collectUploadEntries(req);
 
     const { name, locals, views, ignored, warnings } = parseUploadedTemplate(
       entries,
-      { name: req.body && req.body.name }
+      { fallbackName }
     );
 
     // Nothing below needs the temporary files, and creating a template makes

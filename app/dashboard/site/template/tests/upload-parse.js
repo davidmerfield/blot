@@ -3,6 +3,7 @@ describe("parseUploadedTemplate", function () {
   const Template = require("models/template");
   const {
     UPLOAD_MAX_FILES,
+    UPLOAD_MAX_RAW_FILES,
     UPLOAD_MAX_VIEW_BYTES,
     UPLOAD_FALLBACK_NAME,
   } = require("../save/constants");
@@ -337,10 +338,36 @@ describe("parseUploadedTemplate", function () {
       expect(problems[0].reason).toEqual("duplicate");
     });
 
-    it("rejects more files than the limit", function () {
+    it("rejects more usable files than the limit", function () {
       const entries = [];
       for (let i = 0; i < UPLOAD_MAX_FILES + 1; i++) {
         entries.push(entry(`view-${i}.html`, "hello"));
+      }
+
+      const problems = problemsFrom(entries);
+
+      expect(problems[0].reason).toEqual("count");
+    });
+
+    it("does not count ignored files towards the limit", function () {
+      // A template kept in a git working tree carries hundreds of entries
+      // under .git which never become views
+      const entries = [entry("my-theme/index.html", "<h1>Hi</h1>")];
+
+      for (let i = 0; i < UPLOAD_MAX_FILES * 2; i++) {
+        entries.push(entry(`my-theme/.git/objects/${i}`, "junk"));
+      }
+
+      const result = parse(entries);
+
+      expect(result.views.map((v) => v.name)).toEqual(["index.html"]);
+      expect(result.ignored.length).toEqual(UPLOAD_MAX_FILES * 2);
+    });
+
+    it("refuses to look at an absurd number of files", function () {
+      const entries = [];
+      for (let i = 0; i < UPLOAD_MAX_RAW_FILES + 1; i++) {
+        entries.push(entry(`.git/objects/${i}`, "junk"));
       }
 
       const problems = problemsFrom(entries);
@@ -359,16 +386,32 @@ describe("parseUploadedTemplate", function () {
   });
 
   describe("naming", function () {
-    it("prefers an explicit name over everything else", function () {
+    it("prefers the manifest name over the zip file name", function () {
       const result = parse(
         [
-          entry("my-theme/index.html", "<h1>Hi</h1>"),
-          entry("my-theme/package.json", JSON.stringify({ name: "Manifest" })),
+          entry("index.html", "<h1>Hi</h1>"),
+          entry("package.json", JSON.stringify({ name: "Manifest" })),
         ],
-        { name: "Typed by the user" }
+        { fallbackName: "downloaded-template" }
       );
 
-      expect(result.name).toEqual("Typed by the user");
+      expect(result.name).toEqual("Manifest");
+    });
+
+    it("prefers the folder name over the zip file name", function () {
+      const result = parse([entry("my-theme/index.html", "<h1>Hi</h1>")], {
+        fallbackName: "downloaded-template",
+      });
+
+      expect(result.name).toEqual("my-theme");
+    });
+
+    it("falls back to the zip file name", function () {
+      const result = parse([entry("index.html", "<h1>Hi</h1>")], {
+        fallbackName: "downloaded-template",
+      });
+
+      expect(result.name).toEqual("downloaded-template");
     });
 
     it("prefers the manifest name over the folder name", function () {
@@ -393,9 +436,10 @@ describe("parseUploadedTemplate", function () {
     });
 
     it("truncates long names", function () {
-      const result = parse([entry("index.html", "<h1>Hi</h1>")], {
-        name: "x".repeat(200),
-      });
+      const result = parse([
+        entry("index.html", "<h1>Hi</h1>"),
+        entry("package.json", JSON.stringify({ name: "x".repeat(200) })),
+      ]);
 
       expect(result.name.length).toEqual(100);
     });
