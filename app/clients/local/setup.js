@@ -1,11 +1,10 @@
-const Sync = require("sync");
 const Blog = require("models/blog");
-const async = require("async");
 const config = require("config");
 const chokidar = require("chokidar");
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 const localPath = require("helper/localPath");
 const Fix = require("sync/fix");
+const establishSyncLock = require("sync/establishSyncLock");
 const clfdate = require("helper/clfdate");
 const prefix = () => clfdate() + " Local folder client:";
 
@@ -28,74 +27,65 @@ function setup(blogID, callback) {
 function watch(blogID) {
   const debounceInterval = 50;
   const maximumBatchSize = 100;
-  const pendingPaths = [];
+  const pending = new Set();
   let flushTimer;
+  let running = false;
 
-  // We want to queue up and process batches in order while holding the sync
-  // lock for a bounded amount of work.
-  const queue = async.queue(function (paths, callback) {
-    Blog.get({ id: blogID }, function (err, blog) {
-      if (err || !blog) {
-        if (watchers[blogID]) {
-          watchers[blogID].close();
-          delete watchers[blogID];
-        }
-        return callback();
-      }
-      
-      if (blog.client !== "local") {
-        if (watchers[blogID]) {
-          watchers[blogID].close();
-          delete watchers[blogID];
-        }
-        return callback();
-      }
-
-      Sync(blogID, function (err, folder, done) {
-        if (err) {
-          console.log(err);
-          return callback();
-        }
-
-        let batchError;
-
-        async.eachSeries(
-          paths,
-          function (path, next) {
-            folder.update(path, function (err) {
-              if (err && !batchError) batchError = err;
-              next();
-            });
-          },
-          function () {
-            done(batchError, function (err) {
-              callback(err || batchError);
-            });
-          }
-        );
-      });
+  async function processBatch(paths) {
+    const blog = await new Promise((resolve, reject) => {
+      Blog.get({ id: blogID }, (err, blog) =>
+        err ? reject(err) : resolve(blog)
+      );
     });
-  });
 
-  queue.error = function (err) {
-    console.error(prefix(), "Unable to process watcher batch", blogID, err);
-  };
+    if (!blog || blog.client !== "local") {
+      if (watchers[blogID]) {
+        watchers[blogID].close();
+        delete watchers[blogID];
+      }
+      return;
+    }
 
-  function flushPendingPaths() {
+    const { folder, done } = await establishSyncLock(blogID);
+    let batchError;
+
+    try {
+      for (const path of paths) {
+        try {
+          await folder.update(path);
+        } catch (err) {
+          if (!batchError) batchError = err;
+        }
+      }
+    } finally {
+      await done(batchError || null);
+    }
+
+    if (batchError) throw batchError;
+  }
+
+  async function flush() {
     flushTimer = undefined;
+    if (running) return;
+    running = true;
 
-    const snapshot = pendingPaths.splice(0, maximumBatchSize);
-    const paths = snapshot.filter(
-      (path, index) => snapshot.indexOf(path) === index
-    );
-
-    if (paths.length) queue.push(paths);
-    if (pendingPaths.length) scheduleFlush();
+    try {
+      while (pending.size) {
+        const paths = [...pending].slice(0, maximumBatchSize);
+        paths.forEach((path) => pending.delete(path));
+        await processBatch(paths);
+      }
+    } catch (err) {
+      console.error(prefix(), "Unable to process watcher batch", blogID, err);
+    } finally {
+      running = false;
+      if (pending.size) scheduleFlush();
+    }
   }
 
   function scheduleFlush() {
-    if (flushTimer) return;
-    flushTimer = setTimeout(flushPendingPaths, debounceInterval);
+    if (flushTimer || running) return;
+    flushTimer = setTimeout(flush, debounceInterval);
   }
 
   try {
@@ -111,8 +101,7 @@ function watch(blogID) {
     watcher.on("all", (event, path) => {
       if (!path) return;
       // Blot likes leading slashes
-      path = "/" + path;
-      pendingPaths.push(path);
+      pending.add("/" + path);
       scheduleFlush();
     });
 
