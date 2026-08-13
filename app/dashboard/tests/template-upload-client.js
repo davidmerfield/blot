@@ -190,14 +190,13 @@ describe("template upload client", function () {
     function element(attributes = {}) {
       const listeners = {};
 
-      return {
+      const node = {
         attributes,
         listeners,
         hidden: false,
         disabled: false,
         value: "",
         textContent: "",
-        innerHTML: "",
         children: [],
         classList: {
           classes: [],
@@ -218,6 +217,9 @@ describe("template upload client", function () {
         getAttribute(name) {
           return attributes[name];
         },
+        setAttribute(name, value) {
+          attributes[name] = value;
+        },
         addEventListener(name, handler) {
           (listeners[name] = listeners[name] || []).push(handler);
         },
@@ -228,11 +230,29 @@ describe("template upload client", function () {
           this.children.push(child);
         },
       };
+
+      // Setting innerHTML to "" empties the element, as it does in a browser.
+      // Without this, rows would accumulate across re-renders and a test
+      // counting them would be measuring the stub rather than the code.
+      Object.defineProperty(node, "innerHTML", {
+        get() {
+          return "";
+        },
+        set(value) {
+          if (!value) node.children = [];
+        },
+      });
+
+      return node;
     }
 
     function build() {
       const dropzone = element();
-      const status = element();
+      const empty = element();
+      const selected = element();
+      const selectedLabel = element();
+      const files = element();
+      const clear = element();
       const errorBox = element();
       const errorMessage = element();
       const problems = element();
@@ -252,7 +272,11 @@ describe("template upload client", function () {
 
       const bySelector = {
         "[data-template-upload-dropzone]": dropzone,
-        "[data-template-upload-status]": status,
+        "[data-template-upload-empty]": empty,
+        "[data-template-upload-selected]": selected,
+        "[data-template-upload-selected-label]": selectedLabel,
+        "[data-template-upload-files]": files,
+        "[data-template-upload-clear]": clear,
         "[data-template-upload-error]": errorBox,
         "[data-template-upload-message]": errorMessage,
         "[data-template-upload-problems]": problems,
@@ -270,7 +294,11 @@ describe("template upload client", function () {
       return {
         root,
         dropzone,
-        status,
+        empty,
+        selected,
+        selectedLabel,
+        files,
+        clear,
         errorBox,
         errorMessage,
         problems,
@@ -297,6 +325,7 @@ describe("template upload client", function () {
       global.window = { addEventListener: function () {} };
       global.document = {
         createElement: () => element(),
+        createElementNS: () => element(),
         createTextNode: (text) => ({ text }),
         querySelectorAll: () => [],
       };
@@ -456,6 +485,92 @@ describe("template upload client", function () {
           // The page must not have navigated on its own
           expect(global.window.location).toBe(undefined);
         });
+    });
+
+    it("swaps the instructions for one row per dropped file", function () {
+      const { root, dropzone, empty, selected, selectedLabel, files } = build();
+      global.fetch = () => new Promise(function () {});
+
+      panel.init(root);
+
+      dropzone.dispatch("drop", {
+        dataTransfer: dataTransfer({
+          files: [
+            file("index.html", { webkitRelativePath: "my-theme/index.html" }),
+            file("style.css", { webkitRelativePath: "my-theme/style.css" }),
+          ],
+        }),
+        preventDefault: function () {},
+      });
+
+      return Promise.resolve().then(function () {
+        expect(empty.hidden).toBe(true);
+        expect(selected.hidden).toBe(false);
+        expect(files.children.length).toEqual(2);
+        expect(selectedLabel.textContent).toContain("Uploading 2 files");
+      });
+    });
+
+    it("rebuilds the rows from what the server actually created", function () {
+      const { root, dropzone, selectedLabel, files } = build();
+
+      // A zip is one row on the way up: only the server knows what was inside
+      global.fetch = () =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              ok: true,
+              name: "Theme",
+              redirect: "/sites/example/template/theme",
+              views: ["index.html", "entry.html", "style.css"],
+              ignored: [{ path: ".DS_Store", reason: "system-file" }],
+              warnings: ["package.json set 'enabled'"],
+            }),
+        });
+
+      panel.init(root);
+
+      dropzone.dispatch("drop", {
+        dataTransfer: dataTransfer({ files: [file("theme.zip")] }),
+        preventDefault: function () {},
+      });
+
+      return Promise.resolve()
+        .then(function () {
+          // Before the response: just the zip
+          expect(files.children.length).toEqual(1);
+        })
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve())
+        .then(function () {
+          // After it: the views it contained, plus what was skipped
+          expect(files.children.length).toEqual(4);
+          expect(selectedLabel.textContent).toContain("Created 3 files");
+        });
+    });
+
+    it("returns to the instructions when cleared", function () {
+      const { root, dropzone, empty, selected, files, clear } = build();
+      global.fetch = () => new Promise(function () {});
+
+      panel.init(root);
+
+      dropzone.dispatch("drop", {
+        dataTransfer: dataTransfer({ files: [file("index.html")] }),
+        preventDefault: function () {},
+      });
+
+      return Promise.resolve().then(function () {
+        expect(selected.hidden).toBe(false);
+
+        // Still uploading, so clearing must not pull the rows away
+        clear.dispatch("click", { preventDefault: function () {} });
+        expect(selected.hidden).toBe(false);
+        expect(files.children.length).toEqual(1);
+      });
     });
 
     it("redirects immediately when there are no warnings", function () {

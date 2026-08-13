@@ -26,7 +26,12 @@ function init(root) {
   var dropzone = root.querySelector("[data-template-upload-dropzone]");
   var folderInput = root.querySelector("[data-template-upload-folder-input]");
   var zipInput = root.querySelector("[data-template-upload-zip-input]");
-  var status = root.querySelector("[data-template-upload-status]");
+
+  var empty = root.querySelector("[data-template-upload-empty]");
+  var selected = root.querySelector("[data-template-upload-selected]");
+  var selectedLabel = root.querySelector("[data-template-upload-selected-label]");
+  var fileList = root.querySelector("[data-template-upload-files]");
+  var clear = root.querySelector("[data-template-upload-clear]");
 
   var errorBox = root.querySelector("[data-template-upload-error]");
   var errorMessage = root.querySelector("[data-template-upload-message]");
@@ -48,8 +53,94 @@ function init(root) {
   var dragDepth = 0;
   var working = false;
 
+  // One row per file, keyed by path so the response can update them in place
+  var rows = {};
+
+  var FILE_ICON =
+    "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" +
+    "|M14 2v6h6M8 13h8M8 17h8M8 9h2";
+
+  function svgIcon() {
+    var svg = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "svg"
+    );
+
+    svg.setAttribute("class", "file-drop__file-icon");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "1.5");
+    svg.setAttribute("aria-hidden", "true");
+
+    FILE_ICON.split("|").forEach(function (d) {
+      var path = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path"
+      );
+      path.setAttribute("d", d);
+      svg.appendChild(path);
+    });
+
+    return svg;
+  }
+
+  function setLabel(text) {
+    if (selectedLabel) selectedLabel.textContent = text || "";
+  }
+
   function setStatus(message) {
-    if (status) status.textContent = message || "";
+    setLabel(message);
+  }
+
+  function showEmptyState() {
+    rows = {};
+    if (fileList) fileList.innerHTML = "";
+    if (empty) empty.hidden = false;
+    if (selected) selected.hidden = true;
+  }
+
+  // Replaces the drop instructions with one row per file, the way the
+  // importer swaps its instructions for the file it is about to import
+  function showFiles(paths, label) {
+    if (!fileList || !selected) return;
+
+    rows = {};
+    fileList.innerHTML = "";
+
+    paths.forEach(function (path) {
+      var row = document.createElement("div");
+      row.className = "file-drop__chip template-upload__file";
+
+      var name = document.createElement("span");
+      name.className = "file-drop__name";
+      name.textContent = path;
+
+      var state = document.createElement("span");
+      state.className = "template-upload__file-state";
+
+      row.appendChild(svgIcon());
+      row.appendChild(name);
+      row.appendChild(state);
+      fileList.appendChild(row);
+
+      rows[path] = { row: row, state: state };
+    });
+
+    setLabel(label);
+
+    if (empty) empty.hidden = true;
+    selected.hidden = false;
+  }
+
+  function setFileState(path, text, modifier) {
+    var entry = rows[path];
+    if (!entry) return;
+
+    entry.state.textContent = text || "";
+    entry.row.className =
+      "file-drop__chip template-upload__file" +
+      (modifier ? " template-upload__file--" + modifier : "");
   }
 
   function renderList(list, items, withPath) {
@@ -129,14 +220,42 @@ function init(root) {
   // Warnings mean the template was created but not quite as its package.json
   // asked — it was not installed, or describes files which were not uploaded.
   // Redirecting straight past them would mean nobody ever reads them.
+  // The server decides what a zip actually contained and which files were set
+  // aside, so the rows only become accurate once it has answered. Re-render
+  // them from the response rather than leaving the user looking at a single
+  // 'template.zip' row.
+  function showResult(result) {
+    var views = result.views || [];
+    var ignored = result.ignored || [];
+
+    showFiles(
+      views.concat(
+        ignored.map(function (item) {
+          return item.path;
+        })
+      ),
+      views.length === 1
+        ? "Created 1 file in " + result.name
+        : "Created " + views.length + " files in " + result.name
+    );
+
+    views.forEach(function (name) {
+      setFileState(name, "Added", "added");
+    });
+
+    ignored.forEach(function (item) {
+      setFileState(item.path, "Skipped", "ignored");
+    });
+  }
+
   function finish(result) {
+    setWorking(false);
+    showResult(result);
+
     if (!result.warnings || !result.warnings.length || !warningBox) {
       window.location = result.redirect;
       return;
     }
-
-    setWorking(false);
-    setStatus("");
 
     if (warningMessage) {
       warningMessage.textContent = "Created " + result.name + ".";
@@ -173,11 +292,21 @@ function init(root) {
     }
 
     setWorking(true);
-    setStatus(
-      entries.length === 1
-        ? "Uploading " + entries[0].relativePath + "…"
-        : "Uploading " + entries.length + " files…"
+
+    var paths = entries.map(function (entry) {
+      return entry.relativePath;
+    });
+
+    showFiles(
+      paths,
+      paths.length === 1
+        ? "Uploading 1 file…"
+        : "Uploading " + paths.length + " files…"
     );
+
+    paths.forEach(function (path) {
+      setFileState(path, "Uploading…", "working");
+    });
 
     fetch(action, { method: "POST", body: buildFormData(entries) })
       .then(function (response) {
@@ -207,6 +336,21 @@ function init(root) {
       .then(finish)
       .catch(function (err) {
         setWorking(false);
+
+        // Leave the rows on screen and mark the ones at fault, so the message
+        // above the list and the file it refers to are visible together
+        paths.forEach(function (path) {
+          setFileState(path, "", null);
+        });
+
+        (err.problems || []).forEach(function (problem) {
+          if (problem.path) setFileState(problem.path, "Problem", "problem");
+        });
+
+        setLabel(
+          paths.length === 1 ? "1 file" : paths.length + " files"
+        );
+
         showError(err.message, err.problems);
       });
   }
@@ -235,6 +379,15 @@ function init(root) {
     dismiss.addEventListener("click", function (event) {
       event.preventDefault();
       hideNotices();
+    });
+  }
+
+  if (clear) {
+    clear.addEventListener("click", function (event) {
+      event.preventDefault();
+      if (working) return;
+      hideNotices();
+      showEmptyState();
     });
   }
 
