@@ -213,6 +213,66 @@ describe("parseUploadedTemplate", function () {
       expect(problems[0].path).toEqual("package.json");
     });
 
+    it("rejects a view name which only differs from package.json by case", function () {
+      // writeToFolder always generates a package.json beside the views, so on
+      // a case-insensitive filesystem one would overwrite the other
+      const problems = problemsFrom([
+        entry("index.html", "<h1>Hi</h1>"),
+        entry("package.json", JSON.stringify({ name: "Theme" })),
+        entry("Package.json", "not the manifest"),
+      ]);
+
+      expect(problems.length).toEqual(1);
+      expect(problems[0].reason).toEqual("duplicate");
+      expect(problems[0].path).toEqual("Package.json");
+    });
+
+    it("rejects a manifest which is not valid UTF-8", function () {
+      // Decoding would replace the bad byte and the JSON would still parse,
+      // saving a quietly corrupted name
+      const bad = Buffer.concat([
+        Buffer.from('{"name":"Caf', "utf8"),
+        Buffer.from([0xff]),
+        Buffer.from('"}', "utf8"),
+      ]);
+
+      const problems = problemsFrom([
+        entry("index.html", "<h1>Hi</h1>"),
+        entry("package.json", bad),
+      ]);
+
+      expect(problems.length).toEqual(1);
+      expect(problems[0].path).toEqual("package.json");
+      expect(problems[0].reason).toEqual("binary");
+    });
+
+    it("rejects a view setting which should be an object", function () {
+      const problems = problemsFrom([
+        entry("index.html", "<h1>Hi</h1>"),
+        entry(
+          "package.json",
+          JSON.stringify({ views: { "index.html": { locals: "bad" } } })
+        ),
+      ]);
+
+      expect(problems.length).toEqual(1);
+      expect(problems[0].path).toEqual("index.html");
+      expect(problems[0].message).toContain("locals");
+    });
+
+    it("rejects a view setting which is a list where an object belongs", function () {
+      const problems = problemsFrom([
+        entry("index.html", "<h1>Hi</h1>"),
+        entry(
+          "package.json",
+          JSON.stringify({ views: { "index.html": { partials: ["a"] } } })
+        ),
+      ]);
+
+      expect(problems.length).toEqual(1);
+      expect(problems[0].message).toContain("partials");
+    });
+
     it("reports malformed JSON with a line number", function () {
       const problems = problemsFrom([
         entry("index.html", "<h1>Hi</h1>"),
@@ -417,6 +477,21 @@ describe("parseUploadedTemplate", function () {
       const problems = problemsFrom(entries);
 
       expect(problems[0].reason).toEqual("count");
+    });
+
+    it("does not count package.json towards the limit", function () {
+      // A template with exactly the maximum number of views has to survive a
+      // download and re-upload, and its zip carries a package.json too
+      const entries = [];
+      for (let i = 0; i < UPLOAD_MAX_FILES; i++) {
+        entries.push(entry(`view-${i}.html`, "hello"));
+      }
+      entries.push(entry("package.json", JSON.stringify({ name: "Full" })));
+
+      const result = parse(entries);
+
+      expect(result.views.length).toEqual(UPLOAD_MAX_FILES);
+      expect(result.name).toEqual("Full");
     });
 
     it("does not count ignored files towards the limit", function () {

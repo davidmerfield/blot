@@ -379,6 +379,23 @@ describe("upload template route", function () {
     for (const path of paths) expect(await fs.pathExists(path)).toBe(false);
   });
 
+  it("answers rather than hangs on a view setting of the wrong type", async function () {
+    const { req, paths } = await folderRequest(this.blog, {
+      "index.html": "<h1>Hi</h1>",
+      "package.json": JSON.stringify({
+        name: "Bad locals",
+        views: { "index.html": { locals: "not an object" } },
+      }),
+    });
+
+    const result = await run(req);
+
+    expect(result.status).toEqual(422);
+    expect(result.body.problems[0].path).toEqual("index.html");
+
+    for (const path of paths) expect(await fs.pathExists(path)).toBe(false);
+  });
+
   it("rejects a request with no files", async function () {
     const result = await run({ blog: this.blog, files: {}, body: {} });
 

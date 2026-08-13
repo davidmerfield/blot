@@ -111,6 +111,27 @@ const isValidUTF8 = (buffer) => {
   return Buffer.compare(Buffer.from(buffer.toString("utf8"), "utf8"), buffer) === 0;
 };
 
+// setView runs the view through viewModel, which expects these to be objects.
+// A string there is rejected deep inside the model and surfaces as a bare
+// TypeError, so name the file and the setting instead.
+const OBJECT_SETTINGS = ["locals", "partials", "retrieve"];
+
+const invalidSettingReason = (view) => {
+  for (const setting of OBJECT_SETTINGS) {
+    const value = view[setting];
+
+    if (value === undefined || value === null) continue;
+
+    if (typeof value !== "object" || Array.isArray(value)) {
+      return `'${setting}' must be a set of values, not ${
+        Array.isArray(value) ? "a list" : typeof value
+      }`;
+    }
+  }
+
+  return null;
+};
+
 // A view's url may be a single path or a list of them, but every one of them
 // has to be text before it reaches setView
 const invalidUrlReason = (value) => {
@@ -128,6 +149,18 @@ const invalidUrlReason = (value) => {
 };
 
 const parsePackage = (buffer, problems, warnings) => {
+  // Views are checked for this, and the manifest deserves it more: decoding
+  // replaces bad bytes with U+FFFD, after which the JSON still parses and a
+  // quietly corrupted name or setting would be saved.
+  if (!isValidUTF8(buffer)) {
+    problems.push({
+      path: PACKAGE,
+      reason: "binary",
+      message: "package.json is not valid UTF-8 text",
+    });
+    return {};
+  }
+
   const contents = buffer.toString("utf8");
   let parsed;
 
@@ -255,17 +288,6 @@ module.exports = function parseUploadedTemplate (entries = [], options = {}) {
     });
   }
 
-  // Now that the noise is out of the way, count what would actually become
-  // views. Dropping a template kept in a git working tree should not fail
-  // because .git contributed hundreds of entries we already discarded.
-  if (kept.length > UPLOAD_MAX_FILES) {
-    problems.push({
-      reason: "count",
-      message: `A template cannot contain more than ${UPLOAD_MAX_FILES} files — this one has ${kept.length}`,
-    });
-    throw new UploadValidationError(problems);
-  }
-
   // 3. Strip the directory the files share, if any
   const { entries: flattened, wrapperName } = stripWrapperDirectories(kept);
 
@@ -305,11 +327,38 @@ module.exports = function parseUploadedTemplate (entries = [], options = {}) {
   }
 
   const manifestEntry = manifestEntries[0];
+
+  const viewEntries = roots.filter((entry) => entry.path !== PACKAGE);
+
+  // writeToFolder always generates a package.json beside the views, so a view
+  // whose name only differs in case would land on the same path on a
+  // case-insensitive filesystem and one would overwrite the other.
+  for (const entry of viewEntries) {
+    if (entry.path.toLowerCase() === PACKAGE) {
+      problems.push({
+        path: entry.path,
+        reason: "duplicate",
+        message: `A template file cannot be called '${entry.path}' — that name is reserved for the template's package.json`,
+      });
+    }
+  }
+
+  // Now that the noise is out of the way and the manifest is set aside, count
+  // what would actually become views. Dropping a template kept in a git
+  // working tree should not fail because .git contributed hundreds of entries
+  // we already discarded, and a template with exactly the maximum number of
+  // views should still round trip with its package.json alongside them.
+  if (viewEntries.length > UPLOAD_MAX_FILES) {
+    problems.push({
+      reason: "count",
+      message: `A template cannot contain more than ${UPLOAD_MAX_FILES} files — this one has ${viewEntries.length}`,
+    });
+    throw new UploadValidationError(problems);
+  }
+
   const manifest = manifestEntry
     ? parsePackage(manifestEntry.buffer, problems, warnings)
     : {};
-
-  const viewEntries = roots.filter((entry) => entry.path !== PACKAGE);
 
   // 6. Validate each view before we create anything
   const seen = new Map();
@@ -382,6 +431,17 @@ module.exports = function parseUploadedTemplate (entries = [], options = {}) {
         path: name,
         reason: "manifest",
         message: `package.json gives this file an invalid url: ${badUrl}`,
+      });
+      continue;
+    }
+
+    const badSetting = invalidSettingReason(view);
+
+    if (badSetting) {
+      problems.push({
+        path: name,
+        reason: "manifest",
+        message: `package.json gives this file an invalid setting: ${badSetting}`,
       });
       continue;
     }
