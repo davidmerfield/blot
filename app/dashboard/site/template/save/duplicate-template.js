@@ -1,5 +1,4 @@
-const createTemplate = require("./create-template");
-const { MAX_DEDUPLICATION_ATTEMPTS } = require("./constants");
+const createTemplateWithUniqueName = require("./create-template-with-unique-name");
 
 const COPY_NAME_PATTERN = /^(.*?)(?: copy(?: (\d+))?)$/;
 const COPY_SLUG_PATTERN = /^(.*?)(?:-copy(?:-(\d+))?)$/;
@@ -51,41 +50,16 @@ async function duplicateTemplate({ owner, template }) {
   const baseName = `${nameBase} copy`.trim();
   const baseSlug = `${slugBase}-copy`;
 
-  let deduplicationCounter = Math.max(nameCounter, slugCounter, 1);
-  let attemptName = baseName;
-  let attemptSlug = baseSlug;
-  let attempts = 0;
-
-  while (attempts < MAX_DEDUPLICATION_ATTEMPTS) {
-    attempts++;
-
-    try {
-      return await createTemplate({
-        isPublic: false,
-        owner,
-        name: attemptName,
-        slug: attemptSlug,
-        cloneFrom: template.id,
-      });
-    } catch (error) {
-      if (
-        error &&
-        error.code === "EEXISTS" &&
-        attempts < MAX_DEDUPLICATION_ATTEMPTS
-      ) {
-        deduplicationCounter = Math.max(deduplicationCounter, 1) + 1;
-        attemptName = `${baseName} ${deduplicationCounter}`;
-        attemptSlug = `${baseSlug}-${deduplicationCounter}`;
-        continue;
-      }
-
-      throw error;
-    }
-  }
-
-  const err = new Error("Unable to duplicate template after multiple attempts");
-  err.code = "EEXISTS";
-  throw err;
+  return createTemplateWithUniqueName({
+    isPublic: false,
+    owner,
+    name: baseName,
+    slug: baseSlug,
+    cloneFrom: template.id,
+    // 'Original copy 3' starts counting from 3, so the next free name is 4
+    startCounter: Math.max(nameCounter, slugCounter, 1),
+    exhaustedMessage: "Unable to duplicate template after multiple attempts",
+  });
 }
 
 module.exports = duplicateTemplate;
