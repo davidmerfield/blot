@@ -1,4 +1,54 @@
 <br>
+<h1>Upload a template</h1>
+
+<div
+  class="template-upload"
+  data-template-upload
+  data-csrf="{{csrftoken}}"
+  data-action="{{{dashboardBase}}}/template/new/upload"
+>
+  <div class="template-upload__dropzone" data-template-upload-dropzone>
+    <p class="template-upload__hint">
+      Drop a template folder or <code>.zip</code> file here
+    </p>
+    <p class="template-upload__actions">
+      <label class="template-upload__button">
+        Choose a folder
+        <input
+          type="file"
+          webkitdirectory
+          directory
+          multiple
+          data-template-upload-folder-input
+        />
+      </label>
+      <label class="template-upload__button">
+        Choose a .zip file
+        <input
+          type="file"
+          accept=".zip,application/zip"
+          data-template-upload-zip-input
+        />
+      </label>
+    </p>
+  </div>
+
+  <p class="template-upload__name">
+    <label for="template-upload-name">Name <span>(optional)</span></label>
+    <input
+      type="text"
+      id="template-upload-name"
+      maxlength="100"
+      placeholder="Taken from package.json or the folder name"
+      data-template-upload-name
+    />
+  </p>
+
+  <p class="template-upload__status" data-template-upload-status></p>
+  <ul class="template-upload__problems" data-template-upload-problems hidden></ul>
+</div>
+
+<br>
 <h1>Your templates</h1>
 
 <div class="template-grid">
