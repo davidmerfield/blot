@@ -1,16 +1,10 @@
-Transfer Juliet's site and theme from blogger
-
----
-
 Fix bug with hypertext template and follow up with [31](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLPVXLRDkJTLCsKnMBRZdTklb)
-
-Fix bug with studio template and tell [Metta](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLXxhzdkjnSDVQSCnzLsSWmJK)
 
 Fix bug with [hypertext template blockquotes](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLFkHgQpSzXFdjfWFtvlDVXPB)
 
-Work out how to reverse zach's post on [a single tag page](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLFlPvWMjNXjrDNcNzPWfLXGb)
+Fix bug with studio template and tell [Metta](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLXxhzdkjnSDVQSCnzLsSWmJK)
 
-Fix bug with tags on blog template when switching from {{#entries}} to {{#posts}} in https://blot.im/questions/3391
+Work out how to reverse zach's post on [a single tag page](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLFlPvWMjNXjrDNcNzPWfLXGb)
 
 Verify that bunny cdn bug with [url-encoded chars is resolved](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBGZHQxLrXsSJvfGcXPMMptDr)
 
@@ -32,6 +26,7 @@ Check in that fail2ban is now correctly purging the db of old bans:
 - sudo sqlite3 /var/lib/fail2ban/fail2ban.sqlite3 \
   "SELECT COUNT(*) FROM bans WHERE timeofban < $(date -d 'now -1 day' +%s);"
 - output of command above should be 0
+- was 113 on thu aug 13
 
 Write useful benchmark tool for Blot
 - Add performance tests which output something like this for PRs (compare against master branch, fail if over threshold):
@@ -55,6 +50,7 @@ Move to redis hashes for entry storage
 * Refactor `app/models/entry/get.js` to accept an optional `fields` argument (string or array). Use `multi` to `HMGET`/`HGETALL` from the hash key and fall back to the JSON key when the hash is missing, reusing the serializer to coerce types. Ensure single-field calls return the scalar when only one entry is requested, while preserving existing behaviors for callers expecting full `Entry` objects.
 * Cover the new pathways with unit coverage (or targeted integration coverage) once tests are runnable, verifying full-entry fetches, hash fallback to legacy JSON, and single-field lookups.
 * does this fix slow pages like the archives page on www.jaysjay.com?
+
 ---
 
 Google Drive:
