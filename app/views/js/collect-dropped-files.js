@@ -91,14 +91,26 @@ function collectDroppedFiles(dataTransfer) {
     );
   }
 
-  var tasks = items.map(function (item) {
-    if (item.kind !== "file" || typeof item.webkitGetAsEntry !== "function") {
-      return Promise.resolve([]);
-    }
+  // Entry support is per item, not per payload: one item can yield a directory
+  // entry while another yields none. Falling back for the whole payload only
+  // when every item lacks an entry would silently drop those odd ones out, so
+  // fall back for each item on its own.
+  var tasks = items.map(function (item, index) {
+    if (item.kind !== "file") return Promise.resolve([]);
 
-    var entry = item.webkitGetAsEntry();
-    if (!entry) return Promise.resolve([]);
-    return collectDroppedFilesFromEntry(entry, "");
+    var entry =
+      typeof item.webkitGetAsEntry === "function" ? item.webkitGetAsEntry() : null;
+
+    if (entry) return collectDroppedFilesFromEntry(entry, "");
+
+    var file =
+      typeof item.getAsFile === "function" ? item.getAsFile() : files[index];
+
+    if (!file) return Promise.resolve([]);
+
+    return Promise.resolve([
+      { file: file, relativePath: file.webkitRelativePath || file.name },
+    ]);
   });
 
   return Promise.all(tasks).then(function (sets) {

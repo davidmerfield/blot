@@ -7,45 +7,63 @@
   data-csrf="{{csrftoken}}"
   data-action="{{{dashboardBase}}}/template/new/upload"
 >
-  <div class="template-upload__dropzone" data-template-upload-dropzone>
-    <p class="template-upload__hint">
-      Drop a template folder or <code>.zip</code> file here
-    </p>
-    <p class="template-upload__actions">
-      <label class="template-upload__button">
-        Choose a folder
-        <input
-          type="file"
-          webkitdirectory
-          directory
-          multiple
-          data-template-upload-folder-input
-        />
-      </label>
-      <label class="template-upload__button">
-        Choose a .zip file
-        <input
-          type="file"
-          accept=".zip,application/zip"
-          data-template-upload-zip-input
-        />
-      </label>
-    </p>
+  <div class="error template-upload__notice" data-template-upload-error hidden>
+    <button
+      type="button"
+      class="template-upload__dismiss"
+      data-template-upload-dismiss
+      aria-label="Dismiss"
+    >
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M3 3l8 8M11 3l-8 8" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <p class="template-upload__message" data-template-upload-message></p>
+    <ul class="template-upload__list" data-template-upload-problems></ul>
   </div>
 
-  <p class="template-upload__name">
-    <label for="template-upload-name">Name <span>(optional)</span></label>
-    <input
-      type="text"
-      id="template-upload-name"
-      maxlength="100"
-      placeholder="Taken from package.json or the folder name"
-      data-template-upload-name
-    />
-  </p>
+  <div class="success template-upload__notice" data-template-upload-warning hidden>
+    <p class="template-upload__message" data-template-upload-warning-message></p>
+    <ul class="template-upload__list" data-template-upload-warnings></ul>
+    <p><a href="#" data-template-upload-continue>Continue to your new template</a></p>
+  </div>
 
-  <p class="template-upload__status" data-template-upload-status></p>
-  <ul class="template-upload__problems" data-template-upload-problems hidden></ul>
+  <div class="file-drop" data-template-upload-dropzone>
+    <input
+      class="file-drop__input"
+      type="file"
+      id="template-upload-folder"
+      webkitdirectory
+      directory
+      multiple
+      data-template-upload-folder-input
+    />
+    <input
+      class="file-drop__input"
+      type="file"
+      id="template-upload-zip"
+      accept=".zip,application/zip"
+      data-template-upload-zip-input
+    />
+
+    <div class="file-drop__empty template-upload__dropzone">
+      <svg class="file-drop__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M7 18a4.5 4.5 0 0 1 .3-9 5.5 5.5 0 0 1 10.7 1.5A3.5 3.5 0 0 1 17.5 18H7z" stroke-linejoin="round"/>
+        <path d="M12 15V9M9.5 11.5 12 9l2.5 2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="file-drop__title">Upload a template</span>
+      <span class="file-drop__action">
+        Drag and drop a template folder, or
+        <label class="file-drop__choose" for="template-upload-folder">choose a folder</label>
+        or <label class="file-drop__choose" for="template-upload-zip">choose a .zip file</label>.
+      </span>
+      <span class="file-drop__hints">
+        Up to 100 files, maximum 10 MB. The template is named after its
+        package.json, folder or zip file.
+      </span>
+      <span class="template-upload__status" data-template-upload-status></span>
+    </div>
+  </div>
 </div>
 
 <br>

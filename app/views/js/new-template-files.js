@@ -6,7 +6,7 @@ var collect = require("./collect-dropped-files.js");
 // Keep these in step with save/constants.js. Checking here means the common
 // mistake — dropping a whole site, or a folder full of images — gets a clear
 // message instead of the generic 413 page the multipart limit would produce.
-var MAX_FILES = 100;
+var MAX_RAW_FILES = 1000;
 var MAX_TOTAL_BYTES = 10 * 1024 * 1024;
 
 var ZIP_PATTERN = /\.zip$/i;
@@ -26,9 +26,20 @@ function init(root) {
   var dropzone = root.querySelector("[data-template-upload-dropzone]");
   var folderInput = root.querySelector("[data-template-upload-folder-input]");
   var zipInput = root.querySelector("[data-template-upload-zip-input]");
-  var nameInput = root.querySelector("[data-template-upload-name]");
-  var problemList = root.querySelector("[data-template-upload-problems]");
   var status = root.querySelector("[data-template-upload-status]");
+
+  var errorBox = root.querySelector("[data-template-upload-error]");
+  var errorMessage = root.querySelector("[data-template-upload-message]");
+  var problemList = root.querySelector("[data-template-upload-problems]");
+  var dismiss = root.querySelector("[data-template-upload-dismiss]");
+
+  var warningBox = root.querySelector("[data-template-upload-warning]");
+  var warningMessage = root.querySelector(
+    "[data-template-upload-warning-message]"
+  );
+  var warningList = root.querySelector("[data-template-upload-warnings]");
+  var continueLink = root.querySelector("[data-template-upload-continue]");
+
   var csrfToken = root.getAttribute("data-csrf");
   var action = root.getAttribute("data-action");
 
@@ -41,37 +52,45 @@ function init(root) {
     if (status) status.textContent = message || "";
   }
 
-  function clearProblems() {
-    if (problemList) {
-      problemList.innerHTML = "";
-      problemList.hidden = true;
-    }
-  }
+  function renderList(list, items, withPath) {
+    if (!list) return;
 
-  function showProblems(title, problems) {
-    setStatus(title);
+    list.innerHTML = "";
 
-    if (!problemList) return;
+    (items || []).forEach(function (item) {
+      var li = document.createElement("li");
+      var path = withPath && item.path;
 
-    problemList.innerHTML = "";
-
-    (problems || []).forEach(function (problem) {
-      var item = document.createElement("li");
-
-      if (problem.path) {
-        var path = document.createElement("code");
-        path.textContent = problem.path;
-        item.appendChild(path);
-        item.appendChild(document.createTextNode(" "));
+      if (path) {
+        var code = document.createElement("code");
+        code.textContent = path;
+        li.appendChild(code);
+        li.appendChild(document.createTextNode(" "));
       }
 
-      item.appendChild(
-        document.createTextNode(problem.message || "This file could not be used")
+      li.appendChild(
+        document.createTextNode(
+          (withPath ? item.message : item) || "This file could not be used"
+        )
       );
-      problemList.appendChild(item);
-    });
 
-    problemList.hidden = problems && problems.length ? false : true;
+      list.appendChild(li);
+    });
+  }
+
+  function hideNotices() {
+    if (errorBox) errorBox.hidden = true;
+    if (warningBox) warningBox.hidden = true;
+  }
+
+  function showError(message, problems) {
+    setStatus("");
+
+    if (!errorBox) return;
+
+    if (errorMessage) errorMessage.textContent = message || "";
+    renderList(problemList, problems, true);
+    errorBox.hidden = false;
   }
 
   function setWorking(isWorking) {
@@ -102,36 +121,53 @@ function init(root) {
       formData.append("relativePaths", JSON.stringify(relativePaths));
     }
 
-    if (nameInput && nameInput.value.trim()) {
-      formData.append("name", nameInput.value.trim());
-    }
-
     formData.append("_csrf", csrfToken);
 
     return formData;
   }
 
+  // Warnings mean the template was created but not quite as its package.json
+  // asked — it was not installed, or describes files which were not uploaded.
+  // Redirecting straight past them would mean nobody ever reads them.
+  function finish(result) {
+    if (!result.warnings || !result.warnings.length || !warningBox) {
+      window.location = result.redirect;
+      return;
+    }
+
+    setWorking(false);
+    setStatus("");
+
+    if (warningMessage) {
+      warningMessage.textContent = "Created " + result.name + ".";
+    }
+
+    renderList(warningList, result.warnings, false);
+
+    if (continueLink) continueLink.href = result.redirect;
+
+    warningBox.hidden = false;
+  }
+
   function upload(entries) {
     if (working || !entries.length) return;
 
-    clearProblems();
+    hideNotices();
 
-    if (entries.length > MAX_FILES) {
-      return showProblems(
-        "A template cannot contain more than " +
-          MAX_FILES +
-          " files — you dropped " +
+    if (entries.length > MAX_RAW_FILES) {
+      return showError(
+        "That folder contains " +
           entries.length +
-          ".",
+          " files, which is far more than a template can use.",
         []
       );
     }
 
     if (totalBytes(entries) > MAX_TOTAL_BYTES) {
-      return showProblems(
-        "These files are too large to be a template. The most a template can be is " +
+      return showError(
+        "Those files are too large to be a template. The most a template can be is " +
           Math.round(MAX_TOTAL_BYTES / 1024 / 1024) +
-          "mb.",
+          " MB.",
         []
       );
     }
@@ -152,7 +188,7 @@ function init(root) {
             // renders an HTML error page rather than JSON
             throw new Error(
               response.status === 413
-                ? "These files are too large to upload."
+                ? "Those files are too large to upload."
                 : "Something went wrong uploading this template."
             );
           })
@@ -168,13 +204,10 @@ function init(root) {
             return result;
           });
       })
-      .then(function (result) {
-        setStatus("Created " + result.name + ". Opening it now…");
-        window.location = result.redirect;
-      })
+      .then(finish)
       .catch(function (err) {
         setWorking(false);
-        showProblems(err.message, err.problems);
+        showError(err.message, err.problems);
       });
   }
 
@@ -183,7 +216,10 @@ function init(root) {
       .collectDroppedFiles(dataTransfer)
       .then(upload)
       .catch(function () {
-        showProblems("This folder could not be read. Try choosing it instead.", []);
+        showError(
+          "That folder could not be read. Try choosing it instead.",
+          []
+        );
       });
   }
 
@@ -194,6 +230,13 @@ function init(root) {
 
   window.addEventListener("dragover", preventNavigation);
   window.addEventListener("drop", preventNavigation);
+
+  if (dismiss) {
+    dismiss.addEventListener("click", function (event) {
+      event.preventDefault();
+      hideNotices();
+    });
+  }
 
   dropzone.addEventListener("dragenter", function (event) {
     if (!collect.hasFileDragPayload(event.dataTransfer)) return;

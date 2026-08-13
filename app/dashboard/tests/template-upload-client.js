@@ -232,9 +232,18 @@ describe("template upload client", function () {
 
     function build() {
       const dropzone = element();
-      const problems = element();
       const status = element();
-      const name = element();
+      const errorBox = element();
+      const errorMessage = element();
+      const problems = element();
+      const dismiss = element();
+      const warningBox = element();
+      const warningMessage = element();
+      const warnings = element();
+      const continueLink = element();
+
+      errorBox.hidden = true;
+      warningBox.hidden = true;
 
       const root = element({
         "data-csrf": "token",
@@ -243,19 +252,48 @@ describe("template upload client", function () {
 
       const bySelector = {
         "[data-template-upload-dropzone]": dropzone,
-        "[data-template-upload-problems]": problems,
         "[data-template-upload-status]": status,
-        "[data-template-upload-name]": name,
+        "[data-template-upload-error]": errorBox,
+        "[data-template-upload-message]": errorMessage,
+        "[data-template-upload-problems]": problems,
+        "[data-template-upload-dismiss]": dismiss,
+        "[data-template-upload-warning]": warningBox,
+        "[data-template-upload-warning-message]": warningMessage,
+        "[data-template-upload-warnings]": warnings,
+        "[data-template-upload-continue]": continueLink,
         "[data-template-upload-folder-input]": null,
         "[data-template-upload-zip-input]": null,
       };
 
       root.querySelector = (selector) => bySelector[selector];
 
-      return { root, dropzone, problems, status, name };
+      return {
+        root,
+        dropzone,
+        status,
+        errorBox,
+        errorMessage,
+        problems,
+        dismiss,
+        warningBox,
+        warningMessage,
+        warnings,
+        continueLink,
+      };
     }
 
+    // fetch and FormData are Node globals. Deleting them rather than putting
+    // them back would break every later suite in the same process.
+    const BROWSER_GLOBALS = ["window", "document", "FormData", "fetch"];
+    let originalGlobals;
+
     beforeEach(function () {
+      originalGlobals = BROWSER_GLOBALS.map((name) => ({
+        name,
+        existed: name in global,
+        value: global[name],
+      }));
+
       global.window = { addEventListener: function () {} };
       global.document = {
         createElement: () => element(),
@@ -264,7 +302,7 @@ describe("template upload client", function () {
       };
       global.FormData = function () {
         this.appended = [];
-        this.append = function (key, value) {
+        this.append = function (key) {
           this.appended.push(key);
         };
       };
@@ -276,10 +314,10 @@ describe("template upload client", function () {
     });
 
     afterEach(function () {
-      delete global.window;
-      delete global.document;
-      delete global.FormData;
-      delete global.fetch;
+      originalGlobals.forEach(function ({ name, existed, value }) {
+        if (existed) global[name] = value;
+        else delete global[name];
+      });
     });
 
     it("recognises a zip by extension and by type", function () {
@@ -320,13 +358,13 @@ describe("template upload client", function () {
       expect(dropzone.classList.contains("is-dragover")).toBe(false);
     });
 
-    it("refuses too many files without making a request", function () {
-      const { root, dropzone, status } = build();
+    it("refuses an absurd number of files without making a request", function () {
+      const { root, dropzone, errorBox, errorMessage } = build();
       global.fetch = jasmine.createSpy("fetch");
       panel.init(root);
 
       const files = [];
-      for (let i = 0; i < 101; i++) files.push(file(`view-${i}.html`));
+      for (let i = 0; i < 1001; i++) files.push(file(`view-${i}.html`));
 
       dropzone.dispatch("drop", {
         dataTransfer: dataTransfer({ files }),
@@ -336,12 +374,13 @@ describe("template upload client", function () {
       // collectDroppedFiles resolves a promise, so let it settle
       return Promise.resolve().then(function () {
         expect(global.fetch).not.toHaveBeenCalled();
-        expect(status.textContent).toContain("100 files");
+        expect(errorBox.hidden).toBe(false);
+        expect(errorMessage.textContent).toContain("1001 files");
       });
     });
 
     it("refuses files which are too large without making a request", function () {
-      const { root, dropzone, status } = build();
+      const { root, dropzone, errorBox, errorMessage } = build();
       global.fetch = jasmine.createSpy("fetch");
       panel.init(root);
 
@@ -354,8 +393,105 @@ describe("template upload client", function () {
 
       return Promise.resolve().then(function () {
         expect(global.fetch).not.toHaveBeenCalled();
-        expect(status.textContent).toContain("too large");
+        expect(errorBox.hidden).toBe(false);
+        expect(errorMessage.textContent).toContain("too large");
       });
+    });
+
+    it("dismisses the error message", function () {
+      const { root, dropzone, errorBox, dismiss } = build();
+      global.fetch = jasmine.createSpy("fetch");
+      panel.init(root);
+
+      dropzone.dispatch("drop", {
+        dataTransfer: dataTransfer({
+          files: [file("index.html", { size: 11 * 1024 * 1024 })],
+        }),
+        preventDefault: function () {},
+      });
+
+      return Promise.resolve().then(function () {
+        expect(errorBox.hidden).toBe(false);
+
+        dismiss.dispatch("click", { preventDefault: function () {} });
+
+        expect(errorBox.hidden).toBe(true);
+      });
+    });
+
+    it("shows warnings instead of redirecting past them", function () {
+      const { root, dropzone, warningBox, warnings, continueLink } = build();
+
+      global.fetch = () =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              ok: true,
+              name: "Theme",
+              redirect: "/sites/example/template/theme",
+              views: ["index.html"],
+              ignored: [],
+              warnings: ["package.json set 'enabled'"],
+            }),
+        });
+
+      panel.init(root);
+
+      dropzone.dispatch("drop", {
+        dataTransfer: dataTransfer({ files: [file("index.html")] }),
+        preventDefault: function () {},
+      });
+
+      // Let collectDroppedFiles, fetch and its two thens settle
+      return Promise.resolve()
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve())
+        .then(function () {
+          expect(warningBox.hidden).toBe(false);
+          expect(warnings.children.length).toEqual(1);
+          expect(continueLink.href).toEqual("/sites/example/template/theme");
+          // The page must not have navigated on its own
+          expect(global.window.location).toBe(undefined);
+        });
+    });
+
+    it("redirects immediately when there are no warnings", function () {
+      const { root, dropzone } = build();
+
+      global.fetch = () =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              ok: true,
+              name: "Theme",
+              redirect: "/sites/example/template/theme",
+              views: ["index.html"],
+              ignored: [],
+              warnings: [],
+            }),
+        });
+
+      panel.init(root);
+
+      dropzone.dispatch("drop", {
+        dataTransfer: dataTransfer({ files: [file("index.html")] }),
+        preventDefault: function () {},
+      });
+
+      return Promise.resolve()
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve())
+        .then(() => Promise.resolve())
+        .then(function () {
+          expect(global.window.location).toEqual(
+            "/sites/example/template/theme"
+          );
+        });
     });
   });
 });

@@ -1,6 +1,8 @@
 const async = require("async");
 const Template = require("models/template");
-const makeSlug = require("helper/makeSlug");
+const client = require("models/client");
+const key = require("models/template/key");
+const urlNormalizer = require("helper/urlNormalizer");
 const createTemplateWithUniqueName = require("./create-template-with-unique-name");
 
 // Creates a template from the output of parse-uploaded-template.
@@ -23,6 +25,30 @@ const setView = (templateID, view) =>
       resolve();
     });
   });
+
+// setView writes the exact-url lookup key before it writes the view itself,
+// so a view which failed part way through leaves a mapping behind that
+// Template.drop cannot find: drop reads each url from a view hash, and this
+// view never got one. Remove the mappings for every view we attempted.
+const dropAttemptedViewUrls = async (templateID, views) => {
+  const urls = views
+    .map((view) => (Array.isArray(view.url) ? view.url[0] : view.url))
+    .filter((url) => typeof url === "string" && url)
+    .map(urlNormalizer);
+
+  await Promise.all(
+    urls.map((url) =>
+      Promise.resolve(client.del(key.url(templateID, url))).catch((err) => {
+        console.error(
+          "Failed to remove url mapping while rolling back",
+          templateID,
+          url,
+          err
+        );
+      })
+    )
+  );
+};
 
 const dropTemplate = (owner, templateID) =>
   new Promise((resolve) => {
@@ -52,9 +78,9 @@ module.exports = async function createTemplateFromUpload ({
   const template = await createTemplateWithUniqueName({
     owner,
     name,
-    // Template.create derives the id from the name, and routing resolves a
-    // template by that id, so keep the stored slug in step with it
-    slug: makeSlug(name).slice(0, 30),
+    // No slug: Template.create derives one from the name it settles on, which
+    // keeps the stored slug and the id routing resolves by in step even when
+    // deduplication has had to trim the name
     locals,
     isPublic: false,
     exhaustedMessage:
@@ -76,6 +102,7 @@ module.exports = async function createTemplateFromUpload ({
     });
   } catch (err) {
     await dropTemplate(owner, template.id);
+    await dropAttemptedViewUrls(template.id, views);
     throw err;
   }
 

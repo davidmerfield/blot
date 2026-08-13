@@ -7,7 +7,16 @@ module.exports = {
   // multipart request at 30mb and setView caps a serialized view at 2mb.
   // These sit below both so we can return a useful JSON error rather than
   // the generic 413 page, or a failure part-way through persistence.
+  // How many files a template may end up with. Counted after system noise
+  // and hidden files have been set aside: a template kept in a git working
+  // tree can carry hundreds of entries under .git which never become views,
+  // and rejecting it for those would be wrong.
   UPLOAD_MAX_FILES: 100,
+
+  // How many files we will look at at all, before deciding which are usable.
+  // Only a guard against being asked to walk something enormous.
+  UPLOAD_MAX_RAW_FILES: 1000,
+
   UPLOAD_MAX_TOTAL_BYTES: 10 * 1024 * 1024, // 10mb
   // A view's serialized payload also carries locals, partials and JSON
   // overhead, so keep the source itself well under setView's 2mb ceiling.
