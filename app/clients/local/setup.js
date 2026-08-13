@@ -26,11 +26,15 @@ function setup(blogID, callback) {
 }
 
 function watch(blogID) {
-  // We want to queue up and process in order
-  // events from the file system.
-  const queue = async.queue(function (path, callback) {
+  const debounceInterval = 50;
+  const maximumBatchSize = 100;
+  const pendingPaths = [];
+  let flushTimer;
+
+  // We want to queue up and process batches in order while holding the sync
+  // lock for a bounded amount of work.
+  const queue = async.queue(function (paths, callback) {
     Blog.get({ id: blogID }, function (err, blog) {
-      
       if (err || !blog) {
         if (watchers[blogID]) {
           watchers[blogID].close();
@@ -52,15 +56,47 @@ function watch(blogID) {
           console.log(err);
           return callback();
         }
-        folder.update(path, function (err) {
-          done(err, function (err) {
-            if (err) return callback(err);
-            callback();
-          });
-        });
+
+        let batchError;
+
+        async.eachSeries(
+          paths,
+          function (path, next) {
+            folder.update(path, function (err) {
+              if (err && !batchError) batchError = err;
+              next();
+            });
+          },
+          function () {
+            done(batchError, function (err) {
+              callback(err || batchError);
+            });
+          }
+        );
       });
     });
   });
+
+  queue.error = function (err) {
+    console.error(prefix(), "Unable to process watcher batch", blogID, err);
+  };
+
+  function flushPendingPaths() {
+    flushTimer = undefined;
+
+    const snapshot = pendingPaths.splice(0, maximumBatchSize);
+    const paths = snapshot.filter(
+      (path, index) => snapshot.indexOf(path) === index
+    );
+
+    if (paths.length) queue.push(paths);
+    if (pendingPaths.length) scheduleFlush();
+  }
+
+  function scheduleFlush() {
+    if (flushTimer) return;
+    flushTimer = setTimeout(flushPendingPaths, debounceInterval);
+  }
 
   try {
     if (watchers[blogID]) return;
@@ -76,7 +112,8 @@ function watch(blogID) {
       if (!path) return;
       // Blot likes leading slashes
       path = "/" + path;
-      queue.push(path);
+      pendingPaths.push(path);
+      scheduleFlush();
     });
 
     watchers[blogID] = watcher;

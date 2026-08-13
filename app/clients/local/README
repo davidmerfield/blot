@@ -95,8 +95,8 @@ The core initialization and watching logic:
 
 1. **Fix phase**: Calls `Sync/fix` to validate and repair the blog's internal state (entry ghosts, tag ghosts, etc.).
 2. **Watch phase** (development only): In development environment, starts watching the blog folder with `chokidar` for file system events.
-3. **Event queuing**: File system events are queued and processed sequentially via `async.queue` to ensure changes are applied in order.
-4. **Sync flow**: Each file change triggers `Sync(blogID, ...)`, which locks the blog folder, processes the update via `folder.update(path, ...)`, and releases the lock.
+3. **Event queuing**: File system events are briefly collected into bounded batches. Duplicate paths within each batch are removed while preserving their first-seen order, and batches are processed sequentially via `async.queue`.
+4. **Sync flow**: Each batch triggers one `Sync(blogID, ...)` call and one blog lookup. While holding the lock, its paths are passed to `folder.update(path, ...)` in series before the lock is released. Events arriving during that work are collected for a later batch.
 5. **Watch lifecycle**: Watchers are stored in a per-blog registry and cleaned up when the blog is switched to a different client or deleted.
 
 ### write.js
@@ -123,8 +123,9 @@ The sync flow coordinates changes between the file system and Blot's internal st
    - In development, starts watching the blog folder with `chokidar`.
 
 2. **File System Watch** (`setup.js` `watch()` function): When a file system event occurs on a watched path:
-   - The event is queued (path with leading slash).
-   - Queued events are processed sequentially to maintain order.
+   - The path is normalized with a leading slash and added to a short debounce collector.
+   - On each flush, a bounded snapshot of pending paths is deduplicated in first-seen order and queued as one batch.
+   - Events received while a batch is running remain available for a subsequent batch.
 
 3. **Sync Lock** (`app/sync/index.js`): Before processing any changes:
    - Acquires an exclusive lock on the blog folder using `proper-lockfile`.
@@ -132,7 +133,7 @@ The sync flow coordinates changes between the file system and Blot's internal st
 
 4. **Update Processing** (`app/sync/index.js`): Once locked:
    - Creates a `folder` object with `update(path, callback)` method.
-   - Calls the update handler (passed via callback) which processes the specific file change.
+   - Processes every path in the batch serially with `folder.update`, continuing with later paths if one update fails.
    - Updates are wrapped to track pending operations.
 
 5. **Lock Release**: After all changes are processed:
