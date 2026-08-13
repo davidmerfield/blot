@@ -75,18 +75,69 @@
   height: 14px;
 }
 
-.template-upload__status {
-  display: block;
-  margin-top: 0.75rem;
+/* One row per file, the way the importer shows the file it is about to
+   import. A template can hold up to 100 files, so the list scrolls rather
+   than pushing the rest of the page away. */
+.template-upload__files {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.template-upload__file {
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.template-upload__file .file-drop__name {
+  font-weight: 400;
+}
+
+.template-upload__file-state {
+  flex-shrink: 0;
   font-size: 13px;
   color: var(--medium-text-color);
 }
 
-.template-upload__status:empty {
+.template-upload__file-state:empty {
   display: none;
 }
 
-.template-upload.is-working .file-drop__empty {
+.template-upload__file--added .file-drop__name {
+  font-weight: 600;
+}
+
+.template-upload__file--added .template-upload__file-state {
+  color: var(--success-text-color);
+}
+
+/* Skipped and failed rows are stated rather than merely tinted, so the
+   distinction does not rest on colour alone */
+.template-upload__file--ignored .file-drop__name,
+.template-upload__file--ignored .file-drop__file-icon {
+  opacity: 0.6;
+}
+
+.template-upload__file--problem .template-upload__file-state {
+  color: var(--error-text-color);
+}
+
+.template-upload__again {
+  margin: 0.75rem 0 0;
+}
+
+.template-upload__reset {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+}
+
+.template-upload.is-working .template-upload__reset {
+  pointer-events: none;
   opacity: 0.6;
 }
 

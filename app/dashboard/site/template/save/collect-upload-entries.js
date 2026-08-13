@@ -1,7 +1,10 @@
 const fs = require("fs-extra");
 const unzipUpload = require("./unzip-upload");
 const UploadValidationError = require("./upload-validation-error");
-const { UPLOAD_MAX_FILES, UPLOAD_MAX_TOTAL_BYTES } = require("./constants");
+const {
+  UPLOAD_MAX_RAW_FILES,
+  UPLOAD_MAX_TOTAL_BYTES,
+} = require("./constants");
 
 // Reads what multiparty left in req.files into { relativePath, buffer }
 // records for parse-uploaded-template.
@@ -120,11 +123,15 @@ module.exports = async function collectUploadEntries (req) {
     };
   }
 
-  if (otherFiles.length > UPLOAD_MAX_FILES) {
+  // The raw cap, not the template's file limit: the parser applies that once
+  // it has set aside system noise and hidden files. Comparing against the
+  // lower limit here would reject a template kept in a git working tree
+  // before anything had a chance to discard its .git entries.
+  if (otherFiles.length > UPLOAD_MAX_RAW_FILES) {
     throw new UploadValidationError([
       {
         reason: "count",
-        message: `A template cannot contain more than ${UPLOAD_MAX_FILES} files — you dropped ${otherFiles.length}`,
+        message: `You dropped ${otherFiles.length} files, which is far more than a template can use`,
       },
     ]);
   }

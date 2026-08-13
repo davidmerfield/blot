@@ -405,6 +405,27 @@ describe("upload template route", function () {
     expect(second.body.name).toMatch(/ 2$/);
   });
 
+  it("accepts a template dropped from a git working tree", async function () {
+    // More than 100 multipart entries, but only two usable views. The count
+    // limit has to be applied after the ignored files are discarded, and it
+    // has to be applied that way through the whole route, not just the parser.
+    const files = {
+      "my-theme/index.html": "<h1>Hi</h1>",
+      "my-theme/style.css": "body{}",
+    };
+
+    for (let i = 0; i < 150; i++) {
+      files[`my-theme/.git/objects/object-${i}`] = "junk";
+    }
+
+    const { req } = await folderRequest(this.blog, files);
+    const result = await run(req);
+
+    expect(result.status).toEqual(200);
+    expect(result.body.views.sort()).toEqual(["index.html", "style.css"]);
+    expect(result.body.ignored.length).toEqual(150);
+  });
+
   it("reports ignored files", async function () {
     const { req } = await folderRequest(this.blog, {
       "my-theme/index.html": "<h1>Hi</h1>",
