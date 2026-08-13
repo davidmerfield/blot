@@ -24,6 +24,23 @@ const STRIP_MARKER = new RegExp("^" + BLANK + "*" + MARKER + BLANK + "?");
 
 const isBlank = (text) => text.replace(/&nbsp;/gi, " ").trim() === "";
 
+// Elements which are content in their own right, even though they hold no
+// text of their own. A quoted line containing one is not a marker-only line.
+const EMBEDDED = [
+  "img",
+  "picture",
+  "source",
+  "svg",
+  "canvas",
+  "video",
+  "audio",
+  "iframe",
+  "embed",
+  "object",
+  "input",
+  "table",
+];
+
 module.exports = ($) => {
   const text = (node) => (node.type === "text" ? node.data : $(node).text());
 
@@ -72,9 +89,20 @@ module.exports = ($) => {
   const isEmpty = (line) =>
     line.nodes.every((node) => node.type === "text" && isBlank(node.data));
 
+  // Whether a line contains an element which is content of its own, such as
+  // an image, at any depth
+  const hasEmbedded = (nodes) =>
+    nodes.some(
+      (node) =>
+        node.type === "tag" &&
+        (EMBEDDED.indexOf(node.name) > -1 ||
+          (node.children && hasEmbedded(node.children)))
+    );
+
   // Whether a quoted line is empty once its marker is removed, e.g. '>'
   // Such lines separate the paragraphs of a single quote
   const isSeparator = (line) =>
+    !hasEmbedded(line.nodes) &&
     isBlank(line.nodes.map(text).join("").replace(STRIP_MARKER, ""));
 
   // Join lines with <br> inside a fresh element, moving the original
