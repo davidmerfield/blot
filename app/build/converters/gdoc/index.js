@@ -211,13 +211,15 @@ async function read(blog, path, callback) {
     // handle line breaks
     linebreaks($);
 
-    // restore display math whose Google Docs paragraphs were joined above
-    restoreDisplayMath($);
-
     await processImages(blog.id, path, $);
 
     // handle blockquotes
     blockquotes($);
+
+    // restore display math whose Google Docs paragraphs were joined above
+    // this runs after blockquotes so that an equation inside a quote is
+    // recognized once its quote markers have been removed
+    restoreDisplayMath($);
 
     // handle footnotes
     footnotes($);

@@ -1,4 +1,4 @@
-Spring newsletter
+Summer newsletter
 
 *You received this email because you subscribed to [Blot’s newsletter](https://blot.im/news). You can [unsubscribe](https://blot.im/news/cancel) at any time. Please reply directly to this email if you have any thoughts or questions.*  
 
@@ -31,12 +31,13 @@ Spring newsletter
 - Fixed a prototype pollution vulnerability in how the dashboard processes form fields
 - Fixed a bug that allowed unauthorized access to another site’s files by submitting a crafted site ID
 - Fixed an authorization bug that let you install and view another site’s private template
+- Fixed the HTML produced for blockquotes in [Google Docs](https://blot.im/how/files/google-docs), which could make quoted text wider than the rest of your writing
 
 **Questions**
 
 **Mistakes**
 
-**Plans for the summer**
+**Plans for the autumn**
 
 If you have any thoughts or questions, please don’t hesitate to reply directly to this email.
 
