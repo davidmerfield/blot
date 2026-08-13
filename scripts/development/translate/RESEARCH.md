@@ -920,21 +920,28 @@ the comparison UI covers the common case.
 ```
 scripts/development/translate/
   RESEARCH.md          ← this file
-  index.js             ← IN container: provision blog + template (idempotent)
-  finalize.js          ← IN container: re-assert "enabled": true, grep for
-                          host-specific strings (§5.1, §5.2)
-  content-check.js     ← IN container: has content arrived and built? (§3.2)
-  screenshot.js        ← ON host: puppeteer (container cannot reach *.local.blot)
-  compare-server.js    ← ON host: comparison UI + feedback intake (§6.6.2)
-  state.js             ← run-state read/write for idempotent re-runs (§6.7)
+  PLAN.md              ← implementation plan and status
   translate.sh         ← host entrypoint referenced by package.json
-  prompt.md            ← the Claude Code brief (template rules)
+  handle.js            ← URL → deterministic site handle (+ tests/)
+  index.js             ← IN container: provision blog + template (idempotent)
+  content-check.js     ← IN container: has content arrived and built? (§3.2)
+  rescan.js            ← IN container: read the folder into the database (§1.2)
+  settle.js            ← IN container: wait for cacheID to stop changing
+  targets.js           ← IN container: which pages to compare
+  finalize.js          ← IN container: re-assert "enabled": true, grep for
+                          host-specific strings (§5.1, §5.2) — milestone G
+  screenshot.js        ← ON host: puppeteer (container cannot reach *.local.blot)
+  capture.js           ← ON host: pair the shots, drop bad sources
+  compare-server.js    ← ON host: comparison UI + feedback intake (§6.6.2)
+  state.js             ← run-state read/write for idempotent re-runs — milestone G
+  prompt.md            ← the agent brief (template rules)
   README.folder.md     ← template for the folder-root README   (§6.5)
   README.template.md   ← template for the in-template README   (§6.5)
 ```
 
-No crawler, no importer, no packaging module: content arrives from elsewhere (§3.1)
-and the operator zips the reviewed folder by hand (§0.1).
+No crawler, no importer, no packaging module: content arrives from elsewhere
+(§3.1) and the operator zips the reviewed folder by hand (§0.1). **No agent
+runner either** — the script prints a command rather than driving the CLI (§6.3).
 
 ```json
 "translate": "./scripts/development/translate/translate.sh"
@@ -1006,14 +1013,48 @@ Blot's default `blog` template, the anchoring happened and the brief needs
 sharpening.
 
 
-### 6.3 Invoking the Claude Code CLI from the Node script
+### 6.3 Handing over to the Claude Code CLI
 
-Yes — shell out to the `claude` binary. It is installed on this machine at
-`/Users/david/.local/bin/claude`, version `2.1.47`. It must run **on the host**,
-not in the container: the image has no `claude` binary and no credentials.
+**Decided after trying the alternative: the script does not run the agent. It
+prints the command for the operator to run in another window.**
 
-**Headless invocation.** `-p` / `--print` runs non-interactively and exits.
-Relevant flags from `claude --help` (verified against 2.1.47):
+The headless route was built and abandoned. Driving `claude -p` meant owning
+session-ID lifecycle, resume semantics, `PIPESTATUS` through a formatter pipe,
+stream-JSON parsing, and a transcript file — and every bug in that milestone came
+from the plumbing rather than from template translation. Two failures made the
+case: passing `--session-id` on a re-run fails with *"Session ID … is already in
+use"*, and the CLI refuses to start nested inside another Claude Code session.
+
+Running it interactively is also a better fit for the work:
+
+- the operator watches and can interject mid-task, which matters for a design job
+  where "the nav is wrong" is faster said than inferred;
+- permission prompts behave normally, rather than needing a blanket
+  `acceptEdits` while the agent processes untrusted third-party HTML;
+- session continuity is the CLI's own job (`claude --continue` in that folder);
+- the terminal is the transcript, so nothing needs capturing.
+
+The brief runs to ~180 lines, so it cannot be passed inline. Write it to
+`.verification/brief.md` and print a single paste-able command:
+
+```
+cd <folder> && claude --model sonnet "$(cat .verification/brief.md)"
+```
+
+`claude` must still be **on the host** — the container has no binary and no
+credentials — so preflight checks it exists before provisioning anything.
+
+#### What the script gives up
+
+It no longer knows whether the agent did anything: no exit code, no blocked
+signal, no completion check. Acceptable, because the operator is watching. What
+replaces it is the next run: it commits whatever changed, re-screenshots, and
+shows the comparison.
+
+#### Flags, for reference
+
+These were verified against `claude` 2.1.47 while the headless route was being
+built. Kept because they are the map if it is ever wanted back:
 
 | Flag | Use here |
 |---|---|
@@ -1027,8 +1068,8 @@ Relevant flags from `claude --help` (verified against 2.1.47):
 | `--session-id <uuid>` / `--resume` | run the content phase and the template phase as separate invocations that share context |
 | `--append-system-prompt` | inject the Blot constraints without displacing the default system prompt |
 
-**Blocking and abort semantics.** Requirement: if Claude is blocked, it must
-bubble out and stop the whole script. Three layers:
+**Blocking and abort semantics** *(applied only to the abandoned headless
+route; with a printed command the operator sees the failure directly)*:
 
 1. **Process exit code.** `spawn`/`execFile` the binary and treat any non-zero
    exit as fatal. Do not swallow it — `translate.sh` should be `set -euo pipefail`
@@ -1056,18 +1097,13 @@ propose a structure → build the template → verify visually. If an early phas
 fails there is no point starting the next.
 
 
-#### Local CLIs only, and which one is the operator's choice
+#### Multiple agents — investigated, built, then removed
 
-**Nothing here talks to a model API directly.** The script drives a coding-agent
-CLI that is already installed and signed in on the operator's machine. That keeps
-credentials, billing and rate limits entirely outside this codebase, and means
-the operator's existing setup just works.
+An adapter layer supporting `claude`, `codex` and `cursor-agent` was built and
+then taken out along with the headless invocation: with a printed command, the
+operator can run whichever agent they like without the script knowing about it.
 
-Three are supported, discovered at preflight by testing whether the command
-exists: `claude`, `codex` and `cursor-agent`. Each lives behind an adapter in
-`scripts/development/translate/agents/` defining `agent_available`,
-`agent_install_hint`, `agent_models` and `agent_run`; the contract is documented
-in that directory's `README`.
+The findings are kept because they are what a future attempt would need.
 
 **Model discovery is only partly possible, and this is worth knowing before
 designing around it:**
@@ -1078,18 +1114,13 @@ designing around it:**
 | `claude` | No such command. Accepts aliases (`sonnet`, `opus`, `haiku`) or full model names |
 | `codex` | No such command. `-m/--model` accepts a name |
 
-So the adapter interface asks for a *list*, and lets each adapter satisfy it
-however it can — live for cursor-agent, curated for the other two. The selector
-always accepts a typed name as well, so a curated list never becomes a ceiling.
+So any adapter interface should ask for a *list* and let each agent satisfy it
+however it can — live for cursor-agent, curated for the other two — and should
+always accept a typed name, so a curated list never becomes a ceiling.
 
-**The choice is remembered** in `data/tmp/translate/agent.conf` (`data/` is
-gitignored). It is a machine preference rather than a per-site one, so it lives
-outside the per-run state file. `--reconfigure` re-asks; `TRANSLATE_AGENT` and
-`TRANSLATE_MODEL` override for a single run without being saved.
-
-**No spend ceiling is imposed.** Only one of the three CLIs has a budget flag,
-and each has its own account-level controls; an abstraction that works for one
-agent out of three is not worth having. Cost stays where the credentials are.
+**No spend ceiling is imposed** anywhere in this design. Only one of the three
+CLIs has a budget flag, and each has its own account-level controls. Cost stays
+where the credentials are.
 
 **Non-interactive invocation differs per CLI**, which is most of what an adapter
 exists to absorb:
@@ -1109,15 +1140,9 @@ and associative arrays.
 
 #### The transcript
 
-The agent's output is captured twice: raw streaming events appended to
-`.verification/agent.jsonl`, and a readable commentary in `.verification/agent.log`.
-`agent-log.js` does the conversion, rendering assistant text, tool calls as
-`→ tool: target`, and errors as `✗ …`. Both paths are printed by the script and
-repeated in any abort message, so there is never a question of where to look.
-
-Append rather than overwrite, so a resumed turn extends the record. And check
-`PIPESTATUS` when piping an agent through the formatter — otherwise a failing
-agent is masked by a succeeding formatter.
+Not captured. The operator runs the agent in their own terminal, which is the
+transcript, and the CLI keeps its own session history. A stream-JSON formatter
+was built for the headless route and removed with it.
 
 ### 6.4 The verification loop and the `.verification/` folder
 
@@ -1563,10 +1588,11 @@ legible as a diff.
 | Content handoff | Operator moves content in; the script **verifies entries built** rather than trusting a keypress | §3.2 |
 | Agent may edit content | Yes — some design mismatches are content problems, and git makes the edits reviewable | §3.3, §6.4 |
 | Template scaffold | Clone `SITE:blog` — take the working boilerplate, instruct the agent to treat it as structure, not as a look | §6.2 |
-| Invoking the agent | A **local CLI only** — `claude`, `codex` or `cursor-agent` — run on the host. Discovered at preflight, chosen once, remembered in `data/tmp/translate/agent.conf`. Non-zero exit or `.verification/BLOCKED.txt` aborts the run | §6.3 |
-| Default agent | `claude` with `sonnet` | §6.3 |
-| Spend ceilings | Not imposed. Only one of the three CLIs has a budget flag; cost stays with the credentials | §6.3 |
-| Agent transcript | `.verification/agent.log` (readable) and `agent.jsonl` (raw), both named in the script output | §6.3 |
+| Invoking the agent | **The script does not.** It writes `.verification/brief.md` and prints `cd <folder> && claude --model sonnet "$(cat .verification/brief.md)"` for the operator to run in another window | §6.3 |
+| Agent and model | `claude`, `sonnet`. Presence checked at preflight; `TRANSLATE_MODEL` overrides | §6.3 |
+| Spend ceilings | Not imposed; cost stays with the credentials | §6.3 |
+| Agent transcript | Not captured — the operator's terminal is the transcript | §6.3 |
+| The loop | Re-running the script. It commits the round, re-screenshots, refreshes the comparison and folds in any feedback | §6.7 |
 | Verification folder | `.verification/` — dot-named so Finder select-all excludes it; still served over HTTP for the operator | §6.4 |
 | READMEs | Two, both named `README`, no extension, Markdown inside. Ignored at the folder root; becomes a `/readme` view in the template, which is accepted and matches seven shipped templates | §6.5 |
 | Comparison UI | Screenshot pairs + opacity-blend slider + open-in-tab links + feedback textarea, served on port 3021 | §6.6.2 |

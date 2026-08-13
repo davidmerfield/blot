@@ -20,11 +20,11 @@ scaffolded site and the whole pipeline is exercisable before any crawler exists.
 
 **Prerequisite for every task:** `npm start` running in another window.
 
-**Status:** Milestones A–E complete, including one real agent run. `npm run
-translate <url>` provisions a site, scaffolds a template cloned from `SITE:blog`,
-initialises a git repo, waits for content and verifies it built, screenshots both
-sites, serves a comparison UI, and hands the job to a local agent CLI of the
-operator's choosing. Next: milestone F (the feedback loop).
+**Status:** Milestones A–F complete. `npm run translate <url>` provisions a site,
+scaffolds a template cloned from `SITE:blog`, initialises a git repo, waits for
+content and verifies it built, commits each round, screenshots both sites, serves
+a comparison UI, and prints the `claude` command for the operator to run in
+another window. Re-running is the loop. Next: milestone G (finalize and re-runs).
 
 Two findings worth carrying forward:
 
@@ -263,92 +263,82 @@ hand.*
 - Say that content edits are permitted and when they are the right fix (§3.3).
 - **Done when:** the brief is complete enough that a human could follow it.
 
-### E3. Invoke the CLI (§6.3)  ✅
-- On the **host** (no agent binary or credentials in the container).
-- Goes through the adapter layer (E6) rather than calling `claude` directly.
-- `claude -p --output-format json --permission-mode acceptEdits`, cwd
-  `data/blogs/<blogID>/`, `--add-dir` for the brief so it stays out of the folder.
-- Tool allowlist `Read, Write, Edit, Glob, Grep, WebFetch, Bash(node:*)` — **not**
-  unrestricted `Bash`; the agent is processing untrusted third-party HTML.
-- `--session-id <uuid>` pinned on the first run.
-- A process timeout. No spend ceiling — see E6.
-- **Done when:** one invocation edits the template and the site still renders.
+### E3. Print the command, do not run the agent  ✅
+**Simplified deliberately.** The script prepares the workspace and prints a
+command for the operator to run in another window. It does not drive the agent.
 
-### E4. Abort handling (§6.3)  ✅
-- Non-zero exit is fatal and propagates through `set -euo pipefail`.
-- Check for `.verification/BLOCKED.txt` after the turn; if present, print its
-  contents as the abort reason. Exit code alone cannot distinguish "finished" from
-  "gave up".
-- Commit after the turn.
-- **Done when:** a deliberately-written `BLOCKED.txt` aborts the run with its
-  message.
+Why this is better rather than merely easier: running `claude` interactively lets
+the operator watch and interject mid-task, which matters for a design job;
+permission prompts behave normally instead of needing a blanket `acceptEdits`
+while the agent processes untrusted third-party HTML; session continuity becomes
+claude's problem (`claude --continue` in that folder); and the terminal is the
+transcript, so nothing needs capturing.
 
-### E5. Stream and store the agent transcript  ✅
-- `agent-log.js` reads the agent's streaming JSON on stdin, appends every event
-  verbatim to `.verification/agent.jsonl`, and prints a readable commentary
-  (assistant text, `→ tool: target`, `✗ errors`) to stdout.
-- `translate.sh` tees that through to `.verification/agent.log`, so the operator
-  watches it live and keeps the readable record.
-- Both paths are named in the script's output, and in the abort messages.
-- Appends rather than overwrites: a resumed turn extends the record.
-- Propagates the agent's failure via `PIPESTATUS` so a succeeding formatter
-  cannot mask a failing agent.
-- **Done when:** a synthetic event stream renders correctly, an error result
-  exits non-zero, non-JSON lines pass through, and a second turn appends.
+Almost every bug in this milestone came from driving the CLI headlessly rather
+than from the work itself — session-ID collisions, resume semantics, `PIPESTATUS`,
+stream-JSON parsing, and the CLI's refusal to run nested inside another Claude
+Code session.
 
-### E6. Local agent CLIs, discovered and remembered  ✅
-**Only local CLIs.** Nothing talks to an API directly; everything runs through a
-command already installed and signed in on the operator's machine.
+- The composed instruction (brief + this run's specifics) is written to
+  `.verification/brief.md`, because it runs to ~180 lines and cannot be passed
+  inline.
+- The printed command is a single paste:
+  `cd <folder> && claude --model sonnet "$(cat .verification/brief.md)"`
+- `claude`'s presence is still checked during preflight, so a missing CLI is
+  reported before a site is provisioned rather than at the very end.
+- **Done when:** the command is printed, `brief.md` resolves from the folder it
+  tells you to `cd` into, and the run's specifics are interpolated correctly.
 
-- Adapters in `agents/`, one per CLI, each defining `agent_available`,
-  `agent_install_hint`, `agent_models` and `agent_run`. Contract in
-  `agents/README`. Shipped: `claude`, `codex`, `cursor-agent`.
-- `agent-config.sh` discovers which adapters have their CLI installed, asks the
-  operator to choose when there is more than one, then asks for a model.
-- **Model discovery is only partly possible**, and the design reflects that:
-  `cursor-agent --list-models` returns a live list; `claude` and `codex` have no
-  such command, so their adapters carry a curated list of aliases. Either way the
-  operator can type a name that is not on the list.
-- Choice is remembered in `data/tmp/translate/agent.conf` (gitignored). Re-ask
-  with `--reconfigure`. `TRANSLATE_AGENT` / `TRANSLATE_MODEL` override for a
-  single run and are never saved.
-- Runs in preflight, so a missing or misconfigured agent fails before any site is
-  provisioned.
-- **No budget flag.** Cost is the operator's business and each CLI has its own
-  controls; a `--max-budget-usd` that only one of three agents understands is not
-  worth the abstraction.
-- macOS ships bash 3.2, so no `mapfile` and no associative arrays.
-- **Done when:** discovery lists installed CLIs, selection persists, an env
-  override wins without being saved, and an unknown agent name is rejected with
-  the available ones listed.
+### E4. Commit every round  ✅
+- Each run commits whatever changed since the last one: content the operator
+  supplied, and anything the agent edited in between.
+- First content commit is *"Add content as supplied"*; later ones *"Changes since
+  last run"*. Nothing changed means no commit.
+- This is what makes a round reviewable and a bad round a revert.
+- **Done when:** both messages appear in the right circumstances and an unchanged
+  re-run creates no commit.
+
+### E5. Feedback folds into the next brief  ✅
+- Feedback typed into the comparison UI (D3) is written to
+  `.verification/feedback.txt`.
+- The next run prepends it to `brief.md` under *"Feedback on the last attempt —
+  address this first"*, then deletes the file so it is not replayed.
+- This is the whole of the feedback loop, at no plumbing cost: type in the
+  browser, re-run, and it is in the next command.
+- **Done when:** feedback appears at the top of the brief and the file is cleared.
+
+**Removed in this simplification:** the `agents/` adapter layer (claude, codex,
+cursor-agent), `agent-config.sh` (discovery, selection, persistence) and
+`agent-log.js` (stream-JSON transcript capture) — roughly 400 lines. Model
+discovery findings are kept in RESEARCH.md §6.3 in case the abstraction is ever
+wanted back.
+
+**The trade, stated plainly:** the script no longer knows whether the agent did
+anything. No exit code, no blocked signal, no completion check. That is
+acceptable because the operator is watching it run.
 
 ---
 
-## Milestone F — The loop
+## Milestone F — The loop  ✅ MOSTLY DISSOLVED
 
-*Done when: you can iterate to a result you are happy with, then stop.*
+*Re-running the script is the loop.*
 
-### F1. Terminal feedback prompt (§6.6.1)
-- `readline` prompt: Enter accepts, text becomes feedback, `q` aborts.
-- Extend the `scripts/util/getConfirmation.js` shape (promise + optional callback).
-- Requires a TTY — do not run the script in a pipeline that detaches stdin.
-- **Done when:** each of the three inputs does the right thing.
+Once the agent is invoked by hand (E3), the loop needs no machinery of its own:
 
-### F2. Resume with feedback
-- `claude --resume <session-id>` with the feedback prepended, so it lands in a
-  session that already knows what it built.
-- Read pending feedback from either the terminal or the comparison server (D3).
-- Commit each round with the feedback text as the message (§6.10) — the log
-  becomes a record of the conversation.
-- **Done when:** feedback visibly changes the next turn's output.
+```
+npm run translate <url>     → prepares, screenshots, prints the command
+  run the printed command   → agent edits the template
+npm run translate <url>     → commits the round, re-screenshots, refreshes the
+                              comparison, folds in any feedback, prints again
+```
 
-### F3. Wire the loop
-- `agent turn → settle (B3) → screenshot (C2) → serve/refresh UI (D1) → prompt (F1)`
-  → repeat or exit.
-- Cap the agent's inner rounds (~5) and rely on the operator as the real stop
-  condition.
-- **Done when:** two or three rounds run end to end without manual intervention
-  between them.
+- **F1. Feedback intake** → done in D3 and E5.
+- **F2. Resume with context** → handled by `claude --continue` in that folder,
+  which is the CLI's own job.
+- **F3. Wire the loop** → it is the re-run.
+
+The only thing genuinely lost is an automatic stopping condition, which was
+always going to be the operator's judgement anyway.
 
 ---
 

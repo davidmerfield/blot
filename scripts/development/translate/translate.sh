@@ -49,13 +49,8 @@ fi
 URL="$1"
 shift || true
 
-RECONFIGURE=false
-
 for arg in "$@"; do
-  case "$arg" in
-    --reconfigure) RECONFIGURE=true ;;
-    *) die "Unknown option: $arg" "Usage: npm run translate <url> [--reconfigure]" ;;
-  esac
+  die "Unknown option: $arg" "Usage: npm run translate <url>"
 done
 
 case "$URL" in
@@ -160,14 +155,17 @@ fi
 
 echo "[translate] Server is up at https://$BLOT_HOST"
 
-# Which agent, and which model. Discovered from what is installed on this
-# machine, chosen once, and remembered. See agents/README for the contract.
-# shellcheck source=/dev/null
-. "$DIR/agent-config.sh"
+# The agent is not run by this script — it prints the command for you to run in
+# another window. Check it exists anyway, so a missing CLI is reported before a
+# site is provisioned rather than at the very end.
+MODEL="${TRANSLATE_MODEL:-sonnet}"
 
-configure_agent "$RECONFIGURE"
+if ! command -v claude >/dev/null 2>&1; then
+  die "The claude CLI is not installed or not on PATH." \
+"It runs on the host, not in the container:
 
-echo "[translate] Agent: $AGENT ($MODEL)"
+  https://claude.com/claude-code"
+fi
 
 # ---------------------------------------------------------------- provision
 
@@ -318,15 +316,24 @@ if [ -n "$WARNING" ]; then
   echo ""
 fi
 
-# Commit the content exactly as it was supplied, so that everything the agent
-# changes later shows up as a reviewable diff against it.
+# Commit whatever has changed since the last run: content the operator supplied,
+# and anything the agent edited in between. Keeping each round as its own commit
+# is what makes the agent's work reviewable, and a bad round a revert.
 if [ -d "$FOLDER/.git" ]; then
   git -C "$FOLDER" add -A >/dev/null 2>&1 || true
+
   if ! git -C "$FOLDER" diff --cached --quiet 2>/dev/null; then
+    # One commit beyond the scaffold means this is the first content to arrive.
+    if [ "$(git -C "$FOLDER" rev-list --count HEAD 2>/dev/null || echo 1)" -le 1 ]; then
+      COMMIT_MESSAGE="Add content as supplied"
+    else
+      COMMIT_MESSAGE="Changes since last run"
+    fi
+
     git -C "$FOLDER" \
       -c user.name=translate -c user.email=translate@local \
-      commit --quiet -m "Add content as supplied" >/dev/null 2>&1 || true
-    echo "[translate] Committed the content as supplied"
+      commit --quiet -m "$COMMIT_MESSAGE" >/dev/null 2>&1 || true
+    echo "[translate] Committed: $COMMIT_MESSAGE"
   fi
 fi
 
@@ -406,61 +413,30 @@ echo "[translate]   Dashboard: $DASHBOARD_URL"
 echo "[translate]   Shots:     $VERIFICATION"
 [ -n "$COMPARE_URL" ] && echo "[translate]   Compare:   $COMPARE_URL"
 
-# ---------------------------------------------------------------- the agent
+# ------------------------------------------------------------------ handover
 
-BLOCKED_FILE="$VERIFICATION/BLOCKED.txt"
-SESSION_FILE="$VERIFICATION/session-id"
-TRANSCRIPT="$VERIFICATION/agent.jsonl"
-AGENT_LOG="$VERIFICATION/agent.log"
+BRIEF_FILE="$VERIFICATION/brief.md"
+FEEDBACK_FILE="$VERIFICATION/feedback.txt"
 
-# A stale marker from an earlier run would abort this one immediately.
-rm -f "$BLOCKED_FILE"
+# Compose the brief plus this run's specifics. Written to a file rather than
+# passed inline because it runs to a couple of hundred lines.
+{
+  if [ -s "$FEEDBACK_FILE" ]; then
+    cat <<EOF
+## Feedback on the last attempt
 
-# Pin a session so later turns can resume it with the operator's feedback and
-# keep the context of what was already built.
-if [ -f "$SESSION_FILE" ]; then
-  SESSION_ID="$(cat "$SESSION_FILE")"
-else
-  SESSION_ID="$(uuidgen | tr "[:upper:]" "[:lower:]")"
-  echo "$SESSION_ID" > "$SESSION_FILE"
-fi
+$(cat "$FEEDBACK_FILE")
 
-check_blocked() {
-  if [ -f "$BLOCKED_FILE" ]; then
-    echo ""
-    echo "[translate] The agent stopped and reported:"
-    echo ""
-    sed "s/^/  /" "$BLOCKED_FILE"
-    echo ""
-    die "Stopped at the agent's request." \
-"Nothing is lost. The site, its content and the work so far are in:
+Address this first, then continue with the brief below.
 
-  $FOLDER
+---
 
-The full agent transcript is in:
-
-  $AGENT_LOG"
-  fi
-}
-
-commit_turn() {
-  local message="$1"
-
-  git -C "$FOLDER" add -A >/dev/null 2>&1 || true
-
-  if ! git -C "$FOLDER" diff --cached --quiet 2>/dev/null; then
-    git -C "$FOLDER" \
-      -c user.name=translate -c user.email=translate@local \
-      commit --quiet -m "$message" >/dev/null 2>&1 || true
-    return 0
+EOF
   fi
 
-  return 1
-}
+  cat "$DIR/prompt.md"
 
-BRIEF="$(cat "$DIR/prompt.md")"
-
-FIRST_INSTRUCTION="$BRIEF
+  cat <<EOF
 
 ---
 
@@ -474,53 +450,39 @@ FIRST_INSTRUCTION="$BRIEF
 - Preview the result at: $PREVIEW_URL
 - Inspect render data by appending ?json=true to any page on that preview
 
-Build the template now."
+Build the template now.
+EOF
+} > "$BRIEF_FILE"
+
+# Consumed — clear it so the same feedback is not replayed on the next run.
+rm -f "$FEEDBACK_FILE"
 
 echo ""
-echo "[translate] Handing over to $AGENT ($MODEL)"
-echo "[translate] Transcript: $AGENT_LOG"
+echo "──────────────────────────────────────────────────────────────────────"
 echo ""
-
-# tee so the operator watches it live and the readable log survives the run.
-if ( cd "$FOLDER" && agent_run "$FIRST_INSTRUCTION" new "$SESSION_ID" "$MODEL" "$TRANSCRIPT" ) \
-     2>&1 | tee -a "$AGENT_LOG"; then
-  AGENT_OK=true
-else
-  AGENT_OK=false
-fi
-
-check_blocked
-
-if [ "$AGENT_OK" != true ]; then
-  die "The $AGENT agent exited with an error." \
-"The full transcript is in:
-
-  $AGENT_LOG
-
-The site and everything built so far are in:
-
-  $FOLDER"
-fi
-
+echo "  Run this in another window to build the template:"
 echo ""
-
-if commit_turn "Agent: build template from $URL"; then
-  echo "[translate] Committed the agent's changes"
-else
-  echo "[translate] The agent made no changes"
-fi
+echo "    cd $FOLDER && claude --model $MODEL \"\$(cat .verification/brief.md)\""
+echo ""
+echo "  Then come back and re-run this script to see the result:"
+echo ""
+echo "    npm run translate $URL"
+echo ""
+echo "──────────────────────────────────────────────────────────────────────"
+echo ""
 
 # --------------------------------------------------------------------- done
 
 echo ""
-echo "[translate] Done for now."
+echo "[translate] Ready."
+echo "[translate]   Folder:     $FOLDER"
 echo "[translate]   Preview:    $PREVIEW_URL"
-echo "[translate]   Transcript: $AGENT_LOG"
-echo "[translate]   Raw events: $TRANSCRIPT"
+echo "[translate]   Brief:      $BRIEF_FILE"
 [ -n "$COMPARE_URL" ] && echo "[translate]   Compare:    $COMPARE_URL"
 echo ""
-echo "The feedback loop lands in the next milestone. For now, look at the result"
-echo "and re-run to continue."
+echo "Re-running is the loop: it re-reads the folder, commits whatever the agent"
+echo "changed, takes fresh screenshots and rebuilds the comparison. Feedback typed"
+echo "into the comparison UI is folded into the next brief."
 echo ""
 
 if [ -n "$COMPARE_URL" ]; then

@@ -161,5 +161,5 @@ reproduce and the reason — that goes in the folder's `README` under *Notes fro
 the translation*.
 
 **If you are blocked** — the target cannot be fetched, the content is not what
-you were told, the design needs something Blot cannot do — write the reason to
-`.verification/BLOCKED.txt` and stop. Do not improvise around a broken premise.
+you were told, the design needs something Blot cannot do — say so plainly and
+stop. Do not improvise around a broken premise.
