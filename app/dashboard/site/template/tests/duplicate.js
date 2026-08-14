@@ -23,6 +23,37 @@ describe("duplicate template route", function () {
     });
   });
 
+  it("stores a slug which matches the id, even for long names", async function () {
+    // writeToFolder names the template's directory after the stored slug and
+    // readFromFolder turns that name back into an id. If the two disagree, a
+    // locally edited duplicate can be read back as the template it came from
+    // and overwrite it.
+    const name = "My extremely long template name for testing";
+
+    await new Promise((resolve, reject) => {
+      Template.create(this.blog.id, name, {}, (err) =>
+        err ? reject(err) : resolve()
+      );
+    });
+
+    const templates = await new Promise((resolve, reject) => {
+      Template.getTemplateList(this.blog.id, (err, list) =>
+        err ? reject(err) : resolve(list)
+      );
+    });
+
+    const original = templates.find((t) => t.name === name);
+    const copy = await duplicateTemplate({ owner: this.blog.id, template: original });
+
+    expect(copy.slug).toEqual(copy.id.split(":").slice(1).join(":"));
+
+    // And again once deduplication has had to trim the name
+    const second = await duplicateTemplate({ owner: this.blog.id, template: original });
+
+    expect(second.id).not.toEqual(copy.id);
+    expect(second.slug).toEqual(second.id.split(":").slice(1).join(":"));
+  });
+
   it("deduplicates subsequent copies", async function () {
     const firstCopy = await duplicateTemplate({
       owner: this.blog.id,

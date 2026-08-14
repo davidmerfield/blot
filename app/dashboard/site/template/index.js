@@ -59,6 +59,10 @@ TemplateEditor.route("/new")
     });
   });
 
+// Creates a template from a dropped folder or zip file. Two path segments, so
+// it cannot be captured by the single-segment /:templateSlug route below.
+TemplateEditor.post("/new/upload", require("./save/upload-template"));
+
 TemplateEditor.route("/:templateSlug/install")
   .get(function (req, res) {
     res.locals.title = `Install - ${req.template.name}`;
