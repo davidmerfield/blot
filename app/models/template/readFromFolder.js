@@ -15,6 +15,8 @@ var key = require("./key");
 var dropView = require("./dropView");
 const Blog = require("models/blog");
 const create = require("./create");
+const improveJSONErrorMessage = require("./util/improveJSONErrorMessage");
+const improveMustacheErrorMessage = require("./util/improveMustacheErrorMessage");
 
 async function createLocalTemplate (blogID, dir) {
   return new Promise(async function (resolve, reject) {
@@ -173,43 +175,6 @@ function removeDeletedViews (templateID, contents, callback) {
       );
     })
     .catch(callback);
-}
-
-// Maps 'at position 505' to
-function improveJSONErrorMessage (err, contents) {
-  try {
-    const regex = /at position (\d+)$/gm;
-    const found = [...err.message.matchAll(regex)][0];
-    const position = parseInt(found[1]);
-    const messageWithoutLocation = err.message.slice(0, found.index).trim();
-    const lines = contents.slice(0, position).split("\n");
-    const lineNumber = lines.length;
-    const linePosition = lines[lineNumber - 1].length;
-    return `${messageWithoutLocation} at position ${linePosition} on line ${lineNumber}`;
-  } catch (e) {
-    // We could not rewrite the message, so report the original rather than
-    // the failure to rewrite it
-    return err.message;
-  }
-}
-
-// Maps 'Unclosed section "entriess" at 1446' to
-// `Unclosed section "entriess" on line 12`
-function improveMustacheErrorMessage (err, contents) {
-  try {
-    const regex = /at (\d+)$/gm;
-    const found = [...err.message.matchAll(regex)][0];
-    const position = parseInt(found[1]);
-    const messageWithoutLocation = err.message.slice(0, found.index).trim();
-    const lines = contents.slice(0, position).split("\n");
-    const lineNumber = lines.length;
-    const linePosition = lines[lineNumber - 1].length;
-    return `${messageWithoutLocation} at position ${linePosition} on line ${lineNumber}`;
-  } catch (e) {
-    // We could not rewrite the message, so report the original rather than
-    // the failure to rewrite it
-    return err.message;
-  }
 }
 
 function badPermission (blogID, templateID) {
