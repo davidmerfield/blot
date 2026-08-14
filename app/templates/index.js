@@ -260,7 +260,14 @@ function build(directory, callback) {
 
 function buildViews(id, definitions, callback) {
   var views = Object.keys(definitions || {}).sort();
+  var errors = [];
 
+  // One view failing to build (e.g. invalid Mustache) must not prevent
+  // every other view from building too - alphabetically-later views
+  // would otherwise never get rebuilt after Template.drop() wiped the
+  // previous, working set. So we always call next() and collect errors
+  // instead, then report them via the final callback once every view
+  // has had a chance to build.
   async.eachSeries(
     views,
     function (name, next) {
@@ -274,13 +281,26 @@ function buildViews(id, definitions, callback) {
           errorView.content = err.toString();
           Template.setView(id, errorView, function () {});
           if (path) err.message += " in " + path;
-          return next(err);
+          errors.push(err);
         }
 
         next();
       });
     },
-    callback
+    function (err) {
+      if (err) return callback(err);
+      if (!errors.length) return callback();
+
+      callback(
+        new Error(
+          errors.length +
+            " view" +
+            (errors.length === 1 ? "" : "s") +
+            " failed to build: " +
+            errors.map((e) => e.message).join("; ")
+        )
+      );
+    }
   );
 }
 
@@ -293,7 +313,17 @@ function assembleTemplateSnapshot(directory, templatePackage, locals) {
     var path = directory + "/" + entry;
     var viewFilename = basename(path);
 
-    if (viewFilename === "package.json" || viewFilename.slice(0, 1) === ".")
+    // READMEs are documentation, not views: they're never routed and
+    // often contain prose examples of Mustache syntax (e.g. an unclosed
+    // "{{#foo}}" to illustrate what a tag looks like), which is exactly
+    // the kind of thing that fails Template.setView's Mustache parse
+    // check. Treating them as a real view for no benefit isn't worth
+    // that risk.
+    if (
+      viewFilename === "package.json" ||
+      viewFilename.slice(0, 1) === "." ||
+      /^readme(\.\w+)?$/i.test(viewFilename)
+    )
       return;
 
     var viewName = viewFilename;
