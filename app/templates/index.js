@@ -134,68 +134,83 @@ function build(directory, callback) {
     // package.json is optional
   }
 
-  id = TEMPLATES_OWNER + ":" + basename(directory);
-  name = templatePackage.name || capitalize(basename(directory));
-  description = templatePackage.description || "";
-  isPublic = templatePackage.isPublic !== false;
+  try {
+    id = TEMPLATES_OWNER + ":" + basename(directory);
+    name = templatePackage.name || capitalize(basename(directory));
+    description = templatePackage.description || "";
+    isPublic = templatePackage.isPublic !== false;
 
-  template = {
-    isPublic: isPublic,
-    description: description,
-    locals: templatePackage.locals,
-  };
-
-  // Set the default font for each template
-  if (template.locals.body_font !== undefined) {
-    template.locals.body_font = _.merge(
-      _.cloneDeep(DEFAULT_FONT),
-      template.locals.body_font
-    );
-  }
-
-  if (template.locals.font !== undefined) {
-    template.locals.font = _.merge(
-      _.cloneDeep(DEFAULT_FONT),
-      template.locals.font
-    );
-  }
-
-  if (template.locals.navigation_font !== undefined) {
-    template.locals.navigation_font = _.merge(
-      _.cloneDeep(DEFAULT_FONT),
-      template.locals.navigation_font
-    );
-  }
-
-  if (template.locals.syntax_highlighter !== undefined) {
-    template.locals.syntax_highlighter = {
-      ...HIGHLIGHTER_THEMES.find(
-        ({ id }) =>
-          id ===
-          (template.locals.syntax_highlighter.id || "stackoverflow-light")
-      ),
+    template = {
+      isPublic: isPublic,
+      description: description,
+      // templatePackage can be {} (missing/unreadable/mid-write
+      // package.json - see above, deliberately tolerated), so this
+      // can't just be templatePackage.locals: that's undefined in
+      // exactly that case, and every .locals.* read below would throw.
+      locals: templatePackage.locals || {},
     };
-  }
 
-  if (template.locals.coding_font !== undefined) {
-    template.locals.coding_font = _.merge(
-      _.cloneDeep(DEFAULT_MONO_FONT),
-      template.locals.coding_font
+    // Set the default font for each template
+    if (template.locals.body_font !== undefined) {
+      template.locals.body_font = _.merge(
+        _.cloneDeep(DEFAULT_FONT),
+        template.locals.body_font
+      );
+    }
+
+    if (template.locals.font !== undefined) {
+      template.locals.font = _.merge(
+        _.cloneDeep(DEFAULT_FONT),
+        template.locals.font
+      );
+    }
+
+    if (template.locals.navigation_font !== undefined) {
+      template.locals.navigation_font = _.merge(
+        _.cloneDeep(DEFAULT_FONT),
+        template.locals.navigation_font
+      );
+    }
+
+    if (template.locals.syntax_highlighter !== undefined) {
+      template.locals.syntax_highlighter = {
+        ...HIGHLIGHTER_THEMES.find(
+          ({ id }) =>
+            id ===
+            (template.locals.syntax_highlighter.id || "stackoverflow-light")
+        ),
+      };
+    }
+
+    if (template.locals.coding_font !== undefined) {
+      template.locals.coding_font = _.merge(
+        _.cloneDeep(DEFAULT_MONO_FONT),
+        template.locals.coding_font
+      );
+    }
+
+    if (template.locals.syntax_highlighter_font !== undefined) {
+      template.locals.syntax_highlighter_font = _.merge(
+        _.cloneDeep(DEFAULT_MONO_FONT),
+        template.locals.syntax_highlighter_font
+      );
+    }
+
+    snapshot = assembleTemplateSnapshot(
+      directory,
+      templatePackage,
+      template.locals
     );
+  } catch (e) {
+    // A template folder can be caught mid-edit (a save landing between
+    // chokidar's change event and a template being fully rewritten, a
+    // package.json briefly missing/malformed, etc). That's a build
+    // failure for this one template, not a reason to crash the whole
+    // process - log it and let the next file change in this folder
+    // trigger a fresh, hopefully-complete rebuild.
+    e.message = "Failed to build " + basename(directory) + ": " + e.message;
+    return callback(e);
   }
-
-  if (template.locals.syntax_highlighter_font !== undefined) {
-    template.locals.syntax_highlighter_font = _.merge(
-      _.cloneDeep(DEFAULT_MONO_FONT),
-      template.locals.syntax_highlighter_font
-    );
-  }
-
-  snapshot = assembleTemplateSnapshot(
-    directory,
-    templatePackage,
-    template.locals
-  );
 
   Template.getMetadata(id, function (metadataErr, storedMetadata) {
     if (metadataErr && metadataErr.code !== "ENOENT")
