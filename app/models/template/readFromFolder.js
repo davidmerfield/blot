@@ -187,7 +187,9 @@ function improveJSONErrorMessage (err, contents) {
     const linePosition = lines[lineNumber - 1].length;
     return `${messageWithoutLocation} at position ${linePosition} on line ${lineNumber}`;
   } catch (e) {
-    return e.message;
+    // We could not rewrite the message, so report the original rather than
+    // the failure to rewrite it
+    return err.message;
   }
 }
 
@@ -204,7 +206,9 @@ function improveMustacheErrorMessage (err, contents) {
     const linePosition = lines[lineNumber - 1].length;
     return `${messageWithoutLocation} at position ${linePosition} on line ${lineNumber}`;
   } catch (e) {
-    return e.message;
+    // We could not rewrite the message, so report the original rather than
+    // the failure to rewrite it
+    return err.message;
   }
 }
 
