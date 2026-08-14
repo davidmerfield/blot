@@ -89,7 +89,12 @@ body {
 }
 
 a {color: var(--link-color); font-weight: bold;}
-a:hover {opacity: 0.75;}
+/* filter: brightness(), not opacity: opacity blends the link color
+   toward whatever's behind it, which - for a dark accent on a light
+   background - only ever reduces contrast (verified: ~6:1 down to
+   ~3.5:1, failing WCAG AA on hover). brightness() darkens the color
+   itself instead, which increases contrast here (up to ~9:1). */
+a:hover {filter: brightness(0.75);}
 
 .light {
   color: var(--light-text-color);
@@ -146,7 +151,7 @@ a:hover {opacity: 0.75;}
   gap: 0.5em;
 }
 
-.site-title a:hover {opacity: 0.75;}
+.site-title a:hover {filter: brightness(0.75);}
 
 .site-avatar {
   /* Fixed width AND height reserve the box before the image has loaded and
@@ -192,6 +197,10 @@ a:hover {opacity: 0.75;}
   height: 1.2em;
 }
 
+.site-header--stripe .hamburger {
+  color: var(--text-color);
+}
+
 .site-header--stripe .hamburger-inner,
 .site-header--stripe .hamburger-inner:before,
 .site-header--stripe .hamburger-inner:after {
@@ -212,9 +221,21 @@ a:hover {opacity: 0.75;}
   pointer-events: none;
 }
 
+/* The checkbox itself is invisible (see above), and its <label> isn't
+   independently focusable - it's the checkbox a keyboard user actually
+   tabs to. Without this, Tab would land on the toggle with no visible
+   indication at all. color: currentColor here so the outline matches
+   whichever icon color is active (light on the dark "block" header,
+   dark on the light "stripe" one) without duplicating that logic. */
+.sidebar-toggle:focus-visible ~ .site-header .hamburger {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 .hamburger {
   display: none;
   position: relative;
+  color: var(--header-text-color);
   width: 1.5em;
   height: 1.5em;
   flex-shrink: 0;
