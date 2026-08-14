@@ -1,5 +1,33 @@
+const makeSlug = require("helper/makeSlug");
+const makeID = require("models/template/util/makeID");
 const createTemplate = require("./create-template");
 const { MAX_DEDUPLICATION_ATTEMPTS } = require("./constants");
+
+// Template.create derives a template's id from makeSlug(name).slice(0, 30)
+const MAX_SLUG_LENGTH = 30;
+
+// The id is what routing resolves a template by, and writeToFolder names the
+// template's directory after the stored slug, which readFromFolder then turns
+// back into an id. Let the two disagree and a locally edited copy can be read
+// back as the template it was copied from, so derive the slug from the id.
+const slugFor = (owner, name) =>
+  makeID(owner, name).split(":").slice(1).join(":");
+
+// Appending a counter to a name whose slug already fills those 30 characters
+// leaves them unchanged, so every attempt derives the same id and collides
+// again. Trim the base until the counter survives into the slug.
+const withCounter = (base, counter) => {
+  let trimmed = base;
+
+  while (
+    trimmed.length > 1 &&
+    makeSlug(`${trimmed} ${counter}`).length > MAX_SLUG_LENGTH
+  ) {
+    trimmed = trimmed.slice(0, -1).trim();
+  }
+
+  return `${trimmed} ${counter}`;
+};
 
 const COPY_NAME_PATTERN = /^(.*?)(?: copy(?: (\d+))?)$/;
 const COPY_SLUG_PATTERN = /^(.*?)(?:-copy(?:-(\d+))?)$/;
@@ -46,14 +74,13 @@ async function duplicateTemplate({ owner, template }) {
   }
 
   const { base: nameBase, counter: nameCounter } = parseCopyName(template.name);
-  const { base: slugBase, counter: slugCounter } = parseCopySlug(template.slug);
+  // Only the counter: the slug now follows whatever name we settle on
+  const { counter: slugCounter } = parseCopySlug(template.slug);
 
   const baseName = `${nameBase} copy`.trim();
-  const baseSlug = `${slugBase}-copy`;
 
   let deduplicationCounter = Math.max(nameCounter, slugCounter, 1);
   let attemptName = baseName;
-  let attemptSlug = baseSlug;
   let attempts = 0;
 
   while (attempts < MAX_DEDUPLICATION_ATTEMPTS) {
@@ -64,7 +91,7 @@ async function duplicateTemplate({ owner, template }) {
         isPublic: false,
         owner,
         name: attemptName,
-        slug: attemptSlug,
+        slug: slugFor(owner, attemptName),
         cloneFrom: template.id,
       });
     } catch (error) {
@@ -74,8 +101,7 @@ async function duplicateTemplate({ owner, template }) {
         attempts < MAX_DEDUPLICATION_ATTEMPTS
       ) {
         deduplicationCounter = Math.max(deduplicationCounter, 1) + 1;
-        attemptName = `${baseName} ${deduplicationCounter}`;
-        attemptSlug = `${baseSlug}-${deduplicationCounter}`;
+        attemptName = withCounter(baseName, deduplicationCounter);
         continue;
       }
 
