@@ -588,6 +588,38 @@ th, td {border: 1px solid var(--border-color); padding: 0.3em 0.7em;}
 
 {{> plugin}}
 
+/* Blot's margin-note markdown feature ({|<}) assumes a single, wide
+   content column with open space beside it: plugin.css positions
+   .right.margin by floating it 40% further right, absolutely
+   positioned. In Notebook's two-column layout that space is always
+   .sidebar, so a margin note overlaps it (and .main is only 483px
+   wide to begin with - nowhere near enough room to spare 40% besides).
+   plugin.css already has a safe, inline fallback for exactly this
+   problem, normally reserved for its own sub-933px breakpoint; apply
+   it unconditionally here since Notebook's sidebar sits alongside
+   .main at every width the two-column layout is active. */
+.margin,
+.margin.right,
+.margin.left {
+  width: 100%;
+  position: relative;
+  display: block;
+  top: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  float: none;
+  padding: 0;
+  text-align: left;
+}
+
+.wide,
+.wide.left,
+.wide.right {
+  width: 100%;
+  margin: 0;
+}
+
 /* plugin.css sets a top margin on body below 933px and restyles the
    sidebar; keep Thisaway's 760px column layout intact. */
 @media screen and (max-width: 933px) {
