@@ -1,5 +1,9 @@
 Resolve [app user reports](https://mail.google.com/mail/u/0/#inbox/FMfcgzQhVqzPNVcFNjRcMcsZPqrMJQKp)
 
+Repackage new notebook template
+
+Send out summer newsletter
+
 ---
 
 Fix bug with hypertext template and follow up with [31](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLPVXLRDkJTLCsKnMBRZdTklb)
@@ -514,6 +518,7 @@ New plugins:
 - Add [preload=none](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/audio#preload) to all audio and video tags without it defined or maybe preload="metadata"? 
 
 Improvements to dashboard:
+- Add affordance for drag-and-drop to upload
 - Make it clearer in the UI that creating a second site increases the subscription at the next billing cycle, probably with a one-time notice.
 - Improve clients
   - cache sync validity and display checkmark on dashboard
