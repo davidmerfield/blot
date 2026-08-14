@@ -16,7 +16,7 @@
             <div class="post-footer">
               {{#author}}<span class="post-author">Posted by {{.}}</span>{{/author}}
               {{^hide_dates}}{{#date}}<span class="post-date">{{date}}</span>{{/date}}{{/hide_dates}}
-              {{#tags}}<a href="/tagged/{{slug}}" class="post-tag">{{tag}}</a>{{/tags}}
+              {{#tags}}<span class="post-tag-separator">&middot;</span><a href="/tagged/{{slug}}" class="post-tag">{{tag}}</a>{{/tags}}
             </div>
           </article>
 

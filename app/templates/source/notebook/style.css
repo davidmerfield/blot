@@ -62,10 +62,9 @@
      borders (1px) and the two viewport-width breakpoints are deliberately
      left in px - a 1px border scaling to a fractional pixel isn't
      desirable, and breakpoints respond to physical screen size, not type
-     size. Values below are the original px design divided by 16, the
-     current base-font-size for Source Serif. */
-  --page-width: 47.5rem;      /* 760px */
-  --main-width: 30.1875rem;   /* 483px */
+     size. The pixel equivalents below use the current 16px base font. */
+  --page-width: 54rem;         /* 864px */
+  --main-width: 36.6875rem;    /* 587px */
   --sidebar-width: 16.8125rem; /* 269px */
 }
 
@@ -89,6 +88,7 @@ body {
 }
 
 a {color: var(--link-color); font-weight: normal;}
+b, strong {font-weight: 600;}
 /* filter: brightness(), not opacity: opacity blends the link color
    toward whatever's behind it, which - for a dark accent on a light
    background - only ever reduces contrast (verified: ~6:1 down to
@@ -273,7 +273,7 @@ a:hover {filter: brightness(0.75);}
 .content-wrapper > .clear {display: none;}
 
 .main {
-  /* flex-shrink 1 (not 0): .main + .sidebar's combined basis (~47rem) can
+  /* flex-shrink 1 (not 0): .main + .sidebar's combined basis (~53.5rem) can
      exceed .wrapper's own width before the 640px stacking breakpoint
      kicks in - worse the larger --base-font-size is configured, since
      these are rem-based but the breakpoint is a fixed viewport px value.
@@ -282,7 +282,7 @@ a:hover {filter: brightness(0.75);}
   flex: 0 1 var(--main-width);
   width: var(--main-width);
   min-width: 0;
-  padding: 1.375rem 0.5rem 1.375rem;
+  padding: 1.375rem 1.25rem;
 }
 
 .sidebar {
@@ -301,6 +301,7 @@ a:hover {filter: brightness(0.75);}
 @media (max-width: 640px) {
   .content-wrapper {flex-direction: column; padding: 0 0.5rem; justify-content: flex-start;}
   .main, .sidebar {flex-basis: auto; width: 100%;}
+  .main {padding-right: 0.5rem; padding-left: 0.5rem;}
   .sidebar {box-shadow: 0 -1px 0 var(--sidebar-border-color);}
 }
 
@@ -365,7 +366,7 @@ a:hover {filter: brightness(0.75);}
   {{/title_font}}
 }
 
-.post-title a {color: inherit; text-decoration: none;}
+.post-title a {color: inherit; font-weight: inherit; text-decoration: none;}
 .post-title a:hover {text-decoration: underline;}
 
 .post-body p,
@@ -407,17 +408,33 @@ a:hover {filter: brightness(0.75);}
   {{/title_font}}
 }
 
+.post-body h2 {
+  margin: 2em 0 0.5em;
+  font-size: 1.25em;
+  font-weight: normal;
+}
+
+.post-body h3,
+.post-body h4,
+.post-body h5,
+.post-body h6 {
+  margin: 2em 0 0.5em;
+  font-size: 1.1em;
+  font-weight: normal;
+}
+
 .post-footer {
   margin-top: 1.2em;
   font-size: 0.8em;
   color: var(--light-text-color);
 }
 
-.post-author + .post-date:before,
-.post-tag:before {
+.post-author + .post-date:before {
   content: "\00b7";
   margin: 0 0.6em;
 }
+
+.post-tag-separator {margin: 0 0.6em;}
 
 .post-date {
   {{#title_font}}
@@ -428,6 +445,9 @@ a:hover {filter: brightness(0.75);}
 .post-tag {
   color: var(--light-text-color);
   font-weight: normal;
+  {{#title_font}}
+  font-family: {{{stack}}};
+  {{/title_font}}
 }
 
 /* ---------- Pagers ---------- */
@@ -642,7 +662,7 @@ th, td {border: 1px solid var(--border-color); padding: 0.3em 0.7em;}
    content column with open space beside it: plugin.css positions
    .right.margin by floating it 40% further right, absolutely
    positioned. In Notebook's two-column layout that space is always
-   .sidebar, so a margin note overlaps it (and .main is only 483px
+   .sidebar, so a margin note overlaps it (and .main is only 587px
    wide to begin with - nowhere near enough room to spare 40% besides).
    plugin.css already has a safe, inline fallback for exactly this
    problem, normally reserved for its own sub-933px breakpoint; apply
@@ -671,7 +691,7 @@ th, td {border: 1px solid var(--border-color); padding: 0.3em 0.7em;}
 }
 
 /* plugin.css sets a top margin on body below 933px and restyles the
-   sidebar; keep Thisaway's 760px column layout intact. */
+   sidebar; keep Notebook's 864px column layout intact. */
 @media screen and (max-width: 933px) {
   body {margin: 0; padding: 0; width: auto;}
   .sidebar {
