@@ -241,15 +241,22 @@ a:hover {opacity: 0.75;}
 .content-wrapper > .clear {display: none;}
 
 .main {
-  flex: 0 0 var(--main-width);
+  /* flex-shrink 1 (not 0): .main + .sidebar's combined basis (~47rem) can
+     exceed .wrapper's own width before the 640px stacking breakpoint
+     kicks in - worse the larger --base-font-size is configured, since
+     these are rem-based but the breakpoint is a fixed viewport px value.
+     Letting both columns shrink under pressure avoids overflow/clipping
+     in that gap instead of relying on the breakpoint to catch every case. */
+  flex: 0 1 var(--main-width);
   width: var(--main-width);
   min-width: 0;
   padding: 1.375rem 0.5rem 1.375rem;
 }
 
 .sidebar {
-  flex: 0 0 var(--sidebar-width);
+  flex: 0 1 var(--sidebar-width);
   width: var(--sidebar-width);
+  min-width: 0;
   font-size: 90%;
   line-height: var(--line-height);
   padding: 1rem 0.6875rem 0 1.8125rem;
