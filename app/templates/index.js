@@ -313,17 +313,7 @@ function assembleTemplateSnapshot(directory, templatePackage, locals) {
     var path = directory + "/" + entry;
     var viewFilename = basename(path);
 
-    // READMEs are documentation, not views: they're never routed and
-    // often contain prose examples of Mustache syntax (e.g. an unclosed
-    // "{{#foo}}" to illustrate what a tag looks like), which is exactly
-    // the kind of thing that fails Template.setView's Mustache parse
-    // check. Treating them as a real view for no benefit isn't worth
-    // that risk.
-    if (
-      viewFilename === "package.json" ||
-      viewFilename.slice(0, 1) === "." ||
-      /^readme(\.\w+)?$/i.test(viewFilename)
-    )
+    if (viewFilename === "package.json" || viewFilename.slice(0, 1) === ".")
       return;
 
     var viewName = viewFilename;
