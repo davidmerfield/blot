@@ -46,6 +46,36 @@ describe("duplicate template route", function () {
       });
     });
 
+    it("still says it is a copy", async function () {
+      // Room for ' copy' is made by trimming the name, never the suffix.
+      // Trimming the whole thing eats the word first, leaving a copy which
+      // does not say so and which parseCopyName cannot recognise later.
+      const copy = await duplicateTemplate({
+        owner: this.blog.id,
+        template: this.longTemplate,
+      });
+
+      expect(copy.name).toMatch(/ copy$/);
+      expect(copy.slug).toMatch(/-copy$/);
+
+      const second = await duplicateTemplate({
+        owner: this.blog.id,
+        template: this.longTemplate,
+      });
+
+      expect(second.name).toMatch(/ copy 2$/);
+      expect(second.slug).toMatch(/-copy-2$/);
+    });
+
+    it("does not collide with the template it came from", async function () {
+      const copy = await duplicateTemplate({
+        owner: this.blog.id,
+        template: this.longTemplate,
+      });
+
+      expect(copy.id).not.toEqual(this.longTemplate.id);
+    });
+
     it("stores a slug which matches the id", async function () {
       // writeToFolder names the template's directory after the stored slug
       // and readFromFolder turns that name back into an id. If they disagree,
