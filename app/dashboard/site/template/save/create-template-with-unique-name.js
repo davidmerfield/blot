@@ -14,22 +14,28 @@ const MAX_SLUG_LENGTH = 30;
 const slugFor = (owner, name) =>
   makeID(owner, name).split(":").slice(1).join(":");
 
-// Appending a counter to a name whose slug is already 30 characters leaves
-// the first 30 unchanged, so every attempt derives the same id, collides
-// again, and the retry loop burns all its attempts before giving up on a
-// name that should simply have become 'name 2'. Trim the base until the
-// counter survives into the slug.
-const withCounter = (base, counter, formatName) => {
-  let trimmed = base;
+// A suffix appended to a name whose slug already fills those 30 characters
+// leaves them unchanged, so every attempt derives the same id, collides
+// again, and the retry loop burns all its attempts before giving up on a name
+// which should simply have become 'name 2'.
+//
+// Room is made by trimming the base, never the formatted result: trimming the
+// whole thing would eat the suffix first, so a duplicate would lose the word
+// 'copy' that says what it is.
+const withSuffix = (base, counter, formatAttempt) => {
+  let trimmed = String(base).trim();
+
+  // Nothing to protect — this attempt is the bare name
+  if (formatAttempt(trimmed, counter) === trimmed) return trimmed;
 
   while (
     trimmed.length > 1 &&
-    makeSlug(formatName(trimmed, counter)).length > MAX_SLUG_LENGTH
+    makeSlug(formatAttempt(trimmed, counter)).length > MAX_SLUG_LENGTH
   ) {
     trimmed = trimmed.slice(0, -1).trim();
   }
 
-  return formatName(trimmed, counter);
+  return formatAttempt(trimmed, counter);
 };
 
 // Template.create() has no collision handling of its own: it returns an error
@@ -37,16 +43,18 @@ const withCounter = (base, counter, formatName) => {
 // Note the ID is derived from the *name*, not the slug, so callers which want
 // the two to agree should pass a slug derived from the same name.
 //
-// The first attempt uses `name` verbatim. Each subsequent attempt appends an
-// incrementing counter until one succeeds or we give up. The slug always
-// follows the name, so callers do not pass one.
-const defaultFormatName = (base, counter) => `${base} ${counter}`;
+// `name` is the base a caller starts from, and formatAttempt turns it and the
+// attempt number into the name to try. By default the first attempt is the
+// base itself and later ones append a counter; duplication adds ' copy'.
+// The slug always follows the name, so callers do not pass one.
+const defaultFormatAttempt = (base, counter) =>
+  counter > 1 ? `${base} ${counter}` : base;
 
 async function createTemplateWithUniqueName ({
   owner,
   name,
   startCounter = 1,
-  formatName = defaultFormatName,
+  formatAttempt = defaultFormatAttempt,
   exhaustedMessage = "Unable to create a template with a unique name after multiple attempts",
   ...properties
 }) {
@@ -59,7 +67,7 @@ async function createTemplateWithUniqueName ({
   }
 
   let counter = Math.max(startCounter, 1);
-  let attemptName = name;
+  let attemptName = withSuffix(name, 1, formatAttempt);
   let attempts = 0;
 
   while (attempts < MAX_DEDUPLICATION_ATTEMPTS) {
@@ -79,7 +87,7 @@ async function createTemplateWithUniqueName ({
         attempts < MAX_DEDUPLICATION_ATTEMPTS
       ) {
         counter = Math.max(counter, 1) + 1;
-        attemptName = withCounter(name, counter, formatName);
+        attemptName = withSuffix(name, counter, formatAttempt);
         continue;
       }
 

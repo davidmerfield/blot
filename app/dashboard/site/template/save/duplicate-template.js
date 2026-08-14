@@ -1,38 +1,8 @@
-const makeSlug = require("helper/makeSlug");
-const makeID = require("models/template/util/makeID");
-const createTemplate = require("./create-template");
-const { MAX_DEDUPLICATION_ATTEMPTS } = require("./constants");
+const createTemplateWithUniqueName = require("./create-template-with-unique-name");
 
-// Template.create derives a template's id from makeSlug(name).slice(0, 30)
-const MAX_SLUG_LENGTH = 30;
-
-// The id is what routing resolves a template by, and writeToFolder names the
-// template's directory after the stored slug, which readFromFolder then turns
-// back into an id. Let the two disagree and a locally edited copy can be read
-// back as the template it was copied from, so derive the slug from the id.
-const slugFor = (owner, name) =>
-  makeID(owner, name).split(":").slice(1).join(":");
-
-// A name whose slug already fills those 30 characters leaves no room for
-// ' copy', so the copy derives the same id as the template it came from and
-// collides with it. Make room by trimming the name — but only the name, never
-// the suffix: trimming the whole thing would eat the word 'copy' first,
-// leaving a copy which does not say it is one and which parseCopyName can no
-// longer recognise when it is itself duplicated.
-const withCopySuffix = (nameBase, counter) => {
-  const suffix = counter > 1 ? ` copy ${counter}` : " copy";
-
-  let trimmed = nameBase.trim();
-
-  while (
-    trimmed.length > 1 &&
-    makeSlug(`${trimmed}${suffix}`).length > MAX_SLUG_LENGTH
-  ) {
-    trimmed = trimmed.slice(0, -1).trim();
-  }
-
-  return `${trimmed}${suffix}`.trim();
-};
+// Making room for ' copy' in a name whose slug already fills the 30
+// characters an id is derived from, and keeping the stored slug in step with
+// that id, are both handled by createTemplateWithUniqueName.
 
 const COPY_NAME_PATTERN = /^(.*?)(?: copy(?: (\d+))?)$/;
 const COPY_SLUG_PATTERN = /^(.*?)(?:-copy(?:-(\d+))?)$/;
@@ -82,39 +52,20 @@ async function duplicateTemplate({ owner, template }) {
   // Only the counter: the slug now follows whatever name we settle on
   const { counter: slugCounter } = parseCopySlug(template.slug);
 
-  let deduplicationCounter = Math.max(nameCounter, slugCounter, 1);
-  let attemptName = withCopySuffix(nameBase, 1);
-  let attempts = 0;
-
-  while (attempts < MAX_DEDUPLICATION_ATTEMPTS) {
-    attempts++;
-
-    try {
-      return await createTemplate({
-        isPublic: false,
-        owner,
-        name: attemptName,
-        slug: slugFor(owner, attemptName),
-        cloneFrom: template.id,
-      });
-    } catch (error) {
-      if (
-        error &&
-        error.code === "EEXISTS" &&
-        attempts < MAX_DEDUPLICATION_ATTEMPTS
-      ) {
-        deduplicationCounter = Math.max(deduplicationCounter, 1) + 1;
-        attemptName = withCopySuffix(nameBase, deduplicationCounter);
-        continue;
-      }
-
-      throw error;
-    }
-  }
-
-  const err = new Error("Unable to duplicate template after multiple attempts");
-  err.code = "EEXISTS";
-  throw err;
+  return createTemplateWithUniqueName({
+    isPublic: false,
+    owner,
+    // The base is the name without ' copy'. The suffix is added by
+    // formatAttempt, so making room for it never trims it away and leaves a
+    // copy which does not say that it is one.
+    name: nameBase,
+    formatAttempt: (base, counter) =>
+      counter > 1 ? `${base} copy ${counter}`.trim() : `${base} copy`.trim(),
+    cloneFrom: template.id,
+    // 'Original copy 3' starts counting from 3, so the next free name is 4
+    startCounter: Math.max(nameCounter, slugCounter, 1),
+    exhaustedMessage: "Unable to duplicate template after multiple attempts",
+  });
 }
 
 module.exports = duplicateTemplate;
