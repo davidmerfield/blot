@@ -111,6 +111,18 @@ before repeating the mistake.
   both columns is the fix that doesn't depend on guessing a breakpoint
   large enough for every configured font size.
 
+- **Alpha-blending a color toward a lighter background has a ceiling:
+  the base color's own contrast, at alpha 1.** It can never get darker
+  than that no matter how high the alpha goes. `accent_color`'s
+  original default (`#6A9718`) only reached ~3.2:1 against
+  `content_background_color` even at full strength - short of WCAG
+  AA's 4.5:1 for small text no matter what alpha the sidebar
+  links/headings and date/footer metadata used. The default is now
+  `#486610` (~6:1 at full strength), which leaves enough room for
+  those tints to sit at 0.9+ alpha and actually clear 4.5:1. If you
+  change the default again, check the ceiling first, not just the
+  alphas.
+
 ## Working on the design
 
 Append `?json=true` to any page on the site to see the exact data the template is
@@ -126,7 +138,8 @@ See `package.json`. This template only exposes two standalone color
 controls — `text_color` (body text, and the header/footer background) and
 `content_background_color` (the reading pane behind the post list and
 sidebar) — plus `font` / `title_font`. Every other color in the design
-comes from a single `accent_color` local (default a green, `#6A9718`):
+comes from a single `accent_color` local (default a dark green,
+`#486610` - picked to leave headroom for WCAG contrast, see below):
 
 - `--page-background` (the outer canvas) and `--link-color` are the accent
   color at full strength, unchanged.

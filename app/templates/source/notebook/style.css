@@ -19,7 +19,18 @@
      behind it (content background for most of these, the implicit page
      background for the canvas itself). No Sass, no color-mix() — just
      rgba() over the --accent-rgb channels where a tint is needed, the
-     same technique other Blot templates use for tints of text_color. */
+     same technique other Blot templates use for tints of text_color.
+
+     Alpha-blending toward a light background can only ever get as dark
+     as the base color itself (alpha 1) - it can't exceed that color's
+     own contrast ceiling. The default accent (#486610) is deliberately
+     picked to give real headroom there: ~6:1 against
+     content_background_color at full strength, so the tints below (all
+     text - sidebar links/headings, dates, footer metadata) can sit at
+     0.9+ alpha and still clear WCAG AA's 4.5:1 for small text, which a
+     lighter/brighter accent (the original #6A9718 default only reached
+     ~3.2:1 even at alpha 1) can't. Background/border tints stay much
+     lower alpha since non-text contrast requirements are looser. */
   --accent-color: {{accent_color}};
   --accent-rgb: {{#rgb}}{{accent_color}}{{/rgb}};
 
@@ -27,9 +38,9 @@
   --link-color: var(--accent-color);
   --title-color: var(--accent-color);
   --sidebar-link-hover-color: var(--accent-color);
-  --sidebar-link-color: rgba(var(--accent-rgb), 0.85);
-  --sidebar-heading-color: rgba(var(--accent-rgb), 0.65);
-  --light-text-color: rgba(var(--accent-rgb), 0.55);
+  --sidebar-link-color: rgba(var(--accent-rgb), 0.95);
+  --sidebar-heading-color: rgba(var(--accent-rgb), 0.9);
+  --light-text-color: rgba(var(--accent-rgb), 0.9);
   --sidebar-border-color: rgba(var(--accent-rgb), 0.2);
   --border-color: rgba(var(--accent-rgb), 0.15);
   --sidebar-background: rgba(var(--accent-rgb), 0.08);
@@ -355,10 +366,12 @@ a:hover {opacity: 0.75;}
 
 .post-body img {max-width: 100%; height: auto;}
 
-/* The post's title is rendered separately (.post-title); the body's
-   own leading heading, generated from the post's "# Title" line, would
-   otherwise duplicate it. */
-.post-body > h1:first-child {display: none;}
+/* The post's title is rendered separately (.post-title) using the
+   already-title-stripped `body` field, not `html` (which still has the
+   title inlined) - so there's no leftover h1 to hide here. See
+   app/build/prepare/title.js: it only strips the extracted h1 from
+   `body`, not from `html`, and the h1 isn't guaranteed to be
+   .post-body's first child if the post has content before its title. */
 
 .post-body h1,
 .post-body h2,
