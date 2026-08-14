@@ -5,7 +5,7 @@
 {{{title_font.styles}}}
 
 :root {
-  --content-background: {{content_background_color}};
+  --content-background: {{background_color}};
   --text-color: {{text_color}};
   --text-rgb: {{#rgb}}{{text_color}}{{/rgb}};
   /* The header/footer/submit-button are dark (--text-color), so their
@@ -23,9 +23,9 @@
 
      Alpha-blending toward a light background can only ever get as dark
      as the base color itself (alpha 1) - it can't exceed that color's
-     own contrast ceiling. The default accent (#486610) is deliberately
-     picked to give real headroom there: ~6:1 against
-     content_background_color at full strength, so the tints below (all
+     own contrast ceiling. The default accent (#9A3412) is deliberately
+     picked to give real headroom there: ~6.9:1 against
+     background_color at full strength, so the tints below (all
      text - sidebar links/headings, dates, footer metadata) can sit at
      0.9+ alpha and still clear WCAG AA's 4.5:1 for small text, which a
      lighter/brighter accent (the original #6A9718 default only reached
@@ -88,7 +88,7 @@ body {
   text-align: center;
 }
 
-a {color: var(--link-color); font-weight: bold;}
+a {color: var(--link-color); font-weight: normal;}
 /* filter: brightness(), not opacity: opacity blends the link color
    toward whatever's behind it, which - for a dark accent on a light
    background - only ever reduces contrast (verified: ~6:1 down to
@@ -333,6 +333,7 @@ a:hover {filter: brightness(0.75);}
   width: 1em;
   height: 1em;
   flex-shrink: 0;
+  transform: translateY(-0.0625em);
   background-color: currentColor;
   mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJpbmxpbmUiPiA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCI+PC9jaXJjbGU+IDxwb2x5bGluZSBwb2ludHM9IjEyIDYgMTIgMTIgMTYgMTQiPjwvcG9seWxpbmU+IDwvc3ZnPg==");
   mask-repeat: no-repeat;
@@ -495,12 +496,13 @@ a:hover {filter: brightness(0.75);}
   color: var(--sidebar-heading-color);
 }
 
-/* Blogger widget bundle:
-   ul ul li { padding-left: 1.2em }
-   ul.posts li { padding-left: 1.3em; text-indent: -15px }
-   so wrapped post titles hang under the first line. */
+/* Keep years and their months at separate levels, but align post titles
+   with their month label. Wrapped title lines retain a small hanging indent. */
 .sidebar ul.archive-months {padding-left: 1.2em;}
-.sidebar ul.archive-posts {padding-left: 1.3em;}
+.sidebar ul.archive-posts {
+  margin-top: 0.4em;
+  padding-left: 0;
+}
 .archive-posts li {
   padding-left: 0.9375rem;
   text-indent: -0.9375rem;
@@ -551,25 +553,35 @@ a:hover {filter: brightness(0.75);}
 }
 
 .full-archive a {
+  display: block;
+  padding: 0.4em 0;
+  text-decoration: none;
   {{#title_font}}
   font-family: {{{stack}}};
   {{/title_font}}
 }
 
+.full-archive .archive-title {text-decoration: underline;}
+
 .full-archive li {
-  padding: 0.4em 0;
+  padding: 0;
   border-bottom: 1px solid var(--border-color);
 }
 
 /* ---------- Search / forms ---------- */
 
-.search-form {margin: 1.5em 0;}
+.search-form {
+  display: flex;
+  align-items: stretch;
+  gap: 0.3em;
+  margin: 1.5em 0;
+}
 
 input[type="text"],
 input[type="submit"] {
   font: inherit;
   font-size: 0.9em;
-  padding: 0.4em 0.7em;
+  padding: 0.5em 0.7em 0.3em;
   border: 1px solid var(--border-color);
   border-radius: 0.3em;
   background: var(--content-background);
@@ -578,7 +590,11 @@ input[type="submit"] {
   {{/title_font}}
 }
 
-input[type="text"] {min-width: 16em; max-width: 100%;}
+input[type="text"] {
+  flex: 1 1 16em;
+  min-width: 0;
+  max-width: 100%;
+}
 
 input[type="submit"] {
   background: var(--text-color);
@@ -586,7 +602,7 @@ input[type="submit"] {
   border-color: var(--text-color);
   font-weight: bold;
   cursor: pointer;
-  margin-left: 0.3em;
+  margin-left: 0;
 }
 
 /* ---------- Footer ---------- */
