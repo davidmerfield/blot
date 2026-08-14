@@ -212,6 +212,29 @@ describe("upload template route", function () {
     for (const path of paths) expect(await fs.pathExists(path)).toBe(false);
   });
 
+  it("reports a zip file it cannot read rather than failing", async function () {
+    const { req, paths } = await zipRequest(this.blog, {
+      "index.html": "<h1>Hi</h1>".repeat(200),
+    });
+
+    // Damage the compressed data, leaving the central directory intact, so
+    // the archive opens but the entry cannot be read. An encrypted zip fails
+    // the same way: at the entry, not at the archive.
+    const zipPath = paths[0];
+    const bytes = await fs.readFile(zipPath);
+    for (let i = 40; i < 80 && i < bytes.length; i++) bytes[i] = bytes[i] ^ 0xff;
+    await fs.writeFile(zipPath, bytes);
+    req.files.zip[0].size = bytes.length;
+
+    const result = await run(req);
+
+    // A problem with the file they chose, not an internal failure
+    expect(result.status).toEqual(422);
+    expect(result.body.problems.length).toBeGreaterThan(0);
+
+    for (const path of paths) expect(await fs.pathExists(path)).toBe(false);
+  });
+
   it("strips a wrapper directory inside a zip file", async function () {
     const { req } = await zipRequest(this.blog, {
       "my-theme/index.html": "<h1>Hi</h1>",
@@ -394,6 +417,49 @@ describe("upload template route", function () {
     expect(result.body.problems[0].path).toEqual("index.html");
 
     for (const path of paths) expect(await fs.pathExists(path)).toBe(false);
+  });
+
+  it("clears url lookups before it releases the template id", async function () {
+    const client = require("models/client");
+    const key = require("models/template/key");
+    const setView = Template.setView;
+    const drop = Template.drop;
+
+    spyOn(Template, "setView").and.callFake(function (id, view, callback) {
+      if (view.name === "second.html") {
+        return client
+          .set(key.url(id, "/second.html"), view.name)
+          .then(() => callback(new Error("Could not save this view")));
+      }
+      return setView(id, view, callback);
+    });
+
+    // Dropping the template frees its id for reuse. If the urls were cleared
+    // after that, a second upload of the same name could create a template in
+    // between and have its mappings deleted out from under it.
+    let urlsAtDropTime = null;
+
+    spyOn(Template, "drop").and.callFake(function (owner, slug, callback) {
+      const templateID = `${owner}:${slug}`;
+
+      Promise.all([
+        client.exists(key.url(templateID, "/first.html")),
+        client.exists(key.url(templateID, "/second.html")),
+      ]).then(function (existing) {
+        urlsAtDropTime = existing;
+        drop(owner, slug, callback);
+      });
+    });
+
+    const { req } = await folderRequest(this.blog, {
+      "first.html": "<h1>Hi</h1>",
+      "second.html": "<h1>There</h1>",
+      "package.json": JSON.stringify({ name: "Ordering" }),
+    });
+
+    await run(req);
+
+    expect(urlsAtDropTime).toEqual([0, 0]);
   });
 
   it("rejects a request with no files", async function () {

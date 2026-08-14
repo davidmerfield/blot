@@ -123,7 +123,21 @@ module.exports = function unzipUpload (zipPath) {
           entries.push({ relativePath: entry.fileName, buffer });
           zipfile.readEntry();
         } catch (readError) {
-          fail(readError);
+          // An entry we cannot read — encrypted, corrupt, or compressed by a
+          // method yauzl does not support — is a problem with the file the
+          // user chose, not with us. Say so rather than answering 500.
+          fail(
+            readError && readError.problems
+              ? readError
+              : new UploadValidationError([
+                  {
+                    path: entry.fileName,
+                    reason: "zip",
+                    message:
+                      "This file could not be read from the zip archive. It may be password protected or damaged.",
+                  },
+                ])
+          );
         }
       });
 

@@ -427,6 +427,26 @@ describe("template upload client", function () {
       });
     });
 
+    it("says so when a dropped folder is empty", function () {
+      const { root, dropzone, errorBox, errorMessage } = build();
+      global.fetch = jasmine.createSpy("fetch");
+      panel.init(root);
+
+      // An empty directory collects no files at all
+      dropzone.dispatch("drop", {
+        dataTransfer: dataTransfer({ items: [{ kind: "file" }], files: [] }),
+        preventDefault: function () {},
+      });
+
+      return Promise.resolve()
+        .then(() => Promise.resolve())
+        .then(function () {
+          expect(global.fetch).not.toHaveBeenCalled();
+          expect(errorBox.hidden).toBe(false);
+          expect(errorMessage.textContent).toContain("no files");
+        });
+    });
+
     it("dismisses the error message", function () {
       const { root, dropzone, errorBox, dismiss } = build();
       global.fetch = jasmine.createSpy("fetch");

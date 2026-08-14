@@ -269,9 +269,18 @@ function init(root) {
   }
 
   function upload(entries) {
-    if (working || !entries.length) return;
+    if (working) return;
 
     hideNotices();
+
+    // Dropping an empty folder collects nothing. Saying so beats the page
+    // appearing not to have noticed the drop at all.
+    if (!entries.length) {
+      return showError(
+        "There are no files in that folder to make a template from.",
+        []
+      );
+    }
 
     if (entries.length > MAX_RAW_FILES) {
       return showError(
@@ -422,7 +431,12 @@ function init(root) {
   [folderInput, zipInput].forEach(function (input) {
     if (!input) return;
     input.addEventListener("change", function () {
-      upload(collect.collectSelectedFiles(input));
+      // Dismissing the file picker without choosing anything is not an empty
+      // folder, so leave the panel as it was rather than complaining
+      if (input.files && input.files.length) {
+        upload(collect.collectSelectedFiles(input));
+      }
+
       // Let the same folder be chosen again after a failure
       input.value = "";
     });

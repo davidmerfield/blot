@@ -101,8 +101,13 @@ module.exports = async function createTemplateFromUpload ({
       );
     });
   } catch (err) {
-    await dropTemplate(owner, template.id);
+    // Urls first, then the template. Dropping the template frees its id, and
+    // the id is what stops a second upload of the same name being created —
+    // so clearing urls afterwards could delete the mappings of a template
+    // someone else had just created in the meantime, leaving their views
+    // unreachable. While the id is still taken, only our own keys exist.
     await dropAttemptedViewUrls(template.id, views);
+    await dropTemplate(owner, template.id);
     throw err;
   }
 
