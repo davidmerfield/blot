@@ -9,6 +9,7 @@ const {
   UPLOAD_MAX_RAW_FILES,
   UPLOAD_MAX_TOTAL_BYTES,
   UPLOAD_MAX_VIEW_BYTES,
+  UPLOAD_MAX_VIEW_PAYLOAD_BYTES,
   UPLOAD_MAX_WRAPPER_DEPTH,
   UPLOAD_FALLBACK_NAME,
   PACKAGE,
@@ -120,7 +121,15 @@ const invalidSettingReason = (view) => {
   for (const setting of OBJECT_SETTINGS) {
     const value = view[setting];
 
-    if (value === undefined || value === null) continue;
+    // A manifest which says "locals": null means it has none. viewModel does
+    // not accept null for an object, so drop the key rather than letting it
+    // reach setView and fail there.
+    if (value === null) {
+      delete view[setting];
+      continue;
+    }
+
+    if (value === undefined) continue;
 
     if (typeof value !== "object" || Array.isArray(value)) {
       return `'${setting}' must be a set of values, not ${
@@ -458,6 +467,25 @@ module.exports = function parseUploadedTemplate (entries = [], options = {}) {
     view.url = view.url || "/" + name;
 
     delete view.urlPatterns;
+
+    // The per-file limit above measures the source. What setView actually
+    // weighs is the whole view once package.json's settings are merged in, so
+    // a modest file with a large locals object can still be refused there.
+    // Measure what it will measure.
+    const payloadSize = Buffer.byteLength(JSON.stringify(view));
+
+    if (payloadSize > UPLOAD_MAX_VIEW_PAYLOAD_BYTES) {
+      problems.push({
+        path: name,
+        reason: "size",
+        message: `This file and its settings in package.json come to ${prettyBytes(
+          payloadSize
+        )} together — the most a template file can be is ${prettyBytes(
+          UPLOAD_MAX_VIEW_PAYLOAD_BYTES
+        )}`,
+      });
+      continue;
+    }
 
     views.push(view);
   }

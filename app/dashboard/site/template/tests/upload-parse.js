@@ -260,6 +260,44 @@ describe("parseUploadedTemplate", function () {
       expect(problems[0].message).toContain("locals");
     });
 
+    it("treats a null setting as absent rather than failing on it", function () {
+      // viewModel does not accept null for an object, so this has to be
+      // dropped here or setView rejects it after the template exists
+      const result = parse([
+        entry("index.html", "<h1>Hi</h1>"),
+        entry(
+          "package.json",
+          JSON.stringify({
+            views: { "index.html": { locals: null, retrieve: null } },
+          })
+        ),
+      ]);
+
+      const view = viewNamed(result, "index.html");
+
+      expect("locals" in view).toBe(false);
+      expect("retrieve" in view).toBe(false);
+    });
+
+    it("rejects a view whose settings push it over the payload limit", function () {
+      // The file itself is small; its locals are not. setView weighs the two
+      // together, so this has to be caught before the template is created.
+      const locals = {};
+      for (let i = 0; i < 40000; i++) locals[`key-${i}`] = "x".repeat(50);
+
+      const problems = problemsFrom([
+        entry("index.html", "<h1>Hi</h1>"),
+        entry(
+          "package.json",
+          JSON.stringify({ views: { "index.html": { locals } } })
+        ),
+      ]);
+
+      expect(problems.length).toEqual(1);
+      expect(problems[0].reason).toEqual("size");
+      expect(problems[0].path).toEqual("index.html");
+    });
+
     it("rejects a view setting which is a list where an object belongs", function () {
       const problems = problemsFrom([
         entry("index.html", "<h1>Hi</h1>"),

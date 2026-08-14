@@ -22,6 +22,11 @@ module.exports = {
   // overhead, so keep the source itself well under setView's 2mb ceiling.
   UPLOAD_MAX_VIEW_BYTES: 1024 * 1024, // 1mb
 
+  // What setView will actually accept once the content, the settings from
+  // package.json and the JSON overhead are added together. Kept in step with
+  // MAX_VIEW_PAYLOAD_SIZE in models/template/setView.js.
+  UPLOAD_MAX_VIEW_PAYLOAD_BYTES: 2 * 1024 * 1024, // 2mb
+
   // How many wrapper directories will we strip from an upload? Dropping a
   // folder gives one; a zip of a folder containing a folder can give two.
   UPLOAD_MAX_WRAPPER_DEPTH: 5,
