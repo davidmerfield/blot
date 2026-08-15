@@ -41,7 +41,13 @@ function internalLinks($, resolvedFileLinks) {
 
 		if (!normalizedValue) return;
 
-		var creditIndex = remainingFileLinks.indexOf(normalizedValue);
+		// Credits only ever come from resolving an <a href> (see
+		// dependencies/index.js) - a <link href> or other non-anchor
+		// element happening to share the same resolved path must not
+		// be able to spend a credit that belongs to a real anchor.
+		var creditIndex = $(this).is("a")
+			? remainingFileLinks.indexOf(normalizedValue)
+			: -1;
 
 		if (creditIndex > -1) {
 			remainingFileLinks.splice(creditIndex, 1);

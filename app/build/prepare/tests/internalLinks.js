@@ -96,4 +96,17 @@ describe("internalLinks", function () {
       )
     ).toEqual(["/target"]);
   });
+
+  it("only lets anchors spend resolved-file credits, not other href-bearing tags", function () {
+    // Credits only ever originate from a resolved <a href> - a
+    // <link href> sharing the same path (e.g. a stylesheet reference
+    // to the same file) must not be able to consume a credit that
+    // belongs to a real anchor.
+    expect(
+      this.internalLinks(
+        '<link href="/docs/report.pdf"><a href="/docs/report.pdf">Download</a>',
+        ["/docs/report.pdf"]
+      )
+    ).toEqual(["/docs/report.pdf"]);
+  });
 });
