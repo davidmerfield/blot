@@ -3,7 +3,7 @@ describe("internalLinks", function () {
   var internalLinks = require("../internalLinks");
 
   beforeEach(function () {
-    this.internalLinks = function (html) {
+    this.internalLinks = function (html, dependencies) {
       var $ = cheerio.load(
         html,
         {
@@ -13,7 +13,7 @@ describe("internalLinks", function () {
         false
       );
 
-      return internalLinks($);
+      return internalLinks($, dependencies);
     };
   });
 
@@ -39,5 +39,22 @@ describe("internalLinks", function () {
         '<a href="/target">Base</a><a href="/target#x">Fragment</a><a href="/target?y=1">Query</a>'
       )
     ).toEqual(["/target"]);
+  });
+
+  it("excludes hrefs already known to be resolved file dependencies", function () {
+    // A relative link to a local file resolves to an absolute path,
+    // e.g. beach.jpg -> /Photos/beach.jpg. If that path happens to
+    // collide with another entry's custom permalink, it must not be
+    // mistaken for a link to that entry.
+    expect(
+      this.internalLinks(
+        '<a href="/Photos/beach.jpg">Beach</a><a href="/some-post">Some post</a>',
+        ["/Photos/beach.jpg"]
+      )
+    ).toEqual(["/some-post"]);
+  });
+
+  it("keeps all internal links when no dependencies are given", function () {
+    expect(this.internalLinks('<a href="/hey">Hey</a>')).toEqual(["/hey"]);
   });
 });

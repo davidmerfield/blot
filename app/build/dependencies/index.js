@@ -42,6 +42,14 @@ function dependencies (path, html, metadata) {
   // Multiple times. The plugins features also do this.
   var $ = cheerio.load(html, { decodeEntities: false }, false);
   var dependencies = [];
+  // The subset of dependencies which came specifically from
+  // resolving a *relative* <a href> against this file's location.
+  // internalLinks uses this to avoid mistaking a resolved file
+  // reference for a link to another page - unlike an href the
+  // author already wrote as absolute (e.g. a normal link to
+  // another post), which is a legitimate internal-link candidate
+  // even though it also ends up in `dependencies`.
+  var resolvedFileLinks = [];
   var attribute, value, resolved_value;
   var metadataByLowercaseKey = metadataCaseInsensitive(metadata);
 
@@ -102,12 +110,15 @@ function dependencies (path, html, metadata) {
     if (!!$el.attr("href")) attribute = "href";
     if (!!$el.attr("src")) attribute = "src";
 
-    // Browsers ignore leading/trailing whitespace when parsing a
-    // URL, e.g. href=" #details" is still an in-page anchor and
-    // href=" //example.com/x" is still an external URL - trim
-    // before classifying the value, or whitespace-padded values
-    // slip past those checks and get mistaken for a local path.
-    value = ($el.attr(attribute) || "").trim();
+    // Browsers strip all ASCII tab/newline characters (wherever
+    // they appear, not just at the ends) and then trim leading/
+    // trailing whitespace when parsing a URL - e.g. href="h\ntt
+    // ps://example.com/x" is still the external URL "https://
+    // example.com/x", and href=" #details" is still an in-page
+    // anchor. Match that before classifying the value, or a
+    // whitespace-mangled value slips past these checks and gets
+    // mistaken for a local path.
+    value = ($el.attr(attribute) || "").replace(/[\t\r\n]/g, "").trim();
 
     if (!value) {
       debug(path, attribute, value, "is empty");
@@ -156,6 +167,15 @@ function dependencies (path, html, metadata) {
       debug(path, attribute, value, "is not a path");
       return;
     }
+
+    // Was this an <a href> the author wrote as a relative reference
+    // (as opposed to one already absolute, e.g. a normal link to
+    // another post)? Captured before resolve() below, which is a
+    // no-op for anything already starting with "/". Wikilinks are
+    // excluded since we never rewrite their attribute (see below) -
+    // resolvedFileLinks should mirror exactly what ends up in the
+    // final html.
+    var isRelativeAnchorLink = isAnchor && !isWikilink && value[0] !== "/";
 
     resolved_value = resolve(path, value);
 
@@ -211,6 +231,10 @@ function dependencies (path, html, metadata) {
       return;
     }
 
+    if (isRelativeAnchorLink && resolvedFileLinks.indexOf(resolved_value) === -1) {
+      resolvedFileLinks.push(resolved_value);
+    }
+
     if (dependencies.indexOf(resolved_value) === -1) {
       dependencies.push(resolved_value);
       debug(path, attribute, resolved_value, "was added to dependencies");
@@ -219,7 +243,12 @@ function dependencies (path, html, metadata) {
     }
   });
 
-  return { html: $.html(), dependencies: dependencies, metadata: metadata };
+  return {
+    html: $.html(),
+    dependencies: dependencies,
+    metadata: metadata,
+    resolvedFileLinks: resolvedFileLinks,
+  };
 }
 
 module.exports = dependencies;

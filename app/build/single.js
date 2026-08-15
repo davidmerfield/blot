@@ -22,7 +22,7 @@ module.exports = function (blog, path, callback) {
           debug("Blog:", blog.id, path, "back from converter");
         }
 
-        var parsed, metadata, dependencies;
+        var parsed, metadata, dependencies, resolvedFileLinks;
 
         // Some converters need to extract metadata before converting the body.
         // Use those original values directly instead of reparsing converted HTML.
@@ -49,6 +49,7 @@ module.exports = function (blog, path, callback) {
         try {
           parsed = Dependencies(path, html, metadata);
           dependencies = parsed.dependencies;
+          resolvedFileLinks = parsed.resolvedFileLinks;
           metadata = parsed.metadata;
           html = parsed.html;
         } catch (err) {
@@ -66,6 +67,8 @@ module.exports = function (blog, path, callback) {
 
           html = fixMustache(html);
           dependencies = dependencies.concat(newDependencies);
+          extras = extras || {};
+          extras.resolvedFileLinks = resolvedFileLinks;
 
           return callback(null, html, metadata, stat, dependencies, extras);
         });

@@ -49,8 +49,17 @@ function template(url) {
 // would also match). That's an accepted, low-stakes tradeoff here -
 // worst case a link renders as an image instead of a link.
 function isBareLabel(href, text) {
-  if (href === text) return true;
   if (!text) return false;
+  if (href === text) return true;
+
+  // The href was already trimmed (and any local path resolved)
+  // before this plugin runs, but the label's text is never touched -
+  // so a whitespace-padded bare link like <a href=" photo.jpg ">
+  // photo.jpg </a> needs its text trimmed here to still compare
+  // equal, the same way a URL parser would treat the padded href.
+  const trimmedText = text.trim();
+
+  if (href === trimmedText) return true;
 
   // path.posix.normalize collapses internal "x/../" segments, but
   // it can't collapse *leading* "../"/"./" ones (there's nothing
@@ -58,7 +67,7 @@ function isBareLabel(href, text) {
   // they cancel out against the directory of the file resolve()
   // already applied to produce href.
   const cleanText = posix
-    .normalize(text)
+    .normalize(trimmedText)
     .replace(/^(?:\.\.?\/)+/, "")
     .replace(/\/$/, "");
 

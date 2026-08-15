@@ -6,7 +6,12 @@ describe("dependencies", function () {
   function should_get_dependencies(input) {
     it("gets dependencies from " + input.path, function () {
       var result = depedencies(input.path, input.html, input.metadata);
-      expect(result).toEqual(input.result);
+      // Most fixtures don't care about resolvedFileLinks (the
+      // subset of dependencies resolved from a relative <a href>,
+      // used by internalLinks to avoid false backlinks) - default
+      // it to empty unless a fixture explicitly sets it.
+      var expected = Object.assign({ resolvedFileLinks: [] }, input.result);
+      expect(result).toEqual(expected);
     });
   }
 
@@ -85,6 +90,7 @@ describe("dependencies", function () {
       html: '<a href="/page.html"></a>',
       metadata: {},
       dependencies: ["/page.html"],
+      resolvedFileLinks: ["/page.html"],
     },
   });
 
@@ -97,6 +103,7 @@ describe("dependencies", function () {
       html: '<a href="/other-page"></a>',
       metadata: {},
       dependencies: ["/other-page"],
+      resolvedFileLinks: ["/other-page"],
     },
   });
 
@@ -110,6 +117,7 @@ describe("dependencies", function () {
       html: '<a href="/folder/other-post.md"></a>',
       metadata: {},
       dependencies: ["/folder/other-post.md"],
+      resolvedFileLinks: ["/folder/other-post.md"],
     },
   });
 
@@ -122,6 +130,7 @@ describe("dependencies", function () {
       html: '<a href="/photos/beach.jpg">Download</a>',
       metadata: {},
       dependencies: ["/photos/beach.jpg"],
+      resolvedFileLinks: ["/photos/beach.jpg"],
     },
   });
 
@@ -135,6 +144,7 @@ describe("dependencies", function () {
       html: '<a href="/photos/beach.jpg"><img src="/photos/beach.jpg"></a>',
       metadata: {},
       dependencies: ["/photos/beach.jpg"],
+      resolvedFileLinks: ["/photos/beach.jpg"],
     },
   });
 
@@ -147,6 +157,7 @@ describe("dependencies", function () {
       html: '<a href="/docs/report.pdf#page=3">Report</a>',
       metadata: {},
       dependencies: ["/docs/report.pdf"],
+      resolvedFileLinks: ["/docs/report.pdf"],
     },
   });
 
@@ -159,6 +170,7 @@ describe("dependencies", function () {
       html: '<a href="/docs/report.pdf?download=1">Report</a>',
       metadata: {},
       dependencies: ["/docs/report.pdf"],
+      resolvedFileLinks: ["/docs/report.pdf"],
     },
   });
 
@@ -187,7 +199,12 @@ describe("dependencies", function () {
     },
   });
 
-  // Should not touch links which are already absolute
+  // Should not touch links which are already absolute. It's still
+  // added to `dependencies` (matching src), but critically not to
+  // `resolvedFileLinks` - an href the author wrote as absolute is a
+  // normal link (e.g. to another post), not a resolved file
+  // reference, and must stay eligible as an internal-link/backlink
+  // candidate.
   should_get_dependencies({
     html: '<a href="/docs/report.pdf">Report</a>',
     path: "/post.txt",
@@ -349,6 +366,7 @@ describe("dependencies", function () {
       html: '<a href="/posts/gallery/">Gallery</a>',
       metadata: {},
       dependencies: ["/posts/gallery/"],
+      resolvedFileLinks: ["/posts/gallery/"],
     },
   });
 
@@ -361,6 +379,7 @@ describe("dependencies", function () {
       html: '<a href="/posts/">Home</a>',
       metadata: {},
       dependencies: ["/posts/"],
+      resolvedFileLinks: ["/posts/"],
     },
   });
 
@@ -373,6 +392,7 @@ describe("dependencies", function () {
       html: '<a href="/posts/gallery/">Gallery</a>',
       metadata: {},
       dependencies: ["/posts/gallery/"],
+      resolvedFileLinks: ["/posts/gallery/"],
     },
   });
 
@@ -395,6 +415,33 @@ describe("dependencies", function () {
     metadata: {},
     result: {
       html: '<a href=" //example.com/file.jpg">Download</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // Should strip an embedded newline before classifying a URL,
+  // not just leading/trailing whitespace
+  should_get_dependencies({
+    html: '<a href="ht\ntps://example.com/file.jpg">Download</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="ht\ntps://example.com/file.jpg">Download</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // Should strip an embedded tab before classifying a URI scheme -
+  // browsers do this too, closing off "java\tscript:" as a way to
+  // sneak a scheme past a naive string check
+  should_get_dependencies({
+    html: '<a href="java\tscript:void(0)">Click</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="java\tscript:void(0)">Click</a>',
       metadata: {},
       dependencies: [],
     },
@@ -435,6 +482,7 @@ describe("dependencies", function () {
       html: '<a href="/posts/photo.jpg">photo.jpg</a>',
       metadata: {},
       dependencies: ["/posts/photo.jpg"],
+      resolvedFileLinks: ["/posts/photo.jpg"],
     },
   });
 
@@ -447,6 +495,7 @@ describe("dependencies", function () {
       html: '<a href="/posts/photo.jpg">My photo</a>',
       metadata: {},
       dependencies: ["/posts/photo.jpg"],
+      resolvedFileLinks: ["/posts/photo.jpg"],
     },
   });
 

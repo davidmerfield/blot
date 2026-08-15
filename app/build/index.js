@@ -86,6 +86,7 @@ module.exports = function build(blog, path, callback) {
           );
           entry = Prepare(entry, {
             titlecase: blog.plugins.titlecase.enabled,
+            resolvedFileLinks: (extras && extras.resolvedFileLinks) || [],
           });
           debug("Blog:", blog.id, path, " additional properties computed.");
         } catch (e) {

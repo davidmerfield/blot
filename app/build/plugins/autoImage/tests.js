@@ -88,4 +88,13 @@ describe("autoImage plugin", function () {
     expect(newHTML).toContain('<img src="/posts/photo.jpg"');
     expect(newHTML).not.toContain("<a href");
   });
+
+  it("converts a bare link whose label has surrounding whitespace", async () => {
+    // The href is already trimmed and resolved by the time this
+    // plugin runs, but the label's text is never touched.
+    const html = '<p><a href="/posts/photo.jpg"> photo.jpg </a></p>';
+    const newHTML = await runTest(html);
+    expect(newHTML).toContain('<img src="/posts/photo.jpg"');
+    expect(newHTML).not.toContain("<a href");
+  });
 });
