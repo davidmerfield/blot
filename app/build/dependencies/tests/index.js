@@ -345,13 +345,43 @@ describe("dependencies", function () {
   });
 
   // A link to a post's own source file should still be rewritten to
-  // an absolute path, just not counted as a dependency of itself
+  // an absolute path, just not counted as a dependency of itself.
+  // It's still recorded in resolvedFileLinks, though - it's a
+  // resolved file reference, not a link to another page, and
+  // internalLinks needs to know that even for a self-link.
   should_get_dependencies({
     html: '<a href="post.txt">Source</a>',
     path: "/folder/post.txt",
     metadata: {},
     result: {
       html: '<a href="/folder/post.txt">Source</a>',
+      metadata: {},
+      dependencies: [],
+      resolvedFileLinks: ["/folder/post.txt"],
+    },
+  });
+
+  // Browsers treat a backslash the same as a forward slash - a
+  // single leading backslash is root-relative
+  should_get_dependencies({
+    html: '<a href="\\Files\\report.pdf">Report</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/Files/report.pdf">Report</a>',
+      metadata: {},
+      dependencies: ["/Files/report.pdf"],
+    },
+  });
+
+  // A double leading backslash is an external network-path
+  // reference, same as "//host/..." - must not be resolved locally
+  should_get_dependencies({
+    html: '<a href="\\\\host\\report.pdf">Report</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="\\\\host\\report.pdf">Report</a>',
       metadata: {},
       dependencies: [],
     },

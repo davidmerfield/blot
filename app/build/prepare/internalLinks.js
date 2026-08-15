@@ -18,7 +18,18 @@ var debug = require("debug")("blot:build:prepare:internalLinks");
 function internalLinks($, resolvedFileLinks) {
 	var result = [];
 
-	resolvedFileLinks = resolvedFileLinks || [];
+	// A copy we consume credits from as we find matches, rather than
+	// a plain "is this value ever a resolved file link" check. If the
+	// same path appears twice in a post - once from resolving a
+	// relative file reference, once as an independently authored
+	// absolute link to another post that happens to share that path -
+	// only the first occurrence should be treated as the file
+	// reference; the other is still a legitimate internal-link
+	// candidate. Since `result` is a deduplicated set of values, it
+	// doesn't matter which of the two occurrences "spends" the
+	// credit - either way the value still makes it into `result`
+	// via the other occurrence.
+	var remainingFileLinks = (resolvedFileLinks || []).slice();
 
 	$("[href]").each(function () {
 		let value = $(this).attr("href");
@@ -28,9 +39,16 @@ function internalLinks($, resolvedFileLinks) {
 
 		normalizedValue = normalizedValue.split("#")[0].split("?")[0];
 
-		if (!normalizedValue || result.indexOf(normalizedValue) > -1) return;
+		if (!normalizedValue) return;
 
-		if (resolvedFileLinks.indexOf(normalizedValue) > -1) return;
+		var creditIndex = remainingFileLinks.indexOf(normalizedValue);
+
+		if (creditIndex > -1) {
+			remainingFileLinks.splice(creditIndex, 1);
+			return;
+		}
+
+		if (result.indexOf(normalizedValue) > -1) return;
 
 		result.push(normalizedValue);
 	});

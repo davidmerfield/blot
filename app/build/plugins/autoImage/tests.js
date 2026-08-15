@@ -97,4 +97,14 @@ describe("autoImage plugin", function () {
     expect(newHTML).toContain('<img src="/posts/photo.jpg"');
     expect(newHTML).not.toContain("<a href");
   });
+
+  it("converts a bare link whose label has an embedded newline", async () => {
+    // The href is already stripped of embedded tab/newline
+    // characters by the time this plugin runs, but the label's
+    // text is never touched.
+    const html = '<p><a href="/posts/photo.jpg">photo.\njpg</a></p>';
+    const newHTML = await runTest(html);
+    expect(newHTML).toContain('<img src="/posts/photo.jpg"');
+    expect(newHTML).not.toContain("<a href");
+  });
 });

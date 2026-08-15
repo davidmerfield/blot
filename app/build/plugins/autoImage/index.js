@@ -52,12 +52,13 @@ function isBareLabel(href, text) {
   if (!text) return false;
   if (href === text) return true;
 
-  // The href was already trimmed (and any local path resolved)
-  // before this plugin runs, but the label's text is never touched -
-  // so a whitespace-padded bare link like <a href=" photo.jpg ">
-  // photo.jpg </a> needs its text trimmed here to still compare
-  // equal, the same way a URL parser would treat the padded href.
-  const trimmedText = text.trim();
+  // The href was already stripped of embedded tab/newline characters,
+  // trimmed, and (if local) resolved before this plugin runs, but the
+  // label's text is never touched - so a whitespace-mangled bare link
+  // like <a href="photo.\njpg">photo.\njpg</a> needs the same
+  // normalization applied to its text here to still compare equal,
+  // the same way a URL parser would treat the mangled href.
+  const trimmedText = text.replace(/[\t\r\n]/g, "").trim();
 
   if (href === trimmedText) return true;
 

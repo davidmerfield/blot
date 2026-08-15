@@ -141,6 +141,14 @@ function dependencies (path, html, metadata) {
 
       suffix = cutIndex === -1 ? "" : value.slice(cutIndex);
 
+      // Browsers treat a backslash the same as a forward slash when
+      // parsing a URL for an http(s) page - e.g. "\Files\report.pdf"
+      // is root-relative ("/Files/report.pdf") and "\\host\report.pdf"
+      // is an external network-path reference ("//host/report.pdf").
+      // Normalizing here means the existing is_url/absolute-path
+      // checks below already handle both cases correctly.
+      pathPart = pathPart.replace(/\\/g, "/");
+
       if (!pathPart) {
         debug(path, attribute, value, "is a fragment or query only");
         return;
@@ -217,6 +225,15 @@ function dependencies (path, html, metadata) {
       $el.attr(attribute, resolved_value + suffix);
     }
 
+    // Track this regardless of self-reference: even a link to a
+    // post's own source file is a resolved file reference, not a
+    // link to another page, and internalLinks needs to know that to
+    // avoid mistaking it for one if it happens to collide with some
+    // other entry's permalink.
+    if (isRelativeAnchorLink && resolvedFileLinks.indexOf(resolved_value) === -1) {
+      resolvedFileLinks.push(resolved_value);
+    }
+
     if (isSelfReference) {
       return;
     }
@@ -229,10 +246,6 @@ function dependencies (path, html, metadata) {
     if (isWikilink && !extname(value)) {
       debug(path, attribute, value, "wikilink target has no extension");
       return;
-    }
-
-    if (isRelativeAnchorLink && resolvedFileLinks.indexOf(resolved_value) === -1) {
-      resolvedFileLinks.push(resolved_value);
     }
 
     if (dependencies.indexOf(resolved_value) === -1) {

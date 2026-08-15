@@ -57,4 +57,18 @@ describe("internalLinks", function () {
   it("keeps all internal links when no dependencies are given", function () {
     expect(this.internalLinks('<a href="/hey">Hey</a>')).toEqual(["/hey"]);
   });
+
+  it("still counts a path as an internal link if it also appears as an independently authored link, even though the same path is a resolved file link", function () {
+    // One resolved file reference to /target, and a *separate*,
+    // independently authored <a href="/target"> to an actual post.
+    // Only one of the two occurrences should be "spent" by the file
+    // reference - the other must still register /target as a real
+    // internal link/backlink candidate.
+    expect(
+      this.internalLinks(
+        '<a href="/target">File</a><a href="/target">Post</a>',
+        ["/target"]
+      )
+    ).toEqual(["/target"]);
+  });
 });
