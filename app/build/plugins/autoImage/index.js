@@ -18,7 +18,7 @@ function render($, callback) {
       const text = $(this).text();
       const isImage = IsImage(href);
 
-      if (href && isImage && href === text) {
+      if (href && isImage && isBareLabel(href, text)) {
         $(this).replaceWith(template(href));
       }
     } catch (e) {}
@@ -29,6 +29,28 @@ function render($, callback) {
 
 function template(url) {
   return '<img src="' + url + '" />';
+}
+
+// A "bare" link is one whose label is just its own destination,
+// e.g. <a href="photo.jpg">photo.jpg</a>, rather than a custom
+// label like <a href="photo.jpg">My photo</a>. This used to be a
+// simple equality check, but a relative local href is now resolved
+// to an absolute path (e.g. /posts/photo.jpg) before this plugin
+// runs, while the link's text still holds the original, unresolved
+// reference the author typed - so we also accept href ending in
+// "/" + text (stripping any leading "./") as still being bare.
+// This is a heuristic, not a re-derivation of the original href:
+// it can't distinguish "text that resolved to this href" from "text
+// that merely shares a filename with an unrelated href in a
+// different folder" (e.g. href="/other/photo.jpg", text="photo.jpg"
+// would also match). That's an accepted, low-stakes tradeoff here -
+// worst case a link renders as an image instead of a link.
+function isBareLabel(href, text) {
+  if (href === text) return true;
+
+  const cleanText = text.replace(/^\.\//, "");
+
+  return !!cleanText && href.slice(-(cleanText.length + 1)) === "/" + cleanText;
 }
 
 function IsImage(url) {

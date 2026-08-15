@@ -375,15 +375,16 @@ describe("dependencies", function () {
     },
   });
 
-  // A bare, auto-labeled link (text === href) should have its text
-  // kept in sync with the resolved href, so plugins which compare
-  // the two (e.g. autoImage) still recognize the pattern
+  // Authored link text is never touched, even when it happens to
+  // equal the original href - only the destination gets resolved
+  // (the autoImage plugin, which used to rely on href === text,
+  // is responsible for tolerating this on its own side)
   should_get_dependencies({
     html: '<a href="photo.jpg">photo.jpg</a>',
     path: "/posts/index.txt",
     metadata: {},
     result: {
-      html: '<a href="/posts/photo.jpg">/posts/photo.jpg</a>',
+      html: '<a href="/posts/photo.jpg">photo.jpg</a>',
       metadata: {},
       dependencies: ["/posts/photo.jpg"],
     },

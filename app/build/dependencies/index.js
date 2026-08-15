@@ -109,14 +109,6 @@ function dependencies (path, html, metadata) {
       return;
     }
 
-    // If the link's visible text is just the href itself (a bare,
-    // auto-labeled link like <a href="photo.jpg">photo.jpg</a>,
-    // rather than a custom label), keep the text in sync with
-    // wherever the href ends up - otherwise plugins which compare
-    // href to text (e.g. autoImage) stop recognizing this pattern.
-    var originalValue = value;
-    var textMatchesHref = isAnchor && $el.text() === originalValue;
-
     if (isAnchor) {
       // Anchors are also used for in-page navigation (footnotes,
       // tables of contents), which isn't a file path – strip any
@@ -190,10 +182,6 @@ function dependencies (path, html, metadata) {
     // it can't find a match.
     if (!isWikilink) {
       $el.attr(attribute, resolved_value + suffix);
-
-      if (textMatchesHref) {
-        $el.text(resolved_value + suffix);
-      }
     }
 
     if (isSelfReference) {
