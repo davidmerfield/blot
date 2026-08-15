@@ -71,4 +71,29 @@ describe("internalLinks", function () {
       )
     ).toEqual(["/target"]);
   });
+
+  it("spends one credit per resolved occurrence of the same path", function () {
+    // Two separate anchors both resolved to the same file path -
+    // both occurrences must be excluded, not just the first, even
+    // though the result is a deduplicated set of one value.
+    expect(
+      this.internalLinks(
+        '<a href="/target">File one</a><a href="/target">File two</a>',
+        ["/target", "/target"]
+      )
+    ).toEqual([]);
+  });
+
+  it("excludes only as many occurrences as there are credits for that path", function () {
+    // Two resolved-file occurrences of /target, plus a third,
+    // independently authored link to the same path - only the first
+    // two should be spent, leaving the third to register /target as
+    // a real internal link/backlink candidate.
+    expect(
+      this.internalLinks(
+        '<a href="/target">File one</a><a href="/target">File two</a><a href="/target">Post</a>',
+        ["/target", "/target"]
+      )
+    ).toEqual(["/target"]);
+  });
 });

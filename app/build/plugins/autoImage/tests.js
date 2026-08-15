@@ -107,4 +107,14 @@ describe("autoImage plugin", function () {
     expect(newHTML).toContain('<img src="/posts/photo.jpg"');
     expect(newHTML).not.toContain("<a href");
   });
+
+  it("converts a bare link whose label uses backslashes", async () => {
+    // The href is already normalized from backslashes to forward
+    // slashes and resolved by the time this plugin runs, but the
+    // label's text is never touched.
+    const html = '<p><a href="/posts/photos/photo.jpg">photos\\photo.jpg</a></p>';
+    const newHTML = await runTest(html);
+    expect(newHTML).toContain('<img src="/posts/photos/photo.jpg"');
+    expect(newHTML).not.toContain("<a href");
+  });
 });

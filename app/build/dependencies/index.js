@@ -37,6 +37,16 @@ var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 // plugin, which runs after this module, resolves those from their
 // original, unresolved target text.
 
+// A plugin running after this module (e.g. autoImage) can remove the
+// exact anchor a resolvedFileLinks entry came from, replacing it with
+// an <img>. Marking the surviving DOM element, rather than just
+// collecting values into an array, is what lets single.js tell which
+// credits are still backed by a real anchor once plugins have run -
+// counting occurrences of a value isn't enough, since an unrelated
+// anchor sharing the same resolved path could still be present after
+// the one that actually earned the credit is gone.
+var RESOLVED_FILE_LINK_ATTR = "data-blot-resolved-file-link";
+
 function dependencies (path, html, metadata) {
   // In future it would be nice NOT to reparse the HTML
   // Multiple times. The plugins features also do this.
@@ -229,9 +239,16 @@ function dependencies (path, html, metadata) {
     // post's own source file is a resolved file reference, not a
     // link to another page, and internalLinks needs to know that to
     // avoid mistaking it for one if it happens to collide with some
-    // other entry's permalink.
-    if (isRelativeAnchorLink && resolvedFileLinks.indexOf(resolved_value) === -1) {
+    // other entry's permalink. One entry per occurrence, not per
+    // unique path: internalLinks consumes one credit per matching
+    // <a href> it encounters, and two separate anchors that happen
+    // to resolve to the same path are two occurrences to exclude,
+    // not one. Also mark the element itself - see comment above
+    // RESOLVED_FILE_LINK_ATTR for why single.js needs this rather
+    // than just this array.
+    if (isRelativeAnchorLink) {
       resolvedFileLinks.push(resolved_value);
+      $el.attr(RESOLVED_FILE_LINK_ATTR, "");
     }
 
     if (isSelfReference) {
@@ -265,3 +282,4 @@ function dependencies (path, html, metadata) {
 }
 
 module.exports = dependencies;
+module.exports.RESOLVED_FILE_LINK_ATTR = RESOLVED_FILE_LINK_ATTR;

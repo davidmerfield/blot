@@ -62,13 +62,20 @@ function isBareLabel(href, text) {
 
   if (href === trimmedText) return true;
 
+  // dependencies/index.js normalizes backslashes to forward slashes
+  // on the href side before resolving (browsers treat them the same
+  // for http(s) pages) - apply the same normalization to the label
+  // here, e.g. "photos\photo.jpg" should still match a resolved href
+  // ending in "/photos/photo.jpg".
+  const normalizedText = trimmedText.replace(/\\/g, "/");
+
   // path.posix.normalize collapses internal "x/../" segments, but
   // it can't collapse *leading* "../"/"./" ones (there's nothing
   // before them to cancel against) - strip those separately, since
   // they cancel out against the directory of the file resolve()
   // already applied to produce href.
   const cleanText = posix
-    .normalize(trimmedText)
+    .normalize(normalizedText)
     .replace(/^(?:\.\.?\/)+/, "")
     .replace(/\/$/, "");
 

@@ -87,7 +87,7 @@ describe("dependencies", function () {
     path: "/post.txt",
     metadata: {},
     result: {
-      html: '<a href="/page.html"></a>',
+      html: '<a href="/page.html" data-blot-resolved-file-link=""></a>',
       metadata: {},
       dependencies: ["/page.html"],
       resolvedFileLinks: ["/page.html"],
@@ -100,7 +100,7 @@ describe("dependencies", function () {
     path: "/post.txt",
     metadata: {},
     result: {
-      html: '<a href="/other-page"></a>',
+      html: '<a href="/other-page" data-blot-resolved-file-link=""></a>',
       metadata: {},
       dependencies: ["/other-page"],
       resolvedFileLinks: ["/other-page"],
@@ -114,7 +114,7 @@ describe("dependencies", function () {
     path: "/folder/post.txt",
     metadata: {},
     result: {
-      html: '<a href="/folder/other-post.md"></a>',
+      html: '<a href="/folder/other-post.md" data-blot-resolved-file-link=""></a>',
       metadata: {},
       dependencies: ["/folder/other-post.md"],
       resolvedFileLinks: ["/folder/other-post.md"],
@@ -127,7 +127,7 @@ describe("dependencies", function () {
     path: "/photos/vacation.txt",
     metadata: {},
     result: {
-      html: '<a href="/photos/beach.jpg">Download</a>',
+      html: '<a href="/photos/beach.jpg" data-blot-resolved-file-link="">Download</a>',
       metadata: {},
       dependencies: ["/photos/beach.jpg"],
       resolvedFileLinks: ["/photos/beach.jpg"],
@@ -141,10 +141,26 @@ describe("dependencies", function () {
     path: "/photos/vacation.txt",
     metadata: {},
     result: {
-      html: '<a href="/photos/beach.jpg"><img src="/photos/beach.jpg"></a>',
+      html: '<a href="/photos/beach.jpg" data-blot-resolved-file-link=""><img src="/photos/beach.jpg"></a>',
       metadata: {},
       dependencies: ["/photos/beach.jpg"],
       resolvedFileLinks: ["/photos/beach.jpg"],
+    },
+  });
+
+  // Should record one resolvedFileLinks entry per occurrence, not
+  // one per unique path - two separate anchors that both resolve to
+  // the same file are two occurrences internalLinks needs to be able
+  // to exclude, not one.
+  should_get_dependencies({
+    html: '<a href="beach.jpg">Download</a><a href="beach.jpg">Again</a>',
+    path: "/photos/vacation.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/photos/beach.jpg" data-blot-resolved-file-link="">Download</a><a href="/photos/beach.jpg" data-blot-resolved-file-link="">Again</a>',
+      metadata: {},
+      dependencies: ["/photos/beach.jpg"],
+      resolvedFileLinks: ["/photos/beach.jpg", "/photos/beach.jpg"],
     },
   });
 
@@ -154,7 +170,7 @@ describe("dependencies", function () {
     path: "/docs/index.txt",
     metadata: {},
     result: {
-      html: '<a href="/docs/report.pdf#page=3">Report</a>',
+      html: '<a href="/docs/report.pdf#page=3" data-blot-resolved-file-link="">Report</a>',
       metadata: {},
       dependencies: ["/docs/report.pdf"],
       resolvedFileLinks: ["/docs/report.pdf"],
@@ -167,7 +183,7 @@ describe("dependencies", function () {
     path: "/docs/index.txt",
     metadata: {},
     result: {
-      html: '<a href="/docs/report.pdf?download=1">Report</a>',
+      html: '<a href="/docs/report.pdf?download=1" data-blot-resolved-file-link="">Report</a>',
       metadata: {},
       dependencies: ["/docs/report.pdf"],
       resolvedFileLinks: ["/docs/report.pdf"],
@@ -354,7 +370,7 @@ describe("dependencies", function () {
     path: "/folder/post.txt",
     metadata: {},
     result: {
-      html: '<a href="/folder/post.txt">Source</a>',
+      html: '<a href="/folder/post.txt" data-blot-resolved-file-link="">Source</a>',
       metadata: {},
       dependencies: [],
       resolvedFileLinks: ["/folder/post.txt"],
@@ -393,7 +409,7 @@ describe("dependencies", function () {
     path: "/posts/index.txt",
     metadata: {},
     result: {
-      html: '<a href="/posts/gallery/">Gallery</a>',
+      html: '<a href="/posts/gallery/" data-blot-resolved-file-link="">Gallery</a>',
       metadata: {},
       dependencies: ["/posts/gallery/"],
       resolvedFileLinks: ["/posts/gallery/"],
@@ -406,7 +422,7 @@ describe("dependencies", function () {
     path: "/posts/index.txt",
     metadata: {},
     result: {
-      html: '<a href="/posts/">Home</a>',
+      html: '<a href="/posts/" data-blot-resolved-file-link="">Home</a>',
       metadata: {},
       dependencies: ["/posts/"],
       resolvedFileLinks: ["/posts/"],
@@ -419,7 +435,7 @@ describe("dependencies", function () {
     path: "/posts/index.txt",
     metadata: {},
     result: {
-      html: '<a href="/posts/gallery/">Gallery</a>',
+      html: '<a href="/posts/gallery/" data-blot-resolved-file-link="">Gallery</a>',
       metadata: {},
       dependencies: ["/posts/gallery/"],
       resolvedFileLinks: ["/posts/gallery/"],
@@ -509,7 +525,7 @@ describe("dependencies", function () {
     path: "/posts/index.txt",
     metadata: {},
     result: {
-      html: '<a href="/posts/photo.jpg">photo.jpg</a>',
+      html: '<a href="/posts/photo.jpg" data-blot-resolved-file-link="">photo.jpg</a>',
       metadata: {},
       dependencies: ["/posts/photo.jpg"],
       resolvedFileLinks: ["/posts/photo.jpg"],
@@ -522,7 +538,7 @@ describe("dependencies", function () {
     path: "/posts/index.txt",
     metadata: {},
     result: {
-      html: '<a href="/posts/photo.jpg">My photo</a>',
+      html: '<a href="/posts/photo.jpg" data-blot-resolved-file-link="">My photo</a>',
       metadata: {},
       dependencies: ["/posts/photo.jpg"],
       resolvedFileLinks: ["/posts/photo.jpg"],
