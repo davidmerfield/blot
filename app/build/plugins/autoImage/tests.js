@@ -74,4 +74,18 @@ describe("autoImage plugin", function () {
     expect(newHTML).toContain("<em>My photo</em>");
     expect(newHTML).not.toContain("<img src");
   });
+
+  it("converts a link whose text is a parent-relative reference", async () => {
+    const html = '<p><a href="/posts/photo.jpg">../photo.jpg</a></p>';
+    const newHTML = await runTest(html);
+    expect(newHTML).toContain('<img src="/posts/photo.jpg"');
+    expect(newHTML).not.toContain("<a href");
+  });
+
+  it("converts a link whose text has internal dot-segments", async () => {
+    const html = '<p><a href="/posts/photo.jpg">foo/../photo.jpg</a></p>';
+    const newHTML = await runTest(html);
+    expect(newHTML).toContain('<img src="/posts/photo.jpg"');
+    expect(newHTML).not.toContain("<a href");
+  });
 });

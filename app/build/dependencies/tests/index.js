@@ -352,6 +352,54 @@ describe("dependencies", function () {
     },
   });
 
+  // Should treat a bare "." as a directory reference too
+  should_get_dependencies({
+    html: '<a href=".">Home</a>',
+    path: "/posts/index.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/posts/">Home</a>',
+      metadata: {},
+      dependencies: ["/posts/"],
+    },
+  });
+
+  // Should treat a trailing "/." dot-segment as a directory reference
+  should_get_dependencies({
+    html: '<a href="gallery/.">Gallery</a>',
+    path: "/posts/index.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/posts/gallery/">Gallery</a>',
+      metadata: {},
+      dependencies: ["/posts/gallery/"],
+    },
+  });
+
+  // Should trim whitespace before classifying a fragment-only href
+  should_get_dependencies({
+    html: '<a href=" #details">Details</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href=" #details">Details</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // Should trim whitespace before classifying a protocol-relative URL
+  should_get_dependencies({
+    html: '<a href=" //example.com/file.jpg">Download</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href=" //example.com/file.jpg">Download</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
   // Should not touch anchors using URI schemes it doesn't recognize
   should_get_dependencies({
     html: '<a href="javascript:void(0)">Click</a>',

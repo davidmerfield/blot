@@ -1,4 +1,5 @@
 const { URL } = require("url");
+const { posix } = require("path");
 
 // Define a list of common image extensions
 const imageExtensions = [
@@ -38,7 +39,9 @@ function template(url) {
 // to an absolute path (e.g. /posts/photo.jpg) before this plugin
 // runs, while the link's text still holds the original, unresolved
 // reference the author typed - so we also accept href ending in
-// "/" + text (stripping any leading "./") as still being bare.
+// "/" + text, after collapsing any "./", "../" or internal "x/../"
+// segments in text (e.g. "../photo.jpg" or "foo/../photo.jpg" both
+// reduce to "photo.jpg") as still being bare.
 // This is a heuristic, not a re-derivation of the original href:
 // it can't distinguish "text that resolved to this href" from "text
 // that merely shares a filename with an unrelated href in a
@@ -47,8 +50,17 @@ function template(url) {
 // worst case a link renders as an image instead of a link.
 function isBareLabel(href, text) {
   if (href === text) return true;
+  if (!text) return false;
 
-  const cleanText = text.replace(/^\.\//, "");
+  // path.posix.normalize collapses internal "x/../" segments, but
+  // it can't collapse *leading* "../"/"./" ones (there's nothing
+  // before them to cancel against) - strip those separately, since
+  // they cancel out against the directory of the file resolve()
+  // already applied to produce href.
+  const cleanText = posix
+    .normalize(text)
+    .replace(/^(?:\.\.?\/)+/, "")
+    .replace(/\/$/, "");
 
   return !!cleanText && href.slice(-(cleanText.length + 1)) === "/" + cleanText;
 }

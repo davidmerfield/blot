@@ -102,7 +102,12 @@ function dependencies (path, html, metadata) {
     if (!!$el.attr("href")) attribute = "href";
     if (!!$el.attr("src")) attribute = "src";
 
-    value = $el.attr(attribute);
+    // Browsers ignore leading/trailing whitespace when parsing a
+    // URL, e.g. href=" #details" is still an in-page anchor and
+    // href=" //example.com/x" is still an external URL - trim
+    // before classifying the value, or whitespace-padded values
+    // slip past those checks and get mistaken for a local path.
+    value = ($el.attr(attribute) || "").trim();
 
     if (!value) {
       debug(path, attribute, value, "is empty");
@@ -154,11 +159,19 @@ function dependencies (path, html, metadata) {
 
     resolved_value = resolve(path, value);
 
-    // path.resolve() drops trailing slashes, but a directory link
-    // (e.g. href="gallery/") needs to keep its trailing slash - the
-    // browser resolves relative resources inside the linked page
+    // path.resolve() drops trailing slashes, and normalizes away
+    // trailing dot-segments (e.g. "gallery/." or ".") - but all of
+    // these refer to a directory, and need to keep a trailing slash:
+    // the browser resolves relative resources inside the linked page
     // differently with and without one.
-    if (value.slice(-1) === "/" && resolved_value.slice(-1) !== "/") {
+    var referencesDirectory =
+      value.slice(-1) === "/" ||
+      value === "." ||
+      value === ".." ||
+      value.slice(-2) === "/." ||
+      value.slice(-3) === "/..";
+
+    if (referencesDirectory && resolved_value.slice(-1) !== "/") {
       resolved_value += "/";
     }
 
