@@ -252,6 +252,21 @@ describe("dependencies", function () {
     },
   });
 
+  // A wikilink to another page, e.g. [[target-of-link]], has no
+  // extension in its raw target - that literal guess can never
+  // match a real file, so it should not be tracked as a dependency
+  // (the wikilinks plugin tracks the actual resolved file itself)
+  should_get_dependencies({
+    html: '<a href="target-of-link" title="wikilink">target-of-link</a>',
+    path: "/contains-wikilink.md",
+    metadata: {},
+    result: {
+      html: '<a href="target-of-link" title="wikilink">target-of-link</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
   // SHould not extract them from URLs
   should_get_dependencies({
     html: '<img src="//google.com/goo.jpg">',
@@ -309,6 +324,80 @@ describe("dependencies", function () {
       html: '<img src="/image.jpg">',
       metadata: {},
       dependencies: [],
+    },
+  });
+
+  // A link to a post's own source file should still be rewritten to
+  // an absolute path, just not counted as a dependency of itself
+  should_get_dependencies({
+    html: '<a href="post.txt">Source</a>',
+    path: "/folder/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/folder/post.txt">Source</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // Should preserve a trailing slash on a resolved directory link
+  should_get_dependencies({
+    html: '<a href="gallery/">Gallery</a>',
+    path: "/posts/index.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/posts/gallery/">Gallery</a>',
+      metadata: {},
+      dependencies: ["/posts/gallery/"],
+    },
+  });
+
+  // Should not touch anchors using URI schemes it doesn't recognize
+  should_get_dependencies({
+    html: '<a href="javascript:void(0)">Click</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="javascript:void(0)">Click</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  should_get_dependencies({
+    html: '<a href="geo:37.7,-122.4">Map</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="geo:37.7,-122.4">Map</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // A bare, auto-labeled link (text === href) should have its text
+  // kept in sync with the resolved href, so plugins which compare
+  // the two (e.g. autoImage) still recognize the pattern
+  should_get_dependencies({
+    html: '<a href="photo.jpg">photo.jpg</a>',
+    path: "/posts/index.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/posts/photo.jpg">/posts/photo.jpg</a>',
+      metadata: {},
+      dependencies: ["/posts/photo.jpg"],
+    },
+  });
+
+  // A custom-labeled link (text !== href) should keep its label
+  should_get_dependencies({
+    html: '<a href="photo.jpg">My photo</a>',
+    path: "/posts/index.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/posts/photo.jpg">My photo</a>',
+      metadata: {},
+      dependencies: ["/posts/photo.jpg"],
     },
   });
 

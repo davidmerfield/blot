@@ -3,6 +3,7 @@ var cheerio = require("cheerio");
 var is_url = require("./is_url");
 var debug = require("debug")("blot:build:dependencies");
 var is_path = require("./is_path");
+var extname = require("path").extname;
 var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 
 // The purpose of this module is to take the HTML for
@@ -108,6 +109,14 @@ function dependencies (path, html, metadata) {
       return;
     }
 
+    // If the link's visible text is just the href itself (a bare,
+    // auto-labeled link like <a href="photo.jpg">photo.jpg</a>,
+    // rather than a custom label), keep the text in sync with
+    // wherever the href ends up - otherwise plugins which compare
+    // href to text (e.g. autoImage) stop recognizing this pattern.
+    var originalValue = value;
+    var textMatchesHref = isAnchor && $el.text() === originalValue;
+
     if (isAnchor) {
       // Anchors are also used for in-page navigation (footnotes,
       // tables of contents), which isn't a file path – strip any
@@ -129,6 +138,15 @@ function dependencies (path, html, metadata) {
         return;
       }
 
+      // Anchors are also used for URI schemes we don't otherwise
+      // recognize (javascript:, geo:, magnet:, etc.) - treat any
+      // recognizable URI scheme as non-local, not just the specific
+      // ones is_url knows about.
+      if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(pathPart) && !is_url(pathPart)) {
+        debug(path, attribute, value, "has an unrecognized URI scheme");
+        return;
+      }
+
       value = pathPart;
     }
 
@@ -144,9 +162,21 @@ function dependencies (path, html, metadata) {
 
     resolved_value = resolve(path, value);
 
-    if (resolved_value === path) {
+    // path.resolve() drops trailing slashes, but a directory link
+    // (e.g. href="gallery/") needs to keep its trailing slash - the
+    // browser resolves relative resources inside the linked page
+    // differently with and without one.
+    if (value.slice(-1) === "/" && resolved_value.slice(-1) !== "/") {
+      resolved_value += "/";
+    }
+
+    // A link to a post's own source file resolves to its own path.
+    // We still want to rewrite the attribute (see below), but there's
+    // no point recording a post as a dependency of itself.
+    var isSelfReference = resolved_value === path;
+
+    if (isSelfReference) {
       debug(path, attribute, value, "is the same as its path");
-      return;
     }
 
     // Wikilinks ([[Note]] / ![[Image]]) are rendered directly to
@@ -160,6 +190,24 @@ function dependencies (path, html, metadata) {
     // it can't find a match.
     if (!isWikilink) {
       $el.attr(attribute, resolved_value + suffix);
+
+      if (textMatchesHref) {
+        $el.text(resolved_value + suffix);
+      }
+    }
+
+    if (isSelfReference) {
+      return;
+    }
+
+    // A wikilink's raw target is only worth tracking as a dependency
+    // when it already looks like a file, e.g. ![[pic.png]]. A plain
+    // page link like [[target-of-link]] has no extension, so the
+    // literal guess (/target-of-link) can never match a real file -
+    // the wikilinks plugin tracks the actual resolved file itself.
+    if (isWikilink && !extname(value)) {
+      debug(path, attribute, value, "wikilink target has no extension");
+      return;
     }
 
     if (dependencies.indexOf(resolved_value) === -1) {
