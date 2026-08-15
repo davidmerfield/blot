@@ -4,32 +4,18 @@ var debug = require("debug")("blot:build:prepare:internalLinks");
 // a given blog post and work out if any of the links
 // inside refer to other pages on the site.
 //
-// resolvedFileLinks (optional) is the list of absolute paths this
-// entry's build resolved from a *relative* <a href>, e.g. a link to
-// a sibling image, now rewritten to an absolute folder path. Those
-// aren't links to other pages, so we exclude them here - otherwise
-// a resolved file path that happens to collide with some other
-// entry's custom permalink would be mistaken for a link to that
-// entry and produce a spurious backlink. This deliberately doesn't
-// exclude every entry.dependencies value - an href the author
-// already wrote as absolute (e.g. a normal link to another post) is
-// still a legitimate internal-link candidate, even though it's also
-// tracked as a dependency.
-function internalLinks($, resolvedFileLinks) {
+// KNOWN EDGE CASE (accepted, not solved): dependencies/index.js
+// resolves a relative <a href> (e.g. a link to a sibling file) to an
+// absolute path. If that resolved path happens to be identical to
+// some other entry's custom permalink, it's indistinguishable here
+// from a real link to that entry, and produces a spurious backlink.
+// This requires an exact, coincidental collision between a resolved
+// file path and someone's custom permalink - extraordinarily
+// unlikely - and the worst case is one wrong entry in a backlinks
+// list, not a broken link or lost data. See the matching comment in
+// dependencies/index.js for more.
+function internalLinks($) {
 	var result = [];
-
-	// A copy we consume credits from as we find matches, rather than
-	// a plain "is this value ever a resolved file link" check. If the
-	// same path appears twice in a post - once from resolving a
-	// relative file reference, once as an independently authored
-	// absolute link to another post that happens to share that path -
-	// only the first occurrence should be treated as the file
-	// reference; the other is still a legitimate internal-link
-	// candidate. Since `result` is a deduplicated set of values, it
-	// doesn't matter which of the two occurrences "spends" the
-	// credit - either way the value still makes it into `result`
-	// via the other occurrence.
-	var remainingFileLinks = (resolvedFileLinks || []).slice();
 
 	$("[href]").each(function () {
 		let value = $(this).attr("href");
@@ -39,22 +25,7 @@ function internalLinks($, resolvedFileLinks) {
 
 		normalizedValue = normalizedValue.split("#")[0].split("?")[0];
 
-		if (!normalizedValue) return;
-
-		// Credits only ever come from resolving an <a href> (see
-		// dependencies/index.js) - a <link href> or other non-anchor
-		// element happening to share the same resolved path must not
-		// be able to spend a credit that belongs to a real anchor.
-		var creditIndex = $(this).is("a")
-			? remainingFileLinks.indexOf(normalizedValue)
-			: -1;
-
-		if (creditIndex > -1) {
-			remainingFileLinks.splice(creditIndex, 1);
-			return;
-		}
-
-		if (result.indexOf(normalizedValue) > -1) return;
+		if (!normalizedValue || result.indexOf(normalizedValue) > -1) return;
 
 		result.push(normalizedValue);
 	});

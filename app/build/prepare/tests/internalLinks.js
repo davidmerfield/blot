@@ -3,7 +3,7 @@ describe("internalLinks", function () {
   var internalLinks = require("../internalLinks");
 
   beforeEach(function () {
-    this.internalLinks = function (html, dependencies) {
+    this.internalLinks = function (html) {
       var $ = cheerio.load(
         html,
         {
@@ -13,7 +13,7 @@ describe("internalLinks", function () {
         false
       );
 
-      return internalLinks($, dependencies);
+      return internalLinks($);
     };
   });
 
@@ -39,74 +39,5 @@ describe("internalLinks", function () {
         '<a href="/target">Base</a><a href="/target#x">Fragment</a><a href="/target?y=1">Query</a>'
       )
     ).toEqual(["/target"]);
-  });
-
-  it("excludes hrefs already known to be resolved file dependencies", function () {
-    // A relative link to a local file resolves to an absolute path,
-    // e.g. beach.jpg -> /Photos/beach.jpg. If that path happens to
-    // collide with another entry's custom permalink, it must not be
-    // mistaken for a link to that entry.
-    expect(
-      this.internalLinks(
-        '<a href="/Photos/beach.jpg">Beach</a><a href="/some-post">Some post</a>',
-        ["/Photos/beach.jpg"]
-      )
-    ).toEqual(["/some-post"]);
-  });
-
-  it("keeps all internal links when no dependencies are given", function () {
-    expect(this.internalLinks('<a href="/hey">Hey</a>')).toEqual(["/hey"]);
-  });
-
-  it("still counts a path as an internal link if it also appears as an independently authored link, even though the same path is a resolved file link", function () {
-    // One resolved file reference to /target, and a *separate*,
-    // independently authored <a href="/target"> to an actual post.
-    // Only one of the two occurrences should be "spent" by the file
-    // reference - the other must still register /target as a real
-    // internal link/backlink candidate.
-    expect(
-      this.internalLinks(
-        '<a href="/target">File</a><a href="/target">Post</a>',
-        ["/target"]
-      )
-    ).toEqual(["/target"]);
-  });
-
-  it("spends one credit per resolved occurrence of the same path", function () {
-    // Two separate anchors both resolved to the same file path -
-    // both occurrences must be excluded, not just the first, even
-    // though the result is a deduplicated set of one value.
-    expect(
-      this.internalLinks(
-        '<a href="/target">File one</a><a href="/target">File two</a>',
-        ["/target", "/target"]
-      )
-    ).toEqual([]);
-  });
-
-  it("excludes only as many occurrences as there are credits for that path", function () {
-    // Two resolved-file occurrences of /target, plus a third,
-    // independently authored link to the same path - only the first
-    // two should be spent, leaving the third to register /target as
-    // a real internal link/backlink candidate.
-    expect(
-      this.internalLinks(
-        '<a href="/target">File one</a><a href="/target">File two</a><a href="/target">Post</a>',
-        ["/target", "/target"]
-      )
-    ).toEqual(["/target"]);
-  });
-
-  it("only lets anchors spend resolved-file credits, not other href-bearing tags", function () {
-    // Credits only ever originate from a resolved <a href> - a
-    // <link href> sharing the same path (e.g. a stylesheet reference
-    // to the same file) must not be able to consume a credit that
-    // belongs to a real anchor.
-    expect(
-      this.internalLinks(
-        '<link href="/docs/report.pdf"><a href="/docs/report.pdf">Download</a>',
-        ["/docs/report.pdf"]
-      )
-    ).toEqual(["/docs/report.pdf"]);
   });
 });

@@ -36,30 +36,26 @@ var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 // dependency, but don't rewrite the attribute: the wikilinks
 // plugin, which runs after this module, resolves those from their
 // original, unresolved target text.
-
-// A plugin running after this module (e.g. autoImage) can remove the
-// exact anchor a resolvedFileLinks entry came from, replacing it with
-// an <img>. Marking the surviving DOM element, rather than just
-// collecting values into an array, is what lets single.js tell which
-// credits are still backed by a real anchor once plugins have run -
-// counting occurrences of a value isn't enough, since an unrelated
-// anchor sharing the same resolved path could still be present after
-// the one that actually earned the credit is gone.
-var RESOLVED_FILE_LINK_ATTR = "data-blot-resolved-file-link";
+//
+// KNOWN EDGE CASE (accepted, not solved): if a relative <a href>
+// resolves to a path that happens to be identical to some other
+// entry's custom permalink, app/build/prepare/internalLinks.js has
+// no way to tell "this is a resolved file reference" apart from "this
+// is a real link to that entry" - it'll be counted as the latter,
+// producing a spurious backlink on that entry's page. This requires
+// an exact, coincidental collision between a resolved file path and
+// someone's custom permalink, which is extraordinarily unlikely, and
+// the worst case is one wrong entry in a backlinks list - not a
+// broken link or lost data. An earlier version of this module threaded
+// a "credit" system through here, single.js, and internalLinks.js to
+// distinguish the two cases precisely, but the complexity wasn't
+// worth what it protected against, so it was removed.
 
 function dependencies (path, html, metadata) {
   // In future it would be nice NOT to reparse the HTML
   // Multiple times. The plugins features also do this.
   var $ = cheerio.load(html, { decodeEntities: false }, false);
   var dependencies = [];
-  // The subset of dependencies which came specifically from
-  // resolving a *relative* <a href> against this file's location.
-  // internalLinks uses this to avoid mistaking a resolved file
-  // reference for a link to another page - unlike an href the
-  // author already wrote as absolute (e.g. a normal link to
-  // another post), which is a legitimate internal-link candidate
-  // even though it also ends up in `dependencies`.
-  var resolvedFileLinks = [];
   var attribute, value, resolved_value;
   var metadataByLowercaseKey = metadataCaseInsensitive(metadata);
 
@@ -186,15 +182,6 @@ function dependencies (path, html, metadata) {
       return;
     }
 
-    // Was this an <a href> the author wrote as a relative reference
-    // (as opposed to one already absolute, e.g. a normal link to
-    // another post)? Captured before resolve() below, which is a
-    // no-op for anything already starting with "/". Wikilinks are
-    // excluded since we never rewrite their attribute (see below) -
-    // resolvedFileLinks should mirror exactly what ends up in the
-    // final html.
-    var isRelativeAnchorLink = isAnchor && !isWikilink && value[0] !== "/";
-
     resolved_value = resolve(path, value);
 
     // path.resolve() drops trailing slashes, and normalizes away
@@ -235,22 +222,6 @@ function dependencies (path, html, metadata) {
       $el.attr(attribute, resolved_value + suffix);
     }
 
-    // Track this regardless of self-reference: even a link to a
-    // post's own source file is a resolved file reference, not a
-    // link to another page, and internalLinks needs to know that to
-    // avoid mistaking it for one if it happens to collide with some
-    // other entry's permalink. One entry per occurrence, not per
-    // unique path: internalLinks consumes one credit per matching
-    // <a href> it encounters, and two separate anchors that happen
-    // to resolve to the same path are two occurrences to exclude,
-    // not one. Also mark the element itself - see comment above
-    // RESOLVED_FILE_LINK_ATTR for why single.js needs this rather
-    // than just this array.
-    if (isRelativeAnchorLink) {
-      resolvedFileLinks.push(resolved_value);
-      $el.attr(RESOLVED_FILE_LINK_ATTR, "");
-    }
-
     if (isSelfReference) {
       return;
     }
@@ -277,9 +248,7 @@ function dependencies (path, html, metadata) {
     html: $.html(),
     dependencies: dependencies,
     metadata: metadata,
-    resolvedFileLinks: resolvedFileLinks,
   };
 }
 
 module.exports = dependencies;
-module.exports.RESOLVED_FILE_LINK_ATTR = RESOLVED_FILE_LINK_ATTR;
