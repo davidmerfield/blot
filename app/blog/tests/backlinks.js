@@ -65,6 +65,22 @@ describe("backlinks", function () {
   });
 
 
+  it("does not create a backlink from a resolved link to a plain local file", async function () {
+    const fs = require("fs-extra");
+    await fs.outputFile(this.blogDirectory + "/beach.jpg", "fake image data");
+
+    await this.write({
+      path: "/vacation.txt",
+      content: "Title: Vacation\n\n[Download](beach.jpg)",
+    });
+    await this.template(backlinksTemplate);
+
+    // The link resolves to /beach.jpg (a real file, not a post),
+    // so it must not show up as a backlink anywhere.
+    const body = await this.text("/vacation");
+    expect(body).not.toContain("Backlinks:");
+  });
+
   it("resolves backlinks from double-encoded href values", async function () {
     await this.write({
       path: "/target.txt",

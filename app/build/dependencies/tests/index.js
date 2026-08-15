@@ -74,13 +74,176 @@ describe("dependencies", function () {
     },
   });
 
-  // SHould not mess with links
+  // Links are resolved exactly like src attributes, extension and
+  // all: a relative link to another post's source file resolves
+  // directly to that file, not to the rendered post's permalink.
   should_get_dependencies({
     html: '<a href="page.html"></a>',
     path: "/post.txt",
     metadata: {},
     result: {
-      html: '<a href="page.html"></a>',
+      html: '<a href="/page.html"></a>',
+      metadata: {},
+      dependencies: ["/page.html"],
+    },
+  });
+
+  // Same for a link with no extension at all
+  should_get_dependencies({
+    html: '<a href="other-page"></a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/other-page"></a>',
+      metadata: {},
+      dependencies: ["/other-page"],
+    },
+  });
+
+  // Should resolve relative links to plain files, e.g. a link
+  // directly to another post's source file (not the rendered post)
+  should_get_dependencies({
+    html: '<a href="other-post.md"></a>',
+    path: "/folder/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/folder/other-post.md"></a>',
+      metadata: {},
+      dependencies: ["/folder/other-post.md"],
+    },
+  });
+
+  // Should resolve a relative link to a local image
+  should_get_dependencies({
+    html: '<a href="beach.jpg">Download</a>',
+    path: "/photos/vacation.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/photos/beach.jpg">Download</a>',
+      metadata: {},
+      dependencies: ["/photos/beach.jpg"],
+    },
+  });
+
+  // Should resolve an image wrapped in a link to the same image,
+  // keeping both attributes in sync (the original bug report)
+  should_get_dependencies({
+    html: '<a href="beach.jpg"><img src="beach.jpg"></a>',
+    path: "/photos/vacation.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/photos/beach.jpg"><img src="/photos/beach.jpg"></a>',
+      metadata: {},
+      dependencies: ["/photos/beach.jpg"],
+    },
+  });
+
+  // Should preserve a fragment appended to a resolved link
+  should_get_dependencies({
+    html: '<a href="report.pdf#page=3">Report</a>',
+    path: "/docs/index.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/docs/report.pdf#page=3">Report</a>',
+      metadata: {},
+      dependencies: ["/docs/report.pdf"],
+    },
+  });
+
+  // Should preserve a query string appended to a resolved link
+  should_get_dependencies({
+    html: '<a href="report.pdf?download=1">Report</a>',
+    path: "/docs/index.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/docs/report.pdf?download=1">Report</a>',
+      metadata: {},
+      dependencies: ["/docs/report.pdf"],
+    },
+  });
+
+  // Should not touch fragment-only hrefs, e.g. footnotes and
+  // tables of contents
+  should_get_dependencies({
+    html: '<a href="#fn1">1</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="#fn1">1</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // Should not touch query-only hrefs
+  should_get_dependencies({
+    html: '<a href="?page=2">Next</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="?page=2">Next</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // Should not touch links which are already absolute
+  should_get_dependencies({
+    html: '<a href="/docs/report.pdf">Report</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/docs/report.pdf">Report</a>',
+      metadata: {},
+      dependencies: ["/docs/report.pdf"],
+    },
+  });
+
+  // Should not touch external links
+  should_get_dependencies({
+    html: '<a href="https://example.com/image.jpg">Image</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="https://example.com/image.jpg">Image</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // Should not touch mailto/tel links, even with a dotted domain
+  should_get_dependencies({
+    html: '<a href="mailto:user@example.com">Email</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="mailto:user@example.com">Email</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // Should not touch wikilinks (title="wikilink"), even when they
+  // look like a file reference - the wikilinks plugin resolves
+  // these later, from their original, unresolved target text
+  should_get_dependencies({
+    html: '<a href="Spec Sheet.md" title="wikilink">Spec Sheet.md</a>',
+    path: "/notes/index.txt",
+    metadata: {},
+    result: {
+      html: '<a href="Spec Sheet.md" title="wikilink">Spec Sheet.md</a>',
+      metadata: {},
+      dependencies: [],
+    },
+  });
+
+  // Should not touch wikilink media embeds either
+  should_get_dependencies({
+    html: '<img src="diagram.png" title="wikilink">',
+    path: "/notes/index.txt",
+    metadata: {},
+    result: {
+      html: '<img src="diagram.png" title="wikilink">',
       metadata: {},
       dependencies: [],
     },
