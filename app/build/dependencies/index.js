@@ -29,11 +29,12 @@ var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 // A link to another post's source file (e.g. other-post.md, or
 // page.html) resolves directly to that file, the same as it
 // would for an <img src>; it is not resolved against that post's
-// permalink. We skip anything already tagged as a wikilink
-// (title="wikilink"), since the markdown converter emits those
-// directly from [[...]] syntax and the wikilinks plugin – which
-// runs after this module – is responsible for resolving them
-// from their original, unresolved target text.
+// permalink. For anything already tagged as a wikilink
+// (title="wikilink") - emitted directly from [[...]] syntax by the
+// markdown converter - we still track the resolved guess as a
+// dependency, but don't rewrite the attribute: the wikilinks
+// plugin, which runs after this module, resolves those from their
+// original, unresolved target text.
 
 function dependencies (path, html, metadata) {
   // In future it would be nice NOT to reparse the HTML
@@ -94,17 +95,8 @@ function dependencies (path, html, metadata) {
   $("link[href], a[href], [src]").each(function () {
     var $el = $(this);
     var isAnchor = $el.is("a");
+    var isWikilink = $el.attr("title") === "wikilink";
     var suffix = "";
-
-    // Wikilinks ([[Note]] / ![[Image]]) are rendered directly to
-    // <a title="wikilink"> / <img title="wikilink"> by the markdown
-    // converter. The wikilinks plugin (which runs after this module)
-    // resolves them from their original target text, so we must not
-    // touch their href/src here.
-    if ($el.attr("title") === "wikilink") {
-      debug(path, "skipping wikilink-marked element");
-      return;
-    }
 
     if (!!$el.attr("href")) attribute = "href";
     if (!!$el.attr("src")) attribute = "src";
@@ -157,7 +149,18 @@ function dependencies (path, html, metadata) {
       return;
     }
 
-    $el.attr(attribute, resolved_value + suffix);
+    // Wikilinks ([[Note]] / ![[Image]]) are rendered directly to
+    // <a title="wikilink"> / <img title="wikilink"> by the markdown
+    // converter, using the raw, unresolved target text. We still
+    // track the resolved guess as a dependency, so the post rebuilds
+    // automatically if a matching file later appears - but we must
+    // not rewrite the attribute itself: the wikilinks plugin, which
+    // runs after this module, resolves wikilinks from that original
+    // target text, including deliberately leaving it untouched when
+    // it can't find a match.
+    if (!isWikilink) {
+      $el.attr(attribute, resolved_value + suffix);
+    }
 
     if (dependencies.indexOf(resolved_value) === -1) {
       dependencies.push(resolved_value);

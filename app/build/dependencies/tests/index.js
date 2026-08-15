@@ -223,9 +223,11 @@ describe("dependencies", function () {
     },
   });
 
-  // Should not touch wikilinks (title="wikilink"), even when they
-  // look like a file reference - the wikilinks plugin resolves
-  // these later, from their original, unresolved target text
+  // Should not rewrite the href of a wikilink (title="wikilink"),
+  // even when it looks like a file reference - the wikilinks plugin
+  // resolves these later, from their original, unresolved target
+  // text. The resolved guess is still tracked as a dependency, so
+  // the post rebuilds automatically if a matching file appears.
   should_get_dependencies({
     html: '<a href="Spec Sheet.md" title="wikilink">Spec Sheet.md</a>',
     path: "/notes/index.txt",
@@ -233,11 +235,12 @@ describe("dependencies", function () {
     result: {
       html: '<a href="Spec Sheet.md" title="wikilink">Spec Sheet.md</a>',
       metadata: {},
-      dependencies: [],
+      dependencies: ["/notes/Spec Sheet.md"],
     },
   });
 
-  // Should not touch wikilink media embeds either
+  // Should not rewrite wikilink media embeds either, but should
+  // still track the resolved guess as a dependency
   should_get_dependencies({
     html: '<img src="diagram.png" title="wikilink">',
     path: "/notes/index.txt",
@@ -245,7 +248,7 @@ describe("dependencies", function () {
     result: {
       html: '<img src="diagram.png" title="wikilink">',
       metadata: {},
-      dependencies: [],
+      dependencies: ["/notes/diagram.png"],
     },
   });
 
