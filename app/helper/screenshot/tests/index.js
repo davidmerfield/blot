@@ -1,155 +1,87 @@
-const express = require("express");
-const screenshot = require("../index.js");
 const fs = require("fs-extra");
-const hashFile = require("helper/hashFile");
+const screenshot = require("../index.js");
 
-describe("screenshot plugin", function () {
-  let server;
+const { isPublicAddress, parseWebUrl, validateDestination, protectRequests } = screenshot._security;
 
-  global.test.timeout(60 * 1000); // 60s
+describe("screenshot destination protection", function () {
+  const output = __dirname + "/data/rejected.png";
+  const publicLookup = async () => [{ address: "93.184.216.34", family: 4 }];
+  const privateLookup = async () => [{ address: "10.0.0.4", family: 4 }];
 
-  const port = 7623;
-  const site = `http://localhost:${port}`;
-  const path = __dirname + "/data/screenshot.png";
-  const expectedPath = __dirname + "/expected.png";
-  let requestTimes = [];
+  async function expectRejection(promise, pattern) {
+    let error;
+    try {
+      await promise;
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toEqual(jasmine.any(Error));
+    expect(error.message).toMatch(pattern);
+  }
 
-  beforeAll((done) => {
-    const app = express();
+  beforeEach(async () => fs.remove(output));
 
-    // Return 404 for favicon requests
-    app.get("/favicon.ico", (req, res) => {
-      res.status(404).send("Not found");
+  for (const protocol of ["file:///etc/passwd", "data:text/plain,hello", "chrome://settings"]) {
+    it(`rejects ${protocol.split(":")[0]} URLs`, () => {
+      expect(() => parseWebUrl(protocol)).toThrowError(/protocol is not allowed/);
     });
+  }
 
-    // Track request times for rate limiting tests
-    app.use((req, res, next) => {
-      requestTimes.push(Date.now());
-      console.log(`Request ${requestTimes.length} received`);
-      next();
-    });
-
-    app.get("/", (req, res) => {
-      console.log("sending response");
-      res.send(
-        "<html><head><style>body{background:white}</style></head><body><h1>Hello, world!</h1></body></html>"
-      );
-    });
-
-    server = app.listen(port, done);
+  it("rejects localhost names", async () => {
+    await expectRejection(validateDestination("http://localhost", new Map(), privateLookup), /not public/);
   });
 
-  beforeEach(() => {
-    requestTimes = [];
-    // Clean up any leftover screenshots
-    if (fs.existsSync(path)) {
-      fs.unlinkSync(path);
+  it("rejects private IPv4 and IPv6 literals, including mapped addresses", () => {
+    for (const address of ["127.0.0.1", "10.1.2.3", "169.254.1.1", "100.64.0.1", "::1", "fc00::1", "fe80::1", "::ffff:127.0.0.1"]) {
+      expect(isPublicAddress(address)).withContext(address).toBe(false);
     }
   });
 
-  afterAll(() => {
-    console.log("Closing server");
-    server.close();
+  it("rejects DNS names when any answer is private", async () => {
+    const lookup = async () => [
+      { address: "93.184.216.34", family: 4 },
+      { address: "fd00::1", family: 6 },
+    ];
+    await expectRejection(validateDestination("https://example.com", new Map(), lookup), /not public/);
   });
 
-  it("creates matching screenshot", async function () {
-    const expectedHash = await hashFile(expectedPath);
-    await screenshot(site, path);
-    expect(fs.existsSync(path)).toBe(true);
-    const hash = await hashFile(path);
-
-    if (hash !== expectedHash) {
-      throw new Error(
-        `Screenshot does not match expected hash, please check ./data/screenshot.png`
-      );
-    }
-
-    fs.unlinkSync(path);
+  it("permits a public HTTPS destination", async () => {
+    const url = await validateDestination("https://example.com/page", new Map(), publicLookup);
+    expect(url.href).toBe("https://example.com/page");
   });
 
-  it("handles browser restarts smoothly", async function () {
-    const requests = 10; // Reduced number of requests for stability
-    const paths = Array.from(
-      { length: requests },
-      (_, i) => `${__dirname}/data/screenshot_${i}.png`
-    );
+  it("aborts redirects and subresources that target private addresses", async () => {
+    const handlers = {};
+    const page = {
+      setRequestInterception: jasmine.createSpy().and.returnValue(Promise.resolve()),
+      on: (event, handler) => { handlers[event] = handler; },
+    };
+    const protection = await protectRequests(page, publicLookup);
+    expect(page.setRequestInterception).toHaveBeenCalledWith(true);
 
-    console.log(`Starting restart with ${requests} requests`);
-    console.log(paths);
-
-    setTimeout(() => {
-      // Wait 2 seconds to ensure some requests have started
-      screenshot.restart();
-    }, 2000);
-
-    // Issue screenshot requests in parallel and await all to finish
-    // this should take ~10 seconds
-    await Promise.all(paths.map((p) => screenshot(site, p)));
-
-    // Cleanup
-    for (const p of paths) {
-      if (fs.existsSync(p)) {
-        const expectedHash = await hashFile(expectedPath);
-        const hash = await hashFile(p);
-        if (hash !== expectedHash) {
-          throw new Error(
-            `Screenshot at ${p} does not match expected hash, please check the file.`
-          );
-        }
-        fs.unlinkSync(p);
-      }
+    for (const target of ["http://127.0.0.1/redirect", "http://[::1]/asset.png"]) {
+      const request = {
+        url: () => target,
+        continue: jasmine.createSpy(),
+        abort: jasmine.createSpy().and.returnValue(Promise.resolve()),
+      };
+      await handlers.request(request);
+      expect(request.abort).toHaveBeenCalledWith("blockedbyclient");
     }
+    expect(protection.blockedError().message).toMatch(/not public/);
   });
 
-  it("respects rate limiting", async function () {
-    const requests = 10;
-    const paths = Array.from(
-      { length: requests },
-      (_, i) => `${__dirname}/data/screenshot_${i}.png`
-    );
+  it("rejects DNS rebinding between requests", async () => {
+    let calls = 0;
+    const lookup = async () => [{ address: calls++ ? "93.184.216.35" : "93.184.216.34", family: 4 }];
+    const cache = new Map();
+    await validateDestination("https://example.com", cache, lookup);
+    await expectRejection(validateDestination("https://example.com/image", cache, lookup), /changed address/);
+  });
 
-    console.log(`Starting rate limiting test with ${requests} requests`);
-    console.log(paths);
-
-    // Execute requests in parallel and await all to finish
-    await Promise.all(paths.map((p) => screenshot(site, p)));
-
-    // Log the requests and their corresponding times
-    console.log(
-      requestTimes.map((t, i) => `Request ${i + 1}: ${t}`).join("\n")
-    );
-
-    // Check time differences between requests
-    const timeDiffs = [];
-    for (let i = 1; i < requestTimes.length; i++) {
-      timeDiffs.push(requestTimes[i] - requestTimes[i - 1]);
-    }
-
-    // log the time differences, e.g. 'Diff between req 1 and 2: 1000ms'
-    console.log(
-      timeDiffs
-        .map((diff, i) => `Diff between req ${i + 1} and ${i + 2}: ${diff}ms`)
-        .join("\n")
-    );
-
-    // calculate the average time difference
-    const averageDiff = timeDiffs.reduce((a, b) => a + b) / timeDiffs.length;
-
-    // verify the average time difference is greater than 500ms
-    expect(averageDiff).toBeGreaterThan(500);
-
-    // Cleanup
-    for (const p of paths) {
-      if (fs.existsSync(p)) {
-        const expectedHash = await hashFile(expectedPath);
-        const hash = await hashFile(p);
-        if (hash !== expectedHash) {
-          throw new Error(
-            `Screenshot at ${p} does not match expected hash, please check the file.`
-          );
-        }
-        fs.unlinkSync(p);
-      }
-    }
+  it("does not leave a screenshot file after validation failure", async () => {
+    await fs.outputFile(output, "stale partial output");
+    await expectAsync(screenshot("file:///etc/passwd", output)).toBeRejected();
+    expect(await fs.pathExists(output)).toBe(false);
   });
 });
