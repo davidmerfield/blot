@@ -1,0 +1,33 @@
+<h1>Bluesky comments</h1>
+
+<p>
+  Blot’s Bluesky comments plugin lets you embed the discussion for a Bluesky
+  post at the end of any entry. The comments are rendered by the
+  <a href="https://github.com/bluesky-social/bluesky-comments" rel="nofollow">Bluesky comments widget</a>
+  and require the identifier of the Bluesky post you want to attach.
+</p>
+
+<ol>
+  <li>Open the <a href="/settings/services">Services</a> page and enable <strong>Bluesky comments</strong>.</li>
+  <li>
+    Enter the default Bluesky handle you would like to use when loading the widget.
+    This should usually be the author of the blog or the account responsible for the
+    linked discussion.
+  </li>
+  <li>
+    For every post that should show Bluesky comments, include a
+    <code>Bluesky</code> field in the entry’s metadata set to the full post URI
+    (for example <code>at://did:plc:example/app.bsky.feed.post/123</code>).
+  </li>
+</ol>
+
+<p>
+  Without the Bluesky metadata field the widget will not appear, even if the
+  plugin is enabled. Comments remain hidden on pages unless you explicitly set
+  <code>Comments: Yes</code> in the page metadata.
+</p>
+
+<p>
+  You can combine the plugin with other comment systems and switch between them
+  whenever you need from the Services page.
+</p>
