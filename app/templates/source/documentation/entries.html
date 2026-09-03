@@ -42,9 +42,11 @@
     </a>
 </div>
 
+{{^hide_dates}}
 {{#entry.date}}
-<p>Updated on {{.}}</p>
+<p>Updated on {{#formatDate}}{{date_display}}{{/formatDate}}</p>
 {{/entry.date}}
+{{/hide_dates}}
 </div>
 {{/first}}
 {{/posts}}
