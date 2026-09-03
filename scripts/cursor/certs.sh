@@ -5,7 +5,7 @@
 # browser-based testing shows a valid certificate). Idempotent and non-blocking.
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 export CAROOT="$(mkcert -CAROOT)"
 
 mkcert -install >/dev/null 2>&1 || true

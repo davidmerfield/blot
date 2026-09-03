@@ -6,7 +6,7 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "$DIR/.." && pwd)"
+REPO_DIR="$(cd "$DIR/../.." && pwd)"
 cd "$REPO_DIR"
 
 # 1. System packages: Docker Engine + Compose v2, mkcert (+ NSS tools for Chrome
