@@ -26,7 +26,7 @@ img {max-width: 100%;height: auto;}
 
 pre {
   padding: 0.7em 1em;
-  margin: 0 -1em;
+  margin: 0 calc({{spacing}}em * -1);
 }
 
 pre, code {

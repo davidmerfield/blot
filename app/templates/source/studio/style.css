@@ -9,6 +9,12 @@ body {
   font-family: {{{stack}}};
   font-size: {{{font_size}}}px;
   line-height: {{{line_height}}};
+  {{#weight}}
+  font-weight: {{{.}}};
+  {{/weight}}
+  {{#style}}
+  font-style: {{{.}}};
+  {{/style}}
   {{/body_font}}
   -webkit-font-smoothing: antialiased;
   background: {{background_color}};
@@ -37,6 +43,12 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 400;
   {{#heading_font}}
   font-family: {{{stack}}};
+  {{#weight}}
+  font-weight: {{{.}}};
+  {{/weight}}
+  {{#style}}
+  font-style: {{{.}}};
+  {{/style}}
   {{/heading_font}}
 }
 
@@ -52,8 +64,13 @@ h1 {
 
 a {color: {{link_color}};text-decoration: none;}
 
-.light {
+.light,
+.small {
   color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.7);
+}
+
+.small {
+  font-size: 0.75em;
 }
 
 .site-logo {
@@ -100,6 +117,9 @@ a {color: {{link_color}};text-decoration: none;}
 
 .terminal-header__title {
   white-space: nowrap;
+  {{#heading_font}}
+  font-family: {{{stack}}};
+  {{/heading_font}}
 }
 
 .terminal-nav-toggle {
@@ -290,11 +310,22 @@ input:focus {outline: none;}
 
 {{> plugin}}
 
+.grid-bleed {
+  margin: 0 calc({{spacing}}em * -1);
+}
+
 .grid-sizer,
 .grid-item {
   width: calc(100% / {{grid_columns}});
   padding: 0 {{spacing}}em;
   box-sizing: border-box;
+}
+
+.grid-item a {
+  line-height: 1.5;
+  display: block;
+  margin: {{spacing}}em 0;
+  font-size: 0.8em;
 }
 
 @media (max-width: 1200px) {
@@ -320,18 +351,22 @@ input:focus {outline: none;}
 
 @media (max-width: 600px) {
   body {
-    padding: 2.5em 1em 3.5em;
+    padding: calc({{spacing}}em * 2.5) {{spacing}}em calc({{spacing}}em * 3.5);
   }
 
   .container {
     min-width: 0;
     width: 100%;
-    margin: 2em 0 1.5em;
+    margin: calc({{spacing}}em * 2) 0 calc({{spacing}}em * 1.5);
+  }
+
+  .grid-bleed {
+    margin: 0;
   }
 
   .grid-sizer,
   .grid-item {
     width: 100%;
-    padding-bottom: 1.5em;
+    padding-bottom: calc({{spacing}}em * 1.5);
   }
 }
