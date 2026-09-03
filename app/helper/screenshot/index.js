@@ -3,6 +3,7 @@ const { dirname } = require("path");
 const fs = require("fs-extra");
 const Bottleneck = require("bottleneck");
 const retry = require("./retry");
+const blockPrivateRequests = require("./blockPrivateRequests");
 const clfdate = require("helper/clfdate");
 
 const prefix = () => `${clfdate()} Screenshot:`;
@@ -168,6 +169,9 @@ async function takeScreenshot(site, path, options = {}) {
 
     page = await browser.newPage();
     await page.setUserAgent(DEFAULT_USER_AGENT);
+
+    // Opt-in SSRF guard for untrusted URLs (e.g. bookmark screenshots).
+    if (options.blockPrivateRequests) await blockPrivateRequests(page);
 
     const viewport = options.mobile ? VIEWPORT.mobile : VIEWPORT.desktop;
     await page.setViewport({

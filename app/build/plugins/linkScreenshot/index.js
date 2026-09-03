@@ -1,6 +1,6 @@
-const Url = require("url");
 const { callbackify } = require("util");
 const screenshot = callbackify(require("helper/screenshot"));
+const { assertPublicUrl } = require("helper/publicUrl");
 const { join } = require("path");
 const config = require("config");
 const uuid = require("uuid/v4");
@@ -31,36 +31,43 @@ function render($, callback, { blogID, path }) {
     return callback();
   }
 
-  try {
-    Url.parse(href);
-  } catch (e) {
-    console.log(prefix(), "Invalid HREF");
+  // Reject file://, private/loopback/link-local hosts and the cloud metadata
+  // endpoint before handing the URL to Chrome (SSRF). blockPrivateRequests below
+  // re-checks each request the page makes, including redirects.
+  assertPublicUrl(href).then(runScreenshot, function (e) {
+    console.log(prefix(), "Refusing to screenshot", href, "-", e.message);
     return callback();
-  }
+  });
 
-  screenshot(
-    href,
-    localPathToScreenshot,
-    { width: SCREENSHOT_WIDTH, height: SCREENSHOT_HEIGHT },
-    function (err) {
-      if (err) {
-        console.log(prefix(), "Error fetching screenshot", err);
-        return callback();
-      }
+  function runScreenshot() {
+    screenshot(
+      href,
+      localPathToScreenshot,
+      {
+        width: SCREENSHOT_WIDTH,
+        height: SCREENSHOT_HEIGHT,
+        blockPrivateRequests: true
+      },
+      function (err) {
+        if (err) {
+          console.log(prefix(), "Error fetching screenshot", err);
+          return callback();
+        }
 
-      $.root().html(
-        `<p class="bookmark-container">
+        $.root().html(
+          `<p class="bookmark-container">
         <a class="bookmark-screenshot" href="${href}">
           <img width="${SCREENSHOT_WIDTH}" height="${SCREENSHOT_HEIGHT}" src="${src}" title="Screenshot of ${caption}" />
         </a>
         <a class="bookmark" href="${href}">${caption}</a>
        </p>`
-      );
+        );
 
-      console.log(prefix(), "Valid screenshot", href, src);
-      return callback();
-    }
-  );
+        console.log(prefix(), "Valid screenshot", href, src);
+        return callback();
+      }
+    );
+  }
 }
 
 module.exports = {

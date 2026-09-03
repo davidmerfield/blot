@@ -6,6 +6,7 @@ const UID = require("helper/makeUid");
 const callOnce = require("helper/callOnce");
 const tempDir = require("helper/tempDir")();
 const nameFrom = require("helper/nameFrom");
+const { agent } = require("helper/publicUrl");
 const tidy = require("./tidy");
 const invalid = require("./invalid");
 
@@ -47,6 +48,9 @@ module.exports = function (url, headers, callback) {
     },
     redirect: "follow",
     follow: MAX_REDIRECTS,
+    // Blocks the request (and every redirect hop) if the host resolves to a
+    // private, loopback or link-local address. See helper/publicUrl.
+    agent,
     timeout: TIMEOUT
   };
 
