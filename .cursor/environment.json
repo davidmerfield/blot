@@ -1,0 +1,12 @@
+{
+  "name": "Blot (local dev)",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    {
+      "name": "blot",
+      "command": "bash .cursor/run.sh"
+    }
+  ],
+  "ports": [80, 443, 8080, 6379]
+}
