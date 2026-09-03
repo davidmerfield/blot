@@ -1,0 +1,78 @@
+.pattern-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin: 0 0 1.25rem;
+}
+
+button.copy.copy-for-agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  margin: 0;
+  padding: 0.5em 0.75em;
+  border-radius: var(--border-radius);
+  background: var(--accent-color);
+  color: var(--background-color);
+  font-size: var(--small-font-size);
+  font-weight: 600;
+}
+
+button.copy.copy-for-agent:hover {
+  color: var(--background-color);
+}
+
+button.copy.copy-for-agent.copied {
+  background: var(--success-background-color);
+  color: var(--success-text-color);
+}
+
+.pattern-agent-source {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+
+.clients li a .pattern-index-summary {
+  display: block;
+  color: var(--medium-text-color);
+  font-size: var(--small-font-size);
+  margin-top: 0.15em;
+  padding-right: 1.5em;
+}
+
+.pattern-demo-caption {
+  color: var(--medium-text-color);
+  font-size: var(--small-font-size);
+  margin-bottom: 0.5em;
+}
+
+.pattern-demo {
+  border: 1px solid var(--border-color);
+  border-radius: var(--large-border-radius);
+  background: var(--background-color);
+  padding: 1rem 1.1rem;
+  margin: 0 0 1.5rem;
+  max-width: 22rem;
+  color: var(--text-color);
+}
+
+.pattern-demo a {
+  color: inherit;
+}
+
+.pattern-demo--hamburger-navigation {
+  max-width: 18rem;
+}
+
+.pattern-demo--tag-links,
+.pattern-demo--details-disclosure,
+.pattern-demo--task-lists {
+  max-width: 24rem;
+}

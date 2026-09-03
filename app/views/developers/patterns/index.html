@@ -1,0 +1,39 @@
+{{=[[ ]]=}}
+
+<h1>Design patterns</h1>
+
+<p>Reusable HTML and CSS for Blot templates. Each pattern is written so you can paste it into an agent chat, or fetch the Markdown directly.</p>
+
+<p>
+  <button type="button" class="copy copy-for-agent" data-copy-from="#pattern-catalog-markdown">
+    <span class="icon-copy"></span> Copy all for agent
+  </button>
+  <a href="/developers/patterns.md">View as Markdown</a>
+  ·
+  <a href="/developers/patterns.json">JSON</a>
+</p>
+
+<pre id="pattern-catalog-markdown" class="pattern-agent-source" hidden>[[catalogMarkdown]]</pre>
+
+[[#groups]]
+<h2 id="[[categorySlug]]">[[category]]</h2>
+<ul class="clients">
+  [[#patterns]]
+  <li>
+    <a href="/developers/patterns/[[slug]]">
+      <span>
+        <span class="a">[[title]]</span>
+        <span class="pattern-index-summary">[[summary]]</span>
+        <span class="icon-small-chevron-right align-right"></span>
+      </span>
+    </a>
+  </li>
+  [[/patterns]]
+</ul>
+[[/groups]]
+
+<h2>Add a pattern</h2>
+
+<p>Patterns live in <code>app/documentation/patterns/</code>. Add a module that exports the HTML, CSS, guidance, and a live demo, then require it from <code>index.js</code>. The developer pages, Markdown, JSON, and copy-for-agent text are generated from that file.</p>
+
+[[={{ }}=]]
