@@ -38,7 +38,7 @@ function hexPairToIPv4(high, low) {
 function embeddedIPv4(ip) {
   const lower = String(ip).toLowerCase();
 
-  const dotted = lower.match(/^(?::ffff:|64:ff9b::)(\d+\.\d+\.\d+\.\d+)$/);
+  const dotted = lower.match(/^(?:::ffff:|64:ff9b::)(\d+\.\d+\.\d+\.\d+)$/);
   if (dotted && isIP(dotted[1]) === 4) return dotted[1];
 
   const mappedHex = lower.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);

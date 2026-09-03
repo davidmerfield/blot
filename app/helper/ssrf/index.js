@@ -17,6 +17,14 @@ function ssrfError(target, reason) {
   return err;
 }
 
+function hostnameOf(parsed) {
+  let hostname = parsed.hostname || "";
+  if (hostname.charAt(0) === "[" && hostname.charAt(hostname.length - 1) === "]") {
+    hostname = hostname.slice(1, -1);
+  }
+  return hostname;
+}
+
 function parseHttpUrl(input) {
   if (!input || typeof input !== "string") {
     throw new Error("URL is required");
@@ -33,7 +41,7 @@ function parseHttpUrl(input) {
     throw new Error("Has unsupported protocol " + input);
   }
 
-  if (!parsed.hostname) {
+  if (!hostnameOf(parsed)) {
     throw new Error("Has no host " + input);
   }
 
@@ -85,7 +93,7 @@ async function assertPublicHttpUrl(input, options) {
     options.allowLoopback !== undefined
       ? options.allowLoopback
       : allowLoopbackDefault();
-  const hostname = parsed.hostname;
+  const hostname = hostnameOf(parsed);
 
   if (isIP(hostname)) {
     checkHostnameAddresses(hostname, [hostname], allowLoopback);
@@ -104,6 +112,20 @@ function safeLookup(hostname, options, callback) {
   }
 
   const allowLoopback = allowLoopbackDefault();
+  hostname = hostnameOf({ hostname: hostname });
+
+  if (isIP(hostname)) {
+    try {
+      checkHostnameAddresses(hostname, [hostname], allowLoopback);
+    } catch (e) {
+      return callback(e);
+    }
+    const family = isIP(hostname);
+    if (options && options.all) {
+      return callback(null, [{ address: hostname, family: family }]);
+    }
+    return callback(null, hostname, family);
+  }
 
   dns.lookup(hostname, Object.assign({}, options, { all: true }), function (
     err,
@@ -123,8 +145,36 @@ function safeLookup(hostname, options, callback) {
   });
 }
 
-const httpAgent = new http.Agent({ lookup: safeLookup, keepAlive: false });
-const httpsAgent = new https.Agent({ lookup: safeLookup, keepAlive: false });
+function guardConnect(options) {
+  const host = options && (options.host || options.hostname);
+  if (!host) return;
+  const hostname = hostnameOf({ hostname: host });
+  if (!isIP(hostname)) return;
+  checkHostnameAddresses(hostname, [hostname], allowLoopbackDefault());
+}
+
+function createGuardedAgent(Agent) {
+  const agent = new Agent({ lookup: safeLookup, keepAlive: false });
+  const original = agent.createConnection;
+  agent.createConnection = function (options, callback) {
+    try {
+      guardConnect(options);
+    } catch (err) {
+      if (typeof callback === "function") {
+        process.nextTick(function () {
+          callback(err);
+        });
+        return;
+      }
+      throw err;
+    }
+    return original.call(this, options, callback);
+  };
+  return agent;
+}
+
+const httpAgent = createGuardedAgent(http.Agent);
+const httpsAgent = createGuardedAgent(https.Agent);
 
 function requestAgent(parsedURL) {
   return parsedURL.protocol === "http:" ? httpAgent : httpsAgent;

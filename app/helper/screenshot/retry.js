@@ -14,7 +14,11 @@ const retry = async (fn, retries = 3, delay = 1000) => {
       lastError = error;
       console.log(`Attempt ${attempt} failed:`, error.message);
 
-      if (isFatal(error) || attempt >= retries) {
+      if (isFatal(error)) {
+        throw error;
+      }
+
+      if (attempt >= retries) {
         break;
       }
 

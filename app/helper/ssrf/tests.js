@@ -3,7 +3,7 @@ const {
   isLoopback,
   parseHttpUrl,
   assertPublicHttpUrl,
-} = require("../index");
+} = require("helper/ssrf");
 
 function expectRejectedWith(promise, matcher) {
   return promise.then(

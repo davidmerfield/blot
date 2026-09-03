@@ -17,6 +17,7 @@ const CACHE_CONTROL = "cache-control";
 
 const MAX_REDIRECTS = 5;
 const TIMEOUT = 5000; // 5s
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 const debug = function () {}; // console.log || noop for debugging
 
@@ -46,8 +47,7 @@ module.exports = function (url, headers, callback) {
       })
     },
     agent: requestAgent,
-    redirect: "follow",
-    follow: MAX_REDIRECTS,
+    redirect: "manual",
     timeout: TIMEOUT
   };
 
@@ -59,7 +59,7 @@ module.exports = function (url, headers, callback) {
   assertPublicHttpUrl(url)
     .then(() => {
       file = createWriteStream(path);
-      return fetch(url, options);
+      return fetchFollowingRedirects(url, options, MAX_REDIRECTS);
     })
     .then(res => {
       debug("Received response:");
@@ -119,6 +119,24 @@ module.exports = function (url, headers, callback) {
       callback(err);
     });
 };
+
+function fetchFollowingRedirects(url, options, hopsLeft) {
+  return fetch(url, options).then(function (res) {
+    if (!REDIRECT_STATUSES.has(res.status)) return res;
+
+    if (hopsLeft <= 0) throw new Error("Too many redirects");
+
+    const location = res.headers.get("location");
+    if (!location) throw new Error("Redirect missing Location");
+
+    if (res.body && typeof res.body.resume === "function") res.body.resume();
+
+    const next = new URL(location, url).toString();
+    return assertPublicHttpUrl(next).then(function () {
+      return fetchFollowingRedirects(next, options, hopsLeft - 1);
+    });
+  });
+}
 
 function isFresh (existing) {
   return (
