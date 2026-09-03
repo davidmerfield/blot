@@ -15,7 +15,12 @@ if ! command -v docker >/dev/null 2>&1 \
   || ! command -v mkcert >/dev/null 2>&1 \
   || ! command -v dnsmasq >/dev/null 2>&1; then
   sudo apt-get update -y
+  # -o Dpkg::Options::=--force-conf* keeps existing conffiles without prompting;
+  # otherwise installing fuse3 stops on the /etc/fuse.conf conffile prompt (no
+  # tty in the build/setup environment) and aborts the whole install.
   sudo apt-get install -y --no-install-recommends \
+    -o Dpkg::Options::="--force-confdef" \
+    -o Dpkg::Options::="--force-confold" \
     docker.io docker-compose-v2 mkcert libnss3-tools \
     fuse-overlayfs dnsmasq-base ca-certificates curl
 fi
