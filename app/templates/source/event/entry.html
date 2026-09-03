@@ -37,10 +37,10 @@
 {{/entry.metadata.slides.length}}
 
 {{^entry.metadata.slides.length}}
-<div style="display: flex;">
+<div class="site-header">
 
 <div style="width:50%;" class="main">
-    <a href="/" style="text-decoration: none;padding: 1em 0;font-size: 0.9em;display: block;">{{title}}</a>
+    <a href="/" class="site-title">{{#logo_url}}<img src="{{{logo_url}}}" alt="" class="site-logo">{{/logo_url}}{{title}}</a>
 </div>
 <div style="width:50%;" class="main">
     {{> navigation}}
@@ -51,4 +51,5 @@
         {{{entry.html}}}
      </div>
  </div> 
+ {{> footer}}
  {{/entry.metadata.slides.length}}
