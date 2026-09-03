@@ -10,10 +10,20 @@
     "accent_color": "#0000FF",
     "body_font": {
       "id": "system-sans",
-      "font_size": 14
+      "font_size": 14,
+      "line_height": 1.4
     },
     "heading_font": {
-      "id": "system-sans"
+      "id": "system-sans",
+      "font_size": 28,
+      "line_height": 1.2
+    },
+    "syntax_highlighter": {
+      "id": "stackoverflow-light"
+    },
+    "syntax_highlighter_font": {
+      "id": "system-mono",
+      "font_size": 13
     },
     "favicon_url": "",
     "logo_url": "",

@@ -1,6 +1,8 @@
 {{{app_css}}}
 {{{body_font.styles}}}
 {{{heading_font.styles}}}
+{{{syntax_highlighter_font.styles}}}
+{{{syntax_highlighter.styles}}}
 
 body {
   margin: {{spacing}}em;
@@ -37,6 +39,11 @@ h1, h2, h3, .site-title {
   {{#style}}
   font-style: {{{.}}};
   {{/style}}
+}
+
+h1, h2, h3 {
+  font-size: {{{font_size}}}px;
+  line-height: {{{line_height}}};
 }
 {{/heading_font}}
 
@@ -107,7 +114,30 @@ a.active {color: inherit;text-decoration: none;}
 
 img {max-width: 100%;height: auto;vertical-align: middle;}
 
+pre {
+  overflow-x: auto;
+  padding: 0.7em 1em;
+}
+
+pre, code {
+  {{#syntax_highlighter_font}}
+  font-family: {{{stack}}};
+  font-size: {{{font_size}}}px;
+  {{/syntax_highlighter_font}}
+}
+
 .clear {width: 100%;clear: both;display: block;}
+
+.search-form {
+  text-align: center;
+  margin: {{spacing}}em 0;
+}
+
+.search-results {
+  max-width: 600px;
+  text-align: center;
+  margin: 0 auto;
+}
 
 .entry {
   width: {{thumbnail_size}}px;
