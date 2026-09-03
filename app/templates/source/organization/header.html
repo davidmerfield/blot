@@ -1,7 +1,10 @@
 <!-- Navbar -->
-  <nav id="MagicMenu" class="topnav navbar navbar-expand-lg navbar-light bg-white fixed-top">
+  <nav id="MagicMenu" class="topnav navbar navbar-expand-lg navbar-light bg-white{{#sticky_navigation}} fixed-top{{/sticky_navigation}}">
     <div class="container">
-      <a class="navbar-brand" href="/"><strong>{{title}}</strong></a>
+      <a class="navbar-brand" href="/">
+        {{#logo_url}}<img src="{{{logo_url}}}" alt="{{title}}" class="navbar-logo">{{/logo_url}}
+        <strong>{{title}}</strong>
+      </a>
       <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -15,12 +18,14 @@
           {{/menu}}
 
         </ul>
+        {{#show_search}}
         <ul class="navbar-nav ml-auto d-flex align-items-center" style="flex-grow:1;padding-left:3em">
 
           <form class="bd-search hidden-sm-down w-100" action="/search">
             <input type="text" class="form-control text-small" id="lunrsearch" name="q" value="{{query}}" placeholder="Search">
           </form>
         </ul>
+        {{/show_search}}
       </div>
     </div>
   </nav>

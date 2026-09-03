@@ -13,7 +13,8 @@
   {{^entry}}<meta name="description" content="{{> description}}">{{/entry}}
 
   <link rel="alternate" type="application/rss+xml" title="RSS Feed for {{title}}" href="{{{siteURL}}}{{{feedURL}}}">
-  {{#avatar}}<link rel="icon" href="{{{avatar}}}" type="image/x-icon">{{/avatar}}
+  {{#favicon_url}}<link rel="icon" href="{{{favicon_url}}}" type="image/x-icon">{{/favicon_url}}
+  {{^favicon_url}}{{#avatar}}<link rel="icon" href="{{{avatar}}}" type="image/x-icon">{{/avatar}}{{/favicon_url}}
   <link rel="preconnect" href="{{{cdn}}}" />
   <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
 
@@ -61,9 +62,6 @@
 
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
-
-  <!-- Google Fonts-->
-  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700" rel="stylesheet">
 
   <!-- Jquery on header to make sure everything works, the rest of the scripts in footer for fast loading -->
   <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
