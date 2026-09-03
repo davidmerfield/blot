@@ -1,5 +1,6 @@
 // Map folder [Eg] to 'Eg'
 const STRIP_TAG_TOKENS = true;
+const COLLAPSE_NAVIGATION_BY_DEFAULT = {{#collapse_navigation_by_default}}true{{/collapse_navigation_by_default}}{{^collapse_navigation_by_default}}false{{/collapse_navigation_by_default}};
 
 class SidebarNavigation {
   constructor() {
@@ -214,6 +215,10 @@ class SidebarNavigation {
 
   // ------- default expand -------
   expandToActiveIfAny() {
+    if (!COLLAPSE_NAVIGATION_BY_DEFAULT) {
+      this.root.querySelectorAll("li.folder").forEach((li) => this.setFolder(li, true));
+      return;
+    }
     const active = this.root.querySelector("a.active");
     if (!active) return;
     let ul = active.closest("ul");
