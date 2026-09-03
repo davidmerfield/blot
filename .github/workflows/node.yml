@@ -43,6 +43,7 @@ jobs:
         - app/site
         - app/sync
         - app/templates
+        - config/openresty
     steps:
       - name: Sparse checkout for hash calculation
         uses: actions/checkout@v4
@@ -161,9 +162,9 @@ jobs:
     needs: setup-tests
     runs-on: ubuntu-latest
     env:
-      # Copy the SKIP_PATHS definition from setup-tests
-      SKIP_PATHS: |
-        - config/openresty
+      # No spec paths are skipped; every describe()/it() file must sit under
+      # a TEST_SUITES directory (or be named tests.js).
+      SKIP_PATHS: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -317,6 +318,8 @@ jobs:
             -e BLOT_STRIPE_KEY=$BLOT_STRIPE_KEY \
             -e BLOT_STRIPE_SECRET=$BLOT_STRIPE_SECRET \
             -e BLOT_STRIPE_PRODUCT=$BLOT_STRIPE_PRODUCT \
+            -e BLOT_OPENRESTY_TEST_USER=root \
+            -e BLOT_OPENRESTY_TEST_GROUP=root \
             -v ${{ github.workspace }}/app:/usr/src/app/app \
             -v ${{ github.workspace }}/scripts:/usr/src/app/scripts \
             -v ${{ github.workspace }}/config:/usr/src/app/config \
