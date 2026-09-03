@@ -29,6 +29,10 @@ describe("screenshot plugin", function () {
       next();
     });
 
+    app.get("/redir-meta", (req, res) => {
+      res.redirect("http://169.254.169.254/latest/meta-data/");
+    });
+
     app.get("/", (req, res) => {
       console.log("sending response");
       res.send(
@@ -65,6 +69,25 @@ describe("screenshot plugin", function () {
     }
 
     fs.unlinkSync(path);
+  });
+
+  it("rejects file URLs", async function () {
+    await expectAsync(screenshot("file:///etc/passwd", path)).toBeRejected();
+    expect(fs.existsSync(path)).toBe(false);
+  });
+
+  it("rejects link-local metadata URLs", async function () {
+    await expectAsync(
+      screenshot("http://169.254.169.254/latest/meta-data/", path)
+    ).toBeRejected();
+    expect(fs.existsSync(path)).toBe(false);
+  });
+
+  it("does not follow a navigation redirect onto a link-local address", async function () {
+    await expectAsync(
+      screenshot(`http://localhost:${port}/redir-meta`, path)
+    ).toBeRejected();
+    expect(fs.existsSync(path)).toBe(false);
   });
 
   it("handles browser restarts smoothly", async function () {

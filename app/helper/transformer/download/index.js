@@ -8,6 +8,7 @@ const tempDir = require("helper/tempDir")();
 const nameFrom = require("helper/nameFrom");
 const tidy = require("./tidy");
 const invalid = require("./invalid");
+const { assertPublicHttpUrl, requestAgent } = require("helper/ssrf");
 
 const IF_NONE_MATCH = "If-None-Match";
 const IF_MODIFIED_SINCE = "If-Modified-Since";
@@ -35,7 +36,6 @@ module.exports = function (url, headers, callback) {
   callback = callOnce(callback);
 
   const path = tempDir + UID(6) + "-" + nameFrom(url);
-  const file = createWriteStream(path);
 
   const options = {
     headers: {
@@ -45,6 +45,7 @@ module.exports = function (url, headers, callback) {
         [IF_MODIFIED_SINCE]: headers[LAST_MODIFIED]
       })
     },
+    agent: requestAgent,
     redirect: "follow",
     follow: MAX_REDIRECTS,
     timeout: TIMEOUT
@@ -53,7 +54,13 @@ module.exports = function (url, headers, callback) {
   debug("Downloading", url, "to", path, "with fetch headers:");
   debug(print(options.headers));
 
-  fetch(url, options)
+  let file;
+
+  assertPublicHttpUrl(url)
+    .then(() => {
+      file = createWriteStream(path);
+      return fetch(url, options);
+    })
     .then(res => {
       debug("Received response:");
 
@@ -107,7 +114,7 @@ module.exports = function (url, headers, callback) {
     })
     .catch(err => {
       debug("Download error:", err);
-      file.close();
+      if (file) file.close();
       fs.unlink(path).catch(() => {});
       callback(err);
     });

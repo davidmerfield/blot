@@ -4,6 +4,7 @@ const fs = require("fs-extra");
 const Bottleneck = require("bottleneck");
 const retry = require("./retry");
 const clfdate = require("helper/clfdate");
+const { assertPublicHttpUrl } = require("helper/ssrf");
 
 const prefix = () => `${clfdate()} Screenshot:`;
 
@@ -34,6 +35,59 @@ const limiter = new Bottleneck({
   maxConcurrent: CONCURRENT_SCREENSHOTS,
   minTime: MIN_TIME_BETWEEN_OPS,
 });
+
+async function attachRequestFilter(page) {
+  const cache = new Map();
+
+  await page.setRequestInterception(true);
+
+  page.on("request", async (request) => {
+    try {
+      const url = request.url();
+
+      if (url === "about:blank") {
+        await request.continue();
+        return;
+      }
+
+      let parsed;
+      try {
+        parsed = new URL(url);
+      } catch (e) {
+        await request.abort("blockedbyclient");
+        return;
+      }
+
+      if (parsed.protocol === "data:" || parsed.protocol === "blob:") {
+        if (request.isNavigationRequest()) {
+          await request.abort("blockedbyclient");
+        } else {
+          await request.continue();
+        }
+        return;
+      }
+
+      const key = parsed.protocol + "//" + parsed.host;
+      if (!cache.has(key)) {
+        cache.set(key, assertPublicHttpUrl(url));
+      }
+      await cache.get(key);
+      await request.continue();
+    } catch (e) {
+      try {
+        await request.abort("blockedbyclient");
+      } catch (ignored) {}
+    }
+  });
+}
+
+function isBlockedNavigation(error) {
+  const message = (error && error.message) || "";
+  return (
+    (error && error.code === "ERR_SSRF") ||
+    message.includes("ERR_BLOCKED_BY_CLIENT")
+  );
+}
 
 function validateOptions(options) {
   const validatedOptions = { ...options };
@@ -177,6 +231,7 @@ async function takeScreenshot(site, path, options = {}) {
     });
 
     await fs.ensureDir(dirname(path));
+    await attachRequestFilter(page);
 
     console.log(prefix(), "Navigating browser to", site);
     await page.goto(site, {
@@ -189,7 +244,9 @@ async function takeScreenshot(site, path, options = {}) {
 
   } catch (error) {
     console.error(prefix(), "Error during screenshot:", error);
-    await restart();
+    if (!isBlockedNavigation(error)) {
+      await restart();
+    }
     throw error;
   } finally {
     if (page) {
@@ -212,6 +269,8 @@ async function shutdown() {
 
 // Export main function
 const screenshot = async (site, path, options = {}) => {
+  await assertPublicHttpUrl(site);
+
   try {
     return await retry(() =>
       limiter.schedule(() => takeScreenshot(site, path, options))

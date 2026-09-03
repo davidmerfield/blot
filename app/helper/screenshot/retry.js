@@ -1,3 +1,9 @@
+function isFatal(error) {
+  const message = (error && error.message) || "";
+  const code = (error && error.code) || "";
+  return code === "ERR_SSRF" || message.includes("ERR_BLOCKED_BY_CLIENT");
+}
+
 const retry = async (fn, retries = 3, delay = 1000) => {
   let lastError;
 
@@ -8,13 +14,13 @@ const retry = async (fn, retries = 3, delay = 1000) => {
       lastError = error;
       console.log(`Attempt ${attempt} failed:`, error.message);
 
-      if (attempt < retries) {
-        console.log(`Waiting ${delay}ms before retry...`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        console.log("Retrying...");
-      } else {
-        console.log("No more retries left.");
+      if (isFatal(error) || attempt >= retries) {
+        break;
       }
+
+      console.log(`Waiting ${delay}ms before retry...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      console.log("Retrying...");
     }
   }
 
