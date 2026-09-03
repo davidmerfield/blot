@@ -52,7 +52,7 @@ input[type=radio] {display: none;}
           </noscript>
       </span>
       <span class="title">{{title}}</span>
-      {{#date}}<span class="date">{{date}}</span>{{/date}}
+      {{^hide_dates}}{{#date}}<span class="date">{{date}}</span>{{/date}}{{/hide_dates}}
         </a>
         {{/entries}}
         </div>

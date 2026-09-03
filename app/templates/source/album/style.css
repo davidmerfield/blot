@@ -178,6 +178,21 @@ header {
   {{/sticky_navigation}}
 }
 
+{{#is.navigation_position.bottom}}
+{{^sticky_navigation}}
+header {
+  order: 1;
+  margin-top: auto;
+}
+{{/sticky_navigation}}
+{{/is.navigation_position.bottom}}
+
+{{#hide_dates}}
+.date {
+  display: none
+}
+{{/hide_dates}}
+
 .site-title {
   display: inline-flex;
   align-items: center;
@@ -234,7 +249,9 @@ header > a:first-child {
   margin-left: 0;
 }
 
+{{^show_search}}
 nav a[href="/search"] {display: none}
+{{/show_search}}
 
 nav .spacer {
     height: 22px;
@@ -373,7 +390,7 @@ font-feature-settings: 'tnum';
   display: flex;
   max-height: 100vh;
   flex-direction: column;
-  font-size: 14px
+  font-size: {{body_font.font_size}}px
 }
 
 .edge.left {
@@ -426,7 +443,13 @@ font-feature-settings: 'tnum';
 .entry .body {
   flex-grow: 1;
   text-align: center;
+  {{#heading_font}}
+  font-size: {{{font_size}}}px;
+  line-height: {{{line_height}}};
+  {{/heading_font}}
+  {{^heading_font}}
   font-size: 23px;
+  {{/heading_font}}
   -webkit-font-smoothing: auto;
 }
 
@@ -482,7 +505,7 @@ pre, code {
 
 
 .entry.page .body>* {
-  max-width: 35em;
+  max-width: {{max_width}}px;
 }
 
 hr {
@@ -557,7 +580,7 @@ the absolutely positioned stuff is off the viewport.
 .margin,
 .inside {
   width: 33%;
-  font-size: 15px;
+  font-size: {{body_font.font_size}}px;
   box-sizing: border-box;
 }
 

@@ -194,11 +194,13 @@
             ">
             {{ title }}
           </span>
+          {{^hide_dates}}
           {{#date}}
-          <span style="font-size: 13px; display: block"
+          <span class="date" style="font-size: 13px; display: block"
             >Added <span date-from-now="{{ dateStamp }}">{{ date }}</span></span
           >
           {{/date}}
+          {{/hide_dates}}
         </span>
         {{/thumbnail.medium}}
       </span>
