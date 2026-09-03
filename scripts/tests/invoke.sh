@@ -38,16 +38,16 @@ docker run -d \
   $REDIS_IMAGE \
   sh -c "rm -f /data/dump.rdb && redis-server"
 
-# Build the test image. Legacy `docker build` does not set TARGETPLATFORM,
-# which the Dockerfile needs to pick a Pandoc architecture. BuildKit does,
-# and we also pass the arg explicitly so a fallback builder still works.
+# Build the test image. The Dockerfile needs TARGETPLATFORM to pick a
+# Pandoc architecture. BuildKit sets this automatically; the classic
+# builder does not, so pass it explicitly (this environment has no buildx).
 case "$(uname -m)" in
   x86_64) TARGETPLATFORM="linux/amd64" ;;
   aarch64|arm64) TARGETPLATFORM="linux/arm64" ;;
   *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
 esac
 
-DOCKER_BUILDKIT=1 docker build \
+docker build \
   --target dev \
   --build-arg TARGETPLATFORM="$TARGETPLATFORM" \
   -t $TEST_IMAGE \
