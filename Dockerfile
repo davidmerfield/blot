@@ -97,7 +97,7 @@ RUN git config --global --add safe.directory /usr/src/app && git config --global
 # /usr/lib/nginx/bin/openresty (a symlink to /usr/sbin/nginx). Link it to
 # the paths the test runner already looks for. procps provides `ps aux`
 # used when restarting OpenResty between specs.
-RUN apk add --no-cache openresty sudo procps \
+RUN apk add --no-cache openresty sudo procps bash \
  && mkdir -p /usr/local/openresty/bin /var/run/nginx /var/log/nginx /var/tmp/nginx \
  && ln -sf /usr/lib/nginx/bin/openresty /usr/local/openresty/bin/openresty \
  && ln -sf /usr/lib/nginx/bin/openresty /usr/bin/openresty
