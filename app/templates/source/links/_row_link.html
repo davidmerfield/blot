@@ -7,7 +7,7 @@
       </noscript>
 
   {{/thumbnail.square}}</span> </a></td>
-  <td><a href="{{{url}}}" style="display:block">{{#formatDate}}MMM YYYY{{/formatDate}}</a></td>
+  <td>{{^hide_dates}}<a href="{{{url}}}" style="display:block">{{#formatDate}}MMM YYYY{{/formatDate}}</a>{{/hide_dates}}</td>
 
   <td style="min-width:20em"><a href="{{{url}}}" style="display:block">{{title}}</a></td>
   <td>{{#tags}}<a href="/tagged/{{slug}}">{{tag}}</a> {{/tags}}</td>
