@@ -62,6 +62,7 @@ button.copy.copy-for-agent.copied {
   margin: 0 0 1.5rem;
   max-width: 22rem;
   color: var(--text-color);
+  container-type: inline-size;
 }
 
 .pattern-demo a {

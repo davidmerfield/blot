@@ -210,7 +210,7 @@ module.exports = {
   </nav>
 </header>`,
   demoCaption:
-    "The demo frame is narrower than 40em, so the hamburger stays collapsed until you open it. On a wide viewport the same CSS shows the links in a row and hides the toggle.",
+    "The demo frame is narrower than 40em, so the hamburger stays collapsed until you open it. Copied CSS uses a viewport media query; the live demo maps that to the frame width. On a wide viewport the same CSS shows the links in a row and hides the toggle.",
   guidance: `This is the checkbox-and-label pattern used by Blot’s Album, Text, and Studio templates.
 
 **How it works**

@@ -114,15 +114,18 @@ describe("template design pattern catalog", function () {
   it("scopes demo CSS to the pattern demo wrapper", function () {
     const pattern = catalog.get("hamburger-navigation");
     const presented = catalog.present(pattern);
+    expect(pattern.css).toContain("@media (max-width: 40em)");
     expect(presented.demoCSS).toContain(
       ".pattern-demo--hamburger-navigation .site-header"
     );
     expect(presented.demoCSS).not.toMatch(/(^|})\s*\.site-header\s*\{/);
+    expect(presented.demoCSS).toContain("@container (max-width: 40em)");
+    expect(presented.demoCSS).not.toContain("@media (max-width: 40em)");
     expect(presented.demoCSS).toMatch(
-      /@media \(max-width: 40em\)[\s\S]*\.pattern-demo--hamburger-navigation \.site-nav/
+      /@container \(max-width: 40em\)[\s\S]*\.pattern-demo--hamburger-navigation \.site-nav/
     );
     expect(presented.demoCSS).not.toMatch(
-      /@media \(max-width: 40em\)\s*\{\s*\.site-header\s*\{/
+      /@container \(max-width: 40em\)\s*\{\s*\.site-header\s*\{/
     );
   });
 

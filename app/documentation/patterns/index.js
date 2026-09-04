@@ -73,6 +73,15 @@ function scopeCSS(css, scope) {
   });
 }
 
+// Live demos sit in a narrow box, not a small viewport. Copied template CSS
+// still uses @media; rewrite those queries so the demo follows the frame width.
+function demoScopedCSS(css, slug) {
+  return scopeCSS(css, ".pattern-demo--" + slug).replace(
+    /@media\b/g,
+    "@container"
+  );
+}
+
 function all() {
   return PATTERNS.slice();
 }
@@ -243,10 +252,10 @@ function present(pattern) {
       name: source.name,
       files: (source.files || []).map((path) => ({ path })),
     })),
-    demoCSS: scopeCSS(pattern.css.trim(), ".pattern-demo--" + pattern.slug),
+    demoCSS: demoScopedCSS(pattern.css.trim(), pattern.slug),
     demoStyleTag:
       "<style>\n" +
-      scopeCSS(pattern.css.trim(), ".pattern-demo--" + pattern.slug) +
+      demoScopedCSS(pattern.css.trim(), pattern.slug) +
       "\n</style>",
     demoScriptTag: wrapDemoJS(pattern.slug, pattern.demoJS),
   };
