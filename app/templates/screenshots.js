@@ -11,7 +11,7 @@ const TEMPLATE_SCREENSHOT_WIDTH = 1060;
 const TEMPLATE_SCREENSHOT_HEIGHT = 780;
 
 // These previews are served by a local server we start ourselves, so there is
-// nothing to be polite to: run several browser tabs at once and drop the pacing
+// nothing to be polite to: take several at once and drop the pacing that
 // helper/screenshot applies when screenshotting live sites.
 const CONCURRENCY = Number(process.env.BLOT_SCREENSHOT_CONCURRENCY) || 4;
 
@@ -103,7 +103,9 @@ const main = async ({ templates } = {}) => {
   });
 
   if (failures.length) {
-    console.error(`Failed to take ${failures.length} of ${shots.length} screenshots:`);
+    console.error(
+      `Failed to take ${failures.length} of ${shots.length} screenshots:`
+    );
     for (const { path, error } of failures) {
       console.error("-", path, error.message || error);
     }
@@ -126,9 +128,12 @@ if (require.main === module) {
   const arg = process.argv.slice(2).find((value) => !value.startsWith("--"));
 
   main({ templates: arg || process.env.BLOT_SCREENSHOT_TEMPLATES })
-    .then(() => {
+    .then(({ failures }) => {
       console.log("Done!");
-      process.exit();
+      // The image directory is emptied before the run, so a screenshot that
+      // failed has left a gap rather than a stale image. Exiting non-zero is
+      // what stops the caller committing that gap to the template gallery.
+      process.exit(failures.length ? 1 : 0);
     })
     .catch((error) => {
       console.error(error);

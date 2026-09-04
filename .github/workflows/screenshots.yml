@@ -171,6 +171,7 @@ jobs:
           echo "Redis holds $(redis-cli dbsize | tr -d '[:space:]') keys"
 
       - name: Take screenshots
+        id: screenshots
         env:
           BLOT_PROTOCOL: http
           BLOT_ENVIRONMENT: development
@@ -187,6 +188,12 @@ jobs:
           echo "Building demo folders"
           node app/templates/folders/index.js --for-templates="$TEMPLATES"
 
+          # Flush Redis to disk here rather than at the end of the job: this is
+          # the state worth caching, and it is worth caching even if a
+          # screenshot fails further down.
+          redis-cli save
+          echo "demo_blogs_built=true" >> $GITHUB_OUTPUT
+
           # The folder build used to take minutes, which was long enough for
           # the server to come up on its own. A cache hit skips almost all of
           # that work, so wait explicitly rather than screenshot a server that
@@ -202,14 +209,11 @@ jobs:
           echo "Taking screenshots"
           node app/templates/screenshots.js "$TEMPLATES"
 
-          # Flush the Redis database to disk so it can be cached alongside the
-          # folders and resized images it describes.
-          redis-cli save
-
       # Only a full run has built every demo folder, so only a full run may
-      # write the cache the next run will trust.
+      # write the cache the next run will trust. A failed screenshot says
+      # nothing about the demo blogs, so cache them either way.
       - name: Save demo blogs
-        if: ${{ success() && inputs.templates == '' && steps.cache-demo-blogs.outputs.cache-hit != 'true' }}
+        if: ${{ always() && steps.screenshots.outputs.demo_blogs_built == 'true' && inputs.templates == '' && steps.cache-demo-blogs.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: |
@@ -219,6 +223,9 @@ jobs:
             data/redis
           key: demo-blogs-v1-pandoc${{ matrix.pandoc-version }}-${{ hashFiles('app/templates/folders/**', 'app/build/**', 'app/sync/**', 'app/models/**', 'package.json') }}
 
+      # Deliberately not run when the screenshots step failed: the image
+      # directory is emptied before a run, so committing a partial run would
+      # publish a template gallery with missing images.
       - name: Commit changes
         run: |
           git config --local user.email "action@github.com"
