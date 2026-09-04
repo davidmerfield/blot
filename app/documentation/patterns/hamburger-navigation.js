@@ -54,9 +54,8 @@ module.exports = {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75em 1.5em;
   position: relative;
-  height: 2.5em;
-  overflow: hidden;
 }
 
 .site-title {
@@ -76,19 +75,11 @@ module.exports = {
   clip-path: inset(50%);
   border: 0;
   white-space: nowrap;
+  visibility: hidden;
 }
 
 .nav-toggle-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 2.5em;
-  height: 2.5em;
-  cursor: pointer;
-  z-index: 2;
+  display: none;
 }
 
 .nav-toggle-sr {
@@ -137,7 +128,6 @@ module.exports = {
   display: flex;
   flex-wrap: wrap;
   gap: 1em;
-  width: 100%;
 }
 
 .site-nav a {
@@ -145,34 +135,65 @@ module.exports = {
   text-decoration: none;
 }
 
-.nav-toggle:checked ~ .site-header {
-  height: auto;
-  overflow: visible;
-}
+@media (max-width: 40em) {
+  .site-header {
+    height: 2.5em;
+    overflow: hidden;
+    gap: 0;
+  }
 
-.nav-toggle:checked ~ .site-header .site-nav {
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 0.75em 0 0.25em;
-}
+  .nav-toggle {
+    visibility: visible;
+  }
 
-.nav-toggle:checked ~ .site-header .nav-toggle-icon {
-  transform: rotate(45deg);
-}
+  .nav-toggle-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2.5em;
+    height: 2.5em;
+    cursor: pointer;
+    z-index: 2;
+  }
 
-.nav-toggle:checked ~ .site-header .nav-toggle-icon::before {
-  top: 0;
-  transform: rotate(90deg);
-}
+  .site-nav {
+    width: 100%;
+    visibility: hidden;
+  }
 
-.nav-toggle:checked ~ .site-header .nav-toggle-icon::after {
-  top: 0;
-  opacity: 0;
-}
+  .nav-toggle:checked ~ .site-header {
+    height: auto;
+    overflow: visible;
+  }
 
-.nav-toggle:focus-visible ~ .site-header .nav-toggle-label {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+  .nav-toggle:checked ~ .site-header .site-nav {
+    visibility: visible;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.75em 0 0.25em;
+  }
+
+  .nav-toggle:checked ~ .site-header .nav-toggle-icon {
+    transform: rotate(45deg);
+  }
+
+  .nav-toggle:checked ~ .site-header .nav-toggle-icon::before {
+    top: 0;
+    transform: rotate(90deg);
+  }
+
+  .nav-toggle:checked ~ .site-header .nav-toggle-icon::after {
+    top: 0;
+    opacity: 0;
+  }
+
+  .nav-toggle:focus-visible ~ .site-header .nav-toggle-label {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
 }`,
   demoHTML: `<input class="nav-toggle" type="checkbox" id="demo-nav-toggle" aria-controls="demo-site-nav">
 <header class="site-header">
@@ -189,15 +210,16 @@ module.exports = {
   </nav>
 </header>`,
   demoCaption:
-    "The frame is narrow on purpose so the links wrap under the title and stay clipped until you open the menu.",
+    "The demo frame is narrower than 40em, so the hamburger stays collapsed until you open it. On a wide viewport the same CSS shows the links in a row and hides the toggle.",
   guidance: `This is the checkbox-and-label pattern used by Blot’s Album, Text, and Studio templates.
 
 **How it works**
 
 1. A visually hidden checkbox sits immediately before the \`<header>\`.
-2. The header has a fixed height and \`overflow: hidden\`. Menu links that wrap onto a second row are clipped.
-3. A \`<label for="nav-toggle">\` is the click/tap target. It contains a screen-reader-only “Menu” string and three bars drawn with a pseudo-element.
-4. The adjacent-sibling selector \`.nav-toggle:checked ~ .site-header\` raises the header height to \`auto\`, so the wrapped links become visible. The bars rotate into an ×.
+2. On viewports wider than \`40em\`, the nav sits in a row next to the title and the toggle is hidden.
+3. On small screens the header has a fixed height and \`overflow: hidden\`. The nav is \`visibility: hidden\` so clipped links are not in the tab order.
+4. A \`<label for="nav-toggle">\` is the click/tap target. It contains a screen-reader-only “Menu” string and three bars drawn with a pseudo-element.
+5. The adjacent-sibling selector \`.nav-toggle:checked ~ .site-header\` raises the header height to \`auto\` and restores \`visibility\`, so the links become visible and tabbable. The bars rotate into an ×.
 
 **How to add it to a template**
 
@@ -210,13 +232,15 @@ module.exports = {
 **Common mistakes**
 
 - Putting the checkbox *inside* the header. The \`~\` sibling selector will not match.
-- Using \`display: none\` on the checkbox instead of clipping it. A \`display: none\` control cannot receive keyboard focus.
+- Using \`width: 100%\` on \`.site-nav\` without a media query. The links wrap under the title at every viewport, so the header always looks like a hamburger.
+- Using \`display: none\` on the checkbox on small screens. A \`display: none\` control cannot receive keyboard focus.
+- Clipping the nav with \`overflow: hidden\` alone. Overflow does not remove those links from the tab order; use \`visibility: hidden\` until the menu is open.
 - Giving the label no accessible name. Keep the \`.nav-toggle-sr\` text, or set \`aria-label\` on the checkbox as Zine does.
 - Introducing SCSS, a submenu library, or a second copy of the header with a different \`id\`.`,
-  accessibility: `- The checkbox is clipped, not removed, so it can still receive focus. Pair that with \`:focus-visible ~ .site-header .nav-toggle-label\` so the visible control shows a focus ring.
+  accessibility: `- On small screens the checkbox is clipped, not removed, so it can still receive focus. Pair that with \`:focus-visible ~ .site-header .nav-toggle-label\` so the visible control shows a focus ring. On wide screens hide the checkbox (\`visibility: hidden\`) so it is not an extra tab stop.
 - The label’s screen-reader text must describe the action (“Menu”). Decorative bars are \`aria-hidden="true"\`.
 - \`aria-controls\` points at the \`<nav>\` id.
-- Menu links must remain in the DOM (do not \`display: none\` them on small screens if you can clip them instead) so they stay in the tab order once the menu is open.
+- When the menu is collapsed, set \`visibility: hidden\` on the nav so clipped links are skipped in the tab order. Restore \`visibility: visible\` when the checkbox is checked (and on wide screens, where the nav is in a row).
 - Do not rely on hover. The control must work with click, tap, and Enter/Space on the focused checkbox.`,
   related: ["site-menu-bar", "details-disclosure"],
 };

@@ -52,10 +52,11 @@ function highlightCode(code, lang) {
 }
 
 // Prefix every selector so live demos cannot leak into the rest of the docs.
-// Does not rewrite @media/@keyframes wrappers; those are uncommon in these snippets.
+// Leaves @media/@keyframes wrappers intact and still scopes the rules inside them.
 function scopeCSS(css, scope) {
   if (!css) return "";
-  return css.replace(/(^|})\s*([^{}]+?)\s*\{/g, function (match, brace, selectors) {
+  return css.replace(/([^{}]+)\{/g, function (match, selectors) {
+    const leading = selectors.match(/^\s*/);
     const trimmed = selectors.trim();
     if (!trimmed || trimmed.startsWith("@")) {
       return match;
@@ -68,7 +69,7 @@ function scopeCSS(css, scope) {
         return scope + " " + selector;
       })
       .join(", ");
-    return brace + " " + scoped + " {";
+    return (leading ? leading[0] : "") + scoped + " {";
   });
 }
 

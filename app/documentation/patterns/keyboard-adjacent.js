@@ -105,8 +105,8 @@ root.addEventListener("keydown", function (event) {
 });`,
   demoHTML: `<p class="keyboard-status">Click this demo, then press ← or →. Typing in a field must not navigate.</p>
 <nav class="slideshow-nav" aria-label="Adjacent posts">
-  <a href="/older" data-adjacent="older" rel="prev">Older</a>
-  <a href="/newer" data-adjacent="newer" rel="next">Newer</a>
+  <a href="#older" data-adjacent="older" rel="prev">Older</a>
+  <a href="#newer" data-adjacent="newer" rel="next">Newer</a>
 </nav>
 <label>Try a field <input type="text" placeholder="arrows should not leave"></label>`,
   demoCaption:

@@ -59,11 +59,14 @@ module.exports = {
   margin: 0.5em 0 0 1.25em;
 }`,
   markdownFile: "post.md",
-  markdown: `<details>
+  markdown: `<details class="disclosure">
 <summary>More information</summary>
+
+<div class="disclosure-body">
 
 Hidden until the reader opens the section. Markdown inside the details block is fine as long as you leave a blank line after \`<summary>\`.
 
+</div>
 </details>`,
   demoHTML: `<details class="disclosure">
   <summary>Ingredients</summary>
@@ -82,7 +85,7 @@ Hidden until the reader opens the section. Markdown inside the details block is 
 
 **In the template** — wrap chrome that should start closed (a long archives note, a debug table, “how this page is sorted”). Put the CSS in \`style.css\`.
 
-**In a post** — authors can paste the same markup into Markdown. Pandoc will pass raw HTML through. Leave a blank line after \`<summary>\` if the body should be parsed as Markdown.
+**In a post** — authors can paste the same markup into Markdown. Pandoc will pass raw HTML through. Use \`class="disclosure"\` on \`<details>\` and wrap the body in \`<div class="disclosure-body">\` so the template CSS applies. Leave a blank line after \`<summary>\` if the body should be parsed as Markdown.
 
 **How to add it**
 
