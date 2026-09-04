@@ -9,6 +9,7 @@
 	--link-color: {{link_color}};
 	--header-background-color: {{header_background_color}};
 	--muted-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.55);
+	--divider-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.1);
 	{{#body_font}}
 	--body-font-family: {{{stack}}};
 	--body-font-size: {{{font_size}}}px;
@@ -3098,12 +3099,12 @@ a:active {
 }
 
 hr {
-	background-color: var(--header-background-color);
+	background-color: var(--divider-color);
 }
 
 .page-header,
 .main-navigation a {
-	border-color: var(--header-background-color);
+	border-color: var(--divider-color);
 }
 
 .byline a,
@@ -3112,8 +3113,8 @@ hr {
 .posted-on a,
 .reply a,
 .comments-link a {
-	background: var(--header-background-color);
-	border-color: var(--header-background-color);
+	background: var(--divider-color);
+	border-color: var(--divider-color);
 }
 
 .archive-date {
@@ -3133,11 +3134,11 @@ hr {
 @media screen and (min-width: 60em) {
 	.site-content,
 	.site-footer {
-		border-color: var(--header-background-color);
+		border-color: var(--divider-color);
 	}
 
 	.site-footer {
-		border-top-color: var(--header-background-color);
+		border-top-color: var(--divider-color);
 	}
 }
 
