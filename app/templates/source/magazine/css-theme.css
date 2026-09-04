@@ -200,6 +200,7 @@ pre, code {
   {{#syntax_highlighter_font}}
   font-family: {{{stack}}};
   font-size: {{font_size}}px;
+  line-height: {{line_height}};
   {{/syntax_highlighter_font}}
 }
 
@@ -328,6 +329,7 @@ h4, h5, h6, p, blockquote, ul, ol, table {margin:2rem 0}
 h1, h2, h3, h4, h5, h6, .fw9 {
   {{#heading_font}}
   font-family: {{{stack}}};
+  line-height: {{line_height}};
   {{/heading_font}}
 }
 
@@ -337,7 +339,6 @@ h1 {
   padding:0;
   {{#heading_font}}
   font-size: {{font_size}}px;
-  line-height: {{line_height}};
   {{/heading_font}}
 }
 
@@ -383,6 +384,14 @@ figure cite, figure cite a {font-size:0.8rem;color:rgba({{#rgb}}{{text_color}}{{
   {{#heading_font}}
   line-height: {{line_height}};
   {{/heading_font}}
+}
+
+/* Let the configured body line height reach the article body, which
+   Tachyons' .lh-copy would otherwise pin to 1.5 */
+.entry .lh-copy {
+  {{#body_font}}
+  line-height: {{line_height}};
+  {{/body_font}}
 }
 
 .pv2-5 {padding-top:0.75rem;padding-bottom:0.75rem}
