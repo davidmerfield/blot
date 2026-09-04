@@ -139,7 +139,6 @@ function relativeDate(input) {
 
 root.querySelectorAll("[data-offset-ms]").forEach(function (el) {
   var stamp = Date.now() - parseInt(el.getAttribute("data-offset-ms"), 10);
-  el.setAttribute("date-from-now", String(stamp));
   if (Date.now() - stamp > YEAR_MS) return;
   el.textContent = relativeDate(stamp);
 });`,
