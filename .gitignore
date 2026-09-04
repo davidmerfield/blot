@@ -15,7 +15,6 @@
 
 data
 app/views-built
-config/openresty/tests/data
 
 # Eventually merge into one 'data' folder
 blogs/*
