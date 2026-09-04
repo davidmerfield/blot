@@ -120,12 +120,31 @@ async function close(browser, reason) {
 }
 
 async function acquire() {
-  return idle.pop() || launch();
+  let browser;
+
+  // A browser can also die while sitting idle (e.g. it crashed mid-screenshot
+  // and was returned to the pool before that was noticed - see release()).
+  // Skip past any dead entries rather than handing one out.
+  while ((browser = idle.pop())) {
+    if (browser.instance.connected) return browser;
+    await close(browser, "found disconnected in the pool");
+  }
+
+  return launch();
 }
 
 // Returns a browser to the pool, or closes it if it should not be used again.
 async function release(browser, { unresponsive } = {}) {
   if (unresponsive) return close(browser, "browser stopped responding");
+
+  // A crash or disconnect (e.g. OOM) throws a plain Error from whatever
+  // puppeteer call was in flight, not the local TimeoutError, so
+  // `unresponsive` is never set for it. Check the browser itself: putting a
+  // dead instance back in the pool would fail every screenshot that
+  // acquire()s it next, since nothing else ever notices it is gone.
+  if (!browser.instance.connected) {
+    return close(browser, "browser is no longer connected");
+  }
 
   if (browser.generation !== generation) {
     return close(browser, "restarted since this browser was launched");

@@ -44,6 +44,9 @@ jobs:
     env:
       BLOT_SCREENSHOT_CONCURRENCY: ${{ inputs.concurrency }}
       TEMPLATES: ${{ inputs.templates }}
+      # Shared by the restore, delete and save steps below so the three can't
+      # drift apart.
+      DEMO_BLOGS_CACHE_KEY: demo-blogs-v1-pandoc${{ matrix.pandoc-version }}-${{ hashFiles('app/templates/folders/**', 'app/build/**', 'app/sync/**', 'app/models/**', 'package.json') }}
 
     steps:
       - name: Checkout code
@@ -161,7 +164,18 @@ jobs:
             data/static
             data/cdn
             data/redis
-          key: demo-blogs-v1-pandoc${{ matrix.pandoc-version }}-${{ hashFiles('app/templates/folders/**', 'app/build/**', 'app/sync/**', 'app/models/**', 'package.json') }}
+          key: ${{ env.DEMO_BLOGS_CACHE_KEY }}
+
+      # actions/cache/save refuses to overwrite an existing key, so without
+      # this, rebuild_demo_blogs would rebuild locally but the next run would
+      # still restore the very cache entry it was meant to replace.
+      - name: Drop the cached demo blogs before rebuilding
+        if: ${{ inputs.rebuild_demo_blogs }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh cache delete "$DEMO_BLOGS_CACHE_KEY" --repo "${{ github.repository }}" ||
+            echo "No cached demo blogs at $DEMO_BLOGS_CACHE_KEY to delete"
 
       - name: Start Redis
         run: |
@@ -221,7 +235,7 @@ jobs:
             data/static
             data/cdn
             data/redis
-          key: demo-blogs-v1-pandoc${{ matrix.pandoc-version }}-${{ hashFiles('app/templates/folders/**', 'app/build/**', 'app/sync/**', 'app/models/**', 'package.json') }}
+          key: ${{ env.DEMO_BLOGS_CACHE_KEY }}
 
       # Deliberately not run when the screenshots step failed: the image
       # directory is emptied before a run, so committing a partial run would
