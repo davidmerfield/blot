@@ -398,11 +398,30 @@ form input:focus,
 .search-results h1,
 .error-page h1 {
   font-family: var(--heading-font-stack, var(--font-stack));
+  line-height: var(--heading-line-height, 1.2);
+}
+
+/* Heading scale, expressed as multiples of the configurable heading
+   font size so the dashboard size / line-height controls reach every
+   heading this template styles, not just the entry h1/h2. */
+.entry h1,
+.archives h1,
+.tags h1,
+.search-results h1,
+.error-page h1 {
+  font-size: calc(2 * var(--heading-font-size, 1em));
+}
+
+.entry h3,
+.tags h3 {
+  font-size: calc(1.17 * var(--heading-font-size, 1em));
+}
+
+.entry h4 {
+  font-size: var(--heading-font-size, 1em);
 }
 
 .entry h1 {
-  font-size: calc(2 * var(--heading-font-size, 1em));
-  line-height: var(--heading-line-height, 1.2);
   margin-top: var(--space-2);
   margin-bottom: 1em;
 }
@@ -469,7 +488,6 @@ form input:focus,
   text-rendering: optimizelegibility;
   font-weight: bold;
   margin: .75em 0;
-  line-height: var(--heading-line-height, 1.2);
 }
 
 .entry pre,
