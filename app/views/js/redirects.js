@@ -10,17 +10,19 @@ function setConflict(section, conflict) {
   const warning = section.querySelector(".redirect-conflict");
   if (!warning) return;
 
+  const tooltip = warning.querySelector(".redirect-conflict-tooltip");
+
   if (conflict && conflict.message) {
     warning.hidden = false;
-    warning.setAttribute("data-tooltip", conflict.message);
     warning.setAttribute("title", conflict.message);
     warning.setAttribute("aria-label", conflict.message);
+    if (tooltip) tooltip.textContent = conflict.message;
     section.classList.add("has-conflict");
   } else {
     warning.hidden = true;
-    warning.removeAttribute("data-tooltip");
     warning.removeAttribute("title");
     warning.setAttribute("aria-label", "This redirect may not run");
+    if (tooltip) tooltip.textContent = "";
     section.classList.remove("has-conflict");
   }
 }

@@ -20,7 +20,10 @@ describe("dashboard redirects", function () {
     expect(conflictRow.length).toEqual(1);
     expect(conflictRow.find("input.lab").val()).toEqual("/search");
     expect(conflictRow.find(".redirect-conflict").attr("hidden")).toBeUndefined();
-    expect(conflictRow.find(".redirect-conflict").attr("data-tooltip")).toMatch(
+    expect(conflictRow.find(".redirect-conflict").attr("title")).toMatch(
+      /won't run/i
+    );
+    expect(conflictRow.find(".redirect-conflict-tooltip").text()).toMatch(
       /won't run/i
     );
 

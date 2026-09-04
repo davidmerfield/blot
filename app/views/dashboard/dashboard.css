@@ -338,9 +338,13 @@ span.file {
   display: none;
 }
 
-#redirects .redirect-conflict:hover::after,
-#redirects .redirect-conflict:focus::after {
-  content: attr(data-tooltip);
+#redirects .redirect-conflict:hover .redirect-conflict-tooltip,
+#redirects .redirect-conflict:focus .redirect-conflict-tooltip {
+  display: block;
+}
+
+#redirects .redirect-conflict-tooltip {
+  display: none;
   position: absolute;
   right: 0;
   bottom: calc(100% + 6px);

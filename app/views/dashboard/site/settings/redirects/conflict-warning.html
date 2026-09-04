@@ -1,9 +1,9 @@
 <span
   class="redirect-conflict"
   {{^conflict}}hidden{{/conflict}}
-  {{#conflict}}data-tooltip="{{message}}" title="{{message}}"{{/conflict}}
+  {{#conflict}}title="{{message}}"{{/conflict}}
   tabindex="0"
   role="img"
   aria-label="{{#conflict}}{{message}}{{/conflict}}{{^conflict}}This redirect may not run{{/conflict}}"
   ><span class="icon-small-alert"></span
-></span>
+  ><span class="redirect-conflict-tooltip">{{#conflict}}{{message}}{{/conflict}}</span></span>
