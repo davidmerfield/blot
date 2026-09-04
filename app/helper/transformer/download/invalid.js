@@ -21,7 +21,9 @@ function invalid(url) {
   if (protocols.indexOf(parsed.protocol) === -1)
     return new Error("Has unsupported protocol " + url);
 
-  if (parsed.auth) return new Error("Must not contain credentials " + url);
+  // Don't echo the URL here - this branch is reached precisely when it may
+  // carry credentials, and this error can end up in logs.
+  if (parsed.auth) return new Error("URL must not contain credentials");
 
   return false;
 }

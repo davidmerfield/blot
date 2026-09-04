@@ -47,7 +47,14 @@ function render($, callback, { blogID, path }) {
     parsedHref.username ||
     parsedHref.password
   ) {
-    console.log(prefix(), "Refusing to screenshot non-public HREF", href);
+    // Log the origin/protocol only - never the full href here, since this
+    // branch is reached precisely when the URL may carry credentials.
+    console.log(
+      prefix(),
+      "Refusing to screenshot non-public HREF",
+      parsedHref.protocol,
+      parsedHref.host
+    );
     return callback();
   }
 

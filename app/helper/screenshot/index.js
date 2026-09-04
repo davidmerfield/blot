@@ -110,13 +110,18 @@ async function restart() {
 async function cleanup() {
   if (browser) {
     try {
-      const pages = await browser.pages();
-      await Promise.all(pages.map(page => closePageWithTimeout(page).catch(() => {})));
-      // The airlock's Chromium is shared and long-lived - detach from it
-      // rather than killing it. A launched Chromium we own gets closed.
-      if (REMOTE_BROWSER_URL && typeof browser.disconnect === "function") {
+      if (REMOTE_BROWSER_URL) {
+        // The airlock's Chromium is shared with every other container
+        // (blue/green/yellow) that connects to it, so browser.pages() would
+        // enumerate - and closePageWithTimeout would then close - pages
+        // belonging to unrelated in-flight screenshots on other containers.
+        // Each of our own screenshots runs in its own browser context (see
+        // takeScreenshot) and closes that context itself, so there is
+        // nothing of ours left to clean up here beyond detaching.
         browser.disconnect();
       } else {
+        const pages = await browser.pages();
+        await Promise.all(pages.map(page => closePageWithTimeout(page).catch(() => {})));
         await browser.close().catch(() => {});
       }
     } catch (error) {
@@ -178,11 +183,22 @@ async function screenshotWithTimeout(page, path) {
 
 async function takeScreenshot(site, path, options = {}) {
   let page = null;
+  let context = null;
   try {
     options = validateOptions(options);
     await initialize();
 
-    page = await browser.newPage();
+    // In airlock mode the browser is shared with other containers - open
+    // an incognito context per screenshot so this navigation's cookies,
+    // cache and storage can't leak into (or be tainted by) anyone else's,
+    // and so we have a single handle to tear down in `finally` instead of
+    // reaching into the shared browser's global page list.
+    if (REMOTE_BROWSER_URL) {
+      context = await browser.createBrowserContext();
+      page = await context.newPage();
+    } else {
+      page = await browser.newPage();
+    }
     await page.setUserAgent(DEFAULT_USER_AGENT);
 
     const viewport = options.mobile ? VIEWPORT.mobile : VIEWPORT.desktop;
@@ -212,9 +228,18 @@ async function takeScreenshot(site, path, options = {}) {
       console.log(prefix(), "closing page");
       await closePageWithTimeout(page);
     }
+    if (context) {
+      await context.close().catch((error) => {
+        console.error(prefix(), "Error closing browser context:", error);
+      });
+    }
 
-    // Check if restart is needed after the screenshot is complete
-    if (Date.now() - lastRestartTime >= DEFAULT_RESTART_INTERVAL) {
+    // The periodic restart exists to recycle a launched Chromium's process
+    // state (memory, any state a page managed to leave behind). In airlock
+    // mode every screenshot already gets a fresh incognito context above, so
+    // there's nothing stale to recycle, and "restarting" would just
+    // disconnect/reconnect to the same long-lived shared browser.
+    if (!REMOTE_BROWSER_URL && Date.now() - lastRestartTime >= DEFAULT_RESTART_INTERVAL) {
       await restart();
     }
   }

@@ -3,13 +3,17 @@
 The single egress boundary for fetching **untrusted, user-supplied URLs** in
 Blot's build pipeline.
 
-Two things in Blot fetch a URL that a user controls, on Blot's own
-infrastructure, and show the result back to that user:
+Two callers in Blot are routed through it - both fetch a URL a user controls,
+on Blot's own infrastructure, and show the result back to that user, which is
+what makes them read primitives rather than just SSRF:
 
 | Caller | User input | What it does |
 | --- | --- | --- |
 | [`app/build/plugins/linkScreenshot`](../../app/build/plugins/linkScreenshot) | `href` from an uploaded `.webloc` / `.url` bookmark file | screenshots the page, embeds the image in the post |
 | [`app/helper/transformer/download`](../../app/helper/transformer/download) | `<img src>` / `![](…)` in a post | downloads the asset, caches it, rewrites to the CDN |
+
+See "Known sinks not covered" below for other user-controlled fetches in the
+app that aren't routed through `airlock` yet.
 
 Without protection either one is a classic SSRF primitive: point it at
 `http://169.254.169.254/…` (cloud instance metadata → credentials),
@@ -32,12 +36,25 @@ code does no IP classification.
   the caller dialled, and carries the WebSocket upgrade. See
   [`nginx.conf`](nginx.conf).
 * **tinyproxy** on **:8888** — an HTTP(S) forward proxy that
-  `app/helper/transformer/download` points `node-fetch` at.
+  `app/helper/transformer/download` points `node-fetch` at. It does no
+  destination filtering itself (no `ConnectPort` allow-list either - see the
+  comment in [`tinyproxy.conf`](tinyproxy.conf) for why that would just add a
+  confusing failure mode without adding real protection); `egress.nft` is the
+  only destination control.
 * **[`egress.nft`](egress.nft)** — installed by
-  [`entrypoint.sh`](entrypoint.sh) before any service starts. It `drop`s
-  every RFC1918 / loopback / link-local / ULA / CGNAT / documentation /
-  benchmark / multicast / reserved destination, v4 and v6. The cloud metadata
-  address `169.254.169.254` is inside `169.254.0.0/16`.
+  [`entrypoint.sh`](entrypoint.sh) before any service starts. It `reject`s
+  (fails fast, not a multi-second timeout per blocked destination) every
+  RFC1918 / loopback / link-local / ULA / CGNAT / documentation / benchmark /
+  6to4 / Teredo / NAT64 / multicast / reserved destination, v4 and v6. The
+  cloud metadata address `169.254.169.254` is inside `169.254.0.0/16`.
+  Loopback (`127.0.0.0/8`) is **not** blanket-allowed: Chromium and tinyproxy
+  run as the unprivileged `airlock` user and handle user-supplied URLs, so if
+  they could reach `127.0.0.1` freely, a bookmark or `<img src>` pointed at
+  `http://127.0.0.1:9221/json/version` would reach this container's own
+  unauthenticated DevTools endpoint. Only Docker's DNS resolver
+  (`127.0.0.11`), nginx's own uid (the nginx → Chromium hop), and root (this
+  entrypoint, the `HEALTHCHECK`) may use loopback - see the comment in
+  [`egress.nft`](egress.nft).
 
 `entrypoint.sh` runs all three services and exits (bringing the container
 down for Docker to restart) if any of them stops.
@@ -117,8 +134,19 @@ Not yet wired into `scripts/deploy`. To roll out:
    "-e BLOT_AIRLOCK_PROXY_URL=http://blot-airlock:8888",
    ```
 
-   (`--network` replaces the default bridge; the published `-p` port mapping
-   still works.)
+   This is the one step here that touches running production containers, and
+   it's more than the one-liner it looks like: moving a container off the
+   default `bridge` network onto `blotnet` also moves its gateway - the host
+   stops being reachable at `172.17.0.1` and becomes `blotnet`'s gateway
+   address instead. `config/index.js` reads `BLOT_REDIS_HOST` (default
+   `127.0.0.1`) and `BLOT_REVERSE_PROXY_URLS` from `ENV_FILE_ON_SERVER`, so
+   whether this is a no-op depends on how those are set on the live hosts -
+   check both for a hardcoded bridge-gateway address **before** switching
+   networks, and roll one container at a time given blue/green/yellow is
+   already the deploy shape.
+
+   (The published `-p` port mapping for the app's own HTTP port still works
+   after the network change.)
 
 4. **Harden the instance metadata service** while you're here — defence in
    depth for any other fetch in the app:
@@ -127,6 +155,29 @@ Not yet wired into `scripts/deploy`. To roll out:
    aws ec2 modify-instance-metadata-options --instance-id i-xxxx \
      --http-tokens required --http-put-response-hop-limit 1 --http-endpoint enabled
    ```
+
+## Known sinks not covered
+
+Besides [`app/templates/screenshots.js`](../../app/templates/screenshots.js)
+(template-gallery previews - **no** user input, its URLs are built entirely
+from `config.host`; deliberately left on a locally-launched Chromium, don't
+set `BLOT_AIRLOCK_BROWSER_URL` for that job), two more places take a
+user-controlled hostname and fetch it from the app container, not routed
+through `airlock`:
+
+* [`app/dashboard/site/domain/verify.js`](../../app/dashboard/site/domain/verify.js)
+  — a hostname the user typed into the dashboard, `fetch("http://" + hostname + "/verify/domain-setup")`.
+* [`app/documentation/featured/verifySiteIsOnline.js`](../../app/documentation/featured/verifySiteIsOnline.js)
+  — same shape, `https://<host>/verify/domain-setup`.
+
+Both are **blind**: the response body is compared against the blog's handle,
+never echoed back to the user, so they're not a read primitive the way
+`linkScreenshot` and `transformer/download` are. They can still reach an
+internal address from a user-supplied hostname, though, so routing them
+through `airlock`'s proxy is worth doing - just not done in this PR. Treat
+this list as "known and accepted for now," not exhaustive; grep for
+user-controlled `fetch`/`request` calls in `app/build` and `app/dashboard`
+before relying on it.
 
 ## Verifying
 
@@ -138,11 +189,17 @@ docker exec blot-airlock sh -c 'curl -m3 -sS http://10.0.0.1/       ; echo exit=
 docker exec blot-airlock sh -c 'curl -m5 -sS -o /dev/null -w "%{http_code}\n" https://example.com'
 # the proxy path works end to end
 docker exec blot-airlock sh -c 'curl -m5 -sS -x http://127.0.0.1:8888 -o /dev/null -w "%{http_code}\n" https://example.com'
+# the container's own DevTools endpoint is NOT reachable through the proxy
+# (this is the loopback confinement above - it must time out, not 200)
+docker exec blot-airlock sh -c 'curl -m3 -sS -x http://127.0.0.1:8888 http://127.0.0.1:9221/json/version ; echo exit=$?'
 ```
 
 The Jasmine spec [`app/build/plugins/linkScreenshot/tests.js`](../../app/build/plugins/linkScreenshot/tests.js)
-covers the app-side URL rejection (protocol allow-list, credentials) that sits
-in front of `airlock` as cheap defence in depth.
+stubs `helper/screenshot` and asserts, per URL, whether it was called - so it
+pins the actual boundary between refused and allowed (including that the
+metadata address is deliberately *not* refused at that layer), not just "the
+HTML wasn't rewritten," which a plugin that rejected everything would also
+satisfy.
 
 ## Limitations
 
@@ -161,3 +218,15 @@ in front of `airlock` as cheap defence in depth.
 * `app/templates/screenshots.js` (the template-gallery build tool) has **no**
   user input and is left on a locally-launched Chromium; don't set
   `BLOT_AIRLOCK_BROWSER_URL` for that job.
+* **Chromium/Puppeteer version drift.** `package.json` pins `puppeteer`;
+  `alpine:3.20`'s `chromium` apk floats with the base image and is a
+  different release train. The Dockerfile records the version it shipped
+  with in `/etc/airlock/chromium-version` (also logged at container start)
+  precisely so a drift shows up there before it shows up as bookmark
+  screenshots silently failing in production after an image rebuild.
+* In production, `config/index.js` only **warns** (`console.warn`, on
+  startup) if `BLOT_AIRLOCK_BROWSER_URL` / `BLOT_AIRLOCK_PROXY_URL` are unset
+  - it does not refuse to start. A hard failure was rejected on purpose: the
+  production deploy wiring above hasn't landed yet, so a startup crash here
+  would just take every app container down. Once the sidecar + env vars are
+  actually deployed, consider tightening this to fail closed.

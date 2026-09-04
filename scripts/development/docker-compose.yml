@@ -18,7 +18,7 @@ services:
       toxiproxy:
         condition: service_started
       airlock:
-        condition: service_started
+        condition: service_healthy
     env_file:
       - ../../.env
     environment:
@@ -75,6 +75,10 @@ services:
     build:
       context: ../../config/airlock
       dockerfile: Dockerfile
+    # entrypoint.sh exits non-zero (fail closed) if any of its services go
+    # down, relying on the restart policy to bring it back - matches
+    # --restart unless-stopped in the production docker run (see README.md).
+    restart: unless-stopped
     # Needed so the entrypoint can install the nftables egress filter.
     cap_add:
       - NET_ADMIN
