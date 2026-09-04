@@ -1,7 +1,32 @@
+# Screenshots the template gallery previews and commits the images.
+#
+# Nearly all of the wall-clock time used to go on rebuilding the demo blogs the
+# previews are rendered from, so this workflow:
+#   - caches the built demo blogs (data/blogs, data/static, data/redis) and
+#     re-uses them, leaving the folder build to sync only what changed
+#   - builds only the demo folders needed by the templates being screenshotted
+#   - takes screenshots several at a time instead of one every two seconds
+#
+# Caches are scoped per branch, but every branch can read the caches saved by
+# master. Running this workflow on master once therefore warms the cache for
+# every other branch.
 name: Screenshots
 
 on:
   workflow_dispatch:
+    inputs:
+      templates:
+        description: 'Templates to screenshot, comma-separated (e.g. "album,blog"). Blank screenshots every template.'
+        required: false
+        default: ""
+      concurrency:
+        description: "How many screenshots to take at once."
+        required: false
+        default: "4"
+      rebuild_demo_blogs:
+        description: "Ignore the cached demo blogs and rebuild them from scratch."
+        type: boolean
+        default: false
 
 jobs:
   test:
@@ -10,8 +35,15 @@ jobs:
     strategy:
       matrix:
         node-version: [21.7.3]
-        pandoc-version: [3.1.1]
-        redis-version: [6.2.6]
+        # Matches the version installed in the Dockerfile. The macOS build must
+        # be arm64: the runners are Apple silicon and an x86_64 pandoc would be
+        # translated by Rosetta on every conversion, which the folder build does
+        # thousands of.
+        pandoc-version: [3.6.1]
+
+    env:
+      BLOT_SCREENSHOT_CONCURRENCY: ${{ inputs.concurrency }}
+      TEMPLATES: ${{ inputs.templates }}
 
     steps:
       - name: Checkout code
@@ -24,7 +56,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: ./package.json
 
       - name: Cache Pandoc
@@ -32,38 +64,58 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/pandoc
-          key: pandoc-${{ matrix.pandoc-version }}-macos
+          key: pandoc-${{ matrix.pandoc-version }}-arm64-macos
 
-      - name: Set up Pandoc on macos
+      - name: Set up Pandoc
         run: |
-          if [ ! -f "data/pandoc/pandoc-${{ matrix.pandoc-version }}/bin/pandoc" ]; then
+          # The archive unpacks to pandoc-<version>-arm64/
+          PANDOC_DIR="$(pwd)/data/pandoc/pandoc-${{ matrix.pandoc-version }}-arm64"
+          if [ ! -x "$PANDOC_DIR/bin/pandoc" ]; then
             mkdir -p data/pandoc
             cd data/pandoc
-            wget https://github.com/jgm/pandoc/releases/download/${{ matrix.pandoc-version }}/pandoc-${{ matrix.pandoc-version }}-macOS.zip -O pandoc.zip
-            unzip pandoc.zip
+            curl -fsSL -o pandoc.zip \
+              https://github.com/jgm/pandoc/releases/download/${{ matrix.pandoc-version }}/pandoc-${{ matrix.pandoc-version }}-arm64-macOS.zip
+            unzip -q -o pandoc.zip
+            rm pandoc.zip
             cd ../..
           fi
-          export BLOT_PANDOC_PATH=$(pwd)/data/pandoc/pandoc-${{ matrix.pandoc-version }}/bin/pandoc
-          echo "BLOT_PANDOC_PATH=$(pwd)/data/pandoc/pandoc-${{ matrix.pandoc-version }}/bin/pandoc" >> $GITHUB_ENV
-          $BLOT_PANDOC_PATH --version
+          echo "BLOT_PANDOC_PATH=$PANDOC_DIR/bin/pandoc" >> $GITHUB_ENV
+          "$PANDOC_DIR/bin/pandoc" --version
+
+      # node_modules rather than just the npm download cache: there is no
+      # package-lock.json (see the Dockerfile) so `npm install` re-resolves and
+      # rebuilds sharp every run, and puppeteer re-downloads Chrome.
+      - name: Cache Node modules and the Puppeteer browser
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/puppeteer
+          key: node-modules-${{ runner.os }}-${{ runner.arch }}-${{ matrix.node-version }}-${{ hashFiles('package.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm install
 
       - name: Cache Homebrew packages
-        id: cache-homebrew
         uses: actions/cache@v4
         with:
           path: |
             ~/Library/Caches/Homebrew
             /opt/homebrew/var/homebrew/locks
-          key: homebrew-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+          key: homebrew-${{ runner.os }}-${{ hashFiles('.github/workflows/screenshots.yml') }}
           restore-keys: |
             homebrew-${{ runner.os }}-
 
+      - name: Install dnsmasq, Redis and Nginx
+        run: brew install dnsmasq redis nginx
+
       - name: Use dnsmasq to resolve blot.development
         run: |
-          brew install kubernetes-cli dnsmasq
           export LOCAL_CUSTOM_TLD="blot.development"
           echo "address=/.${LOCAL_CUSTOM_TLD}/127.0.0.1" >> $(brew --prefix)/etc/dnsmasq.conf
-          sudo mkdir /etc/resolver/
+          sudo mkdir -p /etc/resolver/
           cat <<EOF | sudo tee /etc/resolver/${LOCAL_CUSTOM_TLD}
           nameserver 127.0.0.1
           EOF
@@ -71,14 +123,8 @@ jobs:
           sudo killall -HUP mDNSResponder
           scutil --dns
 
-      - name: Set up Redis
-        run: |
-          brew install redis
-          brew services start redis
-
       - name: Configure and start Nginx reverse proxy
         run: |
-          brew install nginx
           sudo tee /opt/homebrew/etc/nginx/nginx.conf <<EOF
           events { }
           http {
@@ -94,8 +140,35 @@ jobs:
           EOF
           sudo nginx
 
-      - name: Install Dependencies
-        run: npm install
+      # The demo blogs are expensive to build: every file is converted with
+      # pandoc, every image resized, and the result written to Redis. Their
+      # blog IDs are random, so the folders, the resized images and the Redis
+      # database have to be restored together or not at all.
+      #
+      # The key covers the demo folders and the code that turns them into
+      # entries. It deliberately excludes app/templates/source, which is what
+      # usually changes when this workflow is run and which the templates build
+      # picks up on every run anyway. There are no restore-keys: a partial hit
+      # would restore entries built by different code without rebuilding them,
+      # which would silently screenshot stale pages.
+      - name: Restore demo blogs
+        id: cache-demo-blogs
+        if: ${{ !inputs.rebuild_demo_blogs }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/blogs
+            data/static
+            data/cdn
+            data/redis
+          key: demo-blogs-v1-pandoc${{ matrix.pandoc-version }}-${{ hashFiles('app/templates/folders/**', 'app/build/**', 'app/sync/**', 'app/models/**', 'package.json') }}
+
+      - name: Start Redis
+        run: |
+          mkdir -p data/redis
+          redis-server --daemonize yes --dir "$(pwd)/data/redis" --dbfilename dump.rdb
+          until redis-cli ping 2>/dev/null | grep -q PONG; do sleep 0.2; done
+          echo "Redis holds $(redis-cli dbsize | tr -d '[:space:]') keys"
 
       - name: Take screenshots
         env:
@@ -105,13 +178,44 @@ jobs:
         run: |
           export BLOT_DIRECTORY=$(pwd)
           export NODE_PATH=$(pwd)/app
-          export BLOT_CACHE_DIRECTORY=$(pwd)/cache          
+
+          echo "Building templates"
           node app/templates/index.js --no-watch
+
           node app/index.js &
-          echo "Building folders"
-          node app/templates/folders/index.js
+
+          echo "Building demo folders"
+          node app/templates/folders/index.js --for-templates="$TEMPLATES"
+
+          # The folder build used to take minutes, which was long enough for
+          # the server to come up on its own. A cache hit skips almost all of
+          # that work, so wait explicitly.
+          echo "Waiting for the server to listen"
+          for i in $(seq 1 60); do
+            curl -fsS -o /dev/null http://localhost:8080/health && break
+            sleep 1
+          done
+          curl -fsS -o /dev/null http://localhost:8080/health
+
           echo "Taking screenshots"
-          node app/templates/screenshots.js
+          node app/templates/screenshots.js "$TEMPLATES"
+
+          # Flush the Redis database to disk so it can be cached alongside the
+          # folders and resized images it describes.
+          redis-cli save
+
+      # Only a full run has built every demo folder, so only a full run may
+      # write the cache the next run will trust.
+      - name: Save demo blogs
+        if: ${{ success() && inputs.templates == '' && steps.cache-demo-blogs.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/blogs
+            data/static
+            data/cdn
+            data/redis
+          key: demo-blogs-v1-pandoc${{ matrix.pandoc-version }}-${{ hashFiles('app/templates/folders/**', 'app/build/**', 'app/sync/**', 'app/models/**', 'package.json') }}
 
       - name: Commit changes
         run: |
