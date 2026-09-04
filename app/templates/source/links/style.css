@@ -93,8 +93,8 @@ body.entry-container {
   white-space: nowrap;
   text-rendering: optimizeLegibility;
   font-family: var(--heading-font-stack, var(--font-stack));
-  font-size: var(--heading-font-size);
-  line-height: var(--heading-line-height);
+  font-size: var(--heading-font-size, 1em);
+  line-height: var(--heading-line-height, var(--line-height));
   font-weight: 600
 }
 
@@ -735,6 +735,7 @@ label {
   flex-basis: 25%;
   flex-grow: 1;
   align-items: center;
+  /* Defaults to flex-end; navigation_alignment overrides it below */
   justify-content: flex-end;
   {{#is.navigation_alignment.left}}
   justify-content: flex-start;
@@ -742,9 +743,6 @@ label {
   {{#is.navigation_alignment.center}}
   justify-content: center;
   {{/is.navigation_alignment.center}}
-  {{#is.navigation_alignment.right}}
-  justify-content: flex-end;
-  {{/is.navigation_alignment.right}}
 }
 
 .nav a {
