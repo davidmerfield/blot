@@ -92,15 +92,13 @@ RUN npm install --no-package-lock && npm cache clean --force
 # Configure git so the git client doesn't complain
 RUN git config --global --add safe.directory /usr/src/app && git config --global user.email "you@example.com" && git config --global user.name "Your Name"
 
-# OpenResty is spawned by config/openresty (cacher) tests via
-# `openresty -c ...`. Alpine's community package installs the binary as
-# /usr/lib/nginx/bin/openresty (a symlink to /usr/sbin/nginx). Link it to
-# the paths the test runner already looks for. procps provides `ps aux`
-# used when restarting OpenResty between specs.
-RUN apk add --no-cache openresty sudo procps bash \
- && mkdir -p /usr/local/openresty/bin /var/run/nginx /var/log/nginx /var/tmp/nginx \
- && ln -sf /usr/lib/nginx/bin/openresty /usr/local/openresty/bin/openresty \
- && ln -sf /usr/lib/nginx/bin/openresty /usr/bin/openresty
+# OpenResty is spawned by config/openresty (cacher) tests via `openresty -c ...`.
+# Alpine's community package installs the binary at /usr/lib/nginx/bin/openresty,
+# which start-openresty.sh already probes for. procps provides the `ps` used when
+# restarting OpenResty between specs; the /var dirs are nginx's compiled-in
+# defaults for the pid file and logs.
+RUN apk add --no-cache openresty sudo procps \
+ && mkdir -p /var/run/nginx /var/log/nginx /var/tmp/nginx
 
 ## Stage 3 (copy in source)
 # This gets our source code into builder for use in next two stages

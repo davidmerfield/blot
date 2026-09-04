@@ -8,8 +8,17 @@ const fs = require("fs-extra");
 const { cache_directory } = require("../../..");
 
 function openrestyIdentity() {
-  const info = os.userInfo();
-  const username = process.env.BLOT_OPENRESTY_TEST_USER || info.username;
+  // os.userInfo() throws when the running uid has no /etc/passwd entry (some
+  // sandboxed CI/agent environments), so only call it when the env var is
+  // absent and fall back to "root" if it still blows up.
+  let username = process.env.BLOT_OPENRESTY_TEST_USER;
+  if (!username) {
+    try {
+      username = os.userInfo().username;
+    } catch (e) {
+      username = "root";
+    }
+  }
   // nginx `user` must exist. Root in Docker/CI uses group root; the original
   // macOS default is staff.
   const group =

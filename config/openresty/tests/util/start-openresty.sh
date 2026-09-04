@@ -23,9 +23,9 @@ fi
 
 echo "Starting openresty with $OPENRESTY -c $CONFIG"
 
-if [ "$(id -u)" -eq 0 ]; then
-  "$OPENRESTY" -c "$CONFIG"
-elif command -v sudo >/dev/null 2>&1; then
+# nginx's `user` directive is only honoured when the master runs as root, so
+# escalate with sudo when we aren't root already and sudo is available.
+if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
   sudo "$OPENRESTY" -c "$CONFIG"
 else
   "$OPENRESTY" -c "$CONFIG"

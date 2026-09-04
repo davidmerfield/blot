@@ -318,8 +318,6 @@ jobs:
             -e BLOT_STRIPE_KEY=$BLOT_STRIPE_KEY \
             -e BLOT_STRIPE_SECRET=$BLOT_STRIPE_SECRET \
             -e BLOT_STRIPE_PRODUCT=$BLOT_STRIPE_PRODUCT \
-            -e BLOT_OPENRESTY_TEST_USER=root \
-            -e BLOT_OPENRESTY_TEST_GROUP=root \
             -v ${{ github.workspace }}/app:/usr/src/app/app \
             -v ${{ github.workspace }}/scripts:/usr/src/app/scripts \
             -v ${{ github.workspace }}/config:/usr/src/app/config \
