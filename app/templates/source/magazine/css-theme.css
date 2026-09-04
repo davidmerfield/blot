@@ -304,7 +304,7 @@ blockquote, ol, ul {
   padding-left:4rem;
 }
 blockquote {
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}},.4);
+  color: rgba({{#rgb}}{{text_color}}{{/rgb}},.6);
 }
   
 .tracked-tight {letter-spacing:-0.01em}
@@ -372,7 +372,7 @@ h1 em {font-style:normal}
 .lh-title.f2, .lh-title.f1 {line-height:1}
 
 figure {margin:3rem 0;}
-figcaption, .caption {font-size:0.9rem;color:rgba({{#rgb}}{{text_color}}{{/rgb}},.4);margin:0rem 0 0;}
+figcaption, .caption {font-size:0.9rem;color:rgba({{#rgb}}{{text_color}}{{/rgb}},.6);margin:0rem 0 0;}
 figure cite, figure cite a {font-size:0.8rem;color:rgba({{#rgb}}{{text_color}}{{/rgb}},.4);font-style:normal;border:none!important;}
 
 .caption {display: block;margin-bottom: 3rem}
