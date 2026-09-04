@@ -392,6 +392,8 @@ form input:focus,
 .entry h2,
 .entry h3,
 .entry h4,
+.entry h5,
+.entry h6,
 .archives h1,
 .tags h1,
 .tags h3,
@@ -419,6 +421,14 @@ form input:focus,
 
 .entry h4 {
   font-size: var(--heading-font-size, 1em);
+}
+
+.entry h5 {
+  font-size: calc(0.83 * var(--heading-font-size, 1em));
+}
+
+.entry h6 {
+  font-size: calc(0.67 * var(--heading-font-size, 1em));
 }
 
 .entry h1 {
