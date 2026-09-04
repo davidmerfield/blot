@@ -189,13 +189,15 @@ jobs:
 
           # The folder build used to take minutes, which was long enough for
           # the server to come up on its own. A cache hit skips almost all of
-          # that work, so wait explicitly.
+          # that work, so wait explicitly rather than screenshot a server that
+          # is not listening yet. The Host header picks the same vhost the
+          # previews are served from.
           echo "Waiting for the server to listen"
           for i in $(seq 1 60); do
-            curl -fsS -o /dev/null http://localhost:8080/health && break
+            curl -fsS -o /dev/null -H "Host: $BLOT_HOST" http://localhost:8080/health && break
             sleep 1
           done
-          curl -fsS -o /dev/null http://localhost:8080/health
+          curl -fsS -o /dev/null -H "Host: $BLOT_HOST" http://localhost:8080/health
 
           echo "Taking screenshots"
           node app/templates/screenshots.js "$TEMPLATES"
