@@ -2,7 +2,7 @@
 	"name": "Documentation",
 	"locals": {
 		"page_size": 100,
-		"page_size_range": [1, 200],
+		"page_size_range": [1, 100],
 		"sort_by": "id",
 		"spacing": 1,
 		"spacing_range": [0, 4],
