@@ -23,6 +23,7 @@
 <div class="pattern-demo pattern-demo--[[slug]]">
 [[& demoHTML]]
 </div>
+[[& demoScriptTag]]
 
 <h2>When to use</h2>
 
@@ -35,6 +36,11 @@
 <h2>CSS</h2>
 
 <pre data-file="[[cssFile]]"><code class="hljs">[[& cssHighlighted]]</code></pre>
+
+[[#hasJS]]
+<h2>JavaScript</h2>
+<pre data-file="[[jsFile]]"><code class="hljs">[[& jsHighlighted]]</code></pre>
+[[/hasJS]]
 
 [[#hasMarkdown]]
 <h2>Markdown</h2>

@@ -78,5 +78,5 @@ Comma-separated lists use \`{{^first}}, {{/first}}\` (or \`{{^last}}, {{/last}}\
   accessibility: `- Wrap the list in \`<nav aria-label="Tags">\` so it is a distinct navigation landmark, not a stray pile of links.
 - The link text must be the tag name. Do not replace it with a generic “Tag” label.
 - If you add a heading (“Tags”), associate it with the list rather than leaving an empty heading when \`tags.length\` is 0 — the \`{{#tags.length}}\` guard handles that.`,
-  related: ["task-lists", "details-disclosure"],
+  related: ["backlinks", "archives-chronological", "task-lists"],
 };

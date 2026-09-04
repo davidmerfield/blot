@@ -2,10 +2,21 @@ const highlight = require("highlight.js");
 const { marked } = require("marked");
 
 const PATTERNS = [
+  require("./site-menu-bar"),
   require("./hamburger-navigation"),
+  require("./pagination"),
+  require("./adjacent-posts"),
+  require("./archives-by-month"),
+  require("./archives-chronological"),
+  require("./search-form"),
   require("./tag-links"),
+  require("./backlinks"),
   require("./details-disclosure"),
   require("./task-lists"),
+  require("./code-copy-button"),
+  require("./heading-permalinks"),
+  require("./relative-dates"),
+  require("./keyboard-adjacent"),
 ];
 
 const REQUIRED_FIELDS = [
@@ -93,6 +104,10 @@ function toAgentMarkdown(pattern) {
     ? `## Markdown authors write\n\nSuggested file: \`${pattern.markdownFile || "post.md"}\`\n\n\`\`\`md\n${pattern.markdown.trim()}\n\`\`\`\n`
     : "";
 
+  const jsBlock = pattern.js
+    ? `## JavaScript\n\nSuggested file: \`${pattern.jsFile || "script.js"}\`\n\n\`\`\`js\n${pattern.js.trim()}\n\`\`\`\n`
+    : "";
+
   return `# Blot template design pattern: ${pattern.title}
 
 Use this pattern when working on a Blot template. Blot templates are Mustache. Do not add SCSS, subdirectories for views, or JavaScript unless the pattern explicitly requires it.
@@ -119,7 +134,7 @@ Suggested file: \`${pattern.cssFile || "style.css"}\`
 ${pattern.css.trim()}
 \`\`\`
 
-${markdownBlock}## Implementation guidance
+${jsBlock}${markdownBlock}## Implementation guidance
 
 ${pattern.guidance}
 
@@ -147,7 +162,7 @@ function toCatalogMarkdown() {
 
   return `# Blot template design patterns
 
-This library is for agents and people editing Blot templates. Each pattern is copy-pasteable HTML/CSS with guidance. Constraints: Mustache only, no SCSS, no view subdirectories, prefer no JavaScript.
+This library is for agents and people editing Blot templates. Each pattern is copy-pasteable HTML/CSS with guidance, plus JavaScript when the feature needs it. Constraints: Mustache only, no SCSS, no view subdirectories, prefer no JavaScript unless the pattern includes a script.
 
 ${index}
 
@@ -167,9 +182,11 @@ function toJSON(pattern) {
     markdownURL: "/developers/patterns/" + pattern.slug + ".md",
     htmlFile: pattern.htmlFile || null,
     cssFile: pattern.cssFile || null,
+    jsFile: pattern.js ? pattern.jsFile || "script.js" : null,
     markdownFile: pattern.markdownFile || null,
     html: pattern.html.trim(),
     css: pattern.css.trim(),
+    js: pattern.js ? pattern.js.trim() : null,
     markdown: pattern.markdown ? pattern.markdown.trim() : null,
     whenToUse: pattern.whenToUse,
     guidance: pattern.guidance,
@@ -179,16 +196,33 @@ function toJSON(pattern) {
   };
 }
 
+function wrapDemoJS(slug, demoJS) {
+  if (!demoJS || !String(demoJS).trim()) return "";
+  const selector = JSON.stringify(".pattern-demo--" + slug);
+  return (
+    "<script>\n(function (root) {\n  if (!root) return;\n" +
+    String(demoJS).trim() +
+    "\n})(document.querySelector(" +
+    selector +
+    "));\n</script>"
+  );
+}
+
 function present(pattern) {
   const htmlLang = pattern.html.includes("{{") ? "handlebars" : "html";
+  const js = pattern.js ? pattern.js.trim() : "";
   return {
     ...pattern,
     html: pattern.html.trim(),
     css: pattern.css.trim(),
+    js,
     markdown: pattern.markdown ? pattern.markdown.trim() : "",
     hasMarkdown: Boolean(pattern.markdown),
+    hasJS: Boolean(js),
+    jsFile: pattern.jsFile || "script.js",
     htmlHighlighted: highlightCode(pattern.html.trim(), htmlLang),
     cssHighlighted: highlightCode(pattern.css.trim(), "css"),
+    jsHighlighted: js ? highlightCode(js, "javascript") : "",
     markdownHighlighted: pattern.markdown
       ? highlightCode(pattern.markdown.trim(), "markdown")
       : "",
@@ -213,6 +247,7 @@ function present(pattern) {
       "<style>\n" +
       scopeCSS(pattern.css.trim(), ".pattern-demo--" + pattern.slug) +
       "\n</style>",
+    demoScriptTag: wrapDemoJS(pattern.slug, pattern.demoJS),
   };
 }
 
@@ -252,4 +287,5 @@ module.exports = {
   validate,
   highlightCode,
   scopeCSS,
+  wrapDemoJS,
 };

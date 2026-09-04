@@ -54,6 +54,7 @@ button.copy.copy-for-agent.copied {
 }
 
 .pattern-demo {
+  position: relative;
   border: 1px solid var(--border-color);
   border-radius: var(--large-border-radius);
   background: var(--background-color);
@@ -73,6 +74,65 @@ button.copy.copy-for-agent.copied {
 
 .pattern-demo--tag-links,
 .pattern-demo--details-disclosure,
-.pattern-demo--task-lists {
+.pattern-demo--task-lists,
+.pattern-demo--site-menu-bar,
+.pattern-demo--pagination,
+.pattern-demo--search-form,
+.pattern-demo--adjacent-posts,
+.pattern-demo--backlinks,
+.pattern-demo--relative-dates {
   max-width: 24rem;
+}
+
+.pattern-demo--archives-by-month,
+.pattern-demo--archives-chronological,
+.pattern-demo--code-copy-button,
+.pattern-demo--heading-permalinks,
+.pattern-demo--keyboard-adjacent {
+  max-width: 28rem;
+}
+
+.pattern-demo--keyboard-adjacent:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.pattern-demo--keyboard-adjacent .keyboard-status {
+  margin: 0 0 0.75em;
+  font-size: 0.875em;
+  opacity: 0.7;
+}
+
+.pattern-demo--keyboard-adjacent label {
+  display: block;
+  margin-top: 0.75em;
+  font-size: 0.875em;
+}
+
+.pattern-demo--keyboard-adjacent input {
+  margin-left: 0.5em;
+  font: inherit;
+}
+
+.pattern-demo--code-copy-button pre,
+.pattern-demo--heading-permalinks .entry {
+  margin: 0;
+}
+
+.pattern-demo--code-copy-button pre {
+  padding: 1em 2.75em 1em 1em;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 6px;
+  overflow: auto;
+}
+
+.pattern-demo--heading-permalinks h2,
+.pattern-demo--heading-permalinks h3 {
+  margin: 0 0 0.4em;
+  font-size: 1.1em;
+}
+
+.pattern-demo--heading-permalinks h3 {
+  font-size: 1em;
+  margin-top: 1em;
 }

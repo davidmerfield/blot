@@ -218,5 +218,5 @@ module.exports = {
 - \`aria-controls\` points at the \`<nav>\` id.
 - Menu links must remain in the DOM (do not \`display: none\` them on small screens if you can clip them instead) so they stay in the tab order once the menu is open.
 - Do not rely on hover. The control must work with click, tap, and Enter/Space on the focused checkbox.`,
-  related: ["details-disclosure"],
+  related: ["site-menu-bar", "details-disclosure"],
 };

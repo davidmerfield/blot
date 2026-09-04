@@ -4,7 +4,7 @@
 
 <p>You can help AI assistants work more effectively on your Blot template by adding an <code>AGENTS.md</code> file to your template directory. This file describes the template’s structure, constraints, and conventions to guide the assistant.</p>
 
-<p>When you want the assistant to implement a specific piece of UI — a collapsing menu, tag links, a task list — paste a pattern from the <a href="/developers/patterns">design pattern library</a> into the chat. Each pattern page has a <strong>Copy for agent</strong> button. You can also point the assistant at the Markdown catalog:</p>
+<p>When you want the assistant to implement a specific piece of UI — a menu, pagination, search, copy buttons, a task list — paste a pattern from the <a href="/developers/patterns">design pattern library</a> into the chat. Each pattern page has a <strong>Copy for agent</strong> button. You can also point the assistant at the Markdown catalog:</p>
 
 <pre class="text"><code>https://blot.im/developers/patterns.md</code></pre>
 
@@ -59,7 +59,7 @@ If you are unsure which view maps to which URL, open `package.json` and check `v
 
 - Keep changes minimal and backwards-compatible.
 - Prefer semantic HTML and accessible patterns.
-- Reuse patterns from `/developers/patterns` (hamburger navigation, tag links, details, task lists) instead of inventing new UI.
+- Reuse patterns from `/developers/patterns` (site menu, pagination, search, copy buttons, and the rest of the library) instead of inventing new UI.
 - Keep client JS optional; degrade gracefully if JS is disabled.
 - When adding a new view or route, update `package.json` and link it from the template's navigation where appropriate.
 </code></pre>
