@@ -391,7 +391,10 @@ form input:focus,
 .entry h3,
 .entry h4,
 .archives h1,
-.tags h1 {
+.tags h1,
+.tags h3,
+.search-results h1,
+.error-page h1 {
   font-family: var(--heading-font-stack, var(--font-stack));
 }
 
@@ -720,6 +723,16 @@ table a {
   display: flex;
   color: var(--medium-text-color);
 }
+
+{{^show_tags}}
+{{#infinite_scroll}}
+/* Nothing left to show in the toolbar: no tags bar and no pagination
+   controls (those only render when infinite scroll is off). */
+.toolbar {
+  display: none;
+}
+{{/infinite_scroll}}
+{{/show_tags}}
 
 /* used by infinite scroll */
 .next-page {
