@@ -31,6 +31,7 @@
 				{{/infinite_scroll}}
 			</main><!-- #main -->
 			{{#infinite_scroll}}
+			{{#pagination.next}}
 			<script type="text/javascript">
 				var init = {{pagination.next}};
 
@@ -49,6 +50,7 @@ jQuery(window).on("scroll", function() {
 					});
 				}
 </script>
+			{{/pagination.next}}
 			{{/infinite_scroll}}
 		</div><!-- #primary -->
 	</div><!-- #content -->
