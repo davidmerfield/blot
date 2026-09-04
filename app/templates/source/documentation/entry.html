@@ -37,11 +37,13 @@
 </div>
 
 
+{{#entry}}
 {{^hide_dates}}
-{{#entry.date}}
+{{#date}}
 <p>Updated on {{#formatDate}}{{date_display}}{{/formatDate}}</p>
-{{/entry.date}}
+{{/date}}
 {{/hide_dates}}
+{{/entry}}
 </div>
 
 {{> footer}}
