@@ -157,13 +157,14 @@ module.exports = function processSubscriptionLifecycle(callback) {
           singular: cancelledDueForDeletion.length === 1,
         },
         function (emailErr) {
+          // Log and swallow: the lifecycle work already succeeded by this
+          // point, so a transient email failure shouldn't fail the job.
           if (emailErr) {
             console.log(
               clfdate(),
               "Subscription lifecycle job failed to send cancelled deletion summary",
               emailErr
             );
-            return callback(emailErr);
           }
 
           callback();
