@@ -19,7 +19,6 @@
     },
     "favicon_url": "",
     "header_image_url": "",
-    "sticky_navigation": false,
     "infinite_scroll": true,
     "show_related_posts": true,
     "syntax_highlighter": {

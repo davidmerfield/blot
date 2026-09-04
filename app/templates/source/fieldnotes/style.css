@@ -3049,10 +3049,6 @@ a:active {
 
 .site-header {
 	background: var(--header-background-color);
-	{{#sticky_navigation}}
-	position: sticky;
-	top: 0;
-	{{/sticky_navigation}}
 }
 
 {{#header_image_url}}
