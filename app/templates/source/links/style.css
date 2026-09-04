@@ -30,6 +30,8 @@ on the services page of the dashboard */
   {{/heading_font}}
   {{#syntax_highlighter_font}}
   --code-font-stack: {{{stack}}};
+  --code-font-size: {{font_size}}px;
+  --code-line-height: {{line_height}};
   {{/syntax_highlighter_font}}
   --font-size-small: 0.875em;
   --border-width: 0.0625em;
@@ -399,8 +401,8 @@ form input:focus,
 }
 
 .entry h1 {
-  font-size: 2em;
-  line-height: 1.2;
+  font-size: calc(2 * var(--heading-font-size, 1em));
+  line-height: var(--heading-line-height, 1.2);
   margin-top: var(--space-2);
   margin-bottom: 1em;
 }
@@ -463,16 +465,18 @@ form input:focus,
 }
 
 .entry h2 {
-  font-size: 1.5em;
+  font-size: calc(1.5 * var(--heading-font-size, 1em));
   text-rendering: optimizelegibility;
   font-weight: bold;
   margin: .75em 0;
-  line-height: 1.6em;
+  line-height: var(--heading-line-height, 1.2);
 }
 
 .entry pre,
 .entry code {
   font-family: var(--code-font-stack, monospace);
+  font-size: var(--code-font-size, 1em);
+  line-height: var(--code-line-height, 1.5);
 }
 
 .entry pre {

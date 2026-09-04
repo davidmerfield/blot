@@ -40,7 +40,9 @@
       "id": "stackoverflow-light"
     },
     "syntax_highlighter_font": {
-      "id": "system-mono"
+      "id": "system-mono",
+      "font_size": 16,
+      "line_height": 1.6
     },
     "favicon_url": "",
     "logo_url": "",
