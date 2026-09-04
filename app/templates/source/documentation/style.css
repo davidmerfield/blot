@@ -588,6 +588,27 @@ h3 {
   margin-top: 24px;
 }
 
+h4 {
+  font-size: var(--heading-font-size);
+  font-weight: 550;
+  margin-bottom: 24px;
+  margin-top: 24px;
+}
+
+h5 {
+  font-size: calc(var(--heading-font-size) * 0.875);
+  font-weight: 550;
+  margin-bottom: 24px;
+  margin-top: 24px;
+}
+
+h6 {
+  font-size: calc(var(--heading-font-size) * 0.75);
+  font-weight: 550;
+  margin-bottom: 24px;
+  margin-top: 24px;
+}
+
 b, strong {
   font-weight: 600;
 }
