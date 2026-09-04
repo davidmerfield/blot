@@ -4,13 +4,14 @@ Manages per-blog URL redirect rules. Redirect rules are stored in Redis and eval
 
 ## Role in the application
 
-This module sits in the `app/models` layer alongside other Redis-backed data models (entries, tags, 404s, etc.). It is the sole read/write interface for redirect data. The blog request pipeline calls `check` on every unmatched URL; the dashboard calls `set` and `list` to let blog owners manage their redirect rules.
+This module sits in the `app/models` layer alongside other Redis-backed data models (entries, tags, 404s, etc.). It is the sole read/write interface for redirect data. The blog request pipeline calls `check` on every unmatched URL; the dashboard calls `set`, `list`, and `conflicts` to let blog owners manage their redirect rules and see when a rule will not run.
 
 ## File inventory
 
 | File | Responsibility |
 |---|---|
-| `index.js` | Re-exports the public interface: `check`, `drop`, `get`, `key`, `list`, `set`, `util`. |
+| `index.js` | Re-exports the public interface: `check`, `conflicts`, `drop`, `get`, `key`, `list`, `set`, `util`. |
+| `conflicts.js` | Cheap dashboard lookup: for each exact (non-regex) `from` path, reports whether a post, page, template view, built-in route, or folder file would be served instead. |
 | `key.js` | Generates Redis key strings for this model. |
 | `set.js` | Writes a full replacement set of redirect mappings for a blog, atomically. |
 | `get.js` | Looks up the redirect destination for a single `from` path, resolving regex captures if applicable. |
@@ -72,6 +73,23 @@ Resolution order:
 2. If no direct match, scans the sorted set with `zScan`, testing each member that is identified as a regex pattern against `input`.
 3. Returns `undefined` if no rule matches.
 
+### `conflicts(blog, redirects, callback)`
+
+Annotates redirect rules with a `conflict` object when the `from` path would never be evaluated. Used by the dashboard redirects page.
+
+- `blog` — blog object (`id` and `template` are used)
+- `redirects` — array of `{ from, to, ... }` objects (typically from `list`)
+- `callback` — called with `(err, redirects)` where matching items gain a `conflict` of `{ type, message, ... }`
+
+Checks, in request-pipeline order:
+
+1. A published post or page at that URL (`Entry.getByUrl`).
+2. Built-in routes: `/`, `/search`, `/random`, `/robots.txt`, `/page/:n`, `/tagged/...`.
+3. A template view (`getViewByURL`).
+4. A file in the site folder (`fs.stat` of the path and its lowercase variant).
+
+Regex rules are skipped: they still apply to URLs that do not match existing content. Each exact rule is a handful of Redis lookups and at most a couple of `stat` calls.
+
 ### `list(blogID, callback)`
 
 Returns all redirect rules for the blog in insertion order.
@@ -116,7 +134,9 @@ Exported for use by callers that need regex-awareness outside the standard CRUD 
 
 ### Dashboard
 
-`app/dashboard/site/load/redirects.js` calls `Redirects.list` to populate `res.locals.redirects` for the site settings page.
+`app/dashboard/site/load/redirects.js` calls `Redirects.list` then `Redirects.conflicts` to populate `res.locals.redirects` for the site settings page, including per-rule warnings.
+
+`GET /settings/redirects/conflict?from=` returns `{ conflict }` as JSON so the redirects page can re-check a rule as it is typed.
 
 `app/dashboard/site/save/redirects.js` normalizes form input and calls `Redirects.set` to persist the updated rule list. Normalization ensures bare paths without a leading `/` are prefixed before storage.
 

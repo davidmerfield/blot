@@ -319,6 +319,41 @@ span.file {
   border-right: 1px solid #eeeeec;
 }
 
+#redirects section.has-conflict {
+  border-color: var(--warning-text-color);
+}
+
+#redirects .redirect-conflict {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  color: var(--warning-text-color);
+  cursor: help;
+  border-left: 1px solid #eeeeec;
+  flex-shrink: 0;
+}
+
+#redirects .redirect-conflict[hidden] {
+  display: none;
+}
+
+#redirects .redirect-conflict:hover::after,
+#redirects .redirect-conflict:focus::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  width: 220px;
+  padding: 8px 10px;
+  background: #111;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.35;
+  border-radius: var(--border-radius);
+  z-index: 5;
+  pointer-events: none;
+}
 
 .pageLink {
 line-height: 48px;

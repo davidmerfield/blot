@@ -4,6 +4,7 @@ var load = require("./load");
 var save = require("./save");
 var trace = require("helper/trace");
 var flags = require("./flags");
+var Redirects = require("models/redirects");
 const sse = require("helper/sse")({
   channel: (req) => `sync:status:${req.blog.id}`,
 });
@@ -80,6 +81,19 @@ site.get("/settings/embeds", load.plugins, (req, res) => {
 
 site.get("/settings/services", load.plugins, (req, res) => {
   res.render("dashboard/site/settings/services");
+});
+
+site.get("/settings/redirects/conflict", (req, res, next) => {
+  const from = typeof req.query.from === "string" ? req.query.from : "";
+
+  Redirects.conflicts(req.blog, [{ from }], function (err, redirects) {
+    if (err) return next(err);
+
+    res.set("Cache-Control", "no-store");
+    res.json({
+      conflict: (redirects[0] && redirects[0].conflict) || null,
+    });
+  });
 });
 
 site.get("/settings/redirects", load.redirects, (req, res) => {

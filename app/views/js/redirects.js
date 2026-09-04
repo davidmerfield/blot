@@ -4,6 +4,71 @@ const redirectsContainer = document.getElementById("redirects");
 
 if (redirectsContainer) {
 
+const conflictCheckURL = redirectsContainer.getAttribute("data-conflict-check");
+
+function setConflict(section, conflict) {
+  const warning = section.querySelector(".redirect-conflict");
+  if (!warning) return;
+
+  if (conflict && conflict.message) {
+    warning.hidden = false;
+    warning.setAttribute("data-tooltip", conflict.message);
+    warning.setAttribute("title", conflict.message);
+    warning.setAttribute("aria-label", conflict.message);
+    section.classList.add("has-conflict");
+  } else {
+    warning.hidden = true;
+    warning.removeAttribute("data-tooltip");
+    warning.removeAttribute("title");
+    warning.setAttribute("aria-label", "This redirect may not run");
+    section.classList.remove("has-conflict");
+  }
+}
+
+async function checkFrom(section) {
+  const fromInput = section.querySelector('input[name*=".from"]');
+  if (!fromInput || !conflictCheckURL) return;
+
+  const from = fromInput.value.trim();
+  if (!from) {
+    setConflict(section, null);
+    return;
+  }
+
+  try {
+    const url = new URL(conflictCheckURL, window.location.origin);
+    url.searchParams.set("from", from);
+    const res = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    setConflict(section, data.conflict);
+  } catch (err) {
+    // leave the existing warning in place if the check fails
+  }
+}
+
+function bindConflictCheck(section) {
+  const fromInput = section.querySelector('input[name*=".from"]');
+  if (!fromInput || fromInput.dataset.conflictBound) return;
+  fromInput.dataset.conflictBound = "true";
+
+  let timer;
+  fromInput.addEventListener("input", function () {
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      checkFrom(section);
+    }, 300);
+  });
+  fromInput.addEventListener("blur", function () {
+    clearTimeout(timer);
+    checkFrom(section);
+  });
+}
+
+redirectsContainer.querySelectorAll("section").forEach(bindConflictCheck);
+
 const sortable = new Sortable(sortEl, {
     handle: ".handle",
     ghostClass: "sortable-ghost",
@@ -68,6 +133,8 @@ const sortable = new Sortable(sortEl, {
     });
 
     redirectsContainer.appendChild(newlink);
+    bindConflictCheck(newlink);
+    if (from) checkFrom(newlink);
 
     if (from) {
       newlink.querySelector('input[name*="to"]').focus();
@@ -75,7 +142,6 @@ const sortable = new Sortable(sortEl, {
       newlink.querySelector('input[name*="from"]').focus();
     }
 
-    e.preventDefault();
     return false;
   }
 
