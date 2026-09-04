@@ -2,8 +2,15 @@ const puppeteer = require("puppeteer");
 const { dirname } = require("path");
 const fs = require("fs-extra");
 const Bottleneck = require("bottleneck");
+const config = require("config");
 const retry = require("./retry");
 const clfdate = require("helper/clfdate");
+
+// When set, screenshots run in the shared "airlock" container (config/airlock)
+// instead of a Chromium we launch ourselves: we attach to its DevTools
+// endpoint over the Docker network. The airlock's nftables egress filter is
+// what stops a bookmark link from pointing Chromium at an internal address.
+const REMOTE_BROWSER_URL = config.airlock && config.airlock.browser_url;
 
 const prefix = () => `${clfdate()} Screenshot:`;
 
@@ -51,14 +58,17 @@ async function initialize() {
     browserInitializationPromise = (async () => {
       try {
         if (!browser) {
-          browser = await puppeteer.launch({
-            headless: "new",
-            devtools: false,
-            args: BROWSER_ARGS,
-            ignoreDefaultArgs: ["--disable-extensions"],
-          });
+          browser = REMOTE_BROWSER_URL
+            ? await puppeteer.connect({ browserURL: REMOTE_BROWSER_URL })
+            : await puppeteer.launch({
+                headless: "new",
+                devtools: false,
+                args: BROWSER_ARGS,
+                ignoreDefaultArgs: ["--disable-extensions"],
+              });
           const page = await browser.newPage();
           await page.goto("about:blank");
+          await page.close();
         }
       } catch (error) {
         browserInitializationPromise = null;
@@ -102,7 +112,13 @@ async function cleanup() {
     try {
       const pages = await browser.pages();
       await Promise.all(pages.map(page => closePageWithTimeout(page).catch(() => {})));
-      await browser.close().catch(() => {});
+      // The airlock's Chromium is shared and long-lived - detach from it
+      // rather than killing it. A launched Chromium we own gets closed.
+      if (REMOTE_BROWSER_URL && typeof browser.disconnect === "function") {
+        browser.disconnect();
+      } else {
+        await browser.close().catch(() => {});
+      }
     } catch (error) {
       console.error(prefix(), "Error during cleanup:", error);
     } finally {

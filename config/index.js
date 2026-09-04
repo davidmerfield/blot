@@ -118,6 +118,20 @@ module.exports = {
     timeout: 10000, // 10s
   },
 
+  // The "airlock" container (config/airlock) is the single egress point for
+  // fetching untrusted, user-supplied URLs: bookmark-link screenshots and
+  // remote images referenced in posts. When these are unset the app talks to
+  // the network directly - fine for local development, but with no SSRF
+  // protection - so production must set both. See config/airlock/README.md.
+  airlock: {
+    // Chromium DevTools endpoint, e.g. http://airlock:9222 - consumed by
+    // app/helper/screenshot.
+    browser_url: process.env.BLOT_AIRLOCK_BROWSER_URL || null,
+    // HTTP(S) forward proxy, e.g. http://airlock:8888 - consumed by
+    // app/helper/transformer/download.
+    proxy: process.env.BLOT_AIRLOCK_PROXY_URL || null,
+  },
+
   paypal: {
     client_id: process.env.BLOT_PAYPAL_CLIENT_ID,
     secret: process.env.BLOT_PAYPAL_SECRET,

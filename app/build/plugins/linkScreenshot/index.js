@@ -1,4 +1,3 @@
-const Url = require("url");
 const { callbackify } = require("util");
 const screenshot = callbackify(require("helper/screenshot"));
 const { join } = require("path");
@@ -31,10 +30,24 @@ function render($, callback, { blogID, path }) {
     return callback();
   }
 
+  // Only ever screenshot a plain public http(s) URL. Credentials in the URL
+  // are a common trick for slipping an internal host past a naive check.
+  // Destination IP filtering (private ranges, cloud metadata, rebinding) is
+  // enforced in the airlock container - see config/airlock.
+  let parsedHref;
   try {
-    Url.parse(href);
+    parsedHref = new URL(href);
   } catch (e) {
     console.log(prefix(), "Invalid HREF");
+    return callback();
+  }
+
+  if (
+    (parsedHref.protocol !== "http:" && parsedHref.protocol !== "https:") ||
+    parsedHref.username ||
+    parsedHref.password
+  ) {
+    console.log(prefix(), "Refusing to screenshot non-public HREF", href);
     return callback();
   }
 

@@ -1,6 +1,9 @@
 const fetch = require("node-fetch");
 const fs = require("fs").promises;
 const { createWriteStream } = require("fs");
+const config = require("config");
+const { HttpProxyAgent } = require("http-proxy-agent");
+const { HttpsProxyAgent } = require("https-proxy-agent");
 const ensure = require("helper/ensure");
 const UID = require("helper/makeUid");
 const callOnce = require("helper/callOnce");
@@ -8,6 +11,20 @@ const tempDir = require("helper/tempDir")();
 const nameFrom = require("helper/nameFrom");
 const tidy = require("./tidy");
 const invalid = require("./invalid");
+
+// When set, remote assets referenced in posts are fetched through the shared
+// "airlock" container's forward proxy (config/airlock) instead of straight
+// from this process. The airlock's nftables egress filter is what blocks a
+// URL - or a redirect from one - that resolves to an internal address, and
+// it does so on the real connection IP, so DNS-rebinding does not help an
+// attacker. Unset (local dev): fetch directly, no SSRF protection.
+const proxyUrl = config.airlock && config.airlock.proxy;
+const httpProxyAgent = proxyUrl ? new HttpProxyAgent(proxyUrl) : null;
+const httpsProxyAgent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : null;
+const proxyAgent = proxyUrl
+  ? (parsedURL) =>
+      parsedURL.protocol === "https:" ? httpsProxyAgent : httpProxyAgent
+  : undefined;
 
 const IF_NONE_MATCH = "If-None-Match";
 const IF_MODIFIED_SINCE = "If-Modified-Since";
@@ -47,7 +64,8 @@ module.exports = function (url, headers, callback) {
     },
     redirect: "follow",
     follow: MAX_REDIRECTS,
-    timeout: TIMEOUT
+    timeout: TIMEOUT,
+    agent: proxyAgent
   };
 
   debug("Downloading", url, "to", path, "with fetch headers:");

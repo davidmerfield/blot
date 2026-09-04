@@ -1,6 +1,11 @@
 var protocols = ["http:", "https:"];
 var Url = require("url");
 
+// Cheap sanity check on a URL before we try to download it. This is NOT the
+// SSRF control - destination IP filtering (private ranges, cloud metadata,
+// DNS-rebinding) happens in the airlock container, see config/airlock.
+// Rejecting credentials in the URL here just removes a common trick for
+// hiding an internal host from a naive check.
 function invalid(url) {
   var parsed;
 
@@ -15,6 +20,8 @@ function invalid(url) {
 
   if (protocols.indexOf(parsed.protocol) === -1)
     return new Error("Has unsupported protocol " + url);
+
+  if (parsed.auth) return new Error("Must not contain credentials " + url);
 
   return false;
 }

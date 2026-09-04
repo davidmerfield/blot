@@ -1,0 +1,63 @@
+#!/usr/sbin/nft -f
+#
+# Airlock egress filter.
+#
+# Applied by entrypoint.sh before Chromium or the proxy start. Every packet
+# the container sends is matched against its real destination IP, in-kernel,
+# at connect() time - so this also defeats DNS-rebinding and covers redirects
+# and sub-resources that application-level URL checks miss.
+#
+# Private, loopback, link-local, ULA, carrier-grade-NAT, documentation,
+# benchmarking and multicast/reserved ranges are dropped. The cloud instance
+# metadata address (169.254.169.254) falls inside 169.254.0.0/16.
+#
+# The `table {}` + `delete table` prelude makes `nft -f` idempotent so the
+# entrypoint can be re-run without erroring on an already-present table.
+
+table inet airlock {}
+delete table inet airlock
+
+table inet airlock {
+    chain output {
+        type filter hook output priority 0; policy accept;
+
+        # Local traffic, and Docker's embedded DNS resolver on 127.0.0.11.
+        oif "lo" accept
+
+        # Let replies to already-vetted connections back in/out.
+        ct state established,related accept
+
+        # --- IPv4: drop every non-public destination ---
+        ip daddr {
+            0.0.0.0/8,
+            10.0.0.0/8,
+            100.64.0.0/10,
+            127.0.0.0/8,
+            169.254.0.0/16,
+            172.16.0.0/12,
+            192.0.0.0/24,
+            192.0.2.0/24,
+            192.88.99.0/24,
+            192.168.0.0/16,
+            198.18.0.0/15,
+            198.51.100.0/24,
+            203.0.113.0/24,
+            224.0.0.0/4,
+            240.0.0.0/4,
+            255.255.255.255/32
+        } drop
+
+        # --- IPv6: drop every non-public destination ---
+        ip6 daddr {
+            ::1/128,
+            ::/128,
+            ::ffff:0:0/96,
+            64:ff9b:1::/48,
+            100::/64,
+            2001:db8::/32,
+            fc00::/7,
+            fe80::/10,
+            ff00::/8
+        } drop
+    }
+}
