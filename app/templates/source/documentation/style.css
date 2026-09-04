@@ -22,6 +22,8 @@
   {{/body_font}}
   {{#heading_font}}
   --heading-font-family: {{{stack}}};
+  --heading-font-size: {{{font_size}}}px;
+  --heading-line-height: {{{line_height}}};
   {{/heading_font}}
   {{#syntax_highlighter_font}}
   --code-font-family: {{{stack}}};
@@ -563,26 +565,24 @@ a {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--heading-font-family);
+  line-height: var(--heading-line-height);
 }
 
 h1 {
-  font-size: 24px;
-font-weight: 550;
-line-height: 28.6333px;
-margin-bottom: 24px;
+  font-size: calc(var(--heading-font-size) * 1.5);
+  font-weight: 550;
+  margin-bottom: 24px;
 }
 
 h2 {
-  font-size: 20px;
-  line-height: 22.67px;
+  font-size: calc(var(--heading-font-size) * 1.25);
   font-weight: 550;
   margin-bottom: 24px;
   margin-top: 36px;
 }
 
 h3 {
-  font-size: 18px;
-  line-height: 22.67px;
+  font-size: calc(var(--heading-font-size) * 1.125);
   font-weight: 550;
   margin-bottom: 24px;
   margin-top: 24px;
