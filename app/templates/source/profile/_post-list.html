@@ -15,11 +15,13 @@
         {{{body}}}
       </section>
       {{/titleTag}}
+      {{^hide_dates}}{{#date}}
       <a href="{{{url}}}" class="u-url">
         <aside class="dates">
-          <time datetime="{{date}}" class="dt-published">→ {{date}}</time>
+          <time datetime="{{date}}" class="dt-published">→ {{#formatDate}}{{date_display}}{{/formatDate}}</time>
         </aside>
       </a>
+      {{/date}}{{/hide_dates}}
     </article>
   </li>
   <span class="separator"><span class="divider"></span></span>
