@@ -4,6 +4,12 @@
 {{{syntax_highlighter_font.styles}}}
 {{{syntax_highlighter.styles}}}
 
+html,
+body {
+  background: {{background_color}};
+  color-scheme: light;
+}
+
 body {
   {{#body_font}}
   font-size: {{{font_size}}}px;
@@ -16,20 +22,30 @@ body {
   background: {{background_color}};
 }
 
+/* Fill the viewport below the header; paint a background so screenshots are opaque. */
+body:has(.gallery) {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
 .gallery {
   overflow-x: scroll;
   overflow-y: hidden !important;
   white-space: nowrap;
-  position: absolute;
-  bottom: 0;
-  top: calc({{spacing}}em * 2);
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
   padding: 0 {{spacing}}em;
+  background: {{background_color}};
 }
 
 .gallery .entry {
   display: inline-block;
   vertical-align: top;
   width: {{slide_width}}px;
+  box-sizing: border-box;
   white-space: normal;
 }
 
@@ -77,9 +93,11 @@ hr {width: 100%;border: none;border-bottom: 1px solid rgba({{#rgb}}{{text_color}
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  flex: 0 0 auto;
   gap: 0.5em 1em;
   padding: {{spacing}}em;
   font-size: 0.875em;
+  background: {{background_color}};
 }
 
 {{#is.navigation_alignment.justified}}
@@ -100,7 +118,6 @@ hr {width: 100%;border: none;border-bottom: 1px solid rgba({{#rgb}}{{text_color}
   position: sticky;
   top: 0;
   z-index: 2;
-  background: {{background_color}};
 }
 {{/sticky_navigation}}
 
@@ -173,3 +190,33 @@ pre, code {
 }
 
 .pagination {margin: 2em 0;color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.55)}
+
+@media screen and (max-width: 800px) {
+  #header {
+    padding: 1.25em 1.25em 1em;
+    row-gap: 0.4em;
+  }
+
+  #header a {
+    margin: 0 0.35em 0 0;
+    padding: 0.4em 0.5em;
+  }
+
+  #header #title {
+    flex: 0 0 100%;
+    order: -1;
+    margin: 0;
+    padding: 0.15em 0;
+    font-size: 26px;
+    overflow-wrap: anywhere;
+  }
+
+  .gallery {
+    padding: 0 1.25em;
+  }
+
+  .contents,
+  .list {
+    margin: 0 1.25em 2em;
+  }
+}
