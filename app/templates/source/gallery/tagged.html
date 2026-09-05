@@ -2,12 +2,13 @@
 <html>
   {{> head}}
   <body>
-    <div class="container">
     {{> header}}
     <h1>{{tag}}</h1>
+    <div class="grid">
     {{#entries}}
       {{> item}}
     {{/entries}}
+    </div>
 
     {{#pagination}}
     <div class="pagination">
@@ -22,6 +23,5 @@
     {{/pagination}}
 
     {{> footer}}
-    </div>
   </body>
 </html>

@@ -2,8 +2,13 @@
 
   <a class="full" href="{{{url}}}"></a>
 
+  {{#thumbnail.medium}}
+  <img class="thumb" src="{{{url}}}" width="{{width}}" height="{{height}}" alt="{{title}}"/>
+  {{/thumbnail.medium}}
+
+  {{^thumbnail.medium}}
   {{#thumbnail.small}}
-  <img class="thumb" src="{{{url}}}" width="{{width}}" height="{{height}}"/>
+  <img class="thumb" src="{{{url}}}" width="{{width}}" height="{{height}}" alt="{{title}}"/>
   {{/thumbnail.small}}
 
   {{^thumbnail.small}}
@@ -12,4 +17,5 @@
     {{{teaser}}}
   </div>
   {{/thumbnail.small}}
+  {{/thumbnail.medium}}
 </div>

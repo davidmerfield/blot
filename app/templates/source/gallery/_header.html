@@ -2,15 +2,16 @@
 
 <a href="/" title="Home" class="{{#is_active}}/{{/is_active}}"><strong>{{title}}</strong></a>
 
+<nav class="tags">
 {{#all_tags}}
-&nbsp; <a href="/tagged/{{slug}}" title="{{name}}" class="{{active}}">{{name}}</a>
+<a href="/tagged/{{slug}}" title="{{name}}" class="{{active}}">{{name}}</a>
 {{/all_tags}}
+</nav>
 
-<span style="float:right">
+<nav class="menu">
 {{#menu}}
-&nbsp; <a href="{{{url}}}" title="{{label}}" class="{{active}}">{{label}}</a>
+<a href="{{{url}}}" title="{{label}}" class="{{active}}">{{label}}</a>
 {{/menu}}
-</span>
+</nav>
 
-<div class="clear"></div>
 </header>
