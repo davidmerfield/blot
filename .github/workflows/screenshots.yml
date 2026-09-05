@@ -23,6 +23,11 @@ on:
         description: "Reset cache"
         type: boolean
         default: false
+  # Cursor's GitHub token cannot create workflow_dispatch events, so this branch
+  # also runs when the PR is marked ready. Restrict to that event so the
+  # screenshots commit (synchronize) does not retrigger the job.
+  pull_request:
+    types: [ready_for_review]
 
 jobs:
   test:
@@ -42,7 +47,9 @@ jobs:
       # rather than something to vary per run, so it lives here rather than
       # as a workflow_dispatch input - edit this line to change it.
       BLOT_SCREENSHOT_CONCURRENCY: 4
-      TEMPLATES: ${{ inputs.templates }}
+      # workflow_dispatch supplies inputs.templates; ready_for_review does not,
+      # so default this demonstration branch to the Text template only.
+      TEMPLATES: ${{ github.event_name == 'pull_request' && 'text' || inputs.templates }}
 
     steps:
       # GITHUB_TOKEN is deliberately not used here: GitHub does not let a
@@ -56,7 +63,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.head_ref || github.ref }}
           token: ${{ secrets.SCREENSHOTS_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
 
       # hashFiles() only works inside a step (job-level env can't see the
@@ -239,7 +246,7 @@ jobs:
       # write the cache the next run will trust. A failed screenshot says
       # nothing about the demo blogs, so cache them either way.
       - name: Save demo blogs
-        if: ${{ always() && steps.screenshots.outputs.demo_blogs_built == 'true' && inputs.templates == '' && steps.cache-demo-blogs.outputs.cache-hit != 'true' }}
+        if: ${{ always() && steps.screenshots.outputs.demo_blogs_built == 'true' && github.event_name == 'workflow_dispatch' && inputs.templates == '' && steps.cache-demo-blogs.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: |
