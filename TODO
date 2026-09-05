@@ -227,6 +227,9 @@ Fix bugs with templates:
   - [ ] Add exif info
   - [ ] Add backlinks
 
+Dashboard control follow-ups (found while reviewing the per-template dashboard-control PRs):
+- Index template: the new logo_url upload is reused as og:image / twitter:image in _head.html. Upload URLs are site-relative, so social scrapers get a relative path. Either expose an absolute form of the upload value or fall back to {{{avatar}}} for social meta.
+
 Fix bug with the website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 
 Fix bug with template slugs / local templates
