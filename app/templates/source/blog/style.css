@@ -41,7 +41,14 @@ html, body {
 body {
   word-wrap: break-word; /* for long words & urls */
   position: relative;
-  width: var(--content-width);
+  /* Never let the fixed sidebar + gutters push the outer width past the
+     viewport (which the {{{spacing}}}/{{{content_width}}}/{{{sidebar_width}}}
+     controls can do at their maxima or with a large body font). Above that
+     point this resolves to --content-width and the layout is unchanged. */
+  width: min(
+    var(--content-width),
+    100vw - var(--sidebar-width) - var(--sidebar-gap) - var(--gutter-padding)
+  );
   margin: var(--spacing) auto;
   padding: 0 var(--gutter-padding) 0 calc(var(--sidebar-width) + var(--sidebar-gap));
   color: var(--text-color);
@@ -67,6 +74,9 @@ body {
   left: calc(50% - var(--body-outer-width) / 2);
   z-index: 2;
   background: var(--background-color);
+  /* A long title or menu can outgrow the viewport; keep every link reachable. */
+  max-height: 100vh;
+  overflow-y: auto;
   {{/sticky_navigation}}
   {{#is.navigation_alignment.left}}
   text-align: left;

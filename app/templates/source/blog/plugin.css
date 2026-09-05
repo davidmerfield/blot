@@ -89,6 +89,24 @@ p, div, section {position: relative;overflow: visible;}
   margin: 0 -29.3333333% 0 0;
 }
 
+{{#is.navigation_location.right}}
+/* With the navigation moved into the right gutter there is no longer any
+   room to the right of the text column, so keep margin notes and wide
+   figures inside it rather than letting them slide under the nav. */
+.right.margin {
+  position: static;
+  right: auto;
+  width: auto;
+  padding-left: 0;
+}
+.wide,
+.wide.left,
+.wide.right {
+  width: 100%;
+  margin: 0;
+}
+{{/is.navigation_location.right}}
+
 .column {box-sizing: border-box;float: left;}
 
 .column.two {width: 50%;padding-right: 11px;}
