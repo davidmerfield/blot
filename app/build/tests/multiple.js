@@ -90,6 +90,29 @@ describe("build multiple", function () {
     );
   });
 
+  it("maps bracketed plus folders to a stripped entry path", function () {
+    expect(build.findMultiFolder("/[Blog]+/one.md")).toEqual({
+      folderPath: "/[Blog]+",
+      entryPath: "/[Blog]",
+      triggerPath: "/[Blog]+/one.md",
+    });
+  });
+
+  it("omits files whose converter is disabled", async function () {
+    this.blog.converters = Object.assign({}, this.blog.converters, {
+      img: false,
+    });
+
+    var root = path.join(this.blogDirectory, "album+");
+    fs.outputFileSync(path.join(root, "one.md"), "# One");
+    fs.outputFileSync(path.join(root, "cover.jpg"), Buffer.from("fake"));
+
+    var entry = await this.buildEntry("/album+");
+
+    expect(entry.metadata._sourcePaths).toEqual(["/album+/one.md"]);
+    expect(entry.html).not.toContain("cover.jpg");
+  });
+
   it("returns an EMPTY error when no convertible files are present", function (done) {
     var root = path.join(this.blogDirectory, "void+");
     fs.ensureDirSync(root);

@@ -6,7 +6,7 @@ var localPath = require("helper/localPath");
 var ensure = require("helper/ensure");
 var pathNormalizer = require("helper/pathNormalizer");
 var Single = require("./single");
-var converters = require("./converters");
+var enabledConverters = require("./converters/enabled");
 var titlecase = require("helper/titlecase");
 
 var MAX_MULTI_FILES = 50;
@@ -169,7 +169,7 @@ function collectConvertibleFiles(blog, folderPath, callback) {
 
           if (isPreviewFile(entry.name)) return next();
 
-          if (!isConvertible(entryPath)) return next();
+          if (!isConvertible(blog, entryPath)) return next();
 
           files.push(entryPath);
 
@@ -281,8 +281,8 @@ function deriveTitleFromFolder(folderPath) {
   return titlecase(spaced);
 }
 
-function isConvertible(filePath) {
-  return converters.some(function (converter) {
+function isConvertible(blog, filePath) {
+  return enabledConverters(blog).some(function (converter) {
     return converter.is(filePath);
   });
 }
