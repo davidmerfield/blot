@@ -17,7 +17,10 @@
                 </video>
                 {{/Video}}
                 {{#Caption}}
-                <span class="slide-caption">{{Caption}} <a href="{{Link}}">{{Credit}}</a></span>
+                <span class="slide-caption">
+                    <span class="slide-caption-text">{{Caption}}</span>
+                    {{#Credit}}<a class="slide-caption-credit" href="{{Link}}">{{Credit}}</a>{{/Credit}}
+                </span>
                 {{/Caption}}
             </div>
             {{/entry.metadata.slides}}

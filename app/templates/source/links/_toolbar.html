@@ -2,12 +2,14 @@
 
   <div class="tags-container">
 
+    {{#show_tags}}
     {{#popular_tags.length}}
     <div id="tags" style="padding-left:0.325rem">
       {{#popular_tags}}<a href="/{{^active}}tagged/{{slug}}{{/active}}" class="{{active}}"><strong>{{tag}}</strong><span>{{tag}}</span></a>{{/popular_tags}}
     </div>
 
     {{/popular_tags.length}}
+    {{/show_tags}}
   </div>
 
   {{^infinite_scroll}}
@@ -26,7 +28,7 @@
   {{^pagination}}All {{entries.length}} posts{{/pagination}}
     </a>
       <a class="upper opac" style="{{^previous}}opacity:0.25{{/previous}}" {{#previous}}href="/page/{{previous}}"{{/previous}}>← PREVIOUS</a>
-      <a class="upper opac" style="{{^next}}opacity:0.25;{{/next}}margin-left:0.7rem" {{#next}}href="/page/{{pagination.next}}"{{/next}}>NEXT →</a>
+      <a class="upper opac" style="{{^next}}opacity:0.25;{{/next}}margin-left:0.7rem" {{#next}}href="/page/{{next}}"{{/next}}>NEXT →</a>
     </div>
   </div>
   {{/infinite_scroll}}
