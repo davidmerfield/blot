@@ -1,6 +1,6 @@
 /* Inserts the styles required by various options
 on the services page of the dashboard */
-{{{appCSS}}}
+{{{app_css}}}
 {{{body_font.styles}}}
 {{{syntax_highlighter.styles}}}
 
@@ -146,6 +146,12 @@ h3 {
 .subheading-column h3 ~ p, .subheading-column h3 ~ ul {
   margin-left: 8em; /* Add space to align content after the date column */
   color: var(--medium-text-color);
+}
+
+.subheading-column h3 ~ p,
+.subheading-column h3 ~ ul li {
+  orphans: 2;
+  widows: 2;
 }
 
 /* collapse the h3 and p elements on small screens */

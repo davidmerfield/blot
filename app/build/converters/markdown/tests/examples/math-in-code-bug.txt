@@ -1,0 +1,1 @@
+This is an inline <code>$$withmath$$</code> but weirdly it doesn't leave the math as-is. A bug with pandoc I believe.

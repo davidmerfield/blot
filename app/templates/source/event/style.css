@@ -1,7 +1,7 @@
 /* GLOBAL STYLES AND RESETS */
 
 /* Injected styles from templates and external sources */
-{{{appCSS}}}
+{{{app_css}}}
 {{{body_font.styles}}}
 {{{syntax_highlighter.styles}}}
 {{> flickity.css}}
@@ -52,6 +52,14 @@ a { color: var(--link-color); }
 a:hover { text-decoration: underline; }
 strong { font-weight: 600; }
 small { color: var(--light-text-color); }
+
+.main p,
+.main li,
+.main blockquote,
+.main figcaption {
+  orphans: 2;
+  widows: 2;
+}
 
 /* TYPOGRAPHY */
 h1 {

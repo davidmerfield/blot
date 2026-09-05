@@ -1,7 +1,9 @@
 {
   "name": "Index",
   "locals": {
-    "page_size": 20
+    "page_size": 20,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y"
   },
   "isPublic": false,
   "views": {
@@ -34,12 +36,6 @@
       "partials": {
         "title": "{{{entry.title}}} - {{{title}}}",
         "description": "{{{entry.summary}}}"
-      }
-    },
-    "public.html": {
-      "partials": {
-        "title": "Index of {{{path}}}",
-        "description": "All the files and folders inside {{{path}}}"
       }
     },
     "search.html": {

@@ -5,20 +5,31 @@ module.exports = function (done) {
   var context = this;
   var fakePassword = "XXX-" + Date.now();
   var fakeEmail = randomString(20) + "@example.com";
+  var finished = false;
+  var timeout = setTimeout(function () {
+    finish(new Error("createUser timed out"));
+  }, 10000);
+
+  function finish(err) {
+    if (finished) return;
+    finished = true;
+    clearTimeout(timeout);
+    done(err);
+  }
 
   User.hashPassword(fakePassword, function (err, passwordHash) {
     if (err) {
-      return done(err);
+      return finish(err);
     }
 
     User.create(fakeEmail, passwordHash, {}, {}, function (err, user) {
       if (err) {
-        return done(err);
+        return finish(err);
       }
 
       context.user = user;
       context.user.fakePassword = fakePassword;
-      done();
+      finish();
     });
   });
 };

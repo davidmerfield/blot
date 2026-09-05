@@ -1,4 +1,4 @@
-{{{appJS}}}
+{{{app_js}}}
 
 document.querySelectorAll('.page img').forEach(function(el){
   el.setAttribute('data-action', 'zoom');

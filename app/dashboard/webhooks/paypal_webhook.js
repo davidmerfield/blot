@@ -4,6 +4,7 @@ const parser = require("body-parser");
 const User = require("models/user");
 const config = require("config");
 const clfdate = require("helper/clfdate");
+const subscriptionLifecycle = require("models/user/subscriptionLifecycle");
 
 const SUBSCRIPTION_EVENTS = [
   "BILLING.SUBSCRIPTION.CANCELLED",
@@ -63,7 +64,26 @@ const updateSubscription = async subscriptionID => {
 
       const paypal = await response.json();
 
-      User.set(user.uid, { paypal }, err => {
+      const updates = { paypal };
+
+      const shouldDisable = subscriptionLifecycle.shouldDisableFromPaypalSubscription(paypal);
+      const shouldEnable = paypal.status === "ACTIVE" && user.isDisabled;
+
+      if (shouldDisable) {
+        return User.disable(user, updates, err => {
+          if (err) return reject(err);
+          resolve();
+        });
+      }
+
+      if (shouldEnable) {
+        return User.enable(user, updates, err => {
+          if (err) return reject(err);
+          resolve();
+        });
+      }
+
+      User.set(user.uid, updates, err => {
         if (err) return reject(err);
         resolve();
       });

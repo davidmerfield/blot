@@ -5,6 +5,7 @@ var client = require("models/client");
 var clfdate = require("helper/clfdate");
 var seedrandom = require("seedrandom");
 var async = require("async");
+const { before } = require("lodash");
 var seed;
 var config = {
   spec_dir: "",
@@ -64,6 +65,23 @@ seedrandom(seed, { global: true });
 jasmine.seed(seed);
 jasmine.loadConfig(config);
 
+// Build command for re-running with DEBUG
+function buildDebugCommand() {
+  var cmd = "DEBUG=blot* npm test";
+  if (args[0]) cmd += " " + args[0];
+  if (args[1]) cmd += " " + args[1];
+  return cmd;
+}
+
+// Log DEBUG command at start (only if DEBUG is not already set)
+if (!process.env.DEBUG) {
+  console.log(
+    clfdate(),
+    "To run with debug logs:",
+    colors.cyan(buildDebugCommand())
+  );
+}
+
 jasmine.addReporter({
   specStarted: function (result) {
     console.time(colors.dim(" " + result.fullName));
@@ -83,7 +101,7 @@ jasmine.addReporter({
   specDone: function (result) {
     durations[result.fullName] = Date.now() - startTimes[result.fullName];
   },
-  jasmineDone: function () {
+  jasmineDone: function (result) {
     console.log(clfdate(), "Slowest specs:");
     Object.keys(durations)
       .sort(function (a, b) {
@@ -92,6 +110,14 @@ jasmine.addReporter({
       .map((fullName) => durations[fullName] + "ms " + colors.dim(fullName))
       .slice(0, 10)
       .forEach((line) => console.log(line));
+    
+    // If tests failed, show how to re-run with DEBUG (only if DEBUG is not already set)
+    if (result.overallStatus === "failed" && !process.env.DEBUG) {
+      console.log();
+      console.log("Re-run with debug logs:");
+      console.log(colors.cyan(buildDebugCommand()));
+      console.log();
+    }
   },
 });
 
@@ -104,13 +130,24 @@ global.test = {
   fake: require("./util/fake"),
 
   user: function () {
-    beforeEach(require("./util/createUser"));
-    afterEach(require("./util/removeUser"));
+    beforeEach(function (done) {
+      require("./util/createUser").call(this, function (err) {
+        done(err);
+      });
+    });
+
+    afterEach(function (done) {
+      require("./util/removeUser").call(this, function (err) {
+        done(err);
+      });
+    });
   },
 
   server: require("./util/server"),
 
   site: require("./util/site"),
+
+  templates: require("./util/templates"),
 
   timeout: function (ms) {
     // Store original value
@@ -178,15 +215,23 @@ global.test = {
 };
 
 // get the number of keys in the database
-client.keys("*", function (err, keys) {
-  if (err) {
-    throw err;
+(async function ensureEmptyDatabase() {
+  let hasKeys = false;
+
+  for await (const _ of client.scanIterator({ MATCH: "*", COUNT: 1 })) {
+    if (_.length > 0) {
+      hasKeys = true;
+      break;
+    }
   }
-  if (keys.length === 0) {
+
+  if (!hasKeys) {
     // if there are no keys, we need to run the tests
     jasmine.execute();
   } else {
     // if there are keys, we need to throw an error
-    throw new Error("Database is not empty: " + keys.length + " keys found");
+    throw new Error("Database is not empty: keys found");
   }
+})().catch(function (err) {
+  throw err;
 });

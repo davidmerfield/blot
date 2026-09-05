@@ -2,28 +2,24 @@ var fs = require('fs-extra');
 var DataURI = require('datauri');
 var CleanCSS = require('clean-css');
 
-module.exports = function () {
+module.exports = async function () {
 
-  var images = fs.readdirSync(__dirname + '/images');
-  var styles = fs.readdirSync(__dirname + '/css');
-  var fonts = fs.readdirSync(__dirname + '/fonts');
+  var images = await fs.readdir(__dirname + '/images');
+  var styles = await fs.readdir(__dirname + '/css');
+  var fonts = await fs.readdir(__dirname + '/fonts');
   var css = '';
 
-  styles.forEach(function(name){
-    
-    if (name.indexOf('.css') == -1) return;
+  for (const name of styles) {
+    if (name.indexOf('.css') === -1) continue;
+    css += await fs.readFile(__dirname + '/css/' + name, 'utf-8');
+  }
 
-    css += fs.readFileSync(__dirname + '/css/' + name, 'utf-8');
-  });
+  for (const name of images) {
+    if (css.indexOf(name) === -1) continue;
+    const datauri = await DataURI(__dirname + '/images/' + name);
 
-  images.forEach(function(name){
-    
-    if (css.indexOf(name) === -1) return;
-
-    var datauri = new DataURI(__dirname + '/images/' + name);
-
-    css = css.split(name).join(datauri.content);
-  });
+    css = css.split(name).join(datauri);
+  }
 
   css = new CleanCSS().minify(css).styles;
 
@@ -31,5 +27,9 @@ module.exports = function () {
 };
 
 if (require.main === module) {
-  fs.outputFileSync(__dirname + '/build.css', module.exports());
+  async function main() {
+    const css = await module.exports();
+    fs.outputFileSync(__dirname + '/build.css', css);
+  }
+  main();
 }

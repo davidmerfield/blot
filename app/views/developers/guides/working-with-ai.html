@@ -1,0 +1,62 @@
+{{=[[ ]]=}}
+
+<h1>Working with AI</h1>
+
+<p>You can help AI assistants work more effectively on your Blot template by adding an <code>AGENTS.md</code> file to your template directory. This file describes the template’s structure, constraints, and conventions to guide the assistant.</p>
+
+<h2>Example AGENTS.md</h2>
+
+<p>Below is an example <code>AGENTS.md</code> for a blog template. You can adapt it for your own template.</p>
+
+<pre class="md" data-file="AGENTS.md"><code># Blot template
+
+This directory is a **Blot template**.
+It contains Mustache views and template configuration.
+
+## What this template contains
+
+- `package.json` — template configuration:
+  - `locals`: template-wide variables exposed to all views
+  - `views`: per-file routing (`url`) and per-view `partials` (string partials)
+- `entries.html` — homepage view (paginated list of posts)
+- `entry.html` — single entry/post view
+- `archives.html` — archives listing view (commonly routed to `/archives`)
+- Optional view(s): search page, RSS/Atom feed, sitemap (names/routes defined in `package.json`)
+- `style.css` — main stylesheet (plain CSS)
+- `script.js` — optional client-side behavior (keep lightweight)
+
+If you are unsure which view maps to which URL, open `package.json` and check `views[*].url`.
+
+## Template language and safety
+
+- Templates are **Mustache**.
+  - Variables are HTML-escaped by default.
+  - Use triple-braces to bypass HTML escaping, typical for `{{{url}}}` or `{{{path}}}`, which contain slashes, and for rendered entry content like `{{{body}}}` and `{{{html}}}`.
+- Partials:
+  - File partials: `{{> header}}` includes `header.html` (if present) and inherits context.
+  - Per-view string partials: from `package.json` under `views[view].partials`, included as `{{> title}}`, etc.
+  - Embed rendered site files: `{{> /Pages/Home.md}}` includes the rendered HTML output of that file.
+
+## Blot-specific constraints
+
+- **No subdirectories for template view files.** Keep view files in the template root.
+- **No SCSS/Sass compilation.** Keep CSS as plain `.css`.
+- The blog routes templates before serving static files. Avoid adding a view whose `url`
+  conflicts with an existing post/page path unless that's intentional.
+- Avoid view-name collisions:
+  - Do not create two views with the same basename (e.g., `feed.xml` and `feed.rss`).
+
+## Edit and test loop
+
+- Use `?json=true` on any page to inspect the exact JSON context used for rendering.
+- Make a change, wait for it to sync, reload the page, and verify HTML output and CSS/JS asset URLs.
+
+## Output expectations
+
+- Keep changes minimal and backwards-compatible.
+- Prefer semantic HTML and accessible patterns.
+- Keep client JS optional; degrade gracefully if JS is disabled.
+- When adding a new view or route, update `package.json` and link it from the template's navigation where appropriate.
+</code></pre>
+
+[[={{ }}=]]

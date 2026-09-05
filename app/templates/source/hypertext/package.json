@@ -1,0 +1,50 @@
+{
+  "name": "Hypertext",
+  "locals": {
+    "page_size": 100,
+    "lang": "en",
+    "sort_by": "id",
+    "background_color": "#fff",
+    "text_color": "rgb(0, 0, 0)",
+    "link_color": "rgb(48, 84, 235)",
+    "syntax_highlighter": {
+      "id": "solarized-light"
+    },
+    "syntax_highlighter_font": {
+      "id": "plex-mono"
+    },
+    "body_font": {
+      "id": "system-sans"
+    },
+    "demo_folder": "hypertext"
+  },
+  "views": {
+    "archives.html": {
+      "url": "/archives"
+    },
+    "search.html": {
+      "url": "/search"
+    },
+    "pagination.html": {
+      "url": "/pagination/:page"
+    },
+    "entries.html": {
+      "partials": {
+        "title": "{{#entries}}{{#first}}{{{title}}} -  {{/first}}{{/entries}}{{{title}}}",
+        "description": "{{#entries}}{{#first}}{{{title}}} -  {{/first}}{{/entries}}{{{title}}}"
+      }
+    },
+    "entry.html": {
+      "partials": {
+        "title": "{{{entry.title}}} - {{{title}}}",
+        "description": "{{{entry.title}}} - {{{title}}}"
+      }
+    },
+    "error.html": {
+      "partials": {
+        "title": "{{error.title}} - {{{title}}}",
+        "description": "{{error.message}}"
+      }
+    }
+  }
+}

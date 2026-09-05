@@ -6,14 +6,14 @@ var Prepare = require("./prepare");
 var Thumbnail = require("./thumbnail");
 var DateStamp = require("./prepare/dateStamp");
 var moment = require("moment");
-var converters = require("./converters");
+var enabledConverters = require("./converters/enabled");
 
 // This file cannot become a blog post because it is not
 // a type that Blot can process properly.
-function isWrongType(path) {
+function isWrongType(blog, path) {
   var isWrong = true;
 
-  converters.forEach(function (converter) {
+  enabledConverters(blog).forEach(function (converter) {
     if (converter.is(path)) isWrong = false;
   });
 
@@ -23,7 +23,7 @@ function isWrongType(path) {
 module.exports = function build(blog, path, callback) {
   debug("Build:", process.pid, "processing", path);
 
-  if (isWrongType(path)) {
+  if (isWrongType(blog, path)) {
     var err = new Error("Path is wrong type to convert");
     err.code = "WRONGTYPE";
     return callback(err);

@@ -49,15 +49,3 @@
   </div>
 </div>
 </form>
-
-<script src="/js/jquery.js?{{cacheID}}"></script>
-<script src="/js/tz_detect.js?{{cacheID}}"></script>
-<script type="text/javascript">
-var timezone = jstz.determine();
-if (timezone) {
-  $('input[name="timeZone"]').val(timezone.name());
-}
-const titleInput = document.getElementById('title_input');
-titleInput.focus();
-titleInput.select();
-</script>

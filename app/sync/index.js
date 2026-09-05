@@ -5,6 +5,14 @@ const localPath = require("helper/localPath");
 const renames = require("./renames");
 const lockfile = require("proper-lockfile");
 const messenger = require("./messenger");
+const gatherLockDiagnostics = require("./lock-diagnostics");
+const clfdate = require("helper/clfdate");
+const {
+  addPendingSync,
+  removePendingSync,
+  addPendingUpdate,
+  removePendingUpdate
+} = require("./lock-diagnostics-state");
 
 const LOCK_STALE_TIMEOUT_MS = 10 * 1000;
 const LOCK_UPDATE_INTERVAL_MS = 3 * 1000; // lowered from 5s to avoid ECOMPROMISED errors?
@@ -26,11 +34,21 @@ function sync(blogID, callback) {
       return callback(new Error("Cannot sync blog " + blogID));
     }
 
-    const { log, status } = messenger(blog);
+    const { log, status, syncID } = messenger(blog);
 
     log("Starting sync");
 
     let release;
+    let lockPath = localPath(blogID, "/");
+
+    // localPath currently returns a path with
+    // a trailing slash, we need to remove it
+    // for diagnostics to work properly
+    if (lockPath.endsWith("/") && lockPath !== "/") {
+      lockPath = lockPath.slice(0, -1);
+    }
+
+    let lockAcquiredAt;
 
     try {
       log("Acquiring lock on folder");
@@ -42,11 +60,58 @@ function sync(blogID, callback) {
           ? { retries: 1, minTimeout: LOCK_STALE_TIMEOUT_MS + 1000 } // 11s total
           : { retries: 3, minTimeout: 750 }; // 0.75s, 1.5s, 3s = 5.25s total
 
-      release = await lockfile.lock(localPath(blogID, "/"), {
+      release = await lockfile.lock(lockPath, {
         stale: LOCK_STALE_TIMEOUT_MS,
         update: LOCK_UPDATE_INTERVAL_MS,
         retries,
+        onCompromised: (err) => {
+          // gatherLockDiagnostics returns a promise, handle via then/catch.
+          gatherLockDiagnostics({
+            blogID,
+            lockPath,
+            lockAcquiredAt
+          })
+          .then(diagnostics => {
+            console.error(clfdate(), "[LOCK COMPROMISED]", {
+              blogID,
+              lockPath,
+              error: {
+                message: err.message,
+                code: err.code,
+                stack: err.stack
+              },
+              lockConfig: {
+                stale: LOCK_STALE_TIMEOUT_MS,
+                update: LOCK_UPDATE_INTERVAL_MS
+              }
+            });
+            console.error(clfdate(), "[LOCK COMPROMISED]", diagnostics);
+          })
+          .catch(diagErr => {
+            // If diagnostics gathering fails, still log compromise
+            console.error(clfdate(), "[LOCK COMPROMISED] (diagnostics error)", {
+              blogID,
+              lockPath,
+              error: {
+                message: err.message,
+                code: err.code,
+                stack: err.stack
+              },
+              lockConfig: {
+                stale: LOCK_STALE_TIMEOUT_MS,
+                update: LOCK_UPDATE_INTERVAL_MS
+              },
+              diagnosticsError: diagErr
+            });
+          })
+          .finally(() => {
+            // Ensure the error is always thrown synchronously
+            throw err;
+          });
+        }
       });
+      lockAcquiredAt = Date.now();
+      addPendingSync(blogID, syncID);
       log("Successfully acquired lock on folder");
     } catch (e) {
       log("Failed to acquire lock on folder");
@@ -56,6 +121,22 @@ function sync(blogID, callback) {
     // we want to know if folder.update or folder.rename is called
     let changes = false;
     let _update = new Update(blog, log, status);
+    const originalUpdate = _update;
+    _update = function (path, callback) {
+      if (typeof callback !== "function") {
+        return originalUpdate.apply(originalUpdate, arguments);
+      }
+      addPendingUpdate(blogID, syncID, path);
+      let called = false;
+      const wrappedCallback = function () {
+        if (!called) {
+          called = true;
+          removePendingUpdate(blogID, syncID, path);
+        }
+        return callback.apply(this, arguments);
+      };
+      return originalUpdate.call(originalUpdate, path, wrappedCallback);
+    };
     let path = localPath(blogID, "/");
 
     // Right now localPath returns a path with a trailing slash for some
@@ -83,6 +164,7 @@ function sync(blogID, callback) {
     // function which wanted to modify the blog's folder.
     callback(null, folder, function (syncError, callback) {
       log("Sync callback invoked");
+      removePendingSync(blogID, syncID);
       folder.status("Synced");
 
       if (typeof syncError === "function")

@@ -1,6 +1,6 @@
 <h1>Images</h1>
 
-.png&nbsp;&nbsp;.jpeg&nbsp;&nbsp;.gif&nbsp;&nbsp;.tiff&nbsp;&nbsp;.webp&nbsp;&nbsp;.avif&nbsp;&nbsp;.heic&nbsp;&nbsp;.heif
+<p class="supported-extensions">File extensions: <span>.png</span> <span>.jpeg</span> <span>.gif</span> <span>.tiff</span> <span>.webp</span> <span>.avif</span> <span>.heic</span> <span>.heif</span></p>
 
 <p>
   Put images directly into your site's folder and Blot will publish them as
@@ -11,6 +11,13 @@
   converted into PNG assets when published.
 </p>
 
+<p>
+  Images become posts by default. If you prefer to keep image files in your
+  folder without publishing them as posts, you can turn this off on the
+  <a href="/sites/default/settings/images"><span class="ui-action"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M16 13.25A1.75 1.75 0 0 1 14.25 15H1.75A1.75 1.75 0 0 1 0 13.25V2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75ZM1.75 2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h.94l.03-.03 6.077-6.078a1.75 1.75 0 0 1 2.412-.06L14.5 10.31V2.75a.25.25 0 0 0-.25-.25Zm12.5 11a.25.25 0 0 0 .25-.25v-.917l-4.298-3.889a.25.25 0 0 0-.344.009L4.81 13.5ZM7 6a2 2 0 1 1-3.999.001A2 2 0 0 1 7 6ZM5.5 6a.5.5 0 1 0-1 0 .5.5 0 0 0 1 0Z"></path></svg> Images</span></a>
+  page in your dashboard.
+</p>
+
 <h2>Compression and color profile</h2>
 <p>Blot aims to compress your images as little as possible to preserve its quality. Blot also preserves the color profile of images when publishing them to your site and generating thumbnails.</p>
 
@@ -19,7 +26,7 @@
 Banana.png
 Cherry.gif
 Trip to France
-  _image.png  
+  _image.png
   post.txt
 
 </code></pre>
@@ -52,15 +59,31 @@ Trip to France
 
 <h2>EXIF</h2>
 <p>
-  By default, Blot extracts selected EXIF metadata from image files that become posts. Your template can display this data if needed. The images served on your site have their EXIF removed to prevent leaking personal information.  
+  By default, Blot extracts selected EXIF metadata from image files that become posts. Your template can display this data if needed. You can change this setting on the <a href="/sites/default/settings/images"><span class="ui-action"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M16 13.25A1.75 1.75 0 0 1 14.25 15H1.75A1.75 1.75 0 0 1 0 13.25V2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75ZM1.75 2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h.94l.03-.03 6.077-6.078a1.75 1.75 0 0 1 2.412-.06L14.5 10.31V2.75a.25.25 0 0 0-.25-.25Zm12.5 11a.25.25 0 0 0 .25-.25v-.917l-4.298-3.889a.25.25 0 0 0-.344.009L4.81 13.5ZM7 6a2 2 0 1 1-3.999.001A2 2 0 0 1 7 6ZM5.5 6a.5.5 0 1 0-1 0 .5.5 0 0 0 1 0Z"></path></svg> Images</span></a> page in your dashboard.
 </p>
-<p>You can change this setting on the <a href="/sites/settings/publishing">publish settings</a> page of your dashboard.</p>
-<p>
-  In <strong>Basic</strong> mode, Blot keeps common photographic fields such as <code>Make</code>, <code>Model</code>, <code>ExposureTime</code>, <code>FNumber</code>, <code>ISO</code>, <code>FocalLength</code>, <code>LensMake</code>,<code>LensModel</code>, <code>ImageDescription</code>, and <code>Flash</code>.  
-</p>
-<p>
-  In <strong>Full</strong> mode, Blot also retains location-related data, including <code>GPSPosition</code>, <code>GPSLatitude</code>, <code>GPSLongitude</code>, and <code>GPSAltitude</code>.  
-</p>
-<p>
-  Choose <strong>Off</strong> to remove all metadata entirely. 
-</p>
+
+<table class="feature-table">
+  <thead>
+    <tr>
+      <th>Mode</th>
+      <th>EXIF data extracted</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="ui-action">Basic</span> (default)</td>
+      <td><code>Make</code> <code>Model</code> <code>ExposureTime</code> <code>FNumber</code> <code>ISO</code> <code>FocalLength</code> <code>LensMake</code> <code>LensModel</code> <code>ImageDescription</code> <code>Flash</code></td>
+    </tr>
+    <tr>
+      <td><span class="ui-action">Full</span></td>
+      <td>Basic fields plus location data: <code>GPSPosition</code> <code>GPSLatitude</code> <code>GPSLongitude</code> <code>GPSAltitude</code></td>
+    </tr>
+    <tr>
+      <td><span class="ui-action">Off</span></td>
+      <td>No metadata extracted</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The images themselves which are served on your site always have their EXIF removed regardless of this setting.</p>
+

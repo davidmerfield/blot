@@ -1,4 +1,8 @@
 const { promisify } = require("util");
+const client = require("models/client");
+const Blog = require("models/blog");
+const key = require("../key");
+
 describe("template", function () {
   require("./setup")({ createTemplate: true });
 
@@ -7,7 +11,7 @@ describe("template", function () {
   const getBlog = promisify(require("models/blog").get);
 
   it("sets a template's metadata", async function () {
-    var updates = { description: this.fake.random.word() };
+    var updates = { description: "A test template description" };
     await setMetadata(this.template.id, updates);
     const template = await getMetadata(this.template.id);
     expect(template.description).toEqual(updates.description);
@@ -15,10 +19,26 @@ describe("template", function () {
 
   it("updates the cache ID of the blog which owns a template after updating", async function () {
     var initialCacheID = this.blog.cacheID;
-    var updates = { description: this.fake.random.word() };
+    var updates = { description: "Updated template description" };
     await setMetadata(this.template.id, updates);
     const blog = await getBlog({ id: this.template.owner });
     expect(blog.cacheID).not.toEqual(initialCacheID);
+  });
+
+  it("uses raw isPublic/owner values for set membership and cache bump decisions", async function () {
+    await setMetadata(this.template.id, { isPublic: true });
+
+    const sRemSpy = spyOn(client, "sRem").and.callThrough();
+    const blogSetSpy = spyOn(Blog, "set").and.callThrough();
+
+    await setMetadata(this.template.id, {
+      isPublic: false,
+      description: "Template should remain private",
+    });
+
+    expect(sRemSpy).toHaveBeenCalledWith(key.publicTemplates(), this.template.id);
+    expect(blogSetSpy).toHaveBeenCalled();
+    expect(blogSetSpy.calls.mostRecent().args[0]).toEqual(this.blog.id);
   });
 
   it("it will inject the font styles when you simply supply an id", async function () {
@@ -44,6 +64,8 @@ describe("template", function () {
   });
 
   it("updates the CDN manifest when metadata locals change", async function () {
+    // Install the template so the CDN manifest is generated
+    await this.blog.update({template: this.template.id});
 
     await this.setView({
       name: "style.css",

@@ -37,6 +37,14 @@ p {
   vertical-align: baseline;
 }
 
+p,
+li,
+blockquote,
+figcaption {
+  orphans: 2;
+  widows: 2;
+}
+
 h1, h2, h3, h4, h5, h6 {font-size: inherit;}
 
 h2, h3 {margin-top: 2em}

@@ -1,10 +1,9 @@
-var Template = require("models/template");
-
 var ERROR = require("./error");
 var loadView = require("./load");
 var renderLocals = require("./locals");
 var finalRender = require("./main");
 var retrieve = require("./retrieve");
+var getCachedFullView = require("./full-view-cache");
 
 var ensure = require("helper/ensure");
 var extend = require("helper/extend");
@@ -16,7 +15,6 @@ var CACHE = config.cache;
 var CONTENT_TYPE = "Content-Type";
 var CACHE_CONTROL = "Cache-Control";
 
-const { minifyJS, minifyCSS } = require("./minify");
 const replaceFolderLinks = require("./replaceFolderLinks/html");
 const replaceFolderLinksCSS = require("./replaceFolderLinks/css");
 
@@ -37,7 +35,6 @@ module.exports = function (req, res, _next) {
     if (!req.template) return next();
 
     var blog = req.blog;
-    var blogID = blog.id;
     var templateID = req.template.id;
 
     // We have a special case for Cloudflare
@@ -51,38 +48,40 @@ module.exports = function (req, res, _next) {
 
     if (callback) callback = callOnce(callback);
 
-    Template.getFullView(blogID, templateID, name, function (err, response) {
-      if (err) {
-        return next(err);
-      }
+    getCachedFullView(
+      { blog: blog, template: req.template, viewName: name },
+      function (err, response) {
+        if (err) {
+          return next(err);
+        }
 
-      if (!response) {
-        err = new Error(
-          `The view '${name}' does not exist under templateID=${templateID}`
-        );
-        err.code = "NO_VIEW";
-        return next(err);
-      }
+        if (!response) {
+          err = new Error(
+            `The view '${name}' does not exist under templateID=${templateID}`
+          );
+          err.code = "NO_VIEW";
+          return next(err);
+        }
 
-      req.log("Loaded view");
+        req.log("Loaded view");
 
-      var viewLocals = response[0];
-      var viewPartials = response[1];
-      var missingLocals = response[2];
-      var viewType = response[3];
-      var view = response[4];
-      var query = Object.keys(req.query).length ? { query: req.query } : {};
+        var viewLocals = response[0];
+        var viewPartials = response[1];
+        var missingLocals = response[2];
+        var viewType = response[3];
+        var view = response[4];
+        var query = Object.keys(req.query).length ? { query: req.query } : {};
 
-      extend(res.locals)
-        .and(query)
-        .and(viewLocals)
-        .and(req.template.locals)
-        .and(blog.locals);
+        extend(res.locals)
+          .and(query)
+          .and(viewLocals)
+          .and(req.template.locals)
+          .and(blog.locals);
 
-      extend(res.locals.partials).and(viewPartials);
+        extend(res.locals.partials).and(viewPartials);
 
-      retrieve(req, res, missingLocals, function (err, foundLocals) {
-        extend(res.locals).and(foundLocals);
+        retrieve(req, res, missingLocals, function (err, foundLocals) {
+          extend(res.locals).and(foundLocals);
 
         // LOAD ANY LOCALS OR PARTIALS
         // WHICH ARE REFERENCED IN LOCALS
@@ -101,7 +100,13 @@ module.exports = function (req, res, _next) {
             var locals = res.locals;
             var partials = res.locals.partials;
 
-            // ?debug=true _AND_ ?json=true to get template locals as JSON
+            // This is a public inspection interface for public blog pages. Its
+            // output intentionally includes partials, template and blog locals,
+            // and rendered published-entry data: Blot treats everything in the
+            // public render context as public. Never put credentials, private
+            // account data, unpublished entries, or other secrets in res.locals.
+            // Keep this response no-cache and public (not preview-only) unless
+            // Blot's public-template policy changes.
             if (req.query && (req.query.debug || req.query.json)) {
               if (callback) return callback(null, res.locals);
               res.set("Cache-Control", "no-cache");
@@ -133,28 +138,6 @@ module.exports = function (req, res, _next) {
               req.log("Replacing folder links with CDN links");
               output = await replaceFolderLinksCSS(blog, output, req.log);
               req.log("Replaced folder links with CDN links");
-            }
-
-            if (viewType === STYLE) {
-              req.log("Minifying CSS");
-              try {
-                output = minifyCSS(output);
-                req.log("Minified CSS");
-              } catch (e) {
-                req.log("Failed to minify CSS");
-                console.log(e);
-              }
-            }
-
-            if (viewType === JS) {
-              req.log("Minifying JavaScript");
-              try {
-                output = await minifyJS(output);
-                req.log("Minified JavaScript");
-              } catch (e) {
-                req.log("Failed to minify JS");
-                console.log(e);
-              }
             }
 
             if (callback) {
@@ -196,7 +179,8 @@ module.exports = function (req, res, _next) {
             }
           });
         });
-      });
-    });
+        });
+      }
+    );
   }
 };

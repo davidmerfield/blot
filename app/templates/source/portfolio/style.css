@@ -1,6 +1,6 @@
 /* Inserts the styles required by various options
 on the services page of the dashboard */
-{{{appCSS}}}
+{{{app_css}}}
 
 /* Will be replaced with the @font-face rules required
 to load which font is selected as the main body font */
@@ -480,6 +480,14 @@ body.position-top label[for="toggle"] {
 
 .entry p {
   margin: 1.3em 0
+}
+
+.entry p,
+.entry li,
+.entry blockquote,
+.entry figcaption {
+  orphans: 2;
+  widows: 2;
 }
 
 

@@ -38,4 +38,22 @@ module.exports = {
     title: "Thought-forms",
     template: "SITE:studio",
   },
+  hypertext: {
+    title: "Richard Waller",
+    template: "SITE:hypertext",
+    plugins: {
+      injectTitle: {
+        enabled: true,
+        options: {}
+      },
+      linebreaks: {
+        enabled: true,
+        options: {}
+      },
+      zoom: {
+        enabled: true,
+        options: {}
+      }
+    }
+  },
 };

@@ -7,6 +7,7 @@ var ensure = require("helper/ensure");
 var Blog = require("models/blog");
 var injectLocals = require("./injectLocals");
 var updateCdnManifest = require("./util/updateCdnManifest");
+var serializeRedisHashValues = require("models/redisHashSerializer");
 
 module.exports = function setMetadata(id, updates, callback) {
   try {
@@ -16,8 +17,9 @@ module.exports = function setMetadata(id, updates, callback) {
   }
 
   getMetadata(id, function (err, metadata) {
-    var changes;
+    if (err && err.code !== "ENOENT") return callback(err);
 
+    var changes;
     metadata = metadata || {};
 
     for (var i in updates) {
@@ -28,9 +30,7 @@ module.exports = function setMetadata(id, updates, callback) {
     metadata.cdn = metadata.cdn || {};
 
     if (!metadata.owner)
-      return callback(
-        new Error("No owner: please specify an owner for this template")
-      );
+      return callback(new Error("No owner: please specify an owner for this template"));
 
     try {
       injectLocals(metadata.locals);
@@ -38,34 +38,46 @@ module.exports = function setMetadata(id, updates, callback) {
       console.log("error injecting locals:", e);
     }
 
-    metadata = serialize(metadata, metadataModel);
+    var isPublic = metadata.isPublic === true || metadata.isPublic === "true";
+    var owner = metadata.owner;
 
-    if (metadata.isPublic) {
-      client.sadd(key.publicTemplates(), id);
-    } else {
-      client.srem(key.publicTemplates(), id);
-    }
+    metadata = serializeRedisHashValues(serialize(metadata, metadataModel));
 
-    client.sadd(key.blogTemplates(metadata.owner), id, function (err) {
-      if (err) return callback(err);
+    (async function () {
+      try {
+        if (isPublic) {
+          await client.sAdd(key.publicTemplates(), id);
+        } else {
+          await client.sRem(key.publicTemplates(), id);
+        }
 
-      client.hmset(key.metadata(id), metadata, function (err) {
-        if (err) return callback(err);
+        await client.sAdd(key.blogTemplates(owner), id);
+        await client.hSet(key.metadata(id), metadata);
 
-        updateCdnManifest(id, function (manifestErr) {
-          if (manifestErr) return callback(manifestErr);
-
-          if (!changes) return callback(null, changes);
-
-          if (metadata.isPublic || metadata.owner === "SITE") {
-            return callback(null, changes);
-          }
-
-          Blog.set(metadata.owner, { cacheID: Date.now() }, function (err) {
-            callback(err, changes);
+        if (!changes) {
+          return updateCdnManifest(id, function (manifestErr) {
+            if (manifestErr) return callback(manifestErr);
+            callback(null, changes);
           });
+        }
+
+        var shouldBumpCache = !(isPublic || owner === "SITE");
+        var regenerateManifest = function () {
+          updateCdnManifest(id, function (manifestErr) {
+            if (manifestErr) return callback(manifestErr);
+            callback(null, changes);
+          });
+        };
+
+        if (!shouldBumpCache) return regenerateManifest();
+
+        Blog.set(owner, { cacheID: Date.now() }, function (cacheErr) {
+          if (cacheErr) return callback(cacheErr);
+          regenerateManifest();
         });
-      });
-    });
+      } catch (redisErr) {
+        callback(redisErr);
+      }
+    })();
   });
 };

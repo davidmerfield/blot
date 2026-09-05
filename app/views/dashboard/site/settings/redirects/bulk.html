@@ -12,6 +12,7 @@
 <br>
 
 <textarea
+id="bulk_redirects"
 name="redirects"
 placeholder="/from /to"
 style="
@@ -27,29 +28,5 @@ style="
 >
 
 {{> form-footer}}
-
-
-<script src="/js/jquery.js?{{ cacheID }}"></script>
-<script type="text/javascript">
-  $("button").attr("onclick", "");
-  $('form').submit(function (event) {
-    var redirects = $("textarea").val().trim();
-
-
-    redirects.split("\n").forEach(function (line, index) {
-      let from = line.split(" ")[0];
-      let to = line.split(" ")[1];
-
-      $('form').append(`
-    <input class="lab" placeholder="from" type="text" name="redirects.${index}.from" value="${from}"/>
-    <input class="val" placeholder="to" type="text" name="redirects.${index}.to" value="${to}"/>`);
-    });
-
-    $("textarea").remove();
-
-    // return false;
-  });
-</script>
-
 
 

@@ -22,12 +22,19 @@ var TITLES = {
   "urls": "URL format",
   "hard-stop-start-ec2-instance": "How to stop and start an EC2 instance",
   "who": "Who uses Blot?",
+  "tools": "Tools",
   "developers": "Developers",
+  "working-with-ai": "Working with AI",
+  "troubleshooting": "Troubleshooting",
   "json-feed": "JSON feed",
   "posts-tagged": "A page with posts with a particular tag",
   "ifttt": "IFTTT",
   "soundcloud": "SoundCloud",
   "youtube": "YouTube",
+  "wordpress": "WordPress",
+  "squarespace": "Squarespace",
+  "blogger": "Blogger",
+  "arena": "Are.na",
 };
 
 module.exports = function (req, res, next) {

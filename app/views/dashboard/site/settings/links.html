@@ -54,68 +54,7 @@
 
 </form>
 
-<script type="text/javascript">
-  // when the user changes any of the radio buttons, serialize the form and submit it
-  // this is necessary because the form is inside a <label> and the radio buttons are inside the <label>
-    function submitForm(form) {
-        var formData = new FormData(form);
-        var xhr = new XMLHttpRequest();
-        var data = new URLSearchParams();
 
-        // Convert FormData to URLSearchParams
-        for (var pair of formData) {
-            data.append(pair[0], pair[1]);
-        }
-
-        xhr.open('POST', form.action, true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                console.log('Form submitted successfully:', xhr.responseText);
-            } else {
-                console.error('Form submission error:', xhr.responseText);
-            }
-        };
-
-        xhr.onerror = function () {
-            console.error('Request error');
-        };
-
-        xhr.send(data.toString());
-    }
-    
-
-  document.querySelectorAll('input[type="radio"]').forEach(function (radio) {
-    radio.addEventListener('change', function (event) {
-      submitForm(event.target.form);
-    });
-  });
-
-  // when the user selects the radio input for the custom permalink format, show the save button
-  document.querySelectorAll('input[name="format"]').forEach(function (radio) {
-    radio.addEventListener('change', function (event) {
-      if (event.target.value === '') {
-        document.querySelector('.buttons').style.display = 'flex';
-        document.querySelector('input[name="custom"]').style.display = 'block';
-      } else {
-        document.querySelector('.buttons').style.display = 'none';
-        // hide the text input under the custom permalink format radio input
-        document.querySelector('input[name="custom"]').style.display = 'none';
-      }
-    });
-  });
-  
-  // if the page loads with the radio input for the custom permalink format selected, show the save button
-  if (document.querySelector('input[name="format"]:checked').value === '') {
-    document.querySelector('.buttons').style.display = 'flex';
-  }   else {
-    document.querySelector('input[name="custom"]').style.display = 'none';
-
-  }
-
-
-</script>
 
 <style>
 

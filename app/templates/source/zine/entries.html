@@ -5,12 +5,12 @@
     {{> header}}
 
     <p class="entries">
-      {{#entries}}
-      <a href="{{{url}}}" 
+      {{#posts}}
+      <a href="{{{url}}}"
         ><span>{{title}}</span>
       </a>
       <span class="light">{{date}} {{^last}}//{{/last}}</span>
-      {{/entries}}
+      {{/posts}}
     </p>
 
     <br><br>

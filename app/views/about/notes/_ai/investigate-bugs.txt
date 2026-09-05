@@ -1,0 +1,52 @@
+Scope
+- Primary: app/clients/icloud/macserver/**
+- Follow callers/imports across the repo as needed to reconstruct contracts and control flow.
+
+Runtime assumptions (use these, do not speculate)
+- Node version: 22.14.0
+- Process manager: Docker (single Node.js process as PID 1 inside the container).
+  Crash/restart policy: container is configured to auto-restart; process exit is acceptable.
+- Unhandled rejection mode:
+  Unhandled promise rejections terminate the Node.js process, causing the container to exit
+  and be restarted automatically.
+  Treat any unhandled rejection as a guaranteed crash/restart event.
+
+Method
+Use rg/git grep, read definitions + call sites (caller chain) to reconstruct:
+- inputs (and whether each is user-controlled)
+- outputs/return contracts
+- error propagation paths
+- concurrency/state (shared maps, timers, child procs)
+
+Default stance: SKIP.
+Only report issues that CLEARLY satisfy the Issue Bar AND can be supported by specific code lines.
+
+Output
+- Report ≤10 issues, ranked by severity.
+- If none: say exactly “No reportable issues found under the Issue bar.” Then list 3–5 LOW-CONFIDENCE WATCH POINTS (labeled) with no bug claims.
+
+Issue template (use exactly)
+1) <title> [Severity: Critical/High/Med]
+   - Location: file:line(s)
+   - Trust boundary: (remote user-controlled | local trusted | derived)
+   - Failure mode: what breaks + who is affected
+   - Concrete trace: initial state → input → code path (functions) → failure
+   - Evidence: quote 1–3 key lines (verbatim) that make the trace real
+   - Minimal fix: smallest patch idea (no refactors)
+   - Test/repro: one targeted test OR exact repro steps
+
+Issue Bar (all must hold)
+Reportable only if it is a realistic path to ≥1:
+- sync lock not released / deadlock (if applicable)
+- missed/duplicate sync, permanent divergence, or data loss/corruption
+- user-visible outage (server crash, request hang, unbounded retries)
+- resource leak likely to accumulate (fds, procs, listeners, timers, memory)
+- security exposure (path traversal, command injection, unsafe deserialization, auth bypass)
+
+High-yield checks (prioritize)
+- Express async correctness: missing try/catch/next(err), double-send, missing response on some branches, lack of timeouts/abort handling
+- child_process: timeout/kill strategy, exec buffering, exit-code handling, user-influenced command/args
+- fs/path safety: .. / absolute escape, normalization/case-sensitivity traps, watcher/listener cleanup
+- concurrency/state: module-level shared state, in-flight maps not cleared on error, retry loops without cap/backoff, timers not cleared
+- contract mismatches: undefined returns, promise+callback mixing, callbacks invoked twice/not at all
+- error handling: swallowed errors that still return success or proceed

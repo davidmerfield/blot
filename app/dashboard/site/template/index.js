@@ -6,6 +6,16 @@ const Blog = require("models/blog");
 const archiver = require("archiver");
 const duplicateTemplate = require("./save/duplicate-template");
 const { isAjaxRequest, sendAjaxResponse } = require("./save/ajax-response");
+const writeChangeToFolder = require('./save/writeChangeToFolder');
+
+// /template/default and /template/default/... redirect to the installed template's slug
+// so docs can deep link to e.g. /sites/gitt/template/default/links
+TemplateEditor.use("/default", (req, res, next) => {
+  const slug = res.locals.template?.slug;
+  if (!slug) return next();
+  const pathSuffix = req.path || "";
+  res.redirect(`${res.locals.base}/template/${slug}${pathSuffix}`);
+});
 
 TemplateEditor.param("viewSlug", require("./load/template-views"));
 
@@ -49,6 +59,10 @@ TemplateEditor.route("/new")
     });
   });
 
+// Creates a template from a dropped folder or zip file. Two path segments, so
+// it cannot be captured by the single-segment /:templateSlug route below.
+TemplateEditor.post("/new/upload", require("./save/upload-template"));
+
 TemplateEditor.route("/:templateSlug/install")
   .get(function (req, res) {
     res.locals.title = `Install - ${req.template.name}`;
@@ -57,13 +71,41 @@ TemplateEditor.route("/:templateSlug/install")
   })
   .post(function (req, res, next) {
     var templateID = req.body.template;
-    if (!templateID) return next(new Error("No template ID"));
+    if (typeof templateID !== "string") {
+      const err = new TypeError("Invalid template ID");
+      err.status = 400;
+      return next(err);
+    }
+
+    const ownerPrefix = `${req.blog.id}:`;
+    if (
+      !templateID.startsWith("SITE:") &&
+      !templateID.startsWith(ownerPrefix)
+    ) {
+      const err = new Error("No permission to install template");
+      err.status = 403;
+      return next(err);
+    }
+
     var updates = { template: templateID };
     Blog.set(req.blog.id, updates, function (err) {
       if (err) return next(err);
-      res.message(
-        "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
-        "Installed template"
+
+      Template.removeEnabledFromAllTemplates(
+        req.blog.id,
+        function (removeErr) {
+          if (removeErr) {
+            console.warn(
+              "Failed to remove enabled from local templates after install",
+              req.blog.id,
+              removeErr
+            );
+          }
+          res.message(
+            "/sites/" + req.blog.handle + "/template/" + req.params.templateSlug,
+            "Installed template"
+          );
+        }
       );
     });
   });
@@ -105,16 +147,20 @@ function persistTemplateUpdate(req, res, next) {
     { locals: req.locals, partials: req.partials },
     function (err) {
       if (err) return next(err);
-      if (isAjaxRequest(req)) {
-        const ajaxOptions = {};
-        if (res.locals.templateForked) {
-          ajaxOptions.headers = { "X-Template-Forked": "1" };
-        }
-        return sendAjaxResponse(res, ajaxOptions);
-      }
+      writeChangeToFolder(req.blog, req.template, {}, function (err) {
+        if (err) return next(err);
 
-      res.message(req.baseUrl + req.url, "Success!");
-    }
+        if (isAjaxRequest(req)) {
+          const ajaxOptions = {};
+          if (res.locals.templateForked) {
+            ajaxOptions.headers = { "X-Template-Forked": "1" };
+          }
+          return sendAjaxResponse(res, ajaxOptions);
+        }
+
+        res.message(req.baseUrl + req.url, "Success!");
+      });
+    },
   );
 }
 
@@ -164,9 +210,6 @@ TemplateEditor.route("/:templateSlug/syntax-highlighter")
   )
   .get(function (req, res) {
     res.locals.selected = { ...res.locals.selected, settings: "selected" };
-    if (res.locals.syntax_themes) {
-      res.locals.syntax_themes.expanded = true;
-    }
     res.locals.title = `Syntax highlighter - ${req.template.name}`;
     res.render("dashboard/template/syntax-highlighter");
   });
