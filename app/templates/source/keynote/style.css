@@ -87,8 +87,7 @@ hr {width: 100%;border: none;border-bottom: 1px solid rgba(0,0,0,0.15)}
     flex-wrap: wrap;
     align-items: center;
     row-gap: 0.4em;
-    position: relative;
-    z-index: 1;
+    flex: 0 0 auto;
   }
 
   #header a {
@@ -108,8 +107,20 @@ hr {width: 100%;border: none;border-bottom: 1px solid rgba(0,0,0,0.15)}
     overflow-wrap: anywhere;
   }
 
+  body:has(.gallery) {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
   .gallery {
-    top: 10em;
+    position: relative;
+    top: auto;
+    bottom: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
     padding: 0 1.25em;
   }
 
