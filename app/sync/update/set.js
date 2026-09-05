@@ -46,13 +46,6 @@ function dropEntryAndPreview(blogID, targetPath, callback) {
 
       if (entry.draft && !isHidden(targetPath)) {
         Preview.remove(blogID, targetPath, callback);
-      }
-
-      // This file is a draft, write a preview file
-      // to the users Dropbox and continue down
-      // We look up the remote path later in this module...
-      if (entry.draft && !isHidden(entry.path)) {
-        Preview.write(blog.id, path, callback);
       } else {
         callback();
       }
