@@ -16,6 +16,13 @@
   --spacing: {{spacing}}em;
 }
 
+/* Root background fills the canvas (body is only --max-width wide). Needed for
+   screenshots with a transparent default background, and for dark-mode UAs. */
+html {
+  color-scheme: light;
+  background: var(--background-color);
+}
+
 body {
   {{#body_font}}
   font-family: {{{stack}}};
@@ -57,7 +64,7 @@ blockquote,
 figcaption {orphans: 2; widows: 2;}
 
 small, .menu, .caption {color: var(--caption-color);font-weight: 400;}
-sup {font-size: 0.83;line-height: 0;vertical-align: super;}
+sup {font-size: 0.83em;line-height: 0;vertical-align: super;}
 
 .entry {position: relative;}
 .entry a {text-decoration: underline;}
@@ -222,7 +229,7 @@ input[type=submit] {
 
 }
 
-input#search:focus {
+input[name=q]:focus {
   outline: none;
 }
 
