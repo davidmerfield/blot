@@ -84,7 +84,7 @@ function render($, callback) {
 
 module.exports = {
   render: render,
-  category: "typography",
+  category: "embeds",
   title: "Bluesky",
-  description: "Embed posts from Bluesky URLs",
+  description: "Embed posts from Bluesky links",
 };

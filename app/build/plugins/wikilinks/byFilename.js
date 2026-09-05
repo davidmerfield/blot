@@ -1,4 +1,4 @@
-const fs = require("fs");
+const fs = require("fs-extra");
 const { dirname, join, basename, normalize } = require("path");
 const localPath = require("helper/localPath");
 const caseSensitivePath = require("helper/caseSensitivePath");
@@ -11,7 +11,6 @@ module.exports = function byFilename(
   isLink,
   callback
 ) {
-
   debug("Looking up by filename:", href, "from", pathOfPost);
 
   if (!href) {
@@ -66,7 +65,6 @@ module.exports = function byFilename(
       absoluteDir,
       { withFileTypes: true },
       function handleDir(err, entries = []) {
-
         debug("Searching in", current, "for", targetName, "found", entries);
 
         if (!err) {
@@ -78,8 +76,17 @@ module.exports = function byFilename(
         caseSensitivePath(
           root,
           join(current, targetName),
-          function (matchErr, matchPath) {
+          async function (matchErr, matchPath) {
             if (!matchErr && matchPath && matchPath.startsWith(root)) {
+
+              // We don't want to match directories, only files
+              try {
+                const stat = await fs.stat(matchPath);
+                if (stat && stat.isDirectory()) {
+                  return searchNext();
+                }
+              } catch (e) {}
+
               const resolvedPath = "/" + matchPath.slice(root.length);
 
               debug("Found match at", resolvedPath);

@@ -35,6 +35,6 @@ function render($, callback, options) {
 module.exports = {
   render: render,
   isDefault: false,
-  category: "Typography",
-  description: "External links open in a new tab",
+  category: "links",
+  description: "Open external links in a new tab",
 };

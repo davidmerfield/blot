@@ -4,13 +4,13 @@ var Dependencies = require("./dependencies");
 var Plugins = require("./plugins").convert;
 var ensure = require("helper/ensure");
 var async = require("async");
-var converters = require("./converters");
+var enabledConverters = require("./converters/enabled");
 
 module.exports = function (blog, path, callback) {
   ensure(blog, "object").and(path, "string").and(callback, "function");
 
   async.each(
-    converters,
+    enabledConverters(blog),
     function (converter, next) {
       if (!converter.is(path)) return next();
 
@@ -24,14 +24,20 @@ module.exports = function (blog, path, callback) {
 
         var parsed, metadata, dependencies;
 
-        // Now we extract any metadata from the file
-        // This modifies the 'contents' if it succeeds
-        try {
-          parsed = Metadata(html);
-          metadata = parsed.metadata;
-          html = parsed.html;
-        } catch (err) {
-          return callback(err);
+        // Some converters need to extract metadata before converting the body.
+        // Use those original values directly instead of reparsing converted HTML.
+        if (extras && extras.preExtractedMetadata) {
+          metadata = extras.preExtractedMetadata;
+        } else {
+          // Now we extract any metadata from the file
+          // This modifies the 'contents' if it succeeds
+          try {
+            parsed = Metadata(html);
+            metadata = parsed.metadata;
+            html = parsed.html;
+          } catch (err) {
+            return callback(err);
+          }
         }
 
         // We have to compute the dependencies before

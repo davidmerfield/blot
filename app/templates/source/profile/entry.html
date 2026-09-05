@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow">
+  <meta property="og:site_name" content="{{title}}">
+  <meta content="{{author}}" name="author">
+  <title>{{> title}}</title>
+  {{#entry}}
+  {{#summary}}<meta name="description" content="{{summary}}">{{/summary}}
+  {{^summary}}<meta name="description" content="{{title}}">{{/summary}}
+  {{/entry}}
+  {{^entry}}<meta name="description" content="{{description}}">{{/entry}}
+
+  <link rel="preconnect" href="{{{cdn}}}" />
+  <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
+  {{#avatar}}<link rel="icon" href="{{{avatar}}}" type="image/x-icon">{{/avatar}}
+  <link href="/feed.json" title="{{title}}" type="application/json" rel="alternate">
+  <link href="/feed.rss" title="RSS Feed for {{title}}" type="application/rss+xml" rel="alternate">
+
+  {{#entry}}
+  {{#absoluteURL}}
+  <link rel="canonical" href="{{{absoluteURL}}}">
+  <meta property="og:url" content="{{{absoluteURL}}}">
+  {{/absoluteURL}}
+  <meta property="og:title" content="{{title}}">
+  {{#summary}}<meta property="og:description" content="{{summary}}">{{/summary}}{{^summary}}<meta property="og:description" content="{{title}}">{{/summary}}
+  {{#thumbnail.large}}
+  <meta property="og:image" content="{{{url}}}">
+  <meta property="og:image:width" content="{{width}}">
+  <meta property="og:image:height" content="{{height}}">
+  {{/thumbnail.large}}
+  {{^thumbnail.large}}
+  {{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}
+  {{/thumbnail.large}}
+  <meta property="og:type" content="article">
+  {{#thumbnail.large}}<meta name="twitter:card" content="summary_large_image">{{/thumbnail.large}}{{^thumbnail.large}}<meta name="twitter:card" content="summary">{{/thumbnail.large}}
+  <meta name="twitter:title" content="{{title}}">
+  {{#summary}}<meta name="twitter:description" content="{{summary}}">{{/summary}}{{^summary}}<meta name="twitter:description" content="{{title}}">{{/summary}}
+  {{#thumbnail.large}}<meta name="twitter:image" content="{{{url}}}">{{/thumbnail.large}}
+  {{^thumbnail.large}}
+  {{#avatar}}<meta name="twitter:image" content="{{{avatar}}}">{{/avatar}}
+  {{/thumbnail.large}}
+  <meta property="article:author" content="{{{siteURL}}}">
+  <meta property="article:published_time" content="{{#formatDate}}YYYY-MM-DDTHH:mm:ssZ{{/formatDate}}">
+  <meta property="article:modified_time" content="{{#formatUpdated}}YYYY-MM-DDTHH:mm:ssZ{{/formatUpdated}}">
+  {{#tags}}
+  <meta property="article:tag" content="{{name}}">
+  {{/tags}}
+  {{/entry}}
+
+  {{^entry}}
+  <meta property="og:type" content="website">
+  {{#url}}
+  <link rel="canonical" href="{{{url}}}">
+  <meta property="og:url" content="{{{url}}}">
+  {{/url}}
+  <meta property="og:title" content="{{> title}}">
+  <meta property="og:description" content="{{description}}">
+  {{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}
+  {{/entry}}
+</head>
+
+<body>
+  {{> navigation}}
+
+  <section id="wrapper" {{#entry.page}} class="bio" {{/entry.page}}>
+
+    {{#entry}}
+    <article class="h-entry post">
+      <header>
+        <ul class="h-card p-author author hidden">
+          <li>
+            <a class="u-url" href="/about" rel="me"><span class="p-author">{{author}}</span></a>
+          </li>
+          {{#avatar}}<li>
+            <img class="u-photo" src="{{{avatar}}}" alt="">
+      </li>{{/avatar}}
+          <li>
+            <a href="mailto:{{email}}" class="u-email" rel="me">{{email}}</a>
+          </li>
+        </ul>
+        {{{titleTag}}}
+        <h2 class="headline">
+      <time class="dt-published" datetime="{{date}}">
+        <a class="u-url dates" href="{{{url}}}">{{date}}</a>
+      </time>
+    </h2>
+      </header>
+      <section class="e-content post-body">
+        {{{body}}}
+      </section>
+    </article>
+    {{/entry}}
+    <section id="post-meta" class="clearfix">
+      <a href="/">
+    {{#avatar}}<img class="avatar" src="{{{avatar}}}">{{/avatar}}
+    <div>
+      <span class="dark">{{author}}</span>
+      <span>{{description}}</span>
+    </div>
+  </a>
+    </section>
+  </section>
+  <footer id="footer">
+    {{> footer}}
+  </footer>
+</body>
+
+</html>

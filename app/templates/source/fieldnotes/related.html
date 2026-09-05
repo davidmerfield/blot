@@ -1,0 +1,38 @@
+<div
+	class="jp-relatedposts-post jp-relatedposts-post0 jp-relatedposts-post-thumbs"
+	data-post-id="{{id}}"
+	data-post-format="false"
+>
+	{{#thumbnail.medium.url}}
+	<a
+		class="jp-relatedposts-post-a"
+		href="{{{url}}}"
+		title="{{titles}}"
+		data-origin="{{id}}"
+		data-position="0"
+		><img
+			class="jp-relatedposts-post-img"
+			src="{{{thumbnail.medium.url}}}"
+			width="350"
+			alt="{{title}}"
+	/></a>
+	{{/thumbnail.medium.url}}
+	<h4 class="jp-relatedposts-post-title">
+		<a
+			class="jp-relatedposts-post-a"
+			href="{{{url}}}"
+			title="{{{title}}}"
+			data-origin="{{id}}"
+			data-position="0"
+			>{{title}}</a
+		>
+	</h4>
+	<p class="jp-relatedposts-post-excerpt">
+		{{summary}}
+	</p>
+	{{#date}}
+	<p class="jp-relatedposts-post-date" style="display: block;">
+		{{date}}
+	</p>
+	{{/date}}
+</div>

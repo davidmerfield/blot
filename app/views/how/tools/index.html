@@ -1,0 +1,57 @@
+
+<h1>{{^category}}Tools{{/category}}{{#category}}{{title}}{{/category}}</h1>
+
+<ul class="pill-navigation">
+
+<li><a href="/how/tools" class="{{^category}}selected{{/category}}">All</a></li>
+{{#categories}}
+<li><a href="/how/tools/{{slug}}" class="{{selected}}">{{title}}</a></li>
+{{/categories}}
+</ul>
+
+{{^category}}
+{{#categories}}
+<div class="top-tool-row " style="position: relative;">
+  <div class="tool-category" >
+    <h3>
+      <a href="/how/tools/{{slug}}">{{title}}</a>
+    </h3>
+    <div class="category-description">
+    {{{description}}}    
+    </div>
+    <a style="position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0;
+    bottom: 0;
+    width: 60px;
+    min-width: 60px;
+    background: #fff;
+    box-shadow: 0 0 40px #fff;background: none;padding:0;text-align: right;" href="/how/tools/{{slug}}">View all </a>
+
+  </div>
+  <ul class="tool-list top-tools" style="position: relative;flex-grow: 1;">
+    {{#top_tools}}
+    <li><a href="/how/tools/{{slug}}">{{#icon}}<img src="{{#cdn}}/how/tools{{{icon}}}{{/cdn}}" width="16">{{/icon}}<span class="a"><b>{{title}} 
+    </b></span></a></li>
+    {{/top_tools}}  
+
+  </ul>
+  
+  
+</div>
+
+{{/categories}}
+
+{{/category}}
+
+{{#category}}
+<ul class="tool-list">
+  {{#tools}}
+  <li><a href="/how/tools/{{slug}}">{{#icon}}<img src="{{#cdn}}/how/tools{{{icon}}}{{/cdn}}" width="16">{{/icon}}<span class="a"><b>{{title}} 
+    <!-- {{#popular}}<span style="font-size:11px">popular</span>{{/popular}} -->
+  </b><br>{{subtitle}} </span></a></li>
+  {{/tools}}  
+</ul>
+{{/category}}
+

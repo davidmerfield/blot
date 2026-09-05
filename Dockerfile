@@ -16,6 +16,7 @@ WORKDIR /usr/src/app
 # Install necessary packages for Puppeteer, the git client, and HEIF-enabled libvips
 RUN apk add --no-cache --update \
     git \
+    tini \
     curl \
     chromium \
     nss \
@@ -23,6 +24,15 @@ RUN apk add --no-cache --update \
     harfbuzz \
     ca-certificates \
     ttf-freefont
+
+# Configure git to handle lots of large binary files in memory-constrained environments.
+RUN git config --system pack.threads 1 \
+ && git config --system pack.windowMemory 32m \
+ && git config --system pack.deltaCacheSize 32m \
+ && git config --system pack.window 5
+
+# Use tini as the init process so simple-git child processes are reaped instead of becoming zombies.
+ENTRYPOINT ["/sbin/tini", "--"]
 
 # Set the Puppeteer executable path
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
@@ -36,10 +46,7 @@ RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
   && rm -r pandoc-${PANDOC_VERSION}
 
 # Sharp Runtime libs
-RUN apk add --no-cache --update \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
+RUN apk add --no-cache \
     vips \
     vips-dev \
     vips-heif \
@@ -60,6 +67,9 @@ RUN apk add exiftool
 RUN exiftool -ver
 
 # Copy package file and any install hooks required during npm install
+# We don't create a package-lock.json because we ran into issues
+# with sharp on different architectures. If we can solve this, then
+# we can commit the package-lock.json and edit this step.
 COPY package.json ./
 
 RUN npm install --no-package-lock && npm cache clean --force
@@ -81,6 +91,14 @@ RUN npm install --no-package-lock && npm cache clean --force
     
 # Configure git so the git client doesn't complain
 RUN git config --global --add safe.directory /usr/src/app && git config --global user.email "you@example.com" && git config --global user.name "Your Name"
+
+# OpenResty is spawned by config/openresty (cacher) tests via `openresty -c ...`.
+# Alpine's community package installs the binary at /usr/lib/nginx/bin/openresty,
+# which start-openresty.sh already probes for. procps provides the `ps` used when
+# restarting OpenResty between specs; the /var dirs are nginx's compiled-in
+# defaults for the pid file and logs.
+RUN apk add --no-cache openresty sudo procps \
+ && mkdir -p /var/run/nginx /var/log/nginx /var/tmp/nginx
 
 ## Stage 3 (copy in source)
 # This gets our source code into builder for use in next two stages

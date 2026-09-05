@@ -15,8 +15,10 @@ module.exports = {
   model: require("./model"),
   remove: require("./remove"),
   scheduleSubscriptionEmail: require("./scheduleSubscriptionEmail"),
+  scheduleWelcomeEmail: require("./scheduleWelcomeEmail"),
   set: require("./set"),
   disable: require("./disable"),
   enable: require("./enable"),
+  subscriptionTenure: require("./subscriptionTenure"),
   validate: require("./validate")
 };

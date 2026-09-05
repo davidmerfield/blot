@@ -1,0 +1,56 @@
+{
+  "name": "Journal",
+  "locals": {
+    "page_size": 40,
+    "background_color": "#FFFFF8",
+    "text_color": "#111111",
+    "link_color": "#111111",
+    "hide_dates": false,
+    "date_display": "Y-MM-DD",
+    "body_font": {
+      "id": "et-book",
+      "font_size": "18",
+      "line_height": "1.4",
+      "line_width": 38
+    }
+  },
+  "views": {
+    "search.html": {
+      "partials": {
+        "title": "Search - {{{title}}}",
+        "description": "Search all the entries posted on {{{title}}}"
+      }
+    },
+    "archives.html": {
+      "url": "/archives",
+      "partials": {
+        "title": "Archives - {{{title}}}",
+        "description": "All the entries posted on {{{title}}}"
+      }
+    },
+    "entries.html": {
+      "partials": {
+        "title": "{{{title}}}",
+        "description": "The latest entries posted on {{{title}}}"
+      }
+    },
+    "entry.html": {
+      "partials": {
+        "title": "{{{entry.title}}} - {{{title}}}",
+        "description": "{{{entry.summary}}}"
+      }
+    },
+    "error.html": {
+      "partials": {
+        "title": "{{{error.title}}} - {{{title}}}",
+        "description": "Error on {{{title}}}"
+      }
+    },
+    "tagged.html": {
+      "partials": {
+        "title": "{{{tag}}} - {{{title}}}",
+        "description": "All of the entries posted on {{{title}}} tagged {{{tag}}}"
+      }
+    }
+  }
+}

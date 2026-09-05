@@ -1,0 +1,19 @@
+1. buy domain
+2. create hosted zone on route 53 for new domain: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones
+3. point domain to Blot's IP
+
+Considerations:
+- Updown: status page
+- iCloud client: change email from link@blot.im to link@blot.site
+- Stripe:
+    - update business details: https://dashboard.stripe.com/settings/business-details
+    - update webhooks endpoint: https://dashboard.stripe.com/workbench/webhooks
+- Paypal:
+  - update 'Product page URL' for each product:  https://www.paypal.com/billing/plans
+  - update business owner email: https://www.paypal.com/businessmanage/account/accountOwner
+  - update webhooks endpoint: https://developer.paypal.com/dashboard/applications/
+- Mailgun:
+  - does not let me add two domains at once... so remove blot.im once domain transition is complete
+    - if this fails, look into SES or sending through fastmail directly
+Email:
+- Set up email alias on fastmail for *@blot.im then forward to contact@blot.site

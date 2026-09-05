@@ -7,7 +7,7 @@ var STATUS = { syncID: "string", message: "string", datestamp: "number" };
 
 var FLAGS = {
   google_drive_beta: "boolean",
-  google_docs_preserve_linebreaks: "boolean",
+  google_docs_preserve_linebreaks: "boolean", // deprecated IGNORE and REMOVE in future release
   deleted_entries_sanitized: "boolean",
 };
 
@@ -40,6 +40,7 @@ var DECLARATION = {
   scriptURL: ["string", false, true],
   roundAvatar: ["boolean", true, true],
   imageExif: ["string", true, true],
+  converters: ["object", true, true],
 };
 
 var MODEL = { TYPE: {}, PUBLIC: [], WRITEABLE: [] };

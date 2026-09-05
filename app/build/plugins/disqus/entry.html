@@ -1,12 +1,12 @@
 <div id="disqus_thread"></div>
 <script type="text/javascript">
     var disqus_shortname = '{{plugins.disqus.options.shortname}}';
-    {{#entry.metadata.disqus}}
-    var disqus_identifier = '{{entry.metadata.disqus}}';
-    {{/entry.metadata.disqus}}
-    {{^entry.metadata.disqus}}
+    {{#entry.metadataLowercase.disqus}}
+    var disqus_identifier = '{{entry.metadataLowercase.disqus}}';
+    {{/entry.metadataLowercase.disqus}}
+    {{^entry.metadataLowercase.disqus}}
     var disqus_identifier = '{{entry.guid}}';
-    {{/entry.metadata.disqus}}
+    {{/entry.metadataLowercase.disqus}}
     var disqus_title = '{{entry.title}}';
 
     (function() {

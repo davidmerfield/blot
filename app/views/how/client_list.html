@@ -1,28 +1,4 @@
 <ul class="clients">
-  {{^selected.dropbox}}
-  <li>
-    <a href="/how/sync/dropbox">
-      <img src="{{#cdn}}/images/sync/dropbox.svg{{/cdn}}" />
-      <span class="a">Dropbox</span>{{> chevron}}</a
-    >
-  </li>
-  {{/selected.dropbox}}
-  {{^selected.git}}
-  <li>
-    <a href="/how/sync/git">
-      <img src="{{#cdn}}/images/sync/git.svg{{/cdn}}" />
-      <span class="a">Git</span>{{> chevron}}
-    </a>
-  </li>
-  {{/selected.git}}
-  {{^selected.google-drive}}
-  <li>
-    <a href="/how/sync/google-drive">
-      <img src="{{#cdn}}/images/sync/google-drive.svg{{/cdn}}" />
-      <span class="a">Google Drive</span>{{> chevron}}</a
-    >
-  </li>
-  {{/selected.google-drive}}
   {{^selected.icloud}}
   <li>
     <a href="/how/sync/icloud">
@@ -31,5 +7,29 @@
     >
   </li>
   {{/selected.icloud}}
+  {{^selected.dropbox}}
+  <li>
+    <a href="/how/sync/dropbox">
+      <img src="{{#cdn}}/images/sync/dropbox.svg{{/cdn}}" />
+      <span class="a">Dropbox</span>{{> chevron}}</a
+    >
+  </li>
+  {{/selected.dropbox}}
+  {{^selected.google-drive}}
+  <li>
+    <a href="/how/sync/google-drive">
+      <img src="{{#cdn}}/images/sync/google-drive.svg{{/cdn}}" />
+      <span class="a">Google Drive</span>{{> chevron}}</a
+    >
+  </li>
+  {{/selected.google-drive}}
+  {{^selected.git}}
+  <li>
+    <a href="/how/sync/git">
+      <img src="{{#cdn}}/images/sync/git.svg{{/cdn}}" />
+      <span class="a">Git</span>{{> chevron}}
+    </a>
+  </li>
+  {{/selected.git}}
 
 </ul>

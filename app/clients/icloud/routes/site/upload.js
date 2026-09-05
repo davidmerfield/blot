@@ -1,6 +1,8 @@
 const localPath = require("helper/localPath");
-const establishSyncLock = require("../../util/establishSyncLock");
+const establishSyncLock = require("sync/establishSyncLock");
 const fs = require("fs-extra");
+const { handleSyncLockError } = require("../lock");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 module.exports = async function (req, res) {
   try {
@@ -9,6 +11,9 @@ module.exports = async function (req, res) {
       "utf8"
     );
     const modifiedTime = req.header("modifiedTime");
+    const isPlaceholderUpload = req.header("x-placeholder") === "true";
+    const originalSizeHeader = req.header("x-original-size");
+    const originalSize = Number(originalSizeHeader);
 
     // Validate required headers
     if (!blogID || !filePath) {
@@ -16,22 +21,88 @@ module.exports = async function (req, res) {
       return res.status(400).send("Missing required headers: blogID or path");
     }
 
+    if (shouldIgnoreFile(filePath)) {
+      return res.sendStatus(204);
+    }
+
+    const pathOnDisk = localPath(blogID, filePath);
+    const incomingContents = isPlaceholderUpload
+      ? Buffer.alloc(0)
+      : Buffer.isBuffer(req.body)
+      ? req.body
+      : Buffer.from(req.body);
+
+    const isFileAlreadyCurrent = async () => {
+      if (!(await fs.pathExists(pathOnDisk))) {
+        return false;
+      }
+
+      const existingContents = await fs.readFile(pathOnDisk);
+      const contentsMatch = existingContents.equals(incomingContents);
+      let modifiedTimeMatches = true;
+
+      if (modifiedTime) {
+        const stat = await fs.stat(pathOnDisk);
+        modifiedTimeMatches =
+          stat.mtime.getTime() === new Date(modifiedTime).getTime();
+      }
+
+      return contentsMatch && modifiedTimeMatches;
+    };
+
     console.log(
       `Uploading binary file for blogID: ${blogID}, path: ${filePath}`
     );
+
+    if (await isFileAlreadyCurrent()) {
+      return res
+        .status(200)
+        .send(`File already up to date for blogID: ${blogID}`);
+    }
 
     // Establish sync lock to allow safe file operations
     const { done, folder } = await establishSyncLock(blogID);
 
     try {
-      // Compute the local file path on disk
-      const pathOnDisk = localPath(blogID, filePath);
+      if (await isFileAlreadyCurrent()) {
+        return res
+          .status(200)
+          .send(`File already up to date for blogID: ${blogID}`);
+      }
+
+      if (isPlaceholderUpload) {
+        folder.status("Saving placeholder " + filePath);
+
+        await fs.outputFile(pathOnDisk, Buffer.alloc(0));
+
+        if (modifiedTime) {
+          const modifiedTimeDate = new Date(modifiedTime);
+          await fs.utimes(pathOnDisk, modifiedTimeDate, modifiedTimeDate);
+        }
+
+        await folder.update(filePath);
+        folder.status("Updated placeholder " + filePath);
+
+        console.warn(
+          `Placeholder created for oversized source file at: ${pathOnDisk}`,
+          {
+            blogID,
+            filePath,
+            originalSize,
+            modifiedTime,
+          }
+        );
+
+        return res
+          .status(200)
+          .send(`Placeholder created for oversized file for blogID: ${blogID}`);
+      }
 
       folder.status("Saving " + filePath);
 
       // Ensure the directory exists and write the binary data to the file
       // Write the binary data (req.body is raw binary)
-      await fs.outputFile(pathOnDisk, req.body);
+      await fs.outputFile(pathOnDisk, incomingContents);
 
       // Use the iso string modifiedTime if provided
       if (modifiedTime) {
@@ -52,6 +123,17 @@ module.exports = async function (req, res) {
       done();
     }
   } catch (err) {
+    if (
+      handleSyncLockError({
+        err,
+        res,
+        blogID: req.header("blogID"),
+        action: "upload",
+      })
+    ) {
+      return;
+    }
+
     console.error("Error in /upload:", err);
     res.status(500).send("Internal Server Error");
   }

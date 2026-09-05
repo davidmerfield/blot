@@ -6,7 +6,8 @@
 
 input[type="submit"],
 input[type="text"],
-input[type="password"] {
+input[type="password"],
+input[type="url"] {
   border-radius: 0;
 }
 
@@ -50,7 +51,8 @@ input[name="password"] {
 }
 
 input[type="text"],
-input[type="password"] {
+input[type="password"],
+input[type="url"] {
   padding: 4px 3px;
   margin: 2px 0;
   font-size: 17px;
@@ -70,7 +72,8 @@ input[type="password"] {
 
 
 input[type="text"]:focus,
-input[type="password"]:focus {
+input[type="password"]:focus,
+input[type="url"]:focus {
   outline: none !important;
   z-index: 2;
   border: 1px solid var(--accent-color);

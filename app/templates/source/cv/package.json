@@ -1,0 +1,67 @@
+{
+  "name": "CV",
+  "locals": {
+    "page_size": 18,
+    "spacing": 1,
+    "background_color": "#fff",
+    "text_color": "#000",
+    "link_color": "#000",
+    "dark_background_color": "#111",
+    "dark_text_color": "#eee",
+    "dark_link_color": "#eee",
+    "hide_dates": false,
+    "date_display": "MMM D",
+    "syntax_highlighter": {
+      "id": "stackoverflow-light"
+    },
+    "syntax_highlighter": {
+      "id": "arduino-light"
+    },
+    "body_font": {
+      "id": "system-sans",
+      "line_height": 1.6,
+      "font_size": 15
+    },
+    "demo_folder": "clara"
+  },
+  "enabled": true,
+  "views": {
+    "error.html": {
+      "partials": {
+        "title": "{{{error.title}}} - {{{title}}}",
+        "description": "Error on {{{title}}}"
+      }
+    },
+    "entry.html": {
+      "partials": {
+        "title": "{{{entry.title}}} - {{{title}}}",
+        "description": "{{{entry.summary}}}"
+      }
+    },
+    "entries.html": {
+      "partials": {
+        "title": "{{{title}}}",
+        "description": "The latest on {{{title}}}"
+      }
+    },
+    "tagged.html": {
+      "partials": {
+        "title": "{{{tag}}} - {{{title}}}",
+        "description": "{{{tag}}} on {{{title}}}"
+      }
+    },
+    "writing.html": {
+      "url": "/writing",
+      "partials": {
+        "title": "{{{title}}} - Writing",
+        "description": ""
+      }
+    },
+    "search.html": {
+      "partials": {
+        "title": "Search - {{{title}}}",
+        "description": "Search everything on {{{title}}}"
+      }
+    }
+  }
+}

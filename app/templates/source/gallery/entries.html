@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+
+    {{> header}}
+
+    {{#posts}}
+      {{> item}}
+    {{/posts}}
+
+    <div class="clear"></div>
+
+    {{#pagination}}
+    <div class="pagination">
+      {{#previous}}
+        <a href="/page/{{previous}}"><strong>← Newer</strong></a>
+      {{/previous}}
+      Page {{current}} of {{total}}
+      {{#next}}
+        <a href="/page/{{next}}"><strong>Older →</strong></a>
+      {{/next}}
+    </div>
+
+    {{/pagination}}
+
+    {{> footer}}
+  </body>
+</html>

@@ -3,8 +3,8 @@
 <p>
   You can use wikilinks to create internal links between your posts. You can
   enable or disable wikilinks on the
-  <a href="/settings/services">services page of your dashboard</a> under
-  <em>Typography</em>.
+  <a href="/sites/default/settings/services"><span class="ui-action"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M1.5 3.25c0-.966.784-1.75 1.75-1.75h2.5c.966 0 1.75.784 1.75 1.75v2.5A1.75 1.75 0 0 1 5.75 7.5h-2.5A1.75 1.75 0 0 1 1.5 5.75Zm7 0c0-.966.784-1.75 1.75-1.75h2.5c.966 0 1.75.784 1.75 1.75v2.5a1.75 1.75 0 0 1-1.75 1.75h-2.5A1.75 1.75 0 0 1 8.5 5.75Zm-7 7c0-.966.784-1.75 1.75-1.75h2.5c.966 0 1.75.784 1.75 1.75v2.5a1.75 1.75 0 0 1-1.75 1.75h-2.5a1.75 1.75 0 0 1-1.75-1.75Zm7 0c0-.966.784-1.75 1.75-1.75h2.5c.966 0 1.75.784 1.75 1.75v2.5a1.75 1.75 0 0 1-1.75 1.75h-2.5a1.75 1.75 0 0 1-1.75-1.75ZM3.25 3a.25.25 0 0 0-.25.25v2.5c0 .138.112.25.25.25h2.5A.25.25 0 0 0 6 5.75v-2.5A.25.25 0 0 0 5.75 3Zm7 0a.25.25 0 0 0-.25.25v2.5c0 .138.112.25.25.25h2.5a.25.25 0 0 0 .25-.25v-2.5a.25.25 0 0 0-.25-.25Zm-7 7a.25.25 0 0 0-.25.25v2.5c0 .138.112.25.25.25h2.5a.25.25 0 0 0 .25-.25v-2.5a.25.25 0 0 0-.25-.25Zm7 0a.25.25 0 0 0-.25.25v2.5c0 .138.112.25.25.25h2.5a.25.25 0 0 0 .25-.25v-2.5a.25.25 0 0 0-.25-.25Z"></path></svg> External services</span></a> under
+  <span class="ui-action">Typography</span>.
 </p>
 
 <pre
@@ -21,7 +21,7 @@ The wikilink above is equivalent to this Markdown:
 <h2>Why use Wikilinks?</h2>
 
 <p>
-  You don't need to know the URL of the linked post to create a wikilink, just
+  You do not need to know the URL of the linked post to create a wikilink, only
   the filename. Also, some note-taking applications, like
   <a href="https://obsidian.md/">Obsidian</a>, create and update wikilinks
   automatically.
@@ -60,7 +60,7 @@ The wikilink above is equivalent to this Markdown:
 
 <h2>Examples</h2>
 
-<p>Consider the following folder structure</p>
+<p>Consider this folder structure:</p>
 <background class="green" style="margin: 0">
   <pre class="folder" title="Your site"><code>Introduction.docx
 Fruits
@@ -71,7 +71,7 @@ Fruits
 </code></pre>
 </background>
 
-<p>These are all valid Wikilinks for the files in the folder above:</p>
+<p>These are all valid wikilinks for files in the folder above:</p>
 
 <table>
   <tr>
@@ -104,7 +104,7 @@ Fruits
 
 <h2>Changing the link text</h2>
 
-By default, the linked post's title will become the link's text. You can specify
+By default, the linked post title becomes the link text. You can specify
 your own text using the following syntax:
 
 <pre><code>
@@ -114,11 +114,10 @@ your own text using the following syntax:
 <h2>Tip for Obsidian</h2>
 
 <p>
-  For those who use <a href="https://obsidian.md/">Obsidian</a> to manage their
-  notes, I recommend setting the <em>New link format</em> to
+  If you use <a href="https://obsidian.md/">Obsidian</a>, set <em>New link format</em> to
   <em>relative path to file</em>. Blot will work with the
   <em>New link format</em> set to <em>absolute path in vault</em> as long as
-  your Obsidian Vault is not inside a subdirectory of your site folder on Blot.
+  your Obsidian vault is not inside a subdirectory of your site folder on Blot.
 </p>
 
 <h2>Embedding files with Obsidian</h2>
@@ -126,7 +125,7 @@ your own text using the following syntax:
 <p>
   Obsidian lets you embed files such as images, audio, video, PDFs, and
   Markdown notes using the same wikilink syntax prefixed with an exclamation
-  mark: <code>![[...]]</code>. Blot mirrors this behaviour and converts embeds
+  mark: <code>![[...]]</code>. Blot mirrors this behavior and converts embeds
   into the correct HTML output when your site is built.
 </p>
 
@@ -188,4 +187,23 @@ your own text using the following syntax:
   to keep embeds in a dedicated <code>attachments</code> folder, Obsidian's
   default attachment settings work without extra configuration—just make sure
   the folder is inside your blog directory so the files can sync to Blot.
+</p>
+
+<h3>Embedding Markdown and text files</h3>
+
+<p>
+  In addition to <code>.md</code> notes, Blot also supports embedding
+  <code>.txt</code>, <code>.text</code>, and <code>.markdown</code> files with
+  the same Obsidian-style syntax:
+</p>
+
+<pre><code>![[Research notes.txt]]
+![[Snippets/Outline.text]]
+![[Drafts/Appendix.markdown]]</code></pre>
+
+<p>
+  These file embeds are resolved using the same lookup rules as normal
+  wikilinks (relative path, absolute path, filename, URL, then title). When a
+  match is found, Blot renders the embedded file's Markdown output inline where
+  the embed appears.
 </p>

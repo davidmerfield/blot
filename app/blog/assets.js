@@ -131,6 +131,14 @@ assets.use(async (req, res, next) => {
 
   try {
     await sendFile(
+      join(blogFolder, withoutTrailingSlash(decodedPath) + "/_index.html"),
+      { req, res }
+    );
+    return;
+  } catch (e) {}
+
+  try {
+    await sendFile(
       join(blogFolder, withoutTrailingSlash(decodedPath) + ".html"),
       { req, res }
     );

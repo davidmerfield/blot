@@ -5,10 +5,37 @@ var time = require("helper/time");
 var extname = require("path").extname;
 var Metadata = require("build/metadata");
 var convert = require("./convert");
-const { lte } = require("lodash");
 
 function is (path) {
   return [".org"].indexOf(extname(path).toLowerCase()) > -1;
+}
+
+function toDeterministicMetadataComment (metadata) {
+  const keys = Object.keys(metadata || {}).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" })
+  );
+
+  if (!keys.length) return "";
+
+  let metadataComment = "<!--";
+
+  keys.forEach((key) => {
+    metadataComment += "\n" + key + ": " + metadata[key];
+  });
+
+  return metadataComment + "\n-->\n";
+}
+
+function mergeOrgMetadata (outerMetadata, innerMetadata) {
+  const mergedMetadata = {};
+
+  [outerMetadata, innerMetadata].forEach((source) => {
+    Object.keys(source || {}).forEach((key) => {
+      mergedMetadata[key] = source[key];
+    });
+  });
+
+  return mergedMetadata;
 }
 
 function read (blog, path, callback) {
@@ -32,21 +59,19 @@ function read (blog, path, callback) {
 
       if (err) return callback(err);
 
-      const { html, metadata } = Metadata(contents);
+      const { html: orgBody, metadata: orgMetadata } = Metadata(contents);
 
-      convert(blog, html, function (err, html) {
+      convert(blog, orgBody, function (err, html, yamlMetadata) {
         if (err) return callback(err);
 
-        let metadataString = "<!--";
+        // Canonical metadata handling for org conversion:
+        // 1. Parse org-style header metadata before conversion.
+        // 2. Parse YAML metadata extracted from a leading YAML source block after conversion.
+        // 3. Merge both sources with YAML taking precedence for identical keys.
+        const mergedMetadata = mergeOrgMetadata(orgMetadata, yamlMetadata);
+        const metadataComment = toDeterministicMetadataComment(mergedMetadata);
 
-        for (var i in metadata) metadataString += "\n" + i + ": " + metadata[i];
-
-        if (metadataString !== "<!--") {
-          metadataString += "\n-->\n";
-          html = metadataString + html;
-        }
-
-        callback(null, html, stat);
+        callback(null, metadataComment + html, stat);
       });
     });
   });

@@ -1,36 +1,20 @@
-
-<style type="text/css">
-
-</style>
-<div style="display:flex;min-height:80vh;">
-<div
-	style="flex-shrink:0;display: flex;flex-direction: column;"
->
-	<div style="flex-grow: 1;">
-		{{> source-code-sidebar}}
-	</div>
+<div style="display:flex;min-height:80vh;gap:2em">
+  <div style="flex-shrink:0;display: flex;flex-direction: column;width:284px">
+	  {{> source-code-sidebar}}
+  </div>
+  <div class="editor-container">
+    {{> source-code-header}}
+    
+    {{#view}}
+    <div id="editor"></div>
+    <textarea
+      id="source"
+      style="display:none"
+      data-mode="{{editorMode}}"
+      name="content"
+    >{{content}}</textarea>
+    {{/view}}
+    
+  </div>
 </div>
-
-<div style="width:calc(100vw - 35rem);font-size: 14px;">
-  {{> source-code-header}}
-  <div style="background: rgba(0, 0, 0, 0.1);padding: 0 1rem"></div>
-
-  {{#view}}
-
-<div id="editor"></div>
-
-<textarea
-  id="source"
-  style="display:none"
-  data-mode="{{editorMode}}"
-  name="content"
->{{content}}</textarea>
-
-  <script defer src="{{#cdn}}/js/template-source-editor.min.js{{/cdn}}"></script>
-  {{/view}}
-</div>
-
-</div>
-
-
-
+{{> source-code-footer}}

@@ -1,7 +1,12 @@
 const dns = require("dns").promises;
 const nock = require("nock");
-const verify = require("../verify");
 const config = require("config");
+
+const fetchModulePath = require.resolve("node-fetch");
+const realFetch = require(fetchModulePath);
+
+const verifyPath = require.resolve("../verify");
+let verify;
 
 describe("domain verifier", function () {
   const ourIP = config.ip;
@@ -14,6 +19,12 @@ describe("domain verifier", function () {
   let resolver;
 
   beforeEach(() => {
+    if (require.cache[fetchModulePath]) {
+      require.cache[fetchModulePath].exports = realFetch;
+    }
+    delete require.cache[verifyPath];
+    verify = require(verifyPath);
+
     resolver = {
       resolveCname: jasmine.createSpy("resolveCname"),
       resolve4: jasmine.createSpy("resolve4"),
@@ -31,6 +42,9 @@ describe("domain verifier", function () {
 
   afterEach(() => {
     nock.cleanAll();
+    if (require.cache[fetchModulePath]) {
+      require.cache[fetchModulePath].exports = realFetch;
+    }
   });
 
   it("should throw an error for hostnames without nameservers", async () => {
@@ -180,6 +194,40 @@ describe("domain verifier", function () {
     }
   });
 
+  it("should return true for hostnames with CNAME record to an organizations subdomain", async () => {
+    const hostname = "organizations-cname.com";
+    const handle = "example";
+
+    resolver.resolveCname.and.returnValue(
+      Promise.resolve([`customer.organizations.${ourHost}`])
+    );
+    resolver.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+    resolver.resolve6.and.returnValue(Promise.resolve([]));
+    dns.resolveNs.and.returnValue(
+      Promise.resolve(["ns1.organizations.com", "ns2.organizations.com"])
+    );
+
+    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+    expect(result).toBe(true);
+  });
+
+  it("should return true for hostnames with CNAME record to an organization subdomain", async () => {
+    const hostname = "organization-cname.com";
+    const handle = "example";
+
+    resolver.resolveCname.and.returnValue(
+      Promise.resolve([`customer.organization.${ourHost}`])
+    );
+    resolver.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+    resolver.resolve6.and.returnValue(Promise.resolve([]));
+    dns.resolveNs.and.returnValue(
+      Promise.resolve(["ns1.organization.com", "ns2.organization.com"])
+    );
+
+    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+    expect(result).toBe(true);
+  });
+
   it("should return true for hostnames with correct handle verification", async () => {
     const hostname = "correct-handle.com";
     const handle = "example";
@@ -256,5 +304,76 @@ describe("domain verifier", function () {
         "ns2.request-fails.com",
       ]);
     }
+  });
+
+  it("should timeout if the verification endpoint hangs", async () => {
+    const abortableFetch = jasmine.createSpy("abortableFetch").and.callFake((url, options = {}) => {
+      const { signal } = options;
+      return new Promise((resolve, reject) => {
+        if (!signal) {
+          return;
+        }
+
+        const handleAbort = () => {
+          const abortError = new Error("Aborted");
+          abortError.name = "AbortError";
+          reject(abortError);
+        };
+
+        if (signal.aborted) {
+          handleAbort();
+          return;
+        }
+
+        signal.addEventListener("abort", handleAbort, { once: true });
+      });
+    });
+
+    require.cache[fetchModulePath].exports = abortableFetch;
+    delete require.cache[verifyPath];
+    verify = require(verifyPath);
+
+    const hostname = "timeout-request.com";
+    const handle = "example";
+
+    resolver.resolveCname.and.returnValue(
+      Promise.reject(new Error("ENOTFOUND"))
+    );
+    resolver.resolve4.and.returnValue(Promise.resolve(["1.2.3.4"]));
+    resolver.resolve6.and.returnValue(Promise.resolve([]));
+    dns.resolveNs.and.returnValue(
+      Promise.resolve(["ns1.timeout.com", "ns2.timeout.com"])
+    );
+
+    spyOn(global, "setTimeout").and.callFake((fn, delay, ...args) => {
+      const timer = { cleared: false };
+      process.nextTick(() => {
+        if (!timer.cleared) {
+          fn(...args);
+        }
+      });
+      return timer;
+    });
+
+    spyOn(global, "clearTimeout").and.callFake((timer) => {
+      if (timer) {
+        timer.cleared = true;
+      }
+    });
+
+    const start = Date.now();
+
+    await expectAsync(
+      verify({ hostname, handle, ourIP, ourIPv6, ourHost })
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        message: "REQUEST_TIMEOUT",
+        details: "Verification request timed out after 5 seconds.",
+        nameservers: ["ns1.timeout.com", "ns2.timeout.com"],
+      })
+    );
+
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(100);
   });
 });

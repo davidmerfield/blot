@@ -21,10 +21,13 @@ module.exports = (blog) => {
 
     Blog.setStatus(blog.id, { message, syncID });
     log(message);
-    client.publish("sync:status:" + blog.id, message);
+    client
+      .publish("sync:status:" + blog.id, message)
+      .catch((err) => log("failed to publish sync status", err.message));
   };
   return {
     log,
     status,
+    syncID,
   };
 };

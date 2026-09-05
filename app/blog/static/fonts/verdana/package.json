@@ -1,9 +1,10 @@
 {
   "name": "Verdana",
   "tags": [
-    "sans"
+    "sans",
+    "system"
   ],
-  "stack": "Verdana,Geneva,sans-serif",
+  "stack": "Verdana, 'Bitstream Vera Sans', Geneva, sans-serif",
   "system": true,
   "line_height": 1.425,
   "line_width": 37.9,

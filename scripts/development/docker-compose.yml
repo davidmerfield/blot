@@ -13,12 +13,17 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+      toxiproxy:
+        condition: service_started
     env_file:
       - ../../.env
     environment:
-      - BLOT_REDIS_HOST=redis
+      - BLOT_HOST=${BLOT_HOST}
+      - BLOT_REDIS_HOST=${BLOT_REDIS_HOST:-toxiproxy}
       - CONTAINER_NAME=blot-container-green
+      - DEBUG=${DEBUG:-}
     volumes:
       - ../../data:/usr/src/app/data
       - ../../.git:/usr/src/app/.git
@@ -28,14 +33,34 @@ services:
       - ../../scripts:/usr/src/app/scripts
       - ../../TODO:/usr/src/app/TODO
       - ../../config:/usr/src/app/config
-    command: npx --node-options="--max-old-space-size=750 --trace-deprecation" nodemon /usr/src/app/app/index.js --watch /usr/src/app/app -e js,html,css --ignore /usr/src/app/app/documentation/data --ignore /usr/src/app/app/documentation/output --ignore /usr/src/app/app/views --ignore /usr/src/app/app/views-built  --ignore /usr/src/app/app/clients/*/views --ignore /usr/src/app/app/templates/folders --ignore /usr/src/app/app/templates/latest --ignore /usr/src/app/app/templates/past
+    command: npx --node-options="--max-old-space-size=750 --trace-deprecation" nodemon /usr/src/app/app/index.js --watch /usr/src/app/app -e js,html,css --ignore /usr/src/app/app/documentation/data --ignore /usr/src/app/app/documentation/output --ignore /usr/src/app/app/views --ignore /usr/src/app/app/views-built  --ignore /usr/src/app/app/clients/*/views --ignore /usr/src/app/app/templates/folders --ignore /usr/src/app/app/templates/source
 
   redis:
-    image: "redis:alpine"
+    image: "redis:6.2.12-alpine"
     ports:
       - "6379:6379" # Expose Redis port 6379 to host so we can run scripts if needed
     volumes:
-      - "../../data:/data"
+      - "../../data/redis:/data"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+      start_period: 15s
+
+  toxiproxy:
+    build:
+      context: ./toxiproxy
+      dockerfile: Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8474:8474"
+    expose:
+      - "26379"
 
   nginx:
     build:
@@ -45,7 +70,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ../../data/ssl:/etc/ssl
+      - ../../config/openresty/development_server.conf:/etc/nginx/nginx.conf:ro
+      - ../../config/openresty/init.sh:/etc/nginx/init.sh:ro
+      - ../../data/ssl:/etc/ssl:ro
     depends_on:
       - node-app
-    command:  /bin/sh -c "sh  /etc/nginx/init.sh"
+    command: /bin/sh -c "sh /etc/nginx/init.sh"

@@ -14,6 +14,7 @@ var NO_LONGER_VALID_ERRORS = [
   "EMPTY",
   "ENOTDIR",
   "EISDIR",
+  "TOO_MANY_FILES",
 ];
 
 // The purpose of this module is to rebuild any
@@ -33,59 +34,60 @@ module.exports = function (blogID, path, callback) {
   };
   Blog.get({ id: blogID }, function (err, blog) {
     if (err || !blog) return callback(err || new Error("No blog"));
-    client.SMEMBERS(dependentsKey(blogID, path), function (
-      err,
-      dependent_paths
-    ) {
-      if (err) return callback(err);
+    (async function () {
+      try {
+        const dependent_paths = await client.sMembers(dependentsKey(blogID, path));
 
-      async.eachSeries(
-        dependent_paths,
-        function (dependent_path, next) {
-          Entry.get(blogID, dependent_path, function (entry) {
-            if (!entry) {
-              log("No entry for dependent_path:", dependent_path);
-              return next();
-            }
-
-            build(blog, dependent_path, function (err, updated_dependent) {
-              if (err) {
-                log("Error rebuilding dependent_path:", dependent_path, err);
-
-                if (shouldDropDependent(err)) {
-                  dropDependent(blogID, dependent_path, function (dropErr) {
-                    if (dropErr)
-                      log(
-                        "Error dropping invalid dependent:",
-                        dependent_path,
-                        dropErr
-                      );
-                    next();
-                  });
-                } else {
-                  next();
-                }
-
-                return;
+        async.eachSeries(
+          dependent_paths,
+          function (dependent_path, next) {
+            Entry.get(blogID, dependent_path, function (entry) {
+              if (!entry) {
+                log("No entry for dependent_path:", dependent_path);
+                return next();
               }
 
-              Entry.set(
-                blogID,
-                dependent_path,
-                updated_dependent,
-                function (err) {
-                  if (err) log("Error saving dependent_path entry", err);
+              build(blog, dependent_path, function (err, updated_dependent) {
+                if (err) {
+                  log("Error rebuilding dependent_path:", dependent_path, err);
 
-                  next();
-                },
-                false
-              );
+                  if (shouldDropDependent(err)) {
+                    dropDependent(blogID, dependent_path, function (dropErr) {
+                      if (dropErr)
+                        log(
+                          "Error dropping invalid dependent:",
+                          dependent_path,
+                          dropErr
+                        );
+                      next();
+                    });
+                  } else {
+                    next();
+                  }
+
+                  return;
+                }
+
+                Entry.set(
+                  blogID,
+                  dependent_path,
+                  updated_dependent,
+                  function (err) {
+                    if (err) log("Error saving dependent_path entry", err);
+
+                    next();
+                  },
+                  false
+                );
+              });
             });
-          });
-        },
-        callback
-      );
-    });
+          },
+          callback
+        );
+      } catch (err) {
+        callback(err);
+      }
+    })();
   });
 };
 

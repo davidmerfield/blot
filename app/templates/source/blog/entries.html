@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+
+    {{> sidebar}}
+
+    {{#posts}}
+
+      <div class="entry">
+        {{{html}}}
+      </div>
+
+      <div class="light">{{#date}}
+        <a href="{{{url}}}" title="{{title}}">{{date}}</a>
+        {{/date}}{{#tags}}
+        · <a title="Everything tagged {{name}}" href="/tagged/{{slug}}">{{name}}</a>
+      {{/tags}}</div>
+
+      <hr class="full"/>
+
+    {{/posts}}
+
+    <p class="entry" style="text-align:center">View <a href="/archives">the archives</a></p>
+
+    {{> footer}}
+  </body>
+</html>

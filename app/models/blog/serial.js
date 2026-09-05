@@ -17,6 +17,10 @@ function serialize(sourceObj) {
     ) {
       obj[i] = JSON.stringify(obj[i]);
     }
+
+    if (TYPE[i] === "boolean") {
+      obj[i] = obj[i] ? "true" : "false";
+    }
   }
 
   return obj;

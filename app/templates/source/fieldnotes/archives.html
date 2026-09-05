@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+  {{> head}}
+  <body class="search search-results">
+    <div id="page" class="hfeed site">
+      {{> header}}
+      <div id="content" class="site-content">
+        <div id="primary" class="content-area">
+          <main id="main" class="site-main" role="main">
+            <header class="page-header">
+              <h1 class="page-title">Archives</h1>
+            </header>
+          <article>
+            <div class="entry-content">
+            {{#archives}}
+              <h2>{{year}}</h2>
+              {{#months}}
+              {{#entries}}
+            <a href="{{{url}}}">{{title}}</a>{{#date}}&nbsp;&nbsp;<span class="archive-date">{{date}}</span>{{/date}}
+              <br>
+                {{/entries}}
+                {{/months}}
+          {{/archives}}
+            </div>                      </article>
+          </main>
+          <!-- #main -->
+        </div>
+        <!-- #primary -->
+      </div>
+      <!-- #content -->
+      {{> footer}}
+    </div>
+  </body>
+</html>

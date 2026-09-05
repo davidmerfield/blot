@@ -6,6 +6,7 @@ var getView = require("./getView");
 var async = require("async");
 var makeID = require("./util/makeID");
 var setView = require("./setView");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 var MAX_SIZE = 2.5 * 1000 * 1000; // 2.5mb
 var PACKAGE = "package.json";
 var savePackage = require("./package").save;
@@ -14,6 +15,8 @@ var key = require("./key");
 var dropView = require("./dropView");
 const Blog = require("models/blog");
 const create = require("./create");
+const improveJSONErrorMessage = require("./util/improveJSONErrorMessage");
+const improveMustacheErrorMessage = require("./util/improveMustacheErrorMessage");
 
 async function createLocalTemplate (blogID, dir) {
   return new Promise(async function (resolve, reject) {
@@ -53,8 +56,8 @@ module.exports = function readFromFolder (blogID, dir, callback) {
           async.eachSeries(
             contents,
             function (name, next) {
-              // Skip Dotfile or Package.json
-              if (name[0] === "." || name === PACKAGE) return next();
+              // Skip ignored files or Package.json or dotfiles
+              if (name === PACKAGE || shouldIgnoreFile(name) || name.startsWith('.')) return next();
 
               fs.stat(dir + "/" + name, function (err, stat) {
                 // Skip folders, or files which are too large
@@ -80,6 +83,12 @@ module.exports = function readFromFolder (blogID, dir, callback) {
                       for (var i in views[name]) view[i] = views[name][i];
 
                     view.content = content;
+                    if (
+                      Array.isArray(view.urlPatterns) &&
+                      view.urlPatterns.length
+                    ) {
+                      view.url = view.urlPatterns;
+                    }
                     view.url = view.url || "/" + view.name;
 
                     setView(id, view, function (err) {
@@ -149,54 +158,23 @@ function loadPackage (id, dir, callback) {
 function removeDeletedViews (templateID, contents, callback) {
   const viewsToRemove = [];
 
-  client.smembers(key.allViews(templateID), function (err, viewNames) {
-    if (err) return callback(err);
-    for (const viewName of viewNames) {
-      let found = contents.find(fileName => fileName.startsWith(viewName));
-      if (!found) viewsToRemove.push(viewName);
-    }
+  client
+    .sMembers(key.allViews(templateID))
+    .then(function (viewNames) {
+      for (const viewName of viewNames) {
+        let found = contents.find(fileName => fileName.startsWith(viewName));
+        if (!found) viewsToRemove.push(viewName);
+      }
 
-    async.eachSeries(
-      viewsToRemove,
-      function (viewName, next) {
-        dropView(templateID, viewName, next);
-      },
-      callback
-    );
-  });
-}
-
-// Maps 'at position 505' to
-function improveJSONErrorMessage (err, contents) {
-  try {
-    const regex = /at position (\d+)$/gm;
-    const found = [...err.message.matchAll(regex)][0];
-    const position = parseInt(found[1]);
-    const messageWithoutLocation = err.message.slice(0, found.index).trim();
-    const lines = contents.slice(0, position).split("\n");
-    const lineNumber = lines.length;
-    const linePosition = lines[lineNumber - 1].length;
-    return `${messageWithoutLocation} at position ${linePosition} on line ${lineNumber}`;
-  } catch (e) {
-    return e.message;
-  }
-}
-
-// Maps 'Unclosed section "entriess" at 1446' to
-// `Unclosed section "entriess" on line 12`
-function improveMustacheErrorMessage (err, contents) {
-  try {
-    const regex = /at (\d+)$/gm;
-    const found = [...err.message.matchAll(regex)][0];
-    const position = parseInt(found[1]);
-    const messageWithoutLocation = err.message.slice(0, found.index).trim();
-    const lines = contents.slice(0, position).split("\n");
-    const lineNumber = lines.length;
-    const linePosition = lines[lineNumber - 1].length;
-    return `${messageWithoutLocation} at position ${linePosition} on line ${lineNumber}`;
-  } catch (e) {
-    return e.message;
-  }
+      async.eachSeries(
+        viewsToRemove,
+        function (viewName, next) {
+          dropView(templateID, viewName, next);
+        },
+        callback
+      );
+    })
+    .catch(callback);
 }
 
 function badPermission (blogID, templateID) {

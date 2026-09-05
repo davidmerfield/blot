@@ -25,6 +25,8 @@ Array.from(document.querySelectorAll('[data-font-picker-form]')).forEach(form =>
 
   if (!trigger || !label || !valueInput) return;
 
+  trigger.setAttribute('aria-expanded', 'false');
+
   const openPicker = () => {
     picker.cancelHide();
     trigger.setAttribute('aria-expanded', 'true');
@@ -48,11 +50,23 @@ Array.from(document.querySelectorAll('[data-font-picker-form]')).forEach(form =>
 
   trigger.addEventListener('click', event => {
     event.preventDefault();
+    if (trigger.getAttribute('aria-expanded') === 'true') {
+      picker.hide();
+      return;
+    }
     openPicker();
   });
 
-  trigger.addEventListener('focus', openPicker);
-  trigger.addEventListener('mouseenter', openPicker);
+  trigger.addEventListener('keydown', event => {
+    const activationKeys = ['Enter', ' ', 'Spacebar'];
+    if (!activationKeys.includes(event.key)) return;
+    event.preventDefault();
+    if (trigger.getAttribute('aria-expanded') === 'true') {
+      picker.hide();
+      return;
+    }
+    openPicker();
+  });
 
   trigger.addEventListener('blur', event => {
     const next = event.relatedTarget;
@@ -65,22 +79,8 @@ Array.from(document.querySelectorAll('[data-font-picker-form]')).forEach(form =>
     }
     scheduleHide();
   });
-  trigger.addEventListener('mouseleave', scheduleHide);
 
-  form.addEventListener('mouseenter', cancelHide);
-  form.addEventListener('mouseleave', scheduleHide);
-  form.addEventListener('focusin', cancelHide);
-  form.addEventListener('focusout', event => {
-    const next = event.relatedTarget;
-    const pickerElement = getPickerElement();
-    if (
-      next &&
-      (form.contains(next) || (pickerElement && pickerElement.contains(next)))
-    ) {
-      return;
-    }
-    scheduleHide();
-  });
+
 
   form.querySelectorAll('input[type="number"]').forEach(input => {
     input.addEventListener('change', () => {

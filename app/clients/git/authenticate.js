@@ -28,10 +28,10 @@ module.exports = auth.connect(
         }
 
         // User is attempting to push or pull another user's repo
-        Blog.get({ handle: req.params.gitHandle }, function (err, blog) {
+        Blog.get({ handle: req.gitHandle }, function (err, blog) {
           // There is no blog with this handle
-          if (err || !blog) {
-            console.log(clfdate() + " Git: authenticate: no blog with handle", req.params.gitHandle);
+          if (err || !blog || blog.handle !== req.gitHandle) {
+            console.log(clfdate() + " Git: authenticate: no blog with handle", req.gitHandle);
             return callback(false);
           }
 
@@ -43,7 +43,6 @@ module.exports = auth.connect(
           }
 
           req.blog = blog;
-          req.gitHandle = req.params.gitHandle;
           
           console.log(clfdate() + " Git: authenticate: user", user.uid, "has permission to modify blog", blog.id);
           callback(true);

@@ -1,0 +1,80 @@
+{{=[[ ]]=}}
+
+<h1>Converting the Jekyll theme</h1>
+
+<p>Checklist for converting a Jekyll theme (e.g. Minima) to Blot after you’ve done the initial setup in <a href="/developers/guides/convert-jekyll-template">Convert a Jekyll template to Blot</a>.</p>
+
+<h2>1. Getting the source</h2>
+
+<p>Download the theme from GitHub and unzip (or clone) as in the main guide.</p>
+
+<h2>2. Convert the _config.yml file</h2>
+
+<p>Use an online converter to map Jekyll config to Blot’s <code>package.json</code>.</p>
+
+<ul>
+  <li>Map <code>paginate</code> integer to <code>page_size</code>.</li>
+</ul>
+
+<h2>3. Move files in _includes to root</h2>
+
+<p>Move files in <code>_includes</code> to the template root directory and add an underscore at the start of their name if your template expects that convention.</p>
+
+<h2>4. Rename default layout to entries.html</h2>
+
+<p>Move <code>layouts/default.html</code> to <code>entries.html</code> (Blot’s homepage view).</p>
+
+<h2>5. Rename post layout to entry.html</h2>
+
+<p>Move <code>layouts/post.html</code> to <code>entry.html</code> (Blot’s single-post view).</p>
+
+<h2>6. Compile Sass and merge CSS</h2>
+
+<p>Convert any Sass/SCSS into plain CSS and merge into a single <code>style.css</code> in the template root.</p>
+
+<h2>7. Find and replace partials syntax</h2>
+
+<pre class="code"><code>{% include navigation.html %} --&gt; {{> navigation}}
+
+Regex:
+\{\% include (.*)\.html \%\}
+{{> $1}}</code></pre>
+
+<p>Use the regex above in your editor to replace Jekyll includes with Mustache partials.</p>
+
+<h2>8. Fix pagination</h2>
+
+<p>Replace Jekyll paginator logic with Blot’s <code>{{#pagination}}</code> section:</p>
+
+<pre class="html"><code>&lt;nav id="post-nav"&gt;
+  {% if paginator.previous_page %}...&lt;/nav&gt;</code></pre>
+
+<p>becomes:</p>
+
+<pre class="html"><code>{{#pagination}}
+&lt;nav id="post-nav"&gt;
+  {{#previous}}
+  &lt;span class="prev"&gt;
+    &lt;a href="/page/{{previous}}" title="Previous Page"&gt;
+      &lt;span class="arrow"&gt;←&lt;/span&gt; Newer Posts
+    &lt;/a&gt;
+  &lt;/span&gt;
+  {{/previous}}
+  {{#next}}
+  &lt;span class="next"&gt;
+    &lt;a href="/page/{{next}}"&gt;
+      Older Posts &lt;span class="arrow"&gt;→&lt;/span&gt;
+    &lt;/a&gt;
+  &lt;/span&gt;
+  {{/next}}
+&lt;/nav&gt;
+{{/pagination}}</code></pre>
+
+<h2>9. Fix menu links</h2>
+
+<p>Replace Jekyll’s <code>page.url</code> and <code>site</code> with Blot’s view context (e.g. <code>{{url}}</code>, <code>{{#entry}}</code>). Example:</p>
+
+<pre class="html"><code>&lt;nav class="main-nav"&gt;
+  {{^index}}&lt;a href="/"&gt;&lt;span class="arrow"&gt;←&lt;/span&gt; Home&lt;/a&gt;{{/index}}
+  &lt;a href="/about"&gt;About&lt;/a&gt;
+&lt;/nav&gt;</code></pre>

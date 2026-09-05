@@ -4,11 +4,8 @@ const { join } = require("path");
 const localreaddir = async (dir) => {
   const contents = await fs.readdir(dir);
 
-  // Ignore dotfiles and directories
-  const filteredContents = contents.filter((name) => !name.startsWith("."));
-
   const result = await Promise.all(
-    filteredContents.map(async (name) => {
+    contents.map(async (name) => {
       const path = join(dir, name);
       const stat = await fs.stat(path);
 

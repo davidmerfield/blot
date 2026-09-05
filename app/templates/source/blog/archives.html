@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+
+    {{> sidebar}}
+
+    <h1>Archives</h1>
+
+      <form action="/search">
+        <input placeholder="Search..." value="{{#query}}{{query}}{{/query}}" name="q" id="search" type="text" />&nbsp; <input type="submit" value="Go"/>
+      </form>
+
+      <br>
+
+    <div class="entry">
+
+      {{#archives}}
+        {{#months}}
+          {{#entries}}
+          <a href="{{{url}}}" title="{{title}}">{{title}}</a> <span class="light">{{date}}</span><br>
+          {{/entries}}
+        {{/months}}
+      {{/archives}}
+
+    </div>
+
+    {{> footer}}
+  </body>
+</html>

@@ -8,3 +8,5 @@ require('../controls/highlighter.js');
 require('../controls/boolean.js');
 require('../controls/select.js');
 require('../controls/date.js');
+require('../controls/upload.js');
+require('./menu-links.js')

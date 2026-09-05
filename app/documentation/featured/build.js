@@ -17,6 +17,7 @@ const config = require("config");
 const avatarDirectory = __dirname + "/avatars";
 const outputDirectory = join(__dirname, "../../views/images/featured");
 const verifySiteIsOnline = require("./verifySiteIsOnline");
+const fetchSubscriptionDuration = require("./fetchSubscriptionDuration");
 
 if (require.main === module) {
   build(async (err, sites) => {
@@ -38,11 +39,17 @@ async function build(callback) {
     .filter((i) => i)
     .map((line) => {
       var words = line.split(" ");
-      var link = "https://" + words[1];
-      var name = words.slice(2).join(" ").split(",")[0];
-      var bio = tidy(
-        words.slice(2).join(" ").split(",").slice(1).join(",").trim()
-      );
+      var link = "https://" + words[0];
+      var rest = words.slice(1).join(" ");
+      var parts = rest.split(",").map((p) => p.trim());
+      var name = parts[0];
+      var tenureStartYear = null;
+      var bioPart = parts.slice(1).join(", ");
+      if (parts.length >= 2 && /^\d{4}$/.test(parts[parts.length - 1])) {
+        tenureStartYear = parseInt(parts[parts.length - 1], 10);
+        bioPart = parts.slice(1, -1).join(", ");
+      }
+      var bio = tidy(bioPart);
       var host = toUnicode(parse(link).host);
 
       if (!avatars.find((i) => i.startsWith(host)))
@@ -53,6 +60,7 @@ async function build(callback) {
         host,
         name,
         bio,
+        tenureStartYear,
         avatar: join(
           avatarDirectory,
           avatars.find((i) => i.startsWith(host))
@@ -76,13 +84,44 @@ async function build(callback) {
   sites = await Promise.all(
     sites.map(async (site) => {
       const isOnline = await verifySiteIsOnline(site.host);
-      return isOnline ? site : null;
+
+      if (!isOnline) return null;
+
+      let tenure = null;
+      if (site.tenureStartYear != null) {
+        const startMs = Date.UTC(site.tenureStartYear, 0, 1);
+        tenure = Date.now() - startMs;
+      } else {
+        tenure = await fetchSubscriptionDuration(site.host);
+      }
+
+      const { tenureStartYear, ...rest } = site;
+      return {
+        ...rest,
+        tenure,
+        tenure_label: formatTenureLabel(tenure),
+      };
     })
   ).then((sites) => sites.filter((i) => i));
 
   const result = await generateImages(sites);
 
   callback(null, result);
+}
+
+function formatTenureLabel(durationMs) {
+  if (!Number.isFinite(durationMs) || durationMs <= 0) return null;
+
+  const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+  const completedMonths = Math.floor(durationMs / ONE_MONTH_MS);
+  const months = Math.max(1, completedMonths);
+
+  if (months < 12) {
+    return `this year`;
+  }
+
+  const years = Math.max(1, Math.floor(months / 12));
+  return `${years} year${years === 1 ? "" : "s"} ago`;
 }
 
 const tidy = (bio) => {

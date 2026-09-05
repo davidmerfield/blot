@@ -1,17 +1,15 @@
-<div style="margin-top: 2rem;">
-    <a href="{{{base}}}/" class="template-button" style="margin-left: 0;">
-        &larr; Back to template settings
-    </a>
-</div>
+{{> template-settings-back}}
 
-<form method='post' action='{{{dashboardBase}}}' enctype='multipart/form-data'>
+<form method='post' action='{{{dashboardBase}}}' enctype='multipart/form-data' class="dashboard-form">
 
   <input type="hidden" name="_csrf" value="{{csrftoken}}" />
 
   <input type="hidden" name="redirect" value="{{{base}}}/photo" />
 
-<p>Your photo is used on your site's template and to generate a favicon for your site.</p>
+	<div class="settings-group">
+		<h2 class="template-heading">Photo</h2>
 
+    <div style="padding: 2em 2em 1em">
 
   {{#blog.avatar}} 
 <div class="line" style="padding-left: 0">
@@ -19,17 +17,22 @@
   <span class="center">
     <img style="max-width:64px;max-height:64px;margin:6px 6px 0 0 ;" src="{{blog.avatar}}" class="{{#blog.roundAvatar}}rounded{{/blog.roundAvatar}}" />
   </span>
-  <button class="right" type="submit" style="height:1.3em;font-size:14px;color:#0070e8;" name="avatar" value="">Delete photo</button>
+  <span class="right">
+  <button type="submit" name="avatar" value="">Delete photo</button>
+  </span>
 </div>
   {{/blog.avatar}}
 <br>
   <section style="flex-grow:1">
-    <label style="border-radius:4px;border:1px solid rgba(0,0,0,0.05);display:block;padding: 11px 20px;margin-bottom:6px;cursor:pointer;box-sizing: border-box;">
+    <label style="border-radius:4px;display:block;padding: 11px 20px;margin-bottom:6px;cursor:pointer;box-sizing: border-box;">
     
     <span style="margin-top:0;color:rgb(158, 154, 152);font-size:14px;display:inline;margin-right:10px">Select {{#blog.avatar}}new{{/blog.avatar}} photo:</span>
 
     <input type='file' id="avatarUpload" style="display:inline;margin:0;cursor: pointer;" name='avatar' />
     </label>
   </section>
+    {{> form-footer}}
+      </div>
 
-  {{> form-footer}}
+</div>
+</form>

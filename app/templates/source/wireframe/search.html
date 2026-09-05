@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+
+    <br>
+    <form>
+      <input placeholder="Search for an entry..." value="{{#query}}{{query}}{{/query}}" name="q" id="search" type="text" /><input type="submit" value="Go"/>
+    </form>
+    <br>
+
+    {{#query}}
+      {{^entries}}
+      <p>Sorry, no results for “{{query}}”</p>
+      {{/entries}}
+    {{/query}}
+
+    {{#entries}}
+      <a href="{{{url}}}">{{title}}</a> {{date}}<br>
+    {{/entries}}
+
+    {{> footer}}
+  </body>
+</html>

@@ -6,6 +6,7 @@ const Entry = require("models/entry");
 const IgnoredFiles = require("models/ignoredFiles");
 const moment = require("moment");
 const converters = require("build/converters");
+const enabledConverters = require("build/converters/enabled");
 const Build = require("build");
 const fs = require("fs-extra");
 const localPath = require("helper/localPath");
@@ -18,12 +19,17 @@ const findMultiFolder =
     return null;
   };
 
+const SYNTHETIC_DEPENDENCY_PREFIXES = [
+  "/__wikilink_slug__/",
+  "/__wikilink_filename__/",
+];
+
 module.exports = async function (blog, path) {
   return new Promise((resolve, reject) => {
     const blogID = blog.id;
 
     const multiInfo = findMultiFolder(path);
-    const entryLookupPath = multiInfo ? multiInfo.entryPath : path;
+    const aggregatedLookupPath = multiInfo ? multiInfo.entryPath : null;
 
     Promise.all([
       new Promise((resolve, reject) => {
@@ -32,19 +38,53 @@ module.exports = async function (blog, path) {
           resolve(ignored);
         });
       }),
-      new Promise((resolve, reject) => {
-        Entry.get(blogID, entryLookupPath, function (entry) {
+      new Promise((resolve) => {
+        Entry.get(blogID, path, function (entry) {
+          resolve(entry);
+        });
+      }),
+      new Promise((resolve) => {
+        if (!aggregatedLookupPath || aggregatedLookupPath === path) {
+          return resolve(null);
+        }
+
+        Entry.get(blogID, aggregatedLookupPath, function (entry) {
           resolve(entry);
         });
       }),
     ])
-      .then(([ignoredReason, entry]) => {
-        
+      .then(([ignoredReason, ownEntry, aggregatedEntry]) => {
+        const matchingConverter = converters.find((converter) => {
+          return converter.is(path);
+        });
+        const matchingConverterEnabled = enabledConverters(blog).some(
+          (converter) => {
+            return matchingConverter && converter.id === matchingConverter.id;
+          }
+        );
+
+        let entry = resolveDisplayedEntry({
+          path,
+          ownEntry,
+          aggregatedEntry,
+          multiInfo,
+        });
+
+        const entryLookupPath = entry ? entry.path : path;
+
         let ignored = {};
 
         if (!entry) {
 
-          if (ignoredReason && ignoredReason === 'WRONG_TYPE') {
+          if (
+            ignoredReason &&
+            ignoredReason === 'WRONG_TYPE' &&
+            matchingConverter &&
+            matchingConverter.id === "img" &&
+            !matchingConverterEnabled
+          ) {
+            ignored.imageConverterDisabled = true;
+          } else if (ignoredReason && ignoredReason === 'WRONG_TYPE') {
             ignored.wrongType = true;
           } else if (path.toLowerCase().indexOf("/templates/") === 0) {
             ignored.templateFile = true;
@@ -64,7 +104,7 @@ module.exports = async function (blog, path) {
 
         const file = {};
 
-        file.kind = kind(path, entry);
+        file.kind = kind(path, entry, multiInfo);
         file.path = path;
         file.url = encodePath(path);
         file.name = basename(path);
@@ -73,7 +113,9 @@ module.exports = async function (blog, path) {
         // a dictionary we use to display conditionally in the UI
         file.extension = {};
         file.extension = normalizeExtension(path)
-
+        file.converter = matchingConverter || null;
+        file.converterEnabled = matchingConverterEnabled;
+        
         file.entry = entry;
         file.ignored = ignored;
 
@@ -83,7 +125,7 @@ module.exports = async function (blog, path) {
 
           let converter;
 
-          if (isMultiEntry(entry)) {
+          if (isMultiEntry(entry, multiInfo)) {
             entry.converter = { multi: true };
           } else {
             converter = converters.find((converter) => {
@@ -118,20 +160,22 @@ module.exports = async function (blog, path) {
             return  { backlink};
           });
 
-          entry.dependencies = entry.dependencies.map((dependency) => {
+          entry.dependencies = entry.dependencies
+            .filter((dependency) => {
+              return !isSyntheticDependency(dependency);
+            })
+            .map((dependency) => {
             return { dependency };
-           });
+            });
 
           entry.internalLinks = entry.internalLinks.map((internalLink) => {
             return { internalLink };
           });
 
           const rawMetadata = { ...(entry.metadata || {}) };
-          const sourcePaths = Array.isArray(rawMetadata._sourcePaths)
-            ? rawMetadata._sourcePaths.slice()
-            : null;
+          const sourcePaths = sourcePathsForEntry(entry, multiInfo);
 
-          if (sourcePaths) {
+          if (sourcePaths.length && isMultiEntry(entry, multiInfo)) {
             delete rawMetadata._sourcePaths;
 
             const folderDetails =
@@ -200,8 +244,8 @@ const CATEGORIES = {
   "video": ["mp4", "avi", "mkv", "mov", "flv", "wmv"],
 };
 
-function kind(path, entry) {
-  if (entry && isMultiEntry(entry)) {
+function kind(path, entry, multiInfo) {
+  if (entry && isMultiEntry(entry, multiInfo)) {
     return "Folder post";
   }
 
@@ -243,13 +287,83 @@ function encodePath(input) {
     .join("/");
 }
 
-function isMultiEntry(entry) {
-  return (
-    entry &&
+function resolveDisplayedEntry({ path, ownEntry, aggregatedEntry, multiInfo }) {
+  if (ownEntry && !isDeleted(ownEntry) && !isMultiEntry(ownEntry, multiInfo)) {
+    return ownEntry;
+  }
+
+  if (aggregatedEntry && !isDeleted(aggregatedEntry) && multiInfo) {
+    const sourcePaths = sourcePathsForEntry(aggregatedEntry, multiInfo);
+    const isFolder = path === multiInfo.folderPath;
+    const isSource = sourcePaths.indexOf(path) !== -1;
+
+    if (isFolder || isSource) return aggregatedEntry;
+  }
+
+  if (ownEntry && !isDeleted(ownEntry)) return ownEntry;
+
+  return null;
+}
+
+function isDeleted(entry) {
+  return !!(entry && entry.deleted);
+}
+
+function isMultiEntry(entry, multiInfo) {
+  if (!entry || isDeleted(entry)) return false;
+
+  if (sourcePathsFromHtml(entry.html).length > 0) return true;
+
+  if (
     entry.metadata &&
     Array.isArray(entry.metadata._sourcePaths) &&
     entry.metadata._sourcePaths.length > 0
-  );
+  ) {
+    return true;
+  }
+
+  return !!(multiInfo && entry.path === multiInfo.entryPath);
+}
+
+function sourcePathsForEntry(entry, multiInfo) {
+  const fromHtml = sourcePathsFromHtml(entry && entry.html);
+  if (fromHtml.length) return fromHtml;
+
+  const fromMetadata =
+    entry &&
+    entry.metadata &&
+    Array.isArray(entry.metadata._sourcePaths)
+      ? entry.metadata._sourcePaths.slice()
+      : [];
+
+  if (fromMetadata.length) return fromMetadata;
+
+  if (multiInfo && multiInfo.folderPath) return [multiInfo.folderPath];
+
+  return [];
+}
+
+function sourcePathsFromHtml(html) {
+  if (!html) return [];
+
+  const paths = [];
+  const pattern = /data-file="([^"]*)"/g;
+  let match;
+
+  while ((match = pattern.exec(html))) {
+    paths.push(unescapeAttribute(match[1]));
+  }
+
+  return paths;
+}
+
+function unescapeAttribute(value) {
+  return String(value)
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
 }
 
 function buildMultiEntryData({
@@ -292,4 +406,10 @@ function buildMultiEntryData({
     sources: sources,
     hasMissing: sources.some((source) => !source.exists),
   };
+}
+
+function isSyntheticDependency (path) {
+  return SYNTHETIC_DEPENDENCY_PREFIXES.some((prefix) => {
+    return path.indexOf(prefix) === 0;
+  });
 }

@@ -1,190 +1,306 @@
-Sync
-----
+# sync
+
+The `sync` module is the entry point for all content processing in Blot. It provides an exclusive per-blog file-system lock and, within that lock, exposes a pipeline through which file changes are built into entries, stored in Redis, and reflected in the blog's public state.
+
+Every sync client (Dropbox, Git, local) acquires the lock provided by this module before modifying a blog's folder or calling `folder.update`. This ensures that no two processes concurrently modify or process the same blog folder.
+
+## Structure
+
+```
+sync/
+  index.js                  Primary export. Acquires the folder lock and yields the
+                            folder interface to the caller.
+  rebuild.js                Full-folder rebuild: walks every file in the blog directory
+                            and calls update on each path in series.
+  renames.js                Post-sync rename detection. Correlates recently created and
+                            deleted entries by file size and title to infer moves.
+  messenger.js              Factory for the log/status/syncID triple attached to every
+                            sync session.
+  establishSyncLock.js      Promise-based wrapper around index.js for async/await callers.
+  lock-diagnostics.js       Gathers system-state diagnostics (disk, CPU, memory, lock
+                            file stats) when the proper-lockfile lock is compromised.
+  lock-diagnostics-state.js In-process registry of active sync IDs and in-flight
+                            file-update paths. Consulted by lock-diagnostics.js.
+
+  update/
+    index.js                Constructs the update(path, callback) function bound to a
+                            blog. Dispatches to set or drop based on whether the file
+                            exists. Detects file changes mid-update and re-runs.
+    set.js                  Handles an existing file: classifies it as public, template,
+                            preview, or post/page; builds and stores the entry; triggers
+                            dependent rebuilds.
+    drop.js                 Handles a removed file: drops the entry and any ignored-file
+                            record; removes the draft preview file; triggers dependent
+                            rebuilds.
+    ignore.js               Records a path in the ignoredFiles model and drops any
+                            existing entry for that path.
+    rebuildDependents.js    Rebuilds all entries that declared a dependency on the
+                            changed path. Reads the dependency set from Redis and calls
+                            build + Entry.set for each dependent.
+    drafts.js               Classifies a path as a draft, a preview file, or neither.
+                            Computes preview file paths. Exposes route constants used by
+                            the dashboard SSE stream.
+    preview/
+      index.js              Re-exports write and remove.
+      write.js              Writes a preview HTML wrapper to the blog folder (via the
+                            sync client or directly to disk for client-less blogs).
+      remove.js             Removes the preview HTML file from the blog folder via the
+                            sync client.
+      injection.html        Mustache template for the SSE script tag injected into
+                            draft preview pages.
+      wrapper.html          Mustache template for the outer iframe shell that hosts
+                            a draft preview.
+      readme.txt            Design notes for the draft preview feature.
+
+  fix/
+    index.js                Orchestrator: runs all five repair routines in series against
+                            a blog, then bumps cacheID if any routine reported changes.
+    entry-ghosts.js         Detects entries whose stored path does not match the actual
+                            file on disk (case mismatch or missing file). Corrects the
+                            path or drops the entry.
+    list-ghosts.js          Removes stale entry IDs from the six Redis sorted sets
+                            (all, created, entries, drafts, scheduled, pages).
+    tag-ghosts.js           Removes empty tags and stale entry IDs from tag sorted sets.
+    menu-ghosts.js          Removes deleted or duplicate entries from the blog menu array
+                            and updates stale labels, URLs, and metadata.
+    entries-path-index.js   Compares the entry count to the lex path-index count and
+                            calls pathIndex.backfillIndex when they diverge.
+    tests/
+      entries-path-index.js Unit tests for entries-path-index.js using Jasmine spies.
+
+  tests/
+    index.js                Tests for lock acquisition, mutual exclusion, stale-lock
+                            recovery after process death, and sequential re-sync.
+    build.js                Integration tests for the full update pipeline: path
+                            normalisation, ignored files, dependent rebuilds, slug/link
+                            metadata.
+    update.js               Integration tests for the update function: create, delete,
+                            mid-update file-change re-run.
+    renames.js              Integration tests for rename detection across single and
+                            multiple syncs, empty files, draft-to-post moves, and ghost
+                            entries.
+    rebuild.js              Integration tests for the full-folder rebuild, including
+                            cache-wipe options.
+    multiple.js             Tests that stale locks from a killed child process are
+                            released across 20 concurrent blogs.
+    error.js                Child process used by index.js tests to simulate a crash.
+    kill.js                 Child process used to simulate a SIGKILL during a sync.
+```
+
+## Public API
+
+### `sync(blogID, callback)`
+
+**File:** `index.js`
+
+Acquires a filesystem lock on the blog's folder using `proper-lockfile`, then calls `callback(err, folder, done)`.
+
+- `blogID` — string. Throws `TypeError` if not a string.
+- `callback(err, folder, done)` — called once the lock is acquired or on failure.
+  - `err` — non-null if the blog cannot be found, is disabled, or the lock could not be acquired.
+  - `folder.path` — absolute path to the blog's local folder (trailing slash stripped).
+  - `folder.update(path, callback)` — processes a single path. See `update/index.js`.
+  - `folder.status(message)` — broadcasts a status message via Redis pub/sub.
+  - `folder.log(...args)` — writes a prefixed log line to stdout.
+  - `done(syncError, callback)` — releases the lock. Must be called exactly once. Internally runs `renames`, `buildFromFolder` (templates), and bumps `blog.cacheID` when at least one `folder.update` was called.
 
-The purpose of this module is to ensure that only one process makes changes to a blog's folder at a single time.
+**Lock configuration:**
+- Stale timeout: 10 seconds.
+- Update heartbeat interval: 3 seconds.
+- Retry strategy at process startup (within 10s): 1 retry with an 11-second minimum timeout, to handle stale locks from recently killed processes.
+- Retry strategy after startup: 3 retries at 750ms, 1.5s, 3s.
 
+### `rebuild(blogID, [options], callback)`
 
-// This function lets you acquire a lock on a blog's folder
-// This prevents buggy behaviour when making changes.
+**File:** `rebuild.js`
 
-sync(blogID, function(err, folder, done){
-    
-  // if err, you could not acquire lock on folder
+Walks every file in the blog's local folder and calls `update(path, ...)` on each in series. Does not acquire the sync lock; intended to be called by the caller's own sync session or an administrative tool.
 
-  folder.path = /var/blogs/blogID
+- `options.thumbnails` — boolean. Flushes the thumbnail Transformer store and empties the `_thumbnails` static directory before rebuilding.
+- `options.imageCache` — boolean. Flushes the image-cache Transformer store and empties the `_image_cache` static directory before rebuilding.
 
-  folder.update(path, function(){
-  
-  });
-  
-  // call done to release lock on folder
-  done(err, callback);
-});
+### `establishSyncLock(blogID)`
 
-It takes advantage of Blot's database and an implementation of
-the redlock algorithm by Mike Marcacci https://redis.io/topics/distlock
+**File:** `establishSyncLock.js`
 
-Does last commit fix the zombie process issue?
-How do we test the zombie process issue?
-  - more flags to build?
+Promise-based wrapper. Resolves to `{ folder, done }` where `folder.update` is promisified and `done` is an async function. Used by async/await callers.
 
+## Internal Modules
 
-Generally, can we offload all expensive work into
- 'forked' processes to ease the load on the server
- - almost everything except reads?
- - all GET requests get their own speedy/high priority process?
+### `update/index.js`
 
-Can we abstract the shit in build/index to a helper function
-that could generally make any function 'resilient', e.g.
+Returns a closure `update(path, callback)` bound to a `blog` object, a `log` function, and a `status` function.
 
-  const resilient = require('helper/resilient');
-  function build (...) { ... }
-  module.exports = resilient(build);
+**Dispatch logic:**
 
-Possible future architecture
+1. Hashes the file before processing (`hashBefore`).
+2. `fs.stat` the file:
+   - `ENOENT` → calls `drop(blogID, path, ...)`.
+   - `isDirectory` → calls `maybeEnableInjectTitle` (auto-enables the `injectTitle` plugin when a `.obsidian` directory is detected, unless already enabled or explicitly disabled).
+   - Otherwise → calls `set(blog, path, ...)`.
+3. After the operation, hashes the file again (`hashAfter`). If the hash changed during processing, the update is retried recursively.
+4. Flushes the blog cache after each file.
 
-Blot -- cluster --> server  (can initiate a sync)
-                    server  (can initiate a sync)
-                    sync    -- resilient --> build
+### `update/set.js`
 
+Classifies the path and routes it:
 
+- **Public file** (path starts with `/public/`, contains `/_`, `/.`, or `.textbundle/assets/`): records it in the `ignoredFiles` model.
+- **Template file** (path starts with `/templates/`): no entry action taken.
+- **Preview file** (identified by `drafts.isPreview`): no entry action taken.
+- **Post/page**: calls `build(blog, path, ...)` then `Entry.set`. After setting, triggers `rebuildDependents` for wikilink slug and filename synthetic keys. If the entry is a visible draft, writes a preview file.
+- Always calls `rebuildDependents(blogID, path, ...)` for the raw path after the above.
 
+### `update/drop.js`
 
-Let's remove async exit hook and instead use a heartbeat system between processes:
+Runs in series: `Ignored.drop` → `Entry.drop` → `rebuildDependents`. If the path is currently a draft, also calls `Preview.remove`.
 
-https://www.exratione.com/2013/05/die-child-process-die/
+### `update/rebuildDependents.js`
 
-https://www.exratione.com/2013/03/nodejs-run-the-heartbeat-in-a-child-process/
+Reads the Redis set at `Entry.key.dependents(blogID, path)`. For each dependent path, retrieves the entry, calls `build`, and calls `Entry.set(..., false)` (the `false` suppresses scheduled-post side effects).
 
-Handle bug with build passing a job to a dead slave
-See if we can handle sync with process restart's gracefully!
-Makes the sync less dependent for upon the success of other files
+### `update/drafts.js`
 
-Resolve issues with git client during a partially-successful sync and tell V
+An IIFE exposing:
 
-If using the git client, if building one entry fails, it seems that the rest of the entries in the same sync also fail?
-so right now build/metadata is used multiple times. in certain cases it is wrapped in a try/catch but in others it is not. we need to wrap it in try/catch wherever it is used
-right now, if build/main throws an uncaught exception, it seems like the rest of the sync fails. this needs to not happen
-to debug, add one invalid file ('foo: bar: baz\nxyz') and one valid file ('valid') and sync
-If there is a build error with a specific post, show it on the dashboard, e.g. on the file viewer
+| Export | Description |
+|---|---|
+| `isDraft(blogID, path, cb)` | `true` if the filename has a `[draft]` prefix or the path is inside `/drafts/` (and is not itself a preview). |
+| `isPreview(blogID, path, cb)` | `true` if the file ends in `.preview.html`, starts with `[preview]`, or contains `<meta data-blot-document="preview-container"/>`. |
+| `previewPath(filePath)` | Returns the expected path of the preview file for a given draft path. |
+| `previewFile(handle, path, cb)` | Renders the preview wrapper HTML for a draft at `path`. |
+| `viewURL(handle, filePath)` | Constructs the full URL for a draft preview. |
+| `injectScript(html, filePath, cb)` | Inserts the SSE stream script tag into the `<head>` of a rendered page. |
+| `viewRoute` | Route pattern: `/draft/view/*` |
+| `streamRoute` | Route pattern: `/draft/stream/*` |
 
+Draft detection rules:
+- Filename prefixed with `[draft]` → always a draft.
+- Path is outside `/drafts/` → never a draft.
+- Path is inside `/drafts/` and is not a preview → draft.
 
+### `messenger.js`
 
-To do
------
+Called once per sync with the `blog` object. Returns `{ log, status, syncID }`.
 
-* Expose extend option for long syncs...
-* Think about removing the onerous done(err, callback) argument requirements –> can we pass in a callback?
-* Test error handling more thoroughly
-* What happens to the lock if an exception is thrown mid sync?
+- `syncID` — a UUID prefix of the form `sync_XXXXXXX`, unique per sync session.
+- `log(...args)` — prefixes each line with timestamp, truncated blog ID, syncID, and client name, then writes to stdout.
+- `status(message)` — calls `Blog.setStatus`, calls `log`, and publishes to the Redis channel `sync:status:{blogID}`.
 
+### `lock-diagnostics-state.js`
 
+In-process state tracking using two `Map` structures. Exported functions:
 
-// handle renames without a load of tedious calls to Dropbox
+| Function | Description |
+|---|---|
+| `addPendingSync(blogID, syncID)` | Records a sync session as active. |
+| `removePendingSync(blogID, syncID)` | Removes the session and all its pending updates. |
+| `addPendingUpdate(blogID, syncID, filePath)` | Records a file path as currently being processed. |
+| `removePendingUpdate(blogID, syncID, filePath)` | Removes a file from the in-flight set. |
+| `getPendingSyncs()` | Returns an array of `{ blogID, syncID }` for all active sessions. |
+| `getPendingUpdates()` | Returns an array of `{ blogID, syncID, filePath }` for all in-flight updates. |
 
-// need to resolve path to 'blog folder' as soon as possible
-// and handle changes to 'blog folder' if users has multiple blogs inside dropbox
+### `lock-diagnostics.js`
 
--> use information in local state? this seems smart...
--> why not handle all rename logic locally?
+`gatherLockDiagnostics({ blogID, lockPath, lockAcquiredAt, syncContext, timeoutMs })` → `Promise<object>`
 
-// focus on using Dropbox to keep a folder in sync
+Called by `index.js` when `proper-lockfile` fires the `onCompromised` handler. Collects and returns a diagnostics object containing: pending syncs and updates, process PID and memory, OS load averages, disk space, and `stat` results for the lock file and lock directory. Each field is gathered with a shared deadline (default 2 seconds) so diagnostics cannot block indefinitely.
 
-what happens if a file moves while it is downloading?
+### `renames.js`
 
-expose three commands
+Called at the end of every sync, inside `done(...)`. Looks back 30 seconds to find entries created and entries deleted in that window.
 
-set (add / update)
-move (also guessed from drops & sets)
-drop
+Rename heuristic:
+1. Match a deleted entry with a created entry that has the same non-zero `size`. If exactly one match, treat it as a rename.
+2. If no size match, match by identical `title`. If exactly one match, treat it as a rename.
 
+For each matched rename:
+- Transfers `url` and `guid` from the deleted entry to the created entry.
+- Transfers `dateStamp` when neither entry had a date specified in its filename or metadata.
+- Transfers `created` timestamp unless the deleted entry was in a draft state.
+- Clears the `guid` on the deleted entry so it cannot be matched again.
 
-# Strategy to sync a folder to remote server
+### `fix/index.js`
 
-Syncs appear as create or drops
+`fix(blog, callback)` — runs five repair routines in series:
 
-Given an array of changes.
-  
-filter changes and make them relative to a blog's folder
--> move add them to individual blogs queue
--> filter renames
--> sort changes and put drops before creates & renames?
+1. `entryGhosts` — resolves path case mismatches; drops entries whose files are missing.
+2. `tagGhosts` — prunes empty tags and stale tag-member IDs.
+3. `listGhosts` — prunes stale IDs from the six entry sorted sets.
+4. `menuGhosts` — removes deleted/duplicate entries from `blog.menu`; updates stale labels, URLs, and metadata.
+5. `entriesPathIndex` — backfills the `entries:lex` sorted set if its count diverges from the `entries` sorted set.
 
-push timestamped list of changes to redis queue per blog
+If any routine produced a non-empty report, bumps `blog.cacheID` to force cache invalidation. Returns `(err, finalReport)` where `finalReport` is an object keyed by function name.
 
-Save new folder state instantly.
+## Sync Pipeline
 
-call queue.process (blogID)
+A complete sync session follows this sequence:
 
-pop change from front of queue set, to active set, if fails, return it to front of queue.
+```
+sync(blogID, cb)
+  └─ Blog.get                        Verify blog exists and is not disabled
+  └─ messenger(blog)                 Create log/status/syncID
+  └─ lockfile.lock(blogPath)         Acquire filesystem lock
+  └─ callback(null, folder, done)    Yield control to caller
+       └─ folder.update(path, ...)   [zero or more times]
+            └─ hashFile (before)
+            └─ fs.stat
+                 ├─ ENOENT → drop
+                 ├─ directory → maybeEnableInjectTitle
+                 └─ file → set
+                      ├─ isPreview / isPublic / isTemplate classification
+                      ├─ build(blog, path)
+                      ├─ Entry.set
+                      ├─ rebuildDependents (wikilink keys)
+                      └─ Preview.write (if visible draft)
+            └─ hashFile (after) → retry if changed
+            └─ flushCache
+  └─ done(syncError, finalCallback)
+       └─ renames(blogID)            Detect file moves by size/title correlation
+       └─ buildFromFolder(blogID)    Rebuild templates from Templates/ folder
+       └─ lockfile.unlock
+       └─ Blog.set({ cacheID })      Only if folder.update was called at least once
+       └─ finalCallback(syncError)
+```
 
--> on server restart, return all active to queue, then call queues
+## Integration Points
 
-for drops, do the drop
+| Dependency | Role |
+|---|---|
+| `models/blog` | Fetches blog configuration; sets `cacheID` and status. |
+| `models/entry` | `Entry.set` / `Entry.drop` — core entry persistence. |
+| `models/entries` | `getCreated` / `getDeleted` — used by `renames.js`. |
+| `models/template` | `buildFromFolder` — rebuilds templates at end of sync. |
+| `models/ignoredFiles` | Records paths excluded from entry processing. |
+| `models/client` (Redis) | Publishes `sync:status:{blogID}` messages; reads dependency sets. |
+| `build` | Converts a file at a path into an entry object. |
+| `helper/localPath` | Resolves blog-relative paths to absolute paths on disk. |
+| `helper/hashFile` | Detects mid-update file changes. |
+| `helper/pathNormalizer` | Normalises path separators and casing before dispatch. |
+| `proper-lockfile` | Provides the filesystem-level mutual exclusion lock. |
+| `clients/*` | Dropbox, Git, and local clients all call `sync(blogID, ...)` to acquire the lock before processing their change lists. |
 
-for creates, make a dropbox client and get the file to save it
+## Known Constraints
 
-Immediately process drops. 
+- The lock is per-process and file-system based (`proper-lockfile`). It does not coordinate across machines; running multiple application servers against the same blog folder without shared storage will not be safe.
+- `renames.js` relies on a 30-second window and a heuristic match by file size or title. Renames involving empty files are skipped (zero `size` is excluded). Ambiguous renames — where multiple deleted entries have the same size or title — are not resolved.
+- `rebuildDependents` suppresses build errors for individual dependents and continues, so a broken dependent entry does not block other rebuilds.
+- `rebuild.js` does not acquire the sync lock itself; callers are responsible for ensuring no concurrent sync is in progress.
+- The `maybeEnableInjectTitle` side effect in `update/index.js` mutates `blog.plugins` in-place on the in-memory blog object, so subsequent updates within the same sync session see the updated plugin state.
 
-Once all is done, run a validation of the folder? Probably not. Maybe do this once an hour, or once a day? Would need to wait for queue to empty for this to work.
+## Tests
 
-# Validate
+Tests use Jasmine and the shared `global.test.blog()` / `global.test.blogs(n)` helpers to provision test blogs with a local folder.
 
-build local tree of folder, in memory? fine.
-build remote tree of folder -> client.delta('')
+```
+# From the repository root
+npx jasmine app/sync/tests/index.js
+npx jasmine app/sync/tests/build.js
+npx jasmine app/sync/tests/update.js
+npx jasmine app/sync/tests/renames.js
+npx jasmine app/sync/tests/rebuild.js
+npx jasmine app/sync/tests/multiple.js
+npx jasmine app/sync/fix/tests/entries-path-index.js
+```
 
-compare trees, drop any ghost local entries 
-
-14. sync
-
-the problem
-
-blot does not handle sync notifications from dropbox well.
-
-- for some reason, sync locked up for allpole. this is catastrophic, much worse than multiple entries?
-- for some reason, ben log has multiple drafts.
-
-let's say you add a big directory of files to blot's folder.
-
-Blot will recieve a webhook, get the list of changed files and start downloading them to process them.
-
-This could take a long a while – if during the downloading the user changes one of the files, then the dropbox will notify again. Since the previous sync is not complete, dropbox will send the entire list of changes again, as well as the change.
-
-## the current strategy is to block multiple concurrent syncs for a user, and re-sync after each successful sync until no changes are detected.
-
-## ideal strategy?
-
-- on webhook, fetch changes
-  then handle 'instant changes' instantly (drop, rename, ignore, unignore)
-  store changes which require a download to a queue
-  then immediately save the folderstate
-  then move down the queue
-  - downloading and setting as needed?
-  - this queue would persist, so if the server restarted it could finish OK.
-  all modules should be either 'set' or 'drop' to keep things simple?
-
-- process the changes in the queue, if a file needs to be downloaded, then download
-  - this is where a failure might happen,
-
-  if dealing with a particular change i
-
-
-the goal is to set entry idempotent to permit multiple syncs
-assuming no entry called 'foo.txt', running:
-
-Entry.create(1, {path: 'foo.txt', html: 'A', updated: 1}, callback);
-Entry.create(1, {path: 'foo.txt', html: 'B', updated: 2}, callback);
- and only have one entry ID generated, with the content of the
- most recent updated stored.
-
- set    - store entry JSON against path
-        - if existing updated and updated > new updated, abort
-        - if no JSON exists, gen new ID
-        - if no created exists, gen new created
-        - store path against entry ID
-
- rename - redis.rename path
-        - update to store new path against ID
-
-
-ensure the mtime setting works in unix as well as it does on OSX
+The lock-release tests (`index.js`, `multiple.js`) fork child processes (`tests/error.js`, `tests/kill.js`) to simulate crashes and SIGKILL, then verify the parent can re-acquire the lock.

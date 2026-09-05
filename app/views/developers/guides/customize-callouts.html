@@ -1,0 +1,87 @@
+<h1>Customize callouts</h1>
+
+<p>Callouts inherit a set of default styles from Blot, but you can change their colors, borders, spacing, typography, and icons in your template’s CSS. First, <a href="/how/files/markdown#callouts">add a callout to a Markdown file</a>, then open your site’s template in the dashboard and edit <code>style.css</code>.</p>
+
+<h2>Style every callout</h2>
+
+<p>Every callout has a <code>callout</code> class and a <code>data-callout</code> attribute. Use the class to apply the same style to all callouts:</p>
+
+<pre class="css" data-file="style.css"><code>.callout[data-callout] {
+  border: 1px solid rgb(var(--callout-color));
+  border-left-width: 0.25rem;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.callout-title {
+  font-family: sans-serif;
+  letter-spacing: 0.02em;
+}</code></pre>
+
+<p>Blot defines <code>--callout-color</code> as three comma-separated RGB values. The default stylesheet uses it for the border, background, title, and keyboard-focus outline, so changing the variable keeps those parts coordinated.</p>
+
+<h2>Customize a callout type</h2>
+
+<p>Target the <code>data-callout</code> attribute to customize a built-in type. For example, this changes every <code>[!warning]</code> callout:</p>
+
+<pre class="css" data-file="style.css"><code>.callout[data-callout="warning"] {
+  --callout-color: 180, 83, 9;
+  border-radius: 0;
+}
+
+.callout[data-callout="warning"] .callout-title {
+  text-transform: uppercase;
+}</code></pre>
+
+<p>You can also invent a type in Markdown:</p>
+
+<pre class="md" data-file="post.md"><code>&gt; [!newsletter] Subscribe
+&gt; Get new posts delivered to your inbox.</code></pre>
+
+<p>Unknown types use the default <code>note</code> appearance. Blot preserves the type you wrote in <code>data-callout-original</code>, which you can use to give the custom type its own style:</p>
+
+<pre class="css" data-file="style.css"><code>.callout[data-callout-original="newsletter"] {
+  --callout-color: 126, 76, 170;
+  background: rgba(var(--callout-color), 0.12);
+}</code></pre>
+
+<h2>Add an icon with a <code>::before</code> element</h2>
+
+<p>Each title contains an empty <code>.callout-icon</code> element. Add a visible icon without changing your template’s HTML by styling its <code>::before</code> pseudo-element:</p>
+
+<pre class="css" data-file="style.css"><code>.callout[data-callout="tip"] .callout-icon::before {
+  content: "\2605";
+  display: inline-block;
+  font-size: 1.1em;
+  line-height: 1;
+  margin-right: 0.5rem;
+}
+
+.callout[data-callout-original="newsletter"] .callout-icon::before {
+  content: "\2709";
+  display: inline-block;
+  font-size: 1.1em;
+  line-height: 1;
+  margin-right: 0.5rem;
+}</code></pre>
+
+<p>The icon container is hidden from assistive technology because it is decorative, so the callout title should still describe the callout. You can use a Unicode character, as above, or replace <code>content</code> with an empty string and use a CSS background image or mask for a custom SVG icon.</p>
+
+<h2>Other useful selectors</h2>
+
+<pre class="css" data-file="style.css"><code>/* The title row */
+.callout-title { }
+
+/* The title text, without the icon */
+.callout-title-inner { }
+
+/* The body */
+.callout-content { }
+
+/* A foldable callout */
+.callout[data-callout-fold] { }
+
+/* A foldable callout in its collapsed state */
+.callout.is-collapsed { }</code></pre>
+
+<p>Keep your rules after any existing callout rules in <code>style.css</code> so that your overrides take precedence. For more about callout syntax, titles, types, and folding, see the <a href="/how/files/markdown#callouts">Markdown guide</a>.</p>

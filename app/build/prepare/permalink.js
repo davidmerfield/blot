@@ -1,4 +1,5 @@
 var makeSlug = require("helper/makeSlug");
+var removeDiacritics = require("helper/removeDiacritics");
 var mustache = require("mustache");
 var moment = require("moment");
 var debug = require("debug")("blot:prepare:permalink");
@@ -85,40 +86,6 @@ var allow = [
   "updated",
   "metadata"
 ];
-
-// modified from here: https://gist.github.com/mathewbyrne/1280286
-// also using https://help.ivanti.com/res/help/en_US/IA/2021/Admin/Content/35149.htm
-function removeDiacritics (str) {
-  str = str || "";
-  str = decodeURIComponent(str); // lol we shouldnt do this
-  str = str.toLowerCase();
-
-  var swaps = [
-    { from: "œ", to: "oe" },
-    { from: "ö", to: "oe" },
-    { from: "æ", to: "ae" },
-    { from: "ä", to: "ae" },
-    { from: "å", to: "aa" },
-    { from: "þ", to: "th" },
-    { from: "ü", to: "ue" },
-    { from: "ß", to: "ss" }
-  ];
-
-  for (const item of swaps) {
-    const { from, to } = item;
-    str = str.replace(new RegExp(from, "g"), to);
-  }
-
-  var from = "àáâãåāçćčèéêëēėęîïíīįìłñńôòóøōõśšûùúūųŵÿýŷžźż";
-  var to = "aaaaaaccceeeeeeeiiiiiilnnoooooossuuuuuwyyyzzz";
-
-  for (var i = 0, l = from.length; i < l; i++)
-    str = str.replace(new RegExp(from.charAt(i), "g"), to.charAt(i));
-
-  str = encodeURIComponent(str);
-
-  return str;
-}
 
 module.exports = function (timeZone, format, entry) {
   // Add the permalink automatically if the metadata

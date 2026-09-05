@@ -1,3 +1,83 @@
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sync-status.has-progress {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+/* Progress bar already shows activity — hide the blinking syncing dot. */
+.sync-status.has-progress .sync-status-icon {
+  display: none;
+}
+
+.sync-status-body {
+  display: inline-flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: 0.25rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.sync-status.has-progress .sync-status-body {
+  flex: 1 1 auto;
+}
+
+.sync-status.has-progress .sync-status-body {
+  flex: 1 1 auto;
+}
+
+.sync-status-progress {
+  display: none;
+  width: 100%;
+  min-width: 8rem;
+  height: 0.35rem;
+  overflow: hidden;
+  background: var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.sync-status.has-progress .sync-status-progress {
+  display: block;
+}
+
+.sync-status-progress-label {
+  display: none;
+  color: var(--light-text-color);
+  font-size: var(--small-font-size);
+}
+
+.sync-status.has-progress .sync-status-progress-label {
+  display: inline;
+}
+
+.sync-status-progress-bar {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: var(--border-radius);
+  transition: width 350ms ease-out;
+}
+
+.sync-status-center {
+  height: 1.5em;
+  overflow: hidden;
+  text-wrap: nowrap;
+}
+
+.sync-status-center:has(.sync-status.has-progress) {
+  flex: 1 1 auto;
+  height: auto;
+  min-width: 0;
+  overflow: visible;
+  width: 100%;
+}
+
 .sites-list-container {
   min-height: calc(100vh - 7.8rem);
   display: flex;
@@ -50,7 +130,7 @@ a.blog-link .text-info {
 }
 
 .site:hover {
-  background-color: #e4eafb75
+  background-color: var(--light-background-color);
 }
 
 .site:active {
@@ -96,7 +176,7 @@ button.logout {
 }
 
 button.logout:hover {
-  background-color: #e4eafb;
+  background-color: var(--light-background-color);
   color: var(--accent-color);
 }
 
@@ -143,20 +223,6 @@ span.file {
 
 span.file {
   background-image: url("/images/file.svg");
-}
-
-.underline {
-  color: blue;
-  text-decoration: none;
-  text-shadow: 0.03em 0 #fff, -0.03em 0 #fff, 0 0.03em #fff, 0 -0.03em #fff,
-    0.06em 0 #fff, -0.06em 0 #fff, 0.09em 0 #fff, -0.09em 0 #fff, 0.12em 0 #fff,
-    -0.12em 0 #fff, 0 0.03em #fff, 0 -0.03em #fff, 0 0.06em #fff, 0 -0.06em #fff,
-    0 0.08em #fff, 0 -0.08em #fff;
-  background-image: linear-gradient(#fff, #fff), linear-gradient(#fff, #fff),
-    linear-gradient(blue, blue);
-  background-size: 0 0, 0 0, 0.07em 0.07em;
-  background-repeat: no-repeat, no-repeat, repeat-x;
-  background-position: 0% 90%, 100% 90%, 0% 95%;
 }
 
 .sortable>section {}
@@ -253,6 +319,57 @@ span.file {
   border-right: 1px solid #eeeeec;
 }
 
+.redirectWarningsNotice {
+  font-size: var(--small-font-size);
+  line-height: 1.5;
+  color: var(--warning-text-color);
+  background-color: #fdf6ee;
+  border-radius: var(--border-radius);
+  padding: 12px 16px;
+  margin: 0 0 16px;
+}
+
+.redirectWarningsNotice a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+#redirects .redirectWarning {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  cursor: help;
+  color: var(--warning-text-color);
+}
+
+#redirects .redirectWarning:focus {
+  outline: none;
+}
+
+#redirects .redirectWarningMessage {
+  display: none;
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  right: -1px;
+  width: 240px;
+  padding: 10px 12px;
+  font-size: var(--small-font-size);
+  line-height: 1.4;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  border: 1px solid #eeeeec;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  cursor: auto;
+}
+
+#redirects .redirectWarning:hover .redirectWarningMessage,
+#redirects .redirectWarning:focus .redirectWarningMessage {
+  display: block;
+}
+
 
 .pageLink {
 line-height: 48px;
@@ -299,7 +416,12 @@ line-height: 48px;
 
 .removeLink {
   text-decoration: none;
-  font-size: 12px
+  font-size: 12px;
+  padding: 11px;
+  color: var(--error-text-color)
+}
+.removeLink:hover {
+  background-color: var(--light-background-color);
 }
 
 
@@ -435,4 +557,3 @@ line-height: 48px;
   color: var(--success-text-color);
   background: var(--success-background-color);
 }
-

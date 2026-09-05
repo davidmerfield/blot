@@ -6,7 +6,7 @@ module.exports = {
   THUMBNAILS: {
     small: { size: 160 },
     medium: { size: 640 },
-    large: { size: 1060 },
+    large: { size: 1200 },
     square: { size: 160, crop: true },
   },
 };

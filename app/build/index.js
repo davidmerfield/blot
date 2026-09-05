@@ -7,19 +7,19 @@ var Prepare = require("./prepare");
 var Thumbnail = require("./thumbnail");
 var DateStamp = require("./prepare/dateStamp");
 var moment = require("moment");
-var converters = require("./converters");
+var enabledConverters = require("./converters/enabled");
 var pathNormalizer = require("helper/pathNormalizer");
 
 // This file cannot become a blog post because it is not
 // a type that Blot can process properly.
-function isConvertible(path) {
-  return converters.some(function (converter) {
-    return converter.is(path);
-  });
-}
+function isWrongType(blog, path) {
+  var isWrong = true;
 
-function isWrongType(path) {
-  return !isConvertible(path);
+  enabledConverters(blog).forEach(function (converter) {
+    if (converter.is(path)) isWrong = false;
+  });
+
+  return isWrong;
 }
 
 function findMultiFolder(path) {
@@ -66,7 +66,7 @@ module.exports = function build(blog, path, callback) {
   var builder = multiInfo ? BuildMultiple : BuildSingle;
   var buildArgument = multiInfo ? multiInfo : entryPath;
 
-  if (!multiInfo && isWrongType(entryPath)) {
+  if (!multiInfo && isWrongType(blog, entryPath)) {
     var err = new Error("Path is wrong type to convert");
     err.code = "WRONGTYPE";
     return callback(err);
@@ -120,7 +120,10 @@ module.exports = function build(blog, path, callback) {
             updated: stat && stat.mtime ? moment.utc(stat.mtime).valueOf() : Date.now(),
           };
 
-          if (entry.dateStamp === undefined) delete entry.dateStamp;
+          if (entry.dateStamp === undefined) {
+            entry.dateStampWasRemoved = true;
+            delete entry.dateStamp;
+          }
 
           debug(
             "Blog:",
@@ -143,5 +146,4 @@ module.exports = function build(blog, path, callback) {
   });
 };
 
-module.exports.isConvertible = isConvertible;
 module.exports.findMultiFolder = findMultiFolder;

@@ -1,0 +1,98 @@
+{
+  "name": "Links",
+  "locals": {
+    "page_size": 24,
+    "background_color": "#fff",
+    "text_color": "#000",
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
+    "infinite_scroll": true,
+    "sticky_navigation": false,
+    "footer_navigation": true,
+    "show_tags": true,
+    "navigation_alignment": "right",
+    "navigation_alignment_options": [
+      "left",
+      "center",
+      "right"
+    ],
+    "spacing": 1,
+    "spacing_range": [
+      0,
+      3
+    ],
+    "columns": 4,
+    "columns_range": [
+      1,
+      6
+    ],
+    "body_font": {
+      "id": "system-sans",
+      "font_size": 16,
+      "line_height": 1.4
+    },
+    "heading_font": {
+      "id": "system-sans",
+      "font_size": 16,
+      "line_height": 1.2
+    },
+    "syntax_highlighter": {
+      "id": "stackoverflow-light"
+    },
+    "syntax_highlighter_font": {
+      "id": "system-mono",
+      "font_size": 16,
+      "line_height": 1.6
+    },
+    "favicon_url": "",
+    "logo_url": "",
+    "demo_folder": "bjorn"
+  },
+  "isPublic": true,
+  "views": {
+    "archives.html": {
+      "url": "/archives",
+      "partials": {
+        "title": "Archives - {{{title}}}",
+        "description": "Everything posted on {{{title}}}"
+      }
+    },
+    "tags.html": {
+      "url": "/tags",
+      "partials": {
+        "title": "Tags - {{{title}}}",
+        "description": "All the tags used on {{{title}}}"
+      }
+    },
+    "tagged.html": {
+      "partials": {
+        "title": "{{{tag}}} - {{{title}}}",
+        "description": "{{{tag}}} on {{{title}}}"
+      }
+    },
+    "entries.html": {
+      "partials": {
+        "title": "{{{title}}}",
+        "description": "The latest on {{{title}}}"
+      }
+    },
+    "error.html": {
+      "partials": {
+        "title": "{{{error.title}}} - {{{title}}}",
+        "description": "Error on {{{title}}}"
+      }
+    },
+    "entry.html": {
+      "partials": {
+        "title": "{{{entry.title}}} - {{{title}}}",
+        "description": "{{{entry.summary}}}"
+      }
+    },
+    "search.html": {
+      "partials": {
+        "title": "Search - {{{title}}}",
+        "description": "Search everything on {{{title}}}"
+      }
+    }
+  }
+}

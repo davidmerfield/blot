@@ -157,3 +157,4 @@ var _ReconnectingEventSource;
 // var ReconnectingEventSource = require("./recconnecting-event-source");
 // var evtSource = new ReconnectingEventSource(syncStatusURL);
 
+module.exports = window.ReconnectingEventSource;

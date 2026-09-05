@@ -2,9 +2,9 @@
     <input type="hidden" name="_csrf" value="{{csrftoken}}" />
     <input class="name" placeholder="e.g. background" type="hidden" value="{{key}}" />
     <input class="value" name="locals.{{key}}" placeholder="e.g. #FFFFFF" type="hidden" value="{{value}}" />
-    <div class="color-picker-popup" style="cursor: pointer;display: flex;align-items: center;">
+    <div class="color-picker-popup">
         <span class="previous" style="background:{{value}}"></span>
-        <span style="margin:5px 16px 5px 0;flex-grow: 1">{{label}}</span>
+        <span class="color-label">{{label}}</span>
         <span class="pcr-color-preview">
             <span class="pcr-current-color"></span>
         </span>

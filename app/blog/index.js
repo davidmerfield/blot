@@ -26,10 +26,15 @@ require("./tagged")(blog);
 blog.get('/search', require('./search'));
 
 require("./robots")(blog);
-blog.use(require("./view"));
-blog.use(require("./entry"));
 
-blog.get("/page/:page_number", require("./entries"));
+// By checking for entries before template files
+// we can allow the user to intercept their site's
+// index page on their template with a page whose
+// metadata sets 'Link: /`.
+blog.use(require("./entry"));
+blog.use(require("./view"));
+
+blog.get("/page/:page", require("./entries"));
 blog.get("/", require("./entries"));
 
 blog.use(require("./assets"));

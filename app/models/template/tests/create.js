@@ -6,7 +6,7 @@ describe("template", function () {
   var async = require("async");
 
   it("creates a template", function (done) {
-    create(this.blog.id, this.fake.random.word(), {}, done);
+    create(this.blog.id, "template", {}, done);
   });
 
   it("throws an error if you try to create a template with no name", function (done) {
@@ -19,7 +19,7 @@ describe("template", function () {
 
   it("creates a template whose name contains a slash", function (done) {
     var test = this;
-    var name = this.fake.random.word() + "/" + this.fake.random.word();
+    var name = "template/folder";
     create(test.blog.id, name, {}, function (err) {
       if (err) return done.fail(err);
       getTemplateList(test.blog.id, function (err, templates) {
@@ -66,7 +66,7 @@ describe("template", function () {
   });
 
   it("returns an error if you try to create a template which already exists", function (done) {
-    var name = this.fake.random.word();
+    var name = "template";
     var test = this;
     create(this.blog.id, name, {}, function (err) {
       if (err) return done.fail(err);
@@ -80,9 +80,9 @@ describe("template", function () {
   it("creates a template from an existing template", function (done) {
     var test = this;
     var blogID = test.blog.id;
-    var original = this.fake.random.word();
+    var original = "template";
     var cloned = Date.now().toString(); // prevents same name as original
-    var description = this.fake.random.word();
+    var description = "A test template description";
     var originalTemplate, clonedTemplate;
 
     create(
@@ -127,8 +127,8 @@ describe("template", function () {
   xit("returns an error if you try to clone a template that does not exist", function (done) {
     create(
       this.blog.id,
-      this.fake.random.word(),
-      { cloneFrom: this.fake.random.word() },
+      "template",
+      { cloneFrom: "nonexistent:template" },
       function (err) {
         console.log(err);
         expect(err instanceof Error).toBe(true);

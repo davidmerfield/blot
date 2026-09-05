@@ -1,3 +1,5 @@
+var User = require("models/user");
+
 module.exports = function (server) {
   // Prevent robots from indexing
   // preview subdomains to ward off
@@ -26,5 +28,22 @@ Disallow: /`;
 
     res.set("Cache-Control", "no-cache");
     res.send(req.blog.handle);
+  });
+
+  server.get("/verify/subscription-duration", function (req, res, next) {
+    if (!req.blog || !req.blog.owner) return res.status(404).end();
+
+    User.getById(req.blog.owner, function (err, user) {
+      if (err) return next(err);
+      if (!user) return res.status(404).end();
+
+      var duration = User.subscriptionTenure.getSubscriptionDurationMs(user);
+
+      if (!duration) return res.status(404).end();
+
+      res.set("Cache-Control", "no-cache");
+      res.set("Content-Type", "application/json; charset=utf-8");
+      res.status(200).send({ duration });
+    });
   });
 };

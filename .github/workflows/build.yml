@@ -74,7 +74,7 @@ jobs:
           set -euo pipefail
           docker network create test_network
 
-          redis_container_id=$(docker run -d --name test_redis --network test_network redis:latest)
+          redis_container_id=$(docker run -d --name test_redis --network test_network redis:6.2.12)
 
           timeout=30; interval=2; elapsed=0
           until docker exec "$redis_container_id" redis-cli ping | grep -q PONG; do

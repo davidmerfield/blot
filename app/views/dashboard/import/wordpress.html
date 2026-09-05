@@ -1,20 +1,53 @@
-<div style="padding: 11px 26px;">
-<p style="max-width: 600px">The importer can turn a <a rel="nofollow" href="https://wordpress.com/support/export/">Wordpress export XML file</a> into an archive (.zip) containing markdown files. The importer downloads images in your posts and stores them with the markdown files.</p>
-<br>
+{{> close-button}}
 
-<form method="POST" enctype='multipart/form-data' action="{{{importBase}}}/wordpress">
-  <input type="hidden" name="_csrf" value="{{csrftoken}}">
-  <label style="border-radius:4px;border:1px solid rgba(0,0,0,0.05);display:block;padding: 11px 20px;margin-bottom:6px;cursor:pointer;box-sizing: border-box;">
-      
-      <span style="margin-top:0;color:rgb(158, 154, 152);font-size:14px;display:inline;margin-right:10px">Select XML file: </span>
+<div style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
+  <h1>Import from WordPress</h1>
 
-      <input type="file" id="exportUpload" name="exportUpload" accept=".xml" style="display:inline;margin:0;cursor: pointer;">
+  <a class="import-info" href="/how/configure/import/wordpress">
+    <img class="import-info__logo" src="/images/configure/wordpress.svg" alt="">
+    <div class="import-info__body">
+      <p class="import-info__title">How do I export from WordPress?</p>
+      <p class="import-info__text">Go to Tools → Export on WordPress and download the XML file.</p>
+    </div>
+    <span class="import-info__action">View guide</span>
+  </a>
+
+  <form method="POST" enctype="multipart/form-data" action="{{{importBase}}}/wordpress">
+    <input type="hidden" name="_csrf" value="{{csrftoken}}">
+
+    <div class="file-drop" data-file-drop>
+      <input class="file-drop__input" type="file" id="wordpress-export-upload" name="exportUpload" accept=".xml" aria-describedby="wordpress-file-instructions wordpress-file-hint" required>
+
+      <label class="file-drop__empty" data-file-drop-empty for="wordpress-export-upload">
+        <svg class="file-drop__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M7 18a4.5 4.5 0 0 1 .3-9 5.5 5.5 0 0 1 10.7 1.5A3.5 3.5 0 0 1 17.5 18H7z" stroke-linejoin="round"/>
+          <path d="M12 15V9M9.5 11.5 12 9l2.5 2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="file-drop__title">Upload WordPress export (.xml)</span>
+        <span class="file-drop__action" id="wordpress-file-instructions">Drag and drop an XML file, or <span class="file-drop__choose">choose a file</span>.</span>
+        <span class="file-drop__hints" id="wordpress-file-hint">Maximum file size: 30 MB.</span>
       </label>
 
-  <div class="buttons">
-    <button type="submit">Upload XML file</button>
-    <a href="{{{importBase}}}">Cancel</a>
-  </div>
-</form>
+      <div class="file-drop__selected" data-file-drop-selected hidden>
+        <span class="file-drop__selected-label">Selected file</span>
+        <div class="file-drop__chip">
+          <svg class="file-drop__file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-linejoin="round"/>
+            <path d="M14 2v6h6M8 13h8M8 17h8M8 9h2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="file-drop__name" data-file-drop-name></span>
+          <button type="button" class="file-drop__clear" data-file-drop-clear aria-label="Remove file">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path d="M3 3l8 8M11 3l-8 8" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
 
+    <div class="buttons">
+      <button type="submit">Start import</button>
+      <a href="{{{importBase}}}">Cancel</a>
+    </div>
+  </form>
 </div>
