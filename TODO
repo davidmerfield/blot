@@ -227,6 +227,10 @@ Fix bugs with templates:
   - [ ] Add exif info
   - [ ] Add backlinks
 
+Dashboard control follow-ups (found while reviewing the per-template dashboard-control PRs):
+- Blog template: sticky_navigation positions the sidebar with `left/right: calc(50% - var(--body-outer-width) / 2)`, which only lines up while the body is exactly --body-outer-width wide and centred. Verify against long nav lists and the navigation_location=right case, and confirm behaviour at the mobile breakpoint where .sidebar becomes position:relative.
+- Blog template: title_and_summary index layout renders {{{summary}}} unescaped. Fine while summaries are plain text, but revisit if summaries ever carry markup.
+
 Fix bug with the website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 
 Fix bug with template slugs / local templates
