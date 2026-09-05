@@ -90,6 +90,15 @@ with **no SSRF protection** (fine for local dev, not for production):
 | `BLOT_AIRLOCK_BROWSER_URL` | `http://airlock:9222` | `app/helper/screenshot` |
 | `BLOT_AIRLOCK_PROXY_URL` | `http://airlock:8888` | `app/helper/transformer/download` |
 
+**These are currently unset in production on purpose** - see "Rollout plan"
+below. What production sets today is a separate, temporary pair that only
+feed the post-boot probe, never real traffic:
+
+| Env var | Example | Used by |
+| --- | --- | --- |
+| `BLOT_AIRLOCK_PROBE_BROWSER_URL` | `http://blot-airlock:9222` | `app/helper/airlock/probe.js` |
+| `BLOT_AIRLOCK_PROBE_PROXY_URL` | `http://blot-airlock:8888` | `app/helper/airlock/probe.js` |
+
 ## Local development
 
 Wired into [`scripts/development/docker-compose.yml`](../../scripts/development/docker-compose.yml)
@@ -101,55 +110,75 @@ docker compose -f scripts/development/docker-compose.yml up
 
 Comment out the two `BLOT_AIRLOCK_*` lines to bypass it.
 
-## Production
+## Rollout plan: infrastructure now, cutover later
 
-Not yet wired into `scripts/deploy`. To roll out:
+This lands in two PRs on purpose, so a mistake in the (untestable-without-a-
+real-host) deploy plumbing can't take down blue/green/yellow:
 
-1. **Build & push** the image alongside the app image (add a matrix entry to
-   `.github/workflows/build.yml`, context `config/airlock`), e.g.
-   `ghcr.io/davidmerfield/blot-airlock:<tag>`.
+* **This PR** builds and deploys the `airlock` image/container/network in
+  production, and connects the app containers to it - but nothing in
+  production *uses* it for real traffic yet. `helper/screenshot` and
+  `helper/transformer/download` still fetch directly, exactly as before this
+  PR. Instead, a temporary post-boot check
+  ([`app/helper/airlock/probe.js`](../../app/helper/airlock/probe.js)) opens
+  a real connection to the deployed airlock, takes a real screenshot through
+  it, makes a real fetch through its proxy, and confirms the metadata
+  address is blocked on both paths - logging the result so a few days of
+  production deploys give a real signal, not just a local one, before
+  anything depends on it.
+* **The follow-up PR** (once the probe has been green in production for a
+  while) is the actual cutover: set `BLOT_AIRLOCK_BROWSER_URL` /
+  `BLOT_AIRLOCK_PROXY_URL` (see "Configuration" above) in
+  [`generateDockerCommand.js`](../../scripts/deploy/util/generateDockerCommand.js)
+  the same way `BLOT_AIRLOCK_PROBE_*` is set today, and delete
+  `app/helper/airlock/probe.js`, its call site in
+  [`app/setup.js`](../../app/setup.js), `config.airlockProbe`, and the
+  `BLOT_AIRLOCK_PROBE_*` env vars. Nothing about the airlock container or
+  network itself needs to change for that PR.
 
-2. **On each app host**, once, create a user-defined network and run the
-   sidecar:
+## Production (implemented in `scripts/deploy`)
 
-   ```sh
-   docker network create blotnet 2>/dev/null || true
+Everything below already runs as part of `npm run deploy-node` (see
+[`scripts/deploy/index.js`](../../scripts/deploy/index.js),
+[`constants.js`](../../scripts/deploy/constants.js) and
+[`generateAirlockCommand.js`](../../scripts/deploy/util/generateAirlockCommand.js)).
+Every step is **best-effort and non-fatal** to the app deploy: a problem
+deploying or connecting the airlock is logged but does not fail, roll back,
+or block the blue/green/yellow deploy - see the comment above
+`deployAirlockIfNeeded` in `index.js`.
 
-   docker run -d --name blot-airlock --restart unless-stopped \
-     --network blotnet \
-     --cap-add=NET_ADMIN \
-     --security-opt no-new-privileges \
-     --memory=1g --cpus=1 \
-     --log-driver json-file --log-opt max-size=64m --log-opt max-file=1 \
-     ghcr.io/davidmerfield/blot-airlock:<tag>
-   ```
+1. **Build & push.** `.github/workflows/build.yml` has a second matrix job,
+   `build-airlock`, alongside the app's `build` job: builds `config/airlock`
+   per-arch, pushes `ghcr.io/davidmerfield/blot-airlock:<sha>-<arch>`, then
+   `manifest-airlock` creates the multi-arch `<sha>` (and `latest` on
+   master) tag - same shape as the app image. It also runs the "Verify
+   egress filter" checks from this file's own Verifying section in CI, so a
+   regression in `egress.nft`/`entrypoint.sh` fails the build.
 
-3. **Attach the app containers** to `blotnet` and set the env vars. In
-   [`scripts/deploy/util/generateDockerCommand.js`](../../scripts/deploy/util/generateDockerCommand.js)
-   add to the `docker run` array:
+2. **Network + sidecar.** `deployAirlockIfNeeded()` runs before the
+   blue/green/yellow loop: creates the `blotnet` Docker network if it
+   doesn't exist, and pulls/(re)starts `blot-airlock` if its running image
+   hash doesn't match the commit being deployed (mirrors the app
+   containers' own skip-if-unchanged check), waiting for its `HEALTHCHECK`
+   to report healthy.
 
-   ```js
-   "--network blotnet",
-   "-e BLOT_AIRLOCK_BROWSER_URL=http://blot-airlock:9222",
-   "-e BLOT_AIRLOCK_PROXY_URL=http://blot-airlock:8888",
-   ```
-
-   This is the one step here that touches running production containers, and
-   it's more than the one-liner it looks like: moving a container off the
-   default `bridge` network onto `blotnet` also moves its gateway - the host
-   stops being reachable at `172.17.0.1` and becomes `blotnet`'s gateway
-   address instead. `config/index.js` reads `BLOT_REDIS_HOST` (default
-   `127.0.0.1`) and `BLOT_REVERSE_PROXY_URLS` from `ENV_FILE_ON_SERVER`, so
-   whether this is a no-op depends on how those are set on the live hosts -
-   check both for a hardcoded bridge-gateway address **before** switching
-   networks, and roll one container at a time given blue/green/yellow is
-   already the deploy shape.
-
-   (The published `-p` port mapping for the app's own HTTP port still works
-   after the network change.)
+3. **Connecting app containers.** Deliberately **not** `--network blotnet`
+   on the app containers at creation - that would move them off the default
+   `bridge` network entirely, changing their gateway from `172.17.0.1` to
+   `blotnet`'s gateway, which could silently break a hardcoded
+   `BLOT_REDIS_HOST` or `BLOT_REVERSE_PROXY_URLS` on the live host (neither
+   is visible from this repo). Instead, after each app container starts (or
+   is confirmed already up to date), `connectToAirlockNetwork()` runs
+   `docker network connect blotnet <container>` - Docker's supported way to
+   give a running container a *second* network interface. The container
+   keeps its original bridge network and gateway untouched, and gains the
+   ability to resolve and reach `blot-airlock` via `blotnet`'s embedded DNS.
+   `generateDockerCommand.js` sets `BLOT_AIRLOCK_PROBE_BROWSER_URL` /
+   `BLOT_AIRLOCK_PROBE_PROXY_URL` to `http://blot-airlock:9222` /
+   `:8888` on every app container so the probe (above) can reach it.
 
 4. **Harden the instance metadata service** while you're here — defence in
-   depth for any other fetch in the app:
+   depth for any other fetch in the app, independent of all of this:
 
    ```sh
    aws ec2 modify-instance-metadata-options --instance-id i-xxxx \
@@ -201,6 +230,22 @@ metadata address is deliberately *not* refused at that layer), not just "the
 HTML wasn't rewritten," which a plugin that rejected everything would also
 satisfy.
 
+**In production**, once this PR is deployed, check for the probe's log lines
+(one `Airlock probe:` block per host, from the `config.master` container,
+about a minute after boot/deploy):
+
+```sh
+ssh blot "docker logs blot-container-green 2>&1 | grep 'Airlock probe:'"
+```
+
+A healthy rollout looks like `browser check passed (…)` and `proxy check
+passed (…)`. `skipping - BLOT_AIRLOCK_PROBE_* not set` means the container
+was created before this PR's `generateDockerCommand.js` change and hasn't
+been redeployed since (the env vars are baked in at `docker run` time); a
+failure logs which step it failed at (e.g. `FAILED at step "connect"` most
+likely means `docker network connect blotnet <container>` didn't happen or
+didn't take - check the `Connecting … to blotnet` line in the deploy log).
+
 ## Limitations
 
 * **Always run it on a user-defined Docker network**, never the default
@@ -224,9 +269,20 @@ satisfy.
   with in `/etc/airlock/chromium-version` (also logged at container start)
   precisely so a drift shows up there before it shows up as bookmark
   screenshots silently failing in production after an image rebuild.
+* [`app/helper/airlock/probe.js`](../../app/helper/airlock/probe.js) runs
+  once per boot (gated to `config.master`, so the three containers on a host
+  don't triple-log the same result), not on a timer - each deploy or
+  container restart is a fresh check. If you want continuous monitoring
+  during the observation window instead of relying on deploy cadence, wrap
+  its call in `app/setup.js` with `setInterval` instead of a single
+  `setTimeout`; it wasn't done here to keep this scaffolding as small as
+  possible, since it's meant to be deleted soon.
 * In production, `config/index.js` only **warns** (`console.warn`, on
   startup) if `BLOT_AIRLOCK_BROWSER_URL` / `BLOT_AIRLOCK_PROXY_URL` are unset
-  - it does not refuse to start. A hard failure was rejected on purpose: the
-  production deploy wiring above hasn't landed yet, so a startup crash here
-  would just take every app container down. Once the sidecar + env vars are
-  actually deployed, consider tightening this to fail closed.
+  - it does not refuse to start. Right now that warning is *expected* to
+  fire on every boot, since this PR deliberately leaves those two unset (see
+  "Rollout plan"); it stops being expected once the follow-up cutover PR
+  sets them. A hard failure was rejected even for that later PR: a bad
+  deploy or a crashed airlock shouldn't be able to take every app container
+  down over a feature this size - if you do tighten it, make it fail closed
+  only after confirming the airlock, not unconditionally.

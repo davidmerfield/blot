@@ -39,6 +39,24 @@ module.exports = {
 
   ENV_FILE_ON_SERVER: "/etc/blot/secrets.env",
 
+  // The airlock container (config/airlock) - the egress boundary for
+  // fetching untrusted, user-supplied URLs. See config/airlock/README.md.
+  //
+  // Deployed as a single, standalone container - not blue/green/yellow -
+  // on its own Docker network. App containers are NOT switched onto this
+  // network at creation (that would move their default gateway off the
+  // bridge they're on today - see config/airlock/README.md's production
+  // note); instead the deploy script `docker network connect`s each app
+  // container to it after it starts, so they keep their original network
+  // and gain a second interface that can reach `blot-airlock`.
+  AIRLOCK: {
+    name: "blot-airlock",
+    registry: "ghcr.io/davidmerfield/blot-airlock",
+    network: "blotnet",
+    memory: "1g",
+    cpus: 1,
+  },
+
   CONTAINERS: {
     // Failover server (both sites and blogs)
     BLUE: {

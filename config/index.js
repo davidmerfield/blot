@@ -149,6 +149,22 @@ module.exports = {
     proxy: process.env.BLOT_AIRLOCK_PROXY_URL || null,
   },
 
+  // TEMPORARY, for the airlock rollout only - remove this block,
+  // BLOT_AIRLOCK_PROBE_*, and app/helper/airlock/probe.js together once the
+  // follow-up PR switches helper/screenshot / helper/transformer/download
+  // over to the `airlock` block above.
+  //
+  // Deliberately a separate namespace from `airlock`: the deploy script
+  // sets these on every app container once the airlock sidecar exists, so
+  // app/helper/airlock/probe.js can verify it's reachable and actually
+  // filtering traffic - without touching `airlock.browser_url`/`.proxy`,
+  // which would switch real production traffic through it before that's
+  // been verified. See config/airlock/README.md.
+  airlockProbe: {
+    browserUrl: process.env.BLOT_AIRLOCK_PROBE_BROWSER_URL || null,
+    proxy: process.env.BLOT_AIRLOCK_PROBE_PROXY_URL || null,
+  },
+
   paypal: {
     client_id: process.env.BLOT_PAYPAL_CLIENT_ID,
     secret: process.env.BLOT_PAYPAL_SECRET,
