@@ -108,6 +108,28 @@ describe("sync multi-folder support", function () {
     );
   });
 
+  it("builds a folder post when the folder name contains brackets", function (done) {
+    this.syncAndCheck(
+      [{ path: "/[Blog]+/one.md", content: "# Hello from brackets" }],
+      [
+        {
+          path: "/[Blog]",
+          html: function (html) {
+            return (
+              html.indexOf("Hello from brackets") > -1 &&
+              html.indexOf('data-folder="/[Blog]+"') > -1
+            );
+          },
+          metadata: function (metadata) {
+            return !metadata._sourcePaths;
+          },
+        },
+        { path: "/[Blog]+/one.md", ignored: true },
+      ],
+      done
+    );
+  });
+
   it("skips multi-folder aggregation when more than 50 files exist", async function () {
     for (var i = 1; i <= 51; i++) {
       var name = i < 10 ? "0" + i : String(i);
@@ -120,18 +142,40 @@ describe("sync multi-folder support", function () {
     await this.blog.rebuild();
 
     try {
-      await this.blog.check({ path: "/album+" });
+      await this.blog.check({ path: "/album" });
       throw new Error("Multi-folder post built incorrectly");
     } catch (e) {
       expect(e.message).toContain("No entry exists");
     }
 
     try {
-      await this.blog.check({ path: "/album+/1.md" });
+      await this.blog.check({ path: "/album+/01.md" });
       throw new Error("Multi-folder post built incorrectly");
     } catch (e) {
       expect(e.message).toContain("No entry exists");
     }
+  });
+
+  it("builds a multi-folder post from exactly 50 files", async function () {
+    for (var i = 1; i <= 50; i++) {
+      var name = i < 10 ? "0" + i : String(i);
+      await this.blog.write({
+        path: "/album+/" + name + ".md",
+        content: "# File " + name,
+      });
+    }
+
+    await this.blog.rebuild();
+
+    await this.blog.check({
+      path: "/album",
+      html: function (html) {
+        return (
+          html.indexOf('data-file="/album+/01.md"') > -1 &&
+          html.indexOf('data-file="/album+/50.md"') > -1
+        );
+      },
+    });
   });
 
   it("writes previews for aggregated draft entries", function (done) {

@@ -4,7 +4,7 @@ describe("rebuild dependents cleanup", function () {
 
   global.test.blog();
 
-  it("drops dependents when the source file disappears", async function (done) {
+  it("drops dependents when the source file disappears", async function () {
     const imagePath = "/assets/image.png";
     const postPath = "/post.txt";
 
@@ -24,13 +24,18 @@ describe("rebuild dependents cleanup", function () {
 
     await this.blog.remove(postPath);
 
-    rebuildDependents(this.blog.id, imagePath, (err) => {
-      if (err) return done.fail(err);
+    await new Promise((resolve, reject) => {
+      rebuildDependents(this.blog.id, imagePath, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
 
+    await new Promise((resolve) => {
       Entry.get(this.blog.id, postPath, function (entry) {
         expect(entry).toBeDefined();
         expect(entry.deleted).toBe(true);
-        done();
+        resolve();
       });
     });
   });
