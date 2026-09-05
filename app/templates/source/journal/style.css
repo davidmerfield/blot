@@ -127,6 +127,7 @@ a:hover {text-decoration: underline}
 .logo, .nav {
 font-style: italic;
 font-size:1.4rem;
+line-height: 1;
 }
 
 .logo {text-decoration: none}
@@ -137,8 +138,14 @@ font-size:1.4rem;
   vertical-align: middle;
 }
 
-.nav {text-decoration: none}
-.nav a {margin: 0 0 0 2em; text-decoration: none}
+.nav {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+.nav a {margin: 0 0 0 2em; text-decoration: none; line-height: 1;}
+
+.index-date {white-space: nowrap}
 
 {{#is.navigation_alignment.left}}
 .nav a:first-child {margin-left: 0}
@@ -236,7 +243,7 @@ input[type="submit"] {
   .index .margin {display: block;width: 100%}
   .container {margin: 1em 0 2em;padding-top:1.5em;border-top:1px solid rgba({{#rgb}}{{text_color}}{{/rgb}},0.1);min-width: auto}
   .site-header {flex-direction: column;align-items: flex-start;}
-  .nav {display: block;margin: 0;width: 100%}
+  .nav {float: none;display: block;margin: 0;width: 100%}
   .nav a {margin: 0 1em 0 0;color:{{text_color}};}
   
 .container h1 {

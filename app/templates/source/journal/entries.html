@@ -9,16 +9,13 @@
       <p>
 
         <a class="first" href="{{{url}}}">{{title}}</a>
-        {{#date}}
-        –
-        <span class="light">{{date}}</span>
-        {{/date}}
+        {{#date}}<span class="index-date">– <span class="light">{{date}}</span></span>{{/date}}
 <!--                  {{#tags.length}}
             {{#tags}}
             / <a class="light" href="/tagged/{{slug}}">{{name}}</a>
             {{/tags}}
           {{/tags.length}}
---!>
+-->
       </p>
       {{/posts}}
 
