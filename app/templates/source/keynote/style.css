@@ -96,7 +96,7 @@ hr {width: 100%;border: none;border-bottom: 1px solid rgba(0,0,0,0.15)}
     padding: 0.4em 0.5em;
   }
 
-  #title {
+  #header #title {
     float: none;
     position: static;
     top: auto;
