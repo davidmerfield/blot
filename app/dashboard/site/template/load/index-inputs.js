@@ -61,12 +61,16 @@ const buildSortControl = locals => {
 };
 
 module.exports = function (req, res, next) {
-  const inputs = Object.keys(req.template.locals)
+  // Every template gets the combined "Post sorting" select, so this runs even
+  // for templates whose locals expose none of the other index/layout keys.
+  const locals = req.template.locals || {};
+
+  const inputs = Object.keys(locals)
 
     // If the template uses the thumbnails per row
     // option then hide the page size option
     .filter(key =>
-      req.template.locals.thumbnails_per_row !== undefined
+      locals.thumbnails_per_row !== undefined
         ? key !== "page_size"
         : true
     )
@@ -88,19 +92,19 @@ module.exports = function (req, res, next) {
           "thumbnails_per_row",
           "number_of_rows"
         ].indexOf(key) > -1 ||
-        (typeof req.template.locals[key] === "boolean" &&
+        (typeof locals[key] === "boolean" &&
           ["hide_dates"].indexOf(key) === -1) ||
         (key.indexOf("_range") === -1 &&
-          req.template.locals[key + "_range"] &&
-          req.template.locals[key + "_range"].constructor === Array) ||
+          locals[key + "_range"] &&
+          locals[key + "_range"].constructor === Array) ||
         (key.indexOf("_options") === -1 &&
-          req.template.locals[key + "_options"] &&
-          req.template.locals[key + "_options"].constructor === Array)
+          locals[key + "_options"] &&
+          locals[key + "_options"].constructor === Array)
     )
-    .map(key => determine_input(key, req.template.locals, MAP))
+    .map(key => determine_input(key, locals, MAP))
     .filter(i => i);
 
-  inputs.push(buildSortControl(req.template.locals));
+  inputs.push(buildSortControl(locals));
 
   res.locals.index_page = inputs;
 

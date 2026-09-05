@@ -3,7 +3,7 @@ describe("index-inputs sort control", function () {
   const SORT_OPTIONS = require("../sort-options");
 
   function load(locals) {
-    const req = { template: { locals: locals || {} } };
+    const req = { template: { locals } };
     const res = { locals: {} };
     const next = jasmine.createSpy("next");
 
@@ -27,6 +27,23 @@ describe("index-inputs sort control", function () {
       SORT_OPTIONS.map(option => option.value)
     );
     expect(control.options.filter(option => option.selected === "selected").length).toBe(1);
+  });
+
+  it("appends the control for every template, even with no index/layout locals", function () {
+    // Templates that expose none of the page_size / spacing / *_options keys
+    // (and templates with empty locals) must still get the post-sorting select.
+    [
+      undefined,
+      {},
+      { lang: "en", background_color: "#fff", body_font: { id: "system-sans" } }
+    ].forEach(locals => {
+      const inputs = load(locals);
+      const control = sortControl(inputs);
+
+      expect(control).toBeDefined();
+      expect(control.isSelect).toBe(true);
+      expect(inputs.filter(input => input.key === "sort_by").length).toBe(1);
+    });
   });
 
   it("defaults to newest-first date sorting", function () {
