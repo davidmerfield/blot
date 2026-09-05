@@ -31,6 +31,7 @@
                 <a class="excerpt" href="{{{url}}}">{{summary}}</a>
               </p>
               <div>
+                {{#tags.length}}
                 <small class="d-block text-muted">
             In <span class="catlist">
 
@@ -40,6 +41,7 @@
 
                 </span>
         </small>
+                {{/tags.length}}
                 <small class="text-muted">
             {{#date}}{{date}}{{/date}}
         </small>
@@ -67,6 +69,7 @@
               <h2 class="mb-2 h6 font-weight-bold">
                     <a class="text-dark" href="{{{url}}}">{{title}}</a>
                     </h2>
+              {{#tags.length}}
               <small class="d-block text-muted">
                         In <span class="catlist">
 
@@ -77,6 +80,7 @@
 
                         </span>
                     </small>
+              {{/tags.length}}
               <small class="text-muted">
             {{#date}}{{date}}{{/date}}
                     </small>
@@ -127,6 +131,7 @@
               <p class="excerpt">
                 {{summary}}
               </p>
+              {{#tags.length}}
               <small class="d-block text-muted">
     In <span class="catlist">
 
@@ -135,6 +140,7 @@
       {{/tags}}
     </span>
   </small>
+              {{/tags.length}}
               <small class="text-muted">
             {{#date}}{{date}}{{/date}}
   </small>
@@ -188,6 +194,7 @@
                 <h6 class="font-weight-bold">
                     <a href="{{{url}}}" class="text-dark">{{title}}</a>
                 </h6>
+                {{#tags.length}}
                 <span class="d-block text-muted">
                     In <span class="catlist">
 
@@ -196,6 +203,7 @@
                 {{/tags}}
                 </span>
                 </span>
+                {{/tags.length}}
                 </span>
               </li>
               {{/tagged.featured}}
