@@ -1,0 +1,94 @@
+{{=[[ ]]=}}
+
+<div class="pattern-toolbar">
+  <button type="button" class="copy copy-for-agent" data-copy-from="#pattern-agent-prompt">
+    <span class="icon-copy"></span> Copy for agent
+  </button>
+  <a href="/developers/patterns/[[slug]].md">View as Markdown</a>
+</div>
+
+<pre id="pattern-agent-prompt" class="pattern-agent-source" hidden>[[agentMarkdown]]</pre>
+
+<h1>[[title]]</h1>
+
+<p>[[summary]]</p>
+
+<h2>Demo</h2>
+
+[[#demoCaption]]
+<p class="pattern-demo-caption">[[demoCaption]]</p>
+[[/demoCaption]]
+
+[[& demoStyleTag]]
+<div class="pattern-demo pattern-demo--[[slug]]" style="container-type:inline-size">
+[[& demoHTML]]
+</div>
+[[& demoScriptTag]]
+
+<h2>When to use</h2>
+
+[[& whenToUseHTML]]
+
+<h2>HTML</h2>
+
+<pre data-file="[[htmlFile]]"><code class="hljs">[[& htmlHighlighted]]</code></pre>
+
+<h2>CSS</h2>
+
+<pre data-file="[[cssFile]]"><code class="hljs">[[& cssHighlighted]]</code></pre>
+
+[[#hasJS]]
+<h2>JavaScript</h2>
+<pre data-file="[[jsFile]]"><code class="hljs">[[& jsHighlighted]]</code></pre>
+[[/hasJS]]
+
+[[#hasMarkdown]]
+<h2>Markdown</h2>
+<p>Authors write this in a post. Blot converts it; the template styles the result.</p>
+<pre data-file="[[markdownFile]]"><code class="hljs">[[& markdownHighlighted]]</code></pre>
+[[/hasMarkdown]]
+
+<h2>Implementation</h2>
+
+[[& guidanceHTML]]
+
+<h2>Accessibility</h2>
+
+[[& accessibilityHTML]]
+
+[[#sourceTemplates.length]]
+<h2>Used in</h2>
+<ul>
+  [[#sourceTemplates]]
+  <li>
+    <strong>[[name]]</strong>
+    <ul>
+      [[#files]]
+      <li><code>[[path]]</code></li>
+      [[/files]]
+    </ul>
+  </li>
+  [[/sourceTemplates]]
+</ul>
+[[/sourceTemplates.length]]
+
+[[#relatedPatterns.length]]
+<h2>Related patterns</h2>
+<ul class="clients">
+  [[#relatedPatterns]]
+  <li>
+    <a href="/developers/patterns/[[slug]]">
+      <span>
+        <span class="a">[[title]]</span>
+        <span class="pattern-index-summary">[[summary]]</span>
+        <span class="icon-small-chevron-right align-right"></span>
+      </span>
+    </a>
+  </li>
+  [[/relatedPatterns]]
+</ul>
+[[/relatedPatterns.length]]
+
+<p><a href="/developers/patterns">All design patterns</a></p>
+
+[[={{ }}=]]

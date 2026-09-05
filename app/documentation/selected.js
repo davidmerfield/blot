@@ -24,6 +24,7 @@ var TITLES = {
   "who": "Who uses Blot?",
   "tools": "Tools",
   "developers": "Developers",
+  "patterns": "Design patterns",
   "working-with-ai": "Working with AI",
   "troubleshooting": "Troubleshooting",
   "json-feed": "JSON feed",

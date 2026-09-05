@@ -56,11 +56,19 @@ const initCopyButtons = function () {
       });
 
       const target = event.currentTarget;
-      // get the text from the attribute 'data-copy' or
-      // from the text node previous to the button
-      const text =
-        target.getAttribute("data-copy") ||
-        target.previousSibling.textContent.trim();
+      const copyFrom = target.getAttribute("data-copy-from");
+      let text = "";
+
+      if (copyFrom) {
+        const source = document.querySelector(copyFrom);
+        text = source ? source.textContent.trim() : "";
+      } else {
+        text =
+          target.getAttribute("data-copy") ||
+          (target.previousSibling && target.previousSibling.textContent
+            ? target.previousSibling.textContent.trim()
+            : "");
+      }
       const originalText = target.innerHTML;
 
       copyText(text).then(function (copied) {

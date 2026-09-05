@@ -36,6 +36,12 @@ module.exports = async (contents) => {
     result = result.replace(/{{&gt; /g, "{{> ");
   }
 
+  // Cheerio encodes "&" in text nodes. Restore Mustache unescaped tags
+  // that use custom [[ ]] delimiters: [[& name]]
+  if (result.includes("[[&amp;")) {
+    result = result.replace(/\[\[&amp;\s*/g, "[[& ");
+  }
+
   // remove the indent from the line which contains the body partial
   // this prevents issues with code snippets
   if (result.includes("{{> body}}")) {
