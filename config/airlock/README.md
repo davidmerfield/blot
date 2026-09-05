@@ -151,9 +151,17 @@ or block the blue/green/yellow deploy - see the comment above
    `build-airlock`, alongside the app's `build` job: builds `config/airlock`
    per-arch, pushes `ghcr.io/davidmerfield/blot-airlock:<sha>-<arch>`, then
    `manifest-airlock` creates the multi-arch `<sha>` (and `latest` on
-   master) tag - same shape as the app image. It also runs the "Verify
-   egress filter" checks from this file's own Verifying section in CI, so a
-   regression in `egress.nft`/`entrypoint.sh` fails the build.
+   master) tag - same shape as the app image. It also runs a "Verify egress
+   filter" step, so a regression in `egress.nft`/`entrypoint.sh` fails the
+   build - **not** the same commands as this file's own Verifying section
+   below, on purpose: `169.254.169.254` and `10.0.0.1` have no route at all
+   from a GitHub-hosted runner, filter or not, so testing against them
+   there would pass identically whether or not `egress.nft` is doing
+   anything. The CI step instead spins up a plain sibling container on the
+   test network as a live target (its IP lands in `172.16.0.0/12`, the
+   exact range the filter blocks), confirms an *unfiltered* sibling can
+   reach it first, then asserts the airlock cannot - a check that only
+   passes if the filter actually did something.
 
 2. **Network + sidecar.** `deployAirlockIfNeeded()` runs before the
    blue/green/yellow loop: creates the `blotnet` Docker network if it
@@ -210,17 +218,30 @@ before relying on it.
 
 ## Verifying
 
+Run these against a real deployed `blot-airlock` (a real host, where
+`169.254.169.254` is a real, live metadata service and `10.0.0.1` may well
+be a real address on your VPC - unlike in CI, where neither is routable at
+all and would "fail" identically whether or not the filter is doing
+anything; that's why `build.yml`'s own check tests against a real sibling
+container instead, see the "Production" section above). `-f`, not just
+`-sS`: a service that answered (even with an error status - IMDSv2 returns
+a real 401 to an unauthenticated GET) reached the airlock and got a real
+HTTP response, which is a fail, not a "no output" pass:
+
 ```sh
 # metadata + private ranges are unreachable from inside the container
-docker exec blot-airlock sh -c 'curl -m3 -sS http://169.254.169.254/ ; echo exit=$?'
-docker exec blot-airlock sh -c 'curl -m3 -sS http://10.0.0.1/       ; echo exit=$?'
+docker exec blot-airlock sh -c 'curl -fm3 -sS http://169.254.169.254/ ; echo exit=$?'
+docker exec blot-airlock sh -c 'curl -fm3 -sS http://10.0.0.1/       ; echo exit=$?'
 # the public internet still works
 docker exec blot-airlock sh -c 'curl -m5 -sS -o /dev/null -w "%{http_code}\n" https://example.com'
 # the proxy path works end to end
 docker exec blot-airlock sh -c 'curl -m5 -sS -x http://127.0.0.1:8888 -o /dev/null -w "%{http_code}\n" https://example.com'
 # the container's own DevTools endpoint is NOT reachable through the proxy
-# (this is the loopback confinement above - it must time out, not 200)
-docker exec blot-airlock sh -c 'curl -m3 -sS -x http://127.0.0.1:8888 http://127.0.0.1:9221/json/version ; echo exit=$?'
+# (this is the loopback confinement above - it must fail, not return 200,
+# and -f matters here too: tinyproxy answers with its own valid HTTP error
+# page when it can't reach an upstream, which -sS alone would count as a
+# "successful" response)
+docker exec blot-airlock sh -c 'curl -fm3 -sS -x http://127.0.0.1:8888 http://127.0.0.1:9221/json/version ; echo exit=$?'
 ```
 
 The Jasmine spec [`app/build/plugins/linkScreenshot/tests.js`](../../app/build/plugins/linkScreenshot/tests.js)

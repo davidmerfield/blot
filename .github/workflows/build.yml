@@ -190,6 +190,32 @@ jobs:
           # address the filter would drop. See config/airlock/README.md.
           docker network create airlock_test_network
 
+          # 169.254.169.254 and 10.0.0.1 have no route at all from a
+          # GitHub-hosted runner's network, egress filter or not - curl
+          # fails against them regardless of whether egress.nft is loaded,
+          # wrong, or missing entirely (verified: a stock, unfiltered
+          # alpine container on this same network also can't reach them).
+          # Testing against them here would prove nothing. Instead, put a
+          # real listener on a THIRD, plain sibling container: its IP is
+          # assigned from Docker's default pool, which sits entirely inside
+          # 172.16.0.0/12 - the exact range egress.nft blocks - so it is
+          # genuinely reachable in this topology unless something is
+          # actively filtering it. A second, unfiltered sibling establishes
+          # that baseline before the airlock is asked to reach the same
+          # target, so a pass here means the filter did something, not
+          # that the address was already dead.
+          docker run -d --name airlock_test_target --network airlock_test_network \
+            alpine:3.20 sh -c 'while true; do nc -l -p 80; done'
+
+          target_ip=$(docker inspect --format='{{(index .NetworkSettings.Networks "airlock_test_network").IPAddress}}' airlock_test_target)
+          echo "Target container is at $target_ip"
+
+          docker run -d --name airlock_test_control --network airlock_test_network \
+            alpine:3.20 sleep 300
+
+          echo "Sanity check: an unfiltered sibling container CAN reach the target..."
+          docker exec airlock_test_control sh -c "nc -z -w3 $target_ip 80"
+
           airlock_id=$(docker run -d --network airlock_test_network --cap-add=NET_ADMIN "$IMAGE")
 
           timeout=30; interval=2; elapsed=0
@@ -202,20 +228,24 @@ jobs:
             sleep $interval; elapsed=$((elapsed+interval))
           done
 
-          echo "Checking the cloud metadata address is unreachable..."
-          if docker exec "$airlock_id" sh -c 'curl -m3 -sS http://169.254.169.254/' ; then
-            echo "FAIL: metadata address was reachable from inside the airlock"
+          echo "Checking the airlock CANNOT reach that same, genuinely-reachable target..."
+          if docker exec "$airlock_id" sh -c "curl -fsS -m3 http://$target_ip/"; then
+            echo "FAIL: a private IP a sibling container can reach was reachable from inside the airlock"
             exit 1
           fi
 
-          echo "Checking a private IP is unreachable..."
-          if docker exec "$airlock_id" sh -c 'curl -m3 -sS http://10.0.0.1/' ; then
-            echo "FAIL: a private IP was reachable from inside the airlock"
-            exit 1
-          fi
-
+          # -f, not just -sS: a rejected connection isn't the only way this
+          # can fail. tinyproxy answers with its OWN valid HTTP response
+          # (e.g. "500 Unable to connect") when it can't reach an upstream,
+          # and curl without -f treats any completed HTTP response as
+          # success regardless of status - so a plain -sS check here would
+          # falsely PASS a broken filter that let tinyproxy's own error page
+          # through, and would misreport a working `reject`-style rule (an
+          # immediate refusal, answered fast enough for tinyproxy to relay
+          # its error page inside curl's own timeout) as "reachable". -f
+          # treats that error page as the failure it represents.
           echo "Checking the airlock's own DevTools endpoint is unreachable through its proxy..."
-          if docker exec "$airlock_id" sh -c 'curl -m3 -sS -x http://127.0.0.1:8888 http://127.0.0.1:9221/json/version' ; then
+          if docker exec "$airlock_id" sh -c 'curl -fsS -m3 -x http://127.0.0.1:8888 http://127.0.0.1:9221/json/version'; then
             echo "FAIL: loopback was reachable through the proxy"
             exit 1
           fi
@@ -224,7 +254,7 @@ jobs:
           docker exec "$airlock_id" sh -c 'curl -m8 -sSf -o /dev/null https://example.com'
           docker exec "$airlock_id" sh -c 'curl -m8 -sSf -x http://127.0.0.1:8888 -o /dev/null https://example.com'
 
-          docker rm -f "$airlock_id"
+          docker rm -f "$airlock_id" airlock_test_target airlock_test_control
           docker network rm airlock_test_network
 
   manifest-airlock:

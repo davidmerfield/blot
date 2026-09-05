@@ -341,9 +341,25 @@ async function takeScreenshot(site, path, options = {}) {
       if (await closePageWithTimeout(page)) unresponsive = true;
     }
     if (context) {
-      await context.close().catch((error) => {
-        console.error(prefix(), "Error closing browser context:", error);
-      });
+      if (unresponsive) {
+        // closePageWithTimeout already decided the connection is dead. In
+        // airlock mode close() below only disconnects - it cannot kill the
+        // shared browser - so an unguarded context.close() here would be
+        // the only thing standing between a wedged CDP session and
+        // release(): if it hung too (likely, same dead connection), this
+        // finally block would never finish, the Bottleneck slot would
+        // never free, and every later screenshot on this process would
+        // wait forever. The browser is being discarded either way, so
+        // there is nothing to gain from trying.
+        console.log(prefix(), "skipping context.close() - browser already unresponsive");
+      } else {
+        try {
+          await withTimeout(context.close(), closePageTimeout, "context.close()");
+        } catch (error) {
+          console.error(prefix(), "Error closing browser context:", error);
+          unresponsive = true;
+        }
+      }
     }
 
     await release(browser, { unresponsive });
