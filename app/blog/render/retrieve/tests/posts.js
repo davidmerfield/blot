@@ -239,6 +239,47 @@ describe("posts cache", function () {
     );
   });
 
+  it("forwards the resolved sort selection to fetchTaggedEntries and keeps its order", function (done) {
+    let received;
+    const posts = loadPostsWithTaggedStub(function (blogID, tags, options, cb) {
+      received = { blogID, tags, options };
+      cb(null, { entryIDs: ["z.txt", "a.txt", "m.txt"], pagination: {} });
+    });
+    posts._clear();
+
+    spyOn(Entry, "get").and.callFake(function (blogID, ids, cb) {
+      // Entry.get preserves input order; return the hydrated entries shuffled
+      // to prove posts.js re-imposes the fetchTaggedEntries order.
+      cb([
+        { id: "a.txt", dateStamp: 3 },
+        { id: "z.txt", dateStamp: 1 },
+        { id: "m.txt", dateStamp: 2 },
+      ]);
+    });
+
+    posts(
+      {
+        blog: { id: "blog-1", cacheID: 100 },
+        query: { tag: "foo" },
+        params: {},
+        template: { locals: { sort_by: "id", sort_order: "asc" } },
+        log: function () {},
+      },
+      { locals: {} },
+      function (err, entries) {
+        expect(err).toBeNull();
+        expect(received.options.sortBy).toBe("id");
+        expect(received.options.order).toBe("asc");
+        expect(entries.map((entry) => entry.id)).toEqual([
+          "z.txt",
+          "a.txt",
+          "m.txt",
+        ]);
+        done();
+      }
+    );
+  });
+
   it("reuses cached untagged responses for identical inputs", function (done) {
     const posts = loadPostsWithTaggedStub(function () {});
     posts._clear();

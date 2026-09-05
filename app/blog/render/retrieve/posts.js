@@ -144,14 +144,29 @@ module.exports = function (req, res, callback) {
   fetchTaggedEntries(
     blogID,
     tags,
-    { limit, offset, pathPrefix: options.pathPrefix },
+    {
+      limit,
+      offset,
+      pathPrefix: options.pathPrefix,
+      sortBy: options.sortBy,
+      order: options.order,
+    },
     (err, result) => {
       if (err) {
         return callback(err);
       }
 
-      Entry.get(blogID, result.entryIDs || [], (entries) => {
-        entries.sort((a, b) => b.dateStamp - a.dateStamp);
+      const orderedIDs = result.entryIDs || [];
+
+      Entry.get(blogID, orderedIDs, (entries) => {
+        // fetchTaggedEntries already returns IDs in the requested sort order;
+        // keep that order instead of forcing newest-first by dateStamp.
+        const position = new Map(orderedIDs.map((id, index) => [id, index]));
+        entries.sort(
+          (a, b) =>
+            (position.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+            (position.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+        );
         const payload = {
           entries,
           pagination: result.pagination || {},
