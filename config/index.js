@@ -22,11 +22,13 @@ const reverse_proxies = process.env.BLOT_REVERSE_PROXY_URLS
   ? ["http://127.0.0.1:80"]
   : [];
 
-// See the "airlock" config block below. Production deploy wiring for it
-// (config/airlock/README.md) hasn't landed on the live hosts yet, so this is
-// a warning, not a thrown error that would crash every container on boot -
-// but it means bookmark screenshots and remote-image downloads are fetching
-// user-controlled URLs directly, with no SSRF protection, right now.
+// See the "airlock" config block below. This PR deploys the airlock sidecar
+// but deliberately does NOT set these two yet (only the BLOT_AIRLOCK_PROBE_*
+// pair) - the follow-up cutover PR does. So this warning is *expected* to
+// fire on every production boot until then; it's a reminder, not an error
+// that would crash every container. What it means: bookmark screenshots and
+// remote-image downloads are still fetching user-controlled URLs directly,
+// with no SSRF protection.
 if (
   environment === "production" &&
   !(process.env.BLOT_AIRLOCK_BROWSER_URL && process.env.BLOT_AIRLOCK_PROXY_URL)

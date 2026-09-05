@@ -18,12 +18,12 @@ const REMOTE_BROWSER_URL = config.airlock && config.airlock.browser_url;
 // Bottleneck's concurrency limit only serializes screenshots WITHIN this one
 // process - it can't stop blue, green and yellow from each independently
 // connect()ing to the one shared airlock Chromium and screenshotting at the
-// same time. AIRLOCK_LOCK_PATH is a file on the data directory every
-// container already mounts (config/deploy's DATA_DIRECTORY_ON_SERVER), used
-// purely as a cross-container mutex via proper-lockfile - the same
-// mechanism/dependency app/sync already uses to coordinate across
-// containers sharing that same directory.
-const AIRLOCK_LOCK_PATH = config.data_directory + "/airlock-screenshot.lock";
+// same time. AIRLOCK_LOCK_PATH is a placeholder file on the data directory
+// every container already mounts (config/deploy's DATA_DIRECTORY_ON_SERVER);
+// proper-lockfile locks it by atomically mkdir-ing "<path>.lock" beside it,
+// giving a cross-container mutex - the same mechanism/dependency app/sync
+// already uses to coordinate across containers sharing that directory.
+const AIRLOCK_LOCK_PATH = config.data_directory + "/airlock-screenshot";
 // Comfortably above the worst-case legitimate hold (PAGE_TIMEOUT plus the
 // screenshot/close budgets below), so a lock is never stolen out from under
 // a screenshot that's still genuinely in progress.
@@ -338,6 +338,22 @@ async function takeScreenshot(site, path, options = {}) {
   // regression for the template-gallery batch script's configure() use.
   const unlockAirlock = REMOTE_BROWSER_URL ? await acquireAirlockLock() : null;
 
+  try {
+    await takeScreenshotLocked(site, path, options);
+  } finally {
+    // Outside the inner try so the lock is still released if acquire()
+    // itself throws (e.g. the airlock is briefly unreachable) - otherwise
+    // it would leak and stall every other container's screenshots until it
+    // went stale.
+    if (unlockAirlock) {
+      await unlockAirlock().catch((error) => {
+        console.error(prefix(), "Error releasing airlock screenshot lock:", error);
+      });
+    }
+  }
+}
+
+async function takeScreenshotLocked(site, path, options) {
   const browser = await acquire();
   let page = null;
   let context = null;
@@ -405,12 +421,6 @@ async function takeScreenshot(site, path, options = {}) {
     }
 
     await release(browser, { unresponsive });
-
-    if (unlockAirlock) {
-      await unlockAirlock().catch((error) => {
-        console.error(prefix(), "Error releasing airlock screenshot lock:", error);
-      });
-    }
   }
 }
 
