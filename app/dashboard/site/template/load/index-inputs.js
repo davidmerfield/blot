@@ -14,29 +14,45 @@ const MAP = {
 const SORT_INPUT_KEYS = {
   sort: true,
   sort_by: true,
-  sort_order: true
+  sort_order: true,
+  sort_by_options: true,
+  sort_order_options: true
 };
 
-const resolveSortValue = locals => {
+const getAvailableSortOptions = locals => {
+  const sortByOptions = locals?.sort_by_options;
+
+  if (!Array.isArray(sortByOptions) || !sortByOptions.length) {
+    return SORT_OPTIONS;
+  }
+
+  const allowed = new Set(sortByOptions);
+  const filtered = SORT_OPTIONS.filter(option => allowed.has(option.sort_by));
+
+  return filtered.length ? filtered : SORT_OPTIONS;
+};
+
+const resolveSortValue = (locals, available) => {
   const sortOptions = getTemplateSortOptions(locals);
   const sortBy = sortOptions.sortBy || DEFAULT_SORT.sort_by;
   const sortOrder = sortOptions.order || DEFAULT_SORT.sort_order;
-  const matched = SORT_OPTIONS.find(
+  const matched = available.find(
     option => option.sort_by === sortBy && option.sort_order === sortOrder
   );
 
-  return matched ? matched.value : SORT_OPTIONS[0].value;
+  return matched ? matched.value : available[0].value;
 };
 
 const buildSortControl = locals => {
-  const selectedValue = resolveSortValue(locals);
+  const available = getAvailableSortOptions(locals);
+  const selectedValue = resolveSortValue(locals, available);
 
   return {
     key: "sort_by",
     label: "Post sorting",
     value: selectedValue,
     isSelect: true,
-    options: SORT_OPTIONS.map(option => ({
+    options: available.map(option => ({
       label: option.label,
       value: option.value,
       selected: option.value === selectedValue ? "selected" : ""

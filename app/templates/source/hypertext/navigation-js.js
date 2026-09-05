@@ -2,13 +2,22 @@
 const STRIP_TAG_TOKENS = true;
 const COLLAPSE_NAVIGATION_BY_DEFAULT = {{#collapse_navigation_by_default}}true{{/collapse_navigation_by_default}}{{^collapse_navigation_by_default}}false{{/collapse_navigation_by_default}};
 
+function sidebarCacheKey(root) {
+  return (
+    "sidebarState:" +
+    document.querySelector('meta[name="blot-cache-id"]')?.content +
+    ":sort:" +
+    (root?.dataset.sortBy || "id") +
+    ":" +
+    (root?.dataset.sortOrder || "asc")
+  );
+}
+
 class SidebarNavigation {
   constructor() {
     this.root = document.querySelector(".sidebar");
     if (!this.root) return;
-    this.cacheKey =
-      "sidebarState:" +
-      document.querySelector('meta[name="blot-cache-id"]')?.content;
+    this.cacheKey = sidebarCacheKey(this.root);
     this.maxPages = 100;
   }
 
@@ -256,14 +265,11 @@ class SidebarNavigation {
   }
 
   // ------- sorting -------
-  labelForLi(li) {
+  pathForLi(li) {
     if (li.classList.contains("folder")) {
-      return (
-        li.querySelector(":scope > .folder-label")?.textContent?.trim() || ""
-      );
+      return li.getAttribute("data-folder") || "";
     }
-    const a = li.querySelector(":scope > a");
-    return a?.textContent?.trim() || li.getAttribute("data-filename") || "";
+    return li.getAttribute("data-path") || "";
   }
 
   sortLocale() {
@@ -275,16 +281,25 @@ class SidebarNavigation {
     return lang || undefined;
   }
 
+  shouldReverseSort() {
+    const sortBy = this.root?.dataset.sortBy || "id";
+    const sortOrder = this.root?.dataset.sortOrder || "asc";
+    return sortBy === "id" && sortOrder === "desc";
+  }
+
   sortTree(ul) {
     const children = Array.from(ul.children).filter((n) => n.tagName === "LI");
     const folders = children.filter((li) => li.classList.contains("folder"));
     const files = children.filter((li) => !li.classList.contains("folder"));
     const locale = this.sortLocale();
+    const reverse = this.shouldReverseSort();
 
-    const cmp = (a, b) =>
-      this.labelForLi(a).localeCompare(this.labelForLi(b), locale, {
+    const cmp = (a, b) => {
+      const result = this.pathForLi(a).localeCompare(this.pathForLi(b), locale, {
         sensitivity: "base",
       });
+      return reverse ? -result : result;
+    };
 
     folders.sort(cmp);
     files.sort(cmp);
@@ -380,11 +395,7 @@ class SidebarNavigation {
     try {
       const sidebar = document.querySelector(".sidebar");
       if (!sidebar) return;
-      localStorage.setItem(
-        "sidebarState:" +
-          document.querySelector('meta[name="blot-cache-id"]')?.content,
-        sidebar.innerHTML
-      );
+      localStorage.setItem(sidebarCacheKey(sidebar), sidebar.innerHTML);
     } catch (err) {
       console.warn("Sidebar cache save failed:", err);
     }
