@@ -172,6 +172,11 @@ Blot generates the view for a template based on a few inputs:
 - Properties from your blog (e.g. title, profile picture)
 - Variables derived from the template's route
 
+Templates, partial source, and configured template values are public. They may
+be inspected through a public blog page's JSON render context with `?debug=true`
+or `?json=true`. Only place values in template configuration that are safe for
+anonymous disclosure; application secrets must remain outside template locals.
+
 ## Configuration file
 
 You can use the configuration file to declare template-specific locals and partial templates. Blot's themes use this feature to customize the <title> and description tags of each template.

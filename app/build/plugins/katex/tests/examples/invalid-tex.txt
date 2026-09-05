@@ -1,0 +1,1 @@
+Broken equation markup $$\\frac{1}{$$

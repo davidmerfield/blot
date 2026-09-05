@@ -1,7 +1,7 @@
 <style>
     
-  .imports {padding: 24px 0;display: flex;flex-wrap: wrap;list-style: none;gap: 1em;max-width: 800px;}
-  .imports li {flex-basis: 33%;}
+  .imports {padding: 24px 0 24px 0;display: flex;flex-wrap: wrap;list-style: none;gap: 1em;max-width: none;border-top: 1px solid var(--border-color);}
+  .imports li {flex-basis: 32%;}
   .imports li a {
     padding:11px 20px;
     color:var(--text-color);
@@ -18,6 +18,10 @@
     background-color: var(--light-background-color);
     color: var(--accent-color);
    }
+   .imports li a:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 3px;
+   }
 
    .imports li img {
     max-width: 16px;
@@ -29,145 +33,145 @@
   
   {{> close-button}}
 
-<div style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
+<div data-import-base="{{{importBase}}}" style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
         <h1>Import</h1>
 
 {{#imports.length}}
 <div class="live-updates">
-<p><strong>Your imports:</strong></h2>
+<p><span style="color:var(--medium-text-color);font-size:var(--small-font-size)">Your imports</strong></p>
 
 <style type="text/css">
-  .i {border-top:1px solid rgba(0,0,0,0.05);}
-  .i:hover {background: rgba(0,0,0,0.02)}
-  .i > td form {flex-shrink: 0}
-
+  .import-list {list-style: none;padding: 0;margin: 0;max-width: none;}
+  .import-list li {padding: var(--spacing) var(--spacing);}
+  .import-row {display: flex;align-items: flex-start;justify-content: space-between;gap: 1em;padding: 12px 0;border-top: 1px solid rgba(0,0,0,0.05);font-size: 14px;}
+  .import-row:hover {background: rgba(0,0,0,0.02);}
+  .import-row__info {min-width: 0;flex: 1;}
+  .import-row__filename {font-weight: 600;word-break: break-word;}
+  .import-row__meta {display: flex;align-items: center;flex-wrap: wrap;gap: 0.35em;margin-top: 4px;color: rgba(0,0,0,0.5);font-size: 13px;}
+  .import-row__meta img {height: 14px;width: auto;max-width: 20px;flex-shrink: 0;}
+  .import-row__sync.sync-status {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5em;
+    width: 100%;
+    margin-top: 4px;
+    color: rgba(0,0,0,0.5);
+    font-size: 13px;
+  }
+  .import-row__sync .import-row__meta {
+    margin-top: 0;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+  .import-row__sync .import-row__meta > :not(.sync-status-text) {flex-shrink: 0;}
+  .import-row__pct {display: none;}
+  .import-row__sync.has-progress .import-row__pct {display: contents;}
+  .import-row__pct > span {flex-shrink: 0;}
+  .import-row__sync .sync-status-progress-label {
+    color: inherit;
+    font-size: inherit;
+  }
+  .import-row__sync .sync-status-text {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .import-row__sync .sync-status-progress {
+    max-width: 560px;
+  }
+  .import-row__actions {display: flex;align-items: center;gap: 8px;flex-shrink: 0;}
+  .import-row__actions a,
+  .import-row__actions button {
+    display: block;
+    border-radius: 4px;
+    white-space: nowrap;
+    padding: 6px 11px;
+    text-decoration: none;
+    font-weight: 600;
+    border: 1px solid rgba(0,0,0,0.1);
+    cursor: pointer;
+    background: none;
+    line-height: 1.275;
+    font-size: 14px;
+  }
+  .import-row__actions a {color: #0070e8;}
+  .import-row__actions button {color: rgba(0,0,0,0.4);}
+  .import-row__actions button:hover {color: #ff3e00;}
 </style>
-<table style="max-width: none;table-layout: auto;font-size:14px;">
 
+<ul class="import-list">
 {{#imports}} 
-<tr class="i" id="{{id}}">
+<li class="import-row" id="{{id}}">
 
-  <td class="{{^complete}}{{^error}}working{{/error}}{{/complete}} status">{{name}}</td> 
+  <div class="import-row__info">
+    <div class="import-row__filename">{{identifier}}</div>
+    {{#complete}}
+    <div class="import-row__meta">
+      {{#icon}}<img width="14" height="14" src="{{icon}}" alt="">{{/icon}}
+      <span>{{name}}</span>
+      {{^error}}
+      {{#started}}<span>&bull; {{started}}</span>{{/started}}
+      {{#size}}<span>&bull; {{size}}</span>{{/size}}
+      {{/error}}
+      {{#error}}
+      <span class="error" style="padding:2px 8px;line-height: 1.4;">{{error}}</span>
+      {{/error}}
+    </div>
+    {{/complete}}
+    {{^complete}}
+    <div class="sync-status import-row__sync">
+      <div class="import-row__meta">
+        {{#icon}}<img width="14" height="14" src="{{icon}}" alt="">{{/icon}}
+        <span>{{name}}</span>
+        <span class="import-row__pct">
+          <span>&bull;</span>
+          <span class="sync-status-progress-label"></span>
+        </span>
+        <span>&bull;</span>
+        <span id="status-{{id}}" class="sync-status-text truncate">{{lastStatus}}</span>
+      </div>
+      <span class="sync-status-progress">
+        <span class="sync-status-progress-bar"></span>
+      </span>
+    </div>
+    {{/complete}}
+  </div>
 
-  <td style="width:100%;color:rgba(0,0,0,0.5)">{{identifier}}</td> 
-
-
+  <div class="import-row__actions">
   {{#complete}}
+    {{^error}}
+    <a href="{{{importBase}}}/download/{{id}}" target="_blank" class="s no-underline">Download</a>
+    {{/error}}
+    <form method="post" action="{{{importBase}}}/delete/{{id}}">
+      <input type="hidden" name="_csrf" value="{{csrftoken}}">
+      <button type="submit">Delete</button>
+    </form>
+  {{/complete}}
+  {{^complete}}
+    <form method="post" action="{{{importBase}}}/cancel/{{id}}">
+      <input type="hidden" name="_csrf" value="{{csrftoken}}">
+      <button type="submit">Cancel</button>
+    </form>
+  {{/complete}}
+  </div>
 
-  {{^error}}
-  <td style="padding-right:0"><a href="{{{importBase}}}/download/{{id}}" target="_blank" class="s no-underline" style="display:block;border-radius:4px;white-space: nowrap;padding:4px 11px;text-decoration:none;font-weight: 600;flex-shrink:0;color:#0070e8;border: 1px solid rgba(0,0,0,0.1)">Download result ({{size}} zip)  ↓</a></td>
-  {{/error}}
-  
-  {{#error}}
-  <td><span class="error" style="padding:6px 12px;line-height: 1;">{{error}}</span></td>
-  {{/error}}
-
-  <td><form  method="post" action="{{{importBase}}}/delete/{{id}}">
-    <input type="hidden" name="_csrf" value="{{csrftoken}}">
-    <button type="submit" style="display:block;border-radius:4px;white-space: nowrap;padding:6px 11px;text-decoration:none;font-weight: 600;flex-shrink:0;color: #ff3e00;border: 1px solid rgba(0,0,0,0.1);cursor:pointer;background:none;line-height: 1.275;">Remove</button>
-  </form></td>
-{{/complete}}
-
-
-
-{{^complete}}
-
-<td style="width:100%" colspan="2"><span style="color:rgba(0,0,0,0.5)">{{identifier}}</span><span id="status-{{id}}" style="width:100%" class="truncate">{{lastStatus}}</span></td> 
-
-
-<td>
-<form method="post" action="{{{importBase}}}/cancel/{{id}}">
-  <input type="hidden" name="_csrf" value="{{csrftoken}}">
-  <button type="submit" style="display:block;border-radius:4px;white-space: nowrap;padding:6px 11px;text-decoration:none;font-weight: 600;flex-shrink:0;color: #ff3e00;border: 1px solid rgba(0,0,0,0.1);cursor:pointer;background:none;line-height: 1.275;">Cancel</button>
-</form></td>
-{{/complete}}
-</tr>
-
+</li>
 {{/imports}} 
-</table>
+</ul>
 <br>
 </div>
 {{/imports.length}}
 
 
+{{#imports.length}}
+<p><span style="color:var(--medium-text-color);font-size:var(--small-font-size)">New import</strong></p>
+  {{/imports.length}}
+
 <ul class="imports">
-  <li><a href="{{{importBase}}}/wordpress"><img width="100" height="100" src="/images/configure/wordpress.png"> <span class="a">Wordpress</span></a></li>
-  <li><a href="{{{importBase}}}/are.na"><img width="250" height="149" src="/images/configure/are.na.png">  <span class="a">Are.na</span></a></li>
+  <li><a href="{{{importBase}}}/wordpress"><img width="100" height="100" src="/images/configure/wordpress.svg" alt=""> <span class="a">WordPress</span></a></li>
+  <li><a href="{{{importBase}}}/squarespace"><img width="100" height="100" src="/images/configure/squarespace.svg" alt=""> <span class="a">Squarespace</span></a></li>
+  <li><a href="{{{importBase}}}/blogger"><img width="100" height="100" src="/images/configure/blogger.svg" alt=""> <span class="a">Blogger</span></a></li>
+  <li><a href="{{{importBase}}}/arena"><img width="100" height="100" src="/images/configure/are.na.svg" alt="">  <span class="a">Are.na</span></a></li>
 </ul>
-
-<p style="max-width: 500px">Need an importer for another source? <a href="/contact">Request a new importer</a>.</p>
-
-<script type="text/javascript">
-  // https://www.npmjs.com/package/reconnecting-eventsource
-var _ReconnectingEventSource;(()=>{"use strict";var e={19:(e,t)=>{Object.defineProperty(t,"__esModule",{value:!0}),t.EventSourceNotAvailableError=void 0;class n extends Error{constructor(){super("EventSource not available.\nConsider loading an EventSource polyfill and making it available globally as EventSource, or passing one in as eventSourceClass to the ReconnectingEventSource constructor.")}}t.EventSourceNotAvailableError=n,t.default=class{constructor(e,t){if(this.CONNECTING=0,this.OPEN=1,this.CLOSED=2,this._configuration=null!=t?Object.assign({},t):void 0,this.withCredentials=!1,this._eventSource=null,this._lastEventId=null,this._timer=null,this._listeners={},this.url=e.toString(),this.readyState=this.CONNECTING,this.max_retry_time=3e3,this.eventSourceClass=globalThis.EventSource,null!=this._configuration&&(this._configuration.lastEventId&&(this._lastEventId=this._configuration.lastEventId,delete this._configuration.lastEventId),this._configuration.max_retry_time&&(this.max_retry_time=this._configuration.max_retry_time,delete this._configuration.max_retry_time),this._configuration.eventSourceClass&&(this.eventSourceClass=this._configuration.eventSourceClass,delete this._configuration.eventSourceClass)),null==this.eventSourceClass||"function"!=typeof this.eventSourceClass)throw new n;this._onevent_wrapped=e=>{this._onevent(e)},this._start()}dispatchEvent(e){throw new Error("Method not implemented.")}_start(){let e=this.url;this._lastEventId&&(-1===e.indexOf("?")?e+="?":e+="&",e+="lastEventId="+encodeURIComponent(this._lastEventId)),this._eventSource=new this.eventSourceClass(e,this._configuration),this._eventSource.onopen=e=>{this._onopen(e)},this._eventSource.onerror=e=>{this._onerror(e)},this._eventSource.onmessage=e=>{this.onmessage(e)};for(const e of Object.keys(this._listeners))this._eventSource.addEventListener(e,this._onevent_wrapped)}_onopen(e){0===this.readyState&&(this.readyState=1,this.onopen(e))}_onerror(e){if(1===this.readyState&&(this.readyState=0,this.onerror(e)),this._eventSource&&2===this._eventSource.readyState){this._eventSource.close(),this._eventSource=null;const e=Math.round(this.max_retry_time*Math.random());this._timer=setTimeout((()=>this._start()),e)}}_onevent(e){e instanceof MessageEvent&&(this._lastEventId=e.lastEventId);const t=this._listeners[e.type];if(null!=t)for(const n of[...t])n.call(this,e);"message"===e.type&&this.onmessage(e)}onopen(e){}onerror(e){}onmessage(e){}close(){this._timer&&(clearTimeout(this._timer),this._timer=null),this._eventSource&&(this._eventSource.close(),this._eventSource=null),this.readyState=2}addEventListener(e,t,n){e in this._listeners||(this._listeners[e]=[],null!=this._eventSource&&this._eventSource.addEventListener(e,this._onevent_wrapped));const s=this._listeners[e];Array.isArray(s)&&!s.includes(t)&&s.push(t)}removeEventListener(e,t,n){const s=this._listeners[e];if(null!=s){for(;;){const e=s.indexOf(t);if(-1===e)break;s.splice(e,1)}s.length<=0&&(delete this._listeners[e],null!=this._eventSource&&this._eventSource.removeEventListener(e,this._onevent_wrapped))}}}}},t={};function n(s){var i=t[s];if(void 0!==i)return i.exports;var r=t[s]={exports:{}};return e[s](r,r.exports,n),r.exports}var s={};(()=>{var e=s;Object.defineProperty(e,"__esModule",{value:!0});const t=n(19);Object.assign(window,{ReconnectingEventSource:t.default,EventSourceNotAvailableError:t.EventSourceNotAvailableError})})(),_ReconnectingEventSource=s})();
-
-var evtSource = new ReconnectingEventSource('{{{importBase}}}/status');
-
-var currentlyLoading;
-var lastStatus;
-var checkAgain;
-
-  
-evtSource.onmessage = function (event) {
-
-  const {status, importID} = JSON.parse(event.data);
-
-  var statusContainer = document.getElementById("status-" + importID);
-  
-  statusContainer.removeAttribute('data-text');
-  statusContainer.innerHTML = status;
-  truncate(statusContainer);
-
-  if (status === "Finished") {
-    // Fetch the latest folder state if we're not
-    // already fetching it.
-    if (currentlyLoading) {
-      checkAgain = true;
-      return;
-    }
-
-    currentlyLoading = true;
-
-    if (document.querySelector(".live-updates")) loadFolder(function onLoad() {
-      if (checkAgain === true) {
-        checkAgain = false;
-        return loadFolder(onLoad);
-      }
-
-      currentlyLoading = false;
-    });    
-  } 
-};
-
-function loadFolder(callback) {
-  var xhr = new XMLHttpRequest();
-
-  xhr.onreadystatechange = function (e) {
-    if (xhr.readyState == 4 && xhr.status == 200) {
-      var parser = new DOMParser();
-      var xml = parser.parseFromString(xhr.responseText, "text/html");
-
-      var currentNode = document.querySelector(".live-updates");
-      var newNode = xml.querySelector(".live-updates");
-
-      if (currentNode !== null && newNode !== null) {
-        var currentState = currentNode.innerHTML;
-        var newState = newNode.innerHTML;
-
-        if (newState === currentState) return callback();
-
-        currentNode.innerHTML = newState;
-      }
-
-      callback();
-    }
-  };
-
-  xhr.open("GET", window.location, true);
-  xhr.setRequestHeader("Content-type", "text/html");
-  xhr.send();
-}
-
-</script>
 
 </div>

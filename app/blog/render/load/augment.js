@@ -10,6 +10,8 @@ require("moment-timezone");
 module.exports = function (req, res, entry, callback) {
   var blog = req.blog;
 
+  entry.metadata = createRenderMetadata(entry.metadata);
+
   // Can be either inherited from the properties of the blog
   // or from the template, or from the view
   var hideDate = res.locals.hide_dates || false;
@@ -138,6 +140,28 @@ module.exports = function (req, res, entry, callback) {
     }
   );
 };
+
+function createRenderMetadata(sourceMetadata) {
+  if (!sourceMetadata || !type(sourceMetadata, "object")) {
+    return sourceMetadata;
+  }
+
+  var renderMetadata = Object.assign({}, sourceMetadata);
+  var keys = Object.keys(sourceMetadata);
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var lowerKey = key.toLowerCase();
+
+    if (lowerKey === key || Object.prototype.hasOwnProperty.call(renderMetadata, lowerKey)) {
+      continue;
+    }
+
+    renderMetadata[lowerKey] = sourceMetadata[key];
+  }
+
+  return renderMetadata;
+}
 
 function FormatDate(dateStamp, zone) {
   return function () {

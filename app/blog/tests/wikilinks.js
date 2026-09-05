@@ -48,10 +48,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const res = await this.get("/post");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/post");
     expect(body).toContain('/_image_cache/');
     expect(body).not.toContain('"/Image.jpg"');
   });
@@ -68,10 +65,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const res = await this.get("/missing");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/missing");
     expect(body).toContain('href="Nonexistent Note"'); // Missing targets keep original href
     expect(body).toContain(">Nonexistent Note<");
   });
@@ -136,10 +130,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const introRes = await this.get("/introduction");
-    const introBody = await introRes.text();
-
-    expect(introRes.status).toEqual(200);
+    const introBody = await this.text("/introduction");
     expect(introBody).toContain('href="/fruits/apple"'); // relative path resolves via byPath
     expect(introBody).toContain(">Apple<");
     expect(introBody).toContain('href="/fruits/pear"'); // ./ relative path resolves via byPath
@@ -147,10 +138,7 @@ describe("wikilinks", function () {
     expect(introBody).toContain('href="/fruits/tasty/mango"'); // absolute vault path resolves via byPath
     expect(introBody).toContain(">Mango<");
 
-    const mangoRes = await this.get("/fruits/tasty/notes");
-    const mangoBody = await mangoRes.text();
-
-    expect(mangoRes.status).toEqual(200);
+    const mangoBody = await this.text("/fruits/tasty/notes");
     expect(mangoBody).toContain('href="/fruits/apple"'); // ../ parent traversal resolves via byPath
     expect(mangoBody).toContain(">Apple<");
   });
@@ -179,10 +167,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const res = await this.get("/daily/plan");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/daily/plan");
     expect(body).toContain('href="/Daily/Guide"');
     expect(body).not.toContain('href="/guide"');
     expect(body).toContain('>Guide<');
@@ -200,10 +185,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const res = await this.get("/daily/plan");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/daily/plan");
     expect(body).toContain('href="docs/missing-note"');
     expect(body).toContain('>docs/missing-note<');
     expect(body).not.toContain('>missing-note<');
@@ -232,10 +214,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const res = await this.get("/fruits/apple");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/fruits/apple");
     expect(body).toContain('href="/fruits/tasty/mango"'); // filename search finds Mango in sibling directory
     expect(body).toContain(">Mango<");
   });
@@ -263,10 +242,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const res = await this.get("/plans/notes");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/plans/notes");
     expect(body).toContain('href="/plans/project-plan"'); // byTitle resolves when path & filename miss
     expect(body).toContain(">Project Plan<");
   });
@@ -295,10 +271,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const res = await this.get("/title-link-test");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/title-link-test");
     expect(body).toContain('href="/about"');
     expect(body).toContain(">About Us<");
   });
@@ -322,10 +295,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const res = await this.get("/headings");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/headings");
     expect(body).toContain('href="#heading-demo"'); // matches [[Heading Demo]]
     expect(body).toContain('href="#custom-heading"'); // matches [[custom-heading]] variations
     expect(body).toMatch(/>Heading Demo<.*>Heading Demo</s); // heading text reused for both forms
@@ -359,10 +329,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const res = await this.get("/references/overview");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/references/overview");
     expect(body).toContain('href="/references/label"'); // [[Label]] prefers entry lookup
     expect(body).toContain(">Label Entry<");
     expect(body).toContain('href="#label"'); // [[#Label]] links to heading anchor
@@ -403,10 +370,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const res = await this.get("/notes/guides/tour");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/notes/guides/tour");
     expect(body).toContain('href="/notes/trips/sunrise"'); // filename match wins ahead of title match
     expect(body).toContain(">Mountain Sunrise<");
     expect(body).not.toContain('href="/notes/drafts/dawn"');
@@ -424,10 +388,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const initialRes = await this.get("/notes/waiting");
-    const initialBody = await initialRes.text();
-
-    expect(initialRes.status).toEqual(200);
+    const initialBody = await this.text("/notes/waiting");
     expect(initialBody).toContain('href="Future Note"');
     expect(initialBody).toContain(">Future Note<");
 
@@ -443,10 +404,7 @@ describe("wikilinks", function () {
 
     await this.blog.rebuild();
 
-    const res = await this.get("/notes/waiting");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/notes/waiting");
     expect(body).toContain('href="/library/future-note"');
     expect(body).toContain(">Future Note<");
     expect(body).not.toContain('href="Future Note"');
@@ -464,10 +422,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const initialRes = await this.get("/notes/waiting");
-    const initialBody = await initialRes.text();
-
-    expect(initialRes.status).toEqual(200);
+    const initialBody = await this.text("/notes/waiting");
     expect(initialBody).toContain('href="Spec Sheet.md"');
     expect(initialBody).toContain(">Spec Sheet.md<");
 
@@ -483,10 +438,7 @@ describe("wikilinks", function () {
 
     await this.blog.rebuild();
 
-    const res = await this.get("/notes/waiting");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/notes/waiting");
     expect(body).toContain('href="/library/research-summary"');
     expect(body).toContain(">Research Summary<");
     expect(body).not.toContain('href="Spec Sheet.md"');
@@ -549,10 +501,7 @@ describe("wikilinks", function () {
     });
     await this.blog.rebuild();
 
-    const res = await this.get("/daily/plan");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/daily/plan");
     expect(body).toContain('class="embedded-markdown"');
     expect(body).toContain("Morning routine");
     expect(body).toContain("Review tasks");

@@ -31,6 +31,16 @@ describe("entry.urlDeduplication", function () {
     expect(result.conflictingEntryPath).toEqual("/original.txt");
   });
 
+
+  it("uses mixed-case permalink metadata as first url candidate", async function () {
+    const entry = await this.set(
+      "/mixed-permalink.txt",
+      "Permalink: Mixed-Case-Path\nHello, mixed!"
+    );
+
+    expect(entry.url).toEqual("/mixed-case-path");
+  });
+
   it("adds dependency when URL is deduplicated", async function () {
     await this.set("/dep-a.txt", "Link: dedup\nHello, dep A!");
     const deduplicated = await this.set(

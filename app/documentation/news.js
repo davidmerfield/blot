@@ -102,120 +102,130 @@ news.param("guid", function (req, res, next) {
   next();
 });
 
-news.post("/cancel", parse, function (req, res, next) {
-  var cancel, email, locals;
-  var guid = uuid();
+news.post("/cancel", parse, async function (req, res, next) {
+  try {
+    var cancel, email, locals;
+    var guid = uuid();
 
-  if (!req.body || !req.body.email) {
-    return next(new Error("No email"));
-  }
+    if (!req.body || !req.body.email) {
+      throw new Error("No email");
+    }
 
-  email = req.body.email.trim().toLowerCase();
-  guid = guid.split("-").join("");
-  guid = encodeURIComponent(guid);
-  cancel = cancellationLink(guid);
-  locals = { email: email, cancel: cancel };
+    email = req.body.email.trim().toLowerCase();
+    guid = guid.split("-").join("");
+    guid = encodeURIComponent(guid);
+    cancel = cancellationLink(guid);
+    locals = { email: email, cancel: cancel };
 
-  client.sismember(listKey, email, function (err, stat) {
-    if (err || !stat) return next(err || new Error("No subscription found"));
+    var stat = await client.sIsMember(listKey, email);
+    var isSubscribed = !!stat;
+    if (!isSubscribed) throw new Error("No subscription found");
 
-    client.setex(cancellationKey(guid), TTL, email, function (err) {
-      if (err) return next(err);
+    await client.setEx(cancellationKey(guid), TTL, email);
 
+    await new Promise(function (resolve, reject) {
       Email.NEWSLETTER_CANCELLATION_CONFIRMATION(null, locals, function (err) {
-        if (err) return next(err);
-
-        res.redirect("/news/cancel?email=" + email);
+        if (err) return reject(err);
+        return resolve();
       });
     });
-  });
-});
 
-news.get("/cancel/:guid", function (req, res, next) {
-  var guid = decodeURIComponent(req.params.guid);
-
-  client.get(cancellationKey(guid), function (err, email) {
-    if (err || !email) return next(err || new Error("No email"));
-
-    client.srem(listKey, email, function (err, removed) {
-      if (err) return next(err);
-
-      var locals = { email: email };
-
-      res.locals.title = "Cancelled";
-      res.locals.email = email;
-
-      if (removed) {
-        Email.NEWSLETTER_CANCELLATION_CONFIRMED(null, locals, function () {
-          // Email confirmation sent
-        });
-      }
-
-      res.locals.title = "Cancelled";
-      res.render("news/cancelled");
-    });
-  });
-});
-
-news.get("/confirm/:guid", function (req, res, next) {
-  var guid = decodeURIComponent(req.params.guid);
-
-  client.get(confirmationKey(guid), function (err, email) {
-    if (err || !email) return next(err || new Error("No email"));
-
-    client.sadd(listKey, email, function (err, added) {
-      if (err) return next(err);
-
-      var locals = {
-        email: email,
-        cancel: "https://" + config.host + "/news/cancel"
-      };
-
-      res.locals.title = "Confirmed";
-      res.locals.email = email;
-
-      // The first time the user clicks the confirmation
-      // link we send out a confirmation email, subsequent
-      // clicks they just see the confirmation page.
-      if (added) {
-        Email.NEWSLETTER_SUBSCRIPTION_CONFIRMED(null, locals, function () {
-          // Email confirmation sent
-        });
-      }
-
-      res.redirect(req.baseUrl + "/confirmed");
-    });
-  });
-});
-
-news.post("/sign-up", parse, function (req, res, next) {
-  var confirm, email, locals;
-  var guid = uuid();
-
-  if (!req.body && !req.body.contact_gfhkj) {
-    return next(new Error("No email"));
+    res.redirect("/news/cancel?email=" + email);
+  } catch (err) {
+    next(err);
   }
+});
 
-  // honeypot fields
-  if (req.body.email || req.body.name) {
-    return next(new Error("Honeypot triggered"));
+news.get("/cancel/:guid", async function (req, res, next) {
+  try {
+    var guid = decodeURIComponent(req.params.guid);
+    var email = await client.get(cancellationKey(guid));
+
+    if (!email) throw new Error("No email");
+
+    var removed = await client.sRem(listKey, email);
+    var locals = { email: email };
+
+    res.locals.title = "Cancelled";
+    res.locals.email = email;
+
+    if (removed) {
+      Email.NEWSLETTER_CANCELLATION_CONFIRMED(null, locals, function () {
+        // Email confirmation sent
+      });
+    }
+
+    res.locals.title = "Cancelled";
+    res.render("news/cancelled");
+  } catch (err) {
+    next(err);
   }
+});
 
-  email = req.body.contact_gfhkj.trim().toLowerCase();
-  guid = guid.split("-").join("");
-  guid = encodeURIComponent(guid);
-  confirm = confirmationLink(guid);
-  locals = { email: email, confirm: confirm };
+news.get("/confirm/:guid", async function (req, res, next) {
+  try {
+    var guid = decodeURIComponent(req.params.guid);
+    var email = await client.get(confirmationKey(guid));
 
-  client.setex(confirmationKey(guid), TTL, email, function (err) {
-    if (err) return next(err);
+    if (!email) throw new Error("No email");
 
-    Email.NEWSLETTER_SUBSCRIPTION_CONFIRMATION(null, locals, function (err) {
-      if (err) return next(err);
+    var added = await client.sAdd(listKey, email);
+    var locals = {
+      email: email,
+      cancel: "https://" + config.host + "/news/cancel"
+    };
 
-      res.redirect("/news/sign-up?email=" + email);
+    res.locals.title = "Confirmed";
+    res.locals.email = email;
+
+    // The first time the user clicks the confirmation
+    // link we send out a confirmation email, subsequent
+    // clicks they just see the confirmation page.
+    if (added) {
+      Email.NEWSLETTER_SUBSCRIPTION_CONFIRMED(null, locals, function () {
+        // Email confirmation sent
+      });
+    }
+
+    res.redirect(req.baseUrl + "/confirmed");
+  } catch (err) {
+    next(err);
+  }
+});
+
+news.post("/sign-up", parse, async function (req, res, next) {
+  try {
+    var confirm, email, locals;
+    var guid = uuid();
+
+    if (!req.body || !req.body.contact_gfhkj) {
+      throw new Error("No email");
+    }
+
+    // honeypot fields
+    if (req.body.email || req.body.name) {
+      throw new Error("Honeypot triggered");
+    }
+
+    email = req.body.contact_gfhkj.trim().toLowerCase();
+    guid = guid.split("-").join("");
+    guid = encodeURIComponent(guid);
+    confirm = confirmationLink(guid);
+    locals = { email: email, confirm: confirm };
+
+    await client.setEx(confirmationKey(guid), TTL, email);
+
+    await new Promise(function (resolve, reject) {
+      Email.NEWSLETTER_SUBSCRIPTION_CONFIRMATION(null, locals, function (err) {
+        if (err) return reject(err);
+        return resolve();
+      });
     });
-  });
+
+    res.redirect("/news/sign-up?email=" + email);
+  } catch (err) {
+    next(err);
+  }
 });
 
 function loadToDo (req, res, next) {

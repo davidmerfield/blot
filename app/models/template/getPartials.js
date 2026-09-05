@@ -1,9 +1,9 @@
 var getView = require("./getView");
 var async = require("async");
 var ensure = require("helper/ensure");
-var extend = require("helper/extend");
 var promisify = require("util").promisify;
 var parseTemplate = require("./parseTemplate");
+var mergeRetrieve = require("./util/mergeRetrieve");
 
 module.exports = function getPartials(
   blogID,
@@ -50,7 +50,6 @@ module.exports = function getPartials(
     }
   }
 
-
   function wrapInContext(content, contextPath) {
     if (!contextPath) return content || "";
 
@@ -96,15 +95,22 @@ module.exports = function getPartials(
     async.eachOfSeries(
       partials,
       function (value, partial, next) {
+        var nextCalled = false;
+        var finish = function () {
+          if (nextCalled) return;
+          nextCalled = true;
+          next();
+        };
         var inheritedContexts =
           contextMap[partial] && contextMap[partial].length
             ? contextMap[partial]
             : [""];
+
         // Don't fetch a partial if we've got it already.
         // Partials which returned nothing are set as
         // empty strings to prevent any infinities.
         if (allPartials[partial] !== null && allPartials[partial] !== undefined)
-          return next();
+          return finish();
 
         // If the partial's name starts with a slash,
         // it is a path to an entry.
@@ -120,20 +126,17 @@ module.exports = function getPartials(
             }
 
             if (!entry || !entry.html) {
-              return next();
+              return finish();
             }
 
             // Only allow access to entries which exist and are public
             if (!entry.deleted && !entry.draft && !entry.scheduled) {
               allPartials[partial] = entry.html;
-
-              inheritedContexts.forEach(function (contextPath) {
-                extend(retrieve).and(parseRetrieveInContext(entry.html || "", contextPath));
-              });
             }
 
-            next();
+            finish();
           });
+          return;
         }
 
         // If the partial's name doesn't start with a slash,
@@ -145,9 +148,10 @@ module.exports = function getPartials(
 
               inheritedContexts.forEach(function (contextPath) {
                 if (!contextPath) {
-                  extend(retrieve).and(view.retrieve || {});
+                  mergeRetrieve(retrieve, view.retrieve || {});
                 } else {
-                  extend(retrieve).and(
+                  mergeRetrieve(
+                    retrieve,
                     parseRetrieveInContext(view.content || "", contextPath)
                   );
                 }
@@ -164,13 +168,16 @@ module.exports = function getPartials(
                 });
               });
 
-              fetchList(view.partials, next);
+              fetchList(view.partials, finish);
             } else {
               allPartials[partial] = "";
-              next();
+              finish();
             }
           });
+          return;
         }
+
+        finish();
       },
       done
     );

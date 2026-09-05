@@ -54,6 +54,42 @@ describe("augment", function () {
         expect(body.trim()).toEqual('Second');
     });
 
+
+    it("creates lowercase metadata aliases for rendering", async function () {
+
+        await this.write({
+            path: "/mixed-case-metadata.txt",
+            content: "Apple: Honeycrisp\n\nBody"
+        });
+
+        await this.template({
+            'entry.html': '{{entry.metadata.apple}}'
+        });
+
+        const res = await this.get('/mixed-case-metadata');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body.trim()).toEqual('Honeycrisp');
+    });
+
+    it("preserves explicit lowercase metadata values", async function () {
+
+        await this.write({
+            path: "/metadata-precedence.txt",
+            content: "Apple: Honeycrisp\napple: Gala\n\nBody"
+        });
+
+        await this.template({
+            'entry.html': '{{entry.metadata.apple}}'
+        });
+
+        const res = await this.get('/metadata-precedence');
+        const body = await res.text();
+
+        expect(res.status).toEqual(200);
+        expect(body.trim()).toEqual('Gala');
+    });
     it("encodes tag slugs when augmenting entry tags", async function () {
 
         await this.write({

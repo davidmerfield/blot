@@ -1,5 +1,6 @@
 const Mustache = require("mustache");
 const pluginList = require("build/plugins").list;
+const defaultList = require("build/plugins").defaultList;
 const arrayify = require("helper/arrayify");
 const capitalize = require("helper/capitalize");
 const deCamelize = require("helper/deCamelize");
@@ -17,19 +18,18 @@ module.exports = function (req, res, next) {
       continue;
     }
 
-    if (!blog.plugins[i]) {
-      console.log("Plugin not found: " + i);
-      continue;
-    }
+    const pluginState = blog.plugins[i] || {
+      enabled: false,
+      options: defaultList[i]?.options || {},
+    };
 
     let formHTML = plugins[i].formHTML;
-    let options = blog.plugins[i].options;
+    let options = pluginState.options;
 
     if (plugins[i].formHTML)
       plugins[i].formHTML = Mustache.render(formHTML, options);
 
-    if (blog.plugins[i] && blog.plugins[i].enabled)
-      plugins[i].checked = "checked";
+    if (pluginState.enabled) plugins[i].checked = "checked";
   }
 
   let categories = {};

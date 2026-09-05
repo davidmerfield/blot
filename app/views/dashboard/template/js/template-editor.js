@@ -28,7 +28,7 @@ if (template_list) {
       container: template_list,
       menuElement: templateActionMenu,
       rowSelector: ".template-row",
-      triggerSelector: ".template-row__menu-trigger",
+      triggerSelector: ".row-action-menu__trigger",
       initialFocusKey: "settings",
       linkMap: {
         settings: function (dataset) {

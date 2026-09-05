@@ -10,6 +10,7 @@ var pathNormalizer = require("helper/pathNormalizer");
 var type = require("helper/type");
 
 var makeSlug = require("helper/makeSlug");
+var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 var ensure = require("helper/ensure");
 var Model = require("models/entry").model;
 
@@ -48,6 +49,13 @@ function Prepare (entry, options = {}) {
     .and(entry.updated, "number")
     .and(entry.draft, "boolean")
     .and(entry.metadata, "object");
+
+  const metadataByLowercaseKey = metadataCaseInsensitive(entry.metadata);
+
+  function metadataValue (key) {
+    if (entry.metadata[key] !== undefined) return entry.metadata[key];
+    return metadataByLowercaseKey[key.toLowerCase()];
+  }
 
   // The best areas of for speed improvements lie
   // in the next four blocks!
@@ -96,7 +104,8 @@ function Prepare (entry, options = {}) {
   // We pass in the metadata title in case it exists to prevent
   // a bug which surfaces when the file contains title metadata
   var title = entry.title;
-  if (type(entry.metadata.title, Model.title)) title = entry.metadata.title;
+  const metadataTitle = metadataValue("title");
+  if (type(metadataTitle, Model.title)) title = metadataTitle;
   entry.summary = Summary($, title || "");
   debug(entry.path, "Generated  summary");
 
@@ -111,17 +120,19 @@ function Prepare (entry, options = {}) {
   debug(entry.path, "Generated  teasers");
 
   debug(entry.path, "Generating makeSlug");
-  entry.slug = makeSlug(entry.metadata.title || entry.title);
+  entry.slug = makeSlug(metadataValue("title") || entry.title);
   debug(entry.path, "Generated  makeSlug");
 
   debug(entry.path, "Generating tags");
   var tags = [];
 
-  if (entry.metadata.tags) {
-    if (Array.isArray(entry.metadata.tags)) {
-      tags = entry.metadata.tags.map(tag => String(tag));
-    } else if (typeof entry.metadata.tags === 'string') {
-      tags = entry.metadata.tags.split(",");
+  const metadataTags = metadataValue("tags");
+
+  if (metadataTags) {
+    if (Array.isArray(metadataTags)) {
+      tags = metadataTags.map(tag => String(tag));
+    } else if (typeof metadataTags === "string") {
+      tags = metadataTags.split(",");
     }
   }
 
@@ -143,7 +154,7 @@ function Prepare (entry, options = {}) {
 
   // An entry is a draft if it has draft: yes in its metadata, or if it is inside
   // a folder called drafts.
-  if (truthy(entry.metadata.draft)) entry.draft = true;
+  if (truthy(metadataValue("draft"))) entry.draft = true;
 
   // An entry becomes a page if it:
   // begins with an underscore
@@ -153,8 +164,8 @@ function Prepare (entry, options = {}) {
   entry.page =
     isHidden(entry.path) ||
     isPage(entry.path) ||
-    truthy(entry.metadata.page) ||
-    entry.metadata.menu !== undefined;
+    truthy(metadataValue("page")) ||
+    metadataValue("menu") !== undefined;
 
   // An entry is only added to the menu:
   // if it is a page
@@ -163,7 +174,7 @@ function Prepare (entry, options = {}) {
   entry.menu =
     entry.page &&
     !isHidden(entry.path) &&
-    (entry.metadata.menu === undefined || truthy(entry.metadata.menu));
+    (metadataValue("menu") === undefined || truthy(metadataValue("menu")));
 
   debug(entry.path, "Generated  booleans");
 
@@ -172,9 +183,9 @@ function Prepare (entry, options = {}) {
   // declared a page with no permalink set. We can't
   // do this earlier, since we don't know the slug then
   let permalinkCandidates = [
-    entry.metadata.permalink,
-    entry.metadata.link,
-    entry.metadata.url
+    metadataValue("permalink"),
+    metadataValue("link"),
+    metadataValue("url")
   ];
 
   permalinkCandidates = permalinkCandidates
@@ -192,9 +203,17 @@ function Prepare (entry, options = {}) {
 
   debug(entry.path, "Generating meta-overwrite");
 
-  for (var key in entry.metadata)
-    if (canOverwrite(key) && type(entry.metadata[key], Model[key]))
-      entry[key] = entry.metadata[key];
+  const modelKeyByLower = Object.keys(Model).reduce((acc, modelKey) => {
+    acc[modelKey.toLowerCase()] = modelKey;
+    return acc;
+  }, {});
+
+  for (var key in entry.metadata) {
+    const canonical = modelKeyByLower[key.toLowerCase()];
+
+    if (canOverwrite(canonical) && type(entry.metadata[key], Model[canonical]))
+      entry[canonical] = entry.metadata[key];
+  }
 
   debug(entry.path, "Generated  meta-overwrite");
 

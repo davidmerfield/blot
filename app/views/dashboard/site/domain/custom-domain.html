@@ -13,24 +13,3 @@
 		<a href="{{{base}}}/domain">Cancel</a>
 	</div>
 </div>
-
-
-<script>
-
-	// if the text field starts out empty and then the user types something, update the submit button to say "Set up custom domain"
-	// if the user empties the text field, update the submit button to say "Remove custom domain"
-
-	const initialVal = document.getElementById('customDomain').value;
-	
-	document.getElementById('customDomain').addEventListener('input', function (event) {
-		var button = document.querySelector('.buttons button[type="submit"]');
-		if (event.target.value && !initialVal) {
-			button.textContent = 'Set up custom domain';
-		} else if (!event.target.value && initialVal){
-			button.textContent = 'Remove custom domain';
-		} else {
-			button.textContent = 'Save changes';
-		}
-	});
-
-</script>

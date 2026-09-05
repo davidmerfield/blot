@@ -1,3 +1,4 @@
+const templates = require("templates");
 const gdoc = require("../index");
 const fs = require("fs-extra");
 const express = require("express");
@@ -19,6 +20,11 @@ const imageBuffer = async () =>
 
 describe("gdoc converter", function () {
   global.test.blog();
+
+  // Build the templates
+  beforeAll(function (done) {
+    templates({ watch: false }, done);
+  }, 10 * 1000); // longer timeout
 
   beforeAll(function (done) {
     const app = express();

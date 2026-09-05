@@ -1,57 +1,238 @@
-# Google Drive Client for Blot
+## Google Drive Client
 
-This repository contains the code for Blot’s Google Drive Client, designed to handle all interactions with Google Drive for the Blot blogging platform. The client is responsible for managing shared folders, syncing changes, and facilitating smooth integration between Blot and Google Drive.
+This module provides bidirectional file synchronization between Blot blogs and Google Drive folders. It handles authentication via service accounts, monitors for changes, and keeps local file systems in sync with shared Google Drive folders.
 
-Right now we ask the user to type in their Google Drive email. We avoid doing any sort of OAUTH because this involves Google  more than is strictly neccessary.
+## Overview
 
-After inserting their email address, the user is asked to create a new folder in their drive and then share it with a service account controlled by Blot.
+The Google Drive client avoids OAuth and instead uses service accounts: robot Google Drive accounts controlled by Blot. A user provides their Google Drive email address, creates a folder, and shares it with a Blot-managed service account. The service account then monitors and syncs that folder. This approach minimizes involvement with Google's authentication layers while providing automatic change detection via webhooks.
 
-Google Drive service accounts automatically accept sharing requests sent to them, which is handy.
+### Key Operational Points
 
-## Dotfiles and dotfolders
+- Service accounts are configured in `config.google_drive.service_accounts` as an array of credential objects.
+- Each service account is identified by a `client_id` field.
+- The client maintains persistent state in Redis, tracking blogs, their associated folders, and metadata for efficient syncing.
+- Files and folders with names beginning with a dot (dotfiles) are ignored during sync operations and not downloaded or uploaded.
+- Storage quota varies per service account; each service account has its own 15 GB allocation (for accounts created before April 15, 2025).
 
-Blot ignores files and folders whose names begin with a dot when syncing with Google Drive. Dotfiles remain in the user's Google Drive folder but are not downloaded to Blot's local filesystem or uploaded during reset operations.
+## Public Interface
 
-How is storage usage affected by 'service accounts'?
-- it seems like each service account gets its own storage quota of 15GB
+The module exports the following properties via `/Volumes/Blot/blot/app/clients/google-drive/index.js`:
 
-Do multiple service accounts share the same storage quota? If we upgrade the storage size and have this affect all service accounts?
-- No they do not share the same quota
+- `display_name: "Google Drive"` — Display name for the client.
+- `description: "A file storage and synchronization service"` — Short description.
+- `disconnect(blogID, callback)` — Disconnects a blog from Google Drive, clearing all associated data.
+- `resync` — Alias for `sync/resetFromDrive`; re-syncs a blog by downloading all remote changes.
+- `remove(blogID, path, callback)` — Removes a file or folder from both local and remote storage.
+- `write(blogID, path, input, callback)` — Writes a file to both local and remote storage.
+- `site_routes` — Express router for site-level webhooks and endpoints.
+- `dashboard_routes` — Express router for dashboard pages.
+- `init` — Initialization function called on server startup.
 
-## How to add a new service account
+## Core Architecture
 
-Service accounts are robot google drive accounts which sync the user's folder to Blot's server. The user shares their site folder through Google Drive with the service account, which in turn calls Blot.
+### Sync Flow
 
-1. Create a Google Account and open the cloud console:
+The sync process is bidirectional but heavily weighted toward pulling changes from Google Drive:
 
-https://console.cloud.google.com
+1. **Change Detection**: Google Drive sends webhooks via `changes.watch` when files change. The webhook receiver (`/webhook/changes.watch/:serviceAccountId`) triggers syncs for all blogs using that service account.
+2. **Polling Fallback**: A background process (`pollDriveActivity`) continuously queries the Drive Activity API as a secondary detection mechanism, respecting API rate limits.
+3. **Sync Execution**: When triggered, `sync(blogID)` acquires a sync lock, then recursively compares the remote folder tree with the local file system.
+4. **Reconciliation**: The sync process downloads missing or out-of-date files, creates missing directories, and removes local files that no longer exist remotely.
 
-2. Go to 'Enabled APIs & services' and enable:
+The `write`, `remove`, and `disconnect` operations are explicit Blot-to-Drive synchronizations and do not trigger a full recursive sync.
 
-Google Drive API 	
-Google Drive Activity API
+### File Storage
 
-3. Create a service account
+The client uses Redis for persistence. All model state is stored under the prefix defined in `database/prefix.js`:
 
-Service account name: Blot
-Service account ID: drive-a
+- **Blog Records** (`database/blog.js`): Stores per-blog configuration including `folderId`, `folderName`, `serviceAccountId`, error state, and sync metadata. Redis hash keys are prefixed with `google-drive:blogs:${blogID}`. Blogs are tracked in sets by service account ID for efficient iteration.
+- **Folder Mappings** (`database/folder.js`): Maintains bidirectional mappings between Google Drive file IDs and local paths for each folder, plus metadata (modification time, directory flag). Stored as Redis hashes with keys like `google-drive:${folderId}:folder` and `google-drive:${folderId}:path`.
+- **Channels** (`database/channel.js`): Records active webhook channels, including their expiration times and resource IDs. Used to avoid duplicate channels and track channel lifecycle.
+- **Service Account Info** (`database/serviceAccount.js`): Caches service account metadata, especially storage quota usage, for load balancing.
 
-Do not grant any permissions (skip, skip)
+### Setup and Authentication
 
-4. Create a key
+The setup process (`routes/setup.js`) is multi-phase:
 
-Add key > Create new key > JSON
+1. **User Input**: User provides their Google Drive email and selects/creates a folder to share with the service account.
+2. **Folder Discovery**: The client searches for an empty folder owned by that email and shared with the service account.
+3. **State Synchronization**: Once found, the client locks sync, uploads any local files to the folder, and stores the folder ID.
+4. **Timeout Protection**: If setup is not completed within 2 hours, the process aborts.
 
-Download the JSON and then run:
+The setup process can be interrupted if the user changes their email or cancels (`preparing: false`).
 
-node scripts/google-drive/convertCredentialJSON <path to credentials.json>
+## Dependencies
 
-This script produces a new env variable. Copy/paste the output into the env file:
-- in development: ~/Projects/blot/.env
-- in production: /etc/blot/secrets.env
+### Internal
 
-5. Reload the server
+- `models/blog` — Core blog model for Blot.
+- `models/client` — Redis client for data persistence.
+- `sync/establishSyncLock` — Mutual exclusion lock for sync operations.
+- `sync/fix` — Post-sync validation and fixing of blog state.
+- `helper/localPath` — Constructs filesystem paths for blog content.
+- `helper/tempDir` — Temporary directory for staging downloads.
+- `helper/clfdate` — Logging timestamp formatter.
+- `clients/util/shouldIgnoreFile` — Determines if a file should be ignored (dotfiles, etc.).
 
-## New update from Google:
+### External
 
-Previously, Google Cloud IAM service accounts had access to 15 GB of Google Workspace Storage. However, because they aren't directly managed by administrators, any new service accounts created after April 15, 2025, won't receive this storage. Existing service accounts created before this date will retain their storage.
+- `googleapis` — Google Drive API v3 client library.
+- `bottleneck` — Rate-limiting library for API calls.
+- `fs-extra` — Enhanced filesystem utilities.
+- `yauzl` — ZIP extraction for exported Google Docs.
+- `cheerio` — HTML parsing for Google Docs conversion.
+
+## File and Directory Inventory
+
+### Top Level
+
+- `index.js` — Module exports; public interface definition.
+- `init.js` — Startup initialization; creates Drive clients, fetches storage info, sets up webhooks and polling.
+- `disconnect.js` — Removes blog from Google Drive, clears local data.
+- `write.js` — Writes a file to both local filesystem and Google Drive; handles MD5 comparison to avoid unnecessary updates.
+- `remove.js` — Deletes a file from both local and Google Drive; updates folder metadata.
+
+### `/database`
+
+Persistent state management layer:
+
+- `index.js` — Exports blog, serviceAccount, channel, and folder modules.
+- `prefix.js` — Defines the Redis key prefix for all Google Drive data.
+- `blog.js` — Blog account records: folder ID, service account ID, sync state, error messages.
+- `folder.js` — File ID ↔ path mappings for a Google Drive folder.
+- `channel.js` — Webhook channel lifecycle: create, store, list, delete.
+- `serviceAccount.js` — Service account metadata: storage quota, client ID.
+- `tests/` — Unit tests for database layer.
+
+### `/sync`
+
+Bidirectional synchronization:
+
+- `index.js` — Entry point; acquires sync lock and delegates to `sync.js`.
+- `sync.js` — Core recursive sync algorithm comparing remote and local file trees.
+- `resetFromDrive.js` — Full download of remote folder to local filesystem.
+- `resetToDrive.js` — Full upload of local filesystem to remote folder.
+- `util/driveReaddir.js` — List files in a Google Drive folder.
+- `util/localReaddir.js` — List files in a local directory.
+- `util/transformDriveItems.js` — Transform and deduplicate Google Drive items (handles Google Docs MIME types).
+- `util/truncateToSecond.js` — Truncate timestamps for comparison with Google Docs (which lack MD5).
+
+### `/serviceAccount`
+
+Google Drive API client management and monitoring:
+
+- `createDriveClient.js` — Initializes a Drive API v3 client for a service account.
+- `createDriveActivityClient.js` — Initializes a DriveActivity API client for querying change history.
+- `createDocsClient.js` — Initializes a Google Docs API client for metadata operations.
+- `fetchStorageInfo.js` — Queries and stores current storage quota usage; selects the service account with least load for new blogs.
+- `watchChanges.js` — Sets up a `changes.watch` webhook channel on the Drive API; replaces expired channels.
+- `pollDriveActivity.js` — Polls the DriveActivity API for changes as a fallback to webhooks; respects rate limits via Bottleneck.
+- `hotDocPoller.js` — Monitors for changes to Google Docs files; triggers re-export when edits are detected.
+- `request.js` — Generic HTTP request utility for service account authenticated requests.
+- `tests/` — Unit tests.
+
+### `/util`
+
+Helper functions:
+
+- `download.js` — Downloads files from Google Drive; handles Google Docs by exporting to `.gdoc` format or HTML; tracks MD5 checksums.
+- `md5Checksum.js` — Computes MD5 hash of a local file.
+- `checkWeCanContinue.js` — Checks if a sync should proceed (used during setup to detect user cancellation or email changes).
+
+### `/routes`
+
+HTTP endpoints:
+
+- `site.js` — Webhook receiver for `changes.watch` notifications; triggers syncs for affected blogs.
+- `setup.js` — Setup workflow: email input, folder discovery, sync initiation.
+- `dashboard.js` — Dashboard UI and configuration endpoints.
+
+### `/views`
+
+HTML templates for user-facing pages:
+
+- `connect.html` — Initial connection form (email input).
+- `setup.html` — Folder selection and setup progress.
+- `disconnect.html` — Confirmation for disconnection.
+- `index.html` — Main Google Drive integration status page.
+
+## Sync and Authentication Flow
+
+### Initial Setup (User Perspective)
+
+1. User navigates to "Connect Google Drive" on their blog dashboard.
+2. Enters their Google Drive email address and submits.
+3. Shares a new empty folder in Google Drive with the service account email (e.g., `blot-drive-a@blot-prod.iam.gserviceaccount.com`).
+4. Blot waits for the folder share to be detected via the `changes.watch` webhook.
+5. Once detected, Blot uploads any existing local files to the folder.
+6. Setup completes; the blog now syncs bidirectionally with that folder.
+
+### Ongoing Sync
+
+**Real-time (Webhook-based)**:
+- Google Drive sends a webhook notification to `/webhook/changes.watch/${serviceAccountId}` when files change.
+- The webhook receiver queries `database.blog.iterateByServiceAccountId()` to find all blogs using that service account.
+- Each blog triggers `sync(blogID)` in parallel.
+
+**Fallback (Polling)**:
+- `pollDriveActivity()` runs continuously in the background.
+- It iterates over all blogs, querying their latest activity timestamp.
+- If a new activity is detected, it triggers `sync(blogID)`.
+- Rate limiting via Bottleneck respects the Drive API quota (up to 48 calls per minute per service account).
+
+**Sync Algorithm** (`sync/sync.js`):
+- Recursively walks the remote folder tree.
+- For each remote file/folder:
+  - If missing locally, downloads it or creates a directory.
+  - If present but out-of-date (different size or mod time), re-downloads.
+  - For Google Docs, uses modification time for comparison (no MD5).
+  - For regular files, uses file size.
+- For each local file/folder not present remotely, deletes it (unless it matches an ignore pattern).
+- Updates the folder metadata database with new mappings.
+
+### Write/Remove/Disconnect
+
+- `write(blogID, path, input, callback)`: Computes MD5 of input; compares with local file MD5. If different, uploads to Drive and saves locally.
+- `remove(blogID, path, callback)`: Deletes from local filesystem and Google Drive; removes folder mapping.
+- `disconnect(blogID, callback)`: Removes blog record from Redis; sets `blog.client` to empty string.
+
+### Service Account Selection
+
+When a new blog is set up, `fetchStorageInfo.js` selects a service account based on:
+1. Free space available (must have at least 5 GB free).
+2. Number of blogs currently using the account (prefers least-loaded accounts).
+
+## Concurrency and Locking
+
+- Each blog can only be synced once at a time via `sync/establishSyncLock(blogID)`.
+- The sync lock is acquired before mutating the folder metadata database.
+- The webhook receiver and polling process can both issue syncs; the lock ensures they serialize.
+
+## Known Limitations and Constraints
+
+1. **No Conflict Resolution**: If a file is edited both locally and remotely since the last sync, the remote version always wins.
+2. **Google Docs Export Size Limit**: Google Docs larger than the export size limit (currently ~20 MB for many formats) are skipped with a warning.
+3. **Dotfiles Ignored**: Files and folders starting with `.` are never downloaded or synced to Drive.
+4. **No Selective Sync**: All files in the shared folder are synced; there is no option to exclude subdirectories.
+5. **Service Account Storage Quota**: Accounts created after April 15, 2025, do not receive the automatic 15 GB allocation; existing accounts retain theirs.
+6. **Setup Timeout**: If a user does not complete setup (share the folder) within 2 hours, the setup process aborts.
+7. **Webhook Expiration**: Webhook channels expire after 24 hours and must be renewed. The client renews them every 10 minutes during `init()`.
+8. **Modtime Truncation**: Google Docs do not provide MD5 checksums, so only modification time (truncated to the second) is used for comparison.
+
+## Testing
+
+Tests are organized by module within each directory's `tests/` subdirectory:
+
+- `database/tests/` — Tests for Redis-backed database operations.
+- `serviceAccount/tests/` — Tests for service account authentication and API calls.
+
+Run tests with your normal test runner; consult individual test files for setup and execution instructions.
+
+## Integration Points
+
+- **Blog Model**: The client reads and updates blog records via `models/blog`.
+- **Client Model**: Uses Redis client from `models/client` for all persistence.
+- **Sync Lock**: Integrates with `sync/establishSyncLock` to coordinate with other sync clients.
+- **Post-Sync Fix**: Calls `sync/fix` after sync completes to validate blog state.
+- **Webhooks**: Registers routes in the main Express app via `site_routes` and `dashboard_routes`.
+- **Service Account Selection**: Consulted by blog setup and write operations to choose where to store new content.

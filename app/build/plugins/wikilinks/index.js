@@ -20,8 +20,60 @@ function isMarkdownFile(path) {
   return [".txt", ".text", ".md", ".markdown"].indexOf(ext) > -1;
 }
 
+
 function render($, callback, { blogID, path }) {
-  const wikilinks = $("[title='wikilink']");
+  const cleanupWikilinkMarker = ($node, { removeClass = false } = {}) => {
+    if (!$node || !$node.length) return;
+
+    if ($node.attr("data-wikilink-marker") === "1") {
+      const title = ($node.attr("title") || "").toLowerCase();
+      if (title === "wikilink") {
+        $node.removeAttr("title");
+      }
+      $node.removeAttr("data-wikilink-marker");
+    }
+
+    if (!removeClass) return;
+
+    const existingClasses = ($node.attr("class") || "")
+      .split(/\s+/)
+      .filter((className) => className && className !== "wikilink");
+
+    if (existingClasses.length) {
+      $node.attr("class", existingClasses.join(" "));
+    } else {
+      $node.removeAttr("class");
+    }
+  };
+
+  const legacyWikilinks = $("[title='wikilink']");
+
+  legacyWikilinks.each(function (_, node) {
+    const $node = $(node);
+    const isLink = node && node.name === "a";
+    const isMedia = !isLink && $node.attr("src") !== undefined;
+
+    if (!isLink && !isMedia) {
+      return;
+    }
+
+    const existingClasses = ($node.attr("class") || "")
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (!existingClasses.includes("wikilink")) {
+      existingClasses.push("wikilink");
+      $node.attr("class", existingClasses.join(" "));
+    }
+
+    $node.attr("data-wikilink-marker", "1");
+
+    if (isLink) {
+      $node.removeAttr("title");
+    }
+  });
+
+  const wikilinks = $(".wikilink[data-wikilink-marker='1']");
   let dependencies = [];
 
   eachOf(
@@ -47,6 +99,7 @@ function render($, callback, { blogID, path }) {
       const rawTarget = isLink ? $node.attr(attribute) : mediaSource;
 
       if (!rawTarget) {
+        cleanupWikilinkMarker($node, { removeClass: isMedia });
         debug("Skipping wikilink node with no target");
         return next();
       }
@@ -124,6 +177,8 @@ function render($, callback, { blogID, path }) {
             }
           }
 
+          cleanupWikilinkMarker($node, { removeClass: isMedia });
+
           debug("Wikilink target not found for", href);
           return next();
         }
@@ -148,6 +203,7 @@ function render($, callback, { blogID, path }) {
                   url || linkedPath
                 );
                 $node.attr("src", url || linkedPath);
+                cleanupWikilinkMarker($node, { removeClass: isMedia });
                 return next();
               }
 
@@ -198,6 +254,12 @@ function render($, callback, { blogID, path }) {
             debug("Setting image caption to", altText);
             nextNode.text(altText || "");
           }
+
+          cleanupWikilinkMarker($node, { removeClass: isMedia });
+        }
+
+        if (isLink) {
+          cleanupWikilinkMarker($node);
         }
 
         if (linkedPath) {

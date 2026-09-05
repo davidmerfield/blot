@@ -165,30 +165,19 @@ module.exports = function set (blogID, path, updates, callback) {
         ensure(entry, model, true);
 
         // Store the entry
-        redis.set(entryKey, JSON.stringify(entry), function (err) {
-          if (err) return callback(err);
+        redis
+          .set(entryKey, JSON.stringify(entry))
+          .then(function () {
+            if (entry.deleted) {
+              return redis.expire(entryKey, 24 * 60 * 60).then(function (result) {
+                if (!result)
+                  throw new Error("Failed to set expiration for deleted entry");
+              });
+            }
 
-          var ttlAction = entry.deleted
-            ? function (next) {
-                redis.expire(entryKey, 24 * 60 * 60, function (err, result) {
-                  if (err) return next(err);
-                  if (!result)
-                    return next(
-                      new Error("Failed to set expiration for deleted entry")
-                    );
-                  next();
-                });
-              }
-            : function (next) {
-                redis.persist(entryKey, function (err) {
-                  if (err) return next(err);
-                  next();
-                });
-              };
-
-          ttlAction(function (err) {
-            if (err) return callback(err);
-
+            return redis.persist(entryKey);
+          })
+          .then(function () {
             queue = [
               updateTagList.bind(this, blogID, entry),
               assignToLists.bind(this, blogID, entry),
@@ -252,8 +241,10 @@ module.exports = function set (blogID, path, updates, callback) {
                 }
               );
             });
+          })
+          .catch(function (err) {
+            return callback(err);
           });
-        });
       });
     });
   });

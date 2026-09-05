@@ -9,6 +9,7 @@ const folders = require("./templates/folders");
 const async = require("async");
 const clfdate = require("helper/clfdate");
 const scheduler = require("./scheduler");
+const logRedisCacheStats = require("./scheduler/redis-cache-stats");
 const flush = require("documentation/tools/flush-cache");
 const configureLocalBlogs = require("./configure-local-blogs");
 const purgeCdnUrls = require("helper/purgeCdnUrls");
@@ -40,6 +41,14 @@ async function runPostListenTasks() {
     }
   } else {
     log("Skipping template build after listen (not master)");
+  }
+
+  try {
+    // Each application process owns an independent client-side Redis cache.
+    log("Starting Redis cache stats logging asynchronously");
+    setInterval(logRedisCacheStats, 60 * 1000);
+  } catch (err) {
+    logError("Failed to start Redis cache stats logging", err);
   }
 
   try {
@@ -156,22 +165,24 @@ function main(callback) {
         // Typically, domain keys like domain:example.com store a blog's ID
         // but since the homepage is not a blog, we just use a placeholder 'X'
         log("Creating SSL key for redis");
-        client.msetnx(
-          ["domain:" + config.host, "X", "domain:www." + config.host, "X"],
-          function (err) {
-            if (err) {
-              console.error(
-                "Unable to set domain flag for host" +
-                  config.host +
-                  ". SSL may not work on site."
-              );
-              console.error(err);
-            }
-
-            log("Created SSL key for redis");
-            callback();
+        (async function () {
+          try {
+            await client.mSetNX({
+              ["domain:" + config.host]: "X",
+              ["domain:www." + config.host]: "X",
+            });
+          } catch (err) {
+            console.error(
+              "Unable to set domain flag for host" +
+                config.host +
+                ". SSL may not work on site."
+            );
+            console.error(err);
           }
-        );
+
+          log("Created SSL key for redis");
+          callback();
+        })();
       },
 
       function (callback) {

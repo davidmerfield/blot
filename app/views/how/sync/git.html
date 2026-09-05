@@ -3,16 +3,15 @@
 <p>
   You can connect your site's folder to Blot with
   <a rel="nofollow" href="https://git-scm.com/">Git</a>, a version-control
-  system for tracking changes in computer files and coordinating work on those
-  files among multiple people. You can switch your site seamlessly to another
-  sync method at any point.
+  system for tracking file changes and collaborating with others. You can switch your site to another
+  sync method at any time.
 </p>
 
 <h2>Setting up Git</h2>
 
 <p>
   When you configure your site with git on the dashboard, Blot will
-  provide a repository URL to clone, along with a username and password.
+  provide a repository URL to clone, plus a username and password.
 </p>
 
 <small>
@@ -20,15 +19,14 @@
 </small>
 
 <p>
-  Your site is generated from the master branch of your repository. To update
+  Your site is generated from the <code>master</code> branch of your repository. To update
   your site, commit your changes and push.
 </p>
 
 <h2>Using your phone or tablet</h2>
 
 <p>
-  There are a handful of Git clients for phones and tablets. I've heard from a
-  number of customers who use
+  There are a few Git clients for phones and tablets. A common option is
   <a href="https://workingcopyapp.com/">Working Copy</a>.
 </p>
 
@@ -41,7 +39,7 @@
 <h2>Using an existing Git repository</h2>
 
 <p>
-  You can use an existing Git repostory. Set its remote URL to Blot's repository
+  You can use an existing Git repository. Set its remote URL to Blot's repository
   endpoint:
 </p>
 
@@ -59,7 +57,7 @@
 
 <p>
   Git supports multiple remote URLs. This means you can use the same repository
-  on Blot and GitHub. If you have an existing repository on GitHub, you can add
+  on Blot and GitHub. If you already use GitHub, you can add
   Blot's endpoint:
 </p>
 
@@ -68,7 +66,7 @@
 </small>
 
 <p>
-  Or if you have an existing repository on Blot, you can add GitHub's endpoint:
+  If you already use Blot as your remote, you can add GitHub's endpoint:
 </p>
 
 <small>
@@ -76,8 +74,7 @@
 </small>
 
 <p>
-  The next time you push, you will need to use the force flag to ensure the
-  changes go through on both Blot and GitHub:
+  The next time you push, use the force flag so the changes are accepted by both Blot and GitHub:
 </p>
 
 <small>
@@ -86,8 +83,8 @@
 
 {{> not-synced}}
 
-<h2>Switching client</h2>
+<h2>Switching sync method</h2>
 
-<p>You can switch seamlessly from Git to another sync method at any point:</p>
+<p>You can switch from Git to another sync method at any time:</p>
 
 {{> client_list}}
