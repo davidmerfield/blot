@@ -56,4 +56,91 @@ describe("template", function () {
       });
     });
   });
+
+
+  it("merges projected allEntries fields from nested partials", function (done) {
+    var test = this;
+
+    var itemTitle = {
+      name: "item-title.html",
+      content: "{{#allEntries}}{{title}}{{/allEntries}}",
+    };
+
+    var itemURL = {
+      name: "item-url.html",
+      content: "{{#allEntries}}{{url}}{{/allEntries}}",
+    };
+
+    var parentView = {
+      name: "parent-merged.html",
+      content: "{{> " + itemTitle.name + "}}{{> " + itemURL.name + "}}",
+    };
+
+    setView(test.template.id, itemTitle, function (err) {
+      if (err) return done.fail(err);
+      setView(test.template.id, itemURL, function (err) {
+        if (err) return done.fail(err);
+        setView(test.template.id, parentView, function (err) {
+          if (err) return done.fail(err);
+
+          var partials = {};
+          partials[parentView.name] = "";
+
+          getPartials(test.blog.id, test.template.id, partials, function (
+            err,
+            partials,
+            retrieve
+          ) {
+            if (err) return done.fail(err);
+
+            expect(retrieve).toEqual({
+              allEntries: { fields: { title: true, url: true } },
+            });
+
+            done();
+          });
+        });
+      });
+    });
+  });
+
+  it("projects fields from a partial used inside tagged.entries", function (done) {
+    var test = this;
+
+    var itemTitle = {
+      name: "tagged-item-title.html",
+      content: "{{title}}",
+    };
+
+    var parentView = {
+      name: "tagged-parent.html",
+      content:
+        "{{#tagged.entries}}{{> " + itemTitle.name + "}}{{/tagged.entries}}",
+    };
+
+    setView(test.template.id, itemTitle, function (err) {
+      if (err) return done.fail(err);
+      setView(test.template.id, parentView, function (err) {
+        if (err) return done.fail(err);
+
+        var partials = {};
+        partials[parentView.name] = "";
+
+        getPartials(test.blog.id, test.template.id, partials, function (
+          err,
+          partials,
+          retrieve
+        ) {
+          if (err) return done.fail(err);
+
+          expect(retrieve).toEqual({
+            tagged: { fields: { title: true } },
+          });
+
+          done();
+        });
+      });
+    });
+  });
+
 });

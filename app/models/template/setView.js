@@ -224,6 +224,8 @@ module.exports = function setView(templateID, updates, callback) {
 
 				console.log(clfdate(), templateID.slice(0, 12), "setView:", name);
 
+				var existingRetrieve = view.retrieve || {};
+
 				for (var i in updates) {
 					if (updates[i] !== view[i]) changes = true;
 					view[i] = updates[i];
@@ -284,8 +286,14 @@ module.exports = function setView(templateID, updates, callback) {
 						(infiniteError) => {
 						if (infiniteError) return callback(infiniteError);
 
-						// Merge parser-derived retrieve (e.g. {{title}}) into view.retrieve; do not overwrite user-provided retrieve (includeDraft, filters, etc.)
-						extend(view.retrieve || {}).and(parseResult.retrieve || {});
+						// Parser output is the source of truth for retrieve locals.
+						// Keep user-provided retrieve options (includeDraft, filters)
+						// from the update or the previously stored view.
+						view.retrieve = applyUserRetrieveOptions(
+							parseResult.retrieve || {},
+							updates.retrieve,
+							existingRetrieve
+						);
 
 						view = serializeRedisHashValues(serialize(view, viewModel));
 
@@ -342,6 +350,30 @@ module.exports = function setView(templateID, updates, callback) {
 		}).catch(callback);
 	});
 };
+
+var USER_RETRIEVE_KEYS = ["includeDraft", "filters"];
+
+function applyUserRetrieveOptions(parsedRetrieve, requestedRetrieve, existingRetrieve) {
+	var result = {};
+
+	extend(result).and(parsedRetrieve || {});
+
+	USER_RETRIEVE_KEYS.forEach(function (key) {
+		var value;
+
+		if (requestedRetrieve && requestedRetrieve[key] !== undefined) {
+			value = requestedRetrieve[key];
+		} else if (existingRetrieve && existingRetrieve[key] !== undefined) {
+			value = existingRetrieve[key];
+		}
+
+		if (value !== undefined) {
+			result[key] = value;
+		}
+	});
+
+	return result;
+}
 
 function detectInfinitePartialDependency(
 	templateID,
