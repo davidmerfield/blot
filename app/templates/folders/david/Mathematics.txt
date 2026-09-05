@@ -1,12 +1,12 @@
 # Mathematics and code
 
-Ita fac, mi Lucili: vindica te tibi, et tempus quod adhuc aut auferebatur aut subripiebatur aut excidebat collige et serva.[^1] Persuade tibi hoc sic esse ut scribo: quaedam tempora eripiuntur nobis, quaedam subducuntur, quaedam effluunt. 
+I like to keep a formula next to a function. One is a claim about a surface; the other is just a way to count.
 
 $$
 \theta ;\ \mapsto \; \frac{1}{N} \sum_{i=1}^N \left| y_i - \mu_{\theta}(x_i) \right|^2 + \log[ \,  \sigma^2_{\theta}(x_i) \, ].
 $$
 
-Turpissima tamen est [[Hello|iactura quae]] per neglegentiam fit.[^2] Et si volueris attendere, magna pars vitae elabitur male agentibus, maxima nihil agentibus, tota vita aliud agentibus. 
+Here is the same idea as a loop, which is easier to read and harder to trust:
 
 ```python
 def fib(n):
@@ -16,7 +16,19 @@ def fib(n):
     return a
 ```
 
+{<>} https://upload.wikimedia.org/wikipedia/commons/2/21/Adams_The_Tetons_and_the_Snake_River.jpg
 
-[^1]: Quem mihi dabis qui aliquod pretium tempori ponat, qui diem aestimet, qui intellegat se cotidie mori? In hoc enim fallimur, quod mortem prospicimus: magna pars eius iam praeterit; quidquid aetatis retro est mors tenet. 
+{|<} Material from the official personnel file of Ansel E. Adams from the US National Archives
 
-[^2]: Fac ergo, mi Lucili, quod facere te scribis, omnes horas complectere; sic fiet ut minus ex crastino pendeas, si hodierno manum inieceris. 
+{||||} https://upload.wikimedia.org/wikipedia/commons/2/23/Appointment_Form_for_Ansel_Adams_-_NARA_-_7582610_%28page_1%29.jpg
+{||||} https://upload.wikimedia.org/wikipedia/commons/9/92/Letter_from_Ansel_Adams_to_E._K._Burlew_-_NARA_-_7582629.jpg
+{||||} https://upload.wikimedia.org/wikipedia/commons/8/8d/Adams%2C_Ansel_File_for_23_Alphabetical_Park_Service_-_NARA_-_7582611_%28page_6%29.jpg
+{||||} https://upload.wikimedia.org/wikipedia/commons/c/c9/Note_-_NARA_-_7582647.jpg
+
+| Title          | Looking across lake toward mountains, Evening, McDonald Lake, Glacier National Park, Montana |
+|----------------|--------------------------------------------------------------------------------|
+| Author         | Ansel Adams                                                                                  |
+| Record creator | Department of the Interior. National Park Service. Branch of Still and Motion Pictures.      |
+| Date           | between 1933 and 1942                                                                        |
+| Collection     | National Archives at College Park                                                            |
+| Source         | NARA record: 1332556                                                                         |
