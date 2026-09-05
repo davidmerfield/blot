@@ -77,19 +77,24 @@ a:hover {text-decoration: underline}
 
 .site-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
 }
 
 .logo, .nav {
 font-style: italic;
 font-size:1.4rem;
+line-height: 1;
 }
 
 .logo {text-decoration: none}
 
-.nav {text-decoration: none}
-.nav a {margin: 0 0 0 2em; text-decoration: none}
+.nav {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+.nav a {margin: 0 0 0 2em; text-decoration: none; line-height: 1;}
 
 .index-date {white-space: nowrap}
 
