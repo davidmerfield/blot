@@ -90,6 +90,8 @@ hr { border: none; border-bottom: 1px solid var(--border-color); clear: both; }
 
 .collapse-on-mobile { display: flex; flex-direction: row; }
 
+.site-header { display: flex; }
+
 
 /* NAVIGATION */
 .navigation {
@@ -372,7 +374,9 @@ kbd {
 }
 
 @media screen and (max-width: 640px) {
-  .slides {
+  /* Wrapped nav is two rows; keep slide-less pages (Speakers, FAQs) clear too. */
+  .slides,
+  .site-header {
     margin-top: 5.75em;
   }
 }
