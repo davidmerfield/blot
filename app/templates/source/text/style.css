@@ -3,16 +3,18 @@
 
 /* Inserts the @font-face rules required to load whichever fonts are selected. */
 {{{font.styles}}}
+{{{heading_font.styles}}}
+{{{navigation_font.styles}}}
 {{{syntax_highlighter_font.styles}}}
 {{{syntax_highlighter.styles}}}
 
 :root {
   --sidebar-width: 0px;
   {{#is.navigation_location.left}}
-  --sidebar-width: 300px;
+  --sidebar-width: {{navigation_width}}px;
   {{/is.navigation_location.left}}
   {{#is.navigation_location.right}}
-  --sidebar-width: 300px;
+  --sidebar-width: {{navigation_width}}px;
   {{/is.navigation_location.right}}
 }
 
@@ -66,13 +68,43 @@ header > a {
 }
 
 header {
+  {{#navigation_font}}
+  font-family: {{{stack}}};
+  height: {{{line_height}}}em;
+  {{/navigation_font}}
+  {{^navigation_font}}
   height: {{font.line_height}}em;
+  {{/navigation_font}}
   overflow: hidden;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
+  {{#is.navigation_alignment.left}}
+  justify-content: flex-start;
+  {{/is.navigation_alignment.left}}
+  {{#is.navigation_alignment.right}}
+  justify-content: flex-end;
+  {{/is.navigation_alignment.right}}
+  {{#is.navigation_alignment.center}}
+  justify-content: center;
+  {{/is.navigation_alignment.center}}
   position: relative;
   padding: calc({{spacing}}rem/2) calc({{spacing}}rem);
+}
+
+.site-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  {{#heading_font}}
+  font-family: {{{stack}}};
+  {{/heading_font}}
+}
+
+.site-logo {
+  height: 1.2em;
+  width: auto;
+  vertical-align: middle;
 }
 
 
@@ -209,10 +241,20 @@ nav a:not([href]) {
   justify-content: flex-start;
   gap: calc({{spacing}}rem/2);
   padding: 0;
+  {{#is.navigation_alignment.right}}
+  align-items: flex-end;
+  {{/is.navigation_alignment.right}}
+  {{#is.navigation_alignment.center}}
+  align-items: center;
+  {{/is.navigation_alignment.center}}
 }
 
 .navigation-location-right header {
+  {{^is.navigation_alignment.left}}
+  {{^is.navigation_alignment.center}}
   align-items: flex-end;
+  {{/is.navigation_alignment.center}}
+  {{/is.navigation_alignment.left}}
 }
 
 .navigation-location-left header > a,
@@ -238,10 +280,20 @@ nav a:not([href]) {
   width: 100%;
   background: none;
   padding: 0;
+  {{#is.navigation_alignment.right}}
+  align-items: flex-end;
+  {{/is.navigation_alignment.right}}
+  {{#is.navigation_alignment.center}}
+  align-items: center;
+  {{/is.navigation_alignment.center}}
 }
 
 .navigation-location-right nav {
+  {{^is.navigation_alignment.left}}
+  {{^is.navigation_alignment.center}}
   align-items: flex-end;
+  {{/is.navigation_alignment.center}}
+  {{/is.navigation_alignment.left}}
 }
 
 .navigation-location-left nav .spacer,
@@ -297,7 +349,12 @@ nav a:not([href]) {
   .navigation-location-right header {
     flex-direction: row;
     align-items: center;
+    {{#navigation_font}}
+    height: {{{line_height}}}em;
+    {{/navigation_font}}
+    {{^navigation_font}}
     height: {{font.line_height}}em;
+    {{/navigation_font}}
     justify-content: space-between;
     padding: calc({{spacing}}rem/2) calc({{spacing}}rem);
   }
@@ -567,6 +624,12 @@ p, li {
   widows: 2;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  {{#heading_font}}
+  font-family: {{{stack}}};
+  {{/heading_font}}
+}
+
 h1 {font-size: 1.5625em;line-height: 36px;font-weight: bold;margin-bottom: 24px;text-wrap:balance}
 
 h2, h3, h4, h5, h6 {font-size: 1.0625em;font-weight: bold;line-height: 24px;margin: 48px 0 24px;text-wrap:balance}
@@ -631,7 +694,7 @@ code {
   font-family: {{{syntax_highlighter_font.stack}}};
   margin: 0;
   font-size: 0.85em;
-  background: rgba(0,0,0,.03);
+  background: rgba({{#rgb}}{{text_color}}{{/rgb}},.03);
   border-radius: 3px;
   line-height: 24px;
 }
@@ -651,7 +714,7 @@ pre code {
 pre code {
   display: block;padding: 12px 18px;
   margin: 0 0 0 0;
-  background-color: rgba(0,0,0,.02);
+  background-color: rgba({{#rgb}}{{text_color}}{{/rgb}},.02);
 }
 
 /* TABLES */
