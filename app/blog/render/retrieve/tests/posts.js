@@ -212,6 +212,33 @@ describe("posts cache", function () {
     delete require.cache[helperPath];
   });
 
+  it("passes nested sort locals into getPage", function (done) {
+    const posts = loadPostsWithTaggedStub(function () {});
+    posts._clear();
+
+    spyOn(entriesModel, "getPage").and.callFake(function (blogID, options, callback) {
+      expect(options.sortBy).toBe("id");
+      expect(options.order).toBe("desc");
+      callback(null, [], { page: 1, pages: 1 });
+    });
+
+    posts(
+      {
+        blog: { id: "blog-1", cacheID: 100 },
+        query: {},
+        params: {},
+        template: { locals: { sort: { by: "id", direction: "desc" } } },
+        log: function () {},
+      },
+      { locals: {} },
+      function (err) {
+        expect(err).toBeNull();
+        expect(entriesModel.getPage).toHaveBeenCalledTimes(1);
+        done();
+      }
+    );
+  });
+
   it("reuses cached untagged responses for identical inputs", function (done) {
     const posts = loadPostsWithTaggedStub(function () {});
     posts._clear();

@@ -1,34 +1,29 @@
-
 const SORT_OPTIONS = require("../sort-options");
+const DEFAULT_SORT = SORT_OPTIONS.DEFAULT;
 
-const DEFAULT_SORT = {
-  sort_by: "date",
-  sort_order: "desc"
+const findOptionByValue = value =>
+  SORT_OPTIONS.find(option => option.value === value);
+
+const getSubmittedSortValue = req => {
+  const body = req.body;
+  if (!body) return undefined;
+  if (Object.prototype.hasOwnProperty.call(body, "locals.sort_by")) {
+    return body["locals.sort_by"];
+  }
+  if (body.locals && Object.prototype.hasOwnProperty.call(body.locals, "sort_by")) {
+    return body.locals.sort_by;
+  }
+  return undefined;
 };
 
-const resolveSortSelection = locals => {
-  const matchedByValue = SORT_OPTIONS.find(
-    option => option.value === locals.sort_by
-  );
+const applySortSelection = (locals, selection) => {
+  locals.sort_by = selection.sort_by;
+  locals.sort_order = selection.sort_order;
 
-  if (matchedByValue) {
-    return matchedByValue;
+  if (locals.sort && typeof locals.sort === "object") {
+    locals.sort.by = selection.sort_by;
+    locals.sort.direction = selection.sort_order;
   }
-
-  const matchedByStoredSort = SORT_OPTIONS.find(
-    option =>
-      option.sort_by === locals.sort_by && option.sort_order === locals.sort_order
-  );
-
-  if (matchedByStoredSort) {
-    return matchedByStoredSort;
-  }
-
-  return SORT_OPTIONS.find(
-    option =>
-      option.sort_by === DEFAULT_SORT.sort_by &&
-      option.sort_order === DEFAULT_SORT.sort_order
-  );
 };
 
 module.exports = function (req, res, next) {
@@ -39,13 +34,22 @@ module.exports = function (req, res, next) {
       parseInt(req.locals.number_of_rows);
   }
 
-  const sortSelection = resolveSortSelection(req.locals);
-  if (sortSelection) {
-    req.locals.sort_by = sortSelection.sort_by;
-    req.locals.sort_order = sortSelection.sort_order;
-  } else {
-    req.locals.sort_by = DEFAULT_SORT.sort_by;
-    req.locals.sort_order = DEFAULT_SORT.sort_order;
+  // Each sidebar control posts its own form. Only rewrite sorting when the
+  // combined select was submitted, or when a leftover composite value is stored.
+  const fromBody = getSubmittedSortValue(req);
+  const candidate = fromBody !== undefined ? fromBody : req.locals.sort_by;
+  const submitted = findOptionByValue(candidate);
+
+  if (fromBody !== undefined) {
+    applySortSelection(
+      req.locals,
+      submitted || {
+        sort_by: DEFAULT_SORT.sort_by,
+        sort_order: DEFAULT_SORT.sort_order
+      }
+    );
+  } else if (submitted) {
+    applySortSelection(req.locals, submitted);
   }
 
   next();

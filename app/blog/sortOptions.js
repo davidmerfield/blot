@@ -3,6 +3,6 @@ module.exports = function getTemplateSortOptions (locals) {
 
   return {
     sortBy: sort?.by ?? locals?.sort_by,
-    order: sort?.direction ?? locals?.sort_order,
+    order: sort?.direction ?? sort?.order ?? locals?.sort_order,
   };
 };

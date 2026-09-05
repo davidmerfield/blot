@@ -1,11 +1,7 @@
 const determine_input = require("./util/determine-input");
-
+const getTemplateSortOptions = require("blog/sortOptions");
 const SORT_OPTIONS = require("../sort-options");
-
-const DEFAULT_SORT = {
-  sort_by: "date",
-  sort_order: "desc"
-};
+const DEFAULT_SORT = SORT_OPTIONS.DEFAULT;
 
 const MAP = {
   page_size: {
@@ -15,9 +11,16 @@ const MAP = {
   }
 };
 
+const SORT_INPUT_KEYS = {
+  sort: true,
+  sort_by: true,
+  sort_order: true
+};
+
 const resolveSortValue = locals => {
-  const sortBy = locals.sort_by || DEFAULT_SORT.sort_by;
-  const sortOrder = locals.sort_order || DEFAULT_SORT.sort_order;
+  const sortOptions = getTemplateSortOptions(locals);
+  const sortBy = sortOptions.sortBy || DEFAULT_SORT.sort_by;
+  const sortOrder = sortOptions.order || DEFAULT_SORT.sort_order;
   const matched = SORT_OPTIONS.find(
     option => option.sort_by === sortBy && option.sort_order === sortOrder
   );
@@ -56,6 +59,9 @@ module.exports = function (req, res, next) {
       key =>
         key.indexOf("_navigation") === -1 && key.indexOf("navigation_") === -1
     )
+
+    // The combined post-sorting control covers these keys
+    .filter(key => !SORT_INPUT_KEYS[key])
 
     .filter(
       key =>
