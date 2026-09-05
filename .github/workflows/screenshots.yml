@@ -20,7 +20,7 @@ on:
         required: false
         default: ""
       rebuild_demo_blogs:
-        description: "Force a rebuild of the demo blogs even though the cache key hasn't changed, e.g. to recover from a corrupted cache. You do NOT need this after editing files under app/templates/folders - that already changes the cache key and triggers a full rebuild on its own."
+        description: "Reset cache"
         type: boolean
         default: false
 
