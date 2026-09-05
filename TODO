@@ -227,6 +227,10 @@ Fix bugs with templates:
   - [ ] Add exif info
   - [ ] Add backlinks
 
+Dashboard control follow-ups (found while reviewing the per-template dashboard-control PRs):
+- Album template: the new max_width control replaces `.entry.page .body>* { max-width: 35em }` (~560px) with a px default of 800. That widens the text measure on page entries for every existing site on next rebuild. Double-check the default reads well, or lower it toward the old ~560px.
+- Album template: several rules use `{{^heading_font}} ... 28px/23px fallback {{/heading_font}}`, but heading_font is always a populated object so the fallback is dead. Harmless, but could be tidied.
+
 Fix bug with the website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 
 Fix bug with template slugs / local templates
