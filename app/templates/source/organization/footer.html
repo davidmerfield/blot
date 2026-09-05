@@ -11,16 +11,21 @@
     <div class="container">
       <div class="row align-items-center justify-content-between">
         <div>
-          <span class="navbar-brand mr-2 mb-0"><strong>{{title}}</strong></span>
+          <span class="navbar-brand mr-2 mb-0">
+            {{#logo_url}}<img src="{{{logo_url}}}" alt="{{title}}" class="navbar-logo">{{/logo_url}}
+            <strong>{{title}}</strong>
+          </span>
           <span>{{#all_entries}}{{#last}}{{#formatDate}}YYYY{{/formatDate}}{{/last}}{{/all_entries}}–<script>document.write(new Date().getFullYear())</script>.</span>
 
 
         </div>
+        {{#footer_navigation}}
         <div>
           {{#menu}}
           <a href="{{{url}}}">{{label}}</a> &nbsp;&nbsp;
           {{/menu}}
         </div>
+        {{/footer_navigation}}
       </div>
     </div>
   </footer>

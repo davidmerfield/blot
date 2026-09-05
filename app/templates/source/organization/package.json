@@ -4,7 +4,32 @@
     "page_size": 12,
     "hide_dates": false,
     "date_display": "MMMM D, Y",
-    "demo_folder": "lecture"
+    "demo_folder": "lecture",
+    "background_color": "#ffffff",
+    "text_color": "#212529",
+    "accent_color": "#03a87c",
+    "tag_color": "#ea2f65",
+    "surface_color": "#e8f3ec",
+    "font": {
+      "id": "system-sans",
+      "font_size": 16,
+      "line_height": 1.6
+    },
+    "heading_font": {
+      "id": "georgia"
+    },
+    "article_font": {
+      "id": "source-serif",
+      "font_size": 20,
+      "line_height": 1.86
+    },
+    "logo_url": "",
+    "favicon_url": "",
+    "sticky_navigation": true,
+    "footer_navigation": true,
+    "show_search": true,
+    "show_featured": true,
+    "drop_cap": true
   },
   "isPublic": false,
   "views": {

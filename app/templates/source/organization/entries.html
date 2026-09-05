@@ -123,7 +123,7 @@
 
       <div class="row mt-3">
 
-        <div class="col-md-8 main-loop">
+        <div class="{{#show_featured}}col-md-8{{/show_featured}}{{^show_featured}}col-md-12{{/show_featured}} main-loop">
 
           <h4 class="font-weight-bold spanborder"><span>All Stories</span></h4>
 
@@ -190,6 +190,7 @@
 
         </div>
 
+        {{#show_featured}}
         <div class="col-md-4">
           <div class="sticky-top sticky-top-offset">
             <h4 class="font-weight-bold spanborder"><span>Latest</span></h4>
@@ -217,6 +218,7 @@
             </ol>
           </div>
         </div>
+        {{/show_featured}}
 
       </div>
 
