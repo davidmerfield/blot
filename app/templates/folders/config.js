@@ -50,6 +50,10 @@ module.exports = {
         enabled: true,
         options: {}
       },
+      wikilinks: {
+        enabled: true,
+        options: {}
+      },
       zoom: {
         enabled: true,
         options: {}
