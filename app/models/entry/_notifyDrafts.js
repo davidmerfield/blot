@@ -15,5 +15,12 @@ module.exports = function (blogID, entry, callback) {
 
   // for this entry and refresh the IFRAME
 
-  redis.publish(channel, Date.now().toString(), callback);
+  redis
+    .publish(channel, Date.now().toString())
+    .then(function () {
+      return callback();
+    })
+    .catch(function (err) {
+      return callback(err);
+    });
 };

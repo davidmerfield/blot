@@ -194,6 +194,40 @@ describe("domain verifier", function () {
     }
   });
 
+  it("should return true for hostnames with CNAME record to an organizations subdomain", async () => {
+    const hostname = "organizations-cname.com";
+    const handle = "example";
+
+    resolver.resolveCname.and.returnValue(
+      Promise.resolve([`customer.organizations.${ourHost}`])
+    );
+    resolver.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+    resolver.resolve6.and.returnValue(Promise.resolve([]));
+    dns.resolveNs.and.returnValue(
+      Promise.resolve(["ns1.organizations.com", "ns2.organizations.com"])
+    );
+
+    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+    expect(result).toBe(true);
+  });
+
+  it("should return true for hostnames with CNAME record to an organization subdomain", async () => {
+    const hostname = "organization-cname.com";
+    const handle = "example";
+
+    resolver.resolveCname.and.returnValue(
+      Promise.resolve([`customer.organization.${ourHost}`])
+    );
+    resolver.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+    resolver.resolve6.and.returnValue(Promise.resolve([]));
+    dns.resolveNs.and.returnValue(
+      Promise.resolve(["ns1.organization.com", "ns2.organization.com"])
+    );
+
+    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+    expect(result).toBe(true);
+  });
+
   it("should return true for hostnames with correct handle verification", async () => {
     const hostname = "correct-handle.com";
     const handle = "example";

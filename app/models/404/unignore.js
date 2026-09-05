@@ -9,5 +9,12 @@ module.exports = function (blogID, url, callback) {
 
   ensure(ignoreKey, "string");
 
-  return client.SREM(ignoreKey, url, callback);
+  (async function () {
+    try {
+      var result = await client.sRem(ignoreKey, url);
+      return callback(null, result);
+    } catch (err) {
+      return callback(err);
+    }
+  })();
 };

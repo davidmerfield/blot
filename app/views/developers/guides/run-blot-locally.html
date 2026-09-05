@@ -1,33 +1,44 @@
 <h1>Run Blot locally</h1>
 
-<p>This guide will walk you through setting up a development environment for Blot. Follow these steps to run the server locally and start working on your blog.</p>
+<p>Use this guide to set up a local Blot development environment.</p>
 
 <h2>1. Install Docker</h2>
 <p>You will need <a href="https://www.docker.com/" target="_blank">Docker</a>. Ensure that Docker is installed and running on your machine before proceeding.</p>
 
-<h2>2. Clone the Repository</h2>
-<p>Use <a href="https://git-scm.com/" target="_blank">Git</a> to clone Blot's source code to your machine:</p>
-<pre class="bash"><code>git clone https://github.com/davidmerfield/blot</code></pre>
+<h2>2. Install dnsmasq and mkcert</h2>
+<p>Blot requires a huge number of subdomains to work, for example:</p>
+<pre><code>https://local.blot
+https://cdn.local.blot
+https://site.local.blot
+https://preview-of-blog-on-site.local.blot
+https://preview-of-hypertext-on-site.local.blot
+</code></pre>
+<p>We use dnsmasq to point all requests for the fake TLD <code>.blot</code> to the loopback address:</p>
+<pre class="bash"><code>brew install dnsmasq
+mkdir -pv $(brew --prefix)/etc/
+echo 'address=/.blot/127.0.0.1' >> $(brew --prefix)/etc/dnsmasq.conf
+echo 'port=53' >> $(brew --prefix)/etc/dnsmasq.conf
+sudo brew services start dnsmasq
+sudo mkdir -v /etc/resolver
+sudo bash -c 'echo "nameserver 127.0.0.1" > /etc/resolver/blot'</code></pre>
+<p>We use mkcert to create a locally-trusted SSL certificate. Install it, then <code>npm start</code> will generate and trust the certificate:</p>
+<pre class="bash"><code>brew install mkcert nss</code></pre>
 
-<h2>3. Start the Server</h2>
-<p>Navigate to the cloned repository and start the server:</p>
+<h2>3. Clone the repository</h2>
+<p>Use <a href="https://git-scm.com/" target="_blank">Git</a> to clone Blot’s source code:</p>
+<pre class="bash"><code>git clone https://github.com/davidmerfield/blot --depth 1</code></pre>
+
+<h2>4. Start the server</h2>
+<p>In the cloned repository, start the server:</p>
 <pre class="bash"><code>npm start</code></pre>
 
-<h2>4. Add SSL Exceptions</h2>
-<p>Before you begin working on the code, open the following URLs in your browser and add an exception for the self-signed SSL certificates:</p>
+<h2>5. Open the dashboard and example site</h2>
+<p>When the server starts it prints a dashboard login URL. You can also open:</p>
 <ul>
-    <li><a href="https://localhost" target="_blank">https://localhost/</a></li>
-    <li><a href="https://cdn.localhost" target="_blank">https://cdn.localhost/</a></li>
-    <li><a href="https://example.localhost" target="_blank">https://example.localhost/</a></li>
+    <li>The dashboard: <a href="https://local.blot" target="_blank">https://local.blot</a></li>
+    <li>The example site: <a href="https://example.local.blot" target="_blank">https://example.local.blot</a></li>
 </ul>
 
-<h2>5. Access the Dashboard and Example Site</h2>
-<p>Once you have trusted the self-signed certificates, you can access the following:</p>
-<ul>
-    <li>The dashboard: <a href="https://localhost" target="_blank">https://localhost</a></li>
-    <li>The example site: <a href="https://example.localhost" target="_blank">https://example.localhost</a></li>
-</ul>
-
-<h2>6. Edit the Example Blog</h2>
-<p>The folder for the example blog is located inside the <code>data</code> directory. You can edit it here:</p>
+<h2>6. Edit the example blog</h2>
+<p>The example blog folder is inside <code>data</code>:</p>
 <pre><code>./data/blogs/blog_$ID</code></pre>

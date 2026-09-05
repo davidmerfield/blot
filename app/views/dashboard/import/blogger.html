@@ -1,0 +1,56 @@
+{{> close-button}}
+
+<div style="border:1px solid var(--border-color);border-radius: var(--border-radius);padding:20px">
+  <h1>Import from Blogger</h1>
+
+  <a class="import-info" href="/how/configure/import/blogger">
+    <img class="import-info__logo" src="/images/configure/blogger.svg" alt="">
+    <div class="import-info__body">
+      <p class="import-info__title">How do I export from Blogger?</p>
+      <p class="import-info__text">Go to Settings → Manage blog → Back up content then download the export file.</p>
+    </div>
+    <span class="import-info__action">View guide</span>
+  </a>
+
+  <form method="POST" enctype="multipart/form-data" action="{{{importBase}}}/blogger">
+    <input type="hidden" name="_csrf" value="{{csrftoken}}">
+
+    <div class="file-drop" data-file-drop>
+      <input class="file-drop__input" type="file" id="blogger-export-upload" name="exportUpload" accept=".atom,application/atom+xml" aria-describedby="blogger-file-instructions blogger-file-hint" required>
+
+      <label class="file-drop__empty" data-file-drop-empty for="blogger-export-upload">
+        <svg class="file-drop__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M7 18a4.5 4.5 0 0 1 .3-9 5.5 5.5 0 0 1 10.7 1.5A3.5 3.5 0 0 1 17.5 18H7z" stroke-linejoin="round"/>
+          <path d="M12 15V9M9.5 11.5 12 9l2.5 2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="file-drop__title">Upload Blogger export (.atom)</span>
+        <span class="file-drop__action" id="blogger-file-instructions">Drag and drop an Atom file, or <span class="file-drop__choose">choose a file</span>.</span>
+        <span class="file-drop__hints" id="blogger-file-hint">Maximum file size: 30 MB.</span>
+      </label>
+
+      <div class="file-drop__selected" data-file-drop-selected hidden>
+        <span class="file-drop__selected-label">Selected file</span>
+        <div class="file-drop__chip">
+          <svg class="file-drop__file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-linejoin="round"/>
+            <path d="M14 2v6h6M8 13h8M8 17h8M8 9h2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="file-drop__name" data-file-drop-name></span>
+          <button type="button" class="file-drop__clear" data-file-drop-clear aria-label="Remove file">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path d="M3 3l8 8M11 3l-8 8" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <label for="blogger-site-url" style="display:block;margin:16px 0 6px">Blogger site URL <span id="blogger-site-url-hint" style="color:var(--light-text-color)">(optional)</span></label>
+    <input type="url" name="siteURL" id="blogger-site-url" placeholder="https://example.blogspot.com" style="width:100%;max-width:600px;box-sizing:border-box;" autocomplete="url" aria-describedby="blogger-site-url-hint">
+
+    <div class="buttons">
+      <button type="submit">Start import</button>
+      <a href="{{{importBase}}}">Cancel</a>
+    </div>
+  </form>
+</div>

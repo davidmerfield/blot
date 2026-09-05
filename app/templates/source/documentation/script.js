@@ -1,5 +1,5 @@
 // Plugin JavaScript for analytics embed code
-{{{appJS}}}
+{{{app_js}}}
 {{> toc.js}}
 {{> menubar.js}}
 {{> next-previous.js}}

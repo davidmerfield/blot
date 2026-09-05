@@ -73,16 +73,6 @@
 </section>
 
 
-<script>
-var exifRadios = document.querySelectorAll('input[name="imageExif"]');
-exifRadios.forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    var form = this.closest('form');
-    submitForm(form);
-  });
-});
-</script>
-
 <style>
   #image-publishing {
     margin: 0 0 2rem 0;

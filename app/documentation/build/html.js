@@ -1,6 +1,6 @@
 const cheerio = require("cheerio");
 
-module.exports = async contents => {
+module.exports = async (contents) => {
   const transformers = [
     require("../tools/hljs"),
     require("../tools/typeset"),

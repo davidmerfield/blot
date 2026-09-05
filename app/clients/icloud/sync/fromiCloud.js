@@ -33,15 +33,19 @@ module.exports = async (blogID, publish, update) => {
   try {
     publish("Syncing folder tree");
     await remoteRecursiveList(blogID, "/");
+    publish("Synced folder tree");
   } catch (error) {
-    console.error("Failed to sync folder tree", error);
-    publish("Failed to sync folder tree", error.message);
+    console.error(
+      "Failed to sync folder tree",
+      {
+        error,
+      }
+    );
+    publish("Failed to sync folder tree");
   }
 
   const walk = async (dir) => {
-
     console.log(clfdate(), `Syncing folder: ${dir}`);
-    
     const [remoteContents, localContents] = await Promise.all([
       remoteReaddir(blogID, dir),
       localReaddir(localPath(blogID, dir)),

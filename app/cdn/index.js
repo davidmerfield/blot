@@ -1,12 +1,10 @@
 const config = require("config");
 const express = require("express");
 const cdn = new express.Router();
-const { promisify } = require("util");
 const mime = require("mime-types");
 
 const client = require("models/client");
 const key = require("models/template/key");
-const getAsync = promisify(client.get).bind(client);
 const path = require("path");
 
 const GLOBAL_STATIC_FILES = config.blot_directory + "/app/blog/static";
@@ -75,7 +73,7 @@ cdn.get("/template/:encodedViewAndHash(*)", async (req, res, next) => {
 
     // Fetch rendered output directly by hash
     const renderedKey = key.renderedOutput(hash);
-    const cachedOutput = await getAsync(renderedKey);
+    const cachedOutput = await client.get(renderedKey);
 
     if (cachedOutput == null) {
       // Cache miss - return 404 (shouldn't happen if manifest is up to date)

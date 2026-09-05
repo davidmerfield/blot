@@ -4,8 +4,9 @@
 
 const keys = require("../util/redisKeys");
 const client = require("models/client");
-const { promisify } = require("util");
-const del = promisify(client.del).bind(client);
+const del = function (redisKey) {
+  return client.del(redisKey);
+};
 
 const main = async () => {
   const pattern = "blog:*:folder:*";

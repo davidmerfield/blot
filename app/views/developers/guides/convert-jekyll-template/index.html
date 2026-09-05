@@ -3,7 +3,7 @@
 <h1>Convert a Jekyll template to Blot</h1>
 
 
-<p>This guide will explain how to translate a <a href="https://jekyllrb.com/">Jekyll</a> template to Blot. I'm going to convert the base Jekyll theme <a href="https://jekyll.github.io/minima/">Minima</a> step-by-step. Consider browsing the source code for Minima as as Jekyll template before reading this guide.</p>
+<p>This guide shows how to convert a <a href="https://jekyllrb.com/">Jekyll</a> template to Blot. It uses the base Jekyll theme <a href="https://jekyll.github.io/minima/">Minima</a> as an example. It helps to skim Minima’s source code first.</p>
 
 
 
@@ -38,7 +38,7 @@ README.md
 screenshot.png
 script</pre>
 <h2>Clean up the files</h2>
-<p>Clean up the files and directories which are not relevent to Blot. We don't need the '_posts' directory, since posts on Blot cannot exist inside a template directory, and we don't need the 'script' directory since it contains Jekyll-specific bash scripts:</p>
+<p>Remove files and directories that are not relevant to Blot. The <code>_posts</code> directory is not needed because Blot posts do not live inside the template directory. The <code>script</code> directory is also not needed because it contains Jekyll-specific scripts:</p>
 <pre class="folder">_config.yml
 _includes
 _layouts
@@ -48,7 +48,7 @@ assets
 LICENSE.txt</pre>
 
 <h2>Compile the Sass/SCSS files</h2>
-<p>Firstly, move the 'minima-social-icons.svg' outside the assets directory. Blot does not support SCSS so compile the stylesheet in assets -> css -> style.scss. I don't have the SASS compiler on my machine so I just saved the resulting <a href="https://jekyll.github.io/minima/assets/css/style.css">CSS generated on the Jekyll Theme's demo</a>. Save the result style.css and put in the template's root directory. You can then remove the '_sass' and 'assets' directory:</p>
+<p>Move <code>minima-social-icons.svg</code> out of the <code>assets</code> directory. Blot does not compile SCSS, so compile <code>assets/css/style.scss</code> to CSS and save it as <code>style.css</code> in the template root. You can then remove the <code>_sass</code> and <code>assets</code> directories. If needed, you can reference the compiled CSS from the <a href="https://jekyll.github.io/minima/assets/css/style.css">Minima demo</a>:</p>
 
 <pre class="folder">_config.yml
 _includes

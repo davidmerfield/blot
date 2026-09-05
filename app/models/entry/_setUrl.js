@@ -4,6 +4,7 @@ var _ = require("lodash");
 var urlNormalizer = require("helper/urlNormalizer");
 var UID = require("helper/makeUid");
 var makeSlug = require("helper/makeSlug");
+var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 var withoutExtension = require("helper/withoutExtension");
 var redis = require("models/client");
 var Permalink = require("build/prepare/permalink");
@@ -12,11 +13,6 @@ var model = require("./model");
 var Blog = require("models/blog");
 var get = require("./get");
 var debug = require("debug")("blot:entry:set");
-
-//'/style.css', '/script.js', '/feed.rss', '/robots.txt', '/sitemap.xml'
-// are not possible because . is replaced with. ideally check for
-// all template views here...
-var banned = ["/archives", "/search", "/tagged", "/public", ""];
 
 var MIN_SUMMARY_SLUG_WORDS = 3;
 var MAX_SUMMARY_SLUG_WORDS = 10;
@@ -51,15 +47,16 @@ var UID_PERMUTATIONS = 500;
 
 function Candidates(blog, entry) {
   var candidates = [];
+  var metadataByLowercaseKey = metadataCaseInsensitive(entry.metadata);
 
   var format = blog.permalink.isCustom ? blog.permalink.custom : blog.permalink.format;
   
   // Don't use the permalink format for pages
   // or posts with user specified permalinks.
   if (
-    !entry.metadata.permalink &&
-    !entry.metadata.link &&
-    !entry.metadata.url &&
+    !metadataByLowercaseKey.permalink &&
+    !metadataByLowercaseKey.link &&
+    !metadataByLowercaseKey.url &&
     !entry.page
   ) {
     entry.permalink = Permalink(blog.timeZone, format, entry);
@@ -130,14 +127,17 @@ function Candidates(blog, entry) {
   });
 
   candidates = candidates.filter(function (candidate) {
+    // Will catch empty strings, null, undefined, etc.
     if (!candidate) return false;
 
     // WE DONT EVER ADD ENTRY.PATH so images are always accessible
     // It's possible that entry.name when normalized === entry.path
     if (entry.path && candidate === entry.path) return false;
 
-    if (banned.indexOf(candidate) > -1) return false;
-
+    // Otherwise we are pretty liberal: we allow posts and pages 
+    // to have the same URL as a template view. This lets us set 
+    // an index page for example directly from the folder using 
+    // the metadata `Link: /`. Think carefuly before changing this.
     return true;
   });
 
@@ -149,36 +149,39 @@ function Candidates(blog, entry) {
 function check(blogID, candidate, entryID, callback) {
   var key = Key(blogID, candidate);
 
-  redis.get(key, function (err, existingID) {
-    if (err) return callback(err);
+  redis
+    .get(key)
+    .then(function (existingID) {
+      // This url is available and unused
+      if (!existingID) return callback(null, false, null);
 
-    // This url is available and unused
-    if (!existingID) return callback(null, false, null);
+      // This url points to this entry already
+      if (existingID === entryID) return callback(null, false, null);
 
-    // This url points to this entry already
-    if (existingID === entryID) return callback(null, false, null);
+      // This url points to a different entry
+      get(blogID, existingID, function (existingEntry) {
+        // For some reason (bug) the url key was
+        // set but the entry does not exist. Claim the url.
+        if (!existingEntry) return callback(null, false, null);
 
-    // This url points to a different entry
-    get(blogID, existingID, function (existingEntry) {
-      // For some reason (bug) the url key was
-      // set but the entry does not exist. Claim the url.
-      if (!existingEntry) return callback(null, false, null);
+        // The existing entry has since moved to a different url
+        // (perhaps the author modified its permalink etc...)
+        // so this entry can claim this url.
+        if (existingEntry.url !== candidate) return callback(null, false, null);
 
-      // The existing entry has since moved to a different url
-      // (perhaps the author modified its permalink etc...)
-      // so this entry can claim this url.
-      if (existingEntry.url !== candidate) return callback(null, false, null);
+        // The existing entry was deleted after claiming this
+        // url, so this entry can claim it.
+        if (existingEntry.deleted) return callback(null, false, null);
 
-      // The existing entry was deleted after claiming this
-      // url, so this entry can claim it.
-      if (existingEntry.deleted) return callback(null, false, null);
-
-      // If we reach this far down, it means the entry
-      // which has claimed this url is still visible and
-      // still uses this url, so we can't claim it.
-      return callback(null, true, existingEntry.path);
+        // If we reach this far down, it means the entry
+        // which has claimed this url is still visible and
+        // still uses this url, so we can't claim it.
+        return callback(null, true, existingEntry.path);
+      });
+    })
+    .catch(function (err) {
+      return callback(err);
     });
-  });
 }
 
 // this needs to return an error if something went wrong
@@ -242,17 +245,20 @@ function setUrl(blogID, entry, callback) {
 
           var key = Key(blogID, candidate);
 
-          redis.set(key, entry.id, function (err) {
-            if (err) return callback(err);
-
-            return callback(null, {
-              url: candidate,
-              conflictingEntryPath:
-                firstCandidateTaken && candidate !== firstCandidate
-                  ? firstCandidateConflictingPath
-                  : null,
+          redis
+            .set(key, entry.id)
+            .then(function () {
+              return callback(null, {
+                url: candidate,
+                conflictingEntryPath:
+                  firstCandidateTaken && candidate !== firstCandidate
+                    ? firstCandidateConflictingPath
+                    : null,
+              });
+            })
+            .catch(function (err) {
+              return callback(err);
             });
-          });
         });
       },
       function () {

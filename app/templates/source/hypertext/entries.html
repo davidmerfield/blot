@@ -5,12 +5,18 @@
     {{> navigation}}
     <main>
         <div class="entry">
-        {{^entries.length}}
+        {{^posts.length}}
             <p>Nothing here.</p>
-        {{/entries.length}}
-        {{#entries}}
+        {{/posts.length}}
+        {{#posts}}
         {{#first}}
             {{{html}}}
+            {{^hide_dates}}
+            {{#dateStamp}}
+            <p class="entry-date">{{#formatDate}}{{date_display}}{{/formatDate}}</p>
+            {{/dateStamp}}
+            {{/hide_dates}}
+            {{#show_backlinks}}
             {{#backlinks.length}}
             <br>
             <hr>
@@ -21,8 +27,9 @@
             {{/backlinks}}
             </p>
             {{/backlinks.length}}
+            {{/show_backlinks}}
         {{/first}}
-        {{/entries}}
+        {{/posts}}
         </div>
     </main>
     {{> footer}}

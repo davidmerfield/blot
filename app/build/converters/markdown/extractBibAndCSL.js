@@ -6,11 +6,17 @@ const resolve = require("path").resolve;
 const dirname = require("path").dirname;
 const caseSensitivePath = require("helper/caseSensitivePath");
 
+function getIgnoreCase(obj, key) {
+  const lower = key.toLowerCase();
+  const k = Object.keys(obj).find((x) => x.toLowerCase() === lower);
+  return k ? obj[k] : undefined;
+}
+
 module.exports = function (blog, path, metadata, callback) {
 
   let paths = {
-    bib: metadata.bibliography,
-    csl: metadata.csl,
+    bib: getIgnoreCase(metadata, "bibliography"),
+    csl: getIgnoreCase(metadata, "csl"),
   };
 
   async.eachOf(

@@ -1,6 +1,6 @@
 Blot will renew your subscription next week
 
-Your [Blot subscription]({{{site}}}) will renew in 7 days.
+Your [Blot subscription]({{{site}}}) for {{blogs.length}} site{{s}} will renew in 7 days. You will be charged {{pretty.price}} total.
 
 If your payment information has changed in the last year, please [update your billing information]({{{site}}}/log-in?then=/account/subscription/payment-method). If you want to close your account, please [cancel your subscription]({{{site}}}/log-in?then=/account/subscription/cancel).
 

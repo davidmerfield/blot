@@ -10,10 +10,10 @@
   </url>
   {{/isPage}}
   {{/menu}}    
-  {{#allEntries}}  
+  {{#all_entries}}  
   <url>
     <loc>{{siteURL}}{{url}}/</loc> 
     <lastmod>{{#formatUpdated}}YYYY-MM-DD{{/formatUpdated}}</lastmod>
   </url>
-  {{/allEntries}}  
+  {{/all_entries}}  
 </urlset>

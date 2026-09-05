@@ -19,7 +19,7 @@ Use it for links, headings, lists and much more.
 
 <pre class="md"><code>**This text will be bold.**</code></pre>
 
-<p>To create italics, use a single asterix (*) on either side of the text:</p>
+<p>To create italics, use a single asterisk (<code>*</code>) on either side of the text:</p>
 
 <pre class="md"><code>*This text will be italic.*</code></pre>
 
@@ -34,7 +34,7 @@ Use it for links, headings, lists and much more.
 
 <pre class="md"><code># Largest heading</code></pre>
 
-<p>Use two octothropes to create a subheading.</p>
+<p>Use two octothorpes to create a subheading.</p>
 
 <pre class="md"><code>## Subheading</code></pre>
 
@@ -48,9 +48,11 @@ Alternative subheading
 
 <h2>Links</h2>
 
-<p>Create a text link by wrapping the linked text in brackets [ ], and then wrapping the link in parenthesis ( ). For example:</p>
+<p>Create a text link by wrapping the linked text in brackets (<code>[ ]</code>) and the URL in parentheses (<code>( )</code>). For example:</p>
 
 <pre class="md"><code>[Wikipedia](https://wikipedia.org)</code></pre>
+
+<p>A relative link, e.g. <code>[Report](report.pdf)</code>, is resolved based on the location of the file you're writing in, not your post's URL.</p>
 
 <h2>Images</h2>
 
@@ -73,7 +75,7 @@ Alternative subheading
 
 
 <h2>Lists</h2>
-<p>Make a bulleted list by preceding list items with a single hyphen (-)  or an asterix (*). You need a space between the hyphen and the text.</p>
+<p>Make a bulleted list by starting each item with a hyphen (<code>-</code>) or an asterisk (<code>*</code>). Add a space after the marker.</p>
 
 <pre class="md"><code>- Round
 - Shell
@@ -85,17 +87,17 @@ Alternative subheading
 2. Deux
 3. Tres</code></pre>
 
-<p>Create a list which starts with a custom number by putting a single parenthesis like so:</p>
+<p>Create a list that starts with a custom number like this:</p>
 <pre class="md"><code> 9) Ninth
 10) Tenth
 11) Eleventh</code></pre>
 
-<p>Create a list with non-nigit characters like so:</p>
+<p>Create a list with non-digit markers like this:</p>
 <pre class="md"><code>i. Unus
 ii. Duo
 iii. Tres</code></pre>
 
-<p>If it's a capital letter, put two characters after the period:</p>
+<p>If it is a capital letter, use two spaces after the period:</p>
 <pre class="md"><code>A.  Unus
 B.  Duo
 C.  Tres</code></pre>
@@ -157,11 +159,43 @@ var foo = "bar";
 
 <pre class="md"><code>> This is a blockquote with two paragraphs.
 >
-> This is the second pragraph. Vestibulum enim wisi.</code></pre>
+> This is the second paragraph. Vestibulum enim wisi.</code></pre>
+
+<h2>Callouts</h2>
+
+<p>Start a blockquote with <code>[!info]</code> to create a callout:</p>
+
+<pre class="md"><code>> [!info] Here's a callout title
+> Here's a callout block. It supports **Markdown**, etc.</code></pre>
+
+<div class="callout" data-callout="info" data-callout-original="info">
+    <div class="callout-title">
+    <span class="callout-icon" aria-hidden="true"></span><span class="callout-title-inner">Here’s a callout title</span>
+    </div>
+    <div class="callout-content">
+    <p>Here’s a callout block. It supports <strong>Markdown</strong>, etc.</p>
+    </div>
+    </div>
+
+<p>Use <code>+</code> or <code>-</code> to make the callout collapsible (initially expanded or collapsed, respectively):</p>
+
+<pre class="md"><code>> [!info]- Here's a collapsible callout
+> Here's the collapsible content.</code></pre>
+
+<div class="callout is-collapsed callout-fold-ready" data-callout="info" data-callout-original="info" data-callout-fold="-" style="max-height: none">
+    <div class="callout-title" role="button" tabindex="0" aria-expanded="false">
+    <span class="callout-icon" aria-hidden="true"></span><span class="callout-title-inner">Here’s a collapsible callout</span>
+    </div>
+    <div class="callout-content">
+    <p>Here’s the initially-collapsed content.</p>
+    </div>
+    </div>
+
+<p>Supported callout types are <code>note</code>, <code>abstract</code>, <code>info</code>, <code>todo</code>, <code>tip</code>, <code>success</code>, <code>question</code>, <code>warning</code>, <code>failure</code>, <code>danger</code>, <code>bug</code>, <code>example</code>, and <code>quote</code>. The syntax is based on <a href="https://help.obsidian.md/callouts">Obsidian callouts</a>. You can <a href="/developers/guides/customize-callouts">customize the appearance</a> of callouts in your template.</p>
 
 <h2>Tables</h2>
 
-<p>You can the follow syntax to create tables:</p>
+<p>You can use the following syntax to create tables:</p>
 
 <pre class="md"><code>| Syntax      | Description |
 | ----------- | ----------- |
@@ -171,11 +205,21 @@ var foo = "bar";
 
 
 <h2>HTML</h2>
-<p>You can mix HTML tags directly into Markdown files, should you need to do something beyond the limits of the Markdown.</p>
+<p>You can mix HTML tags directly into Markdown files when you need behavior beyond Markdown.</p>
 
 
 <h2>Citations</h2>
 <p>You can use an external BibTex citations file to store your citations. Read the <a href="/how/posts/citations">guide to using citations</a>.</p>
+
+
+<h2>Wikilink embeds</h2>
+<p>Blot supports Obsidian-style wikilink embeds using the <code>![[...]]</code> syntax. You can embed media and also embed Markdown/text notes directly into another note.</p>
+
+<pre class="md"><code>![[Notes/Overview.md]]
+![[Notes/Todo.txt]]
+![[Notes/Appendix.markdown]]</code></pre>
+
+<p>Embedded note files are rendered inline as Markdown. For full details on lookup rules, embedding by relative and absolute path, and supported file types, see the <a href="/how/formatting/wikilinks">Wikilinks guide</a>.</p>
 
 <h2>TextBundle</h2>
 <p>You can use the <a href="https://textbundle.org/">TextBundle</a> format to embed images in Markdown files when using supported apps including <a href="/how/tools/ulysses">Ulysses</a> and <a href="/how/tools/bear">Bear</a>.</p>

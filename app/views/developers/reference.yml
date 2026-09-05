@@ -332,11 +332,11 @@
 
     - name: teaser
       type: string
-      description: The HTML of the title and the ﬁrst few items in the entry. You can specify the end of the teaser by inserting the special tag {{more}} into your blog post's ﬁle. Everything before more will be included in the teaser.
+      description: The HTML of the title and the first few items in the entry. You can specify the end of the teaser by inserting the special tag {{more}} into your blog post's file. Everything before more will be included in the teaser.
 
     - name: teaserBody
       type: string
-      description: The HTML of the ﬁrst few items in the entry, excluding the title. Equivalent to teaser without the titleTag.
+      description: The HTML of the first few items in the entry, excluding the title. Equivalent to teaser without the titleTag.
 
     - name: more
       type: boolean
@@ -392,7 +392,7 @@
         {{/all_entries}}
     - name: Pagination
       type: section
-      description: "Pagination is applied on tagged routes (`/tagged/:slug` and `/tagged/:slug/page/:page`) and on entry list routes that set `page_size`. Templates receive a `pagination` object with `current`, `previous`, `next`, `total`, `pageSize`, and `totalEntries`. Defaults and limits: `page_size` uses a baseline of `5` with valid values `1-100`; tagged routes prefer `tagged_page_size` over `page_size`, and use an effective default of `100` when unset, invalid, or outside `1-500`."
+      description: "Pagination is applied on tagged routes (`/tagged/:slug` and `/tagged/:slug/page/:page`) and on entry list routes that set `page_size`. Templates receive a `pagination` object with `current`, `previous`, `next`, `total`, `page_size`, and `total_entries` (with legacy camelCase aliases like `pageSize` still available for compatibility). Defaults and limits: `page_size` uses a baseline of `5` with valid values `1-100`; tagged routes prefer `tagged_page_size` over `page_size`, and use an effective default of `100` when unset, invalid, or outside `1-500`."
       example: |
         {{#pagination.next}}
         <a href="/tagged/{{slug}}/page/{{pagination.next}}">Older</a>
@@ -518,39 +518,39 @@
         Utilities can be used either as literal values (for example `{{cdn}}`) or as section/block helpers (`{{#helper}}...{{/helper}}`) that transform the block contents.
       example: |
         <link rel="preconnect" href="{{{cdn}}}" />
-        {{#encodeXML}}{{title}}{{/encodeXML}}
+        {{#encode_xml}}{{title}}{{/encode_xml}}
 
-    - name: absoluteURLs
+    - name: absolute_urls
       type: function
       description: The same contents, with any relative URLs fully resolved. This is useful to create an RSS feed, since many clients struggle with relative URLs. For example
       example: |
-        {{#absoluteURLs}}
+        {{#absolute_urls}}
         {{{html}}}
-        {{/absoluteURLs}}
+        {{/absolute_urls}}
 
-    - name: encodeJSON
+    - name: encode_json
       type: function
       description: The same contents, encoded appropriately for JSON. This is useful to create a JSON feed. You can use it like this
       example: |
-        {{#encodeJSON}}
+        {{#encode_json}}
         {{{html}}}
-        {{/encodeJSON}}
+        {{/encode_json}}
 
-    - name: encodeURIComponent
+    - name: encode_uri_component
       type: function
       description: This is useful for forming urls from entry properties
       example: |
-        ?text={{#encodeURIComponent}}
+        ?text={{#encode_uri_component}}
         {{title}}
-        {{/encodeURIComponent}}
+        {{/encode_uri_component}}
 
-    - name: encodeXML
+    - name: encode_xml
       type: function
       description: The same contents, encoded appropriately for XML. This is useful to create a RSS feed. You can use it like this
       example: |
-        {{#encodeXML}}
+        {{#encode_xml}}
         {{{html}}}
-        {{/encodeXML}}
+        {{/encode_xml}}
 
     - name: rgb
       type: function
@@ -579,6 +579,6 @@
           description: Public JavaScript emitted by the plugin when available.
         - name: known keys
           type: array
-          description: "analytics, autoImage, bluesky, codeHighlighting, commento, disqus, externalLinks, flickr, image, imageCaption, injectTitle, katex, linebreaks, mediaPreload, linkScreenshot, titlecase, twitter, typeset, videoEmbeds, wikilinks, zoom"
+          description: "analytics, autoImage, bluesky, codeHighlighting, disqus, externalLinks, flickr, image, imageCaption, injectTitle, katex, linebreaks, mediaPreload, linkScreenshot, titlecase, twitter, typeset, videoEmbeds, wikilinks, zoom"
       example: |
         <style>{{{plugin.katex.css}}}</style>

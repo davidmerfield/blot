@@ -8,9 +8,10 @@ TEST_SEED=$2
 
 echo "Running tests in path: $TEST_PATH with seed $TEST_SEED"
 
-# Container names
-REDIS_CONTAINER="test-redis"
-TEST_CONTAINER="test-runner"
+# Unique run ID so multiple invocations can run in parallel (containers named per run)
+BLOT_TEST_ID="${BLOT_TEST_ID:-blot-test-$$-${RANDOM}}"
+REDIS_CONTAINER="test-redis-${BLOT_TEST_ID}"
+TEST_CONTAINER="test-runner-${BLOT_TEST_ID}"
 
 # Image names
 REDIS_IMAGE="redis:alpine"
@@ -37,9 +38,18 @@ docker run -d \
   $REDIS_IMAGE \
   sh -c "rm -f /data/dump.rdb && redis-server"
 
-# Build the test image
+# Build the test image. The Dockerfile needs TARGETPLATFORM to pick a
+# Pandoc architecture. BuildKit sets this automatically; the classic
+# builder does not, so pass it explicitly (this environment has no buildx).
+case "$(uname -m)" in
+  x86_64) TARGETPLATFORM="linux/amd64" ;;
+  aarch64|arm64) TARGETPLATFORM="linux/arm64" ;;
+  *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+esac
+
 docker build \
   --target dev \
+  --build-arg TARGETPLATFORM="$TARGETPLATFORM" \
   -t $TEST_IMAGE \
   $(realpath "$TESTS_DIR/../..")
 
@@ -58,6 +68,9 @@ docker run --rm \
   -v "$CONFIG_DIR:/usr/src/app/config" \
   $TEST_IMAGE \
   sh -c "rm -rf /usr/src/app/data && mkdir /usr/src/app/data && node -v && npm -v && nyc --include $TEST_PATH node tests $TEST_PATH $TEST_SEED"
+TEST_EXIT=$?
 
 # Stop Redis container
-docker stop $REDIS_CONTAINER
+docker stop $REDIS_CONTAINER 2>/dev/null || true
+
+exit $TEST_EXIT

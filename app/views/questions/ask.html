@@ -22,14 +22,3 @@
         value="Ask question"
         onclick="this.classList.add('working')" />
 </form>
-
-<script>
-  // extract title from url query  and set it as the title of the question
-  var urlParams = new URLSearchParams(window.location.search);
-  var title = urlParams.get('title');
-
-  if (title) {
-    document.getElementById('title').value = title;
-  }
-
-</script>

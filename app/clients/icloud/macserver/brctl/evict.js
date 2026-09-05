@@ -6,7 +6,9 @@ import clfdate from "../util/clfdate.js";
 const TIMEOUT = 10 * 1000; // 10 seconds
 const POLLING_INTERVAL = 200; // 200 ms
 
-export default async (path) => {
+export default async (path, options = {}) => {
+  const timeoutMs = options.timeoutMs ?? TIMEOUT;
+
   console.log(clfdate(), `Evicting: ${path}`);
 
   const stat = await fs.stat(path);
@@ -21,14 +23,15 @@ export default async (path) => {
 
   console.log(clfdate(), `Blocks: ${stat.blocks} / ${expectedBlocks}`);
 
-  if (isEvicted) {
+  // we only consider whether or not files are evicted, not directories
+  if (isEvicted && !stat.isDirectory()) {
     console.log(clfdate(), `File already evicted: ${path}`);
     return stat;
   }
 
   const pathInDrive = path.replace(iCloudDriveDirectory, "").slice(1);
 
-  console.log(clfdate(), `Issuing brctl evict for path: ${pathInDrive}`);
+  console.log(clfdate(), `Issuing brctl evict for path: ./${pathInDrive}`);
 
   const { stdout, stderr } = await exec("brctl", ["evict", pathInDrive], {
     cwd: iCloudDriveDirectory,
@@ -42,7 +45,7 @@ export default async (path) => {
     throw new Error(`Unexpected stderr: ${stderr}`);
   }
 
-  while (Date.now() - start < TIMEOUT) {
+  while (Date.now() - start < timeoutMs) {
     console.log(clfdate(), `Checking evict status: ${path}`);
     const stat = await fs.stat(path);
 

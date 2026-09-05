@@ -59,6 +59,10 @@ TemplateEditor.route("/new")
     });
   });
 
+// Creates a template from a dropped folder or zip file. Two path segments, so
+// it cannot be captured by the single-segment /:templateSlug route below.
+TemplateEditor.post("/new/upload", require("./save/upload-template"));
+
 TemplateEditor.route("/:templateSlug/install")
   .get(function (req, res) {
     res.locals.title = `Install - ${req.template.name}`;
@@ -67,7 +71,22 @@ TemplateEditor.route("/:templateSlug/install")
   })
   .post(function (req, res, next) {
     var templateID = req.body.template;
-    if (!templateID) return next(new Error("No template ID"));
+    if (typeof templateID !== "string") {
+      const err = new TypeError("Invalid template ID");
+      err.status = 400;
+      return next(err);
+    }
+
+    const ownerPrefix = `${req.blog.id}:`;
+    if (
+      !templateID.startsWith("SITE:") &&
+      !templateID.startsWith(ownerPrefix)
+    ) {
+      const err = new Error("No permission to install template");
+      err.status = 403;
+      return next(err);
+    }
+
     var updates = { template: templateID };
     Blog.set(req.blog.id, updates, function (err) {
       if (err) return next(err);
@@ -191,9 +210,6 @@ TemplateEditor.route("/:templateSlug/syntax-highlighter")
   )
   .get(function (req, res) {
     res.locals.selected = { ...res.locals.selected, settings: "selected" };
-    if (res.locals.syntax_themes) {
-      res.locals.syntax_themes.expanded = true;
-    }
     res.locals.title = `Syntax highlighter - ${req.template.name}`;
     res.render("dashboard/template/syntax-highlighter");
   });

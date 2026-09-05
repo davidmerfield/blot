@@ -41,29 +41,15 @@ export default async (blogID, path) => {
   }
 
   const filePath = join(iCloudDriveDirectory, blogID, path);
+  const pathBase64 = Buffer.from(path).toString("base64");
 
   console.log(clfdate(), `Preparing to upload file: ${filePath}`);
-  
-  // Download and check file
-  let stat;
-  try {
-    stat = await brctl.download(filePath);
-  } catch (e) {
-    console.error(
-      clfdate(),
-      `Failed to download file before upload: ${filePath}`,
-      e
-    );
-    throw new Error(`Download failed: ${e.message}`);
-  }
 
-  if (stat.size > maxFileSize) {
-    const modifiedTime = stat.mtime.toISOString();
-
+  const notifyOversizedFile = async (size, modifiedTime) => {
     console.error(
       clfdate(),
       `File size exceeds maximum for upload: ${filePath}`,
-      { size: stat.size, maxFileSize }
+      { size, maxFileSize }
     );
 
     let response;
@@ -74,10 +60,10 @@ export default async (blogID, path) => {
         headers: {
           Authorization,
           blogID,
-          pathBase64: Buffer.from(path).toString("base64"),
+          pathBase64,
           modifiedTime,
           "x-placeholder": "true",
-          "x-original-size": String(stat.size),
+          "x-original-size": String(size),
         },
       });
     } catch (error) {
@@ -101,6 +87,46 @@ export default async (blogID, path) => {
         `Placeholder upload failed with status ${response.status}`
       );
     }
+  };
+
+  let preStat;
+  try {
+    preStat = await fs.stat(filePath);
+  } catch (e) {
+    console.error(clfdate(), `Failed to stat file before upload: ${filePath}`, e);
+    throw new Error(`Stat failed: ${e.message}`);
+  }
+
+  if (preStat.size > maxFileSize) {
+    const modifiedTime = preStat.mtime.toISOString();
+
+    await notifyOversizedFile(preStat.size, modifiedTime);
+
+    throw new FileTooLargeError({
+      path,
+      size: preStat.size,
+      maxFileSize,
+      mtime: modifiedTime,
+    });
+  }
+  
+  // Download and check file
+  let stat;
+  try {
+    stat = await brctl.download(filePath);
+  } catch (e) {
+    console.error(
+      clfdate(),
+      `Failed to download file before upload: ${filePath}`,
+      e
+    );
+    throw new Error(`Download failed: ${e.message}`);
+  }
+
+  if (stat.size > maxFileSize) {
+    const modifiedTime = stat.mtime.toISOString();
+
+    await notifyOversizedFile(stat.size, modifiedTime);
 
     throw new FileTooLargeError({
       path,
@@ -126,8 +152,6 @@ export default async (blogID, path) => {
     console.error(clfdate(), `Failed to read file for upload: ${filePath}`, error);
     throw new Error(`Failed to read file: ${error.message}`);
   }
-
-  const pathBase64 = Buffer.from(path).toString("base64");
 
   console.log(clfdate(), `Issuing HTTP /upload request to remote server: ${path}`);
 

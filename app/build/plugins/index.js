@@ -8,6 +8,7 @@ var extend = require("helper/extend");
 var deCamelize = require("helper/deCamelize");
 var time = require("helper/time");
 var async = require("async");
+var _ = require("lodash");
 const bluesky = require("./bluesky");
 
 // Wait 10 minutes to go to next plugin
@@ -23,7 +24,6 @@ var loaded = loadPlugins({
   autoImage: require("./autoImage"),
   bluesky: require("./bluesky"),
   codeHighlighting: require("./codeHighlighting"),
-  commento: require("./commento"),
   disqus: require("./disqus"),
   externalLinks: require("./externalLinks"),
   flickr: require("./flickr"),
@@ -33,6 +33,7 @@ var loaded = loadPlugins({
   katex: require("./katex"),
   linebreaks: require("./linebreaks"),
   mediaPreload: require("./mediaPreload"),
+  callouts: require("./callouts"),
   linkScreenshot: require("./linkScreenshot"),
   titlecase: require("./titlecase"),
   twitter: require("./twitter"),
@@ -272,7 +273,7 @@ function loadPlugins (plugins) {
     // default plugins for each user
     defaultPlugins[name] = {
       enabled: plugin.isDefault,
-      options: plugin.options || {}
+      options: _.cloneDeep(plugin.options || {})
     };
   });
 

@@ -218,10 +218,12 @@ dashboard.post("/disconnect", function (req, res, next) {
     return res.redirect(res.locals.dashboardBase + "/client");
   }
 
-  client.publish(
-    "sync:status:" + req.blog.id,
-    "Attempting to disconnect from Dropbox"
-  );
+  client
+    .publish(
+      "sync:status:" + req.blog.id,
+      "Attempting to disconnect from Dropbox"
+    )
+    .catch((err) => console.error("failed to publish dropbox disconnect status", err));
   delete req.session.dropbox;
   disconnect(req.blog.id, next);
 });

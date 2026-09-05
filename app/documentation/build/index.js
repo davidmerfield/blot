@@ -22,6 +22,7 @@ const buildJS = require("./js")({
 
 const zip = require("templates/folders/zip");
 const tools = require("./tools");
+const templates = require("./templates");
 const generateThumbnail = require("./generate-thumbnail");
 const gitCommits = require("../tools/git-commits").build;
 
@@ -45,6 +46,7 @@ async function computeViewsHash() {
     join(__dirname, "js.js"),
     join(__dirname, "html.js"),
     join(__dirname, "tools.js"),
+    join(__dirname, "templates.js"),
     join(__dirname, "../tools/git-commits.js"),
     join(__dirname, "../tools/hljs.js"),
     join(__dirname, "../tools/finder/build.js"),
@@ -110,6 +112,13 @@ const handle =
         if (initial) return;
         console.log("Rebuilding tools");
         await tools();
+        return;
+      }
+
+      if (path.startsWith("templates/")) {
+        if (initial) return;
+        console.log("Rebuilding templates pages");
+        await templates();
         return;
       }
 
@@ -212,6 +221,7 @@ module.exports = async ({ watch = false, skipZip = false } = {}) => {
     await Promise.all(paths.map(initialHandler));
 
     await tools();
+    await templates();
 
     await buildCSS();
 
@@ -265,7 +275,7 @@ module.exports = async ({ watch = false, skipZip = false } = {}) => {
 
 async function buildHTML(path) {
   const contents = await fs.readFile(join(SOURCE_DIRECTORY, path), "utf-8");
-  const result = await html(contents);
+  const result = await html(contents, { path });
 
   await fs.outputFile(join(DESTINATION_DIRECTORY, path), result);
 }

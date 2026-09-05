@@ -319,7 +319,8 @@ are gradients and I don't know how to do that in CSS.
   vertical-align: text-bottom;
 }
 
-.finder .toolbar .icon {vertical-align: initial;}
+.finder .toolbar .icon {vertical-align: text-bottom;}
+.text .toolbar .icon {vertical-align: initial;}
 
 .finder .item .icon {display: block;float: left;margin-right: 3px}
 .finder .item .icon.folder:before {

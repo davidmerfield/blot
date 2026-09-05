@@ -15,12 +15,12 @@
   <span class="center" style="display: flex;max-width: 100%;">
     <span style="display: flex;width: 100%;">
       {{#customDomain}}
-      {{#domainSuccess}}
+      {{^domainWarning}}
       <span style="color:green;font-size: 12px;margin-right: 4px;position: relative;top:6px" class="icon-small-check"></span> 
-      {{/domainSuccess}}
-      {{^domainSuccess}}
+      {{/domainWarning}}
+      {{#domainWarning}}
       <span style="color: orange; font-size: 12px; margin-right: 4px; position: relative; top: 6px" class="icon-small-alert"></span>
-      {{/domainSuccess}}
+      {{/domainWarning}}
       <span style="color:var(--light-text-color);opacity: 0.75;">https://</span>
       <span class="truncate">{{customDomain}}</span>
       <span class="link" style="margin-left: 12px;">Edit</span>
@@ -40,9 +40,9 @@
 <!-- TODO add guide to purchasing domain if the domain is unregistered! -->
 <!-- TODO vary error based on first setup or subsequent -->
 {{#customDomain}}
-		{{^domainSuccess}}
+		{{#domainWarning}}
       {{> record-guide}}
-		{{/domainSuccess}}
+		{{/domainWarning}}
 	{{/customDomain}}
   {{/edit.custom}}
 

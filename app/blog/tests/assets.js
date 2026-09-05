@@ -18,20 +18,20 @@ describe("asset middleware", function () {
 
   it("returns files with lower-case paths against upper-case URLs", async function () {
     await this.write({ path: "/pages/first.txt", content: "Foo" });
-    const res = await this.get(`/Pages/First.txt`);
-    expect(await res.text()).toEqual("Foo");
+    const body = await this.text(`/Pages/First.txt`);
+    expect(body).toEqual("Foo");
   });
 
   it("returns files with upper-case paths against lower-case URLs", async function () {
     await this.write({ path: "/Pages/First.txt", content: "Foo" });
-    const res = await this.get(`/pages/first.txt`);
-    expect(await res.text()).toEqual("Foo");
+    const body = await this.text(`/pages/first.txt`);
+    expect(body).toEqual("Foo");
   });
 
   it("returns files against URLs with incorrect case", async function () {
     await this.write({ path: "/Pages/First.xml", content: "123" });
-    const res = await this.get(`/pAgEs/FiRsT.xMl`);
-    expect(await res.text()).toEqual("123");
+    const body = await this.text(`/pAgEs/FiRsT.xMl`);
+    expect(body).toEqual("123");
   });
 
   it("returns the correct file if there are multiple with similar case", async function () {
@@ -271,8 +271,8 @@ describe("asset middleware", function () {
 
   it("respects query string parameters while ignoring them for file matching", async function () {
     await this.write({ path: "/query.txt", content: "Query test" });
-    const res = await this.get("/query.txt?param1=value1&param2=value2");
-    expect(await res.text()).toEqual("Query test");
+    const body = await this.text("/query.txt?param1=value1&param2=value2");
+    expect(body).toEqual("Query test");
   });
 
   it("handles files with multiple dots correctly", async function () {
@@ -321,8 +321,8 @@ describe("asset middleware", function () {
 
   it("handles paths with repeating slashes", async function () {
     await this.write({ path: "/folder/file.txt", content: "Content" });
-    const res = await this.get("/folder////file.txt");
-    expect(await res.text()).toEqual("Content");
+    const body = await this.text("/folder////file.txt");
+    expect(body).toEqual("Content");
   });
 
   // Alternative test that checks if the content is readable regardless of BOM
@@ -355,8 +355,8 @@ describe("asset middleware", function () {
     for (const variant of variants) {
       await this.write({ path: variant, content: "Index content" });
       const folderPath = variant.substring(0, variant.lastIndexOf("/") + 1);
-      const res = await this.get(folderPath);
-      expect(await res.text()).toEqual("Index content");
+      const body = await this.text(folderPath);
+      expect(body).toEqual("Index content");
     }
   });
 
@@ -376,6 +376,37 @@ describe("asset middleware", function () {
       const res = await this.get(file.path);
       expect(res.headers.get("content-type")).toContain(file.type);
     }
+  });
+
+  it("resolves a relative link to a local file even when the post's URL differs from its folder location", async function () {
+    await this.template({ "entry.html": "{{{entry.html}}}" });
+    await fs.outputFile(this.blogDirectory + "/Photos/beach.jpg", "fake image data");
+
+    await this.write({
+      path: "/Photos/vacation.txt",
+      content: [
+        "Title: Vacation",
+        "Link: /totally/different/url",
+        "",
+        "[Download](beach.jpg)",
+      ].join("\n"),
+    });
+
+    // The post's published URL has nothing to do with the folder
+    // it lives in, so a naive "resolve relative to the current
+    // page" (the old, broken behavior) would 404. The link should
+    // resolve against the file's real location instead - the render
+    // pipeline then rewrites that into a versioned CDN URL, same as
+    // it would for an <img src>.
+    const body = await this.text("/totally/different/url");
+    expect(body).toContain("/Photos/beach.jpg");
+
+    const hrefMatch = body.match(/href="([^"]+\/Photos\/beach\.jpg)"/);
+    expect(hrefMatch).not.toBeNull();
+
+    const res = await this.fetch(hrefMatch[1]);
+    expect(res.status).toEqual(200);
+    expect(await res.text()).toEqual("fake image data");
   });
 
   it("does not crash on malformed percent-encoding in asset requests", async function () {

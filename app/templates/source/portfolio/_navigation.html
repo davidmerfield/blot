@@ -10,11 +10,11 @@
 
     <div class="shrink">
       {{#is.in_navigation.recent_posts}}
-        {{#recentEntries}}
+        {{#recent_entries}}
           {{#title}}
           <a href="{{{url}}}" class="{{active}}">{{title}}</a>
           {{/title}}
-        {{/recentEntries}}
+        {{/recent_entries}}
       {{/is.in_navigation.recent_posts}}
       {{#is.in_navigation.popular_tags}}
         {{#popular_tags}}

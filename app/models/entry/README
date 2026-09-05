@@ -1,0 +1,257 @@
+# models/entry
+
+This module is the authoritative data layer for blog entries in Blot. It handles persistence, URL assignment, list membership, backlink tracking, dependency graph maintenance, scheduled publication, and full-text search for individual entries within a blog.
+
+All storage is backed by Redis. Entry data is serialised as JSON strings. Relationships (URL-to-path mappings, sorted membership lists, dependency sets) are maintained as separate Redis keys updated atomically alongside each write.
+
+---
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `index.js` | Public module surface. Re-exports `drop`, `get`, `getByUrl`, `instance`, `key`, `model`, `search`, and `set`. |
+| `model.js` | Canonical schema definition. Declares every field name and its expected type. Used by `helper/ensure` to validate entries before storage. |
+| `key.js` | Generates the Redis key strings used throughout the module. |
+| `instance.js` | Minimal constructor function. Wraps a plain object in an `Entry` instance by copying all properties onto `this`. |
+| `get.js` | Retrieves one or more entries by file path from Redis. |
+| `getByUrl.js` | Retrieves a single entry by its public URL. |
+| `set.js` | Writes an entry to Redis and runs all derived side-effects. |
+| `drop.js` | Marks an entry as deleted. |
+| `search.js` | Performs full-text search across a blog's entries. |
+| `_setUrl.js` | Resolves and claims a public URL for an entry. |
+| `_assign.js` | Maintains the Redis sorted-set lists that group entries by type (entries, drafts, scheduled, pages, deleted, etc.). |
+| `_rebuildDependencyGraph.js` | Updates the reverse-dependency index when an entry's `dependencies` array changes. |
+| `_backlinksToUpdate.js` | Determines which other entries need their `backlinks` property updated after a save. |
+| `_addToSchedule.js` | Registers or cancels an in-process `node-schedule` job to publish a future-dated entry. |
+| `_notifyDrafts.js` | Publishes a Redis Pub/Sub event to notify any active draft preview connections that the entry has been updated. |
+
+---
+
+## Entry Schema
+
+Defined in `model.js`. Every field is validated by `helper/ensure` before a write is committed.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Normalised file path; serves as the primary key. |
+| `guid` | string | Stable identifier across URL and path changes. Used for Disqus comment threading. Assigned once and never changed. |
+| `url` | string | The entry's current public URL path (e.g. `/my-post`). Empty for drafts, deleted entries, and scheduled entries. |
+| `permalink` | string | The resolved permalink string before deduplication. |
+| `title` | string | Plain-text title extracted from the entry. |
+| `titleTag` | string | The HTML element containing the title. |
+| `body` | string | HTML content of the entry excluding the title element. |
+| `summary` | string | Plain-text summary. |
+| `teaser` | string | HTML content before a `<!-- more -->` comment. |
+| `teaserBody` | string | `teaser` excluding the title element. |
+| `more` | boolean | `true` when `teaser` differs from the full HTML. |
+| `html` | string | Full rendered HTML. |
+| `slug` | string | URL slug derived from the title. |
+| `name` | string | Filename without directory path. |
+| `path` | string | Full file path within the blog folder. |
+| `size` | number | File size in bytes. |
+| `tags` | array | List of tag strings. |
+| `dependencies` | array | Paths of other files this entry depends on for rendering. |
+| `backlinks` | array | Permalink URLs of other entries that link to this entry. |
+| `internalLinks` | array | URL paths that this entry links to within the same blog. |
+| `menu` | boolean | Whether this entry appears in the blog's navigation menu. |
+| `page` | boolean | Whether this entry is a page (as opposed to a chronological post). |
+| `deleted` | boolean | Whether this entry has been removed. |
+| `draft` | boolean | Whether this entry is a draft. |
+| `scheduled` | boolean | Whether this entry's `dateStamp` is in the future. |
+| `thumbnail` | object | Thumbnail image metadata. |
+| `dateStamp` | number | UTC timestamp of the entry's resolved publication date. Defaults to `created` if not specified. |
+| `created` | number | UTC timestamp of when the entry was first added to the system. |
+| `updated` | number | UTC timestamp of the file's last modification time. |
+| `metadata` | object | Arbitrary key-value metadata extracted from the entry file. |
+| `exif` | object | EXIF data extracted from image files. |
+
+---
+
+## Redis Key Structure
+
+Defined in `key.js`.
+
+| Key pattern | Type | Contains |
+|-------------|------|---------|
+| `blog:{blogID}:entry:{normalizedPath}` | string | JSON-serialised entry object |
+| `blog:{blogID}:url:{url}` | string | The `id` (normalised path) of the entry claiming that URL |
+| `blog:{blogID}:dependents:{path}` | set | Paths of entries that depend on this path |
+| `blog:{blogID}:search` | — | Referenced but not written by this module directly |
+
+List keys written by `_assign.js`:
+
+| Key pattern | Type | Sorted by |
+|-------------|------|-----------|
+| `blog:{blogID}:all` | sorted set | `entry.created` |
+| `blog:{blogID}:created` | sorted set | `entry.created` |
+| `blog:{blogID}:entries` | sorted set | `entry.dateStamp` |
+| `blog:{blogID}:entries:lex` | sorted set | score 0 (lexicographic ordering) |
+| `blog:{blogID}:drafts` | sorted set | `entry.dateStamp` |
+| `blog:{blogID}:scheduled` | sorted set | `entry.dateStamp` |
+| `blog:{blogID}:pages` | sorted set | `entry.dateStamp` |
+| `blog:{blogID}:deleted` | sorted set | `Date.now()` at deletion time |
+
+---
+
+## Public API
+
+### `get(blogID, entryIDs, callback)`
+
+Retrieves one or more entries from Redis.
+
+- `entryIDs` may be a single path string or an array of path strings.
+- When passed a string, calls back with a single `Entry` instance or `undefined` if not found.
+- When passed an array, calls back with an array of `Entry` instances. Missing entries are omitted from the result. An empty input array calls back with an empty array immediately.
+- Results are instances of the `Entry` constructor defined in `instance.js`.
+
+### `getByUrl(blogID, entryUrl, callback)`
+
+Looks up an entry by its public URL.
+
+- Resolves the URL to a path via the `blog:{blogID}:url:{url}` Redis key, then delegates to `get`.
+- Calls back with an `Entry` instance or `undefined` if the URL is not claimed.
+
+### `set(blogID, path, updates, callback)`
+
+Writes entry data and runs all side-effects. This is the primary write operation.
+
+1. Loads the existing entry for `path` (or starts from an empty object for new entries).
+2. Merges `updates` into the existing entry.
+3. Assigns a `guid` if none exists.
+4. Sets `created` to the current time if this is the first write.
+5. Sets `dateStamp` to `created` if not provided; deletes `dateStamp` if `dateStampWasRemoved` is set.
+6. Derives the `scheduled` flag from `dateStamp > Date.now()`.
+7. Enforces mutual exclusivity: draft entries cannot be in the menu, scheduled, or on pages; scheduled entries cannot be in the menu or on pages; deleted entries clear all such flags.
+8. Calls `_setUrl` to resolve and claim a public URL.
+9. Manages URL deduplication dependencies (see URL Assignment below).
+10. Validates the merged entry against `model.js` and writes it to Redis.
+11. Sets a 24-hour TTL on deleted entry keys; removes any TTL from live entry keys.
+12. Runs in parallel: tag list update, list assignment (`_assign`), dependency graph rebuild.
+13. If scheduled, registers a `node-schedule` job.
+14. If a draft, publishes a Redis Pub/Sub notification.
+15. Computes and applies backlink changes to linked entries (recursive `set` calls, one per changed entry).
+
+### `drop(blogID, path, callback)`
+
+Marks an entry as deleted.
+
+- Calls `get` to load the current entry. If no entry exists, calls back immediately.
+- Constructs a sanitised object with `deleted: true` and all other content fields blanked.
+- Delegates to `set`, which handles TTL, list removal, dependency cleanup, and backlink removal.
+
+### `search(blogID, query, callback)`
+
+Performs a case-insensitive substring search across a blog's entries.
+
+- Splits `query` on whitespace. Returns an empty result immediately for blank queries.
+- Iterates entries via `ZSCAN` over `blog:{blogID}:entries` and then `blog:{blogID}:pages` in chunks of 200.
+- For each entry, builds a search corpus from: `title`, `permalink`, `tags`, `path`, `html`, and all `metadata` values.
+- Applies `isSearchable` filtering: deleted entries and drafts are excluded. Pages are excluded unless their metadata contains `search` set to a truthy value (`"yes"`, `"true"`, `"1"`). Any entry with `Search: no/false/0` metadata is excluded.
+- For single-term queries, uses `String.includes`. For multi-term queries, all terms must be present.
+- Returns at most 25 results.
+- Enforces an 8-second timeout; returns partial results if the timeout is reached mid-scan.
+- Calls back with `(err, entries)`.
+
+---
+
+## URL Assignment
+
+Handled by `_setUrl.js`, called internally by `set`.
+
+Draft and deleted entries receive an empty string URL and skip URL assignment entirely.
+
+For live entries, a prioritised candidate list is generated by `Candidates(blog, entry)`:
+
+1. The blog's configured permalink format applied to the entry (unless the entry is a page or has an explicit `permalink`/`link`/`url` metadata field).
+2. Permutations of the resolved permalink with numeric suffixes (`-2`, `-3`, `-4`, `-5`).
+3. The entry's `slug`.
+4. A slug derived from the filename.
+5. A slug derived from the full file path.
+6. Slugs derived from the first 3–10 words of the entry's `summary`.
+7. The entry's existing `url` (to preserve randomly-assigned URLs on re-saves).
+8. 500 randomly generated 3-character UIDs.
+
+Each candidate is checked against the Redis URL index. A candidate is claimed if it is unclaimed, already claimed by this entry, claimed by a now-deleted entry, or claimed by an entry that has since moved to a different URL. The first claimable candidate is stored and returned.
+
+**URL deduplication**: When the first-preference candidate is taken by another live entry, the assigned URL is a lower-priority candidate (e.g. `/my-post-2`). In this case, the conflicting entry's path is recorded as a dependency of the newly saved entry. When the conflicting entry is later removed and the original candidate becomes available again, the dependency is removed and the entry reclaims its preferred URL on the next save.
+
+Banned URL prefixes (cannot be claimed): `/archives`, `/search`, `/tagged`, `/public`, and the empty string.
+
+---
+
+## Dependency Graph
+
+Tracked by `_rebuildDependencyGraph.js`.
+
+Each entry stores an array of file paths it depends on (`entry.dependencies`). These are typically other files in the blog folder that contribute to the entry's rendered output (e.g. included partials or data files).
+
+For each dependency path, the reverse mapping is stored in a Redis set at `blog:{blogID}:dependents:{path}`. This set contains the paths of all entries that depend on that file. When a dependency changes outside the entry model, callers can query this set to determine which entries need rebuilding.
+
+When an entry is deleted, all of its dependencies (current and previous) are removed from the reverse index.
+
+---
+
+## Backlinks
+
+Tracked by `_backlinksToUpdate.js`, called by `set` after the primary write.
+
+Each entry stores an `internalLinks` array of URL paths it links to within the same blog. After each save, the module computes the difference between the previous and current internal link lists and updates the `backlinks` array of affected entries.
+
+- Links added since the last save: this entry's `permalink` is added to the target entry's `backlinks`.
+- Links removed since the last save: this entry's `permalink` is removed from the target entry's `backlinks`.
+- If this entry's permalink has changed, the old permalink is removed and the new one is added.
+- If this entry is deleted, it is removed from the `backlinks` of all entries it previously linked to.
+
+Each backlink update is applied by a recursive call to `set` with only the `backlinks` field.
+
+---
+
+## Scheduled Publication
+
+Handled by `_addToSchedule.js`.
+
+When an entry's `dateStamp` is in the future, `set` calls `_addToSchedule`, which registers a `node-schedule` job keyed by `{blogID}:{path}`. At the scheduled time, the job re-saves the entry with an empty update object (`{}`), which causes `set` to re-evaluate the `scheduled` flag (now false) and publish the entry. The blog's `cacheID` is also updated to invalidate rendered caches.
+
+A new job replaces any existing job for the same key when an entry is re-saved with a changed `dateStamp`. Jobs are tracked in a module-level `Map` and removed from it when they fire or are cancelled. Scheduled jobs are in-process only and do not survive a server restart.
+
+---
+
+## Draft Preview Notification
+
+Handled by `_notifyDrafts.js`.
+
+When a draft entry is saved, a Redis Pub/Sub message is published to the channel `blog:{blogID}:draft:{path}` with the current timestamp as the payload. Any server-sent event connection subscribed to this channel can use the notification to trigger a preview refresh in the browser.
+
+---
+
+## List Assignment
+
+Handled by `_assign.js`.
+
+Every entry belongs to the `all` list (sorted by `created`). Additionally, each entry is placed in exactly the appropriate subset of the following mutually exclusive lists based on its state:
+
+- `entries`: visible, published posts (not a page, not a draft, not scheduled, not deleted, not in the menu)
+- `pages`: entries with `page: true`
+- `drafts`: entries with `draft: true`
+- `scheduled`: entries with `scheduled: true`
+- `deleted`: entries with `deleted: true`
+- `created`: all non-deleted entries, sorted by `created`
+
+An entry is removed from all lists it no longer belongs to in the same Redis transaction.
+
+If `entry.menu` is `true`, the entry is added to or updated within the blog's navigation menu (stored in the blog model). If `entry.menu` is `false`, the entry is removed from the menu by its `id`.
+
+---
+
+## Testing
+
+Tests are located in `tests/`. They use a shared setup defined in `tests/setup.js` that creates a test blog, provides async helpers wrapping `get`, `set`, `drop`, `search`, and filesystem operations, and drives entry creation through the full `build` pipeline.
+
+Test files:
+
+- `tests/backlinks.js` — covers backlink addition, removal, multi-entry scenarios, deletion, URL changes, and restore scenarios.
+- `tests/search.js` — covers basic matching, case insensitivity, multi-term AND semantics, metadata and tag matching, draft/deleted exclusion, page opt-in, the 25-result cap, timeout behaviour, and concurrent search performance.
+- `tests/urlDeduplication.js` — covers URL conflict detection, dependency injection on deduplication, dependency removal on reclamation, and multi-conflict scenarios.
+
+To run the tests, use the project's standard test runner against these files. The tests require a running Redis instance and a configured test environment.

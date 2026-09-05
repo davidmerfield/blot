@@ -15,7 +15,7 @@ var urlNormalizer = require("helper/urlNormalizer");
 var TEMPLATES_DIRECTORY = require("path").resolve(__dirname + "/source");
 var TEMPLATES_OWNER = "SITE";
 
-const redis = require("models/redis");
+const redisSubscriber = require("helper/redisSubscriber");
 
 var HIGHLIGHTER_THEMES = require("blog/static/syntax-highlighter");
 
@@ -61,11 +61,11 @@ if (require.main === module) {
 
   // Rebuilds templates when we load new states
   // using scripts/state/info.js
-  let redis = require("models/redis");
-  let client = new redis();
-  client.subscribe("templates:rebuild");
-  client.on("message", function () {
-    main({}, function () {});
+  redisSubscriber({
+    channel: "templates:rebuild",
+    onMessage: function () {
+      main({}, function () {});
+    },
   });
 }
 
@@ -83,12 +83,11 @@ function main(options, callback) {
 
         // Rebuilds templates when we load new states
         // using scripts/state/info.js
-        const templateClient = new redis();
-
-        templateClient.subscribe("templates:rebuild");
-
-        templateClient.on("message", function () {
-          main({}, function () {});
+        redisSubscriber({
+          channel: "templates:rebuild",
+          onMessage: function () {
+            main({}, function () {});
+          },
         });
 
         callback(null);
@@ -135,68 +134,83 @@ function build(directory, callback) {
     // package.json is optional
   }
 
-  id = TEMPLATES_OWNER + ":" + basename(directory);
-  name = templatePackage.name || capitalize(basename(directory));
-  description = templatePackage.description || "";
-  isPublic = templatePackage.isPublic !== false;
+  try {
+    id = TEMPLATES_OWNER + ":" + basename(directory);
+    name = templatePackage.name || capitalize(basename(directory));
+    description = templatePackage.description || "";
+    isPublic = templatePackage.isPublic !== false;
 
-  template = {
-    isPublic: isPublic,
-    description: description,
-    locals: templatePackage.locals,
-  };
-
-  // Set the default font for each template
-  if (template.locals.body_font !== undefined) {
-    template.locals.body_font = _.merge(
-      _.cloneDeep(DEFAULT_FONT),
-      template.locals.body_font
-    );
-  }
-
-  if (template.locals.font !== undefined) {
-    template.locals.font = _.merge(
-      _.cloneDeep(DEFAULT_FONT),
-      template.locals.font
-    );
-  }
-
-  if (template.locals.navigation_font !== undefined) {
-    template.locals.navigation_font = _.merge(
-      _.cloneDeep(DEFAULT_FONT),
-      template.locals.navigation_font
-    );
-  }
-
-  if (template.locals.syntax_highlighter !== undefined) {
-    template.locals.syntax_highlighter = {
-      ...HIGHLIGHTER_THEMES.find(
-        ({ id }) =>
-          id ===
-          (template.locals.syntax_highlighter.id || "stackoverflow-light")
-      ),
+    template = {
+      isPublic: isPublic,
+      description: description,
+      // templatePackage can be {} (missing/unreadable/mid-write
+      // package.json - see above, deliberately tolerated), so this
+      // can't just be templatePackage.locals: that's undefined in
+      // exactly that case, and every .locals.* read below would throw.
+      locals: templatePackage.locals || {},
     };
-  }
 
-  if (template.locals.coding_font !== undefined) {
-    template.locals.coding_font = _.merge(
-      _.cloneDeep(DEFAULT_MONO_FONT),
-      template.locals.coding_font
+    // Set the default font for each template
+    if (template.locals.body_font !== undefined) {
+      template.locals.body_font = _.merge(
+        _.cloneDeep(DEFAULT_FONT),
+        template.locals.body_font
+      );
+    }
+
+    if (template.locals.font !== undefined) {
+      template.locals.font = _.merge(
+        _.cloneDeep(DEFAULT_FONT),
+        template.locals.font
+      );
+    }
+
+    if (template.locals.navigation_font !== undefined) {
+      template.locals.navigation_font = _.merge(
+        _.cloneDeep(DEFAULT_FONT),
+        template.locals.navigation_font
+      );
+    }
+
+    if (template.locals.syntax_highlighter !== undefined) {
+      template.locals.syntax_highlighter = {
+        ...HIGHLIGHTER_THEMES.find(
+          ({ id }) =>
+            id ===
+            (template.locals.syntax_highlighter.id || "stackoverflow-light")
+        ),
+      };
+    }
+
+    if (template.locals.coding_font !== undefined) {
+      template.locals.coding_font = _.merge(
+        _.cloneDeep(DEFAULT_MONO_FONT),
+        template.locals.coding_font
+      );
+    }
+
+    if (template.locals.syntax_highlighter_font !== undefined) {
+      template.locals.syntax_highlighter_font = _.merge(
+        _.cloneDeep(DEFAULT_MONO_FONT),
+        template.locals.syntax_highlighter_font
+      );
+    }
+
+    snapshot = assembleTemplateSnapshot(
+      directory,
+      templatePackage,
+      template.locals
     );
+  } catch (e) {
+    // A template folder can be caught mid-edit (a save landing between
+    // chokidar's change event and a template being fully rewritten, a
+    // package.json briefly missing/malformed, etc). That's a build
+    // failure for this one template, not a reason to crash the whole
+    // process - log it and let the next file change in this folder
+    // trigger a fresh, hopefully-complete rebuild.
+    e.message = "Failed to build " + basename(directory) + ": " + e.message;
+    return callback(e);
   }
-
-  if (template.locals.syntax_highlighter_font !== undefined) {
-    template.locals.syntax_highlighter_font = _.merge(
-      _.cloneDeep(DEFAULT_MONO_FONT),
-      template.locals.syntax_highlighter_font
-    );
-  }
-
-  snapshot = assembleTemplateSnapshot(
-    directory,
-    templatePackage,
-    template.locals
-  );
 
   Template.getMetadata(id, function (metadataErr, storedMetadata) {
     if (metadataErr && metadataErr.code !== "ENOENT")
@@ -237,19 +251,24 @@ function build(directory, callback) {
         Template.create(TEMPLATES_OWNER, name, template, function (err) {
           if (err) return callback(err);
 
-          buildViews(id, snapshot.definitions, function (err) {
-            if (err) return callback(err);
-
+          buildViews(id, snapshot.definitions, function (buildViewsErr) {
+            // Every valid view has already been persisted by buildViews
+            // regardless of buildViewsErr, so blogs using this template
+            // must still have their cache flushed to see them - a broken
+            // view elsewhere shouldn't leave the working views stuck
+            // behind a stale cache. We still propagate buildViewsErr to
+            // our own callback below, once that's done, so CI/dev logging
+            // of the underlying error is unaffected.
             emptyCacheForBlogsUsing(id, function (err) {
               if (err) return callback(err);
 
               if (!isPublic || config.environment !== "development")
-                return callback();
+                return callback(buildViewsErr);
 
               // in development, we want to reset any versions of the template
               // otherwise it seems local changes are not reflected
-              removeOldVersionFromTestBlogs(id, function (err) {
-                callback();
+              removeOldVersionFromTestBlogs(id, function () {
+                callback(buildViewsErr);
               });
             });
           });
@@ -261,7 +280,15 @@ function build(directory, callback) {
 
 function buildViews(id, definitions, callback) {
   var views = Object.keys(definitions || {}).sort();
+  var errors = {};
 
+  // One view failing to build (e.g. invalid Mustache) must not prevent
+  // every other view from building too - alphabetically-later views
+  // would otherwise never get rebuilt after Template.drop() wiped the
+  // previous, working set. So we always call next() and collect errors
+  // instead, keyed by view name (same shape readFromFolder.js uses for
+  // its own metadata.errors), then persist them once every view has had
+  // a chance to build.
   async.eachSeries(
     views,
     function (name, next) {
@@ -275,13 +302,34 @@ function buildViews(id, definitions, callback) {
           errorView.content = err.toString();
           Template.setView(id, errorView, function () {});
           if (path) err.message += " in " + path;
-          return next(err);
+          errors[name] = err.message;
         }
 
         next();
       });
     },
-    callback
+    function (err) {
+      if (err) return callback(err);
+
+      // Always write errors, even when empty, so a previously-broken
+      // view's error is cleared once it's fixed rather than lingering.
+      Template.setMetadata(id, { errors }, function (metadataErr) {
+        if (metadataErr) return callback(metadataErr);
+
+        var names = Object.keys(errors);
+        if (!names.length) return callback();
+
+        callback(
+          new Error(
+            names.length +
+              " view" +
+              (names.length === 1 ? "" : "s") +
+              " failed to build: " +
+              names.map((name) => name + ": " + errors[name]).join("; ")
+          )
+        );
+      });
+    }
   );
 }
 

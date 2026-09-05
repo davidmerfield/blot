@@ -3,6 +3,7 @@ const fetch = require("../../util/rateLimitedFetchWithRetriesAndTimeout");
 
 const MAC_SERVER_ADDRESS = config.icloud.server_address;
 const MACSERVER_AUTH = config.icloud.secret;
+const RECURSIVE_LIST_TIMEOUT_MS = 90 * 1000;
 
 module.exports = async (blogID, path = "/") => {
   if (!blogID) throw new Error("blogID is required");
@@ -11,6 +12,7 @@ module.exports = async (blogID, path = "/") => {
 
   await fetch(MAC_SERVER_ADDRESS + "/recursiveList", {
     method: "POST",
+    timeout: RECURSIVE_LIST_TIMEOUT_MS,
     headers: {
       Authorization: MACSERVER_AUTH,
       blogID,

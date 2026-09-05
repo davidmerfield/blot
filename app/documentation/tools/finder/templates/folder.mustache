@@ -13,7 +13,7 @@
 
   <div class="contents">
     {{#contents}}
-    <div class="item {{#nested}}{{nested}}-{{depth}}{{/nested}} {{open}}">{{#name}}<span class="icon {{folder}} {{file}} {{extension}}"></span> {{name}}{{/name}}{{^name}}&nbsp;{{/name}}</div>
+    <div class="item {{#nested}}{{nested}}-{{depth}}{{/nested}} {{open}}">{{#name}}<span class="icon {{folder}} {{file}} {{extension}}"></span> <span class="label" title="{{name}}">{{displayName}}</span>{{/name}}{{^name}}&nbsp;{{/name}}</div>
     {{/contents}}
   </div>
   

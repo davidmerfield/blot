@@ -4,6 +4,7 @@ banaction = iptables-multiport
 bantime  = 3600
 findtime = 600
 maxretry = 3
+ignoreip = 127.0.0.1/8 ::1
 
 bantime.increment = true
 bantime.factor = 24
@@ -48,4 +49,18 @@ banaction = iptables-multiport
 logencoding = auto
 polling_file = true
 findtime = 30
+maxlines = 100
+
+[nginx-444]
+filter = nginx-444
+enabled = true
+logpath = /var/instance-ssd/logs/access.log
+backend = polling
+port = http,https
+maxretry = 3
+findtime = 120
+bantime = 3600
+banaction = iptables-multiport
+logencoding = auto
+polling_file = true
 maxlines = 100
