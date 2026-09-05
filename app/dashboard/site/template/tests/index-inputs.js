@@ -45,6 +45,14 @@ describe("index-inputs sort control", function () {
     expect(selected.label).toBe("File path - A to Z");
   });
 
+  it("treats sort_by=id without sort_order as A to Z", function () {
+    const control = sortControl(load({ sort_by: "id" }));
+    const selected = control.options.find(option => option.selected === "selected");
+
+    expect(selected.value).toBe("id_asc");
+    expect(selected.label).toBe("File path - A to Z");
+  });
+
   it("selects nested sort config over flat locals", function () {
     const control = sortControl(
       load({
