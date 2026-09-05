@@ -33,9 +33,11 @@ function main(callback) {
         return next();
       }
 
-      // Force setView to re-parse template content and rewrite retrieve metadata.
-      // setView's short-circuit checks `updates.retrieve` before parsing, so passing
-      // a unique marker ensures it proceeds and then replaces retrieve with parse output.
+      // Force setView to re-parse template content and rewrite retrieve
+      // metadata. setView short-circuits when content and retrieve are
+      // unchanged, so pass a sentinel retrieve object. setView ignores
+      // unknown retrieve keys and rebuilds retrieve from the parser,
+      // preserving user options such as includeDraft and filters.
       Template.setView(
         template.id,
         {

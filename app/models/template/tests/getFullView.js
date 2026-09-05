@@ -136,4 +136,33 @@ describe("template", function () {
     });
   });
 
+  it("projects fields from partials used inside tagged.entries", function (done) {
+    var test = this;
+
+    var partial = {
+      name: "tagged-entry-partial.html",
+      content: "{{title}}",
+    };
+
+    var view = {
+      name: "tagged-with-partial.html",
+      content:
+        "{{#tagged.entries}}{{> " + partial.name + "}}{{/tagged.entries}}",
+    };
+
+    async.map([view, partial], setView.bind(null, test.template.id), function (err) {
+      if (err) return done.fail(err);
+
+      getFullView(test.blog.id, test.template.id, view.name, function (err, fullView) {
+        if (err) return done.fail(err);
+
+        expect(fullView[2]).toEqual({
+          tagged: { fields: { title: true } },
+        });
+
+        done();
+      });
+    });
+  });
+
 });

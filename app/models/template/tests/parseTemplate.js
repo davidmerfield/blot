@@ -60,8 +60,6 @@ describe("parseTemplate", function () {
     });
   });
 
-
-
   it("projects fields from allEntries section access", function () {
     var template = `{{#allEntries}}{{title}}{{/allEntries}}`;
     var result = parseTemplate(template);
@@ -80,7 +78,23 @@ describe("parseTemplate", function () {
     });
   });
 
+  it("does not treat allEntries.length as an entry field", function () {
+    var template = `{{allEntries.length}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { allEntries: { length: true } },
+    });
+  });
 
+  it("projects the root field for dotted access inside allEntries", function () {
+    var template = `{{#allEntries}}{{thumbnail.large}}{{/allEntries}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { allEntries: { fields: { thumbnail: true } } },
+    });
+  });
 
   it("handles nested sections inside allEntries without leaking nested fields as top-level locals", function () {
     var template = `{{#allEntries}}{{#thumbnail}}{{large}}{{/thumbnail}}{{/allEntries}}`;
@@ -99,7 +113,6 @@ describe("parseTemplate", function () {
       retrieve: { allEntries: { fields: { more: true } } },
     });
   });
-
 
   it("tracks non-system locals in allEntries context", function () {
     var template = `{{#allEntries}}{{siteTitle}}{{/allEntries}}`;

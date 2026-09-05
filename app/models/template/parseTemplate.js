@@ -84,30 +84,34 @@ function parseTemplate(template) {
 
   function setProjectedEntryField(root, fieldName) {
     if (!projectedEntryLocals[root]) return false;
-    if (!fieldName || fieldName.indexOf(".") > -1) return false;
+    if (!isProjectableEntryFieldName(fieldName)) return false;
 
     setNestedProperty(root, "fields." + fieldName, true);
     return true;
   }
 
-
   function projectedFieldFromContext(contextPath, variableName) {
-    if (!contextPath || !variableName || variableName.indexOf(".") > -1) return null;
+    if (!contextPath || !variableName) return null;
+
+    var fieldName =
+      variableName.indexOf(".") > -1
+        ? variableName.slice(0, variableName.indexOf("."))
+        : variableName;
+
+    if (!fieldName) return null;
 
     for (var root in projectedEntryLocals) {
       var prefixes = projectedEntryLocals[root] || [];
       for (var i = 0; i < prefixes.length; i++) {
         var prefix = prefixes[i] ? root + "." + prefixes[i] : root;
         if (contextPath === prefix) {
-          return { root: root, field: variableName };
+          return { root: root, field: fieldName };
         }
       }
     }
 
     return null;
   }
-
-
 
   function isProjectedPathSegment(contextPath, variableName) {
     if (!contextPath || !variableName || variableName.indexOf(".") > -1) return false;
@@ -152,14 +156,14 @@ function parseTemplate(template) {
       var prefix = prefixes[i];
 
       if (!prefix) {
-        if (propertyPath.indexOf(".") === -1) return propertyPath;
+        if (isProjectableEntryFieldName(propertyPath)) return propertyPath;
         continue;
       }
 
       if (propertyPath.indexOf(prefix + ".") !== 0) continue;
 
       var fieldName = propertyPath.slice((prefix + ".").length);
-      if (fieldName && fieldName.indexOf(".") === -1) return fieldName;
+      if (isProjectableEntryFieldName(fieldName)) return fieldName;
     }
 
     return null;
@@ -295,7 +299,11 @@ function parseTemplate(template) {
         suppressAsProjectedFieldReference =
           (token[0] === "#" || token[0] === "^") && isProjectedFieldInContext;
 
-        if (isProjectedFieldInContext && isLowercaseProjectedEntryField(variable)) {
+        if (
+          isProjectedFieldInContext &&
+          projectedFieldContext &&
+          isLowercaseProjectedEntryField(projectedFieldContext.field)
+        ) {
           suppressAsProjectedFieldReference = true;
         }
 
@@ -318,7 +326,12 @@ function parseTemplate(template) {
           }
         }
         
-        if (variableRoot && !isSystemRetrieveLocal(variableRoot) && variableRoot !== "cdn") {
+        if (
+          variableRoot &&
+          !isSystemRetrieveLocal(variableRoot) &&
+          variableRoot !== "cdn" &&
+          !suppressAsProjectedFieldReference
+        ) {
           if (!retrieve[variableRoot]) {
             retrieve[variableRoot] = true;
           }
@@ -361,16 +374,20 @@ function parseTemplate(template) {
   }
 
 
-  function isLikelyProjectedEntryField(variableName) {
+  function isProjectableEntryFieldName(variableName) {
     if (!variableName || variableName.indexOf(".") > -1) return false;
-
-    // Accept common entry field naming styles, including lower_snake_case
-    // and lowercase-start camelCase tokens.
+    // Array/list metadata and indexes are not entry fields.
+    if (variableName === "length") return false;
+    if (/^\d+$/.test(variableName)) return false;
     return /^[a-z][a-zA-Z0-9_]*$/.test(variableName);
   }
 
+  function isLikelyProjectedEntryField(variableName) {
+    return isProjectableEntryFieldName(variableName);
+  }
+
   function isLowercaseProjectedEntryField(variableName) {
-    if (!variableName || variableName.indexOf(".") > -1) return false;
+    if (!isProjectableEntryFieldName(variableName)) return false;
     return /^[a-z0-9_]+$/.test(variableName);
   }
 
