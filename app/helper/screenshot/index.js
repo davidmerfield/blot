@@ -3,6 +3,7 @@ const { dirname } = require("path");
 const fs = require("fs-extra");
 const Bottleneck = require("bottleneck");
 const config = require("config");
+const lockfile = require("proper-lockfile");
 const retry = require("./retry");
 const clfdate = require("helper/clfdate");
 
@@ -11,6 +12,22 @@ const clfdate = require("helper/clfdate");
 // endpoint over the Docker network. The airlock's nftables egress filter is
 // what stops a bookmark link from pointing Chromium at an internal address.
 const REMOTE_BROWSER_URL = config.airlock && config.airlock.browser_url;
+
+// Chromium deadlocks in Page.captureScreenshot if two tabs of the SAME
+// instance capture at once (see the "Browsers are pooled" comment below).
+// Bottleneck's concurrency limit only serializes screenshots WITHIN this one
+// process - it can't stop blue, green and yellow from each independently
+// connect()ing to the one shared airlock Chromium and screenshotting at the
+// same time. AIRLOCK_LOCK_PATH is a file on the data directory every
+// container already mounts (config/deploy's DATA_DIRECTORY_ON_SERVER), used
+// purely as a cross-container mutex via proper-lockfile - the same
+// mechanism/dependency app/sync already uses to coordinate across
+// containers sharing that same directory.
+const AIRLOCK_LOCK_PATH = config.data_directory + "/airlock-screenshot.lock";
+// Comfortably above the worst-case legitimate hold (PAGE_TIMEOUT plus the
+// screenshot/close budgets below), so a lock is never stolen out from under
+// a screenshot that's still genuinely in progress.
+const AIRLOCK_LOCK_STALE_MS = 45000;
 
 const prefix = () => `${clfdate()} Screenshot:`;
 
@@ -48,7 +65,13 @@ const VIEWPORT = {
 // one entry: a connect()ed wrapper rather than a launch()ed one. See launch()
 // and close() below for how the two are told apart, and takeScreenshot() for
 // why the remote case additionally isolates each screenshot in its own
-// incognito browser context.
+// incognito browser context. Bottleneck's concurrency limit only serializes
+// screenshots WITHIN this one process, though - it says nothing about
+// whatever blue/green/yellow are doing on their own copies of this module -
+// so the "never shares an instance with another screenshot" invariant above
+// would otherwise break across containers sharing one airlock. See
+// AIRLOCK_LOCK_PATH and takeScreenshot() for the cross-container mutex that
+// restores it for the remote case.
 const idle = [];
 let poolSize = CONCURRENT_SCREENSHOTS;
 // Bumped by restart() and shutdown() so browsers currently taking a
@@ -104,6 +127,19 @@ function validateOptions(options) {
     throw new Error("Height must be a number");
   }
   return validatedOptions;
+}
+
+// Cross-container mutex around a remote screenshot - see AIRLOCK_LOCK_PATH
+// above. Waits roughly up to AIRLOCK_LOCK_STALE_MS for the current holder
+// (a screenshot in another container) to finish or for its lock to go
+// stale, rather than failing fast, since the whole point is to wait for
+// the shared Chromium to be free rather than to detect contention.
+async function acquireAirlockLock() {
+  await fs.ensureFile(AIRLOCK_LOCK_PATH);
+  return lockfile.lock(AIRLOCK_LOCK_PATH, {
+    stale: AIRLOCK_LOCK_STALE_MS,
+    retries: { retries: 90, factor: 1, minTimeout: 500 },
+  });
 }
 
 async function launch() {
@@ -295,6 +331,13 @@ async function screenshotWithTimeout(page, path) {
 async function takeScreenshot(site, path, options = {}) {
   options = validateOptions(options);
 
+  // See AIRLOCK_LOCK_PATH above: only needed when there's a shared browser
+  // to serialize access to. In launch mode every process already has its
+  // own private Chromium, so there's nothing to coordinate and taking this
+  // lock would only add unnecessary cross-container serialization - a real
+  // regression for the template-gallery batch script's configure() use.
+  const unlockAirlock = REMOTE_BROWSER_URL ? await acquireAirlockLock() : null;
+
   const browser = await acquire();
   let page = null;
   let context = null;
@@ -341,28 +384,33 @@ async function takeScreenshot(site, path, options = {}) {
       if (await closePageWithTimeout(page)) unresponsive = true;
     }
     if (context) {
-      if (unresponsive) {
-        // closePageWithTimeout already decided the connection is dead. In
-        // airlock mode close() below only disconnects - it cannot kill the
-        // shared browser - so an unguarded context.close() here would be
-        // the only thing standing between a wedged CDP session and
-        // release(): if it hung too (likely, same dead connection), this
-        // finally block would never finish, the Bottleneck slot would
-        // never free, and every later screenshot on this process would
-        // wait forever. The browser is being discarded either way, so
-        // there is nothing to gain from trying.
-        console.log(prefix(), "skipping context.close() - browser already unresponsive");
-      } else {
-        try {
-          await withTimeout(context.close(), closePageTimeout, "context.close()");
-        } catch (error) {
-          console.error(prefix(), "Error closing browser context:", error);
-          unresponsive = true;
-        }
+      // Always attempt this, even if closePageWithTimeout already flagged
+      // the page as unresponsive: a slow/wedged PAGE doesn't necessarily
+      // mean the underlying browser CONNECTION is dead, and in airlock mode
+      // close() below only disconnects our client - it cannot destroy the
+      // context inside the shared Chromium process. Skipping this
+      // unconditionally on `unresponsive` (an earlier fix, for a real
+      // hang risk) traded that risk for a worse one: leaking an incognito
+      // context - and its storage - in the shared browser on every page
+      // timeout, on every retry, until the airlock's own memory limit is
+      // exhausted for every container sharing it. withTimeout() bounds the
+      // wait either way, so escalate to `unresponsive` only if THIS also
+      // fails - that's the actual signal the connection itself is dead.
+      try {
+        await withTimeout(context.close(), closePageTimeout, "context.close()");
+      } catch (error) {
+        console.error(prefix(), "Error closing browser context:", error);
+        unresponsive = true;
       }
     }
 
     await release(browser, { unresponsive });
+
+    if (unlockAirlock) {
+      await unlockAirlock().catch((error) => {
+        console.error(prefix(), "Error releasing airlock screenshot lock:", error);
+      });
+    }
   }
 }
 

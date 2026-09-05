@@ -252,6 +252,25 @@ async function checkAirlockHealth() {
   return Promise.race([healthCheck(), timeout]);
 }
 
+// Running (not just present) and passing its own HEALTHCHECK. A container
+// that exists with the right image tag but is stopped, crash-looping, or
+// stuck "unhealthy" must NOT be mistaken for "already deployed" - Docker's
+// HEALTHCHECK doesn't restart anything on its own, so if the image-hash
+// skip in deployAirlockIfNeeded didn't also check this, a wedged airlock
+// would never get another chance to recover until a new commit happened to
+// change the image tag.
+async function isAirlockHealthy() {
+  try {
+    const state = await sshCommand(
+      `docker inspect --format='{{.State.Running}} {{.State.Health.Status}}' ${AIRLOCK.name}`
+    );
+    const [running, health] = state.trim().split(" ");
+    return running === "true" && health === "healthy";
+  } catch {
+    return false;
+  }
+}
+
 async function deployAirlock(platform, imageHash) {
   const dockerRunCommand = await generateAirlockCommand(platform, imageHash);
 
@@ -288,15 +307,42 @@ async function deployAirlockIfNeeded(platform, imageHash) {
 
     const currentHash = await getCurrentImageHash(AIRLOCK.name);
 
-    if (currentHash && currentHash === imageHash) {
-      console.log("Airlock image is already deployed. Skipping...");
+    if (currentHash && currentHash === imageHash && (await isAirlockHealthy())) {
+      console.log("Airlock image is already deployed and healthy. Skipping...");
       return;
     }
 
-    await deployAirlock(platform, imageHash);
+    try {
+      await deployAirlock(platform, imageHash);
+    } catch (error) {
+      // deployAirlock() already removed whatever was running before it
+      // tried to start the replacement (same shape as deployContainer()
+      // for the app containers, which has this same brief gap - mitigated
+      // there by having three redundant containers, which the airlock
+      // doesn't have). Roll back to the previous image so a bad airlock
+      // build doesn't leave nothing running at all until a future commit
+      // happens to fix it - matches the rollback main() already does for
+      // blue/green/yellow.
+      console.error("Airlock deploy failed:", error);
+
+      if (currentHash && currentHash !== imageHash) {
+        console.error(`Rolling back airlock to previous image ${currentHash}...`);
+        try {
+          await deployAirlock(platform, currentHash);
+          console.error("Airlock rollback succeeded.");
+        } catch (rollbackError) {
+          console.error("Airlock rollback also failed - airlock is down:", rollbackError);
+        }
+      } else {
+        console.error(
+          "No different previous airlock image to roll back to - airlock is down."
+        );
+      }
+    }
   } catch (error) {
-    // Non-fatal: airlock isn't in the request path of anything today, so a
-    // problem here shouldn't block or roll back the app deploy.
+    // Non-fatal: a problem deploying the airlock degrades bookmark
+    // screenshots and remote-image downloads, but must not block or roll
+    // back the app deploy itself - see the comment above this section.
     console.error("Airlock deploy step failed (continuing with app deploy):", error);
   }
 }
@@ -304,9 +350,25 @@ async function deployAirlockIfNeeded(platform, imageHash) {
 async function connectToAirlockNetwork(containerName) {
   try {
     console.log(`Connecting ${containerName} to ${AIRLOCK.network}...`);
-    await sshCommand(
-      `docker network connect ${AIRLOCK.network} ${containerName} 2>/dev/null || true`
+
+    // Check membership first rather than attempting the connect and
+    // swallowing "already exists" with `|| true`: that would also swallow
+    // every OTHER failure (missing network, missing container, ...),
+    // meaning a genuine attach failure logged nothing and looked identical
+    // to success in the deploy log - discoverable only much later, from
+    // the probe or from screenshots/downloads failing once real traffic
+    // depends on this. A real failure here now propagates to the catch
+    // below instead of being hidden.
+    const members = await sshCommand(
+      `docker network inspect ${AIRLOCK.network} --format='{{range .Containers}}{{.Name}} {{end}}'`
     );
+
+    if (members.split(/\s+/).includes(containerName)) {
+      console.log(`${containerName} is already connected to ${AIRLOCK.network}.`);
+      return;
+    }
+
+    await sshCommand(`docker network connect ${AIRLOCK.network} ${containerName}`);
   } catch (error) {
     // Non-fatal - see the comment above deployAirlockIfNeeded.
     console.error(`Failed to connect ${containerName} to ${AIRLOCK.network}:`, error);

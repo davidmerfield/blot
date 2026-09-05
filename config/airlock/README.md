@@ -142,10 +142,12 @@ Everything below already runs as part of `npm run deploy-node` (see
 [`scripts/deploy/index.js`](../../scripts/deploy/index.js),
 [`constants.js`](../../scripts/deploy/constants.js) and
 [`generateAirlockCommand.js`](../../scripts/deploy/util/generateAirlockCommand.js)).
-Every step is **best-effort and non-fatal** to the app deploy: a problem
-deploying or connecting the airlock is logged but does not fail, roll back,
-or block the blue/green/yellow deploy - see the comment above
-`deployAirlockIfNeeded` in `index.js`.
+Every step is **non-fatal to the app deploy**: a problem deploying or
+connecting the airlock is logged but never fails, blocks, or rolls back
+blue/green/yellow - see the comment above `deployAirlockIfNeeded` in
+`index.js`. The airlock itself *does* get rolled back on a bad deploy (see
+step 2) - "non-fatal" only ever means "can't take the app deploy down with
+it".
 
 1. **Build & push.** `.github/workflows/build.yml` has a second matrix job,
    `build-airlock`, alongside the app's `build` job: builds `config/airlock`
@@ -163,12 +165,26 @@ or block the blue/green/yellow deploy - see the comment above
    reach it first, then asserts the airlock cannot - a check that only
    passes if the filter actually did something.
 
+   [`deploy.yml`](../../.github/workflows/deploy.yml)'s own
+   `wait-for-build` job waits for **both** the app and airlock manifests
+   for the target commit before deploying anything - not just the app
+   one. `deployAirlockIfNeeded()` treats a missing airlock manifest as a
+   non-fatal skip *for that run*, and nothing else ever retries it, so
+   deploying while `build-airlock` is still running (or has failed on its
+   own) would otherwise ship the app image for a commit whose airlock
+   update silently never happened.
+
 2. **Network + sidecar.** `deployAirlockIfNeeded()` runs before the
    blue/green/yellow loop: creates the `blotnet` Docker network if it
-   doesn't exist, and pulls/(re)starts `blot-airlock` if its running image
-   hash doesn't match the commit being deployed (mirrors the app
-   containers' own skip-if-unchanged check), waiting for its `HEALTHCHECK`
-   to report healthy.
+   doesn't exist, and pulls/(re)starts `blot-airlock` if it isn't already
+   running the target commit's image **and** healthy - both conditions, not
+   just the image tag, since a container that's merely present with the
+   right tag but stopped or wedged unhealthy would otherwise be mistaken
+   for "already deployed" and left broken until some later commit happened
+   to change the tag. If deploying the new image fails (bad build, failed
+   health check), it rolls back to whatever image was running before -
+   mirroring the rollback `main()` already does for blue/green/yellow, so a
+   bad airlock build can't leave nothing running at all.
 
 3. **Connecting app containers.** Deliberately **not** `--network blotnet`
    on the app containers at creation - that would move them off the default
@@ -176,11 +192,16 @@ or block the blue/green/yellow deploy - see the comment above
    `blotnet`'s gateway, which could silently break a hardcoded
    `BLOT_REDIS_HOST` or `BLOT_REVERSE_PROXY_URLS` on the live host (neither
    is visible from this repo). Instead, after each app container starts (or
-   is confirmed already up to date), `connectToAirlockNetwork()` runs
-   `docker network connect blotnet <container>` - Docker's supported way to
-   give a running container a *second* network interface. The container
-   keeps its original bridge network and gateway untouched, and gains the
-   ability to resolve and reach `blot-airlock` via `blotnet`'s embedded DNS.
+   is confirmed already up to date), `connectToAirlockNetwork()` checks
+   `blotnet`'s membership first and only runs `docker network connect
+   blotnet <container>` if it isn't already a member - Docker's supported
+   way to give a running container a *second* network interface. Checking
+   membership first (rather than attempting the connect and swallowing
+   "already exists" with `|| true`) means a genuine attach failure - a
+   missing network, a renamed container - surfaces in the deploy log
+   instead of looking identical to success. The container keeps its
+   original bridge network and gateway untouched, and gains the ability to
+   resolve and reach `blot-airlock` via `blotnet`'s embedded DNS.
    `generateDockerCommand.js` sets `BLOT_AIRLOCK_PROBE_BROWSER_URL` /
    `BLOT_AIRLOCK_PROBE_PROXY_URL` to `http://blot-airlock:9222` /
    `:8888` on every app container so the probe (above) can reach it.
@@ -268,6 +289,22 @@ likely means `docker network connect blotnet <container>` didn't happen or
 didn't take - check the `Connecting … to blotnet` line in the deploy log).
 
 ## Limitations
+
+* **Only one screenshot at a time, across the whole fleet, when airlock
+  mode is on.** Chromium deadlocks in `Page.captureScreenshot` if two tabs
+  of the *same instance* capture at once - `helper/screenshot`'s own
+  Bottleneck limiter already prevents that within one process, but it can't
+  stop blue, green and yellow from each independently taking a screenshot
+  against the one shared airlock Chromium at the same time. Fixed with a
+  cross-container mutex: a `proper-lockfile` lock on a file in the data
+  directory every container already mounts (the same dependency/mechanism
+  `app/sync` already uses to coordinate across containers). It only
+  activates when `BLOT_AIRLOCK_BROWSER_URL` is set - in launch mode every
+  process has its own private Chromium, so there's nothing to serialize,
+  and taking the lock anyway would only add unnecessary contention (a real
+  regression for `app/templates/screenshots.js`'s
+  `screenshot.configure({ concurrency: N })` batch use, which never sets
+  that env var). See `AIRLOCK_LOCK_PATH` in `app/helper/screenshot/index.js`.
 
 * **Always run it on a user-defined Docker network**, never the default
   bridge. On a user-defined network DNS is Docker's embedded resolver at

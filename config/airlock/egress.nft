@@ -41,7 +41,12 @@ table inet airlock {
         oif "lo" ip daddr 127.0.0.11 accept
         oif "lo" meta skuid 0 accept
         oif "lo" meta skuid 1002 accept    # 'airlockfwd', nginx's uid
-        oif "lo" drop
+        # reject, not drop, matching every other rule below - for the same
+        # reason: a post with several <img src="http://127.0.0.1/..."> URLs
+        # would otherwise burn each caller's full network timeout budget
+        # (5s per transformer download, up to 20s per screenshot attempt)
+        # waiting for a connection nothing will ever answer.
+        oif "lo" reject
 
         # --- IPv4: drop every non-public destination ---
         ip daddr {

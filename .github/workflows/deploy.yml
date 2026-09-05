@@ -8,6 +8,7 @@ permissions:
 
 env:
   REGISTRY_URL: ghcr.io/davidmerfield/blot
+  AIRLOCK_REGISTRY_URL: ghcr.io/davidmerfield/blot-airlock
   BLOT_DEPLOY_SSH_HOST: ${{ secrets.BLOT_DEPLOY_SSH_HOST }}
 
 jobs:
@@ -34,28 +35,41 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Wait for build image to be available
+      - name: Wait for build images to be available
         run: |
-          echo "Waiting for build image to be available..."
-          
+          echo "Waiting for build images to be available..."
+
+          # Both images, not just the app one: scripts/deploy/index.js's
+          # deployAirlockIfNeeded() treats a missing airlock manifest for
+          # this commit as a non-fatal SKIP, with nothing that retries it
+          # later - so if this workflow is dispatched while build-airlock
+          # is still running (or it fails independently of the app's own
+          # build job), the app image can go out without the sidecar ever
+          # being updated for that commit, silently.
           IMAGE="${{ env.REGISTRY_URL }}:${{ github.sha }}"
+          AIRLOCK_IMAGE="${{ env.AIRLOCK_REGISTRY_URL }}:${{ github.sha }}"
           MAX_WAIT_MINUTES=30
           WAIT_INTERVAL=10
           MAX_ITERATIONS=$((MAX_WAIT_MINUTES * 60 / WAIT_INTERVAL))
           ITERATION=0
-          
+
           while [ $ITERATION -lt $MAX_ITERATIONS ]; do
-            if docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
-              echo "✅ Build image found: $IMAGE"
+            APP_READY=false
+            AIRLOCK_READY=false
+            docker manifest inspect "$IMAGE" > /dev/null 2>&1 && APP_READY=true
+            docker manifest inspect "$AIRLOCK_IMAGE" > /dev/null 2>&1 && AIRLOCK_READY=true
+
+            if [ "$APP_READY" = true ] && [ "$AIRLOCK_READY" = true ]; then
+              echo "✅ Build images found: $IMAGE, $AIRLOCK_IMAGE"
               exit 0
             fi
-            
-            echo "Image not found yet. Waiting ${WAIT_INTERVAL} seconds... (attempt $((ITERATION + 1))/$MAX_ITERATIONS)"
+
+            echo "Not ready yet (app=${APP_READY} airlock=${AIRLOCK_READY}). Waiting ${WAIT_INTERVAL} seconds... (attempt $((ITERATION + 1))/$MAX_ITERATIONS)"
             sleep $WAIT_INTERVAL
             ITERATION=$((ITERATION + 1))
           done
-          
-          echo "❌ Timeout: Build image not found after ${MAX_WAIT_MINUTES} minutes: $IMAGE"
+
+          echo "❌ Timeout: build images not both available after ${MAX_WAIT_MINUTES} minutes ($IMAGE, $AIRLOCK_IMAGE)"
           exit 1
 
   deploy:
