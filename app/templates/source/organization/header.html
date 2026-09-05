@@ -9,7 +9,7 @@
         <ul class="navbar-nav mr-auto d-flex align-items-center">
           <!--  Replace menu links here -->
           {{#menu}}
-          <li class="nav-item" data-label="{{label}}">
+          <li class="nav-item" data-url="{{{url}}}" data-label="{{label}}">
             <a class="nav-link" href="{{{url}}}">{{label}}</a>
           </li>
           {{/menu}}
@@ -20,16 +20,6 @@
           <form class="bd-search hidden-sm-down w-100" action="/search">
             <input type="text" class="form-control text-small" id="lunrsearch" name="q" value="{{query}}" placeholder="Search">
           </form>
-          <style>
-            #MagicMenu .navbar-nav.mr-auto .nav-item[data-label="Search"],
-            #MagicMenu .navbar-nav.mr-auto .nav-item[data-label="search"],
-            #MagicMenu .navbar-nav.mr-auto a[href="/search"],
-            #MagicMenu .navbar-nav.mr-auto a[href="/search/"],
-            #MagicMenu .navbar-nav.mr-auto .nav-item:has(> a[href="/search"]),
-            #MagicMenu .navbar-nav.mr-auto .nav-item:has(> a[href="/search/"]) {
-              display: none;
-            }
-          </style>
         </ul>
       </div>
     </div>
