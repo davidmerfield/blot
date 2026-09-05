@@ -46,4 +46,22 @@ describe("hypertext pagination template", function () {
     expect((html.match(/data-next="/g) || []).length).toEqual(1);
     expect(html).toContain('data-next="3"');
   });
+
+  it("does not repeat the marker when the last post also has pagination.next", function () {
+    const html = render({
+      posts: [
+        { path: "/a", url: "/a", title: "A", active: "" },
+        {
+          path: "/b",
+          url: "/b",
+          title: "B",
+          active: "",
+          pagination: { next: 2 },
+        },
+      ],
+      pagination: { next: 2 },
+    });
+
+    expect((html.match(/data-next="/g) || []).length).toEqual(1);
+  });
 });
