@@ -5,6 +5,13 @@ const localPath = require("helper/localPath");
 const Stat = require("./stat");
 const client = require("models/client");
 const pathNormalize = require("helper/pathNormalizer");
+const Build = require("build");
+
+const findMultiFolder =
+  (Build && Build.findMultiFolder) ||
+  function () {
+    return null;
+  };
 
 async function getContents(blog, dir) {
   const local = localPath(blog.id, dir);
@@ -17,24 +24,30 @@ async function getContents(blog, dir) {
   const [entries, stats] = await Promise.all([
     new Promise((resolve) => {
       // Remove 'reject' parameter since it is not being used
-      const keys = filtered.map(
-        (item) => `blog:${blog.id}:entry:${pathNormalize(path.join(dir, item))}`
-      );
+      const keys = filtered.map((item) => {
+        const itemPath = pathNormalize(path.join(dir, item));
+        const multiInfo = findMultiFolder(itemPath);
+        const lookupPath = multiInfo ? multiInfo.entryPath : itemPath;
+        return `blog:${blog.id}:entry:${pathNormalize(lookupPath)}`;
+      });
       Promise.all(
         keys.map((key) => {
-          return client.exists(key);
+          return client.get(key);
         })
       )
         .then((res) => {
           if (!res || !res.length) return resolve([]);
           resolve(
             filtered.filter((_, index) => {
-              const exists = res[index];
-              return (
-                exists === 1 ||
-                exists === "1" ||
-                exists === true
-              );
+              const raw = res[index];
+              if (!raw) return false;
+
+              try {
+                const entry = typeof raw === "string" ? JSON.parse(raw) : raw;
+                return !!(entry && entry.deleted !== true);
+              } catch (err) {
+                return false;
+              }
             })
           );
         })
