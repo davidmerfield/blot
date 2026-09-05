@@ -37,8 +37,12 @@ const TIMEOUT = 5000; // 5s
 const debug = function () {}; // console.log || noop for debugging
 
 module.exports = function (url, headers, callback) {
-  // Verify the url has a host, and protocol
-  if (invalid(url)) return callback(new Error("Invalid URL " + url));
+  // Verify the url has a host, and protocol. Pass invalid()'s own error
+  // straight through rather than re-interpolating url here - it may
+  // contain credentials, and invalid() already returns a message that
+  // omits them for exactly that case.
+  const invalidReason = invalid(url);
+  if (invalidReason) return callback(invalidReason);
 
   // Sometimes these are null for new urls...
   headers = headers || {};
