@@ -111,6 +111,10 @@ describe("redirects.conflicts", function () {
   });
 
   it("does not warn about a redirect from a URL Blot falls through", async function () {
+    // The default template ships its own robots.txt view, which would
+    // otherwise catch this redirect first and mask what we're testing here.
+    await this.useTemplate([]);
+
     for (const from of ["/robots.txt", "/draft/view/hello.md"])
       expect(await this.conflict(from)).toEqual(null);
   });
