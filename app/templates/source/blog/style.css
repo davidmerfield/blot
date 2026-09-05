@@ -217,7 +217,8 @@ hr {
 /* This is used between articles in list view */
 hr.full {
   color: var(--border-color);
-  margin: var(--spacing) 0 calc(var(--spacing) * 1.57) 1em; /* We add 1em to the left due to letter spacing*/
+  /* master tightened this from 7em/11em; keep it proportional to --spacing (default 7) */
+  margin: calc(var(--spacing) * 0.5) 0 calc(var(--spacing) * 0.643) 1em; /* We add 1em to the left due to letter spacing*/
   height: 0;
   width: 100%;
   text-align: center;
@@ -226,6 +227,11 @@ hr.full {
 }
 
 hr.full:after {content: "··•··";}
+
+.pagination {
+  text-align: center;
+  margin: 2em 0 3em;
+}
 
 
 
@@ -257,7 +263,7 @@ blockquote {
 }
 
 .entry a {
-  text-decoration: underlink;
+  text-decoration: underline;
   color: var(--links-color);
 }
 
