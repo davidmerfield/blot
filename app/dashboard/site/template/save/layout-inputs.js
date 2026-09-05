@@ -23,6 +23,13 @@ const applySortSelection = (locals, selection) => {
   if (locals.sort && typeof locals.sort === "object") {
     locals.sort.by = selection.sort_by;
     locals.sort.direction = selection.sort_order;
+
+    // blog/sortOptions.js also accepts `sort.order` as an alias for
+    // `sort.direction`. Keep it in sync when present so we don't persist a
+    // stale, contradictory value alongside the one we just wrote.
+    if (Object.prototype.hasOwnProperty.call(locals.sort, "order")) {
+      locals.sort.order = selection.sort_order;
+    }
   }
 };
 

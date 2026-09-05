@@ -60,4 +60,15 @@ describe("layout-inputs sort mapping", function () {
     expect(locals.sort_order).toBe("desc");
     expect(locals.sort).toEqual({ by: "date", direction: "desc" });
   });
+
+  it("keeps a nested sort.order alias in sync instead of leaving it stale", function () {
+    const locals = save(
+      { sort: { by: "id", order: "asc" }, sort_by: "date_desc" },
+      { "locals.sort_by": "date_desc" }
+    );
+
+    expect(locals.sort_by).toBe("date");
+    expect(locals.sort_order).toBe("desc");
+    expect(locals.sort).toEqual({ by: "date", order: "desc", direction: "desc" });
+  });
 });
