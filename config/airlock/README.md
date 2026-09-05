@@ -316,6 +316,16 @@ didn't take - check the `Connecting … to blotnet` line in the deploy log).
   screenshots and remote-image transforms fail (they already degrade
   gracefully — the post builds without the image). Give it a restart policy
   and watch the healthcheck.
+* **Memory** (`AIRLOCK.memory` in
+  [`scripts/deploy/constants.js`](../../scripts/deploy/constants.js)) is
+  `512m`, and it's paid for out of the three app containers, not on top of
+  them — `~512/3` is taken off each so the host's total is unchanged. That
+  `512m` is generous for what this PR does (the airlock is idle bar the
+  probe and healthcheck), but tight for the traffic cutover, when real
+  bookmark-screenshot rendering runs here. Raise it then, and take the
+  extra back off the app containers — they stop running Chromium for
+  screenshots at that point, so the overhead they need shrinks by roughly
+  the same amount.
 * The `172.16.0.0/12` drop also stops `airlock` reaching sibling containers on
   a Docker bridge — intended.
 * `app/templates/screenshots.js` (the template-gallery build tool) has **no**
