@@ -20,7 +20,7 @@ The load middleware files in this folder follow naming conventions on keys in `r
 - **Colors** (`color-inputs.js`): any key containing `_color` becomes a color picker.
 - **Fonts** (`font-inputs.js`): keys containing `_font` or named exactly `font` become font pickers.
 - **Uploads** (`url-inputs.js`): keys ending in `_url` become upload controls.
-- **Index / layout inputs** (`index-inputs.js`): keys like `page_size`, `spacing`, `thumbnails_per_row`, etc., plus boolean or select/range keys detected via `*_options` or `*_range` conventions.
+- **Index / layout inputs** (`index-inputs.js`): keys like `page_size`, `spacing`, `thumbnails_per_row`, etc., plus boolean or select/range keys detected via `*_options` or `*_range` conventions. A combined **Post sorting** select is appended for every template — including templates whose locals expose none of the other index/layout keys, and templates with empty locals — so the control is always available. It maps onto `sort_by` and `sort_order` (and nested `sort.by` / `sort.direction` / `sort.order` when present) using `sort-options.js`. If `sort_by_options` is present, the select is limited to those sort keys (Hypertext uses `["id"]` so date options are hidden). Raw `sort_by` / `sort_order` selects are hidden so they are not duplicated.
 - **Navigation inputs** (`navigation-inputs.js`): keys containing `navigation_` or `_navigation`.
 - **Date controls** (`dates.js`): `date_display` and `hide_dates` toggle date-related selectors.
 
