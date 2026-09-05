@@ -44,9 +44,6 @@ jobs:
     env:
       BLOT_SCREENSHOT_CONCURRENCY: ${{ inputs.concurrency }}
       TEMPLATES: ${{ inputs.templates }}
-      # Shared by the restore, delete and save steps below so the three can't
-      # drift apart.
-      DEMO_BLOGS_CACHE_KEY: demo-blogs-v1-pandoc${{ matrix.pandoc-version }}-${{ hashFiles('app/templates/folders/**', 'app/build/**', 'app/sync/**', 'app/models/**', 'package.json') }}
 
     steps:
       - name: Checkout code
@@ -54,6 +51,14 @@ jobs:
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      # hashFiles() only works inside a step (job-level env can't see the
+      # checked-out files yet), so the key is computed here and exported for
+      # the restore/delete/save steps below to share - keeping the three from
+      # drifting apart.
+      - name: Compute demo blogs cache key
+        run: |
+          echo "DEMO_BLOGS_CACHE_KEY=demo-blogs-v1-pandoc${{ matrix.pandoc-version }}-${{ hashFiles('app/templates/folders/**', 'app/build/**', 'app/sync/**', 'app/models/**', 'package.json') }}" >> "$GITHUB_ENV"
 
       - name: Set up Node
         uses: actions/setup-node@v4
