@@ -4,6 +4,7 @@
     "page_size": 12,
     "hide_dates": false,
     "date_display": "MMMM D, Y",
+    "demo_folder": "lecture",
     "background_color": "#ffffff",
     "text_color": "#212529",
     "accent_color": "#03a87c",
