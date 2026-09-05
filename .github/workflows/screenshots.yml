@@ -45,11 +45,19 @@ jobs:
       TEMPLATES: ${{ inputs.templates }}
 
     steps:
+      # GITHUB_TOKEN is deliberately not used here: GitHub does not let a
+      # push authenticated with GITHUB_TOKEN trigger other workflow runs (to
+      # prevent recursive triggering), so the "Commit changes" push at the
+      # end of this job would silently never run build.yml/node.yml's checks
+      # on this PR. SCREENSHOTS_PUSH_TOKEN is a personal access token (repo
+      # Settings -> Secrets and variables -> Actions) scoped to this repo's
+      # Contents: Read and write - falls back to GITHUB_TOKEN if unset, which
+      # still works but without triggering CI on the resulting commit.
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.SCREENSHOTS_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
 
       # hashFiles() only works inside a step (job-level env can't see the
       # checked-out files yet), so the key is computed here and exported for
