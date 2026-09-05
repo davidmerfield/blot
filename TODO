@@ -230,6 +230,7 @@ Fix bugs with templates:
 Dashboard control follow-ups (found while reviewing the per-template dashboard-control PRs):
 - Portfolio template: the new show_search boolean only toggles the search box on archives.html. If search should be hideable everywhere it appears (e.g. the toolbar / nav), wire show_search into those views too.
 - Portfolio template: heading_font control emits {{#weight}}/{{#style}} rules; confirm the fonts static data actually carries weight/style so the control does something, otherwise drop those blocks.
+- Index template: the new logo_url upload is reused as og:image / twitter:image in _head.html. Upload URLs are site-relative, so social scrapers get a relative path. Either expose an absolute form of the upload value or fall back to {{{avatar}}} for social meta.
 
 Fix bug with the website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 
