@@ -13,7 +13,10 @@
 <article class="entry listing-entry">
   {{{html}}}
   {{#date}}
-  <small>Posted on {{date}}</small>
+  <small><a href="{{{url}}}">Posted on {{date}}</a></small>
+  {{/date}}
+  {{^date}}
+  <small><a href="{{{url}}}">Permalink</a></small>
   {{/date}}
   {{#show_tags}}
   {{#tags.length}}

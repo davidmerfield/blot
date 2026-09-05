@@ -14,6 +14,8 @@
   --border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.12);
   --max-width: {{max_width}}em;
   --spacing: {{spacing}}em;
+  --heading-font-size: {{#heading_font}}{{{font_size}}}{{/heading_font}}px;
+  --heading-line-height: {{#heading_font}}{{{line_height}}}{{/heading_font}};
 }
 
 /* Root background fills the canvas (body is only --max-width wide). Needed for
@@ -47,11 +49,14 @@ h1, h2, h3, h4, h5, h6 {
   {{#heading_font}}
   font-family: {{{stack}}};
   {{/heading_font}}
+  line-height: var(--heading-line-height);
 }
 
-h1 {font-size: 2.25em;line-height:1.2;}
-h2 {font-size: 1.25em;}
-h3, h4, h5, h6 {font-size: 1em}
+/* Sized off the Heading Font size control (defaults reproduce the old
+   body-relative 2.25 / 1.25 / 1 ratios). */
+h1 {font-size: calc(var(--heading-font-size) * 2.25);line-height: 1.2;}
+h2 {font-size: calc(var(--heading-font-size) * 1.25);}
+h3, h4, h5, h6 {font-size: var(--heading-font-size);}
 
 hr {margin: 1.25em 0;border: 0;border-top: 1px solid var(--border-color);}
 br {width: 100%;clear: both;float: none;}
@@ -144,6 +149,16 @@ sup {font-size: 0.83em;line-height: 0;vertical-align: super;}
 }
 
 a.menu {margin-right: 0em;line-height: 1.75}
+
+/* The generic a.menu line-height above otherwise shadows the Navigation Font
+   line-height on the header/footer nav links (higher specificity than
+   .site-nav / .site-footer .menu). */
+.site-nav a.menu,
+.site-footer a.menu {
+  {{#navigation_font}}
+  line-height: {{{line_height}}};
+  {{/navigation_font}}
+}
 
 {{#uppercase_navigation}}
 .site-nav a,
@@ -421,7 +436,10 @@ iframe {width: 100%;}
   .wide.left .caption {margin-left: 0}
 }
 
-@media screen and (max-width: 34em) {
+/* Drop the 50vw full-bleed trick once the viewport is narrower than the
+   configured content width - past that point the fixed --max-width/2 offset
+   pushes rows and rules off-screen. Tracks the max_width control. */
+@media screen and (max-width: {{max_width}}em) {
 
   hr.full, a.row {width: 100%;margin-left: 0;margin-right:0;padding-right: 0;padding-left:0;position: relative;left: 0;}
 
