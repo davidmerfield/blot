@@ -18,7 +18,10 @@
     "featured": "docker exec blot-node-app-1 node app/documentation/featured/build",
     "folder": "./scripts/development/folder.sh",
     "translate": "./scripts/development/translate/translate.sh",
-    "preview-newsletter": "./scripts/development/preview-newsletter.sh"
+    "preview-newsletter": "./scripts/development/preview-newsletter.sh",
+    "biome": "biome check .",
+    "biome:format": "biome format .",
+    "biome:lint": "biome lint ."
   },
   "version": "0.0.0",
   "dependencies": {
@@ -82,11 +85,12 @@
     "typeset": "0.2.9",
     "uuid": "3.2.1",
     "vhost": "3.0.2",
-    "yaml": "2.7.0",
     "xml2js": "0.5.0",
+    "yaml": "2.7.0",
     "yauzl": "^3.2.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.12",
     "blessed": "0.1.81",
     "depcheck": "1.4.7",
     "dir-compare": "4.0.0",
