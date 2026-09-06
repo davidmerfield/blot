@@ -170,6 +170,7 @@ TemplateEditor.route("/:templateSlug")
   .all(require("./load/color-inputs"))
   .all(require("./load/url-inputs"))
   .all(require("./load/index-inputs"))
+  .all(require("./load/sort-input"))
   .all(require("./load/navigation-inputs"))
   .all(require("./load/dates"))
   .post(
