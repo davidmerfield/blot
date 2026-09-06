@@ -70,6 +70,8 @@ header > a {
 header {
   {{#navigation_font}}
   font-family: {{{stack}}};
+  font-size: {{{font_size}}}px;
+  line-height: {{{line_height}}};
   height: {{{line_height}}}em;
   {{/navigation_font}}
   {{^navigation_font}}
@@ -141,6 +143,9 @@ nav {
   position: relative;
   {{#collapse_navigation_by_default}}
   width: 100%;
+  {{#is.navigation_alignment.left}}text-align: left;{{/is.navigation_alignment.left}}
+  {{#is.navigation_alignment.right}}text-align: right;{{/is.navigation_alignment.right}}
+  {{#is.navigation_alignment.center}}text-align: center;{{/is.navigation_alignment.center}}
   {{/collapse_navigation_by_default}}
 }
 
@@ -350,6 +355,8 @@ nav a:not([href]) {
     flex-direction: row;
     align-items: center;
     {{#navigation_font}}
+    font-size: {{{font_size}}}px;
+    line-height: {{{line_height}}};
     height: {{{line_height}}}em;
     {{/navigation_font}}
     {{^navigation_font}}
@@ -427,12 +434,16 @@ nav a:not([href]) {
 #hidden-toggle:checked~header nav {
   width: 100%;
   padding: 2em 0;
+  {{#is.navigation_alignment.left}}text-align: left;{{/is.navigation_alignment.left}}
+  {{#is.navigation_alignment.right}}text-align: right;{{/is.navigation_alignment.right}}
+  {{#is.navigation_alignment.center}}text-align: center;{{/is.navigation_alignment.center}}
 }
 
 #hidden-toggle:checked~header nav a {
   display: block;
   margin-left: 0;
   padding: 0.5em 0;
+  text-align: inherit;
 }
 
 #hidden-toggle:checked~header .hamburger-inner:after {
@@ -562,7 +573,11 @@ border-radius: 4px;padding:0.75em 1.25em;font-size:0.9em}
 
 .wide {
     width: calc(100vw - var(--scrollbar-width) - var(--sidebar-width) - 2em);
-    margin-left: calc((100vw - var(--scrollbar-width) - var(--sidebar-width) - {{max_width}}px) * -0.5);
+    /* Centre within the space left of the sidebar. min() keeps the pull-out
+       from turning into a positive (rightward) margin when the configured
+       max-width is wider than the viewport minus the sidebar, which would
+       otherwise push wide content off the right edge. */
+    margin-left: min(-2em, calc((100vw - var(--scrollbar-width) - var(--sidebar-width) - {{max_width}}px) * -0.5));
     margin-right: 0;
 }
 
@@ -576,7 +591,7 @@ border-radius: 4px;padding:0.75em 1.25em;font-size:0.9em}
 
 .wide.left, .wide.right {
   width: calc(100vw - var(--scrollbar-width) - var(--sidebar-width) - 2em);
-  margin-left: calc((100vw - var(--scrollbar-width) - var(--sidebar-width) - {{max_width}}px) * -0.5);
+  margin-left: min(-2em, calc((100vw - var(--scrollbar-width) - var(--sidebar-width) - {{max_width}}px) * -0.5));
   margin-right: -25%;
   float: none;
   overflow: auto; /* collapse internal margins */
@@ -627,12 +642,13 @@ p, li {
 h1, h2, h3, h4, h5, h6 {
   {{#heading_font}}
   font-family: {{{stack}}};
+  line-height: {{{line_height}}};
   {{/heading_font}}
 }
 
-h1 {font-size: 1.5625em;line-height: 36px;font-weight: bold;margin-bottom: 24px;text-wrap:balance}
+h1 {font-size: 1.5625em;line-height: 36px;font-weight: bold;margin-bottom: 24px;text-wrap:balance;{{#heading_font}}font-size: {{{font_size}}}px;line-height: {{{line_height}}};{{/heading_font}}}
 
-h2, h3, h4, h5, h6 {font-size: 1.0625em;font-weight: bold;line-height: 24px;margin: 48px 0 24px;text-wrap:balance}
+h2, h3, h4, h5, h6 {font-size: 1.0625em;font-weight: bold;line-height: 24px;margin: 48px 0 24px;text-wrap:balance;{{#heading_font}}line-height: {{{line_height}}};{{/heading_font}}}
 
 blockquote {
   padding: 0 0 0 12px;

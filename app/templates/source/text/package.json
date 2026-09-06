@@ -16,7 +16,9 @@
       "line_height": 1.4
     },
     "heading_font": {
-      "id": "system-sans"
+      "id": "system-sans",
+      "font_size": 30,
+      "line_height": 1.2
     },
     "navigation_font": {
       "id": "system-sans",
