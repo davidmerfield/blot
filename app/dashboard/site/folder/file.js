@@ -53,7 +53,7 @@ module.exports = async function (blog, path) {
         });
       }),
     ])
-      .then(([ignoredReason, ownEntry, aggregatedEntry]) => {
+      .then(async ([ignoredReason, ownEntry, aggregatedEntry]) => {
         const matchingConverter = converters.find((converter) => {
           return converter.is(path);
         });
@@ -184,7 +184,7 @@ module.exports = async function (blog, path) {
                 ? findMultiFolder(sourcePaths[0])
                 : null) || { entryPath: entry.path };
 
-            entry.multi = buildMultiEntryData({
+            entry.multi = await buildMultiEntryData({
               blogID,
               entry,
               folderDetails,
@@ -366,7 +366,7 @@ function unescapeAttribute(value) {
     .replace(/&amp;/g, "&");
 }
 
-function buildMultiEntryData({
+async function buildMultiEntryData({
   blogID,
   entry,
   folderDetails,
@@ -376,16 +376,13 @@ function buildMultiEntryData({
   const folderPath = folderDetails ? folderDetails.folderPath : null;
   const entryPath = folderDetails ? folderDetails.entryPath : entry.path;
 
+  const existence = await Promise.all(
+    sourcePaths.map((sourcePath) => {
+      return fs.pathExists(localPath(blogID, sourcePath)).catch(() => false);
+    })
+  );
+
   const sources = sourcePaths.map((sourcePath, index) => {
-    const absolute = localPath(blogID, sourcePath);
-    let exists = false;
-
-    try {
-      exists = fs.existsSync(absolute);
-    } catch (err) {
-      exists = false;
-    }
-
     return {
       path: sourcePath,
       name: basename(sourcePath),
@@ -393,7 +390,7 @@ function buildMultiEntryData({
       index: index,
       displayIndex: index + 1,
       current: sourcePath === currentPath,
-      exists: exists,
+      exists: existence[index],
     };
   });
 

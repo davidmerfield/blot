@@ -157,5 +157,4 @@ describe("folder", function () {
       })
       .first();
   }
-
 });
