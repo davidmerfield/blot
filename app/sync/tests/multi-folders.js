@@ -274,4 +274,129 @@ describe("sync multi-folder support", function () {
       );
     });
   });
+
+  it("rebuilds the aggregated entry when a child file is removed", function (done) {
+    var blogID = this.blog.id;
+    var root = this.blogDirectory;
+
+    syncFolder(blogID, function (err, folder, finish) {
+      if (err) return done.fail(err);
+
+      async.series(
+        [
+          function (next) {
+            fs.outputFileSync(path.join(root, "album+/one.md"), "# One");
+            folder.update("/album+/one.md", next);
+          },
+          function (next) {
+            fs.outputFileSync(path.join(root, "album+/two.md"), "# Two");
+            folder.update("/album+/two.md", next);
+          },
+        ],
+        function (seriesErr) {
+          finish(seriesErr, function (finishErr) {
+            if (seriesErr || finishErr)
+              return done.fail(seriesErr || finishErr);
+
+            Entry.get(blogID, "/album", function (initialEntry) {
+              expect(initialEntry).toBeDefined();
+              expect(initialEntry.html.indexOf("One")).toBeGreaterThan(-1);
+              expect(initialEntry.html.indexOf("Two")).toBeGreaterThan(-1);
+
+              fs.removeSync(path.join(root, "album+/two.md"));
+
+              syncFolder(blogID, function (err2, folder2, finish2) {
+                if (err2) return done.fail(err2);
+
+                folder2.update("/album+/two.md", function (updateErr) {
+                  finish2(updateErr, function (finishErr2) {
+                    if (updateErr || finishErr2)
+                      return done.fail(updateErr || finishErr2);
+
+                    Entry.get(blogID, "/album", function (rebuiltEntry) {
+                      expect(rebuiltEntry).toBeDefined();
+                      expect(rebuiltEntry.deleted).toBeFalsy();
+                      expect(
+                        rebuiltEntry.html.indexOf("One")
+                      ).toBeGreaterThan(-1);
+                      expect(rebuiltEntry.html.indexOf("Two")).toBe(-1);
+                      done();
+                    });
+                  });
+                });
+              });
+            });
+          });
+        }
+      );
+    });
+  });
+
+  it("drops the synthesized entry when the + folder is removed", function (done) {
+    var blogID = this.blog.id;
+    var root = this.blogDirectory;
+
+    syncFolder(blogID, function (err, folder, finish) {
+      if (err) return done.fail(err);
+
+      async.series(
+        [
+          function (next) {
+            fs.outputFileSync(path.join(root, "gallery+/a.md"), "# A");
+            folder.update("/gallery+/a.md", next);
+          },
+          function (next) {
+            fs.outputFileSync(path.join(root, "gallery+/b.md"), "# B");
+            folder.update("/gallery+/b.md", next);
+          },
+        ],
+        function (seriesErr) {
+          finish(seriesErr, function (finishErr) {
+            if (seriesErr || finishErr)
+              return done.fail(seriesErr || finishErr);
+
+            Entry.get(blogID, "/gallery", function (initialEntry) {
+              expect(initialEntry).toBeDefined();
+              expect(initialEntry.deleted).toBeFalsy();
+
+              fs.removeSync(path.join(root, "gallery+"));
+
+              syncFolder(blogID, function (err2, folder2, finish2) {
+                if (err2) return done.fail(err2);
+
+                async.series(
+                  [
+                    function (next) {
+                      folder2.update("/gallery+/a.md", next);
+                    },
+                    function (next) {
+                      folder2.update("/gallery+/b.md", next);
+                    },
+                    function (next) {
+                      folder2.update("/gallery+", next);
+                    },
+                  ],
+                  function (seriesErr2) {
+                    finish2(seriesErr2, function (finishErr2) {
+                      if (seriesErr2 || finishErr2)
+                        return done.fail(seriesErr2 || finishErr2);
+
+                      Entry.get(blogID, "/gallery", function (droppedEntry) {
+                        if (droppedEntry) {
+                          expect(droppedEntry.deleted).toBe(true);
+                        } else {
+                          expect(droppedEntry).toBeFalsy();
+                        }
+                        done();
+                      });
+                    });
+                  }
+                );
+              });
+            });
+          });
+        }
+      );
+    });
+  });
 });
