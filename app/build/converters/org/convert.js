@@ -26,6 +26,9 @@ module.exports = function (blog, text, callback) {
     // we use our own highlighint library (hljs) later
     "--no-highlight",
 
+    // Emit span.math with raw TeX for the KaTeX plugin.
+    "--katex",
+
     "--email-obfuscation=none"
   ];
 
@@ -97,18 +100,8 @@ module.exports = function (blog, text, callback) {
 
     const parsed = extractMetadata(text);
 
-    var metadata = "<!--";
-
-    for (var i in parsed.metadata)
-      metadata += "\n" + i + ": " + parsed.metadata[i];
-
-    if (metadata !== "<!--") {
-      metadata += "\n-->\n";
-      text = metadata + parsed.html;
-    }
-
-    debug("Final:", text);
-    callback(null, text);
+    debug("Final:", parsed.html);
+    callback(null, parsed.html, parsed.metadata);
   });
 
   debug("Pre-pandoc", text);

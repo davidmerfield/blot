@@ -11,6 +11,10 @@ module.exports = {
     title: "David",
     template: "SITE:blog",
   },
+  notes: {
+    title: "David",
+    template: "SITE:blog",
+  },
   documentation: {
     title: "Documentation",
     template: "SITE:documentation",
@@ -37,5 +41,27 @@ module.exports = {
   thoughtforms: {
     title: "Thought-forms",
     template: "SITE:studio",
+  },
+  hypertext: {
+    title: "Richard Waller",
+    template: "SITE:hypertext",
+    plugins: {
+      injectTitle: {
+        enabled: true,
+        options: {}
+      },
+      linebreaks: {
+        enabled: true,
+        options: {}
+      },
+      wikilinks: {
+        enabled: true,
+        options: {}
+      },
+      zoom: {
+        enabled: true,
+        options: {}
+      }
+    }
   },
 };

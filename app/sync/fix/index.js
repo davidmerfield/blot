@@ -3,6 +3,7 @@ const entryGhosts = require("./entry-ghosts");
 const listGhosts = require("./list-ghosts");
 const menuGhosts = require("./menu-ghosts");
 const tagGhosts = require("./tag-ghosts");
+const entriesPathIndex = require("./entries-path-index");
 const async = require("async");
 const callOnce = require("helper/callOnce");
 
@@ -18,7 +19,7 @@ module.exports = function (blog, callback) {
   const finalReport = {};
 
   async.eachSeries(
-    [entryGhosts, tagGhosts, listGhosts, menuGhosts],
+    [entryGhosts, tagGhosts, listGhosts, menuGhosts, entriesPathIndex],
     function (fn, next) {
       fn(
         blog,

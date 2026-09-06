@@ -22,6 +22,9 @@ function render($, callback, options = {}) {
     // add an ID for the heading
     heading.attr('id', makeSlug(title));
 
+    // add a special class to the heading
+    heading.addClass("injected-title");
+
     const firstChild = $.root().children().first();
 
     if (firstChild && firstChild.length) {

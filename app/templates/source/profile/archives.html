@@ -5,13 +5,24 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow">
+  <meta property="og:site_name" content="{{title}}">
   <meta content="{{author}}" name="author">
-  <meta content="{{description}}" name="description">
+  <meta name="description" content="{{description}}">
   <title>{{> title}}</title>
+  {{#avatar}}<link rel="icon" href="{{{avatar}}}" type="image/x-icon">{{/avatar}}
   <link rel="preconnect" href="{{{cdn}}}" />
   <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
-  <link href="{{{avatar}}}" rel="icon">
-  <link href="/feed.rss" title="{{title}}" type="application/rss+xml" rel="alternate">
+  <link href="/feed.rss" title="RSS Feed for {{title}}" type="application/rss+xml" rel="alternate">
+
+  <meta property="og:type" content="website">
+  {{#url}}
+  <link rel="canonical" href="{{{url}}}">
+  <meta property="og:url" content="{{{url}}}">
+  {{/url}}
+  <meta property="og:title" content="{{> title}}">
+  <meta property="og:description" content="{{description}}">
+  {{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}
 </head>
 
 <body>

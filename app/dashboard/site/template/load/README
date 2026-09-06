@@ -1,0 +1,65 @@
+# Template editor controls: package.json -> UI mapping
+
+This template editor reads `locals` from a template’s `package.json` and maps them into controls rendered in the dashboard sidebar. The pipeline is driven by the template editor router and a set of “load” middlewares that populate `res.locals` before rendering the settings view.
+
+## End-to-end flow
+
+1. **Template metadata is hydrated**
+   - When a template is loaded, metadata (including `locals`) is fetched from the Template model. The `locals` originally come from a template’s `package.json` (e.g., `app/templates/source/blog/package.json`) via the template package reader (`Template.package.save`) and are stored in template metadata. See the read path in `app/models/template/readFromFolder.js` and the package serializer in `app/models/template/package.js`.
+2. **Load middlewares map locals to control data**
+   - The main template settings route (`TemplateEditor.route("/:templateSlug")`) runs a set of load middlewares in this folder (`load/color-inputs`, `load/font-inputs`, `load/url-inputs`, `load/index-inputs`, `load/navigation-inputs`, etc.). Each middleware inspects `req.template.locals` and adds an array of control configs onto `res.locals` for use in the sidebar view.
+3. **Controls render in the sidebar**
+   - The sidebar template (`app/views/dashboard/template/template-editor-sidebar.html`) includes the control partials (e.g., `{{> color}}`, `{{> font}}`, `{{> template-editor-group}}`) for each populated array (`colors`, `fonts`, `index_page`, `navigation`, `uploads`, etc.).
+4. **Form submissions update locals**
+   - The settings page posts back to `/:templateSlug`. The POST handler parses `locals.*` fields using `formJSON`, merges them into the existing template locals (`prepareTemplateUpdate`), and persists updates via `Template.update` and `writeChangeToFolder`. For uploads, `/:templateSlug/uploads/:key` uses `save/upload-local` to validate and store `_url` locals.
+
+## How existing control types are detected
+
+The load middleware files in this folder follow naming conventions on keys in `req.template.locals`:
+
+- **Colors** (`color-inputs.js`): any key containing `_color` becomes a color picker.
+- **Fonts** (`font-inputs.js`): keys containing `_font` or named exactly `font` become font pickers.
+- **Uploads** (`url-inputs.js`): keys ending in `_url` become upload controls.
+- **Index / layout inputs** (`index-inputs.js`): keys like `page_size`, `spacing`, `thumbnails_per_row`, etc., plus boolean or select/range keys detected via `*_options` or `*_range` conventions.
+- **Navigation inputs** (`navigation-inputs.js`): keys containing `navigation_` or `_navigation`.
+- **Date controls** (`dates.js`): `date_display` and `hide_dates` toggle date-related selectors.
+
+The generic mapping helper `load/util/determine-input.js` converts a key into a control descriptor:
+
+- **Boolean**: if `locals[key]` is a boolean.
+- **Range**: if `locals[key + "_range"]` is present (or `key === "page_size"`).
+- **Select**: if `locals[key + "_options"]` is an array.
+
+These descriptors are rendered by shared partials such as `template-editor-group`, `controls/range.html`, `controls/select.html`, and `controls/boolean.html`.
+
+## Adding a new control
+
+Use this checklist to add a new control type or key:
+
+1. **Add the local to the template’s package.json**
+   - Example:
+     ```json
+     {
+       "locals": {
+         "text_color": "#111111"
+       }
+     }
+     ```
+2. **Choose a naming convention or add a loader**
+   - If your local fits an existing convention (e.g., `_color`, `_font`, `_url`, `*_options`, `*_range`, boolean), it will be picked up automatically.
+   - Otherwise, add a new loader in `app/dashboard/site/template/load/` to map your key(s) into `res.locals.<new_array>`.
+3. **Render the control in the sidebar**
+   - Add a new partial (HTML + optional JS/CSS) under `app/views/dashboard/template/controls/`, or reuse existing ones.
+   - Wire the new array into `template-editor-sidebar.html` with a section similar to Colors or Index page controls.
+4. **Ensure saving works**
+   - For standard `locals.*` inputs, the POST handler on `/:templateSlug` will persist the new value automatically via `prepareTemplateUpdate`.
+   - For uploads, use `_url` locals and the `/:templateSlug/uploads/:key` route (`save/upload-local`) to handle file storage and update the local.
+5. **Template usage**
+   - Reference the new local in template CSS/HTML with `{{local_name}}` so it affects rendering.
+
+## Example: `text_color`
+
+- `locals.text_color` exists in `app/templates/source/blog/package.json`.
+- `load/color-inputs.js` detects keys with `_color` and builds `res.locals.colors` entries.
+- `controls/color.html` renders the control, and `controls/color.js` posts updates back to the settings URL.
+- The POST handler updates `locals.text_color`, and template CSS uses `{{text_color}}` to apply the new value.

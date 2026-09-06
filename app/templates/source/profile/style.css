@@ -1,4 +1,4 @@
-{{{appCSS}}}
+{{{app_css}}}
 
 /*! normalize.css v2.0.1 | MIT License | git.io/normalize */
 
@@ -400,12 +400,14 @@ html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abb
 /* Base */
 html, body {
   height: 100%;
+  background: #fff;
 }
 
 body {
   font-size: 17px;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   color: #424a52;
+  background: #fff;
   text-rendering: optimizeLegibility;
 }
 
@@ -491,6 +493,8 @@ nav.main-nav a.cta:hover {
 
 p, li {
   line-height: 1.7;
+  orphans: 2;
+  widows: 2;
 }
 
 h1, h2, h3 {

@@ -38,6 +38,7 @@ module.exports = function (req, res, next, handle) {
 
     req.blog = blog;
     res.locals.blog = blog;
+    if (req.session) req.session.lastBlogHandle = blog.handle;
     res.locals.base = `/sites/${req.params.handle}`;
     res.locals.dashboardBase = res.locals.base; // alias for use in clients
     res.locals.breadcrumbs.add("Sites", "/sites");

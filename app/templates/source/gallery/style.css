@@ -1,4 +1,4 @@
-{{{appCSS}}}
+{{{app_css}}}
 {{{body_font.styles}}}
 
 body {
@@ -17,6 +17,14 @@ body {
   font-style: {{{.}}};
   {{/style}}
   {{/body_font}}
+}
+
+p,
+li,
+blockquote,
+figcaption {
+  orphans: 2;
+  widows: 2;
 }
 
 header {margin: 2em 0}

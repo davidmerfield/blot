@@ -33,7 +33,7 @@ describe("template", function () {
     // expect to receive both the second view's contents
     // and the contents of the view already created.
     var parentView = {
-      name: "Another " + test.fake.random.word(),
+      name: "parent.html",
       content: "{{> " + test.view.name + "}}",
     };
 

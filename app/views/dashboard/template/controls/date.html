@@ -9,34 +9,27 @@
 
     <input type="hidden" name="_csrf" value="{{csrftoken}}" />
     
-    {{^hide_dates}}
     {{#displayFormats.length}}
-    <div style="display: flex;" id="date_display_container">
+    <div id="date_display_container" style="display: {{#hide_dates}}none{{/hide_dates}}{{^hide_dates}}flex{{/hide_dates}};">
         <select style="font-size:1rem;" id="date_display" name="locals.date_display">
             {{#displayFormats}}
             <option value="{{value}}" {{selected}}>{{date}}</option>
             {{/displayFormats}}
         </select>
-        </div>
+    </div>
     {{/displayFormats.length}}
-    {{/hide_dates}}
-    
 
 {{#show_hide_dates}}
 <label class="bool" style="padding:8px 16px;border-bottom: 1px solid var(--light-border-color);display: block;display: flex;">
-                        	   <span style="flex-grow: 1;">Hide dates:</span>
-                        	   <input type="hidden" value="off" name="locals.hide_dates">
-                                       {{#hide_dates}}
-
-                        	  <input type="checkbox" checked name="locals.hide_dates">
-                                      {{/hide_dates}}
-        {{^hide_dates}}
-                                	  <input type="checkbox" checked name="locals.hide_dates">
-
-        {{/hide_dates}}
-
-                        	</label>
-
+    <span style="flex-grow: 1;">Hide dates:</span>
+    <input type="hidden" value="off" name="locals.hide_dates">
+    {{#hide_dates}}
+    <input type="checkbox" checked name="locals.hide_dates" id="hide_dates_checkbox">
+    {{/hide_dates}}
+    {{^hide_dates}}
+    <input type="checkbox" name="locals.hide_dates" id="hide_dates_checkbox">
+    {{/hide_dates}}
+</label>
     {{/show_hide_dates}}								
 </form>
 </div>

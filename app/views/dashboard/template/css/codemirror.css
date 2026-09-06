@@ -1,20 +1,25 @@
+:root {
+  --codemirror-height: 300px;
+  --codemirror-color: black;
+}
+
 /* BASICS */
 
 .CodeMirror {
-  /* Set height, width, borders, and global font properties here */
   font-family: monospace;
-  height: 300px;
-  color: black;
+  height: var(--codemirror-height);
+  color: var(--codemirror-color);
   direction: ltr;
 }
 
 /* PADDING */
 
 .CodeMirror-lines {
-  padding: 4px 0; /* Vertical padding around content */
+  padding: 0.25em 0;
 }
+
 .CodeMirror pre {
-  padding: 0 4px; /* Horizontal padding of content */
+  padding: 0 0.25em;
 }
 
 .CodeMirror-scrollbar-filler, .CodeMirror-gutter-filler {
@@ -29,7 +34,7 @@
 }
 .CodeMirror-linenumbers {}
 .CodeMirror-linenumber {
-  padding: 0 3px 0 5px;
+  padding: 0 0.1875em 0 0.3125em;
   min-width: 20px;
   text-align: right;
   color: var(--light-text-color);

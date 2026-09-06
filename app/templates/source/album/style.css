@@ -1,6 +1,6 @@
 /* Inserts the styles required by various options
 on the services page of the dashboard */
-{{{appCSS}}}
+{{{app_css}}}
 {{{body_font.styles}}}
 {{{syntax_highlighter.styles}}}
 
@@ -211,6 +211,7 @@ nav a:not([href]) {
 }
 
 #toggle {
+  display: none;
   position: absolute;
   top: calc({{spacing}}rem/2);
   right:  {{spacing}}rem;
@@ -313,7 +314,17 @@ font-feature-settings: 'tnum';
 
     .yield.flex {display: block}
 
+  #toggle {
+    display: block;
+  }
+
 }
+
+{{#infinite_scroll}}
+a.next-page {
+  display: none;
+}
+{{/infinite_scroll}}
 
 
 .edge a {
@@ -411,6 +422,14 @@ font-feature-settings: 'tnum';
 
 .body p {
   margin: 1.4em 0
+}
+
+.body p,
+.body li,
+.body blockquote,
+.body figcaption {
+  orphans: 2;
+  widows: 2;
 }
 
 .body h2 {margin: 2.8em 0 1.4em; font-size: inherit;font-weight: 600}

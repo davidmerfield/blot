@@ -7,6 +7,9 @@ var getViewByURL = require("models/template/index").getViewByURL;
 module.exports = function setup(options) {
   options = options || {};
 
+  // Build the templates into Redis
+  global.test.templates();
+
   // Create test blog before each test and remove it after
   global.test.blog();
 
@@ -19,12 +22,12 @@ module.exports = function setup(options) {
   if (options.createTemplate) {
     beforeEach(function (done) {
       var test = this;
-      var name = test.fake.random.word();
+      var name = "template";
       create(test.blog.id, name, {}, function (err) {
         if (err) return done(err);
         getTemplateList(test.blog.id, function (err, templates) {
           test.template = templates.filter(function (template) {
-            return template.name === name;
+            return template.name === name && template.owner === test.blog.id;
           })[0];
           done();
         });
@@ -79,9 +82,9 @@ module.exports = function setup(options) {
     beforeEach(function (done) {
       var test = this;
       var view = {
-        name: test.fake.random.word(),
-        url: "/" + test.fake.random.word(),
-        content: test.fake.random.word(),
+        name: "index.html",
+        url: "/index",
+        content: "<h1>Index page</h1>",
       };
       setView(test.template.id, view, function (err) {
         if (err) return done(err);

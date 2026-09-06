@@ -5,20 +5,19 @@
     {{> header}}
     <div class="container index">
 
-      {{#entries}}
+      {{#posts}}
       <p>
 
         <a class="first" href="{{{url}}}">{{title}}</a>
-        –
-        <span class="light">{{date}}</span>        
+        <span class="index-date">– <span class="light">{{date}}</span></span>
 <!--                  {{#tags.length}}
             {{#tags}}
             / <a class="light" href="/tagged/{{slug}}">{{name}}</a>
             {{/tags}}
           {{/tags.length}}
---!>          
+-->
       </p>
-      {{/entries}}
+      {{/posts}}
 
       <br><br>
 

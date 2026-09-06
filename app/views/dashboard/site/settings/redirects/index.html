@@ -40,6 +40,15 @@
   
 <br>
 
+{{#redirectWarnings}}
+<p class="redirectWarningsNotice">
+  <span class="icon-small-alert" aria-hidden="true"></span>
+  Blot checks your redirects last, once it has failed to find a post, a page,
+  a template view or a file at a URL. The redirects marked below will never be
+  used because something on your site already answers to the URL they redirect
+  from. <a href="/how/configure/redirects">Read more</a>
+</p>
+{{/redirectWarnings}}
 
 <section id="stage">
   
@@ -66,6 +75,12 @@
         type="text"
         name="redirects.{{ index }}.to"
         value="{{ to }}" />
+      {{#warning}}
+      <span class="redirectWarning" tabindex="0">
+        <span class="icon-small-alert" aria-hidden="true"></span>
+        <span class="redirectWarningMessage" role="note">{{ warning }}</span>
+      </span>
+      {{/warning}}
       <a href="#!" class="removeLink">
         <svg style="fill: currentColor;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"></path></svg>
         Delete
@@ -98,107 +113,6 @@
 </section>
 
 <div class="clear"></div>
-
-
-
-<script src="/js/sortable.js?{{ cacheID }}"></script>
-<script type="text/javascript">
-  const sortable = new Sortable(document.querySelector(".sortable"), {
-    handle: ".handle",
-    ghostClass: "sortable-ghost",
-    onUpdate: function () {
-      const sections = document.querySelectorAll(".sortable section");
-      sections.forEach((section, index) => {
-        const inputs = section.querySelectorAll("input");
-        inputs.forEach((input) => {
-          const name = input.getAttribute("name");
-          const newName =
-            name.slice(0, name.indexOf(".") + 1) +
-            index +
-            name.slice(name.lastIndexOf("."));
-          input.setAttribute("name", newName);
-        });
-      });
-    },
-  });
-
-  const redirectsContainer = document.getElementById("redirects");
-  redirectsContainer.addEventListener("click", function (e) {
-    if (e.target.classList.contains("removeLink")) {
-      e.target.parentNode.remove();
-      e.preventDefault();
-
-      if (!redirectsContainer.querySelector("section")) {
-        const emptyRedirects = document.getElementById("emptyRedirects");
-        emptyRedirects.style.display = "block";
-      }
-
-      return false;
-    }
-  });
-
-  function createRedirect(from) {
-    // hide the empty redirects message
-
-    const emptyRedirects = document.getElementById("emptyRedirects");
-    emptyRedirects.style.display = "none";
-
-    const index = redirectsContainer.querySelectorAll("section").length;
-    const linkID = new Date().getTime();
-    const newlink = document
-      .getElementById("new_redirect")
-      .cloneNode(true);
-    newlink.removeAttribute("style");
-
-    newlink.id += linkID;
-
-    const inputs = newlink.querySelectorAll("input");
-    inputs.forEach((input) => {
-      input.removeAttribute("disabled");
-    });
-
-    const fromInput = newlink.querySelector('input[name*="from"]');
-    fromInput.value = from || "";
-
-    const indexInputs = newlink.querySelectorAll('input[name*="{index}"]');
-    indexInputs.forEach((input) => {
-      const name = input.getAttribute("name");
-      const newName = name.split("{index}").join(index);
-      input.setAttribute("name", newName);
-    });
-
-    redirectsContainer.appendChild(newlink);
-
-    if (from) {
-      newlink.querySelector('input[name*="to"]').focus();
-    } else {
-      newlink.querySelector('input[name*="from"]').focus();
-    }
-
-    e.preventDefault();
-    return false;
-  }
-
-  const addRedirectButton = document.getElementById("addRedirect");
-
-  addRedirectButton.addEventListener("click", function (e) {
-    e.preventDefault();
-    createRedirect();
-    return false;
-  });
-
-  // extract a new redirect from the query 'create'
-  // if it exists, and remove it from the query
-  const url = new URL(window.location.href);
-  const create = url.searchParams.get("create");
-  if (create) {
-    url.searchParams.delete("create");
-    window.history.replaceState({}, "", url.toString());
-    createRedirect(create);
-  }
-</script>
-
-
 
 
 
@@ -236,41 +150,9 @@ Guide to redirects <span style="float: right">&rarr;</span>
 
 </form>
 
-<script type="text/javascript">document.querySelectorAll(".buttons a, .buttons input, .buttons button").forEach(function(a){a.addEventListener("click",function(a){a.target.classList.add("disabled")})})
-</script>
 
 
-<script>
 
-  //  when any of the input checkboxes are toggled
-  var checkboxes = document.querySelectorAll('.plugin input[type=checkbox]');
-  checkboxes.forEach(function(checkbox) {
-    checkbox.addEventListener('change', function() {
-      // serialized and submit the form in the background as a POST request
-      var form = this.closest('form');
-      var el = this;
-  
-      // do nothing
-      // if the checkbox was checked, add the checked class to the parent div which has the class 'plugin'
-      // otherwise remove it
-      if (el.checked) {
-        el.closest('.plugin').classList.add('checked');
-      } else {
-        el.closest('.plugin').classList.remove('checked');
-      }
-  
-      var xhr = new XMLHttpRequest();
-      xhr.open('POST', form.action);
-      xhr.onload = function() {
-        // success callback
-      };
-      xhr.onerror = function() {
-        // error callback
-      };
-      xhr.send(new FormData(form));
-    });
-  });
-  
-  </script>
+
 
   

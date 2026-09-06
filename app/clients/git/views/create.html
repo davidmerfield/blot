@@ -11,7 +11,8 @@
   <input type="hidden" name="_csrf" value="{{csrftoken}}">
   <div class="buttons">
     <button type="submit">Sync with Git</button>
-    <button type="submit" name="cancel" value="cancel">Cancel</button>
+    {{^blog.client}}<a href="{{{dashboardBase}}}/client">Cancel</a>{{/blog.client}}
+    {{#blog.client}}<button type="submit" name="cancel" value="cancel">Cancel</button>{{/blog.client}}
   </div>
 </form>
 

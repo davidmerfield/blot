@@ -1,67 +1,48 @@
 // docker exec -it blot-node-app-1 node scripts/google-drive/reset.js
 
 const reset = require("clients/google-drive/sync/resetFromDrive");
-const get = require("../get/blog");
-const each = require("../each/blog");
-const readline = require("readline");
+const eachBlogOrOneBlog = require("../each/eachBlogOrOneBlog");
+const getConfirmation = require("../util/getConfirmation");
 
-async function askForConfirmation(question) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+let blogCount = 0;
 
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.toLowerCase() === "y");
-    });
-  });
-}
+const processBlog = async (blog) => {
+  if (!blog || blog.isDisabled) return;
+  if (blog.client !== "google-drive") return;
 
-if (process.argv[2]) {
-  get(process.argv[2], async function (err, user, blog) {
-    if (err) throw err;
+  blogCount++;
 
-    console.log("Resetting folder from Blot to Google Drive");
-    await reset(blog.id);
-    console.log("Reset folder from Blot to Google Drive");
+  if (!process.argv[2] && blogCount === 1) {
+    // First blog in all-blogs mode, need confirmation
+    const confirmed = await getConfirmation(
+      "Are you sure you want to reset all these blogs?"
+    );
 
-    process.exit();
-  });
-} else {
-  const blogIDsToReset = [];
-  each(
-    (user, blog, next) => {
-      if (!blog || blog.isDisabled) return next();
-      if (blog.client !== "google-drive") return next();
-
-      blogIDsToReset.push(blog.id);
-      next();
-    },
-    async (err) => {
-      if (err) throw err;
-
-      console.log("Blogs to reset: ", blogIDsToReset.length);
-
-      const confirmed = await askForConfirmation(
-        "Are you sure you want to reset all these blogs? (y/n): "
-      );
-
-      if (!confirmed) {
-        console.log("Reset cancelled!");
-        process.exit();
-      }
-
-      for (let i = 0; i < blogIDsToReset.length; i++) {
-        const blogID = blogIDsToReset[i];
-        console.log("Resetting blog", blogID);
-        await reset(blogID);
-        console.log("Reset blog", blogID);
-      }
-
-      console.log("All blogs reset!");
-      process.exit();
+    if (!confirmed) {
+      console.log("Reset cancelled!");
+      process.exit(0);
     }
-  );
+  }
+
+  console.log("Resetting blog", blog.id);
+  await reset(blog.id);
+  console.log("Reset blog", blog.id);
+};
+
+if (require.main === module) {
+  const identifier = process.argv[2];
+
+  if (!identifier) {
+    console.log("Blogs to reset: (will prompt for confirmation)");
+  }
+
+  eachBlogOrOneBlog(processBlog)
+    .then(() => {
+      console.log("All blogs reset!");
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Error:", err);
+      process.exit(1);
+    });
 }

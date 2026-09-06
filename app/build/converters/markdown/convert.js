@@ -1,4 +1,5 @@
 var spawn = require("child_process").spawn;
+var path = require("path");
 var indentation = require("./indentation");
 var footnotes = require("./footnotes");
 var time = require("helper/time");
@@ -10,8 +11,14 @@ var debug = require("debug")("blot:converters:markdown");
 // '+hard_line_breaks' +
 
 module.exports = function (blog, text, options, callback) {
+  var katexEnabled = Boolean(
+    blog.plugins && blog.plugins.katex && blog.plugins.katex.enabled
+  );
   var extensions =
 
+    // handles highlights ==e.g.==
+    '+mark' +
+    
     // resolves issue with html tags in markdown
     // producing extra <p> tags (see ./tests/examples/mix-of-html-and-markdown.txt)
     "-native_divs" +
@@ -27,10 +34,9 @@ module.exports = function (blog, text, options, callback) {
     // without blank lines between them.
     "-simple_tables" +
     "-multiline_tables" +
-    // We already convert any math with katex
-    // perhaps we should use pandoc to do this
-    // instead of a separate function?
-    "-tex_math_dollars" +
+    // Leave raw TeX alone so the KaTeX plugin can render math consistently
+    // across all text converters.
+    "-raw_tex" +
     // This sometimes throws errors for some reason
     "-yaml_metadata_block" +
     // Don't generate figures automatically
@@ -39,6 +45,15 @@ module.exports = function (blog, text, options, callback) {
     "+lists_without_preceding_blankline" +
     "-blank_before_header" +
     "-blank_before_blockquote";
+
+  // Only consume dollar-delimited math when it will be rendered server-side.
+  // Otherwise Pandoc treats the dollars as ordinary text, preserving them for
+  // client-side renderers such as MathJax.
+  if (katexEnabled) { 
+    extensions += "+tex_math_dollars";
+  } else {
+    extensions += "-tex_math_dollars";
+  }
 
   // This feature fucks with [@twitter]() links
   // perhaps make it an option in future?
@@ -71,6 +86,21 @@ module.exports = function (blog, text, options, callback) {
     // such a dumb default feature... sorry john!
     "--email-obfuscation=none",
   ];
+
+  // Emit span.math with raw TeX for the KaTeX plugin. Without --standalone,
+  // this does not add CDN script or link tags.
+  if (katexEnabled) args.push("--katex");
+
+  if (
+    blog.plugins &&
+    blog.plugins.callouts &&
+    blog.plugins.callouts.enabled === true
+  ) {
+    args.push("--lua-filter");
+    args.push(
+      path.resolve(__dirname, "../../plugins/callouts/callouts.lua")
+    );
+  }
 
   if (options.bib) {
     args.push("-M");

@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="{{lang}}">
 {{> head}}
-<body class="home blog">
+<body class="home blog{{#infinite_scroll}} infinite-scroll neverending{{/infinite_scroll}}">
 <div id="page" class="hfeed site">
-	{{> header}}	
+	{{> header}}
 	<div id="content" class="site-content">
 		<div id="primary" class="content-area">
 			<main id="main" class="site-main" role="main">
-				{{#entries}}						
+				{{#posts}}
 				{{> article}}
-				{{/entries}}
+				{{/posts}}
+				{{^infinite_scroll}}
 				<nav class="navigation paging-navigation" role="navigation">
 					<h1 class="screen-reader-text">Posts navigation</h1>
 					<div class="nav-links">
@@ -26,12 +27,13 @@
 						{{/previous}}
 						{{/pagination}}
 					</div><!-- .nav-links -->
-				</nav><!-- .navigation -->	
+				</nav><!-- .navigation -->
+				{{/infinite_scroll}}
 			</main><!-- #main -->
+			{{#infinite_scroll}}
+			{{#pagination.next}}
 			<script type="text/javascript">
 				var init = {{pagination.next}};
-
-				jQuery('main nav').remove();
 
 jQuery(window).on("scroll", function() {
 	var scrollHeight = jQuery(document).height();
@@ -48,6 +50,8 @@ jQuery(window).on("scroll", function() {
 					});
 				}
 </script>
+			{{/pagination.next}}
+			{{/infinite_scroll}}
 		</div><!-- #primary -->
 	</div><!-- #content -->
 	{{> footer}}

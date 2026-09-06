@@ -87,13 +87,15 @@ form.dashboard-form {
   
   form.dashboard-form label,
   form.dashboard-form input[type="text"],
-  form.dashboard-form input[type="password"] {
+  form.dashboard-form input[type="password"],
+  form.dashboard-form input[type="url"] {
     width: 100%;
     display: block;
   }
   
   form.dashboard-form input[type="text"],
   form.dashboard-form input[type="password"],
+  form.dashboard-form input[type="url"],
   form.dashboard-form textarea {
   margin: 2px 0;
       font-size: 17px;
@@ -117,12 +119,14 @@ form.dashboard-form {
   
   form.dashboard-form input[type="text"]:hover,
   form.dashboard-form input[type="password"]:hover,
+  form.dashboard-form input[type="url"]:hover,
   form.dashboard-form textarea:hover {
     border-color: var(--accent-color)
   }
   
   form.dashboard-form input[type="text"]:focus,
   form.dashboard-form input[type="password"]:focus,
+  form.dashboard-form input[type="url"]:focus,
   form.dashboard-form textarea:focus {
     outline: none;
     z-index: 1;

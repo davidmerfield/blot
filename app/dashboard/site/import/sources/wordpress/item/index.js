@@ -3,7 +3,12 @@ var helper = require("dashboard/site/import/helper");
 var extract_entry = require("./extract_entry");
 var tidy = require("./tidy");
 
-module.exports = function (item, output_directory, callback) {
+module.exports = function (item, output_directory, write, callback) {
+  // Keep compatibility with callers which process a single item directly.
+  if (!callback) {
+    callback = write;
+    write = helper.write;
+  }
   // Filter out items which should not become posts or pages
   if (
     item["wp:post_type"][0] === "nav_menu_item" ||
@@ -22,7 +27,7 @@ module.exports = function (item, output_directory, callback) {
       helper.download_images,
       helper.convert_to_markdown,
       helper.insert_metadata,
-      helper.write,
+      write,
     ],
     function (err, result) {
       if (err) console.error(err);

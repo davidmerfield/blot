@@ -1,5 +1,5 @@
 {{> head}}
-<div style="display: flex;">
+<div class="site-header">
 
     <div style="width:50%;" class="main">
         <a href="/" style="text-decoration: none;padding: 1em 0;font-size: 0.9em;display: block;">{{title}}</a>
@@ -11,15 +11,15 @@
     <div class="main">
          <div class="fade-in entry">
             <br>
-            {{#entries}}
+            {{#posts}}
             <center><small>{{date}}</small></center>
             <div class="announcement">
-                {{{html}}}                
+                {{{html}}}
             </div>
-            {{/entries}}
+            {{/posts}}
          </div>
      </div>
-</div> 
+</div>
 
 
 {{> footer}}

@@ -1,4 +1,4 @@
-{{{appCSS}}}
+{{{app_css}}}
 
 body {
   font: 20px / 1.7 sans-serif;
@@ -7,6 +7,14 @@ body {
   color: gray;
   padding: 1em 4em 5em;
   word-wrap: break-word; /* for long words & urls */
+}
+
+p,
+li,
+blockquote,
+figcaption {
+  orphans: 2;
+  widows: 2;
 }
 
 .container {

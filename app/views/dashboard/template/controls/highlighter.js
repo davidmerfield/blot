@@ -8,7 +8,6 @@ document.querySelectorAll("form.syntax-highlighter").forEach(function (form) {
   const toggleLabel = toggleInput
     ? form.querySelector('label[for="' + toggleInput.id + '"]')
     : null;
-  const shouldStayOpen = form.dataset.expanded === "true";
 
   form.querySelectorAll("button").forEach(function (node) {
     const submitForm = (event) => {
@@ -26,7 +25,7 @@ document.querySelectorAll("form.syntax-highlighter").forEach(function (form) {
         handleAjaxSaveResponse
       );
 
-      if (toggleInput && !shouldStayOpen) {
+      if (toggleInput) {
         toggleInput.checked = false;
       }
 

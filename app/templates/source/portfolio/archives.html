@@ -3,7 +3,8 @@
 <style type="text/css">
   form {
     padding: {{spacing}}rem;
-    display: none;
+    {{#show_search}}display: block;{{/show_search}}
+    {{^show_search}}display: none;{{/show_search}}
   }
 
   input{
@@ -33,7 +34,7 @@
       </noscript>
     {{/thumbnail.small.url}}
     </span>
-    <span><span class="title">{{title}}</span><span class="date">{{date}}</span></span>
+    <span><span class="title">{{title}}</span>{{#date}}<span class="date">{{date}}</span>{{/date}}</span>
   </a>
   {{/entries}}
   {{/months}}

@@ -1,7 +1,10 @@
 {
   "name": "Organization",
   "locals": {
-    "page_size": 12
+    "page_size": 12,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
+    "demo_folder": "lecture"
   },
   "isPublic": false,
   "views": {

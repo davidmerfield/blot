@@ -1,4 +1,4 @@
-{{{appCSS}}}
+{{{app_css}}}
 {{{body_font.styles}}}
 {{{syntax_highlighter_font.styles}}}
 {{{syntax_highlighter.styles}}}
@@ -28,6 +28,16 @@ body {
 
 .entries {
   font-size: calc({{{body_font.font_size}}}px * 1.25);
+}
+
+.entries .entry {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: baseline;
+}
+
+.entries .entry-date {
+  white-space: nowrap;
 }
 
 .entries a + span {opacity:0.75}
@@ -168,6 +178,14 @@ hr.full {width: 100%;border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.15);}
 .caption, blockquote {color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.6)}
 
 blockquote {font-style: italic;margin:0;padding: 0 0 0 1em;border-left: 1px solid rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.3)}
+
+p,
+li,
+blockquote,
+figcaption {
+  orphans: 2;
+  widows: 2;
+}
 
 table {
   word-break: normal;

@@ -5,16 +5,16 @@
 {{> /Profile.txt}}
 </div>
 
-{{#recentEntries.length}}
+{{#recent_entries.length}}
 <h2>
 <a href="/" class="selected">About</a>
 <a href="/writing">Writing</a>
 </h2>
-{{/recentEntries.length}}
+{{/recent_entries.length}}
 
-{{^recentEntries.length}}
+{{^recent_entries.length}}
 <h2>About</h2>
-{{/recentEntries.length}}
+{{/recent_entries.length}}
 
 <div class="subheading-column fade-in arrow-after-link">
 {{> /About.txt}}

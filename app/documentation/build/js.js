@@ -9,7 +9,7 @@ module.exports =
       entryPoints: [join(source, "js/documentation.js")],
       bundle: true,
       minify: true,
-      target: ["chrome58", "firefox57", "safari11", "edge16"],
+      target: "es6",
       outfile: join(destination, "documentation.min.js"),
     });
 
@@ -19,7 +19,7 @@ module.exports =
       entryPoints: [join(source, "js/dashboard.js")],
       bundle: true,
       minify: true,
-      target: ["chrome58", "firefox57", "safari11", "edge16"],
+      target: "es6",
       outfile: join(destination, "dashboard.min.js"),
     });
 
@@ -29,7 +29,7 @@ module.exports =
       entryPoints: [join(source, "dashboard/template/js/index.js")],
       bundle: true,
       minify: true,
-      target: ["chrome58", "firefox57", "safari11", "edge16"],
+      target: "es6",
       outfile: join(destination, "template-editor.min.js"),
     });
 
@@ -39,7 +39,7 @@ module.exports =
       entryPoints: [join(source, "dashboard/template/js/source-code-editor.js")],
       bundle: true,
       minify: true,
-      target: ["chrome58", "firefox57", "safari11", "edge16"],
+      target: "es6",
       outfile: join(destination, "js/template-source-editor.min.js"),
     });
 

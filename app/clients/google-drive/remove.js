@@ -24,7 +24,7 @@ module.exports = async function remove(blogID, path, callback) {
       console.log(prefix(), "Removing fileId from db");
       await remove(fileId);
       console.log(prefix(), "Removing fileId from API");
-      await drive.files.delete({ fileId });
+      await drive.files.delete({ fileId, supportsAllDrives: true });
     } else {
       console.log(prefix(), "WARNING No fileId found in db");
     }

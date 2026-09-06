@@ -18,6 +18,9 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../../ && pwd)"
 SETUP="$DIR/config/openresty/setup.sh"
 COMPOSE_FILE="$DIR/scripts/development/docker-compose.yml"
 FOLDER_SERVER="$DIR/scripts/development/open-folder-server.js"
+TOXIPROXY_SETUP="$DIR/scripts/development/setup-toxiproxy.sh"
+TOXIPROXY_ENABLE="$DIR/scripts/development/enable-toxiproxy-latency.sh"
+TOXIPROXY_DISABLE="$DIR/scripts/development/disable-toxiproxy-latency.sh"
 
 # Env for builds
 export COMPOSE_DOCKER_CLI_BUILD="${COMPOSE_DOCKER_CLI_BUILD:-bake}"
@@ -47,14 +50,58 @@ run_with_timeout() {
 echo "[start] Running setup"
 bash "$SETUP" "$BLOT_HOST"
 
+# Kill any existing process listening on port 3020
+echo "[start] Checking for existing process on port 3020"
+if lsof -ti:3020 >/dev/null 2>&1; then
+  echo "[start] Killing existing process on port 3020"
+  lsof -ti:3020 | xargs kill -9 2>/dev/null || true
+fi
+
+# Create .env if it doesn't exist
+if [ ! -f "$DIR/.env" ]; then
+  echo "[start] Creating .env file"
+  touch "$DIR/.env"
+fi
+
 echo "[start] Launching local folder opener"
 node "$FOLDER_SERVER" &
 FOLDER_PID=$!
 
 compose up --build -d
 
+if [ "${BLOT_USE_TOXIPROXY:-true}" = "true" ]; then
+  echo "[start] Configuring toxiproxy"
+  bash "$TOXIPROXY_SETUP"
+  # Keep startup fast until node-app reports capabilities.
+  bash "$TOXIPROXY_DISABLE" >/dev/null 2>&1 || true
+fi
+
 # start logs in background to avoid 'exit status 130' noise on Ctrl-C
-compose logs -f --no-log-prefix node-app &
+if [ "${BLOT_USE_TOXIPROXY:-true}" = "true" ]; then
+  (
+    FAST_MODE=1
+    compose logs -f --no-log-prefix node-app | while IFS= read -r line; do
+      echo "$line"
+
+      if [[ "$line" == *"[nodemon] restarting due to changes"* ]]; then
+        if [ "$FAST_MODE" -eq 0 ]; then
+          FAST_MODE=1
+          bash "$TOXIPROXY_DISABLE" || true
+        fi
+        continue
+      fi
+
+      if [[ "$line" == *"Local server capabilities"* ]]; then
+        if [ "$FAST_MODE" -eq 1 ]; then
+          FAST_MODE=0
+          bash "$TOXIPROXY_ENABLE" || true
+        fi
+      fi
+    done
+  ) &
+else
+  compose logs -f --no-log-prefix node-app &
+fi
 LOGS_PID=$!
 
 SHUTTING_DOWN=0

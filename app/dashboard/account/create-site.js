@@ -28,7 +28,6 @@ CreateBlog.route("/paypal").get(async (req, res, next) => {
   if (!req.user.paypal.id) return next();
 
   await updatePayPalSubscription(req.user.paypal.id);
-  Email.CREATED_BLOG(req.user.uid);
   res.redirect("/sites/account/create-site");
 });
 

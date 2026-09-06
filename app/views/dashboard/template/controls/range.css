@@ -1,8 +1,12 @@
+:root {
+  --input-control-padding: 0.5em 1em;
+}
+
 .number-input {
-    padding: 8px 16px;
-    border-bottom: 1px solid var(--light-border-color);
+  padding: var(--input-control-padding);
+  border-bottom: 1px solid var(--light-border-color);
 }
 
 .number-input:last-child {
-    border-bottom: none;
+  border-bottom: none;
 }

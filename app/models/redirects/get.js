@@ -10,22 +10,28 @@ module.exports = function (blogID, from, callback, input) {
 
   var fromKey = key.redirect(blogID, from);
 
-  client.get(fromKey, function (err, to) {
-    if (notRegex(to) || !input) {
-      return callback(null, to);
-    }
-
-    // this is only neccessary for from, if from is a regex
-    var redirect;
-
+  (async function () {
     try {
-      redirect = map(input, from, to);
-    } catch (e) {}
+      var to = await client.get(fromKey);
 
-    // WE SHOULD CACHE THIS RESPONSE HERE.... ?
-    // HOW TO BIND IT to the core FROM PATTERN ?
-    redirect = redirect !== from ? redirect : null;
+      if (notRegex(to) || !input) {
+        return callback(null, to);
+      }
 
-    return callback(err, redirect);
-  });
+      // this is only neccessary for from, if from is a regex
+      var redirect;
+
+      try {
+        redirect = map(input, from, to);
+      } catch (e) {}
+
+      // WE SHOULD CACHE THIS RESPONSE HERE.... ?
+      // HOW TO BIND IT to the core FROM PATTERN ?
+      redirect = redirect !== from ? redirect : null;
+
+      return callback(null, redirect);
+    } catch (err) {
+      return callback(err);
+    }
+  })();
 };

@@ -23,7 +23,7 @@ export BLOT_REDIS_HOST=127.0.0.1
 export BLOT_USER=
 
 # Use latest stable version which passes tests
-export BLOT_NODE_VERSION=16.14.0
+export BLOT_NODE_VERSION=22.14.0
 
 # result of which pandoc
 export BLOT_PANDOC_PATH=
@@ -89,12 +89,6 @@ export AWS_SECRET_ACCESS_KEY=
 
 # Mailgun for sending emails to customers
 export BLOT_MAILGUN_KEY=
-
-# Twitter for fetching embed codes
-export BLOT_TWITTER_CONSUMER_KEY=
-export BLOT_TWITTER_CONSUMER_SECRET=
-export BLOT_TWITTER_ACCESS_TOKEN_KEY=
-export BLOT_TWITTER_ACCESS_TOKEN_SECRET=
 
 # Google Drive client for folder syncing
 export BLOT_GOOGLEDRIVE_ID=

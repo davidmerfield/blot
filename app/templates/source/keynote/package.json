@@ -1,7 +1,10 @@
 {
   "name": "Keynote",
   "locals": {
-    "page_size": 12
+    "page_size": 12,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
+    "background_color": "#ffffff"
   },
   "isPublic": false,
   "views": {

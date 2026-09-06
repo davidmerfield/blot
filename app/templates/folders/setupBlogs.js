@@ -30,6 +30,11 @@ module.exports = async function setupBlogs(user, folders) {
 
     const update = config[blog.handle] || {};
 
+    if (update.plugins) {
+      update.plugins = {...blog.plugins, ...update.plugins};
+    }
+
+    
     await setBlog(blog.id, { ...update, client: "" });
 
     blogs[blog.id] = { path, blog };

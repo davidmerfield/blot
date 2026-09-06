@@ -1,10 +1,34 @@
-document.addEventListener("DOMContentLoaded", renderMultiLingual);
+if (typeof document !== "undefined") {
+  document.addEventListener("DOMContentLoaded", renderMultiLingual);
+}
+
+function nextIsCodePre(nextElement) {
+  return Boolean(nextElement && nextElement.tagName === "PRE");
+}
+
+function groupAdjacentCodeBlocks(codeBlocks) {
+  const codeGroups = [];
+  let currentGroup = [];
+
+  codeBlocks.forEach((block, index) => {
+    currentGroup.push(block.parentElement);
+
+    const nextElement = block.parentElement.nextElementSibling;
+    const isLastBlock = index === codeBlocks.length - 1;
+
+    if (!nextIsCodePre(nextElement) || isLastBlock) {
+      codeGroups.push([...currentGroup]);
+      currentGroup = [];
+    }
+  });
+
+  return codeGroups;
+}
 
 function renderMultiLingual() {
   const STORAGE_KEY = 'preferredCodeLanguage';
   const codeBlocks = document.querySelectorAll("pre code");
-  const codeGroups = [];
-  let currentGroup = [];
+  const codeGroups = groupAdjacentCodeBlocks(codeBlocks);
 
   const getLanguage = (codeElement) => {
     return Array.from(codeElement.classList).find((cls) => cls !== "hljs");
@@ -17,21 +41,6 @@ function renderMultiLingual() {
   const saveLanguagePreference = (lang) => {
     localStorage.setItem(STORAGE_KEY, lang);
   };
-
-  codeBlocks.forEach((block, index) => {
-    currentGroup.push(block.parentElement);
-
-    const nextElement = block.parentElement.nextElementSibling;
-    if (
-      !nextElement?.querySelector("code") ||
-      index === codeBlocks.length - 1
-    ) {
-      if (currentGroup.length >= 1) {
-        codeGroups.push([...currentGroup]);
-      }
-      currentGroup = [];
-    }
-  });
 
   codeGroups.forEach((group) => {
     const wrapper = document.createElement("div");
@@ -173,4 +182,11 @@ function renderMultiLingual() {
       }
     });
   }
+}
+
+if (typeof module !== "undefined") {
+  module.exports = {
+    groupAdjacentCodeBlocks,
+    nextIsCodePre,
+  };
 }

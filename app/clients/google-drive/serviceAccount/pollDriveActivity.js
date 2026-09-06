@@ -69,7 +69,10 @@ module.exports = async (serviceAccountId, driveactivity) => {
       // 1) Iterate over each blog. For each blog, queue the check in Bottleneck.
       await database.blog.iterateByServiceAccountId(
         serviceAccountId,
-        async (blogID, { folderId, latestDriveActivityTimestamp }) => {
+        async (blogID, account) => {
+          const { folderId, latestDriveActivityTimestamp } = account;
+          if (!folderId) return;
+
           try {
             await checkDriveActivity(
               blogID,
@@ -84,5 +87,7 @@ module.exports = async (serviceAccountId, driveactivity) => {
     } catch (err) {
       console.error("Error during iterateByServiceAccountId:", err);
     }
+    // wait 5 seconds and avoid blocking the event loop
+    await new Promise(resolve => setTimeout(resolve, 5000));
   }
 };

@@ -5,7 +5,7 @@
 // 
 // https://blot.im/settings/services
 //
-{{{appJS}}}
+{{{app_js}}}
 
 
 

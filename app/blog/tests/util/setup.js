@@ -42,6 +42,41 @@ module.exports = function () {
     this.get = (path, options = {}) =>
       this.fetch(resolveURL(path, blogOrigin), options);
 
+    // Request with path sent literally (no URL normalization). Use for paths
+    // like /%2e%2e/secret.txt or /../secret.txt that would otherwise be
+    // normalized to /secret.txt by the URL API before the request is sent.
+    this.getWithRawPath = (path) => {
+      const url = new URL(this.origin);
+      const http = require("http");
+      const parsedOrigin = new URL(blogOrigin);
+      return new Promise((resolve, reject) => {
+        const opts = {
+          hostname: url.hostname,
+          port: url.port || 80,
+          path,
+          method: "GET",
+          headers: {
+            "x-forwarded-host": parsedOrigin.host,
+            "x-forwarded-proto": parsedOrigin.protocol.replace(":", ""),
+            "X-Forwarded-Proto": parsedOrigin.protocol.replace(":", ""),
+          },
+        };
+        const req = http.request(opts, (res) => {
+          let body = "";
+          res.on("data", (chunk) => (body += chunk));
+          res.on("end", () =>
+            resolve({
+              status: res.statusCode,
+              headers: res.headers,
+              text: () => Promise.resolve(body),
+            })
+          );
+        });
+        req.on("error", reject);
+        req.end();
+      });
+    };
+
     this.text = async (path, options = {}) => {
       const res = await this.get(path, options);
 

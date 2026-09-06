@@ -5,8 +5,14 @@ const Entry = require("models/entry");
 const IgnoredFiles = require("models/ignoredFiles");
 const moment = require("moment");
 const converters = require("build/converters");
+const enabledConverters = require("build/converters/enabled");
 
 require("moment-timezone");
+
+const SYNTHETIC_DEPENDENCY_PREFIXES = [
+  "/__wikilink_slug__/",
+  "/__wikilink_filename__/",
+];
 
 module.exports = async function (blog, path) {
   return new Promise((resolve, reject) => {
@@ -26,12 +32,28 @@ module.exports = async function (blog, path) {
       }),
     ])
       .then(([ignoredReason, entry]) => {
-        
+        const matchingConverter = converters.find((converter) => {
+          return converter.is(path);
+        });
+        const matchingConverterEnabled = enabledConverters(blog).some(
+          (converter) => {
+            return matchingConverter && converter.id === matchingConverter.id;
+          }
+        );
+
         let ignored = {};
 
         if (!entry) {
 
-          if (ignoredReason && ignoredReason === 'WRONG_TYPE') {
+          if (
+            ignoredReason &&
+            ignoredReason === 'WRONG_TYPE' &&
+            matchingConverter &&
+            matchingConverter.id === "img" &&
+            !matchingConverterEnabled
+          ) {
+            ignored.imageConverterDisabled = true;
+          } else if (ignoredReason && ignoredReason === 'WRONG_TYPE') {
             ignored.wrongType = true;
           } else if (path.toLowerCase().indexOf("/templates/") === 0) {
             ignored.templateFile = true;
@@ -59,6 +81,8 @@ module.exports = async function (blog, path) {
         // a dictionary we use to display conditionally in the UI
         file.extension = {};
         file.extension = normalizeExtension(path)
+        file.converter = matchingConverter || null;
+        file.converterEnabled = matchingConverterEnabled;
         
         file.entry = entry;
         file.ignored = ignored;
@@ -92,9 +116,13 @@ module.exports = async function (blog, path) {
             return  { backlink};
           });
 
-          entry.dependencies = entry.dependencies.map((dependency) => {
+          entry.dependencies = entry.dependencies
+            .filter((dependency) => {
+              return !isSyntheticDependency(dependency);
+            })
+            .map((dependency) => {
             return { dependency };
-           });
+            });
 
            entry.internalLinks = entry.internalLinks.map((internalLink) => {
             return { internalLink };
@@ -181,4 +209,10 @@ function normalizeExtension (path) {
   res[extension] = true;
 
   return res;
+}
+
+function isSyntheticDependency (path) {
+  return SYNTHETIC_DEPENDENCY_PREFIXES.some((prefix) => {
+    return path.indexOf(prefix) === 0;
+  });
 }

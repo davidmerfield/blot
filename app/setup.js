@@ -9,12 +9,16 @@ const folders = require("./templates/folders");
 const async = require("async");
 const clfdate = require("helper/clfdate");
 const scheduler = require("./scheduler");
+const logRedisCacheStats = require("./scheduler/redis-cache-stats");
 const flush = require("documentation/tools/flush-cache");
 const configureLocalBlogs = require("./configure-local-blogs");
 const purgeCdnUrls = require("helper/purgeCdnUrls");
 
 const log = (...args) =>
   console.log.apply(null, [clfdate(), "Setup:", ...args]);
+
+// TEMPORARY: see the airlock probe block in runPostListenTasks below.
+const AIRLOCK_PROBE_DELAY_MS = 60 * 1000; // 1 minute
 
 async function runPostListenTasks() {
   log("Running post-listen tasks asynchronously");
@@ -43,12 +47,39 @@ async function runPostListenTasks() {
   }
 
   try {
+    // Each application process owns an independent client-side Redis cache.
+    log("Starting Redis cache stats logging asynchronously");
+    setInterval(logRedisCacheStats, 60 * 1000);
+  } catch (err) {
+    logError("Failed to start Redis cache stats logging", err);
+  }
+
+  try {
     if (config.master) {
       log("Starting scheduler asynchronously");
       scheduler();
     }
   } catch (err) {
     logError("Failed to start scheduler", err);
+  }
+
+  // TEMPORARY: airlock rollout signal only, see app/helper/airlock/probe.js.
+  // Gated to config.master, like the scheduler above, so the three
+  // containers on a host don't all log the same result for the one airlock
+  // sidecar they share. The delay gives the airlock's own HEALTHCHECK and
+  // this container's `docker network connect` (scripts/deploy/index.js) a
+  // moment to land before we try to use it.
+  try {
+    if (config.master) {
+      log("Scheduling airlock probe");
+      setTimeout(() => {
+        require("helper/airlock/probe")().catch((err) =>
+          logError("Airlock probe failed unexpectedly", err)
+        );
+      }, AIRLOCK_PROBE_DELAY_MS);
+    }
+  } catch (err) {
+    logError("Failed to schedule airlock probe", err);
   }
 
   try {
@@ -117,7 +148,6 @@ async function runPostListenTasks() {
       "/dashboard.min.js",
       "/documentation.min.css",
       "/documentation.min.js",
-      "/images/featured.jpg",
     ].map((path) => cdnURL(path, (p) => p));
 
     await purgeCdnUrls(urls);
@@ -157,22 +187,24 @@ function main(callback) {
         // Typically, domain keys like domain:example.com store a blog's ID
         // but since the homepage is not a blog, we just use a placeholder 'X'
         log("Creating SSL key for redis");
-        client.msetnx(
-          ["domain:" + config.host, "X", "domain:www." + config.host, "X"],
-          function (err) {
-            if (err) {
-              console.error(
-                "Unable to set domain flag for host" +
-                  config.host +
-                  ". SSL may not work on site."
-              );
-              console.error(err);
-            }
-
-            log("Created SSL key for redis");
-            callback();
+        (async function () {
+          try {
+            await client.mSetNX({
+              ["domain:" + config.host]: "X",
+              ["domain:www." + config.host]: "X",
+            });
+          } catch (err) {
+            console.error(
+              "Unable to set domain flag for host" +
+                config.host +
+                ". SSL may not work on site."
+            );
+            console.error(err);
           }
-        );
+
+          log("Created SSL key for redis");
+          callback();
+        })();
       },
 
       function (callback) {

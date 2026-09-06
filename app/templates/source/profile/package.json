@@ -2,11 +2,13 @@
   "name": "Profile",
   "isPublic": false,
   "locals": {
-    "author": "Your Name",
-    "description": "A short description.",
-    "email": "email@site.url",
-    "microblog_user": "enter-username",
-    "page_size": 20
+    "author": "",
+    "description": "",
+    "email": "",
+    "microblog_user": "",
+    "page_size": 20,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y"
   },
   "views": {
     "tagged": {
