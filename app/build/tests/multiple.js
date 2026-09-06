@@ -113,6 +113,23 @@ describe("build multiple", function () {
     expect(entry.html).not.toContain("cover.jpg");
   });
 
+  it("unions comma-separated tags from every source file", async function () {
+    var root = path.join(this.blogDirectory, "tagged+");
+
+    fs.outputFileSync(
+      path.join(root, "one.md"),
+      "Tags: alpha, beta\n\n# One"
+    );
+    fs.outputFileSync(
+      path.join(root, "two.md"),
+      "Tags: beta, gamma\n\n# Two"
+    );
+
+    var entry = await this.buildEntry("/tagged+");
+
+    expect(entry.tags.slice().sort()).toEqual(["alpha", "beta", "gamma"]);
+  });
+
   it("returns an EMPTY error when no convertible files are present", function (done) {
     var root = path.join(this.blogDirectory, "void+");
     fs.ensureDirSync(root);

@@ -343,11 +343,18 @@ function sourcePathsForEntry(entry, multiInfo) {
   return [];
 }
 
+function isFolderPostHtml(html) {
+  return typeof html === "string" && html.indexOf('class="multi-file-post"') !== -1;
+}
+
 function sourcePathsFromHtml(html) {
-  if (!html) return [];
+  // Only treat this as a folder post if it carries the generated wrapper.
+  // A normal post can legitimately contain a stray data-file attribute
+  // (e.g. <pre data-file="example.js">) and must not be misclassified.
+  if (!isFolderPostHtml(html)) return [];
 
   const paths = [];
-  const pattern = /data-file="([^"]*)"/g;
+  const pattern = /<section class="multi-file-entry"[^>]*\sdata-file="([^"]*)"/g;
   let match;
 
   while ((match = pattern.exec(html))) {

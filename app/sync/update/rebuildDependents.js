@@ -47,7 +47,15 @@ module.exports = function (blogID, path, callback) {
                 return next();
               }
 
-              build(blog, dependent_path, function (err, updated_dependent) {
+              // A folder post lives at a plus-stripped path that does not
+              // exist on disk (e.g. the aggregate for /album+ is stored at
+              // /album). Rebuild it through its source folder so that
+              // changing a referenced asset does not make build() fail with
+              // ENOENT/WRONGTYPE and delete the still-valid aggregate.
+              var folderSource = folderPostSource(entry);
+              var buildPath = folderSource || dependent_path;
+
+              build(blog, buildPath, function (err, updated_dependent) {
                 if (err) {
                   log("Error rebuilding dependent_path:", dependent_path, err);
 
@@ -68,9 +76,17 @@ module.exports = function (blogID, path, callback) {
                   return;
                 }
 
+                if (
+                  folderSource &&
+                  updated_dependent.metadata &&
+                  updated_dependent.metadata._sourcePaths
+                ) {
+                  delete updated_dependent.metadata._sourcePaths;
+                }
+
                 Entry.set(
                   blogID,
-                  dependent_path,
+                  updated_dependent.path || dependent_path,
                   updated_dependent,
                   function (err) {
                     if (err) log("Error saving dependent_path entry", err);
@@ -90,6 +106,26 @@ module.exports = function (blogID, path, callback) {
     })();
   });
 };
+
+// If the stored entry is a folder post, return the "+" source folder it was
+// built from (read off the data-folder attribute in its generated HTML).
+function folderPostSource(entry) {
+  var html = entry && entry.html;
+
+  if (typeof html !== "string") return null;
+  if (html.indexOf('class="multi-file-post"') === -1) return null;
+
+  var match = html.match(/<section class="multi-file-post"[^>]*\sdata-folder="([^"]*)"/);
+
+  if (!match) return null;
+
+  return String(match[1])
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
 
 function shouldDropDependent(err) {
   if (!err) return false;

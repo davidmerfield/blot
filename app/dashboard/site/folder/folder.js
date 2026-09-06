@@ -13,6 +13,31 @@ const findMultiFolder =
     return null;
   };
 
+// Pull the source-file paths out of a folder post's generated HTML. Returns
+// an empty list for anything that is not a folder post so a stray data-file
+// attribute in an ordinary post cannot be mistaken for aggregation.
+function folderPostSourcePaths(html) {
+  if (typeof html !== "string" || html.indexOf('class="multi-file-post"') === -1)
+    return [];
+
+  const paths = [];
+  const pattern = /<section class="multi-file-entry"[^>]*\sdata-file="([^"]*)"/g;
+  let match;
+
+  while ((match = pattern.exec(html))) {
+    paths.push(
+      String(match[1])
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&")
+    );
+  }
+
+  return paths;
+}
+
 async function getContents(blog, dir) {
   const local = localPath(blog.id, dir);
   const contents = await fs.readdir(local);
@@ -24,15 +49,23 @@ async function getContents(blog, dir) {
   const [entries, stats] = await Promise.all([
     new Promise((resolve) => {
       // Remove 'reject' parameter since it is not being used
-      const keys = filtered.map((item) => {
+      const lookups = filtered.map((item) => {
         const itemPath = pathNormalize(path.join(dir, item));
         const multiInfo = findMultiFolder(itemPath);
-        const lookupPath = multiInfo ? multiInfo.entryPath : itemPath;
-        return `blog:${blog.id}:entry:${pathNormalize(lookupPath)}`;
+        const viaAggregate = !!(
+          multiInfo && pathNormalize(multiInfo.entryPath) !== itemPath
+        );
+        const lookupPath = viaAggregate ? multiInfo.entryPath : itemPath;
+        return {
+          itemPath,
+          viaAggregate,
+          folderPath: multiInfo ? pathNormalize(multiInfo.folderPath) : null,
+          key: `blog:${blog.id}:entry:${pathNormalize(lookupPath)}`,
+        };
       });
       Promise.all(
-        keys.map((key) => {
-          return client.get(key);
+        lookups.map((lookup) => {
+          return client.get(lookup.key);
         })
       )
         .then((res) => {
@@ -42,12 +75,30 @@ async function getContents(blog, dir) {
               const raw = res[index];
               if (!raw) return false;
 
+              let entry;
               try {
-                const entry = typeof raw === "string" ? JSON.parse(raw) : raw;
-                return !!(entry && entry.deleted !== true);
+                entry = typeof raw === "string" ? JSON.parse(raw) : raw;
               } catch (err) {
                 return false;
               }
+
+              if (!entry || entry.deleted === true) return false;
+
+              const lookup = lookups[index];
+
+              // A file inside a "+" folder resolves to the shared aggregate
+              // entry. Only badge it as published if it is actually the "+"
+              // folder itself or one of the folder post's source files -
+              // not an unsupported sibling like archive.zip.
+              if (lookup.viaAggregate) {
+                if (lookup.itemPath === lookup.folderPath) return true;
+                return (
+                  folderPostSourcePaths(entry.html).indexOf(lookup.itemPath) !==
+                  -1
+                );
+              }
+
+              return true;
             })
           );
         })

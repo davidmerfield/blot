@@ -329,6 +329,13 @@ function mergeMetadata(target, source) {
       return;
     }
 
+    // "Tags: one, two" reaches us as a string, so without this every source
+    // file after the first would have its tags dropped. Union them instead.
+    if (isTagKey(key) && isTagValue(result[key]) && isTagValue(incoming)) {
+      result[key] = mergeTagValues(result[key], incoming);
+      return;
+    }
+
     if (result[key] === undefined || result[key] === null || result[key] === "") {
       result[key] = cloneValue(incoming);
     }
@@ -339,6 +346,37 @@ function mergeMetadata(target, source) {
   });
 
   return result;
+}
+
+function isTagKey(key) {
+  return String(key).toLowerCase() === "tags";
+}
+
+function isTagValue(value) {
+  return typeof value === "string" ? value.trim() !== "" : Array.isArray(value);
+}
+
+function mergeTagValues(existing, incoming) {
+  var seen = new Set();
+  var merged = [];
+
+  toTagList(existing)
+    .concat(toTagList(incoming))
+    .forEach(function (tag) {
+      var trimmed = String(tag).trim();
+      if (!trimmed) return;
+      var dedupeKey = trimmed.toLowerCase();
+      if (seen.has(dedupeKey)) return;
+      seen.add(dedupeKey);
+      merged.push(trimmed);
+    });
+
+  return merged.join(", ");
+}
+
+function toTagList(value) {
+  if (Array.isArray(value)) return value;
+  return String(value).split(",");
 }
 
 function escapeAttribute(value) {
