@@ -1,4 +1,6 @@
+var getTemplateSortOptions = require("blog/sortOptions");
 var Entry = require("models/entry");
+var sortEntries = getTemplateSortOptions.sortEntries;
 
 module.exports = function (req, res, callback) {
   var blogID = req.blog.id;
@@ -8,5 +10,10 @@ module.exports = function (req, res, callback) {
     return callback(null, []);
   }
 
-  Entry.search(blogID, req.query.q, callback);
+  var sortOptions = getTemplateSortOptions(req.template && req.template.locals);
+
+  Entry.search(blogID, req.query.q, function (err, results) {
+    if (err) return callback(err);
+    callback(null, sortEntries(results, sortOptions));
+  });
 };

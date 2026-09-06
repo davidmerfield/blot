@@ -239,21 +239,21 @@ describe("posts cache", function () {
     );
   });
 
-  it("forwards the resolved sort selection to fetchTaggedEntries and keeps its order", function (done) {
+  it("forwards the resolved sort selection to fetchTaggedEntries and orders the page", function (done) {
     let received;
     const posts = loadPostsWithTaggedStub(function (blogID, tags, options, cb) {
       received = { blogID, tags, options };
-      cb(null, { entryIDs: ["z.txt", "a.txt", "m.txt"], pagination: {} });
+      cb(null, { entryIDs: ["a.txt", "m.txt", "z.txt"], pagination: {} });
     });
     posts._clear();
 
     spyOn(Entry, "get").and.callFake(function (blogID, ids, cb) {
       // Entry.get preserves input order; return the hydrated entries shuffled
-      // to prove posts.js re-imposes the fetchTaggedEntries order.
+      // to prove posts.js re-applies the selected order.
       cb([
-        { id: "a.txt", dateStamp: 3 },
-        { id: "z.txt", dateStamp: 1 },
         { id: "m.txt", dateStamp: 2 },
+        { id: "z.txt", dateStamp: 1 },
+        { id: "a.txt", dateStamp: 3 },
       ]);
     });
 
@@ -271,9 +271,9 @@ describe("posts cache", function () {
         expect(received.options.sortBy).toBe("id");
         expect(received.options.order).toBe("asc");
         expect(entries.map((entry) => entry.id)).toEqual([
-          "z.txt",
           "a.txt",
           "m.txt",
+          "z.txt",
         ]);
         done();
       }

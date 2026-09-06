@@ -4,6 +4,7 @@ const entriesModel = require("models/entries");
 const LRUCache = require("lru-cache").LRUCache;
 const fetchTaggedEntries = require("./helpers/fetchTaggedEntries");
 const getTemplateSortOptions = require("blog/sortOptions");
+const { sortEntries } = getTemplateSortOptions;
 
 const postsCache = new LRUCache({
   max: 1000,
@@ -156,19 +157,11 @@ module.exports = function (req, res, callback) {
         return callback(err);
       }
 
-      const orderedIDs = result.entryIDs || [];
-
-      Entry.get(blogID, orderedIDs, (entries) => {
-        // fetchTaggedEntries already returns IDs in the requested sort order;
-        // keep that order instead of forcing newest-first by dateStamp.
-        const position = new Map(orderedIDs.map((id, index) => [id, index]));
-        entries.sort(
-          (a, b) =>
-            (position.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
-            (position.get(b.id) ?? Number.MAX_SAFE_INTEGER)
-        );
+      Entry.get(blogID, result.entryIDs || [], (entries) => {
         const payload = {
-          entries,
+          // fetchTaggedEntries paginated in the selected order; re-apply it to
+          // the hydrated page so Entry.get's ordering can't drift.
+          entries: sortEntries(entries, options),
           pagination: result.pagination || {},
         };
         const immutableCopy = deepFreeze(cloneDeep(payload));

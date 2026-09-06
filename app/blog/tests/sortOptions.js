@@ -34,3 +34,68 @@ describe("getTemplateSortOptions", function () {
     });
   });
 });
+
+describe("sortEntries / sortEntryIDs", function () {
+  const { sortEntries, sortEntryIDs, isNewestFirst } = require("../sortOptions");
+
+  // Newest-first by dateStamp is the natural order tag sets and recent_entries
+  // already return.
+  const newestFirst = [
+    { id: "c.txt", dateStamp: 30 },
+    { id: "a.txt", dateStamp: 20 },
+    { id: "b.txt", dateStamp: 10 }
+  ];
+
+  const ids = entries => entries.map(entry => entry.id);
+
+  it("leaves newest-first order untouched for the default selection", function () {
+    expect(ids(sortEntries(newestFirst, {}))).toEqual(["c.txt", "a.txt", "b.txt"]);
+    expect(ids(sortEntries(newestFirst, { sortBy: "date", order: "asc" }))).toEqual(
+      ["c.txt", "a.txt", "b.txt"]
+    );
+    expect(isNewestFirst({})).toBe(true);
+    expect(isNewestFirst({ sortBy: "date", order: "asc" })).toBe(true);
+  });
+
+  it("flips to oldest-first for date + desc", function () {
+    expect(ids(sortEntries(newestFirst, { sortBy: "date", order: "desc" }))).toEqual(
+      ["b.txt", "a.txt", "c.txt"]
+    );
+    expect(isNewestFirst({ sortBy: "date", order: "desc" })).toBe(false);
+  });
+
+  it("sorts by file path for id + asc / desc", function () {
+    expect(ids(sortEntries(newestFirst, { sortBy: "id", order: "asc" }))).toEqual(
+      ["a.txt", "b.txt", "c.txt"]
+    );
+    expect(ids(sortEntries(newestFirst, { sortBy: "id", order: "desc" }))).toEqual(
+      ["c.txt", "b.txt", "a.txt"]
+    );
+  });
+
+  it("does not mutate the input array", function () {
+    const input = newestFirst.slice();
+    sortEntries(input, { sortBy: "id", order: "asc" });
+    expect(ids(input)).toEqual(["c.txt", "a.txt", "b.txt"]);
+  });
+
+  it("orders an ID-only list that arrived newest-first", function () {
+    const list = ["c.txt", "a.txt", "b.txt"];
+    expect(sortEntryIDs(list, {})).toEqual(["c.txt", "a.txt", "b.txt"]);
+    expect(sortEntryIDs(list, { sortBy: "date", order: "desc" })).toEqual([
+      "b.txt",
+      "a.txt",
+      "c.txt"
+    ]);
+    expect(sortEntryIDs(list, { sortBy: "id", order: "asc" })).toEqual([
+      "a.txt",
+      "b.txt",
+      "c.txt"
+    ]);
+    expect(sortEntryIDs(list, { sortBy: "id", order: "desc" })).toEqual([
+      "c.txt",
+      "b.txt",
+      "a.txt"
+    ]);
+  });
+});

@@ -3,6 +3,7 @@ const {
   normalizePathPrefix,
   filterEntryIDsByPathPrefix,
 } = require("helper/pathPrefix");
+const { sortEntryIDs, isNewestFirst } = require("blog/sortOptions");
 
 function buildPagination(current, pageSize, totalEntries) {
   const total = pageSize > 0 ? Math.ceil(totalEntries / pageSize) : 0;
@@ -112,34 +113,6 @@ function intersectMany(arrays) {
   return [...set];
 }
 
-// Tagged entry IDs come back newest-first (the sorted set is scored by
-// dateStamp and read with REV). That matches the dashboard's default
-// "Publish date - Newest first" selection (sort_by "date", order "asc").
-function isDefaultTaggedOrder(sortBy, order) {
-  const by = sortBy || "date";
-  const direction = order || "asc";
-  return by === "date" && direction === "asc";
-}
-
-// Order a full list of tagged entry IDs to match a dashboard sort selection.
-// The incoming list is already newest-first by dateStamp.
-function orderTaggedEntryIDs(entryIDs, sortBy, order) {
-  const ids = (entryIDs || []).slice();
-  const by = sortBy || "date";
-  const direction = order || "asc";
-
-  if (by === "id") {
-    // Entry IDs are lowercased paths; sort lexicographically like models/entries.
-    ids.sort();
-    if (direction === "desc") ids.reverse();
-    return ids;
-  }
-
-  // Date sorting: "asc" keeps newest-first, "desc" flips to oldest-first.
-  if (direction === "desc") ids.reverse();
-  return ids;
-}
-
 function getTag(blogID, slug, opts) {
   return new Promise((resolve, reject) => {
     // Tags.get may accept options for single-tag queries
@@ -161,9 +134,8 @@ async function fetchTaggedEntriesInternal(blogID, slugs, options) {
   const pg = parsePaginationOptions(options);
   const normalized = normalizeSlugs(slugs);
   const pathPrefix = normalizePathPrefix(options.pathPrefix);
-  const sortBy = options.sortBy;
-  const order = options.order;
-  const defaultOrder = isDefaultTaggedOrder(sortBy, order);
+  const sortOptions = { sortBy: options.sortBy, order: options.order };
+  const newestFirst = isNewestFirst(sortOptions);
 
   if (!normalized.length) {
     return buildMultiTagResult({
@@ -180,7 +152,7 @@ async function fetchTaggedEntriesInternal(blogID, slugs, options) {
     // Redis can only paginate in its own (newest-first) order. For any other
     // dashboard selection we must pull the whole list and order it ourselves
     // before slicing, otherwise pagination picks the wrong entries.
-    const canPageInRedis = !pathPrefix && pg.hasPagination && defaultOrder;
+    const canPageInRedis = !pathPrefix && pg.hasPagination && newestFirst;
     const tagOptions = canPageInRedis
       ? { limit: pg.limit, offset: pg.offset }
       : undefined;
@@ -192,7 +164,7 @@ async function fetchTaggedEntriesInternal(blogID, slugs, options) {
     if (canPageInRedis) {
       finalEntryIDs = filteredEntryIDs;
     } else {
-      const orderedEntryIDs = orderTaggedEntryIDs(filteredEntryIDs, sortBy, order);
+      const orderedEntryIDs = sortEntryIDs(filteredEntryIDs, sortOptions);
       finalEntryIDs = pg.hasPagination
         ? orderedEntryIDs.slice(pg.offset, pg.offset + pg.limit)
         : orderedEntryIDs;
@@ -217,7 +189,7 @@ async function fetchTaggedEntriesInternal(blogID, slugs, options) {
   const intersectedEntryIDs = intersectMany(lists);
   const prettyTags = results.map((result) => result.prettyTag);
   const filteredEntryIDs = applyPathPrefixFiltering(intersectedEntryIDs, pathPrefix);
-  const orderedEntryIDs = orderTaggedEntryIDs(filteredEntryIDs, sortBy, order);
+  const orderedEntryIDs = sortEntryIDs(filteredEntryIDs, sortOptions);
   const finalEntryIDs = pg.hasPagination
     ? orderedEntryIDs.slice(pg.offset, pg.offset + pg.limit)
     : orderedEntryIDs;
