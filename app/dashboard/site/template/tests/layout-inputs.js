@@ -39,6 +39,23 @@ describe("layout-inputs sort mapping", function () {
     expect(locals.sort_order).toBe("asc");
   });
 
+  it("accepts a legacy raw sort_by=id submission, keeping the stored order", function () {
+    const locals = save(
+      { sort_by: "id", sort_order: "desc", page_size: 8 },
+      { "locals.sort_by": "id" }
+    );
+
+    expect(locals.sort_by).toBe("id");
+    expect(locals.sort_order).toBe("desc");
+  });
+
+  it("accepts a legacy raw sort_by=id submission with no stored order", function () {
+    const locals = save({ sort_by: "id" }, { "locals.sort_by": "id" });
+
+    expect(locals.sort_by).toBe("id");
+    expect(locals.sort_order).toBe("asc");
+  });
+
   it("does not reset existing sort when another layout control is saved", function () {
     const locals = save(
       { sort_by: "id", sort_order: "asc", page_size: 8 },

@@ -49,7 +49,10 @@ describe("post sorting across retrieve helpers", function () {
     const searchResults = require("../search_results");
 
     beforeEach(function () {
-      spyOn(Entry, "search").and.callFake((blogID, query, cb) => cb(null, newestFirst()));
+      spyOn(Entry, "search").and.callFake(function (blogID, query, options, cb) {
+        if (typeof options === "function") cb = options;
+        cb(null, newestFirst());
+      });
     });
 
     it("keeps newest-first by default", async function () {

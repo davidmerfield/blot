@@ -5,13 +5,18 @@ const SORT_OPTIONS = require("../sort-options");
 // search results and feeds — so it is built here as its own control rather than
 // alongside the index-page layout inputs.
 
+// Respect a template's sort_by_options / sort_order_options allowlists, the
+// same way the now-removed raw sort_by / sort_order selects did.
+const narrow = (options, allowed, pick) => {
+  if (!Array.isArray(allowed) || !allowed.length) return options;
+  const filtered = options.filter(option => allowed.includes(pick(option)));
+  return filtered.length ? filtered : options;
+};
+
 const availableOptions = locals => {
-  const allowed = locals?.sort_by_options;
-
-  if (!Array.isArray(allowed) || !allowed.length) return SORT_OPTIONS;
-
-  const filtered = SORT_OPTIONS.filter(option => allowed.includes(option.sort_by));
-  return filtered.length ? filtered : SORT_OPTIONS;
+  let options = narrow(SORT_OPTIONS, locals?.sort_by_options, o => o.sort_by);
+  options = narrow(options, locals?.sort_order_options, o => o.sort_order);
+  return options;
 };
 
 const buildSortControl = locals => {

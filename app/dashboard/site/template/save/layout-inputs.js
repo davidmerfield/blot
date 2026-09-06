@@ -25,22 +25,26 @@ module.exports = function (req, res, next) {
   }
 
   // The Post sorting select posts its own form as `locals.sort_by` carrying a
-  // composite value like "date_asc". Only rewrite sorting when that form was
-  // submitted (or a leftover composite value is still stored); every other
-  // sidebar form must leave the existing sort settings untouched.
+  // composite value like "date_asc". Every other sidebar form must leave the
+  // existing sort settings untouched.
   const submitted =
     req.body &&
     (req.body["locals.sort_by"] ??
       (req.body.locals && req.body.locals.sort_by));
-  const composite =
-    submitted !== undefined
-      ? submitted
-      : SORT_OPTIONS.some(option => option.value === req.locals.sort_by)
-      ? req.locals.sort_by
-      : undefined;
 
-  if (composite !== undefined) {
-    applySortSelection(req.locals, SORT_OPTIONS.resolve({ value: composite }));
+  if (submitted !== undefined) {
+    // Accept both the new composite values and the legacy raw "id" / "date"
+    // still posted by an old open dashboard tab (which keeps the stored order).
+    const option =
+      SORT_OPTIONS.find(o => o.value === submitted) ||
+      SORT_OPTIONS.resolve({
+        sort_by: submitted,
+        sort_order: req.locals.sort_order
+      });
+    applySortSelection(req.locals, option);
+  } else if (SORT_OPTIONS.some(o => o.value === req.locals.sort_by)) {
+    // A leftover composite value ended up stored in locals; normalise it.
+    applySortSelection(req.locals, SORT_OPTIONS.resolve({ value: req.locals.sort_by }));
   }
 
   next();

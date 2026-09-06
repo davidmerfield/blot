@@ -56,4 +56,19 @@ describe("sort-input (Post sorting control)", function () {
     expect(control.options.map(o => o.value)).toEqual(["id_asc", "id_desc"]);
     expect(selected(control).value).toBe("id_asc");
   });
+
+  it("also honours sort_order_options", function () {
+    const control = load({ sort_order_options: ["asc"] });
+    expect(control.options.map(o => o.value)).toEqual(["date_asc", "id_asc"]);
+  });
+
+  it("combines both allowlists", function () {
+    const control = load({
+      sort_by: "id",
+      sort_by_options: ["id"],
+      sort_order_options: ["asc"]
+    });
+    expect(control.options.map(o => o.value)).toEqual(["id_asc"]);
+    expect(selected(control).value).toBe("id_asc");
+  });
 });

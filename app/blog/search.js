@@ -26,8 +26,8 @@ module.exports = async (req, res, next) => {
 
     if (query) {
       res.locals.query = query;
-      const results = (await search(req.blog.id, query)) || [];
       const sortOptions = getTemplateSortOptions(req.template && req.template.locals);
+      const results = (await search(req.blog.id, query, sortOptions)) || [];
       res.locals.entries = getTemplateSortOptions.sortEntries(results, sortOptions);
     }
 

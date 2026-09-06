@@ -12,7 +12,9 @@ module.exports = function (req, res, callback) {
 
   var sortOptions = getTemplateSortOptions(req.template && req.template.locals);
 
-  Entry.search(blogID, req.query.q, function (err, results) {
+  // Entry.search applies the ordering before its result cap; sortEntries here
+  // also covers the default (no explicit sort_by) case.
+  Entry.search(blogID, req.query.q, sortOptions, function (err, results) {
     if (err) return callback(err);
     callback(null, sortEntries(results, sortOptions));
   });

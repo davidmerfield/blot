@@ -1,6 +1,8 @@
 const ensure = require("helper/ensure");
 const client = require("models/client");
 const { promisify } = require("util");
+const { sortEntries } = require("blog/sortOptions");
+const metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 const get = promisify((blogID, entryIDs, callback) =>
   require("./get")(blogID, entryIDs, function (entries) {
     callback(null, entries);
@@ -9,8 +11,11 @@ const get = promisify((blogID, entryIDs, callback) =>
 
 const TIMEOUT = 8000;
 const MAX_RESULTS = 25;
+// When a sort is requested we cannot stop at the first MAX_RESULTS matches in
+// Redis scan order — we need the whole match set so the first page is correct
+// in the chosen order. Bounded by this ceiling and the timeout.
+const MAX_COLLECT = 500;
 const CHUNK_SIZE = 200;
-const metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 
 function buildSearchText(entry) {
   return [
@@ -37,7 +42,13 @@ function isFalsy(value) {
   return value === "false" || value === "no" || value === "0";
 }
 
-module.exports = async function (blogID, query, callback) {
+module.exports = async function (blogID, query, options, callback) {
+  if (typeof options === "function") {
+    callback = options;
+    options = {};
+  }
+  options = options || {};
+
   ensure(blogID, "string").and(query, "string").and(callback, "function");
 
   const terms = query.split(/\s+/)
@@ -48,99 +59,47 @@ module.exports = async function (blogID, query, callback) {
     return callback(null, []);
   }
 
+  const sorted = !!options.sortBy;
+  const collectLimit = sorted ? MAX_COLLECT : MAX_RESULTS;
+
   const startTime = Date.now();
+  const timedOut = () => Date.now() - startTime > TIMEOUT;
   const results = [];
-  let cursor = '0';
+
+  const isMatch = entry => {
+    if (!isSearchable(entry)) return false;
+    const text = buildSearchText(entry);
+    return terms.length === 1
+      ? text.includes(terms[0])
+      : terms.every(term => text.includes(term));
+  };
+
+  const scanList = async key => {
+    let cursor = "0";
+    do {
+      if (timedOut() || results.length >= collectLimit) return;
+
+      const scanned = await client.zScan(key, cursor, { COUNT: CHUNK_SIZE });
+      cursor = String(scanned.cursor);
+
+      const ids = (scanned.members || []).map(member => member.value);
+      if (!ids.length) continue;
+
+      for (const entry of await get(blogID, ids)) {
+        if (isMatch(entry)) results.push(entry);
+        if (results.length >= collectLimit || timedOut()) return;
+      }
+    } while (cursor !== "0");
+  };
 
   try {
-    do {
-      if (Date.now() - startTime > TIMEOUT) {
-        return callback(null, results);
-      }
+    // The 'entries' list (rather than 'all') skips deleted entries; the 'pages'
+    // list picks up any pages opted into search via metadata.
+    await scanList("blog:" + blogID + ":entries");
+    await scanList("blog:" + blogID + ":pages");
 
-      // we use the entries list rather than the 'all' list to skip deleted entries
-      // this can badly affect performance if there are a lot of deleted entries
-      const scannedEntries = await client.zScan(
-        "blog:" + blogID + ":entries",
-        cursor,
-        { COUNT: CHUNK_SIZE }
-      );
-      cursor = String(scannedEntries.cursor);
-
-      const ids = (scannedEntries.members || []).map(function (member) {
-        return member.value;
-      });
-      if (!ids.length) continue;
-
-      const entries = await get(blogID, ids);
-
-      for (const entry of entries) {
-        if (!isSearchable(entry)) continue;
-
-        const text = buildSearchText(entry);
-        
-        const matches = terms.length === 1 
-          ? text.includes(terms[0])
-          : terms.every(term => text.includes(term));
-
-        if (matches) {
-          results.push(entry);
-          if (results.length >= MAX_RESULTS) {
-            return callback(null, results);
-          }
-        }
-
-        if (Date.now() - startTime > TIMEOUT) {
-          return callback(null, results);
-        }
-      }
-    } while (cursor !== '0');
-
-
-    // now  we check the 'pages' list for any pages which might be searchable
-    cursor = '0';
-    do {
-      if (Date.now() - startTime > TIMEOUT) {
-        return callback(null, results);
-      }
-
-      const scannedPages = await client.zScan(
-        "blog:" + blogID + ":pages",
-        cursor,
-        { COUNT: CHUNK_SIZE }
-      );
-      cursor = String(scannedPages.cursor);
-
-      const ids = (scannedPages.members || []).map(function (member) {
-        return member.value;
-      });
-      if (!ids.length) continue;
-
-      const entries = await get(blogID, ids);
-
-      for (const entry of entries) {
-        if (!isSearchable(entry)) continue;
-
-        const text = buildSearchText(entry);
-        
-        const matches = terms.length === 1 
-          ? text.includes(terms[0])
-          : terms.every(term => text.includes(term));
-
-        if (matches) {
-          results.push(entry);
-          if (results.length >= MAX_RESULTS) {
-            return callback(null, results);
-          }
-        }
-
-        if (Date.now() - startTime > TIMEOUT) {
-          return callback(null, results);
-        }
-      }
-    } while (cursor !== '0');
-
-    return callback(null, results);
+    const ordered = sorted ? sortEntries(results, options) : results;
+    return callback(null, ordered.slice(0, MAX_RESULTS));
   } catch (error) {
     return callback(error);
   }
