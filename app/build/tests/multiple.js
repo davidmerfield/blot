@@ -130,6 +130,39 @@ describe("build multiple", function () {
     expect(entry.tags.slice().sort()).toEqual(["alpha", "beta", "gamma"]);
   });
 
+  it("unions tags even when source files spell the key with different case", async function () {
+    var root = path.join(this.blogDirectory, "tagcase+");
+
+    fs.outputFileSync(path.join(root, "one.md"), "Tags: alpha\n\n# One");
+    fs.outputFileSync(path.join(root, "two.md"), "tags: beta\n\n# Two");
+
+    var entry = await this.buildEntry("/tagcase+");
+
+    expect(entry.tags.slice().sort()).toEqual(["alpha", "beta"]);
+  });
+
+  it("excludes .textbundle asset files from folder post sources", async function () {
+    var root = path.join(this.blogDirectory, "bundle+");
+
+    fs.outputFileSync(
+      path.join(root, "note.textbundle", "text.md"),
+      "# Note\n\n![Pic](assets/pic.png)"
+    );
+    fs.outputFileSync(
+      path.join(root, "note.textbundle", "assets", "pic.png"),
+      Buffer.from("fake")
+    );
+
+    var entry = await this.buildEntry("/bundle+");
+
+    expect(entry.metadata._sourcePaths).not.toContain(
+      "/bundle+/note.textbundle/assets/pic.png"
+    );
+    expect(entry.html).not.toContain(
+      'data-file="/bundle+/note.textbundle/assets/pic.png"'
+    );
+  });
+
   it("returns an EMPTY error when no convertible files are present", function (done) {
     var root = path.join(this.blogDirectory, "void+");
     fs.ensureDirSync(root);

@@ -302,7 +302,10 @@ function shouldIgnore(entryPath) {
   return (
     normalized.startsWith("/public/") ||
     normalized.includes("/_") ||
-    normalized.includes("/.")
+    normalized.includes("/.") ||
+    // textbundle asset files are dependencies of their .textbundle, not
+    // standalone content - matches the rule in app/sync/update/set.js
+    normalized.includes(".textbundle/assets/")
   );
 }
 
@@ -316,8 +319,16 @@ function mergeMetadata(target, source) {
     result[key] = cloneValue(target[key]);
   });
 
-  Object.keys(source).forEach(function (key) {
-    var incoming = source[key];
+  Object.keys(source).forEach(function (rawKey) {
+    var incoming = source[rawKey];
+
+    // Resolve tag keys case-insensitively ("Tags" vs "tags") so both spellings
+    // merge into a single key instead of surviving as two.
+    var key = rawKey;
+    if (isTagKey(rawKey)) {
+      var existingTagKey = Object.keys(result).filter(isTagKey)[0];
+      if (existingTagKey) key = existingTagKey;
+    }
 
     if (Array.isArray(result[key]) && Array.isArray(incoming)) {
       result[key] = Array.from(new Set(result[key].concat(incoming)));
