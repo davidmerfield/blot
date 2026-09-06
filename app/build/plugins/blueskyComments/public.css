@@ -10,7 +10,7 @@
 .comment-container a,
 #main-post-actions {
   text-decoration: none;
-  color: var(--highlight2);
+  color: var(--highlight2, var(--link, currentColor));
 }
 
 .post-actions {
@@ -29,12 +29,10 @@
   display: inline-block;
 }
 
-.post-actions div:hover {
-  color: var(--accent);
-}
-
+.post-actions div:hover,
 .post-actions div:hover svg {
-  stroke: var(--accent);
+  color: var(--accent, inherit);
+  fill: currentColor;
 }
 
 /* Comment Section */
@@ -54,7 +52,7 @@
 }
 
 #comments .comment .comment-container p {
-  color: var(--accent);
+  color: var(--accent, inherit);
   margin: 0.25em 0;
 }
 
@@ -76,7 +74,7 @@
   left: 16px;
   width: 20px;
   height: calc(100% - 41px - 0.5em);
-  border: 2px solid var(--highlight);
+  border: 2px solid var(--highlight, currentColor);
   border-top: none;
   border-right: none;
   border-radius: 0 0 0 20px;

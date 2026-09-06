@@ -1,33 +1,38 @@
 <h1>Bluesky comments</h1>
 
 <p>
-  Blot’s Bluesky comments plugin lets you embed the discussion for a Bluesky
-  post at the end of any entry. The comments are rendered by the
-  <a href="https://github.com/bluesky-social/bluesky-comments" rel="nofollow">Bluesky comments widget</a>
-  and require the identifier of the Bluesky post you want to attach.
+  Blot’s Bluesky comments plugin shows the replies to a Bluesky post at the end
+  of an entry. Blot looks for the Bluesky post that links to the page and renders
+  its thread as a comment section, following the approach described in
+  <a href="https://emilyliu.me/blog/comments" rel="nofollow">Emily Liu’s write-up</a>.
 </p>
 
 <ol>
-  <li>Open the <a href="/settings/services">Services</a> page and enable <strong>Bluesky comments</strong>.</li>
+  <li>Open the <a href="/sites/default/settings/services">Services</a> page and enable <strong>Bluesky comments</strong>.</li>
   <li>
-    Enter the default Bluesky handle you would like to use when loading the widget.
-    This should usually be the author of the blog or the account responsible for the
-    linked discussion.
+    Enter your Bluesky profile URL (for example
+    <code>https://bsky.app/profile/example.bsky.social</code>). Blot uses this to
+    find the post you made linking to each page.
   </li>
   <li>
-    For every post that should show Bluesky comments, include a
-    <code>Bluesky</code> field in the entry’s metadata set to the full post URI
-    (for example <code>at://did:plc:example/app.bsky.feed.post/123</code>).
+    Publish a post on Bluesky that links to the entry’s URL. Once it is live, the
+    replies appear beneath the entry. Until then, nothing is shown.
   </li>
 </ol>
 
+<h2>Pinning a specific thread</h2>
 <p>
-  Without the Bluesky metadata field the widget will not appear, even if the
-  plugin is enabled. Comments remain hidden on pages unless you explicitly set
-  <code>Comments: Yes</code> in the page metadata.
+  To attach a particular Bluesky post to an entry instead of relying on the
+  automatic lookup, add a <code>Bluesky</code> field to the entry’s
+  <a href="/how/metadata">metadata</a> set to the post’s URL or AT URI, for
+  example:
 </p>
 
+<pre><code>Bluesky: https://bsky.app/profile/example.bsky.social/post/3k7abcde2fg2h</code></pre>
+
 <p>
-  You can combine the plugin with other comment systems and switch between them
-  whenever you need from the Services page.
+  Comments follow the usual rules: they are shown on posts and hidden on pages
+  unless you set <code>Comments: Yes</code> in the page’s metadata, and any entry
+  with <code>Comments: No</code> hides them. You can switch between comment
+  systems at any time from the Services page.
 </p>

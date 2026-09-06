@@ -1,8 +1,6 @@
 <div id="comments"
-    data-uri="{{{entry.metadata.bluesky}}}"
-    data-author="{{plugins.blueskyComments.options.authorURI}}">
-    <h2>Comments</h2>
-</div>
+    data-uri="{{entry.metadataLowercase.bluesky}}"
+    data-author="{{plugins.blueskyComments.options.authorURI}}"></div>
 
 <!-- Hidden templates -->
 <template id="template-post-actions">
@@ -24,11 +22,11 @@
 
 <template id="template-comment-container">
     <div class="comment-container">
-        <a href="" target="_blank" data-post-url>
-            <img src="" alt="avatar" data-avatar>
+        <a href="" target="_blank" rel="noopener" data-post-url>
+            <img alt="avatar" data-avatar>
         </a>
         <div>
-            <a href="" target="_blank" data-post-url>
+            <a href="" target="_blank" rel="noopener" data-post-url>
                 <strong class="author" data-display-name></strong>
             </a>
             <p data-text></p>
@@ -44,15 +42,15 @@
 </template>
 
 <template id="template-reply-link">
-    <a href="" target="_blank" id="see-more" data-post-url>See more on Bluesky</a>
+    <a href="" target="_blank" rel="noopener" id="see-more" data-post-url>See more on Bluesky</a>
 </template>
 
 <template id="template-comments-header">
     <h2>Comments</h2>
-    <p><a href="" target="_blank" data-post-url>Reply on Bluesky</a></p>
+    <p><a href="" target="_blank" rel="noopener" data-post-url>Reply on Bluesky</a></p>
 </template>
 
 <template id="template-error-message">
     <h2>Comments</h2>
-    <p><span data-message></span> <a href="https://bsky.app" target="_blank">Post on Bluesky</a> to start the discussion!</p>
+    <p><span data-message></span> <a href="https://bsky.app" target="_blank" rel="noopener">Post on Bluesky</a> to start the discussion!</p>
 </template>
