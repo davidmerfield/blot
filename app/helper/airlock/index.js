@@ -31,6 +31,11 @@ const browserUrl = (config.airlock && config.airlock.browser_url) || null;
 const proxyConfigured = !!proxyUrl;
 const browserConfigured = !!browserUrl;
 
+const parsedProxy = proxyUrl ? new URL(proxyUrl) : null;
+
+const VERIFY_USER_AGENT = "Blot (+https://blot.im)";
+const MAX_VERIFY_REDIRECTS = 5;
+
 // node-fetch's `agent` option accepts a function of the parsed URL, so one
 // value covers both http: and https: targets (and redirects between them).
 const httpProxyAgent = proxyUrl ? new HttpProxyAgent(proxyUrl) : null;
@@ -79,63 +84,117 @@ function abortError() {
   return e;
 }
 
-// GET a fixed destination IP through the airlock, with an explicit Host
-// header. This exists for app/dashboard/site/domain/verify.js: it resolves
-// the domain itself (authoritative nameservers + public fallback resolvers)
-// and must connect to THAT IP - during DNS propagation or split-horizon the
-// airlock's own resolver can disagree. A normal proxied fetch can't express
-// this: http-proxy-agent rebuilds the request-line URI from the Host header,
-// so the IP is dropped and the proxy re-resolves the name. Here the proxied
-// request line targets `http://<ip><path>` (tinyproxy connects to that IP;
-// the egress filter still re-checks it) while the Host header carries the
-// real domain so Blot's proxy identifies the blog. Fails closed like fetch().
-// Resolves { status, text }.
+// GET a path from a fixed destination IP through the airlock, with an
+// explicit Host header. This exists for app/dashboard/site/domain/verify.js:
+// it resolves the domain itself (authoritative nameservers + public fallback
+// resolvers) and must make the FIRST connection to THAT IP - during DNS
+// propagation or split-horizon the airlock's own resolver can disagree, and
+// a normal proxied fetch can't express this (http-proxy-agent rebuilds the
+// request-line URI from the Host header, so the IP is dropped and the proxy
+// re-resolves the name).
+//
+// Hop 0 targets `http://<ip><path>` with Host: <domain> - tinyproxy connects
+// to that exact IP, the egress filter still re-checks it. If hop 0 redirects
+// (a very common HTTP->HTTPS bounce via a CDN or reverse proxy), the rest of
+// the chain goes through the normal proxied fetch() below - still
+// egress-filtered - since the pinning only ever mattered for the initial
+// connection to the user-declared A record. Fails closed like fetch().
+// Rejects on request/response error, timeout, or abort. Resolves
+// { status, text }.
 function getViaIP(ip, path, { host, timeout, signal, label } = {}) {
   assertProxyReady(label || "domain/verify");
 
   return new Promise((resolve, reject) => {
-    const headers = { Host: host, Connection: "close" };
-    let options;
+    let settled = false;
+    let timer = null;
 
-    if (proxyUrl) {
-      const proxy = new URL(proxyUrl);
-      options = {
-        host: proxy.hostname,
-        port: proxy.port || 80,
-        method: "GET",
-        path: `http://${ip}${path}`,
-        headers,
-      };
-    } else {
-      options = { host: ip, port: 80, method: "GET", path, headers };
+    const done = (fn) => (value) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      if (signal) signal.removeEventListener("abort", onAbort);
+      fn(value);
+    };
+    const succeed = done(resolve);
+    const failWith = done(reject);
+
+    const onAbort = () => {
+      try {
+        req.destroy(abortError());
+      } catch (e) {
+        /* already destroyed */
+      }
+      failWith(abortError());
+    };
+
+    if (timeout) {
+      timer = setTimeout(() => {
+        const e = new Error("request-timeout");
+        e.type = "request-timeout";
+        try {
+          req.destroy(e);
+        } catch (err) {
+          /* already destroyed */
+        }
+        failWith(e);
+      }, timeout);
     }
 
+    const headers = {
+      Host: host,
+      Connection: "close",
+      "User-Agent": VERIFY_USER_AGENT,
+    };
+
+    const options = parsedProxy
+      ? {
+          host: parsedProxy.hostname,
+          port: parsedProxy.port || 80,
+          method: "GET",
+          path: `http://${ip}${path}`,
+          headers,
+        }
+      : { host: ip, port: 80, method: "GET", path, headers };
+
     const req = http.request(options, (res) => {
+      res.on("error", failWith);
+      res.on("aborted", () => failWith(new Error("response aborted")));
+
+      const status = res.statusCode;
+
+      if (status >= 300 && status < 400 && res.headers.location) {
+        res.resume(); // discard the redirect body
+        let next;
+        try {
+          next = new URL(res.headers.location, `http://${host}${path}`);
+        } catch (e) {
+          return failWith(new Error("bad redirect location"));
+        }
+        fetch(next.toString(), {
+          redirect: "follow",
+          follow: MAX_VERIFY_REDIRECTS,
+          timeout,
+          signal,
+          headers: { "User-Agent": VERIFY_USER_AGENT },
+        })
+          .then((r) => r.text().then((text) => succeed({ status: r.status, text })))
+          .catch(failWith);
+        return;
+      }
+
       let text = "";
       res.setEncoding("utf8");
       res.on("data", (chunk) => (text += chunk));
-      res.on("end", () => resolve({ status: res.statusCode, text }));
+      res.on("end", () => succeed({ status, text }));
     });
 
-    if (timeout) {
-      req.setTimeout(timeout, () => {
-        const e = new Error("request-timeout");
-        e.type = "request-timeout";
-        req.destroy(e);
-      });
-    }
+    req.on("error", failWith);
 
     if (signal) {
-      if (signal.aborted) {
-        req.destroy(abortError());
-      } else {
-        signal.addEventListener("abort", () => req.destroy(abortError()), {
-          once: true,
-        });
-      }
+      if (signal.aborted) return onAbort();
+      signal.addEventListener("abort", onAbort, { once: true });
     }
 
-    req.on("error", reject);
     req.end();
   });
 }

@@ -104,25 +104,39 @@ describe("helper/airlock", function () {
   });
 
   describe("getViaIP", function () {
-    // Capture the options http.request is called with instead of hitting the
-    // network - the point of getViaIP is exactly the request shape.
+    // Stub http.request so hop 0 never hits the network - the point of
+    // getViaIP is the request shape and the error/redirect handling. Set
+    // `reply` per spec to control the fake response.
     let seen;
+    let reply;
+    let reqListeners;
+
     beforeEach(function () {
       seen = null;
+      reply = { statusCode: 200, headers: {}, body: "blog_handle" };
+      reqListeners = {};
+
       spyOn(http, "request").and.callFake(function (options, cb) {
         seen = options;
         const res = {
-          statusCode: 200,
+          statusCode: reply.statusCode,
+          headers: reply.headers || {},
           setEncoding() {},
+          resume() {},
           on(ev, handler) {
-            if (ev === "data") handler("blog_handle");
-            if (ev === "end") handler();
+            if (ev === "data" && reply.body != null && reply.statusCode < 300)
+              handler(reply.body);
+            if (ev === "end" && reply.statusCode < 300) handler();
+            if (ev === reply.emit) handler(reply.emitArg);
           },
         };
         return {
-          setTimeout() {},
-          on() {},
+          destroy() {},
+          on(ev, handler) {
+            reqListeners[ev] = handler;
+          },
           end() {
+            if (reply.reqError) return reqListeners.error(reply.reqError);
             cb(res);
           },
         };
@@ -148,6 +162,54 @@ describe("helper/airlock", function () {
       expect(seen.host).toBe("93.184.216.34");
       expect(seen.path).toBe("/verify/domain-setup");
       expect(seen.headers.Host).toBe("example.com");
+    });
+
+    it("resolves { status, text } for a 2xx", async function () {
+      const airlock = load({ required: false });
+      const r = await airlock.getViaIP("1.2.3.4", "/verify/domain-setup", {
+        host: "example.com",
+      });
+      expect(r).toEqual({ status: 200, text: "blog_handle" });
+    });
+
+    it("follows a redirect off hop 0 through the proxied fetch", async function () {
+      const airlock = load({ required: false });
+      reply = {
+        statusCode: 301,
+        headers: { location: "https://example.com/verify/domain-setup" },
+      };
+      const scope = nock("https://example.com")
+        .get("/verify/domain-setup")
+        .reply(200, "handle-after-redirect");
+      const r = await airlock.getViaIP("1.2.3.4", "/verify/domain-setup", {
+        host: "example.com",
+      });
+      expect(r).toEqual({ status: 200, text: "handle-after-redirect" });
+      expect(scope.isDone()).toBe(true);
+    });
+
+    it("rejects when hop 0 errors", async function () {
+      const airlock = load({ required: false });
+      reply = { reqError: Object.assign(new Error("ECONNRESET"), { code: "ECONNRESET" }) };
+      let threw;
+      try {
+        await airlock.getViaIP("1.2.3.4", "/verify/domain-setup", { host: "x" });
+      } catch (e) {
+        threw = e;
+      }
+      expect(threw && threw.message).toBe("ECONNRESET");
+    });
+
+    it("rejects when the response stream aborts", async function () {
+      const airlock = load({ required: false });
+      reply = { statusCode: 200, emit: "aborted" };
+      let threw;
+      try {
+        await airlock.getViaIP("1.2.3.4", "/verify/domain-setup", { host: "x" });
+      } catch (e) {
+        threw = e;
+      }
+      expect(threw).toBeDefined();
     });
 
     it("fails closed when required but no proxy is configured", function () {
