@@ -54,7 +54,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Sized off the Heading Font size control (defaults reproduce the old
    body-relative 2.25 / 1.25 / 1 ratios). */
-h1 {font-size: calc(var(--heading-font-size) * 2.25);line-height: 1.2;}
+h1 {font-size: calc(var(--heading-font-size) * 2.25);}
 h2 {font-size: calc(var(--heading-font-size) * 1.25);}
 h3, h4, h5, h6 {font-size: var(--heading-font-size);}
 
