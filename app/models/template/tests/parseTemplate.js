@@ -204,6 +204,26 @@ describe("parseTemplate", function () {
     });
   });
 
+  it("sees through encode_xml when projecting entry fields", function () {
+    var template = `{{#recent_entries}}{{title}}{{#encode_xml}}{{{body}}}{{/encode_xml}}{{/recent_entries}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.recent_entries).toEqual({
+      fields: { title: true, body: true },
+    });
+  });
+
+  it("sees through nested transparent helpers when projecting entry fields", function () {
+    var template = `{{#posts}}{{#absolute_urls}}{{#encode_xml}}{{{html}}}{{/encode_xml}}{{/absolute_urls}}{{/posts}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.posts).toEqual({ fields: { html: true } });
+  });
+
+  it("does not record a transparent helper name as an entry field", function () {
+    var template = `{{#allEntries}}{{#encode_xml}}{{{html}}}{{/encode_xml}}{{/allEntries}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.allEntries).toEqual({ fields: { html: true } });
+  });
+
   it("tracks nested plugin assets", function () {
     var template = `{{{plugin.katex.css}}}`;
     var result = parseTemplate(template);

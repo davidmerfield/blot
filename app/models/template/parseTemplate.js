@@ -35,6 +35,25 @@ var projectedEntryLocals = {
   archives: ["months.entries"],
 };
 
+// Section helpers that transform the text they wrap but keep the surrounding
+// data context. e.g. {{#encode_xml}}{{{body}}}{{/encode_xml}} inside an entry
+// list still references the entry's `body`, so field projection has to see
+// through them. Without this, feeds that wrap {{{body}}}/{{{html}}} in an
+// encoder would have those fields projected away by recalculate-retrieve.
+var transparentSectionHelpers = {
+  encode_xml: true,
+  encodeXML: true,
+  encode_json: true,
+  encodeJSON: true,
+  encode_uri_component: true,
+  encodeURIComponent: true,
+  absolute_urls: true,
+  absoluteURLs: true,
+  formatDate: true,
+  formatUpdated: true,
+  formatCreated: true,
+};
+
 function isProjectedEntryLocal(name) {
   return !!projectedEntryLocals[name];
 }
@@ -55,6 +74,22 @@ function parseTemplate(template) {
   }
 
   var projectedFieldContexts = {};
+
+  // Context paths whose direct leaf variables are entry fields of the named
+  // projected-entry local. Seeded with the static prefixes (e.g. "allEntries",
+  // "tagged.entries") and extended at parse time when we descend through a
+  // transparent section helper such as {{#encode_xml}}.
+  var entryFieldContexts = {};
+
+  for (var seedRoot in projectedEntryLocals) {
+    var seedPrefixes = projectedEntryLocals[seedRoot] || [];
+    for (var s = 0; s < seedPrefixes.length; s++) {
+      var seedPath = seedPrefixes[s]
+        ? seedRoot + "." + seedPrefixes[s]
+        : seedRoot;
+      entryFieldContexts[seedPath] = seedRoot;
+    }
+  }
 
   process("", parsed);
 
@@ -100,14 +135,8 @@ function parseTemplate(template) {
 
     if (!fieldName) return null;
 
-    for (var root in projectedEntryLocals) {
-      var prefixes = projectedEntryLocals[root] || [];
-      for (var i = 0; i < prefixes.length; i++) {
-        var prefix = prefixes[i] ? root + "." + prefixes[i] : root;
-        if (contextPath === prefix) {
-          return { root: root, field: fieldName };
-        }
-      }
+    if (entryFieldContexts[contextPath]) {
+      return { root: entryFieldContexts[contextPath], field: fieldName };
     }
 
     return null;
@@ -218,7 +247,18 @@ function parseTemplate(template) {
         var suppressAsProjectedFieldReference = false;
         var isProjectedFieldInContext = false;
 
-        if (
+        // {{#encode_xml}} & friends: descend without recording the helper name
+        // as an entry field, but keep the entry context for inner variables.
+        var isTransparentHelperSection =
+          (token[0] === "#" || token[0] === "^") &&
+          transparentSectionHelpers[variable] &&
+          !!entryFieldContexts[contextPath];
+
+        if (isTransparentHelperSection) {
+          entryFieldContexts[contextPath + "." + variable] =
+            entryFieldContexts[contextPath];
+          isProjectedFieldInContext = true;
+        } else if (
           projectedFieldContext &&
           isLikelyProjectedEntryField(projectedFieldContext.field)
         ) {
