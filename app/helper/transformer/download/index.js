@@ -1,9 +1,6 @@
 const fetch = require("node-fetch");
 const fs = require("fs").promises;
 const { createWriteStream } = require("fs");
-const config = require("config");
-const { HttpProxyAgent } = require("http-proxy-agent");
-const { HttpsProxyAgent } = require("https-proxy-agent");
 const ensure = require("helper/ensure");
 const UID = require("helper/makeUid");
 const callOnce = require("helper/callOnce");
@@ -12,19 +9,15 @@ const nameFrom = require("helper/nameFrom");
 const tidy = require("./tidy");
 const invalid = require("./invalid");
 
-// When set, remote assets referenced in posts are fetched through the shared
-// "airlock" container's forward proxy (config/airlock) instead of straight
-// from this process. The airlock's nftables egress filter is what blocks a
-// URL - or a redirect from one - that resolves to an internal address, and
-// it does so on the real connection IP, so DNS-rebinding does not help an
-// attacker. Unset (local dev): fetch directly, no SSRF protection.
-const proxyUrl = config.airlock && config.airlock.proxy;
-const httpProxyAgent = proxyUrl ? new HttpProxyAgent(proxyUrl) : null;
-const httpsProxyAgent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : null;
-const proxyAgent = proxyUrl
-  ? (parsedURL) =>
-      parsedURL.protocol === "https:" ? httpsProxyAgent : httpProxyAgent
-  : undefined;
+// Remote assets referenced in posts are user-controlled URLs, so they are
+// fetched through the shared "airlock" container's forward proxy
+// (config/airlock, see helper/airlock). The airlock's nftables egress filter
+// is what blocks a URL - or a redirect from one - that resolves to an
+// internal address, on the real connection IP, so DNS-rebinding does not
+// help an attacker. In production assertProxyReady() throws if the proxy
+// isn't configured rather than letting this fall back to a direct fetch;
+// outside production the fetch goes direct.
+const { proxyAgent, assertProxyReady } = require("helper/airlock");
 
 const IF_NONE_MATCH = "If-None-Match";
 const IF_MODIFIED_SINCE = "If-Modified-Since";
@@ -43,6 +36,14 @@ module.exports = function (url, headers, callback) {
   // omits them for exactly that case.
   const invalidReason = invalid(url);
   if (invalidReason) return callback(invalidReason);
+
+  // Fail closed: in production this must go through the airlock proxy. If it
+  // isn't configured, error out rather than fetch the user URL directly.
+  try {
+    assertProxyReady("transformer/download");
+  } catch (e) {
+    return callback(e);
+  }
 
   // Sometimes these are null for new urls...
   headers = headers || {};
@@ -83,12 +84,13 @@ module.exports = function (url, headers, callback) {
       const lastModified = res.headers.get(LAST_MODIFIED);
       const expires = res.headers.get("expires");
       const etag = res.headers.get("etag");
+      const age = res.headers.get("age");
 
       headers[LAST_MODIFIED] = lastModified || headers[LAST_MODIFIED] || "";
       headers.etag = etag || headers.etag || "";
       headers.expires =
         tidy.date(expires) ||
-        tidy.expire(cacheControl) ||
+        tidy.expire(cacheControl, age) ||
         headers.expires ||
         "";
       headers.url = headers.url || url;
@@ -101,15 +103,116 @@ module.exports = function (url, headers, callback) {
 
       if (!res.ok) {
         debug("  it has a bad status code:", res.status);
+        // Nobody consumes the body on this path; drop it so the socket
+        // isn't held open.
+        res.body.destroy();
         throw new Error(res.status);
       }
 
       debug("  updated latest response headers for status", res.status);
-      res.body.pipe(file); // start piping the response body to the file
+
+      // node-fetch transparently decompresses gzip/deflate/br bodies but
+      // leaves Content-Length describing the *encoded* payload, so a
+      // decoded byte count can legitimately differ from it. Only use the
+      // header for the truncation check when the body is served identity.
+      var contentEncoding = res.headers.get("content-encoding");
+      var canCompareLength =
+        !contentEncoding || /^identity$/i.test(contentEncoding.trim());
+
+      var expectedLength = Number(res.headers.get("content-length"));
+      if (
+        !canCompareLength ||
+        !Number.isFinite(expectedLength) ||
+        expectedLength < 0
+      )
+        expectedLength = null;
 
       return new Promise((resolve, reject) => {
-        file.on("finish", () => resolve({ status: res.status, path, headers }));
-        file.on("error", reject);
+        var settled = false;
+        var received = 0;
+        var idleTimer = null;
+
+        function clearIdle() {
+          if (idleTimer) {
+            clearTimeout(idleTimer);
+            idleTimer = null;
+          }
+        }
+
+        // Independent streaming watchdog. We do not rely solely on
+        // res.body emitting 'error': node-fetch's `timeout` option does
+        // not arm a body timer when the stream is consumed via pipe(), and
+        // some truncated-body cases (socket destroyed after a partial
+        // chunk) can leave the PassThrough open without 'error'/'end'/
+        // 'close'. Without this, the promise never settles and the build
+        // hangs. This is the ESOCKETIMEDOUT case the old TODO referred to.
+        function armIdle() {
+          clearIdle();
+          idleTimer = setTimeout(function () {
+            onError(
+              new Error("Download stalled: no data for " + TIMEOUT + "ms")
+            );
+          }, TIMEOUT);
+        }
+
+        function cleanup() {
+          clearIdle();
+          res.body.removeListener("data", onData);
+          file.removeListener("error", onError);
+          file.removeListener("finish", onFinish);
+          // Deliberately keep the res.body 'error' listener: destroy() and
+          // late premature-close errors can still fire after we've settled,
+          // and an unhandled 'error' on the stream would crash the process.
+          // onError's `settled` guard makes the extra call a no-op.
+        }
+
+        function onError(err) {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          res.body.unpipe(file);
+          // Destroy the response stream, not just unpipe it: an unpiped,
+          // unconsumed PassThrough stays paused and backpressures - and so
+          // holds open - the underlying HTTP socket, and node-fetch has
+          // already cleared its request timeout once headers arrived.
+          res.body.destroy();
+          file.destroy();
+          reject(err);
+        }
+
+        function onData(chunk) {
+          received += chunk.length;
+          armIdle();
+        }
+
+        function onFinish() {
+          if (settled) return;
+          // A body that ends short of its advertised Content-Length is a
+          // truncated download, not a success - node-fetch does not always
+          // surface this as an 'error'.
+          if (expectedLength !== null && received < expectedLength) {
+            return onError(
+              new Error(
+                "Download truncated: received " +
+                  received +
+                  " of " +
+                  expectedLength +
+                  " bytes"
+              )
+            );
+          }
+          settled = true;
+          cleanup();
+          resolve({ status: res.status, path, headers });
+        }
+
+        res.body.on("error", onError);
+        res.body.on("data", onData);
+        file.on("error", onError);
+        file.on("finish", onFinish);
+
+        armIdle();
+        res.body.pipe(file); // start piping the response body to the file
       });
     })
     .then(result => {
@@ -129,7 +232,7 @@ module.exports = function (url, headers, callback) {
     })
     .catch(err => {
       debug("Download error:", err);
-      file.close();
+      if (!file.destroyed) file.destroy();
       fs.unlink(path).catch(() => {});
       callback(err);
     });
