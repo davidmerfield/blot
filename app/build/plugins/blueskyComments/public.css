@@ -2,6 +2,10 @@
   display: flex;
 }
 
+#comments .bluesky-comments-error {
+  opacity: 0.7;
+}
+
 .comment-container > a {
   flex-shrink: 0;
 }
