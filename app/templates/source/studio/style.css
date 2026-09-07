@@ -43,6 +43,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 400;
   {{#heading_font}}
   font-family: {{{stack}}};
+  line-height: {{{line_height}}};
   {{#weight}}
   font-weight: {{{.}}};
   {{/weight}}
@@ -55,18 +56,22 @@ h1, h2, h3, h4, h5, h6 {
 h2, h3 {margin-top: 2em}
 
 h1 {
-  line-height: 1.4;
   {{#heading_font}}
   font-size: {{{font_size}}}px;
-  line-height: {{{line_height}}};
   {{/heading_font}}
 }
+
+h2 { font-size: calc({{{heading_font.font_size}}}px * 0.83); }
+h3 { font-size: calc({{{heading_font.font_size}}}px * 0.67); }
+h4 { font-size: calc({{{heading_font.font_size}}}px * 0.56); }
+h5 { font-size: calc({{{heading_font.font_size}}}px * 0.46); }
+h6 { font-size: calc({{{heading_font.font_size}}}px * 0.38); }
 
 a {color: {{link_color}};text-decoration: none;}
 
 .light,
 .small {
-  color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.7);
+  color: {{text_color}};
 }
 
 .small {
@@ -310,8 +315,19 @@ input:focus {outline: none;}
 
 {{> plugin}}
 
+pre code.hljs {
+  padding: 0;
+  margin: 0;
+}
+
 .grid-bleed {
   margin: 0 calc({{spacing}}em * -1);
+}
+
+.grid {
+  max-width: calc({{max_width}}px + ({{spacing}}em * 2));
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .grid-sizer,
