@@ -75,7 +75,7 @@ a:hover {
   text-decoration: underline;
 }
 
-h1, h2 {
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--heading-font-family, var(--font-family));
 }
 
@@ -91,7 +91,7 @@ h2 {
 }
 
 {{#is.navigation_alignment.center}}
-h2 {
+h2.section-nav {
   text-align: center;
 }
 {{/is.navigation_alignment.center}}
@@ -131,7 +131,7 @@ h2 a.selected {border-bottom: 1px solid var(--link-color);color:var(--link-color
 .header.subpage ul {display: none!important;}
 .header.subpage h1 {font-size: var(--font-size);color:var(--light-text-color);font-weight: normal;}
 .header.subpage h1 + p {display: none;}
-.header.subpage p:first-of-type img {width:3em;height:3em;float:none;font-size: var(--font-size);}
+.header.subpage p:first-of-type img {width:3em;height:3em;float:none;font-size: 18px;}
 
 
 .header p:first-of-type img {
@@ -187,12 +187,12 @@ h3 {
 }
 
 {{#hide_dates}}
-.subheading-column h3 {
+.subheading-column h3.date-heading {
   display: none;
 }
 
-.subheading-column h3 ~ p,
-.subheading-column h3 ~ ul {
+.subheading-column h3.date-heading ~ p,
+.subheading-column h3.date-heading ~ ul {
   margin-left: 0;
 }
 {{/hide_dates}}
