@@ -14,6 +14,7 @@
     {{/posts}}
     </p>
 
+    {{#posts.length}}
     {{#pagination}}
     <div class="pagination">
       {{#previous}}
@@ -25,6 +26,7 @@
       {{/next}}
     </div>
     {{/pagination}}
+    {{/posts.length}}
     </div>
 
     <br><br>

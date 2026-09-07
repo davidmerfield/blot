@@ -27,6 +27,7 @@ a {
 h1, h2, h3, h4, h5, h6 {
   {{#heading_font}}
   font-family: {{{stack}}};
+  line-height: {{{line_height}}};
   {{/heading_font}}
 }
 
@@ -36,6 +37,12 @@ h1 {
   line-height: {{{line_height}}};
   {{/heading_font}}
 }
+
+h2 { font-size: calc({{{heading_font.font_size}}}px * 0.83); }
+h3 { font-size: calc({{{heading_font.font_size}}}px * 0.67); }
+h4 { font-size: calc({{{heading_font.font_size}}}px * 0.56); }
+h5 { font-size: calc({{{heading_font.font_size}}}px * 0.46); }
+h6 { font-size: calc({{{heading_font.font_size}}}px * 0.38); }
 
 .site-header {
   display: flex;
