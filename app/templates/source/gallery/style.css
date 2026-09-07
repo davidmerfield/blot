@@ -42,9 +42,12 @@ h1, h2, h3, .site-title {
 }
 
 h1, h2, h3 {
-  font-size: {{{font_size}}}px;
   line-height: {{{line_height}}};
 }
+
+h1 { font-size: {{{font_size}}}px; }
+h2 { font-size: calc({{{font_size}}}px * 0.83); }
+h3 { font-size: calc({{{font_size}}}px * 0.67); }
 {{/heading_font}}
 
 header {
