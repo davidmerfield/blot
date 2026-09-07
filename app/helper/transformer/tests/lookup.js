@@ -282,6 +282,42 @@ describe("transformer", function () {
     });
   });
 
+  it("revalidates a no-cache response even when it carries a max-age", function (done) {
+    var test = this;
+    var firstTransform = jasmine.createSpy().and.callFake(test.transform);
+    var secondTransform = jasmine.createSpy().and.callFake(test.transform);
+
+    // no-cache means "revalidate before reuse", so the second lookup must
+    // still hit the network despite the hour-long max-age. With no ETag /
+    // Last-Modified the revalidation is a plain 200 with a new body, so the
+    // transform runs again.
+    test.queueRemoteResponse({
+      body: "short " + Date.now(),
+      etag: null,
+      lastModified: null,
+      headers: { "Cache-Control": "no-cache, max-age=3600" },
+    });
+    test.queueRemoteResponse({
+      body: "a considerably longer second body " + Date.now(),
+      etag: null,
+      lastModified: null,
+      headers: { "Cache-Control": "no-cache, max-age=3600" },
+    });
+
+    test.transformer.lookup(test.sequenceUrl, firstTransform, function (err, firstResult) {
+      if (err) return done.fail(err);
+
+      test.transformer.lookup(test.sequenceUrl, secondTransform, function (err, secondResult) {
+        if (err) return done.fail(err);
+
+        expect(firstTransform).toHaveBeenCalled();
+        expect(secondTransform).toHaveBeenCalled();
+        expect(secondResult.size).not.toEqual(firstResult.size);
+        done();
+      });
+    });
+  });
+
   describe("url download caching", function () {
     it("stores the transformed result after a successful download", function (done) {
       var test = this;
@@ -417,7 +453,7 @@ describe("transformer", function () {
         expect(spy).not.toHaveBeenCalled();
         done();
       });
-    });
+    }, 20000);
 
     it("falls back to the cached result when a later download drops mid-body", function (done) {
       var test = this;
@@ -440,6 +476,6 @@ describe("transformer", function () {
           done();
         });
       });
-    });
+    }, 20000);
   });
 });

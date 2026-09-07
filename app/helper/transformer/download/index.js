@@ -83,12 +83,13 @@ module.exports = function (url, headers, callback) {
       const lastModified = res.headers.get(LAST_MODIFIED);
       const expires = res.headers.get("expires");
       const etag = res.headers.get("etag");
+      const age = res.headers.get("age");
 
       headers[LAST_MODIFIED] = lastModified || headers[LAST_MODIFIED] || "";
       headers.etag = etag || headers.etag || "";
       headers.expires =
         tidy.date(expires) ||
-        tidy.expire(cacheControl) ||
+        tidy.expire(cacheControl, age) ||
         headers.expires ||
         "";
       headers.url = headers.url || url;
@@ -106,21 +107,46 @@ module.exports = function (url, headers, callback) {
 
       debug("  updated latest response headers for status", res.status);
 
+      var expectedLength = Number(res.headers.get("content-length"));
+      if (!Number.isFinite(expectedLength) || expectedLength < 0)
+        expectedLength = null;
+
       return new Promise((resolve, reject) => {
         var settled = false;
+        var received = 0;
+        var idleTimer = null;
+
+        function clearIdle() {
+          if (idleTimer) {
+            clearTimeout(idleTimer);
+            idleTimer = null;
+          }
+        }
+
+        // Independent streaming watchdog. We do not rely solely on
+        // res.body emitting 'error': node-fetch's `timeout` option does
+        // not arm a body timer when the stream is consumed via pipe(), and
+        // some truncated-body cases (socket destroyed after a partial
+        // chunk) can leave the PassThrough open without 'error'/'end'/
+        // 'close'. Without this, the promise never settles and the build
+        // hangs. This is the ESOCKETIMEDOUT case the old TODO referred to.
+        function armIdle() {
+          clearIdle();
+          idleTimer = setTimeout(function () {
+            onError(
+              new Error("Download stalled: no data for " + TIMEOUT + "ms")
+            );
+          }, TIMEOUT);
+        }
 
         function cleanup() {
+          clearIdle();
           res.body.removeListener("error", onError);
+          res.body.removeListener("data", onData);
           file.removeListener("error", onError);
           file.removeListener("finish", onFinish);
         }
 
-        // The response body is a stream too: a socket reset, premature
-        // close, or the fetch timeout firing mid-download emits 'error'
-        // on res.body, NOT on the file. pipe() does not forward that, so
-        // without this listener the promise never settles (build hangs)
-        // and an unhandled stream 'error' can crash the process. This is
-        // the ESOCKETIMEDOUT case the old TODO referred to.
         function onError(err) {
           if (settled) return;
           settled = true;
@@ -130,17 +156,38 @@ module.exports = function (url, headers, callback) {
           reject(err);
         }
 
+        function onData(chunk) {
+          received += chunk.length;
+          armIdle();
+        }
+
         function onFinish() {
           if (settled) return;
+          // A body that ends short of its advertised Content-Length is a
+          // truncated download, not a success - node-fetch does not always
+          // surface this as an 'error'.
+          if (expectedLength !== null && received < expectedLength) {
+            return onError(
+              new Error(
+                "Download truncated: received " +
+                  received +
+                  " of " +
+                  expectedLength +
+                  " bytes"
+              )
+            );
+          }
           settled = true;
           cleanup();
           resolve({ status: res.status, path, headers });
         }
 
         res.body.on("error", onError);
+        res.body.on("data", onData);
         file.on("error", onError);
         file.on("finish", onFinish);
 
+        armIdle();
         res.body.pipe(file); // start piping the response body to the file
       });
     })
