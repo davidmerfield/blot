@@ -11,9 +11,9 @@ const get = promisify((blogID, entryIDs, callback) =>
 
 const TIMEOUT = 8000;
 const MAX_RESULTS = 25;
-// When a sort is requested we cannot stop at the first MAX_RESULTS matches in
-// Redis scan order — we need the whole match set so the first page is correct
-// in the chosen order. Bounded by this ceiling and the timeout.
+// The caller sorts the result, so we can't stop at the first MAX_RESULTS
+// matches in Redis scan order — collect a wider pool (capped here and by the
+// timeout) so the sorted first page is right. Beyond this it stays best-effort.
 const MAX_COLLECT = 500;
 const CHUNK_SIZE = 200;
 
@@ -59,9 +59,10 @@ module.exports = async function (blogID, query, options, callback) {
     return callback(null, []);
   }
 
-  const sorted = !!options.sortBy;
-  const collectLimit = sorted ? MAX_COLLECT : MAX_RESULTS;
-
+  // Callers always order the result (blog/sortOptions.js normalises a missing
+  // selection to newest-first date), so stopping at the first MAX_RESULTS
+  // matches in Redis scan order could drop newer entries. Collect the wider
+  // candidate pool (bounded by MAX_COLLECT and the timeout), then sort + cap.
   const startTime = Date.now();
   const timedOut = () => Date.now() - startTime > TIMEOUT;
   const results = [];
@@ -77,7 +78,7 @@ module.exports = async function (blogID, query, options, callback) {
   const scanList = async key => {
     let cursor = "0";
     do {
-      if (timedOut() || results.length >= collectLimit) return;
+      if (timedOut() || results.length >= MAX_COLLECT) return;
 
       const scanned = await client.zScan(key, cursor, { COUNT: CHUNK_SIZE });
       cursor = String(scanned.cursor);
@@ -87,7 +88,7 @@ module.exports = async function (blogID, query, options, callback) {
 
       for (const entry of await get(blogID, ids)) {
         if (isMatch(entry)) results.push(entry);
-        if (results.length >= collectLimit || timedOut()) return;
+        if (results.length >= MAX_COLLECT || timedOut()) return;
       }
     } while (cursor !== "0");
   };
@@ -98,8 +99,7 @@ module.exports = async function (blogID, query, options, callback) {
     await scanList("blog:" + blogID + ":entries");
     await scanList("blog:" + blogID + ":pages");
 
-    const ordered = sorted ? sortEntries(results, options) : results;
-    return callback(null, ordered.slice(0, MAX_RESULTS));
+    return callback(null, sortEntries(results, options).slice(0, MAX_RESULTS));
   } catch (error) {
     return callback(error);
   }

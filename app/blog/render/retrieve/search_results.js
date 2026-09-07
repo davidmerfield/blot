@@ -1,6 +1,5 @@
 var getTemplateSortOptions = require("blog/sortOptions");
 var Entry = require("models/entry");
-var sortEntries = getTemplateSortOptions.sortEntries;
 
 module.exports = function (req, res, callback) {
   var blogID = req.blog.id;
@@ -12,10 +11,7 @@ module.exports = function (req, res, callback) {
 
   var sortOptions = getTemplateSortOptions(req.template && req.template.locals);
 
-  // Entry.search applies the ordering before its result cap; sortEntries here
-  // also covers the default (no explicit sort_by) case.
-  Entry.search(blogID, req.query.q, sortOptions, function (err, results) {
-    if (err) return callback(err);
-    callback(null, sortEntries(results, sortOptions));
-  });
+  // Entry.search collects a wide candidate pool, then sorts and caps by the
+  // selection (a missing selection normalises to newest-first date).
+  Entry.search(blogID, req.query.q, sortOptions, callback);
 };

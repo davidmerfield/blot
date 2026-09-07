@@ -47,21 +47,30 @@ describe("post sorting across retrieve helpers", function () {
 
   describe("search_results", function () {
     const searchResults = require("../search_results");
+    let received;
 
     beforeEach(function () {
+      received = undefined;
       spyOn(Entry, "search").and.callFake(function (blogID, query, options, cb) {
-        if (typeof options === "function") cb = options;
+        if (typeof options === "function") {
+          cb = options;
+          options = undefined;
+        }
+        received = { blogID, query, options };
+        // Entry.search returns already sorted + capped; the helper passes through.
         cb(null, newestFirst());
       });
     });
 
-    it("keeps newest-first by default", async function () {
-      expect(ids(await run(searchResults, {}))).toEqual(["c.txt", "a.txt", "b.txt"]);
+    it("forwards the resolved selection to Entry.search and passes results through", async function () {
+      const value = await run(searchResults, { sort_by: "id", sort_order: "desc" });
+      expect(received.options).toEqual({ sortBy: "id", order: "desc" });
+      expect(ids(value)).toEqual(["c.txt", "a.txt", "b.txt"]);
     });
 
-    it("sorts by file path Z-A for id + desc", async function () {
-      const value = await run(searchResults, { sort_by: "id", sort_order: "desc" });
-      expect(ids(value)).toEqual(["c.txt", "b.txt", "a.txt"]);
+    it("forwards the default (undefined) selection", async function () {
+      await run(searchResults, {});
+      expect(received.options).toEqual({ sortBy: undefined, order: undefined });
     });
 
     it("returns [] when there is no query", function (done) {
