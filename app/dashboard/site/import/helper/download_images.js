@@ -8,32 +8,49 @@ var fs = require("fs-extra");
 var sharp = require("sharp");
 var mime = require("mime-types");
 var assetDirectory = require("./asset_directory");
-var download = require("helper/transformer/download");
+var Transformer = require("helper/transformer");
+var hashFile = require("helper/transformer/hash");
+var tempDir = require("helper/tempDir")();
 
 // Consider using this algorithm to determine best part of alt tag or caption to use
 // as the file's name:
 // http://www.bearcave.com/misl/misl_tech/wavelets/compression/shannon.html
 
-// Remote assets are fetched through helper/transformer's download module
-// rather than a bare fetch(). That module routes every request - and every
-// redirect - through the airlock forward proxy (see config/airlock), whose
-// nftables egress filter blocks a URL that resolves to a private range, a
-// cloud metadata endpoint or a DNS-rebinding target. An import pulls
-// arbitrary URLs out of a user-supplied WordPress / Blogger / Are.na export,
-// so this matters.
+// Remote assets go through helper/transformer, the same module the image
+// plugin, thumbnail builder and gdoc / img converters use. The wins for an
+// importer, which pulls arbitrary URLs out of a user-supplied WordPress /
+// Blogger / Are.na export:
 //
-// It deliberately does NOT use the full Transformer (the Redis-backed,
-// content-hash-keyed result cache): that cache is process-global, and
-// Transformer.fromURL serves the last good result when a later download
-// fails - so an expired signed URL that now 403s for a different account
-// would hand back the first account's bytes. Every import re-downloads, the
-// same as before this change.
+//   1. SSRF - transformer/download routes every request and redirect through
+//      the airlock forward proxy (config/airlock), which filters egress to
+//      private ranges, cloud metadata and DNS-rebinding targets.
+//   2. Dedup - the same asset is downloaded and inspected once, keyed by its
+//      content hash, then reused across posts and across re-runs.
+//   3. Conditional requests on later imports.
+//
+// The store is namespaced "import" rather than per-blog: an import stages
+// files before the blog folder exists, and identical asset URLs should dedupe
+// across every blog's imports. One accepted, low-severity consequence:
+// Transformer.fromURL serves the last good result when a later download of
+// the same URL fails, so an expiring signed URL re-imported by a second
+// account after it 403s could receive the first account's cached bytes.
+// flush() is never called here.
+var cache = new Transformer("import", "images");
 
-// Fetch a remote src to a temp file: { tempPath, name }. Calls back with no
-// result (rather than an error) for anything we should skip - data: URIs,
-// unparseable hosts, download failures, an access-denied response - matching
-// the old behaviour of leaving the original src untouched.
-function fetchAsset(src, callback) {
+// transformer deletes the downloaded temp file once the transform returns and
+// hands back only stored JSON on a cache hit, so the transform copies each
+// asset into this directory, keyed by CONTENT hash. That keeps the backing
+// file immutable: transformer already dedupes results by the same content
+// hash, so a hit that reuses a result always finds the right bytes even if
+// the source URL later serves something different.
+var IMAGE_CACHE_DIR = join(tempDir, "import-image-cache");
+fs.ensureDirSync(IMAGE_CACHE_DIR);
+
+// Resolve a remote src to a cached asset: { name, cachePath }. Calls back with
+// no result (rather than an error) for anything we should skip - data: URIs,
+// unparseable hosts, download failures - matching the old behaviour of
+// leaving the original src untouched.
+function localize(src, callback) {
   if (!src || src.indexOf("data:") === 0) return callback();
 
   try {
@@ -42,50 +59,66 @@ function fetchAsset(src, callback) {
     return callback();
   }
 
-  // Empty headers: no If-None-Match / If-Modified-Since, so no 304 - the
-  // download always produces a temp file on success.
-  download(src, {}, function (err, tempPath) {
-    if (err || !tempPath) {
-      if (err) console.log("Failed to download image", src, err.message);
+  cache.lookup(src, persist(src), function (err, result) {
+    if (err) {
+      console.log("Failed to localize image", src, err.message);
       return callback();
     }
 
-    sharp(tempPath).metadata(function (err, metadata) {
-      // Response headers are not surfaced here, so the filename is derived
-      // from the URL plus sharp's detected format only (a host that serves
-      // opaque image URLs, e.g. Blogger, therefore loses its
-      // Content-Disposition filename - an accepted, cosmetic trade).
-      var format = metadata && metadata.format ? metadata.format : undefined;
-      callback(null, { tempPath: tempPath, name: nameFrom(src, null, format) });
-    });
+    if (!result || !result.name || !result.cachePath) return callback();
+
+    callback(result);
   });
 }
 
-// Move a fetched asset into the entry's staging directory and rewrite the
-// element. The temp file is always consumed - moved on success, removed on
-// any bail.
-function place(post, el, $, src, asset, next) {
-  assetDirectory(post, function (err, directory) {
-    if (err) {
-      fs.remove(asset.tempPath);
-      return next(false);
-    }
+// The transform. Runs only on a cache miss; receives the path of the freshly
+// downloaded temp file (transformer has already applied the airlock proxy,
+// redirect cap and timeout).
+function persist(src) {
+  return function (path, done) {
+    hashFile(path, function (err, contentHash) {
+      if (err) return done(err);
 
-    fs.move(
-      asset.tempPath,
-      join(directory, asset.name),
+      sharp(path).metadata(function (err, metadata) {
+        // Response headers are not available to a transform, so the filename
+        // is derived from the URL plus sharp's detected format only (a host
+        // that serves opaque image URLs, e.g. Blogger, therefore loses its
+        // Content-Disposition filename - an accepted, cosmetic trade).
+        var format = metadata && metadata.format ? metadata.format : undefined;
+        var name = nameFrom(src, null, format);
+        var cachePath = join(IMAGE_CACHE_DIR, contentHash + extname(name));
+
+        fs.copy(path, cachePath, { overwrite: true }, function (err) {
+          if (err) return done(err);
+          done(null, { name: name, cachePath: cachePath });
+        });
+      });
+    });
+  };
+}
+
+// Copy a localized asset into the entry's staging directory and rewrite the
+// element. A missing cachePath (the temp dir was pruned between imports, and
+// the transformer result outlived its backing file) surfaces here as a copy
+// error and is skipped, same as any other download failure.
+function place(post, el, $, src, result, next) {
+  assetDirectory(post, function (err, directory) {
+    if (err) return next(false);
+
+    fs.copy(
+      result.cachePath,
+      join(directory, result.name),
       { overwrite: true },
       function (err) {
         if (err) {
-          console.log("Failed to store image", src, err.message);
-          fs.remove(asset.tempPath);
+          console.log("Failed to copy cached image", src, err.message);
           return next(false);
         }
 
         if (el) {
-          $(el).attr("src", asset.name);
+          $(el).attr("src", result.name);
           if ($(el).parent().attr("href") === src)
-            $(el).parent().attr("href", asset.name);
+            $(el).parent().attr("href", result.name);
         }
 
         next(true);
@@ -101,11 +134,11 @@ function download_thumbnail(post, callback) {
 
   if (!thumbnail) return callback();
 
-  fetchAsset(thumbnail, function (err, asset) {
-    if (!asset) return callback();
+  localize(thumbnail, function (result) {
+    if (!result) return callback();
 
-    place(post, null, null, thumbnail, asset, function (ok) {
-      callback(null, ok ? asset.name : undefined);
+    place(post, null, null, thumbnail, result, function (ok) {
+      callback(null, ok ? result.name : undefined);
     });
   });
 }
@@ -131,10 +164,10 @@ module.exports = function download_images(post, callback) {
 
         if (!src) return next();
 
-        fetchAsset(src, function (err, asset) {
-          if (!asset) return next();
+        localize(src, function (result) {
+          if (!result) return next();
 
-          place(post, el, $, src, asset, function (ok) {
+          place(post, el, $, src, result, function (ok) {
             if (ok) changes = true;
             next();
           });
