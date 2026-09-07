@@ -28,16 +28,24 @@ const reverse_proxies = process.env.BLOT_REVERSE_PROXY_URLS
 // helper/airlock fails those operations closed in production (the post
 // builds without the image, the domain check errors) rather than falling
 // back to an unprotected fetch. The warning just flags that this container
-// missed the env vars and those features are broken until it is redeployed.
+// missed the env vars, so those features are broken until it is redeployed:
+//   - BLOT_AIRLOCK_BROWSER_URL unset: the production image ships no Chromium
+//     of its own (see the Dockerfile), and helper/screenshot will not fall
+//     back to a local launch for a user URL - bookmark-link screenshots
+//     cannot run at all.
+//   - BLOT_AIRLOCK_PROXY_URL unset: remote-image downloads and user-domain
+//     checks error out (fail closed) instead of fetching directly.
 if (
   environment === "production" &&
   !(process.env.BLOT_AIRLOCK_BROWSER_URL && process.env.BLOT_AIRLOCK_PROXY_URL)
 ) {
   console.warn(
     "WARNING: BLOT_AIRLOCK_BROWSER_URL / BLOT_AIRLOCK_PROXY_URL are not both " +
-      "set in production. Bookmark-link screenshots, remote-image downloads " +
-      "and user-domain checks will fail closed (no unprotected fetch) until " +
-      "this container is redeployed. See config/airlock/README.md."
+      "set in production. Without BLOT_AIRLOCK_BROWSER_URL, bookmark-link " +
+      "screenshots will fail (the prod image has no local Chromium). Without " +
+      "BLOT_AIRLOCK_PROXY_URL, remote-image downloads and user-domain checks " +
+      "fail closed (no unprotected fetch). Both stay broken until this " +
+      "container is redeployed. See config/airlock/README.md."
   );
 }
 
