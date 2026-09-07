@@ -121,6 +121,37 @@ describe("projectEntryFields", function () {
     expect(entries[0].html).toBe("<p>one</p>");
   });
 
+  it("projects a single entry object in place (latestEntry)", function () {
+    var single = entry();
+
+    var returned = projectEntryFields(
+      single,
+      { latestEntry: { fields: { title: true } } },
+      ["latestEntry", "latest_entry"]
+    );
+
+    expect(returned).toBe(single);
+    expect(single.title).toEqual("One");
+    expect(single.html).toBeUndefined();
+    expect(single.summary).toBeUndefined();
+  });
+
+  it("leaves a single entry object untouched for legacy metadata", function () {
+    var single = entry();
+
+    projectEntryFields(single, { latestEntry: true }, ["latestEntry"]);
+
+    expect(single.html).toBe("<p>one</p>");
+  });
+
+  it("tolerates an empty single entry object", function () {
+    expect(
+      projectEntryFields({}, { latestEntry: { fields: { title: true } } }, [
+        "latestEntry",
+      ])
+    ).toEqual({});
+  });
+
   it("tolerates empty and non-array input", function () {
     expect(projectEntryFields([], { allEntries: { fields: {} } }, ["allEntries"])).toEqual(
       []

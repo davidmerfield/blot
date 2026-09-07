@@ -59,12 +59,16 @@ function resolveFields(retrieve, keys) {
 }
 
 // Mutates the entries in place, deleting heavy fields the template does not
-// reference. Entries handed to retrieve modules are always freshly parsed (or
-// freshly cloned, in the case of the posts/tagged caches) so in-place deletion
-// never touches shared or frozen instances. Returns the same array for
-// convenience.
+// reference. Accepts either a list of entries (allEntries, posts, ...) or a
+// single entry object (latestEntry). Entries handed to retrieve modules are
+// always freshly parsed (or freshly cloned, in the case of the posts/tagged
+// caches) so in-place deletion never touches shared or frozen instances.
+// Returns the same value it was given for convenience.
 function projectEntryFields(entries, retrieve, keys) {
-  if (!Array.isArray(entries) || !entries.length) return entries;
+  var isList = Array.isArray(entries);
+  var list = isList ? entries : entries ? [entries] : [];
+
+  if (!list.length) return entries;
 
   var fields = resolveFields(retrieve, Array.isArray(keys) ? keys : [keys]);
 
@@ -76,8 +80,8 @@ function projectEntryFields(entries, retrieve, keys) {
 
   if (!strip.length) return entries;
 
-  for (var i = 0; i < entries.length; i++) {
-    var entry = entries[i];
+  for (var i = 0; i < list.length; i++) {
+    var entry = list[i];
 
     if (!entry || typeof entry !== "object") continue;
 

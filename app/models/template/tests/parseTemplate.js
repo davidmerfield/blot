@@ -204,6 +204,24 @@ describe("parseTemplate", function () {
     });
   });
 
+  it("projects fields from latestEntry section and property access", function () {
+    var template = `{{#latestEntry}}{{title}}{{/latestEntry}}{{latestEntry.url}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { latestEntry: { fields: { title: true, url: true } } },
+    });
+  });
+
+  it("projects fields from latest_entry section access", function () {
+    var template = `{{#latest_entry}}{{title}}{{/latest_entry}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { latest_entry: { fields: { title: true } } },
+    });
+  });
+
   it("sees through encode_xml when projecting entry fields", function () {
     var template = `{{#recent_entries}}{{title}}{{#encode_xml}}{{{body}}}{{/encode_xml}}{{/recent_entries}}`;
     var result = parseTemplate(template);
