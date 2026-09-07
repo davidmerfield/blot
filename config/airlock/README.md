@@ -233,8 +233,6 @@ can still reach an internal address from a user-supplied host:
 * [`app/documentation/featured/verifySiteIsOnline.js`](../../app/documentation/featured/verifySiteIsOnline.js)
   and [`fetchSubscriptionDuration.js`](../../app/documentation/featured/fetchSubscriptionDuration.js)
   — `https://<blog.domain>/verify/*`.
-* [`app/dashboard/site/import/sources/arena/parse.js`](../../app/dashboard/site/import/sources/arena/parse.js)
-  — an image URL taken from are.na channel content (attacker-creatable).
 * [`app/dashboard/site/domain/index.js`](../../app/dashboard/site/domain/index.js)
   `triggerAutoSSL()` and
   [`app/dashboard/account/create-site.js`](../../app/dashboard/account/create-site.js)
@@ -257,6 +255,13 @@ wiring.
   user-controlled, not the destination host.
 * `app/documentation/build/tools.js` — `link` comes from a repo YAML file at
   doc-build time, not runtime user input.
+* [`app/dashboard/site/import/sources/arena/parse.js`](../../app/dashboard/site/import/sources/arena/parse.js)
+  — `image.original.url` from the are.na API is pinned to are.na's own image
+  hosts (`d2w9rnfcy7mm78.cloudfront.net`, `*.are.na`), so the destination
+  host isn't user-controlled. The generic imported-HTML image/PDF
+  downloaders (`app/dashboard/site/import/helper/download_{images,pdfs}.js`)
+  do fetch arbitrary URLs from imported content and are **not** yet routed
+  or pinned — a known gap across all importers.
 
 Treat this as "known", not exhaustive; grep for user-controlled
 `fetch`/`request` calls in `app/build` and `app/dashboard` before relying on
