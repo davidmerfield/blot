@@ -26,7 +26,10 @@
 // for every exception after the first, the exception should contain a property 'nameservers' that contains the nameserver addresses of the domain
 
 const dns = require('dns').promises;
-const fetch = require('node-fetch');
+// The domain-setup check fetches a user-typed hostname, so it goes through
+// the airlock proxy (helper/airlock, config/airlock/README.md) - the egress
+// filter rejects a hostname/A-record that resolves to an internal address.
+const fetch = require('helper/airlock').fetch;
 const { parse } = require('tldts');
 
 const VERIFICATION_TIMEOUT_MS = 5000;

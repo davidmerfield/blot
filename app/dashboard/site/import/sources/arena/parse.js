@@ -1,4 +1,6 @@
-const fetch = require("node-fetch");
+// item.image.original.url comes from are.na channel content (attacker-
+// creatable), so download it through the airlock proxy. See helper/airlock.
+const fetch = require("helper/airlock").fetch;
 const { join, extname } = require("path");
 const moment = require("moment");
 const fs = require("fs-extra");
