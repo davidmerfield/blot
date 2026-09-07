@@ -222,6 +222,34 @@ describe("parseTemplate", function () {
     });
   });
 
+  it("records a heavy field referenced under an ordinary entry predicate", function () {
+    var template = `{{#posts}}{{#first}}{{{html}}}{{/first}}{{/posts}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.posts).toEqual({
+      fields: { first: true, html: true },
+    });
+  });
+
+  it("records a heavy field under a nested predicate but not a light one", function () {
+    var template = `{{#allEntries}}{{#thumbnail}}{{large}}{{{teaser}}}{{/thumbnail}}{{/allEntries}}`;
+    var result = parseTemplate(template);
+    // `large` stays attributed to `thumbnail`; `teaser` is heavy so it is
+    // recorded on the entry (it resolves from the parent at render time).
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { allEntries: { fields: { thumbnail: true, teaser: true } } },
+    });
+  });
+
+  it("does not leak a heavy field under a predicate to the top level", function () {
+    var template = `{{#allEntries}}{{^more}}{{{teaserBody}}}{{/more}}{{/allEntries}}`;
+    var result = parseTemplate(template);
+    expect(result).toEqual({
+      partials: {},
+      retrieve: { allEntries: { fields: { more: true, teaserBody: true } } },
+    });
+  });
+
   it("sees through encode_xml when projecting entry fields", function () {
     var template = `{{#recent_entries}}{{title}}{{#encode_xml}}{{{body}}}{{/encode_xml}}{{/recent_entries}}`;
     var result = parseTemplate(template);

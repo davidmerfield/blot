@@ -143,4 +143,43 @@ describe("template", function () {
     });
   });
 
+  it("parses retrieve fields from preloaded inline partial content in context", function (done) {
+    var test = this;
+    var partials = { "inline-item.html": "{{{html}}}" };
+    var contextMap = { "inline-item.html": ["posts"] };
+
+    getPartials(
+      test.blog.id,
+      test.template.id,
+      partials,
+      function (err, resolved, retrieve) {
+        if (err) return done.fail(err);
+        expect(retrieve).toEqual({ posts: { fields: { html: true } } });
+        done();
+      },
+      contextMap,
+      ""
+    );
+  });
+
+  it("blocks projection when an inline partial changes mustache delimiters", function (done) {
+    var test = this;
+    var partials = { "inline-delim.html": "{{=<% %>=}}<%{html}%>" };
+    var contextMap = { "inline-delim.html": ["posts"] };
+
+    getPartials(
+      test.blog.id,
+      test.template.id,
+      partials,
+      function (err, resolved, retrieve) {
+        if (err) return done.fail(err);
+        // Can't wrap it safely, so `posts` stays a boolean => no projection.
+        expect(retrieve.posts).toBe(true);
+        done();
+      },
+      contextMap,
+      ""
+    );
+  });
+
 });

@@ -1,25 +1,28 @@
 describe("mergeRetrieve", function () {
   var mergeRetrieve = require("../util/mergeRetrieve");
 
-  it("promotes boolean retrieve roots to objects when merging fields", function () {
+  it("lets a legacy boolean on the target block projection over incoming fields", function () {
+    // An un-recalculated view (allEntries: true) whose recalculated partial
+    // contributes { fields: { title: true } } must stay a boolean, so
+    // projection is skipped and the view's own {{{html}}} still renders.
     expect(
       mergeRetrieve(
         { allEntries: true },
         { allEntries: { fields: { title: true } } }
       )
     ).toEqual({
-      allEntries: { fields: { title: true } },
+      allEntries: true,
     });
   });
 
-  it("keeps an existing fields object when merging a boolean", function () {
+  it("lets a legacy boolean on the source block projection over existing fields", function () {
     expect(
       mergeRetrieve(
         { allEntries: { fields: { title: true } } },
         { allEntries: true }
       )
     ).toEqual({
-      allEntries: { fields: { title: true } },
+      allEntries: true,
     });
   });
 

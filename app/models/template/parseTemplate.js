@@ -1,6 +1,16 @@
 var _ = require("lodash");
 var mustache = require("mustache");
 var type = require("helper/type");
+var projectableEntryFields = require("./util/projectableEntryFields");
+
+// Heavy entry fields keyed for O(1) lookup. Referenced anywhere inside an
+// entry-list context - including through ordinary predicate sections like
+// {{#first}} where Mustache still resolves them from the parent entry - they
+// must be recorded so retrieve-time projection never drops them.
+var heavyEntryFieldSet = {};
+projectableEntryFields.forEach(function (name) {
+  heavyEntryFieldSet[name] = true;
+});
 
 // My goal is to look at a template
 // retrieve a list of variables and partials inside the template
@@ -144,6 +154,22 @@ function parseTemplate(template) {
     return null;
   }
 
+  // Walk up a context path to the closest ancestor that is an entry-field
+  // context, returning its projected-entry-local root. Lets a heavy field
+  // buried under ordinary predicate sections (e.g. posts > first > html) still
+  // be attributed to the entry.
+  function nearestEntryFieldRoot(contextPath) {
+    var current = contextPath;
+
+    while (current) {
+      if (entryFieldContexts[current]) return entryFieldContexts[current];
+      var lastDot = current.lastIndexOf(".");
+      current = lastDot > -1 ? current.slice(0, lastDot) : "";
+    }
+
+    return null;
+  }
+
   function isProjectedPathSegment(contextPath, variableName) {
     if (!contextPath || !variableName || variableName.indexOf(".") > -1) return false;
 
@@ -270,6 +296,22 @@ function parseTemplate(template) {
           );
         }
 
+        // A heavy field referenced under an ordinary predicate section (e.g.
+        // {{#posts}}{{#first}}{{{html}}}{{/first}}{{/posts}}) still resolves
+        // from the parent entry at render time. Attribute it to that entry so
+        // projection keeps it, even though `first` is not a real sub-object.
+        var heavyFieldName = variableRoot || variable;
+        if (
+          !projectedFieldContext &&
+          inProjectedFieldContext &&
+          heavyEntryFieldSet[heavyFieldName]
+        ) {
+          var heavyFieldRoot = nearestEntryFieldRoot(contextPath);
+          if (heavyFieldRoot) {
+            setProjectedEntryField(heavyFieldRoot, heavyFieldName);
+          }
+        }
+
         if (isSystemRetrieveLocal(variable)) {
           // Special case: 'cdn' should always be an array (empty for literals, with targets for blocks)
           // to prevent soft merge issues with multiple partials via helper/extend.js
@@ -349,7 +391,11 @@ function parseTemplate(template) {
           suppressAsProjectedFieldReference = true;
         }
 
-        if (inProjectedFieldContext && isLowercaseProjectedEntryField(variable)) {
+        if (
+          inProjectedFieldContext &&
+          (isLowercaseProjectedEntryField(variable) ||
+            heavyEntryFieldSet[heavyFieldName])
+        ) {
           suppressAsProjectedFieldReference = true;
         }
 

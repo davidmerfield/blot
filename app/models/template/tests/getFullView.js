@@ -105,7 +105,7 @@ describe("template", function () {
   });
 
 
-  it("handles nested allEntries context in partials without top-level leakage", function (done) {
+  it("keeps a heavy field a partial renders under a nested entry predicate", function (done) {
     var test = this;
 
     var partial = {
@@ -127,8 +127,11 @@ describe("template", function () {
       getFullView(test.blog.id, test.template.id, view.name, function (err, fullView) {
         if (err) return done.fail(err);
 
+        // {{{html}}} inside {{#thumbnail}} has no `thumbnail.html`, so Mustache
+        // resolves it from the parent entry - projection must keep `html`.
+        // `thumbnail` is still recorded, and nothing leaks to the top level.
         expect(fullView[2]).toEqual({
-          allEntries: { fields: { thumbnail: true } },
+          allEntries: { fields: { thumbnail: true, html: true } },
         });
 
         done();
