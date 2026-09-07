@@ -70,7 +70,7 @@ small { color: var(--light-text-color); }
 /* TYPOGRAPHY */
 h1, h2 {
   font-family: var(--heading-font-family);
-  font-size: clamp(2em, 3.5vw, var(--heading-font-size));
+  font-size: clamp(9px, 3.5vw, var(--heading-font-size));
   line-height: var(--heading-line-height);
 }
 h1 {
@@ -438,7 +438,12 @@ kbd {
 
   .slides {
     position: relative; 
+    {{#sticky_navigation}}
     margin: 3.5em 0 1em;
+    {{/sticky_navigation}}
+    {{^sticky_navigation}}
+    margin: 0 0 1em;
+    {{/sticky_navigation}}
     border-right: none; border-bottom: 1px solid var(--border-color); border-top: 1px solid var(--border-color);
   }
   
@@ -447,8 +452,10 @@ kbd {
 
 @media screen and (max-width: 640px) {
   /* Wrapped nav is two rows; keep slide-less pages (Speakers, FAQs) clear too. */
+  {{#sticky_navigation}}
   .slides,
   .site-header {
     margin-top: 5.75em;
   }
+  {{/sticky_navigation}}
 }
