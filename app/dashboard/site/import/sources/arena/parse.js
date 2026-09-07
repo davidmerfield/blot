@@ -7,6 +7,40 @@ const async = require("async");
 const helper = require("dashboard/site/import/helper");
 const sanitize = require("./sanitize");
 
+// Every image the are.na API hands back for an Image/Link/Media block lives
+// on are.na's own storage: image.original.url on their CloudFront
+// distribution, the resized variants on images.are.na. Pinning the download
+// to those hosts keeps a hand-crafted channel from pointing this at an
+// internal address, without needing to route it through the airlock -
+// are.na, not the importing user, controls what host this URL resolves to.
+// (The generic imported-HTML image/PDF downloaders in
+// dashboard/site/import/helper still fetch arbitrary URLs - separate issue.)
+const ARENA_IMAGE_HOSTS = new Set(["d2w9rnfcy7mm78.cloudfront.net"]);
+
+function isArenaImageHost(host) {
+  return (
+    ARENA_IMAGE_HOSTS.has(host) || host === "are.na" || host.endsWith(".are.na")
+  );
+}
+
+// Returns a normalized https URL if `raw` points at an are.na image host,
+// otherwise null (credentials, non-https, or any other host are rejected).
+function arenaImageURL(raw) {
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch (e) {
+    return null;
+  }
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password) {
+    return null;
+  }
+  if (!isArenaImageHost(parsed.hostname.toLowerCase())) {
+    return null;
+  }
+  return parsed.toString();
+}
+
 async function parse({ outputDirectory, posts, status }) {
   status = typeof status === "function" ? status : () => {};
   if (posts.length === 0) {
@@ -107,7 +141,17 @@ async function link(item, outputDirectory) {
 }
 
 async function image(item, outputDirectory) {
-  const response = await fetch(item.image.original.url, {
+  const rawURL = item.image && item.image.original && item.image.original.url;
+  const src = arenaImageURL(rawURL);
+
+  if (!src) {
+    throw new Error(`Refusing to download non-are.na image URL: ${rawURL}`);
+  }
+
+  const response = await fetch(src, {
+    // are.na serves these 200 directly; a redirect off an are.na host is
+    // exactly what the allow-list above exists to stop, so don't follow it.
+    redirect: "manual",
     headers: {
       "User-Agent":
         "Mozilla/5.0 (compatible; Blot/1.0; +https://blot.im)",

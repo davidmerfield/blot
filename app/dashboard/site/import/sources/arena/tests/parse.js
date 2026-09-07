@@ -95,3 +95,98 @@ describe("Are.na text block importer", function () {
     expect(fs.readFileSync(path.join(outputDirectory, "2020", "04-05-Still-imported.txt"), "utf8")).toContain("Success");
   });
 });
+
+describe("Are.na image block importer", function () {
+  const nock = require("nock");
+  let outputDirectory;
+
+  function imageBlock(url, overrides) {
+    return Object.assign(
+      {
+        id: 1,
+        class: "Image",
+        title: "My picture",
+        visibility: "public",
+        created_at: "2020-04-05T06:07:08.000Z",
+        image: { filename: "photo.png", original: { url } },
+      },
+      overrides
+    );
+  }
+
+  beforeEach(function () {
+    outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "arena-image-"));
+    nock.disableNetConnect();
+  });
+
+  afterEach(function () {
+    nock.cleanAll();
+    nock.enableNetConnect();
+    fs.removeSync(outputDirectory);
+  });
+
+  it("downloads an image from are.na's CloudFront host", async function () {
+    const scope = nock("https://d2w9rnfcy7mm78.cloudfront.net")
+      .get("/1/original_abc.png")
+      .reply(200, Buffer.from("PNGBYTES"));
+
+    await parse({
+      outputDirectory,
+      status: function () {},
+      posts: [
+        imageBlock(
+          "https://d2w9rnfcy7mm78.cloudfront.net/1/original_abc.png"
+        ),
+      ],
+    });
+
+    expect(scope.isDone()).toBe(true);
+    const written = fs.readdirSync(outputDirectory);
+    expect(written.length).toBe(1);
+    expect(fs.readFileSync(path.join(outputDirectory, written[0]), "utf8")).toBe(
+      "PNGBYTES"
+    );
+  });
+
+  ["http://169.254.169.254/latest/meta-data/", "https://evil.example/x.png", "https://d2w9rnfcy7mm78.cloudfront.net.evil.example/x.png"].forEach(
+    (url) => {
+      it("refuses non-are.na image URL " + url, async function () {
+        const statuses = [];
+        spyOn(console, "error");
+
+        await parse({
+          outputDirectory,
+          status: (message) => statuses.push(message),
+          posts: [imageBlock(url)],
+        });
+
+        expect(
+          statuses.some((m) => m.includes("Refusing to download non-are.na image URL"))
+        ).toBe(true);
+        expect(fs.readdirSync(outputDirectory).length).toBe(0);
+      });
+    }
+  );
+
+  it("does not follow a redirect off the are.na host", async function () {
+    const scope = nock("https://d2w9rnfcy7mm78.cloudfront.net")
+      .get("/1/original_abc.png")
+      .reply(302, "", { Location: "http://169.254.169.254/" });
+    const statuses = [];
+    spyOn(console, "error");
+
+    await parse({
+      outputDirectory,
+      status: (message) => statuses.push(message),
+      posts: [
+        imageBlock(
+          "https://d2w9rnfcy7mm78.cloudfront.net/1/original_abc.png"
+        ),
+      ],
+    });
+
+    expect(scope.isDone()).toBe(true);
+    expect(statuses.some((m) => m.includes("Failed to process"))).toBe(true);
+    expect(fs.readdirSync(outputDirectory).length).toBe(0);
+  });
+});
