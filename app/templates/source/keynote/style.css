@@ -144,9 +144,8 @@ hr {width: 100%;border: none;border-bottom: 1px solid rgba({{#rgb}}{{text_color}
   {{#roundAvatar}}
   border-radius:50%;
   {{/roundAvatar}}
-  position:absolute;
-  top:-3px;
-  left:-48px
+  vertical-align: middle;
+  margin-right: 0.75em;
 }
 
 .entry {font-size:0.875em;padding: 1em;color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.55)}
