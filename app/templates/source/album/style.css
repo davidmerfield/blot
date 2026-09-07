@@ -188,7 +188,8 @@ header {
 {{/is.navigation_position.bottom}}
 
 {{#hide_dates}}
-.date {
+.post .date,
+#hyperlist .date {
   display: none
 }
 {{/hide_dates}}
@@ -373,6 +374,13 @@ font-feature-settings: 'tnum';
     display: block;
   }
 
+  {{#is.navigation_alignment.right}}
+  header {
+    justify-content: flex-start;
+    padding-right: calc({{spacing}}rem + 2.8em);
+  }
+  {{/is.navigation_alignment.right}}
+
 }
 
 {{#infinite_scroll}}
@@ -454,13 +462,6 @@ a.next-page {
 .entry .body {
   flex-grow: 1;
   text-align: center;
-  {{#heading_font}}
-  font-size: {{{font_size}}}px;
-  line-height: {{{line_height}}};
-  {{/heading_font}}
-  {{^heading_font}}
-  font-size: 23px;
-  {{/heading_font}}
   -webkit-font-smoothing: auto;
 }
 
@@ -498,6 +499,7 @@ a.next-page {
 h1, h2, h3, h4, h5, h6 {
   {{#heading_font}}
   font-family: {{{stack}}};
+  line-height: {{{line_height}}};
   {{/heading_font}}
 }
 
@@ -505,6 +507,7 @@ pre, code {
   {{#syntax_highlighter_font}}
   font-family: {{{stack}}};
   font-size: {{{font_size}}}px;
+  line-height: {{{line_height}}};
   {{/syntax_highlighter_font}}
 }
 

@@ -59,7 +59,8 @@
     },
     "syntax_highlighter_font": {
       "id": "system-mono",
-      "font_size": 14
+      "font_size": 14,
+      "line_height": 1.5
     },
     "favicon_url": "",
     "logo_url": "",

@@ -54,7 +54,7 @@ input[type=radio] {display: none;}
 padding: 0 {{spacing}}rem;    
 box-sizing: border-box;
 width: 100vw">
-  {{> search_form}}
+  {{#show_search}}{{> search_form}}{{/show_search}}
   </div>
     <div id="hyperlist" class="container"></div>
     <script type="text/javascript" src="{{#asset}}/archive.js{{/asset}}"></script>
