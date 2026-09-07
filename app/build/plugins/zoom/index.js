@@ -41,5 +41,5 @@ module.exports = {
   isDefault: false,
   category: "images",
   title: "Zoomer",
-  description: "Adds a zoom to large images",
+  description: "Enable zoom on large images",
 };

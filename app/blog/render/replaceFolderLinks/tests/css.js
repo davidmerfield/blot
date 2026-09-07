@@ -16,8 +16,7 @@ describe("replaceCssUrls", function () {
       "style.css": `.test { background-image: url('/images/test.jpg'); }`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(cdnRegex("/images/test.jpg"));
   });
@@ -70,8 +69,7 @@ describe("replaceCssUrls", function () {
       "style.css": `.test { background: url(/images/test.jpg); }`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(cdnRegex("/images/test.jpg"));
   });
@@ -116,14 +114,12 @@ describe("replaceCssUrls", function () {
           }`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(cdnRegex("/img1.jpg"));
     expect(result).toMatch(cdnRegex("/img2.jpg"));
 
-    const res2 = await this.get("/style.css");
-    const result2 = await res2.text();
+    const result2 = await this.text("/style.css");
 
     expect(result2).toMatch(cdnRegex("/img1.jpg"));
     expect(result2).toMatch(cdnRegex("/img2.jpg"));
@@ -133,8 +129,7 @@ describe("replaceCssUrls", function () {
     const css = `.test{background:url(http://example.com/image.jpg);background-image:url(https://example.com/image.png)}`;
     await this.template({ "style.css": css });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toEqual(css);
   });
@@ -168,9 +163,7 @@ describe("replaceCssUrls", function () {
       content: "fake font data",
     });
 
-    const res = await this.get("/style.css");
-
-    const result = await res.text();
+    const result = await this.text("/style.css");
     expect(result).toMatch(
       cdnRegex("/Templates/Fonts/trio.grotesk/triogrotesk-regular.otf")
     );
@@ -178,8 +171,7 @@ describe("replaceCssUrls", function () {
       cdnRegex("/Templates/Fonts/trio.grotesk/triogrotesk-italic.otf")
     );
 
-    const res2 = await this.get("/style.css");
-    const result2 = await res2.text();
+    const result2 = await this.text("/style.css");
     expect(result2).toMatch(
       cdnRegex("/Templates/Fonts/trio.grotesk/triogrotesk-regular.otf")
     );
@@ -192,8 +184,7 @@ describe("replaceCssUrls", function () {
     const css = `.test{background:url(data:image/png;base64,abc123)}`;
     await this.template({ "style.css": css });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toEqual(css);
   });
@@ -202,8 +193,7 @@ describe("replaceCssUrls", function () {
     const css = `.test{background:url(/nonexistent.jpg)}`;
     await this.template({ "style.css": css });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toEqual(css);
   });
@@ -219,8 +209,7 @@ describe("replaceCssUrls", function () {
           }`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(/color:red/);
     expect(result).toMatch(/center\/cover;/);
@@ -234,8 +223,7 @@ describe("replaceCssUrls", function () {
       "style.css": `.test { background: url('/image.jpg?v=1'); }`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(cdnRegex("/image.jpg\\?v=1"));
   });
@@ -252,8 +240,7 @@ describe("replaceCssUrls", function () {
     fs.stat = jasmine.createSpy("stat").and.callFake(origStat);
 
     // First request
-    const res1 = await this.get("/style.css");
-    const result1 = await res1.text();
+    const result1 = await this.text("/style.css");
 
     expect(fs.stat).toHaveBeenCalledWith(filePath);
     expect(fs.stat.calls.count()).toBe(1);
@@ -261,8 +248,7 @@ describe("replaceCssUrls", function () {
     fs.stat.calls.reset();
 
     // Second request
-    const res2 = await this.get("/style.css");
-    const result2 = await res2.text();
+    const result2 = await this.text("/style.css");
 
     expect(result1).toEqual(result2);
     expect(fs.stat).not.toHaveBeenCalled();
@@ -280,8 +266,7 @@ describe("replaceCssUrls", function () {
           }`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     const matches = result.match(
       new RegExp(`${config.cdn.origin}/folder/v-[a-f0-9]{8}`, "g")
@@ -293,8 +278,7 @@ describe("replaceCssUrls", function () {
     const css = `.test{background:url(../../../../etc/passwd)}`;
     await this.template({ "style.css": css });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toEqual(css);
   });
@@ -309,8 +293,7 @@ describe("replaceCssUrls", function () {
     await this.template({ "style.css": css });
     await this.write({ path: "/test.jpg", content: "image" });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
     expect(result).toMatch(cdnRegex("/test.jpg"));
   });
 
@@ -333,8 +316,7 @@ describe("replaceCssUrls", function () {
             `,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(cdnRegex("/a.jpg"));
     expect(result).toMatch(cdnRegex("/b.jpg"));
@@ -345,8 +327,7 @@ describe("replaceCssUrls", function () {
     await this.write({ path: "/test.jpg", content: "image 1" });
     await this.template({ "style.css": `.test {background: url(./test.jpg)}` });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(cdnRegex("/test.jpg"));
 
@@ -357,8 +338,7 @@ describe("replaceCssUrls", function () {
 
     await this.write({ path: "/test.jpg", content: "image 2" });
 
-    const res2 = await this.get("/style.css");
-    const result2 = await res2.text();
+    const result2 = await this.text("/style.css");
 
     expect(result2).toMatch(cdnRegex("/test.jpg"));
 
@@ -373,8 +353,7 @@ describe("replaceCssUrls", function () {
       "style.css": `@media (max-width:768px){.test{background-image:url(https://cdn.localhost/folder/v-e464a519/blog_2c245d7ded644f2380a75cdcf260a603/mobile.jpg)}}`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(cdnRegex("/mobile.jpg"));
     expect(result).toMatch(/@media \(max-width:768px\)/);
@@ -391,8 +370,7 @@ describe("replaceCssUrls", function () {
         }`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(cdnRegex("/image with spaces.jpg"));
     expect(result).toMatch(cdnRegex("/image.jpg"));
@@ -408,8 +386,7 @@ describe("replaceCssUrls", function () {
       }`;
     await this.template({ "style.css": css });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toEqual(css);
   });
@@ -427,8 +404,7 @@ describe("replaceCssUrls", function () {
         }`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(cdnRegex("/test.jpg"));
     expect(result).toMatch(/@media print/);
@@ -444,8 +420,7 @@ describe("replaceCssUrls", function () {
         }`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(cdnRegex("/test.jpg"));
     expect(result).toMatch(/linear-gradient\(red, blue\)/);
@@ -483,8 +458,7 @@ describe("replaceCssUrls", function () {
       "style.css": `.test { mask-image: url(/sprite.svg#icon-home); }`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     expect(result).toMatch(cdnRegex("/sprite.svg"));
   });
@@ -497,8 +471,7 @@ describe("replaceCssUrls", function () {
         .test { background: url(/test.jpg); }`,
     });
 
-    const res = await this.get("/style.css");
-    const result = await res.text();
+    const result = await this.text("/style.css");
 
     const matches = result.match(cdnRegex("/test.jpg"));
     expect(matches.length).toBe(1); // Should only replace the actual URL, not the one in comments

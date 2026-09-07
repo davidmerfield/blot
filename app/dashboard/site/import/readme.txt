@@ -1,7 +1,9 @@
-1. Install the dependencies needed for this importer:
-- Run 'npm install' in the root directory of this repository
-- Run 'npm install' in ```app/dashboard/importer```
+Dashboard imports
+-----------------
 
-2. Navigate to the directory for the script you'd like to use and run 'npm install' there.
+Importers are run through a site's dashboard, not invoked directly as command-line
+scripts. Open the site's dashboard, select Import, choose the source platform,
+and upload the export file.
 
-3. Follow the instructions in the readme for that script.
+WordPress and Squarespace XML exports are supported. See the source-specific
+readmes for export details.

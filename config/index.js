@@ -22,6 +22,24 @@ const reverse_proxies = process.env.BLOT_REVERSE_PROXY_URLS
   ? ["http://127.0.0.1:80"]
   : [];
 
+// See the "airlock" config block below. A warning, not a thrown error that
+// would crash every container on boot over a single misconfigured/down
+// dependency - but it means bookmark screenshots and remote-image downloads
+// are fetching user-controlled URLs directly, with no SSRF protection. Once
+// the airlock deploy has been stable for a while, consider tightening this
+// to fail closed (but only after confirming the airlock, not blindly).
+if (
+  environment === "production" &&
+  !(process.env.BLOT_AIRLOCK_BROWSER_URL && process.env.BLOT_AIRLOCK_PROXY_URL)
+) {
+  console.warn(
+    "WARNING: BLOT_AIRLOCK_BROWSER_URL / BLOT_AIRLOCK_PROXY_URL are not both " +
+      "set in production. Bookmark-link screenshots and remote-image " +
+      "downloads are fetching user-controlled URLs directly, with no SSRF " +
+      "protection. See config/airlock/README.md."
+  );
+}
+
 module.exports = {
   // codebase expects either 'production' or 'development'
   environment,
@@ -44,7 +62,7 @@ module.exports = {
     // the development server needs to know the production
     // server's host. This let's us use the same code
     relay_host: "webhooks.blot.im",
-    development_host: "localhost",
+    development_host: "local.blot",
   },
 
   maintenance: process.env.BLOT_MAINTENANCE === "true",
@@ -116,6 +134,20 @@ module.exports = {
     bin: process.env.BLOT_PANDOC_PATH || "pandoc",
     maxmemory: "500M", // 500mb
     timeout: 10000, // 10s
+  },
+
+  // The "airlock" container (config/airlock) is the single egress point for
+  // fetching untrusted, user-supplied URLs: bookmark-link screenshots and
+  // remote images referenced in posts. When these are unset the app talks to
+  // the network directly - fine for local development, but with no SSRF
+  // protection (see the production warning above). See config/airlock/README.md.
+  airlock: {
+    // Chromium DevTools endpoint, e.g. http://airlock:9222 - consumed by
+    // app/helper/screenshot.
+    browser_url: process.env.BLOT_AIRLOCK_BROWSER_URL || null,
+    // HTTP(S) forward proxy, e.g. http://airlock:8888 - consumed by
+    // app/helper/transformer/download.
+    proxy: process.env.BLOT_AIRLOCK_PROXY_URL || null,
   },
 
   paypal: {
@@ -219,14 +251,7 @@ module.exports = {
       }
     })(),
   },
-
-  twitter: {
-    consumer_key: process.env.BLOT_TWITTER_CONSUMER_KEY,
-    consumer_secret: process.env.BLOT_TWITTER_CONSUMER_SECRET,
-    access_token: process.env.BLOT_TWITTER_ACCESS_TOKEN_KEY,
-    access_token_secret: process.env.BLOT_TWITTER_ACCESS_TOKEN_SECRET,
-  },
-
+  
   icloud: {
     secret: process.env.BLOT_ICLOUD_SERVER_SECRET,
     server_address: process.env.BLOT_ICLOUD_SERVER_ADDRESS,

@@ -1,7 +1,8 @@
 {
   "name": "Times",
   "tags": [
-    "serif"
+    "serif",
+    "system"
   ],
   "stack": "Times,'Times New Roman',serif",
   "line_height": 1.45,

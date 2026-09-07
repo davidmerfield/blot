@@ -29,7 +29,7 @@ alias access="docker exec blot-container-blue node /usr/src/app/scripts/blog/acc
 alias info="docker exec blot-container-blue node /usr/src/app/scripts/info"
 alias errors="tail -n 10000000 \$LOGS/access.log | egrep ' (500|501|502|504) '"
 alias 404s="cat /var/instance-ssd/logs/access.log | grep ' 404 ' | cut -d ' ' -f7 | sed -E 's|https?://[^/]+| |' |  sort | uniq -c | sort -rn | head -n 100"
-alias upstream='tail -f /var/instance-ssd/logs/access.log | stdbuf -oL grep MISS | stdbuf -oL awk "{print \$10, \$3, \$4, \$7}"'
+alias upstream='tail -f /var/instance-ssd/logs/access.log | stdbuf -oL grep "st=[^-]" | stdbuf -oL awk "{print \$10, \$3, \$4, \$7}"'
 alias rebuild='docker exec blot-container-blue node /usr/src/app/scripts/entry/rebuild'
 
 question() {

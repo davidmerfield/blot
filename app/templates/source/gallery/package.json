@@ -1,0 +1,55 @@
+{
+  "name": "Gallery",
+  "locals": {
+    "page_size": 96,
+    "hide_dates": false,
+    "date_display": "MMMM D, Y",
+    "text_color": "#000000",
+    "background_color": "#FFFFFF",
+    "accent_color": "blue",
+    "body_font": {
+      "font_size": 14
+    },
+    "demo_folder": "bjorn"
+  },
+  "isPublic": false,
+  "views": {
+    "archives.html": {
+      "url": "/archives",
+      "partials": {
+        "title": "Archives - {{{title}}}",
+        "description": "All the entries posted on {{{title}}}"
+      }
+    },
+    "tagged.html": {
+      "partials": {
+        "title": "Entries tagged {{{tag}}} from {{{title}}}",
+        "description": "All of the entries posted on {{{title}}} tagged {{{tag}}}"
+      }
+    },
+    "entries.html": {
+      "partials": {
+        "title": "{{{title}}}",
+        "description": "The latest entries posted on {{{title}}}"
+      }
+    },
+    "error.html": {
+      "partials": {
+        "title": "{{{error.title}}} - {{{title}}}",
+        "description": "Error on {{{title}}}"
+      }
+    },
+    "entry.html": {
+      "partials": {
+        "title": "{{{entry.title}}} - {{{title}}}",
+        "description": "{{{entry.summary}}}"
+      }
+    },
+    "search.html": {
+      "partials": {
+        "title": "Search - {{{title}}}",
+        "description": "Search all the entries posted on {{{title}}}"
+      }
+    }
+  }
+}

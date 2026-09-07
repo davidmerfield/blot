@@ -10,13 +10,16 @@ describe("template", function () {
     createShareID(test.template.id, function (err, shareID) {
       if (err) return done.fail(err);
       expect(typeof shareID).toEqual("string");
-      dropShareID(shareID, function (err) {
-        if (err) return done.fail(err);
-        client.keys("*" + shareID + "*", function (err, result) {
-          if (err) return done.fail(err);
-          expect(result).toEqual([]);
-          done();
-        });
+      dropShareID(shareID, function (dropErr) {
+        if (dropErr) return done.fail(dropErr);
+
+        client
+          .keys("*" + shareID + "*")
+          .then(function (result) {
+            expect(result).toEqual([]);
+            done();
+          })
+          .catch(done.fail);
       });
     });
   });

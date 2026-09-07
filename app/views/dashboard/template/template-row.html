@@ -1,5 +1,5 @@
 <div
-  class="template-row {{#selected}}selected{{/selected}}"
+  class="template-row row-action-menu-row {{#selected}}selected{{/selected}}"
   data-template-slug="{{slug}}"
   data-template-name="{{#localEditing}}{{slug}}{{/localEditing}}{{^localEditing}}{{name}}{{/localEditing}}"
 >
@@ -8,6 +8,7 @@
       {{^localEditing}}
       <img
         src="{{#cdn}}/images/examples/{{thumbnailSlug}}/0-icon.png{{/cdn}}"
+        width="48" height="35"
       />
       {{/localEditing}} {{#localEditing}}
       <span
@@ -46,10 +47,12 @@
     {{/checked}}
   </a>
   <button
-    class="template-row__menu-trigger"
+    class="template-row__menu-trigger row-action-menu__trigger"
     type="button"
     data-editurl="{{{editURL}}}"
     data-previewurl="{{{previewMenuURL}}}"
+    aria-haspopup="true"
+    aria-expanded="false"
   >
     <span class="icon-dots"></span>
   </button>

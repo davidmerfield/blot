@@ -51,12 +51,8 @@ module.exports = function ($) {
       const inner = $(node).html().trim();
 
       // Is this an empty line?
-      if (
-        inner === "" ||
-        inner === "<span></span>" ||
-        inner === "<span/>" ||
-        inner.match(/^<span>\s*<\/span>$/)
-      ) {
+      // Note: empty spans are already cleaned up by cleanupSpans()
+      if (inner === "") {
         emptyCount++;
         // Always remove the empty <p>
         $(node).remove();

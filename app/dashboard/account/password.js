@@ -50,7 +50,7 @@ function requireTokenOrLackOfPassword(req, res, next) {
     return next();
   }
 
-  if (!req.user.passwordHash) {
+  if (!req.user.hasPassword) {
     return next();
   }
 

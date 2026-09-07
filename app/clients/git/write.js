@@ -3,6 +3,7 @@ var localPath = require("helper/localPath");
 var Git = require("simple-git");
 var debug = require("debug")("blot:clients:git:write");
 var checkGitRepoExists = require("./checkGitRepoExists");
+const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
 // Used to write a file to the user's blog folder
 // contents can be anything supported by fs-extra.outputFile
@@ -13,6 +14,10 @@ module.exports = function write(blogID, path, contents, callback) {
   var blogDirectory = localPath(blogID, "/");
 
   debug("Blog:", blogID, "Writing", path);
+
+  if (shouldIgnoreFile(path)) {
+    return callback(new Error(`Cannot write ignored file: ${path}`));
+  }
 
   // Right now local path returns a path with a trailing slash
   // eventually I would like this function to just accept

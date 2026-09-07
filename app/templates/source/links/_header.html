@@ -1,0 +1,21 @@
+{{> head}}
+
+<body style="display:flex;flex-direction:column;min-height:100%;" class="{{#infinite_scroll}}infinite-scroll{{/infinite_scroll}}">
+  <input type="checkbox" id="toggle" name="toggle">
+
+  <div class="header">{{> index_link}}
+    <label for="toggle">Menu</label>
+
+    <div class="hide search">{{> search_field}}
+    </div>
+
+    <div class="hide nav">{{#menu}}
+      <a class="menu-link light"
+        title="{{label}}"
+        data-url="{{{url}}}"
+        data-label="{{label}}"
+        style="padding:0.5rem 0.75rem;{{#last}}padding-right:1.3rem{{/last}}"
+        href="{{{url}}}">{{label}}
+      </a>{{/menu}}
+    </div>
+  </div>

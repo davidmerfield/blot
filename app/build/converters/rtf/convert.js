@@ -3,6 +3,10 @@ var time = require("helper/time");
 var config = require("config");
 var Pandoc = config.pandoc.bin;
 var debug = require("debug")("blot:converters:rtf");
+var cheerio = require("cheerio");
+var normalizeLiteralDollarMath = require(
+  "build/math/normalizeLiteralDollars"
+).normalizeLiteralDollarMath;
 
 module.exports = function (blog, text, callback) {
   var args = [
@@ -23,6 +27,11 @@ module.exports = function (blog, text, callback) {
 
     // we use our own highlighint library (hljs) later
     "--no-highlight",
+
+    // Keep this aligned with the other Pandoc converters. The RTF reader does
+    // not create Pandoc Math nodes from dollar-delimited TeX, so normalize its
+    // literal output below while the original TeX is still available.
+    "--katex",
 
     // such a dumb default feature... sorry john!
     "--email-obfuscation=none",
@@ -66,6 +75,10 @@ module.exports = function (blog, text, callback) {
     }
 
     if (err) return callback(err);
+
+    var $ = cheerio.load(result, { decodeEntities: false }, false);
+    normalizeLiteralDollarMath($);
+    result = $.html();
 
     debug("Final:", result);
     callback(null, result);

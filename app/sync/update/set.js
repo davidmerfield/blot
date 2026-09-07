@@ -25,7 +25,9 @@ function isPublic(path) {
     // whose name begins with an underscore
     normalizedPath.includes("/_") ||
     // convention to ingore dotfiles or folders
-    normalizedPath.includes("/.")
+    normalizedPath.includes("/.") || 
+    // textbundle asset files
+    normalizedPath.includes(".textbundle/assets/")
   );
 }
 

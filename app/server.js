@@ -23,26 +23,35 @@ console.log(
   config.host
 );
 
-// Trusts secure requests terminated by NGINX, as far as I know
-server.set("trust proxy", true);
+// Trust exactly one proxy hop (the NGINX/OpenResty edge on 127.0.0.1).
+//
+// NGINX appends the real client address to X-Forwarded-For via
+// $proxy_add_x_forwarded_for, so with `true` Express would trust the whole
+// chain and resolve req.ip to the left-most, client-supplied XFF entry. That
+// let a client rotate X-Forwarded-For to get a fresh express-rate-limit bucket
+// per request and bypass the log-in rate limiter. With a hop count of 1,
+// req.ip is the address NGINX appended, which a client cannot spoof.
+server.set("trust proxy", 1);
 
 // Check if the database is healthy
-server.get("/redis-health", function (req, res) {
-  let redis = require("models/redis");
-  let client = redis();
+server.get("/redis-health", async function (req, res) {
+  const createRedisClient = require("models/redis");
+  const client = createRedisClient();
 
   // do not cache response
   res.set("Cache-Control", "no-store");
 
-  client.ping(function (err, reply) {
-    if (err) {
-      res.status(400).send("Failed to ping redis");
-    } else {
-      res.send("OK");
+  try {
+    await client.connect();
+    await client.ping();
+    res.send("OK");
+  } catch (err) {
+    res.status(400).send("Failed to ping redis");
+  } finally {
+    if (client.isOpen) {
+      await client.quit();
     }
-
-    client.quit();
-  });
+  }
 });
 
 // Prevent <iframes> embedding pages served by Blot while allowing

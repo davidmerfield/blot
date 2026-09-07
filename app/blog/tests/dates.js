@@ -42,7 +42,7 @@ describe("dates", function () {
     expect(await this.text("/")).toBe("1/3/2025");
   });
 
-  it("preserves the date computed from metadata, even after removing the metadata", async function () {
+  it("does not preserve the date computed from metadata after removing the metadata", async function () {
     await this.write({ path: "/a.txt", content: "Date: 2025-01-03\n\nFoo" });
     await this.template({
       "entries.html": `{{#entries}}{{date}}{{/entries}}`,
@@ -54,7 +54,7 @@ describe("dates", function () {
     await this.write({ path: "/a.txt", content: "Foo" });
     await this.blog.rebuild();
 
-    expect(await this.text("/")).toBe("January 3, 2025");
+    expect(await this.text("/")).not.toBe("January 3, 2025");
   });
 
   it("respects the template's hide_dates setting", async function () {
@@ -200,6 +200,19 @@ describe("dates", function () {
 
     expect(await this.text("/")).toBe("25 Jan 3rd");
   });
+
+  it("supports the formatDate helper with a variable", async function () {
+    await this.write({ path: "/a.txt", content: "Date: 2025-01-03\n\nFoo" });
+
+    await this.template({
+      "entries.html": `{{#entries}}{{#formatDate}}{{date_format}}{{/formatDate}}{{/entries}}`,
+    }, {
+      locals: { date_format: "YY MMM, Do" },
+    });
+
+    expect(await this.text("/")).toBe("25 Jan, 3rd");
+  });
+
 
   it("supports the formatUpdated helper", async function () {
     const before = Date.now();

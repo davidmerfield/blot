@@ -1,160 +1,142 @@
-// todo turn this into a github action? runs when changes made automatically?
-
 const screenshot = require("helper/screenshot");
 const config = require("config");
 const { dirname } = require("path");
 const root = require("helper/rootDir");
 const fs = require("fs-extra");
-const TEMPLATES_DIRECTORY = root + "/app/templates/latest";
-const TEMPLATE_ARCHIVE_DIRECTORY = root + "/app/templates/past";
-const FOLDERS_DIRECTORY = root + "/app/templates/folders";
+const demoFolders = require("./demoFolders");
 const IMAGE_DIRECTORY = root + "/app/views/images/examples";
+// Template gallery previews use a fixed 1060x780 viewport; this is independent
+// of entry thumbnail sizing or OG image dimensions.
+const TEMPLATE_SCREENSHOT_WIDTH = 1060;
+const TEMPLATE_SCREENSHOT_HEIGHT = 780;
 
-const templateOptions = {
-  blog: {
-    handle: "david"
-  },
-  magazine: {
-    handle: "plants"
-  },
-  grid: {
-    handle: "botanist"
-  },
-  photo: {
-    handle: "william"
-  },
-  portfolio: {
-    handle: "bjorn"
-  },
-  'photo-old': {
-    handle: "photographer"
-  },
-  scroll: {
-    handle: "illustrator",
-  },
-  terminal: {
-    handle: "photographer"
-  },
-  reference: {
-    handle: "bjorn"
-  },
-  blank: {
-    handle: "david"
-  },
-  isola: {
-    handle: "writer"
-  },
-  marfa: {
-    handle: "david"
+// These previews are served by a local server we start ourselves, so there is
+// nothing to be polite to: take several at once and drop the pacing that
+// helper/screenshot applies when screenshotting live sites.
+const CONCURRENCY = Number(process.env.BLOT_SCREENSHOT_CONCURRENCY) || 4;
+
+// Enough for helper/screenshot to burn a page-load timeout and retry, but not
+// so long that one wedged preview stalls the whole run.
+const SHOT_TIMEOUT = Number(process.env.BLOT_SCREENSHOT_TIMEOUT) || 60 * 1000;
+
+const shotsFor = (template) => {
+  const handle = demoFolders.forTemplate(template);
+  const pages = ["/"];
+
+  return pages.flatMap((page, index) => {
+    const url = `${config.protocol}preview-of-${template}-on-${handle}.${config.host}${page}`;
+    const destination = `${IMAGE_DIRECTORY}/${template}/${index}`;
+
+    return [
+      {
+        url,
+        path: `${destination}.png`,
+        options: {
+          width: TEMPLATE_SCREENSHOT_WIDTH,
+          height: TEMPLATE_SCREENSHOT_HEIGHT,
+        },
+      },
+      { url, path: `${destination}.mobile.png`, options: { mobile: true } },
+    ];
+  });
+};
+
+// Runs tasks with at most `limit` in flight. Each task's timeout only starts
+// once a worker picks it up, otherwise queued tasks would spend their budget
+// waiting rather than working.
+const inParallel = async (items, limit, worker) => {
+  let next = 0;
+
+  const run = async () => {
+    while (next < items.length) await worker(items[next++]);
+  };
+
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
+};
+
+const emptyImageDirectories = async (templates) => {
+  if (templates.length === demoFolders.list().length) {
+    // A full run owns the whole directory, so this also clears out images
+    // belonging to templates which no longer exist.
+    console.log("Emptying image directory", IMAGE_DIRECTORY);
+    return fs.emptyDir(IMAGE_DIRECTORY);
+  }
+
+  // A filtered run must leave the other templates' images alone, otherwise
+  // screenshotting one template would delete every other template's images.
+  for (const template of templates) {
+    const directory = `${IMAGE_DIRECTORY}/${template}`;
+    console.log("Emptying image directory", directory);
+    await fs.emptyDir(directory);
   }
 };
 
-// you don't need to do this for folders with
-// a template in the Templates folder
-const foldersOptions = {
-  bjorn: {
-    template: "portfolio"
-  },
-  david: {
-    template: "blog"
-  }
-};
+const main = async ({ templates } = {}) => {
+  const selected = demoFolders.parse(templates);
+  const shots = selected.flatMap(shotsFor);
 
-const templates = fs
-  .readdirSync(TEMPLATES_DIRECTORY)
-  .filter(i => !i.startsWith(".") && !i.endsWith(".md"))
-  .concat(
-    fs
-      .readdirSync(TEMPLATE_ARCHIVE_DIRECTORY)
-      .filter(i => !i.startsWith(".") && !i.endsWith(".md"))
-  )
-  .map(i => {
-    const handle = templateOptions[i] ? templateOptions[i].handle : "david";
-    const template = i;
-    const pages =
-      templateOptions[i] && templateOptions[i].pages
-        ? templateOptions[i].pages
-        : ["/"];
+  screenshot.configure({ concurrency: CONCURRENCY, minTime: 0 });
 
-    return pages.map((page, index) => {
-      return {
-        url: `${config.protocol}preview-of-${template}-on-${handle}.${config.host}${page}`,
-        destination: `${IMAGE_DIRECTORY}/${template}/${index}`
-      };
-    });
-  });
+  console.log("Templates:", selected.join(", "));
 
-const folders = fs
-  .readdirSync(FOLDERS_DIRECTORY)
-  .filter(i => !i.startsWith(".") && !i.endsWith(".md") && !i.endsWith(".js"))
-  .map(folder => {
-    const pages =
-      foldersOptions[folder] && foldersOptions[folder].pages
-        ? foldersOptions[folder].pages
-        : ["/"];
-    const template =
-      foldersOptions[folder] && foldersOptions[folder].template
-        ? foldersOptions[folder].template
-        : fs.existsSync(`${FOLDERS_DIRECTORY}/${folder}/Templates`)
-        ? `my-${
-            fs
-              .readdirSync(`${FOLDERS_DIRECTORY}/${folder}/Templates`)
-              .filter(i => !i.startsWith("."))[0]
-          }`
-        : "blog";
-    return pages.map((page, index) => {
-      return {
-        url: `${config.protocol}preview-of-${template}-on-${folder}.${config.host}${page}`,
-        destination: `${IMAGE_DIRECTORY}/${folder}/${index}`
-      };
-    });
-  });
+  await emptyImageDirectories(selected);
 
-const screenshots = templates.concat(folders).flat();
+  console.log(`Taking ${shots.length} screenshots, ${CONCURRENCY} at a time`);
 
-const main = async () => {
-  console.log(screenshots);
+  const failures = [];
 
-  console.log("Emptying image directory", IMAGE_DIRECTORY);
-  await fs.emptyDir(IMAGE_DIRECTORY);
-
-  console.log("Taking screenshots");
-  for (const screenshot of screenshots) {
+  await inParallel(shots, CONCURRENCY, async (shot) => {
     try {
-      // if the screenshot takes longer than 15 seconds, it's probably not going to work
-      // so we should just skip it
       await Promise.race([
-        takeScreenshot(screenshot),
+        takeScreenshot(shot),
         new Promise((resolve, reject) => {
-          setTimeout(() => reject("Timeout"), 15000);
-        })
+          setTimeout(
+            () => reject(new Error(`Timeout after ${SHOT_TIMEOUT}ms`)),
+            SHOT_TIMEOUT
+          );
+        }),
       ]);
     } catch (error) {
-      console.error(error);
+      failures.push({ path: shot.path, error });
+      console.error(shot.path, error);
     }
+  });
+
+  if (failures.length) {
+    console.error(
+      `Failed to take ${failures.length} of ${shots.length} screenshots:`
+    );
+    for (const { path, error } of failures) {
+      console.error("-", path, error.message || error);
+    }
+  } else {
+    console.log(`Took all ${shots.length} screenshots`);
   }
+
+  return { shots, failures };
 };
 
-const takeScreenshot = async ({ url, destination }) => {
-  await fs.ensureDir(dirname(destination));
-
-  const path = `${destination}.png`;
-
+const takeScreenshot = async ({ url, path, options }) => {
+  await fs.ensureDir(dirname(path));
   console.log(`Taking screenshot of ${url} to ${path}`);
-  await screenshot(url, path, { width: 1060, height: 780 });
-
-  const mobilePath = `${destination}.mobile.png`;
-  console.log(`Taking mobile screenshot of ${url} to ${mobilePath}`);
-  await screenshot(url, mobilePath, { mobile: true });
+  await screenshot(url, path, options);
 };
 
 module.exports = main;
 
 if (require.main === module) {
-  main()
-    .then(() => {
+  const arg = process.argv.slice(2).find((value) => !value.startsWith("--"));
+
+  main({ templates: arg || process.env.BLOT_SCREENSHOT_TEMPLATES })
+    .then(({ failures }) => {
       console.log("Done!");
-      process.exit();
+      // The image directory is emptied before the run, so a screenshot that
+      // failed has left a gap rather than a stale image. Exiting non-zero is
+      // what stops the caller committing that gap to the template gallery.
+      process.exit(failures.length ? 1 : 0);
     })
-    .catch(console.error);
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
 }

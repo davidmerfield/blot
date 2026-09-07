@@ -1,37 +1,4 @@
 <div class="inputs">
-	<div class="settings-group">
-		<h2 class="template-heading">Menu links</h2>
-		<a class="line" style="border-bottom:none" href="{{{base}}}/links">
-			<span class="center" style="margin-top: 4px;white-space: nowrap;overflow: hidden;position: relative;">
-				{{#blog.menu}}
-				<span class="tablet">{{label}}</span>
-				{{/blog.menu}}
-				
-				{{^blog.menu.length}}
-				<i>Your menu is empty</i>
-				{{/blog.menu.length}}
-				<span class="link" style="position: absolute;top:0;right:0" >Edit</span>
-			</span>
-			</a>
-	</div>	
-
-	<div class="settings-group">
-		<h2 class="template-heading">Photo</h2>
-		<a class="line" href="{{{base}}}/photo"  style="padding: 11px 20px;border-bottom: none;"> 
-		{{^blog.avatar}}
-		<span class="center" style="border: 1px dashed var(--border-color);width: 48px;height:48px;display:inline-block; vertical-align: middle;margin-right: 0.5rem;margin-bottom: 4px;">
-		</span>
-		<span class="link">Choose a photo</span>
-		{{/blog.avatar}}
-		
-		{{#blog.avatar}}
-		<span class="center" style="width: 48px;height:48px;display:inline-block; vertical-align: middle;">
-			<img style="max-width:48px;max-height:48px;vertical-align: baseline; display: inline;" src="{{blog.avatar}}" class="{{#blog.roundAvatar}}rounded{{/blog.roundAvatar}}" />
-		</span>
-		<span class="right" >Edit</span>    
-			{{/blog.avatar}}
-		</a>
-	</div>
 
 	{{#colors.length}}
 	<div class="settings-group">
@@ -43,21 +10,59 @@
 	{{/colors.length}}
 
 	{{#fonts.length}} 	
-	<div class="settings-group">
-	{{#fonts}} 
-	{{> font}} 
-	{{/fonts}} 
-	</div>
-	{{/fonts.length}} 	
+        {{#fonts}}
+        {{> font}}
+        {{/fonts}}
+        {{/fonts.length}}
 
-	{{#navigation.length}}
-	<div class="settings-group">
-	<h2 class="template-heading">Navigation</h2>
-	{{#navigation}}
+        {{#uploads.length}}
+        <div class="settings-group">
+        <h2 class="template-heading">Uploads</h2>
+        {{#uploads}}
+        {{> upload}}
+        {{/uploads}}
+        </div>
+        {{/uploads.length}}
+
+        <div class="settings-group">
+                <h2 class="template-heading">Menu</h2>
+                <a class="line links" href="{{{base}}}/links">
+                        <span class="center">
+                                {{#blog.menu}}
+				<span class="tablet">{{label}}</span>
+				{{/blog.menu}}
+				
+				{{^blog.menu.length}}
+				<i>Your menu is empty</i>
+				{{/blog.menu.length}}
+				<span class="link" >Edit</span>
+			</span>
+			</a>
+{{#navigation}}
 	{{> template-editor-group}}
-	{{/navigation}}
+	{{/navigation}}			
+	</div>	
+
+	<div class="settings-group">
+		<h2 class="template-heading">Photo</h2>
+		<a class="line" href="{{{base}}}/photo"  style="padding: 11px 14px;border-bottom: none;"> 
+		{{^blog.avatar}}
+		<span class="center" style="border: 1px dashed var(--border-color);width: 48px;height:48px;display:inline-block; vertical-align: middle;margin-right: 0.5rem;border-radius: var(--border-radius);">
+		</span>
+		<span class="link">Choose a photo</span>
+		{{/blog.avatar}}
+		
+		{{#blog.avatar}}
+		<span class="center" style="width: 48px;height:48px;display:inline-block; vertical-align: middle;">
+			<img style="max-width:48px;max-height:48px;vertical-align: baseline; display: inline;" src="{{blog.avatar}}" class="{{#blog.roundAvatar}}rounded{{/blog.roundAvatar}}" />
+		</span>
+		<span class="link" >Edit</span>    
+			{{/blog.avatar}}
+		</a>
 	</div>
-	{{/navigation.length}}
+
+
+
 
 
 	{{#index_page.length}}
@@ -74,7 +79,7 @@
 {{#syntax_themes}}
         <div class="settings-group">
                 <h2 class="template-heading">Syntax highlighter</h2>
-                <a class="line" href="{{{base}}}/syntax-highlighter" style="padding: 11px 20px;">
+                <a class="line" href="{{{base}}}/syntax-highlighter" style="padding: 11px 20px;border-bottom: none;">
                         <span class="center">Open syntax controls</span>
                         <span class="right">Edit</span>
                 </a>
@@ -82,11 +87,7 @@
         {{/syntax_themes}}
 </div>
 
-{{#template.isMirror}}
-<div class="settings-group">
-        <a class="line" href="{{{base}}}/reset" style="padding: 11px 20px;">
-                <span class="center">Reset template</span>
-        </a>
-</div>
-{{/template.isMirror}}
+	<div class="settings-group template-docs-support-links-group">
+		{{> template-docs-support-links}}
+	</div>
 

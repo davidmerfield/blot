@@ -1,10 +1,13 @@
 var cheerio = require("cheerio");
 var basename = require("path").basename;
+var extname = require("path").extname;
 var parse = require("url").parse;
 var each_el = require("./each_el");
 var fs = require("fs-extra");
 var sharp = require("sharp");
+var mime = require("mime-types");
 var callOnce = require("helper/callOnce");
+var assetDirectory = require("./asset_directory");
 
 // Consider using this algorithm to determine best part of alt tag or caption to use
 // as the file's name:
@@ -16,10 +19,10 @@ function download(url, _callback) {
 
   var time;
 
-  var callback = callOnce(function (err, data) {
+  var callback = callOnce(function (err, data, format, headers) {
     console.log("Finishing attempt to download", url);
     clearTimeout(time);
-    _callback(err, data);
+    _callback(err, data, format, headers);
   });
 
   if (!require("url").parse(url).hostname)
@@ -36,24 +39,29 @@ function download(url, _callback) {
   fetch(url)
     .then(function (res) {
       if (!res.ok) {
-        return callback(new Error("Bad status code: " + res.status));
+        throw new Error("Bad status code: " + res.status);
       }
+
       console.log("Successfully downloaded", url);
 
-      return res.blob(); // First get the blob
+      var headers = {
+        contentType: res.headers.get("content-type"),
+        contentDisposition: res.headers.get("content-disposition"),
+      };
+
+      return res.arrayBuffer().then(function (arrayBuffer) {
+        return { arrayBuffer: arrayBuffer, headers: headers };
+      });
     })
-    .then(function (blob) {
-      return blob.arrayBuffer(); // Convert blob to arrayBuffer
-    })
-    .then(function (arrayBuffer) {
-      const buffer = Buffer.from(arrayBuffer); // Convert arrayBuffer to Buffer
+    .then(function (result) {
+      const buffer = Buffer.from(result.arrayBuffer);
       sharp(buffer).metadata(function (err, metadata) {
         var format;
         if (metadata && metadata.format) {
           format = metadata.format;
         }
 
-        callback(null, buffer, format);
+        callback(null, buffer, format, result.headers);
       });
     })
     .catch(function (err) {
@@ -62,26 +70,25 @@ function download(url, _callback) {
     });
 }
 
-function download_thumbnail(post, path, callback) {
+function download_thumbnail(post, callback) {
   if (!post || !post.metadata || !post.metadata.thumbnail) return callback();
 
   var thumbnail = post.metadata.thumbnail;
 
   if (!thumbnail) return callback();
 
-  var name = nameFrom(thumbnail);
+  download(thumbnail, function (err, data, format, headers) {
+    if (err || !data) return callback();
 
-  if (name.charAt(0) !== "_") name = "_" + name;
+    var name = nameFrom(thumbnail, headers, format);
 
-  download(thumbnail, function (err, data, format) {
-    if (err || !data) return callback(err);
-
-    if (format && !name.toLowerCase().endsWith(format.toLowerCase()))
-      name = name + "." + format;
-
-    fs.outputFile(path + "/" + name, data, function (err) {
+    assetDirectory(post, function (err, directory) {
       if (err) return callback(err);
-      callback(null, name);
+
+      fs.outputFile(directory + "/" + name, data, function (err) {
+        if (err) return callback(err);
+        callback(null, name);
+      });
     });
   });
 }
@@ -90,8 +97,11 @@ module.exports = function download_images(post, callback) {
   var changes = false;
   var $ = cheerio.load(post.html, { decodeEntities: false });
 
-  download_thumbnail(post, post.path, function (err, thumbnail) {
-    if (!err && thumbnail) {
+  // The directory is created lazily only if a download succeeds.
+  download_thumbnail(post, function (err, thumbnail) {
+    if (err) return callback(err);
+
+    if (thumbnail) {
       changes = true;
       post.metadata.thumbnail = thumbnail;
     }
@@ -104,28 +114,27 @@ module.exports = function download_images(post, callback) {
 
         if (!src) return next();
 
-        var name = nameFrom(src);
-
-        if (name.charAt(0) !== "_") name = "_" + name;
-
-        download(src, function (err, data, format) {
+        download(src, function (err, data, format, headers) {
           if (err || !data) {
             return next();
           }
 
-          if (format && !name.toLowerCase().endsWith(format.toLowerCase()))
-            name = name + "." + format;
+          var name = nameFrom(src, headers, format);
 
-          fs.outputFile(post.path + "/" + name, data, function (err) {
+          assetDirectory(post, function (err, directory) {
             if (err) return next();
-            changes = true;
 
-            $(el).attr("src", name);
+            fs.outputFile(directory + "/" + name, data, function (err) {
+              if (err) return next();
+              changes = true;
 
-            if ($(el).parent().attr("href") === src)
-              $(el).parent().attr("href", name);
+              $(el).attr("src", name);
 
-            next();
+              if ($(el).parent().attr("href") === src)
+                $(el).parent().attr("href", name);
+
+              next();
+            });
           });
         });
       },
@@ -138,6 +147,86 @@ module.exports = function download_images(post, callback) {
   });
 };
 
-function nameFrom(src) {
-  return "_" + basename(parse(src).pathname);
+function nameFrom(src, headers, format) {
+  var name =
+    filenameFromContentDisposition(headers && headers.contentDisposition) ||
+    basename(parse(src).pathname) ||
+    "image";
+
+  try {
+    name = decodeURIComponent(name);
+  } catch (e) {
+    // keep the raw name if it isn't valid percent-encoding
+  }
+
+  name = sanitizeFilename(name);
+
+  if (name.charAt(0) !== "_") name = "_" + name;
+
+  return ensureExtension(name, headers, format);
 }
+
+function filenameFromContentDisposition(header) {
+  if (!header) return;
+
+  // filename*=UTF-8''encoded-name.jpg
+  var star = /filename\*\s*=\s*(?:UTF-8''|utf-8'')([^;]+)/i.exec(header);
+  if (star) {
+    try {
+      return decodeURIComponent(star[1].trim().replace(/^["']|["']$/g, ""));
+    } catch (e) {
+      // fall through
+    }
+  }
+
+  // filename="Koa Etymology Pie Chart.jpg"
+  var quoted = /filename\s*=\s*"((?:\\.|[^"])*)"/i.exec(header);
+  if (quoted) return quoted[1].replace(/\\(.)/g, "$1");
+
+  var unquoted = /filename\s*=\s*([^;]+)/i.exec(header);
+  if (unquoted) return unquoted[1].trim().replace(/^['"]|['"]$/g, "");
+}
+
+function sanitizeFilename(name) {
+  return String(name)
+    .replace(/[/\\?%*:|"<>]/g, "-")
+    .replace(/\0/g, "")
+    .trim()
+    .replace(/\s+/g, "_");
+}
+
+function ensureExtension(name, headers, format) {
+  if (extname(name)) return name;
+
+  var ext =
+    extensionFromContentType(headers && headers.contentType) ||
+    normalizeFormat(format);
+
+  if (ext) return name + "." + ext;
+
+  return name;
+}
+
+function extensionFromContentType(contentType) {
+  if (!contentType) return;
+
+  var type = String(contentType).split(";")[0].trim().toLowerCase();
+  var ext = mime.extension(type);
+
+  return ext || undefined;
+}
+
+function normalizeFormat(format) {
+  if (!format) return;
+
+  format = String(format).toLowerCase();
+
+  // sharp reports "jpeg"; prefer the common file extension
+  if (format === "jpeg") return "jpg";
+
+  return format;
+}
+
+// Exported for tests
+module.exports._nameFrom = nameFrom;
+module.exports._filenameFromContentDisposition = filenameFromContentDisposition;

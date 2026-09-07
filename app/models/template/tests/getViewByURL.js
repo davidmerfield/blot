@@ -31,7 +31,7 @@ describe("template", function () {
 
   it("gets a view from a URL with a query string", async function () {
     const view = {
-      name: this.fake.random.word(),
+      name: "apple.html",
       url: ["/apple"],
     };
 
@@ -48,7 +48,7 @@ describe("template", function () {
 
   it("gets a view from a URL with a trailing slash", async function () {
     const view = {
-      name: this.fake.random.word(),
+      name: "apple.html",
       url: ["/apple"],
     };
 
@@ -60,7 +60,7 @@ describe("template", function () {
 
   it("gets a view whose route contains a trailing slash from a URL without", async function () {
     const view = {
-      name: this.fake.random.word(),
+      name: "apple.html",
       url: ["/apple/"],
     };
 
@@ -72,7 +72,7 @@ describe("template", function () {
 
   it("gets a view by multiple url", async function () {
     const view = {
-      name: this.fake.random.word(),
+      name: "page.html",
       url: ["/page/:page", "/"],
     };
 
@@ -88,7 +88,7 @@ describe("template", function () {
   it("gets a view by a lowercase URL without slash", async function () {
     const url = "/Apple";
     const view = {
-      name: this.fake.random.word(),
+      name: "apple.html",
       url: [url],
     };
 
@@ -132,7 +132,7 @@ describe("template", function () {
   it("gets a view by an uppercase URL", async function () {
     const url = "/apple";
     const view = {
-      name: this.fake.random.word(),
+      name: "apple.html",
       url: [url],
     };
 
@@ -145,7 +145,7 @@ describe("template", function () {
   it("gets a view with accented characters", async function () {
     const url = "/ápple";
     const view = {
-      name: this.fake.random.word(),
+      name: "apple.html",
       url: [url],
     };
 

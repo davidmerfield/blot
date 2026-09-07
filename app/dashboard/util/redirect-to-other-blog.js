@@ -19,6 +19,7 @@ module.exports = function (err, req, res, next) {
       }
     });
 
+    console.log('Redirect to other blog', 'handleToRedirect:', handleToRedirect, 'pathWithoutHandle:', pathWithoutHandle, 'req.path:', req.path);
     res.redirect(`/sites/${handleToRedirect}${pathWithoutHandle}`);
   });
 };

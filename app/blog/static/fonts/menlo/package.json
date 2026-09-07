@@ -1,0 +1,11 @@
+{
+  "name": "Menlo",
+  "tags": [
+    "mono",
+    "system"
+  ],
+  "stack": "menlo, monaco, consolas, 'courier new', monospace",
+  "line_height": 1.5,
+  "line_width": 38,
+  "font_size": 16
+}

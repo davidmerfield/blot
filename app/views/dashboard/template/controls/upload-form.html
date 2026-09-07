@@ -1,0 +1,42 @@
+{{> template-settings-back}}
+
+{{#upload}}
+
+<form method='post' action='{{{base}}}/uploads/{{key}}' enctype='multipart/form-data' class="dashboard-form">
+
+  <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+  <input type="hidden" name="_url" value="{{key}}" />
+  <input type="hidden" name="redirect" value="{{{base}}}/uploads/{{key}}" />
+
+	<div class="settings-group">
+		<h2 class="template-heading">{{label}}</h2>
+
+    <div style="padding: 2em 2em 1em">
+
+  {{#value}} 
+<div class="line" style="padding-left: 0">
+  <span class="label">Current file</span>
+  <span class="center">
+    <img style="max-width:64px;max-height:64px;margin:6px 6px 0 0 ;" src="{{{value}}}" alt="{{label}} preview" />
+  </span>
+  <span class="right">
+  <button type="submit" name="upload" value="">Delete file</button>
+  </span>
+</div>
+  {{/value}}
+<br>
+  <section style="flex-grow:1">
+    <label style="border-radius:4px;display:block;padding: 11px 20px;margin-bottom:6px;cursor:pointer;box-sizing: border-box;">
+    
+    <span style="margin-top:0;color:rgb(158, 154, 152);font-size:14px;display:inline;margin-right:10px">Select {{#value}}new{{/value}} file:</span>
+
+    <input type='file' id="upload.{{key}}" style="display:inline;margin:0;cursor: pointer;" name='upload' />
+    </label>
+  </section>
+    {{> form-footer}}
+      </div>
+
+      {{/upload}}
+      
+</div>
+

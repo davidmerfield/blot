@@ -1,6 +1,6 @@
 <form class="number-input" id="locals.{{key}}.form" method="post" style="display: flex;align-items: center;">
 	<input type="hidden" name="_csrf" value="{{csrftoken}}" />
-	<label for="locals.{{key}}" style="flex-grow:1;padding:5px 16px;font-size: 14px">{{label}}:</label>
+	<label for="locals.{{key}}" style="flex-grow:1;">{{label}}:</label>
 
 	<input
 		type="number"
@@ -10,8 +10,8 @@
 		min="{{min}}"
 		max="{{max}}"
 		step="1"
-		style="width: 70px;
-		margin-right: 16px;"
+		style="width: 60px;
+		"
 	/>
 
 </form>

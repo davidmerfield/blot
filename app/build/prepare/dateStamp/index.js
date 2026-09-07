@@ -7,18 +7,23 @@ const type = require("helper/type");
 const moment = require("moment");
 require("moment-timezone");
 
+const metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
+
 module.exports = function (blog, path, metadata) {
   const { id, dateFormat, timeZone } = blog;
   let dateStamp;
 
   debug("Blog:", id, "dateFormat:", dateFormat, "timeZone", timeZone, path);
 
+  const metadataByLowercaseKey = metadataCaseInsensitive(metadata);
+  const metadataDate = metadataByLowercaseKey.date;
+
   // If the user specified a date
   // field in the entry's metadata,
   // try and parse a timestamp from it.
-  if (metadata.date) {
+  if (metadataDate) {
     // Since there is the possibilty of using YAML, the date might not be a string
-    let dateMetadataString = String(metadata.date);
+    let dateMetadataString = String(metadataDate);
     let parsedFromMetadata = fromMetadata(dateMetadataString, dateFormat, timeZone);
     dateStamp = validate(parsedFromMetadata.created);
     if (dateStamp && parsedFromMetadata.adjusted) {

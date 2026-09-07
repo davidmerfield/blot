@@ -24,4 +24,25 @@ describe("odt converter", function () {
       });
     });
   });
+
+  it("does not execute shell substitutions in filenames", function (done) {
+    const test = this;
+    const name = "paragraph$(touch odt-shell-substitution).odt";
+    const path = "/" + name;
+    const marker = process.cwd() + "/odt-shell-substitution";
+    const expected = fs.readFileSync(
+      __dirname + "/paragraph.odt.html",
+      "utf8"
+    );
+
+    fs.removeSync(marker);
+    fs.copySync(__dirname + "/paragraph.odt", test.blogDirectory + path);
+
+    odt.read(test.blog, path, function (err, result) {
+      if (err) return done.fail(err);
+      expect(result).toEqual(expected);
+      expect(fs.existsSync(marker)).toBe(false);
+      done();
+    });
+  });
 });

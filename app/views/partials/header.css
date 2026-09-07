@@ -37,7 +37,7 @@
 }
 
 .call-to-action a:hover {
-  background-color: #e4eafb;
+  background-color: var(--light-background-color);
 }
 
 

@@ -5,7 +5,6 @@ var time = require("helper/time");
 var extname = require("path").extname;
 
 var layout = require("./layout");
-var katex = require("./katex");
 var convert = require("./convert");
 var extractMetadata = require("build/metadata");
 var yaml = require("yaml");
@@ -59,11 +58,6 @@ function read (blog, path, callback) {
         time.end("linebreaks");
       }
 
-      if (blog.plugins.katex.enabled) {
-        time("katex");
-        text = katex(text);
-        time.end("katex");
-      }
 
       extractBibAndCSL(blog, path, parsed.metadata, function (err, bib, csl) {
         if (err) return callback(err);

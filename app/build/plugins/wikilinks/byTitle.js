@@ -5,9 +5,16 @@ module.exports = function byTitle(blogID, href, done) {
   // model and build so this is neccessary for now...
   // todo: replace this with paginated queries to avoid loading
   // all entries into memory at once which will crash large blogs
-  const { getAll } = require("models/entries");
+  const { get } = require("models/entries");
 
-  getAll(blogID, function (allEntries) {
+  // Search both posts (entries) and pages so [[Title]] works for either
+  get(blogID, { lists: ["entries", "pages"] }, function (err, response) {
+    if (err) return done(err);
+    const allEntries = [].concat(
+      response.entries || [],
+      response.pages || []
+    );
+
     const perfectMatch = allEntries.find((entry) => entry.title === href);
 
     if (perfectMatch) {

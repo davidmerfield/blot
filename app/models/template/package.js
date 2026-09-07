@@ -21,8 +21,23 @@ module.exports = {
       var view = views[name];
       var metadataToAddToPackage = {};
 
-      if (view.url && view.url !== "/" + name) {
+      var urlPatterns = null;
+
+      if (type(view.urlPatterns, "array") && view.urlPatterns.length) {
+        urlPatterns = view.urlPatterns;
+      } else if (type(view.url, "array") && view.url.length) {
+        urlPatterns = view.url;
+      }
+
+      if (urlPatterns && urlPatterns.length > 1) {
+        metadataToAddToPackage.url = urlPatterns;
+      } else if (view.url && view.url !== "/" + name) {
         metadataToAddToPackage.url = view.url;
+      } else if (urlPatterns && urlPatterns.length === 1) {
+        var singleUrl = urlPatterns[0];
+        if (singleUrl !== "/" + name) {
+          metadataToAddToPackage.url = singleUrl;
+        }
       }
 
       if (view.locals && objectWithProperties(view.locals)) {

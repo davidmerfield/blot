@@ -1,7 +1,8 @@
 {
   "name": "System serif",
   "tags": [
-    "serif"
+    "serif",
+    "system"
   ],
   "stack": "serif",
   "line_height": 1.45,

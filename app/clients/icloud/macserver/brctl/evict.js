@@ -1,11 +1,15 @@
-const { iCloudDriveDirectory } = require("../config");
-const fs = require("fs-extra");
-const exec = require("../exec");
+import { iCloudDriveDirectory } from "../config.js";
+import fs from "fs-extra";
+import exec from "../exec.js";
+import clfdate from "../util/clfdate.js";
+
 const TIMEOUT = 10 * 1000; // 10 seconds
 const POLLING_INTERVAL = 200; // 200 ms
 
-module.exports = async (path) => {
-  console.log(`Evicting: ${path}`);
+export default async (path, options = {}) => {
+  const timeoutMs = options.timeoutMs ?? TIMEOUT;
+
+  console.log(clfdate(), `Evicting: ${path}`);
 
   const stat = await fs.stat(path);
   const start = Date.now();
@@ -17,16 +21,17 @@ module.exports = async (path) => {
   const expectedBlocks = 0;
   const isEvicted = stat.blocks === expectedBlocks;
 
-  console.log(`Blocks: ${stat.blocks} / ${expectedBlocks}`);
+  console.log(clfdate(), `Blocks: ${stat.blocks} / ${expectedBlocks}`);
 
-  if (isEvicted) {
-    console.log(`File already evicted: ${path}`);
+  // we only consider whether or not files are evicted, not directories
+  if (isEvicted && !stat.isDirectory()) {
+    console.log(clfdate(), `File already evicted: ${path}`);
     return stat;
   }
 
   const pathInDrive = path.replace(iCloudDriveDirectory, "").slice(1);
 
-  console.log(`Issuing brctl evict for path: ${pathInDrive}`);
+  console.log(clfdate(), `Issuing brctl evict for path: ./${pathInDrive}`);
 
   const { stdout, stderr } = await exec("brctl", ["evict", pathInDrive], {
     cwd: iCloudDriveDirectory,
@@ -40,14 +45,14 @@ module.exports = async (path) => {
     throw new Error(`Unexpected stderr: ${stderr}`);
   }
 
-  while (Date.now() - start < TIMEOUT) {
-    console.log(`Checking evict status: ${path}`);
+  while (Date.now() - start < timeoutMs) {
+    console.log(clfdate(), `Checking evict status: ${path}`);
     const stat = await fs.stat(path);
 
-    console.log(`Blocks: ${stat.blocks} / ${expectedBlocks}`);
+    console.log(clfdate(), `Blocks: ${stat.blocks} / ${expectedBlocks}`);
 
     if (stat.blocks === expectedBlocks) {
-      console.log(`Eviction complete: ${path}`);
+      console.log(clfdate(), `Eviction complete: ${path}`);
       return stat;
     } else {
       await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL));

@@ -23,4 +23,25 @@ describe("docx converter", function () {
       });
     });
   });
+
+  it("does not execute shell substitutions in filenames", function (done) {
+    const test = this;
+    const name = "paragraph$(touch docx-shell-substitution).docx";
+    const path = "/" + name;
+    const marker = process.cwd() + "/docx-shell-substitution";
+    const expected = fs.readFileSync(
+      __dirname + "/paragraph.docx.html",
+      "utf8"
+    );
+
+    fs.removeSync(marker);
+    fs.copySync(__dirname + "/paragraph.docx", test.blogDirectory + path);
+
+    docx.read(test.blog, path, function (err, result) {
+      if (err) return done.fail(err);
+      expect(result).toEqual(expected);
+      expect(fs.existsSync(marker)).toBe(false);
+      done();
+    });
+  });
 });

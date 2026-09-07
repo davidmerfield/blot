@@ -40,10 +40,10 @@
     <p>
       <label for="email">Your email address</label>
       {{#validemail}}
-      <input name="email" required="" onchange="updateReset(this)" type="text" value="{{email}}" />
+      <input name="email" required="" type="text" value="{{email}}" />
       {{/validemail}}
       {{^validemail}}
-      <input name="email" required="" onchange="updateReset(this)" type="text" value="{{email}}" autofocus />
+      <input name="email" required="" type="text" value="{{email}}" autofocus />
       {{/validemail}}
     </p>
     <p>
@@ -60,9 +60,3 @@
   </form>
 </section>
 
-<script type="text/javascript">
-  
-function updateReset(node){
-  document.getElementById('reset').href='/log-in/reset?email=' + node.value
-}
-</script>

@@ -1,0 +1,11 @@
+{
+  "name": "Comic Sans",
+  "tags": [
+    "other",
+    "system"
+  ],
+  "stack": "'comic sans ms', 'comic sans', cursive, sans-serif",
+  "line_height": 1.4,
+  "line_width": 38,
+  "font_size": 16
+}

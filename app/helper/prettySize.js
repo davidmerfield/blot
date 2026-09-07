@@ -1,7 +1,9 @@
 module.exports = function formatBytes(kilobytes, decimals) {
   var bytes = kilobytes * 1000;
 
-  decimals = decimals || 2;
+  if (typeof decimals !== "number") {
+    decimals = 2;
+  }
 
   if (bytes === 0) return "0 Bytes";
 

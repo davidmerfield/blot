@@ -46,7 +46,7 @@
 a.close-button > span {
     display: flex;flex-direction: column;
     justify-content: center;align-items: center;width: 40px;height: 40px;
-    text-align: center;background: #e4eafb;
+    text-align: center;background: var(--light-background-color);
     border-radius: 40px;
     transition: background-color 0.2s;
 }
@@ -61,13 +61,12 @@ a.close-button:hover {
 
 a.close-button:hover > span,
 .template-button:hover {
-    background-color: #e4eafb75;
+    background-color: var(--light-background-color);
 }
 
 .template-button {
     border:none;cursor: pointer; font-size:14px;
     display:  inline-block;border-radius: var(--border-radius);
-    /* background-color: #e4eafb; */
     transition: background-color 0.2s;
     color:#656e82;padding:0.333em 0.66em;margin:0 6px 0;
 }
@@ -77,6 +76,12 @@ a.close-button:hover > span,
     font-weight: 600;
     outline: none;
     position: relative;
+}
+
+.template-button.selected span,
+.template-button.selected svg {
+    color: var(--accent-color);
+    fill: var(--accent-color);
 }
 
 .template-button.selected:after {
@@ -96,12 +101,19 @@ a.close-button:hover > span,
     align-self: flex-end;
 }
 
+.template-button span {font-size: 14px;}
+
 .template-button svg {
-    fill:currentColor;vertical-align: middle;position:relative;top:-0.1em;
+    fill:var(--light-text-color);
+    width: 14px;
+    vertical-align: middle;
+    position:relative;
+    top:-0.1em;
     margin-right: 4px;
 }
 
 .template-button span {
+  color: var(--light-text-color);
   vertical-align: middle;position:relative;top:-0.1em;
   margin-right: 4px;
 }

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+
+    {{> header}}
+
+    {{#entry}}
+
+    {{{html}}}
+
+    <br>
+    <br>
+
+    {{#date}}
+    Posted on {{date}}
+    {{/date}}
+
+    {{#tags.length}}
+    under
+    {{#tags}}<a href="/tagged/{{slug}}">{{tag}}</a>{{/tags}}
+    {{/tags.length}}
+
+    {{#thumbnail}}
+    •
+    <a href="https://www.google.no/searchbyimage?client=safari&rls=en&site=search&image_url={{thumbnail.large.url}}&sa=X">Source</a>
+    {{/thumbnail}}
+
+    <br>
+
+    {{> pluginHTML}}
+
+    {{/entry}}
+
+    </div>
+    {{> footer}}
+    </div>
+  </body>
+</html>

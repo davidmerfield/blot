@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+    <div class="container archive">
+      <h1>Archive</h1>
+      {{#archives}}
+        <h2 class="">{{year}}</h2>
+        {{#months}}
+          <h3 class="">{{month}}</h3>
+          <p>
+          {{#entries}}
+          <a href="{{{url}}}">{{title}}</a><br>
+          {{/entries}}
+          <br>
+          </p>
+        {{/months}}
+        <div class="clear"></div>
+      {{/archives}}
+    </div>
+    {{> footer}}
+  </body>
+</html>

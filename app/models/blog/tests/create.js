@@ -9,11 +9,21 @@ describe("Blog.create", function () {
 
   // Clean up a blog created during tests
   afterEach(function (done) {
-    if (this.blog) {
-      remove(this.blog.id, done);
-    } else {
-      done();
-    }
+    var blogs = (this.blogs || []).slice();
+
+    if (this.blog) blogs.push(this.blog);
+
+    if (!blogs.length) return done();
+
+    var pending = blogs.length;
+
+    blogs.forEach(function (blog) {
+      remove(blog.id, function () {
+        pending -= 1;
+
+        if (!pending) done();
+      });
+    });
   });
 
   it("creates a blog", function (done) {
@@ -41,6 +51,18 @@ describe("Blog.create", function () {
       expect(test.blog.isImageExifBasic).toBe(true);
       expect(test.blog.isImageExifOff).toBe(false);
 
+      expect(test.blog.converters).toEqual({
+        html: true,
+        img: true,
+        webloc: true,
+        gdoc: true,
+        docx: true,
+        rtf: true,
+        odt: true,
+        org: true,
+        markdown: true,
+      });
+
       done();
     });
   });
@@ -59,4 +81,30 @@ describe("Blog.create", function () {
       });
     });
   });
+
+
+  it("creates blogs with isolated plugin defaults", function (done) {
+    var test = this;
+
+    create(test.user.uid, { handle: "firstblog" }, function (err, firstBlog) {
+      if (err) return done.fail(err);
+
+      test.blogs = [firstBlog];
+
+      firstBlog.plugins.typeset.enabled = false;
+      firstBlog.plugins.typeset.options.smallCaps = false;
+
+      create(test.user.uid, { handle: "secondblog" }, function (err, secondBlog) {
+        if (err) return done.fail(err);
+
+        test.blogs.push(secondBlog);
+
+        expect(secondBlog.plugins.typeset.enabled).toBe(true);
+        expect(secondBlog.plugins.typeset.options.smallCaps).toBe(true);
+
+        done();
+      });
+    });
+  });
+
 });

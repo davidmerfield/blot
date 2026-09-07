@@ -9,6 +9,7 @@ module.exports = {
   getFullView: require("./getFullView"),
   getView: require("./getView"),
   getViewByURL: require("./getViewByURL"),
+  getViewsByURLs: require("./getViewsByURLs"),
   setView: require("./setView"),
   dropView: require("./dropView"),
   getPartials: require("./getPartials"),
@@ -28,7 +29,9 @@ module.exports = {
   buildFromFolder: require("./buildFromFolder"),
   readFromFolder: require("./readFromFolder"),
   writeToFolder: require("./writeToFolder"),
-
+  removeFromFolder: require("./removeFromFolder"),
+  removeEnabledFromAllTemplates: require("./removeEnabledFromAllTemplates"),
+  
   package: require("./package"),
   viewModel: require("./viewModel"),
   metadataModel: require("./metadataModel"),

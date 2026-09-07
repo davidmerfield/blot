@@ -1,0 +1,9 @@
+Inline accents $$\hat{\theta} + \bar{y} + \vec{F} + \dot{x} + \ddot{y}$$
+
+Display accents
+
+$$
+\overbrace{\`{b}+\^{c}}^{\text{sum}} + \underbrace{\dot{x}+\bar{y}+\ddot{z}}_{\text{terms}}
+$$
+
+Text accents: $$\text{\'{a} + \"{o} + \`{e} \~{n} \^{u} \v{s}}$$

@@ -1,0 +1,372 @@
+# Dropbox Client
+
+## Purpose
+
+The Dropbox client provides file synchronization between a user's Dropbox folder and their Blot blog on the Blot server. It monitors a designated folder in Dropbox using webhooks and keeps the local blog folder synchronized with changes made remotely. Conversely, it also pushes changes made to the blog (via Blot's editing interface) back to Dropbox. The client supports two permission modes: app folder (restricted to `/Apps/Blot/`) and full access to the user's entire Dropbox.
+
+## Architecture Overview
+
+The Dropbox client operates using a webhook-based event notification system combined with Dropbox's cursor-based delta retrieval mechanism. When changes occur in a user's Dropbox folder, Dropbox sends a webhook notification to Blot. Blot then uses the saved cursor and Dropbox's `filesListFolderContinue` API to fetch only the changes that occurred since the last synchronization, rather than re-listing the entire folder.
+
+### Key Architectural Decisions
+
+- **Webhook-driven sync**: Changes are detected via webhooks pushed from Dropbox, not through polling.
+- **Cursor-based delta**: The sync only fetches changes since the last known state, keeping API calls minimal.
+- **Lock-based concurrency**: The sync module (`Sync` from `require("sync")`) ensures that only one synchronization runs at a time per blog to prevent race conditions when modifying the folder.
+- **Two permission modes**:
+  - **App folder** (restricted): Blot has access only to `/Apps/Blot/` in the user's Dropbox.
+  - **Full access**: Blot has access to any folder the user selects in their Dropbox.
+- **Content hash comparison**: Before downloading files, the client compares content hashes to avoid unnecessary downloads.
+- **Case-sensitive path handling**: Blot normalizes case in file paths, since Dropbox is case-insensitive but the Blot server file system is case-sensitive.
+
+## File and Directory Inventory
+
+### Top-Level Files
+
+- **`index.js`**: Main export file. Defines the public interface of the Dropbox client, exporting `init`, `disconnect`, `resync`, `remove`, `write`, and route handlers.
+- **`init.js`**: Initialization logic run at server startup. Schedules hourly sync validation for all Dropbox-connected blogs and triggers resyncs for recently synced blogs on restart.
+- **`database.js`**: Manages Redis-backed persistence of Dropbox account information (tokens, folder paths, sync cursors, etc.). Uses the model defined within this file to enforce type safety.
+- **`delta.js`**: Constructs a delta (change set) by querying Dropbox's `filesListFolder` and `filesListFolderContinue` APIs. Computes relative paths for each change and handles case-only renames (e.g., `foo.txt` → `FOO.txt`).
+- **`disconnect.js`**: Handles disconnecting a blog from Dropbox by removing credentials, clearing the OAuth token, and revoking it if no other blogs use the same account.
+- **`write.js`**: Writes a file to both the local Blot folder and uploads it to Dropbox. Uses the retry wrapper for resilience.
+- **`remove.js`**: Removes a file from both Dropbox and the local Blot folder. Ensures the file is successfully deleted from Dropbox before removing it locally.
+- **`readme.txt`**: Legacy documentation (superseded by this README).
+
+### Routes
+
+- **`routes/index.js`**: Re-exports dashboard and site routes.
+- **`routes/dashboard.js`**: Dashboard routes (authenticated, blog-specific):
+  - `GET /`: Main settings page showing current Dropbox account and folder information.
+  - `GET /setup`: Initial setup page explaining what will happen during authentication.
+  - `GET /edit`: Page to select a different Dropbox account.
+  - `GET /redirect`: Initiates OAuth flow by redirecting to Dropbox.
+  - `GET /authenticate`: OAuth callback that receives the authorization code from Dropbox.
+  - `GET /permission`: Explains permission levels (full vs. app folder).
+  - `GET /disconnect`: Confirmation page before disconnecting.
+  - `POST /disconnect`: Executes the disconnection.
+- **`routes/site.js`**: Public site routes (not authenticated):
+  - `GET /authenticate`: Intermediate redirect handler for OAuth callbacks (resolves which blog to authenticate via cookie).
+  - `GET /webhook`: Webhook challenge endpoint (Dropbox verifies webhook endpoint on setup).
+  - `POST /webhook`: Receives webhook notifications from Dropbox containing account IDs of accounts with changes. Initiates syncs for all blogs linked to those accounts.
+- **`routes/setup/index.js`**: Main setup logic orchestrating OAuth, account metadata retrieval, folder creation/configuration, and initial sync.
+- **`routes/setup/getAccount.js`**: Exchanges the OAuth authorization code for access and refresh tokens and retrieves account metadata (email, account_id, folder path).
+- **`routes/setup/createFolder.js`**: Creates (or designates) the blog folder in Dropbox. Handles migration logic when a user connects a second blog to an app folder that already has files.
+
+### Sync
+
+- **`sync/index.js`**: Main sync entry point. Acquires the blog's sync lock, creates a Dropbox client, and orchestrates the delta retrieval and file application.
+  - Calls `Delta` to fetch changes.
+  - Calls `Apply` (defined within the file) to apply deletions, create directories, and download files.
+  - Updates Blot's Entry model for each change via `folder.update()`.
+  - Saves the new cursor and folder metadata to the database after successful sync.
+  - Handles pagination (more changes) and recursive checks for additional changes.
+- **`sync/reset-to-blot.js`**: Performs a full recursive walk of the Dropbox folder and compares it with the local Blot folder, downloading all files that are missing or have different content hashes. Used during setup and periodic validation.
+- **`sync/reset-from-blot.js`**: (Reference only in this file structure; not yet fully implemented.) Intended to upload all local Blot files to Dropbox. Currently called during setup.
+
+### Utilities
+
+- **`util/constants.js`**: Constants used across the client:
+  - `MAX_FILE_SIZE`: 100 MB file size limit.
+  - `UNSUPPORTED_FILE_EXTENSIONS`: Array of unsupported extensions (currently `[".paper"]`).
+  - `hasUnsupportedExtension()`: Checks if a file path has an unsupported extension.
+  - `isDotfileOrDotfolder`: Alias for `shouldIgnoreFile()`, filters out dotfiles and dotfolders.
+- **`util/createClient.js`**: Factory function that retrieves the Dropbox account from the database and instantiates a Dropbox SDK client. Handles token refresh if a refresh token is present.
+- **`util/download.js`**: Downloads a file from Dropbox and writes it to disk.
+- **`util/upload.js`**: Uploads a file from disk to Dropbox, preserving modification time metadata.
+- **`util/setMtime.js`**: Sets the modification time on a file in Dropbox (used during uploads to preserve mtimes).
+- **`util/retry.js`**: Wraps a function to retry on transient errors.
+- **`util/waitForErrorTimeout.js`**: Handles HTTP 429 (rate limit) responses by parsing the `Retry-After` header and delaying the retry.
+- **`util/titleToFolder.js`**: (Utility for converting blog titles to Dropbox folder names.)
+
+### Views
+
+HTML templates rendered by dashboard routes:
+- **`views/index.html`**: Main settings page.
+- **`views/authenticate.html`**: Initial setup/authentication page.
+- **`views/edit.html`**: Change Dropbox account page.
+- **`views/permission.html`**: Permission level explanation page.
+- **`views/disconnect.html`**: Disconnection confirmation page.
+
+### Tests
+
+- **`tests/index.js`**: Main test runner and setup bootstrap.
+- **`tests/setup/index.js`**: Test setup utilities.
+- **`tests/setup/server.js`**: Test webhook server configuration.
+- **`tests/setup/createFolder.js`**: Tests for folder creation during setup.
+- **`tests/setup/emptyFolder.js`**: Tests for handling empty folders.
+- **`tests/setup/getAccount.js`**: Tests for OAuth account retrieval.
+- **`tests/setup/webhook/index.js`**: Tests for webhook handling.
+- **`tests/sync.js`**: Sync integration tests.
+- **`tests/sync-root-directory.js`**: Tests for syncing when the blog folder is at Dropbox root.
+- **`tests/write.js`**: Tests for writing files to Dropbox.
+- **`tests/remove.js`**: Tests for removing files from Dropbox.
+- **`tests/delta.js`**: Tests for delta calculation.
+- **`tests/paths.js`**: Tests for path handling.
+- **`tests/database.js`**: Tests for database operations.
+- **`tests/waitForErrorTimeout.js`**: Tests for rate limit handling.
+- **`tests/files/will_flag_restricted_content.png`**: Test file for restricted content detection.
+
+## Public API
+
+The Dropbox client is instantiated and managed by the client system. Its public interface is exported from `index.js`:
+
+### Exported Functions and Properties
+
+```javascript
+{
+  display_name: "Dropbox",
+  description: "A file storage and synchronization service",
+  init: require("./init"),
+  disconnect: require("./disconnect"),
+  resync: require('./sync/reset-to-blot'),
+  remove: require("./remove"),
+  write: require("./write"),
+  site_routes: require("./routes").site,
+  dashboard_routes: require("./routes").dashboard
+}
+```
+
+### `init(callback)`
+
+Initializes the Dropbox client at server startup. Schedules hourly sync validation for all Dropbox-connected blogs and triggers resyncs for blogs that synced within the last 15 minutes.
+
+- **Called**: Once at application startup (from the Blot application server).
+- **Side effects**: Sets up scheduled job, may trigger resync for recent blogs.
+
+### `write(blogID, path, contents, callback)`
+
+Writes a file to the blog folder on the local Blot server and uploads it to Dropbox.
+
+- **Parameters**:
+  - `blogID`: String identifier for the blog.
+  - `path`: String file path relative to the blog folder root.
+  - `contents`: String or Buffer file contents.
+  - `callback(err)`: Called when complete. Errors are passed.
+- **Behavior**:
+  - Refuses to write ignored files (dotfiles, dotfolders).
+  - Writes locally first, then uploads to Dropbox.
+  - Wrapped with `retry()` to handle transient errors.
+
+### `remove(blogID, path, callback)`
+
+Removes a file from Dropbox and the local blog folder.
+
+- **Parameters**:
+  - `blogID`: String identifier for the blog.
+  - `path`: String file path relative to the blog folder root.
+  - `callback(err)`: Called when complete.
+- **Behavior**:
+  - Deletes from Dropbox first, then removes locally.
+  - If removal from Dropbox fails (except for 409/not found), the local file is not removed.
+  - Wrapped with `retry()` to handle transient errors.
+
+### `disconnect(blogID, callback)`
+
+Disconnects a blog from Dropbox.
+
+- **Parameters**:
+  - `blogID`: String identifier for the blog.
+  - `callback(err)`: Called when complete.
+- **Behavior**:
+  - Clears the blog's client type.
+  - Removes Dropbox account credentials from the database.
+  - Revokes the OAuth token if no other blogs use the same account.
+
+### `resync(blogID, publish)`
+
+Performs a full folder resync from Dropbox to Blot (used for validation and recovery).
+
+- **Parameters**:
+  - `blogID`: String identifier for the blog.
+  - `publish(args...)`: Callback to report progress (typically logs to console or updates UI).
+- **Returns**: Promise resolving to a summary object with `{ downloaded, removed, createdDirs, skipped }`.
+- **Behavior**:
+  - Walks the entire Dropbox folder recursively.
+  - Compares with local folder using content hashes.
+  - Downloads missing or changed files.
+  - Removes local files not present in Dropbox.
+  - Skips unsupported and oversized files.
+
+## Integration Points
+
+### Dropbox API
+
+The client uses the official Dropbox JavaScript SDK (`dropbox` npm package) to interact with Dropbox's REST API. Key API methods used:
+
+- **`filesListFolder()`**: Initial listing of a folder (includes pagination via `has_more`).
+- **`filesListFolderContinue()`**: Fetch next page of results using a cursor.
+- **`filesListFolderGetLatestCursor()`**: Get a cursor without listing entries (used during setup).
+- **`filesGetMetadata()`**: Retrieve metadata for a folder to get its current path and folder ID.
+- **`filesDownload()`**: Download file contents.
+- **`filesUpload()`**: Upload file contents (used for creation and updates).
+- **`filesDelete()`**: Delete a file or folder.
+- **`authTokenRevoke()`**: Revoke an OAuth token.
+
+### Internal Blot Integration
+
+- **Sync module** (`require("sync")`): Provides distributed lock management to ensure only one sync runs per blog at a time.
+- **Blog model** (`require("models/blog")`): Stores the blog's client type and retrieves blog metadata.
+- **Entry model** (`require("sync")`): Updated after each sync to notify Blot about changes (via `folder.update(path)`).
+- **Client model** (`require("models/client")`): Redis-backed pubsub for publishing sync status updates.
+- **Helper modules**:
+  - `helper/hashFile`: Computes file content hashes for comparison.
+  - `helper/localPath`: Converts blog-relative paths to absolute file system paths.
+  - `helper/caseSensitivePath`: Resolves case-sensitive paths on case-insensitive file systems.
+  - `helper/email`: Sends error notifications to users and admins.
+  - `helper/ensure`: Runtime type validation.
+- **Configuration** (`config`): Reads Dropbox OAuth credentials and webhook configuration.
+
+### Webhooks
+
+- Dropbox sends webhook notifications to `POST /clients/dropbox/webhook`.
+- The webhook payload contains a list of account IDs with changes.
+- Blot looks up all blogs connected to each account and initiates syncs.
+- Webhooks are validated using HMAC-SHA256 signatures using the app's shared secret.
+
+## Synchronization Flow
+
+### Initial Setup (User Connects Blog to Dropbox)
+
+1. User clicks "Connect to Dropbox" on dashboard.
+2. Dashboard route `GET /redirect` initiates OAuth flow by redirecting to Dropbox.
+3. Dropbox redirects back to `POST /authenticate` (via `site/routes.js`) with authorization code.
+4. Code is stored in session; user is sent to dashboard.
+5. Setup function (in `routes/setup/index.js`) is called asynchronously:
+   - `getAccount()`: Exchanges code for access/refresh tokens and retrieves account info.
+   - `createFolder()`: Creates or designates the blog folder in Dropbox (handles migration for multiple blogs).
+   - Saves account info to Redis database.
+   - `resetFromBlot()`: Uploads all local blog files to Dropbox.
+
+### Ongoing Sync (Webhook-Triggered)
+
+1. User modifies a file in their Dropbox folder.
+2. Dropbox sends a webhook to `POST /webhook` containing the account ID.
+3. Blot looks up all blogs linked to that account.
+4. For each blog, `sync/index.js` is called (protected by lock to prevent concurrent syncs):
+   - Creates Dropbox client using stored credentials.
+   - `delta.js` fetches changes since last cursor.
+   - `Apply` function (in `sync/index.js`) applies changes:
+     - Deletes removed items.
+     - Creates directories.
+     - Downloads files (skipping unsupported and oversized files, comparing content hashes).
+   - Calls `folder.update(path)` for each changed item to notify Blot.
+   - Saves new cursor and folder metadata to database.
+
+### Periodic Validation (Hourly, From `init.js`)
+
+- Every hour, `init.js` checks all Dropbox-connected blogs that synced recently.
+- For each blog, calls `resetToBlot()` (a full recursive walk) to validate consistency.
+- If changes are detected, sends a report email to the admin.
+
+### Write from Blot (User Edits in Blot)
+
+1. Blot's edit interface modifies an entry file.
+2. Calls `write(blogID, path, contents, callback)`.
+3. File is written locally to the blog folder.
+4. File is uploaded to Dropbox via `util/upload.js`.
+
+### Delete from Blot (User Removes Entry in Blot)
+
+1. Blot's delete interface removes an entry.
+2. Calls `remove(blogID, path, callback)`.
+3. File is deleted from Dropbox via `filesDelete()`.
+4. If successful, file is removed locally.
+
+## Database Schema
+
+Account data is stored in Redis as a hash (`blog:{blogID}:dropbox:account`) with the following fields:
+
+```javascript
+{
+  account_id: "string",      // Dropbox account ID (used to link blogs)
+  email: "string",            // User's Dropbox email (for display)
+  access_token: "string",     // OAuth access token (4-hour expiry)
+  refresh_token: "string",    // OAuth refresh token (long-lived, for new access tokens)
+  error_code: "number",       // Last error HTTP status code (0 if no error)
+  last_sync: "number",        // Timestamp of last successful sync
+  full_access: "boolean",     // true if full access, false if app folder only
+  folder: "string",           // Display path to blog folder in Dropbox (e.g., "/MyBlog")
+  folder_id: "string",        // Dropbox folder ID (immutable identifier)
+  cursor: "string"            // Cursor for next delta fetch
+}
+```
+
+A second Redis set (`clients:dropbox:{account_id}`) tracks which blogs are linked to each Dropbox account, enabling efficient lookup during webhook processing.
+
+## Error Handling
+
+The client gracefully handles various Dropbox API errors:
+
+- **HTTP 0, 500, 504** (network errors): Logged, user notified, sync retried.
+- **HTTP 429, 503** (rate limits): Logged, user notified, sync retried with backoff.
+- **HTTP 507** (quota exceeded): User notified; sync not retried.
+- **HTTP 400, 403** (bad requests): Logged as configuration/code error.
+- **HTTP 401** (revoked/expired token): User notified; token refresh attempted; if still invalid, user must re-authenticate.
+- **HTTP 409** (folder missing/moved): User notified; cursor is reset to trigger full resync.
+- **Unsupported files** (`.paper`): Placeholder files created; download skipped.
+- **Oversized files** (>100 MB): Placeholder files created; download skipped.
+- **Case-only renames** (e.g., `foo` → `FOO`): Detected and injected as delete + create to maintain consistency on case-sensitive file systems.
+
+## Important Limitations and Constraints
+
+- **File size limit**: Files larger than 100 MB are skipped; placeholders are created instead.
+- **Unsupported extensions**: Dropbox `.paper` files cannot be downloaded; placeholders are created.
+- **Dotfiles and dotfolders**: Hidden files (starting with `.`) are ignored during sync and cannot be written to Dropbox.
+- **App folder restrictions** (Dropbox API):
+  - Cannot share app folders.
+  - Must be located under `/Apps/Blot/`.
+- **Case handling**: Blot normalizes file paths to handle case-insensitive Dropbox and case-sensitive server file systems. Case-only renames are detected and handled specially.
+- **Concurrency**: Only one sync per blog runs at a time (enforced by lock); other sync requests are queued.
+- **Refresh token**: Blogs that authenticated before September 2021 do not have refresh tokens; their access tokens do not expire. New authentications use refresh tokens with 4-hour access token expiry.
+
+## Known Issues and Edge Cases
+
+- **Large folder migrations**: When a user connects a second blog to an app folder, all existing files must be moved into a subfolder. This requires user input to specify folder names.
+- **Folder moves**: If a user moves a blog folder within Dropbox after setup, the `folder_id` (which is immutable) is used to track the new location. However, if the folder is deleted and recreated, setup must occur again.
+- **Missing parent directories**: If a file's parent directory does not exist on disk, the client attempts to resolve the case-sensitive path. If this fails, the file is still downloaded using the relative path from Dropbox.
+- **Long file names**: File names exceeding the OS's maximum path length are skipped (error code `ENAMETOOLONG`).
+
+## Testing
+
+Tests are located in the `tests/` directory and use a bootstrapped test blog (set up by `tests/setup/index.js`). To run tests:
+
+```bash
+cd /Volumes/Blot/blot
+npm test -- app/clients/dropbox
+```
+
+Key test suites cover OAuth setup, folder creation, sync operations, delta calculation, error handling, and webhook processing.
+
+## Configuration
+
+The Dropbox client requires configuration entries in the main Blot config:
+
+```javascript
+config.dropbox = {
+  app: {
+    key: "...",      // OAuth client ID for app folder access
+    secret: "..."    // OAuth client secret for app folder access
+  },
+  full: {
+    key: "...",      // OAuth client ID for full access
+    secret: "..."    // OAuth client secret for full access
+  }
+};
+
+config.webhooks = {
+  relay_host: "..."  // Relay host for webhooks in development
+};
+
+config.host = "..."; // Main host for production webhooks
+```
+
+## Dependencies
+
+- **`dropbox`** (npm): Official Dropbox JavaScript SDK for API access.
+- **`dropbox-stream`** (npm): Streaming adapter for large file downloads.
+- **`node-schedule`** (npm): Used for scheduling periodic validation jobs.
+- **`async`** (npm): Utility for managing asynchronous operations.
+- **`fs-extra`** (npm): File system utilities.
+- **`debug`** (npm): Logging utility.
+- **`path`** (Node.js built-in): Path manipulation.
+- **`crypto`** (Node.js built-in): HMAC signature verification for webhooks.

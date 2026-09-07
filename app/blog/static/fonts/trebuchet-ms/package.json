@@ -1,0 +1,11 @@
+{
+  "name": "Trebuchet",
+  "tags": [
+    "sans",
+    "system"
+  ],
+  "stack": "'trebuchet ms', tahoma, verdana, sans-serif",
+  "line_height": 1.45,
+  "line_width": 38,
+  "font_size": 16
+}

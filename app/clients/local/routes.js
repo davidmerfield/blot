@@ -1,13 +1,7 @@
 var Express = require("express");
 var setup = require("./setup");
 var disconnect = require("./disconnect");
-const fetch = require("node-fetch");
-
-const DEFAULT_OPEN_FOLDER_ORIGIN =
-  process.env.LOCAL_OPEN_FOLDER_ORIGIN ||
-  (process.env.CONTAINER_NAME
-    ? "http://host.docker.internal:3020"
-    : "http://localhost:3020");
+var Blog = require("models/blog");
 
 // It's important this is an Express router
 // and not an Express app for reasons unknown
@@ -15,28 +9,25 @@ var Dashboard = Express.Router();
 
 // By the time this middleware is mounted, blot
 // has fetched the information about this user.
-Dashboard.get("/", function (req, res) {
-  setup(req.blog.id, function (err) {
-    if (err) console.log("Error setting up", err);
-  });
-  res.render(__dirname + "/views/index.html");
-});
+Dashboard.get("/", function (req, res, next) {
+  function render() {
+    setup(req.blog.id, function (err) {
+      if (err) console.log("Error setting up", err);
+    });
 
-Dashboard.get("/open", async function (req, res, next) {
-  try {
-    const openUrl = new URL(`${DEFAULT_OPEN_FOLDER_ORIGIN}/open-folder`);
-    openUrl.searchParams.set("blogID", req.blog.id);
-
-    const response = await fetch(openUrl.href);
-
-    if (!response.ok) {
-      throw new Error("Request failed");
-    }
-
-    res.redirect(res.locals.base);
-  } catch (error) {
-    next(new Error("Could not open folder on your computer"));
+    res.render(__dirname + "/views/index.html");
   }
+
+  if (req.blog.client === "local") {
+    return render();
+  }
+
+  Blog.set(req.blog.id, { client: "local" }, function (err) {
+    if (err) return next(err);
+
+    req.blog.client = "local";
+    render();
+  });
 });
 
 Dashboard.route("/disconnect")

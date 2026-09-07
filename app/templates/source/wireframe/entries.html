@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+
+    {{> header}}
+
+    <p>All entries:</p>
+
+    <p>
+    {{#all_entries}}
+    <a href="{{{url}}}">{{title}}</a> {{date}}<br>
+    {{/all_entries}}
+    </p>
+
+    <br><br>
+
+    {{> footer}}
+  </body>
+</html>

@@ -2,9 +2,18 @@ const determine_input = require("./util/determine-input");
 
 const MAP = {
   navigation_alignment: {
-    label: "Align"
+    label: "Alignment"
+  },
+  sticky_navigation: {
+    label: "Fix position on page"
+  },
+  collapse_navigation_by_default: {
+    label: "Collapse by default"
   },
   navigation_location: {
+    label: "Position"
+  },
+  navigation_position: {
     label: "Position"
   }
 };

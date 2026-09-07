@@ -14,7 +14,7 @@ function formJSON(fields, model) {
 
   ensure(fields, "object").and(model, "object");
 
-  var obj = {};
+  var obj = Object.create(null);
 
   for (var i in fields) {
     // Sometimes there are multiple values
@@ -27,6 +27,10 @@ function formJSON(fields, model) {
     var terms = i.split("."),
       totalTerms = terms.length,
       val = fields[i];
+
+    // Reject the entire field before traversing or creating any of its path.
+    // These names can otherwise reach or modify JavaScript object prototypes.
+    if (terms.some(isDangerousPathSegment)) continue;
 
     var parent = obj,
       modelDef = model;
@@ -42,7 +46,7 @@ function formJSON(fields, model) {
         modelDef = false;
       }
 
-      parent[key] = parent[key] || {};
+      parent[key] = parent[key] || Object.create(null);
 
       // At the leaf node
       // final term in list of terms
@@ -122,6 +126,14 @@ function formJSON(fields, model) {
   ensure(obj, model);
 
   return obj;
+}
+
+function isDangerousPathSegment(segment) {
+  return (
+    segment === "__proto__" ||
+    segment === "constructor" ||
+    segment === "prototype"
+  );
 }
 
 function parseBool(string) {

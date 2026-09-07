@@ -1,3 +1,3 @@
-User deleted blog
+User deleted site
 
-{{email}} now pays {{pretty.price}} per {{pretty.interval}} for {{pretty.amount}} blog{{pretty.s}}
+{{email}} now pays {{pretty.price}} per {{pretty.interval}} for {{pretty.amount}} site{{pretty.s}}

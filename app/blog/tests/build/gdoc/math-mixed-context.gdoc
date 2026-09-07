@@ -1,0 +1,10 @@
+<html><head><meta content="text/html; charset=UTF-8" http-equiv="content-type"></head><body>
+<p><span style="font-weight:700">Bold</span> and <span style="font-style:italic">italic</span> around $$m^2$$ math.</p>
+<ul>
+  <li>List item equation $$n+1$$ stays inline.</li>
+</ul>
+<table>
+  <tr><td>Cell equation $$p$$</td><td>Other cell</td></tr>
+</table>
+<blockquote><p>Blockquote equation $$q$$ survives.</p></blockquote>
+</body></html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+    <div class="container">
+
+      {{#entry}}
+
+
+
+
+
+        {{{html}}}
+
+        <p><span class="small">
+          {{#date}}Published on
+          {{date}}
+          {{/date}}
+
+          {{#tags.length}}
+            {{#tags}}
+            – <a class="light" href="/tagged/{{slug}}">{{name}}</a>
+            {{/tags}}
+          {{/tags.length}}
+        </span>
+        </p>
+        <br>
+        {{> pluginHTML}}
+
+      {{/entry}}
+    </div>
+    {{> footer}}
+  </body>
+</html>

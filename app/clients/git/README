@@ -1,0 +1,286 @@
+## Git Client
+
+The Git client enables Blot users to manage their blog using a Git repository as the source folder. This client bridges between user-managed Git repositories and Blot's blog synchronization system.
+
+## Overview
+
+The Git client implements a three-repository architecture:
+
+1. **Bare repository** (storage layer): Located in `/data/git/<blogHandle>.git`. This is a bare Git repository (no working tree) that serves as the central authority for blog content.
+2. **Live repository** (on Blot server): Located in the user's blog folder (`/data/blog_<blogID>/`). A cloned checkout of the bare repository where Blot processes and syncs blog files.
+3. **User repository** (on user's computer): A clone of the bare repository where the user makes edits via Git pushes.
+
+When a user pushes changes from their local repository to the bare repository, Blot automatically detects the change, syncs the blog folder, and processes modified files.
+
+## File Inventory
+
+### Core Modules
+
+- **`index.js`**: Exports the Git client interface, including `display_name`, `description`, and the required interface functions (`remove`, `write`, `disconnect`, `dashboard_routes`, `site_routes`).
+
+- **`routes.js`**: Defines Express routes for both the dashboard UI and the Git push endpoint. Includes:
+  - Dashboard routes for create, index, disconnect, and token reset
+  - Site routes for push handling via pushover
+  - Authentication middleware application
+  - Sync triggering on post-push
+
+- **`authenticate.js`**: HTTP Basic Auth middleware using http-auth. Validates user credentials (email and token) against the blog and user models before allowing access to the push endpoint.
+
+- **`sync.js`**: Core synchronization logic. Acquires a lock on the blog folder, fetches updates from the bare repository, resets the live repository to match the remote, and triggers folder updates for all modified files.
+
+- **`create.js`**: Repository initialization. Creates both the bare repository and live repository, copies existing blog files into the live repository with initial commits, and generates authentication tokens.
+
+- **`write.js`**: Writes a file to the blog folder and pushes changes to the bare repository. Used by Blot to persist preview files and other content changes.
+
+- **`remove.js`**: Removes a file from the blog folder and commits/pushes the deletion to the bare repository.
+
+- **`disconnect.js`**: Cleans up when a user disconnects the Git client. Removes tokens, status records, bare repository directory, and the `.git` directory from the blog folder.
+
+- **`database.js`**: Redis-based token and status storage. Handles token creation, validation, refresh, and deletion. Also manages creation status tracking (e.g., `createInProgress`, `createFailed`, `createComplete`).
+
+- **`dataDir.js`**: Centralized reference to the bare repository data directory (`<blot_directory>/data/git`). Ensures the directory exists on require.
+
+- **`checkGitRepoExists.js`**: Validates that a Git repository exists in a given directory by using `git rev-parse --show-toplevel` and comparing the repository root with the expected blog folder path. Accounts for nested Git repositories (the entire Blot codebase is itself a Git repo).
+
+- **`renameRepo.js`**: Async function to rename a bare repository when a blog handle changes. Moves the bare repository from the old handle path to the new handle path.
+
+### Views
+
+- **`views/index.html`**: Dashboard UI showing the Git repository status, authentication token, and links to create, disconnect, or reset credentials.
+
+- **`views/create.html`**: Setup form for initializing Git for a blog.
+
+- **`views/disconnect.html`**: Confirmation form for disconnecting the Git client from a blog.
+
+- **`views/reset-password.html`**: Form to regenerate the authentication token.
+
+### Tests
+
+- **`tests/setup/index.js`**: Test framework setup. Creates Express server, manages temporary folders, sets test blog configuration, cleans up bare repositories and disconnects after each test.
+
+- **`tests/setup/setClientToGit.js`**: Helper to configure a test blog to use the Git client and create initial repositories.
+
+- **`tests/authenticate.js`**: Tests for authentication middleware validation.
+
+- **`tests/create.js`**: Tests for repository creation, including empty folders, existing files, and error cleanup.
+
+- **`tests/write.js`**: Tests for file write and commit operations.
+
+- **`tests/remove.js`**: Tests for file removal operations.
+
+- **`tests/sync.js`**: Tests for synchronization, including push handling and file change detection.
+
+- **`tests/branches.js`**: Tests for branch handling (only master branch is accepted).
+
+- **`tests/handle-change.js`**: Tests for renaming repositories when a blog handle changes.
+
+## Public API
+
+All public functions are called by Blot's client framework and should not be invoked directly by external code.
+
+### Exported via `index.js`
+
+```javascript
+module.exports = {
+  display_name: "Git",
+  description: "An open-source version control system",
+  remove: require("./remove"),         // (blogID, path, callback) => void
+  write: require("./write"),           // (blogID, path, contents, callback) => void
+  disconnect: require("./disconnect"), // (blogID, callback) => void
+  dashboard_routes: require("./routes").dashboard,
+  site_routes: require("./routes").site,
+};
+```
+
+### Key Functions
+
+#### `write(blogID, path, contents, callback)`
+
+Writes a file to the blog folder and commits/pushes the change to the bare repository.
+
+- **Parameters**:
+  - `blogID` (string): The blog's unique identifier
+  - `path` (string): Relative path within the blog folder (e.g., `/drafts/my-post.md`)
+  - `contents` (string or buffer): File contents
+  - `callback` (function): `(err) => void`
+- **Behavior**: Returns error if the file is in the ignore list (via `shouldIgnoreFile`). Writes to disk, stages with `git add`, commits with message "Updated <path>", and pushes to origin master.
+
+#### `remove(blogID, path, callback)`
+
+Removes a file from the blog folder and commits/pushes the deletion.
+
+- **Parameters**:
+  - `blogID` (string): The blog's unique identifier
+  - `path` (string): Relative path within the blog folder
+  - `callback` (function): `(err) => void`
+- **Behavior**: Removes the file from disk, stages deletion with `git add`, commits with message "Removed <path>", and pushes to origin master. Gracefully handles cases where the file was never tracked by Git.
+
+#### `disconnect(blogID, callback)`
+
+Disconnects the Git client from a blog by removing the Git infrastructure.
+
+- **Parameters**:
+  - `blogID` (string): The blog's unique identifier
+  - `callback` (function): `(err) => void`
+- **Behavior**: Updates blog model to remove the client, deletes Redis token/status keys, removes the bare repository directory, and optionally removes the `.git` directory from the blog folder.
+
+#### Express Route Handlers
+
+The `dashboard_routes` and `site_routes` routers are mounted at `/git` under the dashboard and site namespaces respectively.
+
+**Dashboard routes**:
+- `GET /`: Shows Git status if repository exists, redirects to create otherwise
+- `GET /create`: Shows repository creation form
+- `POST /create`: Initiates repository creation (sets blog client to "git" and calls `create()` asynchronously)
+- `POST /reset-password`: Refreshes the authentication token
+- `GET /disconnect`: Shows disconnection confirmation
+- `POST /disconnect`: Disconnects the Git client
+
+**Site routes**:
+- `POST /end/<blogHandle>.git`: Git push endpoint. Requires HTTP Basic Auth. Triggers synchronization on successful push.
+- `GET /syncs-finished/<blogID>`: Test-only endpoint to check if all active syncs have completed.
+
+## Internal Structure
+
+### Repository Architecture
+
+```
+Bare Repository (Reference)
+  ├─ Contains commits and branches
+  └─ No working tree
+
+Live Repository (Blot Server)
+  ├─ Remote: origin -> Bare Repository
+  └─ Working tree: Blog folder contents
+
+User Repository (User's Computer)
+  ├─ Remote: origin -> Bare Repository
+  └─ User edits files here
+```
+
+### Sync Flow
+
+1. User makes local edits and pushes to the bare repository via `git push origin master`
+2. Pushover middleware intercepts the push at `/end/<blogHandle>.git`
+3. Authentication middleware validates user credentials against the User and Blog models
+4. Push is accepted and completion handler triggers the sync
+5. `sync()` is called with the blog ID and handle
+6. Sync acquires a file lock to prevent concurrent syncs
+7. Sync fetches from the bare repository into the live repository
+8. Sync resets the live working tree to match `origin/master`
+9. Sync computes diff between the previous and new HEAD commits
+10. For each modified file, `folder.update(path)` is called to process the change
+11. Lock is released and callback is invoked
+
+### Authentication Flow
+
+1. User attempts to push to `/end/<blogHandle>.git`
+2. HTTP Basic Auth middleware extracts email and token from the request
+3. User model is queried by email
+4. Token is validated against the stored token in Redis (key: `user:<uid>:git:token`)
+5. Blog model is queried by handle
+6. Ownership is verified (blog.owner must match user.uid)
+7. If all checks pass, `req.blog` and `req.gitHandle` are set and the request proceeds
+8. If any check fails, the request is rejected with a 401 response
+
+## Dependencies
+
+### Internal
+
+- `models/blog`: Blog model for querying and updating blog records
+- `models/user`: User model for email-based user lookup
+- `helper/ensure`: Runtime type validation utility
+- `helper/clfdate`: CLF date formatting for logs
+- `helper/localPath`: Helper to construct absolute paths within blog directories
+- `sync`: Distributed lock manager for coordinating blog folder updates
+- `clients/util/shouldIgnoreFile`: Utility to determine if a file should be excluded from syncing
+
+### External (NPM)
+
+- **`simple-git`** (v1.92.0+): Interface to Git command-line operations
+- **`pushover`** (v1.3.6+): HTTP git push endpoint server
+- **`http-auth`** (v3.2.3+): HTTP Basic Authentication middleware
+- **`uuid`** (v3.2.1+): Token generation
+- **`fs-extra`**: File system utilities with Promise support
+- **`async`**: Utilities for asynchronous operations
+- **`debug`**: Logging utility (namespace: `blot:clients:git:*`)
+- **`express`**: Web framework for routing
+
+### Redis
+
+- Stores authentication tokens (key: `user:<uid>:git:token`)
+- Stores creation status (key: `user:<uid>:git:status`)
+
+## Configuration
+
+### Environment
+
+The Git client uses Redis as the sole persistence layer for credentials and status. No additional environment variables are required; the client integrates with Blot's existing Redis configuration via the shared `models/client` module.
+
+### File Filtering
+
+Files matching patterns in `shouldIgnoreFile()` cannot be written or removed via the Git client. This typically includes system files (`.DS_Store`), editor artifacts, and node_modules.
+
+### Branch Restrictions
+
+Only pushes to the `master` branch are accepted. Pushes to other branches are rejected with HTTP 400.
+
+## Known Limitations and Constraints
+
+1. **Nested Git Repositories**: Blot's entire codebase is a Git repository. The `checkGitRepoExists` function accounts for this by verifying that the repository root directory name matches the blog folder name (prefixed with `blog_`), but this could cause unexpected behavior if a user names their blog folder identically to a higher-level Git directory.
+
+2. **Race Conditions**: The sync mechanism uses a locking mechanism to prevent concurrent syncs, but the test framework includes a tracking mechanism (`activeSyncs`) because determining sync completion without the lock is unreliable. In production, the same lock ensures consistency.
+
+3. **No Rollback**: If `write()` or `remove()` fails after the file operation but before the push completes, the file on disk and in the repository become out of sync. The next sync from the bare repository will reconcile the state.
+
+4. **Token Invalidation**: Tokens are stored in Redis. If Redis is flushed without coordination, authentication will fail until a new token is generated via the dashboard.
+
+5. **Bare Repository Size**: As blog content accumulates, the bare repository grows. There is no automatic garbage collection or pruning implemented.
+
+6. **Push Atomicity**: Pushes are processed asynchronously after the HTTP response is sent. If Blot crashes during sync, the push is accepted but the sync may not complete.
+
+## Testing
+
+Tests are located in the `tests/` directory and use a shared setup utility that:
+- Creates a temporary blog for each test
+- Initializes a Git infrastructure
+- Starts an Express server with the Git client routes
+- Provides utilities for creating and verifying test files
+- Cleans up all temporary data after each test
+
+To run tests:
+
+```bash
+npm test -- app/clients/git/tests
+```
+
+The test suite covers:
+- Authentication validation
+- Repository creation with existing and empty folders
+- File write and remove operations
+- Sync on push with multi-file change detection
+- Branch restriction enforcement
+- Blog handle renaming
+- Error handling and cleanup
+
+## Integration Points
+
+### Blog Model
+
+- `Blog.get()`: Queried by handle during authentication and by ID during sync
+- `Blog.set()`: Called to update blog.client field to "git" during creation
+- Blog ownership is validated before granting access to the push endpoint
+
+### User Model
+
+- `User.getByEmail()`: Queried during authentication to resolve email to user ID
+
+### Sync Utility
+
+- `Sync()`: Used to acquire a distributed lock on the blog folder during create and sync operations
+- `folder.update(path)`: Called during sync to process each modified file
+
+### Client Framework
+
+- The Git client is registered in `app/clients/index.js` and must export the interface defined there
+- Other clients follow the same pattern; see Dropbox, Google Drive, or iCloud for examples

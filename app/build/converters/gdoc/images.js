@@ -31,6 +31,19 @@ async function processImages(blogID, docPath, $) {
     return src && !src.startsWith("data:");
   });
 
+  const assetPrefix = `/_assets/${docHash}/`;
+  const alreadyAssetImages = nonDataImages.filter((elem) => {
+    const src = $(elem).attr("src");
+    return src && src.startsWith(assetPrefix) && src.length > assetPrefix.length;
+  });
+  const needsProcessingImages = nonDataImages.filter(
+    (elem) => !alreadyAssetImages.includes(elem)
+  );
+
+  // Fast-path: leave img src already pointing at Blot static assets unchanged
+  // (e.g. from zip-export download flow that rewrote images/... to /_assets/...)
+  // AlreadyAssetImages are skipped below; no copy or transformer lookup.
+
   // Handle images which embed image data directly
   for (const elem of dataImages) {
     try {
@@ -75,8 +88,8 @@ async function processImages(blogID, docPath, $) {
     }
   }
 
-  // Handle images which reference external resources
-  for (const elem of nonDataImages) {
+  // Handle images which reference external resources (remote URLs, relative paths)
+  for (const elem of needsProcessingImages) {
     const src = $(elem).attr("src");
     const filenameBase = hash(src);
 

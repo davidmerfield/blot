@@ -14,6 +14,9 @@ module.exports = async function setupBlogs(user, folders) {
   // Create/get blogs
   for (const path of folders) {
     const handle = basename(path);
+
+    console.log('Setting up', handle);
+
     let blog = await getBlog({ handle });
 
     if (blog && blog.owner !== user.uid) {
@@ -21,11 +24,17 @@ module.exports = async function setupBlogs(user, folders) {
     }
 
     if (!blog) {
+      console.log('Creating blog', handle);
       blog = await createBlog(user.uid, { handle });
     }
 
     const update = config[blog.handle] || {};
 
+    if (update.plugins) {
+      update.plugins = {...blog.plugins, ...update.plugins};
+    }
+
+    
     await setBlog(blog.id, { ...update, client: "" });
 
     blogs[blog.id] = { path, blog };
