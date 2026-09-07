@@ -64,6 +64,19 @@ module.exports = function setup(options) {
 
     if (status >= 400) return res.send(config.body || "");
 
+    // Serve the body gzip-encoded: Content-Length then describes the
+    // compressed size, which is smaller than the bytes node-fetch hands
+    // back after decoding.
+    if (config.gzip) {
+      var zlib = require("zlib");
+      var gz = zlib.gzipSync(Buffer.from(body));
+      res.set({
+        "Content-Encoding": "gzip",
+        "Content-Length": String(gz.length),
+      });
+      return res.end(gz);
+    }
+
     res.send(body);
   });
 

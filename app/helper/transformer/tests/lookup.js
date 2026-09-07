@@ -318,6 +318,29 @@ describe("transformer", function () {
     });
   });
 
+  it("accepts a gzip-encoded response whose Content-Length is the encoded size", function (done) {
+    var test = this;
+    var transform = jasmine.createSpy().and.callFake(test.transform);
+
+    // A compressible body: the gzip Content-Length is far smaller than the
+    // bytes node-fetch yields after decoding, which must not read as a
+    // truncated download.
+    test.queueRemoteResponse({
+      gzip: true,
+      body: "gzipped body ".repeat(64) + Date.now(),
+      etag: null,
+      lastModified: null,
+    });
+
+    test.transformer.lookup(test.sequenceUrl, transform, function (err, result) {
+      if (err) return done.fail(err);
+
+      expect(transform).toHaveBeenCalled();
+      expect(result.size).toEqual(jasmine.any(Number));
+      done();
+    });
+  });
+
   describe("url download caching", function () {
     it("stores the transformed result after a successful download", function (done) {
       var test = this;

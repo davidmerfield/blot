@@ -102,13 +102,28 @@ module.exports = function (url, headers, callback) {
 
       if (!res.ok) {
         debug("  it has a bad status code:", res.status);
+        // Nobody consumes the body on this path; drop it so the socket
+        // isn't held open.
+        res.body.destroy();
         throw new Error(res.status);
       }
 
       debug("  updated latest response headers for status", res.status);
 
+      // node-fetch transparently decompresses gzip/deflate/br bodies but
+      // leaves Content-Length describing the *encoded* payload, so a
+      // decoded byte count can legitimately differ from it. Only use the
+      // header for the truncation check when the body is served identity.
+      var contentEncoding = res.headers.get("content-encoding");
+      var canCompareLength =
+        !contentEncoding || /^identity$/i.test(contentEncoding.trim());
+
       var expectedLength = Number(res.headers.get("content-length"));
-      if (!Number.isFinite(expectedLength) || expectedLength < 0)
+      if (
+        !canCompareLength ||
+        !Number.isFinite(expectedLength) ||
+        expectedLength < 0
+      )
         expectedLength = null;
 
       return new Promise((resolve, reject) => {
@@ -141,10 +156,13 @@ module.exports = function (url, headers, callback) {
 
         function cleanup() {
           clearIdle();
-          res.body.removeListener("error", onError);
           res.body.removeListener("data", onData);
           file.removeListener("error", onError);
           file.removeListener("finish", onFinish);
+          // Deliberately keep the res.body 'error' listener: destroy() and
+          // late premature-close errors can still fire after we've settled,
+          // and an unhandled 'error' on the stream would crash the process.
+          // onError's `settled` guard makes the extra call a no-op.
         }
 
         function onError(err) {
@@ -152,6 +170,11 @@ module.exports = function (url, headers, callback) {
           settled = true;
           cleanup();
           res.body.unpipe(file);
+          // Destroy the response stream, not just unpipe it: an unpiped,
+          // unconsumed PassThrough stays paused and backpressures - and so
+          // holds open - the underlying HTTP socket, and node-fetch has
+          // already cleared its request timeout once headers arrived.
+          res.body.destroy();
           file.destroy();
           reject(err);
         }
