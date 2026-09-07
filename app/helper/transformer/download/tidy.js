@@ -1,20 +1,22 @@
 function expire(str) {
-  var expires = null;
   var now = Date.now();
 
-  if (!str) return expires;
+  if (!str) return null;
 
-  if (str.indexOf("max-age=") === -1) return expires;
+  // Pull the delta-seconds out of a Cache-Control header, e.g.
+  // "public, max-age=600, immutable" -> 600. The previous implementation
+  // sliced to the start of "max-age=" but never past it, so parseInt
+  // always saw "max-age=..." and returned NaN - meaning max-age was
+  // silently ignored and such responses were re-downloaded every build.
+  var match = /(?:^|[,\s])max-age\s*=\s*"?(\d+)"?/i.exec(str);
 
-  try {
-    str = str.slice(str.indexOf("max-age="));
-    str = parseInt(str) * 1000;
-    expires = now + str;
-  } catch (e) {
-    expires = null;
-  }
+  if (!match) return null;
 
-  return expires;
+  var seconds = parseInt(match[1], 10);
+
+  if (isNaN(seconds)) return null;
+
+  return now + seconds * 1000;
 }
 
 function date(str) {

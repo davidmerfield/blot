@@ -86,6 +86,25 @@ describe("transformer", function () {
       done();
     });
   });
+  it("will not resolve a source that climbs out of the blog's static folder", function (done) {
+    var spy = jasmine.createSpy().and.callFake(this.transform);
+
+    // A file that exists in the static root but NOT in this blog's subtree.
+    var secretName = "secret-" + Date.now() + ".txt";
+    var secretPath = STATIC_DIRECTORY + "/" + secretName;
+    fs.outputFileSync(secretPath, "top secret");
+
+    this.transformer.lookup("../" + secretName, spy, function (err, result) {
+      fs.removeSync(secretPath);
+
+      expect(err instanceof Error).toBe(true);
+      expect(err.code).toEqual("ENOENT");
+      expect(spy).not.toHaveBeenCalled();
+      expect(result).not.toBeTruthy();
+      done();
+    });
+  });
+
   it("transforms a file in the blog's static directory", function (done) {
     var fullPath = this.blogDirectory + "/" + this.path;
     var path = "/" + Date.now() + "-" + this.path;
@@ -228,6 +247,41 @@ describe("transformer", function () {
     });
   });
 
+  it("treats a response with only Cache-Control: max-age as fresh", function (done) {
+    var test = this;
+    var firstTransform = jasmine.createSpy().and.callFake(test.transform);
+    var secondTransform = jasmine.createSpy().and.callFake(test.transform);
+
+    // First response is cacheable for an hour via max-age alone (no Expires,
+    // no ETag / Last-Modified). The second queued response has a different
+    // body - if the transformer re-requests it, sizes will differ.
+    test.queueRemoteResponse({
+      body: "fresh body " + Date.now(),
+      etag: null,
+      lastModified: null,
+      headers: { "Cache-Control": "max-age=3600" },
+    });
+    test.queueRemoteResponse({
+      body: "this body should never be fetched " + Date.now(),
+      etag: null,
+      lastModified: null,
+      headers: { "Cache-Control": "max-age=3600" },
+    });
+
+    test.transformer.lookup(test.sequenceUrl, firstTransform, function (err, firstResult) {
+      if (err) return done.fail(err);
+
+      test.transformer.lookup(test.sequenceUrl, secondTransform, function (err, secondResult) {
+        if (err) return done.fail(err);
+
+        expect(firstTransform).toHaveBeenCalled();
+        expect(secondTransform).not.toHaveBeenCalled();
+        expect(secondResult).toEqual(firstResult);
+        done();
+      });
+    });
+  });
+
   describe("url download caching", function () {
     it("stores the transformed result after a successful download", function (done) {
       var test = this;
@@ -347,6 +401,43 @@ describe("transformer", function () {
 
             done();
           });
+        });
+      });
+    });
+
+    it("errors instead of hanging when the connection drops mid-download", function (done) {
+      var test = this;
+      var spy = jasmine.createSpy().and.callFake(test.transform);
+
+      test.queueRemoteResponse({ destroy: true });
+
+      test.transformer.lookup(test.sequenceUrl, spy, function (err, result) {
+        expect(err instanceof Error).toBe(true);
+        expect(result).not.toBeTruthy();
+        expect(spy).not.toHaveBeenCalled();
+        done();
+      });
+    });
+
+    it("falls back to the cached result when a later download drops mid-body", function (done) {
+      var test = this;
+      var body = "Good body " + Date.now();
+      var firstTransform = jasmine.createSpy().and.callFake(test.transform);
+      var secondTransform = jasmine.createSpy().and.callFake(test.transform);
+
+      test.queueRemoteResponse({ body: body, etag: null, lastModified: null });
+      test.queueRemoteResponse({ destroy: true });
+
+      test.transformer.lookup(test.sequenceUrl, firstTransform, function (err, firstResult) {
+        if (err) return done.fail(err);
+
+        test.transformer.lookup(test.sequenceUrl, secondTransform, function (err, secondResult) {
+          if (err) return done.fail(err);
+
+          expect(firstTransform).toHaveBeenCalled();
+          expect(secondTransform).not.toHaveBeenCalled();
+          expect(secondResult).toEqual(firstResult);
+          done();
         });
       });
     });

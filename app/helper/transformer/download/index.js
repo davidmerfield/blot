@@ -105,11 +105,43 @@ module.exports = function (url, headers, callback) {
       }
 
       debug("  updated latest response headers for status", res.status);
-      res.body.pipe(file); // start piping the response body to the file
 
       return new Promise((resolve, reject) => {
-        file.on("finish", () => resolve({ status: res.status, path, headers }));
-        file.on("error", reject);
+        var settled = false;
+
+        function cleanup() {
+          res.body.removeListener("error", onError);
+          file.removeListener("error", onError);
+          file.removeListener("finish", onFinish);
+        }
+
+        // The response body is a stream too: a socket reset, premature
+        // close, or the fetch timeout firing mid-download emits 'error'
+        // on res.body, NOT on the file. pipe() does not forward that, so
+        // without this listener the promise never settles (build hangs)
+        // and an unhandled stream 'error' can crash the process. This is
+        // the ESOCKETIMEDOUT case the old TODO referred to.
+        function onError(err) {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          res.body.unpipe(file);
+          file.destroy();
+          reject(err);
+        }
+
+        function onFinish() {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          resolve({ status: res.status, path, headers });
+        }
+
+        res.body.on("error", onError);
+        file.on("error", onError);
+        file.on("finish", onFinish);
+
+        res.body.pipe(file); // start piping the response body to the file
       });
     })
     .then(result => {
@@ -129,7 +161,7 @@ module.exports = function (url, headers, callback) {
     })
     .catch(err => {
       debug("Download error:", err);
-      file.close();
+      if (!file.destroyed) file.destroy();
       fs.unlink(path).catch(() => {});
       callback(err);
     });

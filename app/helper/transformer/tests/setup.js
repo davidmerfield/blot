@@ -33,6 +33,15 @@ module.exports = function setup(options) {
     }
 
     var config = sequenceQueue.shift() || {};
+
+    // Simulate the connection dropping part-way through the body: promise
+    // the client 1000 bytes, send a handful, then kill the socket.
+    if (config.destroy) {
+      res.set({ "Content-Length": "1000" });
+      res.write("partial");
+      return res.socket.destroy();
+    }
+
     var status = config.status === undefined ? 200 : config.status;
     var body = config.body === undefined ? responseBody : config.body;
     var etagValue =
