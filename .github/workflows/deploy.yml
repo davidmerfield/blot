@@ -2,6 +2,15 @@ name: Deploy to EC2
 
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch to deploy from"
+        required: false
+        default: "master"
+      commit:
+        description: "Optional commit hash or short code on that branch (defaults to the tip of the branch)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -15,18 +24,42 @@ jobs:
   wait-for-build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+      ref: ${{ steps.resolve.outputs.ref }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Need full history so an arbitrary/older commit or short code can be
+          # resolved and verified against the target branch.
+          fetch-depth: 0
 
-      - name: Check branch
+      - name: Resolve target commit
+        id: resolve
         run: |
-          if [ "${{ github.ref }}" != "refs/heads/master" ]; then
-            echo "❌ Error: This workflow can only be run on the master branch."
-            echo "Current branch: ${{ github.ref }}"
-            exit 1
+          REF="${{ github.event.inputs.ref }}"
+          REF="${REF:-master}"
+          COMMIT="${{ github.event.inputs.commit }}"
+
+          git fetch --quiet origin "$REF"
+
+          if [ -n "$COMMIT" ]; then
+            SHA=$(git rev-parse --verify --quiet "${COMMIT}^{commit}") || {
+              echo "❌ Error: could not resolve commit '$COMMIT'"
+              exit 1
+            }
+            if ! git merge-base --is-ancestor "$SHA" "origin/$REF"; then
+              echo "❌ Error: commit $SHA is not on branch '$REF'"
+              exit 1
+            fi
+          else
+            SHA=$(git rev-parse --verify "origin/$REF^{commit}")
           fi
-          echo "✅ Branch check passed: running on master branch"
+
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "✅ Target commit: $SHA (branch $REF)"
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -37,8 +70,8 @@ jobs:
 
       - name: Wait for build images to be available
         run: |
-          IMAGE="${{ env.REGISTRY_URL }}:${{ github.sha }}"
-          AIRLOCK_IMAGE="${{ env.AIRLOCK_REGISTRY_URL }}:${{ github.sha }}"
+          IMAGE="${{ env.REGISTRY_URL }}:${{ steps.resolve.outputs.sha }}"
+          AIRLOCK_IMAGE="${{ env.AIRLOCK_REGISTRY_URL }}:${{ steps.resolve.outputs.sha }}"
           WAIT_INTERVAL=10
 
           # The app image is required.
@@ -78,10 +111,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: deploy
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.wait-for-build.outputs.sha }}
+          fetch-depth: 0
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -125,7 +161,7 @@ jobs:
         run: npm install
 
       - name: Deploy via npm script
-        run: npm run deploy-node -- ${{ github.sha }}
+        run: npm run deploy-node -- ${{ needs.wait-for-build.outputs.sha }}
         env:
           # Skip branch check since we're in CI and may be checking out a specific commit
           SKIP_BRANCH_CHECK: true
@@ -137,5 +173,6 @@ jobs:
           echo "=========================================="
           echo "Deployment Summary"
           echo "=========================================="
-          echo "Commit SHA: ${{ github.sha }}"
+          echo "Branch:     ${{ needs.wait-for-build.outputs.ref }}"
+          echo "Commit SHA: ${{ needs.wait-for-build.outputs.sha }}"
           echo "Deployment completed successfully! 🚀"
