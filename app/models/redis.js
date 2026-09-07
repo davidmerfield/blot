@@ -23,6 +23,15 @@ function createRedisClient() {
 
   clientSideCaches.set(client, clientSideCache);
 
+  // This client handled errors before the diagnostic work. Retain that
+  // existing behavior; dashboard clients deliberately have no such handler.
+  client.on("error", function (err) {
+    console.log("Redis Error:");
+    console.log(err);
+    if (err.trace) console.log(err.trace);
+    if (err.stack) console.log(err.stack);
+  });
+
   return instrumentRedis("models", client, url);
 }
 

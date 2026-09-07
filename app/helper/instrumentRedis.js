@@ -1,4 +1,5 @@
 const clfdate = require("helper/clfdate");
+const { errorMonitor } = require("node:events");
 
 // node-redis deliberately exposes only lifecycle events, not its underlying
 // socket. Keep this at that public boundary so diagnostic logging cannot alter
@@ -33,10 +34,10 @@ module.exports = function instrumentRedis(name, client, endpoint) {
     console.warn(clfdate(), "Redis lifecycle end", context());
   });
 
-  // An error listener is required by Node's EventEmitter contract. Log the
-  // complete Error object so errno/code/syscall and its stack survive in the
-  // container logs, rather than converting it to a lossy string.
-  client.on("error", (error) => {
+  // errorMonitor observes an EventEmitter error before its regular error
+  // listeners run, but is not itself an error handler. This records the full
+  // error without preventing Node's original unhandled-error crash behavior.
+  client.on(errorMonitor, (error) => {
     console.error(clfdate(), "Redis lifecycle error", context(), error);
   });
 
