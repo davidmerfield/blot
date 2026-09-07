@@ -224,7 +224,12 @@ compared against a handle, or discarded — so not read primitives, but they
 can still reach an internal address from a user-supplied host:
 
 * [`app/dashboard/site/domain/verify.js`](../../app/dashboard/site/domain/verify.js)
-  — dashboard-entered hostname, `fetch("http://" + aRecordIP + "/verify/domain-setup")`.
+  — connects to an A-record it resolved itself (authoritative nameservers +
+  public fallback resolvers), `Host:` the dashboard-entered domain. Uses
+  `helper/airlock.getViaIP`, not `.fetch`: the proxied request line targets
+  `http://<ip>/verify/domain-setup` so the exact resolved IP is kept (the
+  egress filter still re-checks it) instead of the proxy re-resolving the
+  name, which would defeat the point of resolving it here.
 * [`app/documentation/featured/verifySiteIsOnline.js`](../../app/documentation/featured/verifySiteIsOnline.js)
   and [`fetchSubscriptionDuration.js`](../../app/documentation/featured/fetchSubscriptionDuration.js)
   — `https://<blog.domain>/verify/*`.

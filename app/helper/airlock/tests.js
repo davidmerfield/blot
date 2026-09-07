@@ -1,5 +1,6 @@
 describe("helper/airlock", function () {
   const nock = require("nock");
+  const http = require("http");
   const config = require("config");
   const airlockPath = require.resolve("helper/airlock");
 
@@ -100,5 +101,62 @@ describe("helper/airlock", function () {
     const res = await airlock.fetch("http://example.com/");
     expect(res.status).toBe(200);
     expect(scope.isDone()).toBe(true);
+  });
+
+  describe("getViaIP", function () {
+    // Capture the options http.request is called with instead of hitting the
+    // network - the point of getViaIP is exactly the request shape.
+    let seen;
+    beforeEach(function () {
+      seen = null;
+      spyOn(http, "request").and.callFake(function (options, cb) {
+        seen = options;
+        const res = {
+          statusCode: 200,
+          setEncoding() {},
+          on(ev, handler) {
+            if (ev === "data") handler("blog_handle");
+            if (ev === "end") handler();
+          },
+        };
+        return {
+          setTimeout() {},
+          on() {},
+          end() {
+            cb(res);
+          },
+        };
+      });
+    });
+
+    it("sends an absolute-URI request line to the proxy, pinned to the IP", function () {
+      const airlock = load({ proxy: "http://airlock:8888" });
+      airlock.getViaIP("93.184.216.34", "/verify/domain-setup", {
+        host: "example.com",
+      });
+      expect(seen.host).toBe("airlock");
+      expect(String(seen.port)).toBe("8888");
+      expect(seen.path).toBe("http://93.184.216.34/verify/domain-setup");
+      expect(seen.headers.Host).toBe("example.com");
+    });
+
+    it("connects straight to the IP when no proxy is configured", function () {
+      const airlock = load({ required: false });
+      airlock.getViaIP("93.184.216.34", "/verify/domain-setup", {
+        host: "example.com",
+      });
+      expect(seen.host).toBe("93.184.216.34");
+      expect(seen.path).toBe("/verify/domain-setup");
+      expect(seen.headers.Host).toBe("example.com");
+    });
+
+    it("fails closed when required but no proxy is configured", function () {
+      const airlock = load({ required: true });
+      expect(function () {
+        airlock.getViaIP("93.184.216.34", "/verify/domain-setup", {
+          host: "example.com",
+        });
+      }).toThrowError(/BLOT_AIRLOCK_PROXY_URL/);
+    });
   });
 });

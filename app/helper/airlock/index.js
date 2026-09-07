@@ -1,4 +1,5 @@
 const config = require("config");
+const http = require("http");
 const nodeFetch = require("node-fetch");
 const { HttpProxyAgent } = require("http-proxy-agent");
 const { HttpsProxyAgent } = require("https-proxy-agent");
@@ -72,6 +73,73 @@ async function fetch(url, options = {}) {
   return nodeFetch(url, fetchOptions);
 }
 
+function abortError() {
+  const e = new Error("The operation was aborted");
+  e.name = "AbortError";
+  return e;
+}
+
+// GET a fixed destination IP through the airlock, with an explicit Host
+// header. This exists for app/dashboard/site/domain/verify.js: it resolves
+// the domain itself (authoritative nameservers + public fallback resolvers)
+// and must connect to THAT IP - during DNS propagation or split-horizon the
+// airlock's own resolver can disagree. A normal proxied fetch can't express
+// this: http-proxy-agent rebuilds the request-line URI from the Host header,
+// so the IP is dropped and the proxy re-resolves the name. Here the proxied
+// request line targets `http://<ip><path>` (tinyproxy connects to that IP;
+// the egress filter still re-checks it) while the Host header carries the
+// real domain so Blot's proxy identifies the blog. Fails closed like fetch().
+// Resolves { status, text }.
+function getViaIP(ip, path, { host, timeout, signal, label } = {}) {
+  assertProxyReady(label || "domain/verify");
+
+  return new Promise((resolve, reject) => {
+    const headers = { Host: host, Connection: "close" };
+    let options;
+
+    if (proxyUrl) {
+      const proxy = new URL(proxyUrl);
+      options = {
+        host: proxy.hostname,
+        port: proxy.port || 80,
+        method: "GET",
+        path: `http://${ip}${path}`,
+        headers,
+      };
+    } else {
+      options = { host: ip, port: 80, method: "GET", path, headers };
+    }
+
+    const req = http.request(options, (res) => {
+      let text = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => (text += chunk));
+      res.on("end", () => resolve({ status: res.statusCode, text }));
+    });
+
+    if (timeout) {
+      req.setTimeout(timeout, () => {
+        const e = new Error("request-timeout");
+        e.type = "request-timeout";
+        req.destroy(e);
+      });
+    }
+
+    if (signal) {
+      if (signal.aborted) {
+        req.destroy(abortError());
+      } else {
+        signal.addEventListener("abort", () => req.destroy(abortError()), {
+          once: true,
+        });
+      }
+    }
+
+    req.on("error", reject);
+    req.end();
+  });
+}
+
 module.exports = {
   required,
   proxyConfigured,
@@ -80,4 +148,5 @@ module.exports = {
   assertProxyReady,
   assertBrowserReady,
   fetch,
+  getViaIP,
 };
