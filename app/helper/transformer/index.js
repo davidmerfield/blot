@@ -40,6 +40,11 @@ function Transformer(blogID, name) {
 
   var keys = Keys(blogID, name);
 
+  // Note: lookup does NOT de-duplicate concurrent calls for the same source.
+  // The "transform once" guarantee covers repeat lookups once a result is
+  // cached, not lookups that are in flight simultaneously - those may each
+  // run the transform and each write the (idempotent, hash-keyed) result.
+  // This is an accepted trade-off, not a bug; see readme.txt.
   function lookup(src, transform, callback) {
     if (type(src) !== "string") {
       return callback(new Error("Transformer: src is not a string"));
