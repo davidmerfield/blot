@@ -32,6 +32,7 @@ pre, code {
   {{#syntax_highlighter_font}}
   font-family: {{{stack}}};
   font-size: {{{font_size}}}px;
+  line-height: {{{line_height}}};
   {{/syntax_highlighter_font}}
 }
 

@@ -67,25 +67,25 @@ h1 {
 h2 {
   {{#heading_font}}
   font-family: {{{stack}}};
+  font-size: {{{font_size}}}px;
+  line-height: {{{line_height}}};
   {{/heading_font}}
   font-style: italic;
   font-weight: 400;
   margin-top: 3.1rem;
   margin-bottom: 1.4rem;
-  font-size: 2.2rem;
-  line-height: 1;
 }
 
 h3 {
   {{#heading_font}}
   font-family: {{{stack}}};
+  font-size: {{{font_size}}}px;
+  line-height: {{{line_height}}};
   {{/heading_font}}
   font-style: italic;
   font-weight: 400;
-  font-size: 1.7rem;
   margin-top: 2rem;
   margin-bottom: 1.4rem;
-  line-height: 1;
 }
 
 a {color: {{link_color}};
@@ -242,9 +242,28 @@ input[type="submit"] {
 @media screen and (max-width: 900px) {
   .index .margin {display: block;width: 100%}
   .container {margin: 1em 0 2em;padding-top:1.5em;border-top:1px solid rgba({{#rgb}}{{text_color}}{{/rgb}},0.1);min-width: auto}
-  .site-header {flex-direction: column;align-items: flex-start;}
-  .nav {float: none;display: block;margin: 0;width: 100%}
+  .site-header {flex-direction: column;}
+  .nav {float: none;display: flex;margin: 0;width: 100%}
   .nav a {margin: 0 1em 0 0;color:{{text_color}};}
+  .nav a:last-child {margin-right: 0;}
+
+  {{#is.navigation_alignment.justified}}
+  .site-header {align-items: stretch;}
+  .nav {justify-content: space-between;}
+  .nav a {margin-left: 0;margin-right: 0;}
+  {{/is.navigation_alignment.justified}}
+  {{#is.navigation_alignment.left}}
+  .site-header {align-items: flex-start;}
+  .nav {justify-content: flex-start;}
+  {{/is.navigation_alignment.left}}
+  {{#is.navigation_alignment.right}}
+  .site-header {align-items: flex-end;}
+  .nav {justify-content: flex-end;}
+  {{/is.navigation_alignment.right}}
+  {{#is.navigation_alignment.center}}
+  .site-header {align-items: center;}
+  .nav {justify-content: center;}
+  {{/is.navigation_alignment.center}}
   
 .container h1 {
 width: 100%
