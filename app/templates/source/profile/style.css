@@ -27,6 +27,7 @@
   {{#syntax_highlighter_font}}
   --code-font-family: {{{stack}}};
   --code-font-size: {{{font_size}}}px;
+  --code-line-height: {{{line_height}}};
   {{/syntax_highlighter_font}}
 }
 
@@ -528,12 +529,12 @@ nav.main-nav a.cta:hover {
 /* Typography */
 
 p, li {
-  line-height: 1.7;
+  line-height: var(--body-line-height);
   orphans: 2;
   widows: 2;
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4, h5, h6 {
   color: var(--link-color);
   font-family: var(--heading-font-family);
   line-height: var(--heading-line-height);
@@ -567,7 +568,7 @@ code.highlighter-rouge {
   color: var(--muted-color);
   font-family: var(--code-font-family);
   font-size: 15px;
-  line-height: 1.35;
+  line-height: var(--code-line-height, 1.5);
   font-style: normal;
 }
 
@@ -656,12 +657,14 @@ span.code { font-family: var(--code-font-family); background-color: rgba({{#rgb}
 
 pre {
   font-family: var(--code-font-family);
+  background-color: var(--background-color);
+  color: var(--text-color);
   white-space:pre-wrap;
   padding:20px;
   overflow:auto;
   border-radius: 5px;
   font-size: var(--code-font-size);
-  line-height: 1.5em;
+  line-height: var(--code-line-height, 1.5);
   font-weight: 500;
 }
 
@@ -733,7 +736,7 @@ Post List
 
 #post-list h2 {
   margin-top: 0;
-  line-height: 1.35;
+  line-height: var(--heading-line-height);
 }
 
 /* Footer */
