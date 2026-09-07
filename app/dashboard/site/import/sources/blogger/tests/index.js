@@ -1,6 +1,7 @@
 const fs = require("fs-extra");
 const os = require("os");
 const path = require("path");
+const nock = require("nock");
 const blogger = require("../index");
 
 describe("Blogger importer", function () {
@@ -8,12 +9,13 @@ describe("Blogger importer", function () {
   const atomFixture = path.join(__dirname, "fixtures", "export.atom");
 
   // The full import pipeline runs helper.download_images / download_pdfs, which
-  // fetch() the external asset URLs embedded in export.xml (e.g.
+  // fetch the external asset URLs embedded in export.xml (e.g.
   // https://blogger.googleusercontent.com/...). Those real network calls make
-  // the pipeline specs depend on CI egress and time out intermittently
-  // (helper/download_images.js has its own 5s timeout that collides with
-  // Jasmine's). Stub fetch so downloads fail fast and offline; none of these
-  // specs assert on downloaded asset content.
+  // the pipeline specs depend on CI egress and time out intermittently. None of
+  // these specs assert on downloaded asset content, so keep them offline:
+  //   - download_pdfs still uses the global fetch, so stub that.
+  //   - download_images now goes through helper/transformer, which uses
+  //     node-fetch; nock.disableNetConnect() makes those calls fail fast.
   let realFetch;
 
   beforeAll(function () {
@@ -28,10 +30,14 @@ describe("Blogger importer", function () {
         json: () => Promise.resolve({}),
       });
     };
+    nock.disableNetConnect();
+    nock.enableNetConnect("127.0.0.1");
   });
 
   afterAll(function () {
     global.fetch = realFetch;
+    nock.cleanAll();
+    nock.enableNetConnect();
   });
 
   it("selects published posts and pages and maps Atom fields", async function () {
