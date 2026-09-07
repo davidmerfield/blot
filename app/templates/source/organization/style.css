@@ -14143,6 +14143,44 @@ a.text-muted,
 .btn-dark {
   background-color: {{text_color}};
   border-color: {{text_color}};
+  color: {{background_color}} !important;
+}
+
+.btn-dark:hover,
+.btn-dark:focus,
+.btn-dark:active {
+  color: {{background_color}} !important;
+}
+
+.navbar-light .navbar-brand,
+.navbar-light .navbar-brand:hover,
+.navbar-light .navbar-brand:focus,
+.navbar-light .navbar-nav .nav-link,
+.navbar-light .navbar-nav .nav-link:hover,
+.navbar-light .navbar-nav .nav-link:focus,
+.navbar-light .navbar-nav .show > .nav-link,
+.navbar-light .navbar-nav .active > .nav-link,
+.navbar-light .navbar-nav .nav-link.show,
+.navbar-light .navbar-nav .nav-link.active {
+  color: {{text_color}} !important;
+}
+
+.navbar-light .navbar-toggler {
+  color: {{text_color}};
+  border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.2);
+}
+
+.navbar-light .navbar-toggler-icon {
+  background-image: linear-gradient(currentColor, currentColor),
+    linear-gradient(currentColor, currentColor),
+    linear-gradient(currentColor, currentColor);
+  background-size: 100% 2px;
+  background-position: center top, center, center bottom;
+  background-repeat: no-repeat;
+}
+
+.catlist a.text-muted {
+  color: {{tag_color}} !important;
 }
 
 footer {
