@@ -191,6 +191,22 @@ describe("template", () => {
 		expect(view.retrieve.latest_entry).toBe(true);
 	});
 
+	it("merges an explicit nested retrieve request with parser-derived metadata", async function () {
+		// content uses {{{plugin.katex.css}}}; a local needs plugin.zoom.js too.
+		await setView(this.template.id, {
+			name: "plugin.html",
+			content: "{{{plugin.katex.css}}}{{{snippet}}}",
+			locals: { snippet: "{{{plugin.zoom.js}}}" },
+			retrieve: { plugin: { zoom: { js: true } } },
+		});
+
+		const view = await getView(this.template.id, "plugin.html");
+		expect(view.retrieve.plugin).toEqual({
+			katex: { css: true },
+			zoom: { js: true },
+		});
+	});
+
 	it("still sheds stale non-local retrieve keys on re-save", async function () {
 		await setView(this.template.id, {
 			name: "stale.html",

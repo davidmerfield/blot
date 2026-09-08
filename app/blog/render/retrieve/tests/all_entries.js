@@ -83,4 +83,22 @@ describe("all_entries", function () {
     const rendered = await (await this.get("/list")).text();
     expect(rendered).toContain("A body");
   });
+
+  it("keeps a heavy field referenced only from a query string local", async function () {
+    await this.write({ path: "/a.txt", content: "Title: A\n\nA body" });
+
+    await this.template(
+      { "list.html": `{{#allEntries}}{{title}}{{/allEntries}}{{{query.snippet}}}` },
+      { views: { "list.html": { url: "/list" } } }
+    );
+
+    const snippet = encodeURIComponent(
+      "{{#allEntries}}{{{html}}} {{/allEntries}}"
+    );
+    const locals = await (
+      await this.get("/list?json=1&snippet=" + snippet)
+    ).json();
+
+    expect(locals.allEntries[0].html).toContain("A body");
+  });
 });

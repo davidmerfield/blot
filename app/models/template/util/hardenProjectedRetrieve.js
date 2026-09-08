@@ -56,23 +56,27 @@ function collectReferencedIdentifiers(viewContent, allPartials, viewLocals) {
 
   // Locals can hold mustache that renderLocals evaluates later - a heavy field
   // referenced only from a string local (e.g. locals.snippet = "{{{html}}}")
-  // must be kept too.
-  addFromValue(viewLocals, 0);
+  // must be kept too. renderLocals recurses without a depth limit, so match
+  // that: walk arbitrarily deep, guarding only against cycles.
+  addFromValue(viewLocals, new WeakSet());
 
   return names;
 
-  function addFromValue(value, depth) {
-    if (depth > 6 || value == null) return;
+  function addFromValue(value, seen) {
+    if (value == null) return;
     if (typeof value === "string") return addFrom(value);
+    if (typeof value !== "object") return;
+    if (seen.has(value)) return;
+    seen.add(value);
+
     if (Array.isArray(value)) {
-      for (var i = 0; i < value.length; i++) addFromValue(value[i], depth + 1);
+      for (var i = 0; i < value.length; i++) addFromValue(value[i], seen);
       return;
     }
-    if (typeof value === "object") {
-      Object.keys(value).forEach(function (key) {
-        addFromValue(value[key], depth + 1);
-      });
-    }
+
+    Object.keys(value).forEach(function (key) {
+      addFromValue(value[key], seen);
+    });
   }
 
   function addFrom(content) {

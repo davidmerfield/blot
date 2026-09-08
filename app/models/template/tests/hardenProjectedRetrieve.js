@@ -71,6 +71,22 @@ describe("hardenProjectedRetrieve", function () {
     });
   });
 
+  it("scans arbitrarily deep local nesting", function () {
+    var retrieve = { posts: { fields: { title: true } } };
+    harden(retrieve, null, null, {
+      a: { b: { c: { d: { e: { f: { g: "{{#posts}}{{{html}}}{{/posts}}" } } } } } },
+    });
+    expect(retrieve.posts.fields).toEqual({ title: true, html: true });
+  });
+
+  it("does not loop on a cyclic locals object", function () {
+    var locals = { x: "{{{body}}}" };
+    locals.self = locals;
+    var retrieve = { posts: { fields: { title: true } } };
+    harden(retrieve, null, null, locals);
+    expect(retrieve.posts.fields).toEqual({ title: true, body: true });
+  });
+
   it("scans nested objects of locals (e.g. inherited template/blog locals)", function () {
     var retrieve = { posts: { fields: { title: true } } };
     harden(retrieve, null, null, {

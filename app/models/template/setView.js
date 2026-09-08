@@ -363,15 +363,27 @@ function applyUserRetrieveOptions(parsedRetrieve, requestedRetrieve, existingRet
 	// locals.snippet is "{{latest_entry.title}}" and content is "{{{snippet}}}"
 	// still needs retrieve.latest_entry. Carry over any real retrieve local
 	// (one blot knows how to fetch) that the caller or the stored view asked
-	// for and the parser didn't derive. Non-local keys (stale output from an
-	// older parser, internal __sentinels) are dropped - they fetch nothing.
+	// for. Non-local keys (stale output from an older parser, internal
+	// __sentinels) are dropped - they fetch nothing.
 	[requestedRetrieve, existingRetrieve].forEach(function (source) {
 		if (!source) return;
 		Object.keys(source).forEach(function (key) {
 			if (key.indexOf("__") === 0) return;
-			if (result[key] !== undefined) return;
 			if (!parseTemplate.isSystemRetrieveLocal(key)) return;
-			result[key] = source[key];
+
+			var sourceVal = source[key];
+
+			if (result[key] === undefined) {
+				result[key] = sourceVal;
+			} else if (type(result[key], "object") && type(sourceVal, "object")) {
+				// Both structured (e.g. plugin.katex.css from content plus an
+				// explicit plugin.zoom.js needed by a local): keep the parser's
+				// leaves, fold in the extra nested requests.
+				extend(result[key]).and(sourceVal);
+			}
+			// else: parser produced a value and the explicit one is a bare
+			// boolean (or vice versa) - the parser wins (see the setView
+			// stale-boolean tests).
 		});
 	});
 

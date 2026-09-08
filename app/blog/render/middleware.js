@@ -82,13 +82,16 @@ module.exports = function (req, res, _next) {
         extend(res.locals.partials).and(viewPartials);
 
         // getFullView hardened the projection metadata against the view's own
-        // content, partials and locals. Template- and blog-level locals were
-        // merged in above and renderLocals evaluates the mustache in them too,
-        // so fold their references in before projection runs at retrieve time.
-        hardenProjectedRetrieve(missingLocals, null, null, {
-          template: req.template && req.template.locals,
-          blog: blog && blog.locals,
+        // content, partials and locals. res.locals now also holds the query,
+        // template- and blog-level locals merged above, and renderLocals
+        // evaluates the mustache in all of them - fold their references in
+        // before projection runs at retrieve time. Skip `partials` (already
+        // covered by getFullView, and large).
+        var localsForHardening = {};
+        Object.keys(res.locals).forEach(function (k) {
+          if (k !== "partials") localsForHardening[k] = res.locals[k];
         });
+        hardenProjectedRetrieve(missingLocals, null, null, localsForHardening);
 
         retrieve(req, res, missingLocals, function (err, foundLocals) {
           extend(res.locals).and(foundLocals);
