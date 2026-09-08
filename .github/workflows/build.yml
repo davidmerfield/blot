@@ -27,6 +27,13 @@ env:
 
 jobs:
   build:
+    # A PR from a fork runs with a read-only GITHUB_TOKEN and cannot push to
+    # this repo's container registry ("denied: installation not allowed to
+    # Write organization package"), so skip the image build+push for forks.
+    # This still runs on pushes to master and on PRs from branches of this
+    # repo; the manifest job below is skipped automatically because it needs
+    # this one. (Tests in the other workflows still run for fork PRs.)
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     strategy:
       matrix:
         include:
@@ -142,6 +149,9 @@ jobs:
   # scripts/deploy/index.js expects a manifest for every commit's SHA to
   # exist, same as the app image.
   build-airlock:
+    # Skipped for fork PRs for the same reason as the build job above; the
+    # manifest-airlock job needs this one and is skipped automatically.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     strategy:
       matrix:
         include:
