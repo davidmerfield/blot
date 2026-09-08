@@ -250,6 +250,20 @@ describe("parseTemplate", function () {
     });
   });
 
+  it("recognises an entry list resolved through an outer section", function () {
+    var template = `{{#posts}}{{title}}{{/posts}}{{#show}}{{#posts}}{{{html}}}{{/posts}}{{/show}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.posts).toEqual({
+      fields: { title: true, html: true },
+    });
+  });
+
+  it("recognises tagged.entries resolved through an outer section", function () {
+    var template = `{{#show}}{{#tagged.entries}}{{{body}}}{{/tagged.entries}}{{/show}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.tagged).toEqual({ fields: { body: true } });
+  });
+
   it("sees through encode_xml when projecting entry fields", function () {
     var template = `{{#recent_entries}}{{title}}{{#encode_xml}}{{{body}}}{{/encode_xml}}{{/recent_entries}}`;
     var result = parseTemplate(template);

@@ -168,4 +168,45 @@ describe("template", function () {
     });
   });
 
+  it("keeps a heavy field a nested partial renders in a fresh context", function (done) {
+    var test = this;
+
+    // `item` is first used at the root, then reached again through `wrapper`
+    // inside {{#allEntries}}. The bundle backstop must still keep `html`.
+    var item = { name: "bundle-item.html", content: "{{{html}}}" };
+    var wrapper = {
+      name: "bundle-wrapper.html",
+      content: "{{> " + item.name + "}}",
+    };
+    var view = {
+      name: "bundle-parent.html",
+      content:
+        "{{> " +
+        item.name +
+        "}}{{#allEntries}}{{title}}{{> " +
+        wrapper.name +
+        "}}{{/allEntries}}",
+    };
+
+    async.map(
+      [item, wrapper, view],
+      setView.bind(null, test.template.id),
+      function (err) {
+        if (err) return done.fail(err);
+
+        getFullView(test.blog.id, test.template.id, view.name, function (
+          err,
+          fullView
+        ) {
+          if (err) return done.fail(err);
+
+          expect(fullView[2].allEntries.fields.html).toBe(true);
+          expect(fullView[2].allEntries.fields.title).toBe(true);
+
+          done();
+        });
+      }
+    );
+  });
+
 });

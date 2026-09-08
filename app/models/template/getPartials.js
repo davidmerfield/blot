@@ -32,16 +32,7 @@ module.exports = function getPartials(
     cb(null, entry);
   }));
 
-  // Partials whose content was supplied inline by the caller. These skip the
-  // getView fetch below, so their field usage has to be collected here too.
-  var inlinePartialContent = {};
-
-  for (var i in partials) {
-    if (partials[i]) {
-      allPartials[i] = partials[i];
-      inlinePartialContent[i] = partials[i];
-    }
-  }
+  for (var i in partials) if (partials[i]) allPartials[i] = partials[i];
 
   Object.keys(partials || {}).forEach(function (partialName) {
     // Keep any previously-discovered usage contexts for this partial.
@@ -72,48 +63,8 @@ module.exports = function getPartials(
     return wrapped;
   }
 
-  // A boolean retrieve value means "fields unknown here" - mergeRetrieve and
-  // projectEntryFields both treat it as a projection blocker.
-  function contextRootBlocker(contextPath) {
-    var blocker = {};
-    var root = String(contextPath || "").split(".")[0];
-    if (root) blocker[root] = true;
-    return blocker;
-  }
-
   function parseRetrieveInContext(content, contextPath) {
-    content = content || "";
-
-    // A partial that switches Mustache delimiters ({{=<% %>=}}) can't be
-    // wrapped in default-delimiter section tags - the synthetic closing tag
-    // is no longer recognised and the section never closes. Under-reporting
-    // its fields would let the parent projection drop one it renders, so
-    // block projection for this context's entry local instead.
-    if (contextPath && content.indexOf("{{=") > -1) {
-      return contextRootBlocker(contextPath);
-    }
-
     return parseTemplate(wrapInContext(content, contextPath)).retrieve || {};
-  }
-
-  function absorbInlinePartial(partial, inheritedContexts) {
-    var content = inlinePartialContent[partial] || "";
-
-    (inheritedContexts || [""]).forEach(function (contextPath) {
-      if (!contextPath) {
-        mergeRetrieve(retrieve, parseTemplate(content).retrieve || {});
-        return;
-      }
-
-      mergeRetrieve(retrieve, parseRetrieveInContext(content, contextPath));
-
-      // Nested partials inside inline content can't be reliably followed
-      // through every usage context here, so don't let the parent project
-      // this entry local when the inline partial pulls in others.
-      if (content.indexOf("{{>") > -1) {
-        mergeRetrieve(retrieve, contextRootBlocker(contextPath));
-      }
-    });
   }
 
   function mergePartialContexts(viewContent, inheritedContexts) {
@@ -158,12 +109,8 @@ module.exports = function getPartials(
         // Don't fetch a partial if we've got it already.
         // Partials which returned nothing are set as
         // empty strings to prevent any infinities.
-        if (allPartials[partial] !== null && allPartials[partial] !== undefined) {
-          if (inlinePartialContent[partial] !== undefined) {
-            absorbInlinePartial(partial, inheritedContexts);
-          }
+        if (allPartials[partial] !== null && allPartials[partial] !== undefined)
           return finish();
-        }
 
         // If the partial's name starts with a slash,
         // it is a path to an entry.

@@ -3,6 +3,7 @@ var ensure = require("helper/ensure");
 var getPartials = require("./getPartials");
 var parseTemplate = require("./parseTemplate");
 var mergeRetrieve = require("./util/mergeRetrieve");
+var hardenProjectedRetrieve = require("./util/hardenProjectedRetrieve");
 var mime = require("mime-types");
 
 // This method is used to retrieve the locals,
@@ -37,6 +38,10 @@ module.exports = function getFullView(blogID, templateID, viewName, callback) {
         // Now we've fetched the partials we need to
         // append the missing locals in the partials...
         mergeRetrieve(view.retrieve, retrieveFromPartials);
+
+        // Backstop: never let projection drop a heavy entry field that is
+        // referenced anywhere in the assembled view + partials bundle.
+        hardenProjectedRetrieve(view.retrieve, view.content, allPartials);
 
         var response = [
           view.locals,

@@ -358,6 +358,23 @@ function applyUserRetrieveOptions(parsedRetrieve, requestedRetrieve, existingRet
 
 	extend(result).and(parsedRetrieve || {});
 
+	// The parser is authoritative for locals it can see in the content, but it
+	// can't see a dependency reached indirectly - e.g. a view whose
+	// locals.snippet is "{{latest_entry.title}}" and content is "{{{snippet}}}"
+	// still needs retrieve.latest_entry. Carry over any real retrieve local
+	// (one blot knows how to fetch) that the caller or the stored view asked
+	// for and the parser didn't derive. Non-local keys (stale output from an
+	// older parser, internal __sentinels) are dropped - they fetch nothing.
+	[requestedRetrieve, existingRetrieve].forEach(function (source) {
+		if (!source) return;
+		Object.keys(source).forEach(function (key) {
+			if (key.indexOf("__") === 0) return;
+			if (result[key] !== undefined) return;
+			if (!parseTemplate.isSystemRetrieveLocal(key)) return;
+			result[key] = source[key];
+		});
+	});
+
 	USER_RETRIEVE_KEYS.forEach(function (key) {
 		var value;
 

@@ -167,6 +167,43 @@ describe("template", () => {
 		expect(view.retrieve.__recalculateRetrieve).toBeUndefined();
 	});
 
+	it("keeps an explicit retrieve dependency the parser can't see", async function () {
+		// `latest_entry` is only reached indirectly (via a local), so the
+		// parser never meets it - the explicit retrieve key must survive.
+		await setView(this.template.id, {
+			name: "snippet.html",
+			content: "{{{snippet}}}",
+			locals: { snippet: "{{latest_entry.title}}" },
+			retrieve: { latest_entry: true },
+		});
+
+		let view = await getView(this.template.id, "snippet.html");
+		expect(view.retrieve.latest_entry).toBe(true);
+
+		// ...and across a plain content re-save with no retrieve passed.
+		await setView(this.template.id, {
+			name: "snippet.html",
+			content: "{{{snippet}}} ",
+			locals: { snippet: "{{latest_entry.title}}" },
+		});
+
+		view = await getView(this.template.id, "snippet.html");
+		expect(view.retrieve.latest_entry).toBe(true);
+	});
+
+	it("still sheds stale non-local retrieve keys on re-save", async function () {
+		await setView(this.template.id, {
+			name: "stale.html",
+			content: "{{#allEntries}}{{title}}{{/allEntries}}",
+			retrieve: { allEntries: true, months: true, entries: true },
+		});
+
+		const view = await getView(this.template.id, "stale.html");
+		expect(view.retrieve).toEqual({
+			allEntries: { fields: { title: true } },
+		});
+	});
+
 	it("won't set a view with invalid mustache content", async function () {
 		const test = this;
 		const view = {

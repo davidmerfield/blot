@@ -87,23 +87,40 @@ function parseTemplate(template) {
 
   var projectedFieldContexts = {};
 
-  // Context paths whose direct leaf variables are entry fields of the named
-  // projected-entry local. Seeded with the static prefixes (e.g. "allEntries",
-  // "tagged.entries") and extended at parse time when we descend through a
-  // transparent section helper such as {{#encode_xml}}.
+  // Context paths discovered at parse time whose direct leaf variables are
+  // entry fields of the named projected-entry local - currently only the
+  // synthetic contexts created when we descend through a transparent section
+  // helper such as {{#encode_xml}}. Static entry-list contexts are matched
+  // structurally by entryRootForContext() instead.
   var entryFieldContexts = {};
 
-  for (var seedRoot in projectedEntryLocals) {
-    var seedPrefixes = projectedEntryLocals[seedRoot] || [];
-    for (var s = 0; s < seedPrefixes.length; s++) {
-      var seedPath = seedPrefixes[s]
-        ? seedRoot + "." + seedPrefixes[s]
-        : seedRoot;
-      entryFieldContexts[seedPath] = seedRoot;
-    }
-  }
-
   process("", parsed);
+
+  // Return the projected-entry-local root if `contextPath` ends at one of its
+  // field contexts (e.g. "allEntries", "show.posts", "a.b.tagged.entries" all
+  // map to their root). Matching the tail rather than a seeded exact path
+  // means an entry list resolved from the root through an outer section is
+  // still recognised.
+  function entryRootForContext(contextPath) {
+    if (!contextPath) return null;
+
+    if (entryFieldContexts[contextPath]) return entryFieldContexts[contextPath];
+
+    for (var root in projectedEntryLocals) {
+      var prefixes = projectedEntryLocals[root] || [];
+      for (var i = 0; i < prefixes.length; i++) {
+        var pattern = prefixes[i] ? root + "." + prefixes[i] : root;
+        if (
+          contextPath === pattern ||
+          contextPath.slice(-(pattern.length + 1)) === "." + pattern
+        ) {
+          return root;
+        }
+      }
+    }
+
+    return null;
+  }
 
   // Helper function to set nested property in retrieve object
   // Converts boolean values to objects when needed
@@ -147,9 +164,8 @@ function parseTemplate(template) {
 
     if (!fieldName) return null;
 
-    if (entryFieldContexts[contextPath]) {
-      return { root: entryFieldContexts[contextPath], field: fieldName };
-    }
+    var root = entryRootForContext(contextPath);
+    if (root) return { root: root, field: fieldName };
 
     return null;
   }
@@ -162,7 +178,8 @@ function parseTemplate(template) {
     var current = contextPath;
 
     while (current) {
-      if (entryFieldContexts[current]) return entryFieldContexts[current];
+      var root = entryRootForContext(current);
+      if (root) return root;
       var lastDot = current.lastIndexOf(".");
       current = lastDot > -1 ? current.slice(0, lastDot) : "";
     }
@@ -277,14 +294,15 @@ function parseTemplate(template) {
 
         // {{#encode_xml}} & friends: descend without recording the helper name
         // as an entry field, but keep the entry context for inner variables.
-        var isTransparentHelperSection =
+        var transparentHelperEntryRoot =
           (token[0] === "#" || token[0] === "^") &&
-          transparentSectionHelpers[variable] &&
-          !!entryFieldContexts[contextPath];
+          transparentSectionHelpers[variable]
+            ? entryRootForContext(contextPath)
+            : null;
 
-        if (isTransparentHelperSection) {
+        if (transparentHelperEntryRoot) {
           entryFieldContexts[contextPath + "." + variable] =
-            entryFieldContexts[contextPath];
+            transparentHelperEntryRoot;
           isProjectedFieldInContext = true;
         } else if (
           projectedFieldContext &&
@@ -600,5 +618,10 @@ function getPartialContexts(template, parentContextPath) {
 // console.log(parseTemplate('{{{appCSS}}}'));
 
 parseTemplate.getPartialContexts = getPartialContexts;
+
+// Whether `name` is a retrieve local blot knows how to fetch (a module in
+// blog/render/retrieve, or a projected-entry alias). Used by setView to tell
+// a deliberate retrieve dependency from stale parser output.
+parseTemplate.isSystemRetrieveLocal = isSystemRetrieveLocal;
 
 module.exports = parseTemplate;
