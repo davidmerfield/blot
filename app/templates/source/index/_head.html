@@ -12,7 +12,13 @@
   {{^entry}}<meta name="description" content="{{> description}}">{{/entry}}
 
   <link rel="alternate" type="application/rss+xml" title="RSS Feed for {{title}}" href="{{{siteURL}}}{{{feedURL}}}">
-  {{#avatar}}<link rel="icon" href="{{{avatar}}}" type="image/x-icon">{{/avatar}}
+  {{#favicon}}
+  <link rel="icon" href="{{{ico}}}" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{{png32}}}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{{png16}}}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{{appleTouch}}}">
+  {{/favicon}}
+  {{^favicon}}{{#avatar}}<link rel="icon" href="{{{avatar}}}">{{/avatar}}{{/favicon}}
   <link rel="preconnect" href="{{{cdn}}}" />
   <link rel="stylesheet" href="{{#cdn}}/style.css{{/cdn}}">
 
@@ -36,7 +42,8 @@
   <meta property="og:image:height" content="{{height}}">
   {{/thumbnail.large}}
   {{^thumbnail.large}}
-  {{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}
+  {{#logo_url}}<meta property="og:image" content="{{{logo_url}}}">{{/logo_url}}
+  {{^logo_url}}{{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}{{/logo_url}}
   {{/thumbnail.large}}
 
   <!-- (E) Content type (article for posts) -->
@@ -46,7 +53,8 @@
   {{#summary}}<meta name="twitter:description" content="{{summary}}">{{/summary}}{{^summary}}<meta name="twitter:description" content="{{title}}">{{/summary}}
   {{#thumbnail.large}}<meta name="twitter:image" content="{{{url}}}">{{/thumbnail.large}}
   {{^thumbnail.large}}
-  {{#avatar}}<meta name="twitter:image" content="{{{avatar}}}">{{/avatar}}
+  {{#logo_url}}<meta name="twitter:image" content="{{{logo_url}}}">{{/logo_url}}
+  {{^logo_url}}{{#avatar}}<meta name="twitter:image" content="{{{avatar}}}">{{/avatar}}{{/logo_url}}
   {{/thumbnail.large}}
 
   <!-- (F) Author (defaults to siteURL) -->
@@ -71,6 +79,7 @@
   {{/url}}
   <meta property="og:title" content="{{> title}}">
   <meta property="og:description" content="{{> description}}">
-  {{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}
+  {{#logo_url}}<meta property="og:image" content="{{{logo_url}}}">{{/logo_url}}
+  {{^logo_url}}{{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}{{/logo_url}}
   {{/entry}}
 </head>

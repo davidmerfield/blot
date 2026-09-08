@@ -1,30 +1,14 @@
-Resolve [app user reports](https://mail.google.com/mail/u/0/#inbox/FMfcgzQhVqzPNVcFNjRcMcsZPqrMJQKp)
-
-Repackage new notebook template
-
-Send out summer newsletter
+Release new notebook template
 
 ---
 
-Fix bug with hypertext template and follow up with [31](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLPVXLRDkJTLCsKnMBRZdTklb)
-
-Fix bug with studio template and tell [Metta](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgLXxhzdkjnSDVQSCnzLsSWmJK)
-
----
+Todo verify we're still processing Stripe and PayPal webhooks now they are verified
 
 Add a link to how section on pages to menu links settings page to guide new users! 
 
 Hitting the save changes button under typeset settings spits you back out to homepage! Bug!
 
 Debug issue with warwickmostyn
-
-Move GitHub repo to own organization
-
-Check in that fail2ban is now correctly purging the db of old bans:
-- sudo sqlite3 /var/lib/fail2ban/fail2ban.sqlite3 \
-  "SELECT COUNT(*) FROM bans WHERE timeofban < $(date -d 'now -1 day' +%s);"
-- output of command above should be 0
-- was 113 on thu aug 13
 
 Write useful benchmark tool for Blot
 - Add performance tests which output something like this for PRs (compare against master branch, fail if over threshold):
@@ -226,6 +210,16 @@ Fix bugs with templates:
   - [ ] Next / prev should respect tag collections
   - [ ] Add exif info
   - [ ] Add backlinks
+
+Dashboard control follow-ups (found while reviewing the per-template dashboard-control PRs):
+- Portfolio template: the new show_search boolean only toggles the search box on archives.html. If search should be hideable everywhere it appears (e.g. the toolbar / nav), wire show_search into those views too.
+- Portfolio template: heading_font control emits {{#weight}}/{{#style}} rules; confirm the fonts static data actually carries weight/style so the control does something, otherwise drop those blocks.
+- Index template: the new logo_url upload is reused as og:image / twitter:image in _head.html. Upload URLs are site-relative, so social scrapers get a relative path. Either expose an absolute form of the upload value or fall back to {{{avatar}}} for social meta.
+- Blog template: sticky_navigation positions the sidebar with `left/right: calc(50% - var(--body-outer-width) / 2)`, which only lines up while the body is exactly --body-outer-width wide and centred. Verify against long nav lists and the navigation_location=right case, and confirm behaviour at the mobile breakpoint where .sidebar becomes position:relative.
+- Blog template: title_and_summary index layout renders {{{summary}}} unescaped. Fine while summaries are plain text, but revisit if summaries ever carry markup.
+- Keynote template: this PR was rebased onto master's flex gallery rewrite (body:has(.gallery), flex column) that fixed opaque screenshot backgrounds. The gallery padding is now driven by {{spacing}}em (default 4) instead of the tuned 3.66em. Visually re-check that the gallery still fills the viewport below the header and that screenshots stay opaque at the min/max spacing and slide_width values.
+- Album template: the new max_width control replaces `.entry.page .body>* { max-width: 35em }` (~560px) with a px default of 800. That widens the text measure on page entries for every existing site on next rebuild. Double-check the default reads well, or lower it toward the old ~560px.
+- Album template: several rules use `{{^heading_font}} ... 28px/23px fallback {{/heading_font}}`, but heading_font is always a populated object so the fallback is dead. Harmless, but could be tidied.
 
 Fix bug with the website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 

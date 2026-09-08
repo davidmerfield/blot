@@ -5,7 +5,8 @@ on the services page of the dashboard */
 /* Will be replaced with the @font-face rules required
 to load which font is selected as the main body font */
 {{{body_font.styles}}}
-{{{coding_font.styles}}}
+{{{heading_font.styles}}}
+{{{syntax_highlighter_font.styles}}}
 {{{syntax_highlighter.styles}}}
 
 html {
@@ -14,8 +15,35 @@ html {
   font-size: {{{font_size}}}px;
   line-height: {{{line_height}}};
   {{/body_font}}
+  background: {{background_color}};
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+{{#heading_font}}
+h1, h2, h3, h4, h5, h6, .index-link {
+  font-family: {{{stack}}};
+  {{#weight}}
+  font-weight: {{{.}}};
+  {{/weight}}
+  {{#style}}
+  font-style: {{{.}}};
+  {{/style}}
+}
+{{/heading_font}}
+
+.site-logo {
+  max-height: 1.5em;
+  width: auto;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+pre, code {
+  {{#syntax_highlighter_font}}
+  font-family: {{{stack}}};
+  font-size: {{{font_size}}}px;
+  {{/syntax_highlighter_font}}
 }
 
 body {
@@ -38,8 +66,8 @@ body {
   position: absolute;
   {{/sticky_navigation}}
   top: 0;
+  bottom: 0;
   width: {{navigation_width}}px;
-  height: 100vh;
   padding: {{spacing}}rem;
 }
 
@@ -69,9 +97,13 @@ body.position-left .navigation-container {
 
 .navigation {
   flex-grow: 1;
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.navigation .menu {
+  margin-top: auto;
 }
 
 .navigation a.index-link {
@@ -94,7 +126,7 @@ body.position-left .navigation-container {
   display: block;
   text-indent: calc({{spacing}} * -0.5rem);
   padding-left: calc({{spacing}} * 0.5rem);
-  color: inherit;
+  color: {{navigation_link_color}};
   text-decoration: none;
   transition: color 0.1s;
 }
@@ -105,7 +137,7 @@ body.position-left .navigation-container {
   color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
 }
 .navigation a.active {
-  color: inherit;
+  color: {{accent_color}};
   font-weight: 500;
 }
 
@@ -153,6 +185,35 @@ label[for="toggle"] {
   }
 }
 
+{{#collapse_navigation_by_default}}
+@media screen and (min-width: 800px) {
+  label[for="toggle"] {
+    display: block;
+  }
+
+  body.position-left .navigation,
+  body.position-right .navigation {
+    height: 2rem;
+  }
+
+  body.position-left .navigation > *:not(.index-link),
+  body.position-right .navigation > *:not(.index-link) {
+    display: none;
+  }
+
+  body.position-left input[name="toggle"]:checked + .navigation,
+  body.position-right input[name="toggle"]:checked + .navigation {
+    min-height: 100vh;
+    height: auto;
+  }
+
+  body.position-left input[name="toggle"]:checked + .navigation > *:not(.index-link),
+  body.position-right input[name="toggle"]:checked + .navigation > *:not(.index-link) {
+    display: block;
+  }
+}
+{{/collapse_navigation_by_default}}
+
 body.position-top .posts {
   margin-top: 4rem;
 }
@@ -160,6 +221,7 @@ body.position-top .posts {
 body.position-top .navigation-container {
   width: 100%;
     height: auto;
+    bottom: auto;
     display: flex;
     box-sizing: border-box;
     z-index: 1;
@@ -211,6 +273,7 @@ body.position-top label[for="toggle"] {
   .navigation-container {
     width: 100%;
     height: auto;
+    bottom: auto;
     display: flex;
     box-sizing: border-box;
     z-index: 3;
@@ -278,7 +341,7 @@ body.position-top label[for="toggle"] {
 }
 
 .pagination .spacer {
-  border-right: 1px solid rgb(0, 0, 0, 0.1);
+  border-right: 1px solid rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.1);
   height: 22px;
   margin-left: 1.3em;
   margin-right: 1.3em;
@@ -343,16 +406,16 @@ body.position-top label[for="toggle"] {
 .post.text .date,
 .archives a .date,
 .nav a[href] {
-  color: {{navigation_link_color}};
+  color: {{text_color}};
 }
 
 .entry a {
-  color: {{text_link_color}}
+  color: {{text_link_color}};
 }
 
 .entry .caption {display: block;margin:1em 0;}
 .entry a:visited {
-  color: {{text_link_visited_color}}
+  color: {{text_link_visited_color}};
 }
 
 
@@ -363,7 +426,7 @@ body.position-top label[for="toggle"] {
 }
 
 .post.text:hover {
-  border-color: {{text_color}}
+  border-color: {{accent_color}}
 }
 
 
@@ -373,6 +436,13 @@ body.position-top label[for="toggle"] {
   display: flex;
   flex-wrap: wrap;
   padding: calc({{spacing}}rem * 2 / 3);
+}
+
+/* Absorb leftover space on the last row so the final photos
+   keep the same row height as complete rows above them. */
+.posts::after {
+  content: "";
+  flex-grow: 999999999;
 }
 
 .post {
@@ -387,7 +457,7 @@ body.position-top label[for="toggle"] {
 }
 
 .post.text {
-  border: 2px solid rgba(0, 0, 0, .1);
+  border: 2px solid rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.1);
   box-sizing: border-box;
   display: flex;
   justify-content: center;
@@ -431,6 +501,7 @@ body.position-top label[for="toggle"] {
 .post img {
   position: absolute;
   top: 0;
+  left: 0;
   width: 100%;
   vertical-align: bottom;
 }
@@ -470,7 +541,7 @@ body.position-top label[for="toggle"] {
 .entry hr {
   margin: 2.6em 0;
   border: none;
-  border-top: 2px solid #f2f2f2;
+  border-top: 2px solid rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.08);
 }
 
 .entry h1 {
