@@ -265,15 +265,15 @@ class SidebarNavigation {
   }
 
   // ------- sorting -------
-  // Return the key the post listing sorts on: entry IDs are the lower-cased
-  // path, and models/entries orders them with Redis' byte-wise lexicographic
-  // sorted set (entries:lex). Match that here rather than a locale collation,
-  // so the sidebar reflects the selected file-path order for every path.
+  // Return the key the post listing sorts on: the entry's normalised path,
+  // case preserved. models/entries orders these with Redis' byte-wise
+  // lexicographic sorted set (entries:lex), so compare them the same way
+  // rather than with a locale collation or a case fold.
   pathForLi(li) {
     const raw = li.classList.contains("folder")
       ? li.getAttribute("data-folder")
       : li.getAttribute("data-path");
-    return (raw || "").toLowerCase();
+    return raw || "";
   }
 
   shouldReverseSort() {

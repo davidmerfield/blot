@@ -41,9 +41,15 @@ function compareEntries(sortOptions) {
 
   if (by === "id") return (a, b) => sign * compareStrings(a && a.id, b && b.id);
 
-  // "asc" means newest first, so the default comparison is dateStamp descending.
+  // "asc" means newest first, so the base comparison is dateStamp descending.
+  // Equal timestamps fall back to descending id, matching how Redis ZRANGE REV
+  // breaks score ties for the regular listing; `sign` flips both for oldest-first.
   const stamp = (entry) => (entry && entry.dateStamp) || 0;
-  return (a, b) => sign * (stamp(b) - stamp(a));
+  return (a, b) => {
+    const byDate = stamp(b) - stamp(a);
+    if (byDate !== 0) return sign * byDate;
+    return sign * -compareStrings(a && a.id, b && b.id);
+  };
 }
 
 // Return a new array of hydrated entries in the selected order.

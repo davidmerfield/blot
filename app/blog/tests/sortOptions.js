@@ -73,6 +73,26 @@ describe("sortEntries / sortEntryIDs", function () {
     );
   });
 
+  it("breaks equal-dateStamp ties by id, matching the Redis listing", function () {
+    const sameDate = [
+      { id: "b.txt", dateStamp: 10 },
+      { id: "a.txt", dateStamp: 10 },
+      { id: "c.txt", dateStamp: 10 }
+    ];
+    // newest-first: ties fall to descending id (like ZRANGE REV)
+    expect(ids(sortEntries(sameDate, { sortBy: "date", order: "asc" }))).toEqual([
+      "c.txt",
+      "b.txt",
+      "a.txt"
+    ]);
+    // oldest-first: ties fall to ascending id (like ZRANGE)
+    expect(ids(sortEntries(sameDate, { sortBy: "date", order: "desc" }))).toEqual([
+      "a.txt",
+      "b.txt",
+      "c.txt"
+    ]);
+  });
+
   it("does not mutate the input array", function () {
     const input = newestFirst.slice();
     sortEntries(input, { sortBy: "id", order: "asc" });
