@@ -25,23 +25,36 @@ describe("post sorting across retrieve helpers", function () {
 
   describe("recent_entries (feeds)", function () {
     const recentEntries = require("../recent_entries");
+    let received;
 
     beforeEach(function () {
-      spyOn(Entries, "getRecent").and.callFake((blogID, cb) => cb(newestFirst()));
+      received = undefined;
+      // getPage selects the page in the requested order; stub it to just
+      // record the options and hand back a fixed list.
+      spyOn(Entries, "getPage").and.callFake(function (blogID, options, cb) {
+        received = options;
+        cb(null, newestFirst());
+      });
     });
 
-    it("keeps newest-first by default", async function () {
-      expect(ids(await run(recentEntries, {}))).toEqual(["c.txt", "a.txt", "b.txt"]);
+    it("asks getPage for the first page in the default order", async function () {
+      await run(recentEntries, {});
+      expect(received.pageNumber).toBe(1);
+      expect(received.pageSize).toBe(31);
+      expect(received.sortBy).toBeUndefined();
+      expect(received.order).toBeUndefined();
     });
 
-    it("flips to oldest-first for date + desc", async function () {
-      const value = await run(recentEntries, { sort_by: "date", sort_order: "desc" });
-      expect(ids(value)).toEqual(["b.txt", "a.txt", "c.txt"]);
+    it("forwards oldest-first (date + desc) to getPage", async function () {
+      await run(recentEntries, { sort_by: "date", sort_order: "desc" });
+      expect(received.sortBy).toBe("date");
+      expect(received.order).toBe("desc");
     });
 
-    it("sorts by file path for id + asc", async function () {
-      const value = await run(recentEntries, { sort_by: "id", sort_order: "asc" });
-      expect(ids(value)).toEqual(["a.txt", "b.txt", "c.txt"]);
+    it("forwards file-path order to getPage", async function () {
+      await run(recentEntries, { sort_by: "id", sort_order: "asc" });
+      expect(received.sortBy).toBe("id");
+      expect(received.order).toBe("asc");
     });
   });
 

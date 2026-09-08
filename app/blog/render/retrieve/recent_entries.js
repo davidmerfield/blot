@@ -1,12 +1,24 @@
 var getTemplateSortOptions = require("blog/sortOptions");
 var Entries = require("models/entries");
-var sortEntries = getTemplateSortOptions.sortEntries;
 
+// Feeds and "recent posts" widgets. getPage selects the first page in the
+// requested order (Redis-paginated), so oldest-first / file-path selections
+// return the blog's actual oldest or first/last entries — not the newest 31
+// re-sorted. A missing selection validates to newest-first date.
 module.exports = function (req, res, callback) {
-  Entries.getRecent(req.blog.id, function (recentEntries) {
-    // getRecent returns the newest entries; the "Post sorting" control can flip
-    // this to oldest-first or file-path order for feeds and recent-post lists.
-    var sortOptions = getTemplateSortOptions(req.template && req.template.locals);
-    return callback(null, sortEntries(recentEntries, sortOptions));
-  });
+  var sortOptions = getTemplateSortOptions(req.template && req.template.locals);
+
+  Entries.getPage(
+    req.blog.id,
+    {
+      pageNumber: 1,
+      pageSize: 31,
+      sortBy: sortOptions.sortBy,
+      order: sortOptions.order,
+    },
+    function (err, entries) {
+      if (err) return callback(err);
+      return callback(null, entries || []);
+    }
+  );
 };

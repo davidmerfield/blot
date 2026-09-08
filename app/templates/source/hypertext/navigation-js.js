@@ -265,20 +265,15 @@ class SidebarNavigation {
   }
 
   // ------- sorting -------
+  // Return the key the post listing sorts on: entry IDs are the lower-cased
+  // path, and models/entries orders them with Redis' byte-wise lexicographic
+  // sorted set (entries:lex). Match that here rather than a locale collation,
+  // so the sidebar reflects the selected file-path order for every path.
   pathForLi(li) {
-    if (li.classList.contains("folder")) {
-      return li.getAttribute("data-folder") || "";
-    }
-    return li.getAttribute("data-path") || "";
-  }
-
-  sortLocale() {
-    const lang = (
-      document.documentElement.lang ||
-      document.querySelector('meta[name="language"]')?.content ||
-      ""
-    ).trim();
-    return lang || undefined;
+    const raw = li.classList.contains("folder")
+      ? li.getAttribute("data-folder")
+      : li.getAttribute("data-path");
+    return (raw || "").toLowerCase();
   }
 
   shouldReverseSort() {
@@ -291,13 +286,12 @@ class SidebarNavigation {
     const children = Array.from(ul.children).filter((n) => n.tagName === "LI");
     const folders = children.filter((li) => li.classList.contains("folder"));
     const files = children.filter((li) => !li.classList.contains("folder"));
-    const locale = this.sortLocale();
     const reverse = this.shouldReverseSort();
 
     const cmp = (a, b) => {
-      const result = this.pathForLi(a).localeCompare(this.pathForLi(b), locale, {
-        sensitivity: "base",
-      });
+      const pa = this.pathForLi(a);
+      const pb = this.pathForLi(b);
+      const result = pa < pb ? -1 : pa > pb ? 1 : 0;
       return reverse ? -result : result;
     };
 
