@@ -15,15 +15,46 @@ function badRequest(message) {
   return error;
 }
 
+// A crop is only usable when all three coordinates are present and numeric.
+// The form always submits the hidden crop_* fields, so when the client script
+// did not run (or could not preview the image) they arrive as empty strings -
+// treat that as "no crop" so the centered-square fallback below can run.
+function parseCrop(crop) {
+  if (!crop) return null;
+  const x = Number(crop.x);
+  const y = Number(crop.y);
+  const size = Number(crop.size);
+  if (
+    crop.x === undefined || crop.x === null || crop.x === "" ||
+    crop.y === undefined || crop.y === null || crop.y === "" ||
+    crop.size === undefined || crop.size === null || crop.size === "" ||
+    ![x, y, size].every(Number.isFinite)
+  ) {
+    return null;
+  }
+  return { x, y, size };
+}
+
+// Dimensions as the browser (and the cropper) sees them, i.e. after any EXIF
+// orientation has been applied. Orientations 5-8 rotate the image a quarter
+// turn, so width and height are swapped relative to the stored pixels.
+function orientedDimensions(metadata) {
+  const swap = metadata.orientation && metadata.orientation >= 5;
+  return {
+    width: swap ? metadata.height : metadata.width,
+    height: swap ? metadata.width : metadata.height,
+  };
+}
+
 function cropFor(metadata, crop) {
-  const width = metadata.width;
-  const height = metadata.height;
+  const { width, height } = orientedDimensions(metadata);
   if (!width || !height || width * height > MAX_PIXELS) {
     throw badRequest("Please choose a reasonably sized image");
   }
 
+  const parsed = parseCrop(crop);
   const fallbackSize = Math.min(width, height);
-  if (!crop || crop.x === undefined) {
+  if (!parsed) {
     return {
       left: Math.floor((width - fallbackSize) / 2),
       top: Math.floor((height - fallbackSize) / 2),
@@ -32,10 +63,8 @@ function cropFor(metadata, crop) {
     };
   }
 
-  const x = Number(crop.x);
-  const y = Number(crop.y);
-  const size = Number(crop.size);
-  if (![x, y, size].every(Number.isFinite) || x < 0 || y < 0 || size <= 0 || x > 1 || y > 1 || size > 1) {
+  const { x, y, size } = parsed;
+  if (x < 0 || y < 0 || size <= 0 || x > 1 || y > 1 || size > 1) {
     throw badRequest("The selected favicon crop is invalid");
   }
 
@@ -63,7 +92,9 @@ async function generate(sourcePath, outputDirectory, crop) {
   const workDirectory = await fs.mkdtemp(join(os.tmpdir(), "blot-favicon-"));
 
   try {
-    const source = sharp(sourcePath, { pages: 1 }).extract(extraction).png();
+    // rotate() with no argument bakes in the EXIF orientation before we crop,
+    // so the extraction rectangle lines up with what the user saw.
+    const source = sharp(sourcePath, { pages: 1 }).rotate().extract(extraction).png();
     const icoBuffers = await Promise.all(
       ICO_SIZES.map((size) => source.clone().resize(size, size).png().toBuffer())
     );

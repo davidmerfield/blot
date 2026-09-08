@@ -6,6 +6,7 @@ if (form) {
   const image = form.querySelector("[data-favicon-image]");
   const selection = form.querySelector("[data-favicon-selection]");
   const previews = form.querySelector("[data-favicon-previews]");
+  const previewImages = Array.from(previews.querySelectorAll("img"));
   const fields = {
     x: form.querySelector("[data-favicon-crop-x]"),
     y: form.querySelector("[data-favicon-crop-y]"),
@@ -16,6 +17,32 @@ if (form) {
 
   const limit = (value, min, max) => Math.min(max, Math.max(min, value));
   const dimensions = () => ({ width: image.clientWidth, height: image.clientHeight });
+
+  // Draw the selected square into each preview at its real icon size so the
+  // user sees what the server will generate, not a letterboxed whole image.
+  const renderPreviews = () => {
+    if (!crop || !image.naturalWidth || !image.clientWidth) return;
+    const scale = image.naturalWidth / image.clientWidth;
+    const sx = crop.left * scale;
+    const sy = crop.top * scale;
+    const source = crop.side * scale;
+    for (const preview of previewImages) {
+      const size = Number(preview.getAttribute("data-favicon-preview")) || 32;
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = size;
+      const context = canvas.getContext("2d");
+      context.imageSmoothingEnabled = size > 32;
+      try {
+        context.drawImage(image, sx, sy, source, source, 0, 0, size, size);
+        preview.src = canvas.toDataURL("image/png");
+      } catch (e) {
+        // Tainted canvas (e.g. an SVG the browser will not let us read back) -
+        // fall back to showing the whole image.
+        preview.src = image.src;
+      }
+    }
+  };
+
   const writeCrop = () => {
     const { width, height } = dimensions();
     selection.style.left = `${crop.left}px`;
@@ -25,6 +52,7 @@ if (form) {
     fields.x.value = crop.left / width;
     fields.y.value = crop.top / height;
     fields.size.value = crop.side / Math.min(width, height);
+    renderPreviews();
   };
   const point = (event) => {
     const rect = image.getBoundingClientRect();
@@ -40,7 +68,6 @@ if (form) {
       crop = { left: (width - side) / 2, top: (height - side) / 2, side };
       cropper.hidden = false;
       previews.hidden = false;
-      for (const preview of previews.querySelectorAll("img")) preview.src = image.src;
       writeCrop();
     };
     image.src = URL.createObjectURL(file);
@@ -68,5 +95,12 @@ if (form) {
     }
     writeCrop();
   });
-  selection.addEventListener("pointerup", () => { drag = null; });
+  const endDrag = (event) => {
+    if (drag && event.pointerId !== undefined && selection.hasPointerCapture(event.pointerId)) {
+      selection.releasePointerCapture(event.pointerId);
+    }
+    drag = null;
+  };
+  selection.addEventListener("pointerup", endDrag);
+  selection.addEventListener("pointercancel", endDrag);
 }

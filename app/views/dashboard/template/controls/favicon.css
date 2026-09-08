@@ -6,4 +6,6 @@
 .favicon-cropper__selection { box-sizing: border-box; position: absolute; border: 2px solid white; box-shadow: 0 0 0 9999px rgb(0 0 0 / 45%); cursor: move; touch-action: none; }
 .favicon-cropper__selection::after { content: ""; position: absolute; width: 14px; height: 14px; right: -7px; bottom: -7px; border-radius: 50%; background: white; cursor: nwse-resize; }
 .favicon-previews { align-items: center; display: flex; gap: 16px; margin: 1em 0; }
-.favicon-previews img { image-rendering: pixelated; object-fit: contain; }
+.favicon-previews img { object-fit: contain; background: var(--background-color); }
+.favicon-previews img[data-favicon-preview="16"],
+.favicon-previews img[data-favicon-preview="32"] { image-rendering: pixelated; }
