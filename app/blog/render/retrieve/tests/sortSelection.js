@@ -1,5 +1,6 @@
-// The "Post sorting" control feeds every post listing. These specs stub the
-// models and check each retrieve helper re-orders its results accordingly.
+// The "Post sorting" control drives the index page, tag pages and search.
+// Feeds / recent_entries deliberately stay newest-first. These specs stub the
+// models and check each retrieve helper accordingly.
 describe("post sorting across retrieve helpers", function () {
   const Entries = require("models/entries");
   const Entry = require("models/entry");
@@ -25,36 +26,25 @@ describe("post sorting across retrieve helpers", function () {
 
   describe("recent_entries (feeds)", function () {
     const recentEntries = require("../recent_entries");
-    let received;
 
     beforeEach(function () {
-      received = undefined;
-      // getPage selects the page in the requested order; stub it to just
-      // record the options and hand back a fixed list.
-      spyOn(Entries, "getPage").and.callFake(function (blogID, options, cb) {
-        received = options;
-        cb(null, newestFirst());
-      });
+      spyOn(Entries, "getRecent").and.callFake((blogID, cb) => cb(newestFirst()));
     });
 
-    it("asks getPage for the first page in the default order", async function () {
-      await run(recentEntries, {});
-      expect(received.pageNumber).toBe(1);
-      expect(received.pageSize).toBe(31);
-      expect(received.sortBy).toBeUndefined();
-      expect(received.order).toBeUndefined();
-    });
-
-    it("forwards oldest-first (date + desc) to getPage", async function () {
-      await run(recentEntries, { sort_by: "date", sort_order: "desc" });
-      expect(received.sortBy).toBe("date");
-      expect(received.order).toBe("desc");
-    });
-
-    it("forwards file-path order to getPage", async function () {
-      await run(recentEntries, { sort_by: "id", sort_order: "asc" });
-      expect(received.sortBy).toBe("id");
-      expect(received.order).toBe("asc");
+    it("stays newest-first regardless of the Post sorting selection", async function () {
+      // Feeds and "Latest" widgets are recency snapshots; the control must not
+      // touch them.
+      for (const locals of [
+        {},
+        { sort_by: "date", sort_order: "desc" },
+        { sort_by: "id", sort_order: "asc" },
+      ]) {
+        expect(ids(await run(recentEntries, locals))).toEqual([
+          "c.txt",
+          "a.txt",
+          "b.txt",
+        ]);
+      }
     });
   });
 
