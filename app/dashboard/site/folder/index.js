@@ -2,6 +2,7 @@ const localPath = require("helper/localPath");
 const getBreadcrumbs = require("./breadcrumbs");
 const getFile = require("./file");
 const getFolder = require("./folder");
+const getFolderPost = require("./folderPost");
 const Stat = require("./stat");
 const clfdate = require("helper/clfdate");
 
@@ -21,8 +22,10 @@ async function middleware(req, res, next) {
     }
 
     if (req.params.path) {
-      
-      if (res.locals.folder.directory) {
+
+      if (res.locals.folder.folderPost) {
+        res.render("dashboard/folder/folder-post");
+      } else if (res.locals.folder.directory) {
         res.render("dashboard/folder/directory");
       } else {
         res.render("dashboard/folder/file");
@@ -96,13 +99,18 @@ const loadFolder = async (blog, dir) => {
     folder.stat = { ...folder.stat, ...fileStat };
 
   } else if (stat.directory) {
-    const [breadcrumbs, contents] = await Promise.all([
+    const [breadcrumbs, contents, folderPost] = await Promise.all([
       getBreadcrumbs(blog.id, dir, blog.cacheID),
-      getFolder(blog, dir)
+      getFolder(blog, dir),
+      getFolderPost(blog, dir)
     ]);
 
     folder.contents = contents;
     folder.breadcrumbs = breadcrumbs;
+
+    // A "+" folder that has produced a published entry is shown as a single
+    // aggregated post instead of a plain directory listing.
+    if (folderPost) folder.folderPost = folderPost;
   }
 
   if (dir === '/') {

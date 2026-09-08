@@ -50,8 +50,15 @@ describe("folder posts in the dashboard", function () {
     const href = folderLink.attr("href");
     expect(href).toBeDefined();
 
+    // Opening the + folder shows the aggregated post view, not a directory
+    // listing.
     const $folder = await this.parse(href);
-    const fileLink = $folder(".directory-list a")
+    expect($folder(".directory-list").length).toBe(0);
+    expect($folder(".publishing-steps").text()).toContain(
+      "published as a post"
+    );
+
+    const fileLink = $folder(".folder-post-files a")
       .filter(function () {
         return $folder(this).text().includes("hello.md");
       })
@@ -67,22 +74,18 @@ describe("folder posts in the dashboard", function () {
   });
 
   it("does not badge unsupported files inside a + folder as entries", async function () {
-    await this.blog.write({ path: "/album+/one.md", content: "# One" });
+    // Use a sub-folder of the + folder so a directory listing is still shown;
+    // opening the + folder itself renders the aggregated post view.
+    await this.blog.write({ path: "/album+/extras/one.md", content: "# One" });
     await this.blog.write({
-      path: "/album+/archive.zip",
+      path: "/album+/extras/archive.zip",
       content: "not really a zip",
     });
     await this.blog.rebuild();
 
-    const $root = await this.parse(`/sites/${this.blog.handle}`);
-    const folderHref = $root(".directory-list a")
-      .filter(function () {
-        return $root(this).text().includes("album+");
-      })
-      .first()
-      .attr("href");
-
-    const $folder = await this.parse(folderHref);
+    const $folder = await this.parse(
+      `/sites/${this.blog.handle}/folder/album+/extras`
+    );
 
     const zipLink = $folder(".directory-list a")
       .filter(function () {
@@ -99,6 +102,54 @@ describe("folder posts in the dashboard", function () {
       })
       .first();
     expect(mdLink.find(".icon-file-check").length).toBe(1);
+  });
+
+  it("shows the aggregated post view when opening a + folder", async function () {
+    await this.blog.write({ path: "/story+/01 intro.md", content: "# Intro" });
+    await this.blog.write({ path: "/story+/02 middle.md", content: "The middle." });
+    await this.blog.write({ path: "/story+/03 end.md", content: "The end." });
+    await this.blog.rebuild();
+
+    const $folder = await this.parse(
+      `/sites/${this.blog.handle}/folder/story+`
+    );
+
+    // Aggregated view, not a directory listing.
+    expect($folder(".directory-list").length).toBe(0);
+    expect($folder(".entry-info").length).toBe(1);
+    expect($folder(".publishing-steps").text()).toContain(
+      "published as a post"
+    );
+
+    // Source files link to their own dashboard pages, in order.
+    const names = $folder(".folder-post-files .file-name")
+      .map(function () {
+        return $folder(this).text().trim();
+      })
+      .get();
+    expect(names).toEqual(["01 intro.md", "02 middle.md", "03 end.md"]);
+
+    const firstHref = $folder(".folder-post-files a").first().attr("href");
+    expect(firstHref).toContain("/folder/story%2B/01%20intro.md");
+  });
+
+  it("truncates the source file list past ten files", async function () {
+    for (let i = 1; i <= 13; i++) {
+      const name = String(i).padStart(2, "0");
+      await this.blog.write({
+        path: `/big+/${name}.md`,
+        content: `# Part ${i}`,
+      });
+    }
+    await this.blog.rebuild();
+
+    const $folder = await this.parse(`/sites/${this.blog.handle}/folder/big+`);
+
+    // Ten visible, the rest behind a disclosure.
+    expect($folder(".folder-post-summary > .folder-post-files .folder-post-file").length).toBe(10);
+    expect($folder(".folder-post-more").length).toBe(1);
+    expect($folder(".folder-post-more > summary").text()).toContain("13 files");
+    expect($folder(".folder-post-more .folder-post-file").length).toBe(3);
   });
 
   it("does not treat an ordinary post containing data-file as a folder post", async function () {

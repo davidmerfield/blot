@@ -403,3 +403,26 @@ a.template-button.file-helper span {margin-left: 0.5em;}
   color: #c0392b;
   margin-top: 4px;
 }
+
+.folder-post-more {
+  margin-top: 12px;
+}
+
+.folder-post-more > summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--accent-color);
+  list-style: none;
+}
+
+.folder-post-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.folder-post-more[open] > summary {
+  margin-bottom: 4px;
+}
+
+.folder-post-more .folder-post-files {
+  border-top: none;
+}
