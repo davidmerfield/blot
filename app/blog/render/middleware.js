@@ -4,6 +4,7 @@ var renderLocals = require("./locals");
 var finalRender = require("./main");
 var retrieve = require("./retrieve");
 var getCachedFullView = require("./full-view-cache");
+var hardenProjectedRetrieve = require("models/template/util/hardenProjectedRetrieve");
 
 var ensure = require("helper/ensure");
 var extend = require("helper/extend");
@@ -79,6 +80,15 @@ module.exports = function (req, res, _next) {
           .and(blog.locals);
 
         extend(res.locals.partials).and(viewPartials);
+
+        // getFullView hardened the projection metadata against the view's own
+        // content, partials and locals. Template- and blog-level locals were
+        // merged in above and renderLocals evaluates the mustache in them too,
+        // so fold their references in before projection runs at retrieve time.
+        hardenProjectedRetrieve(missingLocals, null, null, {
+          template: req.template && req.template.locals,
+          blog: blog && blog.locals,
+        });
 
         retrieve(req, res, missingLocals, function (err, foundLocals) {
           extend(res.locals).and(foundLocals);

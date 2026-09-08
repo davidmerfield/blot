@@ -67,6 +67,29 @@ module.exports = function getPartials(
     return parseTemplate(wrapInContext(content, contextPath)).retrieve || {};
   }
 
+  // Merge only the context-independent dependencies out of a partial's stored
+  // retrieve: real retrieve locals blot can fetch, user options, and cdn.
+  // Skips bare non-local keys (e.g. `title`) so they don't leak to the top
+  // level when the partial is used inside an entry section.
+  function mergeStoredDependencies(target, viewRetrieve) {
+    if (!viewRetrieve) return;
+
+    var deps = {};
+
+    Object.keys(viewRetrieve).forEach(function (key) {
+      if (
+        key === "cdn" ||
+        key === "includeDraft" ||
+        key === "filters" ||
+        parseTemplate.isSystemRetrieveLocal(key)
+      ) {
+        deps[key] = viewRetrieve[key];
+      }
+    });
+
+    mergeRetrieve(target, deps);
+  }
+
   function mergePartialContexts(viewContent, inheritedContexts) {
     var merged = {};
 
@@ -154,6 +177,12 @@ module.exports = function getPartials(
                     retrieve,
                     parseRetrieveInContext(view.content || "", contextPath)
                   );
+                  // The contextual parse only sees the partial's visible
+                  // content. Its stored retrieve can also carry dependencies
+                  // that aren't context-bound - an explicit retrieve.latest_entry
+                  // for a local, includeDraft/filters, cdn targets. Those still
+                  // apply wherever the partial is embedded.
+                  mergeStoredDependencies(retrieve, view.retrieve);
                 }
               });
 

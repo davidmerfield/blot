@@ -65,4 +65,22 @@ describe("all_entries", function () {
     const rendered = await (await this.get("/list")).text();
     expect(rendered).toContain("A body");
   });
+
+  it("keeps a heavy field referenced only from a template-level local", async function () {
+    await this.write({ path: "/a.txt", content: "Title: A\n\nA body" });
+
+    await this.template(
+      { "list.html": `{{#allEntries}}{{title}}{{/allEntries}}{{{snippet}}}` },
+      {
+        views: { "list.html": { url: "/list" } },
+        locals: { snippet: "{{#allEntries}}{{{html}}} {{/allEntries}}" },
+      }
+    );
+
+    const locals = await (await this.get("/list?json=1")).json();
+    expect(locals.allEntries[0].html).toContain("A body");
+
+    const rendered = await (await this.get("/list")).text();
+    expect(rendered).toContain("A body");
+  });
 });

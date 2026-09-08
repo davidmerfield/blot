@@ -71,6 +71,19 @@ describe("hardenProjectedRetrieve", function () {
     });
   });
 
+  it("scans nested objects of locals (e.g. inherited template/blog locals)", function () {
+    var retrieve = { posts: { fields: { title: true } } };
+    harden(retrieve, null, null, {
+      template: { snippet: "{{#posts}}{{{html}}}{{/posts}}" },
+      blog: { footer: "{{{body}}}" },
+    });
+    expect(retrieve.posts.fields).toEqual({
+      title: true,
+      html: true,
+      body: true,
+    });
+  });
+
   it("keeps a heavy field found in entry-backed partial content", function () {
     var retrieve = { posts: { fields: { title: true } } };
     harden(retrieve, "{{#posts}}{{title}}{{> /snippet.txt}}{{/posts}}", {

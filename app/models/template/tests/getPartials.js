@@ -143,4 +143,45 @@ describe("template", function () {
     });
   });
 
+  it("keeps a partial's stored dependency when it is used inside a section", function (done) {
+    var test = this;
+
+    // `item` is used inside {{#posts}}, so it inherits the posts context.
+    // Its explicit retrieve.latestEntry (a real retrieve local) must still
+    // reach the merged retrieve even though the contextual parse never sees it.
+    var item = {
+      name: "dep-item.html",
+      content: "{{title}}",
+      retrieve: { latestEntry: true },
+    };
+
+    var parentView = {
+      name: "dep-parent.html",
+      content: "{{#posts}}{{> " + item.name + "}}{{/posts}}",
+    };
+
+    setView(test.template.id, item, function (err) {
+      if (err) return done.fail(err);
+      setView(test.template.id, parentView, function (err) {
+        if (err) return done.fail(err);
+
+        var partials = {};
+        partials[parentView.name] = "";
+
+        getPartials(test.blog.id, test.template.id, partials, function (
+          err,
+          resolved,
+          retrieve
+        ) {
+          if (err) return done.fail(err);
+
+          expect(retrieve.latestEntry).toBe(true);
+          expect(retrieve.posts).toEqual({ fields: { title: true } });
+
+          done();
+        });
+      });
+    });
+  });
+
 });
