@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+    <main class="content">
+        
+      {{#posts}}
+      <article>
+        <h3><a href="{{{url}}}">{{title}}</a></h3>
+        {{#date}}
+        <div class="meta">{{date}}</div>
+        {{/date}}
+        {{{body}}}
+      </article>
+      <hr>
+
+    {{#pagination}}
+      <nav class="pagination">
+        {{#previous}}
+        <a href="/page/{{previous}}">&larr;</a>
+        {{/previous}}
+        <span>{{current}} of {{total}}</span>
+        {{#next}}
+        <a href="/page/{{next}}">&rarr;</a>
+        {{/next}}
+      </nav>
+      {{/pagination}}      
+      {{/posts}}
+
+      
+    </main>
+    {{> footer}}
+  </body>
+</html>

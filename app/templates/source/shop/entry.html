@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+    <main class="content">
+      {{#entry}}
+      <article class="entry-content">
+        <h1>{{title}}</h1>
+        {{#date}}
+        <div class="meta">{{date}}</div>
+        {{/date}}
+        {{{body}}}
+      </article>
+      {{#adjacent}}
+      <nav class="pagination">
+        {{#previous}}
+        <a href="{{{url}}}">&larr; {{title}}</a>
+        {{/previous}}
+        <span></span>
+        {{#next}}
+        <a href="{{{url}}}">{{title}} &rarr;</a>
+        {{/next}}
+      </nav>
+      {{/adjacent}}
+      {{> pluginHTML}}
+      {{/entry}}
+    </main>
+    {{> footer}}
+  </body>
+</html>

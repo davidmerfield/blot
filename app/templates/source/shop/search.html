@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  {{> head}}
+  <body>
+    {{> header}}
+    <main class="content">
+      <h2 class="section-title">Archive</h2>
+      {{> search-form}}
+      <div class="archive-list">
+        {{#query}}
+        {{^entries}}
+        <p>No results found for "{{query}}".</p>
+        {{/entries}}
+        {{/query}}
+        {{#entries}}
+        <div class="archive-item">
+          <a class="archive-title" href="{{{url}}}">{{title}}</a>
+          <span class="archive-date">{{#formatDate}}MMM YYYY{{/formatDate}}</span>
+        </div>
+        {{/entries}}
+      </div>
+
+    </main>
+    {{> footer}}
+  </body>
+</html>

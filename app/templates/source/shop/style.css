@@ -1,0 +1,422 @@
+/*
+ * Kanso Blot Template Stylesheet
+ *
+ * This stylesheet attempts to capture the minimalist look and feel of the
+ * original Kanso WordPress theme. It uses a clean sans‑serif font and a
+ * light colour palette to keep the focus on your writing. Cards are
+ * used to wrap each post on the home page and subtle separators help
+ * guide the reader’s eye down the page.
+ */
+
+ /* Inserts the @font-face rules required to load whichever fonts are selected. */
+{{{font.styles}}}
+{{{appCSS}}}
+
+:root {
+	/* Colour palette inspired by Kanso */
+	--primary-color: {{text_color}};
+	--secondary-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.643);
+	--tertiary-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.443);
+	--background-color: {{background_color}};
+	--card-border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.109);
+	--accent-color: {{link_color}};
+	--input-background-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.025);
+	/* Layout */
+	--content-width: {{main_content_width}}px;
+	--small-font-size: 0.95675676em;
+}
+
+html, body {
+  {{#font}}
+  font-family: {{{stack}}};
+  font-size: {{{font_size}}}px;
+  line-height: {{{line_height}}};
+  {{/font}}
+}
+
+/* Reset */
+html,
+body {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	color: var(--primary-color);
+	background-color: var(--background-color);
+}
+
+hr {
+	border: none;
+	border-top: 1px solid var(--card-border-color);
+	margin: 2rem 0;
+}
+
+blockquote {
+	border-left: 1px solid var(--card-border-color);
+	margin: 1.5rem 0;
+	padding-left: 1rem;
+	color: var(--secondary-color);
+	font-style: italic;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin: 0;
+	font-weight: 600;
+}
+
+p {
+	margin: 1rem 0;
+}
+
+a {
+	color: var(--primary-color);
+	text-decoration: none;
+	transition: color 0.2s ease;
+}
+
+
+
+/* Header */
+.site-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	max-width: var(--content-width);
+	margin: 48px auto 32px;
+	padding: 0 1rem;
+}
+
+.site-header .site-avatar {
+	width: 60px;
+	height: 60px;
+	border-radius: 50%;
+	object-fit: cover;
+	margin-right: 1.5rem;
+}
+
+.site-header .site-branding {
+	flex: 1;
+}
+
+.site-header .site-branding h1 {
+	font-size: 1.16216216em;
+	font-weight: 600;
+}
+
+.site-header .site-branding p {
+	margin: 0;
+	color: var(--secondary-color);
+	max-width: 600px;
+}
+
+.site-header nav a {
+	margin-left: 1rem;
+	font-size: var(--small-font-size);
+	color: var(--secondary-color);
+}
+
+.site-header nav a.active {
+	color: var(--primary-color);
+}
+
+.site-header nav a:hover {
+	color: var(--text-color);
+}
+
+/* Main content */
+.content {
+	max-width: var(--content-width);
+	margin: 0 auto;
+	padding: 0 1rem;
+}
+
+.section-title {
+	margin-top: 3rem;
+	margin-bottom: 1.5rem;
+	font-size: 1.5rem;
+	font-weight: 600;
+}
+
+/* Post card on home page */
+article {
+	margin-bottom: 2rem;
+	padding: 1.5rem 0;
+}
+
+.card {
+	border: 1px solid var(--card-border-color);
+	border-radius: 12px;
+	padding: 1.5rem 1.75rem;
+	transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+article h3 {
+	margin-top: 0;
+	margin-bottom: 0.5rem;
+	font-size: 1.25rem;
+	font-weight: 600;
+}
+
+article .meta {
+	font-size: 0.875rem;
+	color: var(--secondary-color);
+	margin-bottom: 1rem;
+}
+
+/* Responsive media in cards */
+article img,
+article video,
+article iframe,
+article embed,
+article object {
+	max-width: 100%;
+	height: auto;
+	display: block;
+}
+
+article img {
+	border-radius: 6px;
+}
+
+/* Post content on single page */
+.entry-content {
+	margin-top: 2rem;
+}
+
+/* Responsive media in entry content */
+.entry-content img,
+.entry-content video,
+.entry-content iframe,
+.entry-content embed,
+.entry-content object {
+	max-width: 100%;
+	height: auto;
+	display: block;
+}
+
+.entry-content img {
+	border-radius: 6px;
+}
+
+/* Images in paragraphs */
+p img {
+	margin-bottom: 1em;
+}
+
+/* Tag links */
+.tag-cloud {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-bottom: 16px;
+}
+
+.tag-cloud-link {
+	align-items: center;
+	border-radius: 8px;
+	border: 1px solid var(--card-border-color);
+	display: inline-flex;
+	font-size: var(--small-font-size);
+	justify-content: center;
+	padding: 0 16px;
+	min-height: 36px;
+	transition: background-color 200ms ease-out, color 200ms ease-out, transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Archive page */
+.archive-description {
+	margin-top: 0.75rem;
+	margin-bottom: 2rem;
+	color: var(--secondary-color);
+	max-width: 60ch;
+}
+
+.archive-list {
+	margin-top: 1rem;
+}
+
+.archive-item {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	column-gap: 1rem;
+	align-items: baseline;
+	padding: 0.375rem 0;
+}
+
+.archive-title {
+	min-width: 0;
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.archive-date {
+	font-size: var(--small-font-size);
+	color: var(--secondary-color);
+	white-space: nowrap;
+}
+
+/* Responsive iframes (YouTube, Vimeo, etc.) */
+.entry-content iframe,
+article iframe {
+	aspect-ratio: 16 / 9;
+	width: 100%;
+	height: auto;
+}
+
+pre,
+code {
+	font-family: "Courier New", Courier, monospace;
+	background-color: #f5f5f5;
+	padding: 0.2rem 0.4rem;
+	border-radius: 4px;
+}
+
+pre {
+	overflow-x: auto;
+	padding: 1rem;
+}
+
+/* Footer */
+footer {
+	max-width: var(--content-width);
+	margin: 0 auto;
+	text-align: center;
+	padding: 2rem 0;
+	font-size: 0.875rem;
+	color: var(--secondary-color);
+	border-top: 1px solid var(--card-border-color);
+}
+
+/* Search form */
+form.search-form {
+	margin: 2rem 0;
+	display: flex;
+	align-items: center;
+}
+
+form.search-form input[type="text"] {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	flex: 1;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--card-border-color);
+	border-radius: 6px;
+	background-color: var(--input-background-color);
+	color: var(--primary-color);
+	font: inherit;
+	font-size: 1rem;
+	width: 100%;
+	box-sizing: border-box;
+	box-shadow: none;
+	background-clip: padding-box;
+}
+
+form.search-form input[type="text"]::placeholder {
+	color: var(--secondary-color);
+}
+
+form.search-form input[type="text"]:focus {
+	appearance: none;
+	outline: 2px solid var(--card-border-color);
+	outline-offset: 2px;
+}
+
+/* Search: hide submit button and keep a single full-width input */
+form.search-form input[type="submit"] {
+	display: none;
+}
+
+/* Pagination */
+.pagination {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin: 2rem 0;
+	font-size: 0.875rem;
+}
+
+.pagination a {
+	color: var(--accent-color);
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.pagination a:hover {
+	text-decoration: underline;
+}
+
+
+.entry-content .cv {
+	display: grid;
+	grid-template-columns: minmax(10ch, 14ch) 1fr;
+	column-gap: 2rem;
+	margin:2rem 0;
+	align-items: start;
+}
+
+.entry-content .cv > h1,
+.entry-content .cv > h2,
+.entry-content .cv > h3,
+.entry-content .cv > h4,
+.entry-content .cv > h5,
+.entry-content .cv > h6 {
+	grid-column: 1;
+	color: var(--tertiary-color);
+	font-size: var(--small-font-size);
+	white-space: nowrap;
+	padding-top: 0.15rem;
+}
+
+.entry-content .cv > h1,
+.entry-content .cv > h2,
+.entry-content .cv > h3,
+.entry-content .cv > h4,
+.entry-content .cv > h5,
+.entry-content .cv > h6 {
+	margin: 0;
+	font-weight: 600;
+}
+
+.entry-content .cv > :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+	grid-column: 2;
+}
+
+.entry-content .cv > p {
+	margin: 0.5rem 0;
+}
+
+.entry-content .cv > p:first-of-type {
+	margin-top: 0;
+	padding-top: 0.15rem;
+}
+
+@media (max-width: 640px) {
+	.entry-content .cv {
+		grid-template-columns: 1fr;
+		row-gap: 0.25rem;
+	}
+
+	.entry-content .cv > :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+		grid-column: 1;
+	}
+
+	.entry-content .cv > h1,
+	.entry-content .cv > h2,
+	.entry-content .cv > h3,
+	.entry-content .cv > h4,
+	.entry-content .cv > h5,
+	.entry-content .cv > h6 {
+		white-space: normal;
+	}
+}
