@@ -53,20 +53,27 @@ module.exports = {
   // fetching untrusted, user-supplied URLs. See config/airlock/README.md.
   //
   // Deployed as a single, standalone container - not blue/green/yellow -
-  // on its own Docker network. App containers are NOT switched onto this
-  // network at creation (that would move their default gateway off the
-  // bridge they're on today - see config/airlock/README.md's production
+  // on its own Docker network. App containers are NOT given `--network
+  // blotnet` at `docker create` (that would move their default gateway off
+  // the bridge they're on today - see config/airlock/README.md's production
   // note); instead the deploy script `docker network connect`s each app
-  // container to it after it starts, so they keep their original network
-  // and gain a second interface that can reach `blot-airlock`.
+  // container to it between `docker create` and `docker start`, so they keep
+  // their original bridge network and gateway and gain a second interface
+  // that can reach `blot-airlock`. Attaching the network before start (not
+  // after, as originally written) matters: connecting a network to an
+  // already-running container drops its in-flight connections - it was
+  // killing the app's established connections to the off-box Redis instance
+  // seconds after each deploy, one crash-restart per container.
   //
-  // memory is deliberately tight: in this PR the airlock is idle (only the
-  // once-per-boot probe and the 15s HEALTHCHECK touch it), and idle
-  // headless Chromium + nginx + tinyproxy sit comfortably under ~300m.
-  // The traffic cutover puts real bookmark-screenshot rendering here and
-  // should re-evaluate this upward (and take the corresponding memory off
-  // the app containers, which stop running Chromium then). It's taken out
-  // of siteConfig/blogsConfig above, not added on top - see the note there.
+  // memory is deliberately tight. Idle (nginx + tinyproxy + a headless
+  // Chromium with no page open) this sits under ~300m; it held up in
+  // testing to three back-to-back full 1200x1200 @2x screenshots with no
+  // OOM. Real bookmark-screenshot rendering and remote-image downloads run
+  // here now (config.airlock), serialized across the app containers by the
+  // lock in app/helper/screenshot, so concurrent load on it stays low. This
+  // 512m is taken out of siteConfig/blogsConfig above, not added on top -
+  // see the note there; the app containers can shed more of their own
+  // Chromium overhead once the follow-up PR drops that binary.
   AIRLOCK: {
     name: "blot-airlock",
     registry: "ghcr.io/davidmerfield/blot-airlock",

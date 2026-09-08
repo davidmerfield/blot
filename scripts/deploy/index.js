@@ -159,7 +159,7 @@ async function getCurrentImageHash(containerName) {
 }
 
 async function deployContainer(container, platform, imageHash) {
-  const dockerRunCommand = await generateDockerCommand(
+  const dockerCreateCommand = await generateDockerCommand(
     container,
     platform,
     imageHash
@@ -167,7 +167,7 @@ async function deployContainer(container, platform, imageHash) {
 
   console.log(`Deploying ${container.name}... with command:`);
   console.log();
-  console.log(dockerRunCommand);
+  console.log(dockerCreateCommand);
   console.log();
 
   console.log("Pulling new image...");
@@ -194,8 +194,19 @@ async function deployContainer(container, platform, imageHash) {
     );
   }
   await removeContainer(container.name);
+
+  // Create the container stopped, attach the airlock network, THEN start it -
+  // so the app process finds its network in final shape and opens its Redis
+  // connections once. Connecting a network to an already-running container
+  // (the previous behaviour) dropped the app's in-flight connections to the
+  // off-box Redis instance, which surfaced as an unhandled `read ETIMEDOUT`
+  // that crash-restarted every container once per deploy. See
+  // generateDockerCommand.js and the AIRLOCK comment in ./constants.js.
+  console.log("Creating new container...");
+  await sshCommand(dockerCreateCommand);
+  await connectToAirlockNetwork(container.name);
   console.log("Starting new container...");
-  await sshCommand(dockerRunCommand);
+  await sshCommand(`docker start ${container.name}`);
   console.log("Checking health of new container...");
   await checkHealth(container.name, container.port);
 }
@@ -204,10 +215,15 @@ async function deployContainer(container, platform, imageHash) {
 //
 // Deployed as a standalone container, not part of the blue/green/yellow
 // rotation. Every step here is best-effort and non-fatal to the overall
-// deploy: nothing in production reads config.airlock yet (see the comment
-// on the probe env vars in generateDockerCommand.js), so a bug here must
-// not be able to take down blue/green/yellow. It only affects whether
-// app/helper/airlock/probe.js's post-boot check can reach the airlock.
+// deploy: a bug deploying or connecting the airlock must not be able to
+// take down blue/green/yellow. Since the cutover (BLOT_AIRLOCK_BROWSER_URL /
+// PROXY_URL are set on the app containers - see generateDockerCommand.js),
+// an app container that comes up without a working connection to the
+// airlock will fail bookmark screenshots and remote-image downloads (both
+// already degrade gracefully - the post builds without the image), but it
+// still shouldn't fail the app deploy itself. config/index.js's own
+// startup warning surfaces the "env vars unset" case; watch for it, and for
+// "Screenshot failed after retries", in the container logs after a deploy.
 
 async function ensureAirlockNetwork() {
   console.log(`Ensuring Docker network ${AIRLOCK.network} exists...`);
@@ -355,10 +371,10 @@ async function connectToAirlockNetwork(containerName) {
     // swallowing "already exists" with `|| true`: that would also swallow
     // every OTHER failure (missing network, missing container, ...),
     // meaning a genuine attach failure logged nothing and looked identical
-    // to success in the deploy log - discoverable only much later, from
-    // the probe or from screenshots/downloads failing once real traffic
-    // depends on this. A real failure here now propagates to the catch
-    // below instead of being hidden.
+    // to success in the deploy log - discoverable only much later, when
+    // screenshots/downloads on that container start failing. A real
+    // failure here now propagates to the catch below instead of being
+    // hidden.
     const members = await sshCommand(
       `docker network inspect ${AIRLOCK.network} --format='{{range .Containers}}{{.Name}} {{end}}'`
     );
@@ -450,7 +466,11 @@ async function main() {
           `Image for ${container.name} is already deployed. Skipping...`
         );
         // Still ensure the network hookup exists even when we skip
-        // redeploying the container itself (e.g. a re-run of this script).
+        // redeploying the container itself (e.g. a re-run of this script, or a
+        // container whose create-time attach failed on the previous deploy).
+        // This is the one path that may attach the network to an
+        // already-running container; a normal deploy attaches it between
+        // `docker create` and `docker start` (see deployContainer).
         await connectToAirlockNetwork(container.name);
         continue;
       }
@@ -462,8 +482,8 @@ async function main() {
       }
 
       try {
+        // deployContainer attaches AIRLOCK.network between create and start.
         await deployContainer(container, platform, imageHash);
-        await connectToAirlockNetwork(container.name);
       } catch (error) {
         console.error(`Deployment failed for ${container.name}`);
 
@@ -484,7 +504,6 @@ async function main() {
         console.error("Rolling back...");
         try {
           await deployContainer(container, platform, rollbackHash);
-          await connectToAirlockNetwork(container.name);
           console.error("Rollback succeeded.");
         } catch (rollbackError) {
           console.error("Rollback failed:", rollbackError);
