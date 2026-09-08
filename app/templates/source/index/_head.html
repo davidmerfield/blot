@@ -42,7 +42,8 @@
   <meta property="og:image:height" content="{{height}}">
   {{/thumbnail.large}}
   {{^thumbnail.large}}
-  {{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}
+  {{#logo_url}}<meta property="og:image" content="{{{logo_url}}}">{{/logo_url}}
+  {{^logo_url}}{{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}{{/logo_url}}
   {{/thumbnail.large}}
 
   <!-- (E) Content type (article for posts) -->
@@ -52,7 +53,8 @@
   {{#summary}}<meta name="twitter:description" content="{{summary}}">{{/summary}}{{^summary}}<meta name="twitter:description" content="{{title}}">{{/summary}}
   {{#thumbnail.large}}<meta name="twitter:image" content="{{{url}}}">{{/thumbnail.large}}
   {{^thumbnail.large}}
-  {{#avatar}}<meta name="twitter:image" content="{{{avatar}}}">{{/avatar}}
+  {{#logo_url}}<meta name="twitter:image" content="{{{logo_url}}}">{{/logo_url}}
+  {{^logo_url}}{{#avatar}}<meta name="twitter:image" content="{{{avatar}}}">{{/avatar}}{{/logo_url}}
   {{/thumbnail.large}}
 
   <!-- (F) Author (defaults to siteURL) -->
@@ -77,6 +79,7 @@
   {{/url}}
   <meta property="og:title" content="{{> title}}">
   <meta property="og:description" content="{{> description}}">
-  {{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}
+  {{#logo_url}}<meta property="og:image" content="{{{logo_url}}}">{{/logo_url}}
+  {{^logo_url}}{{#avatar}}<meta property="og:image" content="{{{avatar}}}">{{/avatar}}{{/logo_url}}
   {{/entry}}
 </head>
