@@ -93,8 +93,10 @@ async function generate(sourcePath, outputDirectory, crop) {
 
   try {
     // rotate() with no argument bakes in the EXIF orientation before we crop,
-    // so the extraction rectangle lines up with what the user saw.
-    const source = sharp(sourcePath, { pages: 1 }).rotate().extract(extraction).png();
+    // so the extraction rectangle lines up with what the user saw. ensureAlpha()
+    // guarantees 4-channel input: to-ico@1.1.5 mis-encodes 24-bit PNGs (e.g. a
+    // straight RGB JPEG upload) into a malformed ICO otherwise.
+    const source = sharp(sourcePath, { pages: 1 }).rotate().ensureAlpha().extract(extraction).png();
     const icoBuffers = await Promise.all(
       ICO_SIZES.map((size) => source.clone().resize(size, size).png().toBuffer())
     );

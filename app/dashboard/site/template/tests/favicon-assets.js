@@ -39,4 +39,42 @@ describe("favicon assets", function () {
       expect(metadata.height).toEqual(size);
     }
   });
+
+  it("produces a well-formed ico from a 3-channel (JPEG) source", async function () {
+    const source = join(this.tmp, "source.jpg");
+    const destination = join(this.tmp, "output-jpg");
+    await sharp({ create: { width: 120, height: 120, channels: 3, background: "#3366cc" } })
+      .jpeg()
+      .toFile(source);
+    expect((await sharp(source).metadata()).channels).toEqual(3);
+
+    const favicon = await generate(source, destination, { x: 0, y: 0, size: 1 });
+
+    // to-ico@1.1.5 embeds each size as a 32-bit BITMAPINFOHEADER DIB (40-byte
+    // header + width*height*4, no AND mask). If the source is not 4-channel it
+    // sizes the pixel data as 24-bit, so the directory entry's declared size no
+    // longer matches a 32-bit DIB. Recompute the expected size for every entry
+    // and check the entries tile the file exactly.
+    const ico = await fs.readFile(join(destination, `${favicon.prefix}.ico`));
+    expect(ico.slice(0, 4)).toEqual(Buffer.from([0, 0, 1, 0]));
+    const count = ico.readUInt16LE(4);
+    expect(count).toEqual(3);
+
+    const dibSize = (side) => 40 + side * side * 4;
+    let covered = 6 + count * 16;
+    const sides = [];
+    for (let i = 0; i < count; i++) {
+      const entry = 6 + i * 16;
+      const side = ico[entry] === 0 ? 256 : ico[entry];
+      const length = ico.readUInt32LE(entry + 8);
+      const offset = ico.readUInt32LE(entry + 12);
+      expect(ico.readUInt16LE(entry + 6)).toEqual(32); // bit depth
+      expect(length).toEqual(dibSize(side));
+      expect(offset).toEqual(covered);
+      covered += length;
+      sides.push(side);
+    }
+    expect(covered).toEqual(ico.length);
+    expect(sides.sort((a, b) => a - b)).toEqual([16, 32, 48]);
+  });
 });

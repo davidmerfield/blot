@@ -77,17 +77,14 @@ module.exports = async function uploadFavicon(req, res, next) {
     delete req.template.locals.favicon;
     try {
       await update(req.blog, req.params.templateSlug, req.template.locals);
-    } catch (error) {
-      return next(error);
-    }
-    // Metadata no longer references the old assets, so tidy them even if the
-    // folder sync below fails.
-    await removeAssetsIfUnreferenced(req, previous);
-    try {
+      // Keep the old files until the folder's package.json also stops
+      // referencing them: if this fails, a folder reload restores the old
+      // (working) favicon rather than pointing at deleted files.
       await persistToFolder(req.blog, req.template);
     } catch (error) {
       return next(error);
     }
+    await removeAssetsIfUnreferenced(req, previous);
     return isAjaxRequest(req) ? res.json({ favicon: null }) : res.message(req.body.redirect || res.locals.base, "Removed favicon");
   }
 
@@ -116,21 +113,24 @@ module.exports = async function uploadFavicon(req, res, next) {
   try {
     await update(req.blog, req.params.templateSlug, req.template.locals);
   } catch (error) {
-    // The template never took on the new URLs, so the freshly generated files
-    // are safe to discard.
+    // Metadata never took on the new URLs, so discard the freshly generated files.
     await Promise.all(assetPaths(req.blog, favicon).map((path) => fs.remove(path).catch(() => {})));
     return next(error);
   }
 
-  // The template now points at the new assets. Tidying the previous ones, and
-  // syncing a locally-edited template's folder, are both best-effort from here:
-  // a failure must not roll back the already-published metadata.
-  await removeAssetsIfUnreferenced(req, previous);
   try {
     await persistToFolder(req.blog, req.template);
   } catch (error) {
+    // Redis now points at the new favicon but the folder's package.json still
+    // points at the old one. Leave both sets of files in place: a folder reload
+    // will restore the old (working) favicon, and deleting either set here would
+    // leave one of the two references dangling.
     return next(error);
   }
+
+  // Redis and the folder now agree on the new favicon; the previous files are
+  // safe to drop unless another template still references them.
+  await removeAssetsIfUnreferenced(req, previous);
 
   return isAjaxRequest(req) ? res.json({ favicon }) : res.message(req.body.redirect || res.locals.base, "Updated favicon");
 };
