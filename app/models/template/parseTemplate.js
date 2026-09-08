@@ -66,12 +66,33 @@ var transparentSectionHelpers = {
   formatCreated: true,
 };
 
+// blog/render/retrieve/index.js exposes each retrieve module under aliases
+// that are not derivable from its filename (appCSS for app_css.js, encodeXML
+// for encode_xml.js, ...). These have no file of their own, so list them here.
+// tests/systemRetrieveLocals.js asserts this stays in sync with the dictionary.
+var retrieveAliases = {
+  absoluteURLs: true,
+  allTags: true,
+  appCSS: true,
+  appJS: true,
+  encodeJSON: true,
+  encodeURIComponent: true,
+  encodeXML: true,
+  isActive: true,
+  plugin_css: true,
+  plugin_js: true,
+};
+
 function isProjectedEntryLocal(name) {
   return !!projectedEntryLocals[name];
 }
 
 function isSystemRetrieveLocal(name) {
-  return retrieveThese.indexOf(name) > -1 || isProjectedEntryLocal(name);
+  return (
+    retrieveThese.indexOf(name) > -1 ||
+    isProjectedEntryLocal(name) ||
+    retrieveAliases[name] === true
+  );
 }
 
 function parseTemplate(template) {

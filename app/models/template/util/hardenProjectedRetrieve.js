@@ -13,10 +13,10 @@ var projectableEntryFields = require("./projectableEntryFields");
 // every partial's content) and make sure no heavy field that appears there is
 // ever projected away. Over-broad (an {{{html}}} outside any entry loop keeps
 // `html` on every entry local) but only ever keeps fields, never drops one.
-module.exports = function hardenProjectedRetrieve(retrieve, viewContent, allPartials) {
+module.exports = function hardenProjectedRetrieve(retrieve, viewContent, allPartials, viewLocals) {
   if (!retrieve || typeof retrieve !== "object") return retrieve;
 
-  var referenced = collectReferencedIdentifiers(viewContent, allPartials);
+  var referenced = collectReferencedIdentifiers(viewContent, allPartials, viewLocals);
 
   Object.keys(retrieve).forEach(function (key) {
     var value = retrieve[key];
@@ -43,7 +43,7 @@ module.exports = function hardenProjectedRetrieve(retrieve, viewContent, allPart
   return retrieve;
 };
 
-function collectReferencedIdentifiers(viewContent, allPartials) {
+function collectReferencedIdentifiers(viewContent, allPartials, viewLocals) {
   var names = {};
 
   addFrom(viewContent);
@@ -54,7 +54,26 @@ function collectReferencedIdentifiers(viewContent, allPartials) {
     });
   }
 
+  // Locals can hold mustache that renderLocals evaluates later - a heavy field
+  // referenced only from a string local (e.g. locals.snippet = "{{{html}}}")
+  // must be kept too.
+  addFromValue(viewLocals, 0);
+
   return names;
+
+  function addFromValue(value, depth) {
+    if (depth > 6 || value == null) return;
+    if (typeof value === "string") return addFrom(value);
+    if (Array.isArray(value)) {
+      for (var i = 0; i < value.length; i++) addFromValue(value[i], depth + 1);
+      return;
+    }
+    if (typeof value === "object") {
+      Object.keys(value).forEach(function (key) {
+        addFromValue(value[key], depth + 1);
+      });
+    }
+  }
 
   function addFrom(content) {
     if (!content || typeof content !== "string") return;

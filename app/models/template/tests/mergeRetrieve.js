@@ -42,4 +42,22 @@ describe("mergeRetrieve", function () {
       cdn: ["a.css", "b.css"],
     });
   });
+
+  it("does not let a boolean clobber a non-projection structured value", function () {
+    // `plugin` is not projection metadata (no `fields`); a partial's bare
+    // {{plugin}} must not wipe out a {{{plugin.katex.css}}} request.
+    expect(
+      mergeRetrieve(
+        { plugin: { katex: { css: true } } },
+        { plugin: true }
+      )
+    ).toEqual({ plugin: { katex: { css: true } } });
+
+    expect(
+      mergeRetrieve(
+        { plugin: true },
+        { plugin: { katex: { css: true } } }
+      )
+    ).toEqual({ plugin: { katex: { css: true } } });
+  });
 });

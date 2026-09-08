@@ -209,4 +209,30 @@ describe("template", function () {
     );
   });
 
+  it("keeps a heavy field referenced only from a string local", function (done) {
+    var test = this;
+
+    var view = {
+      name: "snippet-view.html",
+      locals: { snippet: "{{#allEntries}}{{{html}}}{{/allEntries}}" },
+      content: "{{#allEntries}}{{title}}{{/allEntries}}{{{snippet}}}",
+    };
+
+    setView(test.template.id, view, function (err) {
+      if (err) return done.fail(err);
+
+      getFullView(test.blog.id, test.template.id, view.name, function (
+        err,
+        fullView
+      ) {
+        if (err) return done.fail(err);
+
+        expect(fullView[2].allEntries.fields.html).toBe(true);
+        expect(fullView[2].allEntries.fields.title).toBe(true);
+
+        done();
+      });
+    });
+  });
+
 });

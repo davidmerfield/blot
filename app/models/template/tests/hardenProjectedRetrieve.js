@@ -56,6 +56,21 @@ describe("hardenProjectedRetrieve", function () {
     ]);
   });
 
+  it("keeps a heavy field referenced only from a string local", function () {
+    var retrieve = { posts: { fields: { title: true } } };
+    harden(
+      retrieve,
+      "{{#posts}}{{title}}{{/posts}}{{{snippet}}}",
+      {},
+      { snippet: "{{#posts}}{{{html}}}{{/posts}}", nested: { deep: "{{{body}}}" } }
+    );
+    expect(retrieve.posts.fields).toEqual({
+      title: true,
+      html: true,
+      body: true,
+    });
+  });
+
   it("keeps a heavy field found in entry-backed partial content", function () {
     var retrieve = { posts: { fields: { title: true } } };
     harden(retrieve, "{{#posts}}{{title}}{{> /snippet.txt}}{{/posts}}", {

@@ -40,8 +40,13 @@ module.exports = function getFullView(blogID, templateID, viewName, callback) {
         mergeRetrieve(view.retrieve, retrieveFromPartials);
 
         // Backstop: never let projection drop a heavy entry field that is
-        // referenced anywhere in the assembled view + partials bundle.
-        hardenProjectedRetrieve(view.retrieve, view.content, allPartials);
+        // referenced anywhere in the assembled view + partials + locals bundle.
+        hardenProjectedRetrieve(
+          view.retrieve,
+          view.content,
+          allPartials,
+          view.locals
+        );
 
         var response = [
           view.locals,
