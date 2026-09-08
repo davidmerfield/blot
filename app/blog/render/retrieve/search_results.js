@@ -1,3 +1,4 @@
+var getTemplateSortOptions = require("blog/sortOptions");
 var Entry = require("models/entry");
 var projectEntryFields = require("./helpers/projectEntryFields");
 
@@ -9,7 +10,11 @@ module.exports = function (req, res, callback) {
     return callback(null, []);
   }
 
-  Entry.search(blogID, req.query.q, function (err, results) {
+  var sortOptions = getTemplateSortOptions(req.template && req.template.locals);
+
+  // Entry.search collects a wide candidate pool, then sorts and caps by the
+  // selection (a missing selection normalises to newest-first date).
+  Entry.search(blogID, req.query.q, sortOptions, function (err, results) {
     if (err) return callback(err);
 
     // The HTML was only needed to match against the query; drop the heavy
