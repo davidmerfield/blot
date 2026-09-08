@@ -21,7 +21,7 @@
 	"enabled": true,
 	"views": {
 		"archive.html": {
-			"url": "/archive",
+			"url": "/archives",
 			"partials": {
 				"title": "Archive – {{{title}}}",
 				"description": "A list of all posts published on {{{title}}}"
