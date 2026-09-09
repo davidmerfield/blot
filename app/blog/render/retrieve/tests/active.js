@@ -29,6 +29,13 @@ describe("active property", function () {
     );
   });
 
+  it("does not conflate an encoded query delimiter in a slug with a real query string", function () {
+    expect(active("/tagged/foo%3Fbar", { slug: "foo%3Fbar" })).toEqual(
+      "active"
+    );
+    expect(active("/tagged/foo?bar", { slug: "foo%3Fbar" })).toEqual("");
+  });
+
   it("retains complete local URL matching and rejects malformed escapes", function () {
     expect(active("/caf%C3%A9", { url: "/café" })).toEqual("active");
     expect(active("/tagged/bad%escape", { slug: "bad%escape" })).toBe(false);
