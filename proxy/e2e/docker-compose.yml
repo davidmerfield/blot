@@ -38,8 +38,10 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    # The app routes by Host: an unknown host is treated as a blog and /health
+    # 404s. Probe as the site host instead.
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8081/health"]
+      test: ["CMD", "curl", "-fsS", "-H", "Host: localhost", "http://127.0.0.1:8081/health"]
       interval: 3s
       timeout: 5s
       retries: 90
