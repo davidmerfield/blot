@@ -29,6 +29,76 @@ describe("template", () => {
 		expect(savedView.content).toEqual(view.content);
 	});
 
+	it("stores file-backed partials under the literal reference from the content", async function () {
+		// The key must stay verbatim: Mustache resolves "{{> /pages/home.txt}}"
+		// by that exact string, so rewriting it (e.g. to a true-case entry path)
+		// would break the reference at render time.
+		await this.set("/Pages/Home.txt", "Hello from home");
+		await setView(this.template.id, {
+			name: "literal-partial.html",
+			content: "{{> /pages/home.txt}}",
+		});
+
+		const savedView = await getView(this.template.id, "literal-partial.html");
+		expect(savedView.partials).toEqual({ "/pages/home.txt": null });
+	});
+
+	it("recomputes file-backed partials from content instead of accumulating stale keys", async function () {
+		await this.set("/pages/home.txt", "Hello from home");
+		await this.set("/pages/about.txt", "About us");
+
+		await setView(this.template.id, {
+			name: "swap-partial.html",
+			content: "{{> /pages/home.txt}}",
+		});
+		await setView(this.template.id, {
+			name: "swap-partial.html",
+			content: "{{> /pages/about.txt}}",
+		});
+
+		const savedView = await getView(this.template.id, "swap-partial.html");
+		expect(savedView.partials).toEqual({ "/pages/about.txt": null });
+	});
+
+	it("keeps an explicitly declared file marker that backs an inline partial", async function () {
+		await this.set("/pages/foo.txt", "Foo body");
+
+		// parseTemplate(content) only sees "{{> wrapper}}", so the file marker
+		// has to survive the save for getPartials to fetch /pages/foo.txt.
+		await setView(this.template.id, {
+			name: "inline-dep.html",
+			content: "{{> wrapper}}",
+			partials: {
+				wrapper: "{{> /pages/foo.txt}}",
+				"/pages/foo.txt": null,
+			},
+		});
+
+		const savedView = await getView(this.template.id, "inline-dep.html");
+		expect(savedView.partials.wrapper).toEqual("{{> /pages/foo.txt}}");
+		expect(savedView.partials["/pages/foo.txt"]).toEqual(null);
+	});
+
+	it("short-circuits an unchanged view whose content references a file-backed partial", async function () {
+		await this.set("/pages/home.txt", "Hello from home");
+
+		await setView(this.template.id, {
+			name: "sc-partial.html",
+			content: "{{> /pages/home.txt}}",
+			partials: {},
+		});
+
+		const before = await promisify(Blog.get)({ id: this.template.owner });
+		await setView(this.template.id, {
+			name: "sc-partial.html",
+			content: "{{> /pages/home.txt}}",
+			partials: {},
+		});
+		const after = await promisify(Blog.get)({ id: this.template.owner });
+
+		expect(after.cacheID).toEqual(before.cacheID);
+	});
+
 	it("sets changes to an existing view", async function () {
 		const test = this;
 		const view = {
@@ -97,6 +167,127 @@ describe("template", () => {
 		const view = await getView(templateID, "draft.html");
 		expect(view.locals.showHero).toBe(false);
 		expect(view.retrieve.includeDraft).toBe(false);
+	});
+
+	it("stores projected allEntries fields in retrieve metadata", async function () {
+		await setView(this.template.id, {
+			name: "entries.html",
+			content: "{{#allEntries}}{{title}}{{/allEntries}}",
+		});
+
+		const view = await getView(this.template.id, "entries.html");
+		expect(view.retrieve).toEqual({
+			allEntries: { fields: { title: true } },
+		});
+	});
+
+	it("replaces stale boolean retrieve locals with projected fields", async function () {
+		await setView(this.template.id, {
+			name: "entries.html",
+			content: "{{#allEntries}}{{title}}{{/allEntries}}",
+			retrieve: {
+				allEntries: true,
+				includeDraft: true,
+			},
+		});
+
+		const view = await getView(this.template.id, "entries.html");
+		expect(view.retrieve).toEqual({
+			allEntries: { fields: { title: true } },
+			includeDraft: true,
+		});
+	});
+
+	it("preserves includeDraft when re-saving content without retrieve", async function () {
+		await setView(this.template.id, {
+			name: "entries.html",
+			content: "{{#allEntries}}{{title}}{{/allEntries}}",
+			retrieve: {
+				includeDraft: true,
+			},
+		});
+
+		await setView(this.template.id, {
+			name: "entries.html",
+			content: "{{#allEntries}}{{title}} {{url}}{{/allEntries}}",
+		});
+
+		const view = await getView(this.template.id, "entries.html");
+		expect(view.retrieve).toEqual({
+			allEntries: { fields: { title: true, url: true } },
+			includeDraft: true,
+		});
+	});
+
+	it("does not persist the recalculate retrieve sentinel", async function () {
+		await setView(this.template.id, {
+			name: "entries.html",
+			content: "{{#allEntries}}{{title}}{{/allEntries}}",
+			retrieve: {
+				includeDraft: true,
+				__recalculateRetrieve: Date.now(),
+			},
+		});
+
+		const view = await getView(this.template.id, "entries.html");
+		expect(view.retrieve).toEqual({
+			allEntries: { fields: { title: true } },
+			includeDraft: true,
+		});
+		expect(view.retrieve.__recalculateRetrieve).toBeUndefined();
+	});
+
+	it("keeps an explicit retrieve dependency the parser can't see", async function () {
+		// `latest_entry` is only reached indirectly (via a local), so the
+		// parser never meets it - the explicit retrieve key must survive.
+		await setView(this.template.id, {
+			name: "snippet.html",
+			content: "{{{snippet}}}",
+			locals: { snippet: "{{latest_entry.title}}" },
+			retrieve: { latest_entry: true },
+		});
+
+		let view = await getView(this.template.id, "snippet.html");
+		expect(view.retrieve.latest_entry).toBe(true);
+
+		// ...and across a plain content re-save with no retrieve passed.
+		await setView(this.template.id, {
+			name: "snippet.html",
+			content: "{{{snippet}}} ",
+			locals: { snippet: "{{latest_entry.title}}" },
+		});
+
+		view = await getView(this.template.id, "snippet.html");
+		expect(view.retrieve.latest_entry).toBe(true);
+	});
+
+	it("merges an explicit nested retrieve request with parser-derived metadata", async function () {
+		// content uses {{{plugin.katex.css}}}; a local needs plugin.zoom.js too.
+		await setView(this.template.id, {
+			name: "plugin.html",
+			content: "{{{plugin.katex.css}}}{{{snippet}}}",
+			locals: { snippet: "{{{plugin.zoom.js}}}" },
+			retrieve: { plugin: { zoom: { js: true } } },
+		});
+
+		const view = await getView(this.template.id, "plugin.html");
+		expect(view.retrieve.plugin).toEqual({
+			katex: { css: true },
+			zoom: { js: true },
+		});
+	});
+
+	it("still sheds stale non-local retrieve keys on re-save", async function () {
+		await setView(this.template.id, {
+			name: "stale.html",
+			content: "{{#allEntries}}{{title}}{{/allEntries}}",
+			retrieve: { allEntries: true, months: true, entries: true },
+		});
+
+		const view = await getView(this.template.id, "stale.html");
+		expect(view.retrieve).toEqual({
+			allEntries: { fields: { title: true } },
+		});
 	});
 
 	it("won't set a view with invalid mustache content", async function () {
