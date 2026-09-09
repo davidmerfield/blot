@@ -7,10 +7,13 @@ function buildBenchmarkResult(options) {
     buildSiteDurations,
     renderPhaseMetrics,
     renderTiming,
+    renderBytesTotal,
     siteSummaries,
     renderTasks,
     renderFailures,
   } = options;
+
+  const renderedPages = renderTasks.length;
 
   return {
     schema_version: 1,
@@ -56,6 +59,11 @@ function buildBenchmarkResult(options) {
       },
       cpu: renderPhaseMetrics.cpu,
       memory_mb: renderPhaseMetrics.memory_mb,
+      bytes: {
+        total: renderBytesTotal || 0,
+        mean_per_page:
+          renderedPages > 0 ? (renderBytesTotal || 0) / renderedPages : 0,
+      },
     },
     sites: siteSummaries,
     status: "pass",

@@ -48,7 +48,7 @@ describe("blog benchmarks", function () {
 
     buildPhaseMonitor.start();
 
-    await runWithConcurrency(writeTasks, 32, async (task) => {
+    await runWithConcurrency(writeTasks, benchmarkConfig.writeConcurrency, async (task) => {
       if (task.sourcePath != null) {
         let blogDir = localPath(task.blog.id, "/");
         if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
@@ -79,6 +79,7 @@ describe("blog benchmarks", function () {
     const renderFailures = [];
     const siteSummaries = [];
     const renderTasks = [];
+    const bytesPerSite = new Array(blogs.length).fill(0);
 
     for (let index = 0; index < blogs.length; index++) {
       const blog = blogs[index];
@@ -104,16 +105,11 @@ describe("blog benchmarks", function () {
       }
 
       const n = benchmarkConfig.requestsPerPage;
-      const tasksForBlog = sitemapPaths.length * n;
       console.log(
         "[benchmark]",
         blog.handle,
-        "sitemap paths:",
-        sitemapPaths.length,
-        "× requestsPerPage:",
-        n,
-        "=>",
-        tasksForBlog,
+        `${sitemapPaths.length} sitemap pages × ${n} =>`,
+        sitemapPaths.length * n,
         "render tasks"
       );
 
@@ -144,10 +140,11 @@ describe("blog benchmarks", function () {
       async ({ blogIndex, blog, path }) => {
         const startedAt = performance.now();
         const res = await this.getForBlog(blog, path, { redirect: "manual" });
-        await res.arrayBuffer();
+        const body = await res.arrayBuffer();
 
         const elapsedMs = performance.now() - startedAt;
         renderDurations.push(elapsedMs);
+        bytesPerSite[blogIndex] += body.byteLength;
 
         if (res.status >= 400) {
           renderFailures.push({ blogIndex, path, status: res.status });
@@ -158,14 +155,17 @@ describe("blog benchmarks", function () {
     const renderPhaseMetrics = renderPhaseMonitor.stop();
     const renderTiming = summarizeDurations(renderDurations);
 
-    for (const summary of siteSummaries) {
+    siteSummaries.forEach((summary, index) => {
       summary.rendered_pages = renderTasks.filter(
         (task) => task.blog.id === summary.blog_id
       ).length;
       summary.non_2xx = renderFailures.filter(
         (failure) => blogs[failure.blogIndex].id === summary.blog_id
       ).length;
-    }
+      summary.rendered_bytes = bytesPerSite[index] || 0;
+    });
+
+    const renderBytesTotal = bytesPerSite.reduce((sum, n) => sum + n, 0);
 
     const result = buildBenchmarkResult({
       benchmarkConfig,
@@ -175,6 +175,7 @@ describe("blog benchmarks", function () {
       buildSiteDurations,
       renderPhaseMetrics,
       renderTiming,
+      renderBytesTotal,
       siteSummaries,
       renderTasks,
       renderFailures,
@@ -221,6 +222,11 @@ describe("blog benchmarks", function () {
       label("Mean blog render time") +
         num(result.render.timing_ms.mean.toFixed(0), 8) +
         " ms per page"
+    );
+    console.log(
+      label("Mean output size") +
+        num((result.render.bytes.mean_per_page / 1024).toFixed(1), 8) +
+        " kb per page"
     );
     console.log("");
   });
