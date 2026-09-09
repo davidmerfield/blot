@@ -90,6 +90,8 @@ jobs:
       HISTORY_DIR: .benchmarks/history
       RESULT_FILE: .benchmarks/result-${{ matrix.arch }}.json
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # The commit actually being benchmarked (PR head, not the merge commit).
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
     steps:
       - name: Checkout code
@@ -99,6 +101,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      # Flip the sticky comment to a loading state straight away, before the
+      # (slow) image build, so the PR shows the run is in flight.
+      - name: Mark PR benchmark comment as running
+        if: github.event_name == 'pull_request'
+        run: |
+          node scripts/benchmarks/pr-comment.js \
+            --pr "${{ github.event.pull_request.number }}" \
+            --arch "$ARCH" \
+            --status running \
+            --sha "$HEAD_SHA"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -180,8 +193,19 @@ jobs:
           node scripts/benchmarks/pr-comment.js \
             --pr "${{ github.event.pull_request.number }}" \
             --arch "$ARCH" \
+            --status done \
+            --sha "$HEAD_SHA" \
             --result "$RESULT_FILE" \
             --history-dir "$HISTORY_DIR"
+
+      - name: Mark PR benchmark comment as failed
+        if: github.event_name == 'pull_request' && failure()
+        run: |
+          node scripts/benchmarks/pr-comment.js \
+            --pr "${{ github.event.pull_request.number }}" \
+            --arch "$ARCH" \
+            --status failed \
+            --sha "$HEAD_SHA"
 
       # --- master: update history + maybe open a regression issue ----------
       - name: Update rolling history

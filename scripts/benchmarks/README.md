@@ -56,8 +56,14 @@ here blocks a merge — the signal comes from trends, not single runs.
 
 - runs on **amd64 only**, `2` iterations, aggregated to medians
   ([`aggregate.js`](aggregate.js))
-- posts / updates one sticky comment ([`pr-comment.js`](pr-comment.js))
-  comparing the PR against the rolling master median
+- keeps **one** sticky comment ([`pr-comment.js`](pr-comment.js)) comparing the
+  PR against the rolling master median. It has three states, all on the same
+  comment:
+  - **running** (`⏳` in the header) — flipped on as soon as the job starts, so
+    the PR shows a run is in flight. The previous run's table stays visible.
+  - **done** — the table, plus the commit it was benchmarked from (and the one
+    before it) in the footer.
+  - **run failed** — set if the job errors, so the comment never sticks on `⏳`.
 - draft PRs are skipped entirely
 
 ### On push to master
