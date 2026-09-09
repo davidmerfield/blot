@@ -126,33 +126,58 @@ if (args[0]) {
   );
 }
 
-// Resolve the explicit shard file list now; it is applied after loadConfig.
-let shardFiles = null;
-if (shard) {
-  const root = path.resolve(
-    process.cwd(),
-    args[0] && !args[0].endsWith(".js") ? args[0] : "."
-  );
-  const allFiles = listSpecFiles(root);
-  shardFiles = allFiles.filter((_, i) => i % shard.total === shard.index - 1);
-
+// --shard / --exclude only make sense against a directory (or the whole
+// tree). A specific spec file was already pinned into config.spec_files
+// above, so leave it alone and ignore the flags.
+const targetIsFile = !!(args[0] && args[0].endsWith(".js"));
+if (targetIsFile && (shard || excludePrefixes.length > 0)) {
   console.log(
     clfdate(),
-    `Shard ${shard.index}/${shard.total}:`,
-    colors.cyan(`${shardFiles.length} of ${allFiles.length} spec files`)
+    colors.yellow(
+      `Ignoring --shard/--exclude: a specific spec file was given (${args[0]}).`
+    )
   );
+  shard = null;
+  excludePrefixes.length = 0;
+}
 
-  if (shardFiles.length === 0) {
+// Build an explicit spec-file list when sharding and/or excluding - both
+// need the same discovery + exclude filter (listSpecFiles applies
+// isExcluded), and a shard then takes a round-robin slice of it. This
+// replaces the spec_dir / spec_files globs; the list is added after
+// loadConfig() below.
+let shardFiles = null;
+if (!targetIsFile && (shard || excludePrefixes.length > 0)) {
+  const root = path.resolve(process.cwd(), args[0] || ".");
+  const filteredFiles = listSpecFiles(root);
+
+  if (shard) {
+    shardFiles = filteredFiles.filter(
+      (_, i) => i % shard.total === shard.index - 1
+    );
     console.log(
       clfdate(),
-      colors.yellow(
-        `Shard ${shard.index}/${shard.total} matched no spec files - ` +
-          `TOTAL (${shard.total}) is larger than the file count for this path.`
-      )
+      `Shard ${shard.index}/${shard.total}:`,
+      colors.cyan(`${shardFiles.length} of ${filteredFiles.length} spec files`)
+    );
+    if (shardFiles.length === 0) {
+      console.log(
+        clfdate(),
+        colors.yellow(
+          `Shard ${shard.index}/${shard.total} matched no spec files - ` +
+            `TOTAL (${shard.total}) is larger than the file count for this path.`
+        )
+      );
+    }
+  } else {
+    shardFiles = filteredFiles;
+    console.log(
+      clfdate(),
+      `Excluding ${excludePrefixes.join(", ")}:`,
+      colors.cyan(`${shardFiles.length} spec files`)
     );
   }
 
-  // An explicit file list (added below) replaces the spec_dir / spec_files globs.
   config.spec_dir = "";
   config.spec_files = [];
 }
