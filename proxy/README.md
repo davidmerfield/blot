@@ -19,6 +19,8 @@ separately.
 | `build/data/latest/` | Generated output (git-ignored). |
 | `Dockerfile` | Two-stage build: vendors the Lua deps, then assembles the image. |
 | `entrypoint.sh` | Validates `BLOT_HOST` and a certificate is present, then starts OpenResty. |
+| `tests/` | Cache (`cacher.lua`) behaviour specs. Run as the `proxy` suite in the `node` workflow's test matrix, same as `config/openresty`. |
+| `tests/e2e/` | End-to-end: composes the proxy image with the Blot app image and drives requests through the proxy. Run by the `integration` workflow. |
 
 ## Build and run locally
 
@@ -75,7 +77,15 @@ Reproducibility relies on pinning, because the upstream toolchain has drifted:
 4. **Persistent volumes.** The proxy cache (`/var/cache/openresty`) and
    `lua-resty-auto-ssl` storage (`/etc/resty-auto-ssl`) must be volumes so a
    redeploy does not cold-start the cache or re-request certificates.
-5. **Cache integration tests.** A `proxy/tests/` suite exists on the older
-   `containerize-proxy` branch. It is kept out of this PR because it needs
-   OpenResty and Redis available to the runner; it will land in the follow-up
-   that wires it into CI as its own test suite.
+## Tests
+
+- **`proxy` suite** (`.github/workflows/node.yml` test matrix) runs
+  `proxy/tests/*.js` inside the Blot dev image, spinning up OpenResty against
+  `proxy/config` - the `cacher.lua` behaviour specs (`basic`, `gzip`,
+  `inspect`, `lru_purge`, `rehydrate`, plus `coverage` for per-host keys,
+  method/health cacheability, binary bodies and argument validation).
+- **`integration` workflow** (`.github/workflows/integration.yml`) builds the
+  proxy image, brings it up with the Blot app image + Redis via
+  `proxy/tests/e2e/docker-compose.yml`, and runs `proxy/tests/e2e/run.js`
+  through the proxy: site loads, sign-in page renders, a sign-in / sign-out
+  round trip against a seeded user, static assets, and cache headers.
