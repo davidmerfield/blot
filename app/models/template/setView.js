@@ -349,11 +349,18 @@ module.exports = function setView(templateID, updates, options, callback) {
 							.then(() => {
 
 								// Clear this view from template metadata.errors when saving
-								// via the dashboard so fixing a view clears its error state
+								// via the dashboard so fixing a view clears its error state.
+								// Propagate deferCacheBump so setMetadata doesn't bump the
+								// owner cache / rebuild the manifest behind our back.
 								var clearErrorsIfNeeded = () => {
 									if (metadata.errors && metadata.errors[name]) {
 										delete metadata.errors[name];
-										return setMetadata(templateID, { errors: metadata.errors }, callback);
+										return setMetadata(
+											templateID,
+											{ errors: metadata.errors },
+											{ deferCacheBump: deferCacheBump },
+											callback
+										);
 									}
 
 									callback();
