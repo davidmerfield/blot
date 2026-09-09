@@ -1,6 +1,7 @@
 var _ = require("lodash");
 var mustache = require("mustache");
 var type = require("helper/type");
+var async = require("async");
 
 // My goal is to look at a template
 // retrieve a list of variables and partials inside the template
@@ -265,7 +266,7 @@ parseTemplate.resolveEntryPartials = function (blogID, partials, callback) {
   var names = Object.keys(partials || {});
   var resolved = {};
 
-  require("async").eachSeries(
+  async.eachSeries(
     names,
     function (name, next) {
       if (name.charAt(0) !== "/" || partials[name] !== null) {
