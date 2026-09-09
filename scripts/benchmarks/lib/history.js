@@ -65,7 +65,7 @@ function computeBaseline(records, options = {}) {
   } = options;
 
   const usable = records
-    .filter((r) => r && r.metrics && r.git_sha !== excludeSha)
+    .filter((r) => r && r.metrics && (!excludeSha || r.git_sha !== excludeSha))
     .slice(-window);
 
   const metrics = {};
