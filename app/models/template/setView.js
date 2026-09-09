@@ -275,12 +275,26 @@ module.exports = function setView(templateID, updates, callback) {
 					view.partials = _partials;
 				}
 
-				// Drop previously stored file-backed partials so a renamed or
-				// re-cased "{{> /path}}" reference doesn't leave a stale key
-				// behind; they are recomputed from the current content here.
-				// Named/inline partials (no leading slash, or an explicit value)
-				// are left untouched.
-				view.partials = stripFilePartials(view.partials);
+				// Drop file-backed partial markers this save no longer references -
+				// neither parsed from the current content nor explicitly passed in
+				// updates.partials - so a "{{> /old.txt}}" edited out of the view
+				// doesn't linger in the persisted map forever. Markers the caller
+				// still declares are kept: they may back a file referenced only
+				// inside an inline partial's body, which parseTemplate can't see.
+				for (var storedPartial in view.partials) {
+					if (
+						storedPartial.charAt(0) === "/" &&
+						!view.partials[storedPartial] &&
+						!(parseResult.partials && storedPartial in parseResult.partials) &&
+						!(
+							updates.partials &&
+							type(updates.partials, "object") &&
+							storedPartial in updates.partials
+						)
+					)
+						delete view.partials[storedPartial];
+				}
+
 				extend(view.partials).and(parseResult.partials);
 
 						detectInfinitePartialDependency(
@@ -348,19 +362,6 @@ module.exports = function setView(templateID, updates, callback) {
 		}).catch(callback);
 	});
 };
-
-// File-backed partials (keys beginning with "/") are derived entirely from a
-// view's content and are only ever carried as bare "fetch this file" markers
-// (a null/empty value), so a save can safely drop the stored set and recompute
-// it from the current content — otherwise a "{{> /old.txt}}" reference that was
-// edited out lingers in the persisted map forever. Named and inline partials
-// (no leading slash, or carrying an explicit value) are left untouched.
-function stripFilePartials(partials) {
-	var out = {};
-	for (var key in partials)
-		if (key.charAt(0) !== "/" || partials[key]) out[key] = partials[key];
-	return out;
-}
 
 function detectInfinitePartialDependency(
 	templateID,

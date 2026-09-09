@@ -60,6 +60,25 @@ describe("template", () => {
 		expect(savedView.partials).toEqual({ "/pages/about.txt": null });
 	});
 
+	it("keeps an explicitly declared file marker that backs an inline partial", async function () {
+		await this.set("/pages/foo.txt", "Foo body");
+
+		// parseTemplate(content) only sees "{{> wrapper}}", so the file marker
+		// has to survive the save for getPartials to fetch /pages/foo.txt.
+		await setView(this.template.id, {
+			name: "inline-dep.html",
+			content: "{{> wrapper}}",
+			partials: {
+				wrapper: "{{> /pages/foo.txt}}",
+				"/pages/foo.txt": null,
+			},
+		});
+
+		const savedView = await getView(this.template.id, "inline-dep.html");
+		expect(savedView.partials.wrapper).toEqual("{{> /pages/foo.txt}}");
+		expect(savedView.partials["/pages/foo.txt"]).toEqual(null);
+	});
+
 	it("short-circuits an unchanged view whose content references a file-backed partial", async function () {
 		await this.set("/pages/home.txt", "Hello from home");
 
