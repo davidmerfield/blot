@@ -57,26 +57,15 @@ Reproducibility relies on pinning, because the upstream toolchain has drifted:
 - `resty.auto-ssl.vendor.shell` and `sockproc` are pinned to the same commits
   the `lua-resty-auto-ssl` Makefile uses.
 
-## Not done yet (deferred, intentionally)
+## Not done yet
 
-1. **Certificate issuance.** The image ships a self-signed placeholder at
-   `/etc/ssl/private/letsencrypt-domain.{pem,key}` so OpenResty can start.
-   `entrypoint.sh` no longer shells out to `acme-nginx`. On-demand issuance for
-   custom blog domains still needs `lua-resty-auto-ssl` wired to Redis + a
-   working `sockproc` + the `dehydrated` hook scripts, none of which are
-   exercised here. For now, mount a real cert over those paths.
-2. **Zero-downtime deployment.** Replacing the container drops the `:80`/`:443`
-   listening socket. Config-only changes can still use `openresty -s reload`
-   against a bind-mounted config dir; container/image replacement needs a
-   blue/green mechanism (`SO_REUSEPORT` on `--network host`, or iptables
-   port-shifting). Out of scope for this PR.
-3. **Config de-duplication.** `proxy/config/` is a fork of
-   `config/openresty/conf/` and omits the rate-limit and bot-restriction
-   includes (`restrict-bot-uas.conf`, `reverse-proxy-limit-*.conf`, …). These
-   two copies should become one source.
-4. **Persistent volumes.** The proxy cache (`/var/cache/openresty`) and
-   `lua-resty-auto-ssl` storage (`/etc/resty-auto-ssl`) must be volumes so a
-   redeploy does not cold-start the cache or re-request certificates.
+This is build-only scaffolding: nothing here is deployed, and it does not yet
+replace `config/openresty`. The remaining work - certificate issuance for
+custom domains, zero-downtime deployment, de-duplicating `proxy/config`
+against `config/openresty/conf`, persistent cache/cert volumes, and hardening
+the real-app e2e - is tracked in the repo's `TODO` file under
+"Proxy container (OpenResty)".
+
 ## Tests
 
 - **`proxy` suite** (`.github/workflows/node.yml` test matrix) runs
