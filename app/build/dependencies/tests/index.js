@@ -195,6 +195,66 @@ describe("dependencies", function () {
     },
   });
 
+  // Paths that already contain percent-encoding (from the Markdown
+  // converter, Pandoc, or a hand-written link) must round-trip
+  // unchanged rather than being encoded a second time.
+  should_get_dependencies({
+    html:
+      '<a href="caf%C3%A9.pdf">Report</a><img src="my%20photo.png">',
+    path: "/notes/post.txt",
+    metadata: {},
+    result: {
+      html:
+        '<a href="/notes/caf%C3%A9.pdf">Report</a><img src="/notes/my%20photo.png">',
+      metadata: {},
+      dependencies: ["/notes/caf%C3%A9.pdf", "/notes/my%20photo.png"],
+    },
+  });
+
+  // Characters that are legal in a URL path (sub-delimiters such as
+  // : ; @ + = ,) are left untouched, so the rewritten value still
+  // resolves to the same entry/file. getByUrl / the asset handler
+  // only decodeURI once and would not decode these if we encoded them.
+  should_get_dependencies({
+    html: '<a href="/notes:2024/draft+final,v2@home">link</a>',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/notes:2024/draft+final,v2@home">link</a>',
+      metadata: {},
+      dependencies: ["/notes:2024/draft+final,v2@home"],
+    },
+  });
+
+  // A query string or fragment on a non-anchor attribute (cache-buster,
+  // SVG sprite id) is split off and reattached, not encoded into the
+  // resolved path.
+  should_get_dependencies({
+    html: '<img src="photo.jpg?v=2"><img src="icons.svg#home">',
+    path: "/assets/post.txt",
+    metadata: {},
+    result: {
+      html:
+        '<img src="/assets/photo.jpg?v=2"><img src="/assets/icons.svg#home">',
+      metadata: {},
+      dependencies: ["/assets/photo.jpg", "/assets/icons.svg"],
+    },
+  });
+
+  // Backslash separators are normalized to forward slashes for every
+  // attribute (browsers do the same on http(s) pages), so the value is
+  // never encoded as "%5C".
+  should_get_dependencies({
+    html: '<img src="images\\photo.jpg">',
+    path: "/post.txt",
+    metadata: {},
+    result: {
+      html: '<img src="/images/photo.jpg">',
+      metadata: {},
+      dependencies: ["/images/photo.jpg"],
+    },
+  });
+
   // Should not touch fragment-only hrefs, e.g. footnotes and
   // tables of contents
   should_get_dependencies({
