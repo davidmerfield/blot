@@ -30,8 +30,12 @@ function flag(name) {
   return process.argv.includes(name);
 }
 
-function gh(args) {
-  const res = spawnSync("gh", args, { encoding: "utf8", env: process.env });
+function gh(args, input) {
+  const res = spawnSync("gh", args, {
+    encoding: "utf8",
+    env: process.env,
+    input,
+  });
   if (res.status !== 0) {
     throw new Error(`gh ${args.join(" ")} failed: ${res.stderr || res.stdout}`);
   }
@@ -192,18 +196,21 @@ function main() {
 
   ensureLabel(repo);
 
-  const out = gh([
-    "issue",
-    "create",
-    "--repo",
-    repo,
-    "--title",
-    title,
-    "--body",
-    body,
-    "--label",
-    "benchmark-regression",
-  ]);
+  const out = gh(
+    [
+      "issue",
+      "create",
+      "--repo",
+      repo,
+      "--title",
+      title,
+      "--body-file",
+      "-",
+      "--label",
+      "benchmark-regression",
+    ],
+    body
+  );
   console.log(`[detect] filed ${out.trim()}`);
 }
 

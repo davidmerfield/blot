@@ -145,6 +145,11 @@ function main() {
     );
     const match = existing.find((c) => (c.body || "").includes(marker));
 
+    // Send the payload as a JSON request body on stdin (--input -) so the
+    // markdown is escaped by JSON.stringify and never touched by gh's
+    // field parsing.
+    const payload = JSON.stringify({ body });
+
     if (match) {
       gh(
         [
@@ -152,10 +157,10 @@ function main() {
           "--method",
           "PATCH",
           `repos/${repo}/issues/comments/${match.id}`,
-          "-f",
-          "body=@-",
+          "--input",
+          "-",
         ],
-        body
+        payload
       );
       console.log(`[pr-comment] updated comment ${match.id}`);
     } else {
@@ -165,10 +170,10 @@ function main() {
           "--method",
           "POST",
           `repos/${repo}/issues/${pr}/comments`,
-          "-f",
-          "body=@-",
+          "--input",
+          "-",
         ],
-        body
+        payload
       );
       console.log("[pr-comment] created comment");
     }
