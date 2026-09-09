@@ -87,6 +87,14 @@ function projectEntryFields(entries, retrieve, keys) {
   // walks every string property, not only the heavy ones. So if ANY retained
   // string field of ANY entry contains template tags, we can't know which
   // fields are safe to drop - bail out of projection for the whole list.
+  //
+  // KNOWN LIMITATION: this only sees the entries in *this* local. An entry
+  // here whose markup references a different retrieve local's heavy field
+  // (e.g. a post body containing "{{latestEntry.summary}}") does not stop
+  // latest_entry from projecting `summary` away, because each retrieve module
+  // runs independently. Closing that needs projection to move to a single
+  // post-retrieval pass in blog/render/retrieve/index.js - tracked as a
+  // follow-up. It is rare and fails safe-ish (empty fragment, not data loss).
   for (var i = 0; i < list.length; i++) {
     if (entryHasMustache(list[i], strip)) return entries;
   }
