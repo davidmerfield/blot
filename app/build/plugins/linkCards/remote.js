@@ -11,13 +11,11 @@ const { transformerLookup } = require("./transformers");
 const { createHTMLTransform, extractMetadataFromHTML } = require("./metadata");
 
 async function fetchMetadata(href, transformer) {
-  const fallback = () => fetchMetadataDirect(href);
-
-  if (!transformer) {
-    return fallback();
-  }
-
-  return transformerLookup(transformer, href, createHTMLTransform(href), fallback);
+  // transformerLookup handles a null transformer by going straight to the
+  // fallback, so there's no need to special-case it here.
+  return transformerLookup(transformer, href, createHTMLTransform(href), () =>
+    fetchMetadataDirect(href)
+  );
 }
 
 async function fetchMetadataDirect(href) {

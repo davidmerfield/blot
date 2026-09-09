@@ -14,6 +14,7 @@ const {
   REQUEST_TIMEOUT,
 } = require("./constants");
 const { transformerLookup } = require("./transformers");
+const { sanitizeDimension } = require("./metadata");
 
 sharp.cache(false);
 
@@ -93,14 +94,6 @@ function applyPublicImagePaths(metadata, blogID) {
   metadata.image = src;
   metadata.imageWidth = width;
   metadata.imageHeight = height;
-}
-
-function sanitizeDimension(value) {
-  const number = Number(value);
-  if (!Number.isFinite(number) || number <= 0) {
-    return null;
-  }
-  return Math.round(number);
 }
 
 async function thumbnailsExist(imageSet, blogID) {

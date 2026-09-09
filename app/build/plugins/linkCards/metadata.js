@@ -2,9 +2,68 @@ const { URL } = require("url");
 const cheerio = require("cheerio");
 const fs = require("fs-extra");
 
+// docs.google.com / drive.google.com don't emit Open Graph tags, and a doc
+// that isn't world-readable answers with a redirect to a sign-in page whose
+// title is localised and unpredictable. Scraping either produces a nonsense
+// card ("Sign in", "Page not found", ...), so recognise these links by URL
+// and build a clean branded card instead.
+const GOOGLE_DOC_HOSTS = new Set(["docs.google.com", "drive.google.com"]);
+const GOOGLE_TITLE_SUFFIX = /\s[-–]\sGoogle (?:Docs|Sheets|Slides|Forms|Drive)\s*$/i;
+
+function googleProduct(url) {
+  const path = url.pathname;
+  if (path.startsWith("/spreadsheets/")) return "Google Sheets";
+  if (path.startsWith("/presentation/")) return "Google Slides";
+  if (path.startsWith("/forms/")) return "Google Forms";
+  if (path.startsWith("/document/")) return "Google Docs";
+  return "Google Drive";
+}
+
+function googleDocsMetadata(href, $) {
+  let url;
+  try {
+    url = new URL(href);
+  } catch (err) {
+    return null;
+  }
+
+  if (!GOOGLE_DOC_HOSTS.has(url.hostname)) return null;
+
+  const product = googleProduct(url);
+  const rawTitle = ($("title").first().text() || "").trim();
+
+  // A "published to the web" doc (/d/e/<id>/pub) renders the real document,
+  // so its <title> is the doc name and safe to use as-is. For an ordinary
+  // /edit link the page is the editor shell: trust the title only while it
+  // still carries the " - Google Docs" suffix, otherwise we're most likely
+  // looking at a sign-in wall.
+  const published = url.pathname.includes("/d/e/") || /\/pub\b/.test(url.pathname);
+
+  let title = "";
+  if (published) {
+    title = rawTitle;
+  } else if (GOOGLE_TITLE_SUFFIX.test(rawTitle)) {
+    title = rawTitle.replace(GOOGLE_TITLE_SUFFIX, "").trim();
+  }
+
+  return {
+    title: title || product,
+    description: "",
+    image: "",
+    siteName: product,
+    icon: "",
+  };
+}
+
 function extractMetadataFromHTML(html, href) {
   try {
     const $ = cheerio.load(html);
+
+    const branded = googleDocsMetadata(href, $);
+    if (branded) {
+      sanitizeMetadata(branded, href);
+      return branded;
+    }
 
     const metadata = {
       title:
@@ -41,33 +100,26 @@ function extractMeta($, selector) {
 }
 
 function fallbackMetadata(href) {
+  let display = href;
+
   try {
     const { hostname } = new URL(href);
-    const display = hostname || href;
-    return {
-      url: href,
-      title: display,
-      description: "",
-      image: "",
-      siteName: display,
-      icon: "",
-      iconPath: "",
-      imageWidth: null,
-      imageHeight: null,
-    };
+    if (hostname) display = hostname;
   } catch (err) {
-    return {
-      url: href,
-      title: href,
-      description: "",
-      image: "",
-      siteName: href,
-      icon: "",
-      iconPath: "",
-      imageWidth: null,
-      imageHeight: null,
-    };
+    // Not a parseable URL - fall back to the raw string.
   }
+
+  return {
+    url: href,
+    title: display,
+    description: "",
+    image: "",
+    siteName: display,
+    icon: "",
+    iconPath: "",
+    imageWidth: null,
+    imageHeight: null,
+  };
 }
 
 function sanitizeMetadata(metadata, href) {
@@ -287,4 +339,5 @@ module.exports = {
   sanitizeRemoteImage,
   sanitizeIcon,
   sanitizeRemoteURL,
+  sanitizeDimension,
 };

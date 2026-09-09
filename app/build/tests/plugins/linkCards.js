@@ -194,6 +194,62 @@ describe("link cards plugin", function () {
     expect(defaultList.linkCards.enabled).toBe(true);
   });
 
+  it("renders a clean branded card for a public Google Doc", async function () {
+    nock("https://docs.google.com")
+      .get("/document/d/abc123/edit")
+      .reply(
+        200,
+        `<!doctype html><html><head><title>Quarterly Plan - Google Docs</title></head><body></body></html>`
+      );
+
+    const href = "https://docs.google.com/document/d/abc123/edit";
+    const path = "/gdoc.txt";
+
+    await this.blog.update({
+      plugins: {
+        ...this.blog.plugins,
+        linkCards: { enabled: true, options: {} },
+      },
+    });
+    await this.blog.write({ path, content: `[${href}](${href})` });
+    await this.blog.rebuild();
+
+    const entry = await this.blog.check({ path });
+
+    expect(entry.html).toBe(
+      '<article class="link-card link-card--compact"><a class="link-card__anchor" href="https://docs.google.com/document/d/abc123/edit" rel="noopener noreferrer"><div class="link-card__content"><h3 class="link-card__title">Quarterly Plan</h3><span class="link-card__url"><span class="link-card__url-text">Google Docs</span></span></div></a></article>'
+    );
+    expect(entry.html).not.toContain("link-card__thumbnail");
+  });
+
+  it("does not scrape a Google sign-in wall for a private Doc", async function () {
+    nock("https://docs.google.com")
+      .get("/spreadsheets/d/secret/edit")
+      .reply(
+        200,
+        `<!doctype html><html><head><title>Sign in - Google Accounts</title></head><body></body></html>`
+      );
+
+    const href = "https://docs.google.com/spreadsheets/d/secret/edit";
+    const path = "/private-sheet.txt";
+
+    await this.blog.update({
+      plugins: {
+        ...this.blog.plugins,
+        linkCards: { enabled: true, options: {} },
+      },
+    });
+    await this.blog.write({ path, content: `[${href}](${href})` });
+    await this.blog.rebuild();
+
+    const entry = await this.blog.check({ path });
+
+    expect(entry.html).toContain(
+      '<h3 class="link-card__title">Google Sheets</h3>'
+    );
+    expect(entry.html).not.toContain("Sign in");
+  });
+
   describe("URL guards", function () {
     const cheerio = require("cheerio");
     const { shouldTransform } = require("build/plugins/linkCards/dom");
