@@ -20,6 +20,19 @@ module.exports = function create(owner, name, metadata, callback) {
   metadata.slug = metadata.slug.split("/").join("-");
   metadata.id = makeID(owner, name);
 
+  // The id is the only thing routing, writeToFolder and readFromFolder resolve
+  // a template by. writeToFolder names the template's on-disk directory after
+  // the stored slug and readFromFolder turns that name back into an id with
+  // makeID, so a slug which makeID maps to a *different* id lets a locally
+  // edited template be read back as another template and overwrite it. A
+  // caller-supplied slug (duplication, forking, adding a shared template) can
+  // diverge as soon as the name is long enough for the 30-character truncation
+  // to bite. Keep the slug in step with the id; a slug which already round-trips
+  // (e.g. a local template named after its folder) is left untouched.
+  if (makeID(owner, metadata.slug) !== metadata.id) {
+    metadata.slug = metadata.id.split(":").slice(1).join(":");
+  }
+
   metadata.name = name;
   metadata.owner = owner;
   metadata.locals = metadata.locals || {};
