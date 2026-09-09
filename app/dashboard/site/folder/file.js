@@ -6,6 +6,7 @@ const IgnoredFiles = require("models/ignoredFiles");
 const moment = require("moment");
 const converters = require("build/converters");
 const enabledConverters = require("build/converters/enabled");
+const postSourceSize = require("build/converters/post-source-size");
 
 require("moment-timezone");
 
@@ -66,6 +67,7 @@ module.exports = async function (blog, path) {
             ignored.underscoreName = true;
           } else if (ignoredReason && ignoredReason === 'TOO_LARGE') {
             ignored.tooLarge = true;
+            ignored.postSizeLimit = postSourceSize.MAX_POST_SOURCE_SIZE_LABEL;
           } else  {
             ignored.syncing = true;
           }

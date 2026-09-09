@@ -5,12 +5,14 @@ var Preview = require("./preview");
 var isPreview = require("./drafts").isPreview;
 var async = require("async");
 var WRONG_TYPE = "WRONG_TYPE";
+var TOO_LARGE = "TOO_LARGE";
 var PUBLIC_FILE = "PUBLIC_FILE";
 var isHidden = require("build/prepare/isHidden");
 var build = require("build");
 var pathNormalizer = require("helper/pathNormalizer");
 var makeSlug = require("helper/makeSlug");
 var path = require("path");
+var IgnoredFiles = require("models/ignoredFiles");
 
 var basename = (path.posix || path).basename;
 var noop = () => {};
@@ -40,36 +42,44 @@ function buildAndSet(blog, path, callback) {
     if (err && err.code === "WRONGTYPE")
       return Ignore(blog.id, path, WRONG_TYPE, callback);
 
+    if (err && err.code === TOO_LARGE)
+      return Ignore(blog.id, path, TOO_LARGE, callback);
+
     if (err) return callback(err);
 
     Entry.set(blog.id, entry.path, entry, function (err) {
       if (err) return callback(err);
 
-      const syntheticKeys = new Set();
+      // A successful rebuild means any previous rejection is now stale.
+      IgnoredFiles.drop(blog.id, entry.path, function (err) {
+        if (err) return callback(err);
 
-      const slugToken = makeSlug(
-        entry.slug || entry.metadata.title || entry.title || ""
-      );
-      if (slugToken) {
-        syntheticKeys.add(`/__wikilink_slug__/${slugToken}`);
-      }
+        const syntheticKeys = new Set();
 
-      const filenameToken = entry.path ? basename(entry.path) : "";
-      if (filenameToken) {
-        syntheticKeys.add(`/__wikilink_filename__/${filenameToken}`);
-      }
+        const slugToken = makeSlug(
+          entry.slug || entry.metadata.title || entry.title || ""
+        );
+        if (slugToken) {
+          syntheticKeys.add(`/__wikilink_slug__/${slugToken}`);
+        }
 
-      syntheticKeys.forEach((syntheticKey) =>
-        rebuildDependents(blog.id, syntheticKey, noop)
-      );
-      // This file is a draft, write a preview file
-      // to the users Dropbox and continue down
-      // We look up the remote path later in this module...
-      if (entry.draft && !isHidden(entry.path)) {
-        Preview.write(blog.id, path, callback);
-      } else {
-        callback();
-      }
+        const filenameToken = entry.path ? basename(entry.path) : "";
+        if (filenameToken) {
+          syntheticKeys.add(`/__wikilink_filename__/${filenameToken}`);
+        }
+
+        syntheticKeys.forEach((syntheticKey) =>
+          rebuildDependents(blog.id, syntheticKey, noop)
+        );
+        // This file is a draft, write a preview file
+        // to the users Dropbox and continue down
+        // We look up the remote path later in this module...
+        if (entry.draft && !isHidden(entry.path)) {
+          Preview.write(blog.id, path, callback);
+        } else {
+          callback();
+        }
+      });
     });
   });
 }

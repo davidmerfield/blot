@@ -5,6 +5,8 @@ const localPath = require("helper/localPath");
 const Stat = require("./stat");
 const client = require("models/client");
 const pathNormalize = require("helper/pathNormalizer");
+const IgnoredFiles = require("models/ignoredFiles");
+const postSourceSize = require("build/converters/post-source-size");
 
 async function getContents(blog, dir) {
   const local = localPath(blog.id, dir);
@@ -14,7 +16,7 @@ async function getContents(blog, dir) {
     return !item.startsWith(".") && !item.endsWith(".preview.html");
   });
 
-  const [entries, stats] = await Promise.all([
+  const [entries, ignoredFiles, stats] = await Promise.all([
     new Promise((resolve) => {
       // Remove 'reject' parameter since it is not being used
       const keys = filtered.map(
@@ -42,6 +44,12 @@ async function getContents(blog, dir) {
           resolve([]);
         });
     }),
+    new Promise((resolve, reject) => {
+      IgnoredFiles.get(blog.id, function (err, ignored) {
+        if (err) return reject(err);
+        resolve(ignored);
+      });
+    }),
     Promise.all(
       filtered.map(async (item) => {
         const fullPath = path.join(local, item);
@@ -61,6 +69,9 @@ async function getContents(blog, dir) {
   const result = alphanum(
     stats.map((stat, index) => {
       stat.entry = entries.includes(stat.name);
+      stat.tooLarge = ignoredFiles[pathNormalize(stat.path)] === "TOO_LARGE";
+      if (stat.tooLarge)
+        stat.postSizeLimit = postSourceSize.MAX_POST_SOURCE_SIZE_LABEL;
       return stat;
     }),
     { property: "name" }
