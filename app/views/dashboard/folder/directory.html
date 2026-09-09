@@ -96,6 +96,29 @@
           {{/contents}}
         </table>
 
+        {{#pagination.multiplePages}}
+        <nav class="directory-pagination" aria-label="Folder pages">
+          {{#pagination.hasPrevious}}
+          <a class="directory-pagination__link" href="{{{pagination.previousUrl}}}" rel="prev">Previous</a>
+          {{/pagination.hasPrevious}}
+          {{^pagination.hasPrevious}}
+          <span class="directory-pagination__link is-disabled" aria-disabled="true">Previous</span>
+          {{/pagination.hasPrevious}}
+
+          <span class="directory-pagination__status">
+            {{pagination.rangeStart}}&ndash;{{pagination.rangeEnd}} of {{pagination.total}}
+            &middot; page {{pagination.page}} of {{pagination.totalPages}}
+          </span>
+
+          {{#pagination.hasNext}}
+          <a class="directory-pagination__link" href="{{{pagination.nextUrl}}}" rel="next">Next</a>
+          {{/pagination.hasNext}}
+          {{^pagination.hasNext}}
+          <span class="directory-pagination__link is-disabled" aria-disabled="true">Next</span>
+          {{/pagination.hasNext}}
+        </nav>
+        {{/pagination.multiplePages}}
+
         <div id="folder-file-action-menu" class="template-action-menu row-action-menu" aria-hidden="true">
           <ul>
             <li><a data-menu-link="download" href="#">Download</a></li>

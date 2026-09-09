@@ -173,6 +173,100 @@ describe("folder", function () {
     expect(file.text()).toContain("cannot become a post or page until it is reduced");
   });
 
+  describe("pagination", function () {
+    // Sorted names so we can predict which files land on which page.
+    const names = ["p01.txt", "p02.txt", "p03.txt", "p04.txt", "p05.txt"];
+
+    beforeEach(async function () {
+      for (const path of names) {
+        await this.write({ path, content: "content of " + path });
+      }
+    });
+
+    const rowNames = ($) =>
+      $(".directory-list tbody tr.directory-row .truncate")
+        .map(function () {
+          return $(this).text().trim();
+        })
+        .get();
+
+    it("splits a large folder into pages", async function () {
+      const $ = await this.parse(`/sites/${this.blog.handle}?pageSize=2`);
+
+      expect(rowNames($)).toEqual(["p01.txt", "p02.txt"]);
+      expect($(".directory-pagination").length).toEqual(1);
+      expect($(".directory-pagination__status").text().replace(/\s+/g, " ").trim())
+        .toContain("page 1 of 3");
+
+      // No "Previous" link on the first page, but a "Next" link.
+      expect($("a.directory-pagination__link[rel='prev']").length).toEqual(0);
+      expect($("a.directory-pagination__link[rel='next']").length).toEqual(1);
+    });
+
+    it("shows the requested page", async function () {
+      const $ = await this.parse(
+        `/sites/${this.blog.handle}?pageSize=2&page=2`
+      );
+
+      expect(rowNames($)).toEqual(["p03.txt", "p04.txt"]);
+      expect($("a.directory-pagination__link[rel='prev']").length).toEqual(1);
+      expect($("a.directory-pagination__link[rel='next']").length).toEqual(1);
+    });
+
+    it("shows a partial final page and disables Next", async function () {
+      const $ = await this.parse(
+        `/sites/${this.blog.handle}?pageSize=2&page=3`
+      );
+
+      expect(rowNames($)).toEqual(["p05.txt"]);
+      expect($("a.directory-pagination__link[rel='next']").length).toEqual(0);
+      expect($(".directory-pagination__status").text()).toContain("5 of 5");
+    });
+
+    it("clamps an out-of-range page to the last page", async function () {
+      const $ = await this.parse(
+        `/sites/${this.blog.handle}?pageSize=2&page=999`
+      );
+
+      expect(rowNames($)).toEqual(["p05.txt"]);
+      expect($(".directory-pagination__status").text().replace(/\s+/g, " "))
+        .toContain("page 3 of 3");
+    });
+
+    it("does not paginate a folder that fits on one page", async function () {
+      const $ = await this.parse(`/sites/${this.blog.handle}`);
+
+      expect(rowNames($)).toEqual(names);
+      expect($(".directory-pagination").length).toEqual(0);
+    });
+
+    it("still lists a folder when an entry disappears mid-read", async function () {
+      // A dangling symlink makes fs.stat throw ENOENT, the same failure mode
+      // as a file removed between readdir and stat while a big folder syncs.
+      // Previously this made the whole folder render as empty.
+      const fs = require("fs-extra");
+      const { join } = require("path");
+      await fs.symlink(
+        join(this.blogDirectory, "does-not-exist.txt"),
+        join(this.blogDirectory, "dangling.txt")
+      );
+
+      const $ = await this.parse(`/sites/${this.blog.handle}`);
+
+      expect(rowNames($)).toEqual(names);
+    });
+
+    it("caps the page size at the default", async function () {
+      const getContents = require("dashboard/site/folder/folder");
+      const { pagination } = await getContents(
+        this.blog,
+        "/",
+        { pageSize: 10 * getContents.DEFAULT_PAGE_SIZE }
+      );
+      expect(pagination.pageSize).toEqual(getContents.DEFAULT_PAGE_SIZE);
+    });
+  });
+
   function findElementByText(selector, text, $) {
     return $(selector)
       .filter(function () {

@@ -250,8 +250,18 @@ Fix bug with crash loop for page rendering issue
 Fix bug with crash loop for entry build
 - add a timeout for entry build process which is solid
 
-Fix bug with folder viewer which crashes server for large number of entries
-- add pagination
+[DONE] Fix bug with folder viewer which crashes server for large number of entries
+- [DONE] add pagination
+  - app/dashboard/site/folder/folder.js now sorts the (cheap) list of names
+    first and only stats / checks Redis / renders one page of results
+    (DEFAULT_PAGE_SIZE = 1000, overridable smaller via ?pageSize=).
+  - app/dashboard/site/folder/index.js threads ?page= through loadFolder,
+    caches per page and builds the Previous/Next links.
+  - directory.html renders a pagination nav; folder.css styles it.
+  - Also fixed: a single entry vanishing between readdir and stat (common
+    while a big folder is still syncing) used to reject the whole listing and
+    render the folder as empty; per-file ENOENT is now skipped.
+- Still open: client-side column sorting only reorders the current page.
 
 Fix bug with 'failed to update folder lock' that throws an error – is the issue ebs?
 - I can't reproduce the problem locally.

@@ -13,8 +13,15 @@ async function middleware(req, res, next) {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/normalize
 
     const dir = req.params.path ? "/" + req.params.path.normalize('NFC') : '/';
-    
-    res.locals.folder = await loadFolder(req.blog, dir);
+
+    const pageOptions = {
+      page: req.query.page,
+      pageSize: req.query.pageSize,
+    };
+
+    res.locals.folder = await loadFolder(req.blog, dir, pageOptions);
+
+    addPaginationUrls(res.locals.folder, res.locals.base, dir, req.query);
 
     for (const breadcrumb of res.locals.folder.breadcrumbs) {
       res.locals.breadcrumbs.add(breadcrumb.name, breadcrumb.url);
@@ -59,9 +66,43 @@ const invalidateCache = (blog) => {
   }
 };
 
-const loadFolder = async (blog, dir) => {
+// Build the ?page= links the directory template renders as "Previous" / "Next".
+// Kept out of loadFolder so the cached folder object stays free of request-
+// specific state.
+const addPaginationUrls = (folder, base, dir, query = {}) => {
+  if (!folder || !folder.pagination) return;
 
-  const cacheKey = blog.id + '_' + blog.cacheID + '_' + dir;
+  const baseUrl =
+    dir === "/"
+      ? base + "/"
+      : base + "/folder" + dir.split("/").map(encodeURIComponent).join("/");
+
+  const parsedSize = parseInt(query.pageSize, 10);
+  const carrySize =
+    Number.isFinite(parsedSize) && parsedSize > 0
+      ? "&pageSize=" + parsedSize
+      : "";
+
+  folder.pagination.previousUrl =
+    baseUrl + "?page=" + folder.pagination.previousPage + carrySize;
+  folder.pagination.nextUrl =
+    baseUrl + "?page=" + folder.pagination.nextPage + carrySize;
+};
+
+const loadFolder = async (blog, dir, options = {}) => {
+
+  const page = parseInt(options.page, 10);
+  const pageSize = parseInt(options.pageSize, 10);
+  const cacheKey =
+    blog.id +
+    '_' +
+    blog.cacheID +
+    '_' +
+    dir +
+    '_p' +
+    (Number.isFinite(page) && page > 0 ? page : 1) +
+    '_s' +
+    (Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 'default');
   const synced = blog.status.message.toLowerCase() === 'synced';
   
   if (synced && folderCache[cacheKey]) {
@@ -96,12 +137,13 @@ const loadFolder = async (blog, dir) => {
     folder.stat = { ...folder.stat, ...fileStat };
 
   } else if (stat.directory) {
-    const [breadcrumbs, contents] = await Promise.all([
+    const [breadcrumbs, folderContents] = await Promise.all([
       getBreadcrumbs(blog.id, dir, blog.cacheID),
-      getFolder(blog, dir)
+      getFolder(blog, dir, { page, pageSize })
     ]);
 
-    folder.contents = contents;
+    folder.contents = folderContents.contents;
+    folder.pagination = folderContents.pagination;
     folder.breadcrumbs = breadcrumbs;
   }
 
