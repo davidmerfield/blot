@@ -1,11 +1,15 @@
 var Entries = require("models/entries");
 var projectEntryFields = require("./helpers/projectEntryFields");
+var entryFieldList = require("./helpers/entryFieldList");
 
 module.exports = function (req, res, callback) {
-  Entries.getAll(req.blog.id, function (allEntries) {
+  var keys = ["allEntries", "all_entries"];
+  var fields = entryFieldList(req.retrieve, keys);
+
+  Entries.getAll(req.blog.id, { fields: fields }, function (allEntries) {
     return callback(
       null,
-      projectEntryFields(allEntries, req.retrieve, ["allEntries", "all_entries"])
+      projectEntryFields(allEntries, req.retrieve, keys)
     );
   });
 };

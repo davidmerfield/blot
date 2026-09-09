@@ -1,14 +1,12 @@
 var Entries = require("models/entries");
 var projectEntryFields = require("./helpers/projectEntryFields");
+var entryFieldList = require("./helpers/entryFieldList");
 
 module.exports = function (req, res, callback) {
-  Entries.getRecent(req.blog.id, function (recentEntries) {
-    return callback(
-      null,
-      projectEntryFields(recentEntries, req.retrieve, [
-        "recentEntries",
-        "recent_entries",
-      ])
-    );
+  var keys = ["recentEntries", "recent_entries"];
+  var fields = entryFieldList(req.retrieve, keys);
+
+  Entries.getRecent(req.blog.id, { fields: fields }, function (recentEntries) {
+    return callback(null, projectEntryFields(recentEntries, req.retrieve, keys));
   });
 };

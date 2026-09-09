@@ -304,7 +304,10 @@ module.exports = (function () {
       .then(function (entryIDs) {
         if (!options.full && !options.skinny) return callback(entryIDs);
 
-        Entry.get(blogID, entryIDs, function (entries) {
+        // options.fields (array of entry property names) narrows the Redis
+        // read to just those fields - see models/entry/get.js. Undefined means
+        // "whole entry", so existing callers are unaffected.
+        Entry.get(blogID, entryIDs, options.fields, function (entries) {
           return callback(entries);
         });
       })
@@ -772,8 +775,13 @@ module.exports = (function () {
     });
   }
 
-  function getRecent(blogID, callback) {
-    getRange(blogID, 0, 30, { skinny: true }, function (entries) {
+  function getRecent(blogID, options, callback) {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    }
+
+    getRange(blogID, 0, 30, { skinny: true, fields: options.fields }, function (entries) {
       redis
         .zCard(listKey(blogID, "entries"))
         .then(function (totalEntries) {

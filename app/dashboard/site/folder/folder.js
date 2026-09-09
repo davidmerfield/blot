@@ -4,6 +4,7 @@ const alphanum = require("helper/alphanum");
 const localPath = require("helper/localPath");
 const Stat = require("./stat");
 const client = require("models/client");
+const entryKeys = require("models/entry").key;
 const pathNormalize = require("helper/pathNormalizer");
 const IgnoredFiles = require("models/ignoredFiles");
 const postSourceSize = require("build/converters/post-source-size");
@@ -19,12 +20,16 @@ async function getContents(blog, dir) {
   const [entries, ignoredFiles, stats] = await Promise.all([
     new Promise((resolve) => {
       // Remove 'reject' parameter since it is not being used
-      const keys = filtered.map(
-        (item) => `blog:${blog.id}:entry:${pathNormalize(path.join(dir, item))}`
-      );
+      // An entry may be stored as a legacy JSON string key, a Redis hash, or
+      // (during the migration) both. EXISTS with multiple keys returns the
+      // count, so >= 1 means the entry is present in some form.
       Promise.all(
-        keys.map((key) => {
-          return client.exists(key);
+        filtered.map((item) => {
+          const entryPath = path.join(dir, item);
+          return client.exists([
+            entryKeys.entry(blog.id, entryPath),
+            entryKeys.entryHash(blog.id, entryPath),
+          ]);
         })
       )
         .then((res) => {
@@ -32,11 +37,7 @@ async function getContents(blog, dir) {
           resolve(
             filtered.filter((_, index) => {
               const exists = res[index];
-              return (
-                exists === 1 ||
-                exists === "1" ||
-                exists === true
-              );
+              return Number(exists) >= 1 || exists === true;
             })
           );
         })
