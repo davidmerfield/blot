@@ -1,12 +1,4 @@
-Release new notebook template
-
----
-
-Verify we're still processing Stripe and PayPal webhooks now they are verified
-
 Add a link to how section on pages to menu links settings page to guide new users! 
-
-Hitting the save changes button under typeset settings spits you back out to homepage! Bug!
 
 Debug issue with warwickmostyn
 
@@ -189,8 +181,6 @@ iCloud:
 
 ---
 
-Fix bug with local editing and template slugs
-
 Fix bugs with templates:
 - Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
 - Fix 'back' button in photo template and tell [Bibi](https://mail.google.com/mail/u/0/#inbox/FMfcgzGrcPJTmPXxWvhbmFpvwdfVzhpn)
@@ -223,11 +213,6 @@ Dashboard control follow-ups (found while reviewing the per-template dashboard-c
 
 Fix bug with the website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 
-Fix bug with template slugs / local templates
-- Slugs should be derived from template.name and unique per owner
-- Local editing should use folder name ↔ name ↔ slug consistently
-- Add slug lookup utility and update dashboard/template load paths
-
 Fix bug with the paypal next bill dates are not syncing correctly for some users (e.g.slopserve)
 
 Fix bug with repeat resyncs of specific sites via Google Drive:
@@ -235,29 +220,16 @@ Fix bug with repeat resyncs of specific sites via Google Drive:
 
 Fix bug with CDN replaceFolder not working with relative path to CSS file on wall.blot.im
 
-Fix bug with camelCase custom metadata and tell [questioner](https://blot.im/questions/2294)
-
 Fix bug with [~/gitbug folder](https://mail.google.com/mail/u/0/#inbox/KtbxLxgKJJfmhMNplLBcTcFCPgBVNlGtHL) during setup
 - surface setup errors with git client
 - handle these errors nicely through sync status
 
 Fix bug with auto heading injector and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgKvJFLPslvxmlmMBnmcQQTqzq)
 
-Fix bug where pages where appearing in the list of posts filtered by path_prefix AND tag – e.g. /work/tagged/automotive and tell Chuck
-
 Fix bug with huge draft crashing the sync server /a327ex/drafts/it_follows.txt
 - Chunk large drafts into multiple messages to avoid memory issues? 
 
-Fix bug linking to relative pdf in subfolders, e.g. Pages/File.md '[](./file.pdf)' breaks
-
-Fix bug: relative <a href> resolution in app/build/dependencies/index.js doesn't percent-encode filesystem-derived path segments before writing them into the href
-- e.g. a post inside a folder named "folder#1" linking to a relative report.pdf resolves to /folder#1/report.pdf, which browsers parse as path /folder plus fragment 1/report.pdf, so the sibling file is never requested (same issue with "?" in a folder name)
-- pre-existing issue, also affects img src/link href resolution in the same module, not just anchors
-- flagged by Codex review on PR #1643 (https://github.com/davidmerfield/blot/pull/1643#discussion_r3789725057 area)
-
 Fix possible bug with changing folder name in Google Drive from uppercase to lowercase (what happens to file inside?). Is this related to entry lookup for deleted files? How was the missing ghost file undeleteable? the case of one variant was deleted but the other was not. The case of the ID mismatched. The folder lock was stuck.
-
-Fix bug with Elizabeth's Google Docs (export 403 file exceeds...)
 
 Fix bug with crash loop for page rendering issue
 - cache 502 responses in proxy cache for X mins?
@@ -269,29 +241,6 @@ Fix bug with crash loop for entry build
 
 Fix bug with folder viewer which crashes server for large number of entries
 - add pagination
-
-Fix bug with 'failed to update folder lock' that throws an error – is the issue ebs?
-- I can't reproduce the problem locally.
-- Problem occurs with all the clients it seems
-- Can we reproduce by attempting to acquire 50 locks in parallel in production?
-  - I tried this and it didn't seem to trigger the bug
-  - Is this correlated with high disk activity?
-
-Add diagnostic logging for ECOMPROMISED lock errors:
-- Add onCompromised handler to lockfile.lock() in app/sync/index.js (line 45)
-- Track lock acquisition time (lockAcquiredAt) when lock is successfully acquired
-- Create diagnostic function to gather: blogID, lockDuration, system load (os.loadavg), memory usage (process.memoryUsage), disk space (freeDiskSpace helper), lock file stats, process info (pid, uptime), lock config values
-- In onCompromised handler: gather diagnostics (with 2s timeout), log structured error with console.error(), re-throw error to crash server
-- Use clfdate() for logging format consistency
-
-Fix bug with cancelled subscriptions that keeps the account around
-- finish script to identify long-expired customers with blogs to safely delete and free up space. 
-- Sort by date expired
-- Write script to safely delete blogs
-  - wipe blog folder
-  - wipe static directory
-  - wipe all keys
-- Automate the deletion of canceled /  failed accounts after a 2 month grace period, with warning emails  
 
 Fix bug with overdue subscription payment form not working
 - Possible bug introduced by recent stripe upgrade
@@ -305,9 +254,6 @@ Fix bugs with custom domain setup
 - Validate the domain is pointing to Blot before allowing resty-auto-ssl to request a cert. we seem to get into a DNS mismatch where a client thinks a domain points to Blot, and triggers a cert request through resty-auto-ssl but whatever DNS server Blot's server points to has the stale record (pointing elsewhere)
 - Disable redirect to HTTPS for blogs by default (to ensure old browsers without SNI work) but ensure all prominent links to the blog on dashboard use HTTPS
 - cache domain validity and display checkmark on dashboard
-
-Fix bug with huge tiddlywiki post that crashed site by enforcing a size limit on txt and markdown files and html files for them to become posts
-- Ensure the error for files too large is made clearly visible
 
 Fix bug with incorrect date of files by path and follow up with [Ashish](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbgJMGBfxXGrhsDPbNJfnbZVCW)
 - `/posts/2021/Dec 2021/12-01 - Snow envy/Snow envy.txt` isn't dated correctly (should be first of december rather than january 12th)
@@ -327,15 +273,8 @@ Fix bugs with git client
 Fix bug with menu which occur when multiple pages are added at once Menu needs concurrency or atomic operations (so we can build posts in parallel)
 - move menu into its own model (it's possible to add thousands of entries to it...)
 
-Fix bug with the typeset settings do not actually affect anything (you can only disable/enable)
-
 Fix bug where one bad page can take down upstream repeatedly 
 – perhaps we need to cache in proxy cache timeouts? or somehow detect if a request causes upstream to crash?
-
-Fix template partial embeddings which no longer work because of switch from lowercase to true case:
-- write script to find these
-- e.g. {{> /pages/home.txt}} when pages is really Pages
-- we should resolve the case-insensitive path to file when saving a template and parsing its partials
 
 Fix bug with [many twitter embeds and tell Nash](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllMNfjvRBthVncQtPJQpmrksx)
 
@@ -401,26 +340,16 @@ Fix bug with indented code in pre tags and tell [Michael](https://mail.google.co
 
 Fix bug with nested Markdown and tell [Martin](https://mail.google.com/mail/u/0/#inbox/FMfcgxwDqnhgBjBSKzvtclvqcFcMptMR):
 
-Fix bug with with initial transfer and [Michael's folder](https://mail.google.com/mail/u/0/#inbox/FMfcgzQZTptZPWFlcHhJCqZRTxThqvKn)
-
 Fix bug with [Rodrigo's Word Document files](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVWRXqnjmjBDmcRXKcdxjcDfr)
 
 Fix bug with image minification which produces larger file than source file and tell [Jan](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBTkHlNvhcJLGVRCPvXvjbwsWR)
 
 Fix bug parsing ISO8601 date format and tell [Thomas](https://mail.google.com/mail/u/0/#inbox/1625012def221a8f)
 
-Fix bug when the customer's blog does not have a client, client.write and client.remove need to remove the files from the source folder. Create some kind of local client which we fall back and use when none is configured?
-
 Fix bug with Client.write which does not propogate sync errors... to demonstrate this, revoke dropbox token then try to enable local editing.
-
-Fix bug with pages not appearing in backlinks and [tell questioner](https://blot.im/questions/2913)
-
-Fix bug with magic text in posts which breaks backend and tell [Victor](https://mail.google.com/mail/u/0/#inbox/FMfcgzQVxRMzjBtRWVwLWtlBcFGsSVCQ)
 
 Fix bug with Google Drive client and [Stephen's large blog](https://mail.google.com/mail/u/0/#inbox/QgrcJHsBsbkNkMkkkMmLWBxRfnGnWPVwLHl)
   - It also seems like server crashes when a massive google drive folder is synced, with a directory containing 6772 items
-
-Fix issue with template settings and tell [Dirt](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrQRPKNbMkwscffXLqSLGqjr)
 
 Fix bug with Bruce's local template, [possibly related to Ryan's issue](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrKgBjjDKTqMbltHHhplfZsr). The template switches from 3 to 2 after each sync.
 - Also affecting [Chris](https://mail.google.com/mail/u/0/#inbox/FMfcgzQbdrRbHMFllcTBGXPJBNKBcLjr)
@@ -438,8 +367,6 @@ Record new video
 ---
 
 Handle content negotiation headers for accept markdown from [LLM bots](https://blog.cloudflare.com/markdown-for-agents/) and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBsvRjgTvbGqmqtSfCQZZNpdM)
-
-Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
 
 New templates:
 - Release [Fede](https://wordpress.org/themes/kanso/)'s theme as profile template
@@ -516,9 +443,6 @@ Improvements to docs and documentation:
   - explain image compression and thumbnails
 - Add a documentation page on typography and fonts
   - explain typeset
-
-New plugins:
-- Add [preload=none](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/audio#preload) to all audio and video tags without it defined or maybe preload="metadata"? 
 
 Improvements to dashboard:
 - Add affordance for drag-and-drop to upload
@@ -773,7 +697,6 @@ Improvements to template engine:
 - Add way to allow all entry lists to access {{#months}} sorting options just like the archives page.
 - Tell [Marco](https://mail.google.com/mail/u/0/#inbox/FMfcgxwHNWCgxHCttPshJRSPCMTPffMP) when arbirary list sorting is ready
 - Add support for fetching only some properties of an entry (ideally only those that are used). prevent some properties from being fetched in some lists (html, for example in all_entries). Would be a good candidate for hgetall or hget?
-- Incorporate some of [notebook](https://github.com/WesleyAC/notebook)'s features in a template
 
 Launch new server and test that the new scripts to mount the instance store and data ebs-disk work
 
@@ -959,8 +882,6 @@ Use [thumbhash](https://github.com/evanw/thumbhash?tab=readme-ov-file) to genera
 Surface recently edited posts on the sites tab of the dashboard
 
 Can we support white-label cdn subdomain so there are no Blot CDN links?
-
-Change dashboard cookies: Set-Cookie: mycookie=value; Path=/; SameSite=Lax; Secure;
 
 Write tests for animated gif thumbnail
 
@@ -1272,9 +1193,6 @@ Add way to filter archives page by year or month and tell [Chad](https://mail.go
 Adjust length of slug to use as few words as possible until collision and tell [Chet](https://mail.google.com/mail/u/0/#inbox/FMfcgxwGBmtwFVcGnqXNNxPNqdbzlWhL)
 
 --- 
-
-Metadata parser
-- Removing Date metadata from a post should reset its date to the file's creation date. Currently nothing changes.
 
 Improve 404 log page on Dashboard
 - Make the 404 page more useful (see Netlify site)
