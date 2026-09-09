@@ -12,7 +12,12 @@ const writeChangeToFolder = require('./save/writeChangeToFolder');
 // so docs can deep link to e.g. /sites/gitt/template/default/links
 TemplateEditor.use("/default", (req, res, next) => {
   const slug = res.locals.template?.slug;
-  if (!slug) return next();
+  // When the installed template's own slug is literally "default" (the user
+  // named a local template "default") there is nothing to disambiguate: fall
+  // through to the /:templateSlug route, which loads it directly. Redirecting
+  // here would point /template/default at itself and loop until the browser
+  // bails with ERR_TOO_MANY_REDIRECTS.
+  if (!slug || slug === "default") return next();
   const pathSuffix = req.path || "";
   res.redirect(`${res.locals.base}/template/${slug}${pathSuffix}`);
 });
@@ -169,7 +174,9 @@ TemplateEditor.route("/:templateSlug")
   .all(require("./load/syntax-highlighter"))
   .all(require("./load/color-inputs"))
   .all(require("./load/url-inputs"))
+  .all(require("./load/favicon"))
   .all(require("./load/index-inputs"))
+  .all(require("./load/sort-input"))
   .all(require("./load/navigation-inputs"))
   .all(require("./load/dates"))
   .post(
@@ -192,6 +199,14 @@ TemplateEditor.route("/:templateSlug/uploads/:key")
     res.render("dashboard/template/controls/upload-form");
   })
   .post(require("./save/fork-if-needed"), require("./save/upload-local"));
+
+TemplateEditor.route("/:templateSlug/favicon")
+  .get(require("./load/favicon"), function (req, res) {
+    res.locals.title = `Favicon - ${req.template.name}`;
+    res.locals.selected = { ...res.locals.selected, settings: "selected" };
+    res.render("dashboard/template/controls/favicon-form");
+  })
+  .post(require("./save/fork-if-needed"), require("./save/upload-favicon"));
 
 // Catch-all for /uploads/ without a key - redirect to template settings
 // This must come AFTER the specific route above

@@ -4,23 +4,25 @@
   <body>
     {{> header}}
 
+    <div class="container">
     <h1>Posts tagged “{{tag}}”</h1>
 
     {{#entries}}
-    <a href="{{{url}}}">{{title}}</a> {{date}} <br>
+    <a href="{{{url}}}">{{title}}</a>{{#date}} {{date}}{{/date}} <br>
     {{/entries}}
 
     {{#pagination}}
     <div class="pagination">
       {{#previous}}
-      <a href="/tagged/{{slug}}/page/{{previous}}">&larr; Newer</a>
+      <a href="/tagged/{{slug}}/page/{{previous}}">&larr; Previous</a>
       {{/previous}}
       Page {{current}} of {{total}}
       {{#next}}
-      <a href="/tagged/{{slug}}/page/{{next}}">Older &rarr;</a>
+      <a href="/tagged/{{slug}}/page/{{next}}">Next &rarr;</a>
       {{/next}}
     </div>
     {{/pagination}}
+    </div>
 
     {{> footer}}
   </body>
