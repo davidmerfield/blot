@@ -2,6 +2,14 @@
 // place (scripts/entry/backfill-hashes.js) and app/models/entry has been
 // reading from the hash in production long enough to be trusted.
 //
+// PRECONDITIONS (all must hold before running without --dry-run):
+//   1. The dual-write build is deployed to every app instance - no writer is
+//      still updating only the JSON string.
+//   2. scripts/entry/backfill-hashes.js has completed with no errors.
+//   3. Hash-first reads have run in production long enough to be trusted.
+// Deleting a string key removes the last fallback for that entry, so the hash
+// becomes the single copy from that point on.
+//
 // For each entry tracked in blog:<id>:all it checks that the hash key exists
 // and only then deletes the string key. An entry with no hash is left alone
 // and reported, so a half-finished backfill can never lose data.
