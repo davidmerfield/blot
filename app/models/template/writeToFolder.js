@@ -9,7 +9,6 @@ var fs = require("fs-extra");
 var generatePackage = require("./package").generate;
 var determineTemplateFolder = require("./determineTemplateFolder");
 var makeID = require("./util/makeID");
-var slugForName = require("./util/slugForName");
 var setMetadata = require("./setMetadata");
 var PACKAGE = "package.json";
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
@@ -25,41 +24,48 @@ function writeToFolder (blogID, templateID, callback) {
 
       if (!views || !metadata) return callback(noTemplate(blogID, templateID));
 
-      repairSlug(blogID, templateID, metadata, function (repairErr) {
-        if (repairErr) return callback(repairErr);
+      makeClient(blogID, function (err, client, blogTemplate) {
+        if (err) {
+          return callback(err);
+        }
 
-        makeClient(blogID, function (err, client, blogTemplate) {
-          if (err) {
-            return callback(err);
+        determineTemplateFolder(blogID, function (folderErr, folderName) {
+          if (folderErr) {
+            return callback(folderErr);
           }
 
-          determineTemplateFolder(blogID, function (folderErr, folderName) {
-            if (folderErr) {
-              return callback(folderErr);
+          repairSlug(
+            blogID,
+            templateID,
+            metadata,
+            client,
+            folderName,
+            function (repairErr) {
+              if (repairErr) return callback(repairErr);
+
+              var dir = joinpath(folderName, metadata.slug);
+              var shouldCompareWrites = true;
+
+              listLocalFiles(blogID, dir, function (err, existingFiles) {
+                if (err) {
+                  return callback(err);
+                }
+
+                writeTemplateContents(
+                  blogID,
+                  client,
+                  dir,
+                  metadata,
+                  views,
+                  {
+                    compare: shouldCompareWrites,
+                    existingFiles: existingFiles,
+                  },
+                  callback
+                );
+              });
             }
-
-            var dir = joinpath(folderName, metadata.slug);
-            var shouldCompareWrites = true;
-
-            listLocalFiles(blogID, dir, function (err, existingFiles) {
-              if (err) {
-                return callback(err);
-              }
-
-              writeTemplateContents(
-                blogID,
-                client,
-                dir,
-                metadata,
-                views,
-                {
-                  compare: shouldCompareWrites,
-                  existingFiles: existingFiles,
-                },
-                callback
-              );
-            });
-          });
+          );
         });
       });
     });
@@ -70,17 +76,37 @@ function writeToFolder (blogID, templateID, callback) {
 // makeID maps to a different id. writeToFolder names the on-disk directory
 // after that slug and readFromFolder resolves the name back through makeID, so
 // leaving it would let this template be written where another one is read from.
-// Repair it here, before the first folder write, and persist the repair so the
-// folder-sync cleanup in buildFromFolder matches on the same value.
-function repairSlug (blogID, templateID, metadata, callback) {
+//
+// Repair it against the id itself — never the display name, which the rename
+// route can change independently of the id — persist the repair so the
+// buildFromFolder cleanup matches on the same value, and remove the directory
+// the stale slug named so a folder sync does not keep loading it. An id whose
+// own suffix does not round-trip (a legacy id minted before makeID was capped)
+// is left alone rather than pointed somewhere new.
+function repairSlug (blogID, templateID, metadata, client, folderName, callback) {
   if (makeID(blogID, metadata.slug) === templateID) return callback(null);
 
-  var repaired = slugForName(blogID, metadata.name || metadata.slug || "");
+  var idSlug = templateID.split(":").slice(1).join(":");
 
-  setMetadata(templateID, { slug: repaired }, function (err) {
+  if (!idSlug || makeID(blogID, idSlug) !== templateID) return callback(null);
+
+  var staleSlug = metadata.slug;
+
+  setMetadata(templateID, { slug: idSlug }, function (err) {
     if (err) return callback(err);
-    metadata.slug = repaired;
-    callback(null);
+
+    metadata.slug = idSlug;
+
+    if (!staleSlug || staleSlug === idSlug) return callback(null);
+
+    var stalePath = joinpath(folderName, staleSlug);
+
+    client.remove(blogID, stalePath, function (removeErr) {
+      if (removeErr && removeErr.code !== "ENOENT") return callback(removeErr);
+      fs.remove(localPath(blogID, stalePath), function () {
+        callback(null);
+      });
+    });
   });
 }
 

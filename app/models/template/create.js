@@ -2,7 +2,6 @@ var clone = require("./clone");
 var ensure = require("helper/ensure");
 var makeSlug = require("helper/makeSlug");
 var makeID = require("./util/makeID");
-var slugForName = require("./util/slugForName");
 var client = require("models/client");
 var key = require("./key");
 var metadataModel = require("./metadataModel");
@@ -21,6 +20,20 @@ module.exports = function create(owner, name, metadata, callback) {
   metadata.slug = metadata.slug.split("/").join("-");
   metadata.id = makeID(owner, name);
 
+  // The id, and every editor URL derived from it, is built from the name. A
+  // name which slugs to nothing (e.g. "!!!") leaves an id of just the owner
+  // and, through the fallback below, an empty slug — which writeToFolder would
+  // treat as the templates root. Reject it rather than store the wreckage.
+  var idSlug = metadata.id.split(":").slice(1).join(":");
+
+  if (!idSlug) {
+    var nameErr = new Error(
+      "A template name must contain letters or numbers: " + name
+    );
+    nameErr.code = "ENOSLUG";
+    return callback(nameErr);
+  }
+
   // The id is the only thing routing, writeToFolder and readFromFolder resolve
   // a template by. writeToFolder names the template's on-disk directory after
   // the stored slug and readFromFolder turns that name back into an id with
@@ -30,9 +43,9 @@ module.exports = function create(owner, name, metadata, callback) {
   // diverge as soon as the name is long enough for the 30-character truncation
   // to bite. Keep the slug in step with the id; a slug which already round-trips
   // (e.g. a local template named after its folder) is left untouched, anything
-  // else falls back to a slug derived from the name which makeID maps to itself.
+  // else falls back to the id's own suffix, which makeID maps to itself.
   if (makeID(owner, metadata.slug) !== metadata.id) {
-    metadata.slug = slugForName(owner, name);
+    metadata.slug = idSlug;
   }
 
   metadata.name = name;
