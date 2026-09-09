@@ -2,9 +2,11 @@ const fs = require("fs-extra");
 const html = require("build/converters/html");
 const markdown = require("build/converters/markdown");
 const markdownWithoutPandoc = require("build/converters/markdown-without-pandoc");
+const gdoc = require("build/converters/gdoc");
 const {
   MARKDOWN,
   HTML,
+  GDOC,
 } = require("build/converters/post-source-size");
 
 describe("post source size limit", function () {
@@ -29,6 +31,7 @@ describe("post source size limit", function () {
     ["Pandoc Markdown", markdown, ".md", MARKDOWN],
     ["Markdown without Pandoc", markdownWithoutPandoc, ".markdown", MARKDOWN],
     ["HTML", html, ".html", HTML],
+    ["Google Doc", gdoc, ".gdoc", GDOC],
   ];
 
   implementations.forEach(([name, converter, extension, limit]) => {
@@ -63,6 +66,7 @@ describe("post source size limit", function () {
     ]),
     ["HTML", html, ".html", HTML],
     ["HTML", html, ".htm", HTML],
+    ["Google Doc", gdoc, ".gdoc", GDOC],
   ].forEach(([name, converter, extension, limit]) => {
     it(`${name} rejects ${extension} one byte over the ${limit.label} limit`, function (done) {
       const entryPath = `/over-limit${extension}`;
