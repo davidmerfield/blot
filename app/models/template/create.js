@@ -2,6 +2,7 @@ var clone = require("./clone");
 var ensure = require("helper/ensure");
 var makeSlug = require("helper/makeSlug");
 var makeID = require("./util/makeID");
+var slugForName = require("./util/slugForName");
 var client = require("models/client");
 var key = require("./key");
 var metadataModel = require("./metadataModel");
@@ -28,9 +29,10 @@ module.exports = function create(owner, name, metadata, callback) {
   // caller-supplied slug (duplication, forking, adding a shared template) can
   // diverge as soon as the name is long enough for the 30-character truncation
   // to bite. Keep the slug in step with the id; a slug which already round-trips
-  // (e.g. a local template named after its folder) is left untouched.
+  // (e.g. a local template named after its folder) is left untouched, anything
+  // else falls back to a slug derived from the name which makeID maps to itself.
   if (makeID(owner, metadata.slug) !== metadata.id) {
-    metadata.slug = metadata.id.split(":").slice(1).join(":");
+    metadata.slug = slugForName(owner, name);
   }
 
   metadata.name = name;

@@ -8,6 +8,9 @@ var localPath = require("helper/localPath");
 var fs = require("fs-extra");
 var generatePackage = require("./package").generate;
 var determineTemplateFolder = require("./determineTemplateFolder");
+var makeID = require("./util/makeID");
+var slugForName = require("./util/slugForName");
+var setMetadata = require("./setMetadata");
 var PACKAGE = "package.json";
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
@@ -22,40 +25,62 @@ function writeToFolder (blogID, templateID, callback) {
 
       if (!views || !metadata) return callback(noTemplate(blogID, templateID));
 
-      makeClient(blogID, function (err, client, blogTemplate) {
-        if (err) {
-          return callback(err);
-        }
+      repairSlug(blogID, templateID, metadata, function (repairErr) {
+        if (repairErr) return callback(repairErr);
 
-        determineTemplateFolder(blogID, function (folderErr, folderName) {
-          if (folderErr) {
-            return callback(folderErr);
+        makeClient(blogID, function (err, client, blogTemplate) {
+          if (err) {
+            return callback(err);
           }
 
-          var dir = joinpath(folderName, metadata.slug);
-          var shouldCompareWrites = true;
-
-          listLocalFiles(blogID, dir, function (err, existingFiles) {
-            if (err) {
-              return callback(err);
+          determineTemplateFolder(blogID, function (folderErr, folderName) {
+            if (folderErr) {
+              return callback(folderErr);
             }
 
-            writeTemplateContents(
-              blogID,
-              client,
-              dir,
-              metadata,
-              views,
-              {
-                compare: shouldCompareWrites,
-                existingFiles: existingFiles,
-              },
-              callback
-            );
+            var dir = joinpath(folderName, metadata.slug);
+            var shouldCompareWrites = true;
+
+            listLocalFiles(blogID, dir, function (err, existingFiles) {
+              if (err) {
+                return callback(err);
+              }
+
+              writeTemplateContents(
+                blogID,
+                client,
+                dir,
+                metadata,
+                views,
+                {
+                  compare: shouldCompareWrites,
+                  existingFiles: existingFiles,
+                },
+                callback
+              );
+            });
           });
         });
       });
     });
+  });
+}
+
+// A template stored before slug/id normalisation may still carry a slug which
+// makeID maps to a different id. writeToFolder names the on-disk directory
+// after that slug and readFromFolder resolves the name back through makeID, so
+// leaving it would let this template be written where another one is read from.
+// Repair it here, before the first folder write, and persist the repair so the
+// folder-sync cleanup in buildFromFolder matches on the same value.
+function repairSlug (blogID, templateID, metadata, callback) {
+  if (makeID(blogID, metadata.slug) === templateID) return callback(null);
+
+  var repaired = slugForName(blogID, metadata.name || metadata.slug || "");
+
+  setMetadata(templateID, { slug: repaired }, function (err) {
+    if (err) return callback(err);
+    metadata.slug = repaired;
+    callback(null);
   });
 }
 
