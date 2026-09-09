@@ -1,0 +1,64 @@
+name: blot-proxy-e2e
+
+# Brings up the proxy container in front of a real Blot app container so
+# proxy/e2e/run.js can drive requests through it. See
+# .github/workflows/integration.yml.
+#
+# Everything runs on the host network so the proxy's hard-coded upstream
+# addresses (127.0.0.1:8088-8091) resolve with no extra plumbing. Meant for a
+# CI runner, not a shared machine (it binds :80 and :443).
+
+services:
+  redis:
+    image: redis:6.2.12-alpine
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  app:
+    image: ${BLOT_APP_IMAGE:-ghcr.io/davidmerfield/blot:test-latest}
+    network_mode: host
+    command: ["node", "/usr/src/app/app/index.js"]
+    environment:
+      NODE_ENV: development
+      BLOT_HOST: ${BLOT_HOST:-localhost}
+      BLOT_REDIS_HOST: "127.0.0.1"
+      BLOT_PORT: "8081"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8081/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  # The generated proxy config has four hard-coded upstream addresses
+  # (127.0.0.1:8088-8091 - blue/green/yellow/purple). Point all of them at
+  # the single app instance on :8081.
+  upstream-mux:
+    image: alpine/socat
+    network_mode: host
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        for p in 8088 8089 8090 8091; do
+          socat TCP-LISTEN:$$p,fork,reuseaddr TCP:127.0.0.1:8081 &
+        done; wait
+    depends_on:
+      app:
+        condition: service_healthy
+
+  proxy:
+    image: ${BLOT_PROXY_IMAGE:-blot-proxy:e2e}
+    network_mode: host
+    environment:
+      BLOT_HOST: ${BLOT_HOST:-localhost}
+    depends_on:
+      app:
+        condition: service_healthy

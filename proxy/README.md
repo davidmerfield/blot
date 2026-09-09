@@ -20,7 +20,7 @@ separately.
 | `Dockerfile` | Two-stage build: vendors the Lua deps, then assembles the image. |
 | `entrypoint.sh` | Validates `BLOT_HOST` and a certificate is present, then starts OpenResty. |
 | `tests/` | Cache (`cacher.lua`) behaviour specs. Run as the `proxy` suite in the `node` workflow's test matrix, same as `config/openresty`. |
-| `tests/e2e/` | End-to-end: composes the proxy image with the Blot app image and drives requests through the proxy. Run by the `integration` workflow. |
+| `e2e/` | Full-stack checks driven through the built image (stub upstream + a real Blot app container). Run by the `integration` workflow. |
 
 ## Build and run locally
 
@@ -84,8 +84,12 @@ Reproducibility relies on pinning, because the upstream toolchain has drifted:
   `proxy/config` - the `cacher.lua` behaviour specs (`basic`, `gzip`,
   `inspect`, `lru_purge`, `rehydrate`, plus `coverage` for per-host keys,
   method/health cacheability, binary bodies and argument validation).
-- **`integration` workflow** (`.github/workflows/integration.yml`) builds the
-  proxy image, brings it up with the Blot app image + Redis via
-  `proxy/tests/e2e/docker-compose.yml`, and runs `proxy/tests/e2e/run.js`
-  through the proxy: site loads, sign-in page renders, a sign-in / sign-out
-  round trip against a seeded user, static assets, and cache headers.
+- **`integration` workflow** (`.github/workflows/integration.yml`):
+  - `proxy/e2e/checks.sh` drives the built image against
+    `proxy/e2e/stub-upstream.js` - Host-based routing (site over HTTPS, blogs
+    and custom domains over HTTP), `/.git` and `wp-*` blocking, `Blot-Cache`
+    MISS then HIT, gzip negotiation, upstream-error handling.
+  - `proxy/e2e/run.js` brings the image up with the Blot app image + Redis
+    (`proxy/e2e/docker-compose.yml`) and goes through the proxy end to end:
+    the site loads, the sign-in page renders, and a seeded user signs in,
+    reaches the dashboard, and signs out.

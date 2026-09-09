@@ -21,10 +21,11 @@ RUN set -eux; \
     fetch lua-resty-auto-ssl-0.13.1-1.src.rock a6a1776a8f320f4ff5499c34dd296b4cf38c45165a978cc8d6d2b9824101c8df; \
     fetch lua-resty-http-0.17.2-0.src.rock    04ae92ca37f2d6c87ccd36e8f260566483d488274598f19bb54b7a911501b8be; \
     fetch shell-games-1.1.0-1.src.rock        a2d80aa83345587f942fb786d66531eaf7d36f87fed31503206f452de174eba5; \
-    mkdir -p /vendor/lualib/resty; \
+    mkdir -p /vendor/lualib/resty /vendor/resty-auto-ssl; \
     cp -a lua-resty-auto-ssl/lib/resty/. /vendor/lualib/resty/; \
     cp -a lua-resty-http/lib/resty/.     /vendor/lualib/resty/; \
-    cp -a lua-shell-games/lib/.          /vendor/lualib/
+    cp -a lua-shell-games/lib/.          /vendor/lualib/; \
+    cp -a lua-resty-auto-ssl/bin/.       /vendor/resty-auto-ssl/
 
 # lua-resty-auto-ssl vendors this single file at build time (its Makefile
 # curls it at a pinned commit); the .src.rock ships only a placeholder.
@@ -38,7 +39,7 @@ ARG SOCKPROC_COMMIT=92aba736027bb5d96e190b71555857ac5bb6b2be
 RUN git clone https://github.com/juce/sockproc.git /tmp/sockproc && \
     git -C /tmp/sockproc checkout --detach "${SOCKPROC_COMMIT}" && \
     make -C /tmp/sockproc && \
-    install -m 0755 /tmp/sockproc/sockproc /vendor/sockproc
+    install -m 0755 /tmp/sockproc/sockproc /vendor/resty-auto-ssl/sockproc
 
 # ---------------------------------------------------------------------------
 # Stage 2: the proxy image
@@ -51,7 +52,10 @@ RUN apk add --no-cache bash openssl
 RUN addgroup -S ec2-user && adduser -S -u 1000 -G ec2-user ec2-user
 
 COPY --from=deps /vendor/lualib/ /usr/local/openresty/lualib/
-COPY --from=deps /vendor/sockproc /usr/local/bin/sockproc
+# lua-resty-auto-ssl shells out to /usr/bin/resty-auto-ssl/start_sockproc,
+# which runs ./sockproc next to it.
+COPY --from=deps /vendor/resty-auto-ssl/ /usr/bin/resty-auto-ssl/
+RUN chmod 0755 /usr/bin/resty-auto-ssl/*
 
 # Directories referenced by the generated config and by lua-resty-auto-ssl.
 # The log and cache directories (and auto-ssl storage) must be writable by the
