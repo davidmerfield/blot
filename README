@@ -20,3 +20,5 @@ npm start
 The dashboard is https://local.blot and the example site is https://example.local.blot. For the full setup, see:
 
 https://blot.im/developers/guides/run-blot-locally
+
+(Force a CI run to benchmark the test suite. This commit will be reverted.)
