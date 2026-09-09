@@ -38,8 +38,15 @@ module.exports = function readFromFolder (blogID, dir, callback) {
     var id = makeID(blogID, basename(dir));
 
     getMetadata(id, async function (err, template) {
-      if (err || !template)
-        template = await createLocalTemplate(blogID, basename(dir));
+      if (err || !template) {
+        try {
+          template = await createLocalTemplate(blogID, basename(dir));
+        } catch (createErr) {
+          // e.g. a folder whose name slugs to nothing ("Templates/!!!").
+          // buildFromFolder logs this and moves on to the next folder.
+          return callback(createErr);
+        }
+      }
 
       loadPackage(id, dir, function (err, views, enabled) {
         const errors = {};

@@ -43,7 +43,7 @@ module.exports = function create(owner, name, metadata, callback) {
   // diverge as soon as the name is long enough for the 30-character truncation
   // to bite. Keep the slug in step with the id; a slug which already round-trips
   // (e.g. a local template named after its folder) is left untouched, anything
-  // else falls back to the id's own suffix, which makeID maps to itself.
+  // else falls back to the id's own suffix.
   if (makeID(owner, metadata.slug) !== metadata.id) {
     metadata.slug = idSlug;
   }
