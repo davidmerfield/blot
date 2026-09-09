@@ -41,7 +41,21 @@ function safeMatch(rawPattern, normalizedPathname) {
   // Use path-to-regexp to create a matching function
   const matchPattern = match(normalizedPattern, { decode: false });
 
-  return matchPattern(normalizedPathname);
+  const matchResult = matchPattern(normalizedPathname);
+
+  if (!matchResult) return null;
+
+  for (const key of Object.keys(matchResult.params)) {
+    const value = matchResult.params[key];
+
+    try {
+      matchResult.params[key] = decodeURIComponent(value);
+    } catch (err) {
+      // Keep malformed percent escapes as-is rather than failing the route.
+    }
+  }
+
+  return matchResult;
 }
 
 /**

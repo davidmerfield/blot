@@ -155,6 +155,33 @@ describe("template", function () {
     expect(viewName).toEqual(view.name);
   });
 
+  it("decodes parameters after matching encoded path separators", async function () {
+    const view = {
+      name: "tagged.html",
+      url: ["/work/tagged/:tag"],
+    };
+
+    await this.setView(view);
+    const { viewName, params } = await this.getViewByURL(
+      "/work/tagged/design%2Fui"
+    );
+
+    expect(viewName).toEqual(view.name);
+    expect(params).toEqual({ tag: "design/ui" });
+  });
+
+  it("keeps malformed percent escapes in parameters non-fatal", async function () {
+    const view = {
+      name: "tagged.html",
+      url: ["/tagged/:tag"],
+    };
+
+    await this.setView(view);
+    const { viewName, params } = await this.getViewByURL("/tagged/design%ZZ");
+
+    expect(viewName).toEqual(view.name);
+    expect(params).toEqual({ tag: "design%zz" });
+  });
 
   it("returns an error for a non-existent URL", async function () {
     try {

@@ -156,6 +156,44 @@ describe("tagged block", function () {
     expect(body.trim()).toEqual("1|1|Car post");
   });
 
+  it("matches encoded separators inside custom tagged-route parameters", async function () {
+    await this.write({
+      path: "/work/first.txt",
+      content: "Title: First design post\nTags: Design/UI\n\nFirst body",
+    });
+    await this.write({
+      path: "/work/second.txt",
+      content: "Title: Second design post\nTags: Design/UI\n\nSecond body",
+    });
+
+    await this.template(
+      {
+        "tagged.html": `{{#tagged}}{{tag}}|{{pagination.current}}|{{#entries}}{{title}}{{/entries}}{{/tagged}}`,
+      },
+      {
+        views: {
+          "tagged.html": {
+            url: ["/work/tagged/:tag", "/work/tagged/:tag/page/:page"],
+          },
+        },
+        locals: {
+          path_prefix: "/work/",
+          tagged_page_size: 1,
+        },
+      },
+    );
+
+    const firstPage = await this.get("/work/tagged/design%2Fui");
+    const firstPageBody = await firstPage.text();
+    const secondPage = await this.get("/work/tagged/design%2Fui/page/2");
+    const secondPageBody = await secondPage.text();
+
+    expect(firstPage.status).toEqual(200);
+    expect(firstPageBody.trim()).toEqual("Design/UI|1|Second design post");
+    expect(secondPage.status).toEqual(200);
+    expect(secondPageBody.trim()).toEqual("Design/UI|2|First design post");
+  });
+
   it("treats empty and whitespace path_prefix as disabled filtering", async function () {
     await this.write({
       path: "/blog/one.txt",
