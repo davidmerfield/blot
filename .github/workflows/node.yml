@@ -62,6 +62,7 @@ jobs:
         - app/sync:1
         - app/templates:1
         - config/openresty:1
+        - proxy:1
     steps:
       - name: Sparse checkout for hash calculation
         uses: actions/checkout@v4
@@ -328,5 +329,6 @@ jobs:
             -v ${{ github.workspace }}/app:/usr/src/app/app \
             -v ${{ github.workspace }}/scripts:/usr/src/app/scripts \
             -v ${{ github.workspace }}/config:/usr/src/app/config \
+            -v ${{ github.workspace }}/proxy:/usr/src/app/proxy \
             $IMAGE_TAG \
             sh -c "node scripts/tests '$TEST_SUITE' --shard='$TEST_SHARD' $EXCLUDE_ARG"
