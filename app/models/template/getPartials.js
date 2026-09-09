@@ -50,7 +50,12 @@ module.exports = function getPartials(
   function wrapInContext(content, contextPath) {
     if (!contextPath) return content || "";
 
-    var segments = contextPath.split(".").filter(Boolean);
+    // contextPath segments are joined by parseTemplate.CONTEXT_SEPARATOR, so a
+    // dotted section name ({{#author.posts}}) stays a single segment here and
+    // is re-emitted as one {{#author.posts}} tag rather than nested sections.
+    var segments = contextPath
+      .split(parseTemplate.CONTEXT_SEPARATOR)
+      .filter(Boolean);
     var wrapped = content || "";
 
     for (var i = segments.length - 1; i >= 0; i--) {

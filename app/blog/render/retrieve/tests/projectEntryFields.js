@@ -145,6 +145,40 @@ describe("projectEntryFields", function () {
     expect(entries[1].html).toBe("<p>one</p>");
   });
 
+  it("skips projection when a retained light field contains Mustache", function () {
+    var entries = [
+      entry({ id: "2", title: "{{#allEntries}}{{summary}}{{/allEntries}}" }),
+    ];
+
+    projectEntryFields(
+      entries,
+      { allEntries: { fields: { title: true } } },
+      ["allEntries", "all_entries"]
+    );
+
+    // `title` is kept (referenced) but its Mustache is re-rendered against the
+    // whole local, so `summary` etc. must not be stripped.
+    expect(entries[0].summary).toBe("one summary");
+    expect(entries[0].html).toBe("<p>one</p>");
+  });
+
+  it("still projects when Mustache only appears in a field being stripped", function () {
+    var entries = [
+      entry({ id: "2", body: "{{#allEntries}}{{summary}}{{/allEntries}}" }),
+    ];
+
+    projectEntryFields(
+      entries,
+      { allEntries: { fields: { title: true } } },
+      ["allEntries", "all_entries"]
+    );
+
+    // `body` is being removed anyway, so its contents don't block projection.
+    expect(entries[0].body).toBeUndefined();
+    expect(entries[0].summary).toBeUndefined();
+    expect(entries[0].html).toBeUndefined();
+  });
+
   it("projects a single entry object in place (latestEntry)", function () {
     var single = entry();
 

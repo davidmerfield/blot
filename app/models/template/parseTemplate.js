@@ -621,6 +621,12 @@ function parseTemplate(template) {
   }
 }
 
+// Context paths returned here join their section-token names with a NUL, not
+// a ".", so a single dotted section ({{#author.posts}}) stays one segment and
+// consumers (getPartials.wrapInContext) don't re-split it into {{#author}}
+// {{#posts}}. parseTemplate.CONTEXT_SEPARATOR is exported for those consumers.
+var CONTEXT_SEPARATOR = " ";
+
 function getPartialContexts(template, parentContextPath) {
   var partialContexts = {};
   var parsed;
@@ -656,7 +662,7 @@ function getPartialContexts(template, parentContextPath) {
 
       if ((tokenType === "#" || tokenType === "^") && type(token[4], "array")) {
         var nextContext = contextPath
-          ? contextPath + "." + tokenValue
+          ? contextPath + CONTEXT_SEPARATOR + tokenValue
           : tokenValue;
         collect(nextContext, token[4]);
       }
@@ -668,6 +674,7 @@ function getPartialContexts(template, parentContextPath) {
 // console.log(parseTemplate('{{{appCSS}}}'));
 
 parseTemplate.getPartialContexts = getPartialContexts;
+parseTemplate.CONTEXT_SEPARATOR = CONTEXT_SEPARATOR;
 
 // Whether `name` is a retrieve local blot knows how to fetch (a module in
 // blog/render/retrieve, or a projected-entry alias). Used by setView to tell

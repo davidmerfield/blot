@@ -143,6 +143,43 @@ describe("template", function () {
     });
   });
 
+  it("does not attribute a partial in an explicit dotted section to the root list", function (done) {
+    var test = this;
+
+    var item = {
+      name: "dotted-item.html",
+      content: "{{{html}}}",
+    };
+
+    // {{#author.posts}} iterates author's `posts`, not the root posts local.
+    var parentView = {
+      name: "dotted-parent.html",
+      content: "{{#author.posts}}{{> " + item.name + "}}{{/author.posts}}",
+    };
+
+    setView(test.template.id, item, function (err) {
+      if (err) return done.fail(err);
+      setView(test.template.id, parentView, function (err) {
+        if (err) return done.fail(err);
+
+        var partials = {};
+        partials[parentView.name] = "";
+
+        getPartials(test.blog.id, test.template.id, partials, function (
+          err,
+          partials,
+          retrieve
+        ) {
+          if (err) return done.fail(err);
+
+          expect(retrieve.posts).toBeUndefined();
+
+          done();
+        });
+      });
+    });
+  });
+
   it("keeps a partial's stored dependency when it is used inside a section", function (done) {
     var test = this;
 

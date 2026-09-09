@@ -80,18 +80,15 @@ function projectEntryFields(entries, retrieve, keys) {
 
   if (!strip.length) return entries;
 
-  // Heavy fields we are keeping. A Blot entry's own markup can contain
-  // Mustache that renderLocals evaluates later - e.g. an entry whose `html`
-  // is "{{#allEntries}}{{{summary}}}{{/allEntries}}". That markup is rendered
-  // against the whole retrieved local, not just its own entry, so if ANY
-  // entry's kept field carries template tags we can't safely strip the other
-  // heavy fields from any entry in the list. Bail out of projection entirely.
-  var keep = HEAVY_FIELDS.filter(function (field) {
-    return fields[field];
-  });
-
+  // A Blot entry's own content can carry Mustache that renderLocals evaluates
+  // after retrieval - e.g. an entry whose `html` (or even a plain `title`) is
+  // "{{#allEntries}}{{{summary}}}{{/allEntries}}". That markup is rendered
+  // against the whole retrieved local, not just its own entry, and renderLocals
+  // walks every string property, not only the heavy ones. So if ANY retained
+  // string field of ANY entry contains template tags, we can't know which
+  // fields are safe to drop - bail out of projection for the whole list.
   for (var i = 0; i < list.length; i++) {
-    if (keptFieldHasMustache(list[i], keep)) return entries;
+    if (entryHasMustache(list[i], strip)) return entries;
   }
 
   for (var k = 0; k < list.length; k++) {
@@ -107,12 +104,19 @@ function projectEntryFields(entries, retrieve, keys) {
   return entries;
 }
 
-function keptFieldHasMustache(entry, keep) {
+// True if any string field that will survive projection contains a Mustache
+// tag. `strip` is the set of fields about to be removed - those are ignored
+// (they won't be around to be re-rendered).
+function entryHasMustache(entry, strip) {
   if (!entry || typeof entry !== "object") return false;
-  for (var i = 0; i < keep.length; i++) {
-    var value = entry[keep[i]];
+
+  for (var key in entry) {
+    if (!Object.prototype.hasOwnProperty.call(entry, key)) continue;
+    if (strip.indexOf(key) !== -1) continue;
+    var value = entry[key];
     if (typeof value === "string" && value.indexOf("{{") !== -1) return true;
   }
+
   return false;
 }
 
