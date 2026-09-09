@@ -11,13 +11,9 @@ const BYTES_PER_MB = 1000 * 1000;
 const MARKDOWN = { bytes: 2 * BYTES_PER_MB, label: "2 MB" };
 const HTML = { bytes: 5 * BYTES_PER_MB, label: "5 MB" };
 
-function isHTMLPath(path) {
-  return /\.html?$/i.test(path || "");
-}
-
 // The limit that applies to a given source file, chosen by extension.
 function limitForPath(path) {
-  return isHTMLPath(path) ? HTML : MARKDOWN;
+  return /\.html?$/i.test(path || "") ? HTML : MARKDOWN;
 }
 
 function tooLargeError(limit) {

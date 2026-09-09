@@ -59,36 +59,36 @@ function buildAndSet(blog, path, callback) {
     Entry.set(blog.id, entry.path, entry, function (err) {
       if (err) return callback(err);
 
-      // A successful rebuild means any previous rejection is now stale.
-      IgnoredFiles.drop(blog.id, entry.path, function (err) {
-        if (err) return callback(err);
+      // A successful rebuild means any previous "ignored" record for this
+      // path (wrong type, too large, …) is stale. Clear it best-effort —
+      // it must not hold up or fail the sync.
+      IgnoredFiles.drop(blog.id, entry.path, noop);
 
-        const syntheticKeys = new Set();
+      const syntheticKeys = new Set();
 
-        const slugToken = makeSlug(
-          entry.slug || entry.metadata.title || entry.title || ""
-        );
-        if (slugToken) {
-          syntheticKeys.add(`/__wikilink_slug__/${slugToken}`);
-        }
+      const slugToken = makeSlug(
+        entry.slug || entry.metadata.title || entry.title || ""
+      );
+      if (slugToken) {
+        syntheticKeys.add(`/__wikilink_slug__/${slugToken}`);
+      }
 
-        const filenameToken = entry.path ? basename(entry.path) : "";
-        if (filenameToken) {
-          syntheticKeys.add(`/__wikilink_filename__/${filenameToken}`);
-        }
+      const filenameToken = entry.path ? basename(entry.path) : "";
+      if (filenameToken) {
+        syntheticKeys.add(`/__wikilink_filename__/${filenameToken}`);
+      }
 
-        syntheticKeys.forEach((syntheticKey) =>
-          rebuildDependents(blog.id, syntheticKey, noop)
-        );
-        // This file is a draft, write a preview file
-        // to the users Dropbox and continue down
-        // We look up the remote path later in this module...
-        if (entry.draft && !isHidden(entry.path)) {
-          Preview.write(blog.id, path, callback);
-        } else {
-          callback();
-        }
-      });
+      syntheticKeys.forEach((syntheticKey) =>
+        rebuildDependents(blog.id, syntheticKey, noop)
+      );
+      // This file is a draft, write a preview file
+      // to the users Dropbox and continue down
+      // We look up the remote path later in this module...
+      if (entry.draft && !isHidden(entry.path)) {
+        Preview.write(blog.id, path, callback);
+      } else {
+        callback();
+      }
     });
   });
 }
