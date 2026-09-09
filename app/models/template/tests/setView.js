@@ -29,23 +29,23 @@ describe("template", () => {
 		expect(savedView.content).toEqual(view.content);
 	});
 
-	it("saves canonical paths for file-backed partials", async function () {
+	it("stores file-backed partials under the literal reference from the content", async function () {
+		// The key must stay verbatim: Mustache resolves "{{> /pages/home.txt}}"
+		// by that exact string, so rewriting it (e.g. to a true-case entry path)
+		// would break the reference at render time.
 		await this.set("/Pages/Home.txt", "Hello from home");
 		await setView(this.template.id, {
-			name: "canonical-partial.html",
+			name: "literal-partial.html",
 			content: "{{> /pages/home.txt}}",
 		});
 
-		const savedView = await getView(
-			this.template.id,
-			"canonical-partial.html",
-		);
-		expect(savedView.partials).toEqual({ "/Pages/Home.txt": null });
+		const savedView = await getView(this.template.id, "literal-partial.html");
+		expect(savedView.partials).toEqual({ "/pages/home.txt": null });
 	});
 
 	it("recomputes file-backed partials from content instead of accumulating stale keys", async function () {
-		await this.set("/Pages/Home.txt", "Hello from home");
-		await this.set("/Pages/About.txt", "About us");
+		await this.set("/pages/home.txt", "Hello from home");
+		await this.set("/pages/about.txt", "About us");
 
 		await setView(this.template.id, {
 			name: "swap-partial.html",
@@ -57,11 +57,11 @@ describe("template", () => {
 		});
 
 		const savedView = await getView(this.template.id, "swap-partial.html");
-		expect(savedView.partials).toEqual({ "/Pages/About.txt": null });
+		expect(savedView.partials).toEqual({ "/pages/about.txt": null });
 	});
 
-	it("short-circuits an unchanged view whose content references a mixed-case file partial", async function () {
-		await this.set("/Pages/Home.txt", "Hello from home");
+	it("short-circuits an unchanged view whose content references a file-backed partial", async function () {
+		await this.set("/pages/home.txt", "Hello from home");
 
 		await setView(this.template.id, {
 			name: "sc-partial.html",

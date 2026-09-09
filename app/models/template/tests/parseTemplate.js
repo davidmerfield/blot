@@ -18,23 +18,6 @@ describe("parseTemplate", function () {
     });
   });
 
-  it("resolves parsed entry partials to their canonical path", async function () {
-    await this.set("/Pages/Home.txt", "Hello from home");
-    var parsed = parseTemplate("{{> /pages/home.txt}}");
-    var partials = await new Promise((resolve, reject) => {
-      parseTemplate.resolveEntryPartials(
-        this.blog.id,
-        parsed.partials,
-        function (err, result) {
-          if (err) return reject(err);
-          resolve(result);
-        }
-      );
-    });
-
-    expect(partials).toEqual({ "/Pages/Home.txt": null });
-  });
-
   it("parses locals to retrieve from a template", function () {
     var template = `{{folder}}`; // folder is on the whitelist of variables
     var result = parseTemplate(template);

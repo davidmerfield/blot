@@ -178,14 +178,9 @@ module.exports = function setView(templateID, updates, callback) {
 						) {
 							extend(expectedPartials).and(parseResultForComparison.partials);
 						}
-						// Ignore file-backed partials in this comparison: they are
-						// recomputed from content on every save and canonicalised to
-						// their true-case entry path, so a stored "/Pages/Home.txt"
-						// would never match a freshly parsed "/pages/home.txt". When
-						// the content is unchanged they cannot have changed anyway.
 						partialsUnchanged =
-							JSON.stringify(stripFilePartials(expectedPartials)) ===
-							JSON.stringify(stripFilePartials(view.partials || {}));
+							JSON.stringify(expectedPartials) ===
+							JSON.stringify(view.partials || {});
 					} else {
 						// Content changed, so we can't short-circuit anyway - partials will be recomputed
 						partialsUnchanged = false;
@@ -280,17 +275,13 @@ module.exports = function setView(templateID, updates, callback) {
 					view.partials = _partials;
 				}
 
-				parseTemplate.resolveEntryPartials(
-					metadata.owner,
-					parseResult.partials,
-					function (resolveErr, resolvedPartials) {
-						if (resolveErr) return callback(resolveErr);
-						parseResult.partials = resolvedPartials;
-						// Drop previously stored file-backed partials so renamed or
-						// re-cased references don't leave stale keys, then re-merge the
-						// freshly parsed (and canonicalised) set.
-						view.partials = stripFilePartials(view.partials);
-						extend(view.partials).and(parseResult.partials);
+				// Drop previously stored file-backed partials so a renamed or
+				// re-cased "{{> /path}}" reference doesn't leave a stale key
+				// behind; they are recomputed from the current content here.
+				// Named/inline partials (no leading slash, or an explicit value)
+				// are left untouched.
+				view.partials = stripFilePartials(view.partials);
+				extend(view.partials).and(parseResult.partials);
 
 						detectInfinitePartialDependency(
 						templateID,
@@ -350,8 +341,6 @@ module.exports = function setView(templateID, updates, callback) {
 							.catch(callback);
 						},
 					);
-					},
-				);
 					})
 					.catch(callback);
 				}).catch(callback);
@@ -361,12 +350,11 @@ module.exports = function setView(templateID, updates, callback) {
 };
 
 // File-backed partials (keys beginning with "/") are derived entirely from a
-// view's content and are canonicalised to their true-case entry path on save,
-// so a stored "/Pages/Home.txt" never string-matches a freshly parsed
-// "/pages/home.txt". They are only ever supplied as bare "fetch this file"
-// markers (a null/empty value), so we can drop the stored ones and recompute
-// them from the current content. Named and inline partials (no leading slash,
-// or carrying an explicit value) are left untouched.
+// view's content and are only ever carried as bare "fetch this file" markers
+// (a null/empty value), so a save can safely drop the stored set and recompute
+// it from the current content — otherwise a "{{> /old.txt}}" reference that was
+// edited out lingers in the persisted map forever. Named and inline partials
+// (no leading slash, or carrying an explicit value) are left untouched.
 function stripFilePartials(partials) {
 	var out = {};
 	for (var key in partials)

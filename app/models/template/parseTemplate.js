@@ -1,7 +1,6 @@
 var _ = require("lodash");
 var mustache = require("mustache");
 var type = require("helper/type");
-var async = require("async");
 
 // My goal is to look at a template
 // retrieve a list of variables and partials inside the template
@@ -258,32 +257,6 @@ function parseTemplate(template) {
     }
   }
 }
-
-// Canonicalize only unresolved file-backed partials. Named view partials and
-// caller-supplied inline values are deliberately left alone.
-parseTemplate.resolveEntryPartials = function (blogID, partials, callback) {
-  var Entry = require("../entry");
-  var names = Object.keys(partials || {});
-  var resolved = {};
-
-  async.eachSeries(
-    names,
-    function (name, next) {
-      if (name.charAt(0) !== "/" || partials[name] !== null) {
-        resolved[name] = partials[name];
-        return next();
-      }
-
-      Entry.getByPath(blogID, name, function (entry) {
-        resolved[entry && entry.path ? entry.path : name] = null;
-        next();
-      });
-    },
-    function (err) {
-      callback(err, resolved);
-    }
-  );
-};
 
 // console.log(parseTemplate('{{#title}}{{#menu}}{{active}}{{/menu}}{{/title}}'));
 // console.log(parseTemplate('{{{appCSS}}}'));
