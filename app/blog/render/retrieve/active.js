@@ -1,18 +1,31 @@
+function canonicalize(url) {
+  var segments = url.split("/").map(function (segment) {
+    return decodeURIComponent(segment);
+  });
+
+  // Match the previous behavior, which trimmed after decoding the URL.
+  segments[0] = segments[0].trimStart();
+  segments[segments.length - 1] = segments[segments.length - 1].trimEnd();
+
+  // Decode and re-encode each path segment independently. In particular, this
+  // keeps an encoded slash inside a tag slug rather than turning it into a path
+  // separator.
+  return segments.map(encodeURIComponent).join("/");
+}
+
 module.exports = function (req, res, callback) {
   return callback(null, function () {
     var url;
     var link;
 
     try {
-      url = decodeURI(req.url);
+      url = req.url;
       link = this.url;
 
-      // it's neccessary to decodeURI
-      // in order for tag slugs with accents to work
-      if (!link && this.slug) link = "/tagged/" + decodeURIComponent(this.slug);
+      if (!link && this.slug) link = "/tagged/" + this.slug;
 
-      url = url.trim();
-      link = link.trim();
+      url = canonicalize(url);
+      link = canonicalize(link);
     } catch (e) {
       return false;
     }
