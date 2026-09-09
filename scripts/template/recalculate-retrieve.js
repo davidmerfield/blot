@@ -1,9 +1,10 @@
-var eachView = require("../each/view");
+var eachTemplate = require("../each/template");
 var async = require("async");
 var Template = require("models/template");
 var templateKey = require("models/template/key");
 var redis = require("models/client");
 var Blog = require("models/blog");
+var updateCdnManifest = require("models/template/util/updateCdnManifest");
 
 if (require.main === module) {
   main(function (err, stats) {
@@ -30,10 +31,18 @@ function main(callback) {
     skipped: 0,
   };
 
-  // Blog-owned template views.
-  eachView(
-    function (user, blog, template, view, next) {
-      recalcView(template.id, view, stats, next);
+  // Blog-owned templates. Recalculate every view of every template with the
+  // per-view cache work deferred (see recalcView), then, once per template,
+  // refresh the CDN manifest and - only when this template is the one the
+  // blog actually renders - bump the blog's cacheID a single time.
+  //
+  // setView would otherwise bump the owner blog's cacheID and rebuild the
+  // CDN manifest once per changed view, for every template the blog owns
+  // including inactive ones, needlessly flushing the whole fleet's rendered
+  // cache many times over.
+  eachTemplate(
+    function (user, blog, template, nextTemplate) {
+      recalcTemplate(blog, template.id, stats, nextTemplate);
     },
     function (err) {
       if (err) return callback(err, stats);
@@ -53,8 +62,8 @@ function main(callback) {
         function (err) {
           if (err) return callback(err, stats);
 
-          // setView bumped the cacheID of the synthetic "SITE" owner, not the
-          // real blogs rendering these templates. Flush the full-view and
+          // setView's cacheID bump is deferred for these too, and its owner
+          // is the synthetic "SITE" anyway. Flush the full-view and
           // rendered-output caches of every blog whose active template we
           // just rewrote so the new retrieve metadata takes effect.
           invalidateBlogsUsing(Object.keys(touchedSiteTemplates), function (err) {
@@ -64,6 +73,47 @@ function main(callback) {
       );
     }
   );
+}
+
+function recalcTemplate(blog, templateID, stats, done) {
+  Template.getAllViews(templateID, function (err, views) {
+    if (err) return done(err);
+
+    var changed = false;
+
+    async.eachOfSeries(
+      views || {},
+      function (view, name, nextView) {
+        recalcView(templateID, view, stats, function (err, viewChanged) {
+          if (!err && viewChanged) changed = true;
+          nextView(err);
+        });
+      },
+      function (err) {
+        if (err) return done(err);
+
+        // Nothing was rewritten - no cache to flush.
+        if (!changed) return done();
+
+        // Refresh the CDN manifest once for the whole template.
+        // updateCdnManifest already no-ops when the template isn't installed
+        // on its owner blog, so this is cheap for inactive templates.
+        updateCdnManifest(templateID, function (err) {
+          if (err) return done(err);
+
+          // Only the blog's active template affects what it renders, so only
+          // that one needs a cache flush.
+          if (!blog || !blog.template || blog.template !== templateID)
+            return done();
+
+          Blog.set(blog.id, { cacheID: Date.now() }, function (err) {
+            if (!err) console.log("Flushed cache for", blog.handle || blog.id);
+            done(err);
+          });
+        });
+      }
+    );
+  });
 }
 
 function recalcView(templateID, view, stats, next) {
@@ -77,6 +127,9 @@ function recalcView(templateID, view, stats, next) {
   // unchanged, so pass a sentinel retrieve object. setView drops the
   // sentinel and rebuilds retrieve from the parser, preserving user
   // options such as includeDraft and filters.
+  //
+  // deferCacheBump: skip setView's per-view cacheID bump and CDN manifest
+  // rebuild - the caller does that once per template instead.
   Template.setView(
     templateID,
     {
@@ -86,6 +139,7 @@ function recalcView(templateID, view, stats, next) {
         __recalculateRetrieve: Date.now(),
       },
     },
+    { deferCacheBump: true },
     function (err) {
       if (err) return next(err);
 
@@ -96,11 +150,10 @@ function recalcView(templateID, view, stats, next) {
   );
 }
 
-// setView bumps Blog.set(owner). For SITE:* templates the owner is the
-// literal "SITE", so no real blog's cacheID changes and the full-view /
-// rendered caches keep serving the old retrieve metadata. Mirror
-// app/templates/index.js:emptyCacheForBlogsUsing - bump the cacheID of
-// every blog whose active template is one we just rewrote.
+// Mirror app/templates/index.js:emptyCacheForBlogsUsing - bump the cacheID of
+// every blog whose active template is one we just rewrote. Used for SITE:*
+// templates, whose owner is the literal "SITE" so no real blog's cacheID is
+// touched by the recalculation itself.
 function invalidateBlogsUsing(templateIDs, done) {
   if (!templateIDs || !templateIDs.length) return done();
 
