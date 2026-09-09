@@ -51,15 +51,21 @@ RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
   && chmod +x /usr/local/bin/pandoc \
   && rm -r pandoc-${PANDOC_VERSION}
 
-# Runtime libraries only:
-#  - libvips (+ codec libs) is what `sharp` dlopen()s at run time. The vips-dev
-#    headers needed to *compile* sharp live in the `deps` stage.
+# Runtime libraries only (the -dev headers and toolchain used to *compile*
+# sharp live in the throwaway `deps` stage):
+#  - `sharp` is built against the system libvips (see `deps`), so the final
+#    image needs both libvips.so (vips) and libvips-cpp.so (vips-cpp) plus the
+#    HEIC/AVIF decode path: vips-heif -> libheif -> its libde265 plugin. This
+#    is what gives `car.heic` (HEVC-coded) a working decoder; sharp's own
+#    prebuilt libvips ships without HEVC.
 #  - exiftool pulls in the perl runtime it needs; used for image/file metadata.
 # One layer, no apk cache left behind.
 RUN apk add --no-cache \
     vips \
+    vips-cpp \
     vips-heif \
     libheif \
+    libheif-libde265 \
     libpng \
     libjpeg-turbo \
     libde265 \
@@ -82,8 +88,16 @@ FROM base AS deps
 
 RUN apk add --no-cache build-base python3 pkgconfig vips-dev
 
+# Build sharp against the system libvips rather than its bundled prebuilt, so
+# HEIC/HEVC decode (car.heic in app/build) works - the prebuilt libvips omits
+# the HEVC codec. Matches how the pre-multi-stage image resolved sharp.
+ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
+
 # NODE_ENV=production (inherited) keeps this to runtime dependencies only.
-RUN npm install --no-package-lock --omit=dev && npm cache clean --force
+RUN npm install --no-package-lock --omit=dev \
+ && npm rebuild sharp --build-from-source --foreground-scripts \
+ && node -e "const v=require('sharp').versions.vips; if (v!==require('child_process').execSync('pkg-config --modversion vips-cpp').toString().trim()) { console.error('sharp not linked against system libvips, got '+v); process.exit(1) }" \
+ && npm cache clean --force
 
 ## Stage 3 (dev-deps) - THROWAWAY
 # Layers the devDependencies (jasmine, nyc, nock, faker, ...; all pure JS, no
@@ -92,7 +106,12 @@ RUN npm install --no-package-lock --omit=dev && npm cache clean --force
 FROM deps AS dev-deps
 
 ENV NODE_ENV=development
-RUN npm install --no-package-lock && npm cache clean --force
+# The re-resolve can swap sharp back to its prebuilt libvips; force it back onto
+# the system libvips and confirm before this stage is copied forward.
+RUN npm install --no-package-lock \
+ && npm rebuild sharp --build-from-source --foreground-scripts \
+ && node -e "const v=require('sharp').versions.vips; if (v!==require('child_process').execSync('pkg-config --modversion vips-cpp').toString().trim()) { console.error('sharp not linked against system libvips, got '+v); process.exit(1) }" \
+ && npm cache clean --force
 
 ## Stage 4 (development)
 # The image the CI test matrix runs against. Source is NOT baked in - it's bind
@@ -105,6 +124,10 @@ ENV PATH=/usr/src/app/node_modules/.bin:$PATH
 
 # Prebuilt node_modules (prod deps compiled in `deps` + devDeps from `dev-deps`).
 COPY --from=dev-deps /usr/src/app/node_modules ./node_modules
+
+# Fail the build here rather than in a test shard if the runtime libvips
+# closure copied into base can't satisfy the system-linked sharp addon.
+RUN node -e "require('sharp'); console.log('sharp loads against libvips ' + require('sharp').versions.vips)"
 
 # The test suite (app/site/tests) and scripts/development/translate launch a
 # local headless Chromium via Puppeteer. Production does not - it connects to
