@@ -399,8 +399,6 @@ Fix bug parsing ISO8601 date format and tell [Thomas](https://mail.google.com/ma
 
 Fix bug with Client.write which does not propogate sync errors... to demonstrate this, revoke dropbox token then try to enable local editing.
 
-Fix bug with pages not appearing in backlinks and [tell questioner](https://blot.im/questions/2913)
-
 Fix bug with magic text in posts which breaks backend and tell [Victor](https://mail.google.com/mail/u/0/#inbox/FMfcgzQVxRMzjBtRWVwLWtlBcFGsSVCQ)
 
 Fix bug with Google Drive client and [Stephen's large blog](https://mail.google.com/mail/u/0/#inbox/QgrcJHsBsbkNkMkkkMmLWBxRfnGnWPVwLHl)
