@@ -53,37 +53,34 @@ function transformerLookup(transformer, src, transformFactory, fallback) {
   });
 }
 
-function readTransformerResult(transformer, src) {
-  return new Promise((resolve) => {
-    if (!transformer || !transformer._blogID || !transformer._name) {
-      return resolve(null);
-    }
+async function readTransformerResult(transformer, src) {
+  if (!transformer || !transformer._blogID || !transformer._name) {
+    return null;
+  }
 
-    let keys;
+  let keys;
 
-    try {
-      keys = TransformerKeys(transformer._blogID, transformer._name);
-    } catch (err) {
-      return resolve(null);
-    }
+  try {
+    keys = TransformerKeys(transformer._blogID, transformer._name);
+  } catch (err) {
+    return null;
+  }
 
-    const urlContentKey = keys.url.content(src);
+  // models/client is a promise-based node-redis client (RESP3, no legacy
+  // callback mode) - it must be awaited. Passing a callback here, as this
+  // used to, means the callback never fires and the caller hangs until the
+  // plugin's 10 minute timeout.
+  try {
+    const hash = await client.get(keys.url.content(src));
+    if (!hash) return null;
 
-    client.get(urlContentKey, (err, hash) => {
-      if (err || !hash) return resolve(null);
+    const payload = await client.get(keys.content(hash));
+    if (!payload) return null;
 
-      client.get(keys.content(hash), (contentErr, payload) => {
-        if (contentErr || !payload) return resolve(null);
-
-        try {
-          const parsed = JSON.parse(payload);
-          resolve(parsed || null);
-        } catch (parseErr) {
-          resolve(null);
-        }
-      });
-    });
-  });
+    return JSON.parse(payload) || null;
+  } catch (err) {
+    return null;
+  }
 }
 
 module.exports = {

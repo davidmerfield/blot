@@ -1,6 +1,8 @@
 const { join } = require("path");
 const crypto = require("crypto");
-const fetch = require("node-fetch");
+// Remote image URL is user-influenced (og:image / twitter:image on an
+// arbitrary page), so fetch it through the airlock proxy - see remote.js.
+const { fetch } = require("helper/airlock");
 const sharp = require("sharp");
 const fs = require("fs-extra");
 
@@ -161,6 +163,7 @@ async function lookupThumbnails(remoteImage, blogID, transformer) {
 async function fetchImageBuffer(remoteImage) {
   try {
     const response = await fetch(remoteImage, {
+      airlockLabel: "linkCards/thumbnail",
       redirect: "follow",
       timeout: REQUEST_TIMEOUT,
       headers: {

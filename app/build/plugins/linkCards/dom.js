@@ -44,17 +44,19 @@ function buildCardHTML(href, metadata, layout) {
 }
 
 function replaceWithCard($, el, html) {
-  const parent = $(el).parent();
-  const text = textContent($(el).text());
+  const $el = $(el);
+  const text = textContent($el.text());
 
-  if (
-    parent.length &&
-    parent[0].name === "p" &&
-    textContent(parent.text()) === text
-  ) {
-    parent.replaceWith(html);
+  // An <article> cannot live inside a <p> (or an inline wrapper inside one),
+  // so when the link sits in a paragraph that contains nothing but the link,
+  // replace the whole paragraph. closest() rather than parent() so a link
+  // wrapped in <em>/<strong> is still handled.
+  const paragraph = $el.closest("p");
+
+  if (paragraph.length && textContent(paragraph.text()) === text) {
+    paragraph.replaceWith(html);
   } else {
-    $(el).replaceWith(html);
+    $el.replaceWith(html);
   }
 }
 
@@ -71,14 +73,22 @@ function shouldTransform($, el, options) {
   if (normalizedHref !== normalizedText) return false;
 
   if (!/^https?:\/\//i.test(href)) return false;
+
+  // Reject credentials in the URL up front - see sanitizeRemoteURL.
+  try {
+    const parsed = new URL(href);
+    if (parsed.username || parsed.password) return false;
+  } catch (err) {
+    return false;
+  }
+
   if (!isExternal(href, options)) return false;
 
-  const parent = $(el).parent();
-  if (
-    parent.length &&
-    parent[0].name === "p" &&
-    textContent(parent.text()) !== normalizedText
-  ) {
+  // Only transform a link inside a paragraph when that paragraph is nothing
+  // but the link; otherwise we would splice a block-level card into a run of
+  // prose. closest() so an <em>/<strong>-wrapped link is covered too.
+  const paragraph = $(el).closest("p");
+  if (paragraph.length && textContent(paragraph.text()) !== normalizedText) {
     return false;
   }
 

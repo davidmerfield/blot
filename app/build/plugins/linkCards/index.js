@@ -6,7 +6,11 @@ const {
   shouldTransform,
   normalizeLayout,
 } = require("./dom");
-const { DEFAULT_LAYOUT } = require("./constants");
+const {
+  DEFAULT_LAYOUT,
+  MAX_CARDS_PER_ENTRY,
+  FETCH_CONCURRENCY,
+} = require("./constants");
 
 function render($, callback, options = {}) {
   const layout = normalizeLayout(options.layout);
@@ -18,28 +22,37 @@ function render($, callback, options = {}) {
   );
 
   $("a").each((_, el) => {
+    if (elements.length >= MAX_CARDS_PER_ENTRY) return false;
     if (shouldTransform($, el, options)) {
       elements.push(el);
     }
   });
 
   (async () => {
-    for (const el of elements) {
-      const href = $(el).attr("href");
+    let cursor = 0;
 
-      try {
-        const metadata = await loadMetadata(href, options.blogID, {
-          html: htmlTransformer,
-          image: imageTransformer,
-        });
-        if (!metadata) continue;
+    const worker = async () => {
+      while (cursor < elements.length) {
+        const el = elements[cursor++];
+        const href = $(el).attr("href");
 
-        const cardHTML = buildCardHTML(href, metadata, layout);
-        replaceWithCard($, el, cardHTML);
-      } catch (err) {
-        // Ignore errors so other content can continue rendering
+        try {
+          const metadata = await loadMetadata(href, options.blogID, {
+            html: htmlTransformer,
+            image: imageTransformer,
+          });
+          if (!metadata) continue;
+
+          const cardHTML = buildCardHTML(href, metadata, layout);
+          replaceWithCard($, el, cardHTML);
+        } catch (err) {
+          // Ignore errors so other content can continue rendering
+        }
       }
-    }
+    };
+
+    const workerCount = Math.min(FETCH_CONCURRENCY, elements.length);
+    await Promise.all(Array.from({ length: workerCount }, worker));
   })()
     .then(() => callback())
     .catch(() => callback());
@@ -48,6 +61,7 @@ function render($, callback, options = {}) {
 module.exports = {
   render,
   category: "typography",
+  isDefault: true,
   title: "Link cards",
   description: "Convert bare external links into rich link cards",
   options: {

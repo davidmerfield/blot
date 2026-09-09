@@ -166,6 +166,13 @@ function sanitizeRemoteURL(value, href) {
     if (!/^https?:$/i.test(url.protocol)) {
       return "";
     }
+    // Credentials in the URL are a common trick for slipping a host past a
+    // naive check; the airlock filters on the destination IP regardless, but
+    // there is no legitimate reason for an og:image / favicon URL to carry
+    // them.
+    if (url.username || url.password) {
+      return "";
+    }
     return url.toString();
   } catch (err) {
     return "";

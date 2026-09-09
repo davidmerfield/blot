@@ -1,7 +1,11 @@
 const { join, extname } = require("path");
 const { URL } = require("url");
 const crypto = require("crypto");
-const fetch = require("node-fetch");
+// The favicon URL comes from a <link rel="icon"> on an arbitrary remote page,
+// so it is user-influenced and must be fetched through the airlock proxy -
+// see remote.js. This path previously did a direct node-fetch, bypassing the
+// airlock entirely.
+const { fetch } = require("helper/airlock");
 const fs = require("fs-extra");
 
 const config = require("config");
@@ -64,6 +68,7 @@ async function cleanupIcon(path, blogID) {
 async function fetchAndStoreIcon(remoteIcon, blogID) {
   try {
     const response = await fetch(remoteIcon, {
+      airlockLabel: "linkCards/icon",
       redirect: "follow",
       timeout: REQUEST_TIMEOUT,
       headers: {

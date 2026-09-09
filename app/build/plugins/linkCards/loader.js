@@ -3,6 +3,7 @@ const { getCachePath, readCache, writeCache } = require("./cache");
 const { sanitizeMetadata, fallbackMetadata } = require("./metadata");
 const { ensureThumbnails } = require("./thumbnails");
 const { ensureIcon } = require("./icons");
+const { NEGATIVE_CACHE_TTL } = require("./constants");
 
 async function loadMetadata(href, blogID, transformers = {}) {
   if (!href) return null;
@@ -10,7 +11,14 @@ async function loadMetadata(href, blogID, transformers = {}) {
   const cachePath = getCachePath(blogID, href);
 
   const cached = await readCache(cachePath);
-  if (cached) {
+  if (cached && cached.fallback) {
+    // Negative cache entry from a previous failed lookup. Keep serving the
+    // hostname-only card until it expires rather than re-hitting the network
+    // on every rebuild.
+    if (isFreshNegativeCache(cached)) {
+      return fallbackMetadata(href);
+    }
+  } else if (cached) {
     sanitizeMetadata(cached, href);
     cached.url = href;
     await ensureThumbnails(cached, blogID, transformers.image);
@@ -30,9 +38,18 @@ async function loadMetadata(href, blogID, transformers = {}) {
   }
 
   const fallback = fallbackMetadata(href);
-  if (fallback) return fallback;
+  if (fallback) {
+    await writeCache(cachePath, { fallback: true, cachedAt: Date.now() });
+    return fallback;
+  }
 
   return null;
+}
+
+function isFreshNegativeCache(cached) {
+  const cachedAt = Number(cached && cached.cachedAt);
+  if (!Number.isFinite(cachedAt)) return false;
+  return Date.now() - cachedAt < NEGATIVE_CACHE_TTL;
 }
 
 module.exports = {
