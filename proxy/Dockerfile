@@ -32,8 +32,11 @@ RUN curl -fsSL -o /vendor/lualib/resty/auto-ssl/vendor/shell.lua \
       "https://raw.githubusercontent.com/juce/lua-resty-shell/955243d70506c21e7cc29f61d745d1a8a718994f/lib/resty/shell.lua" && \
     echo "1db9590b05828572a59a67f4ec83210b86b233b6d13c7e3a1e9713d6e19d6974  /vendor/lualib/resty/auto-ssl/vendor/shell.lua" | sha256sum -c -
 
-# sockproc - used by lua-resty-auto-ssl to shell out during cert issuance
-RUN git clone --depth 1 https://github.com/juce/sockproc.git /tmp/sockproc && \
+# sockproc - used by lua-resty-auto-ssl to shell out during cert issuance.
+# Pinned to the commit lua-resty-auto-ssl's own Makefile uses.
+ARG SOCKPROC_COMMIT=92aba736027bb5d96e190b71555857ac5bb6b2be
+RUN git clone https://github.com/juce/sockproc.git /tmp/sockproc && \
+    git -C /tmp/sockproc checkout --detach "${SOCKPROC_COMMIT}" && \
     make -C /tmp/sockproc && \
     install -m 0755 /tmp/sockproc/sockproc /vendor/sockproc
 
@@ -51,11 +54,14 @@ COPY --from=deps /vendor/lualib/ /usr/local/openresty/lualib/
 COPY --from=deps /vendor/sockproc /usr/local/bin/sockproc
 
 # Directories referenced by the generated config and by lua-resty-auto-ssl.
+# The log and cache directories (and auto-ssl storage) must be writable by the
+# worker user, which the generated config sets to ec2-user.
 RUN mkdir -p /etc/resty-auto-ssl/storage \
     /etc/resty-auto-ssl/letsencrypt/conf \
     /etc/openresty /etc/ssl/private \
     /var/log/openresty /var/cache/openresty && \
-    chmod 755 /etc/resty-auto-ssl
+    chmod 755 /etc/resty-auto-ssl && \
+    chown -R ec2-user:ec2-user /var/log/openresty /var/cache/openresty /etc/resty-auto-ssl
 
 # Self-signed placeholder certificate so `openresty -t` passes and the
 # container boots without any ACME machinery. This image is build-only

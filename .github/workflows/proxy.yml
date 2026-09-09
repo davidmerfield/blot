@@ -5,17 +5,26 @@ name: proxy
 # checks the container boots and answers a health check. It does NOT deploy
 # anything and does not yet run the proxy/tests integration suite.
 
+# The path filters include the external inputs the config generator reads
+# directly (root package.json for mustache/fs-extra, app/config.js ->
+# config/index.js for icloud/webhooks limits), not just proxy/.
 on:
   push:
     branches: [master]
     paths:
       - ".github/workflows/proxy.yml"
       - "proxy/**"
+      - "package.json"
+      - "app/config.js"
+      - "config/index.js"
   pull_request:
     branches: [master]
     paths:
       - ".github/workflows/proxy.yml"
       - "proxy/**"
+      - "package.json"
+      - "app/config.js"
+      - "config/index.js"
 
 jobs:
   build:

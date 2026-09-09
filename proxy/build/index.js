@@ -21,7 +21,11 @@ function loadEnvFile() {
         return vars;
       }, {});
 
-    Object.assign(process.env, envVars);
+    // Do not clobber values already exported by the caller (e.g. the
+    // container paths that proxy/build/build.sh sets). .env only fills gaps.
+    for (const [key, value] of Object.entries(envVars)) {
+      if (process.env[key] === undefined) process.env[key] = value;
+    }
   } catch (error) {
     console.error("Error reading .env file:", error);
   }
@@ -62,7 +66,10 @@ const webhooks_client_max_body_size = `${
 }M`;
 
 const locals = {
-  host: "blot.im",
+  // Base domain the generated virtual hosts are built from. This is a
+  // build-time value; the BLOT_HOST passed to `docker run` only affects
+  // certificate handling in entrypoint.sh, not the already-generated config.
+  host: process.env.BLOT_HOST || "blot.im",
   blot_directory: config.blot_directory,
   disable_http2: process.env.DISABLE_HTTP2,
   node_ip: NODE_SERVER_IP,

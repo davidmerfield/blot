@@ -20,11 +20,16 @@ cd "$REPO_ROOT"
 # require("config") resolves to app/config.js via NODE_PATH
 export NODE_PATH="${NODE_PATH:-$REPO_ROOT/app}"
 
-# Paths inside the container image - keep in sync with proxy/Dockerfile
+# Paths and user inside the container image - keep in sync with proxy/Dockerfile.
+# OPENRESTY_USER must be a user that exists in the image and owns the log and
+# cache directories (proxy/Dockerfile creates and chowns them to ec2-user).
 export OPENRESTY_CONFIG_DIRECTORY="${OPENRESTY_CONFIG_DIRECTORY:-/etc/openresty}"
 export OPENRESTY_LOG_DIRECTORY="${OPENRESTY_LOG_DIRECTORY:-/var/log/openresty}"
 export OPENRESTY_CACHE_DIRECTORY="${OPENRESTY_CACHE_DIRECTORY:-/var/cache/openresty}"
-export OPENRESTY_USER="${OPENRESTY_USER:-nobody}"
+export OPENRESTY_USER="${OPENRESTY_USER:-ec2-user}"
+
+# Base domain the generated virtual hosts are built from (build-time value).
+export BLOT_HOST="${BLOT_HOST:-blot.im}"
 
 # The container is build-only scaffolding: there is no host node server or
 # redis wired up yet. These placeholders keep the generated config valid so

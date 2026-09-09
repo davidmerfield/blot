@@ -23,18 +23,24 @@ separately.
 ## Build and run locally
 
 ```sh
-bash proxy/build/build.sh
+# Base domain for the generated vhosts is a BUILD-time value:
+BLOT_HOST=example.com bash proxy/build/build.sh   # defaults to blot.im
 docker build -f proxy/Dockerfile -t blot-proxy proxy/
 docker run --rm --cap-add SYS_NICE -p 8080:80 -p 8443:443 \
   -e BLOT_HOST=example.com blot-proxy
 curl -i http://localhost:8080/health   # -> 200
 ```
 
+`BLOT_HOST` at `docker run` time is only read by `entrypoint.sh` for
+certificate handling; it does not change the already-generated vhosts. Set it
+when running `build.sh` to change the domain the config is built for.
+
 `--cap-add SYS_NICE` avoids a harmless `setpriority(-20) failed` alert from
 `worker_priority` in an unprivileged container.
 
 CI runs the same steps in [`.github/workflows/proxy.yml`](../.github/workflows/proxy.yml)
-on any change under `proxy/`.
+on any change under `proxy/` (plus `package.json` and `config/index.js`, which
+the generator reads).
 
 ## Pinned dependencies
 
