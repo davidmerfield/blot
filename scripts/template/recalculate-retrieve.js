@@ -188,7 +188,15 @@ function recalcView(templateID, view, stats, next) {
     },
     { deferCacheBump: true },
     function (err) {
-      if (err) return next(err);
+      if (err) {
+        // setView commits the view hash (multi.exec) before the steps that
+        // can still fail here - the deferred error-entry cleanup, or in
+        // non-deferred callers the cache bump / manifest rebuild. So an
+        // error does not mean the retrieve metadata was left untouched.
+        // Report the view as changed anyway so the caller still flushes
+        // this template's caches before the error stops the run.
+        return next(err, true);
+      }
 
       stats.updated++;
       console.log("Updated", templateID, view.name);
