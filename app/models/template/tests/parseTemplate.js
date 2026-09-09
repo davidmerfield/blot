@@ -264,6 +264,20 @@ describe("parseTemplate", function () {
     expect(result.retrieve.tagged).toEqual({ fields: { body: true } });
   });
 
+  it("does not treat an explicit dotted lookup as the root entry list", function () {
+    // {{#author.posts}} iterates the `posts` property of `author`, not the
+    // root posts retriever - it must not add retrieve.posts.
+    var template = `{{#author.posts}}{{title}}{{/author.posts}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.posts).toBeUndefined();
+  });
+
+  it("does not treat a dotted lookup under an outer section as the root list", function () {
+    var template = `{{#show}}{{#author.posts}}{{{html}}}{{/author.posts}}{{/show}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.posts).toBeUndefined();
+  });
+
   it("sees through encode_xml when projecting entry fields", function () {
     var template = `{{#recent_entries}}{{title}}{{#encode_xml}}{{{body}}}{{/encode_xml}}{{/recent_entries}}`;
     var result = parseTemplate(template);

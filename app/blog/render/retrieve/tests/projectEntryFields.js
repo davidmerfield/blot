@@ -121,7 +121,7 @@ describe("projectEntryFields", function () {
     expect(entries[0].html).toBe("<p>one</p>");
   });
 
-  it("keeps every heavy field when a kept field's markup contains Mustache", function () {
+  it("skips projection for the whole list when a kept field's markup contains Mustache", function () {
     var entries = [
       entry({
         id: "2",
@@ -136,12 +136,12 @@ describe("projectEntryFields", function () {
       ["allEntries", "all_entries"]
     );
 
-    // The entry whose html references summary keeps all heavy fields.
+    // The dynamic markup in entry 0 is rendered against the whole list, so
+    // every entry keeps all heavy fields - not just the one holding the tags.
     expect(entries[0].summary).toBe("one summary");
     expect(entries[0].body).toBe("one");
-    // A plain entry in the same list is still projected.
-    expect(entries[1].summary).toBeUndefined();
-    expect(entries[1].body).toBeUndefined();
+    expect(entries[1].summary).toBe("one summary");
+    expect(entries[1].body).toBe("one");
     expect(entries[1].html).toBe("<p>one</p>");
   });
 

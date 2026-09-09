@@ -395,6 +395,12 @@ function applyUserRetrieveOptions(parsedRetrieve, requestedRetrieve, existingRet
 
 			if (result[key] === undefined) {
 				result[key] = sourceVal;
+			} else if (type(result[key], "array") && type(sourceVal, "array")) {
+				// `cdn` is an array dependency - union the targets so an
+				// explicit/stored entry (e.g. a target reached indirectly)
+				// survives alongside the parser's. updateCdnManifest builds
+				// the manifest purely from this persisted array.
+				result[key] = [...new Set(result[key].concat(sourceVal))].sort();
 			} else if (type(result[key], "object") && type(sourceVal, "object")) {
 				// Both structured (e.g. plugin.katex.css from content plus an
 				// explicit plugin.zoom.js needed by a local): keep the parser's

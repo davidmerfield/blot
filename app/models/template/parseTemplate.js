@@ -115,6 +115,14 @@ function parseTemplate(template) {
   // structurally by entryRootForContext() instead.
   var entryFieldContexts = {};
 
+  // Flat context path -> array of the section-token names that produced it.
+  // A single dotted section ({{#author.posts}}) is one segment "author.posts";
+  // nested sections ({{#show}}{{#posts}}) are two segments ["show", "posts"].
+  // entryRootForContext() uses this so its tail match only fires on whole
+  // section boundaries - {{#author.posts}} must NOT be read as the root
+  // `posts` entry list.
+  var contextSegments = { "": [] };
+
   process("", parsed);
 
   // Return the projected-entry-local root if `contextPath` ends at one of its
@@ -127,14 +135,24 @@ function parseTemplate(template) {
 
     if (entryFieldContexts[contextPath]) return entryFieldContexts[contextPath];
 
+    var segments = contextSegments[contextPath];
+
     for (var root in projectedEntryLocals) {
       var prefixes = projectedEntryLocals[root] || [];
       for (var i = 0; i < prefixes.length; i++) {
         var pattern = prefixes[i] ? root + "." + prefixes[i] : root;
-        if (
-          contextPath === pattern ||
-          contextPath.slice(-(pattern.length + 1)) === "." + pattern
-        ) {
+
+        if (contextPath === pattern) return root;
+
+        if (segments) {
+          // Only match when `pattern` lines up with whole section-token
+          // boundaries, so {{#author.posts}} (one segment) is not mistaken
+          // for the root `posts` list while {{#show}}{{#posts}} still is.
+          for (var s = 1; s < segments.length; s++) {
+            if (segments.slice(s).join(".") === pattern) return root;
+          }
+        } else if (contextPath.slice(-(pattern.length + 1)) === "." + pattern) {
+          // No segment info (synthetic path) - fall back to the string tail.
           return root;
         }
       }
@@ -495,7 +513,18 @@ function parseTemplate(template) {
           markProjectedFieldContext(contextPath ? contextPath + "." + variable : variable);
         }
 
-        if (type(token[4], "array")) process(context + variable, token[4]);
+        if (type(token[4], "array")) {
+          var childContext = context + variable;
+          if (
+            (token[0] === "#" || token[0] === "^") &&
+            !contextSegments[childContext]
+          ) {
+            contextSegments[childContext] = (
+              contextSegments[contextPath] || []
+            ).concat([variable]);
+          }
+          process(childContext, token[4]);
+        }
       }
     }
   }

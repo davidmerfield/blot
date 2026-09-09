@@ -82,19 +82,22 @@ function projectEntryFields(entries, retrieve, keys) {
 
   // Heavy fields we are keeping. A Blot entry's own markup can contain
   // Mustache that renderLocals evaluates later - e.g. an entry whose `html`
-  // is "{{#allEntries}}{{{summary}}}{{/allEntries}}". If a kept field holds
-  // template tags we can't be sure the fields we're about to strip aren't
-  // referenced from there, so leave that entry alone.
+  // is "{{#allEntries}}{{{summary}}}{{/allEntries}}". That markup is rendered
+  // against the whole retrieved local, not just its own entry, so if ANY
+  // entry's kept field carries template tags we can't safely strip the other
+  // heavy fields from any entry in the list. Bail out of projection entirely.
   var keep = HEAVY_FIELDS.filter(function (field) {
     return fields[field];
   });
 
   for (var i = 0; i < list.length; i++) {
-    var entry = list[i];
+    if (keptFieldHasMustache(list[i], keep)) return entries;
+  }
+
+  for (var k = 0; k < list.length; k++) {
+    var entry = list[k];
 
     if (!entry || typeof entry !== "object") continue;
-
-    if (keptFieldHasMustache(entry, keep)) continue;
 
     for (var j = 0; j < strip.length; j++) {
       if (entry[strip[j]] !== undefined) delete entry[strip[j]];
@@ -105,6 +108,7 @@ function projectEntryFields(entries, retrieve, keys) {
 }
 
 function keptFieldHasMustache(entry, keep) {
+  if (!entry || typeof entry !== "object") return false;
   for (var i = 0; i < keep.length; i++) {
     var value = entry[keep[i]];
     if (typeof value === "string" && value.indexOf("{{") !== -1) return true;
