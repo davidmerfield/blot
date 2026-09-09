@@ -119,13 +119,17 @@ async function request(path, opts = {}, max = 5) {
   check("GET / routes to the app (2xx)", home.status >= 200 && home.status < 300, "got " + home.status);
   check("GET / returns a non-empty body", home.body.length > 0);
 
-  // 3. The sign-in page renders (dashboard lives under /sites).
-  const loginPage = await request("/sites/log-in");
+  // 3. The sign-in page renders (dashboard lives under /sites). Do this with
+  //    the cookie jar so we pick up the __Host-csrf cookie + token.
+  const jar = {};
+  const loginPage = await request("/sites/log-in", { jar });
   check("GET /sites/log-in returns 200", loginPage.status === 200, "got " + loginPage.status);
   check(
     "sign-in page has email + password fields",
     /name=["']?email/.test(loginPage.body) && /name=["']?password/.test(loginPage.body)
   );
+  const csrf = (loginPage.body.match(/name=["']?_csrf["']?\s+value=["']([^"']+)["']/) || [])[1];
+  check("sign-in page carries a CSRF token", !!csrf, csrf ? "" : "no _csrf field found");
 
   // 4. The dashboard requires auth.
   const anonSites = await once("/sites");
@@ -135,12 +139,12 @@ async function request(path, opts = {}, max = 5) {
     `status ${anonSites.status} location ${anonSites.headers.location}`
   );
 
-  // 5. Sign in with the seeded user.
-  const jar = {};
+  // 5. Sign in with the seeded user (double-submit CSRF: cookie in the jar,
+  //    token in the body).
   const signIn = await request("/sites/log-in", {
     method: "POST",
     jar,
-    body: { email: EMAIL, password: PASSWORD },
+    body: { email: EMAIL, password: PASSWORD, _csrf: csrf },
   });
   check("POST sign-in sets a session cookie", Object.keys(jar).length > 0, JSON.stringify(jar));
   check(
@@ -157,9 +161,14 @@ async function request(path, opts = {}, max = 5) {
     "got " + authedSites.status + " location " + authedSites.headers.location
   );
 
-  // 7. Sign out, then the session no longer works.
-  const signOut = await once("/sites/account/log-out", { method: "POST", jar });
-  check("POST log-out succeeds", signOut.status < 500, "got " + signOut.status);
+  // 7. Sign out, then the session no longer works (log-out is also a
+  //    CSRF-protected mutation).
+  const signOut = await once("/sites/account/log-out", {
+    method: "POST",
+    jar,
+    body: { _csrf: csrf },
+  });
+  check("POST log-out succeeds", signOut.status >= 200 && signOut.status < 400, "got " + signOut.status);
   const afterLogout = await once("/sites", { jar });
   check(
     "GET /sites after log-out redirects to log-in",
