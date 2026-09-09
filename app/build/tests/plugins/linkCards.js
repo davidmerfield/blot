@@ -252,14 +252,21 @@ describe("link cards plugin", function () {
 
   describe("URL guards", function () {
     const cheerio = require("cheerio");
-    const { shouldTransform } = require("build/plugins/linkCards/dom");
+    const {
+      shouldTransform,
+      buildCardHTML,
+    } = require("build/plugins/linkCards/dom");
     const {
       sanitizeRemoteURL,
     } = require("build/plugins/linkCards/metadata");
 
-    function anchor(href) {
-      const $ = cheerio.load(`<p><a href="${href}">${href}</a></p>`, null, false);
+    function node(html) {
+      const $ = cheerio.load(html, null, false);
       return { $, el: $("a")[0] };
+    }
+
+    function anchor(href) {
+      return node(`<p><a href="${href}">${href}</a></p>`);
     }
 
     it("does not transform a link that carries credentials", function () {
@@ -270,6 +277,32 @@ describe("link cards plugin", function () {
     it("still transforms an ordinary external link", function () {
       const { $, el } = anchor("https://example.com/post");
       expect(shouldTransform($, el, { domain: "blog.example" })).toBe(true);
+    });
+
+    it("transforms a link that is the whole content of a list item", function () {
+      const { $, el } = node(
+        `<ul><li><a href="https://example.com/x">https://example.com/x</a></li></ul>`
+      );
+      expect(shouldTransform($, el, { domain: "blog.example" })).toBe(true);
+    });
+
+    it("does not turn a bare link in a heading into a card", function () {
+      const { $, el } = node(
+        `<h1><a href="https://example.com/x">https://example.com/x</a></h1>`
+      );
+      expect(shouldTransform($, el, { domain: "blog.example" })).toBe(false);
+    });
+
+    it("carries target=\"_blank\" onto the card anchor", function () {
+      const html = buildCardHTML(
+        "https://example.com/x",
+        { title: "T", siteName: "example.com" },
+        "compact",
+        { target: "_blank" }
+      );
+      expect(html).toContain(
+        '<a class="link-card__anchor" href="https://example.com/x" target="_blank" rel="noopener noreferrer">'
+      );
     });
 
     it("drops credentialed and non-http(s) remote asset URLs", function () {

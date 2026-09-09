@@ -32,7 +32,9 @@ async function fetchMetadataDirect(href) {
     if (!response.ok) return null;
 
     const html = await response.text();
-    return extractMetadataFromHTML(html, href);
+    // Resolve relative og:image / favicon URLs against where we actually
+    // ended up, not the pre-redirect link.
+    return extractMetadataFromHTML(html, response.url || href);
   } catch (err) {
     return null;
   }

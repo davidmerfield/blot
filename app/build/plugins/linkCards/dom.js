@@ -3,7 +3,19 @@ const he = require("he");
 
 const { DEFAULT_LAYOUT, VALID_LAYOUTS } = require("./constants");
 
-function buildCardHTML(href, metadata, layout) {
+// Block-level elements a link card can be dropped straight into. A link whose
+// wrapping <p> is just the link is handled separately (the <p> is replaced).
+const FLOW_CONTENT_HOSTS = new Set([
+  "li",
+  "td",
+  "div",
+  "dd",
+  "blockquote",
+  "section",
+  "figure",
+]);
+
+function buildCardHTML(href, metadata, layout, anchorOptions = {}) {
   const safeHref = escapeAttribute(href);
   const pieces = [];
 
@@ -36,7 +48,14 @@ function buildCardHTML(href, metadata, layout) {
 
   pieces.push(`<div class="link-card__content">${text.join("")}</div>`);
 
-  const anchor = `<a class="link-card__anchor" href="${safeHref}" rel="noopener noreferrer">${pieces.join(
+  // Carry over target="_blank" if the externalLinks plugin (which runs first)
+  // set it on the original anchor, so enabling "open external links in a new
+  // tab" still works for links that became cards.
+  const targetAttr = anchorOptions.target
+    ? ` target="${escapeAttribute(anchorOptions.target)}"`
+    : "";
+
+  const anchor = `<a class="link-card__anchor" href="${safeHref}"${targetAttr} rel="noopener noreferrer">${pieces.join(
     ""
   )}</a>`;
 
@@ -84,15 +103,29 @@ function shouldTransform($, el, options) {
 
   if (!isExternal(href, options)) return false;
 
-  // Only transform a link inside a paragraph when that paragraph is nothing
-  // but the link; otherwise we would splice a block-level card into a run of
-  // prose. closest() so an <em>/<strong>-wrapped link is covered too.
+  // A link card is flow content and replaceWithCard() needs a block-level
+  // element to stand in for. Accept only the shapes Blot's Markdown produces
+  // for "a link on its own line": an anchor whose surrounding paragraph is
+  // just the link (that <p> gets replaced - covers **url** / *url* wrappers
+  // too), or an anchor that is the entire content of a list item, table
+  // cell, div, blockquote, etc. A bare URL in a heading, or an inline-wrapped
+  // link with no paragraph around it, is rejected so we never emit
+  // <h1><article>… or <p><article>…
   const paragraph = $(el).closest("p");
-  if (paragraph.length && textContent(paragraph.text()) !== normalizedText) {
-    return false;
+  if (paragraph.length) {
+    return textContent(paragraph.text()) === normalizedText;
   }
 
-  return true;
+  const host = $(el).parent();
+  const hostName = host.length ? (host[0].name || "").toLowerCase() : "";
+  if (
+    FLOW_CONTENT_HOSTS.has(hostName) &&
+    textContent(host.text()) === normalizedText
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function normalizeLayout(layout) {

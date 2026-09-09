@@ -35,6 +35,7 @@ function render($, callback, options = {}) {
       while (cursor < elements.length) {
         const el = elements[cursor++];
         const href = $(el).attr("href");
+        const target = $(el).attr("target");
 
         try {
           const metadata = await loadMetadata(href, options.blogID, {
@@ -43,7 +44,7 @@ function render($, callback, options = {}) {
           });
           if (!metadata) continue;
 
-          const cardHTML = buildCardHTML(href, metadata, layout);
+          const cardHTML = buildCardHTML(href, metadata, layout, { target });
           replaceWithCard($, el, cardHTML);
         } catch (err) {
           // Ignore errors so other content can continue rendering

@@ -138,11 +138,8 @@
   margin-top: auto;
 }
 
-.link-card__content:only-child {
-  padding-left: 0;
-}
-
 @media (max-width: 600px) {
+  /* Default layout. */
   .link-card__anchor {
     flex-direction: column;
     gap: 0.75rem;
@@ -152,5 +149,21 @@
   .link-card__thumbnail {
     width: 100%;
     height: auto;
+  }
+
+  /* Compact needs selectors at least as specific as the .link-card--compact
+     rules above, or it stays a row with a 30%-wide thumbnail on mobile. */
+  .link-card--compact .link-card__anchor {
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+  }
+
+  .link-card--compact .link-card__thumbnail {
+    width: 100%;
+    height: auto;
+    flex: auto;
+    border-left: 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   }
 }

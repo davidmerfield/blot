@@ -12,16 +12,20 @@ const {
   THUMBNAIL_DIRECTORY,
   THUMBNAIL_WIDTHS,
   REQUEST_TIMEOUT,
+  MAX_IMAGE_BYTES,
 } = require("./constants");
 const { transformerLookup } = require("./transformers");
 const { sanitizeDimension } = require("./metadata");
+const { readLimitedBody } = require("./body");
 
 sharp.cache(false);
 
 async function ensureThumbnails(metadata, blogID, transformer) {
   if (!blogID) {
+    // No blog to cache into - omit the image rather than publish the raw
+    // third-party URL to readers.
     metadata.imageSet = null;
-    metadata.image = metadata.remoteImage;
+    metadata.image = "";
     metadata.imageWidth = null;
     metadata.imageHeight = null;
     return;
@@ -51,8 +55,10 @@ async function ensureThumbnails(metadata, blogID, transformer) {
   const generated = await lookupThumbnails(remoteImage, blogID, transformer);
 
   if (!generated) {
+    // Download/resize (or the proxy) failed - drop the image instead of
+    // handing readers' browsers the untrusted remote URL directly.
     metadata.imageSet = null;
-    metadata.image = remoteImage;
+    metadata.image = "";
     metadata.imageWidth = null;
     metadata.imageHeight = null;
     return;
@@ -66,7 +72,7 @@ function applyPublicImagePaths(metadata, blogID) {
   const imageSet = metadata.imageSet;
   if (!imageSet || !Array.isArray(imageSet.items) || imageSet.items.length === 0) {
     metadata.imageSet = null;
-    metadata.image = metadata.remoteImage;
+    metadata.image = "";
     return;
   }
 
@@ -167,8 +173,7 @@ async function fetchImageBuffer(remoteImage) {
 
     if (!response.ok) return null;
 
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    return readLimitedBody(response, MAX_IMAGE_BYTES);
   } catch (err) {
     return null;
   }
@@ -193,6 +198,14 @@ async function processThumbnails(buffer, remoteImage, blogID) {
     const outputFormat = selectOutputFormat(metadata);
     if (!outputFormat) return null;
 
+    // Width/height in EXIF-tagged sources describe the stored pixels; once we
+    // .rotate() to honour the orientation tag (orientations 5-8 are 90deg
+    // turns) they swap. Size the resize targets off the *displayed* width.
+    const orientedWidth =
+      metadata.orientation && metadata.orientation >= 5
+        ? metadata.height
+        : metadata.width;
+
     const baseName = crypto
       .createHash("sha1")
       .update(remoteImage)
@@ -210,7 +223,7 @@ async function processThumbnails(buffer, remoteImage, blogID) {
     const items = [];
 
     for (const candidate of THUMBNAIL_WIDTHS) {
-      const targetWidth = determineTargetWidth(candidate, metadata.width);
+      const targetWidth = determineTargetWidth(candidate, orientedWidth);
       if (usedWidths.has(targetWidth)) continue;
 
       const filename = `${baseName}-${targetWidth}.${outputFormat}`;
@@ -218,10 +231,12 @@ async function processThumbnails(buffer, remoteImage, blogID) {
 
       await fs.remove(absolutePath).catch(() => {});
 
-      const pipeline = sharp(buffer).resize({
-        width: targetWidth,
-        withoutEnlargement: true,
-      });
+      const pipeline = sharp(buffer)
+        .rotate()
+        .resize({
+          width: targetWidth,
+          withoutEnlargement: true,
+        });
 
       applyFormat(pipeline, outputFormat);
 

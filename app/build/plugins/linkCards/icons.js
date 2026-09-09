@@ -10,11 +10,18 @@ const fs = require("fs-extra");
 
 const config = require("config");
 
-const { ICON_DIRECTORY, REQUEST_TIMEOUT } = require("./constants");
+const {
+  ICON_DIRECTORY,
+  REQUEST_TIMEOUT,
+  MAX_ICON_BYTES,
+} = require("./constants");
+const { readLimitedBody } = require("./body");
 
 async function ensureIcon(metadata, blogID) {
   if (!blogID) {
-    metadata.icon = metadata.remoteIcon;
+    // No blog to cache into - omit the favicon rather than publish the raw
+    // third-party URL (a tracking beacon for every reader).
+    metadata.icon = "";
     metadata.iconPath = "";
     return;
   }
@@ -37,7 +44,10 @@ async function ensureIcon(metadata, blogID) {
 
   const storedPath = await fetchAndStoreIcon(remoteIcon, blogID);
   if (!storedPath) {
-    metadata.icon = metadata.remoteIcon;
+    // Proxy/caching failed - drop the favicon instead of pointing readers'
+    // browsers straight at the remote URL (which the airlock may have
+    // rejected, or which the page serves only to real visitors).
+    metadata.icon = "";
     metadata.iconPath = "";
     return;
   }
@@ -84,9 +94,8 @@ async function fetchAndStoreIcon(remoteIcon, blogID) {
     const extension = determineExtension(contentType, remoteIcon);
     if (!extension) return null;
 
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    if (!buffer.length) return null;
+    const buffer = await readLimitedBody(response, MAX_ICON_BYTES);
+    if (!buffer || !buffer.length) return null;
 
     const fileName = `${createIconBaseName(remoteIcon)}.${extension}`;
     const directory = join(
