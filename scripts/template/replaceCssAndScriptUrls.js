@@ -1,5 +1,7 @@
 const { promisify } = require("util");
 const url = require("url");
+const net = require("net");
+const dns = require("dns");
 const fetch = require("node-fetch");
 const eachView = require("../each/view");
 const Template = require("models/template");
@@ -77,6 +79,30 @@ function isValidUrl(urlString) {
 }
 
 /**
+ * Determine whether an IP address falls within a loopback, link-local,
+ * or private range. Used to block SSRF requests to internal services
+ * (e.g. localhost, 169.254.169.254 cloud metadata, 10.0.0.0/8, etc).
+ */
+function isPrivateIp(ip) {
+  if (net.isIPv4(ip)) {
+    const parts = ip.split(".").map(Number);
+    return (
+      parts[0] === 0 ||
+      parts[0] === 10 ||
+      parts[0] === 127 ||
+      (parts[0] === 169 && parts[1] === 254) ||
+      (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+      (parts[0] === 192 && parts[1] === 168)
+    );
+  }
+  if (net.isIPv6(ip)) {
+    const lower = ip.toLowerCase();
+    return lower === "::1" || lower.startsWith("fc") || lower.startsWith("fd") || lower.startsWith("fe80");
+  }
+  return true;
+}
+
+/**
  * Fetch an asset from a URL and return the buffer
  */
 async function fetchAsset(assetUrl) {
@@ -85,6 +111,15 @@ async function fetchAsset(assetUrl) {
   const timer = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
   try {
+    const parsed = url.parse(assetUrl.startsWith("//") ? "https:" + assetUrl : assetUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`Blocked request with disallowed protocol: ${parsed.protocol}`);
+    }
+    const { address } = await dns.promises.lookup(parsed.hostname);
+    if (isPrivateIp(address)) {
+      throw new Error(`Blocked request to internal address: ${address}`);
+    }
+
     const response = await fetch(assetUrl, { signal });
 
     clearTimeout(timer);
