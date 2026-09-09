@@ -6,6 +6,14 @@ var is_path = require("./is_path");
 var extname = require("path").extname;
 var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 
+// Encode filesystem paths for use in HTML attributes one segment at a time.
+// Encoding the entire path would also encode its slash separators, while
+// writing the decoded path directly would let characters such as # and ? be
+// interpreted as URL delimiters by the browser.
+function serializePath (path) {
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+
 // The purpose of this module is to take the HTML for
 // a given blog post and work out if it references any
 // files in the user's folder. For example, this image
@@ -219,7 +227,7 @@ function dependencies (path, html, metadata) {
     // target text, including deliberately leaving it untouched when
     // it can't find a match.
     if (!isWikilink) {
-      $el.attr(attribute, resolved_value + suffix);
+      $el.attr(attribute, serializePath(resolved_value) + suffix);
     }
 
     if (isSelfReference) {

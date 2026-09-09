@@ -162,6 +162,39 @@ describe("dependencies", function () {
     },
   });
 
+  // Filesystem path segments must be URL-encoded in rewritten attributes,
+  // without changing the decoded paths used for dependency bookkeeping.
+  should_get_dependencies({
+    html:
+      '<a href="report.pdf">Report</a><img src="cover image.png"><link rel="stylesheet" href="print.css">',
+    path: "/folder#1/post.txt",
+    metadata: {},
+    result: {
+      html:
+        '<a href="/folder%231/report.pdf">Report</a><img src="/folder%231/cover%20image.png"><link rel="stylesheet" href="/folder%231/print.css">',
+      metadata: {},
+      dependencies: [
+        "/folder#1/report.pdf",
+        "/folder#1/cover image.png",
+        "/folder#1/print.css",
+      ],
+    },
+  });
+
+  // A genuine anchor suffix is appended after the resolved filesystem path is
+  // encoded; the suffix itself retains its URL query/fragment delimiters.
+  should_get_dependencies({
+    html: '<a href="report.pdf?download=1#page=3">Report</a>',
+    path: "/folder?draft/post.txt",
+    metadata: {},
+    result: {
+      html:
+        '<a href="/folder%3Fdraft/report.pdf?download=1#page=3">Report</a>',
+      metadata: {},
+      dependencies: ["/folder?draft/report.pdf"],
+    },
+  });
+
   // Should not touch fragment-only hrefs, e.g. footnotes and
   // tables of contents
   should_get_dependencies({
