@@ -7,9 +7,7 @@ var seedrandom = require("seedrandom");
 var async = require("async");
 var fs = require("fs");
 var path = require("path");
-
-// Jasmine >= 7 removed the top-level `random` / `stopSpecOnExpectationFailure`
-// config keys; they now live under `config.env`, and `loadConfig` is async.
+var seed;
 var config = {
   spec_dir: "",
   spec_files: [
@@ -19,14 +17,8 @@ var config = {
     "!**/node_modules/**",
   ],
   helpers: [],
-  env: {
-    stopSpecOnExpectationFailure: false,
-    random: true,
-    // Jasmine 6+ rejects duplicate spec/suite names by default. The existing
-    // suite has some, so keep the pre-upgrade behaviour for now; tightening
-    // this is a follow-up.
-    forbidDuplicateNames: false,
-  },
+  stopSpecOnExpectationFailure: false,
+  random: true,
 };
 
 // Collect only the user-passed args.
@@ -35,7 +27,7 @@ const rawArgs = process.argv.slice(2);
 const dashdash = rawArgs.indexOf("--");
 const cliArgs = dashdash >= 0 ? rawArgs.slice(dashdash + 1) : rawArgs;
 
-// Split flags (--foo=bar) from positionals ([path, seed]).
+// Split flags (--foo=bar / --foo) from positionals ([path, seed]).
 const flags = {};
 const args = [];
 for (const arg of cliArgs) {
@@ -50,10 +42,10 @@ for (const arg of cliArgs) {
 }
 
 // --shard=INDEX/TOTAL runs a deterministic 1/TOTAL slice of the spec files
-// for the given path, so CI can fan a single suite out across several jobs.
-// Selection is round-robin (file i goes to shard i % TOTAL) after a stable
-// sort, which spreads a directory's heavy files across shards rather than
-// piling them into one contiguous chunk.
+// under the given path, so CI can fan one suite out across several jobs.
+// Selection is round-robin (file i -> shard i % TOTAL) after a stable sort,
+// spreading a directory's heavy files across shards rather than piling them
+// into one contiguous chunk.
 let shard = null;
 if (flags.shard) {
   const parts = String(flags.shard).split("/");
@@ -68,8 +60,8 @@ if (flags.shard) {
 }
 
 // --exclude=path[,path...] drops any spec file at or below one of these
-// paths (relative to the project root). Lets one suite be split while a
-// heavy sub-tree of it is carved off into its own matrix entry.
+// paths (relative to the project root), so a heavy sub-tree of a suite can
+// be carved out into its own matrix entry.
 const excludePrefixes = (flags.exclude ? String(flags.exclude).split(",") : [])
   .map((p) => p.trim())
   .filter(Boolean)
@@ -82,9 +74,8 @@ function isExcluded(rel) {
 }
 
 // Recursively list the spec files the runner would pick up under `rootDir`,
-// mirroring the spec_files globs above: any *.js inside a `tests/` directory,
-// or any file named `tests.js`, excluding node_modules and any --exclude
-// paths.
+// mirroring the spec_files globs above: any *.js inside a `tests/` directory
+// or any file named `tests.js`, excluding node_modules and --exclude paths.
 function listSpecFiles(rootDir) {
   const out = [];
   (function walk(dir) {
@@ -135,6 +126,7 @@ if (args[0]) {
   );
 }
 
+// Resolve the explicit shard file list now; it is applied after loadConfig.
 let shardFiles = null;
 if (shard) {
   const root = path.resolve(
@@ -160,15 +152,12 @@ if (shard) {
     );
   }
 
-  // Replace the spec_dir / spec_files globs with an explicit file list.
-  // The list is applied via addSpecFile() after loadConfig() so paths are
-  // taken literally (no glob interpretation of characters in the paths).
+  // An explicit file list (added below) replaces the spec_dir / spec_files globs.
   config.spec_dir = "";
   config.spec_files = [];
 }
 
 // Seed: 2nd positional arg, or env, or random
-let seed;
 if (args[1]) {
   seed = args[1];
 } else {
@@ -182,9 +171,16 @@ if (args[1]) {
     colors.cyan("npm test -- app/models/test.js SEED")
   );
 }
-config.env.seed = seed;
 
 seedrandom(seed, { global: true });
+jasmine.seed(seed);
+jasmine.loadConfig(config);
+
+if (shardFiles) {
+  shardFiles.forEach((f) =>
+    jasmine.addSpecFile(path.resolve(process.cwd(), f))
+  );
+}
 
 // Build command for re-running with DEBUG
 function buildDebugCommand() {
@@ -340,16 +336,10 @@ global.test = {
   },
 };
 
-// Load the config (async since Jasmine 7) then, once we've confirmed the
-// database is empty, hand control to Jasmine.
-(async function run() {
-  await jasmine.loadConfig(config);
-
-  if (shardFiles) {
-    shardFiles.forEach((f) => jasmine.addSpecFile(path.resolve(process.cwd(), f)));
-  }
-
+// get the number of keys in the database
+(async function ensureEmptyDatabase() {
   let hasKeys = false;
+
   for await (const _ of client.scanIterator({ MATCH: "*", COUNT: 1 })) {
     if (_.length > 0) {
       hasKeys = true;
@@ -357,11 +347,13 @@ global.test = {
     }
   }
 
-  if (hasKeys) {
+  if (!hasKeys) {
+    // if there are no keys, we need to run the tests
+    jasmine.execute();
+  } else {
+    // if there are keys, we need to throw an error
     throw new Error("Database is not empty: keys found");
   }
-
-  await jasmine.execute();
 })().catch(function (err) {
   throw err;
 });
