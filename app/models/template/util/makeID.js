@@ -18,7 +18,7 @@ module.exports = function makeID(owner, name) {
   // separator the cut left dangling. Without this the id can exceed 30
   // characters and stop being a fixed point of makeID, so no folder name — and
   // no template slug — can ever resolve back to it.
-  slug = makeSlug(slug).slice(0, MAX_SLUG_LENGTH).replace(/[-/]+$/, "");
+  slug = makeSlug(slug).slice(0, MAX_SLUG_LENGTH).replace(/-+$/, "");
 
   return owner + ":" + slug;
 };
