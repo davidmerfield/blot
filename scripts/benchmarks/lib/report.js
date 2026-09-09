@@ -4,9 +4,9 @@ const { METRICS, extractMetrics, formatValue } = require("./metrics");
 const { classify } = require("./stats");
 const { BENCHMARK_DEFAULTS } = require("../../../app/blog/benchmarks/util/defaults");
 
-const STATUS_ICON = {
-  regression: "🔴",
-  improved: "🟢",
+const STATUS_LABEL = {
+  regression: "regressed",
+  improved: "improved",
   ok: "",
   unknown: "",
 };
@@ -66,7 +66,7 @@ function markdownTable(rows) {
           formatValue(row.current, row.unit),
           formatValue(row.baseline, row.unit),
           fmtDelta(row.deltaPercent),
-          STATUS_ICON[row.status] || "",
+          STATUS_LABEL[row.status] || "",
         ].join(" | ") +
         " |"
     );

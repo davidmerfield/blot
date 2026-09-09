@@ -56,7 +56,7 @@ function buildBody({ arch, result, baseline, marker }) {
       : null;
 
   const lines = [];
-  lines.push(`### 📊 Benchmark — \`${arch}\``);
+  lines.push(`### Benchmark — \`${arch}\``);
   lines.push("");
 
   if (!baseline || !baseline.sample_count) {
@@ -71,7 +71,7 @@ function buildBody({ arch, result, baseline, marker }) {
     );
   } else if (hasRegression(rows)) {
     lines.push(
-      "> 🔴 One or more metrics moved outside the noise band. GitHub-hosted " +
+      "> One or more metrics moved outside the noise band. GitHub-hosted " +
         "runners are noisy — treat this as a prompt to look, **not** a merge blocker."
     );
   } else {
