@@ -140,6 +140,10 @@ jobs:
           mkdir -p .benchmarks/runs
           for i in $(seq 1 "$ITERATIONS"); do
             echo "::group::benchmark iteration $i/$ITERATIONS"
+            # Each iteration expects an empty Redis (the runner's redis service
+            # is shared across the job), so wipe it between runs.
+            docker run --rm --network host redis:6 \
+              redis-cli -h 127.0.0.1 -p 6379 flushall
             docker run --rm \
               --network host \
               -e BLOT_REDIS_HOST=localhost \
