@@ -17,6 +17,8 @@ async function middleware(req, res, next) {
     const pageOptions = {
       page: req.query.page,
       pageSize: req.query.pageSize,
+      sort: req.query.sort,
+      order: req.query.order,
     };
 
     res.locals.folder = await loadFolder(req.blog, dir, pageOptions);
@@ -28,12 +30,18 @@ async function middleware(req, res, next) {
     }
 
     if (req.params.path) {
-      
+
       if (res.locals.folder.directory) {
         res.render("dashboard/folder/directory");
       } else {
         res.render("dashboard/folder/file");
       }
+
+    } else if (req.xhr || req.query.partial) {
+
+      // Infinite-scroll / sort fetches only need the directory listing, not
+      // the whole dashboard shell.
+      res.render("dashboard/folder/directory");
 
     } else {
       next();
@@ -64,11 +72,16 @@ const invalidateCache = (blog) => {
       delete folderCache[key];
     }
   }
+
+  // Drop the cached whole-folder stat sweep used for date / size sorts.
+  if (typeof getFolder.invalidateStatCache === "function") {
+    getFolder.invalidateStatCache(blog);
+  }
 };
 
-// Build the ?page= links the directory template renders as "Previous" / "Next".
-// Kept out of loadFolder so the cached folder object stays free of request-
-// specific state.
+// Build the links the directory template renders as "Previous" / "Next" and
+// the infinite-scroll fetcher reuses. Kept out of loadFolder so the cached
+// folder object stays free of request-specific state.
 const addPaginationUrls = (folder, base, dir, query = {}) => {
   if (!folder || !folder.pagination) return;
 
@@ -77,22 +90,31 @@ const addPaginationUrls = (folder, base, dir, query = {}) => {
       ? base + "/"
       : base + "/folder" + dir.split("/").map(encodeURIComponent).join("/");
 
+  const params = [];
   const parsedSize = parseInt(query.pageSize, 10);
-  const carrySize =
-    Number.isFinite(parsedSize) && parsedSize > 0
-      ? "&pageSize=" + parsedSize
-      : "";
+  if (Number.isFinite(parsedSize) && parsedSize > 0)
+    params.push("pageSize=" + parsedSize);
+  if (folder.pagination.sort && folder.pagination.sort !== "name")
+    params.push("sort=" + encodeURIComponent(folder.pagination.sort));
+  if (folder.pagination.order && folder.pagination.order !== "asc")
+    params.push("order=" + encodeURIComponent(folder.pagination.order));
+
+  const carry = params.length ? "&" + params.join("&") : "";
 
   folder.pagination.previousUrl =
-    baseUrl + "?page=" + folder.pagination.previousPage + carrySize;
+    baseUrl + "?page=" + folder.pagination.previousPage + carry;
   folder.pagination.nextUrl =
-    baseUrl + "?page=" + folder.pagination.nextPage + carrySize;
+    baseUrl + "?page=" + folder.pagination.nextPage + carry;
 };
 
 const loadFolder = async (blog, dir, options = {}) => {
 
   const page = parseInt(options.page, 10);
   const pageSize = parseInt(options.pageSize, 10);
+  const sort = options.sort === "modified" || options.sort === "size"
+    ? options.sort
+    : "name";
+  const order = options.order === "desc" ? "desc" : "asc";
   const cacheKey =
     blog.id +
     '_' +
@@ -102,7 +124,8 @@ const loadFolder = async (blog, dir, options = {}) => {
     '_p' +
     (Number.isFinite(page) && page > 0 ? page : 1) +
     '_s' +
-    (Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 'default');
+    (Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 'default') +
+    '_' + sort + '_' + order;
   const synced = blog.status.message.toLowerCase() === 'synced';
   
   if (synced && folderCache[cacheKey]) {
@@ -139,7 +162,7 @@ const loadFolder = async (blog, dir, options = {}) => {
   } else if (stat.directory) {
     const [breadcrumbs, folderContents] = await Promise.all([
       getBreadcrumbs(blog.id, dir, blog.cacheID),
-      getFolder(blog, dir, { page, pageSize })
+      getFolder(blog, dir, { page, pageSize, sort, order })
     ]);
 
     folder.contents = folderContents.contents;

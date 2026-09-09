@@ -284,6 +284,82 @@ describe("folder", function () {
       );
       expect(pagination.pageSize).toEqual(getContents.DEFAULT_PAGE_SIZE);
     });
+
+    it("sorts by name descending on the server", async function () {
+      const $ = await this.parse(
+        `/sites/${this.blog.handle}?pageSize=2&sort=name&order=desc`
+      );
+      expect(rowNames($)).toEqual(["p05.txt", "p04.txt"]);
+    });
+  });
+
+  describe("server-side sorting", function () {
+    const getContents = () => require("dashboard/site/folder/folder");
+
+    const names = (result) => result.contents.map((stat) => stat.name);
+
+    beforeEach(async function () {
+      const fs = require("fs-extra");
+      const { join } = require("path");
+
+      // Distinct sizes and modified times so every sort has one right answer.
+      await this.write({ path: "small.txt", content: "x".repeat(10) });
+      await this.write({ path: "large.txt", content: "x".repeat(4000) });
+      await this.write({ path: "medium.txt", content: "x".repeat(500) });
+
+      const t = (iso) => new Date(iso);
+      await fs.utimes(join(this.blogDirectory, "small.txt"), t("2021-01-01"), t("2021-01-01"));
+      await fs.utimes(join(this.blogDirectory, "medium.txt"), t("2022-06-01"), t("2022-06-01"));
+      await fs.utimes(join(this.blogDirectory, "large.txt"), t("2023-12-01"), t("2023-12-01"));
+    });
+
+    it("orders by size, largest first", async function () {
+      const result = await getContents()(this.blog, "/", {
+        sort: "size",
+        order: "desc",
+      });
+      expect(names(result)).toEqual(["large.txt", "medium.txt", "small.txt"]);
+    });
+
+    it("orders by size, smallest first", async function () {
+      const result = await getContents()(this.blog, "/", {
+        sort: "size",
+        order: "asc",
+      });
+      expect(names(result)).toEqual(["small.txt", "medium.txt", "large.txt"]);
+    });
+
+    it("orders by modified time, newest first", async function () {
+      const result = await getContents()(this.blog, "/", {
+        sort: "modified",
+        order: "desc",
+      });
+      expect(names(result)).toEqual(["large.txt", "medium.txt", "small.txt"]);
+    });
+
+    it("paginates within a server-side sort", async function () {
+      const page1 = await getContents()(this.blog, "/", {
+        sort: "size",
+        order: "asc",
+        pageSize: 1,
+        page: 1,
+      });
+      const page2 = await getContents()(this.blog, "/", {
+        sort: "size",
+        order: "asc",
+        pageSize: 1,
+        page: 2,
+      });
+      expect(names(page1)).toEqual(["small.txt"]);
+      expect(names(page2)).toEqual(["medium.txt"]);
+      expect(page1.pagination.hasNext).toBe(true);
+    });
+
+    it("falls back to name sort for an unknown sort key", async function () {
+      const result = await getContents()(this.blog, "/", { sort: "banana" });
+      expect(result.pagination.sort).toEqual("name");
+      expect(names(result)).toEqual(["large.txt", "medium.txt", "small.txt"]);
+    });
   });
 
   function findElementByText(selector, text, $) {
