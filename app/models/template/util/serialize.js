@@ -12,6 +12,16 @@ module.exports = function serialize(sourceObj, model) {
   for (var i in obj) {
     if (model[i] === "object" || model[i] === "array") {
       obj[i] = JSON.stringify(obj[i]);
+      continue;
+    }
+
+    if (model[i] === "boolean" && obj[i] !== undefined && obj[i] !== null) {
+      obj[i] = obj[i] === true || obj[i] === "true" ? "true" : "false";
+      continue;
+    }
+
+    if (model[i] === "number" && obj[i] !== undefined && obj[i] !== null) {
+      obj[i] = String(obj[i]);
     }
   }
 

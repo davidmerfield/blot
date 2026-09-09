@@ -1,0 +1,29 @@
+Matrix inline marker before display.
+
+$$
+\begin{matrix}
+a & b \\
+c & d
+\end{matrix}
+$$
+
+$$
+\begin{pmatrix}
+1 & 0 \\
+0 & 1
+\end{pmatrix}
+$$
+
+$$
+\begin{bmatrix}
+x_1 & x_2 & x_3 \\
+y_1 & y_2 & y_3
+\end{bmatrix}
+$$
+
+$$
+\begin{cases}
+x^2 & x \ge 0 \\
+-x & x < 0
+\end{cases}
+$$

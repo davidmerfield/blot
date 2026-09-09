@@ -68,10 +68,12 @@
 }
 
 
-.buttons .working {
+.buttons .working,
+.buttons button:disabled {
   background-color: #d5d5d5;
   color: #999;
   box-shadow: none;
+  cursor: default;
 }
 
 @keyframes pulse {

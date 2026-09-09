@@ -26,7 +26,12 @@
 // for every exception after the first, the exception should contain a property 'nameservers' that contains the nameserver addresses of the domain
 
 const dns = require('dns').promises;
-const fetch = require('node-fetch');
+// The domain-setup check connects to an A-record this function resolved
+// itself and sends Host: <hostname>. It goes through the airlock's proxy
+// (helper/airlock.getViaIP, config/airlock/README.md) so the egress filter
+// rejects an A-record that resolves to an internal address, while still
+// pinning the exact resolved IP rather than letting the proxy re-resolve.
+const airlock = require('helper/airlock');
 const { parse } = require('tldts');
 
 const VERIFICATION_TIMEOUT_MS = 5000;
@@ -34,6 +39,24 @@ const VERIFICATION_TIMEOUT_SECONDS = VERIFICATION_TIMEOUT_MS / 1000;
 const VERIFICATION_TIMEOUT_LABEL = Number.isInteger(VERIFICATION_TIMEOUT_SECONDS)
     ? `${VERIFICATION_TIMEOUT_SECONDS} seconds`
     : `${VERIFICATION_TIMEOUT_SECONDS.toFixed(2)} seconds`;
+
+function normalizeHostname(hostname) {
+    if (!hostname || typeof hostname !== 'string') return '';
+    return hostname.toLowerCase().replace(/\.$/, '');
+}
+
+function isValidCNAMETarget(cnameHost, ourHost) {
+    const normalizedCNAMEHost = normalizeHostname(cnameHost);
+    const normalizedOurHost = normalizeHostname(ourHost);
+
+    if (!normalizedCNAMEHost || !normalizedOurHost) return false;
+    if (normalizedCNAMEHost === normalizedOurHost) return true;
+
+    return (
+        normalizedCNAMEHost.endsWith(`.organization.${normalizedOurHost}`) ||
+        normalizedCNAMEHost.endsWith(`.organizations.${normalizedOurHost}`)
+    );
+}
 
 async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
     
@@ -105,7 +128,7 @@ async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
     ]);
 
     if (cnameHost) {
-        if (cnameHost === ourHost) {
+        if (isValidCNAMETarget(cnameHost, ourHost)) {
             // CNAME matches our host, return success
             return true;
         } else {
@@ -154,14 +177,14 @@ async function validate({ hostname, handle, ourIP, ourIPv6, ourHost }) {
         : null;
 
     try {
-        const response = await fetch(`http://${aRecordIPs[0]}/verify/domain-setup`, {
-            headers: { Host: hostname },
+        const response = await airlock.getViaIP(aRecordIPs[0], '/verify/domain-setup', {
+            host: hostname,
             ...(controller
                 ? { signal: controller.signal }
                 : { timeout: VERIFICATION_TIMEOUT_MS })
         });
 
-        text = await response.text();
+        text = response.text;
 
     } catch (err) {
         const error = new Error('HANDLE_VERIFICATION_REQUEST_FAILED');

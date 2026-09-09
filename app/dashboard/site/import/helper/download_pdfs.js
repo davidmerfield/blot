@@ -4,6 +4,7 @@ var parse = require("url").parse;
 var each_el = require("./each_el");
 var fs = require("fs-extra");
 var callOnce = require("helper/callOnce");
+var assetDirectory = require("./asset_directory");
 
 var TIMEOUT = 5 * 1000; // 10s
 
@@ -93,18 +94,22 @@ module.exports = function download_pdfs(post, callback) {
           return next();
         }
 
-        fs.outputFile(post.path + "/" + name, data, function (err) {
+        assetDirectory(post, function (err, directory) {
           if (err) return next();
 
-          if ($(el).text() === href) {
-            $(el).text(name);
-          }
+          fs.outputFile(directory + "/" + name, data, function (err) {
+            if (err) return next();
 
-          changes = true;
+            if ($(el).text() === href) {
+              $(el).text(name);
+            }
 
-          $(el).attr("href", name);
+            changes = true;
 
-          next();
+            $(el).attr("href", name);
+
+            next();
+          });
         });
       });
     },

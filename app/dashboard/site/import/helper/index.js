@@ -8,6 +8,7 @@ module.exports = {
   for_each: require("./for_each"),
   insert_metadata: require("./insert_metadata"),
   insert_video_embeds: require("./insert_video_embeds"),
+  normalize_identifier: require("./normalize_identifier"),
   output_file: require("./output_file"),
   prepare_directory: require("./prepare_directory"),
   process: require("./process"),

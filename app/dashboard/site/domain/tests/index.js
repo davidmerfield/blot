@@ -194,6 +194,40 @@ describe("domain verifier", function () {
     }
   });
 
+  it("should return true for hostnames with CNAME record to an organizations subdomain", async () => {
+    const hostname = "organizations-cname.com";
+    const handle = "example";
+
+    resolver.resolveCname.and.returnValue(
+      Promise.resolve([`customer.organizations.${ourHost}`])
+    );
+    resolver.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+    resolver.resolve6.and.returnValue(Promise.resolve([]));
+    dns.resolveNs.and.returnValue(
+      Promise.resolve(["ns1.organizations.com", "ns2.organizations.com"])
+    );
+
+    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+    expect(result).toBe(true);
+  });
+
+  it("should return true for hostnames with CNAME record to an organization subdomain", async () => {
+    const hostname = "organization-cname.com";
+    const handle = "example";
+
+    resolver.resolveCname.and.returnValue(
+      Promise.resolve([`customer.organization.${ourHost}`])
+    );
+    resolver.resolve4.and.returnValue(Promise.reject(new Error("ENOTFOUND")));
+    resolver.resolve6.and.returnValue(Promise.resolve([]));
+    dns.resolveNs.and.returnValue(
+      Promise.resolve(["ns1.organization.com", "ns2.organization.com"])
+    );
+
+    const result = await verify({ hostname, handle, ourIP, ourIPv6, ourHost });
+    expect(result).toBe(true);
+  });
+
   it("should return true for hostnames with correct handle verification", async () => {
     const hostname = "correct-handle.com";
     const handle = "example";
@@ -273,7 +307,12 @@ describe("domain verifier", function () {
   });
 
   it("should timeout if the verification endpoint hangs", async () => {
-    const abortableFetch = jasmine.createSpy("abortableFetch").and.callFake((url, options = {}) => {
+    // verify.js now reaches the endpoint through helper/airlock.getViaIP
+    // (a raw http.request through the airlock proxy), not node-fetch, so the
+    // hang is simulated at that boundary: a promise that only settles when
+    // the AbortController fires.
+    const airlock = require("helper/airlock");
+    spyOn(airlock, "getViaIP").and.callFake((ip, path, options = {}) => {
       const { signal } = options;
       return new Promise((resolve, reject) => {
         if (!signal) {
@@ -295,7 +334,6 @@ describe("domain verifier", function () {
       });
     });
 
-    require.cache[fetchModulePath].exports = abortableFetch;
     delete require.cache[verifyPath];
     verify = require(verifyPath);
 

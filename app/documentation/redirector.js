@@ -15,6 +15,8 @@ const internal = {
   "/how/pages": "/how/posts/pages",
   "/how/metadata": "/how/posts/metadata",
   "/how/import": "/how/configure/import",
+  "/how/configure/import/are.na": "/how/configure/import/arena",
+  "/how/configure/import/aredotna": "/how/configure/import/arena",
   "/how/tags": "/how/posts/metadata",
   "/how/files/embedding": "/how/formatting/embedding",
   "/how/files/citations": "/how/formatting/citations",
@@ -23,7 +25,7 @@ const internal = {
   "/how/files/wikilinks": "/how/formatting/wikilinks",
   "/how/files/layout-tags": "/how/formatting/layout-tags",
   "/how/posts": "/how/files",
-  "/about/contact": "/contct",
+  "/about/contact": "/contact",
   "/about/notes/business/unlimited-bandwidth":
     "/about/notes/business/principles",
   "/about/notes/business/technique": "/about/notes/business/tools",

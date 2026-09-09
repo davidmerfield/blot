@@ -1,9 +1,7 @@
 const config = require("config");
 const Express = require("express");
 const redirector = require("./redirector");
-const Email = require("helper/email");
 const { join } = require("path");
-const cookieParser = require('cookie-parser');
 
 const documentation = Express.Router();
 
@@ -80,29 +78,6 @@ documentation.get("/", function (req, res, next) {
   next();
 });
 
-// Inject the CSRF token into the form
-documentation.get(['/support', '/contact', '/feedback'], require("dashboard/util/csrf"));
-
-documentation.post(
-  ["/support", "/contact", "/feedback"],
-  require("dashboard/util/parse"),
-  cookieParser(),
-  require("dashboard/util/csrf"),
-  (req, res) => {
-    const { email, message, contact_e879, contact_7d45 } = req.body;
-
-    // honeypot fields
-    if (email || message) {
-      return res.status(400).send("Invalid request");
-    }
-
-    if (!contact_e879) return res.status(400).send("Message is required");
-
-    Email.SUPPORT(null, { email: contact_7d45, message: contact_e879, replyTo: contact_7d45 });
-    res.send("OK");
-  }
-);
-
 documentation.get("/examples", require("./featured"));
 
 documentation.get("/templates", (req, res) => {
@@ -120,6 +95,7 @@ documentation.get("/templates/for-:type", (req, res, next) => {
 
 documentation.get("/templates/:template", (req, res, next) => {
   res.locals.layout = "partials/layout-full-screen";
+  res.locals.host = config.host;
   const view = `templates/${req.params.template}/index`;
   res.render(view, (err, html) => {
     if (err) return next();

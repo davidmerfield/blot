@@ -10,7 +10,7 @@ const fs = require("fs-extra");
 const config = require("config");
 const renderView = require("blog/render/view");
 
-const getAsync = promisify(client.get).bind(client);
+const getAsync = client.get.bind(client);
 const getMetadataAsync = promisify(getMetadata).bind(getMetadata);
 const setViewAsync = promisify(setView).bind(setView);
 const blogSetAsync = promisify(Blog.set).bind(Blog);
@@ -134,8 +134,16 @@ describe("updateCdnManifest", function () {
 
     expect(newHash).not.toBe(oldHash);
 
-    // Verify old rendered output is removed
-    const oldOutputAfter = await getAsync(oldRenderedKey);
+    // updateCdnManifest deletes the previous hash's rendered output in the
+    // background without awaiting it (util/updateCdnManifest.js: "Run cleanup
+    // in background - don't await"), so the delete can land just after
+    // getMetadata resolves. Poll rather than assume it completed synchronously.
+    let oldOutputAfter = await getAsync(oldRenderedKey);
+    const deadline = Date.now() + 5000;
+    while (oldOutputAfter !== null && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      oldOutputAfter = await getAsync(oldRenderedKey);
+    }
     expect(oldOutputAfter).toBeNull();
 
     // Verify new rendered output exists
@@ -185,11 +193,7 @@ describe("updateCdnManifest", function () {
       cdn: ["style.css", "../secrets.css", "/absolute.css"],
     };
 
-    await new Promise((resolve, reject) => {
-      client.hset(viewKey, "retrieve", JSON.stringify(invalidRetrieve), (err) =>
-        err ? reject(err) : resolve()
-      );
-    });
+    await client.hSet(viewKey, "retrieve", JSON.stringify(invalidRetrieve));
 
     await new Promise((resolve, reject) => {
       require("../util/updateCdnManifest")(test.template.id, (err) =>

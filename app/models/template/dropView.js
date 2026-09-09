@@ -11,32 +11,32 @@ module.exports = function dropView(templateID, viewName, callback) {
   getMetadata(templateID, function (err, metadata) {
     if (err) return callback(err);
 
-    getView(templateID, viewName, function (err, view) {
-      if (err) return callback(err);
+    getView(templateID, viewName, function (viewErr, view) {
+      if (viewErr) return callback(viewErr);
 
       multi.del(key.view(templateID, viewName));
-      multi.hdel(key.urlPatterns(templateID), viewName);
-      multi.srem(key.allViews(templateID), viewName);
+      multi.hDel(key.urlPatterns(templateID), viewName);
+      multi.sRem(key.allViews(templateID), viewName);
 
-      // View might not neccessarily exist
       if (view) {
         multi.del(key.url(templateID, view.url));
         multi.del(key.view(templateID, view.name));
       }
 
-      multi.exec(function (err) {
-        if (err) return callback(err);
+      multi
+        .exec()
+        .then(function () {
+          Blog.set(metadata.owner, { cacheID: Date.now() }, function (cacheErr) {
+            if (cacheErr) return callback(cacheErr);
 
-        Blog.set(metadata.owner, { cacheID: Date.now() }, function (cacheErr) {
-          if (cacheErr) return callback(cacheErr);
+            updateCdnManifest(templateID, function (manifestErr) {
+              if (manifestErr) return callback(manifestErr);
 
-          updateCdnManifest(templateID, function (manifestErr) {
-            if (manifestErr) return callback(manifestErr);
-
-            callback(null, "Deleted " + templateID);
+              callback(null, "Deleted " + templateID);
+            });
           });
-        });
-      });
+        })
+        .catch(callback);
     });
   });
 };

@@ -20,7 +20,7 @@
       <div class="paginator" style=" margin:0 auto;   justify-content: center;">
         <a class="arrow" {{#previous}}href="/page/{{previous}}"{{/previous}}>←</a>
         <div data-limit="30" data-current="{{current}}" data-total="{{total}}" class="numbers"></div>
-        <a class="arrow" {{#next}}href="/page/{{pagination.next}}"{{/next}}>→</a>
+        <a class="arrow" {{#next}}href="/page/{{next}}"{{/next}}>→</a>
       </div>
     </div>
     <span style="text-decoration:none;color:var(--light-text-color);margin-top:2px;display:inline-block;text-transform:uppercase;font-size:11px">
@@ -39,12 +39,14 @@
 {{/infinite_scroll}}
 
 
-<div style="padding:0.65rem 2.5rem;display:flex;color:rgba(0,0,0,.4);">
+<div class="site-footer" style="padding:0.65rem 2.5rem;display:flex;color:var(--light-text-color);">
 
   <div style="flex-grow:1">
+    {{#footer_navigation}}
     {{#menu}}
     <a style="font-size:14px;color:inherit;text-decoration:none;margin:0.65rem" href="{{{url}}}">{{label}}</a>
     {{/menu}}
+    {{/footer_navigation}}
   </div>
 
   <a style="float:right;color:inherit;font-size:14px;text-decoration:none;margin:0 1.3rem" href="/">{{title}}</a>

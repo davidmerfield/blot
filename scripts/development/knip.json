@@ -18,6 +18,7 @@
     "config/openresty/build-config.js",
     "app/blog/static/fonts/test.js",
     "app/blog/static/syntax-highlighter/build.js",
+    "app/build/plugins/katex/preview.js",
     "app/blog/benchmarks/benchmarks.js"
   ],
   "paths": {

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{lang}}">
 {{> head}}
-<body class="home blog">
+<body class="home blog{{#infinite_scroll}} infinite-scroll neverending{{/infinite_scroll}}">
 <div id="page" class="hfeed site">
 	{{> header}}
 	<div id="content" class="site-content">
@@ -10,28 +10,30 @@
 				{{#posts}}
 				{{> article}}
 				{{/posts}}
+				{{^infinite_scroll}}
 				<nav class="navigation paging-navigation" role="navigation">
 					<h1 class="screen-reader-text">Posts navigation</h1>
 					<div class="nav-links">
 						{{#pagination}}
-						{{#next}}
-						<div class="nav-previous">
-							<a href="/page/{{next}}"><span class="meta-nav">&larr;</span> Older posts</a>
-						</div>
-						{{/next}}
 						{{#previous}}
-						<div class="nav-next">
-							<a href="/page/{{previous}}">Newer posts <span class="meta-nav">&rarr;</span> </a>
+						<div class="nav-previous">
+							<a href="/page/{{previous}}"><span class="meta-nav">&larr;</span> Previous</a>
 						</div>
 						{{/previous}}
+						{{#next}}
+						<div class="nav-next">
+							<a href="/page/{{next}}">Next <span class="meta-nav">&rarr;</span> </a>
+						</div>
+						{{/next}}
 						{{/pagination}}
 					</div><!-- .nav-links -->
 				</nav><!-- .navigation -->
+				{{/infinite_scroll}}
 			</main><!-- #main -->
+			{{#infinite_scroll}}
+			{{#pagination.next}}
 			<script type="text/javascript">
 				var init = {{pagination.next}};
-
-				jQuery('main nav').remove();
 
 jQuery(window).on("scroll", function() {
 	var scrollHeight = jQuery(document).height();
@@ -48,6 +50,8 @@ jQuery(window).on("scroll", function() {
 					});
 				}
 </script>
+			{{/pagination.next}}
+			{{/infinite_scroll}}
 		</div><!-- #primary -->
 	</div><!-- #content -->
 	{{> footer}}

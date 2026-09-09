@@ -157,12 +157,14 @@ module.exports = async () => {
     const zip = `/folders/${zip_name}`;
     const readmePath = path.join(templatesSourceDirectory, template.slug, "README");
 
+    // Because build runs on CI on Github actions, config.host is not available so we delegate to the template to replace it with the host
+    // at render time.
     const templateData = {
       ...template,
       preview_host:
         template.demo_folder === template.slug
-          ? `${template.demo_folder}.${config.host}`
-          : `preview-of-${template.slug}-on-${template.demo_folder}.${config.host}`,
+          ? `${template.demo_folder}.{{host}}`
+          : `preview-of-${template.slug}-on-${template.demo_folder}.{{host}}`,
       zip,
     };
 

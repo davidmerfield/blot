@@ -31,6 +31,22 @@ describe("template", function () {
     });
   });
 
+  it("explains what is wrong with an invalid package.json", function (done) {
+    fs.outputFileSync(this.tmp + "/package.json", '{\n  "name": "Example",\n}');
+
+    readFromFolder(this.blog.id, this.tmp, function (err, template) {
+      if (err) return done.fail(err);
+
+      var message = template.errors["package.json"];
+
+      // The message has to describe the file, not our own failure to
+      // rewrite the parse error
+      expect(message).not.toContain("Cannot read properties");
+      expect(message.toLowerCase()).toContain("json");
+      done();
+    });
+  });
+
   it("ignores view files which are too large", function (done) {
     // 3mb of random data should exceed the limit of 2.5mb
     fs.writeFileSync(

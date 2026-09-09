@@ -4,6 +4,7 @@ const uuid = require("uuid/v4");
 const config = require("config");
 const Template = require("models/template");
 const { isAjaxRequest } = require("./ajax-response");
+const cleanupFiles = require("./cleanup-files");
 
 const firstFile = (files = {}) => {
   for (const key of Object.keys(files)) {
@@ -13,18 +14,6 @@ const firstFile = (files = {}) => {
     }
   }
   return null;
-};
-
-const cleanupFiles = async (files = {}) => {
-  const removals = [];
-  for (const key of Object.keys(files)) {
-    for (const file of files[key]) {
-      if (file && file.path) {
-        removals.push(fs.remove(file.path).catch(() => {}));
-      }
-    }
-  }
-  await Promise.all(removals);
 };
 
 const updateTemplate = (blogID, templateSlug, locals) =>

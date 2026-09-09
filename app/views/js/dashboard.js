@@ -11,6 +11,7 @@ require('./account-card-form.js');
 require('./dashboard-login.js');
 require('./reconnecting-event-source.js');
 require('./dashboard-import.js');
+require('./file-drop.js');
 require('./site-preview-path-sync.js');
 require('./domain-record-guide.js');
 require('./domain-custom.js');

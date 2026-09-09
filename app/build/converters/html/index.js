@@ -2,6 +2,9 @@ var fs = require("fs");
 var ensure = require("helper/ensure");
 var LocalPath = require("helper/localPath");
 var extname = require("path").extname;
+var cheerio = require("cheerio");
+var Metadata = require("build/metadata");
+var normalizeLiteralDollarMath = require("build/math/normalizeLiteralDollars").normalizeLiteralDollarMath;
 
 function is(path) {
   return [".html", ".htm"].indexOf(extname(path).toLowerCase()) > -1;
@@ -23,7 +26,16 @@ function read(blog, path, callback) {
     fs.readFile(localPath, "utf-8", function (err, contents) {
       if (err) return callback(err);
 
-      return callback(null, contents, stat);
+      // Metadata must be extracted from the source, rather than from Cheerio's
+      // serialization. In particular, serialization can encode characters in
+      // metadata values (such as "&"), changing both the value and its slug.
+      var parsed = Metadata(contents);
+      var $ = cheerio.load(parsed.html, { decodeEntities: false }, false);
+      normalizeLiteralDollarMath($);
+
+      return callback(null, $.html(), stat, {
+        preExtractedMetadata: parsed.metadata
+      });
     });
   });
 }

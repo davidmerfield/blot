@@ -94,16 +94,23 @@ jasmine.addReporter({
   },
 });
 
-client.keys("*", function (err, keys) {
-  if (err) {
-    throw err;
+(async function ensureEmptyDatabase() {
+  let hasKeys = false;
+
+  for await (const batch of client.scanIterator({ MATCH: "*", COUNT: 1 })) {
+    if (batch.length > 0) {
+      hasKeys = true;
+      break;
+    }
   }
 
-  if (keys.length > 0) {
-    throw new Error("Database is not empty: " + keys.length + " keys found");
+  if (hasKeys) {
+    throw new Error("Database is not empty: keys found");
   }
 
   jasmine.execute();
+})().catch(function (err) {
+  throw err;
 });
 
 function parseArgs(argv) {

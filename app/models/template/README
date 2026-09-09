@@ -306,7 +306,7 @@ The CDN URL format is `{cdn.origin}/template/{h[0:2]}/{h[2:4]}/{h[4:]}/{basename
 
 | Module | Used for |
 |--------|----------|
-| `models/client` | Redis client (all reads and writes) |
+| `models/client` | Redis singleton (all reads and writes) |
 | `models/blog` | Bumping `cacheID`, reading blog configuration, resolving the active client |
 | `models/entry` | Fetching entry HTML for path-referenced partials in `getPartials` |
 | `helper/ensure` | Runtime type and schema validation |

@@ -5,6 +5,7 @@ describe("git client handle changes", function () {
 
   var fs = require("fs-extra");
   var http = require("http");
+  var host = require("config").host;
   var dataDir = require("clients/git/dataDir");
   var setBlog = require("models/blog/set");
 
@@ -16,13 +17,14 @@ describe("git client handle changes", function () {
     var newRepo = dataDir + "/" + newHandle + ".git";
     var redirectStatus = 308;
 
-    var assertRedirect = function (path, expectedLocation, callback) {
+    var assertRedirect = function (path, expectedLocation, headers, callback) {
       var req = http.request(
         {
           method: "GET",
           hostname: "127.0.0.1",
           port: context.server.port,
           path,
+          headers,
         },
         function (res) {
           expect(res.statusCode).toBe(redirectStatus);
@@ -55,33 +57,52 @@ describe("git client handle changes", function () {
             expect(oldExists).toBe(false);
 
             assertRedirect(
-              "/clients/git/end/" + oldHandle + ".git",
-              "http://127.0.0.1:" +
-                context.server.port +
+              "/clients/git/end/" + oldHandle + ".git/HEAD",
+              "https://" +
+                host +
                 "/clients/git/end/" +
                 newHandle +
-                ".git",
+                ".git/HEAD",
+              {
+                Host: "attacker.example",
+                "X-Forwarded-Proto": "http",
+              },
               function () {
                 assertRedirect(
                   "/clients/git/end/" +
                     oldHandle +
-                    ".git/info/refs?service=git-receive-pack",
-                  "http://127.0.0.1:" +
-                    context.server.port +
+                    ".git/git-upload-pack",
+                  "https://" +
+                    host +
                     "/clients/git/end/" +
                     newHandle +
-                    ".git/info/refs?service=git-receive-pack",
+                    ".git/git-upload-pack",
+                  {},
                   function () {
                     assertRedirect(
                       "/clients/git/end/" +
                         oldHandle +
-                        ".git/git-receive-pack",
-                      "http://127.0.0.1:" +
-                        context.server.port +
+                        ".git/info/refs?service=git-receive-pack",
+                      "https://" +
+                        host +
                         "/clients/git/end/" +
                         newHandle +
-                        ".git/git-receive-pack",
-                      done
+                        ".git/info/refs?service=git-receive-pack",
+                      {},
+                      function () {
+                        assertRedirect(
+                          "/clients/git/end/" +
+                            oldHandle +
+                            ".git/git-receive-pack",
+                          "https://" +
+                            host +
+                            "/clients/git/end/" +
+                            newHandle +
+                            ".git/git-receive-pack",
+                          {},
+                          done
+                        );
+                      }
                     );
                   }
                 );
@@ -92,4 +113,48 @@ describe("git client handle changes", function () {
       });
     });
   });
+
+  it(
+    "publicly resolves historical handles without authentication",
+    function (done) {
+      var context = this;
+      var oldHandle = context.blog.handle;
+      var newHandle = oldHandle + "renamed";
+
+      setBlog(
+        context.blog.id,
+        { handle: newHandle, client: "git" },
+        function (err) {
+          if (err) return done.fail(err);
+          context.blog.handle = newHandle;
+
+          var req = http.request(
+            {
+              method: "GET",
+              hostname: "127.0.0.1",
+              port: context.server.port,
+              path: "/clients/git/end/" + oldHandle + ".git/HEAD",
+              // Deliberately omit Authorization: handle history is public.
+              headers: {},
+            },
+            function (res) {
+              expect(res.statusCode).toBe(308);
+              expect(res.headers.location).toBe(
+                "https://" +
+                  host +
+                  "/clients/git/end/" +
+                  newHandle +
+                  ".git/HEAD"
+              );
+              res.resume();
+              done();
+            }
+          );
+
+          req.on("error", done.fail);
+          req.end();
+        }
+      );
+    }
+  );
 });

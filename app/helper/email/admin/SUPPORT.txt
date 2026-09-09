@@ -1,5 +1,0 @@
-Support message
-
-Message from: {{email}} {{^email}}no email provided{{/email}}
-
-{{message}}

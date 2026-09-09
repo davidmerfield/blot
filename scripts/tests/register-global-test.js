@@ -10,8 +10,17 @@ module.exports = function registerGlobalTest() {
     fake: require("./util/fake"),
 
     user: function () {
-      beforeEach(require("./util/createUser"));
-      afterEach(require("./util/removeUser"));
+      beforeEach(function (done) {
+        require("./util/createUser").call(this, function (err) {
+          done(err);
+        });
+      });
+
+      afterEach(function (done) {
+        require("./util/removeUser").call(this, function (err) {
+          done(err);
+        });
+      });
     },
 
     server: require("./util/server"),

@@ -14,10 +14,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Linker");
   });
@@ -30,10 +27,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/first");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/first");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Second");
   });
@@ -53,10 +47,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Linker A");
     expect(body).toContain("Linker B");
@@ -69,13 +60,54 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/standalone");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/standalone");
     expect(body).not.toContain("Backlinks:");
   });
 
+
+  it("does not create a backlink from a resolved link to a plain local file", async function () {
+    const fs = require("fs-extra");
+    await fs.outputFile(this.blogDirectory + "/beach.jpg", "fake image data");
+
+    await this.write({
+      path: "/vacation.txt",
+      content: "Title: Vacation\n\n[Download](beach.jpg)",
+    });
+    await this.template(backlinksTemplate);
+
+    // The link resolves to /beach.jpg (a real file, not a post),
+    // so it must not show up as a backlink anywhere.
+    const body = await this.text("/vacation");
+    expect(body).not.toContain("Backlinks:");
+  });
+
+  it("still creates a backlink from an anchor sharing a path with one the autoImage plugin removed", async function () {
+    // /photo.jpg is a real file, but also deliberately set as another
+    // entry's custom permalink, so the two collide.
+    const fs = require("fs-extra");
+    await fs.outputFile(this.blogDirectory + "/photo.jpg", "fake image data");
+
+    await this.write({
+      path: "/other.txt",
+      content: "Title: Other\nLink: /photo.jpg\n\nContent.",
+    });
+    await this.write({
+      path: "/linker.txt",
+      content:
+        // The bare [photo.jpg](photo.jpg) link resolves to /photo.jpg
+        // and gets converted by the default autoImage plugin into an
+        // <img> - removing that anchor entirely. The second, separate
+        // link is unrelated and must still register as a real
+        // backlink to Other, even though it shares the same resolved
+        // path with the anchor that was just removed.
+        "Title: Linker\n\n[photo.jpg](photo.jpg)\n\n[See other](/photo.jpg)",
+    });
+    await this.template(backlinksTemplate);
+
+    const body = await this.text("/photo.jpg");
+    expect(body).toContain("Backlinks:");
+    expect(body).toContain("Linker");
+  });
 
   it("resolves backlinks from double-encoded href values", async function () {
     await this.write({
@@ -89,10 +121,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/a%2520b");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/a%2520b");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Linker");
   });
@@ -114,10 +143,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/grüße");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/grüße");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Linker");
   });
@@ -131,10 +157,7 @@ describe("backlinks", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Grüße Linker");
   });
@@ -155,10 +178,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/self");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/self");
     expect(body).not.toContain("Backlinks:");
   });
 
@@ -170,10 +190,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect((body.match(/Linker/g) || []).length).toEqual(1);
   });
@@ -190,10 +207,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("Linker Fragment");
     expect(body).toContain("Linker Query");
@@ -208,10 +222,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).not.toContain("Backlinks:");
   });
 
@@ -224,10 +235,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("linker");
   });
@@ -243,10 +251,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/caf%C3%A9");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/caf%C3%A9");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("MD Linker");
   });
@@ -309,10 +314,7 @@ describe("backlinks edge cases", function () {
 
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/résumé");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/résumé");
     expect(body).toContain("Backlinks:");
 
     for (const fixture of fixtures) {
@@ -335,10 +337,7 @@ describe("backlinks edge cases", function () {
     });
     await this.template(backlinksTemplate);
 
-    const res = await this.get("/target");
-    const body = await res.text();
-
-    expect(res.status).toEqual(200);
+    const body = await this.text("/target");
     expect(body).toContain("Backlinks:");
     expect(body).toContain("gdoc-linker");
   });

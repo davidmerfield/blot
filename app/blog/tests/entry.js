@@ -8,10 +8,8 @@ describe("entry", function () {
 
         await this.write({path: '/a.txt', content: 'Link: a\nHello, A!'});
 
-        const res = await this.get('/a', {redirect: 'manual'});
-        const body = await res.text();
+        const body = await this.text('/a', {redirect: 'manual'});
 
-        expect(res.status).toEqual(200);
         expect(body).toContain('Hello, A!');
     });
 
@@ -29,9 +27,7 @@ describe("entry", function () {
         // it won't redirect if the old URL is the index page (we don't want to clobber the index page)
         await this.write({path: '/index.txt', content: 'Link: /\nHello, A!'});
 
-        const res2 = await this.get('/', {redirect: 'manual'});
-        expect(res2.status).toEqual(200);
-        expect(await res2.text()).toContain('Hello, A!');
+        expect(await this.text('/', {redirect: 'manual'})).toContain('Hello, A!');
 
         // change the index page
         await this.write({path: '/index.txt', content: 'Link: /c\nHello, A!'});
@@ -54,10 +50,8 @@ describe("entry", function () {
 
         expect(res.status).toEqual(404);
 
-        const res2 = await this.get('/a?scheduled=true');
-        const body = await res2.text();
+        const body = await this.text('/a?scheduled=true');
 
-        expect(res2.status).toEqual(200);
         expect(body).toContain('Hello, A!');
     });
 
@@ -84,10 +78,8 @@ describe("entry", function () {
         ];
 
         for (const url of urls) {
-            const res = await this.get(url, {redirect: 'manual'});
-            const body = await res.text();
+            const body = await this.text(url, {redirect: 'manual'});
 
-            expect(res.status).toEqual(200);
             expect(body).toContain('Hello, A!');
         }
     });
@@ -96,10 +88,8 @@ describe("entry", function () {
 
         await this.write({path: '/grüße.txt', content: 'Link: /grüße\nHello, Grüße!'});
 
-        const res = await this.get('/grüße', {redirect: 'manual'});
-        const body = await res.text();
+        const body = await this.text('/grüße', {redirect: 'manual'});
 
-        expect(res.status).toEqual(200);
         expect(body).toContain('Hello, Grüße!');
     });
 
@@ -125,10 +115,8 @@ describe("entry", function () {
 
         await this.write({ path: '/encoded.txt', content: 'Link: /a%2520b\nHello, encoded!' });
 
-        const res = await this.get('/a%2520b', { redirect: 'manual' });
-        const body = await res.text();
+        const body = await this.text('/a%2520b', { redirect: 'manual' });
 
-        expect(res.status).toEqual(200);
         expect(body).toContain('Hello, encoded!');
     });
 

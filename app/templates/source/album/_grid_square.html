@@ -17,12 +17,11 @@
   .post {
     position: relative;
     padding: 0.8rem;
-    margin-bottom: 2rem;
     width: 25%;
     cursor: zoom-in;
     box-sizing: border-box;
     font-size: 13px;
-    color: #aaa;
+    color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.45);
     text-decoration: none;
     text-align: center;
 
@@ -38,7 +37,7 @@
     {{#medium}}
     .post {width: 50%;}
     @media screen and (min-width: 540px) {.post {width: 33.3333%;}}
-    @media screen and (min-width: 800px) {.post {width: 33.3333%%;}}
+    @media screen and (min-width: 800px) {.post {width: 33.3333%;}}
     @media screen and (min-width: 1000px) {.post {width: 25%;}}
     @media screen and (min-width: 1200px) {.post {width: 20%;}}
     {{/medium}}
@@ -79,7 +78,6 @@
     display: block;
     overflow: hidden;
     position: relative;
-    margin-bottom: 1.3rem
   }
 
   .post .thumbnail:after {
@@ -105,16 +103,16 @@
   }
 
   .post.no-thumbnail .thumbnail:after {
-    border-color: rgba(0, 0, 0, .15);
+    border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, .15);
     border-width: 2px
   }
 
   .post.no-thumbnail:hover .thumbnail:after {
-    border-color: rgba(0, 0, 0, 0.4);
+    border-color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.4);
   }
 
   .post.no-thumbnail .thumbnail {
-    color: rgba(0, 0, 0, .4);
+    color: rgba({{#rgb}}{{text_color}}{{/rgb}}, .4);
     text-align: center;
   }
 
@@ -160,7 +158,7 @@
           sizes="(max-width: 540px) 33vw, (max-width: 800px) 25vw, (max-width: 1000px) 20vw, (max-width: 1200px) 16vw, 14vw"
           {{/small}}
           {{#medium}}
-          sizes="(max-width: 540px) 50vw, (max-width: 800px) 33.3333vw, (max-width: 1000px) 33.3333vw, 20vw"
+          sizes="(max-width: 540px) 50vw, (max-width: 800px) 33.3333vw, (max-width: 1000px) 33.3333vw, (max-width: 1200px) 25vw, 20vw"
           {{/medium}}
           {{#large}}
           sizes="(max-width: 540px) 100vw, (max-width: 800px) 100vw, (max-width: 1000px) 50vw, (max-width: 1200px) 50vw"
@@ -189,14 +187,18 @@
               margin: 0.65em 1.3rem;
               box-sizing: border-box;
               overflow: hidden;
-              color: rgba(0, 0, 0, 0.5);
-              font-size: 24px;
+              color: rgba({{#rgb}}{{text_color}}{{/rgb}}, 0.5);
+              font-size: {{heading_font.font_size}}px;
             ">
             {{ title }}
           </span>
-          <span style="font-size: 13px; display: block"
+          {{^hide_dates}}
+          {{#date}}
+          <span class="date" style="font-size: 13px; display: block"
             >Added <span date-from-now="{{ dateStamp }}">{{ date }}</span></span
           >
+          {{/date}}
+          {{/hide_dates}}
         </span>
         {{/thumbnail.medium}}
       </span>

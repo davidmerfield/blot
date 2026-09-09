@@ -1,6 +1,6 @@
 Your subscription renews next week
 
-Your [Blot]({{{site}}}) subscription will renew in 7 days.
+Your [Blot]({{{site}}}) subscription for {{blogs.length}} site{{s}} will renew in 7 days. You will be charged {{pretty.price}} total.
 
 If you would like help setting up or improving your site, just reply to this email.
 

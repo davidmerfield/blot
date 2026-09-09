@@ -1,8 +1,19 @@
+Release new notebook template
+
+---
+
+Verify we're still processing Stripe and PayPal webhooks now they are verified
+
+Add a link to how section on pages to menu links settings page to guide new users! 
+
+Hitting the save changes button under typeset settings spits you back out to homepage! Bug!
+
+Debug issue with warwickmostyn
+
 Write useful benchmark tool for Blot
 - Add performance tests which output something like this for PRs (compare against master branch, fail if over threshold):
     Total CPU  29.90%          -> 11.64%
     Syscalls   3.10s           -> 0.66s
-    Crypto     1.6s            -> 0.11s
     Bandwidth  ~6.5 Mbit/sec   -> ~3 Mbit/sec
 
 Move to redis hashes for entry storage
@@ -20,6 +31,7 @@ Move to redis hashes for entry storage
 * Add a serializer/deserializer utility (new module under `app/models/entry/`, e.g., `format.js`) that can translate between `Entry` objects and hash field payloads (strings stay raw; other types use `JSON.stringify`/`JSON.parse`).
 * Refactor `app/models/entry/get.js` to accept an optional `fields` argument (string or array). Use `multi` to `HMGET`/`HGETALL` from the hash key and fall back to the JSON key when the hash is missing, reusing the serializer to coerce types. Ensure single-field calls return the scalar when only one entry is requested, while preserving existing behaviors for callers expecting full `Entry` objects.
 * Cover the new pathways with unit coverage (or targeted integration coverage) once tests are runnable, verifying full-entry fetches, hash fallback to legacy JSON, and single-field lookups.
+* does this fix slow pages like the archives page on www.jaysjay.com?
 
 ---
 
@@ -102,10 +114,10 @@ Dropbox:
 - Modify setup flow:
   - Phase 1: RESET FROM BLOT (NON DESTRUCTIVE, deduplicate on conflict)
   - Phase 2: RESET TO BLOT (TWICE?) then sync/FIX then begin ordinary syncing
+  - Add a progress bar to the dashboard during initial client setup. Use the Google Drive and Git client progress bar implementations as reference.
 - Make Dropbox sync issue emails more useful with a script to compile the logs for a single site (including macserver)
   - Adjust full_folder to add a big warning to prevent confusion about where the new folder is when transitioning permissions
   - Add a step to authentication flow which says: 'there is already a folder called 'Your blog title' in your Dropbox, would you like to use that?' then overwrite the files inside. This prevents the proliferation of confusing 'Your blog title (1)' when you re-authenticate.
-  - Add a progress bar to the dashboard when writing existing files to Dropbox. It takes a while and confuses people. Perhaps leverage existing status message system with prefix of "(1/247)" to be parsed on front-end and turned into progress bar
   - Make the folder in Dropbox rename automatically when the customer changes the username for one of their multiple blogs?
   - When you switch from app folder to full folder, there should be a notification indicating that your folder location has changed
   - Check content hash for upload possible
@@ -116,6 +128,14 @@ Dropbox:
    - How do we make errors sticky? To make sure users click through to clients page to re-connect to Dropbox, etc...
 
 Git:
+- Improve the performance of Git client initialization by either using batching of commits and increasing the interval for Git garbage collection
+- Surface progress of Git garbage collection command on dashboard through blog status updates
+- Create tests for large Git repo initialization
+- Gather the total number of files so we can add a status bar to the setting up repository page
+- Make git client setup resumable / handle server restart
+- Fix bug with git client which let large pushes overwhelm the main server, leading to downtime
+- Handle error out of space on blob server during git client setup
+- Surface errors with permissions on Git repo directory when setting up Git client
 - Add sync check
 - Add support for LFS and tell [Jamie](https://mail.google.com/mail/u/0/#inbox/FMfcgxwBVMcpnxGHqnxJHNdbMBSrglzg)
 - Backdate existing commits (perhaps set file ctime using info from git log?) This would sidestep the frustration experienced by [Gavin](https://mail.google.com/mail/u/0/#inbox/1669a8e621f9ef37) when he imported an existing repository.
@@ -151,6 +171,7 @@ iCloud:
 - Add stats on response time to iCloud server health check logging
   - maybe monitor response time average and email notify when it increases dramatically?
 - Smooth over setup process, add guidance for 'mode' of share panel (e.g. copy vs. collaborate) and maybe a screenshot
+- Add a progress bar to the dashboard during initial client setup. Use the Google Drive and Git client progress bar implementations as reference.
 - Make iCloud sync issue emails more useful with a script to compile the logs for a single site (including macserver)
   - Add logging instrumentation of modified file paths to sync verification to aid in analysis of sync drift
 - Enforce a configurable timeout and cancellation for build jobs triggered by iCloud sync events to avoid the concurrent sync bug referenced in `sync/set.js`.
@@ -164,6 +185,7 @@ iCloud:
   - instead, to sync folder tree, whenever readddir is called, it should maintain an internal map of the last time a blog's subfolder tree was recursively checked, and call it? or maybe just call ls and brctl download on the specific folder? or is this too slow?
 - Investigate the EHOSTUNREACH erors on the main server when attempting to communicate with the mac server – some firewall issue with mac hosting provider?
 - Investigate: can we modify app/clients/icloud/routes/site/upload.js and app/clients/icloud/macserver/httpClient/upload.js to exchange a content hash? to prevent needless re-upload?
+- Investigate setting up paralell server with 'Advanced Data Protection' enabled so users with this setting can sync to Blot as well
 
 ---
 
@@ -189,6 +211,16 @@ Fix bugs with templates:
   - [ ] Add exif info
   - [ ] Add backlinks
 
+Dashboard control follow-ups (found while reviewing the per-template dashboard-control PRs):
+- Portfolio template: the new show_search boolean only toggles the search box on archives.html. If search should be hideable everywhere it appears (e.g. the toolbar / nav), wire show_search into those views too.
+- Portfolio template: heading_font control emits {{#weight}}/{{#style}} rules; confirm the fonts static data actually carries weight/style so the control does something, otherwise drop those blocks.
+- Index template: the new logo_url upload is reused as og:image / twitter:image in _head.html. Upload URLs are site-relative, so social scrapers get a relative path. Either expose an absolute form of the upload value or fall back to {{{avatar}}} for social meta.
+- Blog template: sticky_navigation positions the sidebar with `left/right: calc(50% - var(--body-outer-width) / 2)`, which only lines up while the body is exactly --body-outer-width wide and centred. Verify against long nav lists and the navigation_location=right case, and confirm behaviour at the mobile breakpoint where .sidebar becomes position:relative.
+- Blog template: title_and_summary index layout renders {{{summary}}} unescaped. Fine while summaries are plain text, but revisit if summaries ever carry markup.
+- Keynote template: this PR was rebased onto master's flex gallery rewrite (body:has(.gallery), flex column) that fixed opaque screenshot backgrounds. The gallery padding is now driven by {{spacing}}em (default 4) instead of the tuned 3.66em. Visually re-check that the gallery still fills the viewport below the header and that screenshots stay opaque at the min/max spacing and slide_width values.
+- Album template: the new max_width control replaces `.entry.page .body>* { max-width: 35em }` (~560px) with a px default of 800. That widens the text measure on page entries for every existing site on next rebuild. Double-check the default reads well, or lower it toward the old ~560px.
+- Album template: several rules use `{{^heading_font}} ... 28px/23px fallback {{/heading_font}}`, but heading_font is always a populated object so the fallback is dead. Harmless, but could be tidied.
+
 Fix bug with the website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 
 Fix bug with template slugs / local templates
@@ -209,9 +241,19 @@ Fix bug with [~/gitbug folder](https://mail.google.com/mail/u/0/#inbox/KtbxLxgKJ
 - surface setup errors with git client
 - handle these errors nicely through sync status
 
+Fix bug with auto heading injector and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgKvJFLPslvxmlmMBnmcQQTqzq)
+
+Fix bug where pages where appearing in the list of posts filtered by path_prefix AND tag – e.g. /work/tagged/automotive and tell Chuck
+
 Fix bug with huge draft crashing the sync server /a327ex/drafts/it_follows.txt
+- Chunk large drafts into multiple messages to avoid memory issues? 
 
 Fix bug linking to relative pdf in subfolders, e.g. Pages/File.md '[](./file.pdf)' breaks
+
+Fix bug: relative <a href> resolution in app/build/dependencies/index.js doesn't percent-encode filesystem-derived path segments before writing them into the href
+- e.g. a post inside a folder named "folder#1" linking to a relative report.pdf resolves to /folder#1/report.pdf, which browsers parse as path /folder plus fragment 1/report.pdf, so the sibling file is never requested (same issue with "?" in a folder name)
+- pre-existing issue, also affects img src/link href resolution in the same module, not just anchors
+- flagged by Codex review on PR #1643 (https://github.com/davidmerfield/blot/pull/1643#discussion_r3789725057 area)
 
 Fix possible bug with changing folder name in Google Drive from uppercase to lowercase (what happens to file inside?). Is this related to entry lookup for deleted files? How was the missing ghost file undeleteable? the case of one variant was deleted but the other was not. The case of the ID mismatched. The folder lock was stuck.
 
@@ -303,10 +345,14 @@ Fix bug with template tags in blog post and tell [Shibel](https://mail.google.co
 
 Fix [Frank](https://mail.google.com/mail/u/0/1527fbcf999ba0c3)'s strange template bug
 
+Follow-ups from drag-and-drop template upload:
+- Move the folder browser (views/dashboard/folder/directory.html) onto the shared views/js/collect-dropped-files.js instead of its inline copy of the same traversal
+- Surface template metadata.errors in the dashboard editor, not only on the preview subdomain, so a template with a broken view says so where it is edited
+- Reconcile the two url defaults for a new view: source-code.js maps foo.html to /foo, readFromFolder and the upload route map it to /foo.html
+
 Fix bugs with template engine:
 - Prevent double submission on template editor at insertion and front-end levels
 - Make it possible to rename template directories and tell [Darren](https://mail.google.com/mail/u/0/#inbox/FMfcgzGwHxvsmgwbnxLbDMNDplTLltlc) and tell [questioner](https://blot.im/questions/1610) and [questioner](https://blot.im/questions/3329)
-- Fix bug not exposing issue with invalid JSON in package.json for locally-edited template on dashboard and tell [Jason](https://mail.google.com/mail/u/0/#inbox/FMfcgxwKjndBRlNNjZtlddcVVfFWVBbg)
 - Investigate bug with template views whose names include hashtags and follow up with [Jay](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqPzMvLDJBfbNfLzpkKDzmZSNt)
 - Fix bug with undeleteable template files prefixed with dot and tell [Stuart](https://mail.google.com/mail/u/0/?zx=j8rkxjpin0du#inbox/FMfcgzGqRZbhWzrwNrgrFLQBBDWBzhxL)
 - Fix bug with template editor and ensure POST error messages are passed to client properly through ajax
@@ -391,6 +437,8 @@ Record new video
 
 ---
 
+Handle content negotiation headers for accept markdown from [LLM bots](https://blog.cloudflare.com/markdown-for-agents/) and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBsvRjgTvbGqmqtSfCQZZNpdM)
+
 Add comments from Bluesky feature and tell [John](https://mail.google.com/mail/u/0/#inbox/KtbxLzFrMrLsxTzRKrfFWQBgXxBHCVbGTg)
 
 New templates:
@@ -416,7 +464,6 @@ Make it possible to create a site for free then require subscription to make it 
 Improve markdown:
 - Turn on 'preserve linebreaks by default' for markdown 
 - Extend markdown parser to support [content blocks syntax](https://github.com/iainc/Markdown-Content-Blocks)
-- Extend markdown parser to support Obsidian Callouts and follow up with [questioner](https://blot.im/questions/3374)
 - Extend markdown parser to add a special class to a list of only images for targeting into an image grid or gallery?
   - `- ![Image](_image.jpg)...` -> `<ul class="image-list">`... could then be used in CSS?
 
@@ -474,6 +521,7 @@ New plugins:
 - Add [preload=none](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/audio#preload) to all audio and video tags without it defined or maybe preload="metadata"? 
 
 Improvements to dashboard:
+- Add affordance for drag-and-drop to upload
 - Make it clearer in the UI that creating a second site increases the subscription at the next billing cycle, probably with a one-time notice.
 - Improve clients
   - cache sync validity and display checkmark on dashboard

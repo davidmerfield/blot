@@ -22,6 +22,33 @@ const reverse_proxies = process.env.BLOT_REVERSE_PROXY_URLS
   ? ["http://127.0.0.1:80"]
   : [];
 
+// See the "airlock" config block below. This is a warning, not a thrown
+// error: a misconfigured/down airlock must not crash every container on
+// boot. It does NOT mean user-controlled URLs are fetched directly -
+// helper/airlock fails those operations closed in production (the post
+// builds without the image, the domain check errors) rather than falling
+// back to an unprotected fetch. The warning just flags that this container
+// missed the env vars, so those features are broken until it is redeployed:
+//   - BLOT_AIRLOCK_BROWSER_URL unset: the production image ships no Chromium
+//     of its own (see the Dockerfile), and helper/screenshot will not fall
+//     back to a local launch for a user URL - bookmark-link screenshots
+//     cannot run at all.
+//   - BLOT_AIRLOCK_PROXY_URL unset: remote-image downloads and user-domain
+//     checks error out (fail closed) instead of fetching directly.
+if (
+  environment === "production" &&
+  !(process.env.BLOT_AIRLOCK_BROWSER_URL && process.env.BLOT_AIRLOCK_PROXY_URL)
+) {
+  console.warn(
+    "WARNING: BLOT_AIRLOCK_BROWSER_URL / BLOT_AIRLOCK_PROXY_URL are not both " +
+      "set in production. Without BLOT_AIRLOCK_BROWSER_URL, bookmark-link " +
+      "screenshots will fail (the prod image has no local Chromium). Without " +
+      "BLOT_AIRLOCK_PROXY_URL, remote-image downloads and user-domain checks " +
+      "fail closed (no unprotected fetch). Both stay broken until this " +
+      "container is redeployed. See config/airlock/README.md."
+  );
+}
+
 module.exports = {
   // codebase expects either 'production' or 'development'
   environment,
@@ -88,6 +115,10 @@ module.exports = {
   stripe: {
     key: process.env.BLOT_STRIPE_KEY,
     secret: process.env.BLOT_STRIPE_SECRET,
+    // When set, incoming Stripe webhooks are verified against this signing
+    // secret (see app/dashboard/webhooks/stripe_webhook). Leave it unset to
+    // skip verification, preserving the previous behaviour.
+    webhook_secret: process.env.BLOT_STRIPE_WEBHOOK_SECRET,
     // Ensure that each monthly plan has a corresponding
     // annual plan, and vice versa, and that these IDs
     // correspond to plans on Stripe in both live and
@@ -118,9 +149,32 @@ module.exports = {
     timeout: 10000, // 10s
   },
 
+  // The "airlock" container (config/airlock) is the single egress point for
+  // fetching untrusted, user-supplied URLs: bookmark-link screenshots and
+  // remote images referenced in posts. When these are unset the app talks to
+  // the network directly - fine for local development, but with no SSRF
+  // protection (see the production warning above). See config/airlock/README.md.
+  airlock: {
+    // Chromium DevTools endpoint, e.g. http://airlock:9222 - consumed by
+    // app/helper/screenshot.
+    browser_url: process.env.BLOT_AIRLOCK_BROWSER_URL || null,
+    // HTTP(S) forward proxy, e.g. http://airlock:8888 - consumed by
+    // app/helper/transformer/download and every other user-controlled fetch
+    // via helper/airlock.
+    proxy: process.env.BLOT_AIRLOCK_PROXY_URL || null,
+    // When true (production), helper/airlock refuses a user-controlled fetch
+    // that isn't going through the airlock instead of falling back to a
+    // direct one. Read this rather than re-deriving from environment.
+    required: environment === "production",
+  },
+
   paypal: {
     client_id: process.env.BLOT_PAYPAL_CLIENT_ID,
     secret: process.env.BLOT_PAYPAL_SECRET,
+    // When set, incoming PayPal webhooks are verified via PayPal's
+    // verify-webhook-signature API (see app/dashboard/webhooks/paypal_webhook).
+    // Leave it unset to skip verification, preserving the previous behaviour.
+    webhook_id: process.env.BLOT_PAYPAL_WEBHOOK_ID,
 
     plan: process.env.BLOT_PAYPAL_MONTHLY_6,
 

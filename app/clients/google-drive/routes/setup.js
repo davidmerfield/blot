@@ -100,7 +100,7 @@ async function finishSetup(blog, drive, email, serviceAccountId) {
     await checkWeCanContinue();
     status("Ensuring new folder is in sync");
 
-    await resetFromBlot(blog.id, status);
+    await resetFromBlot(blog.id, status, { publishSyncProgress: true });
 
     await database.blog.store(blog.id, { preparing: false });
     status("All files transferred");

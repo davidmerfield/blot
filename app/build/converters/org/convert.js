@@ -26,6 +26,9 @@ module.exports = function (blog, text, callback) {
     // we use our own highlighint library (hljs) later
     "--no-highlight",
 
+    // Emit span.math with raw TeX for the KaTeX plugin.
+    "--katex",
+
     "--email-obfuscation=none"
   ];
 

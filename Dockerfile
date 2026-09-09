@@ -13,19 +13,31 @@ ENV NODE_PATH=/usr/src/app/app
 # Set the working directory in the Docker container
 WORKDIR /usr/src/app
 
-# Install necessary packages for Puppeteer, the git client, and HEIF-enabled libvips
+# Install the git client and a few runtime basics. Chromium is NOT installed
+# here: production takes screenshots by connecting to the shared "airlock"
+# container's headless Chromium over the Docker network (see
+# app/helper/screenshot and config/airlock), so the prod image ships no
+# browser. The dev stage below adds Chromium back for the test suite.
 RUN apk add --no-cache --update \
     git \
+    tini \
     curl \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
+    ca-certificates
 
-# Set the Puppeteer executable path
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+# Configure git to handle lots of large binary files in memory-constrained environments.
+RUN git config --system pack.threads 1 \
+ && git config --system pack.windowMemory 32m \
+ && git config --system pack.deltaCacheSize 32m \
+ && git config --system pack.window 5
+
+# Use tini as the init process so simple-git child processes are reaped instead of becoming zombies.
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Puppeteer is used only as a CDP client (it connect()s to the airlock's
+# Chromium), so don't let `npm install` download its ~130MB bundled browser.
+# The dev stage, which does launch() a local Chromium for tests, installs the
+# system package and points Puppeteer at it instead.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 # Install Pandoc
 RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
@@ -36,10 +48,7 @@ RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
   && rm -r pandoc-${PANDOC_VERSION}
 
 # Sharp Runtime libs
-RUN apk add --no-cache --update \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
+RUN apk add --no-cache \
     vips \
     vips-dev \
     vips-heif \
@@ -60,6 +69,9 @@ RUN apk add exiftool
 RUN exiftool -ver
 
 # Copy package file and any install hooks required during npm install
+# We don't create a package-lock.json because we ran into issues
+# with sharp on different architectures. If we can solve this, then
+# we can commit the package-lock.json and edit this step.
 COPY package.json ./
 
 RUN npm install --no-package-lock && npm cache clean --force
@@ -77,10 +89,24 @@ FROM base AS dev
 ENV NODE_ENV=development
 ENV PATH=/usr/src/app/node_modules/.bin:$PATH
 
+# The test suite (app/site/tests) and scripts/development/translate launch a
+# local headless Chromium via Puppeteer. Production does not - it connects to
+# the airlock - so the browser and its font/nss deps live in this stage only.
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 RUN npm install --no-package-lock && npm cache clean --force
     
 # Configure git so the git client doesn't complain
 RUN git config --global --add safe.directory /usr/src/app && git config --global user.email "you@example.com" && git config --global user.name "Your Name"
+
+# OpenResty is spawned by config/openresty (cacher) tests via `openresty -c ...`.
+# Alpine's community package installs the binary at /usr/lib/nginx/bin/openresty,
+# which start-openresty.sh already probes for. procps provides the `ps` used when
+# restarting OpenResty between specs; the /var dirs are nginx's compiled-in
+# defaults for the pid file and logs.
+RUN apk add --no-cache openresty sudo procps \
+ && mkdir -p /var/run/nginx /var/log/nginx /var/tmp/nginx
 
 ## Stage 3 (copy in source)
 # This gets our source code into builder for use in next two stages

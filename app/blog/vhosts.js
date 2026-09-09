@@ -36,7 +36,7 @@ module.exports = function (req, res, next) {
   } else {
     // strip port if present, this is required by test suite
     // and is a good idea in general
-    const domain = host.indexOf(":") > -1 ? host.split(":")[0] : host;
+    const domain = (host.indexOf(":") > -1 ? host.split(":")[0] : host).toLowerCase();
     identifier = { domain };
   }
 

@@ -3,45 +3,18 @@ var async = require("async");
 var parseXML = require("xml2js").parseString;
 var colors = require("colors/safe");
 var Item = require("./item");
-
-if (require.main === module) {
-  var options = {};
-  var outputDirectory = process.argv[3];
-  var sourceFile = process.argv[2];
-
-  options.filter = process.argv[4];
-
-  if (!outputDirectory || !sourceFile.length) {
-    console.log(
-      "Please pass XML export file to convert and directory to output result:"
-    );
-    return console.log(
-      "node index.js export.xml output-directory [filter-item-by-title]"
-    );
-  }
-
-  console.log(colors.dim("Starting Wordpress import from"), sourceFile);
-  console.log(colors.dim("Output directory:"), outputDirectory);
-
-  main(sourceFile, outputDirectory, console.log, options, function (err) {
-    if (err) throw err;
-
-    console.log();
-    console.log("Finished!");
-    process.exit();
-  });
-}
+var helper = require("dashboard/site/import/helper");
 
 function main(sourceFile, outputDirectory, status, options, callback) {
   fs.emptyDirSync(outputDirectory);
 
-  status("Reading Wordpress XML file");
+  status("Reading WordPress XML file");
 
   fs.readFile(sourceFile, "utf-8", function (err, xml) {
     if (err) return callback(err);
 
     // Without strict:false, sometimes we run into errors with invalid/unescaped
-    // characters in the XML provided by Wordpress.
+    // characters in the XML provided by WordPress.
     // Strict seems to have some side-effects, which is why we also normalize:true
     // and normalizeTags:true.
     parseXML(xml, { strict: false, normalizeTags: true }, function (
@@ -52,12 +25,10 @@ function main(sourceFile, outputDirectory, status, options, callback) {
 
       try {
         var channel = result.rss.channel[0];
-        console.log('HERE with channel', channel);
         var title = channel && channel.title && channel.title[0];
         var link = channel && channel.link && channel.link[0];
         var exportVersion = channel && channel["wp:wxr_version"] && channel["wp:wxr_version"][0];
         
-        console.log(title);
         console.log(colors.dim("Site URL:"), link);
         console.log(
           colors.dim("Export Version"),
@@ -85,25 +56,23 @@ function main(sourceFile, outputDirectory, status, options, callback) {
 
         var totalItems = items.length;
       } catch (e) {
-        console.log("HERE with err", e);
         return callback(new Error("Invalid XML"));
       }
+
+      // Final destinations are allocated only after downloads have established
+      // whether an entry needs a directory-backed post.txt representation.
+      var write = helper.write.createWriter();
 
       async.eachOfSeries(
         items,
         function (item, index, done) {
-          status(
-            "Processing " +
-              (++index + " of " + totalItems) +
-              " " +
-              item.title[0].trim()
-          );
-          console.log(
-            colors.dim(++index + "/" + totalItems),
-            item.title[0].trim()
-          );
+          var current = Number(index) + 1;
+          var title = item.title[0].trim();
+
+          status("(" + current + "/" + totalItems + ") Processing " + title);
+          console.log(colors.dim(current + "/" + totalItems), title);
           injectAttachedThumbnail(item, channel.item);
-          Item(item, outputDirectory, done);
+          Item(item, outputDirectory, write, done);
         },
         callback
       );

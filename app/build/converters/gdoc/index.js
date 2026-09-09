@@ -10,8 +10,10 @@ const yaml = require("yaml");
 const blockquotes = require("./blockquotes");
 const footnotes = require("./footnotes");
 const linebreaks = require("./linebreaks");
+const restoreDisplayMath = require("./restore-display-math");
 const processImages = require("./images");
 const cleanupSpans = require("./cleanup-spans");
+const { normalizeLiteralDollarMath } = require("build/math/normalizeLiteralDollars");
 
 function textWithLineBreaks($, node) {
   const clonedNode = $(node).clone();
@@ -214,12 +216,18 @@ async function read(blog, path, callback) {
     // handle blockquotes
     blockquotes($);
 
+    // restore display math whose Google Docs paragraphs were joined above
+    // this runs after blockquotes so that an equation inside a quote is
+    // recognized once its quote markers have been removed
+    restoreDisplayMath($);
+
     // handle footnotes
     footnotes($);
 
     // transform code tables before final serialization
     convertCodeTables($);
 
+    normalizeLiteralDollarMath($);
 
     let html = $("body").html();
 
