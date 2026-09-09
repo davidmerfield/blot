@@ -5,8 +5,11 @@ var client = require("models/client");
 var clfdate = require("helper/clfdate");
 var seedrandom = require("seedrandom");
 var async = require("async");
-const { before } = require("lodash");
-var seed;
+var fs = require("fs");
+var path = require("path");
+
+// Jasmine >= 7 removed the top-level `random` / `stopSpecOnExpectationFailure`
+// config keys; they now live under `config.env`, and `loadConfig` is async.
 var config = {
   spec_dir: "",
   spec_files: [
@@ -16,14 +19,100 @@ var config = {
     "!**/node_modules/**",
   ],
   helpers: [],
-  stopSpecOnExpectationFailure: false,
-  random: true,
+  env: {
+    stopSpecOnExpectationFailure: false,
+    random: true,
+    // Jasmine 6+ rejects duplicate spec/suite names by default. The existing
+    // suite has some, so keep the pre-upgrade behaviour for now; tightening
+    // this is a follow-up.
+    forbidDuplicateNames: false,
+  },
 };
+
 // Collect only the user-passed args.
 // If "--" is present, only consider args after it.
 const rawArgs = process.argv.slice(2);
 const dashdash = rawArgs.indexOf("--");
-const args = dashdash >= 0 ? rawArgs.slice(dashdash + 1) : rawArgs;
+const cliArgs = dashdash >= 0 ? rawArgs.slice(dashdash + 1) : rawArgs;
+
+// Split flags (--foo=bar) from positionals ([path, seed]).
+const flags = {};
+const args = [];
+for (const arg of cliArgs) {
+  const m = /^--([^=]+)=(.*)$/.exec(arg);
+  if (m) {
+    flags[m[1]] = m[2];
+  } else if (arg.startsWith("--")) {
+    flags[arg.slice(2)] = true;
+  } else {
+    args.push(arg);
+  }
+}
+
+// --shard=INDEX/TOTAL runs a deterministic 1/TOTAL slice of the spec files
+// for the given path, so CI can fan a single suite out across several jobs.
+// Selection is round-robin (file i goes to shard i % TOTAL) after a stable
+// sort, which spreads a directory's heavy files across shards rather than
+// piling them into one contiguous chunk.
+let shard = null;
+if (flags.shard) {
+  const parts = String(flags.shard).split("/");
+  const index = parseInt(parts[0], 10);
+  const total = parseInt(parts[1], 10);
+  if (!(total >= 1) || !(index >= 1) || index > total) {
+    throw new Error(
+      `Invalid --shard=${flags.shard} (expected INDEX/TOTAL, 1-based, INDEX <= TOTAL)`
+    );
+  }
+  shard = { index, total };
+}
+
+// --exclude=path[,path...] drops any spec file at or below one of these
+// paths (relative to the project root). Lets one suite be split while a
+// heavy sub-tree of it is carved off into its own matrix entry.
+const excludePrefixes = (flags.exclude ? String(flags.exclude).split(",") : [])
+  .map((p) => p.trim())
+  .filter(Boolean)
+  .map((p) => path.relative(process.cwd(), path.resolve(process.cwd(), p)));
+
+function isExcluded(rel) {
+  return excludePrefixes.some(
+    (prefix) => rel === prefix || rel.startsWith(prefix + path.sep)
+  );
+}
+
+// Recursively list the spec files the runner would pick up under `rootDir`,
+// mirroring the spec_files globs above: any *.js inside a `tests/` directory,
+// or any file named `tests.js`, excluding node_modules and any --exclude
+// paths.
+function listSpecFiles(rootDir) {
+  const out = [];
+  (function walk(dir) {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (e) {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.name === "node_modules") continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile() && entry.name.endsWith(".js")) {
+        const rel = path.relative(process.cwd(), full);
+        const segments = rel.split(path.sep);
+        if (
+          (segments.includes("tests") || entry.name === "tests.js") &&
+          !isExcluded(rel)
+        ) {
+          out.push(rel);
+        }
+      }
+    }
+  })(rootDir);
+  return out.sort();
+}
 
 // Pass in a custom test glob for running only specific tests
 if (args[0]) {
@@ -46,7 +135,40 @@ if (args[0]) {
   );
 }
 
+let shardFiles = null;
+if (shard) {
+  const root = path.resolve(
+    process.cwd(),
+    args[0] && !args[0].endsWith(".js") ? args[0] : "."
+  );
+  const allFiles = listSpecFiles(root);
+  shardFiles = allFiles.filter((_, i) => i % shard.total === shard.index - 1);
+
+  console.log(
+    clfdate(),
+    `Shard ${shard.index}/${shard.total}:`,
+    colors.cyan(`${shardFiles.length} of ${allFiles.length} spec files`)
+  );
+
+  if (shardFiles.length === 0) {
+    console.log(
+      clfdate(),
+      colors.yellow(
+        `Shard ${shard.index}/${shard.total} matched no spec files - ` +
+          `TOTAL (${shard.total}) is larger than the file count for this path.`
+      )
+    );
+  }
+
+  // Replace the spec_dir / spec_files globs with an explicit file list.
+  // The list is applied via addSpecFile() after loadConfig() so paths are
+  // taken literally (no glob interpretation of characters in the paths).
+  config.spec_dir = "";
+  config.spec_files = [];
+}
+
 // Seed: 2nd positional arg, or env, or random
+let seed;
 if (args[1]) {
   seed = args[1];
 } else {
@@ -60,16 +182,20 @@ if (args[1]) {
     colors.cyan("npm test -- app/models/test.js SEED")
   );
 }
+config.env.seed = seed;
 
 seedrandom(seed, { global: true });
-jasmine.seed(seed);
-jasmine.loadConfig(config);
 
 // Build command for re-running with DEBUG
 function buildDebugCommand() {
   var cmd = "DEBUG=blot* npm test";
   if (args[0]) cmd += " " + args[0];
   if (args[1]) cmd += " " + args[1];
+  if (flags.shard || flags.exclude) {
+    cmd += " --";
+    if (flags.shard) cmd += " --shard=" + flags.shard;
+    if (flags.exclude) cmd += " --exclude=" + flags.exclude;
+  }
   return cmd;
 }
 
@@ -110,7 +236,7 @@ jasmine.addReporter({
       .map((fullName) => durations[fullName] + "ms " + colors.dim(fullName))
       .slice(0, 10)
       .forEach((line) => console.log(line));
-    
+
     // If tests failed, show how to re-run with DEBUG (only if DEBUG is not already set)
     if (result.overallStatus === "failed" && !process.env.DEBUG) {
       console.log();
@@ -214,10 +340,16 @@ global.test = {
   },
 };
 
-// get the number of keys in the database
-(async function ensureEmptyDatabase() {
-  let hasKeys = false;
+// Load the config (async since Jasmine 7) then, once we've confirmed the
+// database is empty, hand control to Jasmine.
+(async function run() {
+  await jasmine.loadConfig(config);
 
+  if (shardFiles) {
+    shardFiles.forEach((f) => jasmine.addSpecFile(path.resolve(process.cwd(), f)));
+  }
+
+  let hasKeys = false;
   for await (const _ of client.scanIterator({ MATCH: "*", COUNT: 1 })) {
     if (_.length > 0) {
       hasKeys = true;
@@ -225,13 +357,11 @@ global.test = {
     }
   }
 
-  if (!hasKeys) {
-    // if there are no keys, we need to run the tests
-    jasmine.execute();
-  } else {
-    // if there are keys, we need to throw an error
+  if (hasKeys) {
     throw new Error("Database is not empty: keys found");
   }
+
+  await jasmine.execute();
 })().catch(function (err) {
   throw err;
 });
