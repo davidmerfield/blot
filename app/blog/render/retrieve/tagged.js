@@ -45,8 +45,9 @@ module.exports = function (req, res, callback) {
       if (err) return callback(err);
 
       const fields = entryFieldList(req.retrieve, ["tagged"]);
+      const entryIDs = result.entryIDs || [];
 
-      Entry.get(blogID, result.entryIDs || [], fields, function (entries) {
+      const withEntries = function (entries) {
         entries = sortEntries(entries, sortOptions);
 
         projectEntryFields(entries, req.retrieve, ["tagged"]);
@@ -69,7 +70,13 @@ module.exports = function (req, res, callback) {
           slugs: result.slugs,
           prettyTags: result.prettyTags,
         });
-      });
+      };
+
+      if (fields) {
+        Entry.get(blogID, entryIDs, fields, withEntries);
+      } else {
+        Entry.get(blogID, entryIDs, withEntries);
+      }
     }
   );
 };

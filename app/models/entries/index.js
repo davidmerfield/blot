@@ -305,11 +305,18 @@ module.exports = (function () {
         if (!options.full && !options.skinny) return callback(entryIDs);
 
         // options.fields (array of entry property names) narrows the Redis
-        // read to just those fields - see models/entry/get.js. Undefined means
-        // "whole entry", so existing callers are unaffected.
-        Entry.get(blogID, entryIDs, options.fields, function (entries) {
-          return callback(entries);
-        });
+        // read to just those fields - see models/entry/get.js. Only pass it
+        // through when set so existing 3-arg callers (and their test spies)
+        // are completely unaffected.
+        if (options.fields) {
+          Entry.get(blogID, entryIDs, options.fields, function (entries) {
+            return callback(entries);
+          });
+        } else {
+          Entry.get(blogID, entryIDs, function (entries) {
+            return callback(entries);
+          });
+        }
       })
       .catch(function () {
         return callback([]);

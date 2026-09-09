@@ -8,7 +8,7 @@ require("moment-timezone");
 module.exports = function (req, res, callback) {
   var fields = entryFieldList(req.retrieve, ["archives"]);
 
-  Entries.getAll(req.blog.id, { fields: fields }, function (allEntries) {
+  var build = function (allEntries) {
     // dateStamp is always kept, so the year/month grouping below is unaffected.
     projectEntryFields(allEntries, req.retrieve, ["archives"]);
 
@@ -51,5 +51,11 @@ module.exports = function (req, res, callback) {
     });
 
     return callback(null, years);
-  });
+  };
+
+  if (fields) {
+    Entries.getAll(req.blog.id, { fields: fields }, build);
+  } else {
+    Entries.getAll(req.blog.id, build);
+  }
 };
