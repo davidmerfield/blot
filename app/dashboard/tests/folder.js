@@ -151,21 +151,26 @@ describe("folder", function () {
   }
 
   it("shows the post size warning on the directory and file pages", async function () {
-    const limit = require("build/converters/post-source-size")
-      .MAX_POST_SOURCE_SIZE_BYTES;
+    const { MAX_POST_SOURCE_SIZE_BYTES, MAX_POST_SOURCE_SIZE_LABEL } = require(
+      "build/converters/post-source-size"
+    );
     await this.write({
       path: "oversized.md",
-      content: Buffer.alloc(limit + 1, 32),
+      content: Buffer.alloc(MAX_POST_SOURCE_SIZE_BYTES + 1, 32),
     });
     await this.blog.rebuild();
 
     const directory = await this.parse(`/sites/${this.blog.handle}`);
-    expect(directory.text()).toContain("Exceeds 5 MB post limit");
+    expect(directory.text()).toContain(
+      `Exceeds ${MAX_POST_SOURCE_SIZE_LABEL} post limit`
+    );
 
     const file = await this.parse(
       directory("a:contains('oversized.md')").attr("href")
     );
-    expect(file.text()).toContain("exceeds the 5 MB post size limit");
+    expect(file.text()).toContain(
+      `exceeds the ${MAX_POST_SOURCE_SIZE_LABEL} post size limit`
+    );
     expect(file.text()).toContain("remains available as a file");
     expect(file.text()).toContain("cannot become a post or page until it is reduced");
   });

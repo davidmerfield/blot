@@ -33,6 +33,13 @@ module.exports = async function (blog, path) {
       }),
     ])
       .then(([ignoredReason, entry]) => {
+        // Entry.drop keeps a deleted tombstone (deleted: true) around for
+        // 24 hours rather than removing the record outright. For the
+        // dashboard a deleted entry is not a post/page, so treat it as
+        // absent — otherwise the "too large" / "wrong type" messaging for
+        // a previously published file stays hidden behind `if (!entry)`.
+        if (entry && entry.deleted) entry = null;
+
         const matchingConverter = converters.find((converter) => {
           return converter.is(path);
         });

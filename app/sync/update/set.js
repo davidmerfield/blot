@@ -3,6 +3,7 @@ var Ignore = require("./ignore");
 var Entry = require("models/entry");
 var Preview = require("./preview");
 var isPreview = require("./drafts").isPreview;
+var isDraft = require("./drafts").isDraft;
 var async = require("async");
 var WRONG_TYPE = "WRONG_TYPE";
 var TOO_LARGE = "TOO_LARGE";
@@ -42,8 +43,16 @@ function buildAndSet(blog, path, callback) {
     if (err && err.code === "WRONGTYPE")
       return Ignore(blog.id, path, WRONG_TYPE, callback);
 
-    if (err && err.code === TOO_LARGE)
-      return Ignore(blog.id, path, TOO_LARGE, callback);
+    if (err && err.code === TOO_LARGE) {
+      // If this file was previously published as a draft, Preview.write
+      // already dropped a companion .preview.html into the user's folder.
+      // Mirror the cleanup in app/sync/update/drop.js so we don't leave an
+      // orphaned preview behind now that the source can't become a post.
+      return isDraft(blog.id, path, function (draftErr, is_draft) {
+        if (!draftErr && is_draft) Preview.remove(blog.id, path);
+        Ignore(blog.id, path, TOO_LARGE, callback);
+      });
+    }
 
     if (err) return callback(err);
 

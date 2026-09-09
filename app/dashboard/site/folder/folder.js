@@ -45,7 +45,8 @@ async function getContents(blog, dir) {
         });
     }),
     new Promise((resolve, reject) => {
-      IgnoredFiles.get(blog.id, function (err, ignored) {
+      const childPaths = filtered.map((item) => path.join(dir, item));
+      IgnoredFiles.getStatuses(blog.id, childPaths, function (err, ignored) {
         if (err) return reject(err);
         resolve(ignored);
       });
@@ -70,8 +71,12 @@ async function getContents(blog, dir) {
     stats.map((stat, index) => {
       stat.entry = entries.includes(stat.name);
       stat.tooLarge = ignoredFiles[pathNormalize(stat.path)] === "TOO_LARGE";
-      if (stat.tooLarge)
+      if (stat.tooLarge) {
+        // A previously published source that grew too large leaves a
+        // deleted entry tombstone behind; don't show it as a live post.
+        stat.entry = false;
         stat.postSizeLimit = postSourceSize.MAX_POST_SOURCE_SIZE_LABEL;
+      }
       return stat;
     }),
     { property: "name" }

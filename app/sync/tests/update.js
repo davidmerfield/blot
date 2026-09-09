@@ -139,7 +139,10 @@ describe("update", function () {
             if (err) return testDone.fail(err);
             expect(reason).toBe("TOO_LARGE");
             Entry.get(blogID, entryPath, function (entry) {
-              expect(entry).toBeFalsy();
+              // Entry.drop leaves a deleted tombstone rather than removing
+              // the record outright.
+              expect(entry).toBeTruthy();
+              expect(entry.deleted).toBe(true);
               fs.outputFileSync(localPath, "published again");
 
               folder.update(entryPath, function (err) {
