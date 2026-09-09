@@ -51,7 +51,8 @@ jobs:
       TEST_SUITES: |
         - app/blog:2
         - app/build:1
-        - app/clients:2
+        - app/clients|app/clients/git:1
+        - app/clients/git:2
         - app/dashboard:1
         - app/documentation:1
         - app/helper:1
