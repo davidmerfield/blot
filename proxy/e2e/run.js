@@ -8,7 +8,8 @@
 //   E2E_PASSWORD   seeded user's password
 //
 // The proxy terminates TLS with the image's self-signed placeholder cert, so
-// certificate verification is disabled here.
+// certificate verification is disabled here. The Blot dashboard lives under
+// /sites (see app/site/index.js).
 
 const https = require("https");
 const http = require("http");
@@ -44,7 +45,7 @@ function cookieHeader(jar) {
   return Object.entries(jar).map(([k, v]) => `${k}=${v}`).join("; ");
 }
 
-function request(path, { method = "GET", jar, body, headers = {} } = {}) {
+function once(path, { method = "GET", jar, body, headers = {} } = {}) {
   const url = new URL(path, PROXY_ORIGIN);
   const mod = url.protocol === "https:" ? https : http;
   const opts = {
@@ -82,6 +83,32 @@ function request(path, { method = "GET", jar, body, headers = {} } = {}) {
   });
 }
 
+// Follow up to `max` redirects, rewriting absolute Location URLs back onto the
+// proxy origin (+ Host header) and carrying the cookie jar. 301/302 downgrade
+// to GET, like a browser.
+async function request(path, opts = {}, max = 5) {
+  let res = await once(path, opts);
+  let hops = 0;
+  let nextOpts = opts;
+  while (
+    res.status >= 300 &&
+    res.status < 400 &&
+    res.headers.location &&
+    hops < max
+  ) {
+    hops++;
+    const loc = new URL(res.headers.location, PROXY_ORIGIN);
+    const nextPath = loc.pathname + loc.search;
+    nextOpts =
+      res.status === 307 || res.status === 308
+        ? { ...opts, jar: opts.jar }
+        : { jar: opts.jar, headers: opts.headers };
+    res = await once(nextPath, nextOpts);
+  }
+  res.hops = hops;
+  return res;
+}
+
 (async function main() {
   // 1. The proxy answers its own health check.
   const health = await request("/health");
@@ -92,37 +119,37 @@ function request(path, { method = "GET", jar, body, headers = {} } = {}) {
   check("GET / routes to the app (2xx)", home.status >= 200 && home.status < 300, "got " + home.status);
   check("GET / returns a non-empty body", home.body.length > 0);
 
-  // 3. The sign-in page renders.
-  const loginPage = await request("/log-in");
-  check("GET /log-in returns 200", loginPage.status === 200, "got " + loginPage.status);
+  // 3. The sign-in page renders (dashboard lives under /sites).
+  const loginPage = await request("/sites/log-in");
+  check("GET /sites/log-in returns 200", loginPage.status === 200, "got " + loginPage.status);
   check(
-    "GET /log-in has email + password fields",
+    "sign-in page has email + password fields",
     /name=["']?email/.test(loginPage.body) && /name=["']?password/.test(loginPage.body)
   );
 
   // 4. The dashboard requires auth.
-  const anonSites = await request("/sites");
+  const anonSites = await once("/sites");
   check(
-    "GET /sites while logged out redirects to /log-in",
+    "GET /sites while logged out redirects to log-in",
     anonSites.status >= 300 && anonSites.status < 400 && /log-in/.test(anonSites.headers.location || ""),
     `status ${anonSites.status} location ${anonSites.headers.location}`
   );
 
   // 5. Sign in with the seeded user.
   const jar = {};
-  const signIn = await request("/log-in", {
+  const signIn = await request("/sites/log-in", {
     method: "POST",
     jar,
     body: { email: EMAIL, password: PASSWORD },
   });
+  check("POST sign-in sets a session cookie", Object.keys(jar).length > 0, JSON.stringify(jar));
   check(
-    "POST /log-in with valid credentials redirects",
-    signIn.status >= 300 && signIn.status < 400,
-    "got " + signIn.status + " body: " + signIn.body.slice(0, 200)
+    "after sign-in the dashboard is reachable (200)",
+    signIn.status === 200,
+    "got " + signIn.status + " after " + signIn.hops + " hop(s)"
   );
-  check("POST /log-in sets a session cookie", Object.keys(jar).length > 0, JSON.stringify(jar));
 
-  // 6. The session is now usable.
+  // 6. Session works on a fresh request.
   const authedSites = await request("/sites", { jar });
   check(
     "GET /sites while logged in returns 200",
@@ -131,17 +158,17 @@ function request(path, { method = "GET", jar, body, headers = {} } = {}) {
   );
 
   // 7. Sign out, then the session no longer works.
-  const signOut = await request("/account/log-out", { method: "POST", jar });
-  check("POST /account/log-out succeeds", signOut.status < 500, "got " + signOut.status);
-  const afterLogout = await request("/sites", { jar });
+  const signOut = await once("/sites/account/log-out", { method: "POST", jar });
+  check("POST log-out succeeds", signOut.status < 500, "got " + signOut.status);
+  const afterLogout = await once("/sites", { jar });
   check(
-    "GET /sites after log-out redirects to /log-in",
+    "GET /sites after log-out redirects to log-in",
     afterLogout.status >= 300 && afterLogout.status < 400 && /log-in/.test(afterLogout.headers.location || ""),
     `status ${afterLogout.status} location ${afterLogout.headers.location}`
   );
 
   // 8. The proxy's hardening rules apply end to end (blog traffic path).
-  const git = await request("/.git/config", { headers: { Host: "e2e-blog.example" } });
+  const git = await once("/.git/config", { headers: { Host: "e2e-blog.example" } });
   check("GET /.git/config on a blog host is blocked (404)", git.status === 404, "got " + git.status);
 
   console.log(`\n${passes} passed, ${failures} failed`);
