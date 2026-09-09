@@ -20,32 +20,17 @@ module.exports = function create(owner, name, metadata, callback) {
   metadata.slug = metadata.slug.split("/").join("-");
   metadata.id = makeID(owner, name);
 
-  // The id, and every editor URL derived from it, is built from the name. A
-  // name which slugs to nothing (e.g. "!!!") leaves an id of just the owner
-  // and, through the fallback below, an empty slug — which writeToFolder would
-  // treat as the templates root. Reject it rather than store the wreckage.
-  var idSlug = metadata.id.split(":").slice(1).join(":");
-
-  if (!idSlug) {
-    var nameErr = new Error(
-      "A template name must contain letters or numbers: " + name
-    );
-    nameErr.code = "ENOSLUG";
-    return callback(nameErr);
-  }
-
-  // The id is the only thing routing, writeToFolder and readFromFolder resolve
-  // a template by. writeToFolder names the template's on-disk directory after
-  // the stored slug and readFromFolder turns that name back into an id with
-  // makeID, so a slug which makeID maps to a *different* id lets a locally
-  // edited template be read back as another template and overwrite it. A
-  // caller-supplied slug (duplication, forking, adding a shared template) can
-  // diverge as soon as the name is long enough for the 30-character truncation
-  // to bite. Keep the slug in step with the id; a slug which already round-trips
-  // (e.g. a local template named after its folder) is left untouched, anything
-  // else falls back to the id's own suffix.
+  // A template is resolved by its id everywhere: routing, writeToFolder (which
+  // names the on-disk directory after the stored slug) and readFromFolder
+  // (which turns that name back into an id with makeID). A caller-supplied slug
+  // — duplication, forking, adding a shared template — can be truncated
+  // differently from the id when the name is long, and a stored slug that
+  // makeID maps elsewhere lets a locally edited template be read back from its
+  // folder as another template and overwrite it. Keep the slug in step with
+  // the id; one that already round-trips (a local template named after its
+  // folder) is left untouched, anything else falls back to the id's own suffix.
   if (makeID(owner, metadata.slug) !== metadata.id) {
-    metadata.slug = idSlug;
+    metadata.slug = metadata.id.split(":").slice(1).join(":");
   }
 
   metadata.name = name;

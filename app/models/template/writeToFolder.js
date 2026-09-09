@@ -8,8 +8,6 @@ var localPath = require("helper/localPath");
 var fs = require("fs-extra");
 var generatePackage = require("./package").generate;
 var determineTemplateFolder = require("./determineTemplateFolder");
-var makeID = require("./util/makeID");
-var setMetadata = require("./setMetadata");
 var PACKAGE = "package.json";
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 
@@ -24,21 +22,6 @@ function writeToFolder (blogID, templateID, callback) {
 
       if (!views || !metadata) return callback(noTemplate(blogID, templateID));
 
-      // A template stored before this change may carry a slug which makeID
-      // maps to a different id. writeToFolder names the on-disk directory
-      // after the slug and readFromFolder resolves that name back through
-      // makeID, so writing under the stale slug would let this template be
-      // read back as another one. Write under the id's own slug instead.
-      var writeSlug = safeSlug(blogID, templateID, metadata.slug);
-      var slugNeedsRepair = writeSlug !== metadata.slug;
-
-      // Local only for now, so the generated package.json carries the right
-      // slug; the stored copy is corrected below, but only once the new
-      // directory exists — a failed write must not leave metadata naming a
-      // directory that was never created, or the next buildFromFolder would
-      // drop the template as missing.
-      metadata.slug = writeSlug;
-
       makeClient(blogID, function (err, client, blogTemplate) {
         if (err) {
           return callback(err);
@@ -49,7 +32,7 @@ function writeToFolder (blogID, templateID, callback) {
             return callback(folderErr);
           }
 
-          var dir = joinpath(folderName, writeSlug);
+          var dir = joinpath(folderName, metadata.slug);
           var shouldCompareWrites = true;
 
           listLocalFiles(blogID, dir, function (err, existingFiles) {
@@ -67,36 +50,13 @@ function writeToFolder (blogID, templateID, callback) {
                 compare: shouldCompareWrites,
                 existingFiles: existingFiles,
               },
-              function (writeErr) {
-                if (writeErr) return callback(writeErr);
-                if (!slugNeedsRepair) return callback(null);
-
-                // The directory is durable now, so record the corrected slug
-                // for buildFromFolder's cleanup to match on.
-                setMetadata(templateID, { slug: writeSlug }, callback);
-              }
+              callback
             );
           });
         });
       });
     });
   });
-}
-
-// The slug names the on-disk directory and readFromFolder resolves that name
-// back through makeID, so it has to map to this template's id. A slug stored
-// before this change might not; fall back to the id's own suffix, but only
-// when that itself round-trips — a legacy id which does not is left as-is
-// rather than pointed somewhere new. Never derive from the display name, which
-// the rename route changes independently of the id.
-function safeSlug (blogID, templateID, slug) {
-  if (makeID(blogID, slug) === templateID) return slug;
-
-  var idSlug = templateID.split(":").slice(1).join(":");
-
-  if (idSlug && makeID(blogID, idSlug) === templateID) return idSlug;
-
-  return slug;
 }
 
 function writePackage (blogID, client, dir, metadata, views, compare, callback) {

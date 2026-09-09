@@ -56,16 +56,6 @@ describe("template", function () {
     });
   });
 
-  // A name which slugs to nothing would leave an id of just the owner and,
-  // via the slug fallback, an empty slug — which writeToFolder resolves to
-  // the templates root. Refuse it rather than store the wreckage.
-  it("returns an error for a name which slugs to nothing", function (done) {
-    create(this.blog.id, "!!!", {}, function (err) {
-      expect(err instanceof Error).toEqual(true);
-      done();
-    });
-  });
-
   it("throws an error if you try to create a template with no name", function (done) {
     expect(function () {
       create(this.blog.id, null, null, function () {});

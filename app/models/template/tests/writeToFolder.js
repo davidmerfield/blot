@@ -9,8 +9,6 @@ var dropView = require("../index").dropView;
 var setMetadata = require("../index").setMetadata;
 var packageAPI = require("../index").package;
 var removeEnabledFromAllTemplates = require("../index").removeEnabledFromAllTemplates;
-var makeID = require("../index").makeID;
-var getMetadata = require("../index").getMetadata;
 var writeChangeToFolder = require("../../../dashboard/site/template/save/writeChangeToFolder");
 
   require("./setup")({ createTemplate: true });
@@ -20,61 +18,6 @@ var writeChangeToFolder = require("../../../dashboard/site/template/save/writeCh
     fs.removeSync(this.blogDirectory + "/templates");
     fs.removeSync(this.blogDirectory + "/posts");
     fs.removeSync(this.blogDirectory + "/drafts");
-  });
-
-  // A template stored before slug/id normalisation can carry a slug which
-  // makeID maps to a different id. writeToFolder would name the on-disk
-  // directory after it, and readFromFolder resolves that name back through
-  // makeID — so the folder would be read as another template. writeToFolder
-  // must repair the slug before the first write.
-  it("repairs a stored slug that resolves to a different id before writing", function (done) {
-    var test = this;
-    var divergentSlug =
-      "template-with-a-name-far-too-long-to-survive-truncation";
-
-    // makeID would map this slug somewhere other than the template's id
-    expect(makeID(test.blog.id, divergentSlug)).not.toEqual(test.template.id);
-
-    setMetadata(
-      test.template.id,
-      { slug: divergentSlug, localEditing: true },
-      function (err) {
-        if (err) return done.fail(err);
-
-        setView(
-          test.template.id,
-          { name: "index.html", content: "<h1>hi</h1>" },
-          function (err) {
-            if (err) return done.fail(err);
-
-            writeToFolder(test.blog.id, test.template.id, function (err) {
-              if (err) return done.fail(err);
-
-              var root = fs.existsSync(test.blogDirectory + "/Templates")
-                ? test.blogDirectory + "/Templates"
-                : test.blogDirectory + "/templates";
-              var dirs = fs.readdirSync(root);
-
-              expect(dirs.length).toEqual(1);
-              // The directory readFromFolder would scan must resolve back to
-              // this template, not to some other id.
-              expect(makeID(test.blog.id, dirs[0])).toEqual(test.template.id);
-
-              // And the repair is persisted so buildFromFolder's cleanup
-              // matches on the same value.
-              getMetadata(test.template.id, function (err, metadata) {
-                if (err) return done.fail(err);
-                expect(dirs[0]).toEqual(metadata.slug);
-                expect(makeID(test.blog.id, metadata.slug)).toEqual(
-                  test.template.id
-                );
-                done();
-              });
-            });
-          }
-        );
-      }
-    );
   });
 
   it("writes a template to a folder", function (done) {
