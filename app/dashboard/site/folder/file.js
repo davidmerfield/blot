@@ -74,7 +74,7 @@ module.exports = async function (blog, path) {
             ignored.underscoreName = true;
           } else if (ignoredReason && ignoredReason === 'TOO_LARGE') {
             ignored.tooLarge = true;
-            ignored.postSizeLimit = postSourceSize.MAX_POST_SOURCE_SIZE_LABEL;
+            ignored.postSizeLimit = postSourceSize.limitForPath(path).label;
           } else  {
             ignored.syncing = true;
           }

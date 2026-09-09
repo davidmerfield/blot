@@ -75,7 +75,7 @@ async function getContents(blog, dir) {
         // A previously published source that grew too large leaves a
         // deleted entry tombstone behind; don't show it as a live post.
         stat.entry = false;
-        stat.postSizeLimit = postSourceSize.MAX_POST_SOURCE_SIZE_LABEL;
+        stat.postSizeLimit = postSourceSize.limitForPath(stat.path).label;
       }
       return stat;
     }),

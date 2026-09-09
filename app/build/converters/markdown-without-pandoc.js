@@ -15,8 +15,8 @@ module.exports = {
 
     fs.stat(path, function (err, stat) {
       if (err) return callback(err);
-      if (stat.size > postSourceSize.MAX_POST_SOURCE_SIZE_BYTES)
-        return callback(postSourceSize.tooLargeError());
+      if (stat.size > postSourceSize.MARKDOWN.bytes)
+        return callback(postSourceSize.tooLargeError(postSourceSize.MARKDOWN));
 
       fs.readFile(path, "utf-8", function (err, text) {
         if (err) return callback(err);

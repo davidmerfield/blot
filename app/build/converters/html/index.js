@@ -20,8 +20,8 @@ function read(blog, path, callback) {
 
   fs.stat(localPath, function (err, stat) {
     if (err) return callback(err);
-    if (stat.size > postSourceSize.MAX_POST_SOURCE_SIZE_BYTES)
-      return callback(postSourceSize.tooLargeError());
+    if (stat.size > postSourceSize.HTML.bytes)
+      return callback(postSourceSize.tooLargeError(postSourceSize.HTML));
 
     fs.readFile(localPath, "utf-8", function (err, contents) {
       if (err) return callback(err);

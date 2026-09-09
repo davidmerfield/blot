@@ -118,8 +118,7 @@ describe("update", function () {
   it("ignores oversized sources, removes their entries, and recovers after shrinking", function (testDone) {
     const IgnoredFiles = require("models/ignoredFiles");
     const Entry = require("models/entry");
-    const limit = require("build/converters/post-source-size")
-      .MAX_POST_SOURCE_SIZE_BYTES;
+    const limit = require("build/converters/post-source-size").MARKDOWN.bytes;
     const entryPath = "/size-limit.md";
     const localPath = this.blogDirectory + entryPath;
     const blogID = this.blog.id;

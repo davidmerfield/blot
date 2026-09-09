@@ -32,8 +32,8 @@ function read (blog, path, callback) {
     time.end("stat");
 
     if (err) return callback(err);
-    if (stat.size > postSourceSize.MAX_POST_SOURCE_SIZE_BYTES)
-      return callback(postSourceSize.tooLargeError());
+    if (stat.size > postSourceSize.MARKDOWN.bytes)
+      return callback(postSourceSize.tooLargeError(postSourceSize.MARKDOWN));
 
     time("readFile");
 
