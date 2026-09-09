@@ -1,6 +1,5 @@
 const fs = require("fs-extra");
 const path = require("path");
-const alphanum = require("helper/alphanum");
 const localPath = require("helper/localPath");
 const Stat = require("./stat");
 const client = require("models/client");
@@ -25,6 +24,20 @@ function resolvePageSize(pageSize) {
   return Math.min(parsed, DEFAULT_PAGE_SIZE);
 }
 
+// Order names with the same comparator the directory table in
+// app/views/dashboard/folder/directory.html applies on load: the name column
+// is compared as name.toLocaleLowerCase().trim(), ascending. Paginating with
+// a different order (e.g. natural/alphanum sort) would put "p10.txt" on a
+// different page than where the rendered page then sorts it, making the
+// listing appear to jump backwards between pages.
+function byDisplayName(a, b) {
+  const x = String(a).toLocaleLowerCase().trim();
+  const y = String(b).toLocaleLowerCase().trim();
+  if (x < y) return -1;
+  if (x > y) return 1;
+  return 0;
+}
+
 async function getContents(blog, dir, options = {}) {
   const pageSize = resolvePageSize(options.pageSize);
   const requestedPage = parseInt(options.page, 10);
@@ -32,24 +45,68 @@ async function getContents(blog, dir, options = {}) {
   const local = localPath(blog.id, dir);
   const contents = await fs.readdir(local);
 
-  const filtered = contents.filter((item) => {
-    return !item.startsWith(".") && !item.endsWith(".preview.html");
-  });
-
-  // Sort names before paginating so the page boundaries are stable and match
-  // the dashboard's default (name, ascending) sort order.
-  const orderedNames = alphanum(filtered);
+  const orderedNames = contents
+    .filter((item) => {
+      return !item.startsWith(".") && !item.endsWith(".preview.html");
+    })
+    .sort(byDisplayName);
 
   const total = orderedNames.length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  // Upper bound on the number of pages. The true count can be lower when
+  // entries vanish mid-read (see the backfill loop below), so hasNext – not
+  // this – decides whether the "Next" control is shown.
+  const estimatedPages = Math.max(1, Math.ceil(total / pageSize));
   const page = Math.min(
     Math.max(Number.isFinite(requestedPage) ? requestedPage : 1, 1),
-    totalPages
+    estimatedPages
   );
   const startIndex = (page - 1) * pageSize;
-  const pageNames = orderedNames.slice(startIndex, startIndex + pageSize);
 
-  const [entries, ignoredFiles, stats] = await Promise.all([
+  // Walk forward from startIndex collecting up to pageSize entries that still
+  // exist on disk. Files routinely disappear between readdir and stat while a
+  // large folder is still syncing; skipping them without pulling the next
+  // name forward would leave the page short and the running count adrift.
+  const pageStats = [];
+  let cursor = startIndex;
+
+  while (pageStats.length < pageSize && cursor < orderedNames.length) {
+    const batch = orderedNames.slice(
+      cursor,
+      cursor + (pageSize - pageStats.length)
+    );
+    cursor += batch.length;
+
+    const batchStats = await Promise.all(
+      batch.map(async (item) => {
+        const fullPath = path.join(local, item);
+
+        let stat;
+        try {
+          stat = await Stat(fullPath, blog.timeZone);
+        } catch (err) {
+          // The file was removed between readdir and stat. Skip it rather
+          // than failing – and rejecting – the entire listing.
+          if (err && err.code === "ENOENT") return null;
+          throw err;
+        }
+
+        stat.path = path.join(dir, item);
+        // we don't want to turn '/' into '%2F' so we split on '/' and encode each part separately
+        stat.url = stat.path.split('/').map(encodeURIComponent).join('/');
+        stat.fullPath = fullPath;
+        stat.name = item;
+
+        return stat;
+      })
+    );
+
+    for (const stat of batchStats) if (stat !== null) pageStats.push(stat);
+  }
+
+  const hasNext = cursor < orderedNames.length;
+  const pageNames = pageStats.map((stat) => stat.name);
+
+  const [entries, ignoredFiles] = await Promise.all([
     new Promise((resolve) => {
       const keys = pageNames.map(
         (item) => `blog:${blog.id}:entry:${pathNormalize(path.join(dir, item))}`
@@ -83,63 +140,37 @@ async function getContents(blog, dir, options = {}) {
         resolve(ignored);
       });
     }),
-    Promise.all(
-      pageNames.map(async (item) => {
-        const fullPath = path.join(local, item);
-
-        let stat;
-        try {
-          stat = await Stat(fullPath, blog.timeZone);
-        } catch (err) {
-          // The file may have been removed between readdir and stat (common
-          // while a large folder is still syncing). Skip it rather than
-          // failing – and rejecting – the entire listing.
-          if (err && err.code === "ENOENT") return null;
-          throw err;
-        }
-
-        stat.path = path.join(dir, item);
-        // we don't want to turn '/' into '%2F' so we split on '/' and encode each part separately
-        stat.url = stat.path.split('/').map(encodeURIComponent).join('/');
-        stat.fullPath = fullPath;
-        stat.name = item;
-
-        return stat;
-      })
-    ),
   ]);
 
-  const result = alphanum(
-    stats
-      .filter((stat) => stat !== null)
-      .map((stat) => {
-        stat.entry = entries.includes(stat.name);
-        stat.tooLarge = ignoredFiles[pathNormalize(stat.path)] === "TOO_LARGE";
-        if (stat.tooLarge) {
-          // A previously published source that grew too large leaves a
-          // deleted entry tombstone behind; don't show it as a live post.
-          stat.entry = false;
-          stat.postSizeLimit = postSourceSize.limitForPath(stat.path).label;
-        }
-        return stat;
-      }),
-    { property: "name" }
-  );
+  // pageStats is already in byDisplayName order (batches walked in order),
+  // and the directory table re-sorts on load anyway, so no re-sort here.
+  const result = pageStats.map((stat) => {
+    stat.entry = entries.includes(stat.name);
+    stat.tooLarge = ignoredFiles[pathNormalize(stat.path)] === "TOO_LARGE";
+    if (stat.tooLarge) {
+      // A previously published source that grew too large leaves a
+      // deleted entry tombstone behind; don't show it as a live post.
+      stat.entry = false;
+      stat.postSizeLimit = postSourceSize.limitForPath(stat.path).label;
+    }
+    return stat;
+  });
 
   const pagination = {
     page,
     pageSize,
-    totalPages,
+    // On the last page report the real number; otherwise the upper bound.
+    totalPages: hasNext ? Math.max(estimatedPages, page + 1) : page,
     total,
-    // 1-indexed range of items shown, for "Showing 1–1000 of 12,384"
-    rangeStart: total === 0 ? 0 : startIndex + 1,
-    rangeEnd: startIndex + result.length,
+    // 1-indexed range of items shown, for "1–1000 of 12,384".
+    rangeStart: result.length === 0 ? 0 : startIndex + 1,
+    rangeEnd: result.length === 0 ? 0 : startIndex + result.length,
     hasPrevious: page > 1,
-    hasNext: page < totalPages,
+    hasNext,
     previousPage: page - 1,
     nextPage: page + 1,
-    // Only meaningful to show controls when there's more than one page.
-    multiplePages: totalPages > 1,
+    // Only show controls when the listing actually spans more than one page.
+    multiplePages: page > 1 || hasNext,
   };
 
   return { contents: result, pagination };

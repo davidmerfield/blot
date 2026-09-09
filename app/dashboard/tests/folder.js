@@ -256,6 +256,25 @@ describe("folder", function () {
       expect(rowNames($)).toEqual(names);
     });
 
+    it("backfills a page when an entry on it has vanished", async function () {
+      // "p00.txt" sorts before the real files and would be the first row of
+      // page one; a dangling symlink makes it unstattable. The page should
+      // still show a full pageSize of real files by pulling the next name in.
+      const fs = require("fs-extra");
+      const { join } = require("path");
+      await fs.symlink(
+        join(this.blogDirectory, "does-not-exist.txt"),
+        join(this.blogDirectory, "p00.txt")
+      );
+
+      const $ = await this.parse(
+        `/sites/${this.blog.handle}?pageSize=2&page=1`
+      );
+
+      expect(rowNames($)).toEqual(["p01.txt", "p02.txt"]);
+      expect($("a.directory-pagination__link[rel='next']").length).toEqual(1);
+    });
+
     it("caps the page size at the default", async function () {
       const getContents = require("dashboard/site/folder/folder");
       const { pagination } = await getContents(

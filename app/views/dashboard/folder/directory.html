@@ -600,6 +600,20 @@
                   currentNode.innerHTML = newNode.innerHTML;
                   sortTable();
                 }
+
+                // The pagination nav lives outside .live-updates, so refresh
+                // it too – an upload can create a second page, and removing
+                // the last row on a page makes the server clamp back a page.
+                var currentPagination = document.querySelector('.directory-pagination');
+                var newPagination = xml.querySelector('.directory-pagination');
+
+                if (currentPagination && newPagination) {
+                  currentPagination.replaceWith(newPagination);
+                } else if (currentPagination && !newPagination) {
+                  currentPagination.remove();
+                } else if (!currentPagination && newPagination && table) {
+                  table.insertAdjacentElement('afterend', newPagination);
+                }
               }
 
               if (typeof callback === 'function') callback();
