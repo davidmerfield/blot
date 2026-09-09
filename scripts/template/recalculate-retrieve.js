@@ -3,6 +3,7 @@ var async = require("async");
 var Template = require("models/template");
 var templateKey = require("models/template/key");
 var redis = require("models/client");
+var Blog = require("models/blog");
 
 if (require.main === module) {
   main(function (err, stats) {
@@ -40,12 +41,25 @@ function main(callback) {
       // Bundled SITE:* templates are used directly by blogs but are skipped
       // by scripts/each - iterate them explicitly so their views also pick
       // up field projection metadata.
+      var touchedSiteTemplates = {};
+
       eachSiteView(
         function (templateID, view, next) {
-          recalcView(templateID, view, stats, next);
+          recalcView(templateID, view, stats, function (err, changed) {
+            if (!err && changed) touchedSiteTemplates[templateID] = true;
+            next(err);
+          });
         },
         function (err) {
-          callback(err, stats);
+          if (err) return callback(err, stats);
+
+          // setView bumped the cacheID of the synthetic "SITE" owner, not the
+          // real blogs rendering these templates. Flush the full-view and
+          // rendered-output caches of every blog whose active template we
+          // just rewrote so the new retrieve metadata takes effect.
+          invalidateBlogsUsing(Object.keys(touchedSiteTemplates), function (err) {
+            callback(err, stats);
+          });
         }
       );
     }
@@ -55,7 +69,7 @@ function main(callback) {
 function recalcView(templateID, view, stats, next) {
   if (!view || !view.name || !view.content) {
     stats.skipped++;
-    return next();
+    return next(null, false);
   }
 
   // Force setView to re-parse template content and rewrite retrieve
@@ -77,9 +91,44 @@ function recalcView(templateID, view, stats, next) {
 
       stats.updated++;
       console.log("Updated", templateID, view.name);
-      next();
+      next(null, true);
     }
   );
+}
+
+// setView bumps Blog.set(owner). For SITE:* templates the owner is the
+// literal "SITE", so no real blog's cacheID changes and the full-view /
+// rendered caches keep serving the old retrieve metadata. Mirror
+// app/templates/index.js:emptyCacheForBlogsUsing - bump the cacheID of
+// every blog whose active template is one we just rewrote.
+function invalidateBlogsUsing(templateIDs, done) {
+  if (!templateIDs || !templateIDs.length) return done();
+
+  var touched = {};
+  templateIDs.forEach(function (id) {
+    touched[id] = true;
+  });
+
+  Blog.getAllIDs(function (err, ids) {
+    if (err) return done(err);
+
+    async.eachSeries(
+      ids || [],
+      function (blogID, next) {
+        Blog.get({ id: blogID }, function (err, blog) {
+          if (err) return next(err);
+          if (!blog || !blog.template || !touched[blog.template]) return next();
+
+          Blog.set(blogID, { cacheID: Date.now() }, function (err) {
+            if (err) return next(err);
+            console.log("Flushed cache for", blog.handle || blogID);
+            next();
+          });
+        });
+      },
+      done
+    );
+  });
 }
 
 function eachSiteView(iterator, done) {

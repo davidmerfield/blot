@@ -121,6 +121,30 @@ describe("projectEntryFields", function () {
     expect(entries[0].html).toBe("<p>one</p>");
   });
 
+  it("keeps every heavy field when a kept field's markup contains Mustache", function () {
+    var entries = [
+      entry({
+        id: "2",
+        html: "{{#allEntries}}{{{summary}}}{{/allEntries}}",
+      }),
+      entry({ id: "3" }),
+    ];
+
+    projectEntryFields(
+      entries,
+      { allEntries: { fields: { html: true, title: true } } },
+      ["allEntries", "all_entries"]
+    );
+
+    // The entry whose html references summary keeps all heavy fields.
+    expect(entries[0].summary).toBe("one summary");
+    expect(entries[0].body).toBe("one");
+    // A plain entry in the same list is still projected.
+    expect(entries[1].summary).toBeUndefined();
+    expect(entries[1].body).toBeUndefined();
+    expect(entries[1].html).toBe("<p>one</p>");
+  });
+
   it("projects a single entry object in place (latestEntry)", function () {
     var single = entry();
 

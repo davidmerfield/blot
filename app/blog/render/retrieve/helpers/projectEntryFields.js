@@ -80,10 +80,21 @@ function projectEntryFields(entries, retrieve, keys) {
 
   if (!strip.length) return entries;
 
+  // Heavy fields we are keeping. A Blot entry's own markup can contain
+  // Mustache that renderLocals evaluates later - e.g. an entry whose `html`
+  // is "{{#allEntries}}{{{summary}}}{{/allEntries}}". If a kept field holds
+  // template tags we can't be sure the fields we're about to strip aren't
+  // referenced from there, so leave that entry alone.
+  var keep = HEAVY_FIELDS.filter(function (field) {
+    return fields[field];
+  });
+
   for (var i = 0; i < list.length; i++) {
     var entry = list[i];
 
     if (!entry || typeof entry !== "object") continue;
+
+    if (keptFieldHasMustache(entry, keep)) continue;
 
     for (var j = 0; j < strip.length; j++) {
       if (entry[strip[j]] !== undefined) delete entry[strip[j]];
@@ -91,6 +102,14 @@ function projectEntryFields(entries, retrieve, keys) {
   }
 
   return entries;
+}
+
+function keptFieldHasMustache(entry, keep) {
+  for (var i = 0; i < keep.length; i++) {
+    var value = entry[keep[i]];
+    if (typeof value === "string" && value.indexOf("{{") !== -1) return true;
+  }
+  return false;
 }
 
 projectEntryFields.HEAVY_FIELDS = HEAVY_FIELDS;
