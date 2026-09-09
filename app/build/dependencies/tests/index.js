@@ -211,6 +211,19 @@ describe("dependencies", function () {
     },
   });
 
+  // A "%" that does not begin a valid "%HH" escape is a literal percent
+  // sign in the filename and must be encoded so it round-trips.
+  should_get_dependencies({
+    html: '<a href="100%done.pdf">done</a>',
+    path: "/notes/post.txt",
+    metadata: {},
+    result: {
+      html: '<a href="/notes/100%25done.pdf">done</a>',
+      metadata: {},
+      dependencies: ["/notes/100%done.pdf"],
+    },
+  });
+
   // Characters that are legal in a URL path (sub-delimiters such as
   // : ; @ + = ,) are left untouched, so the rewritten value still
   // resolves to the same entry/file. getByUrl / the asset handler

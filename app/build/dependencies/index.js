@@ -18,9 +18,19 @@ var metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 //     unchanged instead of being double-encoded;
 //   - spaces, control characters and the HTML-significant < > " ` .
 //
-// Everything else - "/" separators, sub-delimiters like : @ + = that are
-// legal in a path, and non-ASCII characters - is left untouched so the
-// value still decodes back to the exact path recorded as a dependency.
+// Everything else - "/" separators, reserved characters that are still
+// legal inside a path segment (: @ + = & ; ,), and non-ASCII
+// characters - is left untouched so the value still decodes back to the
+// exact path recorded as a dependency.
+//
+// Two accepted edge cases. First: static asset requests are decoded
+// with decodeURIComponent (app/blog/assets.js), which restores every
+// escape, but Entry.getByUrl and the image transformer use decodeURI,
+// which leaves "%23"/"%3F" encoded - so a folder whose name literally
+// contains "#" or "?" is still served as a static file but misses
+// image-cache optimization. Second: an existing "%HH" is assumed to be
+// pre-encoding rather than a literal "%", so a file literally named
+// e.g. "50%FF.png" would need its "%" doubled by hand.
 function serializePath (path) {
   // eslint-disable-next-line no-control-regex
   return path.replace(/%(?![0-9A-Fa-f]{2})|[\x00-\x20"#<>?\x60]/g, function (char) {
@@ -159,14 +169,7 @@ function dependencies (path, html, metadata) {
     // Strip it before resolving and reattach it, untouched, after - so
     // the suffix keeps its literal ? / # rather than being encoded into
     // the path.
-    var cutIndex = -1;
-    var hashIndex = value.indexOf("#");
-    var queryIndex = value.indexOf("?");
-
-    if (hashIndex > -1) cutIndex = hashIndex;
-    if (queryIndex > -1 && (cutIndex === -1 || queryIndex < cutIndex))
-      cutIndex = queryIndex;
-
+    var cutIndex = value.search(/[#?]/);
     var pathPart = cutIndex === -1 ? value : value.slice(0, cutIndex);
 
     suffix = cutIndex === -1 ? "" : value.slice(cutIndex);
@@ -244,7 +247,10 @@ function dependencies (path, html, metadata) {
     // target text, including deliberately leaving it untouched when
     // it can't find a match.
     if (!isWikilink) {
-      $el.attr(attribute, serializePath(resolved_value) + suffix);
+      var serialized = serializePath(resolved_value);
+      if (serialized !== resolved_value)
+        debug(path, attribute, resolved_value, "encoded to", serialized);
+      $el.attr(attribute, serialized + suffix);
     }
 
     if (isSelfReference) {
