@@ -275,7 +275,13 @@ module.exports = function setView(templateID, updates, callback) {
 					view.partials = _partials;
 				}
 
-				extend(view.partials).and(parseResult.partials);
+				parseTemplate.resolveEntryPartials(
+					metadata.owner,
+					parseResult.partials,
+					function (resolveErr, resolvedPartials) {
+						if (resolveErr) return callback(resolveErr);
+						parseResult.partials = resolvedPartials;
+						extend(view.partials).and(parseResult.partials);
 
 						detectInfinitePartialDependency(
 						templateID,
@@ -335,6 +341,8 @@ module.exports = function setView(templateID, updates, callback) {
 							.catch(callback);
 						},
 					);
+					},
+				);
 					})
 					.catch(callback);
 				}).catch(callback);

@@ -29,6 +29,20 @@ describe("template", () => {
 		expect(savedView.content).toEqual(view.content);
 	});
 
+	it("saves canonical paths for file-backed partials", async function () {
+		await this.set("/Pages/Home.txt", "Hello from home");
+		await setView(this.template.id, {
+			name: "canonical-partial.html",
+			content: "{{> /pages/home.txt}}",
+		});
+
+		const savedView = await getView(
+			this.template.id,
+			"canonical-partial.html",
+		);
+		expect(savedView.partials).toEqual({ "/Pages/Home.txt": null });
+	});
+
 	it("sets changes to an existing view", async function () {
 		const test = this;
 		const view = {
