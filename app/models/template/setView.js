@@ -178,9 +178,14 @@ module.exports = function setView(templateID, updates, callback) {
 						) {
 							extend(expectedPartials).and(parseResultForComparison.partials);
 						}
+						// Ignore file-backed partials in this comparison: they are
+						// recomputed from content on every save and canonicalised to
+						// their true-case entry path, so a stored "/Pages/Home.txt"
+						// would never match a freshly parsed "/pages/home.txt". When
+						// the content is unchanged they cannot have changed anyway.
 						partialsUnchanged =
-							JSON.stringify(expectedPartials) ===
-							JSON.stringify(view.partials || {});
+							JSON.stringify(stripFilePartials(expectedPartials)) ===
+							JSON.stringify(stripFilePartials(view.partials || {}));
 					} else {
 						// Content changed, so we can't short-circuit anyway - partials will be recomputed
 						partialsUnchanged = false;
@@ -281,6 +286,10 @@ module.exports = function setView(templateID, updates, callback) {
 					function (resolveErr, resolvedPartials) {
 						if (resolveErr) return callback(resolveErr);
 						parseResult.partials = resolvedPartials;
+						// Drop previously stored file-backed partials so renamed or
+						// re-cased references don't leave stale keys, then re-merge the
+						// freshly parsed (and canonicalised) set.
+						view.partials = stripFilePartials(view.partials);
 						extend(view.partials).and(parseResult.partials);
 
 						detectInfinitePartialDependency(
@@ -350,6 +359,20 @@ module.exports = function setView(templateID, updates, callback) {
 		}).catch(callback);
 	});
 };
+
+// File-backed partials (keys beginning with "/") are derived entirely from a
+// view's content and are canonicalised to their true-case entry path on save,
+// so a stored "/Pages/Home.txt" never string-matches a freshly parsed
+// "/pages/home.txt". They are only ever supplied as bare "fetch this file"
+// markers (a null/empty value), so we can drop the stored ones and recompute
+// them from the current content. Named and inline partials (no leading slash,
+// or carrying an explicit value) are left untouched.
+function stripFilePartials(partials) {
+	var out = {};
+	for (var key in partials)
+		if (key.charAt(0) !== "/" || partials[key]) out[key] = partials[key];
+	return out;
+}
 
 function detectInfinitePartialDependency(
 	templateID,

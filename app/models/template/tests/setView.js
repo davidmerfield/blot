@@ -43,6 +43,43 @@ describe("template", () => {
 		expect(savedView.partials).toEqual({ "/Pages/Home.txt": null });
 	});
 
+	it("recomputes file-backed partials from content instead of accumulating stale keys", async function () {
+		await this.set("/Pages/Home.txt", "Hello from home");
+		await this.set("/Pages/About.txt", "About us");
+
+		await setView(this.template.id, {
+			name: "swap-partial.html",
+			content: "{{> /pages/home.txt}}",
+		});
+		await setView(this.template.id, {
+			name: "swap-partial.html",
+			content: "{{> /pages/about.txt}}",
+		});
+
+		const savedView = await getView(this.template.id, "swap-partial.html");
+		expect(savedView.partials).toEqual({ "/Pages/About.txt": null });
+	});
+
+	it("short-circuits an unchanged view whose content references a mixed-case file partial", async function () {
+		await this.set("/Pages/Home.txt", "Hello from home");
+
+		await setView(this.template.id, {
+			name: "sc-partial.html",
+			content: "{{> /pages/home.txt}}",
+			partials: {},
+		});
+
+		const before = await promisify(Blog.get)({ id: this.template.owner });
+		await setView(this.template.id, {
+			name: "sc-partial.html",
+			content: "{{> /pages/home.txt}}",
+			partials: {},
+		});
+		const after = await promisify(Blog.get)({ id: this.template.owner });
+
+		expect(after.cacheID).toEqual(before.cacheID);
+	});
+
 	it("sets changes to an existing view", async function () {
 		const test = this;
 		const view = {
