@@ -1,6 +1,7 @@
 const Entry = require("models/entry");
 const fetchTaggedEntries = require("./helpers/fetchTaggedEntries");
 const projectEntryFields = require("./helpers/projectEntryFields");
+const entryFieldList = require("./helpers/entryFieldList");
 const getTemplateSortOptions = require("blog/sortOptions");
 const { sortEntries } = getTemplateSortOptions;
 
@@ -43,7 +44,10 @@ module.exports = function (req, res, callback) {
     function (err, result) {
       if (err) return callback(err);
 
-      Entry.get(blogID, result.entryIDs || [], function (entries) {
+      const fields = entryFieldList(req.retrieve, ["tagged"]);
+      const entryIDs = result.entryIDs || [];
+
+      const withEntries = function (entries) {
         entries = sortEntries(entries, sortOptions);
 
         projectEntryFields(entries, req.retrieve, ["tagged"]);
@@ -66,7 +70,13 @@ module.exports = function (req, res, callback) {
           slugs: result.slugs,
           prettyTags: result.prettyTags,
         });
-      });
+      };
+
+      if (fields) {
+        Entry.get(blogID, entryIDs, fields, withEntries);
+      } else {
+        Entry.get(blogID, entryIDs, withEntries);
+      }
     }
   );
 };
