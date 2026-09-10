@@ -297,8 +297,14 @@ jobs:
             -servername "$TEST_DOMAIN" 2>/dev/null \
             | openssl x509 -noout -issuer)
           echo "issuer: $issuer"
-          echo "$issuer" | grep -qi pebble
-          echo "$issuer" | grep -vqi placeholder
+          if ! echo "$issuer" | grep -qi pebble || echo "$issuer" | grep -qi placeholder; then
+            echo "=== still on the placeholder - running dehydrated directly for the full error ===" >&2
+            docker exec proxy sh -c 'cat /etc/resty-auto-ssl/letsencrypt/config; echo; ls -la /etc/resty-auto-ssl/letsencrypt/' >&2 || true
+            docker exec proxy sh -c 'cd /etc/resty-auto-ssl/letsencrypt && /usr/bin/resty-auto-ssl/dehydrated --register --accept-terms --config ./config 2>&1' >&2 || true
+            docker exec proxy sh -c 'HOOK_SERVER_PORT=8999 /usr/bin/resty-auto-ssl/dehydrated --cron --accept-terms --no-lock --domain '"$TEST_DOMAIN"' --challenge http-01 --config /etc/resty-auto-ssl/letsencrypt/config --hook /usr/bin/resty-auto-ssl/letsencrypt_hooks 2>&1' >&2 || true
+            docker exec proxy sh -c 'curl -sv --cacert /pebble-ca.pem https://127.0.0.1:14000/dir 2>&1 | tail -20' >&2 || true
+            exit 1
+          fi
 
           # ...and verify cleanly against the Pebble root+intermediate bundle.
           if ! curl -sS -o /dev/null --cacert pebble-ca.bundle.pem \

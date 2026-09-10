@@ -27,7 +27,18 @@ if [[ "$(id -u)" == "0" ]]; then
   for d in /var/cache/openresty /var/log/openresty; do
     [[ -d "$d" ]] && chown ec2-user:ec2-user "$d" || true
   done
-  [[ -d /etc/resty-auto-ssl ]] && chown -R ec2-user:ec2-user /etc/resty-auto-ssl || true
+  # Pre-create the whole dehydrated tree owned by ec2-user. OpenResty's master
+  # (root) runs generate_config in init_by_lua and would otherwise `mkdir`
+  # these root-owned, leaving the ec2-user worker unable to write the ACME
+  # account / cert files during issuance.
+  mkdir -p \
+    /etc/resty-auto-ssl/storage \
+    /etc/resty-auto-ssl/tmp \
+    /etc/resty-auto-ssl/letsencrypt/conf.d \
+    /etc/resty-auto-ssl/letsencrypt/accounts \
+    /etc/resty-auto-ssl/letsencrypt/certs \
+    /etc/resty-auto-ssl/letsencrypt/chains
+  chown -R ec2-user:ec2-user /etc/resty-auto-ssl
 fi
 
 # Optional: trust a non-public ACME endpoint. The vendored `dehydrated` hook
