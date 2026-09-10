@@ -188,38 +188,46 @@ jobs:
 
       - name: Start Redis, challtestsrv and Pebble
         env:
-          PEBBLE_IMAGE: letsencrypt/pebble:latest
-          CHALLTESTSRV_IMAGE: letsencrypt/pebble-challtestsrv:latest
+          # The upstream images are distroless (entrypoint is the binary) and
+          # published on ghcr.io, not Docker Hub.
+          PEBBLE_IMAGE: ghcr.io/letsencrypt/pebble:latest
+          CHALLTESTSRV_IMAGE: ghcr.io/letsencrypt/pebble-challtestsrv:latest
         run: |
           set -eux
+
+          # HTTP-01 validation must reach the proxy's default server, not the
+          # loopback-only internal server, so the challenge host resolves to
+          # the runner's routable IP (the proxy binds it via --network host).
+          HOSTIP=$(hostname -I | awk '{print $1}')
+          echo "HOSTIP=$HOSTIP" >> "$GITHUB_ENV"
+
           docker run -d --name redis --network host redis:6.2.12-alpine
 
-          # challtestsrv answers DNS for the test domain; disable its own
-          # challenge listeners so nothing competes with the proxy on :80.
+          # challtestsrv only needs its DNS server; disable the HTTP/HTTPS/
+          # TLS-ALPN/DoH listeners and AAAA so nothing competes with the proxy.
           docker run -d --name challtestsrv --network host "$CHALLTESTSRV_IMAGE" \
-            pebble-challtestsrv -dns01 :8053 -management :8055 \
-              -http01 "" -https01 "" -tlsalpn01 ""
+            -dnsserver :8053 -management :8055 \
+            -http01 "" -https01 "" -tlsalpn01 "" -doh "" -defaultIPv6 ""
 
-          # Pebble's HTTP-01 validation resolves via challtestsrv and connects
-          # back on :80 (httpPort in pebble-config.json), i.e. to the proxy.
           docker run -d --name pebble --network host \
             -e "PEBBLE_VA_NOSLEEP=1" -e "PEBBLE_WFE_NONCEREJECT=0" \
             -v "$PWD/proxy/e2e/pebble-config.json:/test/config/pebble-config.json:ro" \
             "$PEBBLE_IMAGE" \
-            pebble -config /test/config/pebble-config.json -dnsserver 127.0.0.1:8053
+            -config /test/config/pebble-config.json -dnsserver 127.0.0.1:8053
 
           # The CA in front of Pebble's ACME endpoint (:14000) - the proxy's
-          # dehydrated hook (curl) must trust this to place an order.
-          docker run --rm --entrypoint sh "$PEBBLE_IMAGE" \
-            -c 'cat /test/certs/pebble.minica.pem' > pebble.minica.pem
+          # dehydrated hook (curl) must trust this to place an order. The
+          # image has no shell, so copy the file out of a created container.
+          cid=$(docker create "$PEBBLE_IMAGE")
+          docker cp "$cid:/test/certs/pebble.minica.pem" pebble.minica.pem
+          docker rm "$cid"
           test -s pebble.minica.pem
 
           for i in $(seq 1 30); do
-            curl -sf -X POST -d '{"host":"'"$TEST_DOMAIN"'.","addresses":["127.0.0.1"]}' \
+            curl -sf -X POST -d '{"host":"'"$TEST_DOMAIN"'.","addresses":["'"$HOSTIP"'"]}' \
               http://127.0.0.1:8055/add-a && break
             sleep 1
           done
-          curl -sf -X POST -d '{"ip":""}' http://127.0.0.1:8055/set-default-ipv6 || true
 
           # Wait for Pebble, then fetch the root that signs ISSUED certs
           # (distinct from pebble.minica.pem) for verifying the leaf later.
@@ -265,7 +273,7 @@ jobs:
           ok=""
           for i in $(seq 1 40); do
             code=$(curl -sk -o /dev/null -w '%{http_code}' \
-              --resolve "$TEST_DOMAIN:443:127.0.0.1" \
+              --resolve "$TEST_DOMAIN:443:$HOSTIP" \
               "https://$TEST_DOMAIN/" || true)
             echo "attempt $i -> $code"
             if [ "$code" = "200" ]; then ok=1; break; fi
@@ -275,11 +283,11 @@ jobs:
 
           code=$(curl -s -o /dev/null -w '%{http_code}' \
             --cacert pebble-root.pem \
-            --resolve "$TEST_DOMAIN:443:127.0.0.1" "https://$TEST_DOMAIN/")
+            --resolve "$TEST_DOMAIN:443:$HOSTIP" "https://$TEST_DOMAIN/")
           echo "verified request -> $code"
           [ "$code" = "200" ]
 
-          issuer=$(echo | openssl s_client -connect 127.0.0.1:443 \
+          issuer=$(echo | openssl s_client -connect "$HOSTIP:443" \
             -servername "$TEST_DOMAIN" 2>/dev/null \
             | openssl x509 -noout -issuer)
           echo "issuer: $issuer"
@@ -303,7 +311,7 @@ jobs:
 
           code=$(curl -s -o /dev/null -w '%{http_code}' \
             --cacert pebble-root.pem \
-            --resolve "$TEST_DOMAIN:443:127.0.0.1" "https://$TEST_DOMAIN/")
+            --resolve "$TEST_DOMAIN:443:$HOSTIP" "https://$TEST_DOMAIN/")
           [ "$code" = "200" ]
 
           # The recreated container must serve the stored cert without asking
@@ -357,6 +365,11 @@ jobs:
       - name: Start upstream + proxy A + proxy B
         run: |
           set -eux
+          # Blog/site traffic must hit the :80 default server, not the
+          # loopback-only internal server, so target the runner's routable IP.
+          HOSTIP=$(hostname -I | awk '{print $1}')
+          echo "HOSTIP=$HOSTIP" >> "$GITHUB_ENV"
+
           docker run -d --name stub --network host \
             -v "$PWD/proxy/e2e/stub-upstream.js:/s.js" node:22-alpine node /s.js
           for i in $(seq 1 30); do
@@ -373,7 +386,7 @@ jobs:
             docker logs "$1"; return 1
           }
           start_proxy zd-a
-          curl -sf -o /dev/null -H 'Host: someblog.example' http://127.0.0.1/  # baseline
+          curl -sf -o /dev/null -H 'Host: someblog.example' "http://$HOSTIP/"  # baseline
           start_proxy zd-b
 
       - name: Hammer the proxy while stopping A
@@ -383,7 +396,7 @@ jobs:
             for i in $(seq 1 600); do
               curl -s -o /dev/null -w '%{http_code}\n' --max-time 3 \
                 --retry 2 --retry-connrefused \
-                -H 'Host: someblog.example' http://127.0.0.1/ || echo "curl-err"
+                -H 'Host: someblog.example' "http://$HOSTIP/" || echo "curl-err"
               sleep 0.05
             done
           ) > codes.txt &
