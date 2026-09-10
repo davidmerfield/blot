@@ -5,6 +5,7 @@ const moment = require("moment");
 const fs = require("fs-extra");
 const localPath = require("helper/localPath");
 const pathNormalize = require("helper/pathNormalizer");
+const Stat = require("./stat");
 const Build = require("build");
 
 require("moment-timezone");
@@ -61,6 +62,16 @@ async function getFolderPost(blog, dir) {
     )
   );
 
+  // The dashboard renders the source list with the same Name / Date modified /
+  // Size columns as the folder viewer, so stat each file that still exists.
+  const stats = await Promise.all(
+    sourcePaths.map((sourcePath, index) =>
+      existence[index]
+        ? Stat(localPath(blog.id, sourcePath), blog.timeZone).catch(() => null)
+        : Promise.resolve(null)
+    )
+  );
+
   const sources = sourcePaths.map((sourcePath, index) => ({
     path: sourcePath,
     name: basename(sourcePath),
@@ -68,6 +79,10 @@ async function getFolderPost(blog, dir) {
     displayIndex: index + 1,
     exists: existence[index],
     hidden: index >= VISIBLE_SOURCE_LIMIT,
+    modified: stats[index] ? stats[index].modified : null,
+    size: stats[index] ? stats[index].size : null,
+    bytes: stats[index] ? stats[index].bytes : 0,
+    unix: stats[index] ? stats[index].unix : 0,
   }));
 
   const hiddenCount = sources.filter((source) => source.hidden).length;

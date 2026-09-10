@@ -313,6 +313,65 @@ a.template-button.file-helper span {margin-left: 0.5em;}
   padding: 3px 6px;
 }
 
+/* Folder post view: the source files are listed at the top of .file-info with
+   the same Name / Date modified / Size layout as the folder viewer. The table
+   reuses .directory-list, so this only pulls it flush with the card edges and
+   adds a rule between it and the heading above. */
+.folder-post-sources {
+  margin: 4px -36px 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.folder-post-source-list {
+  width: 100%;
+}
+
+.folder-post-source-list th:first-child,
+.folder-post-source-list td:first-child {
+  padding-left: 36px;
+}
+
+.folder-post-source-list th:last-child,
+.folder-post-source-list td:last-child {
+  padding-right: 36px;
+}
+
+.folder-post-source-list tr td:first-child:after {
+  left: 36px;
+}
+
+.folder-post-source-list tr td:last-child:after {
+  right: 36px;
+}
+
+.folder-post-source.missing .file-name {
+  text-decoration: line-through;
+  color: #c0392b;
+}
+
+.folder-post-source .file-missing-note {
+  display: block;
+  font-size: 12px;
+  color: #c0392b;
+  margin-top: 2px;
+}
+
+.folder-post-sources .folder-post-more {
+  margin: 0;
+  padding: 8px 36px 4px;
+  border-top: 1px solid #f4f4f5;
+}
+
+.folder-post-sources .folder-post-more[open] {
+  padding-bottom: 0;
+}
+
+.folder-post-sources .folder-post-more .folder-post-source-list td:first-child:after,
+.folder-post-sources .folder-post-more .folder-post-source-list td:last-child:after {
+  left: 0;
+  right: 0;
+}
+
 .folder-post-summary {
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);

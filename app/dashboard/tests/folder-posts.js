@@ -53,12 +53,13 @@ describe("folder posts in the dashboard", function () {
     // Opening the + folder shows the aggregated post view, not a directory
     // listing.
     const $folder = await this.parse(href);
-    expect($folder(".directory-list").length).toBe(0);
+    expect($folder(".folder-box.directory").length).toBe(0);
+    expect($folder(".folder-post-box").length).toBe(1);
     expect($folder(".publishing-steps").text()).toContain(
       "published as a post"
     );
 
-    const fileLink = $folder(".folder-post-files a")
+    const fileLink = $folder(".folder-post-source-list a")
       .filter(function () {
         return $folder(this).text().includes("hello.md");
       })
@@ -114,22 +115,22 @@ describe("folder posts in the dashboard", function () {
       `/sites/${this.blog.handle}/folder/story+`
     );
 
-    // Aggregated view, not a directory listing.
-    expect($folder(".directory-list").length).toBe(0);
+    // Aggregated view, not the interactive directory listing.
+    expect($folder(".folder-box.directory").length).toBe(0);
     expect($folder(".entry-info").length).toBe(1);
     expect($folder(".publishing-steps").text()).toContain(
       "published as a post"
     );
 
     // Source files link to their own dashboard pages, in order.
-    const names = $folder(".folder-post-files .file-name")
+    const names = $folder(".folder-post-source-list .file-name")
       .map(function () {
         return $folder(this).text().trim();
       })
       .get();
     expect(names).toEqual(["01 intro.md", "02 middle.md", "03 end.md"]);
 
-    const firstHref = $folder(".folder-post-files a").first().attr("href");
+    const firstHref = $folder(".folder-post-source-list a").first().attr("href");
     expect(firstHref).toContain("/folder/story%2B/01%20intro.md");
   });
 
@@ -146,10 +147,12 @@ describe("folder posts in the dashboard", function () {
     const $folder = await this.parse(`/sites/${this.blog.handle}/folder/big+`);
 
     // Ten visible, the rest behind a disclosure.
-    expect($folder(".folder-post-summary > .folder-post-files .folder-post-file").length).toBe(10);
+    expect(
+      $folder(".folder-post-sources > .folder-post-source-list .folder-post-source").length
+    ).toBe(10);
     expect($folder(".folder-post-more").length).toBe(1);
     expect($folder(".folder-post-more > summary").text()).toContain("13 files");
-    expect($folder(".folder-post-more .folder-post-file").length).toBe(3);
+    expect($folder(".folder-post-more .folder-post-source").length).toBe(3);
   });
 
   it("does not treat an ordinary post containing data-file as a folder post", async function () {
