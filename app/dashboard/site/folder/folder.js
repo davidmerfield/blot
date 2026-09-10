@@ -3,7 +3,7 @@ const path = require("path");
 const alphanum = require("helper/alphanum");
 const localPath = require("helper/localPath");
 const Stat = require("./stat");
-const client = require("models/client");
+const Entry = require("models/entry");
 const pathNormalize = require("helper/pathNormalizer");
 const IgnoredFiles = require("models/ignoredFiles");
 const postSourceSize = require("build/converters/post-source-size");
@@ -170,6 +170,9 @@ async function decorate(blog, dir, pageStats) {
 
   const [entries, ignoredFiles] = await Promise.all([
     new Promise((resolve) => {
+      // Resolve each listed item to the entry that decides whether it is
+      // badged as published. A file inside a "+" folder shares the folder
+      // post's aggregate entry, so it is looked up under that path instead.
       const lookups = pageNames.map((item) => {
         const itemPath = pathNormalize(path.join(dir, item));
         const multiInfo = findMultiFolder(itemPath);
@@ -181,31 +184,42 @@ async function decorate(blog, dir, pageStats) {
           itemPath,
           viaAggregate,
           folderPath: multiInfo ? pathNormalize(multiInfo.folderPath) : null,
-          key: `blog:${blog.id}:entry:${pathNormalize(lookupPath)}`,
+          lookupPath: pathNormalize(lookupPath),
         };
       });
+
+      // Every item in a "+" folder resolves to the same aggregate entry, so
+      // read each distinct path once. Entry.get transparently reads the
+      // legacy JSON string key or the newer Redis hash, whichever exists; we
+      // only need the deleted flag and the generated HTML (to confirm a file
+      // is one of the folder post's sources rather than an unsupported
+      // sibling).
+      const uniquePaths = Array.from(
+        new Set(lookups.map((lookup) => lookup.lookupPath))
+      );
+
       Promise.all(
-        lookups.map((lookup) => {
-          return client.get(lookup.key);
-        })
+        uniquePaths.map(
+          (entryPath) =>
+            new Promise((res) => {
+              Entry.get(blog.id, entryPath, ["html", "deleted"], (entry) =>
+                res(entry || null)
+              );
+            })
+        )
       )
-        .then((res) => {
-          if (!res || !res.length) return resolve([]);
+        .then((fetched) => {
+          const byPath = new Map();
+          uniquePaths.forEach((entryPath, index) => {
+            byPath.set(entryPath, fetched[index]);
+          });
+
           resolve(
             pageNames.filter((_, index) => {
-              const raw = res[index];
-              if (!raw) return false;
-
-              let entry;
-              try {
-                entry = typeof raw === "string" ? JSON.parse(raw) : raw;
-              } catch (err) {
-                return false;
-              }
+              const lookup = lookups[index];
+              const entry = byPath.get(lookup.lookupPath);
 
               if (!entry || entry.deleted === true) return false;
-
-              const lookup = lookups[index];
 
               // A file inside a "+" folder resolves to the shared aggregate
               // entry. Only badge it as published if it is actually the "+"
