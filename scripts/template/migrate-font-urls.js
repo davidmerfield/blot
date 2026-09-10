@@ -228,7 +228,15 @@ function logReport(callback) {
 
   console.log("\n=== End Report ===\n");
 
-  callback(null);
+  // Surface a non-zero exit when anything errored so an incomplete run
+  // isn't mistaken for a clean one.
+  callback(
+    report.errors.length > 0
+      ? new Error(
+          `${report.errors.length} view(s)/template(s) errored - see report above`
+        )
+      : null
+  );
 }
 
 function processBlogViews(user, blog, callback) {
@@ -276,6 +284,14 @@ function processBlogViews(user, blog, callback) {
                 `Error getting views for template ${template.id}:`,
                 error
               );
+              // Record it - a swallowed load failure would otherwise make an
+              // incomplete run look clean (this template was never inspected).
+              report.errors.push({
+                blogID: blog.id,
+                templateID: template.id,
+                viewName: null,
+                error: `Failed to load views: ${error.message}`,
+              });
               nextTemplate();
             });
         },
@@ -336,13 +352,12 @@ function main(specificBlog, callback) {
 
 if (require.main === module) {
   const get = require("../get/blog");
+  const arg = process.argv[2];
 
-  get(process.argv[2] || "null", function (err, user, blog) {
-    if (blog) {
-      console.log("processing specific blog", blog.id);
-    } else {
-      console.log("processing all blogs");
-    }
+  const run = (blog) => {
+    console.log(
+      blog ? `processing specific blog ${blog.id}` : "processing all blogs"
+    );
     main(blog, function (err) {
       if (err) {
         console.error(err);
@@ -351,7 +366,25 @@ if (require.main === module) {
       console.log("done");
       process.exit(0);
     });
-  });
+  };
+
+  if (!arg) {
+    // No argument -> every blog.
+    run(null);
+  } else {
+    // An explicit identifier was given: it must resolve. Never silently
+    // fall back to all-blogs (that would rewrite templates installation-wide
+    // from a typo).
+    get(arg, function (err, user, blog) {
+      if (err || !blog) {
+        console.error(
+          `No blog found for "${arg}" - aborting rather than falling back to all blogs.`
+        );
+        process.exit(1);
+      }
+      run(blog);
+    });
+  }
 }
 
 module.exports = main;
