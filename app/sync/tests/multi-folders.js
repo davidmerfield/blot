@@ -400,6 +400,56 @@ describe("sync multi-folder support", function () {
     });
   });
 
+  it("keeps the aggregate entry when Fix runs on server restart", function (done) {
+    var Fix = require("sync/fix");
+    var blog = this.blog;
+    var blogID = blog.id;
+    var root = this.blogDirectory;
+
+    syncFolder(blogID, function (err, folder, finish) {
+      if (err) return done.fail(err);
+
+      async.series(
+        [
+          function (next) {
+            fs.outputFileSync(path.join(root, "essay+/one.md"), "# One");
+            folder.update("/essay+/one.md", next);
+          },
+          function (next) {
+            fs.outputFileSync(path.join(root, "essay+/two.md"), "# Two");
+            folder.update("/essay+/two.md", next);
+          },
+        ],
+        function (seriesErr) {
+          finish(seriesErr, function (finishErr) {
+            if (seriesErr || finishErr)
+              return done.fail(seriesErr || finishErr);
+
+            Entry.get(blogID, "/essay", function (initialEntry) {
+              expect(initialEntry).toBeDefined();
+              expect(initialEntry.deleted).toBeFalsy();
+
+              // Fix() runs on every client startup / server restart. The
+              // folder post's aggregate lives at a "+"-stripped path with no
+              // file behind it, so entry-ghosts must not treat it as a ghost.
+              Fix(blog, function (fixErr) {
+                if (fixErr) return done.fail(fixErr);
+
+                Entry.get(blogID, "/essay", function (afterEntry) {
+                  expect(afterEntry).toBeDefined();
+                  expect(afterEntry.deleted).toBeFalsy();
+                  expect(afterEntry.html.indexOf("One")).toBeGreaterThan(-1);
+                  expect(afterEntry.html.indexOf("Two")).toBeGreaterThan(-1);
+                  done();
+                });
+              });
+            });
+          });
+        }
+      );
+    });
+  });
+
   it("drops the aggregate when a source exceeds the size limit and recovers after shrinking", function (done) {
     var limit = require("build/converters/post-source-size").MARKDOWN.bytes;
     var IgnoredFiles = require("models/ignoredFiles");
