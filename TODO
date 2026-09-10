@@ -1,14 +1,36 @@
-Add a link to how section on pages to menu links settings page to guide new users! 
+Run this in prod: node scripts/template/recalculate-retrieve.js
 
-Hitting the save changes button under typeset settings spits you back out to homepage! Bug!
+Proxy container (OpenResty) - deferred work after the build-only scaffolding PR
+
+The `proxy/` directory is build-only scaffolding: the image builds, the
+generated config passes `openresty -t`, the container boots and serves
+/health, and the cacher + e2e tests run in CI. It is not wired to
+production. Remaining before it can replace the bare-metal `config/openresty`:
+
+1. Certificate issuance for custom domains. The image ships a self-signed
+   placeholder so OpenResty can start; entrypoint.sh no longer calls
+   acme-nginx. Real on-demand issuance needs lua-resty-auto-ssl wired to
+   Redis + a working sockproc + the dehydrated hook scripts.
+2. Zero-downtime deployment. Replacing the container drops the :80/:443
+   listening socket, so `openresty -s reload` no longer covers image
+   changes. Needs a blue/green mechanism - SO_REUSEPORT on `--network host`
+   with an explicit drain, or iptables/nftables port-shifting. Config-only
+   changes can still reload against a bind-mounted config dir.
+3. Config de-duplication. `proxy/config/` is a hand-fork of
+   `config/openresty/conf/` and omits the rate-limit and bot-restriction
+   includes (restrict-bot-uas.conf, reverse-proxy-limit-*.conf, ...). The
+   two copies should become one source.
+4. Persistent volumes for the proxy cache (/var/cache/openresty) and
+   lua-resty-auto-ssl storage (/etc/resty-auto-ssl) so a redeploy doesn't
+   cold-start the cache or re-request certificates.
+5. Harden the `integration` workflow's real-app e2e (proxy/e2e/run.js): it
+   was first exercised in CI, not locally. Extend it to serve an actual
+   blog (seed a blog + template) rather than only the marketing site and
+   dashboard.
+
+---
 
 Debug issue with warwickmostyn
-
-Write useful benchmark tool for Blot
-- Add performance tests which output something like this for PRs (compare against master branch, fail if over threshold):
-    Total CPU  29.90%          -> 11.64%
-    Syscalls   3.10s           -> 0.66s
-    Bandwidth  ~6.5 Mbit/sec   -> ~3 Mbit/sec
 
 Move to redis hashes for entry storage
 0. This is designed to improve all multi-entry list performance
@@ -184,6 +206,67 @@ iCloud:
 ---
 
 Fix bug with local editing and template slugs
+- Forward fix landed in PR #1749: models/template/create.js now keeps a
+  template's stored slug in step with its id (makeID), and newTemplate.js /
+  fork-if-needed.js / create-template-with-unique-name.js derive the slug via
+  the new models/template/util/slugForName.js helper. No template created from
+  now on can be stored with a slug that makeID maps to a different id.
+- STILL TODO: a one-off migration for records created *before* that fix. A
+  draft script (scripts/template/fix-divergent-slugs.js) was dropped from
+  #1749 because getting the on-disk folder move right (under the sync lock,
+  losslessly, across every provider) is its own piece of work. Agent prompt to
+  do it properly:
+
+    Write scripts/template/fix-divergent-slugs.js: a one-off, dry-run-by-default
+    migration that repairs every existing template whose stored slug no longer
+    resolves to its id, i.e. makeID(blog.id, template.slug) !== template.id.
+    Read models/template/{create,writeToFolder,readFromFolder,buildFromFolder,
+    determineTemplateFolder}.js and util/{makeID,slugForName}.js first, plus
+    scripts/dropbox/resync.js and scripts/icloud/resync.js for the
+    establishSyncLock(blog.id) / syncLock.done() pattern, and scripts/each/blog
+    + scripts/get/blog for iteration. Requirements:
+      * CLI: `node scripts/template/fix-divergent-slugs.js [--apply] [<blog>]`.
+        Dry run prints every change it WOULD make and an accurate count
+        (increment the would-repair counter before any early return — the
+        earlier draft always printed "would repair 0"). <blog> is anything
+        scripts/get/blog accepts.
+      * The target slug is the id's own suffix, but ONLY when
+        makeID(blog.id, suffix) === template.id. A legacy id that does not
+        round-trip (a non-ASCII name from before any makeID cap) cannot be
+        repaired here — report it for a manual rename and skip.
+      * Do the whole per-blog repair inside establishSyncLock(blog.id) so no
+        buildFromFolder can run against a half-migrated state (that cleanup
+        drops any local template whose stored slug is absent from the folder).
+        Release the lock in a finally.
+      * Persist the corrected slug (setMetadata) only AFTER the folder is
+        durable under the new name — a failed folder step must leave the stored
+        slug untouched so a rerun retries identically rather than skipping the
+        record.
+      * MOVE the on-disk directory, never delete-and-regenerate: copy every
+        file under Templates/<oldSlug>/ (or templates/<oldSlug>/ — check BOTH
+        roots, buildFromFolder scans both) to Templates/<newSlug>/ through the
+        blog's client (require("clients")[blog.client]; fall back to fs for a
+        blog with no client), walking the real directory so nested, dotfile and
+        shouldIgnoreFile-ignored local-only files are preserved, then remove
+        the old files/dir through the client. Propagate any copy/remove error,
+        do not count the record as repaired, and leave it for a rerun.
+      * Constrain the stale slug as a path component before touching the
+        filesystem: reject "." / ".." / anything that resolves outside the
+        blog's template root.
+      * If the stale slug resolves (via makeID) to a *different* real template
+        that owns Templates/<oldSlug>/, do not move or delete it — report the
+        collision and skip, leaving both records for manual handling.
+      * Handle localEditing === false too: a divergent record can still have a
+        stale folder (the disable route sets the flag even when removeFromFolder
+        failed). Reconcile an actual on-disk directory independently of the flag.
+      * Bump blog.cacheID after a successful repair. Print a per-blog and a
+        grand-total summary (blogs, templates, divergent, repaired, skipped,
+        collisions).
+    Add a spec under app/models/template/tests/ or scripts/tests/ that seeds a
+    divergent locally-edited template with an extra ignored/nested file, runs
+    the script with --apply against a test blog, and asserts: the stored slug
+    now round-trips, the folder moved to the new name, and the extra file
+    survived the move.
 
 Fix bugs with templates:
 - Fix responsive thumbnail component on photo template (it loads large thumbnail every time)
@@ -217,11 +300,6 @@ Dashboard control follow-ups (found while reviewing the per-template dashboard-c
 
 Fix bug with the website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 
-Fix bug with template slugs / local templates
-- Slugs should be derived from template.name and unique per owner
-- Local editing should use folder name ↔ name ↔ slug consistently
-- Add slug lookup utility and update dashboard/template load paths
-
 Fix bug with the paypal next bill dates are not syncing correctly for some users (e.g.slopserve)
 
 Fix bug with repeat resyncs of specific sites via Google Drive:
@@ -239,8 +317,6 @@ Fix bug with huge draft crashing the sync server /a327ex/drafts/it_follows.txt
 - Chunk large drafts into multiple messages to avoid memory issues? 
 
 Fix possible bug with changing folder name in Google Drive from uppercase to lowercase (what happens to file inside?). Is this related to entry lookup for deleted files? How was the missing ghost file undeleteable? the case of one variant was deleted but the other was not. The case of the ID mismatched. The folder lock was stuck.
-
-Fix bug with Elizabeth's Google Docs (export 403 file exceeds...)
 
 Fix bug with crash loop for page rendering issue
 - cache 502 responses in proxy cache for X mins?
@@ -271,29 +347,6 @@ Fix bug with crash loop for entry build
     while a big folder is still syncing) used to reject the whole listing and
     render the folder as empty; per-file ENOENT is now skipped, and name-sort
     pages backfill so they are never left short.
-
-Fix bug with 'failed to update folder lock' that throws an error – is the issue ebs?
-- I can't reproduce the problem locally.
-- Problem occurs with all the clients it seems
-- Can we reproduce by attempting to acquire 50 locks in parallel in production?
-  - I tried this and it didn't seem to trigger the bug
-  - Is this correlated with high disk activity?
-
-Add diagnostic logging for ECOMPROMISED lock errors:
-- Add onCompromised handler to lockfile.lock() in app/sync/index.js (line 45)
-- Track lock acquisition time (lockAcquiredAt) when lock is successfully acquired
-- Create diagnostic function to gather: blogID, lockDuration, system load (os.loadavg), memory usage (process.memoryUsage), disk space (freeDiskSpace helper), lock file stats, process info (pid, uptime), lock config values
-- In onCompromised handler: gather diagnostics (with 2s timeout), log structured error with console.error(), re-throw error to crash server
-- Use clfdate() for logging format consistency
-
-Fix bug with cancelled subscriptions that keeps the account around
-- finish script to identify long-expired customers with blogs to safely delete and free up space. 
-- Sort by date expired
-- Write script to safely delete blogs
-  - wipe blog folder
-  - wipe static directory
-  - wipe all keys
-- Automate the deletion of canceled /  failed accounts after a 2 month grace period, with warning emails  
 
 Fix bug with overdue subscription payment form not working
 - Possible bug introduced by recent stripe upgrade
@@ -326,15 +379,8 @@ Fix bugs with git client
 Fix bug with menu which occur when multiple pages are added at once Menu needs concurrency or atomic operations (so we can build posts in parallel)
 - move menu into its own model (it's possible to add thousands of entries to it...)
 
-Fix bug with the typeset settings do not actually affect anything (you can only disable/enable)
-
 Fix bug where one bad page can take down upstream repeatedly 
 – perhaps we need to cache in proxy cache timeouts? or somehow detect if a request causes upstream to crash?
-
-Fix template partial embeddings which no longer work because of switch from lowercase to true case:
-- write script to find these
-- e.g. {{> /pages/home.txt}} when pages is really Pages
-- we should resolve the case-insensitive path to file when saving a template and parsing its partials
 
 Fix bug with [many twitter embeds and tell Nash](https://mail.google.com/mail/u/0/#inbox/FMfcgzGllMNfjvRBthVncQtPJQpmrksx)
 
@@ -372,8 +418,6 @@ Fix bug with potentially TeX-related escaping issues and tell [Anthony](https://
 Fix issue with variable passed to dateFormat function and tell [Leo](https://mail.google.com/mail/u/0/#inbox/FMfcgzGqQJlfVpSBNBwDxcSlGGqHXQbh)
 
 Fix bug with handling of queries and tell [this person](https://mail.google.com/mail/u/0/?zx=tqp989l7y4yi#inbox/15b575fbc8d80ad1).
-
-Fix bug with Work out why Pandoc cannot handle 'linked' images (instead of conventionally embedded images). For instructiosn on reproducing bug, see [SG's email](https://mail.google.com/mail/u/0/#inbox/FMfcgxvzLhcqMVrZbNlKTcVmxVHwRmJC) and follow up when resolved.
 
 Fix bug with tags that contain slashes and tell [Jack](https://mail.google.com/mail/u/0/#inbox/FMfcgzGpFgzpsCkCMGqnClfqMkWZqNNz)
 

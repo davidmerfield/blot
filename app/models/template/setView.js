@@ -18,8 +18,22 @@ var serializeRedisHashValues = require("models/redisHashSerializer");
 var clfdate = require("helper/clfdate");
 const MAX_VIEW_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
-module.exports = function setView(templateID, updates, callback) {
+module.exports = function setView(templateID, updates, options, callback) {
+        if (typeof options === "function") {
+                callback = options;
+                options = {};
+        }
+
+        options = options || {};
+
         ensure(templateID, "string").and(updates, "object").and(callback, "function");
+
+        // When set, skip the owner-blog cacheID bump and CDN manifest refresh
+        // that a content/retrieve change normally triggers. Bulk callers (e.g.
+        // scripts/template/recalculate-retrieve.js) that touch many views of
+        // many templates use this to defer that work and do it once per
+        // template instead of once per view.
+        var deferCacheBump = options.deferCacheBump === true;
 
         if (updates.partials !== undefined && type(updates.partials) !== "object") {
 		updates.partials = {};
@@ -224,6 +238,8 @@ module.exports = function setView(templateID, updates, callback) {
 
 				console.log(clfdate(), templateID.slice(0, 12), "setView:", name);
 
+				var existingRetrieve = view.retrieve || {};
+
 				for (var i in updates) {
 					if (updates[i] !== view[i]) changes = true;
 					view[i] = updates[i];
@@ -275,6 +291,26 @@ module.exports = function setView(templateID, updates, callback) {
 					view.partials = _partials;
 				}
 
+				// Drop file-backed partial markers this save no longer references -
+				// neither parsed from the current content nor explicitly passed in
+				// updates.partials - so a "{{> /old.txt}}" edited out of the view
+				// doesn't linger in the persisted map forever. Markers the caller
+				// still declares are kept: they may back a file referenced only
+				// inside an inline partial's body, which parseTemplate can't see.
+				for (var storedPartial in view.partials) {
+					if (
+						storedPartial.charAt(0) === "/" &&
+						!view.partials[storedPartial] &&
+						!(parseResult.partials && storedPartial in parseResult.partials) &&
+						!(
+							updates.partials &&
+							type(updates.partials, "object") &&
+							storedPartial in updates.partials
+						)
+					)
+						delete view.partials[storedPartial];
+				}
+
 				extend(view.partials).and(parseResult.partials);
 
 						detectInfinitePartialDependency(
@@ -284,8 +320,14 @@ module.exports = function setView(templateID, updates, callback) {
 						(infiniteError) => {
 						if (infiniteError) return callback(infiniteError);
 
-						// Merge parser-derived retrieve (e.g. {{title}}) into view.retrieve; do not overwrite user-provided retrieve (includeDraft, filters, etc.)
-						extend(view.retrieve || {}).and(parseResult.retrieve || {});
+						// Parser output is the source of truth for retrieve locals.
+						// Keep user-provided retrieve options (includeDraft, filters)
+						// from the update or the previously stored view.
+						view.retrieve = applyUserRetrieveOptions(
+							parseResult.retrieve || {},
+							updates.retrieve,
+							existingRetrieve
+						);
 
 						view = serializeRedisHashValues(serialize(view, viewModel));
 
@@ -306,13 +348,26 @@ module.exports = function setView(templateID, updates, callback) {
 						Promise.resolve(multi.exec())
 							.then(() => {
 
-								if (!changes) {
+								// Clear this view from template metadata.errors when saving
+								// via the dashboard so fixing a view clears its error state.
+								// Propagate deferCacheBump so setMetadata doesn't bump the
+								// owner cache / rebuild the manifest behind our back.
+								var clearErrorsIfNeeded = () => {
 									if (metadata.errors && metadata.errors[name]) {
 										delete metadata.errors[name];
-										return setMetadata(templateID, { errors: metadata.errors }, callback);
+										return setMetadata(
+											templateID,
+											{ errors: metadata.errors },
+											{ deferCacheBump: deferCacheBump },
+											callback
+										);
 									}
 
-									return callback();
+									callback();
+								};
+
+								if (!changes || deferCacheBump) {
+									return clearErrorsIfNeeded();
 								}
 
 								Blog.set(metadata.owner, { cacheID: Date.now() }, (cacheErr) => {
@@ -321,14 +376,7 @@ module.exports = function setView(templateID, updates, callback) {
 									updateCdnManifest(templateID, (manifestErr) => {
 										if (manifestErr) return callback(manifestErr);
 
-										// Clear this view from template metadata.errors when saving
-										// via the dashboard so fixing a view clears its error state
-										if (metadata.errors && metadata.errors[name]) {
-											delete metadata.errors[name];
-											return setMetadata(templateID, { errors: metadata.errors }, callback);
-										}
-
-										callback();
+										clearErrorsIfNeeded();
 									});
 								});
 							})
@@ -342,6 +390,65 @@ module.exports = function setView(templateID, updates, callback) {
 		}).catch(callback);
 	});
 };
+
+var USER_RETRIEVE_KEYS = ["includeDraft", "filters"];
+
+function applyUserRetrieveOptions(parsedRetrieve, requestedRetrieve, existingRetrieve) {
+	var result = {};
+
+	extend(result).and(parsedRetrieve || {});
+
+	// The parser is authoritative for locals it can see in the content, but it
+	// can't see a dependency reached indirectly - e.g. a view whose
+	// locals.snippet is "{{latest_entry.title}}" and content is "{{{snippet}}}"
+	// still needs retrieve.latest_entry. Carry over any real retrieve local
+	// (one blot knows how to fetch) that the caller or the stored view asked
+	// for. Non-local keys (stale output from an older parser, internal
+	// __sentinels) are dropped - they fetch nothing.
+	[requestedRetrieve, existingRetrieve].forEach(function (source) {
+		if (!source) return;
+		Object.keys(source).forEach(function (key) {
+			if (key.indexOf("__") === 0) return;
+			if (!parseTemplate.isSystemRetrieveLocal(key)) return;
+
+			var sourceVal = source[key];
+
+			if (result[key] === undefined) {
+				result[key] = sourceVal;
+			} else if (type(result[key], "array") && type(sourceVal, "array")) {
+				// `cdn` is an array dependency - union the targets so an
+				// explicit/stored entry (e.g. a target reached indirectly)
+				// survives alongside the parser's. updateCdnManifest builds
+				// the manifest purely from this persisted array.
+				result[key] = [...new Set(result[key].concat(sourceVal))].sort();
+			} else if (type(result[key], "object") && type(sourceVal, "object")) {
+				// Both structured (e.g. plugin.katex.css from content plus an
+				// explicit plugin.zoom.js needed by a local): keep the parser's
+				// leaves, fold in the extra nested requests.
+				extend(result[key]).and(sourceVal);
+			}
+			// else: parser produced a value and the explicit one is a bare
+			// boolean (or vice versa) - the parser wins (see the setView
+			// stale-boolean tests).
+		});
+	});
+
+	USER_RETRIEVE_KEYS.forEach(function (key) {
+		var value;
+
+		if (requestedRetrieve && requestedRetrieve[key] !== undefined) {
+			value = requestedRetrieve[key];
+		} else if (existingRetrieve && existingRetrieve[key] !== undefined) {
+			value = existingRetrieve[key];
+		}
+
+		if (value !== undefined) {
+			result[key] = value;
+		}
+	});
+
+	return result;
+}
 
 function detectInfinitePartialDependency(
 	templateID,
