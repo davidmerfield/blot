@@ -8,8 +8,11 @@
 // line: SEED_BLOG_RESULT={"host":"...","title":"...","blogID":"..."}. The
 // workflow greps that line (other libraries log freely to stdout) and passes
 // `host` to proxy/e2e/run.js.
+// Only core modules and NODE_PATH-resolved app modules - the script is copied
+// to /tmp inside the container, so it cannot see the app's node_modules.
 const { promisify } = require("util");
-const fs = require("fs-extra");
+const fs = require("fs");
+const path = require("path");
 
 const User = require("models/user");
 const Blog = require("models/blog");
@@ -39,8 +42,14 @@ if (!email) {
   });
 
   // New blogs default to the global "SITE:blog" template (models/blog/
-  // defaults.js); make sure the global templates exist on disk first.
-  await buildTemplates({ watch: false });
+  // defaults.js). The app container usually builds the global templates on
+  // startup; rebuild them here so the script is deterministic, but don't
+  // abort if that fails - they may already be present.
+  try {
+    await buildTemplates({ watch: false });
+  } catch (err) {
+    console.error("seed-blog: template build failed (continuing):", err.message);
+  }
 
   const post =
     [
@@ -50,7 +59,9 @@ if (!email) {
       "This blog is served through the containerised proxy in the e2e suite.",
     ].join("\n") + "\n";
 
-  await fs.outputFile(localPath(blog.id, "/hello.txt"), post);
+  const postPath = localPath(blog.id, "/hello.txt");
+  await fs.promises.mkdir(path.dirname(postPath), { recursive: true });
+  await fs.promises.writeFile(postPath, post);
   await rebuild(blog.id, {});
 
   console.log(
