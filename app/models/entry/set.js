@@ -1,5 +1,4 @@
 var async = require("async");
-var config = require("config");
 var ensure = require("helper/ensure");
 var model = require("./model");
 var redis = require("models/client");
@@ -31,7 +30,6 @@ module.exports = function set (blogID, path, updates, callback) {
     .and(updates, "object")
     .and(callback, "function");
 
-  var entryKey = key.entry(blogID, path);
   var entryHashKey = key.entryHash(blogID, path);
   var queue;
 
@@ -167,45 +165,24 @@ module.exports = function set (blogID, path, updates, callback) {
         // keys it should have and no more
         ensure(entry, model, true);
 
-        // The Redis hash is the source of truth. Once reads come from it
-        // (config.redis.readEntriesFromHash, on by default) we stop writing
-        // the legacy JSON string - a later purge expires the leftovers. While
-        // the flag is off (rollback) we still dual-write the string so reads
-        // off it stay correct. `del` before `hSet` clears any fields left
-        // behind by an older entry model.
-        var writeStringKey = !config.redis.readEntriesFromHash;
-
-        var storeMulti = redis.multi();
-        if (writeStringKey) storeMulti.set(entryKey, JSON.stringify(entry));
-        storeMulti.del(entryHashKey).hSet(entryHashKey, format.serialize(entry));
-
-        storeMulti
+        // Store the entry as a Redis hash. `del` before `hSet` clears any
+        // fields left behind by an older entry model.
+        redis
+          .multi()
+          .del(entryHashKey)
+          .hSet(entryHashKey, format.serialize(entry))
           .exec()
           .then(function () {
             if (entry.deleted) {
-              // The hash tombstone must get a TTL. Also expire any JSON
-              // string key even in hash-only mode: a pre-migration entry
-              // still has its (now stale, non-deleted) string, and if that
-              // outlives the 24h tombstone get.js would fall back to it and
-              // resurrect the post. `expire` on a missing key is a harmless
-              // no-op, so only the hash result is required.
-              return redis
-                .multi()
-                .expire(entryHashKey, 24 * 60 * 60)
-                .expire(entryKey, 24 * 60 * 60)
-                .exec()
-                .then(function (results) {
-                  if (!results || !results[0])
-                    throw new Error(
-                      "Failed to set expiration for deleted entry"
-                    );
-                });
+              return redis.expire(entryHashKey, 24 * 60 * 60).then(function (ok) {
+                if (!ok)
+                  throw new Error(
+                    "Failed to set expiration for deleted entry"
+                  );
+              });
             }
 
-            var persistMulti = redis.multi();
-            if (writeStringKey) persistMulti.persist(entryKey);
-            persistMulti.persist(entryHashKey);
-            return persistMulti.exec();
+            return redis.persist(entryHashKey);
           })
           .then(function () {
             queue = [

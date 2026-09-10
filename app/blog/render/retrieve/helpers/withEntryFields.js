@@ -1,5 +1,3 @@
-var config = require("config");
-
 // A list fetch narrowed to the referenced fields (see entryFieldList) drops
 // the heavy fields the template does not render. But renderLocals re-evaluates
 // every string in a local as Mustache against the whole local, so an entry
@@ -9,18 +7,12 @@ var config = require("config");
 // this, but it cannot restore fields that were never fetched, so we refetch
 // the whole list instead.
 //
-// Only relevant once config.redis.readEntriesFromHash is on; until then the
-// "narrow" fetch already returns whole entries and this is a straight
-// pass-through with no extra round trip.
-//
 //   withEntryFields(
 //     function (cb) { Entries.getAll(id, { fields: fields }, cb); }, // narrow
 //     function (cb) { Entries.getAll(id, cb); },                     // full
 //     done
 //   );
 module.exports = function withEntryFields(narrowFetch, fullFetch, callback) {
-  if (!config.redis.readEntriesFromHash) return narrowFetch(callback);
-
   narrowFetch(function (entries) {
     if (hasMustache(entries)) return fullFetch(callback);
     return callback(entries);

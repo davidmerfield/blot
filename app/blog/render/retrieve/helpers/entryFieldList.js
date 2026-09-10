@@ -13,11 +13,8 @@
 // dropped, everything the render pipeline relies on (url, tags, dateStamp,
 // metadata, thumbnail, ...) is always fetched. When the metadata is legacy
 // (a bare `allEntries: true`, or non-field access like `allEntries.length`)
-// resolveFields returns null and so do we.
-//
-// The narrowing only actually happens once config.redis.readEntriesFromHash
-// is on - until then models/entry/get ignores the field list and returns
-// whole entries, and projectEntryFields does the in-memory strip as before.
+// resolveFields returns null and so do we, and the caller fetches whole
+// entries.
 //
 // An entry whose own retained content carries Mustache could still reference a
 // heavy field the narrowed read skipped; the retrieve modules guard that with

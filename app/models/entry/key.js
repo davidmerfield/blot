@@ -5,15 +5,8 @@ module.exports = {
     return "blog:" + blogID + ":url:" + url;
   },
 
-  entry: function (blogID, path) {
-    return "blog:" + blogID + ":entry:" + pathNormalize(path);
-  },
-
-  // Redis hash representation of an entry. Written alongside the legacy JSON
-  // string key (see ./set.js) so individual fields can be fetched with HMGET
-  // instead of loading and JSON.parsing the whole entry. The string key stays
-  // authoritative until the backfill (scripts/entry/backfill-hashes.js) has
-  // run everywhere and the strings are purged.
+  // Redis hash holding one field per entry property (see ./format.js). Fetched
+  // with HGETALL, or HMGET for a field subset.
   entryHash: function (blogID, path) {
     return "blog:" + blogID + ":entry:hash:" + pathNormalize(path);
   },

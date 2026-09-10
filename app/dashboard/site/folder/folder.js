@@ -139,16 +139,10 @@ async function decorate(blog, dir, pageStats) {
 
   const [entries, ignoredFiles] = await Promise.all([
     new Promise((resolve) => {
-      // An entry may be stored as a legacy JSON string key, a Redis hash, or
-      // (during the migration) both. EXISTS with multiple keys returns the
-      // count, so >= 1 means the entry is present in some form.
       Promise.all(
         pageNames.map((item) => {
           const entryPath = path.join(dir, item);
-          return client.exists([
-            entryKeys.entry(blog.id, entryPath),
-            entryKeys.entryHash(blog.id, entryPath),
-          ]);
+          return client.exists(entryKeys.entryHash(blog.id, entryPath));
         })
       )
         .then((res) => {
