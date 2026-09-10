@@ -372,38 +372,74 @@ a.template-button.file-helper span {margin-left: 0.5em;}
   right: 0;
 }
 
-/* The file viewer shows this same block for a file that belongs to a folder
-   post. It is not a boxed card: the source list reuses .folder-post-sources so
-   it bleeds to the card edges exactly like the folder-post viewer. */
-.folder-post-summary {
-  margin: 0 0 24px;
-}
-
-.folder-post-summary h2 {
-  margin: 0 0 12px;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  color: var(--text-color);
-}
-
-.folder-post-summary p {
-  margin: 0 0 16px;
-  font-size: 14px;
-  color: var(--medium-text-color);
-}
-
-.folder-post-summary code {
+/* A file that belongs to a folder post gets a "Post files:" row in the
+   file-stat table listing the folder's source files (relative path + size),
+   aligned with the other values in the value column. */
+.folder-post-file-list {
+  list-style: none;
+  margin: 3px 0 0;
+  padding: 0;
   font-size: 13px;
 }
 
-.folder-post-source.current {
-  background: rgba(228, 234, 251, 0.4);
+.folder-post-file-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0;
+  padding: 3px 0;
 }
 
-.folder-post-source.current .file-name {
+.folder-post-file-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  min-width: 0;
+  text-decoration: none;
+  color: var(--text-color);
+}
+
+.folder-post-file-list .icon-file-check {
+  flex-shrink: 0;
+}
+
+.folder-post-file-list .file-name {
+  overflow-wrap: anywhere;
+}
+
+.folder-post-file-list .file-size {
+  color: var(--light-text-color);
+  white-space: nowrap;
+}
+
+.folder-post-file-list li.current .file-name {
   color: var(--accent-color);
+}
+
+.folder-post-file-list li.missing .file-name {
+  text-decoration: line-through;
+  color: #c0392b;
+}
+
+.folder-post-file-list .file-missing-note {
+  color: #c0392b;
+}
+
+/* The "Show all" disclosure lives inside a file-stat value cell, whose
+   `td details summary` rule would otherwise absolutely-position it. */
+.file-stat td .folder-post-more {
+  font-size: 13px;
+}
+
+.file-stat td .folder-post-more > summary {
+  position: static;
+  top: auto;
+  right: auto;
+  color: var(--accent-color);
+}
+
+.file-stat td .folder-post-more .folder-post-file-list {
+  margin-top: 0;
 }
 
 .folder-post-more {

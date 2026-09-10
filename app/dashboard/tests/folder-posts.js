@@ -23,11 +23,21 @@ describe("folder posts in the dashboard", function () {
     expect($file(".publishing-steps").text()).toContain(
       "File is part of a folder post"
     );
-    expect($file(".folder-post-source-list").text()).toContain("one.md");
-    expect($file(".folder-post-source-list").text()).toContain("two.md");
-    expect($file(".folder-post-source.current .file-name").text()).toContain(
+
+    // The folder post's source files are listed in a "Post files:" row.
+    const $postFilesRow = $file("table.file-stat tr").filter(function () {
+      return $file(this).find("td").first().text().trim() === "Post files:";
+    });
+    expect($postFilesRow.length).toBe(1);
+    expect($postFilesRow.find(".folder-post-file-list").text()).toContain(
       "one.md"
     );
+    expect($postFilesRow.find(".folder-post-file-list").text()).toContain(
+      "two.md"
+    );
+    expect(
+      $file(".folder-post-file.current .file-name").text()
+    ).toContain("one.md");
   });
 
   it("builds folder posts whose names contain brackets", async function () {
@@ -168,6 +178,7 @@ describe("folder posts in the dashboard", function () {
 
     expect($file(".publishing-steps").text()).toContain("File is a post");
     expect($file(".publishing-steps").text()).not.toContain("folder post");
-    expect($file(".folder-post-summary").length).toBe(0);
+    expect($file(".folder-post-file-list").length).toBe(0);
+    expect($file("table.file-stat").text()).not.toContain("Post files:");
   });
 });
