@@ -39,6 +39,7 @@ var totals = {
   skipped: 0,
   collisions: 0,
   disabled: 0,
+  failed: 0,
 };
 
 function getList(blogID) {
@@ -56,6 +57,7 @@ async function processBlog(blog) {
   try {
     list = await getList(blog.id);
   } catch (e) {
+    totals.failed++;
     console.error("  " + blog.id + ": getTemplateList failed: " + e.message);
     return;
   }
@@ -77,7 +79,13 @@ async function processBlog(blog) {
 
   if (!pending.length) return;
 
-  var per = { divergent: pending.length, repaired: 0, skipped: 0, collisions: 0 };
+  var per = {
+    divergent: pending.length,
+    repaired: 0,
+    skipped: 0,
+    collisions: 0,
+    failed: 0,
+  };
 
   // establishSyncLock delegates to Sync, which refuses a disabled blog, so a
   // divergent template on one cannot be repaired here. Report it distinctly:
@@ -99,12 +107,12 @@ async function processBlog(blog) {
     try {
       syncLock = await establishSyncLock(blog.id);
     } catch (e) {
+      per.failed += pending.length;
+      totals.failed += pending.length;
       console.error(
         "  " + blog.id + ": could not acquire sync lock: " + e.message +
-        " (skipping this blog)"
+        " (" + pending.length + " template(s) left for a rerun)"
       );
-      per.skipped += pending.length;
-      totals.skipped += pending.length;
       return;
     }
   }
@@ -122,8 +130,8 @@ async function processBlog(blog) {
           },
         });
       } catch (e) {
-        per.skipped++;
-        totals.skipped++;
+        per.failed++;
+        totals.failed++;
         console.error(
           "  FAIL " + blog.id + " " + template.id + ": " + e.message +
           " (left for a rerun)"
@@ -155,6 +163,7 @@ async function processBlog(blog) {
       try {
         await syncLock.done();
       } catch (e) {
+        totals.failed++;
         console.error(
           "  " + blog.id + ": failed to release sync lock: " + e.message
         );
@@ -167,7 +176,8 @@ async function processBlog(blog) {
     "divergent " + per.divergent +
     (APPLY ? "  repaired " : "  would repair ") + per.repaired +
     "  skipped " + per.skipped +
-    "  collisions " + per.collisions
+    "  collisions " + per.collisions +
+    "  failed " + per.failed
   );
 }
 
@@ -180,7 +190,8 @@ function printGrandTotal() {
     (APPLY ? "  repaired " : "  would repair ") + totals.repaired +
     "  skipped " + totals.skipped +
     "  collisions " + totals.collisions +
-    "  disabled " + totals.disabled
+    "  disabled " + totals.disabled +
+    "  failed " + totals.failed
   );
 
   if (!APPLY && totals.divergent) {
@@ -194,6 +205,13 @@ function printGrandTotal() {
       "rerun this script for those blogs once they are re-enabled."
     );
   }
+
+  if (totals.failed) {
+    console.log(
+      "\n" + totals.failed +
+      " template(s) hit an error and were left for a rerun — exiting non-zero."
+    );
+  }
 }
 
 if (require.main === module) {
@@ -205,6 +223,7 @@ if (require.main === module) {
     run = new Promise(function (resolve) {
       require("../get/blog")(IDENTIFIER, function (err, user, blog) {
         if (err || !blog) {
+          totals.failed++;
           console.error(
             "No blog for " + JSON.stringify(IDENTIFIER) + ": " +
             ((err && err.message) || "not found")
@@ -213,6 +232,7 @@ if (require.main === module) {
         }
         totals.blogs = 1;
         processBlog(blog).then(resolve, function (e) {
+          totals.failed++;
           console.error("Fatal: " + e.message);
           resolve();
         });
@@ -228,6 +248,7 @@ if (require.main === module) {
               nextBlog();
             },
             function (e) {
+              totals.failed++;
               console.error("  " + blog.id + ": " + e.message);
               nextBlog();
             }
@@ -242,7 +263,7 @@ if (require.main === module) {
 
   run.then(function () {
     printGrandTotal();
-    process.exit(0);
+    process.exit(totals.failed > 0 ? 1 : 0);
   });
 }
 

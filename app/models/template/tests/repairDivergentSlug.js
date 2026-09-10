@@ -99,4 +99,47 @@ describe("template", function () {
       fs.existsSync(join(this.blogDirectory, root, fixed.slug, ".DS_Store"))
     ).toBe(true);
   });
+
+  it("refuses a template directory that contains a symlink and touches nothing", async function () {
+    var blog = this.blog;
+    var templateID = this.template.id;
+
+    await call(setView, templateID, { name: "entry.html", content: "<h1>hi</h1>" });
+    await call(setMetadata, templateID, { localEditing: true });
+    await call(writeToFolder, blog.id, templateID);
+
+    var goodSlug = (await call(getMetadata, templateID)).slug;
+    var root = fs.existsSync(this.blogDirectory + "/Templates")
+      ? "Templates"
+      : "templates";
+
+    var staleSlug =
+      "another-deliberately-divergent-slug-that-is-really-quite-long";
+    fs.moveSync(
+      join(this.blogDirectory, root, goodSlug),
+      join(this.blogDirectory, root, staleSlug)
+    );
+    await call(setMetadata, templateID, { slug: staleSlug });
+
+    fs.symlinkSync(
+      "entry.html",
+      join(this.blogDirectory, root, staleSlug, "link.html")
+    );
+
+    var divergent = await call(getMetadata, templateID);
+    var syncLock = await establishSyncLock(blog.id);
+    var result;
+    try {
+      result = await repairDivergentSlug(blog, divergent, { apply: true });
+    } finally {
+      await syncLock.done();
+    }
+
+    expect(result.skipped).toBe(true);
+    expect(result.reason).toContain("symlink");
+    // The stored slug and the folder are untouched, so a rerun retries.
+    expect((await call(getMetadata, templateID)).slug).toEqual(staleSlug);
+    expect(fs.existsSync(join(this.blogDirectory, root, staleSlug))).toBe(true);
+    expect(fs.existsSync(join(this.blogDirectory, root, divergent.id.split(":").slice(1).join(":")))).toBe(false);
+  });
 });
