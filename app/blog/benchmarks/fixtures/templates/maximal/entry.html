@@ -1,0 +1,10 @@
+<!doctype html>
+<html>
+  <body data-view="entry">
+    {{> stress}} {{#entry}}{{> entry-fields}}{{/entry}} {{#search_results}}{{>
+    entry-fields}}{{/search_results}} {{#error}}
+    <h1>{{title}}</h1>
+    <p>{{message}}</p>
+    {{/error}}
+  </body>
+</html>

@@ -9,10 +9,10 @@ One run creates `--sites` blogs, writes `--files` generated text entries plus a
 fixed set of converter fixtures (markdown, docx, rtf, odt, org, images, gdoc —
 reused from `app/build/converters/*/tests`), then:
 
-| Phase      | What happens                                                    | Headline metrics |
-|------------|----------------------------------------------------------------|------------------|
-| **build**  | write the workload to disk, then `blog.rebuild()` every site   | per-site wall time p50 / p95, peak RSS, CPU % |
-| **render** | fetch every URL in each blog's sitemap and read the full body  | per-page wall time p50 / p95, peak RSS, CPU %, output bytes/page |
+| Phase      | What happens                                                  | Headline metrics                                                 |
+| ---------- | ------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **build**  | write the workload to disk, then `blog.rebuild()` every site  | per-site wall time p50 / p95, peak RSS, CPU %                    |
+| **render** | fetch every URL in each blog's sitemap and read the full body | per-page wall time p50 / p95, peak RSS, CPU %, output bytes/page |
 
 Everything is seeded (`--seed`, default `blot-benchmark-seed`) so the generated
 workload is identical from run to run. The full result is written as JSON; the
@@ -41,8 +41,26 @@ Lower-level knobs (passed through to [`index.js`](index.js)):
 ```bash
 node scripts/benchmarks --help
 node scripts/benchmarks --sites 3 --files 500 --output /tmp/result.json
+node scripts/benchmarks --template-profile maximal
 BENCHMARK_DEBUG=1 node scripts/benchmarks        # verbose sitemap expansion
 ```
+
+### Template profiles
+
+`--template-profile` selects the template installed on every generated blog
+before build or render measurement. `default` preserves the normal test-blog
+template; `maximal` installs the deterministic fixture in
+`app/blog/benchmarks/fixtures/templates/maximal/` (and is the CI profile).
+
+The maximal profile is intentionally a worst-case retrieval and rendering
+workload, not a realistic theme. Every route renders all-entry, archive, tag,
+popular-tag, recent/latest-entry, and projected heavy entry fields. It repeats
+dependencies through snake_case and camelCase aliases, nested sections,
+transparent helpers, partials, and multiple CDN targets. Expensive locals are
+kept in live sections so the benchmark measures their retrieval and output,
+rather than merely making the template parser discover unreachable work. The
+selected profile is stored as `config.template_profile` in result JSON, keeping
+comparisons auditable.
 
 Defaults for every knob live in one place:
 [`app/blog/benchmarks/util/defaults.js`](../../app/blog/benchmarks/util/defaults.js).
@@ -52,7 +70,7 @@ Defaults for every knob live in one place:
 `.github/workflows/benchmarks.yml`. GitHub-hosted runners are noisy, so nothing
 here blocks a merge — the signal comes from trends, not single runs.
 
-### On a pull request (once it's marked *ready for review*)
+### On a pull request (once it's marked _ready for review_)
 
 - runs on **amd64 only**, `2` iterations, aggregated to medians
   ([`aggregate.js`](aggregate.js))
@@ -117,18 +135,18 @@ PR comment still shows deltas but marks them information-only, and
 
 ## File map
 
-| File | Runs where | Purpose |
-|------|-----------|---------|
-| `index.js` | container | run the spec once, write result JSON |
-| `app/blog/benchmarks/benchmarks.js` | container | the Jasmine spec itself |
-| `invoke.sh` | host | run `index.js` in Docker + throwaway Redis |
-| `compare.js` / `format-diff.js` | host | local branch-vs-branch comparison |
-| `aggregate.js` | host | merge N iteration JSONs into one (median per metric) |
-| `update-history.js` | host | append a master result, recompute baseline |
-| `detect-regression.js` | host | open an issue on sustained master drift |
-| `pr-comment.js` | host | post / update the PR comparison comment |
-| `seed-history.js` | host | restore history from an artifact on cache miss |
-| `lib/*.js` | host | shared stats / metric definitions / history / report |
+| File                                | Runs where | Purpose                                              |
+| ----------------------------------- | ---------- | ---------------------------------------------------- |
+| `index.js`                          | container  | run the spec once, write result JSON                 |
+| `app/blog/benchmarks/benchmarks.js` | container  | the Jasmine spec itself                              |
+| `invoke.sh`                         | host       | run `index.js` in Docker + throwaway Redis           |
+| `compare.js` / `format-diff.js`     | host       | local branch-vs-branch comparison                    |
+| `aggregate.js`                      | host       | merge N iteration JSONs into one (median per metric) |
+| `update-history.js`                 | host       | append a master result, recompute baseline           |
+| `detect-regression.js`              | host       | open an issue on sustained master drift              |
+| `pr-comment.js`                     | host       | post / update the PR comparison comment              |
+| `seed-history.js`                   | host       | restore history from an artifact on cache miss       |
+| `lib/*.js`                          | host       | shared stats / metric definitions / history / report |
 
 ## Ideas not yet built
 

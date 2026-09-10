@@ -48,6 +48,7 @@ var benchmarkConfig = {
   sites: args.sites,
   files: args.files,
   seed: args.seed,
+  templateProfile: args.templateProfile,
   renderConcurrency: args.renderConcurrency,
   writeConcurrency: args.writeConcurrency,
   cpuSampleIntervalMs: args.cpuSampleIntervalMs,
@@ -71,7 +72,7 @@ jasmine.addReporter({
 
     if (result.overallStatus === "passed" && !benchmarkResult) {
       console.error(
-        "[benchmark] Missing benchmark result payload from spec run"
+        "[benchmark] Missing benchmark result payload from spec run",
       );
       exitCode = 1;
     }
@@ -82,7 +83,7 @@ jasmine.addReporter({
       console.log(
         clfdate(),
         "Wrote benchmark result",
-        colors.cyan(args.output)
+        colors.cyan(args.output),
       );
     }
 
@@ -118,6 +119,7 @@ function parseArgs(argv) {
     sites: BENCHMARK_DEFAULTS.sites,
     files: BENCHMARK_DEFAULTS.files,
     seed: BENCHMARK_DEFAULTS.seed,
+    templateProfile: BENCHMARK_DEFAULTS.templateProfile,
     renderConcurrency: BENCHMARK_DEFAULTS.renderConcurrency,
     writeConcurrency: BENCHMARK_DEFAULTS.writeConcurrency,
     cpuSampleIntervalMs: BENCHMARK_DEFAULTS.cpuSampleIntervalMs,
@@ -154,6 +156,12 @@ function parseArgs(argv) {
 
     if (arg === "--seed" && next) {
       parsed.seed = String(next);
+      i += 1;
+      continue;
+    }
+
+    if (arg === "--template-profile" && next) {
+      parsed.templateProfile = String(next);
       i += 1;
       continue;
     }
@@ -197,6 +205,9 @@ function parseArgs(argv) {
   ensurePositiveInt(parsed.writeConcurrency, "--write-concurrency");
   ensurePositiveInt(parsed.cpuSampleIntervalMs, "--cpu-sample-interval-ms");
   ensurePositiveInt(parsed.requestsPerPage, "--requests-per-page");
+  if (!["default", "maximal"].includes(parsed.templateProfile)) {
+    throw new Error("--template-profile must be one of: default, maximal");
+  }
 
   return parsed;
 }
@@ -222,6 +233,9 @@ function printHelp() {
       "  --seed <value>                 Deterministic seed (default: " +
         BENCHMARK_DEFAULTS.seed +
         ")",
+      "  --template-profile <name>      Template workload: default or maximal (default: " +
+        BENCHMARK_DEFAULTS.templateProfile +
+        ")",
       "  --render-concurrency <n>       Sitemap render concurrency (default: " +
         BENCHMARK_DEFAULTS.renderConcurrency +
         ")",
@@ -239,6 +253,6 @@ function printHelp() {
       "  --path <path>                  Limit benchmark discovery to path",
       "  --help                         Show this help message",
       "",
-    ].join("\n")
+    ].join("\n"),
   );
 }

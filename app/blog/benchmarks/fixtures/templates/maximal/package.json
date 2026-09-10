@@ -1,0 +1,19 @@
+{
+  "name": "Benchmark Maximal",
+  "locals": {
+    "page_size": 100,
+    "benchmark_mode": "maximal"
+  },
+  "views": {
+    "entries.html": {},
+    "entry.html": {},
+    "tagged.html": {},
+    "archives.html": {
+      "url": "/archives"
+    },
+    "search.html": {
+      "url": "/search"
+    },
+    "error.html": {}
+  }
+}

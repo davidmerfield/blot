@@ -1,0 +1,14 @@
+<article data-entry="{{id}}">
+  <a href="{{{url}}}">{{title}}</a>
+  <span
+    >{{date}}|{{dateStamp}}|{{path}}|{{name}}|{{slug}}|{{guid}}|{{created}}|{{updated}}</span
+  >
+  {{#first}}
+  <div>{{{html}}}|{{{body}}}|{{{teaser}}}|{{{teaserBody}}}|{{summary}}</div>
+  {{/first}}
+  {{#encode_xml}}{{{html}}}{{/encode_xml}}{{#encodeXML}}{{{body}}}{{/encodeXML}}
+  {{#encode_json}}{{{teaser}}}{{/encode_json}}{{#encodeJSON}}{{{teaserBody}}}{{/encodeJSON}}
+  {{#encode_uri_component}}{{summary}}{{/encode_uri_component}}{{#encodeURIComponent}}{{summary}}{{/encodeURIComponent}}
+  {{#absolute_urls}}{{{html}}}{{/absolute_urls}}{{#absoluteURLs}}{{{body}}}{{/absoluteURLs}}
+  {{#tags}}<i>{{name}}/{{slug}}</i>{{/tags}}
+</article>

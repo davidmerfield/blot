@@ -14,6 +14,8 @@ const BENCHMARK_DEFAULTS = Object.freeze({
   files: 1000,
   // Deterministic seed for workload generation.
   seed: "blot-benchmark-seed",
+  // Template workload installed on every benchmark blog.
+  templateProfile: "default",
   // Concurrency used when replaying sitemap URLs during the render phase.
   renderConcurrency: 8,
   // Concurrency used when writing the generated workload to disk.

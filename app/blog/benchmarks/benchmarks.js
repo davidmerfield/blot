@@ -9,6 +9,7 @@ const { expandSitemapUrls } = require("./util/sitemap");
 const { runWithConcurrency } = require("./util/concurrency");
 const { parseBenchmarkConfig } = require("./util/config");
 const { buildBenchmarkResult } = require("./util/result");
+const { readTemplateProfile } = require("./util/templateProfile");
 
 describe("blog benchmarks", function () {
   require("./util/setup")();
@@ -17,23 +18,36 @@ describe("blog benchmarks", function () {
 
   it("measures build and render performance", async function () {
     const benchmarkConfig = parseBenchmarkConfig(
-      global.__BLOT_BENCHMARK_CONFIG || {}
+      global.__BLOT_BENCHMARK_CONFIG || {},
     );
 
-    const blogs = Array.isArray(this.blogs) && this.blogs.length
-      ? this.blogs
-      : this.blog
-      ? [this.blog]
-      : [];
+    const blogs =
+      Array.isArray(this.blogs) && this.blogs.length
+        ? this.blogs
+        : this.blog
+          ? [this.blog]
+          : [];
 
     if (blogs.length !== benchmarkConfig.sites) {
       throw new Error(
-        `Expected ${benchmarkConfig.sites} benchmark sites but got ${blogs.length}`
+        `Expected ${benchmarkConfig.sites} benchmark sites but got ${blogs.length}`,
       );
     }
 
     const rng = seedrandom(benchmarkConfig.seed);
     const workload = buildWorkload(benchmarkConfig, blogs, rng);
+    const templateProfile = readTemplateProfile(
+      benchmarkConfig.templateProfile,
+    );
+
+    if (templateProfile) {
+      const originalBlog = this.blog;
+      for (const blog of blogs) {
+        this.blog = blog;
+        await this.template(templateProfile.views, templateProfile.packageJSON);
+      }
+      this.blog = originalBlog;
+    }
 
     const buildPhaseMonitor = new PhaseMonitor({
       sampleIntervalMs: benchmarkConfig.cpuSampleIntervalMs,
@@ -48,24 +62,28 @@ describe("blog benchmarks", function () {
 
     buildPhaseMonitor.start();
 
-    await runWithConcurrency(writeTasks, benchmarkConfig.writeConcurrency, async (task) => {
-      if (task.sourcePath != null) {
-        let blogDir = localPath(task.blog.id, "/");
-        if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
-        const destPath = blogDir + task.path;
-        await fs.ensureDir(path.dirname(destPath));
-        await fs.copy(task.sourcePath, destPath);
-      } else {
-        await task.blog.write({ path: task.path, content: task.content });
-      }
-    });
+    await runWithConcurrency(
+      writeTasks,
+      benchmarkConfig.writeConcurrency,
+      async (task) => {
+        if (task.sourcePath != null) {
+          let blogDir = localPath(task.blog.id, "/");
+          if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
+          const destPath = blogDir + task.path;
+          await fs.ensureDir(path.dirname(destPath));
+          await fs.copy(task.sourcePath, destPath);
+        } else {
+          await task.blog.write({ path: task.path, content: task.content });
+        }
+      },
+    );
 
     await Promise.all(
       blogs.map(async (blog, index) => {
         const startedAt = performance.now();
         await blog.rebuild();
         buildSiteDurations[index] = performance.now() - startedAt;
-      })
+      }),
     );
 
     const buildPhaseMetrics = buildPhaseMonitor.stop();
@@ -89,7 +107,7 @@ describe("blog benchmarks", function () {
 
       if (sitemapRes.status !== 200) {
         throw new Error(
-          `Failed to fetch sitemap.xml for ${blog.handle}: status=${sitemapRes.status}`
+          `Failed to fetch sitemap.xml for ${blog.handle}: status=${sitemapRes.status}`,
         );
       }
 
@@ -97,7 +115,7 @@ describe("blog benchmarks", function () {
       const sitemapPaths = await expandSitemapUrls(
         blog,
         sitemapXML,
-        this.getForBlog.bind(this)
+        this.getForBlog.bind(this),
       );
 
       if (!sitemapPaths.length) {
@@ -110,7 +128,7 @@ describe("blog benchmarks", function () {
         blog.handle,
         `${sitemapPaths.length} sitemap pages × ${n} =>`,
         sitemapPaths.length * n,
-        "render tasks"
+        "render tasks",
       );
 
       siteSummaries.push({
@@ -129,7 +147,7 @@ describe("blog benchmarks", function () {
 
     console.log(
       "[benchmark] total render tasks (Total requests):",
-      renderTasks.length
+      renderTasks.length,
     );
 
     renderPhaseMonitor.start();
@@ -149,7 +167,7 @@ describe("blog benchmarks", function () {
         if (res.status >= 400) {
           renderFailures.push({ blogIndex, path, status: res.status });
         }
-      }
+      },
     );
 
     const renderPhaseMetrics = renderPhaseMonitor.stop();
@@ -157,15 +175,31 @@ describe("blog benchmarks", function () {
 
     siteSummaries.forEach((summary, index) => {
       summary.rendered_pages = renderTasks.filter(
-        (task) => task.blog.id === summary.blog_id
+        (task) => task.blog.id === summary.blog_id,
       ).length;
       summary.non_2xx = renderFailures.filter(
-        (failure) => blogs[failure.blogIndex].id === summary.blog_id
+        (failure) => blogs[failure.blogIndex].id === summary.blog_id,
       ).length;
       summary.rendered_bytes = bytesPerSite[index] || 0;
     });
 
     const renderBytesTotal = bytesPerSite.reduce((sum, n) => sum + n, 0);
+
+    if (benchmarkConfig.templateProfile === "maximal") {
+      for (const blog of blogs) {
+        const [entriesBody, archivesBody, taggedBody] = await Promise.all([
+          this.textForBlog(blog, "/"),
+          this.textForBlog(blog, "/archives"),
+          this.textForBlog(blog, "/tagged/benchmark"),
+        ]);
+
+        expect(entriesBody).toContain("MAXIMAL_PROFILE_INSTALLED");
+        expect(entriesBody).toContain("MAXIMAL_ALL_ENTRIES");
+        expect(archivesBody).toContain("MAXIMAL_ARCHIVES");
+        expect(taggedBody).toContain("MAXIMAL_TAGS");
+        expect(taggedBody).toContain("MAXIMAL_POPULAR_TAGS");
+      }
+    }
 
     const result = buildBenchmarkResult({
       benchmarkConfig,
@@ -184,7 +218,7 @@ describe("blog benchmarks", function () {
     global.__BLOT_BENCHMARK_RESULT = result;
 
     expect(workload.files.length).toEqual(
-      benchmarkConfig.files + workload.fixtureCount * blogs.length
+      benchmarkConfig.files + workload.fixtureCount * blogs.length,
     );
     expect(renderTasks.length).toBeGreaterThan(0);
     expect(renderFailures.length).toEqual(0);
@@ -200,33 +234,41 @@ describe("blog benchmarks", function () {
       totalWallMs > 0 ? (totalCpuMs / totalWallMs) * 100 : 0;
     const totalMemoryMb = Math.max(
       result.build.memory_mb.peak_rss,
-      result.render.memory_mb.peak_rss
+      result.render.memory_mb.peak_rss,
     );
     const totalSeconds = totalWallMs / 1000;
     const label = (s) => ("  " + s).padEnd(26);
     const num = (n, width = 10) => String(n).padStart(width);
 
     console.log("");
-    console.log(label("Requests per page") + num(benchmarkConfig.requestsPerPage, 8));
+    console.log(
+      label("Requests per page") + num(benchmarkConfig.requestsPerPage, 8),
+    );
     console.log(label("Total CPU") + num(totalCpuPercent.toFixed(2), 8) + " %");
-    console.log(label("Total Memory") + num(Math.round(totalMemoryMb), 8) + " mb");
-    console.log(label("Total requests") + num(result.render.sitemap_pages_total, 8));
+    console.log(
+      label("Total Memory") + num(Math.round(totalMemoryMb), 8) + " mb",
+    );
+    console.log(
+      label("Total requests") + num(result.render.sitemap_pages_total, 8),
+    );
     console.log("");
-    console.log(label("Total time") + num(totalSeconds.toFixed(1), 8) + " seconds");
+    console.log(
+      label("Total time") + num(totalSeconds.toFixed(1), 8) + " seconds",
+    );
     console.log(
       label("Mean build time") +
         num(result.build.timing_ms.mean.toFixed(0), 8) +
-        " ms per site"
+        " ms per site",
     );
     console.log(
       label("Mean blog render time") +
         num(result.render.timing_ms.mean.toFixed(0), 8) +
-        " ms per page"
+        " ms per page",
     );
     console.log(
       label("Mean output size") +
         num((result.render.bytes.mean_per_page / 1024).toFixed(1), 8) +
-        " kb per page"
+        " kb per page",
     );
     console.log("");
   });

@@ -51,6 +51,7 @@ function makeEntryContent({ rng, slug, blogIndex, index }) {
   return [
     `Title: Benchmark ${blogIndex}-${index}`,
     `Link: /${slug}`,
+    `Tags: benchmark, site-${blogIndex}`,
     "",
     sentences.join(" "),
     "",

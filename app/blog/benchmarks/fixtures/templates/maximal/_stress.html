@@ -1,0 +1,44 @@
+<div id="maximal-profile-installed">MAXIMAL_PROFILE_INSTALLED</div>
+<section id="all-entries">
+  MAXIMAL_ALL_ENTRIES{{#all_entries}}{{>
+  entry-fields}}{{/all_entries}}{{#allEntries}}{{> entry-fields}}{{/allEntries}}
+</section>
+<section id="recent">
+  {{#recent_entries}}{{> entry-fields}}{{/recent_entries}}{{#recentEntries}}{{>
+  entry-fields}}{{/recentEntries}}
+</section>
+<section id="latest">
+  {{#latest_entry}}{{> entry-fields}}{{/latest_entry}}{{#latestEntry}}{{>
+  entry-fields}}{{/latestEntry}}
+</section>
+<section id="posts">{{#posts}}{{> entry-fields}}{{/posts}}</section>
+<section id="archives">
+  MAXIMAL_ARCHIVES{{#archives}}{{year}}/{{total}}{{#months}}{{month}}/{{year}}/{{entries.length}}{{#entries}}{{>
+  entry-fields}}{{/entries}}{{/months}}{{/archives}}
+</section>
+<section id="tags">
+  MAXIMAL_TAGS{{#all_tags}}{{name}}/{{tag}}/{{slug}}/{{total}}{{/all_tags}}{{#allTags}}{{name}}/{{tag}}/{{slug}}/{{total}}{{/allTags}}
+</section>
+<section id="popular-tags">
+  MAXIMAL_POPULAR_TAGS{{#popular_tags}}{{name}}/{{tag}}/{{slug}}/{{total}}{{#entries}}{{.}}{{/entries}}{{/popular_tags}}
+</section>
+<section id="tagged">
+  {{#tagged}}{{tag}}/{{slug}}{{#entries}}{{>
+  entry-fields}}{{/entries}}{{/tagged}}
+</section>
+<div>
+  {{updated}}|{{total_posts}}|{{feed_url}}|{{avatar_url}}|{{css_url}}|{{script_url}}|{{search_query}}
+</div>
+<div>
+  {{app_css}}{{appCSS}}{{app_js}}{{appJS}}{{plugin_css}}{{plugin_js}}{{is_active}}{{isActive}}{{active}}
+</div>
+<div>
+  {{#folder}}{{parent}}/{{parentURI}}{{#contents}}{{name}}/{{path}}/{{pathURI}}/{{isDirectory}}/{{isFile}}/{{updated}}{{/contents}}{{/folder}}
+</div>
+<div>
+  {{#rgb}}#123456{{/rgb}}|{{#is.benchmark_mode.maximal}}is-maximal{{/is.benchmark_mode.maximal}}|{{plugin}}
+</div>
+<div>
+  {{#asset}}benchmark.css{{/asset}}|{{cdn}}|{{#cdn}}benchmark.css{{/cdn}}|{{#cdn}}benchmark.js{{/cdn}}
+</div>
+{{> repeated}}{{> repeated}}

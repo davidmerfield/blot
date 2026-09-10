@@ -37,6 +37,9 @@ on:
       iterations:
         description: "Iterations to run and aggregate"
         default: "3"
+      template_profile:
+        description: "Template workload profile (default or maximal)"
+        default: "maximal"
 
 permissions:
   contents: read
@@ -92,6 +95,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # The commit actually being benchmarked (PR head, not the merge commit).
       HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      TEMPLATE_PROFILE: ${{ github.event.inputs.template_profile || 'maximal' }}
 
     steps:
       - name: Checkout code
@@ -165,6 +169,7 @@ jobs:
               -e GITHUB_SHA=${{ github.sha }} \
               -e SITES_ARG="${{ github.event.inputs.sites }}" \
               -e FILES_ARG="${{ github.event.inputs.files }}" \
+              -e TEMPLATE_PROFILE="$TEMPLATE_PROFILE" \
               -v ${{ github.workspace }}/app:/usr/src/app/app \
               -v ${{ github.workspace }}/scripts:/usr/src/app/scripts \
               -v ${{ github.workspace }}/config:/usr/src/app/config \
@@ -175,6 +180,7 @@ jobs:
                 ARGS="--output /benchmarks/runs/run-'"$i"'.json"
                 [ -n "$SITES_ARG" ] && ARGS="$ARGS --sites $SITES_ARG"
                 [ -n "$FILES_ARG" ] && ARGS="$ARGS --files $FILES_ARG"
+                ARGS="$ARGS --template-profile $TEMPLATE_PROFILE"
                 npm run benchmark:ci -- $ARGS
               '
             echo "::endgroup::"
