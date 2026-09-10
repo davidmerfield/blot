@@ -112,9 +112,9 @@
       <details>
         <summary><span class="icon-support"></span> Explain</summary>
         <p>
-          {{#metadata.link}}The link of this {{type}} is generated from Link metadata.{{/metadata.link}}
-          {{#metadata.url}}The link of this {{type}} is generated from URL metadata.{{/metadata.url}}
-          {{^metadata.link}}{{^metadata.url}}The link of this {{type}} is generated using your site&rsquo;s <a href="{{{base}}}/link-format">link format</a> from the folder&rsquo;s path without the <code>+</code>.{{/metadata.url}}{{/metadata.link}}
+          {{#metadataLink}}The link of this {{type}} is generated from Link metadata.{{/metadataLink}}
+          {{#metadataUrl}}The link of this {{type}} is generated from URL metadata.{{/metadataUrl}}
+          {{^metadataLink}}{{^metadataUrl}}The link of this {{type}} is generated using your site&rsquo;s <a href="{{{base}}}/link-format">link format</a> from the folder&rsquo;s path without the <code>+</code>.{{/metadataUrl}}{{/metadataLink}}
         </p>
       </details>
     </td>

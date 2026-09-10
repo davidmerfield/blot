@@ -138,6 +138,16 @@ function formatEntry(entry, blog) {
 
   const rawMetadata = { ...(entry.metadata || {}) };
   delete rawMetadata._sourcePaths;
+
+  // Keep keyed flags for the link explanation before the table below turns
+  // metadata into a flat {key, value} list.
+  const lowercaseMetadata = {};
+  Object.keys(rawMetadata).forEach((key) => {
+    lowercaseMetadata[key.toLowerCase()] = rawMetadata[key];
+  });
+  entry.metadataLink = !!lowercaseMetadata.link;
+  entry.metadataUrl = !!lowercaseMetadata.url;
+
   entry.metadata = Object.keys(rawMetadata).map((key) => ({
     key,
     value: rawMetadata[key],

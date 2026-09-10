@@ -34,11 +34,11 @@
 
 <h2>The injected title</h2>
 
-<p>If no source file produces an <code>&lt;h1&gt;</code>, Blot inserts one as the first child of <code>.multi-file-post</code> so the post is never headingless:</p>
+<p>If none of the first three source sections produces an <code>&lt;h1&gt;</code>, Blot inserts one as the first child of <code>.multi-file-post</code> so the post is never headingless:</p>
 
 <pre class="html output"><code>&lt;h1 class="multi-file-title"&gt;Album&lt;/h1&gt;</code></pre>
 
-<p>The text is the folder name with the trailing <code>+</code> removed and any percent-encoding decoded. When at least one file already renders an <code>&lt;h1&gt;</code>, nothing is injected. Target <code>.multi-file-title</code> in CSS if you want to hide or restyle it.</p>
+<p>The text is an explicit <code>Title</code> from the merged metadata, or the folder name with the trailing <code>+</code> removed and any percent-encoding decoded. Blot only checks the first three sections because that is as far as it looks when deriving the entry title &mdash; if the first heading appears in a later file you will see both it and the generated <code>.multi-file-title</code>, so target <code>.multi-file-title</code> in CSS if you want to hide or restyle it.</p>
 
 <h2>Merged metadata, dependencies, and stats</h2>
 

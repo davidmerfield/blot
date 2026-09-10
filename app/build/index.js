@@ -1,5 +1,7 @@
 var debug = require("debug")("blot:build");
+var fs = require("fs");
 var basename = require("path").basename;
+var localPath = require("helper/localPath");
 var isDraft = require("../sync/update/drafts").isDraft;
 var BuildSingle = require("./single");
 var BuildMultiple = require("./multiple");
@@ -68,6 +70,29 @@ module.exports = function build(blog, path, callback) {
   debug("Build:", process.pid, "processing", path);
 
   var multiInfo = findMultiFolder(path);
+
+  // findMultiFolder is a path-only check, so a plain file whose name ends in
+  // "+" (e.g. /post.md+) matches too. Only treat it as a folder post when the
+  // "+" segment is a real directory - otherwise it is just a file, and its
+  // plus-stripped path (/post.md) may be a valid sibling we must not disturb.
+  if (multiInfo) {
+    return fs.stat(
+      localPath(blog.id, multiInfo.folderPath),
+      function (statErr, stat) {
+        buildWith(
+          blog,
+          path,
+          !statErr && stat.isDirectory() ? multiInfo : null,
+          callback
+        );
+      }
+    );
+  }
+
+  buildWith(blog, path, null, callback);
+};
+
+function buildWith(blog, path, multiInfo, callback) {
   var entryPath = multiInfo ? multiInfo.entryPath : path;
   var builder = multiInfo ? BuildMultiple : BuildSingle;
   var buildArgument = multiInfo ? multiInfo : entryPath;
@@ -150,6 +175,6 @@ module.exports = function build(blog, path, callback) {
       });
     });
   });
-};
+}
 
 module.exports.findMultiFolder = findMultiFolder;

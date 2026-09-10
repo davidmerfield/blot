@@ -23,7 +23,22 @@ module.exports = function buildMultiple(blog, info, callback) {
 
   debug("Blog:", blog.id, "building multiple for", folderPath);
 
-  collectConvertibleFiles(blog, folderPath, function (err, files) {
+  // A folder like "/article.md+" strips to "/article.md", which can also be a
+  // real sibling file with its own entry. Refuse to aggregate in that case so
+  // the two identities don't overwrite each other depending on sync order.
+  fs.stat(localPath(blog.id, entryPath), function (statErr, entryStat) {
+    if (!statErr && entryStat.isFile()) {
+      var collisionError = new Error(
+        "Folder post path collides with a file: " + entryPath
+      );
+      collisionError.code = "PLUS_PATH_COLLISION";
+      return callback(collisionError);
+    }
+
+    collectConvertibleFiles(blog, folderPath, onFiles);
+  });
+
+  function onFiles(err, files) {
     if (err) return callback(err);
 
     if (!files.length) {
@@ -126,7 +141,7 @@ module.exports = function buildMultiple(blog, info, callback) {
         callback(null, html, metadata, stat, combinedDependencies, combinedExtras);
       }
     );
-  });
+  }
 };
 
 function collectConvertibleFiles(blog, folderPath, callback) {

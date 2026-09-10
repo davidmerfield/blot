@@ -8,6 +8,7 @@ const clfdate = require("helper/clfdate");
 var Preview = require("./preview");
 var isHidden = require("build/prepare/isHidden");
 var isUnsafeFolderPostPreview = require("./isUnsafeFolderPostPreview");
+var folderPostSource = require("./folderPostSourceFolder");
 
 var NO_LONGER_VALID_ERRORS = [
   "WRONGTYPE",
@@ -107,26 +108,6 @@ module.exports = function (blogID, path, callback) {
     })();
   });
 };
-
-// If the stored entry is a folder post, return the "+" source folder it was
-// built from (read off the data-folder attribute in its generated HTML).
-function folderPostSource(entry) {
-  var html = entry && entry.html;
-
-  if (typeof html !== "string") return null;
-  if (html.indexOf('class="multi-file-post"') === -1) return null;
-
-  var match = html.match(/<section class="multi-file-post"[^>]*\sdata-folder="([^"]*)"/);
-
-  if (!match) return null;
-
-  return String(match[1])
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
-}
 
 function shouldDropDependent(err) {
   if (!err) return false;

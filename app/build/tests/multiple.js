@@ -273,4 +273,48 @@ describe("build multiple", function () {
       done();
     });
   });
+
+  it("does not treat a plain file whose name ends in + as a folder post", async function () {
+    fs.outputFileSync(
+      path.join(this.blogDirectory, "post.md+"),
+      "# Just A File"
+    );
+
+    var entry;
+    var err;
+    try {
+      entry = await this.buildEntry("/post.md+");
+    } catch (e) {
+      err = e;
+    }
+
+    // Routed to the single-file builder, never the multi builder, so the
+    // stripped path "/post.md" is left alone.
+    if (err) {
+      expect(err.code).not.toBe("ENOTDIR");
+    } else {
+      expect(entry.path).toBe("/post.md+");
+      expect(entry.html).not.toContain('class="multi-file-post"');
+    }
+  });
+
+  it("refuses to aggregate when the stripped path is a real sibling file", async function () {
+    fs.outputFileSync(
+      path.join(this.blogDirectory, "article.md"),
+      "# The Real Article"
+    );
+    fs.outputFileSync(
+      path.join(this.blogDirectory, "article.md+", "extra.md"),
+      "# Extra section"
+    );
+
+    var err;
+    try {
+      await this.buildEntry("/article.md+/extra.md");
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err && err.code).toBe("PLUS_PATH_COLLISION");
+  });
 });

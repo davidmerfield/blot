@@ -7,27 +7,8 @@ const async = require("async");
 // A folder post is synthesized at a "+"-stripped path with no file behind it
 // (the aggregate for "/Album +" is stored at "/album"). resolvePath would
 // never find a file there and drop it as a ghost on every sync/restart, so
-// these entries are checked against their source "+" folder instead. The
-// folder path is read off the data-folder attribute in the generated HTML.
-function folderPostFolder(entry) {
-  var html = entry && entry.html;
-
-  if (typeof html !== "string") return null;
-  if (html.indexOf('class="multi-file-post"') === -1) return null;
-
-  var match = html.match(
-    /<section class="multi-file-post"[^>]*\sdata-folder="([^"]*)"/
-  );
-
-  if (!match) return null;
-
-  return String(match[1])
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
-}
+// these entries are checked against their source "+" folder instead.
+const folderPostFolder = require("sync/update/folderPostSourceFolder");
 
 function resolvePath (blogID, path, callback) {
   var candidates = [];

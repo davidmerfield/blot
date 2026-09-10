@@ -15,6 +15,7 @@ var makeSlug = require("helper/makeSlug");
 var path = require("path");
 var IgnoredFiles = require("models/ignoredFiles");
 var isUnsafeFolderPostPreview = require("./isUnsafeFolderPostPreview");
+var folderPostSourceFolder = require("./folderPostSourceFolder");
 
 var basename = (path.posix || path).basename;
 var noop = () => {};
@@ -82,17 +83,41 @@ function buildAndSet(blog, path, multiInfo, callback) {
       });
     }
 
+    // A "+" folder whose plus-stripped path is a real sibling file (e.g.
+    // "/article.md+" beside "/article.md") is not aggregated - the file keeps
+    // its own entry.
+    if (err && err.code === "PLUS_PATH_COLLISION") return callback();
+
     // A "+" folder that no longer resolves to a readable directory - emptied
-    // (EMPTY), over the file cap (TOO_MANY_FILES), replaced by a file
-    // (ENOTDIR), or gone (ENOENT) - can't produce an aggregate. Drop the
-    // stale synthesized entry instead of leaving it published on a generic
-    // error.
+    // (EMPTY) or over the file cap (TOO_MANY_FILES) - can't produce an
+    // aggregate, so drop the stale synthesized entry. EMPTY and
+    // TOO_MANY_FILES only fire for a genuine directory.
     if (
       err &&
       multiInfo &&
-      ["EMPTY", "TOO_MANY_FILES", "ENOTDIR", "ENOENT"].indexOf(err.code) !== -1
+      ["EMPTY", "TOO_MANY_FILES"].indexOf(err.code) !== -1
     )
       return dropEntryAndPreview(blog.id, multiInfo.entryPath, callback);
+
+    // ENOTDIR / ENOENT can also come from a plain "+"-suffixed file whose
+    // stripped path is a valid sibling, so only drop the target when the
+    // stored entry there is actually this folder's aggregate.
+    if (
+      err &&
+      multiInfo &&
+      ["ENOTDIR", "ENOENT"].indexOf(err.code) !== -1
+    ) {
+      return Entry.get(blog.id, multiInfo.entryPath, function (existing) {
+        var sourceFolder = folderPostSourceFolder(existing);
+        if (
+          sourceFolder &&
+          pathNormalizer(sourceFolder) === pathNormalizer(multiInfo.folderPath)
+        ) {
+          return dropEntryAndPreview(blog.id, multiInfo.entryPath, callback);
+        }
+        return callback(err);
+      });
+    }
 
     if (err) return callback(err);
 

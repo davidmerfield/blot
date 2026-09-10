@@ -573,6 +573,50 @@ describe("sync multi-folder support", function () {
     });
   });
 
+  it("keeps a sibling file's entry when a + folder collides with its stripped path", function (done) {
+    var blogID = this.blog.id;
+    var root = this.blogDirectory;
+
+    syncFolder(blogID, function (err, folder, finish) {
+      if (err) return done.fail(err);
+
+      async.series(
+        [
+          function (next) {
+            fs.outputFileSync(
+              path.join(root, "article.md"),
+              "# The Real Article"
+            );
+            folder.update("/article.md", next);
+          },
+          function (next) {
+            fs.outputFileSync(
+              path.join(root, "article.md+/extra.md"),
+              "# Extra"
+            );
+            folder.update("/article.md+/extra.md", next);
+          },
+        ],
+        function (seriesErr) {
+          finish(seriesErr, function (finishErr) {
+            if (seriesErr || finishErr)
+              return done.fail(seriesErr || finishErr);
+
+            Entry.get(blogID, "/article.md", function (entry) {
+              expect(entry).toBeDefined();
+              expect(entry.deleted).toBeFalsy();
+              expect(entry.html.indexOf("The Real Article")).toBeGreaterThan(
+                -1
+              );
+              expect(entry.html.indexOf("multi-file-post")).toBe(-1);
+              done();
+            });
+          });
+        }
+      );
+    });
+  });
+
   it("drops the aggregate when a source exceeds the size limit and recovers after shrinking", function (done) {
     var limit = require("build/converters/post-source-size").MARKDOWN.bytes;
     var IgnoredFiles = require("models/ignoredFiles");
