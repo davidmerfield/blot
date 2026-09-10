@@ -12,9 +12,9 @@ var parseTemplate = require("../parseTemplate");
 //      parser, internal __sentinels) are dropped: they fetch nothing.
 //   2. User-set options on the retrieve object (includeDraft, filters).
 //
-// setView persists exactly what this returns, so scripts that recalculate
-// retrieve metadata in bulk compare a view's stored retrieve against a fresh
-// run of this to decide whether a rewrite is needed.
+// setView persists exactly what this returns, so a bulk recalculation can
+// compare a view's stored retrieve against a fresh run of this to decide
+// whether a rewrite is needed.
 
 var USER_RETRIEVE_KEYS = ["includeDraft", "filters"];
 
