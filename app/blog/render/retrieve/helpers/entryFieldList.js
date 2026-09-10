@@ -18,6 +18,10 @@
 // The narrowing only actually happens once config.redis.readEntriesFromHash
 // is on - until then models/entry/get ignores the field list and returns
 // whole entries, and projectEntryFields does the in-memory strip as before.
+//
+// An entry whose own retained content carries Mustache could still reference a
+// heavy field the narrowed read skipped; the retrieve modules guard that with
+// helpers/withEntryFields (refetch the whole list when that happens).
 
 var model = require("models/entry").model;
 var projectEntryFields = require("./projectEntryFields");

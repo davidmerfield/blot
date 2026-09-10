@@ -2,6 +2,7 @@ var Entries = require("models/entries");
 var arrayify = require("helper/arrayify");
 var projectEntryFields = require("./helpers/projectEntryFields");
 var entryFieldList = require("./helpers/entryFieldList");
+var withEntryFields = require("./helpers/withEntryFields");
 var moment = require("moment");
 require("moment-timezone");
 
@@ -53,9 +54,15 @@ module.exports = function (req, res, callback) {
     return callback(null, years);
   };
 
-  if (fields) {
-    Entries.getAll(req.blog.id, { fields: fields }, build);
-  } else {
-    Entries.getAll(req.blog.id, build);
-  }
+  if (!fields) return Entries.getAll(req.blog.id, build);
+
+  withEntryFields(
+    function (cb) {
+      Entries.getAll(req.blog.id, { fields: fields }, cb);
+    },
+    function (cb) {
+      Entries.getAll(req.blog.id, cb);
+    },
+    build
+  );
 };

@@ -1,6 +1,7 @@
 var Entries = require("models/entries");
 var projectEntryFields = require("./helpers/projectEntryFields");
 var entryFieldList = require("./helpers/entryFieldList");
+var withEntryFields = require("./helpers/withEntryFields");
 
 module.exports = function (req, res, callback) {
   var keys = ["allEntries", "all_entries"];
@@ -10,11 +11,15 @@ module.exports = function (req, res, callback) {
     return callback(null, projectEntryFields(allEntries, req.retrieve, keys));
   };
 
-  // Only pass the options object when there is actually something to narrow,
-  // so the plain two-arg call (and its test doubles) is unchanged otherwise.
-  if (fields) {
-    Entries.getAll(req.blog.id, { fields: fields }, done);
-  } else {
-    Entries.getAll(req.blog.id, done);
-  }
+  if (!fields) return Entries.getAll(req.blog.id, done);
+
+  withEntryFields(
+    function (cb) {
+      Entries.getAll(req.blog.id, { fields: fields }, cb);
+    },
+    function (cb) {
+      Entries.getAll(req.blog.id, cb);
+    },
+    done
+  );
 };

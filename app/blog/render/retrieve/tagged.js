@@ -2,6 +2,7 @@ const Entry = require("models/entry");
 const fetchTaggedEntries = require("./helpers/fetchTaggedEntries");
 const projectEntryFields = require("./helpers/projectEntryFields");
 const entryFieldList = require("./helpers/entryFieldList");
+const withEntryFields = require("./helpers/withEntryFields");
 const getTemplateSortOptions = require("blog/sortOptions");
 const { sortEntries } = getTemplateSortOptions;
 
@@ -72,11 +73,17 @@ module.exports = function (req, res, callback) {
         });
       };
 
-      if (fields) {
-        Entry.get(blogID, entryIDs, fields, withEntries);
-      } else {
-        Entry.get(blogID, entryIDs, withEntries);
-      }
+      if (!fields) return Entry.get(blogID, entryIDs, withEntries);
+
+      withEntryFields(
+        function (cb) {
+          Entry.get(blogID, entryIDs, fields, cb);
+        },
+        function (cb) {
+          Entry.get(blogID, entryIDs, cb);
+        },
+        withEntries
+      );
     }
   );
 };
