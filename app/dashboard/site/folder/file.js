@@ -10,6 +10,7 @@ const enabledConverters = require("build/converters/enabled");
 const Build = require("build");
 const fs = require("fs-extra");
 const localPath = require("helper/localPath");
+const postSourceSize = require("build/converters/post-source-size");
 
 require("moment-timezone");
 
@@ -97,6 +98,7 @@ module.exports = async function (blog, path) {
             ignored.underscoreName = true;
           } else if (ignoredReason && ignoredReason === 'TOO_LARGE') {
             ignored.tooLarge = true;
+            ignored.postSizeLimit = postSourceSize.limitForPath(path).label;
           } else  {
             ignored.syncing = true;
           }
