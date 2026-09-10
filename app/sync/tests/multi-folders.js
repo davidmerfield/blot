@@ -450,6 +450,59 @@ describe("sync multi-folder support", function () {
     });
   });
 
+  it("drops the aggregate through Fix when the + folder is gone", function (done) {
+    var Fix = require("sync/fix");
+    var blog = this.blog;
+    var blogID = blog.id;
+    var root = this.blogDirectory;
+
+    syncFolder(blogID, function (err, folder, finish) {
+      if (err) return done.fail(err);
+
+      async.series(
+        [
+          function (next) {
+            fs.outputFileSync(path.join(root, "essay+/one.md"), "# One");
+            folder.update("/essay+/one.md", next);
+          },
+          function (next) {
+            fs.outputFileSync(path.join(root, "essay+/two.md"), "# Two");
+            folder.update("/essay+/two.md", next);
+          },
+        ],
+        function (seriesErr) {
+          finish(seriesErr, function (finishErr) {
+            if (seriesErr || finishErr)
+              return done.fail(seriesErr || finishErr);
+
+            Entry.get(blogID, "/essay", function (initialEntry) {
+              expect(initialEntry).toBeDefined();
+              expect(initialEntry.deleted).toBeFalsy();
+
+              // Remove the folder without letting sync see it, then let Fix
+              // reconcile: the aggregate has no source folder left on disk, so
+              // it is a genuine ghost and must be dropped.
+              fs.removeSync(path.join(root, "essay+"));
+
+              Fix(blog, function (fixErr) {
+                if (fixErr) return done.fail(fixErr);
+
+                Entry.get(blogID, "/essay", function (afterEntry) {
+                  if (afterEntry) {
+                    expect(afterEntry.deleted).toBe(true);
+                  } else {
+                    expect(afterEntry).toBeFalsy();
+                  }
+                  done();
+                });
+              });
+            });
+          });
+        }
+      );
+    });
+  });
+
   it("drops the aggregate when a source exceeds the size limit and recovers after shrinking", function (done) {
     var limit = require("build/converters/post-source-size").MARKDOWN.bytes;
     var IgnoredFiles = require("models/ignoredFiles");
