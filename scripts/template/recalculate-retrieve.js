@@ -317,7 +317,10 @@ function eachSiteView(iterator, done) {
             async.eachOfSeries(
               views || {},
               function (view, name, nextView) {
-                iterator(templateID, view, nextView);
+                iterator(templateID, view, function (err) {
+                  viewBar.tick();
+                  nextView(err);
+                });
               },
               function (err) {
                 viewBar.pop();

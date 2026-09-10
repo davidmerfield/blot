@@ -64,14 +64,16 @@ function eraseLine() {
   if (!lineOnScreen) return;
   writeRaw("\r" + CLEAR_LINE);
   lineOnScreen = false;
-  pendingNewline = false;
 }
 
 function drawLine() {
   if (!frames.length) return;
-  if (pendingNewline) writeRaw("\n");
+  // Real output is sitting mid-line (a write with no trailing newline).
+  // Don't pin the status line over it - wait for the next newline-
+  // terminated write, so a logical line emitted as write("foo");
+  // write("bar\n") stays "foobar" rather than being split in two.
+  if (pendingNewline) return;
   writeRaw(format());
-  pendingNewline = false;
   lineOnScreen = true;
 }
 
@@ -90,7 +92,7 @@ function makePatchedWrite(stream, real) {
     eraseLine();
     var ret = real.apply(stream, arguments);
     var str = typeof chunk === "string" ? chunk : String(chunk);
-    pendingNewline = str.length > 0 && str.charAt(str.length - 1) !== "\n";
+    if (str.length) pendingNewline = str.charAt(str.length - 1) !== "\n";
     drawLine();
     return ret;
   };
@@ -136,6 +138,9 @@ function push(label, total) {
   var frame = { label: label, index: 0, total: total == null ? null : total };
   frames.push(frame);
   install();
+  // Show the 0/N state right away, so a slow or hanging first item still
+  // renders an indicator before it calls tick().
+  onChange(false);
 
   var handle = {
     tick: function (n) {
@@ -155,19 +160,30 @@ function push(label, total) {
     },
     pop: function () {
       var i = frames.indexOf(frame);
-      if (i !== -1) frames.splice(i, 1);
-      // Time-throttled in fallback mode: a long run pops a frame per view,
-      // which must not mean a log line per view.
-      onChange(false);
-      if (!frames.length) {
-        if (sticky) {
-          if (redrawTimer) {
-            clearTimeout(redrawTimer);
-            redrawTimer = null;
-          }
-          teardown();
+      if (i === -1) return handle;
+
+      // When the outermost frame finishes, emit one final line so a
+      // completed run's last record reads N/N - even when the whole run
+      // fit inside the fallback throttle window. Inner frames stay
+      // throttled: a long run pops one frame per view.
+      var outermost = frames.length === 1;
+      var finalLine = outermost ? format() : null;
+
+      frames.splice(i, 1);
+
+      if (outermost) {
+        if (fallback && finalLine) realLog("progress: " + finalLine);
+        if (sticky && redrawTimer) {
+          clearTimeout(redrawTimer);
+          redrawTimer = null;
         }
+        teardown();
+      } else {
+        // Time-throttled in fallback mode: a long run pops a frame per
+        // view, which must not mean a log line per view.
+        onChange(false);
       }
+
       return handle;
     },
   };
