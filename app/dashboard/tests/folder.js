@@ -291,6 +291,24 @@ describe("folder", function () {
       );
       expect(rowNames($)).toEqual(["p05.txt", "p04.txt"]);
     });
+
+    it("orders names naturally across a page boundary", async function () {
+      // Unpadded numbers: a plain lexicographic sort would put "file10"
+      // before "file2" and split the pages there.
+      for (const path of ["file1", "file2", "file10", "file20"]) {
+        await this.write({ path, content: path });
+      }
+
+      const page1 = await this.parse(
+        `/sites/${this.blog.handle}?pageSize=2&sort=name`
+      );
+      const page2 = await this.parse(
+        `/sites/${this.blog.handle}?pageSize=2&sort=name&page=2`
+      );
+
+      expect(rowNames(page1)).toEqual(["file1", "file2"]);
+      expect(rowNames(page2)).toEqual(["file10", "file20"]);
+    });
   });
 
   describe("server-side sorting", function () {

@@ -25,7 +25,7 @@
     <div class="folder-top"></div>
     {{/root}}
 
-    <div class="folder-box {{#root}}root{{/root}} {{#directory}}directory{{/directory}}" style="position:relative;{{^root}}min-height:calc(100vh - 11rem){{/root}}">
+    <div class="folder-box {{#root}}root{{/root}} {{#directory}}directory{{/directory}}" style="position:relative;">
     <div class="folder-drop-target" aria-hidden="true" style="display:none;position:absolute;inset:0;z-index:10;align-items:center;justify-content:center;background:rgba(0, 112, 232, 0.08);border:2px dashed rgba(0, 112, 232, 0.6);border-radius:6px;color:var(--text-color);font-weight:600;pointer-events:none;">Drop files to upload</div>
     {{#directory}}
     <div class="directory-scroll">
@@ -101,7 +101,7 @@
 
         <button type="button" class="directory-expand">View all {{pagination.total}} files</button>
 
-        <script type="application/json" id="folder-pagination-data">{ "page": {{pagination.page}}, "pageSize": {{pagination.pageSize}}, "sort": "{{pagination.sort}}", "order": "{{pagination.order}}", "total": {{pagination.total}}, "hasNext": {{#pagination.hasNext}}true{{/pagination.hasNext}}{{^pagination.hasNext}}false{{/pagination.hasNext}} }</script>
+        <script type="application/json" id="folder-pagination-data">{{#pagination}}{ "page": {{page}}, "pageSize": {{pageSize}}, "sort": "{{sort}}", "order": "{{order}}", "total": {{total}}, "hasNext": {{#hasNext}}true{{/hasNext}}{{^hasNext}}false{{/hasNext}} }{{/pagination}}{{^pagination}}{}{{/pagination}}</script>
 
         {{#pagination.multiplePages}}
         <nav class="directory-pagination" aria-label="Folder pages">
@@ -679,9 +679,12 @@
           function maybeLoadMore() {
             if (!listState.expanded || listState.loading || !listState.hasNext) return;
             if (!nearViewportBottom()) return;
+            var pageBefore = listState.page;
             loadPage(listState.page + 1, true).then(function () {
-              // Keep filling until the viewport is covered or the folder ends.
-              maybeLoadMore();
+              // Keep filling until the viewport is covered or the folder
+              // ends — but stop if the server didn't advance us a page (a
+              // failed fetch) so this can't spin into a tight loop.
+              if (listState.page !== pageBefore) maybeLoadMore();
             });
           }
 

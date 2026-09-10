@@ -305,10 +305,37 @@
 /* Collapsed: clip the list to a preview height with a fade over the last
    rows and reveal the "View all files" button. JS adds .is-clamped only
    when there is more than one page, so without JS the full first page and
-   the Previous/Next nav below remain usable. */
+   the Previous/Next nav below remain usable.
+
+   The preview height is viewport-relative and leaves room for the page
+   chrome above, the sticky table header, the "View all files" button and
+   the sync-status line below it, so "View all files" always sits just
+   under the visible rows without pushing anything off screen. */
 .folder-box.is-clamped .directory-scroll {
-  max-height: 60vh;
   overflow: hidden;
+}
+
+/* Root listing: embedded in the site dashboard below other cards, so the
+   page still scrolls. Keep the preview short enough that "View all files"
+   stays above the fold on a laptop viewport. */
+.folder-box.root.is-clamped .directory-scroll {
+  max-height: max(220px, calc(100vh - 24rem));
+}
+
+/* Subfolder listing: its own full-height page with a sync-status line
+   pinned below. Drop the tall min-height so the button rests directly on
+   top of that line instead of floating in the middle of the viewport, and
+   size the preview so the list + button + status line clear the fold. */
+.folder-box:not(.root).directory {
+  min-height: calc(100vh - 11rem);
+}
+
+.folder-box:not(.root).directory.is-clamped {
+  min-height: 0;
+}
+
+.folder-box:not(.root).directory.is-clamped .directory-scroll {
+  max-height: max(220px, calc(100vh - 19rem));
 }
 
 .folder-box.is-expanded .directory-scroll {

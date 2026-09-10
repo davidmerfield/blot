@@ -1,5 +1,6 @@
 const fs = require("fs-extra");
 const path = require("path");
+const alphanum = require("helper/alphanum");
 const localPath = require("helper/localPath");
 const Stat = require("./stat");
 const client = require("models/client");
@@ -42,17 +43,16 @@ function resolveOrder(order) {
   return order === "desc" ? "desc" : "asc";
 }
 
-// Order names with the same comparator the directory table in
-// app/views/dashboard/folder/directory.html applies on load: the name column
-// is compared as name.toLocaleLowerCase().trim(), ascending. Paginating with
-// a different order would put a name on a different page than where the
-// rendered page then sorts it, making the listing jump between pages.
+// The server is now the sole authority on row order (directory.html no
+// longer re-sorts on load), so order names here the way a file browser
+// does: natural, case-insensitive alphanumeric — "file2" before "file10",
+// "1 copy 2.txt" before "1 copy 10.txt". The same comparator decides page
+// boundaries and the tie-break for date / size sorts, so a name never lands
+// on a different page than the one that then renders it.
 function byDisplayName(a, b) {
-  const x = String(a).toLocaleLowerCase().trim();
-  const y = String(b).toLocaleLowerCase().trim();
-  if (x < y) return -1;
-  if (x > y) return 1;
-  return 0;
+  return alphanum.compare(String(a).trim(), String(b).trim(), {
+    insensitive: true,
+  });
 }
 
 // Small promise pool: run fn over items, at most `limit` in flight.
