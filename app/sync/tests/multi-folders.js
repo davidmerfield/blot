@@ -573,6 +573,42 @@ describe("sync multi-folder support", function () {
     });
   });
 
+  it("keeps a sibling post when a plain +-suffixed file shares its stripped path", function (done) {
+    var blogID = this.blog.id;
+    var root = this.blogDirectory;
+
+    syncFolder(blogID, function (err, folder, finish) {
+      if (err) return done.fail(err);
+
+      async.series(
+        [
+          function (next) {
+            fs.outputFileSync(path.join(root, "post.md"), "# The Real Post");
+            folder.update("/post.md", next);
+          },
+          function (next) {
+            // A file that just happens to end in "+", never a folder.
+            fs.outputFileSync(path.join(root, "post.md+"), "leftover");
+            folder.update("/post.md+", next);
+          },
+        ],
+        function (seriesErr) {
+          finish(seriesErr, function (finishErr) {
+            if (seriesErr || finishErr)
+              return done.fail(seriesErr || finishErr);
+
+            Entry.get(blogID, "/post.md", function (entry) {
+              expect(entry).toBeDefined();
+              expect(entry.deleted).toBeFalsy();
+              expect(entry.html.indexOf("The Real Post")).toBeGreaterThan(-1);
+              done();
+            });
+          });
+        }
+      );
+    });
+  });
+
   it("keeps a sibling file's entry when a + folder collides with its stripped path", function (done) {
     var blogID = this.blog.id;
     var root = this.blogDirectory;

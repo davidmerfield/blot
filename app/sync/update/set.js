@@ -62,8 +62,30 @@ function dropEntryAndPreview(blogID, targetPath, callback) {
 
 function buildAndSet(blog, path, multiInfo, callback) {
   build(blog, path, function (err, entry) {
+    // When a "+" folder can no longer build an aggregate (its files are gone,
+    // it was replaced by a file, ...), the previously published entry at the
+    // plus-stripped path is stale and should be dropped - but only when that
+    // entry really is this folder's aggregate. A plain "/post.md+" file must
+    // not unpublish an unrelated "/post.md" sibling.
+    function dropStaleAggregate(finalErr) {
+      if (!multiInfo) return callback(finalErr);
+      Entry.get(blog.id, multiInfo.entryPath, function (existing) {
+        var sourceFolder = folderPostSourceFolder(existing);
+        if (
+          sourceFolder &&
+          pathNormalizer(sourceFolder) === pathNormalizer(multiInfo.folderPath)
+        ) {
+          return dropEntryAndPreview(blog.id, multiInfo.entryPath, callback);
+        }
+        return callback(finalErr);
+      });
+    }
+
     if (err && err.code === "WRONGTYPE")
-      return Ignore(blog.id, path, WRONG_TYPE, callback);
+      return Ignore(blog.id, path, WRONG_TYPE, function (ignoreErr) {
+        if (ignoreErr) return callback(ignoreErr);
+        dropStaleAggregate();
+      });
 
     if (err && err.code === TOO_LARGE) {
       // If this file was previously published as a draft, Preview.write
@@ -74,11 +96,9 @@ function buildAndSet(blog, path, multiInfo, callback) {
         if (!draftErr && is_draft) Preview.remove(blog.id, path);
         Ignore(blog.id, path, TOO_LARGE, function (ignoreErr) {
           // An oversized source inside a "+" folder aborts the whole
-          // aggregate build. Drop the synthesized entry too (as EMPTY and
-          // TOO_MANY_FILES do) so a stale folder post is not left published
-          // while every rebuild keeps failing on the same file.
-          if (ignoreErr || !multiInfo) return callback(ignoreErr);
-          dropEntryAndPreview(blog.id, multiInfo.entryPath, callback);
+          // aggregate build, so drop the now-stale synthesized entry too.
+          if (ignoreErr) return callback(ignoreErr);
+          dropStaleAggregate();
         });
       });
     }
@@ -88,36 +108,16 @@ function buildAndSet(blog, path, multiInfo, callback) {
     // its own entry.
     if (err && err.code === "PLUS_PATH_COLLISION") return callback();
 
-    // A "+" folder that no longer resolves to a readable directory - emptied
-    // (EMPTY) or over the file cap (TOO_MANY_FILES) - can't produce an
-    // aggregate, so drop the stale synthesized entry. EMPTY and
-    // TOO_MANY_FILES only fire for a genuine directory.
-    if (
-      err &&
-      multiInfo &&
-      ["EMPTY", "TOO_MANY_FILES"].indexOf(err.code) !== -1
-    )
-      return dropEntryAndPreview(blog.id, multiInfo.entryPath, callback);
+    // EMPTY / TOO_MANY_FILES only fire for a genuine directory, so an empty
+    // folder is just "nothing to publish" - not an error to propagate.
+    if (err && ["EMPTY", "TOO_MANY_FILES"].indexOf(err.code) !== -1)
+      return dropStaleAggregate();
 
     // ENOTDIR / ENOENT can also come from a plain "+"-suffixed file whose
-    // stripped path is a valid sibling, so only drop the target when the
-    // stored entry there is actually this folder's aggregate.
-    if (
-      err &&
-      multiInfo &&
-      ["ENOTDIR", "ENOENT"].indexOf(err.code) !== -1
-    ) {
-      return Entry.get(blog.id, multiInfo.entryPath, function (existing) {
-        var sourceFolder = folderPostSourceFolder(existing);
-        if (
-          sourceFolder &&
-          pathNormalizer(sourceFolder) === pathNormalizer(multiInfo.folderPath)
-        ) {
-          return dropEntryAndPreview(blog.id, multiInfo.entryPath, callback);
-        }
-        return callback(err);
-      });
-    }
+    // stripped path is a valid sibling; keep the error unless we cleaned up a
+    // real aggregate.
+    if (err && ["ENOTDIR", "ENOENT"].indexOf(err.code) !== -1)
+      return dropStaleAggregate(err);
 
     if (err) return callback(err);
 
