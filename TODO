@@ -9,26 +9,34 @@ generated config passes `openresty -t`, the container boots and serves
 /health, and the cacher + e2e tests run in CI. It is not wired to
 production. Remaining before it can replace the bare-metal `config/openresty`:
 
-1. Certificate issuance for custom domains. The image ships a self-signed
-   placeholder so OpenResty can start; entrypoint.sh no longer calls
-   acme-nginx. Real on-demand issuance needs lua-resty-auto-ssl wired to
-   Redis + a working sockproc + the dehydrated hook scripts.
-2. Zero-downtime deployment. Replacing the container drops the :80/:443
-   listening socket, so `openresty -s reload` no longer covers image
-   changes. Needs a blue/green mechanism - SO_REUSEPORT on `--network host`
-   with an explicit drain, or iptables/nftables port-shifting. Config-only
-   changes can still reload against a bind-mounted config dir.
+DONE (second increment):
+1. Certificate issuance for custom domains. lua-resty-auto-ssl is wired to
+   Redis with an ACME_CA that CI points at a Pebble test server; the
+   `cert-issuance` job issues a real cert through the proxy and checks it
+   persists across a container recreate. entrypoint.sh can trust a test CA
+   via ACME_CA_CERT.
+4. Persistent volumes. proxy/e2e/docker-compose.yml mounts named volumes for
+   /var/cache/openresty and /etc/resty-auto-ssl; entrypoint.sh chowns them on
+   boot; README documents the `docker run -v` form.
+5. Real-app e2e now seeds a blog (proxy/e2e/seed-blog.js) and asserts it
+   renders on its own vhost through the proxy with cache MISS->HIT.
+   Zero-downtime handover: `blue-green.sh` + SO_REUSEPORT + SIGTERM drain in
+   entrypoint.sh, exercised by the `zero-downtime` job. `reload-config.sh`
+   covers config-only changes.
+
+STILL TO DO:
+2. Wire the deploy scripts (proxy/deploy/) to the real deploy pipeline
+   (currently mechanism + CI smoke test only, not production).
 3. Config de-duplication. `proxy/config/` is a hand-fork of
-   `config/openresty/conf/` and omits the rate-limit and bot-restriction
-   includes (restrict-bot-uas.conf, reverse-proxy-limit-*.conf, ...). The
-   two copies should become one source.
-4. Persistent volumes for the proxy cache (/var/cache/openresty) and
-   lua-resty-auto-ssl storage (/etc/resty-auto-ssl) so a redeploy doesn't
-   cold-start the cache or re-request certificates.
-5. Harden the `integration` workflow's real-app e2e (proxy/e2e/run.js): it
-   was first exercised in CI, not locally. Extend it to serve an actual
-   blog (seed a blog + template) rather than only the marketing site and
-   dashboard.
+   `config/openresty/conf/` and OMITS the rate-limit and bot-restriction
+   includes (restrict-bot-uas.conf, reverse-proxy-limit-*.conf,
+   reverse-proxy-preview.conf, reverse-proxy-base.conf,
+   reverse-proxy-huge.conf) - security-relevant, must land before cutover.
+   The two copies should become one source.
+6. Drop or provision the `stats.` vhost's netdata passwords file (not in the
+   image). Redis auth/TLS. Decide build-arg vs runtime-env for NODE_SERVER_IP
+   / REDIS_IP / netdata creds. Request-ban layer (fail2ban has no container
+   equivalent yet).
 
 ---
 
