@@ -34,13 +34,19 @@ RUN curl -fsSL -o /vendor/lualib/resty/auto-ssl/vendor/shell.lua \
     echo "1db9590b05828572a59a67f4ec83210b86b233b6d13c7e3a1e9713d6e19d6974  /vendor/lualib/resty/auto-ssl/vendor/shell.lua" | sha256sum -c -
 
 # `dehydrated` - the ACME client lua-resty-auto-ssl shells out to during cert
-# issuance. Its Makefile curls this at a pinned commit (DEHYDRATED_VERSION in
-# v0.13.1); the .src.rock does not ship it, so without this the hook fails
-# with "can't execute .../dehydrated: No such file or directory".
-ARG DEHYDRATED_COMMIT=05eda91a2fbaed1e13c733230238fc68475c535e
+# issuance. The .src.rock does not ship it (the Makefile curls it), so without
+# this the hook fails with "can't execute .../dehydrated: No such file".
+#
+# lua-resty-auto-ssl v0.13.1 pins dehydrated 0.6.5 (2019), whose JWS `kid`
+# handling a current ACME server rejects ("Key ID (kid) in JWS header missing
+# expected URL prefix"). Use maintained 0.7.2 instead - the hook contract
+# (bin/resty-auto-ssl/letsencrypt_hooks) is unchanged and it tolerates any
+# extra hooks 0.7.x adds. The bare-metal config/openresty still uses the
+# 0.6.5 pin; unifying that is tracked in TODO.
+ARG DEHYDRATED_TAG=v0.7.2
 RUN curl -fsSL -o /vendor/resty-auto-ssl/dehydrated \
-      "https://raw.githubusercontent.com/lukas2511/dehydrated/${DEHYDRATED_COMMIT}/dehydrated" && \
-    echo "a97b0d64d5ecc21549a58b714bb9017479b38b2e40ff51c04f1638e71291d138  /vendor/resty-auto-ssl/dehydrated" | sha256sum -c - && \
+      "https://raw.githubusercontent.com/dehydrated-io/dehydrated/${DEHYDRATED_TAG}/dehydrated" && \
+    echo "6f45ea1e9ad0d781ecc05ea7171036c4d3e0e10611f2080df6120458323c8d5b  /vendor/resty-auto-ssl/dehydrated" | sha256sum -c - && \
     chmod 0755 /vendor/resty-auto-ssl/dehydrated
 
 # sockproc - used by lua-resty-auto-ssl to shell out during cert issuance.
