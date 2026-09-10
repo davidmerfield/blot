@@ -398,8 +398,8 @@ async function buildMultiEntryData({
     })
   );
 
-  // The list reuses the folder-post viewer's Name / Date modified / Size table,
-  // so stat each file that still exists.
+  // The "Post files:" row shows each source file's relative path and size, so
+  // stat each file that still exists.
   const stats = await Promise.all(
     sourcePaths.map((sourcePath, index) =>
       existence[index]
@@ -421,10 +421,7 @@ async function buildMultiEntryData({
       current: sourcePath === currentPath,
       exists: existence[index],
       hidden: index >= VISIBLE_SOURCE_LIMIT,
-      modified: stats[index] ? stats[index].modified : null,
       size: stats[index] ? stats[index].size : null,
-      bytes: stats[index] ? stats[index].bytes : 0,
-      unix: stats[index] ? stats[index].unix : 0,
     };
   });
 
