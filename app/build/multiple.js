@@ -111,7 +111,7 @@ module.exports = function buildMultiple(blog, info, callback) {
           _sourcePaths: files,
         });
 
-        var html = renderHtmlSections(results, folderPath);
+        var html = renderHtmlSections(results, folderPath, combinedMetadata);
 
         debug(
           "Blog:",
@@ -203,7 +203,7 @@ function createTooManyFilesError(folderPath) {
   return err;
 }
 
-function renderHtmlSections(results, folderPath) {
+function renderHtmlSections(results, folderPath, metadata) {
   var sections = results.map(function (result, index) {
     var attributes = [
       'class="multi-file-entry"',
@@ -231,7 +231,7 @@ function renderHtmlSections(results, folderPath) {
   });
 
   var combinedHtml = sections.join("");
-  var headerHtml = deriveHeading(folderPath, combinedHtml);
+  var headerHtml = deriveHeading(folderPath, combinedHtml, metadataTitle(metadata));
 
   return (
     '<section class="multi-file-post" data-folder="' +
@@ -243,10 +243,12 @@ function renderHtmlSections(results, folderPath) {
   );
 }
 
-function deriveHeading(folderPath, combinedHtml) {
+function deriveHeading(folderPath, combinedHtml, explicitTitle) {
   if (/<h1(\s|>)/i.test(combinedHtml)) return "";
 
-  var title = deriveTitleFromFolder(folderPath);
+  // Prefer an explicit `Title:` from the merged metadata so the injected
+  // heading matches entry.title; fall back to the folder name.
+  var title = explicitTitle || deriveTitleFromFolder(folderPath);
 
   if (!title) return "";
 
@@ -255,6 +257,20 @@ function deriveHeading(folderPath, combinedHtml) {
     escapeHtml(title) +
     "</h1>"
   );
+}
+
+function metadataTitle(metadata) {
+  if (!metadata) return "";
+
+  var key = Object.keys(metadata).filter(function (candidate) {
+    return String(candidate).toLowerCase() === "title";
+  })[0];
+
+  if (!key) return "";
+
+  var value = metadata[key];
+
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function deriveTitleFromFolder(folderPath) {
@@ -347,7 +363,12 @@ function mergeMetadata(target, source) {
       return;
     }
 
-    if (result[key] === undefined || result[key] === null || result[key] === "") {
+    // Documented behavior: for a repeated scalar key (Title, Link, Draft, …)
+    // later source files override earlier ones. An absent/empty incoming
+    // value does not clobber a value an earlier file already set.
+    if (incoming !== undefined && incoming !== null && incoming !== "") {
+      result[key] = cloneValue(incoming);
+    } else if (result[key] === undefined) {
       result[key] = cloneValue(incoming);
     }
   });

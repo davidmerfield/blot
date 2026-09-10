@@ -51,4 +51,24 @@ describe("title parser", function () {
 
     expect(permalink).toEqual("/[design]/bar");
   });
+
+  it("keeps extensionless path/name tokens intact for folder posts", function () {
+    // A folder post ("/album+") is published at the extensionless path
+    // "/album"; lastIndexOf(".") === -1 must not turn slice(0, -1) into
+    // "/albu".
+    const entry = {
+      ...DEFAULT_ENTRY,
+      path: "/album",
+      name: "album",
+    };
+    const zone = this.blog.timeZone;
+
+    expect(Permalink(zone, "{{path-without-extension}}", entry)).toEqual(
+      "/album"
+    );
+    expect(Permalink(zone, "{{name-without-extension}}", entry)).toEqual(
+      "/album"
+    );
+    expect(Permalink(zone, "{{stem}}", entry)).toEqual("/album");
+  });
 });

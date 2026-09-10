@@ -29,7 +29,13 @@ function findMultiFolder(path) {
   var segments = normalized.split("/").filter(Boolean);
   var multiIndex = -1;
 
-  for (var i = segments.length - 1; i >= 0; i--) {
+  // Use the OUTERMOST "+" segment as the folder boundary. Stripping "+" from
+  // every ancestor would let distinct trees collide - "/foo+/bar+" and
+  // "/foo/bar+" would both resolve to "/foo/bar" and overwrite each other's
+  // stored entry. A "+" folder nested inside another "+" folder is not an
+  // independent post; its files are already skipped while walking the parent
+  // (see collectConvertibleFiles in multiple.js).
+  for (var i = 0; i < segments.length; i++) {
     if (segments[i].slice(-1) === "+") {
       multiIndex = i;
       break;

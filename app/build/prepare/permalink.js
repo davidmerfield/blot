@@ -109,20 +109,20 @@ module.exports = function (timeZone, format, entry) {
 
     // this needs a better name but make sure to update any
     // existing custom formats for folks...
-    view["path-without-extension"] = entry.path.slice(
-      0,
-      entry.path.lastIndexOf(".")
-    );
+    // A folder post has an extensionless path/name (e.g. "/album"), so guard
+    // against lastIndexOf(".") === -1 turning slice(0, -1) into "/albu".
+    var pathDot = entry.path.lastIndexOf(".");
+    view["path-without-extension"] =
+      pathDot === -1 ? entry.path : entry.path.slice(0, pathDot);
 
     // stem should be path without extension
     view.stem = makeSlug(view["path-without-extension"]);
 
     // this needs a better name but make sure to update any
     // existing custom formats for folks...
-    view["name-without-extension"] = view.name.slice(
-      0,
-      view.name.lastIndexOf(".")
-    );
+    var nameDot = view.name.lastIndexOf(".");
+    view["name-without-extension"] =
+      nameDot === -1 ? view.name : view.name.slice(0, nameDot);
 
     // this needs a better name but make sure to update any
     // existing custom formats for folks...

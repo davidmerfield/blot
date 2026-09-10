@@ -163,6 +163,61 @@ describe("build multiple", function () {
     );
   });
 
+  it("lets later source files override a repeated scalar metadata key", async function () {
+    var root = path.join(this.blogDirectory, "drafty+");
+
+    fs.outputFileSync(path.join(root, "01.md"), "Draft: no\n\n# One");
+    fs.outputFileSync(path.join(root, "02.md"), "Draft: yes\n\n# Two");
+
+    var entry = await this.buildEntry("/drafty+");
+
+    expect(entry.draft).toBe(true);
+  });
+
+  it("lets a later source file clear an earlier scalar value", async function () {
+    var root = path.join(this.blogDirectory, "undrafty+");
+
+    fs.outputFileSync(path.join(root, "01.md"), "Draft: yes\n\n# One");
+    fs.outputFileSync(path.join(root, "02.md"), "Draft: no\n\n# Two");
+
+    var entry = await this.buildEntry("/undrafty+");
+
+    expect(entry.draft).toBe(false);
+  });
+
+  it("uses an explicit Title from metadata for the injected heading", async function () {
+    var root = path.join(this.blogDirectory, "trip-photos+");
+
+    fs.outputFileSync(
+      path.join(root, "notes.md"),
+      "Title: A Weekend Away\n\nNo heading in the body."
+    );
+
+    var entry = await this.buildEntry("/trip-photos+");
+
+    expect(entry.html).toContain(
+      '<h1 class="multi-file-title">A Weekend Away</h1>'
+    );
+    expect(entry.html).not.toContain("Trip Photos</h1>");
+  });
+
+  it("resolves nested plus folders to the outermost + folder", function () {
+    expect(build.findMultiFolder("/outer+/inner+/one.md")).toEqual({
+      folderPath: "/outer+",
+      entryPath: "/outer",
+      triggerPath: "/outer+/inner+/one.md",
+    });
+  });
+
+  it("does not collide trees that differ only by an ancestor +", function () {
+    var a = build.findMultiFolder("/foo+/bar+/x.md");
+    var b = build.findMultiFolder("/foo/bar+/x.md");
+
+    expect(a.entryPath).toEqual("/foo");
+    expect(b.entryPath).toEqual("/foo/bar");
+    expect(a.entryPath).not.toEqual(b.entryPath);
+  });
+
   it("returns an EMPTY error when no convertible files are present", function (done) {
     var root = path.join(this.blogDirectory, "void+");
     fs.ensureDirSync(root);

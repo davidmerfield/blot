@@ -399,4 +399,133 @@ describe("sync multi-folder support", function () {
       );
     });
   });
+
+  it("drops the aggregate when a source exceeds the size limit and recovers after shrinking", function (done) {
+    var limit = require("build/converters/post-source-size").MARKDOWN.bytes;
+    var IgnoredFiles = require("models/ignoredFiles");
+    var blogID = this.blog.id;
+    var root = this.blogDirectory;
+
+    syncFolder(blogID, function (err, folder, finish) {
+      if (err) return done.fail(err);
+
+      async.series(
+        [
+          function (next) {
+            fs.outputFileSync(path.join(root, "album+/01.md"), "# One");
+            folder.update("/album+/01.md", next);
+          },
+          function (next) {
+            fs.outputFileSync(path.join(root, "album+/02.md"), "# Two");
+            folder.update("/album+/02.md", next);
+          },
+          function (next) {
+            // Grow one source past its converter limit.
+            fs.outputFileSync(
+              path.join(root, "album+/02.md"),
+              Buffer.alloc(limit + 1, 32)
+            );
+            folder.update("/album+/02.md", next);
+          },
+        ],
+        function (seriesErr) {
+          finish(seriesErr, function (finishErr) {
+            if (seriesErr || finishErr)
+              return done.fail(seriesErr || finishErr);
+
+            Entry.get(blogID, "/album", function (aggregate) {
+              // The stale folder post is dropped rather than left published.
+              expect(aggregate && aggregate.deleted).toBe(true);
+
+              IgnoredFiles.getStatus(blogID, "/album+/02.md", function (
+                err,
+                reason
+              ) {
+                if (err) return done.fail(err);
+                expect(reason).toBe("TOO_LARGE");
+
+                syncFolder(blogID, function (err2, folder2, finish2) {
+                  if (err2) return done.fail(err2);
+
+                  fs.outputFileSync(
+                    path.join(root, "album+/02.md"),
+                    "# Two again"
+                  );
+                  folder2.update("/album+/02.md", function (updateErr) {
+                    finish2(updateErr, function (finishErr2) {
+                      if (updateErr || finishErr2)
+                        return done.fail(updateErr || finishErr2);
+
+                      Entry.get(blogID, "/album", function (recovered) {
+                        expect(recovered).toBeTruthy();
+                        expect(recovered.deleted).toBeFalsy();
+                        expect(recovered.html).toContain("Two again");
+
+                        IgnoredFiles.getStatus(
+                          blogID,
+                          "/album+/02.md",
+                          function (err3, reason3) {
+                            if (err3) return done.fail(err3);
+                            // The recovered source is no longer hidden on
+                            // the dashboard.
+                            expect(reason3).toBeFalsy();
+                            done();
+                          }
+                        );
+                      });
+                    });
+                  });
+                });
+              });
+            });
+          });
+        }
+      );
+    });
+  });
+
+  it("does not overwrite a sibling file when a draft folder post writes its preview", function (done) {
+    var blogID = this.blog.id;
+    var root = this.blogDirectory;
+
+    syncFolder(blogID, function (err, folder, finish) {
+      if (err) return done.fail(err);
+
+      async.series(
+        [
+          function (next) {
+            // A real source file at the folder post's published path + .html
+            fs.outputFileSync(
+              path.join(root, "album.html"),
+              "<p>real sibling</p>"
+            );
+            folder.update("/album.html", next);
+          },
+          function (next) {
+            fs.outputFileSync(
+              path.join(root, "album+/01.md"),
+              "Draft: yes\n\n# Draft album"
+            );
+            folder.update("/album+/01.md", next);
+          },
+        ],
+        function (seriesErr) {
+          finish(seriesErr, function (finishErr) {
+            if (seriesErr || finishErr)
+              return done.fail(seriesErr || finishErr);
+
+            Entry.get(blogID, "/album", function (aggregate) {
+              expect(aggregate && aggregate.draft).toBe(true);
+              // previewPath("/album") is "/album.html"; the sibling on disk
+              // must be left untouched.
+              expect(
+                fs.readFileSync(path.join(root, "album.html"), "utf-8")
+              ).toEqual("<p>real sibling</p>");
+              done();
+            });
+          });
+        }
+      );
+    });
+  });
 });

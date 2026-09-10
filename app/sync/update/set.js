@@ -18,6 +18,19 @@ var IgnoredFiles = require("models/ignoredFiles");
 var basename = (path.posix || path).basename;
 var noop = () => {};
 
+// A folder post is synthesized at an extensionless path with no file behind
+// it. Outside /drafts/, previewPath("/album") is the bare "/album.html",
+// which could be a real sibling source file, so a draft folder post there
+// must not write or remove a filesystem preview. Inside /drafts/ the preview
+// gets the safe ".preview.html" appendix, so the normal flow is fine.
+function isUnsafeFolderPostPreview(targetPath, entryHtml) {
+  return (
+    typeof entryHtml === "string" &&
+    entryHtml.indexOf('class="multi-file-post"') !== -1 &&
+    pathNormalizer(targetPath).toLowerCase().indexOf("/drafts/") === -1
+  );
+}
+
 function isPublic(path) {
   const normalizedPath = pathNormalizer(path).toLowerCase();
   return (
@@ -44,10 +57,12 @@ function dropEntryAndPreview(blogID, targetPath, callback) {
   Entry.get(blogID, targetPath, function (entry) {
     if (!entry) return callback();
 
+    var skipPreview = isUnsafeFolderPostPreview(targetPath, entry.html);
+
     Entry.drop(blogID, targetPath, function (err) {
       if (err) return callback(err);
 
-      if (entry.draft && !isHidden(targetPath)) {
+      if (entry.draft && !isHidden(targetPath) && !skipPreview) {
         Preview.remove(blogID, targetPath, callback);
       } else {
         callback();
@@ -68,7 +83,14 @@ function buildAndSet(blog, path, multiInfo, callback) {
       // orphaned preview behind now that the source can't become a post.
       return isDraft(blog.id, path, function (draftErr, is_draft) {
         if (!draftErr && is_draft) Preview.remove(blog.id, path);
-        Ignore(blog.id, path, TOO_LARGE, callback);
+        Ignore(blog.id, path, TOO_LARGE, function (ignoreErr) {
+          // An oversized source inside a "+" folder aborts the whole
+          // aggregate build. Drop the synthesized entry too (as EMPTY and
+          // TOO_MANY_FILES do) so a stale folder post is not left published
+          // while every rebuild keeps failing on the same file.
+          if (ignoreErr || !multiInfo) return callback(ignoreErr);
+          dropEntryAndPreview(blog.id, multiInfo.entryPath, callback);
+        });
       });
     }
 
@@ -116,8 +138,14 @@ function buildAndSet(blog, path, multiInfo, callback) {
 
             // A successful rebuild means any previous "ignored" record for
             // this path (wrong type, too large, …) is stale. Clear it
-            // best-effort — it must not hold up or fail the sync.
+            // best-effort — it must not hold up or fail the sync. For a
+            // folder post the same applies to each source file that is now
+            // part of the aggregate again (e.g. one shrunk back under the
+            // size limit), otherwise the dashboard keeps hiding its badge.
             IgnoredFiles.drop(blog.id, entry.path, noop);
+            sourcePaths.forEach(function (sourcePath) {
+              IgnoredFiles.drop(blog.id, sourcePath, noop);
+            });
 
             const syntheticKeys = new Set();
 
@@ -137,7 +165,14 @@ function buildAndSet(blog, path, multiInfo, callback) {
               rebuildDependents(blog.id, syntheticKey, noop)
             );
 
-            if (entry.draft && !isHidden(entry.path)) {
+            // A draft folder post outside /drafts/ would write "/album.html"
+            // and could clobber a real sibling source file, so skip the
+            // filesystem preview there (still viewable via the draft URL).
+            if (
+              entry.draft &&
+              !isHidden(entry.path) &&
+              !isUnsafeFolderPostPreview(entry.path, entry.html)
+            ) {
               Preview.write(blog.id, entry.path, next);
             } else {
               next();
