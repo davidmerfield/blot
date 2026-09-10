@@ -19,7 +19,7 @@ separately.
 | `build/data/latest/` | Generated output (git-ignored). |
 | `Dockerfile` | Two-stage build: vendors the Lua deps, then assembles the image. |
 | `entrypoint.sh` | Fixes volume ownership, optionally trusts a test ACME CA, then starts OpenResty with a SIGTERM drain (`openresty -s quit`). |
-| `deploy/` | `blue-green.sh` (image swap via SO_REUSEPORT + drain) and `reload-config.sh` (config-only reload). Mechanism only - not wired to production. |
+| `deploy/` | `blue-green.sh` (image swap via SO_REUSEPORT + drain, per-container health socket, requires a real cert mount) and `reload-config.sh` (installs the regenerated `nginx.conf` and reloads). Mechanism only - not wired to production. |
 | `tests/` | Cache (`cacher.lua`) behaviour specs. Run as the `proxy` suite in the `node` workflow's test matrix, same as `config/openresty`. |
 | `e2e/` | Full-stack checks driven through the built image (stub upstream + a real Blot app container + Pebble for certs). Run by the `integration` workflow. |
 
@@ -78,22 +78,30 @@ self-signed placeholder so OpenResty can start).
 The container runs with `--network host` (the generated upstreams are
 `127.0.0.1:8088-8091`). Two kinds of change:
 
-- **Config-only** (a `.conf` / `cacher.lua` edit): keep the container, use
-  [`deploy/reload-config.sh`](deploy/reload-config.sh) - it regenerates the
-  config, runs `openresty -t` inside the container and `openresty -s reload`.
-  The listening sockets are never dropped. Requires the config directory to
-  be bind-mounted.
+- **Config-only** (a `.conf` edit): keep the container, use
+  [`deploy/reload-config.sh`](deploy/reload-config.sh)`<container> <host-conf-dir>`
+  - it regenerates the config, **writes `nginx.conf` into the bind-mounted
+    config dir**, then runs `openresty -t` and `openresty -s reload` inside
+    the container. The listening sockets are never dropped. `cacher.lua` /
+    `html` need their own bind-mounts if a change touches them.
 - **Image change** (base image, Lua deps, Dockerfile): use
   [`deploy/blue-green.sh`](deploy/blue-green.sh). The generated config sets
   `reuseport` on the single default server for `:80` and `:443` (and on the
   loopback-only `:80` / `:8999` helpers), so the new container joins the
   listening group before the old one leaves it. The script waits for the new
-  container's health check, then `docker stop --time 30` the old one -
+  container to answer its **own per-container health socket**
+  (`/run/openresty/health.sock` - not a reuseport TCP port the old container
+  could answer for it), then `docker stop --time 30` the old one -
   `entrypoint.sh` traps SIGTERM and runs `openresty -s quit`, so in-flight
-  requests drain first. The `zero-downtime` job in the `integration` workflow
-  exercises this handover under load.
+  requests drain first. It refuses to run without `PROXY_CERT_MOUNT` (the
+  image ships only a self-signed placeholder). The `zero-downtime` job in the
+  `integration` workflow exercises the handover under load.
+  - *Known limitation*: during the seconds-long overlap the kernel can route
+    a `:8999` ACME hook request to the other instance, whose hook secret
+    differs, so first-issuance for a brand-new domain can be briefly flaky
+    *while a deploy is in progress*. Tracked in `TODO`.
 
-Run with persistent volumes so a redeploy does not cold-start:
+Run with persistent volumes:
 
 ```sh
 docker run -d --network host --cap-add SYS_NICE \
@@ -104,8 +112,14 @@ docker run -d --network host --cap-add SYS_NICE \
   blot-proxy
 ```
 
-`entrypoint.sh` chowns both volumes to `ec2-user` on boot (they mount
-root-owned).
+- **`blot-proxy-cache`** keeps the proxy cache warm across a redeploy.
+- **`blot-proxy-auto-ssl`** keeps the dehydrated ACME account / hook state, so
+  a redeploy does not re-register with the ACME server. The issued
+  certificates themselves live in **Redis** (`storage_adapter = redis`), which
+  is what makes them survive a container swap.
+
+`entrypoint.sh` chowns the volume roots to `ec2-user` on boot (they mount
+root-owned); it does **not** recurse into the cache.
 
 ## Pinned dependencies
 

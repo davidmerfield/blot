@@ -14,13 +14,20 @@ fi
 echo "BLOT_HOST=$BLOT_HOST"
 
 # Persistent-volume mount points come up owned by root; the OpenResty workers
-# run as ec2-user (see the generated config's `user` directive) and need to
-# write the proxy cache and the lua-resty-auto-ssl / dehydrated working files.
-# Fix ownership on every boot while we still have root.
+# run as ec2-user (see the generated config's `user` directive). Fix ownership
+# of the mount *roots* on every boot while we still have root.
+#
+# Do NOT recurse into /var/cache/openresty: it holds up to 200 GB with a
+# one-year lifetime, nginx creates its `levels=1:2` dirs as the worker user
+# anyway, and a recursive walk here can blow past a blue/green readiness
+# timeout. resty-auto-ssl is a small tree of hook state, so -R is fine there.
 if [[ "$(id -u)" == "0" ]]; then
-  for d in /var/cache/openresty /etc/resty-auto-ssl /var/log/openresty; do
-    [[ -d "$d" ]] && chown -R ec2-user:ec2-user "$d" || true
+  mkdir -p /run/openresty
+  chown ec2-user:ec2-user /run/openresty
+  for d in /var/cache/openresty /var/log/openresty; do
+    [[ -d "$d" ]] && chown ec2-user:ec2-user "$d" || true
   done
+  [[ -d /etc/resty-auto-ssl ]] && chown -R ec2-user:ec2-user /etc/resty-auto-ssl || true
 fi
 
 # Optional: trust a non-public ACME endpoint. The vendored `dehydrated` hook

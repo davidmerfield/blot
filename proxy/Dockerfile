@@ -57,6 +57,10 @@ COPY --from=deps /vendor/lualib/ /usr/local/openresty/lualib/
 COPY --from=deps /vendor/resty-auto-ssl/ /usr/bin/resty-auto-ssl/
 RUN chmod 0755 /usr/bin/resty-auto-ssl/*
 
+# Per-container runtime dir for the health-probe Unix socket (see
+# proxy/config/server.conf). entrypoint.sh also (re)creates and chowns it.
+RUN mkdir -p /run/openresty
+
 # Directories referenced by the generated config and by lua-resty-auto-ssl.
 # The log and cache directories (and auto-ssl storage) must be writable by the
 # worker user, which the generated config sets to ec2-user.
@@ -86,10 +90,10 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Liveness for docker/compose and the readiness probe in
-# proxy/deploy/blue-green.sh. Hits the loopback-only internal server
-# (proxy/config/server.conf), so it is never reachable from real traffic.
+# proxy/deploy/blue-green.sh. Probes a per-container Unix socket so a
+# blue/green overlap can't have the other container answer for this one.
 HEALTHCHECK --interval=10s --timeout=3s --start-period=15s --retries=3 \
-  CMD curl -fsS -o /dev/null http://127.0.0.1/health || exit 1
+  CMD curl -fsS -o /dev/null --unix-socket /run/openresty/health.sock http://localhost/health || exit 1
 
 EXPOSE 80 443
 

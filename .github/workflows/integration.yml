@@ -294,9 +294,21 @@ jobs:
           echo "$issuer" | grep -qi pebble
           echo "$issuer" | grep -vqi placeholder
 
-      - name: Certificate survives a container recreate (persistence)
+      - name: Certificate persists across a container recreate
         run: |
           set -eux
+
+          # The cert store is Redis (storage_adapter = redis), so that is what
+          # must hold the cert after issuance...
+          docker exec redis redis-cli --scan --pattern 'ssl*' | tee /tmp/ssl-keys
+          test -s /tmp/ssl-keys
+
+          # ...and whatever the auto-ssl volume does hold (dehydrated account /
+          # hook state) must not be lost across the recreate.
+          before=$(docker run --rm -v blot-acme-storage:/s alpine \
+            sh -c 'find /s -type f | wc -l')
+          echo "auto-ssl volume files before recreate: $before"
+
           docker rm -f proxy
           docker run -d --name proxy --network host --cap-add SYS_NICE \
             -e BLOT_HOST=localhost \
@@ -309,12 +321,16 @@ jobs:
             sleep 2
           done
 
+          after=$(docker run --rm -v blot-acme-storage:/s alpine \
+            sh -c 'find /s -type f | wc -l')
+          [ "$after" -ge "$before" ]
+
           code=$(curl -s -o /dev/null -w '%{http_code}' \
             --cacert pebble-root.pem \
             --resolve "$TEST_DOMAIN:443:$HOSTIP" "https://$TEST_DOMAIN/")
           [ "$code" = "200" ]
 
-          # The recreated container must serve the stored cert without asking
+          # And the recreated container serves the stored cert without asking
           # the ACME server for a new one.
           if docker logs proxy 2>&1 | grep -i "issuing new certificate"; then
             echo "FAIL: proxy re-issued the certificate after recreate" >&2
@@ -393,9 +409,11 @@ jobs:
         run: |
           set -eux
           (
+            # No --retry: every attempt is recorded as-is, so a single
+            # refused/dropped connection during the handover shows up as a
+            # non-200 and fails the assertion below. That is the whole point.
             for i in $(seq 1 600); do
-              curl -s -o /dev/null -w '%{http_code}\n' --max-time 3 \
-                --retry 2 --retry-connrefused \
+              curl -s -o /dev/null -w '%{http_code}\n' --max-time 5 \
                 -H 'Host: someblog.example' "http://$HOSTIP/" || echo "curl-err"
               sleep 0.05
             done
