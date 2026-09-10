@@ -52,6 +52,21 @@ describe("entry.get", function () {
       expect(entry.title).toEqual("Full");
       expect(typeof entry.html).toEqual("string");
     });
+
+    it("falls back to the hash for an entry written in hash-only mode (rollback safety)", async function () {
+      // Written under stage 3 (hash only, no JSON string)...
+      config.redis.readEntriesFromHash = true;
+      await this.set("/hashonly.txt", "# Hash only\n\nbody");
+      // ...then reads are rolled back to the JSON string.
+      config.redis.readEntriesFromHash = false;
+
+      var entry = await get(this.blog.id, "/hashonly.txt");
+      expect(entry).toBeTruthy();
+      expect(entry.title).toEqual("Hash only");
+
+      var list = await get(this.blog.id, ["/hashonly.txt"]);
+      expect(list.length).toEqual(1);
+    });
   });
 
   describe("hash path (readEntriesFromHash on)", function () {
@@ -121,11 +136,20 @@ describe("entry.get", function () {
       });
     });
 
-    it("falls back to the legacy JSON string key when the hash is missing", async function () {
-      await this.set("/legacy.txt", "# Legacy\n\nold entry");
+    // A record that only has the legacy JSON string key - as if it predates
+    // the hash, or its hash was lost.
+    var plantLegacyString = function (blogID, path, entry) {
+      return redis.set(key.entry(blogID, path), JSON.stringify(entry));
+    };
 
-      // Simulate an entry that predates the hash dual-write.
-      await redis.del(key.entryHash(this.blog.id, "/legacy.txt"));
+    it("falls back to the legacy JSON string key when the hash is missing", async function () {
+      await plantLegacyString(this.blog.id, "/legacy.txt", {
+        id: "/legacy.txt",
+        path: "/legacy.txt",
+        title: "Legacy",
+        html: "<p>old entry</p>",
+        url: "/legacy",
+      });
 
       var whole = await get(this.blog.id, "/legacy.txt");
       expect(whole.title).toEqual("Legacy");
@@ -136,8 +160,14 @@ describe("entry.get", function () {
     });
 
     it("projects the JSON-string fallback down to the requested fields", async function () {
-      await this.set("/legacy.txt", "# Legacy\n\nheavy body here");
-      await redis.del(key.entryHash(this.blog.id, "/legacy.txt"));
+      await plantLegacyString(this.blog.id, "/legacy.txt", {
+        id: "/legacy.txt",
+        path: "/legacy.txt",
+        title: "Legacy",
+        url: "/legacy",
+        html: "<p>heavy body here</p>",
+        body: "heavy body here",
+      });
 
       var entry = await get(this.blog.id, "/legacy.txt", ["title", "url"]);
 

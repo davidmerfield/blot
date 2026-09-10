@@ -56,7 +56,11 @@ module.exports = function (blogID, entryIDs, fields, callback) {
   return getFromString(blogID, entryIDs, single, callback);
 };
 
-// --- Legacy path: one MGET over the JSON string keys. -----------------------
+// --- Legacy path: MGET the JSON string keys, fall back to the hash. --------
+//
+// The fallback matters on rollback: once set.js has been writing hash-only
+// (stage 3), entries created or edited in that window have no JSON string,
+// so reading strings alone would make them vanish.
 
 function getFromString(blogID, entryIDs, single, callback) {
   var stringKeys = entryIDs.map(function (entryID) {
@@ -65,22 +69,54 @@ function getFromString(blogID, entryIDs, single, callback) {
 
   redis
     .mGet(stringKeys)
-    .then(function (entries) {
-      entries = entries || [];
+    .then(function (strings) {
+      strings = strings || [];
 
+      var missingIndexes = [];
+      strings.forEach(function (value, index) {
+        if (value === null || value === undefined) missingIndexes.push(index);
+      });
+
+      if (!missingIndexes.length) {
+        return strings.map(parseJSON);
+      }
+
+      var hashKeys = missingIndexes.map(function (index) {
+        return entryHashKey(blogID, entryIDs[index]);
+      });
+
+      return Promise.all(
+        hashKeys.map(function (hashKey) {
+          return redis.hGetAll(hashKey);
+        })
+      ).then(function (hashes) {
+        var byIndex = {};
+        missingIndexes.forEach(function (originalIndex, i) {
+          byIndex[originalIndex] = hashes[i];
+        });
+
+        return strings.map(function (value, index) {
+          if (value !== null && value !== undefined) return parseJSON(value);
+          var hash = byIndex[index];
+          return hash && Object.keys(hash).length
+            ? format.deserialize(hash)
+            : null;
+        });
+      });
+    })
+    .then(function (entries) {
       entries = entries.filter(function (entry) {
         return entry;
       });
 
       entries = entries.map(function (entry) {
-        return new Entry(JSON.parse(entry)); // return value
+        return entry instanceof Entry ? entry : new Entry(entry);
       });
 
       if (single) {
-        entries = entries[0];
+        if (!entries[0]) return callback();
+        return callback(entries[0]);
       }
-
-      if (single && !entries) return callback();
 
       return callback(entries);
     })

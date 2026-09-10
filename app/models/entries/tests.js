@@ -2,7 +2,7 @@ const redis = require("models/client");
 const Entries = require("./index"); // Replace with the correct path to the Entries module
 const Entry = require("../entry");
 const Blog = require("../blog");
-const entryKey = require("../entry/key").entry;
+const entryHashKey = require("../entry/key").entryHash;
 
 function buildEntry(path, overrides) {
   const now = Date.now();
@@ -55,7 +55,9 @@ describe("entries", function () {
     it("sets a TTL when deleted and clears it when restored", async function () {
       const blogID = this.blog.id;
       const path = "/ttl-entry.txt";
-      const key = entryKey(blogID, path);
+      // The hash is the entry; Entry.set applies the TTL there when deleted
+      // and removes it on restore.
+      const key = entryHashKey(blogID, path);
 
       await new Promise((resolve, reject) => {
         Entry.set(blogID, path, buildEntry(path), (err) => (err ? reject(err) : resolve()));
