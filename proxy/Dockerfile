@@ -33,6 +33,16 @@ RUN curl -fsSL -o /vendor/lualib/resty/auto-ssl/vendor/shell.lua \
       "https://raw.githubusercontent.com/juce/lua-resty-shell/955243d70506c21e7cc29f61d745d1a8a718994f/lib/resty/shell.lua" && \
     echo "1db9590b05828572a59a67f4ec83210b86b233b6d13c7e3a1e9713d6e19d6974  /vendor/lualib/resty/auto-ssl/vendor/shell.lua" | sha256sum -c -
 
+# `dehydrated` - the ACME client lua-resty-auto-ssl shells out to during cert
+# issuance. Its Makefile curls this at a pinned commit (DEHYDRATED_VERSION in
+# v0.13.1); the .src.rock does not ship it, so without this the hook fails
+# with "can't execute .../dehydrated: No such file or directory".
+ARG DEHYDRATED_COMMIT=05eda91a2fbaed1e13c733230238fc68475c535e
+RUN curl -fsSL -o /vendor/resty-auto-ssl/dehydrated \
+      "https://raw.githubusercontent.com/lukas2511/dehydrated/${DEHYDRATED_COMMIT}/dehydrated" && \
+    echo "a97b0d64d5ecc21549a58b714bb9017479b38b2e40ff51c04f1638e71291d138  /vendor/resty-auto-ssl/dehydrated" | sha256sum -c - && \
+    chmod 0755 /vendor/resty-auto-ssl/dehydrated
+
 # sockproc - used by lua-resty-auto-ssl to shell out during cert issuance.
 # Pinned to the commit lua-resty-auto-ssl's own Makefile uses.
 ARG SOCKPROC_COMMIT=92aba736027bb5d96e190b71555857ac5bb6b2be
