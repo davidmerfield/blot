@@ -45,20 +45,33 @@ describe("blog benchmarks", function () {
     }));
 
     const buildSiteDurations = [];
+    const writeDurations = { ordinary: [], largeContent: [] };
 
     buildPhaseMonitor.start();
 
-    await runWithConcurrency(writeTasks, benchmarkConfig.writeConcurrency, async (task) => {
-      if (task.sourcePath != null) {
-        let blogDir = localPath(task.blog.id, "/");
-        if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
-        const destPath = blogDir + task.path;
-        await fs.ensureDir(path.dirname(destPath));
-        await fs.copy(task.sourcePath, destPath);
-      } else {
-        await task.blog.write({ path: task.path, content: task.content });
+    await runWithConcurrency(
+      writeTasks,
+      benchmarkConfig.writeConcurrency,
+      async (task) => {
+        const startedAt = performance.now();
+        if (task.sourcePath != null) {
+          let blogDir = localPath(task.blog.id, "/");
+          if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
+          const destPath = blogDir + task.path;
+          await fs.ensureDir(path.dirname(destPath));
+          await fs.copy(task.sourcePath, destPath);
+        } else {
+          await task.blog.write({ path: task.path, content: task.content });
+        }
+        const elapsedMs = performance.now() - startedAt;
+        if (task.workload === "ordinary") {
+          writeDurations.ordinary.push(elapsedMs);
+        }
+        if (task.workload === "large-content") {
+          writeDurations.largeContent.push(elapsedMs);
+        }
       }
-    });
+    );
 
     await Promise.all(
       blogs.map(async (blog, index) => {
@@ -76,6 +89,8 @@ describe("blog benchmarks", function () {
     });
 
     const renderDurations = [];
+    const renderDurationsByWorkload = { ordinary: [], largeContent: [] };
+    const renderBytesByWorkload = { ordinary: 0, largeContent: 0 };
     const renderFailures = [];
     const siteSummaries = [];
     const renderTasks = [];
@@ -134,6 +149,10 @@ describe("blog benchmarks", function () {
 
     renderPhaseMonitor.start();
 
+    const largePaths = new Set(
+      workload.largeEntries.map((entry) => entry.linkPath)
+    );
+
     await runWithConcurrency(
       renderTasks,
       benchmarkConfig.renderConcurrency,
@@ -145,6 +164,13 @@ describe("blog benchmarks", function () {
         const elapsedMs = performance.now() - startedAt;
         renderDurations.push(elapsedMs);
         bytesPerSite[blogIndex] += body.byteLength;
+        const normalizedPath =
+          path.length > 1 ? path.replace(/\/$/, "") : path;
+        const category = largePaths.has(normalizedPath)
+          ? "largeContent"
+          : "ordinary";
+        renderDurationsByWorkload[category].push(elapsedMs);
+        renderBytesByWorkload[category] += body.byteLength;
 
         if (res.status >= 400) {
           renderFailures.push({ blogIndex, path, status: res.status });
@@ -179,13 +205,25 @@ describe("blog benchmarks", function () {
       siteSummaries,
       renderTasks,
       renderFailures,
+      writeTimingByWorkload: {
+        ordinary: summarizeDurations(writeDurations.ordinary),
+        largeContent: summarizeDurations(writeDurations.largeContent),
+      },
+      renderTimingByWorkload: {
+        ordinary: summarizeDurations(renderDurationsByWorkload.ordinary),
+        largeContent: summarizeDurations(renderDurationsByWorkload.largeContent),
+      },
+      renderBytesByWorkload,
     });
 
     global.__BLOT_BENCHMARK_RESULT = result;
 
     expect(workload.files.length).toEqual(
-      benchmarkConfig.files + workload.fixtureCount * blogs.length
+      benchmarkConfig.files +
+        benchmarkConfig.largeEntryCount +
+        workload.fixtureCount * blogs.length
     );
+    expect(workload.largeEntries.length).toEqual(benchmarkConfig.largeEntryCount);
     expect(renderTasks.length).toBeGreaterThan(0);
     expect(renderFailures.length).toEqual(0);
 

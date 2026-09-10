@@ -11,9 +11,13 @@ function buildBenchmarkResult(options) {
     siteSummaries,
     renderTasks,
     renderFailures,
+    writeTimingByWorkload = { ordinary: {}, largeContent: {} },
+    renderTimingByWorkload = { ordinary: {}, largeContent: {} },
+    renderBytesByWorkload = { ordinary: 0, largeContent: 0 },
   } = options;
 
   const renderedPages = renderTasks.length;
+  const largeEntries = workload.largeEntries || [];
 
   return {
     schema_version: 1,
@@ -23,6 +27,9 @@ function buildBenchmarkResult(options) {
       sites: benchmarkConfig.sites,
       files: benchmarkConfig.files,
       fixture_files_per_site: workload.fixtureCount,
+      large_entry_count: benchmarkConfig.largeEntryCount,
+      large_entry_kilobytes: benchmarkConfig.largeEntryKilobytes,
+      images_per_media_entry: benchmarkConfig.imagesPerMediaEntry,
       seed: benchmarkConfig.seed,
       render_concurrency: benchmarkConfig.renderConcurrency,
       requests_per_page: benchmarkConfig.requestsPerPage,
@@ -44,6 +51,10 @@ function buildBenchmarkResult(options) {
       },
       cpu: buildPhaseMetrics.cpu,
       memory_mb: buildPhaseMetrics.memory_mb,
+      workload_timing_ms: {
+        ordinary_entries: writeTimingByWorkload.ordinary,
+        large_content_entries: writeTimingByWorkload.largeContent,
+      },
     },
     render: {
       sitemap_pages_total: renderTasks.length,
@@ -64,6 +75,22 @@ function buildBenchmarkResult(options) {
         mean_per_page:
           renderedPages > 0 ? (renderBytesTotal || 0) / renderedPages : 0,
       },
+      workload_timing_ms: {
+        ordinary_entries: renderTimingByWorkload.ordinary,
+        large_content_entries: renderTimingByWorkload.largeContent,
+      },
+      workload_bytes: {
+        ordinary_entries: renderBytesByWorkload.ordinary,
+        large_content_entries: renderBytesByWorkload.largeContent,
+      },
+    },
+    workload: {
+      large_content: largeEntries.map((entry) => ({
+        path: entry.path,
+        link_path: entry.linkPath,
+        bytes: entry.byteSize,
+        feature_counts: entry.featureCounts,
+      })),
     },
     sites: siteSummaries,
     status: "pass",

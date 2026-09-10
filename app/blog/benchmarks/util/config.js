@@ -8,10 +8,35 @@ function num(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function boundedInt(value, fallback, min, max) {
+  const parsed = num(value, fallback);
+  return Number.isInteger(parsed) && parsed >= min && parsed <= max
+    ? parsed
+    : fallback;
+}
+
 function parseBenchmarkConfig(raw = {}) {
   return {
     sites: num(raw.sites, BENCHMARK_DEFAULTS.sites),
     files: num(raw.files, BENCHMARK_DEFAULTS.files),
+    largeEntryCount: boundedInt(
+      raw.largeEntryCount,
+      BENCHMARK_DEFAULTS.largeEntryCount,
+      0,
+      25
+    ),
+    largeEntryKilobytes: boundedInt(
+      raw.largeEntryKilobytes,
+      BENCHMARK_DEFAULTS.largeEntryKilobytes,
+      64,
+      2048
+    ),
+    imagesPerMediaEntry: boundedInt(
+      raw.imagesPerMediaEntry,
+      BENCHMARK_DEFAULTS.imagesPerMediaEntry,
+      1,
+      250
+    ),
     seed: String(raw.seed || BENCHMARK_DEFAULTS.seed),
     renderConcurrency: num(
       raw.renderConcurrency,

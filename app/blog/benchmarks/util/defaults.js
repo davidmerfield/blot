@@ -12,6 +12,12 @@ const BENCHMARK_DEFAULTS = Object.freeze({
   sites: 5,
   // Total number of generated text entries, spread evenly across sites.
   files: 1000,
+  // Large markdown entries generated per run (about 256 KiB each by default).
+  largeEntryCount: 3,
+  // UTF-8 size target for each generated large markdown entry.
+  largeEntryKilobytes: 256,
+  // Repeated image references in each generated gallery entry.
+  imagesPerMediaEntry: 48,
   // Deterministic seed for workload generation.
   seed: "blot-benchmark-seed",
   // Concurrency used when replaying sitemap URLs during the render phase.

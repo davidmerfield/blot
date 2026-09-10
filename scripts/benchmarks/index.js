@@ -47,6 +47,9 @@ if (args.path) {
 var benchmarkConfig = {
   sites: args.sites,
   files: args.files,
+  largeEntryCount: args.largeEntryCount,
+  largeEntryKilobytes: args.largeEntryKilobytes,
+  imagesPerMediaEntry: args.imagesPerMediaEntry,
   seed: args.seed,
   renderConcurrency: args.renderConcurrency,
   writeConcurrency: args.writeConcurrency,
@@ -117,6 +120,9 @@ function parseArgs(argv) {
   var parsed = {
     sites: BENCHMARK_DEFAULTS.sites,
     files: BENCHMARK_DEFAULTS.files,
+    largeEntryCount: BENCHMARK_DEFAULTS.largeEntryCount,
+    largeEntryKilobytes: BENCHMARK_DEFAULTS.largeEntryKilobytes,
+    imagesPerMediaEntry: BENCHMARK_DEFAULTS.imagesPerMediaEntry,
     seed: BENCHMARK_DEFAULTS.seed,
     renderConcurrency: BENCHMARK_DEFAULTS.renderConcurrency,
     writeConcurrency: BENCHMARK_DEFAULTS.writeConcurrency,
@@ -132,6 +138,9 @@ function parseArgs(argv) {
   var numericFlags = {
     "--sites": "sites",
     "--files": "files",
+    "--large-entry-count": "largeEntryCount",
+    "--large-entry-kilobytes": "largeEntryKilobytes",
+    "--images-per-media-entry": "imagesPerMediaEntry",
     "--render-concurrency": "renderConcurrency",
     "--write-concurrency": "writeConcurrency",
     "--cpu-sample-interval-ms": "cpuSampleIntervalMs",
@@ -193,12 +202,39 @@ function parseArgs(argv) {
 
   ensurePositiveInt(parsed.sites, "--sites");
   ensurePositiveInt(parsed.files, "--files");
+  ensureNonNegativeInt(parsed.largeEntryCount, "--large-entry-count");
+  ensureBoundedInt(
+    parsed.largeEntryKilobytes,
+    "--large-entry-kilobytes",
+    64,
+    2048
+  );
+  ensureBoundedInt(
+    parsed.imagesPerMediaEntry,
+    "--images-per-media-entry",
+    1,
+    250
+  );
   ensurePositiveInt(parsed.renderConcurrency, "--render-concurrency");
   ensurePositiveInt(parsed.writeConcurrency, "--write-concurrency");
   ensurePositiveInt(parsed.cpuSampleIntervalMs, "--cpu-sample-interval-ms");
   ensurePositiveInt(parsed.requestsPerPage, "--requests-per-page");
 
   return parsed;
+}
+
+function ensureNonNegativeInt(value, name) {
+  if (!Number.isInteger(value) || value < 0 || value > 25) {
+    throw new Error(name + " must be an integer between 0 and 25");
+  }
+}
+
+function ensureBoundedInt(value, name, min, max) {
+  if (!Number.isInteger(value) || value < min || value > max) {
+    throw new Error(
+      name + " must be an integer between " + min + " and " + max
+    );
+  }
 }
 
 function ensurePositiveInt(value, name) {
@@ -218,6 +254,15 @@ function printHelp() {
         ")",
       "  --files <n>                    Total generated files (default: " +
         BENCHMARK_DEFAULTS.files +
+        ")",
+      "  --large-entry-count <n>        Large entries, 0-25 (default: " +
+        BENCHMARK_DEFAULTS.largeEntryCount +
+        ")",
+      "  --large-entry-kilobytes <n>    Size per large entry, 64-2048 KiB (default: " +
+        BENCHMARK_DEFAULTS.largeEntryKilobytes +
+        ")",
+      "  --images-per-media-entry <n>   Gallery images, 1-250 (default: " +
+        BENCHMARK_DEFAULTS.imagesPerMediaEntry +
         ")",
       "  --seed <value>                 Deterministic seed (default: " +
         BENCHMARK_DEFAULTS.seed +
