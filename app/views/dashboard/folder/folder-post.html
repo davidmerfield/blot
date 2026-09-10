@@ -7,7 +7,7 @@
 
 <div class="file-info">
 
-  <h1><span class="icon-folder-check"></span>{{folderPath}}</h1>
+  <h1><span class="icon-folder-check"></span>{{folderName}}</h1>
 
   <a href="{{{blog.url}}}{{{url}}}" target="_blank" class="template-button right-aligned file-helper">
     View {{type}}
@@ -31,7 +31,7 @@
             <div class="directory-row__name-cell">
               <a href="{{{base}}}/folder{{{url}}}" class="directory-row__link entry">
                 <span class="icon-file-check"></span>
-                <span class="truncate file-name">{{name}}</span>
+                <span class="truncate file-name">{{relativePath}}</span>
               </a>
             </div>
             {{^exists}}<span class="file-missing-note">File missing from folder</span>{{/exists}}
@@ -56,7 +56,7 @@
               <div class="directory-row__name-cell">
                 <a href="{{{base}}}/folder{{{url}}}" class="directory-row__link entry">
                   <span class="icon-file-check"></span>
-                  <span class="truncate file-name">{{name}}</span>
+                  <span class="truncate file-name">{{relativePath}}</span>
                 </a>
               </div>
               {{^exists}}<span class="file-missing-note">File missing from folder</span>{{/exists}}
@@ -76,16 +76,16 @@
 <div class="publishing-steps">
   <p>
     <i><span class="icon-small-check"></span></i>
-    <b>This folder is published as a {{type}}</b>. Blot builds it from the
-    {{sourceCount}} files inside <code>{{folderPath}}</code>, joined in the order
-    listed above. Add, rename, edit, or delete files inside the folder to update
-    the {{type}}.
+    <b>Folder is a {{type}}</b>
+    To prevent this folder becoming a single {{type}}, remove the <code>+</code>
+    from the end of the folder&rsquo;s name.
   </p>
   {{#hasMissing}}
   <p>
     <i><span class="icon-small-no-entry"></span></i>
-    <b>Some source files are missing</b>. The {{type}} was built from files that
-    are no longer in the folder. It will update the next time the folder syncs.
+    <b>Some source files are missing</b>
+    The {{type}} was built from files that are no longer in the folder. It will
+    update the next time the folder syncs.
   </p>
   {{/hasMissing}}
 </div>

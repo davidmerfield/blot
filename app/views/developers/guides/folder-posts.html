@@ -2,19 +2,19 @@
 
 <h1>Folder posts</h1>
 
-<p>A <a href="/how/sub-folders/folder-posts">folder post</a> is a folder whose name ends in <code>+</code>. Blot converts every file inside, concatenates the results in alphabetical order, and publishes them as one entry at the folder&rsquo;s path without the <code>+</code> (for example <code>/Album+</code> is published at <code>/album</code>). This guide covers the HTML Blot generates so you can build a slideshow, gallery, or other custom layout in your template.</p>
+<p>A <a href="/how/sub-folders/folder-posts">folder post</a> is a folder whose name ends in <code>+</code>. Blot converts every file inside, concatenates the results in alphabetical order, and publishes them as one entry at the folder&rsquo;s path without the <code>+</code> (for example <code>/Album +</code> is published at <code>/album</code>). This guide covers the HTML Blot generates so you can build a slideshow, gallery, or other custom layout in your template.</p>
 
 <h2>Generated markup</h2>
 
 <p>The combined content is wrapped in a single <code>&lt;section class="multi-file-post"&gt;</code>. Each source file is rendered inside its own <code>&lt;section class="multi-file-entry"&gt;</code>, in the order the files appear on your site.</p>
 
-<pre class="html output"><code>&lt;section class="multi-file-post" data-folder="/Album+"&gt;
-  &lt;section class="multi-file-entry" data-file="/Album+/01-intro.md" data-index="0" data-extension="md"&gt;
+<pre class="html output"><code>&lt;section class="multi-file-post" data-folder="/Album +"&gt;
+  &lt;section class="multi-file-entry" data-file="/Album +/01-intro.md" data-index="0" data-extension="md"&gt;
     &lt;h1&gt;Intro&lt;/h1&gt;
     &lt;p&gt;&hellip;&lt;/p&gt;
   &lt;/section&gt;
-  &lt;section class="multi-file-entry" data-file="/Album+/02-first.jpg" data-index="1" data-extension="jpg"&gt;
-    &lt;img src="/Album+/02-first.jpg"&gt;
+  &lt;section class="multi-file-entry" data-file="/Album +/02-first.jpg" data-index="1" data-extension="jpg"&gt;
+    &lt;img src="/Album +/02-first.jpg"&gt;
   &lt;/section&gt;
 &lt;/section&gt;</code></pre>
 

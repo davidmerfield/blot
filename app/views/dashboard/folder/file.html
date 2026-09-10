@@ -49,10 +49,12 @@
   <p>
     <i><span class="icon-small-check"></span></i>
     {{#viewingSource}}
-    <b>This file is part of a folder post</b>. Changes to this file update the {{type}} published at <a href="{{{blog.url}}}{{{url}}}" target="_blank">{{entryPath}}</a>.
+    <b>File is part of a folder post</b>
+    Editing, renaming, or removing this file updates the {{type}} published at <a href="{{{blog.url}}}{{{url}}}" target="_blank">{{entryPath}}</a>.
     {{/viewingSource}}
     {{^viewingSource}}
-    <b>This folder post is published as a {{type}}</b>. Add, rename, or delete files inside
+    <b>Folder is a {{type}}</b>
+    Add, rename, or delete files inside
     {{#folderUrl}}<a href="{{{base}}}/folder{{{folderUrl}}}">{{/folderUrl}}<code>{{folderPath}}</code>{{#folderUrl}}</a>{{/folderUrl}}
     to update it.
     {{/viewingSource}}
@@ -155,24 +157,69 @@
 
   {{#multi}}
   <section class="folder-post-summary">
-    <h2><span class="icon-folder"></span> Folder post</h2>
+    <h2><span class="icon-folder-check"></span> Folder post</h2>
     <p>
-      Blot builds this {{type}} from the files inside
-      {{#folderUrl}}<a href="{{{base}}}/folder{{{folderUrl}}}">{{/folderUrl}}<code>{{folderPath}}</code>{{#folderUrl}}</a>{{/folderUrl}}.
-      The order below matches the way they appear on your site.
+      This {{type}} is built from the files inside
+      {{#folderUrl}}<a href="{{{base}}}/folder{{{folderUrl}}}">{{/folderUrl}}<code>{{folderPath}}</code>{{#folderUrl}}</a>{{/folderUrl}},
+      joined in the order listed below.
     </p>
-    <ol class="folder-post-files">
-      {{#sources}}
-      <li class="folder-post-file {{#current}}current{{/current}} {{^exists}}missing{{/exists}}">
-        <a href="{{{base}}}/folder{{{url}}}">
-          <span class="file-index">{{displayIndex}}.</span>
-          <span class="file-name">{{name}}</span>
-          <span class="file-path">{{path}}</span>
-        </a>
-        {{^exists}}<span class="file-missing-note">File missing from folder</span>{{/exists}}
-      </li>
-      {{/sources}}
-    </ol>
+    <div class="folder-post-sources">
+      <table class="directory-list folder-post-source-list">
+        <thead style="height: 1.4em;">
+          <tr>
+            <th>Name</th>
+            <th>Date modified</th>
+            <th>Size</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#sources}}
+          {{^hidden}}
+          <tr class="directory-row folder-post-source {{#current}}current{{/current}} {{^exists}}missing{{/exists}}">
+            <td>
+              <div class="directory-row__name-cell">
+                <a href="{{{base}}}/folder{{{url}}}" class="directory-row__link entry">
+                  <span class="icon-file-check"></span>
+                  <span class="truncate file-name">{{relativePath}}</span>
+                </a>
+              </div>
+              {{^exists}}<span class="file-missing-note">File missing from folder</span>{{/exists}}
+            </td>
+            <td data-sort="{{unix}}">{{#exists}}{{modified}}{{/exists}}{{^exists}}&mdash;{{/exists}}</td>
+            <td data-sort="{{bytes}}">{{#exists}}{{size}}{{/exists}}{{^exists}}&mdash;{{/exists}}</td>
+          </tr>
+          {{/hidden}}
+          {{/sources}}
+        </tbody>
+      </table>
+
+      {{#truncated}}
+      <details class="folder-post-more">
+        <summary>Show all {{sourceCount}} files</summary>
+        <table class="directory-list folder-post-source-list">
+          <tbody>
+            {{#sources}}
+            {{#hidden}}
+            <tr class="directory-row folder-post-source {{#current}}current{{/current}} {{^exists}}missing{{/exists}}">
+              <td>
+                <div class="directory-row__name-cell">
+                  <a href="{{{base}}}/folder{{{url}}}" class="directory-row__link entry">
+                    <span class="icon-file-check"></span>
+                    <span class="truncate file-name">{{relativePath}}</span>
+                  </a>
+                </div>
+                {{^exists}}<span class="file-missing-note">File missing from folder</span>{{/exists}}
+              </td>
+              <td data-sort="{{unix}}">{{#exists}}{{modified}}{{/exists}}{{^exists}}&mdash;{{/exists}}</td>
+              <td data-sort="{{bytes}}">{{#exists}}{{size}}{{/exists}}{{^exists}}&mdash;{{/exists}}</td>
+            </tr>
+            {{/hidden}}
+            {{/sources}}
+          </tbody>
+        </table>
+      </details>
+      {{/truncated}}
+    </div>
   </section>
   {{/multi}}
 

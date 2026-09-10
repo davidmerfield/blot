@@ -21,11 +21,11 @@ describe("folder posts in the dashboard", function () {
     );
 
     expect($file(".publishing-steps").text()).toContain(
-      "This file is part of a folder post"
+      "File is part of a folder post"
     );
-    expect($file(".folder-post-files").text()).toContain("one.md");
-    expect($file(".folder-post-files").text()).toContain("two.md");
-    expect($file(".folder-post-file.current .file-name").text()).toContain(
+    expect($file(".folder-post-source-list").text()).toContain("one.md");
+    expect($file(".folder-post-source-list").text()).toContain("two.md");
+    expect($file(".folder-post-source.current .file-name").text()).toContain(
       "one.md"
     );
   });
@@ -56,7 +56,7 @@ describe("folder posts in the dashboard", function () {
     expect($folder(".folder-box.directory").length).toBe(0);
     expect($folder(".folder-post-box").length).toBe(1);
     expect($folder(".publishing-steps").text()).toContain(
-      "published as a post"
+      "Folder is a post"
     );
 
     const fileLink = $folder(".folder-post-source-list a")
@@ -69,7 +69,7 @@ describe("folder posts in the dashboard", function () {
 
     const $file = await this.parse(fileLink.attr("href"));
     expect($file(".publishing-steps").text()).toContain(
-      "This file is part of a folder post"
+      "File is part of a folder post"
     );
     expect($file.text()).toContain("Hello from brackets");
   });
@@ -119,7 +119,7 @@ describe("folder posts in the dashboard", function () {
     expect($folder(".folder-box.directory").length).toBe(0);
     expect($folder(".entry-info").length).toBe(1);
     expect($folder(".publishing-steps").text()).toContain(
-      "published as a post"
+      "Folder is a post"
     );
 
     // Source files link to their own dashboard pages, in order.

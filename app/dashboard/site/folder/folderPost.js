@@ -75,6 +75,7 @@ async function getFolderPost(blog, dir) {
   const sources = sourcePaths.map((sourcePath, index) => ({
     path: sourcePath,
     name: basename(sourcePath),
+    relativePath: relativeToFolder(info.folderPath, sourcePath),
     url: encodePath(sourcePath),
     displayIndex: index + 1,
     exists: existence[index],
@@ -91,6 +92,7 @@ async function getFolderPost(blog, dir) {
 
   return {
     folderPath: info.folderPath,
+    folderName: basename(info.folderPath),
     folderUrl: encodePath(info.folderPath),
     entryPath: info.entryPath,
     entry: entry,
@@ -206,6 +208,13 @@ function encodePath(input) {
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
+}
+
+// Path of a source file relative to the "+" folder it belongs to, so the
+// dashboard can list "sub/notes.md" instead of the full "/Album +/sub/notes.md".
+function relativeToFolder(folderPath, sourcePath) {
+  const relative = path.relative(folderPath, sourcePath);
+  return relative && !relative.startsWith("..") ? relative : basename(sourcePath);
 }
 
 function isSyntheticDependency(dependency) {

@@ -11,6 +11,11 @@ const Build = require("build");
 const fs = require("fs-extra");
 const localPath = require("helper/localPath");
 const postSourceSize = require("build/converters/post-source-size");
+const Stat = require("./stat");
+
+// Mirror the folder-post viewer: show the first N source files inline, hide the
+// rest behind a "Show all" toggle.
+const VISIBLE_SOURCE_LIMIT = 10;
 
 require("moment-timezone");
 
@@ -192,6 +197,7 @@ module.exports = async function (blog, path) {
               folderDetails,
               sourcePaths,
               currentPath: path,
+              timeZone: blog.timeZone,
             });
           }
 
@@ -381,6 +387,7 @@ async function buildMultiEntryData({
   folderDetails,
   sourcePaths,
   currentPath,
+  timeZone,
 }) {
   const folderPath = folderDetails ? folderDetails.folderPath : null;
   const entryPath = folderDetails ? folderDetails.entryPath : entry.path;
@@ -391,17 +398,37 @@ async function buildMultiEntryData({
     })
   );
 
+  // The list reuses the folder-post viewer's Name / Date modified / Size table,
+  // so stat each file that still exists.
+  const stats = await Promise.all(
+    sourcePaths.map((sourcePath, index) =>
+      existence[index]
+        ? Stat(localPath(blogID, sourcePath), timeZone).catch(() => null)
+        : Promise.resolve(null)
+    )
+  );
+
   const sources = sourcePaths.map((sourcePath, index) => {
     return {
       path: sourcePath,
       name: basename(sourcePath),
+      relativePath: folderPath
+        ? relativeToFolder(folderPath, sourcePath)
+        : basename(sourcePath),
       url: encodePath(sourcePath),
       index: index,
       displayIndex: index + 1,
       current: sourcePath === currentPath,
       exists: existence[index],
+      hidden: index >= VISIBLE_SOURCE_LIMIT,
+      modified: stats[index] ? stats[index].modified : null,
+      size: stats[index] ? stats[index].size : null,
+      bytes: stats[index] ? stats[index].bytes : 0,
+      unix: stats[index] ? stats[index].unix : 0,
     };
   });
+
+  const hiddenCount = sources.filter((source) => source.hidden).length;
 
   return {
     folderPath: folderPath,
@@ -410,8 +437,17 @@ async function buildMultiEntryData({
     entryUrl: entry.url,
     viewingSource: sources.some((source) => source.current),
     sources: sources,
+    sourceCount: sources.length,
+    hiddenCount: hiddenCount,
+    truncated: hiddenCount > 0,
     hasMissing: sources.some((source) => !source.exists),
   };
+}
+
+// Path of a source file relative to its "+" folder, e.g. "sub/notes.md".
+function relativeToFolder(folderPath, sourcePath) {
+  const relative = path.relative(folderPath, sourcePath);
+  return relative && !relative.startsWith("..") ? relative : basename(sourcePath);
 }
 
 function isSyntheticDependency (path) {
