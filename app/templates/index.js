@@ -357,6 +357,20 @@ function normalizeLocalsForComparison(locals) {
     });
   }
 
+  // injectLocals overwrites every `font`/`*_font` local's `styles` with the
+  // canonical @font-face CSS from blog/static/fonts/index.json, Mustache-
+  // rendered with the real config.cdn.origin. The on-disk source keeps the
+  // raw `{{{config.cdn.origin}}}` token (or omits `styles` entirely), so a
+  // direct compare never matches and the template drops/recreates on every
+  // startup. `styles` is fully derived from the font `id`, so drop it from
+  // both sides - same treatment as the syntax highlighter above.
+  Object.keys(normalized).forEach(function (key) {
+    if (key !== "font" && key.indexOf("_font") === -1) return;
+    if (normalized[key] && typeof normalized[key] === "object") {
+      delete normalized[key].styles;
+    }
+  });
+
   return normalized;
 }
 
