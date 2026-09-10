@@ -51,7 +51,10 @@ jobs:
         id: detect
         run: |
           changed_files=$(mktemp)
-          git diff --name-only \
+          # Treat a move as a deletion and an addition. Rename detection would
+          # report only the destination path, leaving previews which use the
+          # source demo folder stale.
+          git diff --no-renames --name-only \
             "${{ github.event.pull_request.base.sha }}" \
             "${{ github.event.pull_request.head.sha }}" \
             -- app/templates/source app/templates/folders > "$changed_files"
