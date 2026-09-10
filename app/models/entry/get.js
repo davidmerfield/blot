@@ -103,8 +103,13 @@ function getFromHash(blogID, entryIDs, single, fields, callback) {
     fieldList = [fields];
   } else if (Array.isArray(fields) && fields.length) {
     fieldList = fields.slice();
-    // Always carry id so callers can still identify the entry.
-    if (fieldList.indexOf("id") === -1) fieldList.push("id");
+  }
+
+  // Every non-scalar narrowed result carries id so callers can correlate the
+  // returned entries with their input positions (missing entries are filtered
+  // out of the array). scalarMode returns a bare value, so it skips this.
+  if (fieldList && !scalarMode && fieldList.indexOf("id") === -1) {
+    fieldList.push("id");
   }
 
   var hashKeys = entryIDs.map(function (entryID) {
@@ -142,7 +147,10 @@ function getFromHash(blogID, entryIDs, single, fields, callback) {
 
         return hashResults.map(function (result, index) {
           if (byIndex[index] !== undefined && byIndex[index] !== null) {
-            return parseJSON(byIndex[index]);
+            var parsed = parseJSON(byIndex[index]);
+            // The JSON string holds the whole entry; honour the narrowing the
+            // caller asked for so a fallback entry looks like a hash one.
+            return fieldList ? projectToFields(parsed, fieldList) : parsed;
           }
           return toPayload(result, fieldList);
         });
@@ -209,6 +217,18 @@ function parseJSON(value) {
     console.error("entry.get: failed to parse JSON entry", e);
     return null;
   }
+}
+
+// Reduce a whole entry object to just the requested fields - used when a
+// narrowed hash read falls back to the full JSON string.
+function projectToFields(entry, fieldList) {
+  if (!entry || typeof entry !== "object") return entry;
+
+  var out = {};
+  fieldList.forEach(function (field) {
+    if (entry[field] !== undefined) out[field] = entry[field];
+  });
+  return out;
 }
 
 // HGETALL returns {} for a missing hash; HMGET returns [null, null, ...]. Any

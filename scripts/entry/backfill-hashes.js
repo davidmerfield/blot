@@ -24,13 +24,14 @@
 //   node scripts/entry/backfill-hashes.js -o BLOGID  # one blog
 //   node scripts/entry/backfill-hashes.js -s 500     # resume from blog #500
 //
-// (-o / -s / -e / -r are handled by scripts/each/blog.js. -p / parallel is
-// forced off here because WATCH is connection-global.)
+// (-o / -s / -e / -r are handled by scripts/each/blog.js. The concurrency
+// flags -p and -c are forced off here because WATCH is connection-global.)
 
 var async = require("async");
 var redis = require("models/client");
 var WatchError = require("redis").WatchError;
 var eachBlog = require("../each/blog");
+var Blog = require("models/blog");
 var Entries = require("models/entries");
 var entryModel = require("models/entry");
 var key = entryModel.key;
@@ -53,7 +54,9 @@ var totals = {
 // clobbering a concurrent Entry.set. Resolves to one of:
 //   "ok" | "hash-present" | "no-string" | "parse-error" | "retry"
 async function backfillOne(stringKey, hashKey) {
-  await redis.watch(hashKey);
+  // WATCH both keys: a concurrent Entry.set writes both, and a deleted-entry
+  // tombstone can expire mid-operation - either aborts the EXEC below.
+  await redis.watch([stringKey, hashKey]);
 
   try {
     if (Number(await redis.exists(hashKey)) >= 1) {
@@ -68,6 +71,16 @@ async function backfillOne(stringKey, hashKey) {
       return "no-string";
     }
 
+    var ttl = await redis.pTTL(stringKey);
+
+    // -2: the string expired since the GET. 0: expiring now. Don't freeze a
+    // vanishing tombstone into a permanent hash. -1: no TTL (a normal live
+    // entry) - create the hash without one.
+    if (ttl === -2 || ttl === 0) {
+      await redis.unwatch();
+      return "no-string";
+    }
+
     var entry;
     try {
       entry = JSON.parse(raw);
@@ -76,12 +89,10 @@ async function backfillOne(stringKey, hashKey) {
       return "parse-error";
     }
 
-    var ttl = await redis.pTTL(stringKey);
-
     var multi = redis.multi().hSet(hashKey, format.serialize(entry));
-    if (typeof ttl === "number" && ttl > 0) multi.pExpire(hashKey, ttl);
+    if (ttl > 0) multi.pExpire(hashKey, ttl);
 
-    await multi.exec(); // throws WatchError if hashKey changed under us
+    await multi.exec(); // throws WatchError if a watched key changed under us
     return "ok";
   } catch (e) {
     // Make sure a failed attempt never leaves the shared connection watching.
@@ -163,15 +174,46 @@ function backfillBlog(user, blog, nextBlog) {
   });
 }
 
-// WATCH is connection-global on the shared client, so blogs must run serially.
+// WATCH is connection-global on the shared client, so blogs (and entries)
+// must run strictly serially - drop every concurrency flag scripts/each/blog
+// understands before delegating.
 delete options.p;
+delete options.c;
+
+function finish(expectedBlogCount) {
+  console.log("Backfill run finished:");
+  console.log(JSON.stringify(totals, null, 2));
+
+  var incomplete = false;
+
+  if (typeof expectedBlogCount === "number" && totals.blogs < expectedBlogCount) {
+    incomplete = true;
+    console.error(
+      "WARNING: processed " +
+        totals.blogs +
+        " of " +
+        expectedBlogCount +
+        " blogs. " +
+        (expectedBlogCount - totals.blogs) +
+        " were skipped (blog or owner record missing / unreadable). Re-run " +
+        "or verify those blogs before enabling BLOT_REDIS_READ_ENTRIES_FROM_HASH."
+    );
+  }
+
+  process.exit(totals.errors || incomplete ? 1 : 0);
+}
 
 eachBlog(
   backfillBlog,
   function () {
-    console.log("Backfill complete:");
-    console.log(JSON.stringify(totals, null, 2));
-    process.exit(totals.errors ? 1 : 0);
+    // eachBlog silently skips a blog whose blog/owner record won't load, so a
+    // clean exit doesn't prove full coverage. When we backfilled the whole
+    // fleet (no -o/-s/-e slice), cross-check the processed count.
+    if (options.o || options.s || options.e) return finish(null);
+
+    Blog.getAllIDs(function (err, ids) {
+      finish(err || !ids ? null : ids.length);
+    });
   },
   options
 );

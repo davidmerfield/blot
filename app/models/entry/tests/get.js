@@ -108,6 +108,19 @@ describe("entry.get", function () {
       });
     });
 
+    it("keeps id on a multi-entry single-field read so results stay correlatable", async function () {
+      await this.set("/a.txt", "# Alpha\n\naaa");
+      await this.set("/b.txt", "# Beta\n\nbbb");
+
+      var entries = await get(this.blog.id, ["/a.txt", "/b.txt"], "title");
+
+      expect(entries.length).toEqual(2);
+      entries.forEach(function (entry) {
+        expect(typeof entry.title).toEqual("string");
+        expect(typeof entry.id).toEqual("string");
+      });
+    });
+
     it("falls back to the legacy JSON string key when the hash is missing", async function () {
       await this.set("/legacy.txt", "# Legacy\n\nold entry");
 
@@ -120,6 +133,18 @@ describe("entry.get", function () {
 
       var title = await get(this.blog.id, "/legacy.txt", "title");
       expect(title).toEqual("Legacy");
+    });
+
+    it("projects the JSON-string fallback down to the requested fields", async function () {
+      await this.set("/legacy.txt", "# Legacy\n\nheavy body here");
+      await redis.del(key.entryHash(this.blog.id, "/legacy.txt"));
+
+      var entry = await get(this.blog.id, "/legacy.txt", ["title", "url"]);
+
+      expect(entry.title).toEqual("Legacy");
+      expect(entry.id).toEqual("/legacy.txt");
+      expect("html" in entry).toBe(false);
+      expect("body" in entry).toBe(false);
     });
 
     it("returns undefined for a missing single entry", async function () {
