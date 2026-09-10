@@ -14,22 +14,10 @@ var pathNormalizer = require("helper/pathNormalizer");
 var makeSlug = require("helper/makeSlug");
 var path = require("path");
 var IgnoredFiles = require("models/ignoredFiles");
+var isUnsafeFolderPostPreview = require("./isUnsafeFolderPostPreview");
 
 var basename = (path.posix || path).basename;
 var noop = () => {};
-
-// A folder post is synthesized at an extensionless path with no file behind
-// it. Outside /drafts/, previewPath("/album") is the bare "/album.html",
-// which could be a real sibling source file, so a draft folder post there
-// must not write or remove a filesystem preview. Inside /drafts/ the preview
-// gets the safe ".preview.html" appendix, so the normal flow is fine.
-function isUnsafeFolderPostPreview(targetPath, entryHtml) {
-  return (
-    typeof entryHtml === "string" &&
-    entryHtml.indexOf('class="multi-file-post"') !== -1 &&
-    pathNormalizer(targetPath).toLowerCase().indexOf("/drafts/") === -1
-  );
-}
 
 function isPublic(path) {
   const normalizedPath = pathNormalizer(path).toLowerCase();
@@ -94,10 +82,16 @@ function buildAndSet(blog, path, multiInfo, callback) {
       });
     }
 
-    if (err && err.code === "EMPTY" && multiInfo)
-      return dropEntryAndPreview(blog.id, multiInfo.entryPath, callback);
-
-    if (err && err.code === "TOO_MANY_FILES" && multiInfo)
+    // A "+" folder that no longer resolves to a readable directory - emptied
+    // (EMPTY), over the file cap (TOO_MANY_FILES), replaced by a file
+    // (ENOTDIR), or gone (ENOENT) - can't produce an aggregate. Drop the
+    // stale synthesized entry instead of leaving it published on a generic
+    // error.
+    if (
+      err &&
+      multiInfo &&
+      ["EMPTY", "TOO_MANY_FILES", "ENOTDIR", "ENOENT"].indexOf(err.code) !== -1
+    )
       return dropEntryAndPreview(blog.id, multiInfo.entryPath, callback);
 
     if (err) return callback(err);

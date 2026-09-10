@@ -185,6 +185,51 @@ describe("build multiple", function () {
     expect(entry.draft).toBe(false);
   });
 
+  it("overrides a repeated scalar key spelled with a different case", async function () {
+    var root = path.join(this.blogDirectory, "titlecase+");
+
+    fs.outputFileSync(path.join(root, "01.md"), "Title: First\n\n# One");
+    fs.outputFileSync(path.join(root, "02.md"), "title: Second\n\n# Two");
+
+    var entry = await this.buildEntry("/titlecase+");
+
+    var titleKeys = Object.keys(entry.metadata).filter(function (key) {
+      return key.toLowerCase() === "title";
+    });
+    expect(titleKeys.length).toBe(1);
+    expect(entry.metadata[titleKeys[0]]).toBe("Second");
+  });
+
+  it("injects a heading when the only h1 is beyond the first three source files", async function () {
+    var root = path.join(this.blogDirectory, "long-read+");
+
+    fs.outputFileSync(path.join(root, "01.md"), "Intro paragraph.");
+    fs.outputFileSync(path.join(root, "02.md"), "More text.");
+    fs.outputFileSync(path.join(root, "03.md"), "Still going.");
+    fs.outputFileSync(path.join(root, "04.md"), "# The Real Heading\n\nBody.");
+
+    var entry = await this.buildEntry("/long-read+");
+
+    // prepare/title.js never reaches the 4th file's <h1>, so a heading is
+    // injected and the stored title matches what renders at the top.
+    expect(entry.html).toContain(
+      '<h1 class="multi-file-title">Long Read</h1>'
+    );
+    expect(entry.title).toBe("Long Read");
+  });
+
+  it("does not inject a heading when an early source file has an h1", async function () {
+    var root = path.join(this.blogDirectory, "early-head+");
+
+    fs.outputFileSync(path.join(root, "01.md"), "No heading here.");
+    fs.outputFileSync(path.join(root, "02.md"), "# Second File Heading");
+    fs.outputFileSync(path.join(root, "03.md"), "# Third File Heading");
+
+    var entry = await this.buildEntry("/early-head+");
+
+    expect(entry.html).not.toContain('class="multi-file-title"');
+  });
+
   it("uses an explicit Title from metadata for the injected heading", async function () {
     var root = path.join(this.blogDirectory, "trip-photos+");
 

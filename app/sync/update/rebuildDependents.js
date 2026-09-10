@@ -7,6 +7,7 @@ var dependentsKey = Entry.key.dependents;
 const clfdate = require("helper/clfdate");
 var Preview = require("./preview");
 var isHidden = require("build/prepare/isHidden");
+var isUnsafeFolderPostPreview = require("./isUnsafeFolderPostPreview");
 
 var NO_LONGER_VALID_ERRORS = [
   "WRONGTYPE",
@@ -147,7 +148,14 @@ function dropDependent(blogID, path, callback) {
     Entry.drop(blogID, path, function (err) {
       if (err) return callback(err);
 
-      if (entry.draft && !isHidden(path)) {
+      // Same guard as set.js: never remove a filesystem preview for a draft
+      // folder post outside /drafts/, where its path maps to a bare
+      // "/album.html" that could be the user's real sibling source file.
+      if (
+        entry.draft &&
+        !isHidden(path) &&
+        !isUnsafeFolderPostPreview(path, entry.html)
+      ) {
         Preview.remove(blogID, path, callback);
       } else {
         callback();

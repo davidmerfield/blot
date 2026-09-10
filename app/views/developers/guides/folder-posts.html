@@ -42,7 +42,7 @@
 
 <h2>Merged metadata, dependencies, and stats</h2>
 
-<p><a href="/how/metadata">Metadata</a> from every source file is merged into the entry. Later files override earlier files for a repeated key, except <code>Tags</code>, which are unioned across all files. The entry also carries a <code>_sourcePaths</code> array listing the files it was built from, in order. Dependencies (such as images referenced by a Markdown file) and the entry&rsquo;s size and dates are merged the same way.</p>
+<p><a href="/how/metadata">Metadata</a> from every source file is merged into the entry. Later files override earlier files for a repeated key (matched case-insensitively), except <code>Tags</code>, which are unioned across all files. Dependencies (such as images referenced by a Markdown file) and the entry&rsquo;s size and dates are merged the same way. The list of source files is not exposed to templates as metadata &mdash; read it from the <code>data-file</code> attributes in <code>entry.html</code> if you need it.</p>
 
 <h2>Limits</h2>
 
@@ -82,7 +82,7 @@
   height: 1px;
 }</code></pre>
 
-<p>Because <code>entry.html</code> already contains the wrapper, you do not iterate the files in Mustache &mdash; render <code>{{{entry.html}}}</code> and style the sections. To treat only folder posts differently, check for the wrapper class or branch on the <code>_sourcePaths</code> metadata.</p>
+<p>Because <code>entry.html</code> already contains the wrapper, you do not iterate the files in Mustache &mdash; render <code>{{{entry.html}}}</code> and style the sections. To treat only folder posts differently, test for the <code>multi-file-post</code> wrapper class (or a <code>data-folder</code> attribute) in <code>entry.html</code>.</p>
 
 <h2>Example: styling by file type</h2>
 

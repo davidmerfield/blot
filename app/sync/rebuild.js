@@ -3,7 +3,7 @@ const ensure = require("helper/ensure");
 const type = require("helper/type");
 const Update = require("./update");
 const async = require("async");
-const { join, resolve } = require("path");
+const { join, resolve, basename } = require("path");
 const localPath = require("helper/localPath");
 const messenger = require("./messenger");
 const { blog_static_files_dir } = require("config");
@@ -22,6 +22,10 @@ function walk(dir, done) {
       file = resolve(dir, file);
       fs.stat(file, function (err, stat) {
         if (stat && stat.isDirectory()) {
+          // A "+" folder is a rebuild target in its own right. Once it has
+          // been emptied no file path surfaces it, but its stale aggregate
+          // entry still needs the EMPTY cleanup, so record the directory too.
+          if (basename(file).endsWith("+")) results.push(file);
           walk(file, function (err, res) {
             results = results.concat(res);
             if (!--pending) done(null, results);

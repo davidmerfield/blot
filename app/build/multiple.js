@@ -244,7 +244,13 @@ function renderHtmlSections(results, folderPath, metadata) {
 }
 
 function deriveHeading(folderPath, combinedHtml, explicitTitle) {
-  if (/<h1(\s|>)/i.test(combinedHtml)) return "";
+  // prepare/title.js only inspects the first three top-level nodes when it
+  // picks the entry title, so an <h1> beyond the first three source sections
+  // is invisible to it. Mirror that limit: only skip the generated heading
+  // when a heading title.js can actually reach already exists, otherwise the
+  // stored title/slug fall back to the folder name while the rendered post
+  // shows a heading from a later file.
+  if (hasReachableH1(combinedHtml)) return "";
 
   // Prefer an explicit `Title:` from the merged metadata so the injected
   // heading matches entry.title; fall back to the folder name.
@@ -257,6 +263,20 @@ function deriveHeading(folderPath, combinedHtml, explicitTitle) {
     escapeHtml(title) +
     "</h1>"
   );
+}
+
+// True when an <h1> exists within the first three source sections - the same
+// reach prepare/title.js has when deriving the entry title.
+function hasReachableH1(combinedHtml) {
+  var sections = String(combinedHtml).split(
+    '\n  <section class="multi-file-entry"'
+  );
+
+  // sections[0] is whatever preceded the first marker (normally ""); the
+  // first three real sections are sections[1..3].
+  return sections.slice(1, 4).some(function (section) {
+    return /<h1[\s>]/i.test(section);
+  });
 }
 
 function metadataTitle(metadata) {
@@ -338,13 +358,15 @@ function mergeMetadata(target, source) {
   Object.keys(source).forEach(function (rawKey) {
     var incoming = source[rawKey];
 
-    // Resolve tag keys case-insensitively ("Tags" vs "tags") so both spellings
-    // merge into a single key instead of surviving as two.
+    // Resolve every repeated key case-insensitively ("Title" vs "title",
+    // "Tags" vs "tags") so both spellings merge into one key instead of
+    // surviving as two - otherwise a later file's `title` cannot override an
+    // earlier file's `Title` the way the documented merge order promises.
     var key = rawKey;
-    if (isTagKey(rawKey)) {
-      var existingTagKey = Object.keys(result).filter(isTagKey)[0];
-      if (existingTagKey) key = existingTagKey;
-    }
+    var existingKey = Object.keys(result).filter(function (candidate) {
+      return candidate.toLowerCase() === String(rawKey).toLowerCase();
+    })[0];
+    if (existingKey) key = existingKey;
 
     if (Array.isArray(result[key]) && Array.isArray(incoming)) {
       result[key] = Array.from(new Set(result[key].concat(incoming)));

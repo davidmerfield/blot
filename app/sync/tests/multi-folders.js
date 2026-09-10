@@ -503,6 +503,76 @@ describe("sync multi-folder support", function () {
     });
   });
 
+  it("drops the aggregate when the + folder is replaced by a file", function (done) {
+    var Fix = require("sync/fix");
+    var blog = this.blog;
+    var blogID = blog.id;
+    var root = this.blogDirectory;
+
+    syncFolder(blogID, function (err, folder, finish) {
+      if (err) return done.fail(err);
+
+      async.series(
+        [
+          function (next) {
+            fs.outputFileSync(path.join(root, "essay+/one.md"), "# One");
+            folder.update("/essay+/one.md", next);
+          },
+          function (next) {
+            fs.outputFileSync(path.join(root, "essay+/two.md"), "# Two");
+            folder.update("/essay+/two.md", next);
+          },
+        ],
+        function (seriesErr) {
+          finish(seriesErr, function (finishErr) {
+            if (seriesErr || finishErr)
+              return done.fail(seriesErr || finishErr);
+
+            Entry.get(blogID, "/essay", function (initialEntry) {
+              expect(initialEntry).toBeDefined();
+
+              // Swap the directory for a plain file at the same path.
+              fs.removeSync(path.join(root, "essay+"));
+              fs.outputFileSync(path.join(root, "essay+"), "not a folder");
+
+              syncFolder(blogID, function (err2, folder2, finish2) {
+                if (err2) return done.fail(err2);
+
+                folder2.update("/essay+", function (updateErr) {
+                  finish2(updateErr, function (finishErr2) {
+                    if (finishErr2) return done.fail(finishErr2);
+
+                    Entry.get(blogID, "/essay", function (afterUpdate) {
+                      if (afterUpdate) {
+                        expect(afterUpdate.deleted).toBe(true);
+                      } else {
+                        expect(afterUpdate).toBeFalsy();
+                      }
+
+                      // Fix() also treats a non-directory "+" path as a ghost.
+                      Fix(blog, function (fixErr) {
+                        if (fixErr) return done.fail(fixErr);
+
+                        Entry.get(blogID, "/essay", function (afterFix) {
+                          if (afterFix) {
+                            expect(afterFix.deleted).toBe(true);
+                          } else {
+                            expect(afterFix).toBeFalsy();
+                          }
+                          done();
+                        });
+                      });
+                    });
+                  });
+                });
+              });
+            });
+          });
+        }
+      );
+    });
+  });
+
   it("drops the aggregate when a source exceeds the size limit and recovers after shrinking", function (done) {
     var limit = require("build/converters/post-source-size").MARKDOWN.bytes;
     var IgnoredFiles = require("models/ignoredFiles");

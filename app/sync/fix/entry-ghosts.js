@@ -84,11 +84,14 @@ function main (blog, callback) {
       if (_entry.deleted) return next();
 
       // Folder posts have no file at their own path; they are ghosts only if
-      // the "+" folder they were built from is gone.
+      // the "+" folder they were built from is gone - or has been replaced by
+      // a plain file, which can no longer aggregate anything.
       var multiFolder = folderPostFolder(_entry);
       if (multiFolder) {
-        return fs.access(localPath(blog.id, multiFolder), function (err) {
-          if (err) missing.push({ entry: _entry, path: _entry.path });
+        return fs.stat(localPath(blog.id, multiFolder), function (err, stat) {
+          if (err || !stat.isDirectory()) {
+            missing.push({ entry: _entry, path: _entry.path });
+          }
           next();
         });
       }
