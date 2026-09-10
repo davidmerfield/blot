@@ -38,6 +38,7 @@ var totals = {
   repaired: 0,
   skipped: 0,
   collisions: 0,
+  disabled: 0,
 };
 
 function getList(blogID) {
@@ -77,6 +78,21 @@ async function processBlog(blog) {
   if (!pending.length) return;
 
   var per = { divergent: pending.length, repaired: 0, skipped: 0, collisions: 0 };
+
+  // establishSyncLock delegates to Sync, which refuses a disabled blog, so a
+  // divergent template on one cannot be repaired here. Report it distinctly:
+  // it stays vulnerable to the original overwrite bug and must be rerun once
+  // the blog is re-enabled.
+  if (blog.isDisabled) {
+    totals.disabled += pending.length;
+    console.log(
+      "  blog " + blog.id + " (" + (blog.handle || "no handle") + "): " +
+      "DISABLED — " + pending.length + " divergent template(s) left; " +
+      "rerun `node scripts/template/fix-divergent-slugs.js " +
+      (APPLY ? "--apply " : "") + blog.id + "` after re-enabling"
+    );
+    return;
+  }
 
   var syncLock = null;
   if (APPLY) {
@@ -163,11 +179,20 @@ function printGrandTotal() {
     "  divergent " + totals.divergent +
     (APPLY ? "  repaired " : "  would repair ") + totals.repaired +
     "  skipped " + totals.skipped +
-    "  collisions " + totals.collisions
+    "  collisions " + totals.collisions +
+    "  disabled " + totals.disabled
   );
 
   if (!APPLY && totals.divergent) {
     console.log("\nRe-run with --apply to make these changes.");
+  }
+
+  if (totals.disabled) {
+    console.log(
+      "\n" + totals.disabled +
+      " divergent template(s) are on disabled blogs and were not repaired — " +
+      "rerun this script for those blogs once they are re-enabled."
+    );
   }
 }
 

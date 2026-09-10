@@ -41,6 +41,15 @@ function safeDir(blogID, root, slug) {
   return abs;
 }
 
+// A blot-folder-relative path for a client call. Always leading-slashed:
+// git and dropbox strip the slash themselves, but google-drive's write adds
+// one (so its file-id database is keyed with it) while its remove does not —
+// pass the slashed form so removals actually match. See clients/google-drive.
+function clientPath() {
+  var parts = Array.prototype.slice.call(arguments).filter(Boolean);
+  return "/" + parts.join("/");
+}
+
 // Pure classification of a template's stored slug against its id.
 //   { divergent: false }
 //   { divergent: true, repairable: false, reason }   -> needs a manual rename
@@ -82,9 +91,11 @@ function classify(blogID, template) {
   return { divergent: true, repairable: true, target: target };
 }
 
-// List every regular file under absDir (relative, "/"-joined). Symlinks and
-// directories themselves are skipped; dotfiles and shouldIgnoreFile-ignored
-// local-only files are kept so the move is lossless.
+// List every regular file under absDir (relative, "/"-joined). Directories
+// themselves are skipped; dotfiles and shouldIgnoreFile-ignored local-only
+// files are kept so the move is lossless. Symlinks are handled separately
+// (containsSymlink) — a tree with one is refused rather than silently losing
+// it, so they never reach here.
 function walkFiles(absDir) {
   var out = [];
 
@@ -108,13 +119,44 @@ function walkFiles(absDir) {
   return out;
 }
 
-// Copy each file from srcAbs/<rel> to <destRel>/<rel>. Real template files go
-// through the blog's client so the move propagates to the provider; ignored
-// local-only files (which client.write refuses) are written straight to disk.
-async function copyFiles(blogID, client, files, srcAbs, destRel) {
+// True if any entry anywhere under absDir is a symlink. writeToFolder leaves
+// symlinks out of reconciliation without deleting them; this migration deletes
+// the whole source directory through the client, so a tracked symlink would be
+// lost. Refuse such a directory instead.
+function containsSymlink(absDir) {
+  var found = false;
+
+  (function walk(dir) {
+    if (found) return;
+    var entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (e) {
+      if (e.code === "ENOENT" || e.code === "ENOTDIR") return;
+      throw e;
+    }
+    for (var i = 0; i < entries.length; i++) {
+      if (found) return;
+      var entry = entries[i];
+      if (entry.isSymbolicLink()) {
+        found = true;
+        return;
+      }
+      if (entry.isDirectory()) walk(path.join(dir, entry.name));
+    }
+  })(absDir);
+
+  return found;
+}
+
+// Copy each file from srcAbs/<rel> to <destRelClient>/<rel>. Real template
+// files go through the blog's client so the move propagates to the provider;
+// ignored local-only files (which client.write refuses) are written straight
+// to disk.
+async function copyFiles(blogID, client, files, srcAbs, destRelClient) {
   for (var i = 0; i < files.length; i++) {
     var rel = files[i];
-    var destFileRel = path.join(destRel, rel);
+    var destFileRel = destRelClient + "/" + rel;
     var contents = await fs.readFile(path.join(srcAbs, rel));
 
     if (!client || shouldIgnoreFile(destFileRel)) {
@@ -128,10 +170,10 @@ async function copyFiles(blogID, client, files, srcAbs, destRel) {
 // Remove the stale directory: through the client first (so the provider drops
 // the tracked files), then a plain fs.remove to sweep up any local-only
 // leftovers and the now-empty directory shell.
-async function removeDir(blogID, client, oldRel, oldAbs) {
+async function removeDir(blogID, client, oldRelClient, oldAbs) {
   if (client) {
     try {
-      await promisify(client.remove)(blogID, oldRel);
+      await promisify(client.remove)(blogID, oldRelClient);
     } catch (e) {
       if (!e || e.code !== "ENOENT") throw e;
     }
@@ -151,7 +193,10 @@ async function removeDir(blogID, client, oldRel, oldAbs) {
 //   { repaired: true }                     applied
 //
 // Throws on a folder / metadata error — the record is then left untouched so a
-// rerun retries it identically rather than skipping it.
+// rerun retries it identically rather than skipping it. If the metadata write
+// fails after the folder was moved, the move is rolled back first so the
+// buildFromFolder that syncLock.done() runs does not see a folder whose name
+// no longer matches the still-stored slug (and drop the template).
 async function repairDivergentSlug(blog, template, options) {
   options = options || {};
   var apply = options.apply === true;
@@ -178,20 +223,27 @@ async function repairDivergentSlug(blog, template, options) {
     };
   }
 
-  // If the stale slug resolves (via makeID) to a *different* real template,
-  // that template may own the directory — leave both for manual handling.
   var list = await promisify(getTemplateList)(blog.id);
+  var owned = (list || []).filter(function (t) {
+    return t.owner === blog.id;
+  });
+
+  // If the stale slug resolves (via makeID) to a *different* real template, or
+  // another owned record stores the *same* stale slug (so both claim the same
+  // physical directory), leave every record involved for manual handling.
   var staleID = makeID(blog.id, oldSlug);
-  var collidesWith = (list || []).find(function (t) {
-    return t.id === staleID && t.id !== template.id;
+  var collidesWith = owned.find(function (t) {
+    return (
+      t.id !== template.id && (t.id === staleID || t.slug === oldSlug)
+    );
   });
   if (collidesWith) {
     return {
       skipped: true,
       collision: true,
       reason:
-        "stale slug " + JSON.stringify(oldSlug) + " resolves to " + staleID +
-        " (another template) — resolve by hand",
+        "stale slug " + JSON.stringify(oldSlug) + " is also claimed by " +
+        collidesWith.id + " — resolve by hand",
     };
   }
 
@@ -216,6 +268,19 @@ async function repairDivergentSlug(blog, template, options) {
     if (stat && stat.isDirectory()) found.push({ root: root, oldAbs: oldAbs });
   }
 
+  // A tracked symlink would be dropped by the copy and then committed as a
+  // deletion by removeDir — refuse the directory rather than lose it.
+  for (var s = 0; s < found.length; s++) {
+    if (containsSymlink(found[s].oldAbs)) {
+      return {
+        skipped: true,
+        reason:
+          found[s].root + "/" + oldSlug +
+          " contains a symlink — reconcile by hand",
+      };
+    }
+  }
+
   log(
     (apply ? "FIX  " : "WOULD FIX ") + blog.id + " " + template.id +
     "  " + JSON.stringify(oldSlug) + " -> " + JSON.stringify(target) +
@@ -233,42 +298,73 @@ async function repairDivergentSlug(blog, template, options) {
 
   if (!apply) return { wouldRepair: true };
 
-  // Move every stale directory before persisting the slug: a failed folder
-  // step must leave the stored slug untouched so a rerun retries identically.
-  for (var f = 0; f < found.length; f++) {
-    var fromRoot = found[f].root;
-    var fromAbs = found[f].oldAbs;
-    var oldRel = path.join(fromRoot, oldSlug);
-    var newRel = path.join(fromRoot, target);
-    var newAbs = safeDir(blog.id, fromRoot, target);
+  // Move every stale directory, then persist the slug. If anything in this
+  // sequence fails, roll the moves back so a rerun retries identically and the
+  // lock's buildFromFolder never sees folder/metadata disagreement.
+  var moved = [];
 
-    if (newAbs === null) {
-      throw new Error(
-        "refusing to move " + oldRel + " into unsafe path " + newRel
-      );
+  try {
+    for (var f = 0; f < found.length; f++) {
+      var fromRoot = found[f].root;
+      var fromAbs = found[f].oldAbs;
+      var oldRelClient = clientPath(fromRoot, oldSlug);
+      var newRelClient = clientPath(fromRoot, target);
+      var newAbs = safeDir(blog.id, fromRoot, target);
+
+      if (newAbs === null) {
+        throw new Error(
+          "refusing to move " + oldRelClient + " into unsafe path " +
+          newRelClient
+        );
+      }
+
+      // No other template can legitimately own <root>/<target>: target is this
+      // template's own id suffix. A directory already there is a leftover from
+      // an interrupted run — overwrite it and continue.
+      var destStat = null;
+      try {
+        destStat = await fs.lstat(newAbs);
+      } catch (e) {
+        if (e.code !== "ENOENT") throw e;
+      }
+      if (destStat) {
+        log("  " + newRelClient + " already present — resuming a prior move");
+      }
+
+      // Record the move before starting it so a mid-copy failure is rolled
+      // back too (copying the partial destination back over the intact
+      // source is a harmless overwrite).
+      moved.push({
+        oldRelClient: oldRelClient,
+        oldAbs: fromAbs,
+        newRelClient: newRelClient,
+        newAbs: newAbs,
+      });
+
+      var files = walkFiles(fromAbs);
+      await copyFiles(blog.id, client, files, fromAbs, newRelClient);
+      await removeDir(blog.id, client, oldRelClient, fromAbs);
     }
 
-    // No other template can legitimately own <root>/<target>: target is this
-    // template's own id suffix. A directory already there is a leftover from
-    // an interrupted run — overwrite it and continue.
-    var destStat = null;
-    try {
-      destStat = await fs.lstat(newAbs);
-    } catch (e) {
-      if (e.code !== "ENOENT") throw e;
+    // The folder is durable under the new name (or there was no folder) — only
+    // now correct the stored slug.
+    await promisify(setMetadata)(template.id, { slug: target });
+  } catch (e) {
+    for (var m = moved.length - 1; m >= 0; m--) {
+      var mv = moved[m];
+      try {
+        var backFiles = walkFiles(mv.newAbs);
+        await copyFiles(blog.id, client, backFiles, mv.newAbs, mv.oldRelClient);
+        await removeDir(blog.id, client, mv.newRelClient, mv.newAbs);
+      } catch (rollbackErr) {
+        log(
+          "  ROLLBACK FAILED " + mv.newRelClient + " -> " + mv.oldRelClient +
+          ": " + rollbackErr.message + " — reconcile by hand"
+        );
+      }
     }
-    if (destStat) {
-      log("  " + newRel + " already present — resuming an interrupted move");
-    }
-
-    var files = walkFiles(fromAbs);
-    await copyFiles(blog.id, client, files, fromAbs, newRel);
-    await removeDir(blog.id, client, oldRel, fromAbs);
+    throw e;
   }
-
-  // The folder is durable under the new name (or there was no folder) — only
-  // now correct the stored slug.
-  await promisify(setMetadata)(template.id, { slug: target });
 
   // setMetadata already bumps cacheID for a blog-owned template; do it
   // explicitly too so the repair is self-contained.
