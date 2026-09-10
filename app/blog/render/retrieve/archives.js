@@ -1,14 +1,11 @@
 var Entries = require("models/entries");
 var arrayify = require("helper/arrayify");
 var projectEntryFields = require("./helpers/projectEntryFields");
-var entryFieldList = require("./helpers/entryFieldList");
 var moment = require("moment");
 require("moment-timezone");
 
 module.exports = function (req, res, callback) {
-  var fields = entryFieldList(req.retrieve, ["archives"]);
-
-  var build = function (allEntries) {
+  Entries.getAll(req.blog.id, function (allEntries) {
     // dateStamp is always kept, so the year/month grouping below is unaffected.
     projectEntryFields(allEntries, req.retrieve, ["archives"]);
 
@@ -51,11 +48,5 @@ module.exports = function (req, res, callback) {
     });
 
     return callback(null, years);
-  };
-
-  if (fields) {
-    Entries.getAll(req.blog.id, { fields: fields }, build);
-  } else {
-    Entries.getAll(req.blog.id, build);
-  }
+  });
 };

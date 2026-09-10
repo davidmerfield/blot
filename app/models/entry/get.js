@@ -1,5 +1,6 @@
 var ensure = require("helper/ensure");
 var type = require("helper/type");
+var config = require("config");
 
 var redis = require("models/client");
 var key = require("./key");
@@ -13,15 +14,18 @@ var Entry = require("./instance");
 //
 // entryIDs may be a single path (string) or an array of paths.
 //
-// fields (optional) restricts which entry properties are read:
-//   - undefined  -> whole entry (HGETALL, falling back to the legacy JSON key)
-//   - "title"    -> just that field. For a single-entry lookup the raw value is
-//                   returned instead of an Entry object.
-//   - ["a", "b"] -> an Entry carrying only those fields.
+// By default this reads the legacy JSON string key, exactly as it always
+// has. When config.redis.readEntriesFromHash is enabled it reads from the
+// per-entry Redis hash instead (falling back to the JSON string for entries
+// the backfill has not reached yet) and honours an optional `fields`
+// argument:
+//   - undefined  -> whole entry
+//   - "title"    -> just that field; for a single-entry lookup the raw value
+//                   is passed to the callback instead of an Entry
+//   - ["a", "b"] -> an Entry carrying only those fields (plus id)
 //
-// The Redis hash written by ./set.js is the source of truth. Entries that have
-// not been backfilled yet (scripts/entry/backfill-hashes.js) have no hash, so
-// we fall back to the JSON string key and coerce it through the same model.
+// `fields` is ignored while reads are still on the JSON string, so callers
+// can be wired up ahead of the cutover without changing behaviour.
 module.exports = function (blogID, entryIDs, fields, callback) {
   if (typeof fields === "function") {
     callback = fields;
@@ -45,6 +49,53 @@ module.exports = function (blogID, entryIDs, fields, callback) {
 
   ensure(entryIDs, "array");
 
+  if (config.redis.readEntriesFromHash) {
+    return getFromHash(blogID, entryIDs, single, fields, callback);
+  }
+
+  return getFromString(blogID, entryIDs, single, callback);
+};
+
+// --- Legacy path: one MGET over the JSON string keys. -----------------------
+
+function getFromString(blogID, entryIDs, single, callback) {
+  var stringKeys = entryIDs.map(function (entryID) {
+    return entryKey(blogID, entryID);
+  });
+
+  redis
+    .mGet(stringKeys)
+    .then(function (entries) {
+      entries = entries || [];
+
+      entries = entries.filter(function (entry) {
+        return entry;
+      });
+
+      entries = entries.map(function (entry) {
+        return new Entry(JSON.parse(entry)); // return value
+      });
+
+      if (single) {
+        entries = entries[0];
+      }
+
+      if (single && !entries) return callback();
+
+      return callback(entries);
+    })
+    .catch(function (err) {
+      console.error(err);
+
+      if (single) return callback();
+
+      return callback([]);
+    });
+}
+
+// --- Hash path: HMGET/HGETALL per entry, JSON-string fallback. --------------
+
+function getFromHash(blogID, entryIDs, single, fields, callback) {
   var scalarMode = single && typeof fields === "string";
 
   var fieldList = null;
@@ -66,7 +117,7 @@ module.exports = function (blogID, entryIDs, fields, callback) {
 
   Promise.all(reads)
     .then(function (hashResults) {
-      // Work out which entries had no hash and need the legacy JSON key.
+      // Which entries have no hash yet and need the legacy JSON key?
       var missingIndexes = [];
 
       hashResults.forEach(function (result, index) {
@@ -74,7 +125,9 @@ module.exports = function (blogID, entryIDs, fields, callback) {
       });
 
       if (!missingIndexes.length) {
-        return hashResults.map(toPayload);
+        return hashResults.map(function (result) {
+          return toPayload(result, fieldList);
+        });
       }
 
       var stringKeys = missingIndexes.map(function (index) {
@@ -91,7 +144,7 @@ module.exports = function (blogID, entryIDs, fields, callback) {
           if (byIndex[index] !== undefined && byIndex[index] !== null) {
             return parseJSON(byIndex[index]);
           }
-          return toPayload(result);
+          return toPayload(result, fieldList);
         });
       });
     })
@@ -126,37 +179,37 @@ module.exports = function (blogID, entryIDs, fields, callback) {
 
       return callback([]);
     });
+}
 
-  // Convert one hash read (object from HGETALL or array from HMGET) into a
-  // plain, type-coerced object - or null when there was nothing there.
-  function toPayload(result) {
-    if (!result) return null;
+// Convert one hash read (object from HGETALL or array from HMGET) into a
+// plain, type-coerced object - or null when there was nothing there.
+function toPayload(result, fieldList) {
+  if (!result) return null;
 
-    var raw;
+  var raw;
 
-    if (Array.isArray(result)) {
-      raw = {};
-      fieldList.forEach(function (field, i) {
-        if (result[i] !== null && result[i] !== undefined) raw[field] = result[i];
-      });
-    } else {
-      raw = result;
-    }
-
-    if (!Object.keys(raw).length) return null;
-
-    return format.deserialize(raw);
+  if (Array.isArray(result)) {
+    raw = {};
+    fieldList.forEach(function (field, i) {
+      if (result[i] !== null && result[i] !== undefined) raw[field] = result[i];
+    });
+  } else {
+    raw = result;
   }
 
-  function parseJSON(value) {
-    try {
-      return JSON.parse(value);
-    } catch (e) {
-      console.error("entry.get: failed to parse JSON entry", e);
-      return null;
-    }
+  if (!Object.keys(raw).length) return null;
+
+  return format.deserialize(raw);
+}
+
+function parseJSON(value) {
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    console.error("entry.get: failed to parse JSON entry", e);
+    return null;
   }
-};
+}
 
 // HGETALL returns {} for a missing hash; HMGET returns [null, null, ...]. Any
 // non-null field means the hash exists (an existing entry always has scalar
