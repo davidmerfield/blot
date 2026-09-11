@@ -27,15 +27,11 @@ Stats.get("/stats.json", async (req, res) => {
     // Get the most recent files
     const files = await fs.readdir(stats_directory);
 
-    let most_recent_files = files
-      .filter(file => file.indexOf(".json") > -1)
-      .sort();
-
-    if (files.length < number_of_files) {
-      most_recent_files = most_recent_files
-        // we fetch an extra file to ensure we have enough data if the hour just rolled over
-        .slice(-1 * (number_of_files + 1));
-    }
+    const most_recent_files = files
+      .filter(file => file.endsWith(".json"))
+      .sort()
+      // Include the preceding file when the current hour is incomplete.
+      .slice(-(number_of_files + 1));
 
     // Read the files
     const data = await Promise.all(
