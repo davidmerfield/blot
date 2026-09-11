@@ -55,23 +55,26 @@ function resolve(src, ownHostnames) {
 
   if (!parsed.hostname) return null;
 
-  // A non-default port means this URL points at a different service
-  // running on the blog's domain, not necessarily the blog itself -
-  // don't assume it maps onto the blog's own folder.
-  if (parsed.port) return null;
+  // An explicit non-default port means this URL points at a different
+  // service running on the blog's domain, not necessarily the blog
+  // itself - don't assume it maps onto the blog's own folder. An
+  // explicit *default* port (:80 for http, :443 for https) is the same
+  // origin as no port at all, so that's fine.
+  var defaultPort = parsed.protocol === "https:" ? "443" : "80";
+  if (parsed.port && parsed.port !== defaultPort) return null;
 
   var hostname = stripWWW(parsed.hostname.toLowerCase());
 
   if (ownHostnames.indexOf(hostname) === -1) return null;
 
-  var pathname = parsed.pathname || "/";
+  var pathname = (parsed.pathname || "/").toLowerCase();
 
   if (RESERVED_PREFIXES.some(function (prefix) {
     return pathname.indexOf(prefix) === 0;
   }))
     return null;
 
-  return pathname;
+  return parsed.pathname || "/";
 }
 
 module.exports = {

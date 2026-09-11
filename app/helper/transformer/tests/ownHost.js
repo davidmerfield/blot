@@ -51,6 +51,15 @@ describe("helper/transformer/ownHost", function () {
       ).toBe(null);
     });
 
+    it("allows an explicit default port", function () {
+      expect(
+        ownHost.resolve("https://example.com:443/cat.jpg", ownHostnames)
+      ).toEqual("/cat.jpg");
+      expect(
+        ownHost.resolve("http://example.com:80/cat.jpg", ownHostnames)
+      ).toEqual("/cat.jpg");
+    });
+
     it("returns null for a path app/blog/assets.js serves globally, even if the blog folder happens to have a file there too", function () {
       expect(
         ownHost.resolve("https://example.com/icons/search.svg", ownHostnames)
@@ -63,6 +72,15 @@ describe("helper/transformer/ownHost", function () {
       ).toBe(null);
       expect(
         ownHost.resolve("https://example.com/plugins/foo.js", ownHostnames)
+      ).toBe(null);
+    });
+
+    it("matches reserved global asset prefixes case-insensitively", function () {
+      expect(
+        ownHost.resolve("https://example.com/ICONS/search.svg", ownHostnames)
+      ).toBe(null);
+      expect(
+        ownHost.resolve("https://example.com/Fonts/foo.woff2", ownHostnames)
       ).toBe(null);
     });
 
