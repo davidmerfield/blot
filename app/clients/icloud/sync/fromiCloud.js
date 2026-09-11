@@ -91,6 +91,19 @@ module.exports = async (blogID, publish, update) => {
       }
     }
 
+    // Add every new remote file in this directory to the total before
+    // processing any of them, so progress reflects the real amount of work
+    // discovered instead of total growing in lockstep with current.
+    const newFileCount = remoteContents.filter(
+      (item) =>
+        !item.isDirectory &&
+        !localContents.find(
+          (localItem) =>
+            localItem.name.normalize("NFC") === item.name.normalize("NFC")
+        )
+    ).length;
+    progress.discover(newFileCount);
+
     for (const { name, size, isDirectory } of remoteContents) {
       const path = join(dir, name);
       const existsLocally = localContents.find(
@@ -123,10 +136,13 @@ module.exports = async (blogID, publish, update) => {
         if (!existsLocally || (existsLocally && !identicalOnRemote)) {
           try {
             if (size > maxFileSize) {
+              // A missing existsLocally was already added to total by the
+              // discover() pass above; only a type mismatch (local dir
+              // where a file is expected) is new work discovered here.
               progress.publish(
                 "File too large",
                 `${path} (${size} bytes > ${maxFileSize} byte limit)`,
-                !existsLocally || existsLocally.isDirectory
+                Boolean(existsLocally && existsLocally.isDirectory)
               );
               summary.skipped += 1;
 
@@ -145,7 +161,7 @@ module.exports = async (blogID, publish, update) => {
             progress.publish(
               "Downloading",
               path,
-              !existsLocally || existsLocally.isDirectory
+              Boolean(existsLocally && existsLocally.isDirectory)
             );
 
             await download(blogID, path);
@@ -155,7 +171,7 @@ module.exports = async (blogID, publish, update) => {
             publish("Failed to download", path, e);
           }
         } else {
-          progress.publish("Checking", path);
+          progress.publishThrottled("Checking", path);
         }
       }
     }

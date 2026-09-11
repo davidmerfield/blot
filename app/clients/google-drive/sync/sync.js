@@ -127,6 +127,16 @@ module.exports = async function sync(blogID, publish, update) {
       }
     }
 
+    // Add every new remote file in this directory to the total before
+    // processing any of them, so progress reflects the real amount of work
+    // discovered instead of total growing in lockstep with current.
+    const newFileCount = remoteContents.filter(
+      (item) =>
+        !item.isDirectory &&
+        !localContents.find((localItem) => localItem.name === item.name)
+    ).length;
+    progress.discover(newFileCount);
+
     for (const {
       id,
       name,
@@ -157,10 +167,13 @@ module.exports = async function sync(blogID, publish, update) {
 
         if (!existsLocally || !identical) {
           await checkWeCanContinue();
+          // A missing existsLocally was already added to total by the
+          // discover() pass above; only a type mismatch (local dir where a
+          // file is expected) is new work discovered here.
           progress.publish(
             "Downloading",
             path,
-            !existsLocally || existsLocally.isDirectory
+            Boolean(existsLocally && existsLocally.isDirectory)
           );
 
           if (existsLocally) {
@@ -200,7 +213,7 @@ module.exports = async function sync(blogID, publish, update) {
             console.error("Download failed for", path, err);
           }
         } else {
-          progress.publish("Checking", path);
+          progress.publishThrottled("Checking", path);
         }
       } else {
         if (existsLocally && !existsLocally.isDirectory) {

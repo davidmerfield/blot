@@ -62,4 +62,37 @@ describe("resync progress", function () {
       "(3/3) Finished processing folder",
     ]);
   });
+
+  it("discovers work up front instead of growing total one item at a time", function () {
+    const messages = [];
+    // An empty local folder (total=0) about to download 3 remote-only files.
+    const progress = createProgress(0, (message) => messages.push(message));
+
+    progress.discover(3);
+    progress.publish("Downloading", "/one.txt");
+    progress.publish("Downloading", "/two.txt");
+    progress.publish("Downloading", "/three.txt");
+    progress.finish("Finished processing folder");
+
+    expect(messages).toEqual([
+      "(1/3) Downloading /one.txt",
+      "(2/3) Downloading /two.txt",
+      "(3/3) Downloading /three.txt",
+      "(3/3) Finished processing folder",
+    ]);
+  });
+
+  it("throttles high-volume updates without losing progress accounting", function () {
+    const messages = [];
+    const progress = createProgress(3, (message) => messages.push(message));
+
+    // All three calls land within the same throttle window, so only the
+    // first is actually emitted - but current still advances for each one.
+    progress.publishThrottled("Checking", "/one.txt", false, 1, 100000);
+    progress.publishThrottled("Checking", "/two.txt", false, 1, 100000);
+    progress.publishThrottled("Checking", "/three.txt", false, 1, 100000);
+
+    expect(messages).toEqual(["(1/3) Checking /one.txt"]);
+    expect(progress.current).toBe(3);
+  });
 });

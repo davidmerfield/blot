@@ -6,7 +6,6 @@ const tagGhosts = require("./tag-ghosts");
 const entriesPathIndex = require("./entries-path-index");
 const async = require("async");
 const callOnce = require("helper/callOnce");
-const messenger = require("../messenger");
 
 module.exports = function (blog, options, callback) {
   if (!blog) {
@@ -23,8 +22,13 @@ module.exports = function (blog, options, callback) {
   }
 
   const finalReport = {};
-  const fallbackMessenger = options.status ? null : messenger(blog);
-  const status = options.status || fallbackMessenger.status;
+  // Callers that don't pass a status (the legacy two-argument API used by
+  // startup/hourly validators) never published one before this progress
+  // work was added. Keep that silent instead of writing a real messenger's
+  // status to Blog.setStatus - a "(n/5) Checking ..." message with no
+  // terminal follow-up would otherwise leave the dashboard showing that
+  // blog as syncing forever.
+  const status = options.status || function () {};
   const checks = [
     { name: "entry-ghosts", fn: entryGhosts },
     { name: "tag-ghosts", fn: tagGhosts },

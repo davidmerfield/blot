@@ -151,6 +151,19 @@ const walk = async (
     }
   }
 
+  // Add every new remote file in this directory to the total before
+  // processing any of them, so progress reflects the real amount of work
+  // discovered instead of total growing in lockstep with current.
+  const newFileCount = remoteContents.filter((remoteItem) => {
+    const pathOnBlot = join(dir, remoteItem.name);
+    return (
+      !remoteItem.is_directory &&
+      !isDotfileOrDotfolder(pathOnBlot) &&
+      !localContents.find((localItem) => localItem.name === remoteItem.name)
+    );
+  }).length;
+  progress.discover(newFileCount);
+
   for (const remoteItem of remoteContents) {
     const localCounterpart = localContents.find(
       (localItem) => localItem.name === remoteItem.name
@@ -188,10 +201,13 @@ const walk = async (
       );
     } else {
       if (hasUnsupportedExtension(pathOnDropbox)) {
+        // A missing localCounterpart was already added to total by the
+        // discover() pass above; only a type mismatch (local dir where a
+        // file is expected) is new work discovered here.
         progress.publish(
           "Skipping unsupported file",
           pathOnBlot,
-          !localCounterpart || localCounterpart.is_directory
+          Boolean(localCounterpart && localCounterpart.is_directory)
         );
         summary.skipped += 1;
         try {
@@ -209,7 +225,7 @@ const walk = async (
         progress.publish(
           "Skipping oversized file",
           `${pathOnBlot} (${remoteItem.size} bytes > ${MAX_FILE_SIZE} byte limit)`,
-          !localCounterpart || localCounterpart.is_directory
+          Boolean(localCounterpart && localCounterpart.is_directory)
         );
         summary.skipped += 1;
         try {
@@ -237,7 +253,8 @@ const walk = async (
           continue;
         }
       } else if (!localCounterpart) {
-        progress.publish("Downloading", pathOnBlot, true);
+        // Already added to total by the discover() pass above.
+        progress.publish("Downloading", pathOnBlot, false);
         try {
           await download(client, pathOnDropbox, pathOnDisk);
           summary.downloaded += 1;
@@ -245,7 +262,7 @@ const walk = async (
           continue;
         }
       } else {
-        progress.publish("Checking", pathOnBlot);
+        progress.publishThrottled("Checking", pathOnBlot);
       }
     }
   }
