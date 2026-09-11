@@ -1,5 +1,5 @@
 const ensure = require("helper/ensure");
-const callRetriever = require("../lib/callRetriever");
+const callRetriever = require("../../lib/callRetriever");
 
 const all_entries = require("./all_entries");
 const all_tags = require("./all_tags");
