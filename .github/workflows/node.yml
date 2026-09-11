@@ -353,7 +353,7 @@ jobs:
             -v ${{ github.workspace }}/.nyc_output:/usr/src/app/.nyc_output \
             -v ${{ github.workspace }}/.nycrc.json:/usr/src/app/.nycrc.json \
             $IMAGE_TAG \
-            sh -c "nyc --silent node scripts/tests '$TEST_SUITE' --shard='$TEST_SHARD' $EXCLUDE_ARG"
+            sh -c "nyc --silent --no-clean node scripts/tests '$TEST_SUITE' --shard='$TEST_SHARD' $EXCLUDE_ARG"
 
       - name: Upload coverage
         if: always()
@@ -361,6 +361,7 @@ jobs:
         with:
           name: ${{ steps.artifact-name.outputs.name }}
           path: .nyc_output
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
 
@@ -400,13 +401,19 @@ jobs:
 
           echo "Merging $(ls .nyc_output | wc -l) raw coverage files from $(ls coverage-raw | wc -l) shards"
 
-          docker run --rm \
+          # Capture stdout via command substitution (not a pipe) so the
+          # docker run exit code - and therefore this step's - is nyc's own,
+          # not tee's.
+          REPORT_OUTPUT=$(docker run --rm \
             -v ${{ github.workspace }}/app:/usr/src/app/app \
             -v ${{ github.workspace }}/.nyc_output:/usr/src/app/.nyc_output \
             -v ${{ github.workspace }}/.nycrc.json:/usr/src/app/.nycrc.json \
             -v ${{ github.workspace }}/coverage:/usr/src/app/coverage \
             $IMAGE_TAG \
-            sh -c "nyc report -t .nyc_output --reporter=text --reporter=text-summary --reporter=lcov --reporter=json-summary -o coverage | tee coverage/text-report.txt"
+            sh -c "nyc report -t .nyc_output --reporter=text --reporter=text-summary --reporter=lcov --reporter=json-summary -o coverage")
+          DOCKER_EXIT=$?
+          echo "$REPORT_OUTPUT" | tee coverage/text-report.txt
+          exit $DOCKER_EXIT
 
       - name: Add coverage summary to job summary
         run: |
