@@ -8,6 +8,12 @@ var pathNormalizer = require("helper/pathNormalizer");
 var Single = require("./single");
 var enabledConverters = require("./converters/enabled");
 var titlecase = require("helper/titlecase");
+var cheerio = require("cheerio");
+
+// Mirrors the traversal in prepare/title.js exactly: preferred tag order and
+// the "first three nodes at each nesting level" limit.
+var TITLE_TAG_ORDER = ["h4", "h3", "h2", "h1"];
+var TITLE_MAX_DEPTH = 3;
 
 var MAX_MULTI_FILES = 50;
 
@@ -280,18 +286,42 @@ function deriveHeading(folderPath, combinedHtml, explicitTitle) {
   );
 }
 
-// True when an <h1> exists within the first three source sections - the same
-// reach prepare/title.js has when deriving the entry title.
+// True when prepare/title.js would actually resolve an <h1> as the entry
+// title from these sections. It only ever inspects the first three nodes at
+// each nesting level (see the `find` loop in prepare/title.js), so an <h1>
+// buried past that - either as a later source section or past the first
+// three nodes within an early one - is not "reachable" and must not suppress
+// the generated heading.
 function hasReachableH1(combinedHtml) {
-  var sections = String(combinedHtml).split(
-    '\n  <section class="multi-file-entry"'
+  var $ = cheerio.load(
+    String(combinedHtml || ""),
+    { decodeEntities: false, withDomLvl1: false },
+    false
   );
 
-  // sections[0] is whatever preceded the first marker (normally ""); the
-  // first three real sections are sections[1..3].
-  return sections.slice(1, 4).some(function (section) {
-    return /<h1[\s>]/i.test(section);
-  });
+  var titleNode = null;
+
+  function bestTag(first, second) {
+    if (!first || !first.name) return second;
+    if (!second || !second.name) return first;
+    if (TITLE_TAG_ORDER.indexOf(second.name) > TITLE_TAG_ORDER.indexOf(first.name))
+      return second;
+    return first;
+  }
+
+  function find(i, node) {
+    if (i >= TITLE_MAX_DEPTH) return false;
+
+    titleNode = bestTag(titleNode, node);
+
+    if (titleNode.name === "h1") return false;
+
+    $(node).children().each(find);
+  }
+
+  $.root().children().each(find);
+
+  return !!(titleNode && titleNode.name === "h1");
 }
 
 function metadataTitle(metadata) {
@@ -384,7 +414,14 @@ function mergeMetadata(target, source) {
     if (existingKey) key = existingKey;
 
     if (Array.isArray(result[key]) && Array.isArray(incoming)) {
-      result[key] = Array.from(new Set(result[key].concat(incoming)));
+      // Tags are documented as unioned across every source file; any other
+      // repeated array key (Authors, ...) follows the same "later file wins"
+      // rule as a scalar - an empty incoming array does not clobber it.
+      if (isTagKey(key)) {
+        result[key] = Array.from(new Set(result[key].concat(incoming)));
+      } else if (incoming.length) {
+        result[key] = cloneValue(incoming);
+      }
       return;
     }
 

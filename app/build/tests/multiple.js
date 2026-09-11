@@ -141,6 +141,25 @@ describe("build multiple", function () {
     expect(entry.tags.slice().sort()).toEqual(["alpha", "beta"]);
   });
 
+  it("lets a later source file replace a non-tag metadata array instead of unioning it", async function () {
+    var root = path.join(this.blogDirectory, "authors+");
+
+    fs.outputFileSync(
+      path.join(root, "01.md"),
+      ["---", "Authors:", "  - Alice", "---", "", "# One"].join("\n")
+    );
+    fs.outputFileSync(
+      path.join(root, "02.md"),
+      ["---", "Authors:", "  - Bob", "---", "", "# Two"].join("\n")
+    );
+
+    var entry = await this.buildEntry("/authors+");
+
+    // Only Tags are documented as unioned; every other repeated array
+    // follows the same "later file wins" rule as a scalar.
+    expect(entry.metadata.Authors).toEqual(["Bob"]);
+  });
+
   it("excludes .textbundle asset files from folder post sources", async function () {
     var root = path.join(this.blogDirectory, "bundle+");
 
@@ -228,6 +247,24 @@ describe("build multiple", function () {
     var entry = await this.buildEntry("/early-head+");
 
     expect(entry.html).not.toContain('class="multi-file-title"');
+  });
+
+  it("injects a heading when the only h1 is past the first three nodes of a source file", async function () {
+    var root = path.join(this.blogDirectory, "buried-head+");
+
+    fs.outputFileSync(
+      path.join(root, "01.md"),
+      "One.\n\nTwo.\n\nThree.\n\n# Buried Heading"
+    );
+
+    var entry = await this.buildEntry("/buried-head+");
+
+    // prepare/title.js only inspects the first three children at each
+    // nesting level, so a 4th-position heading within a single source file
+    // is exactly as unreachable as one in a 4th source file.
+    expect(entry.html).toContain(
+      '<h1 class="multi-file-title">Buried Head</h1>'
+    );
   });
 
   it("uses an explicit Title from metadata for the injected heading", async function () {

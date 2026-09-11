@@ -653,6 +653,119 @@ describe("sync multi-folder support", function () {
     });
   });
 
+  it("keeps a sibling file's entry when its colliding + folder is deleted", function (done) {
+    var blogID = this.blog.id;
+    var root = this.blogDirectory;
+
+    syncFolder(blogID, function (err, folder, finish) {
+      if (err) return done.fail(err);
+
+      async.series(
+        [
+          function (next) {
+            fs.outputFileSync(
+              path.join(root, "article.md"),
+              "# The Real Article"
+            );
+            folder.update("/article.md", next);
+          },
+          function (next) {
+            fs.outputFileSync(
+              path.join(root, "article.md+/extra.md"),
+              "# Extra"
+            );
+            folder.update("/article.md+/extra.md", next);
+          },
+        ],
+        function (seriesErr) {
+          finish(seriesErr, function (finishErr) {
+            if (seriesErr || finishErr)
+              return done.fail(seriesErr || finishErr);
+
+            // Delete the colliding "+" folder outright.
+            fs.removeSync(path.join(root, "article.md+"));
+
+            syncFolder(blogID, function (err2, folder2, finish2) {
+              if (err2) return done.fail(err2);
+
+              folder2.update("/article.md+", function (updateErr) {
+                finish2(updateErr, function (finishErr2) {
+                  if (finishErr2) return done.fail(finishErr2);
+
+                  Entry.get(blogID, "/article.md", function (entry) {
+                    expect(entry).toBeDefined();
+                    expect(entry.deleted).toBeFalsy();
+                    expect(
+                      entry.html.indexOf("The Real Article")
+                    ).toBeGreaterThan(-1);
+                    done();
+                  });
+                });
+              });
+            });
+          });
+        }
+      );
+    });
+  });
+
+  it("rebuilds a colliding + folder once the blocking sibling file is deleted", function (done) {
+    var blogID = this.blog.id;
+    var root = this.blogDirectory;
+
+    syncFolder(blogID, function (err, folder, finish) {
+      if (err) return done.fail(err);
+
+      async.series(
+        [
+          function (next) {
+            fs.outputFileSync(
+              path.join(root, "article.md"),
+              "# The Real Article"
+            );
+            folder.update("/article.md", next);
+          },
+          function (next) {
+            fs.outputFileSync(
+              path.join(root, "article.md+/extra.md"),
+              "# Extra"
+            );
+            folder.update("/article.md+/extra.md", next);
+          },
+        ],
+        function (seriesErr) {
+          finish(seriesErr, function (finishErr) {
+            if (seriesErr || finishErr)
+              return done.fail(seriesErr || finishErr);
+
+            // Remove the sibling file that was blocking the folder post.
+            fs.removeSync(path.join(root, "article.md"));
+
+            syncFolder(blogID, function (err2, folder2, finish2) {
+              if (err2) return done.fail(err2);
+
+              folder2.update("/article.md", function (updateErr) {
+                finish2(updateErr, function (finishErr2) {
+                  if (finishErr2) return done.fail(finishErr2);
+
+                  Entry.get(blogID, "/article.md", function (entry) {
+                    expect(entry).toBeDefined();
+                    expect(entry.deleted).toBeFalsy();
+                    expect(
+                      entry.html.indexOf("multi-file-post")
+                    ).toBeGreaterThan(-1);
+                    expect(entry.html.indexOf("Extra")).toBeGreaterThan(-1);
+                    done();
+                  });
+                });
+              });
+            });
+          });
+        }
+      );
+    });
+  });
+
   it("drops the aggregate when a source exceeds the size limit and recovers after shrinking", function (done) {
     var limit = require("build/converters/post-source-size").MARKDOWN.bytes;
     var IgnoredFiles = require("models/ignoredFiles");
