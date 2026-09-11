@@ -1,11 +1,14 @@
 const { getEntry, getPage } = require("../../lib/models");
 const LRUCache = require("lru-cache").LRUCache;
 const fetchTaggedEntries = require("./helpers/fetchTaggedEntries");
-const callFetchTaggedEntries = require("../../lib/callFetchTaggedEntries");
 const projectEntryFields = require("./helpers/projectEntryFields");
 const getTemplateSortOptions = require("blog/sortOptions");
 const { cloneDeep, deepFreeze } = require("../../lib/clone");
 const asRetriever = require("../../lib/asRetriever");
+const {
+  normalizePageNumber,
+  normalizePageSize,
+} = require("../../lib/pagination");
 const { sortEntries } = getTemplateSortOptions;
 
 const postsCache = new LRUCache({
@@ -22,16 +25,6 @@ function normalizeTagKey(tags) {
   }
 
   return tags === undefined ? undefined : String(tags);
-}
-
-function parsePositiveInteger(value, fallback) {
-  const parsed = parseInt(value, 10);
-
-  if (!parsed || parsed < 1) {
-    return fallback;
-  }
-
-  return parsed;
 }
 
 function createCacheKey(req, res, normalizedOptions) {
@@ -65,20 +58,19 @@ async function posts(req, res) {
   };
 
   const tags = req?.query?.tag || req?.params?.tag || res?.locals?.tag;
-  const normalizedPageNumber = parsePositiveInteger(options.pageNumber, 1);
-  const normalizedPageSize = parsePositiveInteger(options.pageSize, 100);
-  const normalizedLimit = Math.max(1, Math.min(500, normalizedPageSize));
-  const normalizedOffset = (normalizedPageNumber - 1) * normalizedLimit;
+  const pageNumber = normalizePageNumber(options.pageNumber);
+  const pageSize = normalizePageSize(options.pageSize);
+  const offset = (pageNumber - 1) * pageSize;
   const normalizedOptions = {
     branch: tags ? "tagged" : "untagged",
     tags,
     sortBy: options.sortBy,
     order: options.order,
     pathPrefix: options.pathPrefix,
-    pageNumber: normalizedPageNumber,
-    pageSize: normalizedPageSize,
-    limit: normalizedLimit,
-    offset: normalizedOffset,
+    pageNumber,
+    pageSize,
+    limit: pageSize,
+    offset,
   };
 
   const key = createCacheKey(req, res, normalizedOptions);
@@ -94,21 +86,16 @@ async function posts(req, res) {
 
   if (!tags) {
     log("Loading page of entries");
-    const page = await getPage(blogID, options);
+    const page = await getPage(blogID, {
+      ...options,
+      pageNumber,
+      pageSize,
+    });
     payload = { entries: page.entries, pagination: page.pagination };
   } else {
-    let page = parseInt(options.pageNumber, 10);
-    if (!page || page < 1) page = 1;
-
-    let limit = parseInt(options.pageSize, 10);
-    if (!Number.isFinite(limit)) limit = undefined;
-    if (!limit || limit < 1 || limit > 500) limit = 100;
-
-    const offset = (page - 1) * limit;
-
     log("Loading tagged page of entries");
-    const result = await callFetchTaggedEntries(fetchTaggedEntries, blogID, tags, {
-      limit,
+    const result = await fetchTaggedEntries(blogID, tags, {
+      limit: pageSize,
       offset,
       pathPrefix: options.pathPrefix,
       sortBy: options.sortBy,

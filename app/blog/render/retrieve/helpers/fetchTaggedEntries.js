@@ -208,18 +208,6 @@ async function fetchTaggedEntriesInternal(blogID, slugs, options) {
   });
 }
 
-module.exports = function fetchTaggedEntries(blogID, slugs, options, callback) {
-  if (typeof options === "function") {
-    callback = options;
-    options = {};
-  }
-
-  const promise = fetchTaggedEntriesInternal(blogID, slugs, options);
-
-  if (typeof callback === "function") {
-    promise.then((result) => callback(null, result)).catch(callback);
-    return;
-  }
-
-  return promise;
+module.exports = function fetchTaggedEntries(blogID, slugs, options) {
+  return fetchTaggedEntriesInternal(blogID, slugs, options || {});
 };

@@ -7,7 +7,7 @@ const ensure = require("helper/ensure");
 // the view. This is to ensure that variables
 // inside stuff like entry.html
 // are replaced with the values they should.
-module.exports = function renderLocals(req, res, callback) {
+module.exports = function renderLocals(req, res) {
   ensure(res, "object")
     .and(res.locals, "object")
     .and(res.locals.partials, "object");
@@ -18,7 +18,6 @@ module.exports = function renderLocals(req, res, callback) {
   try {
     handle(res.locals);
   } catch (e) {
-    if (typeof callback === "function") return callback(null, req, res);
     return;
   }
 
@@ -53,6 +52,4 @@ module.exports = function renderLocals(req, res, callback) {
       }
     }
   }
-
-  if (typeof callback === "function") return callback(null, req, res);
 };

@@ -1,5 +1,4 @@
 const ensure = require("helper/ensure");
-const callRetriever = require("../../lib/callRetriever");
 
 const all_entries = require("./all_entries");
 const all_tags = require("./all_tags");
@@ -74,7 +73,7 @@ module.exports = async function retrieve(req, res, needed) {
       req.log("Retrieving local", localName);
 
       try {
-        const value = await callRetriever(dictionary[localName], req, res);
+        const value = await dictionary[localName](req, res);
         if (value !== undefined) locals[localName] = value;
       } catch (err) {
         console.log(err);

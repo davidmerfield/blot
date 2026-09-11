@@ -1,5 +1,5 @@
 const { getPage } = require("../lib/models");
-const getTemplateSortOptions = require("../sortOptions");
+const getTemplateSortOptions = require("blog/sortOptions");
 
 module.exports = async function entries(req, res, next) {
   try {

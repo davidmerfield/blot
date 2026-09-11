@@ -1,17 +1,17 @@
 const { getUserById } = require("../lib/models");
 const User = require("models/user");
 
-module.exports = function registerVerify(server) {
+module.exports = function register(blog) {
   // Called on individual blogs to
   // get the handle associated with them...
-  server.get("/verify/domain-setup", function (req, res, next) {
+  blog.get("/verify/domain-setup", function (req, res, next) {
     if (!req.blog || !req.blog.handle) return next();
 
     res.set("Cache-Control", "no-cache");
     res.send(req.blog.handle);
   });
 
-  server.get("/verify/subscription-duration", async function (req, res, next) {
+  blog.get("/verify/subscription-duration", async function (req, res, next) {
     try {
       if (!req.blog || !req.blog.owner) return res.status(404).end();
 

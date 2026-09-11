@@ -1,4 +1,4 @@
-const Template = require("models/template");
+const { getFullView } = require("../lib/models");
 const { cloneDeep, deepFreeze } = require("../lib/clone");
 const LRUCache = require("lru-cache").LRUCache;
 
@@ -21,7 +21,7 @@ function createCacheKey(blog, template, viewName) {
   });
 }
 
-async function getCachedFullViewAsync(options) {
+async function getCachedFullView(options) {
   const blog = options.blog;
   const template = options.template;
   const viewName = options.viewName;
@@ -32,12 +32,7 @@ async function getCachedFullViewAsync(options) {
     return cloneDeep(fullViewCache.get(key));
   }
 
-  const response = await new Promise((resolve, reject) => {
-    Template.getFullView(blog.id, template.id, viewName, (err, result) => {
-      if (err) reject(err);
-      else resolve(result);
-    });
-  });
+  const response = await getFullView(blog.id, template.id, viewName);
 
   const immutableCopy = deepFreeze(cloneDeep(response));
   fullViewCache.set(key, immutableCopy);
@@ -45,18 +40,7 @@ async function getCachedFullViewAsync(options) {
   return cloneDeep(immutableCopy);
 }
 
-// Dual API: promise when called without a callback, callback-style otherwise.
-module.exports = function getCachedFullView(options, callback) {
-  const promise = getCachedFullViewAsync(options);
-
-  if (typeof callback === "function") {
-    promise.then((result) => callback(null, result), callback);
-    return;
-  }
-
-  return promise;
-};
-
+module.exports = getCachedFullView;
 module.exports._createCacheKey = createCacheKey;
 module.exports._clear = function () {
   fullViewCache.clear();

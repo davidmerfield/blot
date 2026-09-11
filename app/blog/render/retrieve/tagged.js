@@ -1,10 +1,13 @@
 const { getEntry } = require("../../lib/models");
 const fetchTaggedEntries = require("./helpers/fetchTaggedEntries");
-const callFetchTaggedEntries = require("../../lib/callFetchTaggedEntries");
 const projectEntryFields = require("./helpers/projectEntryFields");
 const entryFieldList = require("./helpers/entryFieldList");
-const withEntryFieldsAsync = require("../../lib/withEntryFieldsAsync");
+const withEntryFields = require("../../lib/withEntryFields");
 const asRetriever = require("../../lib/asRetriever");
+const {
+  normalizePageNumber,
+  normalizePageSize,
+} = require("../../lib/pagination");
 const getTemplateSortOptions = require("blog/sortOptions");
 const { sortEntries } = getTemplateSortOptions;
 
@@ -17,30 +20,22 @@ async function tagged(req, res) {
     (res.locals && res.locals.tag) ||
     "";
 
-  let page = parseInt(req.params.page, 10);
-  if (!page || page < 1) page = 1;
+  const page = normalizePageNumber(req.params.page);
 
   const templateLocals = (req.template && req.template.locals) || {};
   const pathPrefix =
     (res.locals && res.locals.path_prefix) ?? templateLocals.path_prefix;
   const sortOptions = getTemplateSortOptions(templateLocals);
 
-  let preferredLimit;
+  const preferredLimit =
+    templateLocals.tagged_page_size !== undefined
+      ? templateLocals.tagged_page_size
+      : templateLocals.page_size;
 
-  if (templateLocals.tagged_page_size !== undefined) {
-    preferredLimit = templateLocals.tagged_page_size;
-  } else {
-    preferredLimit = templateLocals.page_size;
-  }
-
-  let limit = parseInt(preferredLimit, 10);
-  if (!Number.isFinite(limit)) limit = undefined;
-
-  if (!limit || limit < 1 || limit > 500) limit = 100;
-
+  const limit = normalizePageSize(preferredLimit);
   const offset = (page - 1) * limit;
 
-  const result = await callFetchTaggedEntries(fetchTaggedEntries, blogID, tags, {
+  const result = await fetchTaggedEntries(blogID, tags, {
     limit,
     offset,
     pathPrefix,
@@ -54,7 +49,7 @@ async function tagged(req, res) {
   if (!fields) {
     entries = await getEntry(blogID, entryIDs);
   } else {
-    entries = await withEntryFieldsAsync(
+    entries = await withEntryFields(
       () => getEntry(blogID, entryIDs, fields),
       () => getEntry(blogID, entryIDs)
     );

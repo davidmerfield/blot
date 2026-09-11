@@ -22,8 +22,8 @@ async function renderDraft(req, res, next, filePath, callback) {
   });
 }
 
-module.exports = function registerDraft(server) {
-  server.get(drafts.streamRoute, async function (req, res, next) {
+module.exports = function register(blog) {
+  blog.get(drafts.streamRoute, async function (req, res, next) {
     const blogID = req.blog.id;
     const client = createRedisClient();
     const filePath = drafts.getPath(req.url, drafts.streamRoute);
@@ -85,7 +85,7 @@ module.exports = function registerDraft(server) {
     });
   });
 
-  server.get(drafts.viewRoute, async function (req, res, next) {
+  blog.get(drafts.viewRoute, async function (req, res, next) {
     const filePath = drafts.getPath(req.url, drafts.viewRoute);
 
     // Asks search engines not to index drafts

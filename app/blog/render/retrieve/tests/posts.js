@@ -241,9 +241,9 @@ describe("posts cache", function () {
 
   it("forwards the resolved sort selection to fetchTaggedEntries and orders the page", function (done) {
     let received;
-    const posts = loadPostsWithTaggedStub(function (blogID, tags, options, cb) {
+    const posts = loadPostsWithTaggedStub(async function (blogID, tags, options) {
       received = { blogID, tags, options };
-      cb(null, { entryIDs: ["a.txt", "m.txt", "z.txt"], pagination: {} });
+      return { entryIDs: ["a.txt", "m.txt", "z.txt"], pagination: {} };
     });
     posts._clear();
 
@@ -305,14 +305,11 @@ describe("posts cache", function () {
   });
 
   it("reuses cached tagged responses for identical inputs", function (done) {
-    const taggedSpy = jasmine.createSpy("fetchTaggedEntries").and.callFake(function (
-      blogID,
-      tags,
-      options,
-      callback
-    ) {
-      callback(null, { entryIDs: ["1", "2"], pagination: { page: 1, pages: 1 } });
-    });
+    const taggedSpy = jasmine
+      .createSpy("fetchTaggedEntries")
+      .and.callFake(async function (blogID, tags, options) {
+        return { entryIDs: ["1", "2"], pagination: { page: 1, pages: 1 } };
+      });
 
     const posts = loadPostsWithTaggedStub(taggedSpy);
     posts._clear();

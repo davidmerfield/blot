@@ -2,7 +2,7 @@ const { getAll } = require("../../lib/models");
 const arrayify = require("helper/arrayify");
 const projectEntryFields = require("./helpers/projectEntryFields");
 const entryFieldList = require("./helpers/entryFieldList");
-const withEntryFieldsAsync = require("../../lib/withEntryFieldsAsync");
+const withEntryFields = require("../../lib/withEntryFields");
 const moment = require("moment");
 require("moment-timezone");
 const asRetriever = require("../../lib/asRetriever");
@@ -14,7 +14,7 @@ async function archives(req, res) {
   if (!fields) {
     allEntries = await getAll(req.blog.id);
   } else {
-    allEntries = await withEntryFieldsAsync(
+    allEntries = await withEntryFields(
       () => getAll(req.blog.id, { fields }),
       () => getAll(req.blog.id)
     );

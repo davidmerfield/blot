@@ -1,7 +1,7 @@
 const { getAll } = require("../../lib/models");
 const projectEntryFields = require("./helpers/projectEntryFields");
 const entryFieldList = require("./helpers/entryFieldList");
-const withEntryFieldsAsync = require("../../lib/withEntryFieldsAsync");
+const withEntryFields = require("../../lib/withEntryFields");
 const asRetriever = require("../../lib/asRetriever");
 
 async function allEntries(req, res) {
@@ -12,7 +12,7 @@ async function allEntries(req, res) {
   if (!fields) {
     allEntriesList = await getAll(req.blog.id);
   } else {
-    allEntriesList = await withEntryFieldsAsync(
+    allEntriesList = await withEntryFields(
       () => getAll(req.blog.id, { fields }),
       () => getAll(req.blog.id)
     );

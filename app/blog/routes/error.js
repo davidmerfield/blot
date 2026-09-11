@@ -7,9 +7,9 @@ const { checkRedirect } = require("../lib/models");
 
 const VIEW_DIR = path.resolve(__dirname + "/../../views");
 
-module.exports = function registerError(server) {
+module.exports = function register(blog) {
   // Redirects
-  server.use(async function (req, res, next) {
+  blog.use(async function (req, res, next) {
     try {
       const redirect = await checkRedirect(req.blog.id, req.url);
 
@@ -30,7 +30,7 @@ module.exports = function registerError(server) {
   });
 
   // 404s
-  server.use(function (req, res, next) {
+  blog.use(function (req, res, next) {
     res.locals.error = {
       title: "Page not found",
       message: "There is no page with this URL.",
@@ -45,7 +45,7 @@ module.exports = function registerError(server) {
   });
 
   // Errors
-  server.use(function (err, req, res, next) {
+  blog.use(function (err, req, res, next) {
     // This reponse was partially finished
     // end it now and get over it...
     if (res.headersSent) return res.end();
@@ -98,7 +98,7 @@ module.exports = function registerError(server) {
   });
 
   // There was an issue with renderView
-  server.use(function (err, req, res, next) {
+  blog.use(function (err, req, res, next) {
     if (res.headersSent) return res.end();
 
     res.status(400);

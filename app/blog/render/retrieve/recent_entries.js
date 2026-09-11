@@ -1,7 +1,7 @@
 const { getRecent } = require("../../lib/models");
 const projectEntryFields = require("./helpers/projectEntryFields");
 const entryFieldList = require("./helpers/entryFieldList");
-const withEntryFieldsAsync = require("../../lib/withEntryFieldsAsync");
+const withEntryFields = require("../../lib/withEntryFields");
 const asRetriever = require("../../lib/asRetriever");
 
 async function recentEntries(req, res) {
@@ -12,7 +12,7 @@ async function recentEntries(req, res) {
   if (!fields) {
     recent = await getRecent(req.blog.id);
   } else {
-    recent = await withEntryFieldsAsync(
+    recent = await withEntryFields(
       () => getRecent(req.blog.id, { fields }),
       () => getRecent(req.blog.id)
     );

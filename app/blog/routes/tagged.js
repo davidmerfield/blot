@@ -1,12 +1,11 @@
 const retrieveTagged = require("../render/retrieve/tagged");
-const callRetriever = require("../lib/callRetriever");
 
-module.exports = function registerTagged(server) {
-  server.get(
+module.exports = function register(blog) {
+  blog.get(
     ["/tagged/:tag", "/tagged/:tag/page/:page"],
     async function (req, res, next) {
       try {
-        const result = await callRetriever(retrieveTagged, req, res);
+        const result = await retrieveTagged(req, res);
 
         res.locals.slug = encodeURIComponent(req.params.tag);
         res.locals.tag = (result && result.tag) || req.params.tag;
