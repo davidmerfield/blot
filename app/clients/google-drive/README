@@ -184,9 +184,10 @@ HTML templates for user-facing pages:
 - Recursively walks the remote folder tree.
 - For each remote file/folder:
   - If missing locally, downloads it or creates a directory.
-  - If present but out-of-date (different size or mod time), re-downloads.
+  - If present but out-of-date, re-downloads.
   - For Google Docs, uses modification time for comparison (no MD5).
-  - For regular files, uses file size.
+  - For regular files, the downloader compares the local MD5 with the remote checksum; size alone never skips content validation. Matching checksums avoid a network download.
+  - Stream downloads are published only after the destination writer finishes; failed partial downloads are removed.
 - For each local file/folder not present remotely, deletes it (unless it matches an ignore pattern).
 - Updates the folder metadata database with new mappings.
 
