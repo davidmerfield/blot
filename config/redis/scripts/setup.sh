@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # This should only be run once, when the instance is launched
 # It will only work when run as root
@@ -24,9 +23,9 @@ dnf install -y redis6
 
 # Keep mount preparation in a root-owned dependency and Redis service settings
 # in the service drop-in, without overwriting one section with another.
-/bin/bash "$(dirname "$0")/install-service-overrides.sh"
+/bin/bash "$(dirname "$0")/install-service-overrides.sh" || exit $?
 
-systemctl daemon-reload
+systemctl daemon-reload || exit $?
 
 # Start only after the mount dependency and restart policy are installed.
 systemctl start redis6
