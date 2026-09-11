@@ -67,26 +67,36 @@ module.exports = function (req, res, retrieve, callback) {
 
   req.retrieve = retrieve;
 
+  const localNames = _.keys(retrieve);
+  req.log("retrieve: start", `locals=[${localNames.join(',')}]`);
+
   async.each(
-    _.keys(retrieve),
+    localNames,
     function (localName, nextLocal) {
       if (dictionary[localName] === undefined) {
-        // console.log(req.blog.handle, req.blog.id, ": No retrieve method to look up", localName);
+        req.log("retrieve: skipping unknown local", `name=${localName}`);
         return nextLocal();
       }
 
-      req.log("Retrieving local", localName);
+      req.log("retrieve: fetching", `name=${localName}`);
       dictionary[localName](req, res, function (err, value) {
-        if (err) console.log(err);
+        if (err) {
+          req.log("retrieve: error", `name=${localName}`, err.message);
+          console.log(err);
+        }
 
-        if (value !== undefined) locals[localName] = value;
-
-        req.log("Retrieved local", localName);
+        if (value !== undefined) {
+          locals[localName] = value;
+          const valueSize = Array.isArray(value) ? value.length : (typeof value === 'object' ? Object.keys(value).length : 1);
+          req.log("retrieve: fetched", `name=${localName}`, `size=${valueSize}`);
+        } else {
+          req.log("retrieve: fetched (undefined)", `name=${localName}`);
+        }
         return nextLocal();
       });
     },
     function () {
-      req.log("Retrieved all locals");
+      req.log("retrieve: complete", `totalLocals=${Object.keys(locals).length}`);
       callback(null, locals);
     }
   );

@@ -71,7 +71,7 @@ module.exports = function route(server) {
   });
 
   server.get(drafts.viewRoute, function (request, response, next) {
-    // console.log('Draft: Request to a draft view page ' + request.url);
+    request.log("draft: start", `url=${request.url}`);
 
     var filePath = drafts.getPath(request.url, drafts.viewRoute);
 
@@ -79,6 +79,7 @@ module.exports = function route(server) {
     response.set("X-Robots-Tag", "noindex");
     response.set("Cache-Control", "no-cache");
 
+    request.log("draft: rendering", `filePath=${filePath}`);
     renderDraft(request, response, next, filePath, function (html) {
       // Remove the frame protection headers added by the server
       // middleware. They prevent Firefox from rendering the iframe
@@ -86,6 +87,7 @@ module.exports = function route(server) {
       response.removeHeader("X-Frame-Options");
       response.removeHeader("Content-Security-Policy");
 
+      request.log("draft: complete", `htmlLength=${html ? html.length : 0}`);
       // bodyHTML is passed after HTML
       response.send(html);
     });
@@ -95,20 +97,26 @@ module.exports = function route(server) {
     var blog = request.blog,
       blogID = blog.id;
 
-    // console.log('Draft: Rendering draft HTML for entry at: ' + filePath);
+    request.log("draft: fetching entry", `filePath=${filePath}`);
 
     Entry.get(blogID, filePath, function (entry) {
-      if (!entry || !entry.draft || entry.deleted) return next();
+      if (!entry || !entry.draft || entry.deleted) {
+        request.log("draft: entry not found or not a draft");
+        return next();
+      }
+      request.log("draft: entry found", `entryId=${entry.id}`);
 
       // GET FULL ENTRY RETURNS NULL SINCE IT"S DRAFT
       // HOW DO WE RESOLVE THIS NEATLY? WHERE TO DRAW
       // THE LINE TO SHOW OR NOT TO SHOW?
       // PERHAPS PASS {drafts: show}? or something?
 
+      request.log("draft: fetching adjacent entries");
       Entries.adjacentTo(
         blogID,
         entry.id,
         function (nextEntry, previousEntry, index) {
+          request.log("draft: adjacent entries fetched");
           entry.next = nextEntry;
           entry.index = index;
           entry.previous = previousEntry;
@@ -116,7 +124,9 @@ module.exports = function route(server) {
 
           response.locals.entry = entry;
 
+          request.log("draft: rendering entry view");
           response.renderView("entry.html", next, function (err, output) {
+            request.log("draft: entry view rendered, injecting script");
             drafts.injectScript(output, filePath, callback);
           });
         }

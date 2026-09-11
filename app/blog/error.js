@@ -8,17 +8,28 @@ module.exports = function (server) {
 
   // Redirects
   server.use(function (req, res, next) {
+    req.log("redirects: checking", `url=${req.url}`);
     Redirects.check(req.blog.id, req.url, function (err, redirect) {
-      if (err) return next(err);
+      if (err) {
+        req.log("redirects: error", err.message);
+        return next(err);
+      }
 
       // Nothing in the user's setup matches this
       // URL so continue to the next middleware
-      if (!redirect) return next();
+      if (!redirect) {
+        req.log("redirects: no match");
+        return next();
+      }
 
       // It matched a redirect but since we don't
       // want an infinite redirect loop we continue
-      if (redirect === req.url) return next();
+      if (redirect === req.url) {
+        req.log("redirects: self-redirect prevented");
+        return next();
+      }
 
+      req.log("redirects: redirecting", `to=${redirect}`);
       // By default, res.redirect returns a 302 status
       // code (temporary) rather than 301 (permanent)
       res.redirect(301, redirect);
@@ -27,6 +38,7 @@ module.exports = function (server) {
 
   // 404s
   server.use(function (req, res, next) {
+    req.log("error: 404", `url=${req.url}`);
     res.locals.error = {
       title: "Page not found",
       message: "There is no page with this URL.",
@@ -42,9 +54,13 @@ module.exports = function (server) {
 
   // Errors
   server.use(function (err, req, res, next) {
+    req.log("error: handling error", `code=${err.code || 'unknown'}`, `message=${err.message || 'unknown'}`);
     // This reponse was partially finished
     // end it now and get over it...
-    if (res.headersSent) return res.end();
+    if (res.headersSent) {
+      req.log("error: headers already sent, ending response");
+      return res.end();
+    }
 
     // Monit requests localhost/health to determine whether
     // to attempt to restart Blot's node Blot. If you remove
@@ -52,11 +68,13 @@ module.exports = function (server) {
     // before the blog middleware, since there is no blog with
     // the host 'localhost' and hence returns a 404, bad!
     if (err.code === "ENOENT" && req.hostname === "localhost") {
+      req.log("error: localhost health check passthrough");
       return next();
     }
 
     // Blog does not exist...
     if (err.code === "ENOENT") {
+      req.log("error: blog not found (ENOENT)");
       res.status(404);
 
       if (req.hostname.endsWith(config.host)) {
@@ -72,6 +90,7 @@ module.exports = function (server) {
 
     if (err.status && type(err.status, "number")) status = err.status;
 
+    req.log("error: template error", `status=${status}`);
     console.log(
       clfdate(),
       req.headers["x-request-id"] && req.headers["x-request-id"],
@@ -86,8 +105,12 @@ module.exports = function (server) {
     };
 
     res.renderView("error.html", next, function (err, output) {
-      if (err) return next(err);
+      if (err) {
+        req.log("error: failed to render error page");
+        return next(err);
+      }
 
+      req.log("error: error page rendered", `status=${status}`);
       res.status(status || 400);
       res.send(output);
     });

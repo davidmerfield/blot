@@ -110,7 +110,7 @@ module.exports = function (req, res, callback) {
 
   if (postsCache.has(key)) {
     const cachedPayload = cloneDeep(postsCache.get(key));
-    log("Retrieved posts from cache");
+    log("posts: cache hit", `entriesCount=${cachedPayload.entries ? cachedPayload.entries.length : 0}`);
     res.locals.pagination = cachedPayload.pagination;
     return callback(
       null,
@@ -118,13 +118,17 @@ module.exports = function (req, res, callback) {
     );
   }
 
+  log("posts: cache miss");
+
   if (!tags) {
-    log("Loading page of entries");
+    log("posts: loading page from model", `page=${normalizedPageNumber}`, `pageSize=${normalizedPageSize}`);
     return entriesModel.getPage(blogID, options, (err, entries, pagination) => {
       if (err) {
+        log("posts: error loading page", err.message);
         return callback(err);
       }
 
+      log("posts: page loaded", `entriesCount=${entries ? entries.length : 0}`);
       const payload = { entries, pagination };
       const immutableCopy = deepFreeze(cloneDeep(payload));
       postsCache.set(key, immutableCopy);
@@ -148,7 +152,7 @@ module.exports = function (req, res, callback) {
 
   const offset = (page - 1) * limit;
 
-  log("Loading tagged page of entries");
+  log("posts: loading tagged page", `tags=${Array.isArray(tags) ? tags.join(',') : tags}`, `limit=${limit}`, `offset=${offset}`);
   fetchTaggedEntries(
     blogID,
     tags,
@@ -161,10 +165,13 @@ module.exports = function (req, res, callback) {
     },
     (err, result) => {
       if (err) {
+        log("posts: error fetching tagged entries", err.message);
         return callback(err);
       }
 
+      log("posts: tagged entries fetched", `idCount=${result.entryIDs ? result.entryIDs.length : 0}`);
       Entry.get(blogID, result.entryIDs || [], (entries) => {
+        log("posts: entries hydrated", `entriesCount=${entries ? entries.length : 0}`);
         const payload = {
           // fetchTaggedEntries paginated in the selected order; re-apply it to
           // the hydrated page so Entry.get's ordering can't drift.

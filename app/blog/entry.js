@@ -11,7 +11,7 @@ var normalizeMetadataToggle = function (value) {
 
 module.exports = function (request, response, next) {
   
-  request.log("Loading entry");
+  request.log("entry: start", `path=${request.path}`);
   
   var scheduled = !!request.query.scheduled;
   var blog = request.blog;
@@ -32,8 +32,14 @@ module.exports = function (request, response, next) {
   // handle URI decoding so all URL-decoding behavior is centralized there.
   url = url.toLowerCase();
 
+  request.log("entry: fetching by url", `url=${url}`);
   Entry.getByUrl(blog.id, url, function (entry) {
-    if (!entry || entry.deleted || entry.draft) return next();
+    if (!entry || entry.deleted || entry.draft) {
+      request.log("entry: not found or draft", `url=${url}`);
+      return next();
+    }
+    request.log("entry: found", `entryId=${entry.id}`, `title=${entry.title ? entry.title.substring(0, 50) : 'untitled'}`);
+  
 
     // If comments are enabled in settings, they are shown on all blog posts and pages
     // Disable comments in cases:
@@ -76,11 +82,13 @@ module.exports = function (request, response, next) {
 
     if (normalize(entry.url) !== normalize(comparableUrl) && comparableUrl === "/") return next();
 
+    request.log("entry: fetching adjacent entries");
     Entries.adjacentTo(blog.id, entry.id, function (
       nextEntry,
       previousEntry,
       index
     ) {
+      request.log("entry: adjacent entries fetched", `hasNext=${!!nextEntry}`, `hasPrev=${!!previousEntry}`);
       entry.next = nextEntry;
       entry.previous = previousEntry;
       entry.adjacent = !!(nextEntry || previousEntry);
@@ -99,7 +107,9 @@ module.exports = function (request, response, next) {
         return response.status(301).redirect(redirect);
       }
 
+      request.log("entry: loading plugins");
       plugins.load("entryHTML", blog.plugins, function (err, pluginHTML) {
+        request.log("entry: plugins loaded");
         // Dont show plugin HTML on a draft.
         // Don't show plugin HTML on a preview subdomain.
         // This is to prevent Disqus getting stuck on one URL.
@@ -113,7 +123,7 @@ module.exports = function (request, response, next) {
 
         response.locals.entry = entry;
 
-        request.log("Loaded entry");
+        request.log("entry: complete, rendering view");
         response.renderView("entry.html", next);
       });
     });

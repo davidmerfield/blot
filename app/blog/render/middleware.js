@@ -30,11 +30,14 @@ module.exports = function (req, res, _next) {
   return _next();
 
   function render(name, next, callback) {
-    // console.log(req.url, 'rendering', viewName);
+    req.log("renderView: start", `view=${name}`);
 
     ensure(name, "string").and(next, "function");
 
-    if (!req.template) return next();
+    if (!req.template) {
+      req.log("renderView: skipped (no template)");
+      return next();
+    }
 
     var blog = req.blog;
     var templateID = req.template.id;
@@ -50,14 +53,17 @@ module.exports = function (req, res, _next) {
 
     if (callback) callback = callOnce(callback);
 
+    req.log("renderView: fetching cached full view");
     getCachedFullView(
-      { blog: blog, template: req.template, viewName: name },
+      { blog: blog, template: req.template, viewName: name, log: req.log },
       function (err, response) {
         if (err) {
+          req.log("renderView: full view fetch error", err.message);
           return next(err);
         }
 
         if (!response) {
+          req.log("renderView: view not found", `view=${name}`);
           err = new Error(
             `The view '${name}' does not exist under templateID=${templateID}`
           );
@@ -65,7 +71,7 @@ module.exports = function (req, res, _next) {
           return next(err);
         }
 
-        req.log("Loaded view");
+        req.log("renderView: full view loaded");
 
         var viewLocals = response[0];
         var viewPartials = response[1];
@@ -105,20 +111,31 @@ module.exports = function (req, res, _next) {
         });
         hardenProjectedRetrieve(missingLocals, null, null, localsForHardening);
 
+        req.log("renderView: retrieving locals", `count=${Object.keys(missingLocals).length}`);
         retrieve(req, res, missingLocals, function (err, foundLocals) {
+          req.log("renderView: locals retrieved");
           extend(res.locals).and(foundLocals);
 
         // LOAD ANY LOCALS OR PARTIALS
         // WHICH ARE REFERENCED IN LOCALS
+        req.log("renderView: loading view partials");
         loadView(req, res, function (err, req, res) {
-          if (err) return next(ERROR.BAD_LOCALS());
+          if (err) {
+            req.log("renderView: load view error");
+            return next(ERROR.BAD_LOCALS());
+          }
 
+          req.log("renderView: view partials loaded");
           // VIEW IS ALMOST FINISHED
           // ALL PARTRIAL
+          req.log("renderView: rendering locals");
           renderLocals(req, res, async function (err, req, res) {
-            if (err) return next(ERROR.BAD_LOCALS());
+            if (err) {
+              req.log("renderView: render locals error");
+              return next(ERROR.BAD_LOCALS());
+            }
 
-            req.log("Loaded other locals");
+            req.log("renderView: locals rendered");
 
             var output;
 
@@ -138,9 +155,12 @@ module.exports = function (req, res, _next) {
               return res.json(res.locals);
             }
 
+            req.log("renderView: final render start");
             try {
               output = finalRender(view, locals, partials);
+              req.log("renderView: final render complete", `outputLength=${output ? output.length : 0}`);
             } catch (e) {
+              req.log("renderView: final render error", e.message);
               return next(ERROR.BAD_LOCALS());
             }
 
@@ -156,13 +176,13 @@ module.exports = function (req, res, _next) {
                 .join(config.cdn.origin.split("https://").join("http://"));
 
             if (viewType === "text/html" && !req.preview) {
-              req.log("Replacing folder links with CDN links");
+              req.log("renderView: replacing folder links (html)");
               output = await replaceFolderLinks(blog, output, req.log);
-              req.log("Replaced folder links with CDN links");
+              req.log("renderView: folder links replaced (html)");
             } else if (viewType === "text/css" && !req.preview) {
-              req.log("Replacing folder links with CDN links");
+              req.log("renderView: replacing folder links (css)");
               output = await replaceFolderLinksCSS(blog, output, req.log);
-              req.log("Replaced folder links with CDN links");
+              req.log("renderView: folder links replaced (css)");
             }
 
             if (callback) {
@@ -193,13 +213,15 @@ module.exports = function (req, res, _next) {
             }
 
             try {
-              req.log("Sending response");
+              req.log("renderView: sending response", `contentType=${viewType}`, `size=${output ? output.length : 0}`);
               res.header(CONTENT_TYPE, viewType);
               // This lets browsers send 'If-Modified-Since' requests
               // to check if the page has changed since the last time
               res.header("Last-Modified", new Date(blog.cacheID).toUTCString());
               res.send(output);
+              req.log("renderView: complete");
             } catch (e) {
+              req.log("renderView: send error", e.message);
               next(e);
             }
           });

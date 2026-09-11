@@ -54,21 +54,28 @@ module.exports = function getCachedFullView(options, callback) {
   var blog = options.blog;
   var template = options.template;
   var viewName = options.viewName;
+  var log = options.log || function() {};
 
   var key = createCacheKey(blog, template, viewName);
 
   if (fullViewCache.has(key)) {
+    log("fullViewCache: hit", `view=${viewName}`);
     return callback(null, cloneDeep(fullViewCache.get(key)));
   }
 
+  log("fullViewCache: miss", `view=${viewName}`, "fetching from template model");
+
   Template.getFullView(blog.id, template.id, viewName, function (err, response) {
     if (err) {
+      log("fullViewCache: error", `view=${viewName}`, err.message);
       return callback(err);
     }
 
     var immutableCopy = deepFreeze(cloneDeep(response));
 
     fullViewCache.set(key, immutableCopy);
+
+    log("fullViewCache: cached", `view=${viewName}`);
 
     return callback(null, cloneDeep(immutableCopy));
   });

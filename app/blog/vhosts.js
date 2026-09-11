@@ -3,7 +3,7 @@ var config = require("config");
 
 module.exports = function (req, res, next) {
 
-  req.log("Loading blog");
+  req.log("vhosts: start");
 
   var identifier, handle, redirect, previewTemplate, err;
   var host = req.get("host");
@@ -40,12 +40,15 @@ module.exports = function (req, res, next) {
     identifier = { domain };
   }
 
+  req.log("vhosts: fetching blog", identifier.handle ? `handle=${identifier.handle}` : `domain=${identifier.domain}`);
   Blog.get(identifier, function (err, blog) {
     if (err) {
+      req.log("vhosts: blog fetch error");
       return next(err);
     }
 
     if (!blog || blog.isDisabled || blog.isUnpaid) {
+      req.log("vhosts: blog not found or disabled");
       err = new Error("No blog");
       err.code = "ENOENT";
       return next(err);
@@ -131,7 +134,7 @@ module.exports = function (req, res, next) {
     // Store the blog's info so routes can access it
     req.blog = blog;
 
-    req.log("loaded blog");
+    req.log("vhosts: complete", `blogId=${blog.id}`, `handle=${blog.handle}`, req.preview ? "preview=true" : "");
     return next();
   });
 };

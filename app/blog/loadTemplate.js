@@ -8,15 +8,21 @@ module.exports = async function (req, res, next) {
     // We care about template metadata for template
     // locals. Stuff like page-size is set here.
     // Also global colors etc...
-    if (!req.blog.template) return next();
+    if (!req.blog.template) {
+        req.log("loadTemplate: skipped (no template configured)");
+        return next();
+    }
 
-    req.log("Loading template", req.blog.template);
+    req.log("loadTemplate: start", `templateId=${req.blog.template}`);
     
     let metadata;
 
     try {
+        req.log("loadTemplate: fetching metadata");
         metadata = await getMetadata(req.blog.template);
+        req.log("loadTemplate: metadata fetched");
     } catch (err) {
+        req.log("loadTemplate: metadata fetch failed", err.message);
         const error = new Error("This template does not exist.");
         error.code = "NO_TEMPLATE";
         return next(error);    
@@ -24,7 +30,7 @@ module.exports = async function (req, res, next) {
 
     // If we're in preview mode and there are errors then let's show them
     if (req.preview && metadata.errors && Object.keys(metadata.errors).length > 0) {
-
+        req.log("loadTemplate: template has errors, rendering error page");
         const template = await fs.readFile(__dirname + "/views/template-error.html", "utf-8");
 
         const errors = Object.keys(metadata.errors).map(view => {
@@ -48,6 +54,6 @@ module.exports = async function (req, res, next) {
 
     req.template = template;
 
-    req.log("Loaded template", req.blog.template);
+    req.log("loadTemplate: complete", `templateId=${req.blog.template}`, `name=${metadata.name || 'unknown'}`);
     return next();
 };
