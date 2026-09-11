@@ -214,7 +214,12 @@ module.exports = function fetchTaggedEntries(blogID, slugs, options, callback) {
     options = {};
   }
 
-  return fetchTaggedEntriesInternal(blogID, slugs, options)
-    .then((result) => callback(null, result))
-    .catch(callback);
+  const promise = fetchTaggedEntriesInternal(blogID, slugs, options);
+
+  if (typeof callback === "function") {
+    promise.then((result) => callback(null, result)).catch(callback);
+    return;
+  }
+
+  return promise;
 };
