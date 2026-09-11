@@ -21,16 +21,27 @@ module.exports = async function getAll(blogID, options, callback) {
       return callback(null, []); // No tags to process
     }
 
-    // Iterate over tags and fetch their details
-    const tags = [];
+    // Fetch every tag's name + entries (or count) in one round trip instead
+    // of 2 sequential round trips per tag.
+    const pipeline = client.multi();
     for (const tag of allTags) {
-      const name = (await client.get(key.name(blogID, tag))) || "";
+      pipeline.get(key.name(blogID, tag));
+      if (pathPrefix) {
+        pipeline.zRange(key.sortedTag(blogID, tag), 0, -1);
+      } else {
+        pipeline.zCard(key.sortedTag(blogID, tag));
+      }
+    }
+    const results = await pipeline.exec();
+
+    const tags = [];
+    for (let i = 0; i < allTags.length; i++) {
+      const tag = allTags[i];
+      const name = results[i * 2] || "";
+      const second = results[i * 2 + 1];
 
       if (pathPrefix) {
-        const entries = filterEntryIDsByPathPrefix(
-          (await client.zRange(key.sortedTag(blogID, tag), 0, -1)) || [],
-          pathPrefix
-        );
+        const entries = filterEntryIDsByPathPrefix(second || [], pathPrefix);
 
         if (!entries.length) continue;
 
@@ -43,7 +54,7 @@ module.exports = async function getAll(blogID, options, callback) {
         continue;
       }
 
-      const count = (await client.zCard(key.sortedTag(blogID, tag))) || 0;
+      const count = second || 0;
 
       if (count > 0) {
         tags.push({
