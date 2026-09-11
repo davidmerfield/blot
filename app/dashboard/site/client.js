@@ -146,17 +146,21 @@ client_routes.post("/reset/rebuild", function (req, res) {
     const thumbnails = !!req.query.thumbnails;
     const imageCache = !!req.query.imageCache;
 
-    Rebuild(req.blog.id, { thumbnails, imageCache }, function (err) {
-      if (err) console.log(err);
-      folder.status("Checking your site for issues");
-      Fix(req.blog, function (err) {
+    Rebuild(
+      req.blog.id,
+      { thumbnails, imageCache, status: folder.status, log: folder.log },
+      function (err) {
         if (err) console.log(err);
-        folder.status("Finished site rebuild");
-        done(null, function (err) {
-          if (err) console.log("Error releasing sync: ", err);
+        folder.status("Checking your site for issues");
+        Fix(req.blog, { status: folder.status, log: folder.log }, function (err) {
+          if (err) console.log(err);
+          folder.status("Finished site rebuild");
+          done(null, function (err) {
+            if (err) console.log("Error releasing sync: ", err);
+          });
         });
-      });
-    });
+      }
+    );
   });
 });
 
@@ -185,7 +189,7 @@ client_routes.post("/reset/resync", load.client, function (req, res, next) {
     }
 
     folder.status("Checking your site for issues");
-    Fix(req.blog, function (err) {
+    Fix(req.blog, { status: folder.status, log: folder.log }, function (err) {
       if (err) console.log(err);
       folder.status("Finished site rebuild");
       done(null, function (err) {

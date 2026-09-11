@@ -6,10 +6,16 @@ const tagGhosts = require("./tag-ghosts");
 const entriesPathIndex = require("./entries-path-index");
 const async = require("async");
 const callOnce = require("helper/callOnce");
+const messenger = require("../messenger");
 
-module.exports = function (blog, callback) {
+module.exports = function (blog, options, callback) {
   if (!blog) {
     throw new TypeError("Fix: Expected blog as first argument");
+  }
+
+  if (typeof options === "function") {
+    callback = options;
+    options = {};
   }
 
   if (typeof callback !== "function") {
@@ -17,10 +23,22 @@ module.exports = function (blog, callback) {
   }
 
   const finalReport = {};
+  const fallbackMessenger = options.status ? null : messenger(blog);
+  const status = options.status || fallbackMessenger.status;
+  const checks = [
+    entryGhosts,
+    tagGhosts,
+    listGhosts,
+    menuGhosts,
+    entriesPathIndex,
+  ];
+  let current = 0;
 
   async.eachSeries(
-    [entryGhosts, tagGhosts, listGhosts, menuGhosts, entriesPathIndex],
+    checks,
     function (fn, next) {
+      current += 1;
+      status(`(${current}/${checks.length}) Checking ${fn.name}`);
       fn(
         blog,
         callOnce(function (err, report) {

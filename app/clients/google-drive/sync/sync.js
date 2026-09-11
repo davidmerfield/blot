@@ -6,6 +6,10 @@ const download = require("../util/download");
 const createDriveClient = require("../serviceAccount/createDriveClient");
 const CheckWeCanContinue = require("../util/checkWeCanContinue");
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
+const {
+  countLocalFiles,
+  createProgress,
+} = require("clients/util/resyncProgress");
 
 const driveReaddir = require("./util/driveReaddir");
 const localReaddir = require("./util/localReaddir");
@@ -35,6 +39,16 @@ module.exports = async function sync(blogID, publish, update) {
   const drive = await createDriveClient(serviceAccountId);
   const { getByPath, set, remove } = database.folder(folderId);
   const checkWeCanContinue = CheckWeCanContinue(blogID, account);
+  const progress = createProgress(
+    await countLocalFiles(localPath(blogID, "/")),
+    publish
+  );
+  const processed = new Set();
+  const publishProgress = (message, path, additional) => {
+    if (processed.has(path)) return;
+    processed.add(path);
+    progress.publish(message, path, additional);
+  };
 
   // fetch the latest folderName, in case it has changed
   // and also whether or not the folder is in the trash
@@ -92,7 +106,7 @@ module.exports = async function sync(blogID, publish, update) {
 
       if (shouldIgnoreFile(path)) {
         await checkWeCanContinue();
-        publish("Removing ignored", path);
+        publishProgress("Removing ignored", path);
         await fs.remove(localPath(blogID, path));
         await update(path);
         const id = await getByPath(path);
@@ -102,7 +116,7 @@ module.exports = async function sync(blogID, publish, update) {
 
       if (!remoteContents.find((item) => item.name === name)) {
         await checkWeCanContinue();
-        publish("Removing", join(dir, name));
+        publishProgress("Removing", path);
         console.log(
           "Removing",
           join(dir, name),
@@ -144,7 +158,11 @@ module.exports = async function sync(blogID, publish, update) {
 
         if (!existsLocally || !identical) {
           await checkWeCanContinue();
-          publish("Downloading", path);
+          publishProgress(
+            "Downloading",
+            path,
+            !existsLocally || existsLocally.isDirectory
+          );
 
           if (existsLocally) {
             console.log("Updating out-of-sync:", path);
@@ -157,15 +175,21 @@ module.exports = async function sync(blogID, publish, update) {
           }
 
           try {
-            const result = await download(blogID, drive, path, {
-              id,
-              md5Checksum,
-              mimeType,
-              modifiedTime,
-            }, {
-              serviceAccountId,
-              folderId,
-            });
+            const result = await download(
+              blogID,
+              drive,
+              path,
+              {
+                id,
+                md5Checksum,
+                mimeType,
+                modifiedTime,
+              },
+              {
+                serviceAccountId,
+                folderId,
+              }
+            );
 
             if (result?.skippedReason === "exportSizeLimitExceeded") {
               publish("Skipped oversized Google Doc", path);
@@ -176,11 +200,13 @@ module.exports = async function sync(blogID, publish, update) {
             publish("Download failed", path);
             console.error("Download failed for", path, err);
           }
+        } else {
+          publishProgress("Checking", path);
         }
       } else {
         if (existsLocally && !existsLocally.isDirectory) {
           await checkWeCanContinue();
-          publish("Removing file", path);
+          publishProgress("Removing file", path);
           console.log("Removing file", path, "which is a directory remotely");
           await fs.remove(localPath(blogID, path));
           publish("Creating directory", path);
@@ -201,6 +227,7 @@ module.exports = async function sync(blogID, publish, update) {
 
   try {
     await walk("/", folderId);
+    progress.finish("Finished processing folder");
   } catch (err) {
     publish("Sync failed", err.message);
   }
