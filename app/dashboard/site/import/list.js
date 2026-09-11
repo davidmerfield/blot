@@ -10,6 +10,7 @@ module.exports = async function (req, res, next) {
     const imports = await fs.readdir(join(tempDir, "import", req.blog.id));
 
     res.locals.imports = imports
+      .filter(i => !fs.existsSync(join(tempDir, "import", req.blog.id, i, "deleted.txt")))
       .map((i) => {
         let size;
         let started;
@@ -65,6 +66,11 @@ module.exports = async function (req, res, next) {
             "utf-8"
           );
         } catch (e) {}
+
+        const leaseExpiry = require("./lifecycle").leaseExpiry(join(tempDir, "import", req.blog.id, i));
+        if (leaseExpiry !== undefined && leaseExpiry <= Date.now()) {
+          error = "Import worker stopped. Delete this import and try again.";
+        }
 
         return {
           id: i,

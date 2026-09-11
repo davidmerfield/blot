@@ -6,11 +6,11 @@ const archiver = require("archiver");
 const lifecycle = require("./lifecycle");
 
 module.exports = ({ blogID, label }) => {
-  const importID = label + "-" + Date.now();
+  // Keep the existing label/timestamp parser compatible while avoiding same-tick collisions.
+  const importID = label + "-" + Date.now() + "." + require("crypto").randomBytes(12).toString("hex");
   const importDirectory = join(tempDir, "import", blogID, importID);
   const outputDirectory = join(importDirectory, "output");
   fs.ensureDirSync(outputDirectory);
-  fs.writeFileSync(join(importDirectory, "running.txt"), "true");
   const state = lifecycle.create(importDirectory);
   let statuses = Promise.resolve();
 
@@ -74,6 +74,8 @@ module.exports = ({ blogID, label }) => {
         await finish();
         state.check();
       } catch (error) {
+        // A replaced owner must not erase or publish over another worker.
+        if (!state.ownsLease()) return;
         const wasCancelled = fs.existsSync(join(importDirectory, "cancelled.txt"));
         await fs.remove(outputDirectory);
         await fs.remove(join(importDirectory, "result.zip.part"));
@@ -83,7 +85,10 @@ module.exports = ({ blogID, label }) => {
       } finally {
         state.dispose();
         await Promise.all(Array.from(state.assets, directory => fs.remove(directory)));
-        await fs.remove(join(importDirectory, "running.txt"));
+        if (state.ownsLease()) {
+          await fs.remove(state.stagingDirectory);
+          await fs.remove(join(importDirectory, "running.txt"));
+        }
       }
     });
   }

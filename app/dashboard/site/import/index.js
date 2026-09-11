@@ -76,12 +76,9 @@ Import.post("/cancel/:importID", async function (req, res) {
 
 Import.post("/delete/:importID", async function (req, res) {
   try {
-    // Cancel first so another worker cannot recreate a deleted running job.
-    await require("./lifecycle").cancel(req.importDirectory);
-    if (fs.existsSync(join(req.importDirectory, "running.txt"))) {
+    if (!(await require("./lifecycle").remove(req.importDirectory))) {
       return res.message(req.baseUrl, "Cancellation requested; remove the import after it stops");
     }
-    await fs.remove(req.importDirectory);
   } catch (e) {
     return res.message(req.baseUrl, new Error("Failed to remove import"));
   }

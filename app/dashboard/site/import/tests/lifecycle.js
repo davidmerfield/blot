@@ -21,6 +21,65 @@ describe("import job lifecycle", function () {
   });
   afterEach(async function () { await fs.remove(job.importDirectory); });
 
+  it("allocates distinct job identities in the same millisecond", async function () {
+    const now = Date.now();
+    spyOn(Date, "now").and.returnValue(now);
+    const first = init({ blogID: "test", label: "Collision" });
+    const second = init({ blogID: "test", label: "Collision" });
+    try {
+      expect(first.importID).not.toBe(second.importID);
+      expect(parseInt(first.importID.split("-").pop(), 10)).toBe(now);
+      await Promise.all([first.run(async () => {}), second.run(async () => {})]);
+    } finally {
+      await fs.remove(first.importDirectory);
+      await fs.remove(second.importDirectory);
+      await job.run(async () => {});
+    }
+  });
+
+  it("recovers an expired worker while retaining a revocation tombstone", async function () {
+    await fs.outputFile(path.join(job.outputDirectory, "partial.txt"), "partial");
+    await fs.outputFile(path.join(job.importDirectory, "staging", "asset"), "partial");
+    const leaseFile = path.join(job.importDirectory, "running.txt");
+    const lease = await fs.readJson(leaseFile);
+    lease.expiresAt = Date.now() - 1;
+    await fs.writeJson(leaseFile, lease);
+    const response = { locals: {} };
+    await require("../list")({ blog: { id: "test" } }, response, () => {});
+    expect(response.locals.imports.find(item => item.id === job.importID).complete).toBe(true);
+    expect(await lifecycle.remove(job.importDirectory)).toBe(true);
+    await require("../list")({ blog: { id: "test" } }, response, () => {});
+    expect(response.locals.imports.find(item => item.id === job.importID)).toBeUndefined();
+    expect(fs.existsSync(job.outputDirectory)).toBe(false);
+    expect(fs.existsSync(path.join(job.importDirectory, "staging"))).toBe(false);
+    expect(fs.existsSync(path.join(job.importDirectory, "deleted.txt"))).toBe(true);
+    const resumed = jasmine.createSpy("resumed worker");
+    await job.run(resumed);
+    expect(resumed).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(job.importDirectory, "deleted.txt"))).toBe(true);
+    expect(fs.existsSync(path.join(job.importDirectory, "result.zip"))).toBe(false);
+  });
+
+  it("cancels a fresh owner but waits for its cleanup before deleting", async function () {
+    expect(await lifecycle.remove(job.importDirectory)).toBe(false);
+    expect(fs.existsSync(path.join(job.importDirectory, "deleted.txt"))).toBe(false);
+    await job.run(async () => {});
+    expect(await lifecycle.remove(job.importDirectory)).toBe(true);
+    expect(fs.existsSync(job.importDirectory)).toBe(false);
+  });
+
+  it("rejects a replaced ownership token even if its lease is fresh", async function () {
+    const leaseFile = path.join(job.importDirectory, "running.txt");
+    const lease = await fs.readJson(leaseFile);
+    lease.owner = "another worker";
+    await fs.writeJson(leaseFile, lease);
+    const worker = jasmine.createSpy("worker");
+    await job.run(worker);
+    expect(worker).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(job.importDirectory, "error.txt"))).toBe(false);
+    expect((await fs.readJson(leaseFile)).owner).toBe("another worker");
+  });
+
   it("publishes Finished only after a readable archive exists", async function () {
     await job.run(() => fs.outputFile(path.join(job.outputDirectory, "post.txt"), "hello"));
     expect(fs.readFileSync(path.join(job.importDirectory, "result.zip")).slice(0, 2).toString()).toBe("PK");
