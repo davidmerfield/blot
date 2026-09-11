@@ -31,6 +31,12 @@ const BENCHMARK_DEFAULTS = Object.freeze({
   // concurrent burst (Promise.all, not the pooled render-phase queue) during
   // the tag-burst phase, to catch request-queueing regressions.
   tagBurstConcurrency: 8,
+  // How many /archives requests are fired in one genuinely concurrent burst.
+  // Each blog has only one archives URL, so blogs repeat round-robin when
+  // there are fewer sites than this — this reproduces cross-blog contention
+  // (many customers' blogs sharing one Node process) as well as many tabs
+  // hitting one big blog's /archives at once.
+  archivesBurstConcurrency: 8,
   // CI gate / trend-alert threshold, in percent, applied to timing metrics.
   regressionThresholdPercent: 15,
   // Tight threshold for near-deterministic metrics (output byte size).
@@ -47,7 +53,7 @@ const BENCHMARK_DEFAULTS = Object.freeze({
   // reference but excluded from the rolling baseline, so the next master run
   // starts a fresh baseline automatically instead of requiring someone to
   // manually clear the benchmarks-history-* Actions cache.
-  historySchemaVersion: 2,
+  historySchemaVersion: 3,
 });
 
 module.exports = { BENCHMARK_DEFAULTS };

@@ -43,6 +43,9 @@ on:
       tag_burst_concurrency:
         description: "Distinct /tagged/<slug> pages hit at once"
         default: ""
+      archives_burst_concurrency:
+        description: "Concurrent /archives requests"
+        default: ""
 
 permissions:
   contents: read
@@ -173,6 +176,7 @@ jobs:
               -e FILES_ARG="${{ github.event.inputs.files }}" \
               -e TAGS_ARG="${{ github.event.inputs.tags }}" \
               -e TAG_BURST_CONCURRENCY_ARG="${{ github.event.inputs.tag_burst_concurrency }}" \
+              -e ARCHIVES_BURST_CONCURRENCY_ARG="${{ github.event.inputs.archives_burst_concurrency }}" \
               -v ${{ github.workspace }}/app:/usr/src/app/app \
               -v ${{ github.workspace }}/scripts:/usr/src/app/scripts \
               -v ${{ github.workspace }}/config:/usr/src/app/config \
@@ -185,6 +189,7 @@ jobs:
                 [ -n "$FILES_ARG" ] && ARGS="$ARGS --files $FILES_ARG"
                 [ -n "$TAGS_ARG" ] && ARGS="$ARGS --tags $TAGS_ARG"
                 [ -n "$TAG_BURST_CONCURRENCY_ARG" ] && ARGS="$ARGS --tag-burst-concurrency $TAG_BURST_CONCURRENCY_ARG"
+                [ -n "$ARCHIVES_BURST_CONCURRENCY_ARG" ] && ARGS="$ARGS --archives-burst-concurrency $ARCHIVES_BURST_CONCURRENCY_ARG"
                 npm run benchmark:ci -- $ARGS
               '
             echo "::endgroup::"

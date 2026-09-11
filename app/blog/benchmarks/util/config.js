@@ -38,6 +38,10 @@ function parseBenchmarkConfig(raw = {}) {
       raw.tagBurstConcurrency,
       BENCHMARK_DEFAULTS.tagBurstConcurrency
     ),
+    archivesBurstConcurrency: num(
+      raw.archivesBurstConcurrency,
+      BENCHMARK_DEFAULTS.archivesBurstConcurrency
+    ),
   };
 }
 

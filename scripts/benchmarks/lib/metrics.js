@@ -63,6 +63,18 @@ const METRICS = [
     unit: "ratio",
     get: (r) => num(r?.render?.tag_burst?.inflation_ratio),
   },
+  {
+    key: "archives_burst_p95_ms",
+    label: "Archives burst p95 (concurrent /archives)",
+    unit: "ms",
+    get: (r) => num(r?.render?.archives_burst?.burst_timing_ms?.p95),
+  },
+  {
+    key: "archives_burst_inflation_ratio",
+    label: "Archives burst inflation (burst ÷ solo)",
+    unit: "ratio",
+    get: (r) => num(r?.render?.archives_burst?.inflation_ratio),
+  },
 ];
 
 const METRIC_BY_KEY = Object.fromEntries(METRICS.map((m) => [m.key, m]));

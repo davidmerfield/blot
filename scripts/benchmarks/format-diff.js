@@ -22,6 +22,8 @@ function metricsFromResult(result) {
   const totalSeconds = totalWallMs / 1000;
   const tagBurst = render.tag_burst || {};
   const tagBurstTiming = tagBurst.burst_timing_ms || {};
+  const archivesBurst = render.archives_burst || {};
+  const archivesBurstTiming = archivesBurst.burst_timing_ms || {};
   return {
     totalCpuPercent,
     totalMemoryMb,
@@ -31,6 +33,12 @@ function metricsFromResult(result) {
     tagBurstP95Ms: tagBurstTiming.p95 != null ? tagBurstTiming.p95 : 0,
     tagBurstInflationRatio:
       tagBurst.inflation_ratio != null ? tagBurst.inflation_ratio : null,
+    archivesBurstP95Ms:
+      archivesBurstTiming.p95 != null ? archivesBurstTiming.p95 : 0,
+    archivesBurstInflationRatio:
+      archivesBurst.inflation_ratio != null
+        ? archivesBurst.inflation_ratio
+        : null,
   };
 }
 
@@ -104,6 +112,30 @@ function printCompareTable(currentResult, branchResult) {
         br.tagBurstInflationRatio == null
           ? "n/a"
           : br.tagBurstInflationRatio.toFixed(2),
+        8
+      ) +
+      "x"
+  );
+  console.log(
+    label("Archives burst p95") +
+      fmtNum(cur.archivesBurstP95Ms.toFixed(0), 8) +
+      " ms  ->  " +
+      fmtNum(br.archivesBurstP95Ms.toFixed(0), 8) +
+      " ms"
+  );
+  console.log(
+    label("Archives burst inflation") +
+      fmtNum(
+        cur.archivesBurstInflationRatio == null
+          ? "n/a"
+          : cur.archivesBurstInflationRatio.toFixed(2),
+        8
+      ) +
+      "x  ->  " +
+      fmtNum(
+        br.archivesBurstInflationRatio == null
+          ? "n/a"
+          : br.archivesBurstInflationRatio.toFixed(2),
         8
       ) +
       "x"

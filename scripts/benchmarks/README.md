@@ -14,6 +14,7 @@ reused from `app/build/converters/*/tests`), then:
 | **build**  | write the workload to disk, then `blog.rebuild()` every site   | per-site wall time p50 / p95, peak RSS, CPU % |
 | **render** | fetch every URL in each blog's sitemap and read the full body  | per-page wall time p50 / p95, peak RSS, CPU %, output bytes/page |
 | **tag burst** | for each site, request several distinct `/tagged/<slug>` pages once solo (uncontended) and once as a genuine concurrent burst | burst p50/p95, burst ÷ solo inflation ratio |
+| **archives burst** | request `/archives` (repeating blogs round-robin if there are fewer sites than the concurrency) once solo per target and once as a genuine concurrent burst | burst p50/p95, burst ÷ solo inflation ratio |
 
 Each generated entry also gets 1-4 tags drawn from a `--tags` (default 40)
 pool, so `/tagged/<slug>` pages exist with a realistic number of matching
@@ -27,6 +28,20 @@ ratio stays close to 1×; requests queueing behind synchronous, uncached
 per-request work blows it up, same as the render-phase pooled queue does but
 isolated to a controlled, always-the-same-N-pages burst so the signal is
 comparable run to run.
+
+The **archives burst** phase reproduces the same failure mode from the other
+direction. `/archives` (like `/tagged/<slug>`) pulls the full entry set via
+`Entries.getAll` and does a synchronous year/month grouping pass with
+per-entry `moment.tz` formatting on every request — see
+[`archives.js`](../../app/blog/render/retrieve/archives.js) — but there is
+only one `/archives` URL per blog, so there's no "distinct pages" axis to
+burst along. Instead it fires `--archives-burst-concurrency` (default 8)
+concurrent `/archives` requests, cycling through the benchmark's `--sites`
+round-robin when there are fewer blogs than the requested concurrency. With
+the default multi-site config this reproduces cross-customer contention
+(many blogs sharing one Node process each landing on their own `/archives` at
+once); with `--sites 1` it instead reproduces many tabs/crawlers hitting one
+big blog's `/archives` at the same time.
 
 Everything is seeded (`--seed`, default `blot-benchmark-seed`) so the generated
 workload is identical from run to run. The full result is written as JSON; the
@@ -118,8 +133,9 @@ constant — older records stay in the NDJSON file for reference but are
 invisible to the baseline. Bump `historySchemaVersion` whenever a change
 meaningfully redefines a tracked metric (new/removed metric, a workload shape
 that shifts totals — e.g. this file's own `tags` / `tagBurstConcurrency`
-addition bumped it from 1 to 2) and the next master run starts a fresh
-baseline on its own, no manual cache-clearing required.
+addition bumped it 1 → 2, and the `archivesBurstConcurrency` addition bumped
+it 2 → 3) and the next master run starts a fresh baseline on its own, no
+manual cache-clearing required.
 
 **Manual — clear the history.** For anything the schema-version bump doesn't
 cover (e.g. you want to discard recent noisy runs without changing what's
@@ -151,6 +167,7 @@ information-only, and `detect-regression.js` will not open an issue.
 | `index.js` | container | run the spec once, write result JSON |
 | `app/blog/benchmarks/benchmarks.js` | container | the Jasmine spec itself |
 | `app/blog/benchmarks/util/tagBurst.js` | container | tag-burst phase: solo vs. concurrent `/tagged/<slug>` timing |
+| `app/blog/benchmarks/util/archivesBurst.js` | container | archives-burst phase: solo vs. concurrent `/archives` timing |
 | `invoke.sh` | host | run `index.js` in Docker + throwaway Redis |
 | `compare.js` / `format-diff.js` | host | local branch-vs-branch comparison |
 | `aggregate.js` | host | merge N iteration JSONs into one (median per metric) |

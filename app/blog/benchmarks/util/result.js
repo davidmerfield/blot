@@ -12,6 +12,7 @@ function buildBenchmarkResult(options) {
     renderTasks,
     renderFailures,
     tagBurst,
+    archivesBurst,
   } = options;
 
   const renderedPages = renderTasks.length;
@@ -29,6 +30,7 @@ function buildBenchmarkResult(options) {
       requests_per_page: benchmarkConfig.requestsPerPage,
       tags: benchmarkConfig.tags,
       tag_burst_concurrency: benchmarkConfig.tagBurstConcurrency,
+      archives_burst_concurrency: benchmarkConfig.archivesBurstConcurrency,
       regression_threshold_percent: benchmarkConfig.regressionThresholdPercent,
       cpu_sample_interval_ms: benchmarkConfig.cpuSampleIntervalMs,
     },
@@ -77,6 +79,12 @@ function buildBenchmarkResult(options) {
         burst_timing_ms: tagBurst.burst_timing_ms,
         inflation_ratio: tagBurst.inflation_ratio,
         sites: tagBurst.sites,
+      },
+      archives_burst: {
+        requests_tested_total: archivesBurst.requests_tested_total,
+        solo_timing_ms: archivesBurst.solo_timing_ms,
+        burst_timing_ms: archivesBurst.burst_timing_ms,
+        inflation_ratio: archivesBurst.inflation_ratio,
       },
     },
     sites: siteSummaries,

@@ -10,6 +10,7 @@ const { runWithConcurrency } = require("./util/concurrency");
 const { parseBenchmarkConfig } = require("./util/config");
 const { buildBenchmarkResult } = require("./util/result");
 const { runTagBurst } = require("./util/tagBurst");
+const { runArchivesBurst } = require("./util/archivesBurst");
 
 describe("blog benchmarks", function () {
   require("./util/setup")();
@@ -169,6 +170,20 @@ describe("blog benchmarks", function () {
       getForBlog: this.getForBlog.bind(this),
     });
 
+    console.log(
+      "[benchmark] archives burst:",
+      benchmarkConfig.archivesBurstConcurrency,
+      "concurrent /archives requests across",
+      blogs.length,
+      "site(s)"
+    );
+
+    const archivesBurst = await runArchivesBurst({
+      blogs,
+      concurrency: benchmarkConfig.archivesBurstConcurrency,
+      getForBlog: this.getForBlog.bind(this),
+    });
+
     siteSummaries.forEach((summary, index) => {
       summary.rendered_pages = renderTasks.filter(
         (task) => task.blog.id === summary.blog_id
@@ -194,6 +209,7 @@ describe("blog benchmarks", function () {
       renderTasks,
       renderFailures,
       tagBurst,
+      archivesBurst,
     });
 
     global.__BLOT_BENCHMARK_RESULT = result;
@@ -256,6 +272,20 @@ describe("blog benchmarks", function () {
     console.log(
       label("Tag burst p95") +
         num(result.render.tag_burst.burst_timing_ms.p95.toFixed(0), 8) +
+        " ms"
+    );
+    console.log(
+      label("Archives burst inflation") +
+        num(
+          result.render.archives_burst.inflation_ratio === null
+            ? "n/a"
+            : result.render.archives_burst.inflation_ratio.toFixed(2),
+          8
+        ) + "x"
+    );
+    console.log(
+      label("Archives burst p95") +
+        num(result.render.archives_burst.burst_timing_ms.p95.toFixed(0), 8) +
         " ms"
     );
     console.log("");

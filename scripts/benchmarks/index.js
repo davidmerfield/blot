@@ -54,6 +54,7 @@ var benchmarkConfig = {
   requestsPerPage: args.requestsPerPage,
   tags: args.tags,
   tagBurstConcurrency: args.tagBurstConcurrency,
+  archivesBurstConcurrency: args.archivesBurstConcurrency,
 };
 
 global.__BLOT_BENCHMARK_CONFIG = benchmarkConfig;
@@ -126,6 +127,7 @@ function parseArgs(argv) {
     requestsPerPage: BENCHMARK_DEFAULTS.requestsPerPage,
     tags: BENCHMARK_DEFAULTS.tags,
     tagBurstConcurrency: BENCHMARK_DEFAULTS.tagBurstConcurrency,
+    archivesBurstConcurrency: BENCHMARK_DEFAULTS.archivesBurstConcurrency,
     output: null,
     path: null,
     ci: false,
@@ -142,6 +144,7 @@ function parseArgs(argv) {
     "--requests-per-page": "requestsPerPage",
     "--tags": "tags",
     "--tag-burst-concurrency": "tagBurstConcurrency",
+    "--archives-burst-concurrency": "archivesBurstConcurrency",
   };
 
   for (var i = 0; i < argv.length; i++) {
@@ -205,6 +208,10 @@ function parseArgs(argv) {
   ensurePositiveInt(parsed.requestsPerPage, "--requests-per-page");
   ensurePositiveInt(parsed.tags, "--tags");
   ensurePositiveInt(parsed.tagBurstConcurrency, "--tag-burst-concurrency");
+  ensurePositiveInt(
+    parsed.archivesBurstConcurrency,
+    "--archives-burst-concurrency"
+  );
 
   return parsed;
 }
@@ -244,6 +251,9 @@ function printHelp() {
         ")",
       "  --tag-burst-concurrency <n>    Distinct /tagged/<slug> pages hit at once (default: " +
         BENCHMARK_DEFAULTS.tagBurstConcurrency +
+        ")",
+      "  --archives-burst-concurrency <n>  Concurrent /archives requests (default: " +
+        BENCHMARK_DEFAULTS.archivesBurstConcurrency +
         ")",
       "  --cpu-sample-interval-ms <ms>  CPU/memory sampling interval (default: " +
         BENCHMARK_DEFAULTS.cpuSampleIntervalMs +
