@@ -188,12 +188,16 @@ describe("transformer", function () {
     beforeEach(function (done) {
       this.ownHostTransformer = new Transformer(this.blog.id, "own-host");
 
-      // Point this blog's "domain" at the test server's own host, in
-      // Redis, the way a real blog's custom domain is stored - the
-      // transformer looks this up itself rather than being told.
-      var hostname = require("url").parse(this.origin).hostname;
+      // Point this blog's "domain" at "localhost", in Redis, the way a
+      // real blog's custom domain is stored - the transformer looks
+      // this up itself rather than being told. Deliberately portless:
+      // ownHost.resolve() now rejects any URL with an explicit port
+      // (a real custom domain never has one), and the shared test
+      // server only listens on a non-default port, so a URL that could
+      // actually reach it could never be treated as this blog's own
+      // domain anyway - see the two tests below.
       client
-        .hSet(blogKey.info(this.blog.id), "domain", hostname)
+        .hSet(blogKey.info(this.blog.id), "domain", "localhost")
         .then(function () {
           done();
         });
@@ -205,14 +209,15 @@ describe("transformer", function () {
 
     it("resolves a URL on the blog's own host from disk instead of fetching it", function (done) {
       var spy = jasmine.createSpy().and.callFake(this.transform);
-      var ownURL = this.origin + "/" + this.path;
+      var ownURL = "http://localhost/" + this.path;
 
       this.ownHostTransformer.lookup(ownURL, spy, function (err, result) {
         if (err) return done.fail(err);
 
         expect(spy).toHaveBeenCalled();
-        // If this had gone over the network it would have hashed the
-        // "Hello, World!" response body, not the local file.
+        // Nothing listens on localhost:80 in this test environment, so
+        // this could only have succeeded by resolving "foo.txt" from
+        // the blog's own folder, never by going over the network.
         expect(result).toEqual(jasmine.any(Object));
         expect(result.size).toEqual(jasmine.any(Number));
         done();
@@ -220,14 +225,16 @@ describe("transformer", function () {
     });
 
     it("falls back to a network fetch when the local file doesn't exist", function (done) {
-      this.ownHostTransformer.lookup(this.url, this.transform, function (
-        err,
-        result
-      ) {
-        if (err) return done.fail(err);
+      // Nothing listens on localhost:80, so this proves the own-host
+      // branch tried local resolution first (which fails, no such
+      // file), then fell back into the normal network path - it fails
+      // for a different reason (connection refused) than a bare local
+      // lookup would (ENOENT).
+      var missingURL = "http://localhost/this-file-does-not-exist-" + Date.now();
 
-        expect(result).toEqual(jasmine.any(Object));
-        expect(result.size).toEqual(jasmine.any(Number));
+      this.ownHostTransformer.lookup(missingURL, this.transform, function (err) {
+        expect(err).toEqual(jasmine.any(Error));
+        expect(err.code).not.toEqual("ENOENT");
         done();
       });
     });
