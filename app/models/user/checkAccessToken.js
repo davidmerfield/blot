@@ -10,11 +10,14 @@ var key = require("./key");
 module.exports = function (token, callback) {
   (async function () {
     try {
-      var value = await client.get(key.accessToken(token));
+      // Lua also works on Redis versions before GETDEL was introduced.
+      var value = await client.eval(
+        "local value = redis.call('GET', KEYS[1]); " +
+          "if value then redis.call('DEL', KEYS[1]) end; return value",
+        { keys: [key.accessToken(token)], arguments: [] }
+      );
 
       if (!value) return callback(new Error("Invalid access token"));
-
-      await client.del(key.accessToken(token));
 
       return callback(null, value);
     } catch (err) {
