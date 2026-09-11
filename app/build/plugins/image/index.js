@@ -3,10 +3,12 @@ var debug = require("debug")("blot:entry:build:plugins:image");
 var eachEl = require("../eachEl");
 var optimize = require("./optimize");
 var url = require("url");
+var ownLocalPath = require("./ownLocalPath");
 
 function render($, callback, options) {
   var blogID = options.blogID;
   var cache = new Transformer(blogID, "image-cache");
+  var ownHostnames = ownLocalPath.hostnames(options);
 
   // eachEl walks the <img> tags with async.eachOfSeries, so images in one
   // entry are transformed one at a time - the same image referenced twice
@@ -39,41 +41,66 @@ function render($, callback, options) {
         return next();
       }
 
-      // Pass in the `pathname` component of the image src (no URL params or hash)
-      // Also pass the original src so we can include the filename in the CDN URL
-      cache.lookup(src, optimize(blogID, src), function (err, info) {
-        if (err) {
-          debug(src, "Optimize failed with Error:", err);
-          return next();
-        }
+      // If this image is hosted on the blog's own custom domain or its
+      // <handle>.blot.im subdomain, it's very likely a local file being
+      // referenced by its full URL rather than a relative path - fetching
+      // it over HTTP (through the airlock proxy) just to get back bytes we
+      // already have on disk needlessly slows the build down. Try reading
+      // it straight from the blog's folder first, and only fall back to a
+      // real network request if that lookup fails (e.g. the file has since
+      // been deleted, or the URL doesn't actually map onto the folder).
+      var localSrc = ownHostnames.length
+        ? ownLocalPath(src, ownHostnames)
+        : null;
 
-        // Replace the image's source with the new
-        // source, which is a path to an image in the
-        // static assets folder for this blog.
-        $(el).attr("src", info.src);
+      lookup(localSrc || src, localSrc !== null);
 
-        // Now we will attempt to declare the width and
-        // height of the image to speed up page loads...
-        if ($(el).attr("width") || $(el).attr("height")) {
-          debug(src, "El has width or height pre-specified dont modify");
-          return next();
-        }
+      function lookup(lookupSrc, canFallBackToNetwork) {
+        // Pass in the `pathname` component of the image src (no URL params or hash)
+        // Also pass the original src so we can include the filename in the CDN URL
+        cache.lookup(lookupSrc, optimize(blogID, src), function (err, info) {
+          if (err) {
+            if (canFallBackToNetwork) {
+              debug(
+                src,
+                "Local lookup for own-domain image failed, falling back to network fetch:",
+                err
+              );
+              return lookup(src, false);
+            }
 
-        width = info.width;
-        height = info.height;
+            debug(src, "Optimize failed with Error:", err);
+            return next();
+          }
 
-        // This is a retina image so halve its dimensions
-        if ($(el).attr("data-2x") || isRetina(src)) {
-          debug(src, "retinafying the dimensions");
-          height /= 2;
-          width /= 2;
-        }
+          // Replace the image's source with the new
+          // source, which is a path to an image in the
+          // static assets folder for this blog.
+          $(el).attr("src", info.src);
 
-        $(el).attr("width", width).attr("height", height);
+          // Now we will attempt to declare the width and
+          // height of the image to speed up page loads...
+          if ($(el).attr("width") || $(el).attr("height")) {
+            debug(src, "El has width or height pre-specified dont modify");
+            return next();
+          }
 
-        debug(src, "complete!");
-        next();
-      });
+          width = info.width;
+          height = info.height;
+
+          // This is a retina image so halve its dimensions
+          if ($(el).attr("data-2x") || isRetina(src)) {
+            debug(src, "retinafying the dimensions");
+            height /= 2;
+            width /= 2;
+          }
+
+          $(el).attr("width", width).attr("height", height);
+
+          debug(src, "complete!");
+          next();
+        });
+      }
     },
     function () {
       debug("Invoking callback now!");
