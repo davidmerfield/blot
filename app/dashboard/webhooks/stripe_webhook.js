@@ -168,18 +168,20 @@ webhooks.post("/", parser.raw({ type: "application/json" }), function (req, res)
       function (err, subscription) {
         if (err || !subscription) {
           console.error("Failed to retrieve Stripe subscription", err);
-          return res.sendStatus(400);
+          return res.sendStatus(503);
         }
 
         update_subscription(
           event_data.customer,
           subscription,
           function (updateErr) {
-            if (updateErr) console.error("Failed to update subscription", updateErr);
+            if (updateErr) {
+              console.error("Failed to update subscription", updateErr);
+              return res.sendStatus(503);
+            }
+            return res.sendStatus(200);
           }
         );
-
-        return res.sendStatus(200);
       }
     );
   }
@@ -226,11 +228,14 @@ function update_subscription(customer_id, subscription, callback) {
       User.set(user.uid, updates, next);
     };
 
-    if (shouldDisable && !user.isDisabled) {
+    // A prior attempt may have saved the user but failed while updating one
+    // of its blogs. Reconcile blogs again on redelivery even if the user flag
+    // already matches, so a 503 really can be repaired by retrying the event.
+    if (shouldDisable) {
       handler = function (next) {
         User.disable(user, updates, next);
       };
-    } else if (!shouldDisable && subscription.status === "active" && user.isDisabled) {
+    } else if (subscription.status === "active") {
       handler = function (next) {
         User.enable(user, updates, next);
       };

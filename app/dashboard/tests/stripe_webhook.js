@@ -250,7 +250,7 @@ describe("Stripe subscription webhooks", function () {
     expect(blog.isDisabled).toBe(false);
   });
 
-  it("returns 400 when verification fails", async function () {
+  it("returns 503 when subscription retrieval fails", async function () {
     this.stripeClient.customers.retrieveSubscription.and.callFake((_, __, callback) =>
       callback(new Error("nope"))
     );
@@ -275,7 +275,7 @@ describe("Stripe subscription webhooks", function () {
       body: JSON.stringify(event),
     });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(503);
     expect(this.stripeClient.customers.retrieveSubscription).toHaveBeenCalled();
 
     await delay(100);
