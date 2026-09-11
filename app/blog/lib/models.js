@@ -1,4 +1,3 @@
-const { promisify } = require("util");
 const Blog = require("models/blog");
 const Entry = require("models/entry");
 const Entries = require("models/entries");
@@ -7,15 +6,80 @@ const Tags = require("models/tags");
 const Redirects = require("models/redirects");
 const User = require("models/user");
 
-// Standard err-first model APIs — safe for util.promisify.
-const getBlog = promisify(Blog.get);
-const getMetadata = promisify(Template.getMetadata);
-const getFullView = promisify(Template.getFullView);
-const searchEntries = promisify(Entry.search);
-const listTags = promisify(Tags.list);
-const popularTags = promisify(Tags.popular);
-const checkRedirect = promisify(Redirects.check);
-const getUserById = promisify(User.getById);
+// All adapters look up the model method at call time so Jasmine spies
+// (and other runtime replacements) still take effect.
+
+function getBlog(identifier) {
+  return new Promise((resolve, reject) => {
+    Blog.get(identifier, (err, blog) => {
+      if (err) reject(err);
+      else resolve(blog);
+    });
+  });
+}
+
+function getMetadata(templateID) {
+  return new Promise((resolve, reject) => {
+    Template.getMetadata(templateID, (err, metadata) => {
+      if (err) reject(err);
+      else resolve(metadata);
+    });
+  });
+}
+
+function getFullView(blogID, templateID, viewName) {
+  return new Promise((resolve, reject) => {
+    Template.getFullView(blogID, templateID, viewName, (err, response) => {
+      if (err) reject(err);
+      else resolve(response);
+    });
+  });
+}
+
+function searchEntries(blogID, query, options) {
+  return new Promise((resolve, reject) => {
+    Entry.search(blogID, query, options, (err, results) => {
+      if (err) reject(err);
+      else resolve(results);
+    });
+  });
+}
+
+function listTags(blogID, options) {
+  return new Promise((resolve, reject) => {
+    Tags.list(blogID, options, (err, tags) => {
+      if (err) reject(err);
+      else resolve(tags);
+    });
+  });
+}
+
+function popularTags(blogID, options) {
+  return new Promise((resolve, reject) => {
+    Tags.popular(blogID, options, (err, tags) => {
+      if (err) reject(err);
+      else resolve(tags);
+    });
+  });
+}
+
+function checkRedirect(blogID, url) {
+  return new Promise((resolve, reject) => {
+    Redirects.check(blogID, url, (err, redirect) => {
+      if (err) reject(err);
+      else resolve(redirect);
+    });
+  });
+}
+
+function getUserById(id) {
+  return new Promise((resolve, reject) => {
+    User.getById(id, (err, user) => {
+      if (err) reject(err);
+      else resolve(user);
+    });
+  });
+}
 
 // getPage's callback is (err, entries, pagination) — promisify would drop pagination.
 function getPage(blogID, options) {
@@ -91,7 +155,12 @@ function getRecent(blogID, options) {
 }
 
 function getTotal(blogID) {
-  return promisify(Entries.getTotal)(blogID);
+  return new Promise((resolve, reject) => {
+    Entries.getTotal(blogID, (err, total) => {
+      if (err) reject(err);
+      else resolve(total);
+    });
+  });
 }
 
 module.exports = {

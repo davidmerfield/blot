@@ -1,10 +1,11 @@
 const { getEntry } = require("../../lib/models");
 const fetchTaggedEntries = require("./helpers/fetchTaggedEntries");
+const callFetchTaggedEntries = require("../../lib/callFetchTaggedEntries");
 const projectEntryFields = require("./helpers/projectEntryFields");
 const entryFieldList = require("./helpers/entryFieldList");
 const withEntryFieldsAsync = require("../../lib/withEntryFieldsAsync");
-const getTemplateSortOptions = require("blog/sortOptions");
 const asRetriever = require("../../lib/asRetriever");
+const getTemplateSortOptions = require("blog/sortOptions");
 const { sortEntries } = getTemplateSortOptions;
 
 async function tagged(req, res) {
@@ -39,7 +40,7 @@ async function tagged(req, res) {
 
   const offset = (page - 1) * limit;
 
-  const result = await fetchTaggedEntries(blogID, tags, {
+  const result = await callFetchTaggedEntries(fetchTaggedEntries, blogID, tags, {
     limit,
     offset,
     pathPrefix,

@@ -1,6 +1,7 @@
 const { getEntry, getPage } = require("../../lib/models");
 const LRUCache = require("lru-cache").LRUCache;
 const fetchTaggedEntries = require("./helpers/fetchTaggedEntries");
+const callFetchTaggedEntries = require("../../lib/callFetchTaggedEntries");
 const projectEntryFields = require("./helpers/projectEntryFields");
 const getTemplateSortOptions = require("blog/sortOptions");
 const { cloneDeep, deepFreeze } = require("../../lib/clone");
@@ -106,7 +107,7 @@ async function posts(req, res) {
     const offset = (page - 1) * limit;
 
     log("Loading tagged page of entries");
-    const result = await fetchTaggedEntries(blogID, tags, {
+    const result = await callFetchTaggedEntries(fetchTaggedEntries, blogID, tags, {
       limit,
       offset,
       pathPrefix: options.pathPrefix,
