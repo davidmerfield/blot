@@ -2,6 +2,7 @@ var Candidates = require("./candidates");
 var async = require("async");
 var Create = require("./create");
 var Transformer = require("helper/transformer");
+var ownHost = require("helper/transformer/ownHost");
 var STORE_PREFIX = "thumbnails";
 var debug = require("debug")("blot:entry:build:thumbnail");
 
@@ -20,7 +21,7 @@ module.exports = function (blog, path, metadata, html, callback) {
 
   debug(blog.id, path, candidates);
 
-  store = new Transformer(blog.id, STORE_PREFIX);
+  store = new Transformer(blog.id, STORE_PREFIX, ownHost.hostnames(blog));
   create = Create.bind(this, blog.id);
 
   async.eachSeries(

@@ -4,6 +4,7 @@ var isURL = require("./isURL");
 var Keys = require("./keys");
 var HashFile = require("./hash");
 var download = require("./download");
+var ownHost = require("./ownHost");
 var type = require("../type");
 var ensure = require("../ensure");
 var fs = require("fs-extra");
@@ -33,10 +34,11 @@ function resolveCDNPath(src) {
   }
 }
 
-function Transformer(blogID, name) {
+function Transformer(blogID, name, ownHostnames) {
   ensure(blogID, "string").and(name, "string");
 
   var keys = Keys(blogID, name);
+  ownHostnames = ownHostnames || [];
 
   // Note: lookup does NOT de-duplicate concurrent calls for the same source
   // (only repeat calls once a result is cached). Simultaneous callers each
@@ -66,6 +68,30 @@ function Transformer(blogID, name) {
 
     // We check URLs first since isPath is less strict
     if (url) {
+      // If this URL is hosted on the blog's own custom domain or its
+      // <handle>.blot.im subdomain, it's very likely a local file being
+      // referenced by its full URL rather than a relative path - fetching
+      // it over HTTP just to get back bytes we already have on disk
+      // needlessly slows builds down. Try resolving it as a local path
+      // first (recursing back through this same function reuses every
+      // local-path fallback below), and only hit the network if that
+      // fails - e.g. the file has since been deleted, or the URL doesn't
+      // actually map onto the folder.
+      var ownPath = ownHost.resolve(url, ownHostnames);
+
+      if (ownPath) {
+        debug(src, "matches this blog's own domain, trying local path first:", ownPath);
+        return lookup(ownPath, transform, function (err, result, hash) {
+          if (!err) return callback(null, result, hash);
+          debug(
+            src,
+            "local lookup for own-domain URL failed, falling back to network fetch:",
+            err
+          );
+          fromURL(url, transform, callback);
+        });
+      }
+
       debug(src, "seemes to be a URL");
       return fromURL(url, transform, callback);
     }

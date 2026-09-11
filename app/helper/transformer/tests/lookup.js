@@ -2,6 +2,7 @@ describe("transformer", function () {
   var fs = require("fs-extra");
   var Keys = require("../keys");
   var client = require("models/client");
+  var Transformer = require("../index");
   var STATIC_DIRECTORY = require("config").blog_static_files_dir;
 
   // Creates test environment
@@ -179,6 +180,51 @@ describe("transformer", function () {
       expect(result).toEqual(jasmine.any(Object));
       expect(result.size).toEqual(jasmine.any(Number));
       done();
+    });
+  });
+
+  describe("own-host resolution", function () {
+    beforeEach(function () {
+      // A transformer configured to treat the test server's own origin as
+      // this blog's own domain, the way the image plugin and thumbnail
+      // generator configure theirs from the blog's real domain/handle.
+      var hostname = require("url").parse(this.origin).hostname;
+      this.ownHostTransformer = new Transformer(this.blog.id, "own-host", [
+        hostname,
+      ]);
+    });
+
+    afterEach(function (done) {
+      this.ownHostTransformer.flush(done);
+    });
+
+    it("resolves a URL on the blog's own host from disk instead of fetching it", function (done) {
+      var spy = jasmine.createSpy().and.callFake(this.transform);
+      var ownURL = this.origin + "/" + this.path;
+
+      this.ownHostTransformer.lookup(ownURL, spy, function (err, result) {
+        if (err) return done.fail(err);
+
+        expect(spy).toHaveBeenCalled();
+        // If this had gone over the network it would have hashed the
+        // "Hello, World!" response body, not the local file.
+        expect(result).toEqual(jasmine.any(Object));
+        expect(result.size).toEqual(jasmine.any(Number));
+        done();
+      });
+    });
+
+    it("falls back to a network fetch when the local file doesn't exist", function (done) {
+      this.ownHostTransformer.lookup(this.url, this.transform, function (
+        err,
+        result
+      ) {
+        if (err) return done.fail(err);
+
+        expect(result).toEqual(jasmine.any(Object));
+        expect(result.size).toEqual(jasmine.any(Number));
+        done();
+      });
     });
   });
 
