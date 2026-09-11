@@ -17,7 +17,10 @@ module.exports = ({ blogID, label }) => {
   function status(message) {
     // Progress must not overwrite a terminal cancellation status.
     if (state.signal.aborted && message !== "Cancelled" && message !== "Failed") return;
-    statuses = statuses.then(() => fs.outputFile(join(importDirectory, "status.txt"), message));
+    // Recover from any prior write failure before chaining the next one, so a
+    // single rejected write (e.g. ENOSPC) can't permanently stop status.txt
+    // from ever being updated again for the rest of this job.
+    statuses = statuses.catch(() => {}).then(() => fs.outputFile(join(importDirectory, "status.txt"), message));
     statuses.catch(err => console.error("Failed to write import status", err));
     client.publish("import:status:" + blogID, JSON.stringify({ status: message, importID }))
       .catch(err => console.error("Failed to publish import status", err));

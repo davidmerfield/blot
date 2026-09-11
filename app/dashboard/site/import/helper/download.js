@@ -39,8 +39,13 @@ module.exports = async function download(url, options = {}) {
     const chunks = [];
     let bytes = 0;
     for await (const chunk of body) {
+      // lifecycle.check() does synchronous filesystem I/O (existsSync/
+      // readJsonSync); calling it once per stream chunk would block the
+      // event loop hundreds of times per download. lifecycle's own 250ms
+      // background timer (see lifecycle.js) already polls the same state and
+      // aborts this signal, and an explicit cancel aborts it immediately, so
+      // checking it here is enough to react promptly without the extra I/O.
       if (controller.signal.aborted) throw lifecycle.cancelled();
-      lifecycle.check();
       bytes += chunk.length;
       if (state) state.bytes += chunk.length;
       if (state && state.bytes > MAX_IMPORT_BYTES) {
