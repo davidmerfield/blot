@@ -44,7 +44,7 @@ function absolute_urls(base, $) {
   return $;
 }
 
-module.exports = asRetriever(async function (req, res) {
+module.exports = asRetriever(function (req, res) {
   return function () {
     return function (text, render) {
       const base = req.protocol + "://" + req.get("host");

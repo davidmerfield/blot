@@ -3,7 +3,7 @@
 // and should be used by the social sharing buttons plugin when it exists
 const asRetriever = require("../../lib/asRetriever");
 
-module.exports = asRetriever(async function (req, res) {
+module.exports = asRetriever(function (req, res) {
   return function () {
     return function (text, render) {
       let encoded_text = "";

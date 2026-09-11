@@ -2,7 +2,7 @@ const moment = require("moment");
 const asRetriever = require("../../lib/asRetriever");
 require("moment-timezone");
 
-module.exports = asRetriever(async function (req, res) {
+module.exports = asRetriever(function (req, res) {
   return function () {
     const d = moment.utc(req.blog.cacheID).tz(req.blog.timeZone);
 

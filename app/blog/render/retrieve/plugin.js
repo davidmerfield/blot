@@ -1,7 +1,7 @@
 const Plugins = require("build/plugins");
 const asRetriever = require("../../lib/asRetriever");
 
-module.exports = asRetriever(async function (req, res) {
+module.exports = asRetriever(function (req, res) {
   let requested = (req.retrieve && req.retrieve.plugin) || {};
   const response = {};
   const pluginList = Plugins.list || {};

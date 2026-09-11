@@ -28,7 +28,9 @@ function canonicalize(url) {
   return segments.map(encodeURIComponent).join("/") + suffix;
 }
 
-module.exports = asRetriever(async function (req, res) {
+// Sync Mustache lambda factory — keep synchronous so unit tests that read the
+// callback result on the same tick continue to work.
+module.exports = asRetriever(function (req, res) {
   return function () {
     let url;
     let link;

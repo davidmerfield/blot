@@ -14,7 +14,7 @@ function removeXMLInvalidChars(string) {
   return string.replace(regex, "");
 }
 
-module.exports = asRetriever(async function (req, res) {
+module.exports = asRetriever(function (req, res) {
   return function () {
     return function (text, render) {
       let xml;

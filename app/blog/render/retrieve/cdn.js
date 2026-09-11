@@ -2,7 +2,7 @@ const config = require("config");
 const generateCdnUrl = require("models/template/util/generateCdnUrl");
 const asRetriever = require("../../lib/asRetriever");
 
-module.exports = asRetriever(async function (req, res) {
+module.exports = asRetriever(function (req, res) {
   return function () {
     const manifest = (req && req.template && req.template.cdn) || {};
     const templateID = req.template && req.template.id;

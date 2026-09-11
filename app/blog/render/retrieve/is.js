@@ -26,7 +26,7 @@ move to handlebars, say.
 */
 const asRetriever = require("../../lib/asRetriever");
 
-module.exports = asRetriever(async function (req, res) {
+module.exports = asRetriever(function (req, res) {
   const is = {};
 
   for (const local in req.template.locals) {
