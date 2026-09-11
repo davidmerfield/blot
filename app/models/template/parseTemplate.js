@@ -39,10 +39,7 @@ var projectedEntryLocals = {
   all_entries: [""],
   recentEntries: [""],
   recent_entries: [""],
-  latestEntry: [""],
-  latest_entry: [""],
   posts: [""],
-  search_results: [""],
   tagged: ["entries"],
   archives: ["months.entries"],
 };

@@ -176,7 +176,7 @@ module.exports = function getPartials(
                   );
                   // The contextual parse only sees the partial's visible
                   // content. Its stored retrieve can also carry dependencies
-                  // that aren't context-bound - an explicit retrieve.latest_entry
+                  // that aren't context-bound - an explicit retrieve.all_entries
                   // for a local, includeDraft/filters, cdn targets. Those still
                   // apply wherever the partial is embedded.
                   mergeStoredDependencies(retrieve, view.retrieve);

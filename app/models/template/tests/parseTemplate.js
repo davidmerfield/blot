@@ -19,11 +19,11 @@ describe("parseTemplate", function () {
   });
 
   it("parses locals to retrieve from a template", function () {
-    var template = `{{folder}}`; // folder is on the whitelist of variables
+    var template = `{{updated}}`; // updated is on the whitelist of variables
     var result = parseTemplate(template);
     expect(result).toEqual({
       partials: {},
-      retrieve: { folder: true },
+      retrieve: { updated: true },
     });
   });
 
@@ -34,29 +34,29 @@ describe("parseTemplate", function () {
   });
 
   it("captures the root local used", function () {
-    var template = `{{folder.length}}`; // folder is on the whitelist of variables
+    var template = `{{plugin.length}}`; // plugin is on the whitelist of variables
     var result = parseTemplate(template);
     expect(result).toEqual({
       partials: {},
-      retrieve: { folder: { length: true } },
+      retrieve: { plugin: { length: true } },
     });
   });
 
   it("handles deeper nesting", function () {
-    var template = `{{folder.subfolder.property}}`; // folder is on the whitelist
+    var template = `{{plugin.katex.css}}`; // plugin is on the whitelist
     var result = parseTemplate(template);
     expect(result).toEqual({
       partials: {},
-      retrieve: { folder: { subfolder: { property: true } } },
+      retrieve: { plugin: { katex: { css: true } } },
     });
   });
 
   it("handles both root and nested access", function () {
-    var template = `{{folder}}{{folder.length}}`; // folder is on the whitelist
+    var template = `{{plugin}}{{plugin.length}}`; // plugin is on the whitelist
     var result = parseTemplate(template);
     expect(result).toEqual({
       partials: {},
-      retrieve: { folder: { length: true } },
+      retrieve: { plugin: { length: true } },
     });
   });
 
@@ -177,12 +177,12 @@ describe("parseTemplate", function () {
     });
   });
 
-  it("projects fields from search_results section access", function () {
-    var template = `{{#search_results}}{{title}}{{/search_results}}`;
+  it("projects fields from tagged entries section access", function () {
+    var template = `{{#tagged}}{{#entries}}{{title}}{{/entries}}{{/tagged}}`;
     var result = parseTemplate(template);
     expect(result).toEqual({
       partials: {},
-      retrieve: { search_results: { fields: { title: true } } },
+      retrieve: { tagged: { fields: { title: true } } },
     });
   });
 
@@ -204,21 +204,12 @@ describe("parseTemplate", function () {
     });
   });
 
-  it("projects fields from latestEntry section and property access", function () {
-    var template = `{{#latestEntry}}{{title}}{{/latestEntry}}{{latestEntry.url}}`;
+  it("projects fields from recentEntries section and property access", function () {
+    var template = `{{#recentEntries}}{{title}}{{/recentEntries}}{{recentEntries.url}}`;
     var result = parseTemplate(template);
     expect(result).toEqual({
       partials: {},
-      retrieve: { latestEntry: { fields: { title: true, url: true } } },
-    });
-  });
-
-  it("projects fields from latest_entry section access", function () {
-    var template = `{{#latest_entry}}{{title}}{{/latest_entry}}`;
-    var result = parseTemplate(template);
-    expect(result).toEqual({
-      partials: {},
-      retrieve: { latest_entry: { fields: { title: true } } },
+      retrieve: { recentEntries: { fields: { title: true, url: true } } },
     });
   });
 

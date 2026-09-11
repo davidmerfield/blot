@@ -220,27 +220,27 @@ describe("template", () => {
 	});
 
 	it("keeps an explicit retrieve dependency the parser can't see", async function () {
-		// `latest_entry` is only reached indirectly (via a local), so the
+		// `all_entries` is only reached indirectly (via a local), so the
 		// parser never meets it - the explicit retrieve key must survive.
 		await setView(this.template.id, {
 			name: "snippet.html",
 			content: "{{{snippet}}}",
-			locals: { snippet: "{{latest_entry.title}}" },
-			retrieve: { latest_entry: true },
+			locals: { snippet: "{{all_entries.title}}" },
+			retrieve: { all_entries: true },
 		});
 
 		let view = await getView(this.template.id, "snippet.html");
-		expect(view.retrieve.latest_entry).toBe(true);
+		expect(view.retrieve.all_entries).toBe(true);
 
 		// ...and across a plain content re-save with no retrieve passed.
 		await setView(this.template.id, {
 			name: "snippet.html",
 			content: "{{{snippet}}} ",
-			locals: { snippet: "{{latest_entry.title}}" },
+			locals: { snippet: "{{all_entries.title}}" },
 		});
 
 		view = await getView(this.template.id, "snippet.html");
-		expect(view.retrieve.latest_entry).toBe(true);
+		expect(view.retrieve.all_entries).toBe(true);
 	});
 
 	it("merges an explicit nested retrieve request with parser-derived metadata", async function () {

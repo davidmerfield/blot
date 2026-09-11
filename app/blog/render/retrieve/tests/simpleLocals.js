@@ -1,12 +1,6 @@
 const avatarUrl = require("../avatar_url");
-const cssUrl = require("../css_url");
-const feedUrl = require("../feed_url");
-const scriptUrl = require("../script_url");
-const searchQuery = require("../search_query");
-const totalPosts = require("../total_posts");
 const encodeJSON = require("../encode_json");
 const encodeURIComponentLocal = require("../encode_uri_component");
-const Entries = require("models/entries");
 
 function run(fn, req) {
   return new Promise((resolve, reject) => {
@@ -28,40 +22,6 @@ describe("simple pass-through retrieve locals", function () {
       blog: { avatar: "https://cdn/avatar.png" },
     });
     expect(result).toEqual("https://cdn/avatar.png");
-  });
-
-  it("css_url returns the blog's stylesheet URL", async function () {
-    const result = await run(cssUrl, { blog: { cssURL: "/style.css?cache=1" } });
-    expect(result).toEqual("/style.css?cache=1");
-  });
-
-  it("feed_url returns the blog's feed URL", async function () {
-    const result = await run(feedUrl, { blog: { feedURL: "/feed" } });
-    expect(result).toEqual("/feed");
-  });
-
-  it("script_url returns the blog's script URL", async function () {
-    const result = await run(scriptUrl, {
-      blog: { scriptURL: "/script.js?cache=1" },
-    });
-    expect(result).toEqual("/script.js?cache=1");
-  });
-
-  it("search_query returns the q query parameter", async function () {
-    const result = await run(searchQuery, { query: { q: "hello" } });
-    expect(result).toEqual("hello");
-  });
-
-  it("total_posts returns the blog's total entry count", async function () {
-    spyOn(Entries, "getTotal").and.callFake((blogID, cb) => cb(null, 42));
-
-    const result = await run(totalPosts, { blog: { id: "blog-1" } });
-
-    expect(result).toEqual(42);
-    expect(Entries.getTotal).toHaveBeenCalledWith(
-      "blog-1",
-      jasmine.any(Function)
-    );
   });
 });
 

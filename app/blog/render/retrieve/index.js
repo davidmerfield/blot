@@ -5,7 +5,6 @@ var ensure = require("helper/ensure");
 var all_entries = require("./all_entries");
 var all_tags = require("./all_tags");
 var recent_entries = require("./recent_entries");
-var latest_entry = require("./latest_entry");
 var is_active = require("./is_active");
 var absolute_urls = require("./absolute_urls");
 var encode_json = require("./encode_json");
@@ -30,20 +29,15 @@ var dictionary = {
   "asset": require("./asset"),
   "avatar_url": require("./avatar_url"),
   "cdn": require("./cdn"),
-  "css_url": require("./css_url"),
   "encode_json": encode_json,
   "encodeJSON": encode_json,
   "encode_uri_component": encode_uri_component,
   "encodeURIComponent": encode_uri_component,
   "encode_xml": encode_xml,
   "encodeXML": encode_xml,
-  "feed_url": require("./feed_url"),
-  "folder": require("./folder"),
   "is": require("./is"),
   "is_active": is_active,
   "isActive": is_active,
-  "latest_entry": latest_entry,
-  "latestEntry": latest_entry,
   "plugin": require("./plugin"),
   "plugin_css": app_css,
   "plugin_js": app_js,
@@ -52,11 +46,7 @@ var dictionary = {
   "recent_entries": recent_entries,
   "recentEntries": recent_entries,
   "rgb": require("./rgb"),
-  "script_url": require("./script_url"),
-  "search_query": require("./search_query"),
-  "search_results": require("./search_results"),
   "tagged": require("./tagged"),
-  "total_posts": require("./total_posts"),
   "updated": require("./updated"),
 };
 

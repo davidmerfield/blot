@@ -18,10 +18,10 @@ describe("applyUserRetrieveOptions", function () {
   });
 
   it("carries over a real retrieve local the parser could not see", function () {
-    // e.g. locals.snippet = "{{latest_entry.title}}", content = "{{{snippet}}}"
+    // e.g. locals.snippet = "{{all_entries.title}}", content = "{{{snippet}}}"
     expect(
-      applyUserRetrieveOptions({}, undefined, { latest_entry: true })
-    ).toEqual({ latest_entry: true });
+      applyUserRetrieveOptions({}, undefined, { all_entries: true })
+    ).toEqual({ all_entries: true });
   });
 
   it("drops non-system keys from the stored retrieve", function () {
@@ -66,7 +66,7 @@ describe("applyUserRetrieveOptions", function () {
     var parseTemplate = require("../parseTemplate");
     var content =
       "{{{appCSS}}}{{#posts}}{{title}}{{{html}}}{{/posts}}" +
-      "{{#latest_entry}}{{summary}}{{/latest_entry}}";
+      "{{#recent_entries}}{{summary}}{{/recent_entries}}";
 
     var first = applyUserRetrieveOptions(
       parseTemplate(content).retrieve || {},

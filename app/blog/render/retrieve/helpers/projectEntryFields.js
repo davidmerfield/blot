@@ -90,8 +90,8 @@ function projectEntryFields(entries, retrieve, keys) {
   //
   // KNOWN LIMITATION: this only sees the entries in *this* local. An entry
   // here whose markup references a different retrieve local's heavy field
-  // (e.g. a post body containing "{{latestEntry.summary}}") does not stop
-  // latest_entry from projecting `summary` away, because each retrieve module
+  // (e.g. a post body containing "{{recent_entries.summary}}") does not stop
+  // recent_entries from projecting `summary` away, because each retrieve module
   // runs independently. Closing that needs projection to move to a single
   // post-retrieval pass in blog/render/retrieve/index.js - tracked as a
   // follow-up. It is rare and fails safe-ish (empty fragment, not data loss).

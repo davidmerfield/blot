@@ -3,7 +3,6 @@
 // models and check each retrieve helper accordingly.
 describe("post sorting across retrieve helpers", function () {
   const Entries = require("models/entries");
-  const Entry = require("models/entry");
 
   // Newest-first, the order the models return by default.
   const newestFirst = () => [
@@ -45,47 +44,6 @@ describe("post sorting across retrieve helpers", function () {
           "b.txt",
         ]);
       }
-    });
-  });
-
-  describe("search_results", function () {
-    const searchResults = require("../search_results");
-    let received;
-
-    beforeEach(function () {
-      received = undefined;
-      spyOn(Entry, "search").and.callFake(function (blogID, query, options, cb) {
-        if (typeof options === "function") {
-          cb = options;
-          options = undefined;
-        }
-        received = { blogID, query, options };
-        // Entry.search returns already sorted + capped; the helper passes through.
-        cb(null, newestFirst());
-      });
-    });
-
-    it("forwards the resolved selection to Entry.search and passes results through", async function () {
-      const value = await run(searchResults, { sort_by: "id", sort_order: "desc" });
-      expect(received.options).toEqual({ sortBy: "id", order: "desc" });
-      expect(ids(value)).toEqual(["c.txt", "a.txt", "b.txt"]);
-    });
-
-    it("forwards the default (undefined) selection", async function () {
-      await run(searchResults, {});
-      expect(received.options).toEqual({ sortBy: undefined, order: undefined });
-    });
-
-    it("returns [] when there is no query", function (done) {
-      searchResults(
-        { blog: { id: "b1" }, query: {}, template: { locals: {} } },
-        { locals: {} },
-        (err, value) => {
-          expect(err).toBe(null);
-          expect(value).toEqual([]);
-          done();
-        }
-      );
     });
   });
 });
