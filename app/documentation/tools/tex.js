@@ -1,27 +1,32 @@
 var katex = require("katex");
 var OPEN_TAG = "\\(";
 var CLOSE_TAG = "\\)";
+var TEX_STYLESHEET =
+  '<link rel="stylesheet" type="text/css" href="{{#cdn}}/css/tex.css{{/cdn}}">';
 
-module.exports = $ => {
+module.exports = ($) => {
   var hadTex = false;
 
   $(":root").each(function () {
     findTextNodes(this);
   });
 
-  // Inject stylesheet to render TeX
+  // Inject stylesheet to render TeX. Documentation pages are usually body
+  // fragments (no <head>), so fall back to prepending the link.
   if (hadTex) {
-    $("head").append(
-      '<link rel="stylesheet" type="text/css" href="/css/tex.css">'
-    );
+    if ($("head").length) {
+      $("head").append(TEX_STYLESHEET);
+    } else {
+      $.root().prepend(TEX_STYLESHEET);
+    }
   }
 
   // This text does not contain LaTeX
-  function has_TeX (text) {
+  function has_TeX(text) {
     return text.indexOf(OPEN_TAG) !== -1 && text.indexOf(CLOSE_TAG) !== -1;
   }
 
-  function render (text) {
+  function render(text) {
     var TeX = text.slice(
       text.indexOf(OPEN_TAG) + OPEN_TAG.length,
       text.indexOf(CLOSE_TAG)
@@ -39,8 +44,7 @@ module.exports = $ => {
     return text;
   }
 
-  function findTextNodes (node) {
-
+  function findTextNodes(node) {
     $(node)
       .contents()
       .each(function () {
@@ -59,7 +63,6 @@ module.exports = $ => {
             }
             $(childNode).replaceWith(text);
           }
-
         } else {
           findTextNodes(childNode);
         }
