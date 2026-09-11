@@ -15,12 +15,6 @@ describe("helper/transformer/ownHost", function () {
       ]);
     });
 
-    it("falls back to parsing the hostname out of baseURL", function () {
-      expect(ownHost.hostnames({ baseURL: "https://foo.blot.im/" })).toEqual([
-        "foo.blot.im"
-      ]);
-    });
-
     it("includes both the domain and the handle when both are given", function () {
       expect(
         ownHost.hostnames({ domain: "example.com", handle: "foo" })

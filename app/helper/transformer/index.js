@@ -1,5 +1,6 @@
 var debug = require("debug")("blot:helper:transformer");
 var client = require("models/client");
+var blogKey = require("models/blog/key");
 var isURL = require("./isURL");
 var Keys = require("./keys");
 var HashFile = require("./hash");
@@ -34,11 +35,31 @@ function resolveCDNPath(src) {
   }
 }
 
-function Transformer(blogID, name, ownHostnames) {
+function Transformer(blogID, name) {
   ensure(blogID, "string").and(name, "string");
 
   var keys = Keys(blogID, name);
-  ownHostnames = ownHostnames || [];
+
+  // Fetched lazily (only once a URL actually needs to be checked) and
+  // memoized for the life of this Transformer, so instances used purely
+  // for local paths never pay for this lookup.
+  var ownHostnamesPromise;
+
+  function getOwnHostnames() {
+    if (!ownHostnamesPromise) {
+      ownHostnamesPromise = client
+        .hmGet(blogKey.info(blogID), ["domain", "handle"])
+        .then(function (res) {
+          return ownHost.hostnames({ domain: res[0], handle: res[1] });
+        })
+        .catch(function (err) {
+          debug(blogID, "failed to fetch own hostnames", err);
+          return [];
+        });
+    }
+
+    return ownHostnamesPromise;
+  }
 
   // Note: lookup does NOT de-duplicate concurrent calls for the same source
   // (only repeat calls once a result is cached). Simultaneous callers each
@@ -77,23 +98,25 @@ function Transformer(blogID, name, ownHostnames) {
       // local-path fallback below), and only hit the network if that
       // fails - e.g. the file has since been deleted, or the URL doesn't
       // actually map onto the folder.
-      var ownPath = ownHost.resolve(url, ownHostnames);
+      return getOwnHostnames().then(function (ownHostnames) {
+        var ownPath = ownHost.resolve(url, ownHostnames);
 
-      if (ownPath) {
-        debug(src, "matches this blog's own domain, trying local path first:", ownPath);
-        return lookup(ownPath, transform, function (err, result, hash) {
-          if (!err) return callback(null, result, hash);
-          debug(
-            src,
-            "local lookup for own-domain URL failed, falling back to network fetch:",
-            err
-          );
-          fromURL(url, transform, callback);
-        });
-      }
+        if (ownPath) {
+          debug(src, "matches this blog's own domain, trying local path first:", ownPath);
+          return lookup(ownPath, transform, function (err, result, hash) {
+            if (!err) return callback(null, result, hash);
+            debug(
+              src,
+              "local lookup for own-domain URL failed, falling back to network fetch:",
+              err
+            );
+            fromURL(url, transform, callback);
+          });
+        }
 
-      debug(src, "seemes to be a URL");
-      return fromURL(url, transform, callback);
+        debug(src, "seemes to be a URL");
+        fromURL(url, transform, callback);
+      });
     }
 
     if (path.length > 300) {

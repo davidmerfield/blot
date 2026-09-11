@@ -1,5 +1,4 @@
 var Transformer = require("helper/transformer");
-var ownHost = require("helper/transformer/ownHost");
 var debug = require("debug")("blot:entry:build:plugins:image");
 var eachEl = require("../eachEl");
 var optimize = require("./optimize");
@@ -7,7 +6,7 @@ var url = require("url");
 
 function render($, callback, options) {
   var blogID = options.blogID;
-  var cache = new Transformer(blogID, "image-cache", ownHost.hostnames(options));
+  var cache = new Transformer(blogID, "image-cache");
 
   // eachEl walks the <img> tags with async.eachOfSeries, so images in one
   // entry are transformed one at a time - the same image referenced twice

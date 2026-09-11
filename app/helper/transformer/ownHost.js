@@ -9,8 +9,8 @@ function stripWWW(hostname) {
 }
 
 // Returns the set of hostnames (lowercased, "www." stripped) a blog is
-// reachable at, given either a blog-shaped object ({ domain, handle }) or
-// the options object plugins receive ({ domain, baseURL }).
+// reachable at: its custom domain, if any, and its <handle>.blot.im
+// subdomain.
 function hostnames(source) {
   source = source || {};
 
@@ -19,14 +19,8 @@ function hostnames(source) {
   if (source.domain)
     hosts.push(stripWWW(String(source.domain).toLowerCase()));
 
-  if (source.handle) {
+  if (source.handle)
     hosts.push(String(source.handle).toLowerCase() + "." + config.host);
-  } else if (source.baseURL) {
-    try {
-      var parsed = url.parse(source.baseURL);
-      if (parsed.hostname) hosts.push(stripWWW(parsed.hostname.toLowerCase()));
-    } catch (e) {}
-  }
 
   return hosts;
 }

@@ -2,6 +2,7 @@ describe("transformer", function () {
   var fs = require("fs-extra");
   var Keys = require("../keys");
   var client = require("models/client");
+  var blogKey = require("models/blog/key");
   var Transformer = require("../index");
   var STATIC_DIRECTORY = require("config").blog_static_files_dir;
 
@@ -184,14 +185,18 @@ describe("transformer", function () {
   });
 
   describe("own-host resolution", function () {
-    beforeEach(function () {
-      // A transformer configured to treat the test server's own origin as
-      // this blog's own domain, the way the image plugin and thumbnail
-      // generator configure theirs from the blog's real domain/handle.
+    beforeEach(function (done) {
+      this.ownHostTransformer = new Transformer(this.blog.id, "own-host");
+
+      // Point this blog's "domain" at the test server's own host, in
+      // Redis, the way a real blog's custom domain is stored - the
+      // transformer looks this up itself rather than being told.
       var hostname = require("url").parse(this.origin).hostname;
-      this.ownHostTransformer = new Transformer(this.blog.id, "own-host", [
-        hostname,
-      ]);
+      client
+        .hSet(blogKey.info(this.blog.id), "domain", hostname)
+        .then(function () {
+          done();
+        });
     });
 
     afterEach(function (done) {
