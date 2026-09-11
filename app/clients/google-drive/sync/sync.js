@@ -163,9 +163,7 @@ module.exports = async function sync(blogID, publish, update) {
         const identical = isGoogleAppFile
           ? truncateToSecond(existsLocally?.modifiedTime) ===
             truncateToSecond(modifiedTime)
-          // The downloader verifies md5Checksum against the actual local
-          // bytes. Size (or timestamp) alone cannot prove content equality.
-          : false;
+          : existsLocally?.size === size;
 
         if (!existsLocally || !identical) {
           await checkWeCanContinue();
