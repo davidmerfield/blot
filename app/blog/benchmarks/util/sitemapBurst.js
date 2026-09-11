@@ -2,6 +2,7 @@
 
 const { performance } = require("perf_hooks");
 const { summarizeDurations } = require("./metrics");
+const { timedRequest } = require("./burstRequest");
 
 /**
  * Same shape as archivesBurst.js, aimed at /sitemap.xml. Like /archives it
@@ -33,14 +34,14 @@ async function runSitemapBurst({ blogs, concurrency, getForBlog }) {
   const soloDurations = [];
   for (const blog of targets) {
     const startedAt = performance.now();
-    await getForBlog(blog, "/sitemap.xml", { redirect: "manual" });
+    await timedRequest(getForBlog, blog, "/sitemap.xml");
     soloDurations.push(performance.now() - startedAt);
   }
 
   const burstDurations = await Promise.all(
     targets.map(async (blog) => {
       const startedAt = performance.now();
-      await getForBlog(blog, "/sitemap.xml", { redirect: "manual" });
+      await timedRequest(getForBlog, blog, "/sitemap.xml");
       return performance.now() - startedAt;
     })
   );

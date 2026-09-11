@@ -2,6 +2,7 @@
 
 const { performance } = require("perf_hooks");
 const { summarizeDurations } = require("./metrics");
+const { timedRequest } = require("./burstRequest");
 
 /**
  * Each blog's workload includes one "hub" entry that a fraction of its other
@@ -35,14 +36,14 @@ async function runBacklinksBurst({ blogs, hubPathBySite, concurrency, getForBlog
   const soloDurations = [];
   for (const { blog, hubPath } of targets) {
     const startedAt = performance.now();
-    await getForBlog(blog, hubPath, { redirect: "manual" });
+    await timedRequest(getForBlog, blog, hubPath);
     soloDurations.push(performance.now() - startedAt);
   }
 
   const burstDurations = await Promise.all(
     targets.map(async ({ blog, hubPath }) => {
       const startedAt = performance.now();
-      await getForBlog(blog, hubPath, { redirect: "manual" });
+      await timedRequest(getForBlog, blog, hubPath);
       return performance.now() - startedAt;
     })
   );

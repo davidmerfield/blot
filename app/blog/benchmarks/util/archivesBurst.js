@@ -2,6 +2,7 @@
 
 const { performance } = require("perf_hooks");
 const { summarizeDurations } = require("./metrics");
+const { timedRequest } = require("./burstRequest");
 
 /**
  * Each blog has exactly one /archives URL, so "bursting" it can't mean many
@@ -40,7 +41,7 @@ async function runArchivesBurst({ blogs, concurrency, getForBlog }) {
   const soloDurations = [];
   for (const blog of targets) {
     const startedAt = performance.now();
-    await getForBlog(blog, "/archives", { redirect: "manual" });
+    await timedRequest(getForBlog, blog, "/archives");
     soloDurations.push(performance.now() - startedAt);
   }
 
@@ -48,7 +49,7 @@ async function runArchivesBurst({ blogs, concurrency, getForBlog }) {
   const burstDurations = await Promise.all(
     targets.map(async (blog) => {
       const startedAt = performance.now();
-      await getForBlog(blog, "/archives", { redirect: "manual" });
+      await timedRequest(getForBlog, blog, "/archives");
       return performance.now() - startedAt;
     })
   );

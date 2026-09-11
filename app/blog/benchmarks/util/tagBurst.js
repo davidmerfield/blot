@@ -2,6 +2,7 @@
 
 const { performance } = require("perf_hooks");
 const { summarizeDurations } = require("./metrics");
+const { timedRequest } = require("./burstRequest");
 
 /**
  * Reproduces the queueing bug found on a real customer blog: individual
@@ -42,7 +43,7 @@ async function runTagBurst({ blogs, tagsBySite, concurrency, getForBlog }) {
     const soloForSite = [];
     for (const url of urls) {
       const startedAt = performance.now();
-      await getForBlog(blog, url, { redirect: "manual" });
+      await timedRequest(getForBlog, blog, url);
       const elapsedMs = performance.now() - startedAt;
       soloForSite.push(elapsedMs);
       soloDurations.push(elapsedMs);
@@ -52,7 +53,7 @@ async function runTagBurst({ blogs, tagsBySite, concurrency, getForBlog }) {
     const burstForSite = await Promise.all(
       urls.map(async (url) => {
         const startedAt = performance.now();
-        await getForBlog(blog, url, { redirect: "manual" });
+        await timedRequest(getForBlog, blog, url);
         return performance.now() - startedAt;
       })
     );

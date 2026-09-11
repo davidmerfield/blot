@@ -2,6 +2,7 @@
 
 const { performance } = require("perf_hooks");
 const { summarizeDurations } = require("./metrics");
+const { timedRequest } = require("./burstRequest");
 
 /**
  * Same solo-vs-burst pattern as tagBurst.js, aimed at Entry.search
@@ -41,7 +42,7 @@ async function runSearchBurst({ blogs, keywordsBySite, concurrency, getForBlog }
     const soloForSite = [];
     for (const url of urls) {
       const startedAt = performance.now();
-      await getForBlog(blog, url, { redirect: "manual" });
+      await timedRequest(getForBlog, blog, url);
       const elapsedMs = performance.now() - startedAt;
       soloForSite.push(elapsedMs);
       soloDurations.push(elapsedMs);
@@ -51,7 +52,7 @@ async function runSearchBurst({ blogs, keywordsBySite, concurrency, getForBlog }
     const burstForSite = await Promise.all(
       urls.map(async (url) => {
         const startedAt = performance.now();
-        await getForBlog(blog, url, { redirect: "manual" });
+        await timedRequest(getForBlog, blog, url);
         return performance.now() - startedAt;
       })
     );
