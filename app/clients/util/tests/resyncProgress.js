@@ -35,4 +35,31 @@ describe("resync progress", function () {
       "(2/2) Finished processing folder",
     ]);
   });
+
+  it("does not publish the same path twice", function () {
+    const messages = [];
+    const progress = createProgress(2, (message) => messages.push(message));
+
+    progress.publish("Checking", "/one.txt");
+    progress.publish("Checking", "/one.txt");
+
+    expect(messages).toEqual(["(1/2) Checking /one.txt"]);
+  });
+
+  it("advances current by count when a whole directory is removed at once", function () {
+    const messages = [];
+    // total was seeded by counting 3 individual files, one of which lives
+    // inside a folder that gets removed with a single fs.remove call.
+    const progress = createProgress(3, (message) => messages.push(message));
+
+    progress.publish("Checking", "/one.txt");
+    progress.publish("Removing", "/orphaned-folder", false, 2);
+    progress.finish("Finished processing folder");
+
+    expect(messages).toEqual([
+      "(1/3) Checking /one.txt",
+      "(3/3) Removing /orphaned-folder",
+      "(3/3) Finished processing folder",
+    ]);
+  });
 });

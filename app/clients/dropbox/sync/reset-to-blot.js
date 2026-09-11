@@ -88,18 +88,8 @@ async function resetToBlot(blogID, publish) {
 
   const localRoot = localPath(blogID, "/");
   const progress = createProgress(await countLocalFiles(localRoot), publish);
-  const processed = new Set();
 
-  await walk(
-    blogID,
-    client,
-    publish,
-    dropboxRoot,
-    "/",
-    summary,
-    progress,
-    processed
-  );
+  await walk(blogID, client, publish, dropboxRoot, "/", summary, progress);
 
   await set(blogID, {
     error_code: 0,
@@ -117,8 +107,7 @@ const walk = async (
   dropboxRoot,
   dir,
   summary,
-  progress,
-  processed
+  progress
 ) => {
   const localRoot = localPath(blogID, "/");
   publish("Checking", dir);
@@ -127,13 +116,19 @@ const walk = async (
     localReaddir(blogID, localRoot, dir),
   ]);
 
-  for (const { name, path_display } of localContents) {
+  for (const { name, path_display, is_directory } of localContents) {
     const pathOnBlot = join(dir, name);
+    const pathOnDisk = join(localRoot, dir, name);
+    // A directory removed in one fs.remove call still accounts for every
+    // file total counted inside it, so current must advance by that many.
+    const removedCount = is_directory
+      ? await countLocalFiles(pathOnDisk)
+      : 1;
 
     if (shouldIgnoreFile(pathOnBlot)) {
-      publishProgress(progress, processed, "Removing ignored", pathOnBlot);
+      progress.publish("Removing ignored", pathOnBlot, false, removedCount);
       try {
-        await fs.remove(join(localRoot, dir, name));
+        await fs.remove(pathOnDisk);
         summary.removed += 1;
       } catch (e) {
         publish("Failed to remove ignored", path_display, e.message);
@@ -146,9 +141,9 @@ const walk = async (
     );
 
     if (!remoteCounterpart) {
-      publishProgress(progress, processed, "Removing", pathOnBlot);
+      progress.publish("Removing", pathOnBlot, false, removedCount);
       try {
-        await fs.remove(join(localRoot, dir, name));
+        await fs.remove(pathOnDisk);
         summary.removed += 1;
       } catch (e) {
         publish("Failed to remove", path_display, e.message);
@@ -170,7 +165,7 @@ const walk = async (
 
     if (remoteItem.is_directory) {
       if (localCounterpart && !localCounterpart.is_directory) {
-        publishProgress(progress, processed, "Removing", pathOnBlot);
+        progress.publish("Removing", pathOnBlot);
         await fs.remove(pathOnDisk);
         summary.removed += 1;
         publish("Creating directory", pathOnDisk);
@@ -189,14 +184,11 @@ const walk = async (
         dropboxRoot,
         join(dir, name),
         summary,
-        progress,
-        processed
+        progress
       );
     } else {
       if (hasUnsupportedExtension(pathOnDropbox)) {
-        publishProgress(
-          progress,
-          processed,
+        progress.publish(
           "Skipping unsupported file",
           pathOnBlot,
           !localCounterpart || localCounterpart.is_directory
@@ -214,9 +206,7 @@ const walk = async (
         typeof remoteItem.size === "number" &&
         remoteItem.size > MAX_FILE_SIZE
       ) {
-        publishProgress(
-          progress,
-          processed,
+        progress.publish(
           "Skipping oversized file",
           `${pathOnBlot} (${remoteItem.size} bytes > ${MAX_FILE_SIZE} byte limit)`,
           !localCounterpart || localCounterpart.is_directory
@@ -235,9 +225,7 @@ const walk = async (
         localCounterpart.content_hash === remoteItem.content_hash;
 
       if (localCounterpart && !identicalLocally) {
-        publishProgress(
-          progress,
-          processed,
+        progress.publish(
           "Downloading",
           pathOnBlot,
           localCounterpart.is_directory
@@ -249,7 +237,7 @@ const walk = async (
           continue;
         }
       } else if (!localCounterpart) {
-        publishProgress(progress, processed, "Downloading", pathOnBlot, true);
+        progress.publish("Downloading", pathOnBlot, true);
         try {
           await download(client, pathOnDropbox, pathOnDisk);
           summary.downloaded += 1;
@@ -257,17 +245,11 @@ const walk = async (
           continue;
         }
       } else {
-        publishProgress(progress, processed, "Checking", pathOnBlot);
+        progress.publish("Checking", pathOnBlot);
       }
     }
   }
 };
-
-function publishProgress(progress, processed, message, path, additional) {
-  if (processed.has(path)) return;
-  processed.add(path);
-  progress.publish(message, path, additional);
-}
 
 const localReaddir = async (blogID, localRoot, dir) => {
   const contents = await fs.readdir(join(localRoot, dir));

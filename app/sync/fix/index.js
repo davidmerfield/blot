@@ -26,24 +26,24 @@ module.exports = function (blog, options, callback) {
   const fallbackMessenger = options.status ? null : messenger(blog);
   const status = options.status || fallbackMessenger.status;
   const checks = [
-    entryGhosts,
-    tagGhosts,
-    listGhosts,
-    menuGhosts,
-    entriesPathIndex,
+    { name: "entry-ghosts", fn: entryGhosts },
+    { name: "tag-ghosts", fn: tagGhosts },
+    { name: "list-ghosts", fn: listGhosts },
+    { name: "menu-ghosts", fn: menuGhosts },
+    { name: "entries-path-index", fn: entriesPathIndex },
   ];
   let current = 0;
 
   async.eachSeries(
     checks,
-    function (fn, next) {
+    function (check, next) {
       current += 1;
-      status(`(${current}/${checks.length}) Checking ${fn.name}`);
-      fn(
+      status(`(${current}/${checks.length}) Checking ${check.name}`);
+      check.fn(
         blog,
         callOnce(function (err, report) {
           if (err) return next(err);
-          if (report && report.length) finalReport[fn.name] = report;
+          if (report && report.length) finalReport[check.name] = report;
           next();
         })
       );

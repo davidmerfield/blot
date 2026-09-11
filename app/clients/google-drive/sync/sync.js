@@ -43,12 +43,6 @@ module.exports = async function sync(blogID, publish, update) {
     await countLocalFiles(localPath(blogID, "/")),
     publish
   );
-  const processed = new Set();
-  const publishProgress = (message, path, additional) => {
-    if (processed.has(path)) return;
-    processed.add(path);
-    progress.publish(message, path, additional);
-  };
 
   // fetch the latest folderName, in case it has changed
   // and also whether or not the folder is in the trash
@@ -101,12 +95,17 @@ module.exports = async function sync(blogID, publish, update) {
     // google docs to .gdoc files here.
     const remoteContents = transformDriveItems(driveItems);
 
-    for (const { name } of localContents) {
+    for (const { name, isDirectory: isLocalDirectory } of localContents) {
       const path = join(dir, name);
+      // A directory removed in one fs.remove call still accounts for every
+      // file total counted inside it, so current must advance by that many.
+      const removedCount = isLocalDirectory
+        ? await countLocalFiles(localPath(blogID, path))
+        : 1;
 
       if (shouldIgnoreFile(path)) {
         await checkWeCanContinue();
-        publishProgress("Removing ignored", path);
+        progress.publish("Removing ignored", path, false, removedCount);
         await fs.remove(localPath(blogID, path));
         await update(path);
         const id = await getByPath(path);
@@ -116,7 +115,7 @@ module.exports = async function sync(blogID, publish, update) {
 
       if (!remoteContents.find((item) => item.name === name)) {
         await checkWeCanContinue();
-        publishProgress("Removing", path);
+        progress.publish("Removing", path, false, removedCount);
         console.log(
           "Removing",
           join(dir, name),
@@ -158,7 +157,7 @@ module.exports = async function sync(blogID, publish, update) {
 
         if (!existsLocally || !identical) {
           await checkWeCanContinue();
-          publishProgress(
+          progress.publish(
             "Downloading",
             path,
             !existsLocally || existsLocally.isDirectory
@@ -201,12 +200,12 @@ module.exports = async function sync(blogID, publish, update) {
             console.error("Download failed for", path, err);
           }
         } else {
-          publishProgress("Checking", path);
+          progress.publish("Checking", path);
         }
       } else {
         if (existsLocally && !existsLocally.isDirectory) {
           await checkWeCanContinue();
-          publishProgress("Removing file", path);
+          progress.publish("Removing file", path);
           console.log("Removing file", path, "which is a directory remotely");
           await fs.remove(localPath(blogID, path));
           publish("Creating directory", path);

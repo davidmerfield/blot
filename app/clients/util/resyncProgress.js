@@ -16,10 +16,19 @@ async function countLocalFiles(directory) {
 
 function createProgress(total, publish) {
   const progress = { current: 0, total };
+  const processed = new Set();
 
-  progress.publish = function (message, path, additional) {
-    if (additional) progress.total += 1;
-    progress.current = Math.min(progress.current + 1, progress.total);
+  // `count` lets a caller that disposes of a whole directory in one action
+  // (e.g. removing an orphaned local folder with a single fs.remove call)
+  // advance current by the number of files that action accounted for,
+  // rather than by 1 - otherwise current permanently lags total, which was
+  // seeded by counting every file individually.
+  progress.publish = function (message, path, additional, count = 1) {
+    if (processed.has(path)) return;
+    processed.add(path);
+
+    if (additional) progress.total += count;
+    progress.current = Math.min(progress.current + count, progress.total);
     publish(`(${progress.current}/${progress.total}) ${message} ${path}`);
   };
 
