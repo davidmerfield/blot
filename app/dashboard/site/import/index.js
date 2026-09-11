@@ -48,6 +48,10 @@ Import.get("/download/:importID", async function (req, res, next) {
       );
     } catch (e) {}
 
+    if (fs.existsSync(join(req.importDirectory, "cancelled.txt"))) {
+      return next(new Error("Import was cancelled"));
+    }
+
     if (!fs.existsSync(resultZip)) {
       return next(new Error("Result zip does not exist"));
     }
@@ -62,7 +66,7 @@ Import.get("/download/:importID", async function (req, res, next) {
 
 Import.post("/cancel/:importID", async function (req, res) {
   try {
-    await fs.outputFile(join(req.importDirectory, "cancelled.txt"), "true");
+    await require("./lifecycle").cancel(req.importDirectory);
   } catch (e) {
     return res.message(req.baseUrl, new Error("Failed to cancel import"));
   }
@@ -72,6 +76,11 @@ Import.post("/cancel/:importID", async function (req, res) {
 
 Import.post("/delete/:importID", async function (req, res) {
   try {
+    // Cancel first so another worker cannot recreate a deleted running job.
+    await require("./lifecycle").cancel(req.importDirectory);
+    if (fs.existsSync(join(req.importDirectory, "running.txt"))) {
+      return res.message(req.baseUrl, "Cancellation requested; remove the import after it stops");
+    }
     await fs.remove(req.importDirectory);
   } catch (e) {
     return res.message(req.baseUrl, new Error("Failed to remove import"));

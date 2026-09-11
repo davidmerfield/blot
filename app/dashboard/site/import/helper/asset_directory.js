@@ -23,7 +23,11 @@ module.exports = function assetDirectory(entry, callback) {
 
     delete entry.asset_directory_callbacks;
 
-    if (!err) entry.asset_directory = directory;
+    if (!err) {
+      entry.asset_directory = directory;
+      const state = require("../lifecycle").current();
+      if (state) state.assets.add(directory);
+    }
 
     callbacks.forEach(function (callback) {
       callback(err, directory);

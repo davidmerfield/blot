@@ -81,14 +81,14 @@ module.exports = async function (req, res, next) {
           cancelled,
           size,
           error,
-          lastStatus: !!error ? error : lastStatus,
+          lastStatus: cancelled ? (lastStatus === "Cancelled" ? "Cancelled" : "Cancelling") : (!!error ? error : lastStatus),
           started,
           importedOn,
           timestamp,
-          complete: !!size || !!error,
+          complete: !!size || !!error || lastStatus === "Cancelled",
         };
       })
-      .filter((i) => !!i && !!i.name && i.cancelled === undefined);
+      .filter((i) => !!i && !!i.name);
 
       // sort by timestamp
       res.locals.imports.sort((a, b) => {
