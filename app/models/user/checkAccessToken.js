@@ -10,12 +10,8 @@ var key = require("./key");
 module.exports = function (token, callback) {
   (async function () {
     try {
-      // Lua also works on Redis versions before GETDEL was introduced.
-      var value = await client.eval(
-        "local value = redis.call('GET', KEYS[1]); " +
-          "if value then redis.call('DEL', KEYS[1]) end; return value",
-        { keys: [key.accessToken(token)], arguments: [] }
-      );
+      // GETDEL is atomic, so only one concurrent caller can consume the token.
+      var value = await client.getDel(key.accessToken(token));
 
       if (!value) return callback(new Error("Invalid access token"));
 

@@ -27,7 +27,7 @@ describe("one-time access tokens", function () {
   });
 
   it("reports Redis failure instead of authenticating", async function () {
-    spyOn(client, "eval").and.returnValue(Promise.reject(new Error("Redis unavailable")));
+    spyOn(client, "getDel").and.returnValue(Promise.reject(new Error("Redis unavailable")));
     var error = await check(token).then(() => null, err => err);
     expect(error.message).toEqual("Redis unavailable");
   });
