@@ -229,9 +229,8 @@ function update_subscription(customer_id, subscription, callback) {
     };
 
     // Change blog availability only on an account transition: individual
-    // blogs can also be disabled deliberately by an administrator. If a
-    // transition partially updates blogs, durable reconciliation needs its
-    // own state; redelivery alone must not overwrite deliberate blog state.
+    // blogs can also be disabled deliberately by an administrator. The model
+    // saves the account flag last so failed transitions remain retryable.
     if (shouldDisable && !user.isDisabled) {
       handler = function (next) {
         User.disable(user, updates, next);

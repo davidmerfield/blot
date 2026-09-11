@@ -144,7 +144,7 @@ const updateSubscription = async subscriptionID => {
     const done = err => err ? reject(err) : resolve();
     const shouldDisable = subscriptionLifecycle.shouldDisableFromPaypalSubscription(paypal);
     // Preserve deliberate per-blog availability when the account is unchanged.
-    // Recovering a partial blog transition requires separate durable state.
+    // The model saves the account flag last to keep failures retryable.
     const shouldEnable = paypal.status === "ACTIVE" && user.isDisabled;
 
     if (shouldDisable && !user.isDisabled) return User.disable(user, updates, done);
