@@ -34,7 +34,7 @@ const assets = express.Router();
 
 // Security middleware
 assets.use((req, res, next) => {
-  req.log("assets: security check", `path=${req.path}`);
+  if (req.log) req.log("assets: security check", `path=${req.path}`);
   if (
     BLOCKED_PATTERNS.some(
       (pattern) =>
@@ -42,7 +42,7 @@ assets.use((req, res, next) => {
         decodeURIComponent(req.path).includes(pattern)
     )
   ) {
-    req.log("assets: blocked pattern detected");
+    if (req.log) req.log("assets: blocked pattern detected");
     return next(new Error("Not Found"));
   }
   next();
@@ -81,20 +81,20 @@ assets.get("/layout.css", async (req, res, next) => {
 
 // Blog-specific static assets
 assets.use(BLOG_STATIC_PATHS, async (req, res, next) => {
-  req.log("assets: blog static path", `baseUrl=${req.baseUrl}`, `path=${req.path}`);
+  if (req.log) req.log("assets: blog static path", `baseUrl=${req.baseUrl}`, `path=${req.path}`);
   try {
     const filePath =
       config.blog_static_files_dir + "/" + req.blog.id + req.baseUrl + decodeURIComponent(req.path);
-    req.log("assets: serving blog static file", `filePath=${filePath}`);
+    if (req.log) req.log("assets: serving blog static file", `filePath=${filePath}`);
     await sendFile(filePath, {
       req,
       res,
       maxAge: LARGEST_POSSIBLE_MAXAGE,
       immutable: true,
     });
-    req.log("assets: blog static file served");
+    if (req.log) req.log("assets: blog static file served");
   } catch (err) {
-    req.log("assets: blog static file not found");
+    if (req.log) req.log("assets: blog static file not found");
     next();
   }
 });
@@ -104,17 +104,17 @@ assets.use(async (req, res, next) => {
   const blogFolder = config.blog_folder_dir + "/" + req.blog.id;
   const decodedPath = decodeURIComponent(req.path);
   
-  req.log("assets: blog folder lookup", `path=${decodedPath}`);
+  if (req.log) req.log("assets: blog folder lookup", `path=${decodedPath}`);
 
   try {
     await sendFile(join(blogFolder, decodedPath), { req, res });
-    req.log("assets: served exact path");
+    if (req.log) req.log("assets: served exact path");
     return;
   } catch (e) {}
 
   try {
     await sendFile(join(blogFolder, decodedPath.toLowerCase()), { req, res });
-    req.log("assets: served lowercase path");
+    if (req.log) req.log("assets: served lowercase path");
     return;
   } catch (e) {}
 
@@ -129,7 +129,7 @@ assets.use(async (req, res, next) => {
     if (!stat.isFile()) throw new Error("Not a file");
 
     await sendFile(pathWithCorrectCase, { req, res });
-    req.log("assets: served case-corrected path");
+    if (req.log) req.log("assets: served case-corrected path");
     return;
   } catch (e) {}
 
@@ -138,7 +138,7 @@ assets.use(async (req, res, next) => {
       join(blogFolder, withoutTrailingSlash(decodedPath) + "/index.html"),
       { req, res }
     );
-    req.log("assets: served index.html");
+    if (req.log) req.log("assets: served index.html");
     return;
   } catch (e) {}
 
@@ -147,7 +147,7 @@ assets.use(async (req, res, next) => {
       join(blogFolder, withoutTrailingSlash(decodedPath) + "/_index.html"),
       { req, res }
     );
-    req.log("assets: served _index.html");
+    if (req.log) req.log("assets: served _index.html");
     return;
   } catch (e) {}
 
@@ -156,7 +156,7 @@ assets.use(async (req, res, next) => {
       join(blogFolder, withoutTrailingSlash(decodedPath) + ".html"),
       { req, res }
     );
-    req.log("assets: served .html extension");
+    if (req.log) req.log("assets: served .html extension");
     return;
   } catch (e) {}
 
@@ -165,13 +165,13 @@ assets.use(async (req, res, next) => {
       join(blogFolder, addLeadingUnderscore(decodedPath) + ".html"),
       { req, res }
     );
-    req.log("assets: served underscore prefixed .html");
+    if (req.log) req.log("assets: served underscore prefixed .html");
     return;
   } catch (e) {}
 
   // If we get here, none of the candidates worked
   if (!res.headersSent) {
-    req.log("assets: no file found, passing to next middleware");
+    if (req.log) req.log("assets: no file found, passing to next middleware");
     next();
   }
 });
