@@ -55,6 +55,10 @@ var benchmarkConfig = {
   tags: args.tags,
   tagBurstConcurrency: args.tagBurstConcurrency,
   archivesBurstConcurrency: args.archivesBurstConcurrency,
+  searchKeywords: args.searchKeywords,
+  searchBurstConcurrency: args.searchBurstConcurrency,
+  backlinksBurstConcurrency: args.backlinksBurstConcurrency,
+  sitemapBurstConcurrency: args.sitemapBurstConcurrency,
 };
 
 global.__BLOT_BENCHMARK_CONFIG = benchmarkConfig;
@@ -128,6 +132,10 @@ function parseArgs(argv) {
     tags: BENCHMARK_DEFAULTS.tags,
     tagBurstConcurrency: BENCHMARK_DEFAULTS.tagBurstConcurrency,
     archivesBurstConcurrency: BENCHMARK_DEFAULTS.archivesBurstConcurrency,
+    searchKeywords: BENCHMARK_DEFAULTS.searchKeywords,
+    searchBurstConcurrency: BENCHMARK_DEFAULTS.searchBurstConcurrency,
+    backlinksBurstConcurrency: BENCHMARK_DEFAULTS.backlinksBurstConcurrency,
+    sitemapBurstConcurrency: BENCHMARK_DEFAULTS.sitemapBurstConcurrency,
     output: null,
     path: null,
     ci: false,
@@ -145,6 +153,10 @@ function parseArgs(argv) {
     "--tags": "tags",
     "--tag-burst-concurrency": "tagBurstConcurrency",
     "--archives-burst-concurrency": "archivesBurstConcurrency",
+    "--search-keywords": "searchKeywords",
+    "--search-burst-concurrency": "searchBurstConcurrency",
+    "--backlinks-burst-concurrency": "backlinksBurstConcurrency",
+    "--sitemap-burst-concurrency": "sitemapBurstConcurrency",
   };
 
   for (var i = 0; i < argv.length; i++) {
@@ -212,6 +224,19 @@ function parseArgs(argv) {
     parsed.archivesBurstConcurrency,
     "--archives-burst-concurrency"
   );
+  ensurePositiveInt(parsed.searchKeywords, "--search-keywords");
+  ensurePositiveInt(
+    parsed.searchBurstConcurrency,
+    "--search-burst-concurrency"
+  );
+  ensurePositiveInt(
+    parsed.backlinksBurstConcurrency,
+    "--backlinks-burst-concurrency"
+  );
+  ensurePositiveInt(
+    parsed.sitemapBurstConcurrency,
+    "--sitemap-burst-concurrency"
+  );
 
   return parsed;
 }
@@ -254,6 +279,18 @@ function printHelp() {
         ")",
       "  --archives-burst-concurrency <n>  Concurrent /archives requests (default: " +
         BENCHMARK_DEFAULTS.archivesBurstConcurrency +
+        ")",
+      "  --search-keywords <n>          Distinct search keywords generated per site (default: " +
+        BENCHMARK_DEFAULTS.searchKeywords +
+        ")",
+      "  --search-burst-concurrency <n>  Distinct /search?q= queries hit at once (default: " +
+        BENCHMARK_DEFAULTS.searchBurstConcurrency +
+        ")",
+      "  --backlinks-burst-concurrency <n>  Concurrent hits to each site's hub entry (default: " +
+        BENCHMARK_DEFAULTS.backlinksBurstConcurrency +
+        ")",
+      "  --sitemap-burst-concurrency <n>  Concurrent /sitemap.xml requests (default: " +
+        BENCHMARK_DEFAULTS.sitemapBurstConcurrency +
         ")",
       "  --cpu-sample-interval-ms <ms>  CPU/memory sampling interval (default: " +
         BENCHMARK_DEFAULTS.cpuSampleIntervalMs +

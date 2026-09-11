@@ -13,6 +13,9 @@ function buildBenchmarkResult(options) {
     renderFailures,
     tagBurst,
     archivesBurst,
+    searchBurst,
+    sitemapBurst,
+    backlinksBurst,
   } = options;
 
   const renderedPages = renderTasks.length;
@@ -31,6 +34,10 @@ function buildBenchmarkResult(options) {
       tags: benchmarkConfig.tags,
       tag_burst_concurrency: benchmarkConfig.tagBurstConcurrency,
       archives_burst_concurrency: benchmarkConfig.archivesBurstConcurrency,
+      search_keywords: benchmarkConfig.searchKeywords,
+      search_burst_concurrency: benchmarkConfig.searchBurstConcurrency,
+      sitemap_burst_concurrency: benchmarkConfig.sitemapBurstConcurrency,
+      backlinks_burst_concurrency: benchmarkConfig.backlinksBurstConcurrency,
       regression_threshold_percent: benchmarkConfig.regressionThresholdPercent,
       cpu_sample_interval_ms: benchmarkConfig.cpuSampleIntervalMs,
     },
@@ -85,6 +92,25 @@ function buildBenchmarkResult(options) {
         solo_timing_ms: archivesBurst.solo_timing_ms,
         burst_timing_ms: archivesBurst.burst_timing_ms,
         inflation_ratio: archivesBurst.inflation_ratio,
+      },
+      search_burst: {
+        keywords_tested_total: searchBurst.keywords_tested_total,
+        solo_timing_ms: searchBurst.solo_timing_ms,
+        burst_timing_ms: searchBurst.burst_timing_ms,
+        inflation_ratio: searchBurst.inflation_ratio,
+        sites: searchBurst.sites,
+      },
+      sitemap_burst: {
+        requests_tested_total: sitemapBurst.requests_tested_total,
+        solo_timing_ms: sitemapBurst.solo_timing_ms,
+        burst_timing_ms: sitemapBurst.burst_timing_ms,
+        inflation_ratio: sitemapBurst.inflation_ratio,
+      },
+      backlinks_burst: {
+        requests_tested_total: backlinksBurst.requests_tested_total,
+        solo_timing_ms: backlinksBurst.solo_timing_ms,
+        burst_timing_ms: backlinksBurst.burst_timing_ms,
+        inflation_ratio: backlinksBurst.inflation_ratio,
       },
     },
     sites: siteSummaries,

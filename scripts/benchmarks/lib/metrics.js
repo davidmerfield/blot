@@ -75,6 +75,42 @@ const METRICS = [
     unit: "ratio",
     get: (r) => num(r?.render?.archives_burst?.inflation_ratio),
   },
+  {
+    key: "search_burst_p95_ms",
+    label: "Search burst p95 (concurrent /search)",
+    unit: "ms",
+    get: (r) => num(r?.render?.search_burst?.burst_timing_ms?.p95),
+  },
+  {
+    key: "search_burst_inflation_ratio",
+    label: "Search burst inflation (burst ÷ solo)",
+    unit: "ratio",
+    get: (r) => num(r?.render?.search_burst?.inflation_ratio),
+  },
+  {
+    key: "sitemap_burst_p95_ms",
+    label: "Sitemap burst p95 (concurrent /sitemap.xml)",
+    unit: "ms",
+    get: (r) => num(r?.render?.sitemap_burst?.burst_timing_ms?.p95),
+  },
+  {
+    key: "sitemap_burst_inflation_ratio",
+    label: "Sitemap burst inflation (burst ÷ solo)",
+    unit: "ratio",
+    get: (r) => num(r?.render?.sitemap_burst?.inflation_ratio),
+  },
+  {
+    key: "backlinks_burst_p95_ms",
+    label: "Backlinks burst p95 (concurrent hub-entry hits)",
+    unit: "ms",
+    get: (r) => num(r?.render?.backlinks_burst?.burst_timing_ms?.p95),
+  },
+  {
+    key: "backlinks_burst_inflation_ratio",
+    label: "Backlinks burst inflation (burst ÷ solo)",
+    unit: "ratio",
+    get: (r) => num(r?.render?.backlinks_burst?.inflation_ratio),
+  },
 ];
 
 const METRIC_BY_KEY = Object.fromEntries(METRICS.map((m) => [m.key, m]));

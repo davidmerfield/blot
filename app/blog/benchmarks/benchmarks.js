@@ -11,6 +11,9 @@ const { parseBenchmarkConfig } = require("./util/config");
 const { buildBenchmarkResult } = require("./util/result");
 const { runTagBurst } = require("./util/tagBurst");
 const { runArchivesBurst } = require("./util/archivesBurst");
+const { runSearchBurst } = require("./util/searchBurst");
+const { runSitemapBurst } = require("./util/sitemapBurst");
+const { runBacklinksBurst } = require("./util/backlinksBurst");
 
 describe("blog benchmarks", function () {
   require("./util/setup")();
@@ -184,6 +187,46 @@ describe("blog benchmarks", function () {
       getForBlog: this.getForBlog.bind(this),
     });
 
+    console.log(
+      "[benchmark] search burst:",
+      benchmarkConfig.searchBurstConcurrency,
+      "distinct search queries requested concurrently per site"
+    );
+
+    const searchBurst = await runSearchBurst({
+      blogs,
+      keywordsBySite: workload.searchKeywordsBySite,
+      concurrency: benchmarkConfig.searchBurstConcurrency,
+      getForBlog: this.getForBlog.bind(this),
+    });
+
+    console.log(
+      "[benchmark] sitemap burst:",
+      benchmarkConfig.sitemapBurstConcurrency,
+      "concurrent /sitemap.xml requests across",
+      blogs.length,
+      "site(s)"
+    );
+
+    const sitemapBurst = await runSitemapBurst({
+      blogs,
+      concurrency: benchmarkConfig.sitemapBurstConcurrency,
+      getForBlog: this.getForBlog.bind(this),
+    });
+
+    console.log(
+      "[benchmark] backlinks burst:",
+      benchmarkConfig.backlinksBurstConcurrency,
+      "concurrent requests to each site's hub entry"
+    );
+
+    const backlinksBurst = await runBacklinksBurst({
+      blogs,
+      hubPathBySite: workload.hubPathBySite,
+      concurrency: benchmarkConfig.backlinksBurstConcurrency,
+      getForBlog: this.getForBlog.bind(this),
+    });
+
     siteSummaries.forEach((summary, index) => {
       summary.rendered_pages = renderTasks.filter(
         (task) => task.blog.id === summary.blog_id
@@ -210,6 +253,9 @@ describe("blog benchmarks", function () {
       renderFailures,
       tagBurst,
       archivesBurst,
+      searchBurst,
+      sitemapBurst,
+      backlinksBurst,
     });
 
     global.__BLOT_BENCHMARK_RESULT = result;
@@ -260,34 +306,32 @@ describe("blog benchmarks", function () {
         " kb per page"
     );
     console.log("");
-    console.log(
-      label("Tag burst inflation") +
-        num(
-          result.render.tag_burst.inflation_ratio === null
-            ? "n/a"
-            : result.render.tag_burst.inflation_ratio.toFixed(2),
-          8
-        ) + "x"
-    );
-    console.log(
-      label("Tag burst p95") +
-        num(result.render.tag_burst.burst_timing_ms.p95.toFixed(0), 8) +
-        " ms"
-    );
-    console.log(
-      label("Archives burst inflation") +
-        num(
-          result.render.archives_burst.inflation_ratio === null
-            ? "n/a"
-            : result.render.archives_burst.inflation_ratio.toFixed(2),
-          8
-        ) + "x"
-    );
-    console.log(
-      label("Archives burst p95") +
-        num(result.render.archives_burst.burst_timing_ms.p95.toFixed(0), 8) +
-        " ms"
-    );
+
+    const bursts = [
+      ["Tag burst", result.render.tag_burst],
+      ["Archives burst", result.render.archives_burst],
+      ["Search burst", result.render.search_burst],
+      ["Sitemap burst", result.render.sitemap_burst],
+      ["Backlinks burst", result.render.backlinks_burst],
+    ];
+
+    for (const [burstLabel, burst] of bursts) {
+      console.log(
+        label(`${burstLabel} inflation`) +
+          num(
+            burst.inflation_ratio === null
+              ? "n/a"
+              : burst.inflation_ratio.toFixed(2),
+            8
+          ) + "x"
+      );
+      console.log(
+        label(`${burstLabel} p95`) +
+          num(burst.burst_timing_ms.p95.toFixed(0), 8) +
+          " ms"
+      );
+    }
+
     console.log("");
   });
 });
