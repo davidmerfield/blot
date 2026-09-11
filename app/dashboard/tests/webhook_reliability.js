@@ -72,10 +72,12 @@ describe("payment webhook delivery reliability", function () {
     expect(res.code).toBe(503);
     expect(User.set).not.toHaveBeenCalled();
   });
-  it("reconciles blogs even when the Stripe account flag already matches", function () {
+  it("preserves blog availability when the Stripe account is already enabled", function () {
     const res = response();
     route(stripe)(stripeRequest(), res);
-    expect(User.enable).toHaveBeenCalled();
+    expect(User.enable).not.toHaveBeenCalled();
+    expect(User.disable).not.toHaveBeenCalled();
+    expect(User.set).toHaveBeenCalled();
     expect(res.code).toBe(200);
   });
   it("settles PayPal network failures without updating the user", async function () {
@@ -123,6 +125,8 @@ describe("payment webhook delivery reliability", function () {
     await route(paypal)({ body: paypalEvent }, res);
     expect(res.code).toBe(200);
     expect(User.set).toHaveBeenCalled();
+    expect(User.enable).not.toHaveBeenCalled();
+    expect(User.disable).not.toHaveBeenCalled();
   });
   it("keeps malformed PayPal events as client errors", async function () {
     const res = response();

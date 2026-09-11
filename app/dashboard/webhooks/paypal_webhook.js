@@ -143,10 +143,11 @@ const updateSubscription = async subscriptionID => {
     const updates = { paypal };
     const done = err => err ? reject(err) : resolve();
     const shouldDisable = subscriptionLifecycle.shouldDisableFromPaypalSubscription(paypal);
-    // Reconcile all blogs on redelivery after a partial enable operation.
-    const shouldEnable = paypal.status === "ACTIVE";
+    // Preserve deliberate per-blog availability when the account is unchanged.
+    // Recovering a partial blog transition requires separate durable state.
+    const shouldEnable = paypal.status === "ACTIVE" && user.isDisabled;
 
-    if (shouldDisable) return User.disable(user, updates, done);
+    if (shouldDisable && !user.isDisabled) return User.disable(user, updates, done);
     if (shouldEnable) return User.enable(user, updates, done);
     User.set(user.uid, updates, done);
   });

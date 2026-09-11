@@ -228,14 +228,15 @@ function update_subscription(customer_id, subscription, callback) {
       User.set(user.uid, updates, next);
     };
 
-    // A prior attempt may have saved the user but failed while updating one
-    // of its blogs. Reconcile blogs again on redelivery even if the user flag
-    // already matches, so a 503 really can be repaired by retrying the event.
-    if (shouldDisable) {
+    // Change blog availability only on an account transition: individual
+    // blogs can also be disabled deliberately by an administrator. If a
+    // transition partially updates blogs, durable reconciliation needs its
+    // own state; redelivery alone must not overwrite deliberate blog state.
+    if (shouldDisable && !user.isDisabled) {
       handler = function (next) {
         User.disable(user, updates, next);
       };
-    } else if (subscription.status === "active") {
+    } else if (!shouldDisable && subscription.status === "active" && user.isDisabled) {
       handler = function (next) {
         User.enable(user, updates, next);
       };
