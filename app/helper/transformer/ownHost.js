@@ -1,6 +1,14 @@
 var url = require("url");
 var config = require("config");
 
+// Paths app/blog/assets.js mounts globally, ahead of the blog's own
+// folder (see GLOBAL_STATIC_SUBDIRECTORIES there). A blog folder can
+// coincidentally contain a file at one of these paths too, but the live
+// site never serves it - the global asset always shadows it - so we must
+// not "helpfully" resolve these locally, or we'd serve different bytes
+// than the URL actually returns.
+var RESERVED_PREFIXES = ["/fonts/", "/icons/", "/katex/", "/plugins/"];
+
 // Strips a leading "www." so we treat the www and bare-domain forms of a
 // hostname as equivalent without needing to be strict about which one a
 // particular URL uses.
@@ -32,6 +40,11 @@ function hostnames(source) {
 function resolve(src, ownHostnames) {
   if (!ownHostnames || !ownHostnames.length) return null;
 
+  // isURL.js treats a protocol-relative "//host/path" as an implicit
+  // http(s) URL, so we need to match that here too or we'd silently miss
+  // this (fairly common, e.g. copy-pasted from a CMS) form entirely.
+  if (src.indexOf("//") === 0) src = "http:" + src;
+
   var parsed;
 
   try {
@@ -42,11 +55,23 @@ function resolve(src, ownHostnames) {
 
   if (!parsed.hostname) return null;
 
+  // A non-default port means this URL points at a different service
+  // running on the blog's domain, not necessarily the blog itself -
+  // don't assume it maps onto the blog's own folder.
+  if (parsed.port) return null;
+
   var hostname = stripWWW(parsed.hostname.toLowerCase());
 
   if (ownHostnames.indexOf(hostname) === -1) return null;
 
-  return parsed.pathname || "/";
+  var pathname = parsed.pathname || "/";
+
+  if (RESERVED_PREFIXES.some(function (prefix) {
+    return pathname.indexOf(prefix) === 0;
+  }))
+    return null;
+
+  return pathname;
 }
 
 module.exports = {

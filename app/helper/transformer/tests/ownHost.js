@@ -39,6 +39,33 @@ describe("helper/transformer/ownHost", function () {
       ).toEqual("/images/cat.jpg");
     });
 
+    it("resolves a protocol-relative URL", function () {
+      expect(
+        ownHost.resolve("//example.com/images/cat.jpg", ownHostnames)
+      ).toEqual("/images/cat.jpg");
+    });
+
+    it("returns null for a URL with a non-default port", function () {
+      expect(
+        ownHost.resolve("https://example.com:8443/cat.jpg", ownHostnames)
+      ).toBe(null);
+    });
+
+    it("returns null for a path app/blog/assets.js serves globally, even if the blog folder happens to have a file there too", function () {
+      expect(
+        ownHost.resolve("https://example.com/icons/search.svg", ownHostnames)
+      ).toBe(null);
+      expect(
+        ownHost.resolve("https://example.com/fonts/foo.woff2", ownHostnames)
+      ).toBe(null);
+      expect(
+        ownHost.resolve("https://example.com/katex/foo.css", ownHostnames)
+      ).toBe(null);
+      expect(
+        ownHost.resolve("https://example.com/plugins/foo.js", ownHostnames)
+      ).toBe(null);
+    });
+
     it("resolves a URL on the handle's blot.im subdomain to a local path", function () {
       expect(
         ownHost.resolve(
