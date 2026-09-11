@@ -22,6 +22,10 @@ app/blog/
 │   ├── models.js         Promise adapters for Blog/Entry/Entries/Template/Tags APIs
 │   ├── asRetriever.js    Dual callback/promise wrapper for retrieve modules
 │   ├── callRetriever.js  Invokes callback- or async-style retrievers uniformly
+│   ├── callFetchTaggedEntries.js
+│   ├── attachAdjacent.js Shared next/previous wiring for entry + draft
+│   ├── blogHosts.js      Host list for CDN link rewriting
+│   ├── loadPlugin.js     Promise wrapper around build/plugins.load
 │   ├── fromCloudflare.js Shared Cloudflare request sniff
 │   ├── clone.js          Shared deep clone / freeze for LRU caches
 │   └── withEntryFieldsAsync.js
@@ -36,7 +40,8 @@ app/blog/
 │   ├── tagged.js         Serves entries filtered by one or more tags.
 │   ├── search.js         Handles full-text entry search queries.
 │   ├── random.js         Redirects to a randomly selected entry.
-│   ├── robots.js         Serves robots.txt and domain/subscription verification endpoints.
+│   ├── robots.js         Serves robots.txt
+│   ├── verify.js         Domain-setup and subscription-duration verification
 │   ├── assets.js         Serves static files from the blog folder and global static directories.
 │   └── error.js          Final error and 404 handler, including redirect resolution.
 │
@@ -63,7 +68,8 @@ Requests pass through the following middleware in order, as assembled in `index.
    - `draft.js` — `GET /_draft/*` (view) and `GET /_stream/*` (SSE live-reload).
    - `tagged.js` — `GET /tagged/:tag` and `GET /tagged/:tag/page/:page`.
    - `search.js` — `GET /search?q=...`.
-   - `robots.js` — `GET /robots.txt`, `GET /verify/domain-setup`, `GET /verify/subscription-duration`.
+   - `robots.js` — `GET /robots.txt`
+   - `verify.js` — `GET /verify/domain-setup`, `GET /verify/subscription-duration`.
    - `entry.js` — Falls through on all URLs; resolves by `Entry.getByUrl()`.
    - `view.js` — Falls through on all URLs; resolves by `Template.getViewByURL()`.
    - `entries.js` — `GET /` and `GET /page/:page`.

@@ -1,4 +1,5 @@
-const { getEntry, adjacentTo } = require("../lib/models");
+const { getEntry } = require("../lib/models");
+const attachAdjacent = require("../lib/attachAdjacent");
 const drafts = require("sync/update/drafts");
 const createRedisClient = require("models/redis");
 
@@ -13,12 +14,7 @@ async function renderDraft(req, res, next, filePath, callback) {
   const entry = await getEntry(blogID, filePath);
   if (!entry || !entry.draft || entry.deleted) return next();
 
-  const adjacent = await adjacentTo(blogID, entry.id);
-  entry.next = adjacent.next;
-  entry.index = adjacent.index;
-  entry.previous = adjacent.previous;
-  entry.adjacent = !!(adjacent.next || adjacent.previous);
-
+  await attachAdjacent(blogID, entry);
   res.locals.entry = entry;
 
   res.renderView("entry.html", next, function (err, output) {

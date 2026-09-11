@@ -26,6 +26,7 @@ require("./routes/tagged")(blog);
 blog.get("/search", require("./routes/search"));
 
 require("./routes/robots")(blog);
+require("./routes/verify")(blog);
 
 // By checking for entries before template files
 // we can allow the user to intercept their site's

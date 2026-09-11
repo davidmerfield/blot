@@ -1,3 +1,5 @@
-module.exports = function (req, res, callback) {
-  return callback(null, req.blog.avatar);
-};
+const asRetriever = require("../../lib/asRetriever");
+
+module.exports = asRetriever(async function (req, res) {
+  return req.blog.avatarURL;
+});

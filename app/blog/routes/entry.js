@@ -1,10 +1,8 @@
 const normalize = require("helper/urlNormalizer");
-const plugins = require("build/plugins");
 const metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
-const { getEntryByUrl, adjacentTo } = require("../lib/models");
-const { promisify } = require("util");
-
-const loadPluginHTML = promisify(plugins.load.bind(plugins));
+const { getEntryByUrl } = require("../lib/models");
+const attachAdjacent = require("../lib/attachAdjacent");
+const loadPlugin = require("../lib/loadPlugin");
 
 const normalizeMetadataToggle = function (value) {
   if (typeof value === "undefined" || value === null) return "";
@@ -86,11 +84,7 @@ module.exports = async function entry(req, res, next) {
     )
       return next();
 
-    const adjacent = await adjacentTo(blog.id, entry.id);
-    entry.next = adjacent.next;
-    entry.previous = adjacent.previous;
-    entry.adjacent = !!(adjacent.next || adjacent.previous);
-    entry.index = adjacent.index;
+    await attachAdjacent(blog.id, entry);
 
     // Ensure the user is always viewing
     // the entry at its latest and greatest URL
@@ -105,7 +99,7 @@ module.exports = async function entry(req, res, next) {
       return res.status(301).redirect(redirect);
     }
 
-    let pluginHTML = await loadPluginHTML("entryHTML", blog.plugins);
+    let pluginHTML = await loadPlugin("entryHTML", blog.plugins);
 
     // Dont show plugin HTML on a draft.
     // Don't show plugin HTML on a preview subdomain.
