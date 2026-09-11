@@ -20,12 +20,17 @@ function metricsFromResult(result) {
     (render.memory_mb && render.memory_mb.peak_rss) || 0
   );
   const totalSeconds = totalWallMs / 1000;
+  const tagBurst = render.tag_burst || {};
+  const tagBurstTiming = tagBurst.burst_timing_ms || {};
   return {
     totalCpuPercent,
     totalMemoryMb,
     totalSeconds,
     meanBuildMs: buildTiming.mean != null ? buildTiming.mean : 0,
     meanRenderMs: renderTiming.mean != null ? renderTiming.mean : 0,
+    tagBurstP95Ms: tagBurstTiming.p95 != null ? tagBurstTiming.p95 : 0,
+    tagBurstInflationRatio:
+      tagBurst.inflation_ratio != null ? tagBurst.inflation_ratio : null,
   };
 }
 
@@ -77,6 +82,31 @@ function printCompareTable(currentResult, branchResult) {
       " ms per page  ->  " +
       fmtNum(br.meanRenderMs.toFixed(0), 8) +
       " ms per page"
+  );
+  console.log("");
+  console.log(
+    label("Tag burst p95") +
+      fmtNum(cur.tagBurstP95Ms.toFixed(0), 8) +
+      " ms  ->  " +
+      fmtNum(br.tagBurstP95Ms.toFixed(0), 8) +
+      " ms"
+  );
+  console.log(
+    label("Tag burst inflation") +
+      fmtNum(
+        cur.tagBurstInflationRatio == null
+          ? "n/a"
+          : cur.tagBurstInflationRatio.toFixed(2),
+        8
+      ) +
+      "x  ->  " +
+      fmtNum(
+        br.tagBurstInflationRatio == null
+          ? "n/a"
+          : br.tagBurstInflationRatio.toFixed(2),
+        8
+      ) +
+      "x"
   );
   console.log("");
 }

@@ -22,6 +22,15 @@ const BENCHMARK_DEFAULTS = Object.freeze({
   cpuSampleIntervalMs: 250,
   // Requests issued per sitemap URL per blog during the render phase.
   requestsPerPage: 1,
+  // Number of distinct tags generated across each blog's entries. Modelled on
+  // a real customer blog (~800 entries / ~40 tags) that suffered severe
+  // event-loop-blocking slowdowns when several distinct /tagged/<slug> pages
+  // were requested at the same time.
+  tags: 40,
+  // How many distinct /tagged/<slug> pages are requested in one genuinely
+  // concurrent burst (Promise.all, not the pooled render-phase queue) during
+  // the tag-burst phase, to catch request-queueing regressions.
+  tagBurstConcurrency: 8,
   // CI gate / trend-alert threshold, in percent, applied to timing metrics.
   regressionThresholdPercent: 15,
   // Tight threshold for near-deterministic metrics (output byte size).
@@ -32,6 +41,13 @@ const BENCHMARK_DEFAULTS = Object.freeze({
   baselineWindow: 20,
   // Consecutive master commits that must all regress before an issue opens.
   regressionConsecutive: 3,
+  // Bump this whenever a change meaningfully redefines what a tracked metric
+  // means (new/removed metric, changed workload shape that shifts totals,
+  // etc). Records written under an older version are kept in history for
+  // reference but excluded from the rolling baseline, so the next master run
+  // starts a fresh baseline automatically instead of requiring someone to
+  // manually clear the benchmarks-history-* Actions cache.
+  historySchemaVersion: 2,
 });
 
 module.exports = { BENCHMARK_DEFAULTS };

@@ -51,6 +51,18 @@ const METRICS = [
     deterministic: true,
     get: (r) => num(r?.render?.bytes?.mean_per_page),
   },
+  {
+    key: "tag_burst_p95_ms",
+    label: "Tag burst p95 (concurrent /tagged/*)",
+    unit: "ms",
+    get: (r) => num(r?.render?.tag_burst?.burst_timing_ms?.p95),
+  },
+  {
+    key: "tag_burst_inflation_ratio",
+    label: "Tag burst inflation (burst ÷ solo)",
+    unit: "ratio",
+    get: (r) => num(r?.render?.tag_burst?.inflation_ratio),
+  },
 ];
 
 const METRIC_BY_KEY = Object.fromEntries(METRICS.map((m) => [m.key, m]));
@@ -78,6 +90,7 @@ function formatValue(value, unit) {
 
   if (unit === "MB") return Math.round(value) + " MB";
   if (unit === "ms") return Math.round(value) + " ms";
+  if (unit === "ratio") return value.toFixed(2) + "x";
   return String(value);
 }
 

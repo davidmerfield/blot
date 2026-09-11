@@ -13,6 +13,20 @@ reused from `app/build/converters/*/tests`), then:
 |------------|----------------------------------------------------------------|------------------|
 | **build**  | write the workload to disk, then `blog.rebuild()` every site   | per-site wall time p50 / p95, peak RSS, CPU % |
 | **render** | fetch every URL in each blog's sitemap and read the full body  | per-page wall time p50 / p95, peak RSS, CPU %, output bytes/page |
+| **tag burst** | for each site, request several distinct `/tagged/<slug>` pages once solo (uncontended) and once as a genuine concurrent burst | burst p50/p95, burst ÷ solo inflation ratio |
+
+Each generated entry also gets 1-4 tags drawn from a `--tags` (default 40)
+pool, so `/tagged/<slug>` pages exist with a realistic number of matching
+entries — modelled on a real customer blog (~800 entries, ~40 tags) that hit
+severe request-queueing slowdowns when several distinct tag pages were
+requested at once. The **tag burst** phase reproduces that directly: it times
+`--tag-burst-concurrency` (default 8) distinct tag pages one at a time, then
+fires the same pages all at once with `Promise.all` (not the render phase's
+pooled queue) and compares the two. On a healthy render path the inflation
+ratio stays close to 1×; requests queueing behind synchronous, uncached
+per-request work blows it up, same as the render-phase pooled queue does but
+isolated to a controlled, always-the-same-N-pages burst so the signal is
+comparable run to run.
 
 Everything is seeded (`--seed`, default `blot-benchmark-seed`) so the generated
 workload is identical from run to run. The full result is written as JSON; the
@@ -94,15 +108,30 @@ manual step required.
 
 ### Resetting / editing the baseline
 
-The baseline is derived, not stored, so to reset it you clear the history:
+The baseline is derived, not stored, so there are two ways to reset it:
+
+**Automatic — bump `historySchemaVersion`.** Every history record carries the
+`historySchemaVersion` from [`defaults.js`](../../app/blog/benchmarks/util/defaults.js)
+at the time it was written. `computeBaseline` and `detect-regression.js` only
+look at records whose `schema_version` matches the *current* value of that
+constant — older records stay in the NDJSON file for reference but are
+invisible to the baseline. Bump `historySchemaVersion` whenever a change
+meaningfully redefines a tracked metric (new/removed metric, a workload shape
+that shifts totals — e.g. this file's own `tags` / `tagBurstConcurrency`
+addition bumped it from 1 to 2) and the next master run starts a fresh
+baseline on its own, no manual cache-clearing required.
+
+**Manual — clear the history.** For anything the schema-version bump doesn't
+cover (e.g. you want to discard recent noisy runs without changing what's
+measured):
 
 1. delete the `benchmarks-history-amd64-*` / `-arm64-*` entries under the repo's
    Actions caches, and
 2. delete the `benchmark-history-<arch>` artifacts (or let them age out).
 
-Until `minBaselineSamples` (see defaults) master commits have accumulated, the
-PR comment still shows deltas but marks them information-only, and
-`detect-regression.js` will not open an issue.
+Until `minBaselineSamples` (see defaults) master commits have accumulated *at
+the current schema version*, the PR comment still shows deltas but marks them
+information-only, and `detect-regression.js` will not open an issue.
 
 ## Interpreting the numbers
 
@@ -121,6 +150,7 @@ PR comment still shows deltas but marks them information-only, and
 |------|-----------|---------|
 | `index.js` | container | run the spec once, write result JSON |
 | `app/blog/benchmarks/benchmarks.js` | container | the Jasmine spec itself |
+| `app/blog/benchmarks/util/tagBurst.js` | container | tag-burst phase: solo vs. concurrent `/tagged/<slug>` timing |
 | `invoke.sh` | host | run `index.js` in Docker + throwaway Redis |
 | `compare.js` / `format-diff.js` | host | local branch-vs-branch comparison |
 | `aggregate.js` | host | merge N iteration JSONs into one (median per metric) |

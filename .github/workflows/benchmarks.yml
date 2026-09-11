@@ -37,6 +37,12 @@ on:
       iterations:
         description: "Iterations to run and aggregate"
         default: "3"
+      tags:
+        description: "Distinct tags generated per site"
+        default: ""
+      tag_burst_concurrency:
+        description: "Distinct /tagged/<slug> pages hit at once"
+        default: ""
 
 permissions:
   contents: read
@@ -165,6 +171,8 @@ jobs:
               -e GITHUB_SHA=${{ github.sha }} \
               -e SITES_ARG="${{ github.event.inputs.sites }}" \
               -e FILES_ARG="${{ github.event.inputs.files }}" \
+              -e TAGS_ARG="${{ github.event.inputs.tags }}" \
+              -e TAG_BURST_CONCURRENCY_ARG="${{ github.event.inputs.tag_burst_concurrency }}" \
               -v ${{ github.workspace }}/app:/usr/src/app/app \
               -v ${{ github.workspace }}/scripts:/usr/src/app/scripts \
               -v ${{ github.workspace }}/config:/usr/src/app/config \
@@ -175,6 +183,8 @@ jobs:
                 ARGS="--output /benchmarks/runs/run-'"$i"'.json"
                 [ -n "$SITES_ARG" ] && ARGS="$ARGS --sites $SITES_ARG"
                 [ -n "$FILES_ARG" ] && ARGS="$ARGS --files $FILES_ARG"
+                [ -n "$TAGS_ARG" ] && ARGS="$ARGS --tags $TAGS_ARG"
+                [ -n "$TAG_BURST_CONCURRENCY_ARG" ] && ARGS="$ARGS --tag-burst-concurrency $TAG_BURST_CONCURRENCY_ARG"
                 npm run benchmark:ci -- $ARGS
               '
             echo "::endgroup::"

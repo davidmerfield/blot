@@ -33,6 +33,11 @@ function parseBenchmarkConfig(raw = {}) {
       raw.requestsPerPage,
       BENCHMARK_DEFAULTS.requestsPerPage
     ),
+    tags: num(raw.tags, BENCHMARK_DEFAULTS.tags),
+    tagBurstConcurrency: num(
+      raw.tagBurstConcurrency,
+      BENCHMARK_DEFAULTS.tagBurstConcurrency
+    ),
   };
 }
 

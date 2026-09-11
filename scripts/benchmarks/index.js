@@ -52,6 +52,8 @@ var benchmarkConfig = {
   writeConcurrency: args.writeConcurrency,
   cpuSampleIntervalMs: args.cpuSampleIntervalMs,
   requestsPerPage: args.requestsPerPage,
+  tags: args.tags,
+  tagBurstConcurrency: args.tagBurstConcurrency,
 };
 
 global.__BLOT_BENCHMARK_CONFIG = benchmarkConfig;
@@ -122,6 +124,8 @@ function parseArgs(argv) {
     writeConcurrency: BENCHMARK_DEFAULTS.writeConcurrency,
     cpuSampleIntervalMs: BENCHMARK_DEFAULTS.cpuSampleIntervalMs,
     requestsPerPage: BENCHMARK_DEFAULTS.requestsPerPage,
+    tags: BENCHMARK_DEFAULTS.tags,
+    tagBurstConcurrency: BENCHMARK_DEFAULTS.tagBurstConcurrency,
     output: null,
     path: null,
     ci: false,
@@ -136,6 +140,8 @@ function parseArgs(argv) {
     "--write-concurrency": "writeConcurrency",
     "--cpu-sample-interval-ms": "cpuSampleIntervalMs",
     "--requests-per-page": "requestsPerPage",
+    "--tags": "tags",
+    "--tag-burst-concurrency": "tagBurstConcurrency",
   };
 
   for (var i = 0; i < argv.length; i++) {
@@ -197,6 +203,8 @@ function parseArgs(argv) {
   ensurePositiveInt(parsed.writeConcurrency, "--write-concurrency");
   ensurePositiveInt(parsed.cpuSampleIntervalMs, "--cpu-sample-interval-ms");
   ensurePositiveInt(parsed.requestsPerPage, "--requests-per-page");
+  ensurePositiveInt(parsed.tags, "--tags");
+  ensurePositiveInt(parsed.tagBurstConcurrency, "--tag-burst-concurrency");
 
   return parsed;
 }
@@ -230,6 +238,12 @@ function printHelp() {
         ")",
       "  --requests-per-page <n>        Requests per sitemap URL (default: " +
         BENCHMARK_DEFAULTS.requestsPerPage +
+        ")",
+      "  --tags <n>                     Distinct tags generated per site (default: " +
+        BENCHMARK_DEFAULTS.tags +
+        ")",
+      "  --tag-burst-concurrency <n>    Distinct /tagged/<slug> pages hit at once (default: " +
+        BENCHMARK_DEFAULTS.tagBurstConcurrency +
         ")",
       "  --cpu-sample-interval-ms <ms>  CPU/memory sampling interval (default: " +
         BENCHMARK_DEFAULTS.cpuSampleIntervalMs +

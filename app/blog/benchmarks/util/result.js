@@ -11,6 +11,7 @@ function buildBenchmarkResult(options) {
     siteSummaries,
     renderTasks,
     renderFailures,
+    tagBurst,
   } = options;
 
   const renderedPages = renderTasks.length;
@@ -26,6 +27,8 @@ function buildBenchmarkResult(options) {
       seed: benchmarkConfig.seed,
       render_concurrency: benchmarkConfig.renderConcurrency,
       requests_per_page: benchmarkConfig.requestsPerPage,
+      tags: benchmarkConfig.tags,
+      tag_burst_concurrency: benchmarkConfig.tagBurstConcurrency,
       regression_threshold_percent: benchmarkConfig.regressionThresholdPercent,
       cpu_sample_interval_ms: benchmarkConfig.cpuSampleIntervalMs,
     },
@@ -63,6 +66,17 @@ function buildBenchmarkResult(options) {
         total: renderBytesTotal || 0,
         mean_per_page:
           renderedPages > 0 ? (renderBytesTotal || 0) / renderedPages : 0,
+      },
+      tag_burst: {
+        tags_tested_total: tagBurst.tags_tested_total,
+        // Uncontended, one-at-a-time baseline for the same tag pages.
+        solo_timing_ms: tagBurst.solo_timing_ms,
+        // Same pages requested all at once (Promise.all). A healthy render
+        // path keeps this close to the solo timing; queueing behind
+        // synchronous, uncached per-request work blows it up.
+        burst_timing_ms: tagBurst.burst_timing_ms,
+        inflation_ratio: tagBurst.inflation_ratio,
+        sites: tagBurst.sites,
       },
     },
     sites: siteSummaries,

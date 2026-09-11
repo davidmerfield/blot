@@ -9,6 +9,7 @@ const { expandSitemapUrls } = require("./util/sitemap");
 const { runWithConcurrency } = require("./util/concurrency");
 const { parseBenchmarkConfig } = require("./util/config");
 const { buildBenchmarkResult } = require("./util/result");
+const { runTagBurst } = require("./util/tagBurst");
 
 describe("blog benchmarks", function () {
   require("./util/setup")();
@@ -155,6 +156,19 @@ describe("blog benchmarks", function () {
     const renderPhaseMetrics = renderPhaseMonitor.stop();
     const renderTiming = summarizeDurations(renderDurations);
 
+    console.log(
+      "[benchmark] tag burst:",
+      benchmarkConfig.tagBurstConcurrency,
+      "distinct tag pages requested concurrently per site"
+    );
+
+    const tagBurst = await runTagBurst({
+      blogs,
+      tagsBySite: workload.tagsBySite,
+      concurrency: benchmarkConfig.tagBurstConcurrency,
+      getForBlog: this.getForBlog.bind(this),
+    });
+
     siteSummaries.forEach((summary, index) => {
       summary.rendered_pages = renderTasks.filter(
         (task) => task.blog.id === summary.blog_id
@@ -179,6 +193,7 @@ describe("blog benchmarks", function () {
       siteSummaries,
       renderTasks,
       renderFailures,
+      tagBurst,
     });
 
     global.__BLOT_BENCHMARK_RESULT = result;
@@ -227,6 +242,21 @@ describe("blog benchmarks", function () {
       label("Mean output size") +
         num((result.render.bytes.mean_per_page / 1024).toFixed(1), 8) +
         " kb per page"
+    );
+    console.log("");
+    console.log(
+      label("Tag burst inflation") +
+        num(
+          result.render.tag_burst.inflation_ratio === null
+            ? "n/a"
+            : result.render.tag_burst.inflation_ratio.toFixed(2),
+          8
+        ) + "x"
+    );
+    console.log(
+      label("Tag burst p95") +
+        num(result.render.tag_burst.burst_timing_ms.p95.toFixed(0), 8) +
+        " ms"
     );
     console.log("");
   });
