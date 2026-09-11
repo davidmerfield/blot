@@ -59,6 +59,7 @@ jobs:
         - app/models|app/models/entry:2
         - app/models/entry:1
         - app/site:1
+        - app/stats:1
         - app/sync:1
         - app/templates:1
         - config/openresty:1
