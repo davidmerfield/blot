@@ -1,0 +1,11 @@
+{
+  "all": true,
+  "include": ["app/**/*.js"],
+  "exclude": [
+    "**/tests/**",
+    "**/tests.js",
+    "app/blog/benchmarks/**",
+    "app/views-built/**",
+    "**/node_modules/**"
+  ]
+}

@@ -318,6 +318,13 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Sanitize coverage artifact name
+        id: artifact-name
+        run: |
+          SAFE_SUITE=$(echo "${{ matrix.test_suite }}" | tr '/|' '--')
+          SAFE_SHARD=$(echo "${{ matrix.shard }}" | tr '/' '-')
+          echo "name=coverage-${SAFE_SUITE}-${SAFE_SHARD}" >> "$GITHUB_OUTPUT"
+
       - name: Run tests - ${{ matrix.test_suite }} (shard ${{ matrix.shard }})
         env:
           BLOT_STRIPE_KEY: ${{ secrets.BLOT_STRIPE_KEY }}
@@ -332,6 +339,7 @@ jobs:
           if [ -n "$TEST_EXCLUDE" ]; then
             EXCLUDE_ARG="--exclude=$TEST_EXCLUDE"
           fi
+          mkdir -p .nyc_output
           docker run --rm \
             --network host \
             -e BLOT_REDIS_HOST=localhost \
@@ -342,5 +350,76 @@ jobs:
             -v ${{ github.workspace }}/scripts:/usr/src/app/scripts \
             -v ${{ github.workspace }}/config:/usr/src/app/config \
             -v ${{ github.workspace }}/proxy:/usr/src/app/proxy \
+            -v ${{ github.workspace }}/.nyc_output:/usr/src/app/.nyc_output \
+            -v ${{ github.workspace }}/.nycrc.json:/usr/src/app/.nycrc.json \
             $IMAGE_TAG \
-            sh -c "node scripts/tests '$TEST_SUITE' --shard='$TEST_SHARD' $EXCLUDE_ARG"
+            sh -c "nyc --silent node scripts/tests '$TEST_SUITE' --shard='$TEST_SHARD' $EXCLUDE_ARG"
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.artifact-name.outputs.name }}
+          path: .nyc_output
+          if-no-files-found: warn
+          retention-days: 7
+
+  coverage-report:
+    needs: [setup-tests, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download coverage from every shard
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-raw
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge shard coverage and build report
+        env:
+          IMAGE_TAG: ${{ needs.setup-tests.outputs.image_tag }}
+        run: |
+          mkdir -p .nyc_output coverage
+
+          # Each shard's raw coverage json files are the direct children of
+          # coverage-raw/<artifact-name>/ - flatten them into one directory so
+          # `nyc report` can treat it as a single temp dir. Filenames are
+          # content-addressed UUIDs, so collisions across shards aren't a concern.
+          find coverage-raw -mindepth 2 -maxdepth 2 -type f -name '*.json' \
+            -exec cp {} .nyc_output/ \;
+
+          echo "Merging $(ls .nyc_output | wc -l) raw coverage files from $(ls coverage-raw | wc -l) shards"
+
+          docker run --rm \
+            -v ${{ github.workspace }}/app:/usr/src/app/app \
+            -v ${{ github.workspace }}/.nyc_output:/usr/src/app/.nyc_output \
+            -v ${{ github.workspace }}/.nycrc.json:/usr/src/app/.nycrc.json \
+            -v ${{ github.workspace }}/coverage:/usr/src/app/coverage \
+            $IMAGE_TAG \
+            sh -c "nyc report -t .nyc_output --reporter=text --reporter=text-summary --reporter=lcov --reporter=json-summary -o coverage | tee coverage/text-report.txt"
+
+      - name: Add coverage summary to job summary
+        run: |
+          echo "## Code coverage - \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tail -n 20 coverage/text-report.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload merged coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.sha }}
+          path: coverage
+          if-no-files-found: warn
+          retention-days: 30
