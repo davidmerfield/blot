@@ -369,6 +369,12 @@ jobs:
     needs: [setup-tests, test]
     if: always()
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write # to read/write the coverage-baseline cache
+      pull-requests: write # to post/update the sticky PR comment
+    env:
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -379,6 +385,17 @@ jobs:
           pattern: coverage-*
           path: coverage-raw
 
+      # Master's most recent line-coverage % (if any), so a PR run can show a
+      # delta. Keyed by run so every push to master adds a fresh entry;
+      # restore-keys picks up the most recent one.
+      - name: Restore coverage baseline
+        uses: actions/cache/restore@v4
+        with:
+          path: .coverage/history
+          key: coverage-master-${{ github.run_id }}
+          restore-keys: |
+            coverage-master-
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
@@ -387,6 +404,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Merge shard coverage and build report
+        id: merge-coverage
         env:
           IMAGE_TAG: ${{ needs.setup-tests.outputs.image_tag }}
         run: |
@@ -416,17 +434,65 @@ jobs:
           exit $DOCKER_EXIT
 
       - name: Add coverage summary to job summary
+        if: steps.merge-coverage.outcome == 'success'
         run: |
-          echo "## Code coverage - \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Code coverage - \`${{ env.HEAD_SHA }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           tail -n 20 coverage/text-report.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload merged coverage report
-        if: always()
+        id: upload-report
+        if: steps.merge-coverage.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-${{ github.sha }}
           path: coverage
           if-no-files-found: warn
           retention-days: 30
+
+      # master: record this run's line coverage % as the new baseline for
+      # future PRs to diff against.
+      - name: Save coverage baseline
+        if: steps.merge-coverage.outcome == 'success' && github.event_name == 'push'
+        run: |
+          mkdir -p .coverage/history
+          node -e "
+            const fs = require('fs');
+            const s = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+            fs.writeFileSync(
+              '.coverage/history/latest.json',
+              JSON.stringify({ sha: process.env.HEAD_SHA, linesPct: s.total.lines.pct })
+            );
+          "
+
+      - name: Save coverage baseline cache
+        if: steps.merge-coverage.outcome == 'success' && github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: .coverage/history
+          key: coverage-master-${{ github.run_id }}
+
+      # pull_request: post/update the sticky coverage comment.
+      - name: Post PR coverage comment
+        if: always() && github.event_name == 'pull_request' && steps.merge-coverage.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/coverage/pr-comment.js \
+            --pr "${{ github.event.pull_request.number }}" \
+            --sha "$HEAD_SHA" \
+            --status done \
+            --summary coverage/coverage-summary.json \
+            --baseline .coverage/history/latest.json \
+            --artifact-url "${{ steps.upload-report.outputs.artifact-url }}"
+
+      - name: Post PR coverage comment (failed)
+        if: always() && github.event_name == 'pull_request' && steps.merge-coverage.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/coverage/pr-comment.js \
+            --pr "${{ github.event.pull_request.number }}" \
+            --sha "$HEAD_SHA" \
+            --status failed
