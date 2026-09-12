@@ -235,7 +235,25 @@ function report(folder, message, logMessage = message) {
   folder.status(message);
 }
 
-async function countFiles(dir) {
+// Returns true when the path matches a .gitignore rule in the working tree.
+// simple-git resolves even when git exits 1 (not ignored); ignored paths are
+// printed to stdout, non-ignored paths produce an empty string.
+async function isIgnoredByGit(repo, filePath) {
+  try {
+    const output = await repo.raw(["check-ignore", "--", filePath]);
+    return Boolean(String(output || "").trim());
+  } catch (err) {
+    return false;
+  }
+}
+
+function isGitIgnoreAddError(err) {
+  return /ignored by one of your \.gitignore files/i.test(
+    String((err && err.message) || err)
+  );
+}
+
+async function countFiles(dir, liveRepo) {
   const entries = (await fs.readdir(dir, { withFileTypes: true })).filter(
     (entry) => !shouldIgnoreFile(entry.name)
   );
@@ -245,8 +263,12 @@ async function countFiles(dir) {
   for (const entry of entries) {
     const entryPath = path.join(dir, entry.name);
 
+    if (await isIgnoredByGit(liveRepo, entryPath)) {
+      continue;
+    }
+
     if (entry.isDirectory()) {
-      total += await countFiles(entryPath);
+      total += await countFiles(entryPath, liveRepo);
     } else if (entry.isFile()) {
       total += 1;
     }
@@ -272,6 +294,15 @@ async function addFolder(folder, liveRepo, bareRepo, progress) {
     for (const entry of entries) {
       const filePath = path.join(dir, entry.name);
 
+      if (await isIgnoredByGit(liveRepo, filePath)) {
+        console.log(
+          clfdate() +
+            " Git: create: skipping gitignored " +
+            path.relative(folder.path, filePath)
+        );
+        continue;
+      }
+
       if (entry.isDirectory()) {
         await walk(filePath);
       } else if (entry.isFile()) {
@@ -287,7 +318,7 @@ async function addFolder(folder, liveRepo, bareRepo, progress) {
 
   try {
     report(folder, "Counting files...");
-    progress.total = await countFiles(folder.path);
+    progress.total = await countFiles(folder.path, liveRepo);
     console.log(
       clfdate() + " Git: create: counted " + progress.total + " files to add"
     );
@@ -335,6 +366,16 @@ async function stageFile(folder, liveRepo, bareRepo, progress, filePath) {
   try {
     await liveRepo.add(filePath);
   } catch (err) {
+    // Race / check-ignore miss: still skip files that git refuses as ignored
+    if (isGitIgnoreAddError(err)) {
+      console.log(
+        clfdate() +
+          " Git: create: skipping gitignored file " +
+          relativePath
+      );
+      return;
+    }
+
     console.log(
       "Failed to add file " + relativePath + " to repository: " + err.message
     );
