@@ -7,7 +7,11 @@ describe("prettyDate", function () {
   });
 
   it("formats a date string", function () {
-    expect(prettyDate("2023-06-20")).toBe("June 20, 2023");
+    // Use a local-time (non-"Z"/offset) ISO string so this doesn't depend on
+    // the test runner's timezone: a date-only string like "2023-06-20" is
+    // parsed as UTC midnight, which prettyDate (using local-time getters)
+    // can render as the previous day in timezones behind UTC.
+    expect(prettyDate("2023-06-20T12:00:00")).toBe("June 20, 2023");
   });
 
   it("formats a timestamp", function () {
