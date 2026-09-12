@@ -4,6 +4,11 @@ var QRCode = require("qrcode");
 var User = require("models/user");
 var checkPassword = require("./util/checkPassword");
 
+// A password-confirmed setup secret is only good for this long. After that
+// (or if the user navigates away), it must be re-authorized with the
+// password again rather than sitting in the session indefinitely.
+var SETUP_TTL_MS = 10 * 60 * 1000;
+
 TwoFactor.route("/").get(function (req, res) {
   res.render("dashboard/account/two-factor", {
     breadcrumb: "Two-factor authentication",
@@ -13,7 +18,7 @@ TwoFactor.route("/").get(function (req, res) {
 
 TwoFactor.route("/enable")
 
-  .all(requireDisabled)
+  .all(requirePassword, requireDisabled)
 
   .get(function (req, res) {
     res.render("dashboard/account/two-factor-enable", {
@@ -25,10 +30,10 @@ TwoFactor.route("/enable")
 
 TwoFactor.route("/enable/confirm")
 
-  .all(requireDisabled)
+  .all(requirePassword, requireDisabled)
 
   .get(function (req, res, next) {
-    if (!req.session.pendingTotpSetupSecret) {
+    if (!getPendingSetupSecret(req)) {
       return res.redirect(req.baseUrl + "/enable");
     }
 
@@ -36,6 +41,11 @@ TwoFactor.route("/enable/confirm")
   })
 
   .post(confirmSetup);
+
+TwoFactor.get("/enable/cancel", function (req, res) {
+  delete req.session.pendingTotpSetup;
+  res.redirect(req.baseUrl);
+});
 
 TwoFactor.route("/disable")
 
@@ -61,6 +71,13 @@ TwoFactor.route("/backup-codes")
 
   .post(checkPassword, regenerateBackupCodes);
 
+// Two-factor setup relies on re-entering the account password, which
+// passwordless accounts can never satisfy -- send them to set one first.
+function requirePassword(req, res, next) {
+  if (!req.user.hasPassword) return res.redirect("/sites/account/password/set");
+  next();
+}
+
 function requireEnabled(req, res, next) {
   if (!req.user.totpEnabled) return res.redirect(req.baseUrl);
   next();
@@ -71,16 +88,30 @@ function requireDisabled(req, res, next) {
   next();
 }
 
-function beginSetup(req, res, next) {
-  var secret = User.generateTotpSecret();
+function getPendingSetupSecret(req) {
+  var pending = req.session.pendingTotpSetup;
 
-  req.session.pendingTotpSetupSecret = secret;
+  if (!pending) return null;
+
+  if (Date.now() - pending.createdAt > SETUP_TTL_MS) {
+    delete req.session.pendingTotpSetup;
+    return null;
+  }
+
+  return pending.secret;
+}
+
+function beginSetup(req, res, next) {
+  req.session.pendingTotpSetup = {
+    secret: User.generateTotpSecret(),
+    createdAt: Date.now(),
+  };
 
   renderSetup(req, res, next);
 }
 
 function renderSetup(req, res, next) {
-  var secret = req.session.pendingTotpSetupSecret;
+  var secret = getPendingSetupSecret(req);
   var keyUri = User.getTotpKeyUri(req.user.email, secret);
 
   QRCode.toDataURL(keyUri, function (err, qrCodeDataUrl) {
@@ -95,7 +126,7 @@ function renderSetup(req, res, next) {
 }
 
 function confirmSetup(req, res, next) {
-  var secret = req.session.pendingTotpSetupSecret;
+  var secret = getPendingSetupSecret(req);
 
   if (!secret) return res.redirect(req.baseUrl + "/enable");
 
@@ -106,7 +137,7 @@ function confirmSetup(req, res, next) {
   User.enableTotp(req.user.uid, secret, function (err, backupCodes) {
     if (err) return next(err);
 
-    delete req.session.pendingTotpSetupSecret;
+    delete req.session.pendingTotpSetup;
 
     res.render("dashboard/account/two-factor-backup-codes", {
       title: "Your backup codes",

@@ -16,9 +16,14 @@
   {{^user.totpEnabled}}
   <p>Two-factor authentication is <b>off</b>. Turn it on to require a code from an authenticator app (like Google Authenticator or Authy) each time you log in.</p>
 
+  {{#user.hasPassword}}
   <div class="buttons">
     <a href="/sites/account/two-factor/enable"><button type="button">Set up two-factor authentication</button></a>
   </div>
+  {{/user.hasPassword}}
+  {{^user.hasPassword}}
+  <p>You'll need to <a href="/sites/account/password/set">set a password</a> first.</p>
+  {{/user.hasPassword}}
   {{/user.totpEnabled}}
 
 </div>

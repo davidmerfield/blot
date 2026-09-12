@@ -10,6 +10,7 @@ function request(options) {
       user: options.user || {
         uid: "two-factor-route-user",
         email: "user@example.com",
+        hasPassword: true,
         totpEnabled: false,
       },
       session: session,
@@ -45,10 +46,19 @@ describe("two-factor authentication route", function () {
   it("redirects away from /enable when already enabled", async function () {
     var result = await request({
       url: "/enable",
-      user: { uid: "u", email: "u@x.com", totpEnabled: true },
+      user: { uid: "u", email: "u@x.com", hasPassword: true, totpEnabled: true },
     });
 
     expect(result.redirect).toEqual("/account/two-factor");
+  });
+
+  it("redirects away from /enable when the account has no password set", async function () {
+    var result = await request({
+      url: "/enable",
+      user: { uid: "u", email: "u@x.com", hasPassword: false, totpEnabled: false },
+    });
+
+    expect(result.redirect).toEqual("/sites/account/password/set");
   });
 
   it("rejects an incorrect password when starting setup", async function () {
@@ -74,7 +84,8 @@ describe("two-factor authentication route", function () {
     expect(result.view).toEqual("dashboard/account/two-factor-setup");
     expect(result.locals.secret).toEqual(jasmine.any(String));
     expect(result.locals.secret.length).toBeGreaterThan(0);
-    expect(session.pendingTotpSetupSecret).toEqual(result.locals.secret);
+    expect(session.pendingTotpSetup.secret).toEqual(result.locals.secret);
+    expect(session.pendingTotpSetup.createdAt).toEqual(jasmine.any(Number));
     expect(result.locals.qrCodeDataUrl).toMatch(/^data:image\/png;base64,/);
   });
 
@@ -82,11 +93,44 @@ describe("two-factor authentication route", function () {
     var result = await request({
       method: "POST",
       url: "/enable/confirm",
-      session: { pendingTotpSetupSecret: "AAAAAAAAAAAAAAAA" },
+      session: {
+        pendingTotpSetup: { secret: "AAAAAAAAAAAAAAAA", createdAt: Date.now() },
+      },
       body: { code: "000000" },
     });
 
     expect(result.error).toEqual(jasmine.any(Error));
+  });
+
+  it("treats an expired pending setup as absent", async function () {
+    var session = {
+      pendingTotpSetup: {
+        secret: "AAAAAAAAAAAAAAAA",
+        createdAt: Date.now() - 11 * 60 * 1000,
+      },
+    };
+
+    var result = await request({
+      url: "/enable/confirm",
+      session: session,
+    });
+
+    expect(result.redirect).toEqual("/account/two-factor/enable");
+    expect(session.pendingTotpSetup).toBeUndefined();
+  });
+
+  it("clears the pending setup secret on cancel", async function () {
+    var session = {
+      pendingTotpSetup: { secret: "AAAAAAAAAAAAAAAA", createdAt: Date.now() },
+    };
+
+    var result = await request({
+      url: "/enable/cancel",
+      session: session,
+    });
+
+    expect(result.redirect).toEqual("/account/two-factor");
+    expect(session.pendingTotpSetup).toBeUndefined();
   });
 
   it("enables two-factor and shows backup codes on a correct confirmation code", async function () {
@@ -100,7 +144,7 @@ describe("two-factor authentication route", function () {
     var result = await request({
       method: "POST",
       url: "/enable/confirm",
-      session: { pendingTotpSetupSecret: secret },
+      session: { pendingTotpSetup: { secret: secret, createdAt: Date.now() } },
       body: { code: otplib.authenticator.generate(secret) },
     });
 
@@ -111,7 +155,7 @@ describe("two-factor authentication route", function () {
     );
     expect(result.view).toEqual("dashboard/account/two-factor-backup-codes");
     expect(result.locals.codes).toEqual(["code-1", "code-2"]);
-    expect(result.session.pendingTotpSetupSecret).toBeUndefined();
+    expect(result.session.pendingTotpSetup).toBeUndefined();
   });
 
   it("requires a password to disable two-factor authentication", async function () {
@@ -122,7 +166,7 @@ describe("two-factor authentication route", function () {
     var result = await request({
       method: "POST",
       url: "/disable",
-      user: { uid: "u", email: "u@x.com", totpEnabled: true },
+      user: { uid: "u", email: "u@x.com", hasPassword: true, totpEnabled: true },
       body: { password: "wrong-password" },
     });
 
@@ -138,7 +182,7 @@ describe("two-factor authentication route", function () {
     var result = await request({
       method: "POST",
       url: "/disable",
-      user: { uid: "u", email: "u@x.com", totpEnabled: true },
+      user: { uid: "u", email: "u@x.com", hasPassword: true, totpEnabled: true },
       body: { password: "correct-password" },
     });
 

@@ -1,6 +1,6 @@
 var ensure = require("helper/ensure");
 var getById = require("./getById");
-var set = require("./set");
+var consumeTotpBackupCode = require("./consumeTotpBackupCode");
 var decrypt = require("./totp/decrypt");
 var verifyBackupCode = require("./totp/verifyBackupCode");
 var verifyTotpToken = require("./verifyTotpToken");
@@ -16,7 +16,17 @@ module.exports = function checkTotp(uid, code, callback) {
     if (err) return callback(err);
     if (!user || !user.totpEnabled) return callback(null, false);
 
-    if (verifyTotpToken(decrypt(user.totpSecret), code)) {
+    // A corrupt ciphertext, or a secret that no longer decrypts because the
+    // encryption key changed, must not crash the process -- treat it as a
+    // failed TOTP check and fall through to the backup codes.
+    var secret;
+    try {
+      secret = decrypt(user.totpSecret);
+    } catch (err) {
+      secret = null;
+    }
+
+    if (secret && verifyTotpToken(secret, code)) {
       return callback(null, true, "totp");
     }
 
@@ -24,11 +34,12 @@ module.exports = function checkTotp(uid, code, callback) {
       if (err) return callback(err);
       if (index === -1) return callback(null, false);
 
-      var remaining = user.totpBackupCodes.slice();
-      remaining.splice(index, 1);
+      var hash = user.totpBackupCodes[index];
 
-      set(uid, { totpBackupCodes: remaining }, function (err) {
+      consumeTotpBackupCode(uid, hash, function (err, consumed) {
         if (err) return callback(err);
+        // Lost the race with another request consuming the same code.
+        if (!consumed) return callback(null, false);
         callback(null, true, "backup");
       });
     });

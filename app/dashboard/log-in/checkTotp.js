@@ -1,6 +1,6 @@
 var User = require("models/user");
 var LogInError = require("./logInError");
-var authenticate = require("./authenticate");
+var completeLogin = require("./completeLogin");
 
 module.exports = function checkTotp(req, res, next) {
   var uid = req.session.pendingTotpUid;
@@ -20,9 +20,10 @@ module.exports = function checkTotp(req, res, next) {
       delete req.session.pendingTotpUid;
       delete req.session.pendingTotpThen;
 
-      authenticate(req, res, user);
-
-      res.redirect(then);
+      completeLogin(req, res, user, then, function (err, redirectTo) {
+        if (err) return next(err);
+        res.redirect(redirectTo);
+      });
     });
   });
 };

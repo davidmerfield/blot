@@ -22,6 +22,12 @@ var limiter = rateLimit({
   }),
   windowMs: 5 * 60000, // five minute window
   max: 10, // 10 attempts per five minutes
+  // Key by the account being logged into, not the request IP: a six-digit
+  // code is weak enough that an attacker distributing attempts across many
+  // IPs must still be capped on a per-account basis. Fall back to the IP
+  // for any request that somehow reaches this without a pending session.
+  keyGenerator: (req) =>
+    (req.session && req.session.pendingTotpUid) || req.ip,
 });
 
 module.exports = limiter;

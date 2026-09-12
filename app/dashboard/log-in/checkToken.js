@@ -1,5 +1,5 @@
 var User = require("models/user");
-var authenticate = require("./authenticate");
+var completeLogin = require("./completeLogin");
 var LogInError = require("./logInError");
 
 // The purpose of this function is to check to see if the
@@ -23,6 +23,12 @@ module.exports = function checkToken(req, res, next) {
   if (req.query.then || req.query["amp;then"])
     then = decodeURIComponent(req.query.then || req.query["amp;then"]);
 
+  // A magic link only ever sends the user to the dashboard homepage,
+  // except for the one special case of setting a password for the first
+  // time -- any other 'then' is ignored, same as before TOTP existed.
+  var effectiveThen =
+    then === "/sites/account/password/set" ? then : "/sites";
+
   // First we make sure that the access token passed is valid.
   User.checkAccessToken(token, function (err, uid) {
     if (err) return next(new LogInError("BADTOKEN"));
@@ -38,25 +44,18 @@ module.exports = function checkToken(req, res, next) {
       // can delete this check safely.
       if (user.isDisabled) return res.redirect("/disabled");
 
-      // Store the valid user'd ID in the session.
-      authenticate(req, res, user);
-
-      // If the user does not need to be redirected to another page
-      // send them to the dashboard's homepage. Users will be redirected
-      // elsewhere when they attempt to visit private pages, or when they
-      // request a link to reset their password.
-      if (then !== "/sites/account/password/set") {
-        return res.redirect("/sites");
+      // A one-time log-in link (e.g. from a password-reset email) proves
+      // the user controls their email, not their authenticator app -- it
+      // must not bypass a second factor they've enabled.
+      if (user.totpEnabled) {
+        req.session.pendingTotpUid = user.uid;
+        req.session.pendingTotpThen = effectiveThen;
+        return res.redirect("/log-in/two-factor");
       }
 
-      User.generateAccessToken({ uid }, function (err, token) {
+      completeLogin(req, res, user, effectiveThen, function (err, redirectTo) {
         if (err) return next(err);
-
-        // This token is used to authenticate a password change
-        // without an existing password. It's stored in the user's
-        // session instead of a query string to keep the URLs tidy.
-        req.session.passwordSetToken = token;
-        res.redirect(then);
+        res.redirect(redirectTo);
       });
     });
   });
