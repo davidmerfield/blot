@@ -81,6 +81,90 @@ describe("user totp", function () {
     });
   });
 
+  it("regenerateTotpBackupCodes replaces the backup codes", function (done) {
+    var test = this;
+    var secret = User.generateTotpSecret();
+
+    User.enableTotp(test.user.uid, secret, function (err, originalCodes) {
+      if (err) return done.fail(err);
+
+      User.regenerateTotpBackupCodes(test.user.uid, function (err, newCodes) {
+        if (err) return done.fail(err);
+
+        expect(newCodes.length).toEqual(10);
+        expect(newCodes).not.toEqual(originalCodes);
+
+        User.checkTotp(test.user.uid, originalCodes[0], function (err, valid) {
+          if (err) return done.fail(err);
+          expect(valid).toBe(false);
+          done();
+        });
+      });
+    });
+  });
+
+  it("enableTotp reports a conflict instead of silently overwriting a concurrent write", function (done) {
+    var test = this;
+    var client = require("models/client");
+    var secret = User.generateTotpSecret();
+
+    var realGet = client.get.bind(client);
+    var raced = false;
+
+    spyOn(client, "get").and.callFake(function (k) {
+      return realGet(k).then(function (value) {
+        if (raced) return value;
+        raced = true;
+
+        // Simulate a second request's write landing between our read and
+        // our compare-and-swap write.
+        return new Promise(function (resolve) {
+          User.set(test.user.uid, { lastSession: "raced" }, function () {
+            resolve(value);
+          });
+        });
+      });
+    });
+
+    User.enableTotp(test.user.uid, secret, function (err) {
+      expect(err).toEqual(jasmine.any(Error));
+      expect(err.code).toEqual("ECONFLICT");
+      done();
+    });
+  });
+
+  it("regenerateTotpBackupCodes reports a conflict instead of silently overwriting a concurrent write", function (done) {
+    var test = this;
+    var client = require("models/client");
+    var secret = User.generateTotpSecret();
+
+    User.enableTotp(test.user.uid, secret, function (err) {
+      if (err) return done.fail(err);
+
+      var realGet = client.get.bind(client);
+      var raced = false;
+
+      spyOn(client, "get").and.callFake(function (k) {
+        return realGet(k).then(function (value) {
+          if (raced) return value;
+          raced = true;
+
+          return new Promise(function (resolve) {
+            User.set(test.user.uid, { lastSession: "raced" }, function () {
+              resolve(value);
+            });
+          });
+        });
+      });
+
+      User.regenerateTotpBackupCodes(test.user.uid, function (err) {
+        expect(err).toEqual(jasmine.any(Error));
+        expect(err.code).toEqual("ECONFLICT");
+        done();
+      });
+    });
+  });
+
   it("disableTotp clears the secret and backup codes", function (done) {
     var test = this;
     var secret = User.generateTotpSecret();

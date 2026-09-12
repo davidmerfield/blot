@@ -1,6 +1,7 @@
 var User = require("models/user");
 var LogInError = require("./logInError");
 var authenticate = require("./authenticate");
+var pendingTotp = require("./pendingTotp");
 
 module.exports = function checkPassword(req, res, next) {
   var user = req.user;
@@ -21,8 +22,7 @@ module.exports = function checkPassword(req, res, next) {
     if (!match) return next(new LogInError("BADPASSWORD"));
 
     if (user.totpEnabled) {
-      req.session.pendingTotpUid = user.uid;
-      req.session.pendingTotpThen = then;
+      pendingTotp.set(req, user.uid, then);
       return res.redirect("/log-in/two-factor");
     }
 

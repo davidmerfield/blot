@@ -1,6 +1,7 @@
 var User = require("models/user");
 var completeLogin = require("./completeLogin");
 var LogInError = require("./logInError");
+var pendingTotp = require("./pendingTotp");
 
 // The purpose of this function is to check to see if the
 // user has requested the log in page with a one-time access
@@ -48,8 +49,7 @@ module.exports = function checkToken(req, res, next) {
       // the user controls their email, not their authenticator app -- it
       // must not bypass a second factor they've enabled.
       if (user.totpEnabled) {
-        req.session.pendingTotpUid = user.uid;
-        req.session.pendingTotpThen = effectiveThen;
+        pendingTotp.set(req, user.uid, effectiveThen);
         return res.redirect("/log-in/two-factor");
       }
 

@@ -1,9 +1,9 @@
 var checkToken = require("../checkToken");
 var User = require("models/user");
 
-function request(query) {
+function request(query, session) {
   return new Promise(function (resolve, reject) {
-    var session = {};
+    session = session || {};
     var req = { query: query || {}, session: session };
     var res = {
       cookie: function () {},
@@ -35,8 +35,26 @@ describe("log-in checkToken", function () {
 
     expect(result.redirect).toEqual("/log-in/two-factor");
     expect(result.session.uid).toBeUndefined();
-    expect(result.session.pendingTotpUid).toEqual("user_1");
-    expect(result.session.pendingTotpThen).toEqual("/sites");
+    expect(result.session.pendingTotp.uid).toEqual("user_1");
+    expect(result.session.pendingTotp.then).toEqual("/sites");
+    expect(result.session.pendingTotp.createdAt).toEqual(jasmine.any(Number));
+  });
+
+  it("clears an existing authenticated session so the challenge isn't skipped", async function () {
+    // A user already signed in (e.g. a stale session) who opens a
+    // password-reset link must still be forced through the challenge --
+    // otherwise the log-in router's "already signed in" guard would
+    // redirect them away from /log-in/two-factor before it can run.
+    spyOn(User, "getById").and.callFake(function (uid, callback) {
+      callback(null, { uid: uid, isDisabled: false, totpEnabled: true });
+    });
+
+    var session = { uid: "some-other-previously-logged-in-uid" };
+
+    var result = await request({ token: "sometoken" }, session);
+
+    expect(result.redirect).toEqual("/log-in/two-factor");
+    expect(result.session.uid).toBeUndefined();
   });
 
   it("preserves the password/set destination when routing through TOTP", async function () {
@@ -50,7 +68,7 @@ describe("log-in checkToken", function () {
     });
 
     expect(result.redirect).toEqual("/log-in/two-factor");
-    expect(result.session.pendingTotpThen).toEqual(
+    expect(result.session.pendingTotp.then).toEqual(
       "/sites/account/password/set"
     );
   });
@@ -64,6 +82,6 @@ describe("log-in checkToken", function () {
 
     expect(result.redirect).toEqual("/sites");
     expect(result.session.uid).toEqual("user_1");
-    expect(result.session.pendingTotpUid).toBeUndefined();
+    expect(result.session.pendingTotp).toBeUndefined();
   });
 });

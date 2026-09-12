@@ -117,6 +117,10 @@ function renderSetup(req, res, next) {
   QRCode.toDataURL(keyUri, function (err, qrCodeDataUrl) {
     if (err) return next(err);
 
+    // This page displays the reusable secret itself -- never let it sit in
+    // a shared/history cache after the session value that guards it is gone.
+    res.set("Cache-Control", "no-store");
+
     res.render("dashboard/account/two-factor-setup", {
       title: "Set up two-factor authentication",
       secret: secret,
@@ -139,6 +143,8 @@ function confirmSetup(req, res, next) {
 
     delete req.session.pendingTotpSetup;
 
+    res.set("Cache-Control", "no-store");
+
     res.render("dashboard/account/two-factor-backup-codes", {
       title: "Your backup codes",
       codes: backupCodes,
@@ -157,6 +163,8 @@ function disable(req, res, next) {
 function regenerateBackupCodes(req, res, next) {
   User.regenerateTotpBackupCodes(req.user.uid, function (err, codes) {
     if (err) return next(err);
+
+    res.set("Cache-Control", "no-store");
 
     res.render("dashboard/account/two-factor-backup-codes", {
       title: "Your backup codes",

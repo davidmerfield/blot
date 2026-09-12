@@ -7,6 +7,7 @@ var checkEmail = require("./checkEmail");
 var checkPassword = require("./checkPassword");
 var checkTotp = require("./checkTotp");
 var rateLimitTotp = require("./rateLimitTotp");
+var pendingTotp = require("./pendingTotp");
 var errorHandler = require("./errorHandler");
 var redirect = require("./redirect");
 
@@ -65,7 +66,7 @@ form
   .route("/two-factor")
 
   .all(function (req, res, next) {
-    if (!req.session.pendingTotpUid) return res.redirect("/log-in");
+    if (!pendingTotp.get(req)) return res.redirect("/log-in");
     next();
   })
 
