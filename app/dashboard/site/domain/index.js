@@ -87,12 +87,16 @@ Domain.route('/')
         }
 
         if (!hostname) {
-            await updateDomain(blogID, '');
-            // Clear the domain error from the session
-            delete req.session[`${blogID}:domainError`];
-            delete req.session[`${blogID}:domainWarning`];
-            req.session.save();
-            return res.message(res.locals.base + '/domain', 'Domain removed');
+            if (!domainInput || !domainInput.trim()) {
+                await updateDomain(blogID, '');
+                // Clear the domain error from the session
+                delete req.session[`${blogID}:domainError`];
+                delete req.session[`${blogID}:domainWarning`];
+                req.session.save();
+                return res.message(res.locals.base + '/domain', 'Domain removed');
+            }
+
+            return res.message(res.locals.base + '/domain/custom', new Error('Please enter a valid domain'));
         }
 
         // Remove the existing domain if it is set and differs from the new one
