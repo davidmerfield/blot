@@ -17,4 +17,9 @@ module.exports = {
   ready: function (blogID) {
     return "blog:" + blogID + ":archives:ready";
   },
+  // Counter incremented by every set() write, watched by rebuild() to detect
+  // a concurrent entry save during a rebuild's snapshot window.
+  generation: function (blogID) {
+    return "blog:" + blogID + ":archives:generation";
+  },
 };

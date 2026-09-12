@@ -37,21 +37,31 @@ async function archives(req, res) {
 
   // Months are precomputed (bucketed by blog.timeZone when each entry was
   // saved - see models/archives/set.js), so no per-entry date/timezone work
-  // happens here. Walk newest-first, collecting entry IDs up to MAX_ENTRIES,
-  // preserving the clamp semantics from limits.js.
+  // happens here. Archives.months() already returns each month's count, so
+  // the months actually needed for the MAX_ENTRIES clamp can be decided
+  // without fetching any bucket first - then every bucket read for those
+  // months happens in parallel (one round trip, not one per month).
   const months = await Archives.months(blogID);
-  const monthEntryIDs = [];
+  const monthsNeeded = [];
   let total = 0;
 
-  for (const { yearMonth } of months) {
+  for (const month of months) {
     if (total >= MAX_ENTRIES) break;
 
-    const ids = await Archives.bucket(blogID, yearMonth);
-    const clamped = ids.slice(0, MAX_ENTRIES - total);
-
-    monthEntryIDs.push({ yearMonth, ids: clamped });
-    total += clamped.length;
+    monthsNeeded.push(month);
+    total += month.count;
   }
+
+  const buckets = await Promise.all(
+    monthsNeeded.map((month) => Archives.bucket(blogID, month.yearMonth))
+  );
+
+  let remaining = MAX_ENTRIES;
+  const monthEntryIDs = monthsNeeded.map((month, i) => {
+    const ids = buckets[i].slice(0, remaining);
+    remaining -= ids.length;
+    return { yearMonth: month.yearMonth, ids };
+  });
 
   const allIDs = [].concat(...monthEntryIDs.map((m) => m.ids));
 

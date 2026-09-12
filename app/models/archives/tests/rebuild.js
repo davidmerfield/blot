@@ -1,5 +1,6 @@
 const client = require("models/client");
 const Entry = require("models/entry");
+const Entries = require("models/entries");
 const key = require("../key");
 const list = require("../list");
 const rebuild = require("../rebuild");
@@ -103,6 +104,85 @@ describe("archives.rebuild", function () {
       if (err) return done.fail(err);
       expect(count).toBe(0);
       done();
+    });
+  });
+
+  it("aborts without touching the index when the entries fetch comes back empty for a non-empty blog", function (done) {
+    const blogID = this.blog.id;
+    const entry = buildEntry("/a.txt", Date.parse("2020-01-05T00:00:00Z"));
+
+    Entry.set(blogID, entry.path, entry, function (err) {
+      if (err) return done.fail(err);
+
+      rebuild(blogID, async function (err, count) {
+        if (err) return done.fail(err);
+        expect(count).toBe(1);
+
+        // Simulate Entries.getAll swallowing a Redis read failure - it has
+        // no error channel, so a failed read and a genuinely empty blog
+        // both resolve to []. The "entries" list itself still has 1 member.
+        spyOn(Entries, "getAll").and.callFake(function (blogID, options, cb) {
+          cb([]);
+        });
+
+        rebuild(blogID, async function (err, count) {
+          expect(err).toEqual(jasmine.any(Error));
+          expect(count).toBeUndefined();
+
+          // The good index from the first rebuild must survive untouched.
+          const months = await list.months(blogID);
+          expect(months).toEqual([{ yearMonth: "2020-01", count: 1 }]);
+
+          done();
+        });
+      });
+    });
+  });
+
+  it("retries from a fresh snapshot if an entry is saved during the rebuild", function (done) {
+    const blogID = this.blog.id;
+    const first = buildEntry("/a.txt", Date.parse("2020-01-05T00:00:00Z"));
+
+    Entry.set(blogID, first.path, first, function (err) {
+      if (err) return done.fail(err);
+
+      let calls = 0;
+      const realGetAll = Entries.getAll.bind(Entries);
+
+      spyOn(Entries, "getAll").and.callFake(function (blogID, options, cb) {
+        calls++;
+
+        if (calls === 1) {
+          // A second entry is saved (bumping the generation counter -
+          // see models/archives/set.js) after this snapshot is taken but
+          // before rebuild's transaction executes.
+          const second = buildEntry(
+            "/b.txt",
+            Date.parse("2020-02-05T00:00:00Z")
+          );
+          return Entry.set(blogID, second.path, second, function (err) {
+            if (err) return done.fail(err);
+            realGetAll(blogID, options, cb);
+          });
+        }
+
+        return realGetAll(blogID, options, cb);
+      });
+
+      rebuild(blogID, async function (err, count) {
+        if (err) return done.fail(err);
+
+        expect(calls).toBeGreaterThan(1);
+        expect(count).toBe(2);
+
+        const months = await list.months(blogID);
+        expect(months).toEqual([
+          { yearMonth: "2020-02", count: 1 },
+          { yearMonth: "2020-01", count: 1 },
+        ]);
+
+        done();
+      });
     });
   });
 });
