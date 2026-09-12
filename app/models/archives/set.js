@@ -3,16 +3,55 @@ var ensure = require("helper/ensure");
 var key = require("./key");
 var bucket = require("./_bucket");
 
-// Atomically remove a now-possibly-empty bucket from the months index, but
-// only if it is still empty by the time this runs. A plain ZCARD-then-ZREM
-// from JS is a check-then-act race: a concurrent set() adding a new entry to
-// the same month between the check and the removal would have its bucket
-// membership silently dropped from "months" until a later rebuild. Run
-// server-side in one atomic step instead.
-var pruneIfEmpty = `
-  if redis.call('ZCARD', KEYS[1]) == 0 then
-    redis.call('ZREM', KEYS[2], ARGV[1])
+// Reconciles one entry's bucket membership, the months index, the entry's
+// bucket marker, and the generation counter as a single atomic step.
+//
+// This used to be a `multi.exec()` (add/remove/marker/generation) followed
+// by a *separate* round-trip `eval` to prune an emptied month from the
+// months index. That gap between the two calls was a real bug: if the
+// process crashed (or the eval call itself failed) in between, a month
+// could be left in the months index with zero real members - a "ghost"
+// month that renders an empty year/month header on /archives forever,
+// since the sync fixer (app/sync/fix/archives-index.js) only compares
+// *total* entry counts, which a zero-count ghost doesn't change. Doing
+// everything in one Lua script closes that gap: either the whole
+// reconciliation (including the prune) happens, or none of it does.
+var reconcile = `
+  local newBucketKey = KEYS[1]
+  local monthsKey = KEYS[2]
+  local entryKey = KEYS[3]
+  local generationKey = KEYS[4]
+  local oldBucketKey = KEYS[5]
+
+  local entryID = ARGV[1]
+  local isVisible = ARGV[2] == "1"
+  local newBucket = ARGV[3]
+  local dateScore = ARGV[4]
+  local monthScore = ARGV[5]
+  local oldBucket = ARGV[6]
+
+  local bucketChanged = oldBucket ~= "" and oldBucket ~= newBucket
+
+  if bucketChanged then
+    redis.call('ZREM', oldBucketKey, entryID)
   end
+
+  if isVisible then
+    redis.call('ZADD', newBucketKey, dateScore, entryID)
+    redis.call('ZADD', monthsKey, monthScore, newBucket)
+    redis.call('SET', entryKey, newBucket)
+  elseif oldBucket ~= "" then
+    redis.call('DEL', entryKey)
+  end
+
+  redis.call('INCR', generationKey)
+
+  if bucketChanged or (not isVisible and oldBucket ~= "") then
+    if redis.call('ZCARD', oldBucketKey) == 0 then
+      redis.call('ZREM', monthsKey, oldBucket)
+    end
+  end
+
   return 1
 `;
 
@@ -27,7 +66,12 @@ module.exports = function (blogID, entry, timeZone, callback) {
   ensure(blogID, "string").and(timeZone, "string").and(callback, "function");
 
   var entryKey = key.entry(blogID, entry.id);
-  var isVisible = bucket.visible(entry);
+
+  // An entry with no valid dateStamp can't be bucketed by month at all -
+  // rebuild() skips these entirely (see rebuild.js), so this has to agree,
+  // or an incremental save and a full rebuild would disagree about where
+  // (or whether) such an entry appears in the index.
+  var isVisible = bucket.visible(entry) && bucket.hasDateStamp(entry);
   var newBucket = isVisible
     ? bucket.yearMonth(entry.dateStamp, timeZone)
     : null;
@@ -35,46 +79,30 @@ module.exports = function (blogID, entry, timeZone, callback) {
   (async function () {
     var oldBucket = await client.get(entryKey);
 
-    var multi = client.multi();
-    var bucketChanged = oldBucket && oldBucket !== newBucket;
+    // Lua needs a fixed key list. When there's no old bucket (first save)
+    // or the entry isn't visible (no new bucket), these keys are never
+    // dereferenced by the script's guarded branches - the placeholder
+    // bucket name just has to be a valid key string.
+    var newBucketKey = key.bucket(blogID, newBucket || oldBucket || "none");
+    var oldBucketKey = key.bucket(blogID, oldBucket || newBucket || "none");
 
-    if (bucketChanged) {
-      multi.zRem(key.bucket(blogID, oldBucket), entry.id);
-    }
-
-    if (isVisible) {
-      multi.zAdd(key.bucket(blogID, newBucket), {
-        score: entry.dateStamp,
-        value: entry.id,
-      });
-      multi.zAdd(key.months(blogID), {
-        score: bucket.score(newBucket),
-        value: newBucket,
-      });
-      multi.set(entryKey, newBucket);
-    } else if (oldBucket) {
-      multi.del(entryKey);
-    }
-
-    // A rebuild in progress (models/archives/rebuild.js) watches this
-    // counter to detect a concurrent save and retry from a fresh snapshot
-    // rather than overwrite it with stale data. Bump it inside the same
-    // transaction as the actual index change so a rebuild can never observe
-    // a generation bump without the write it corresponds to (or vice versa).
-    multi.incr(key.generation(blogID));
-
-    await multi.exec();
-
-    // Prune a month from the index once its last entry has moved out or
-    // been hidden. Done as a follow-up call rather than inside the multi
-    // above, since bucket membership count isn't the "months" sorted set's
-    // score (unlike tags' popularity count, which prunes in the same multi).
-    if (bucketChanged || (!isVisible && oldBucket)) {
-      await client.eval(pruneIfEmpty, {
-        keys: [key.bucket(blogID, oldBucket), key.months(blogID)],
-        arguments: [oldBucket],
-      });
-    }
+    await client.eval(reconcile, {
+      keys: [
+        newBucketKey,
+        key.months(blogID),
+        entryKey,
+        key.generation(blogID),
+        oldBucketKey,
+      ],
+      arguments: [
+        entry.id,
+        isVisible ? "1" : "0",
+        newBucket || "",
+        String(entry.dateStamp || 0),
+        String(newBucket ? bucket.score(newBucket) : 0),
+        oldBucket || "",
+      ],
+    });
 
     callback();
   })().catch(function (err) {

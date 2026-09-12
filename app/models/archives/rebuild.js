@@ -95,7 +95,7 @@ module.exports = function rebuild(blogID, callback) {
       var buckets = Object.create(null);
 
       entries.forEach(function (entry) {
-        if (!entry || typeof entry.dateStamp !== "number") return;
+        if (!entry || !bucket.hasDateStamp(entry)) return;
 
         var yearMonth = bucket.yearMonth(entry.dateStamp, blog.timeZone);
 

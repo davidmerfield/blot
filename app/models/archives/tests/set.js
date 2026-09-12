@@ -44,6 +44,44 @@ describe("archives.set", function () {
     });
   });
 
+  it("does not index an entry with no dateStamp", function (done) {
+    const entry = {
+      id: "no-datestamp-entry",
+      path: "/no-datestamp-entry",
+      dateStamp: undefined,
+    };
+
+    set(this.blog.id, entry, "UTC", async (err) => {
+      if (err) return done.fail(err);
+
+      const months = await list.months(this.blog.id);
+      expect(months).toEqual([]);
+      done();
+    });
+  });
+
+  it("removes an entry from its bucket if a later save clears its dateStamp", function (done) {
+    const entry = {
+      id: "entry1",
+      path: "/entry1",
+      dateStamp: Date.parse("2020-01-15T00:00:00Z"),
+    };
+
+    set(this.blog.id, entry, "UTC", (err) => {
+      if (err) return done.fail(err);
+
+      entry.dateStamp = undefined;
+
+      set(this.blog.id, entry, "UTC", async (err) => {
+        if (err) return done.fail(err);
+
+        const months = await list.months(this.blog.id);
+        expect(months).toEqual([]);
+        done();
+      });
+    });
+  });
+
   it("moves an entry between months when its dateStamp changes", function (done) {
     const entry = {
       id: "entry1",
