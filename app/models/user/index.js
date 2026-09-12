@@ -1,18 +1,24 @@
 module.exports = {
   checkAccessToken: require("./checkAccessToken"),
   checkPassword: require("./checkPassword"),
+  checkTotp: require("./checkTotp"),
   create: require("./create"),
+  disableTotp: require("./disableTotp"),
+  enableTotp: require("./enableTotp"),
   extend: require("./extend"),
   generateAccessToken: require("./generateAccessToken"),
   generateId: require("./generateId"),
+  generateTotpSecret: require("./generateTotpSecret"),
   getAllIds: require("./getAllIds"),
   getByCustomerId: require("./getByCustomerId"),
   getByEmail: require("./getByEmail"),
   getById: require("./getById"),
   getByPayPalSubscriptionId: require("./getByPayPalSubscriptionId"),
+  getTotpKeyUri: require("./getTotpKeyUri"),
   hashPassword: require("./hashPassword"),
   key: require("./key"),
   model: require("./model"),
+  regenerateTotpBackupCodes: require("./regenerateTotpBackupCodes"),
   remove: require("./remove"),
   scheduleSubscriptionEmail: require("./scheduleSubscriptionEmail"),
   scheduleWelcomeEmail: require("./scheduleWelcomeEmail"),
@@ -20,5 +26,6 @@ module.exports = {
   disable: require("./disable"),
   enable: require("./enable"),
   subscriptionTenure: require("./subscriptionTenure"),
-  validate: require("./validate")
+  validate: require("./validate"),
+  verifyTotpToken: require("./verifyTotpToken")
 };

@@ -1,0 +1,24 @@
+<div class="account">
+
+  {{> message}}
+
+  {{#user.totpEnabled}}
+  <p>Two-factor authentication is <b>on</b>. You'll be asked for a code from your authenticator app each time you log in.</p>
+
+  <p>You have {{user.totpBackupCodesRemaining}} unused backup code{{^user.totpBackupCodesRemaining}}s{{/user.totpBackupCodesRemaining}}{{#user.totpBackupCodesRemaining}} left{{/user.totpBackupCodesRemaining}}.</p>
+
+  <div class="buttons">
+    <a href="/sites/account/two-factor/backup-codes"><button type="button">Regenerate backup codes</button></a>
+    <a href="/sites/account/two-factor/disable"><button type="button" class="red">Turn off</button></a>
+  </div>
+  {{/user.totpEnabled}}
+
+  {{^user.totpEnabled}}
+  <p>Two-factor authentication is <b>off</b>. Turn it on to require a code from an authenticator app (like Google Authenticator or Authy) each time you log in.</p>
+
+  <div class="buttons">
+    <a href="/sites/account/two-factor/enable"><button type="button">Set up two-factor authentication</button></a>
+  </div>
+  {{/user.totpEnabled}}
+
+</div>

@@ -5,6 +5,8 @@ var checkToken = require("./checkToken");
 var checkReset = require("./checkReset");
 var checkEmail = require("./checkEmail");
 var checkPassword = require("./checkPassword");
+var checkTotp = require("./checkTotp");
+var rateLimitTotp = require("./rateLimitTotp");
 var errorHandler = require("./errorHandler");
 var redirect = require("./redirect");
 
@@ -57,6 +59,26 @@ form
 
   .post(function (err, req, res, next) {
     res.render("dashboard/log-in/reset");
+  });
+
+form
+  .route("/two-factor")
+
+  .all(function (req, res, next) {
+    if (!req.session.pendingTotpUid) return res.redirect("/log-in");
+    next();
+  })
+
+  .get(function (req, res) {
+    res.render("dashboard/log-in/two-factor");
+  })
+
+  .post(rateLimitTotp, checkTotp)
+
+  .all(errorHandler)
+
+  .all(function (err, req, res, next) {
+    res.render("dashboard/log-in/two-factor");
   });
 
 form

@@ -7,6 +7,9 @@ function applyUserDefaults(user) {
   if (typeof user.created === "undefined") user.created = 0;
   if (typeof user.welcomeEmailSent === "undefined")
     user.welcomeEmailSent = true;
+  if (typeof user.totpEnabled === "undefined") user.totpEnabled = false;
+  if (typeof user.totpSecret === "undefined") user.totpSecret = "";
+  if (typeof user.totpBackupCodes === "undefined") user.totpBackupCodes = [];
 
   return user;
 }

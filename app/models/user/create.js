@@ -32,7 +32,10 @@ module.exports = function create (
         email: email,
         subscription: subscription,
         paypal: paypal,
-        passwordHash: passwordHash
+        passwordHash: passwordHash,
+        totpEnabled: false,
+        totpSecret: "",
+        totpBackupCodes: []
       };
 
       user = await new Promise(function (resolve, reject) {

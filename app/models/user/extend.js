@@ -8,12 +8,18 @@ module.exports = function extend (user) {
   // True if the user has set a password, false otherwise
   user.hasPassword = !!user.passwordHash;
 
+  // Number of unused two-factor backup codes remaining, computed before
+  // the hashes themselves are stripped from the object below.
+  user.totpBackupCodesRemaining = (user.totpBackupCodes || []).length;
+
   // Don't expose these to the
   // view renderer
   delete user.credentials;
   delete user.passwordHash;
   delete user.created;
   delete user.welcomeEmailSent;
+  delete user.totpSecret;
+  delete user.totpBackupCodes;
 
   user.pretty = {};
 

@@ -20,6 +20,12 @@ module.exports = function checkPassword(req, res, next) {
 
     if (!match) return next(new LogInError("BADPASSWORD"));
 
+    if (user.totpEnabled) {
+      req.session.pendingTotpUid = user.uid;
+      req.session.pendingTotpThen = then;
+      return res.redirect("/log-in/two-factor");
+    }
+
     authenticate(req, res, user);
 
     return res.redirect(then);

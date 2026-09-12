@@ -1,0 +1,16 @@
+<form class="account" method="POST">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}">
+
+  {{> message}}
+
+  <p>Enter your password to set up two-factor authentication.</p>
+
+  <label>Your password:
+    <input autofocus type="password" name="password" />
+  </label>
+
+  <div class="buttons">
+    <button type="submit">Continue</button>
+    <a href="/sites/account/two-factor">Cancel</a>
+  </div>
+</form>
