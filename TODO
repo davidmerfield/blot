@@ -1,6 +1,10 @@
-Resolve cloudflare fail2ban config drift
+Show progress bar and folder status on plugin settings page when a change triggers a full-site rebuild (make the existing background rebuild visible)
 
----
+Add cpu and disk info to benchmarks summary
+
+Add 404 and 400 and other error requests to benchmarks
+
+Test googledrive client
 
 Google Drive:
 - Fix bug with shared drive folders for [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQfBkLKSVzvjZLRSCpRJwcKBPlf)
@@ -186,10 +190,6 @@ Dashboard control follow-ups (found while reviewing the per-template dashboard-c
 - Album template: several rules use `{{^heading_font}} ... 28px/23px fallback {{/heading_font}}`, but heading_font is always a populated object so the fallback is dead. Harmless, but could be tidied.
 
 ---
-
-Fix performance issues with nashp
-
-Fix issue with warwickmostyn
 
 Fix bug with the website preview on the dashboard does not scroll, at least on FireFox on MacOS and tell Omar
 
