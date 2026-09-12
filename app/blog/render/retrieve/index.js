@@ -87,7 +87,7 @@ module.exports = function (req, res, retrieve, callback) {
 
         if (value !== undefined) {
           locals[localName] = value;
-          const valueSize = Array.isArray(value) ? value.length : (typeof value === 'object' ? Object.keys(value).length : 1);
+          const valueSize = Array.isArray(value) ? value.length : (value && typeof value === 'object' ? Object.keys(value).length : 1);
           req.log("retrieve: fetched", `name=${localName}`, `size=${valueSize}`);
         } else {
           req.log("retrieve: fetched (undefined)", `name=${localName}`);

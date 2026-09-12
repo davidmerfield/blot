@@ -8,11 +8,19 @@ module.exports = function requestLogger(req, res, next) {
     return `${req.protocol}://${req.hostname}${req.originalUrl}`;
   }
 
+  // Strip newlines and other control characters from anything that ends
+  // up in a log line so request-controlled values (paths, query strings,
+  // headers, entry titles, etc.) can't forge or split log entries.
+  function sanitizeLogValue(value) {
+    if (typeof value !== "string") return value;
+    return value.replace(/[\x00-\x1F\x7F]/g, " ");
+  }
+
   function createLogEntry(...args) {
     return [
       clfdate(),
-      requestId,
-      ...args
+      sanitizeLogValue(requestId),
+      ...args.map(sanitizeLogValue)
     ].join(" ");
   }
 
