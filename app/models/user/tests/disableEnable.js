@@ -95,35 +95,41 @@ describe("user enable", function () {
 });
 
 describe("user disable/enable with blogs", function () {
-  global.test.blog();
+  global.test.blogs(2);
 
   it("disable propagates isDisabled to all blogs", async function () {
+    var blogIds = this.blogs.map(function (blog) { return blog.id; });
     var user = await getUser(this.user.uid);
-    user.blogs = [this.blog.id];
-    await setUser(user.uid, { blogs: [this.blog.id] });
+    user.blogs = blogIds;
+    await setUser(user.uid, { blogs: blogIds });
     user = await getUser(this.user.uid);
 
     await disable(user);
 
-    var blog = await getBlog({ id: this.blog.id });
-    expect(blog.isDisabled).toBe(true);
+    for (var i = 0; i < blogIds.length; i++) {
+      var blog = await getBlog({ id: blogIds[i] });
+      expect(blog.isDisabled).toBe(true);
+    }
 
     var updatedUser = await getUser(this.user.uid);
     expect(updatedUser.isDisabled).toBe(true);
   });
 
   it("enable propagates isDisabled=false to all blogs", async function () {
+    var blogIds = this.blogs.map(function (blog) { return blog.id; });
     var user = await getUser(this.user.uid);
-    user.blogs = [this.blog.id];
-    await setUser(user.uid, { blogs: [this.blog.id] });
+    user.blogs = blogIds;
+    await setUser(user.uid, { blogs: blogIds });
     user = await getUser(this.user.uid);
 
     await disable(user);
     user = await getUser(this.user.uid);
     await enable(user);
 
-    var blog = await getBlog({ id: this.blog.id });
-    expect(blog.isDisabled).toBe(false);
+    for (var i = 0; i < blogIds.length; i++) {
+      var blog = await getBlog({ id: blogIds[i] });
+      expect(blog.isDisabled).toBe(false);
+    }
 
     var updatedUser = await getUser(this.user.uid);
     expect(updatedUser.isDisabled).toBe(false);

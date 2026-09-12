@@ -217,25 +217,31 @@ describe("user extend", function () {
 
   describe("PayPal subscription", function () {
     var config = require("config");
+    var originalPlans;
 
-    function findPlanId(pattern) {
-      if (!config.paypal || !config.paypal.plans) return null;
-      return Object.keys(config.paypal.plans).find(function (k) {
-        return config.paypal.plans[k] && k.includes(pattern);
-      });
-    }
+    // Deterministic, test-only plan IDs so these specs exercise the real
+    // code path regardless of whether BLOT_PAYPAL_* secrets are configured
+    // in the environment running the tests (they aren't in CI).
+    var testPlans = {
+      monthly_4: "P-TEST-MONTHLY-4",
+      yearly_44: "P-TEST-YEARLY-44"
+    };
+
+    beforeEach(function () {
+      originalPlans = config.paypal.plans;
+      config.paypal.plans = testPlans;
+    });
+
+    afterEach(function () {
+      config.paypal.plans = originalPlans;
+    });
 
     it("sets isSubscribed for ACTIVE paypal status", function () {
-      var planId = findPlanId("yearly");
-      if (!planId) {
-        pending("PayPal config not available in test environment");
-        return;
-      }
       var user = createUser({
         subscription: {},
         paypal: {
           status: "ACTIVE",
-          plan_id: config.paypal.plans[planId],
+          plan_id: testPlans.yearly_44,
           quantity: "1",
           billing_info: {
             next_billing_time: new Date(Date.now() + 86400000).toISOString()
@@ -247,16 +253,11 @@ describe("user extend", function () {
     });
 
     it("sets willCancel for CANCELLED paypal status", function () {
-      var planId = findPlanId("yearly");
-      if (!planId) {
-        pending("PayPal config not available in test environment");
-        return;
-      }
       var user = createUser({
         subscription: {},
         paypal: {
           status: "CANCELLED",
-          plan_id: config.paypal.plans[planId],
+          plan_id: testPlans.yearly_44,
           quantity: "1",
           billing_info: {
             last_payment: { time: new Date().toISOString() }
@@ -268,16 +269,11 @@ describe("user extend", function () {
     });
 
     it("sets isMonthly for monthly PayPal plan", function () {
-      var planId = findPlanId("monthly");
-      if (!planId) {
-        pending("PayPal config not available in test environment");
-        return;
-      }
       var user = createUser({
         subscription: {},
         paypal: {
           status: "ACTIVE",
-          plan_id: config.paypal.plans[planId],
+          plan_id: testPlans.monthly_4,
           quantity: "1",
           billing_info: {
             next_billing_time: new Date(Date.now() + 86400000).toISOString()
@@ -290,16 +286,11 @@ describe("user extend", function () {
     });
 
     it("sets yearly interval for yearly PayPal plan", function () {
-      var planId = findPlanId("yearly");
-      if (!planId) {
-        pending("PayPal config not available in test environment");
-        return;
-      }
       var user = createUser({
         subscription: {},
         paypal: {
           status: "ACTIVE",
-          plan_id: config.paypal.plans[planId],
+          plan_id: testPlans.yearly_44,
           quantity: "1",
           billing_info: {
             next_billing_time: new Date(Date.now() + 86400000).toISOString()

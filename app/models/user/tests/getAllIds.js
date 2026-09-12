@@ -36,10 +36,7 @@ describe("user getAllIds", function () {
       await client.sRem(key.uids, testUids[i]);
     }
     var ids = await getAll();
-    var hasTestUids = testUids.some(function (uid) {
-      return ids.includes(uid);
-    });
-    expect(hasTestUids).toBe(false);
+    expect(ids).toEqual([]);
   });
 
   it("handles adding and removing users", async function () {
