@@ -27,8 +27,7 @@ app/blog/
 │   ├── fromCloudflare.js Shared Cloudflare request sniff
 │   ├── clone.js          Shared deep clone / freeze for LRU caches
 │   ├── pagination.js     Shared page/limit normalization for tagged listings
-│   ├── staticPaths.js    Shared global static directory constants
-│   └── withEntryFields.js Narrowed entry-list fetch with Mustache refetch guard
+│   └── staticPaths.js    Shared global static directory constants
 ├── middleware/           Request-identity middleware
 │   ├── vhosts.js         Identifies and loads the blog from the request host or domain.
 │   └── loadTemplate.js   Loads template metadata and attaches it to req.template.

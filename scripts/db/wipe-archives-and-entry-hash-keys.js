@@ -1,19 +1,18 @@
 // Wipes the Redis keys left behind by the reverted archives-index and
-// entry-hash-read rollout (see PR reverting 911cbff89, de64e4029, 0955e6537,
-// 34763e6f2).
+// entry-hash rollout (the archives-index PR, and the entry-hash stage 1/2
+// dual-write + read PRs, all fully reverted).
 //
 // Deletes two key families:
 //   blog:*:archives:*      - archives index (buckets, months, entry->bucket,
 //                            ready flag, generation counter). Nothing reads
 //                            or writes these any more; safe to delete outright.
-//   blog:*:entry:hash:*    - Redis-hash mirror of each entry, dual-written by
-//                            app/models/entry/set.js (from earlier PRs #1758/
-//                            #1771, NOT reverted here). Deleting these is safe
-//                            because models/entry/get.js falls back to the
-//                            JSON string key, but set.js will simply recreate
-//                            a hash the next time that entry is saved - this
-//                            only clears out what has accumulated so far, it
-//                            does not stop the dual-write.
+//   blog:*:entry:hash:*    - Redis-hash mirror of each entry: dual-written by
+//                            app/models/entry/set.js and populated by
+//                            scripts/entry/backfill-hashes.js (both removed).
+//                            Nothing reads or writes these any more either,
+//                            so unlike an earlier version of this script,
+//                            deleting them is permanent - nothing recreates
+//                            them.
 //
 // Usage:
 //   node scripts/db/wipe-archives-and-entry-hash-keys.js            # prompts before deleting

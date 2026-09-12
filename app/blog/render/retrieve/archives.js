@@ -1,24 +1,12 @@
 const { getAll } = require("../../lib/models");
 const arrayify = require("helper/arrayify");
 const projectEntryFields = require("./helpers/projectEntryFields");
-const entryFieldList = require("./helpers/entryFieldList");
-const withEntryFields = require("../../lib/withEntryFields");
 const moment = require("moment");
 require("moment-timezone");
 const asRetriever = require("../../lib/asRetriever");
 
 async function archives(req, res) {
-  const fields = entryFieldList(req.retrieve, ["archives"]);
-
-  let allEntries;
-  if (!fields) {
-    allEntries = await getAll(req.blog.id);
-  } else {
-    allEntries = await withEntryFields(
-      () => getAll(req.blog.id, { fields }),
-      () => getAll(req.blog.id)
-    );
-  }
+  const allEntries = await getAll(req.blog.id);
 
   // dateStamp is always kept, so the year/month grouping below is unaffected.
   projectEntryFields(allEntries, req.retrieve, ["archives"]);
