@@ -18,6 +18,7 @@ function request(options) {
       baseUrl: "/account/two-factor",
     };
     var res = {
+      set: function () {},
       redirect: function (location) {
         resolve({ redirect: location });
       },
