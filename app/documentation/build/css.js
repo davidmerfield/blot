@@ -7,15 +7,7 @@ const prettySize = require("helper/prettySize");
 const clfdate = require("helper/clfdate");
 
 const buildFinderCSS = require("../tools/finder/build.js");
-
-// Page- or feature-specific CSS kept out of the global docs bundle.
-// These files are still copied to views-built and loaded only when needed
-// (tex via documentation/tools/tex.js; others via head.html conditionals).
-const DOCUMENTATION_BUNDLE_EXCLUDES = [
-  "/css/tex.css",
-  "/questions/tagify.css",
-  "/examples.css",
-];
+const { DOCUMENTATION_BUNDLE_EXCLUDES } = require("./pageSpecificAssets");
 
 const isExcludedFromDocumentationBundle = (filePath) =>
   DOCUMENTATION_BUNDLE_EXCLUDES.some((suffix) => filePath.endsWith(suffix));

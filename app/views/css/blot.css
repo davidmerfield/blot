@@ -1092,6 +1092,11 @@ ul.pill-navigation {
     margin-right: 0.5em;
   }
 
+.card {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
 .video-embed {
   position: relative;
   padding-top: 56.25%;
@@ -1108,8 +1113,6 @@ ul.pill-navigation {
 .pricing-card {
   display: block;
   color: var(--text-color);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
   padding: 24px;
   margin: 24px 0 48px 0;
   width: 400px;
@@ -1132,13 +1135,9 @@ ul.pill-navigation {
   margin-bottom: 4px;
 }
 
-.feature-list .icon-server,
-.feature-list .icon-stack,
-.feature-list .icon-website,
-.feature-list .icon-file-check,
-.feature-list .icon-support {
+.feature-list [class*="icon-"] {
   color: var(--light-text-color);
-  margin-right: 6px;
+  margin-right: 8px;
 }
 
 .icon-inline {

@@ -6,6 +6,10 @@
 <link rel="preconnect" href="{{{cdnURL}}}" />
 {{/cdnURL}}
 <link rel="icon" sizes="180x180" href="{{#cdn}}/favicon-180x180.png{{/cdn}}" />
+<link rel="preload" as="style" href="{{#cdn}}/documentation.min.css{{/cdn}}" />
+{{#selected.dashboard}}
+<link rel="preload" as="style" href="{{#cdn}}/dashboard.min.css{{/cdn}}" />
+{{/selected.dashboard}}
 <link rel="stylesheet" type="text/css" href="{{#cdn}}/documentation.min.css{{/cdn}}" />
 {{#selected.dashboard}}
 <link rel="stylesheet" type="text/css" href="{{#cdn}}/dashboard.min.css{{/cdn}}" />

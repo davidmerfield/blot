@@ -1,7 +1,5 @@
 .email-card {
   max-width: 600px;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
 }
 
 .email-card__row {
@@ -9,6 +7,6 @@
   padding: 24px;
 }
 
-.email-card__row--border {
-  border-bottom: 1px solid var(--border-color);
+.email-card__row + .email-card__row {
+  border-top: 1px solid var(--border-color);
 }

@@ -1,8 +1,11 @@
 var katex = require("katex");
+var { TEX_STYLESHEET_PATH } = require("../build/pageSpecificAssets");
 var OPEN_TAG = "\\(";
 var CLOSE_TAG = "\\)";
 var TEX_STYLESHEET =
-  '<link rel="stylesheet" type="text/css" href="{{#cdn}}/css/tex.css{{/cdn}}">';
+  '<link rel="stylesheet" type="text/css" href="{{#cdn}}' +
+  TEX_STYLESHEET_PATH +
+  '{{/cdn}}">';
 
 module.exports = ($) => {
   var hadTex = false;
