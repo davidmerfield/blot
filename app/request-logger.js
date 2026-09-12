@@ -24,52 +24,62 @@ module.exports = function requestLogger(req, res, next) {
     ].join(" ");
   }
 
-  // Initial request logging
+  // Initial request logging. Written immediately (not buffered below) so a
+  // request that hangs or never finishes still leaves a trace of having
+  // started.
   try {
     console.log(createLogEntry(formatRequestUrl(), req.method));
   } catch (err) {
     console.error("Error logging request:", err);
   }
 
-  // Add request-scoped logging helper
+  // req.log is called many times per request by handlers along the way
+  // (see app/blog/*) to trace where time goes. Each call used to be its
+  // own console.log, i.e. its own blocking write() syscall - on a request
+  // with 20+ trace points that's 20+ syscalls instead of one, and because
+  // console.log to a file/pipe is synchronous on Node, those writes block
+  // the event loop and queue up behind each other under concurrent load.
+  // Buffering the trace lines in memory and flushing them as a single
+  // write when the request ends keeps the same log output shape and
+  // timing values while cutting the number of writes per request to two
+  // (this start line, and one flush at the end).
+  const traceLines = [];
   let lastLogTime = Date.now();
-  req.log = function(...args) {
+  req.log = function (...args) {
     const now = Date.now();
     const timeDiff = now - lastLogTime;
     lastLogTime = now;
-    
-    console.log(createLogEntry(`+${timeDiff}ms`, ...args));
+
+    traceLines.push(createLogEntry(`+${timeDiff}ms`, ...args));
   };
+
+  function flushTraceLines(summaryLine) {
+    traceLines.push(summaryLine);
+    try {
+      console.log(traceLines.join("\n"));
+    } catch (err) {
+      console.error("Error logging request:", err);
+    }
+  }
 
   // Response logging
   let hasFinished = false;
-  
+
   res.on("finish", () => {
     hasFinished = true;
-    try {
-      const duration = ((Date.now() - requestStart) / 1000).toFixed(3);
-      console.log(createLogEntry(
-        res.statusCode,
-        duration,
-        formatRequestUrl()
-      ));
-    } catch (err) {
-      console.error("Error logging response:", err);
-    }
+    const duration = ((Date.now() - requestStart) / 1000).toFixed(3);
+    flushTraceLines(
+      createLogEntry(res.statusCode, duration, formatRequestUrl())
+    );
   });
 
   // this can fire unexpectedly for POST requests with bodies
   // https://github.com/expressjs/express/issues/6334
   req.on("close", () => {
     if (hasFinished) return;
-    try {
-      console.log(createLogEntry(
-        "Connection closed by client",
-        formatRequestUrl()
-      ));
-    } catch (err) {
-      console.error("Error logging connection close:", err);
-    }
+    flushTraceLines(
+      createLogEntry("Connection closed by client", formatRequestUrl())
+    );
   });
 
   next();
