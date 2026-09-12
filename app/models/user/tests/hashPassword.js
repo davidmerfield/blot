@@ -32,12 +32,14 @@ describe("user hashPassword", function () {
     var password = "p@$$w0rd!#$%^&*()";
     var hashedPassword = await hash(password);
     expect(hashedPassword).toBeDefined();
+    expect(hashedPassword).not.toEqual(password);
   });
 
   it("handles unicode characters in password", async function () {
     var password = "密码🔐émoji";
     var hashedPassword = await hash(password);
     expect(hashedPassword).toBeDefined();
+    expect(hashedPassword).not.toEqual(password);
   });
 });
 

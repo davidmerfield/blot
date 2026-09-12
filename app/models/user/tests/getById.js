@@ -17,8 +17,13 @@ describe("user getById", function () {
     paypal: {}
   };
 
+  beforeEach(async function () {
+    await client.sAdd(key.uids, uid);
+  });
+
   afterEach(async function () {
     await client.del(key.user(uid));
+    await client.sRem(key.uids, uid);
   });
 
   it("returns null for non-existent user", async function () {

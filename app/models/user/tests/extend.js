@@ -1,4 +1,6 @@
 var extend = require("../extend");
+var prettyDate = require("helper/prettyDate");
+var prettyPrice = require("helper/prettyPrice");
 
 describe("user extend", function () {
   function createUser(overrides) {
@@ -181,21 +183,22 @@ describe("user extend", function () {
     });
 
     it("sets pretty fields for subscription", function () {
+      var currentPeriodEnd = Math.floor(Date.now() / 1000) + 86400;
       var user = createUser({
         subscription: {
           status: "active",
           customer: "cus_123",
           plan: { amount: 4400, interval: "year" },
           quantity: 2,
-          current_period_end: Math.floor(Date.now() / 1000) + 86400
+          current_period_end: currentPeriodEnd
         }
       });
       extend(user);
       expect(user.pretty.amount).toBe(2);
       expect(user.pretty.s).toEqual("s");
       expect(user.pretty.interval).toEqual("year");
-      expect(user.pretty.price).toBeDefined();
-      expect(user.pretty.expiry).toBeDefined();
+      expect(user.pretty.price).toEqual(prettyPrice(4400 * 2));
+      expect(user.pretty.expiry).toEqual(prettyDate(currentPeriodEnd * 1000));
     });
 
     it("sets pretty.s empty for quantity 1", function () {
@@ -214,17 +217,20 @@ describe("user extend", function () {
 
   describe("PayPal subscription", function () {
     var config = require("config");
-    var hasPayPalConfig = config.paypal && config.paypal.plans && 
-      Object.values(config.paypal.plans).some(function (v) { return v; });
+
+    function findPlanId(pattern) {
+      if (!config.paypal || !config.paypal.plans) return null;
+      return Object.keys(config.paypal.plans).find(function (k) {
+        return config.paypal.plans[k] && k.includes(pattern);
+      });
+    }
 
     it("sets isSubscribed for ACTIVE paypal status", function () {
-      if (!hasPayPalConfig) {
+      var planId = findPlanId("yearly");
+      if (!planId) {
         pending("PayPal config not available in test environment");
         return;
       }
-      var planId = Object.keys(config.paypal.plans).find(function (k) {
-        return config.paypal.plans[k] && k.includes("yearly");
-      });
       var user = createUser({
         subscription: {},
         paypal: {
@@ -241,13 +247,11 @@ describe("user extend", function () {
     });
 
     it("sets willCancel for CANCELLED paypal status", function () {
-      if (!hasPayPalConfig) {
+      var planId = findPlanId("yearly");
+      if (!planId) {
         pending("PayPal config not available in test environment");
         return;
       }
-      var planId = Object.keys(config.paypal.plans).find(function (k) {
-        return config.paypal.plans[k] && k.includes("yearly");
-      });
       var user = createUser({
         subscription: {},
         paypal: {
@@ -264,13 +268,11 @@ describe("user extend", function () {
     });
 
     it("sets isMonthly for monthly PayPal plan", function () {
-      if (!hasPayPalConfig) {
+      var planId = findPlanId("monthly");
+      if (!planId) {
         pending("PayPal config not available in test environment");
         return;
       }
-      var planId = Object.keys(config.paypal.plans).find(function (k) {
-        return config.paypal.plans[k] && k.includes("monthly");
-      });
       var user = createUser({
         subscription: {},
         paypal: {
@@ -288,13 +290,11 @@ describe("user extend", function () {
     });
 
     it("sets yearly interval for yearly PayPal plan", function () {
-      if (!hasPayPalConfig) {
+      var planId = findPlanId("yearly");
+      if (!planId) {
         pending("PayPal config not available in test environment");
         return;
       }
-      var planId = Object.keys(config.paypal.plans).find(function (k) {
-        return config.paypal.plans[k] && k.includes("yearly");
-      });
       var user = createUser({
         subscription: {},
         paypal: {

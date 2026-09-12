@@ -14,6 +14,7 @@ function validateUser(user, updates) {
 describe("user validate", function () {
   var uid = "user_validate_tst";
   var email = "validatetest@example.com";
+  var extraCleanupKeys = [];
 
   function createUser(overrides) {
     return Object.assign({
@@ -37,7 +38,8 @@ describe("user validate", function () {
   });
 
   afterEach(async function () {
-    await client.del([key.user(uid), key.email(email)]);
+    await client.del([key.user(uid), key.email(email)].concat(extraCleanupKeys));
+    extraCleanupKeys = [];
   });
 
   it("returns updated user and changes array", async function () {
@@ -155,15 +157,14 @@ describe("user validate", function () {
     };
     await client.set(key.user(otherUid), JSON.stringify(otherUser));
     await client.set(key.email(otherEmail), otherUid);
-    
+    extraCleanupKeys.push(key.user(otherUid), key.email(otherEmail));
+
     var user = createUser();
     var error = await validateUser(user, { email: otherEmail }).then(
       function () { return null; },
       function (err) { return err; }
     );
-    
-    await client.del([key.user(otherUid), key.email(otherEmail)]);
-    
+
     expect(error).not.toBeNull();
     expect(error.code).toEqual("EEXISTS");
   });

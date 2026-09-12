@@ -8,10 +8,10 @@ var create = promisify(User.create);
 var hashPassword = promisify(User.hashPassword);
 
 describe("user remove", function () {
-  var uid = "user_remove_test";
   var email = "remove@example.com";
   var customerId = "cus_remove_test";
   var paypalId = "I-REMOVE_TEST";
+  var createdUids = [];
 
   async function createTestUser(options) {
     options = options || {};
@@ -19,19 +19,31 @@ describe("user remove", function () {
     var passwordHash = await hashPassword("password");
     var subscription = options.subscription || {};
     var paypal = options.paypal || {};
-    return create(userEmail, passwordHash, subscription, paypal);
+    var user = await create(userEmail, passwordHash, subscription, paypal);
+    createdUids.push(user.uid);
+    return user;
   }
 
   afterEach(async function () {
+    // Clean up by the user's real (randomly generated) uid, not a fixed
+    // placeholder, so a leftover record isn't left behind if a test fails
+    // before its own remove() call runs.
+    for (var i = 0; i < createdUids.length; i++) {
+      var createdUid = createdUids[i];
+      await client.del([
+        key.user(createdUid),
+        "sync:lease:" + createdUid,
+        "sync:again:" + createdUid
+      ]);
+      await client.sRem(key.uids, createdUid);
+    }
+    createdUids = [];
+
     await client.del([
-      key.user(uid),
       key.email(email),
       key.customer(customerId),
-      key.paypal(paypalId),
-      "sync:lease:" + uid,
-      "sync:again:" + uid
+      key.paypal(paypalId)
     ]);
-    await client.sRem(key.uids, uid);
   });
 
   it("removes user from Redis", async function () {

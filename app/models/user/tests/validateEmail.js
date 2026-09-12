@@ -35,6 +35,7 @@ describe("user validate email", function () {
     await client.set(key.email(email), uid);
     await client.set(key.user(otherUid), JSON.stringify(otherUser));
     await client.set(key.email(otherEmail), otherUid);
+    await client.sAdd(key.uids, [uid, otherUid]);
   });
 
   afterEach(async function () {
@@ -46,6 +47,7 @@ describe("user validate email", function () {
       key.email("new@example.com"),
       key.email("normalized@example.com")
     ]);
+    await client.sRem(key.uids, [uid, otherUid]);
   });
 
   it("returns error for empty email", async function () {
@@ -150,7 +152,7 @@ describe("user validate email", function () {
 
     for (var i = 0; i < validEmails.length; i++) {
       var result = await validate(validUser, validEmails[i]);
-      expect(result).toBeDefined();
+      expect(result).toEqual(validEmails[i]);
     }
   });
 });

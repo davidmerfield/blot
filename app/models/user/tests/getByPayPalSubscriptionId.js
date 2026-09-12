@@ -21,10 +21,12 @@ describe("user getByPayPalSubscriptionId", function () {
   beforeEach(async function () {
     await client.set(key.user(uid), JSON.stringify(validUser));
     await client.set(key.paypal(subscriptionId), uid);
+    await client.sAdd(key.uids, uid);
   });
 
   afterEach(async function () {
     await client.del([key.user(uid), key.paypal(subscriptionId)]);
+    await client.sRem(key.uids, uid);
   });
 
   it("returns null for non-existent PayPal subscription ID", async function () {
