@@ -83,15 +83,24 @@ async function posts(req, res) {
 
   if (postsCache.has(key)) {
     const cachedPayload = clonePosts(postsCache.get(key));
-    log("Retrieved posts from cache");
+    log(
+      "posts: cache hit",
+      `entriesCount=${cachedPayload.entries ? cachedPayload.entries.length : 0}`
+    );
     res.locals.pagination = cachedPayload.pagination;
     return projectEntryFields(cachedPayload.entries, req.retrieve, ["posts"]);
   }
 
+  log("posts: cache miss");
+
   let payload;
 
   if (!tags) {
-    log("Loading page of entries");
+    log(
+      "posts: loading page from model",
+      `page=${pageNumber}`,
+      `pageSize=${pageSize}`
+    );
     // Forward the raw, unnormalized pageNumber/pageSize here: models/entries
     // getPage does its own validation (default page size 5, max 100, and a
     // 400 for a non-digit :page) which bots probe for. lib/pagination's
@@ -100,8 +109,14 @@ async function posts(req, res) {
     // branch and the cache key below - never as an override here.
     const page = await getPage(blogID, options);
     payload = { entries: page.entries, pagination: page.pagination };
+    log("posts: page loaded", `entriesCount=${payload.entries.length}`);
   } else {
-    log("Loading tagged page of entries");
+    log(
+      "posts: loading tagged page",
+      `tags=${Array.isArray(tags) ? tags.join(",") : tags}`,
+      `limit=${pageSize}`,
+      `offset=${offset}`
+    );
     const result = await fetchTaggedEntries(blogID, tags, {
       limit: pageSize,
       offset,
@@ -109,8 +124,13 @@ async function posts(req, res) {
       sortBy: options.sortBy,
       order: options.order,
     });
+    log(
+      "posts: tagged entries fetched",
+      `idCount=${result.entryIDs ? result.entryIDs.length : 0}`
+    );
 
     const entries = await getEntry(blogID, result.entryIDs || []);
+    log("posts: entries hydrated", `entriesCount=${entries ? entries.length : 0}`);
     payload = {
       // fetchTaggedEntries paginated in the selected order; re-apply it to
       // the hydrated page so Entry.get's ordering can't drift.

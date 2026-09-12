@@ -4,7 +4,7 @@ const { getBlog } = require("../lib/models");
 const fromCloudflare = require("../lib/fromCloudflare");
 
 module.exports = async function vhosts(req, res, next) {
-  req.log("Loading blog");
+  req.log("vhosts: start");
 
   let identifier, handle, redirect, previewTemplate, err;
   const host = req.get("host");
@@ -40,10 +40,16 @@ module.exports = async function vhosts(req, res, next) {
     identifier = { domain };
   }
 
+  req.log(
+    "vhosts: fetching blog",
+    identifier.handle ? `handle=${identifier.handle}` : `domain=${identifier.domain}`
+  );
+
   try {
     let blog = await getBlog(identifier);
 
     if (!blog || blog.isDisabled || blog.isUnpaid) {
+      req.log("vhosts: blog not found or disabled");
       err = new Error("No blog");
       err.code = "ENOENT";
       return next(err);
@@ -129,9 +135,10 @@ module.exports = async function vhosts(req, res, next) {
     // Store the blog's info so routes can access it
     req.blog = blog;
 
-    req.log("loaded blog");
+    req.log("vhosts: complete", `blogId=${blog.id}`, `handle=${blog.handle}`, req.preview ? "preview=true" : "");
     return next();
   } catch (error) {
+    req.log("vhosts: blog fetch error");
     return next(error);
   }
 };

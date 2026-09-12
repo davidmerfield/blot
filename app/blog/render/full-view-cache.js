@@ -31,17 +31,23 @@ async function getCachedFullView(options) {
   const blog = options.blog;
   const template = options.template;
   const viewName = options.viewName;
+  const log = options.log || function () {};
 
   const key = createCacheKey(blog, template, viewName);
 
   if (fullViewCache.has(key)) {
+    log("fullViewCache: hit", `view=${viewName}`);
     return cloneDeep(fullViewCache.get(key));
   }
+
+  log("fullViewCache: miss", `view=${viewName}`, "fetching from template model");
 
   const response = await getFullView(blog.id, template.id, viewName);
 
   const immutableCopy = deepFreeze(cloneDeep(response));
   fullViewCache.set(key, immutableCopy);
+
+  log("fullViewCache: cached", `view=${viewName}`);
 
   return cloneDeep(immutableCopy);
 }

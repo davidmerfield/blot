@@ -10,7 +10,7 @@ const normalizeMetadataToggle = function (value) {
 };
 
 module.exports = async function entry(req, res, next) {
-  req.log("Loading entry");
+  req.log("entry: start", `path=${req.path}`);
 
   try {
     const scheduled = !!req.query.scheduled;
@@ -32,8 +32,17 @@ module.exports = async function entry(req, res, next) {
     // handle URI decoding so all URL-decoding behavior is centralized there.
     url = url.toLowerCase();
 
+    req.log("entry: fetching by url", `url=${url}`);
     const entry = await getEntryByUrl(blog.id, url);
-    if (!entry || entry.deleted || entry.draft) return next();
+    if (!entry || entry.deleted || entry.draft) {
+      req.log("entry: not found or draft", `url=${url}`);
+      return next();
+    }
+    req.log(
+      "entry: found",
+      `entryId=${entry.id}`,
+      `title=${entry.title ? entry.title.substring(0, 50) : "untitled"}`
+    );
 
     // If comments are enabled in settings, they are shown on all blog posts and pages
     // Disable comments in cases:
@@ -84,7 +93,13 @@ module.exports = async function entry(req, res, next) {
     )
       return next();
 
+    req.log("entry: fetching adjacent entries");
     await attachAdjacent(blog.id, entry);
+    req.log(
+      "entry: adjacent entries fetched",
+      `hasNext=${!!entry.next}`,
+      `hasPrev=${!!entry.previous}`
+    );
 
     // Ensure the user is always viewing
     // the entry at its latest and greatest URL
@@ -99,7 +114,9 @@ module.exports = async function entry(req, res, next) {
       return res.status(301).redirect(redirect);
     }
 
+    req.log("entry: loading plugins");
     let pluginHTML = await loadPlugin("entryHTML", blog.plugins);
+    req.log("entry: plugins loaded");
 
     // Dont show plugin HTML on a draft.
     // Don't show plugin HTML on a preview subdomain.
@@ -113,7 +130,7 @@ module.exports = async function entry(req, res, next) {
     res.locals.partials.pluginHTML = pluginHTML;
     res.locals.entry = entry;
 
-    req.log("Loaded entry");
+    req.log("entry: complete, rendering view");
     res.renderView("entry.html", next);
   } catch (err) {
     return next(err);

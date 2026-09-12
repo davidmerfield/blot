@@ -4,7 +4,10 @@ module.exports = async function view(req, res, next) {
   try {
     const template = req?.blog?.template;
 
-    if (!template) return next();
+    if (!template) {
+      req.log("view: skipped (no template)");
+      return next();
+    }
 
     // If you don't decode the URL here, you'll see issues
     // with URLs containing special characters e.g. %20 or %2F
@@ -16,9 +19,19 @@ module.exports = async function view(req, res, next) {
       url = req.url;
     }
 
+    req.log("view: looking up view by url", `url=${url}`);
     const { viewName, params } = await getViewByURL(template, url);
 
-    if (!viewName) return next();
+    if (!viewName) {
+      req.log("view: no matching view found");
+      return next();
+    }
+
+    req.log(
+      "view: found matching view",
+      `viewName=${viewName}`,
+      `hasParams=${!!params}`
+    );
 
     // Overwrite the request params with the params parsed from the URL
     if (params) {

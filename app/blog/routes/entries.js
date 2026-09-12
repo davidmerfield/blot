@@ -15,16 +15,26 @@ module.exports = async function entries(req, res, next) {
       pathPrefix: req?.template?.locals?.path_prefix,
     };
 
-    req.log("Loading entries");
+    req.log(
+      "entries: start",
+      `page=${options.pageNumber || 1}`,
+      `sortBy=${options.sortBy || "default"}`,
+      `order=${options.order || "default"}`
+    );
     const { entries, pagination } = await getPage(blogID, options);
-    req.log("Loaded entries");
+    req.log(
+      "entries: loaded",
+      `count=${entries ? entries.length : 0}`,
+      `totalPages=${pagination?.total || "unknown"}`
+    );
 
     res.locals.entries = entries;
     res.locals.pagination = pagination;
 
+    req.log("entries: complete, rendering view");
     res.renderView("entries.html", next);
   } catch (err) {
-    req.log("Error loading entries");
+    req.log("entries: error fetching page", err.message);
     return next(err);
   }
 };

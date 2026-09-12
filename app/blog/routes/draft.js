@@ -11,13 +11,27 @@ async function renderDraft(req, res, next, filePath, callback) {
   const blog = req.blog;
   const blogID = blog.id;
 
+  req.log("draft: fetching entry", `filePath=${filePath}`);
   const entry = await getEntry(blogID, filePath);
-  if (!entry || !entry.draft || entry.deleted) return next();
+  if (!entry || !entry.draft || entry.deleted) {
+    req.log("draft: entry not found or not a draft");
+    return next();
+  }
+  req.log("draft: entry found", `entryId=${entry.id}`);
 
+  // GET FULL ENTRY RETURNS NULL SINCE IT"S DRAFT
+  // HOW DO WE RESOLVE THIS NEATLY? WHERE TO DRAW
+  // THE LINE TO SHOW OR NOT TO SHOW?
+  // PERHAPS PASS {drafts: show}? or something?
+
+  req.log("draft: fetching adjacent entries");
   await attachAdjacent(blogID, entry);
+  req.log("draft: adjacent entries fetched");
   res.locals.entry = entry;
 
+  req.log("draft: rendering entry view");
   res.renderView("entry.html", next, function (err, output) {
+    req.log("draft: entry view rendered, injecting script");
     drafts.injectScript(output, filePath, callback);
   });
 }
@@ -86,12 +100,15 @@ module.exports = function register(blog) {
   });
 
   blog.get(drafts.viewRoute, async function (req, res, next) {
+    req.log("draft: start", `url=${req.url}`);
+
     const filePath = drafts.getPath(req.url, drafts.viewRoute);
 
     // Asks search engines not to index drafts
     res.set("X-Robots-Tag", "noindex");
     res.set("Cache-Control", "no-cache");
 
+    req.log("draft: rendering", `filePath=${filePath}`);
     try {
       await renderDraft(req, res, next, filePath, function (html) {
         // Remove the frame protection headers added by the server
@@ -100,6 +117,7 @@ module.exports = function register(blog) {
         res.removeHeader("X-Frame-Options");
         res.removeHeader("Content-Security-Policy");
 
+        req.log("draft: complete", `htmlLength=${html ? html.length : 0}`);
         // bodyHTML is passed after HTML
         res.send(html);
       });

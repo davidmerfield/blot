@@ -64,26 +64,39 @@ module.exports = async function retrieve(req, res, needed) {
   const locals = {};
   req.retrieve = needed;
 
+  const localNames = Object.keys(needed);
+  req.log("retrieve: start", `locals=[${localNames.join(",")}]`);
+
   await Promise.all(
-    Object.keys(needed).map(async (localName) => {
+    localNames.map(async (localName) => {
       if (dictionary[localName] === undefined) {
+        req.log("retrieve: skipping unknown local", `name=${localName}`);
         return;
       }
 
-      req.log("Retrieving local", localName);
+      req.log("retrieve: fetching", `name=${localName}`);
 
       try {
         const value = await dictionary[localName](req, res);
-        if (value !== undefined) locals[localName] = value;
+        if (value !== undefined) {
+          locals[localName] = value;
+          const valueSize = Array.isArray(value)
+            ? value.length
+            : value && typeof value === "object"
+            ? Object.keys(value).length
+            : 1;
+          req.log("retrieve: fetched", `name=${localName}`, `size=${valueSize}`);
+        } else {
+          req.log("retrieve: fetched (undefined)", `name=${localName}`);
+        }
       } catch (err) {
+        req.log("retrieve: error", `name=${localName}`, err.message);
         console.log(err);
       }
-
-      req.log("Retrieved local", localName);
     })
   );
 
-  req.log("Retrieved all locals");
+  req.log("retrieve: complete", `totalLocals=${Object.keys(locals).length}`);
   return locals;
 };
 
