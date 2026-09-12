@@ -86,11 +86,13 @@ async function posts(req, res) {
 
   if (!tags) {
     log("Loading page of entries");
-    const page = await getPage(blogID, {
-      ...options,
-      pageNumber,
-      pageSize,
-    });
+    // Forward the raw, unnormalized pageNumber/pageSize here: models/entries
+    // getPage does its own validation (default page size 5, max 100, and a
+    // 400 for a non-digit :page) which bots probe for. lib/pagination's
+    // normalizePageNumber/normalizePageSize above have different defaults
+    // (100/500) and never reject, so they're only used for the tagged
+    // branch and the cache key below - never as an override here.
+    const page = await getPage(blogID, options);
     payload = { entries: page.entries, pagination: page.pagination };
   } else {
     log("Loading tagged page of entries");
