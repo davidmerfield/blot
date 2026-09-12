@@ -196,12 +196,6 @@ Fix bug with repeat resyncs of specific sites via Google Drive:
 
 Fix bug with CDN replaceFolder not working with relative path to CSS file on wall.blot.im
 
-Fix bug with [~/gitbug folder](https://mail.google.com/mail/u/0/#inbox/KtbxLxgKJJfmhMNplLBcTcFCPgBVNlGtHL) during setup
-- surface setup errors with git client
-- handle these errors nicely through sync status
-
-Fix bug with auto heading injector and tell [Chuck](https://mail.google.com/mail/u/0/#inbox/FMfcgzQgKvJFLPslvxmlmMBnmcQQTqzq)
-
 Fix bug with huge draft crashing the sync server /a327ex/drafts/it_follows.txt
 - Chunk large drafts into multiple messages to avoid memory issues? 
 
