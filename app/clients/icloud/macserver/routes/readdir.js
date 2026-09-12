@@ -52,7 +52,7 @@ export default async (req, res) => {
     console.error(clfdate(), "Error listing directory:", dirPath, error);
   }
 
-  if (listing === null || listing === undefined) {
+  if (listing === null) {
     // Distinguish a directory that is genuinely gone (a legitimate remote
     // deletion - let it flow through the ENOENT -> 404 path below, as before)
     // from one that exists but whose contents iCloud has not materialised.
