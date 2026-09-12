@@ -9,7 +9,7 @@ require("moment-timezone");
 
 const metadataCaseInsensitive = require("helper/metadataCaseInsensitive");
 
-module.exports = function (blog, path, metadata) {
+module.exports = function (blog, path, metadata, previousCreated) {
   const { id, dateFormat, timeZone } = blog;
   let dateStamp;
 
@@ -31,7 +31,14 @@ module.exports = function (blog, path, metadata) {
       return dateStamp;
     } else if (dateStamp) {
       debug("Blog:", id, "Date from metadata", dateStamp);
-      return adjustByBlogTimezone(timeZone, dateStamp);
+      dateStamp = adjustByBlogTimezone(timeZone, dateStamp);
+      dateStamp = useCreatedTimeIfSameDay(
+        dateStamp,
+        dateMetadataString,
+        previousCreated,
+        timeZone
+      );
+      return dateStamp;
     }
   }
 
@@ -58,6 +65,43 @@ function validate(stamp) {
     return stamp;
   
   return undefined;
+}
+
+// Metadata like "Date: 12/12/2025" carries no time-of-day, so it parses
+// to midnight. If the entry already exists and was first created by Blot
+// on that same calendar day (in the blog's timezone), reuse its time of
+// day instead - it's a better guess than midnight for "when was this
+// written". Any explicit time in the metadata, or a metadata date that
+// doesn't match the entry's creation day (e.g. because the post was
+// backdated, or the metadata date was later edited), leaves the parsed
+// timestamp untouched. Removing the date metadata entirely skips this
+// function altogether, since dateStamp then falls back to the path or
+// to previousCreated directly.
+function useCreatedTimeIfSameDay(dateStamp, dateMetadataString, previousCreated, timeZone) {
+  // A colon followed by two digits is present in every time-of-day
+  // format this parser supports (e.g. "12:33", "2:59:27 pm") and in
+  // none of the date-only formats it supports.
+  if (/\d{1,2}:\d{2}/.test(dateMetadataString)) return dateStamp;
+
+  if (typeof previousCreated !== "number" || isNaN(previousCreated))
+    return dateStamp;
+
+  var zone = timeZone && moment.tz.zone(timeZone) ? timeZone : "Etc/UTC";
+  var metadataDay = moment.tz(dateStamp, zone);
+  var created = moment.tz(previousCreated, zone);
+
+  if (metadataDay.format("YYYY-MM-DD") !== created.format("YYYY-MM-DD"))
+    return dateStamp;
+
+  return metadataDay
+    .clone()
+    .set({
+      hour: created.hour(),
+      minute: created.minute(),
+      second: created.second(),
+      millisecond: created.millisecond(),
+    })
+    .valueOf();
 }
 
 function adjustByBlogTimezone(timeZone, stamp) {
