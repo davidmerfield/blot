@@ -7,14 +7,25 @@
  * quicker than the real one) while still producing a passing benchmark.
  * Also consumes the response body so an unread stream doesn't tie up a
  * connection across the dozens of requests each burst phase fires.
+ *
+ * Most bursts target real pages and just want "it succeeded" (any status
+ * under 400). The not-found burst deliberately requests a page that doesn't
+ * exist, so it passes `expectedStatus: 404` to assert the *specific* status
+ * it's timing, rather than accepting whatever comes back.
  */
-async function timedRequest(getForBlog, blog, url) {
+async function timedRequest(getForBlog, blog, url, { expectedStatus } = {}) {
   const res = await getForBlog(blog, url, { redirect: "manual" });
   await res.arrayBuffer();
 
-  if (res.status >= 400) {
+  const ok =
+    expectedStatus !== undefined
+      ? res.status === expectedStatus
+      : res.status < 400;
+
+  if (!ok) {
     throw new Error(
-      `Burst request to ${url} on ${blog.handle} failed: status=${res.status}`
+      `Burst request to ${url} on ${blog.handle} failed: status=${res.status}` +
+        (expectedStatus !== undefined ? ` (expected ${expectedStatus})` : "")
     );
   }
 

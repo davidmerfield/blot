@@ -6,6 +6,7 @@ const BURSTS = [
   { key: "search_burst", label: "Search burst" },
   { key: "sitemap_burst", label: "Sitemap burst" },
   { key: "backlinks_burst", label: "Backlinks burst" },
+  { key: "not_found_burst", label: "Not-found burst" },
 ];
 
 /**
