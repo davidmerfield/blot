@@ -4,6 +4,13 @@ const { performance } = require("perf_hooks");
 const { summarizeDurations } = require("./metrics");
 const { timedRequest } = require("./burstRequest");
 
+// Set verbatim by app/blog/routes/error.js's 404 middleware as
+// `res.locals.error.message` and interpolated into every template's
+// error.html as `{{error.message}}` - present in the rendered body
+// regardless of which of the ~20 templates a benchmark blog uses, so it's a
+// stable, template-independent marker that the real 404 render path ran.
+const NOT_FOUND_BODY_MARKER = "There is no page with this URL.";
+
 /**
  * Same solo-vs-burst pattern as the other bursts, aimed at the 404 path
  * instead of a real page. Every request targets a path guaranteed not to
@@ -39,7 +46,10 @@ async function runNotFoundBurst({ blogs, concurrency, getForBlog }) {
   const soloDurations = [];
   for (const { blog, path } of targets) {
     const startedAt = performance.now();
-    await timedRequest(getForBlog, blog, path, { expectedStatus: 404 });
+    await timedRequest(getForBlog, blog, path, {
+      expectedStatus: 404,
+      expectedBodyIncludes: NOT_FOUND_BODY_MARKER,
+    });
     soloDurations.push(performance.now() - startedAt);
   }
 
@@ -47,7 +57,10 @@ async function runNotFoundBurst({ blogs, concurrency, getForBlog }) {
   const burstDurations = await Promise.all(
     targets.map(async ({ blog, path }) => {
       const startedAt = performance.now();
-      await timedRequest(getForBlog, blog, path, { expectedStatus: 404 });
+      await timedRequest(getForBlog, blog, path, {
+        expectedStatus: 404,
+        expectedBodyIncludes: NOT_FOUND_BODY_MARKER,
+      });
       return performance.now() - startedAt;
     })
   );

@@ -11,11 +11,22 @@
  * Most bursts target real pages and just want "it succeeded" (any status
  * under 400). The not-found burst deliberately requests a page that doesn't
  * exist, so it passes `expectedStatus: 404` to assert the *specific* status
- * it's timing, rather than accepting whatever comes back.
+ * it's timing, rather than accepting whatever comes back - and
+ * `expectedBodyIncludes` so a status code alone can't fool it: if the 404
+ * middleware were ever bypassed (e.g. a bug that calls `next()` without
+ * rendering), Express's own fallback 404 also returns status 404, but
+ * without going through render/middleware.js's retrieve() at all - the very
+ * thing this phase is timing. That would silently record a much faster,
+ * cheaper response as if it were a real measurement.
  */
-async function timedRequest(getForBlog, blog, url, { expectedStatus } = {}) {
+async function timedRequest(
+  getForBlog,
+  blog,
+  url,
+  { expectedStatus, expectedBodyIncludes } = {}
+) {
   const res = await getForBlog(blog, url, { redirect: "manual" });
-  await res.arrayBuffer();
+  const buffer = await res.arrayBuffer();
 
   const ok =
     expectedStatus !== undefined
@@ -26,6 +37,16 @@ async function timedRequest(getForBlog, blog, url, { expectedStatus } = {}) {
     throw new Error(
       `Burst request to ${url} on ${blog.handle} failed: status=${res.status}` +
         (expectedStatus !== undefined ? ` (expected ${expectedStatus})` : "")
+    );
+  }
+
+  if (
+    expectedBodyIncludes !== undefined &&
+    !Buffer.from(buffer).toString("utf8").includes(expectedBodyIncludes)
+  ) {
+    throw new Error(
+      `Burst request to ${url} on ${blog.handle} did not render the expected ` +
+        `page: body is missing "${expectedBodyIncludes}"`
     );
   }
 
