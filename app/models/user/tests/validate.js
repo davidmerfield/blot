@@ -27,7 +27,12 @@ describe("user validate", function () {
       created: Date.now(),
       welcomeEmailSent: true,
       subscription: {},
-      paypal: {}
+      paypal: {},
+      totpEnabled: false,
+      totpSecret: "",
+      totpBackupCodes: [],
+      totpLastUsedCode: "",
+      totpLastUsedAt: 0
     }, overrides);
   }
 

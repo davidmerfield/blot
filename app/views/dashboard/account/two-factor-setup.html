@@ -1,0 +1,24 @@
+<div class="account">
+
+  {{> message}}
+
+  <p>Scan this QR code with an authenticator app (like Google Authenticator or Authy).</p>
+
+  <p><img src="{{qrCodeDataUrl}}" alt="QR code for two-factor authentication" width="200" height="200" /></p>
+
+  <p>Or enter this key manually: <code>{{secret}}</code></p>
+
+  <form method="POST" action="/sites/account/two-factor/enable/confirm">
+    <input type="hidden" name="_csrf" value="{{csrftoken}}">
+
+    <label>Enter the 6-digit code from the app to confirm:
+      <input autofocus name="code" type="text" inputmode="numeric" autocomplete="one-time-code" />
+    </label>
+
+    <div class="buttons">
+      <button type="submit">Turn on two-factor authentication</button>
+      <a href="/sites/account/two-factor/enable/cancel">Cancel</a>
+    </div>
+  </form>
+
+</div>

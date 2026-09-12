@@ -8,7 +8,12 @@ var MODEL = {
   welcomeEmailSent: "boolean",
   passwordHash: "string",
   subscription: "object",
-  paypal: "object"
+  paypal: "object",
+  totpEnabled: "boolean",
+  totpSecret: "string",
+  totpBackupCodes: "array",
+  totpLastUsedCode: "string",
+  totpLastUsedAt: "number"
 };
 
 module.exports = MODEL;

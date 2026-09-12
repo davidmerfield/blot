@@ -1,0 +1,16 @@
+<div class="account">
+
+  {{#justEnabled}}
+  <p>Two-factor authentication is now <b>on</b>.</p>
+  {{/justEnabled}}
+
+  <p>Save these backup codes somewhere safe. Each one can be used once to log in if you lose access to your authenticator app. They won't be shown again.</p>
+
+  <pre style="padding: 1em; border: 1px solid var(--border-color); border-radius: 4px;">{{#codes}}{{.}}
+{{/codes}}</pre>
+
+  <div class="buttons">
+    <a href="/sites/account/two-factor"><button type="button">Done</button></a>
+  </div>
+
+</div>

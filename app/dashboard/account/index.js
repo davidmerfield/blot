@@ -9,6 +9,7 @@ const Email = require("helper/email");
 
 const BREADCRUMBS = {
   "pay-subscription": "Subscription overdue",
+  "two-factor": "Two-factor authentication",
 };
 
 Account.use(function (req, res, next) {
@@ -79,6 +80,7 @@ Account.use("/:section/:subsection", function (req, res, next) {
 });
 
 Account.use("/password", require("./password"));
+Account.use("/two-factor", require("./two-factor"));
 Account.use("/email", require("./email"));
 Account.use("/create-site", require("./create-site"));
 Account.use("/subscription", require("./subscription"));

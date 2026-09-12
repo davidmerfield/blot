@@ -1,0 +1,25 @@
+<section class="authenticate-container">
+
+  <form method="POST">
+
+  <p style="margin-top: 0;margin-bottom: 2em;">
+    <strong style="font-weight: 600;">Two-factor authentication</strong>
+  </p>
+
+  {{#NOTOTPCODE}}
+  <p class="error">Please enter the code from your authenticator app.</p>
+  {{/NOTOTPCODE}}
+
+  {{#BADTOTPCODE}}
+  <p class="error">That code was not correct.</p>
+  {{/BADTOTPCODE}}
+
+    <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+
+    <p>
+      <label for="code">Enter the 6-digit code from your authenticator app, or one of your backup codes</label>
+      <input name="code" required="" type="text" autocomplete="one-time-code" autofocus />
+    </p>
+    <input type="submit" value="Verify" style="margin-bottom: 8px" />
+  </form>
+</section>
