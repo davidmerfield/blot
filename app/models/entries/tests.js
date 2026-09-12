@@ -959,7 +959,7 @@ describe("entries", function () {
   describe("getAll with a limit", function () {
     it("returns only the N most recently published entries", async function (done) {
       const blogID = this.blog.id;
-      const key = `blog:${blogID}:all`;
+      const key = `blog:${blogID}:entries`;
 
       await redis.zAdd(key, [
         { score: 1, value: "id1" },
@@ -979,7 +979,7 @@ describe("entries", function () {
 
     it("returns every entry when no limit is given", async function (done) {
       const blogID = this.blog.id;
-      const key = `blog:${blogID}:all`;
+      const key = `blog:${blogID}:entries`;
 
       await redis.zAdd(key, [
         { score: 1, value: "id1" },
