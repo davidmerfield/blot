@@ -18,11 +18,11 @@ const NAME_MAX_BYTES = 255;
 const PATH_MAX_BYTES = 4096;
 
 const exceedsFilesystemPathLimits = (destination = "") => {
-  const basename = path.basename(destination);
-  return (
-    Buffer.byteLength(basename, "utf8") > NAME_MAX_BYTES ||
-    Buffer.byteLength(destination, "utf8") > PATH_MAX_BYTES
-  );
+  if (Buffer.byteLength(destination, "utf8") > PATH_MAX_BYTES) return true;
+
+  return destination
+    .split(path.sep)
+    .some((component) => Buffer.byteLength(component, "utf8") > NAME_MAX_BYTES);
 };
 
 module.exports = {
