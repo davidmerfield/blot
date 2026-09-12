@@ -31,14 +31,21 @@ module.exports = function (blog, path, metadata, previousCreated) {
       return dateStamp;
     } else if (dateStamp) {
       debug("Blog:", id, "Date from metadata", dateStamp);
-      dateStamp = adjustByBlogTimezone(timeZone, dateStamp);
-      dateStamp = useCreatedTimeIfSameDay(
-        dateStamp,
+      // dateStamp still holds the literal calendar date exactly as
+      // written/parsed (interpreted as UTC) - capture it before
+      // adjustByBlogTimezone potentially shifts it onto a different
+      // UTC-midnight-relative date, so "same day" comparisons below are
+      // against the date the user actually intended, not an artifact of
+      // the timezone adjustment.
+      const intendedDateStamp = dateStamp;
+      const adjustedDateStamp = adjustByBlogTimezone(timeZone, dateStamp);
+      return useCreatedTimeIfSameDay(
+        adjustedDateStamp,
+        intendedDateStamp,
         /\d{1,2}:\d{2}/.test(dateMetadataString),
         previousCreated,
         timeZone
       );
-      return dateStamp;
     }
   }
 
@@ -50,14 +57,15 @@ module.exports = function (blog, path, metadata, previousCreated) {
 
   if (dateStamp !== undefined) {
     debug("Blog:", id, "Date from path", dateStamp);
-    dateStamp = adjustByBlogTimezone(timeZone, dateStamp);
-    dateStamp = useCreatedTimeIfSameDay(
-      dateStamp,
+    const intendedDateStamp = dateStamp;
+    const adjustedDateStamp = adjustByBlogTimezone(timeZone, dateStamp);
+    return useCreatedTimeIfSameDay(
+      adjustedDateStamp,
+      intendedDateStamp,
       !!parsedFromPath.hasTime,
       previousCreated,
       timeZone
     );
-    return dateStamp;
   }
 
   // It is important we return undefined since we fall back
@@ -77,8 +85,8 @@ function validate(stamp) {
 // A date sourced from metadata (e.g. "Date: 12/12/2025") or a path (e.g.
 // "/2025/12/12/post.txt") often carries no time-of-day, so it parses to
 // midnight. If the entry already exists and was first created by Blot on
-// that same calendar day (in the blog's timezone), reuse its time of day
-// instead - it's a better guess than midnight for "when was this
+// that same calendar day (in the blog's timezone), reuse its creation
+// instant instead - it's a better guess than midnight for "when was this
 // written". An explicit time (in the metadata string, or as extra
 // hour/minute tokens in the path), or a date that doesn't match the
 // entry's creation day (e.g. because the post was backdated, or the date
@@ -86,28 +94,35 @@ function validate(stamp) {
 // date metadata entirely skips this function altogether for that branch,
 // since dateStamp then falls back to the path or to previousCreated
 // directly.
-function useCreatedTimeIfSameDay(dateStamp, hasExplicitTime, previousCreated, timeZone) {
-  if (hasExplicitTime) return dateStamp;
+function useCreatedTimeIfSameDay(
+  adjustedDateStamp,
+  intendedDateStamp,
+  hasExplicitTime,
+  previousCreated,
+  timeZone
+) {
+  if (hasExplicitTime) return adjustedDateStamp;
 
   if (typeof previousCreated !== "number" || isNaN(previousCreated))
-    return dateStamp;
+    return adjustedDateStamp;
 
   var zone = timeZone && moment.tz.zone(timeZone) ? timeZone : "Etc/UTC";
-  var metadataDay = moment.tz(dateStamp, zone);
-  var created = moment.tz(previousCreated, zone);
 
-  if (metadataDay.format("YYYY-MM-DD") !== created.format("YYYY-MM-DD"))
-    return dateStamp;
+  // intendedDateStamp is the calendar date exactly as written/parsed,
+  // read as literal UTC fields - comparing it in UTC (rather than
+  // re-deriving it through the blog's timezone) avoids a mismatch when a
+  // timezone's offset changes between UTC midnight and local midnight.
+  var intendedDay = moment.utc(intendedDateStamp).format("YYYY-MM-DD");
+  var createdDay = moment.tz(previousCreated, zone).format("YYYY-MM-DD");
 
-  return metadataDay
-    .clone()
-    .set({
-      hour: created.hour(),
-      minute: created.minute(),
-      second: created.second(),
-      millisecond: created.millisecond(),
-    })
-    .valueOf();
+  if (intendedDay !== createdDay) return adjustedDateStamp;
+
+  // Same calendar day: previousCreated is already a valid instant on
+  // that day, so use it directly. Rebuilding a timestamp from wall-clock
+  // fields (year/month/day from one moment, hour/minute/second from
+  // another) can pick the wrong UTC offset during a DST fall-back
+  // transition, when a local wall-clock time occurs twice.
+  return previousCreated;
 }
 
 function adjustByBlogTimezone(timeZone, stamp) {

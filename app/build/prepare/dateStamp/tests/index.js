@@ -104,5 +104,51 @@ describe("dateStamp", function () {
         Date.UTC(2025, 11, 12, 9, 15, 0)
       );
     });
+
+    it("returns the exact previousCreated instant across a DST fall-back transition", function () {
+      const moment = require("moment-timezone");
+      const blogNY = {
+        id: "test",
+        dateFormat: "M/D/YYYY",
+        timeZone: "America/New_York",
+      };
+      const metadata = { Date: "11/2/2025" };
+
+      // Clocks in America/New_York fall back from 2am to 1am on this date,
+      // so 01:30 local occurs twice - once at UTC-4 (EDT), once at UTC-5
+      // (EST). previousCreated pins the exact instant of the *second*
+      // occurrence (EST); reconstructing a timestamp from wall-clock
+      // fields alone could silently pick the first (EDT) instead.
+      const previousCreated = moment
+        .tz("2025-11-02 01:30", "America/New_York")
+        .valueOf();
+
+      expect(dateStamp(blogNY, "/post.txt", metadata, previousCreated)).toEqual(
+        previousCreated
+      );
+    });
+
+    it("matches the metadata date to the entry's creation day even when the timezone offset differs at UTC midnight", function () {
+      const moment = require("moment-timezone");
+      const blogSantiago = {
+        id: "test",
+        dateFormat: "M/D/YYYY",
+        timeZone: "America/Santiago",
+      };
+      const metadata = { Date: "4/7/2024" };
+
+      // UTC midnight on April 7th is already April 6th evening in
+      // America/Santiago, so adjustByBlogTimezone's UTC-midnight-relative
+      // offset lands the adjusted timestamp on April 6th local time. The
+      // comparison must still recognise this entry, created during April
+      // 7th local time, as being on the metadata's intended day.
+      const previousCreated = moment
+        .tz("2024-04-07 10:00", "America/Santiago")
+        .valueOf();
+
+      expect(
+        dateStamp(blogSantiago, "/post.txt", metadata, previousCreated)
+      ).toEqual(previousCreated);
+    });
   });
 });
