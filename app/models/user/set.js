@@ -61,6 +61,9 @@ module.exports = function save(uid, updates, callback) {
       if (typeof user.totpSecret === "undefined") user.totpSecret = "";
       if (typeof user.totpBackupCodes === "undefined")
         user.totpBackupCodes = [];
+      if (typeof user.totpLastUsedCode === "undefined")
+        user.totpLastUsedCode = "";
+      if (typeof user.totpLastUsedAt === "undefined") user.totpLastUsedAt = 0;
 
       var result = await new Promise(function (resolve, reject) {
         validate(user, updates, function (err, validated, changes) {

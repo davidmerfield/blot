@@ -21,13 +21,22 @@ module.exports = function checkPassword(req, res, next) {
 
     if (!match) return next(new LogInError("BADPASSWORD"));
 
-    if (user.totpEnabled) {
-      pendingTotp.set(req, user.uid, then);
-      return res.redirect("/log-in/two-factor");
-    }
+    // Re-read the account rather than trusting the copy checkEmail loaded
+    // earlier in the middleware chain: if TOTP enrollment completed in the
+    // meantime, that snapshot would still show it disabled and let a
+    // correct-password request skip the second factor entirely.
+    User.getById(user.uid, function (err, freshUser) {
+      if (err) return next(err);
+      if (!freshUser) return next(new LogInError("NOUSER"));
 
-    authenticate(req, res, user);
+      if (freshUser.totpEnabled) {
+        pendingTotp.set(req, freshUser.uid, then);
+        return res.redirect("/log-in/two-factor");
+      }
 
-    return res.redirect(then);
+      authenticate(req, res, freshUser);
+
+      return res.redirect(then);
+    });
   });
 };

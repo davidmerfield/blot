@@ -1,6 +1,7 @@
 var ensure = require("helper/ensure");
 var getById = require("./getById");
 var consumeTotpBackupCode = require("./consumeTotpBackupCode");
+var consumeTotpToken = require("./consumeTotpToken");
 var decrypt = require("./totp/decrypt");
 var verifyBackupCode = require("./totp/verifyBackupCode");
 var verifyTotpToken = require("./verifyTotpToken");
@@ -27,7 +28,12 @@ module.exports = function checkTotp(uid, code, callback) {
     }
 
     if (secret && verifyTotpToken(secret, code)) {
-      return callback(null, true, "totp");
+      return consumeTotpToken(uid, code, function (err, accepted) {
+        if (err) return callback(err);
+        // Already used once within its own validity window (replay).
+        if (!accepted) return callback(null, false);
+        callback(null, true, "totp");
+      });
     }
 
     verifyBackupCode(user.totpBackupCodes, code, function (err, index) {

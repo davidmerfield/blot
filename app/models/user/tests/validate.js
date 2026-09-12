@@ -30,7 +30,9 @@ describe("user validate", function () {
       paypal: {},
       totpEnabled: false,
       totpSecret: "",
-      totpBackupCodes: []
+      totpBackupCodes: [],
+      totpLastUsedCode: "",
+      totpLastUsedAt: 0
     }, overrides);
   }
 

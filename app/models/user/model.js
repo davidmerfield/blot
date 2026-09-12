@@ -11,7 +11,9 @@ var MODEL = {
   paypal: "object",
   totpEnabled: "boolean",
   totpSecret: "string",
-  totpBackupCodes: "array"
+  totpBackupCodes: "array",
+  totpLastUsedCode: "string",
+  totpLastUsedAt: "number"
 };
 
 module.exports = MODEL;

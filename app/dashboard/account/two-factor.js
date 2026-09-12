@@ -98,12 +98,16 @@ function getPendingSetupSecret(req) {
     return null;
   }
 
-  return pending.secret;
+  return User.decryptTotpSecret(pending.secret);
 }
 
 function beginSetup(req, res, next) {
+  // Encrypted at rest the same way the confirmed secret is once it's
+  // written to the user record -- the session is Redis-backed too, and a
+  // read or snapshot of it during enrollment shouldn't hand over a working
+  // authenticator seed in plaintext.
   req.session.pendingTotpSetup = {
-    secret: User.generateTotpSecret(),
+    secret: User.encryptTotpSecret(User.generateTotpSecret()),
     createdAt: Date.now(),
   };
 

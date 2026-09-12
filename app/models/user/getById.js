@@ -10,6 +10,8 @@ function applyUserDefaults(user) {
   if (typeof user.totpEnabled === "undefined") user.totpEnabled = false;
   if (typeof user.totpSecret === "undefined") user.totpSecret = "";
   if (typeof user.totpBackupCodes === "undefined") user.totpBackupCodes = [];
+  if (typeof user.totpLastUsedCode === "undefined") user.totpLastUsedCode = "";
+  if (typeof user.totpLastUsedAt === "undefined") user.totpLastUsedAt = 0;
 
   return user;
 }

@@ -43,6 +43,30 @@ describe("user totp", function () {
     });
   });
 
+  it("checkTotp rejects a replayed code even though it is still within its valid window", function (done) {
+    var test = this;
+    var secret = User.generateTotpSecret();
+
+    User.enableTotp(test.user.uid, secret, function (err) {
+      if (err) return done.fail(err);
+
+      var token = otplib.authenticator.generate(secret);
+
+      User.checkTotp(test.user.uid, token, function (err, valid) {
+        if (err) return done.fail(err);
+        expect(valid).toBe(true);
+
+        // Simulates the same code being captured (phishing, logs, a shared
+        // screen) and reused by someone else while it's still valid.
+        User.checkTotp(test.user.uid, token, function (err, replayedValid) {
+          if (err) return done.fail(err);
+          expect(replayedValid).toBe(false);
+          done();
+        });
+      });
+    });
+  });
+
   it("checkTotp rejects an incorrect code", function (done) {
     var test = this;
     var secret = User.generateTotpSecret();

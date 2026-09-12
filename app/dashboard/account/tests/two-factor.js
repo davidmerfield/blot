@@ -85,7 +85,11 @@ describe("two-factor authentication route", function () {
     expect(result.view).toEqual("dashboard/account/two-factor-setup");
     expect(result.locals.secret).toEqual(jasmine.any(String));
     expect(result.locals.secret.length).toBeGreaterThan(0);
-    expect(session.pendingTotpSetup.secret).toEqual(result.locals.secret);
+    // Stored encrypted, not as the plaintext seed shown to the user.
+    expect(session.pendingTotpSetup.secret).not.toEqual(result.locals.secret);
+    expect(User.decryptTotpSecret(session.pendingTotpSetup.secret)).toEqual(
+      result.locals.secret
+    );
     expect(session.pendingTotpSetup.createdAt).toEqual(jasmine.any(Number));
     expect(result.locals.qrCodeDataUrl).toMatch(/^data:image\/png;base64,/);
   });
@@ -95,7 +99,10 @@ describe("two-factor authentication route", function () {
       method: "POST",
       url: "/enable/confirm",
       session: {
-        pendingTotpSetup: { secret: "AAAAAAAAAAAAAAAA", createdAt: Date.now() },
+        pendingTotpSetup: {
+          secret: User.encryptTotpSecret("AAAAAAAAAAAAAAAA"),
+          createdAt: Date.now(),
+        },
       },
       body: { code: "000000" },
     });
@@ -106,7 +113,7 @@ describe("two-factor authentication route", function () {
   it("treats an expired pending setup as absent", async function () {
     var session = {
       pendingTotpSetup: {
-        secret: "AAAAAAAAAAAAAAAA",
+        secret: User.encryptTotpSecret("AAAAAAAAAAAAAAAA"),
         createdAt: Date.now() - 11 * 60 * 1000,
       },
     };
@@ -122,7 +129,10 @@ describe("two-factor authentication route", function () {
 
   it("clears the pending setup secret on cancel", async function () {
     var session = {
-      pendingTotpSetup: { secret: "AAAAAAAAAAAAAAAA", createdAt: Date.now() },
+      pendingTotpSetup: {
+        secret: User.encryptTotpSecret("AAAAAAAAAAAAAAAA"),
+        createdAt: Date.now(),
+      },
     };
 
     var result = await request({
@@ -145,7 +155,12 @@ describe("two-factor authentication route", function () {
     var result = await request({
       method: "POST",
       url: "/enable/confirm",
-      session: { pendingTotpSetup: { secret: secret, createdAt: Date.now() } },
+      session: {
+        pendingTotpSetup: {
+          secret: User.encryptTotpSecret(secret),
+          createdAt: Date.now(),
+        },
+      },
       body: { code: otplib.authenticator.generate(secret) },
     });
 

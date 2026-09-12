@@ -20,6 +20,7 @@ module.exports = function extend (user) {
   delete user.welcomeEmailSent;
   delete user.totpSecret;
   delete user.totpBackupCodes;
+  delete user.totpLastUsedCode;
 
   user.pretty = {};
 
