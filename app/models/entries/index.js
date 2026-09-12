@@ -120,12 +120,7 @@ module.exports = (function () {
     // entry info when getting every entry
     if (options.skinny === undefined) options.skinny = true;
 
-    // options.limit caps the number of (most recent) entries returned,
-    // instead of the entire "all" list. See app/blog/lib/limits.js for why
-    // the render pipeline passes this.
-    var end = options.limit ? options.limit - 1 : -1;
-
-    return getRange(blogID, 0, end, options, callback);
+    return getRange(blogID, 0, -1, options, callback);
   }
 
   function get(blogID, options, callback) {
