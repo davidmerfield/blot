@@ -74,7 +74,7 @@ Domain.route('/')
     })
     .post(async (req, res) => {
         const blogID = req.blog.id;
-        const domainInput = req.body.domain;
+        const domainInput = typeof req.body.domain === 'string' ? req.body.domain : '';
         const { hostname } = parse(domainInput);
 
         if (req.body.handle) {
