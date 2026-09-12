@@ -56,5 +56,53 @@ describe("dateStamp", function () {
         undefined
       );
     });
+
+    it("applies the same time-of-day logic to a date extracted from the file's path", function () {
+      const previousCreated = Date.UTC(2025, 11, 12, 15, 30, 0);
+
+      expect(
+        dateStamp(blog, "/2025/12/12/post.txt", {}, previousCreated)
+      ).toEqual(Date.UTC(2025, 11, 12, 15, 30, 0));
+    });
+
+    it("leaves a path-derived date at midnight when previousCreated is a different day", function () {
+      const previousCreated = Date.UTC(2025, 11, 11, 15, 30, 0);
+
+      expect(
+        dateStamp(blog, "/2025/12/12/post.txt", {}, previousCreated)
+      ).toEqual(Date.UTC(2025, 11, 12, 0, 0, 0));
+    });
+
+    it("does not override a time already encoded in the path", function () {
+      const previousCreated = Date.UTC(2025, 11, 12, 15, 30, 0);
+
+      expect(
+        dateStamp(blog, "/2025/12/12/09/45/post.txt", {}, previousCreated)
+      ).toEqual(Date.UTC(2025, 11, 12, 9, 45, 0));
+    });
+
+    it("applies the same time-of-day logic to a date parsed from YAML front matter", function () {
+      const Metadata = require("build/metadata");
+      const { metadata } = Metadata(
+        "---\ndate: 12/12/2025\ntitle: Hello\n---\nBody text"
+      );
+      const previousCreated = Date.UTC(2025, 11, 12, 15, 30, 0);
+
+      expect(dateStamp(blog, "/post.txt", metadata, previousCreated)).toEqual(
+        Date.UTC(2025, 11, 12, 15, 30, 0)
+      );
+    });
+
+    it("does not override a time already encoded in YAML front matter", function () {
+      const Metadata = require("build/metadata");
+      const { metadata } = Metadata(
+        "---\ndate: 2025-12-12T09:15:00Z\ntitle: Hello\n---\nBody text"
+      );
+      const previousCreated = Date.UTC(2025, 11, 12, 15, 30, 0);
+
+      expect(dateStamp(blog, "/post.txt", metadata, previousCreated)).toEqual(
+        Date.UTC(2025, 11, 12, 9, 15, 0)
+      );
+    });
   });
 });

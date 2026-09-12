@@ -34,7 +34,7 @@ module.exports = function (blog, path, metadata, previousCreated) {
       dateStamp = adjustByBlogTimezone(timeZone, dateStamp);
       dateStamp = useCreatedTimeIfSameDay(
         dateStamp,
-        dateMetadataString,
+        /\d{1,2}:\d{2}/.test(dateMetadataString),
         previousCreated,
         timeZone
       );
@@ -45,11 +45,18 @@ module.exports = function (blog, path, metadata, previousCreated) {
   // The user didn't specify a valid
   // date in the entry's metadata. Try
   // and extract one from the file's path
-  dateStamp = validate(fromPath(path, timeZone).created);
+  const parsedFromPath = fromPath(path, timeZone);
+  dateStamp = validate(parsedFromPath.created);
 
   if (dateStamp !== undefined) {
     debug("Blog:", id, "Date from path", dateStamp);
     dateStamp = adjustByBlogTimezone(timeZone, dateStamp);
+    dateStamp = useCreatedTimeIfSameDay(
+      dateStamp,
+      !!parsedFromPath.hasTime,
+      previousCreated,
+      timeZone
+    );
     return dateStamp;
   }
 
@@ -67,21 +74,20 @@ function validate(stamp) {
   return undefined;
 }
 
-// Metadata like "Date: 12/12/2025" carries no time-of-day, so it parses
-// to midnight. If the entry already exists and was first created by Blot
-// on that same calendar day (in the blog's timezone), reuse its time of
-// day instead - it's a better guess than midnight for "when was this
-// written". Any explicit time in the metadata, or a metadata date that
-// doesn't match the entry's creation day (e.g. because the post was
-// backdated, or the metadata date was later edited), leaves the parsed
-// timestamp untouched. Removing the date metadata entirely skips this
-// function altogether, since dateStamp then falls back to the path or
-// to previousCreated directly.
-function useCreatedTimeIfSameDay(dateStamp, dateMetadataString, previousCreated, timeZone) {
-  // A colon followed by two digits is present in every time-of-day
-  // format this parser supports (e.g. "12:33", "2:59:27 pm") and in
-  // none of the date-only formats it supports.
-  if (/\d{1,2}:\d{2}/.test(dateMetadataString)) return dateStamp;
+// A date sourced from metadata (e.g. "Date: 12/12/2025") or a path (e.g.
+// "/2025/12/12/post.txt") often carries no time-of-day, so it parses to
+// midnight. If the entry already exists and was first created by Blot on
+// that same calendar day (in the blog's timezone), reuse its time of day
+// instead - it's a better guess than midnight for "when was this
+// written". An explicit time (in the metadata string, or as extra
+// hour/minute tokens in the path), or a date that doesn't match the
+// entry's creation day (e.g. because the post was backdated, or the date
+// was later edited), leaves the parsed timestamp untouched. Removing the
+// date metadata entirely skips this function altogether for that branch,
+// since dateStamp then falls back to the path or to previousCreated
+// directly.
+function useCreatedTimeIfSameDay(dateStamp, hasExplicitTime, previousCreated, timeZone) {
+  if (hasExplicitTime) return dateStamp;
 
   if (typeof previousCreated !== "number" || isNaN(previousCreated))
     return dateStamp;
