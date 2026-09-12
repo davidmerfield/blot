@@ -14,6 +14,10 @@
 //                            deleting them is permanent - nothing recreates
 //                            them.
 //
+// Keys are streamed off SCAN and deleted in bounded batches rather than
+// collected into memory first, so this stays cheap to run against a
+// production-sized backlog of hash keys.
+//
 // Usage:
 //   node scripts/db/wipe-archives-and-entry-hash-keys.js            # prompts before deleting
 //   node scripts/db/wipe-archives-and-entry-hash-keys.js --dry-run  # count only, no prompt, no deletes
@@ -27,39 +31,51 @@ const getConfirmation = require("../util/getConfirmation");
 const PATTERNS = ["blog:*:archives:*", "blog:*:entry:hash:*"];
 const DELETE_BATCH_SIZE = 500;
 
-async function collectKeys(pattern) {
-  const keys = [];
-  await redisKeys(pattern, async (key) => {
-    keys.push(key);
+async function countKeys(pattern) {
+  let count = 0;
+  await redisKeys(pattern, async () => {
+    count++;
   });
-  return keys;
+  return count;
 }
 
-async function deleteKeys(keys) {
+async function deleteBatch(batch) {
+  if (!batch.length) return 0;
+
+  return new Promise((resolve, reject) => {
+    const multi = client.multi();
+    batch.forEach((key) => multi.del(key));
+    multi
+      .exec()
+      .then((results) => {
+        const deleted = Array.isArray(results)
+          ? results.reduce(
+              (sum, value) => sum + (typeof value === "number" ? value : 0),
+              0
+            )
+          : 0;
+        resolve(deleted);
+      })
+      .catch(reject);
+  });
+}
+
+// Streams matching keys off SCAN, deleting them in bounded batches instead
+// of collecting every match into memory first.
+async function deletePattern(pattern) {
+  let batch = [];
   let totalDeleted = 0;
 
-  for (let i = 0; i < keys.length; i += DELETE_BATCH_SIZE) {
-    const batch = keys.slice(i, i + DELETE_BATCH_SIZE);
+  await redisKeys(pattern, async (key) => {
+    batch.push(key);
 
-    const batchDeleted = await new Promise((resolve, reject) => {
-      const multi = client.multi();
-      batch.forEach((key) => multi.del(key));
-      multi
-        .exec()
-        .then((results) => {
-          const deleted = Array.isArray(results)
-            ? results.reduce(
-                (sum, value) => sum + (typeof value === "number" ? value : 0),
-                0
-              )
-            : 0;
-          resolve(deleted);
-        })
-        .catch(reject);
-    });
+    if (batch.length >= DELETE_BATCH_SIZE) {
+      totalDeleted += await deleteBatch(batch);
+      batch = [];
+    }
+  });
 
-    totalDeleted += batchDeleted;
-  }
+  totalDeleted += await deleteBatch(batch);
 
   return totalDeleted;
 }
@@ -69,33 +85,33 @@ async function main() {
   const dryRun = args.includes("--dry-run");
   const skipConfirmation = args.includes("--yes");
 
-  const keysByPattern = new Map();
+  const countsByPattern = new Map();
+  let totalCount = 0;
 
   for (const pattern of PATTERNS) {
-    const keys = await collectKeys(pattern);
-    keysByPattern.set(pattern, keys);
+    const count = await countKeys(pattern);
+    countsByPattern.set(pattern, count);
+    totalCount += count;
     console.log(
-      colors.cyan(`${pattern}: found ${keys.length} key${keys.length === 1 ? "" : "s"}`)
+      colors.cyan(`${pattern}: found ${count} key${count === 1 ? "" : "s"}`)
     );
   }
 
-  const allKeys = Array.from(keysByPattern.values()).flat();
-
-  if (!allKeys.length) {
+  if (!totalCount) {
     console.log(colors.green("No matching keys found. Nothing to do."));
     return;
   }
 
   if (dryRun) {
     console.log(
-      colors.yellow(`Dry run: would delete ${allKeys.length} key${allKeys.length === 1 ? "" : "s"} total.`)
+      colors.yellow(`Dry run: would delete ${totalCount} key${totalCount === 1 ? "" : "s"} total.`)
     );
     return;
   }
 
   if (!skipConfirmation) {
     const confirmed = await getConfirmation(
-      `Delete ${allKeys.length} key${allKeys.length === 1 ? "" : "s"} across ${PATTERNS.length} pattern(s)?`
+      `Delete ${totalCount} key${totalCount === 1 ? "" : "s"} across ${PATTERNS.length} pattern(s)?`
     );
 
     if (!confirmed) {
@@ -104,11 +120,15 @@ async function main() {
     }
   }
 
-  const totalDeleted = await deleteKeys(allKeys);
+  let totalDeleted = 0;
+
+  for (const pattern of PATTERNS) {
+    totalDeleted += await deletePattern(pattern);
+  }
 
   console.log(
     colors.green(
-      `Deleted ${allKeys.length} key${allKeys.length === 1 ? "" : "s"}. Redis removed ${totalDeleted} key${totalDeleted === 1 ? "" : "s"}.`
+      `Found ${totalCount} key${totalCount === 1 ? "" : "s"}. Redis removed ${totalDeleted} key${totalDeleted === 1 ? "" : "s"}.`
     )
   );
 }
