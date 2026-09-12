@@ -67,6 +67,29 @@ describe("user totp", function () {
     });
   });
 
+  it("checkTotp rejects a replay padded with whitespace, since it's the same code once canonicalized", function (done) {
+    var test = this;
+    var secret = User.generateTotpSecret();
+
+    User.enableTotp(test.user.uid, secret, function (err) {
+      if (err) return done.fail(err);
+
+      var token = otplib.authenticator.generate(secret);
+      var padded = " " + token.slice(0, 3) + " " + token.slice(3) + " ";
+
+      User.checkTotp(test.user.uid, token, function (err, valid) {
+        if (err) return done.fail(err);
+        expect(valid).toBe(true);
+
+        User.checkTotp(test.user.uid, padded, function (err, replayedValid) {
+          if (err) return done.fail(err);
+          expect(replayedValid).toBe(false);
+          done();
+        });
+      });
+    });
+  });
+
   it("checkTotp rejects an incorrect code", function (done) {
     var test = this;
     var secret = User.generateTotpSecret();

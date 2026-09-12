@@ -13,6 +13,12 @@ var verifyTotpToken = require("./verifyTotpToken");
 module.exports = function checkTotp(uid, code, callback) {
   ensure(uid, "string").and(code, "string").and(callback, "function");
 
+  // Canonicalize once, up front: verifyTotpToken strips whitespace before
+  // comparing against the secret, so "123456" and " 123 456" verify as the
+  // same code. The replay guard must track that same canonical form, or a
+  // whitespace-padded resubmission would slip past it as if it were new.
+  var canonicalCode = code.replace(/\s+/g, "");
+
   getById(uid, function (err, user) {
     if (err) return callback(err);
     if (!user || !user.totpEnabled) return callback(null, false);
@@ -27,8 +33,8 @@ module.exports = function checkTotp(uid, code, callback) {
       secret = null;
     }
 
-    if (secret && verifyTotpToken(secret, code)) {
-      return consumeTotpToken(uid, code, function (err, accepted) {
+    if (secret && verifyTotpToken(secret, canonicalCode)) {
+      return consumeTotpToken(uid, canonicalCode, function (err, accepted) {
         if (err) return callback(err);
         // Already used once within its own validity window (replay).
         if (!accepted) return callback(null, false);
