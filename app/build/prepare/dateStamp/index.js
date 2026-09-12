@@ -42,7 +42,7 @@ module.exports = function (blog, path, metadata, previousCreated) {
       return useCreatedTimeIfSameDay(
         adjustedDateStamp,
         intendedDateStamp,
-        /\d{1,2}:\d{2}/.test(dateMetadataString),
+        /\d{1,2}:\d{1,2}/.test(dateMetadataString),
         previousCreated,
         timeZone
       );

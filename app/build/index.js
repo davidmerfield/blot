@@ -132,11 +132,16 @@ function buildWith(blog, path, multiInfo, callback) {
         // Used by DateStamp: if the metadata date has no time-of-day, and
         // the entry was first created by Blot on that same calendar day,
         // we reuse the entry's original creation time rather than midnight.
+        // A brand new entry has no stored 'created' yet - Entry.set is
+        // about to assign it Date.now() moments after this build finishes,
+        // so use that same instant here rather than leaving it undefined.
+        // Otherwise a post created *and* dated for today would never
+        // benefit from this until some later, unrelated rebuild.
         Entry.get(blog.id, entryPath, function (existingEntry) {
           var previousCreated =
             existingEntry && typeof existingEntry.created === "number"
               ? existingEntry.created
-              : undefined;
+              : Date.now();
 
           var entry;
 

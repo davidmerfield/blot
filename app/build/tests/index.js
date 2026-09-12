@@ -279,6 +279,34 @@ describe("build", function () {
     var Entry = require("models/entry");
     var moment = require("moment");
 
+    it("uses the current time for a brand new entry whose date-only metadata matches today", function (done) {
+      var path = "/date-only-brand-new.txt";
+      var blog = this.blog;
+      var dateOnly = moment.utc().format("M/D/YYYY");
+
+      fs.outputFileSync(
+        this.blogDirectory + path,
+        "Date: " + dateOnly + "\n\nBrand new post"
+      );
+
+      var before = Date.now();
+
+      build(blog, path, function (err, entry) {
+        if (err) return done.fail(err);
+        var after = Date.now();
+
+        // A brand new entry has no stored 'created' yet - Entry.set is
+        // about to assign it Date.now() moments after this build
+        // finishes, so build() should use that same instant rather than
+        // defaulting to midnight (which would otherwise only get fixed by
+        // a later, unrelated rebuild).
+        expect(entry.dateStamp).toBeGreaterThanOrEqual(before);
+        expect(entry.dateStamp).toBeLessThanOrEqual(after);
+
+        done();
+      });
+    });
+
     it("uses the entry's original creation time when a rebuild's date-only metadata falls on the same day", function (done) {
       var path = "/date-only-same-day.txt";
       var blog = this.blog;

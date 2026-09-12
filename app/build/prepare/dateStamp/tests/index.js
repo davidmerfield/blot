@@ -150,5 +150,14 @@ describe("dateStamp", function () {
         dateStamp(blogSantiago, "/post.txt", metadata, previousCreated)
       ).toEqual(previousCreated);
     });
+
+    it("does not override an explicit time whose minutes are a single digit", function () {
+      const metadata = { Date: "12/12/2025 9:5" };
+      const previousCreated = Date.UTC(2025, 11, 12, 15, 30, 0);
+
+      expect(dateStamp(blog, "/post.txt", metadata, previousCreated)).toEqual(
+        Date.UTC(2025, 11, 12, 9, 5, 0)
+      );
+    });
   });
 });
