@@ -104,7 +104,8 @@ module.exports = async function sync(blogID, publish, update) {
     const remoteContents = transformDriveItems(driveItems)
       .sort((a, b) => comparePaths(a.name, b.name));
     const regularFiles = remoteContents.filter(item =>
-      !item.isDirectory && !item.mimeType.startsWith("application/vnd.google-apps."));
+      !item.isDirectory && !item.mimeType.startsWith("application/vnd.google-apps.") &&
+      item.md5Checksum);
     const verifiedRecords = await getVerifiedContents(regularFiles.map(item => item.id));
     const verifiedById = new Map(regularFiles.map((item, i) => [item.id, verifiedRecords[i]]));
 
