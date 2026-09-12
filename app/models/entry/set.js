@@ -16,6 +16,7 @@ var Blog = require("models/blog");
 var rebuildDependencyGraph = require("./_rebuildDependencyGraph");
 var backlinksToUpdate = require("./_backlinksToUpdate");
 var updateTagList = require("models/tags").set;
+var updateArchivesIndex = require("models/archives").set;
 var addToSchedule = require("./_addToSchedule");
 var notifyDrafts = require("./_notifyDrafts");
 var assignToLists = require("./_assign");
@@ -197,6 +198,7 @@ module.exports = function set (blogID, path, updates, callback) {
           .then(function () {
             queue = [
               updateTagList.bind(this, blogID, entry),
+              updateArchivesIndex.bind(this, blogID, entry, blog.timeZone),
               assignToLists.bind(this, blogID, entry),
               rebuildDependencyGraph.bind(this, blogID, entry, previousDependencies),
             ];
