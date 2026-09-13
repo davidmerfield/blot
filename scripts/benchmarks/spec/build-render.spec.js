@@ -93,6 +93,18 @@ describe("blog benchmarks", function () {
       ? workloadFromManifest(this.corpusManifest)
       : buildWorkload(benchmarkConfig, blogs, rng, mediaFiles);
 
+    if (isCorpusRender) {
+      // Only --corpus-mode/--corpus-manifest-path are passed on the CLI for
+      // a render-mode run, so benchmarkConfig.sites/files would otherwise
+      // stay at the flat-mode defaults (5/1000) even though the actual
+      // restored corpus has ~1000 sites/~160k posts - misleading both the
+      // result JSON's config.sites/files and build.sites_total, and the PR
+      // comment/history built from them. Read the real counts from what was
+      // actually restored.
+      benchmarkConfig.sites = blogs.length;
+      benchmarkConfig.files = workload.files.length;
+    }
+
     const buildPhaseMonitor = new PhaseMonitor({
       sampleIntervalMs: benchmarkConfig.cpuSampleIntervalMs,
     });
