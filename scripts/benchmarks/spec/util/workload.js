@@ -1,4 +1,5 @@
-const { getFixtures } = require("./fixtures");
+const path = require("path");
+const { getFixtures, listMediaFiles } = require("./fixtures");
 
 // Modelled on a real customer blog that suffered severe request-queueing
 // slowdowns: several hundred entries, each carrying a handful of tags out of
@@ -50,13 +51,117 @@ const SEARCH_KEYWORD_PROBABILITY = 0.35;
 // the hub accumulates a realistic backlinks list.
 const HUB_LINK_PROBABILITY = 0.25;
 
+// --- skewed (production-shaped) distribution helpers ----------------------
+//
+// Draws one log-normal weight per site, with a small chance of a much larger
+// "mega site" multiplier, so that allocating a fixed total (posts, tags,
+// keywords, ...) across weights produces the "a few sites have thousands,
+// most sites have a handful" shape the flat/round-robin mode doesn't.
+// Deterministic given the caller's seeded rng.
+function buildSiteWeights(rng, siteCount) {
+  const weights = [];
+
+  for (let i = 0; i < siteCount; i++) {
+    // Box-Muller transform for a standard normal sample.
+    const u1 = Math.max(rng(), 1e-9);
+    const u2 = rng();
+    const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+
+    const sigma = 1.8; // heavier tail = more skew between small/large sites
+    let weight = Math.exp(z * sigma);
+
+    // ~1% of sites become "mega" sites, pushing them far into the long tail
+    // (thousands of posts/tags) the way a handful of real customer blogs
+    // dwarf the median blog.
+    if (rng() < 0.01) weight *= 40;
+
+    weights.push(weight);
+  }
+
+  return weights;
+}
+
+// Allocates `total` discrete units across `weights` proportionally, with a
+// floor of `min` per bucket, correcting rounding drift against the largest
+// buckets so the sum stays exactly `total`.
+function allocateByWeight(total, weights, min = 0) {
+  const sum = weights.reduce((a, b) => a + b, 0) || 1;
+  const counts = weights.map((w) =>
+    Math.max(min, Math.round((w / sum) * total))
+  );
+
+  const order = counts
+    .map((_, i) => i)
+    .sort((a, b) => weights[b] - weights[a]);
+
+  let diff = total - counts.reduce((a, b) => a + b, 0);
+  let guard = 0;
+  const maxGuard = Math.abs(diff) * order.length + order.length + 10;
+
+  while (diff !== 0 && guard < maxGuard) {
+    const i = order[guard % order.length];
+
+    if (diff > 0) {
+      counts[i] += 1;
+      diff -= 1;
+    } else if (counts[i] > min) {
+      counts[i] -= 1;
+      diff += 1;
+    }
+
+    guard += 1;
+  }
+
+  return counts;
+}
+
 function buildWorkload(config, blogs, rng) {
+  const distribution = config.distribution === "skewed" ? "skewed" : "flat";
+  const mediaFraction = Math.min(1, Math.max(0, config.mediaFraction || 0));
+  const mediaFiles = mediaFraction > 0 ? listMediaFiles() : [];
+
+  const siteWeights =
+    distribution === "skewed"
+      ? buildSiteWeights(rng, blogs.length)
+      : blogs.map(() => 1);
+
+  // In flat mode every site gets the same-size tag/keyword pool (config.tags
+  // / config.searchKeywords, unchanged behavior). In skewed mode the *total*
+  // tag/keyword budget across all sites is config.tags/searchKeywords times
+  // the site count, but it's allocated proportionally to each site's weight
+  // (floor of 3) so a few big sites get thousands of tags/keywords and most
+  // sites get a handful - mirroring the post-count skew.
+  const tagCountBySite =
+    distribution === "skewed"
+      ? allocateByWeight(
+          Math.max(0, Math.floor(config.tags)) * blogs.length,
+          siteWeights,
+          Math.min(3, Math.max(0, Math.floor(config.tags)))
+        )
+      : blogs.map(() => Math.max(0, Math.floor(config.tags)));
+
+  const keywordCountBySite =
+    distribution === "skewed"
+      ? allocateByWeight(
+          Math.max(0, Math.floor(config.searchKeywords)) * blogs.length,
+          siteWeights,
+          Math.min(3, Math.max(0, Math.floor(config.searchKeywords)))
+        )
+      : blogs.map(() => Math.max(0, Math.floor(config.searchKeywords)));
+
+  const filesPerSiteTarget =
+    distribution === "skewed"
+      ? allocateByWeight(config.files, siteWeights, 1)
+      : null;
+
   const files = [];
   const filesPerSite = new Array(blogs.length).fill(0);
-  const tagPoolBySite = blogs.map(() => buildTagPool(config, rng));
+  const tagPoolBySite = blogs.map((_, i) =>
+    buildTagPool({ tags: tagCountBySite[i] }, rng)
+  );
   const tagsUsedBySite = blogs.map(() => new Set());
-  const searchKeywordPoolBySite = blogs.map(() =>
-    buildSearchKeywordPool(config, rng)
+  const searchKeywordPoolBySite = blogs.map((_, i) =>
+    buildSearchKeywordPool({ searchKeywords: keywordCountBySite[i] }, rng)
   );
   const searchKeywordsUsedBySite = blogs.map(() => new Set());
   const hubSlugBySite = blogs.map(
@@ -64,8 +169,27 @@ function buildWorkload(config, blogs, rng) {
   );
   const hubCreatedBySite = blogs.map(() => false);
 
-  for (let index = 0; index < config.files; index++) {
-    const blogIndex = index % blogs.length;
+  // Build the (blogIndex, globalIndex) sequence to generate. Flat mode keeps
+  // the original round-robin order (index % blogs.length) exactly. Skewed
+  // mode instead walks each site's pre-allocated post count in turn, so
+  // sites with thousands of posts actually get thousands of posts rather
+  // than an even split.
+  const entryPlan = [];
+
+  if (distribution === "skewed") {
+    for (let blogIndex = 0; blogIndex < blogs.length; blogIndex++) {
+      for (let n = 0; n < filesPerSiteTarget[blogIndex]; n++) {
+        entryPlan.push(blogIndex);
+      }
+    }
+  } else {
+    for (let index = 0; index < config.files; index++) {
+      entryPlan.push(index % blogs.length);
+    }
+  }
+
+  for (let index = 0; index < entryPlan.length; index++) {
+    const blogIndex = entryPlan[index];
     filesPerSite[blogIndex] += 1;
 
     const depth = 1 + Math.floor(rng() * 3);
@@ -85,9 +209,6 @@ function buildWorkload(config, blogs, rng) {
     const slug = isHub
       ? hubSlugBySite[blogIndex]
       : `benchmark-${blogIndex}-${index}-${randomWord(rng, 8)}`;
-    const filePath = isHub
-      ? `/${slug}.txt`
-      : `/${segments.join("/")}/${slug}.txt`;
 
     const tags = pickTags(rng, tagPoolBySite[blogIndex]);
     tags.forEach((tag) => tagsUsedBySite[blogIndex].add(tag));
@@ -100,6 +221,57 @@ function buildWorkload(config, blogs, rng) {
     }
 
     const linksToHub = !isHub && rng() < HUB_LINK_PROBABILITY;
+
+    // A configurable fraction of (non-hub) posts get a hard link to a file
+    // from the shared media pool instead of plain text, so a big corpus
+    // still exercises the image pipeline without unique media bytes per
+    // post (see build-render.spec.js's write step for why this is a hard
+    // link and not a symlink). Picked pseudo-randomly per post from the
+    // same seeded rng, so it's reproducible.
+    const wantsMedia =
+      !isHub && mediaFiles.length > 0 && rng() < mediaFraction;
+    const mediaPath = wantsMedia
+      ? mediaFiles[Math.floor(rng() * mediaFiles.length)]
+      : null;
+
+    if (mediaPath) {
+      const mediaExt = mediaPath.slice(mediaPath.lastIndexOf("."));
+      const filePath = isHub
+        ? `/${slug}${mediaExt}`
+        : `/${segments.join("/")}/${slug}${mediaExt}`;
+
+      files.push({ blogIndex, path: filePath, mediaPath });
+
+      // Media posts still need a text entry so they show up in the sitemap/
+      // tag/search indices like a normal post; the media file itself is
+      // just an extra asset referenced from within it, matching how authors
+      // actually attach images to a post folder.
+      const textFilePath = isHub
+        ? `/${slug}.txt`
+        : `/${segments.join("/")}/${slug}.txt`;
+
+      files.push({
+        blogIndex,
+        path: textFilePath,
+        content: makeEntryContent({
+          rng,
+          slug,
+          blogIndex,
+          index,
+          tags,
+          keyword,
+          hubPath: linksToHub ? `/${hubSlugBySite[blogIndex]}` : null,
+          mediaFilename: path.basename(mediaPath),
+        }),
+      });
+
+      filesPerSite[blogIndex] += 1;
+      continue;
+    }
+
+    const filePath = isHub
+      ? `/${slug}.txt`
+      : `/${segments.join("/")}/${slug}.txt`;
 
     files.push({
       blogIndex,
@@ -128,6 +300,7 @@ function buildWorkload(config, blogs, rng) {
     files,
     filesPerSite,
     fixtureCount: fixtures.length,
+    distribution,
     tagsBySite: tagsUsedBySite.map((set) => Array.from(set)),
     searchKeywordsBySite: searchKeywordsUsedBySite.map((set) =>
       Array.from(set)
@@ -148,6 +321,7 @@ function makeEntryContent({
   tags,
   keyword,
   hubPath,
+  mediaFilename,
 }) {
   const sentenceCount = 3 + Math.floor(rng() * 5);
   const sentences = [];
@@ -170,6 +344,10 @@ function makeEntryContent({
 
   if (hubPath) {
     body += ` See also [this related entry](${hubPath}) for more.`;
+  }
+
+  if (mediaFilename) {
+    body += `\n\n![](./${mediaFilename})`;
   }
 
   return [...header, "", body, ""].join("\n");
@@ -206,4 +384,6 @@ module.exports = {
   makeEntryContent,
   randomSentence,
   randomWord,
+  buildSiteWeights,
+  allocateByWeight,
 };

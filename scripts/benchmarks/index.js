@@ -63,6 +63,8 @@ var benchmarkConfig = {
   backlinksBurstConcurrency: args.backlinksBurstConcurrency,
   sitemapBurstConcurrency: args.sitemapBurstConcurrency,
   notFoundBurstConcurrency: args.notFoundBurstConcurrency,
+  distribution: args.distribution,
+  mediaFraction: args.mediaFraction,
 };
 
 global.__BLOT_BENCHMARK_CONFIG = benchmarkConfig;
@@ -141,6 +143,8 @@ function parseArgs(argv) {
     backlinksBurstConcurrency: BENCHMARK_DEFAULTS.backlinksBurstConcurrency,
     sitemapBurstConcurrency: BENCHMARK_DEFAULTS.sitemapBurstConcurrency,
     notFoundBurstConcurrency: BENCHMARK_DEFAULTS.notFoundBurstConcurrency,
+    distribution: BENCHMARK_DEFAULTS.distribution,
+    mediaFraction: BENCHMARK_DEFAULTS.mediaFraction,
     output: null,
     path: null,
     ci: false,
@@ -163,6 +167,7 @@ function parseArgs(argv) {
     "--backlinks-burst-concurrency": "backlinksBurstConcurrency",
     "--sitemap-burst-concurrency": "sitemapBurstConcurrency",
     "--not-found-burst-concurrency": "notFoundBurstConcurrency",
+    "--media-fraction": "mediaFraction",
   };
 
   for (var i = 0; i < argv.length; i++) {
@@ -193,6 +198,12 @@ function parseArgs(argv) {
 
     if (arg === "--path" && next) {
       parsed.path = next;
+      i += 1;
+      continue;
+    }
+
+    if (arg === "--distribution" && next) {
+      parsed.distribution = next === "skewed" ? "skewed" : "flat";
       i += 1;
       continue;
     }
@@ -307,6 +318,12 @@ function printHelp() {
         ")",
       "  --cpu-sample-interval-ms <ms>  CPU/memory sampling interval (default: " +
         BENCHMARK_DEFAULTS.cpuSampleIntervalMs +
+        ")",
+      "  --distribution <flat|skewed>   Workload shape (default: " +
+        BENCHMARK_DEFAULTS.distribution +
+        ")",
+      "  --media-fraction <0-1>         Fraction of posts hard-linked to a media fixture (default: " +
+        BENCHMARK_DEFAULTS.mediaFraction +
         ")",
       "  --output <path>                Write JSON benchmark result to path",
       "  --ci                           Non-interactive mode",

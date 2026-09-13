@@ -64,6 +64,33 @@ const BENCHMARK_DEFAULTS = Object.freeze({
   // too, so this exercises the not-found render path under concurrency
   // instead of only ever hitting successful pages.
   notFoundBurstConcurrency: 8,
+  // Workload shape: "flat" spreads --files evenly across --sites (the
+  // existing small/smoke-scale default, unchanged). "skewed" instead draws a
+  // log-normal/power-law post count per site (deterministic given --seed) so
+  // a handful of sites get many thousands of posts while most get a
+  // handful - modelled on real production distribution. Tag and search
+  // keyword pool sizes scale the same way per site. This is an additional,
+  // opt-in mode (see scripts/benchmarks/build-corpus.js) layered on top of
+  // the existing flat mode rather than a change to its shape, so it does not
+  // require a historySchemaVersion bump.
+  distribution: "flat",
+  // Fraction of generated entries that get a symlink to a file from the
+  // shared media pool (scripts/benchmarks/fixtures/media) instead of plain
+  // text content. 0 in flat/default mode; the big-corpus mode below turns
+  // this on.
+  mediaFraction: 0,
+  // Defaults for the opt-in big-corpus mode (--distribution skewed),
+  // production-shaped: ~1000 sites, ~160k posts total, ~20% of posts
+  // reference a symlinked media file.
+  corpusSites: 1000,
+  corpusFiles: 160000,
+  corpusMediaFraction: 0.2,
+  // Bump whenever the *shape* of the corpus produced by build-corpus.js
+  // changes (site/post/tag/media distribution, symlink layout, etc) - this
+  // invalidates the cached Redis dump + data/blogs + data/static tarballs
+  // independently of historySchemaVersion, which only tracks metric
+  // definitions for the render/build benchmark itself.
+  corpusSchemaVersion: 1,
   // CI gate / trend-alert threshold, in percent, applied to timing metrics.
   regressionThresholdPercent: 15,
   // Tight threshold for near-deterministic metrics (output byte size).

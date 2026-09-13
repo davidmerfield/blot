@@ -54,6 +54,32 @@ function getFixtures() {
   return CONVERTER_FIXTURES.filter(({ sourcePath }) => fs.existsSync(sourcePath));
 }
 
+// Shared synthetic media pool (see fixtures/generate-media.js). The workload
+// generator symlinks into this directory instead of writing unique media
+// bytes per post, so even a 160k-post corpus stays cheap to write/tar.
+const MEDIA_DIR = path.resolve(__dirname, "../../fixtures/media");
+
+let mediaFilesCache = null;
+
+function listMediaFiles() {
+  if (mediaFilesCache) return mediaFilesCache;
+
+  if (!fs.existsSync(MEDIA_DIR)) {
+    mediaFilesCache = [];
+    return mediaFilesCache;
+  }
+
+  mediaFilesCache = fs
+    .readdirSync(MEDIA_DIR)
+    .filter((name) => !name.startsWith("."))
+    .sort() // stable order so a seeded rng pick is reproducible
+    .map((name) => path.join(MEDIA_DIR, name));
+
+  return mediaFilesCache;
+}
+
 module.exports = {
   getFixtures,
+  MEDIA_DIR,
+  listMediaFiles,
 };

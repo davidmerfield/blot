@@ -55,7 +55,41 @@ describe("blog benchmarks", function () {
     buildPhaseMonitor.start();
 
     await runWithConcurrency(writeTasks, benchmarkConfig.writeConcurrency, async (task) => {
-      if (task.sourcePath != null) {
+      if (task.mediaPath != null) {
+        // Hard-link into the shared media pool (scripts/benchmarks/fixtures/
+        // media) instead of copying unique bytes per post, so even a
+        // 160k-post corpus stays cheap to write/tar.
+        //
+        // NOTE: this is deliberately a *hard* link, not a symlink.
+        // app/helper/assertNoSymlinks.js is called on every path inside a
+        // blog folder during sync (see app/sync/update/index.js and
+        // app/blog/routes/assets.js) and unconditionally rejects any
+        // symlink - including the final path component itself - with
+        // ELOOP. A hard link is indistinguishable from an ordinary file to
+        // lstat(), so it passes that check, and because every post that
+        // references the same pool file shares one inode, `tar` still only
+        // stores that file's bytes once per archive (subsequent hard-linked
+        // paths are recorded as link references), so data/blogs/ stays
+        // small exactly like the symlink approach would have, without
+        // tripping the no-symlinks guard.
+        let blogDir = localPath(task.blog.id, "/");
+        if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
+        const destPath = blogDir + task.path;
+        await fs.ensureDir(path.dirname(destPath));
+        await fs.remove(destPath);
+        try {
+          await fs.link(task.mediaPath, destPath);
+        } catch (err) {
+          // EXDEV: media pool and data/blogs live on different filesystems/
+          // mounts (e.g. some local dev setups). Fall back to a plain copy -
+          // more disk, but still correct.
+          if (err.code === "EXDEV") {
+            await fs.copy(task.mediaPath, destPath);
+          } else {
+            throw err;
+          }
+        }
+      } else if (task.sourcePath != null) {
         let blogDir = localPath(task.blog.id, "/");
         if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
         const destPath = blogDir + task.path;
