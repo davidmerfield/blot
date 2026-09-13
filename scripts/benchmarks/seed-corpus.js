@@ -41,17 +41,47 @@ function hasAllArtifacts(dir) {
   });
 }
 
+// Only relevant to the artifact-fallback path below: unlike the Actions
+// cache (keyed as benchmark-corpus-v<version>-*, so a schema bump naturally
+// misses it), the upload-artifact fallback uses a fixed name across every
+// schema version. Without this check, a schema-version bump meant to
+// invalidate old corpora would silently accept last week's old-shape corpus
+// off this fallback path instead.
+function matchesExpectedSchema(dir, expectedSchemaVersion) {
+  if (expectedSchemaVersion == null) return true;
+
+  const manifestPath = path.join(dir, "manifest.json");
+
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    return String(manifest.corpusSchemaVersion) === String(expectedSchemaVersion);
+  } catch (err) {
+    return false;
+  }
+}
+
 function main() {
   const outDir = arg("--out-dir", ".benchmarks/corpus");
   const workflow = arg("--workflow", "benchmarks-corpus.yml");
   const artifactName = arg("--artifact-name", "benchmark-corpus-artifacts");
+  const expectedSchemaVersion = arg("--corpus-schema-version", null);
   const repo = process.env.GITHUB_REPOSITORY;
 
   fs.mkdirSync(outDir, { recursive: true });
 
   if (hasAllArtifacts(outDir)) {
-    console.log("[seed-corpus] cache hit; nothing to do.");
-    return;
+    if (matchesExpectedSchema(outDir, expectedSchemaVersion)) {
+      console.log("[seed-corpus] cache hit; nothing to do.");
+      return;
+    }
+
+    console.log(
+      "[seed-corpus] cache hit but corpusSchemaVersion mismatch " +
+        `(expected ${expectedSchemaVersion}); ignoring and looking for a fallback artifact.`
+    );
+    for (const name of REQUIRED_FILES) {
+      fs.rmSync(path.join(outDir, name), { force: true });
+    }
   }
 
   if (!repo || !process.env.GH_TOKEN) {
@@ -98,6 +128,17 @@ function main() {
       fs.rmSync(tmpZip, { force: true });
 
       if (unzip.status === 0 && hasAllArtifacts(outDir)) {
+        if (!matchesExpectedSchema(outDir, expectedSchemaVersion)) {
+          console.log(
+            `[seed-corpus] run ${runId}'s artifact has a stale corpusSchemaVersion ` +
+              `(expected ${expectedSchemaVersion}); skipping.`
+          );
+          for (const name of REQUIRED_FILES) {
+            fs.rmSync(path.join(outDir, name), { force: true });
+          }
+          continue;
+        }
+
         console.log(`[seed-corpus] recovered corpus artifacts from run ${runId}.`);
         return;
       }
