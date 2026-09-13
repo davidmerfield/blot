@@ -154,6 +154,19 @@ function buildWorkload(config, blogs, rng, mediaFiles = []) {
         )
       : blogs.map(() => Math.max(0, Math.floor(config.searchKeywords)));
 
+  if (distribution === "skewed" && config.files < blogs.length) {
+    // allocateByWeight's "minimum one file per site" floor means every site
+    // gets at least 1 file regardless of weighting, so a --files below
+    // --sites would silently produce more files than requested and disagree
+    // with what gets recorded in the manifest/config. "Give every site at
+    // least one post" and "total below site count" are contradictory - fail
+    // fast instead of generating a mismatched corpus.
+    throw new Error(
+      `--distribution skewed requires --files (${config.files}) >= --sites (${blogs.length}) ` +
+        `since every site gets at least one file`
+    );
+  }
+
   const filesPerSiteTarget =
     distribution === "skewed"
       ? allocateByWeight(config.files, siteWeights, 1)
@@ -266,7 +279,13 @@ function buildWorkload(config, blogs, rng, mediaFiles = []) {
           tags,
           keyword,
           hubPath: linksToHub ? `/${hubSlugBySite[blogIndex]}` : null,
-          mediaFilename: path.basename(mediaPath),
+          // The body must reference the *hard-linked destination's* name
+          // (`${slug}${mediaExt}`, written to `filePath` above), not the
+          // pool source file's own basename - those differ (the pool file
+          // is one of ~24 shared fixtures reused across many posts, while
+          // each post gets its own slug), so linking the source's basename
+          // would point at a filename that doesn't exist alongside the post.
+          mediaFilename: path.basename(filePath),
         }),
       });
 
