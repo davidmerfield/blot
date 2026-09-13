@@ -205,6 +205,24 @@ function failedBody({ arch, sha, prevBlock, prevSha, marker, title }) {
   return lines.join("\n");
 }
 
+function skippedBody({ arch, sha, prevBlock, prevSha, marker, title, message }) {
+  const lines = [`### ${title || "Benchmark"} — \`${arch}\` — skipped`, ""];
+
+  lines.push(
+    `> ${message || "This run was skipped."}` +
+      (prevBlock
+        ? ` Numbers below are from ${commitRef(prevSha) || "the previous run"}.`
+        : "")
+  );
+
+  if (prevBlock) {
+    lines.push("", prevBlock, "", `<!-- bench:sha:${short(prevSha) || "none"} -->`);
+  }
+
+  lines.push(marker);
+  return lines.join("\n");
+}
+
 function upsert(repo, pr, current, body) {
   // Send as a JSON request body on stdin so the markdown is escaped by
   // JSON.stringify and never touched by gh's field parsing.
@@ -237,6 +255,7 @@ function main() {
   // sticky comment (different workload, not comparable metrics) separate
   // from the default small-scale benchmark comment.
   const title = arg("--title");
+  const message = arg("--message");
   const repo = process.env.GITHUB_REPOSITORY;
 
   if (!pr || !repo) {
@@ -270,6 +289,8 @@ function main() {
       body = runningBody({ arch, sha, prevBlock, prevSha, marker, title });
     } else if (status === "failed") {
       body = failedBody({ arch, sha, prevBlock, prevSha, marker, title });
+    } else if (status === "skipped") {
+      body = skippedBody({ arch, sha, prevBlock, prevSha, marker, title, message });
     } else {
       const result = readJson(resultFile);
       if (!result) {
