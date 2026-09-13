@@ -47,8 +47,6 @@ Domain.use((req, res, next) => {
             res.locals.dnsProvider = dnsProvider;
         }
         
-        console.log(res.locals.dnsProvider);
-
         res.locals.code = {};
         res.locals.code[activeWarning.code] = true;
     }
@@ -128,7 +126,7 @@ Domain.route('/')
                 throw new Error('Domain verification failed.');
             }
         } catch (error) {
-            console.log(error);
+            console.error(error);
 
             // if this is a re-attempt or not
             const previousWarning = req.session[`${blogID}:domainWarning`] || req.session[`${blogID}:domainError`];

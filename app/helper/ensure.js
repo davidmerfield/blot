@@ -1,4 +1,5 @@
 var type = require("./type");
+var log = require("debug")("blot:helper:ensure");
 
 function str(len) {
   var res = "";
@@ -11,30 +12,30 @@ function printarr(arr, indent) {
     var comma = i === arr.length - 1 ? "" : ",";
     var variable = arr[i];
 
-    console.log(str(indent) + variable + comma, "(" + type(variable) + ") ");
+    log(str(indent) + variable + comma, "(" + type(variable) + ") ");
   }
 }
 
 function print(obj, indent) {
   indent = indent || 1;
 
-  if (indent === 1) console.log("{");
+  if (indent === 1) log("{");
 
   for (var i in obj) {
     var comma = i === Object.keys(obj).slice(-1)[0] ? "" : ",";
     var variable = obj[i];
 
     if (type(variable, "array")) {
-      console.log(str(indent) + '"' + i + '": [');
+      log(str(indent) + '"' + i + '": [');
       printarr(variable, indent + 2);
-      console.log(str(indent) + "]" + comma);
+      log(str(indent) + "]" + comma);
       continue;
     }
 
     if (type(variable, "object")) {
-      console.log(str(indent) + '"' + i + '": {');
+      log(str(indent) + '"' + i + '": {');
       print(variable, indent + 2);
-      console.log(str(indent) + "}" + comma);
+      log(str(indent) + "}" + comma);
       continue;
     }
 
@@ -47,35 +48,35 @@ function print(obj, indent) {
       variable = '"' + variable + '"';
     }
 
-    console.log(
+    log(
       str(indent) + '"' + i + '":',
       variable + comma,
       "(" + type(variable) + ") "
     );
   }
 
-  if (indent === 1) console.log("}");
+  if (indent === 1) log("}");
 }
 
-function debug(param, is) {
-  console.log();
-  console.log("------------------------------------------");
+function printDebug(param, is) {
+  log();
+  log("------------------------------------------");
 
-  console.log("Expected:");
+  log("Expected:");
 
   print(is);
-  console.log();
+  log();
 
-  console.log("Actual:");
+  log("Actual:");
 
   print(param);
-  console.log();
+  log();
 
-  console.log("In summary object is:");
+  log("In summary object is:");
 
   for (var i in is) {
     if (param[i] === undefined) {
-      console.log(
+      log(
         '- missing key "' +
           i +
           '" that is specified in the model with type "' +
@@ -87,7 +88,7 @@ function debug(param, is) {
     }
 
     if (!type(param[i], is[i])) {
-      console.log(
+      log(
         '- of wrong type for key "' +
           i +
           '" which should be type "' +
@@ -101,13 +102,13 @@ function debug(param, is) {
 
   for (var x in param) {
     if (!is[x]) {
-      console.log('- has key "' + x + '" that is not specified in the model.');
+      log('- has key "' + x + '" that is not specified in the model.');
       continue;
     }
   }
 
-  console.log("------------------------------------------");
-  console.log();
+  log("------------------------------------------");
+  log();
 }
 
 function ensure(param, is, strictly, recursive) {
@@ -119,8 +120,6 @@ function ensure(param, is, strictly, recursive) {
     return { and: ensure };
   }
 
-  var deleted = [];
-
   if (type(is) === "object") {
     try {
       for (var i in param) {
@@ -128,19 +127,15 @@ function ensure(param, is, strictly, recursive) {
           ensure(param[i], is[i], strictly, true);
         } else {
           delete param[i];
-          deleted.push(i);
         }
       }
 
       if (strictly) for (var j in is) ensure(param[j], is[j], strictly, true);
     } catch (e) {
-      if (!recursive) debug(param, is);
+      if (!recursive) printDebug(param, is);
       throw e;
     }
 
-    if (deleted.length) {
-      console.log("Removed extraneous keys " + deleted.join(", "));
-    }
   } else if (type(param) !== is)
     throw new TypeError(
       'Param "' + param + '" must be a ' + is + ". Its type is " + type(param)

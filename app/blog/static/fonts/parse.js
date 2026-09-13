@@ -89,7 +89,6 @@ function withMetadata(directory, output) {
     });
 
   fonts.forEach((font) => {
-    console.log(font);
     const weight = font.weight;
     const italic = font.style === "italic";
     const name = weight + (italic ? "-italic" : "") + extname(font.filename);

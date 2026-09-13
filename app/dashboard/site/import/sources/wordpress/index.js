@@ -71,7 +71,6 @@ function main(sourceFile, outputDirectory, status, options, callback) {
           var title = item.title[0].trim();
 
           status("(" + current + "/" + totalItems + ") Processing " + title);
-          console.log(colors.dim(current + "/" + totalItems), title);
           injectAttachedThumbnail(item, channel.item);
           Item(item, outputDirectory, write, done);
         },

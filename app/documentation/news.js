@@ -54,7 +54,7 @@ news.get("/", gitCommits, loadToDo, function (req, res) {
   try {
     res.locals.nextNewsletter = nextNewsletter();
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
   res.render("news");
 });
@@ -231,7 +231,7 @@ news.post("/sign-up", parse, async function (req, res, next) {
 function loadToDo (req, res, next) {
   fs.readFile(join(root, "TODO"), "utf-8", function (err, todo) {
     if (err) {
-      console.log(err);
+      console.error(err);
       res.locals.todo = "";
       return next();
     }

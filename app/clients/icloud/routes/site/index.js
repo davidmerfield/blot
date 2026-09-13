@@ -29,8 +29,6 @@ site.get("/started", async function (req, res) {
     } else if (!panicNotificationsSent) {
       panicNotificationsSent = true;
       email.ICLOUD_SERVER_PANIC();
-    } else {
-      console.log("iCloud server restart: not sending any more notifications");
     }
   } catch (error) {
     console.error("Error handling /started notification:", error);

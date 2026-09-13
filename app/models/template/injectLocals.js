@@ -2,7 +2,6 @@ const FONTS = require("blog/static/fonts");
 const Mustache = require("mustache");
 const config = require("config");
 const SYNTAX_HIGHLIGHTER_THEMES = require("blog/static/syntax-highlighter");
-const clfdate = require("helper/clfdate");
 const FONT_PROTECTED_PROPS = ['styles', 'name', 'stack', 'id', 'svg', 'tags'];
 const SYNTAX_HIGHLIGHTER_PROPS_TO_DELETE = [
   'background',
@@ -116,7 +115,6 @@ function initializeFontStylesCache() {
     FONTS.forEach(font => {
       renderFontStyles(font.styles, font.id);
     });
-    console.log(clfdate(), `Font styles cache initialized with ${fontStylesCache.size} entries`);
   } catch (error) {
     console.error('Error initializing font styles cache:', error);
   }

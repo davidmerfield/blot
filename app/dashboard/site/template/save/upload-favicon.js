@@ -53,7 +53,7 @@ async function removeAssetsIfUnreferenced(req, favicon) {
   await Promise.all(
     paths.map((path) =>
       fs.remove(path).catch((err) =>
-        console.log(clfdate(), "uploadFavicon", "Failed to remove old asset", path, err.message)
+        console.error(clfdate(), "uploadFavicon", "Failed to remove old asset", path, err.message)
       )
     )
   );

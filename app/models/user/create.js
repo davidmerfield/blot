@@ -68,12 +68,12 @@ module.exports = function create (
 
       // Schedule a notifcation email for their subscription renewal
       scheduleSubscriptionEmail(user.uid, function (err) {
-        if (err) console.log(err);
+        if (err) console.error(err);
       });
 
       return callback(null, user);
     } catch (err) {
-      console.log(err);
+      console.error(err);
       return callback(err);
     }
   })();

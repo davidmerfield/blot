@@ -108,7 +108,7 @@ Account.post("/log-out", logout, function (req, res) {
 
 Account.use(function (err, req, res, next) {
   if (req.method === "GET") {
-    console.log(err, err.trace);
+    console.error(err, err.trace);
     res.status(400);
     res.render("dashboard/error", { error: err });
   } else if (req.method === "POST") {

@@ -60,7 +60,7 @@ code.hljs, .hljs {padding: 0;margin:0}
         background = background;
       } catch (e) {}
 
-      if (!background) console.log("missing background:", path);
+      if (!background) console.warn("Missing background:", path);
 
       const tags = [lightOrDark(background)];
 
@@ -85,7 +85,7 @@ code.hljs, .hljs {padding: 0;margin:0}
         ];
       } catch (e) {}
 
-      if (!colors.length) console.log("missing colors:", path);
+      if (!colors.length) console.warn("Missing colors:", path);
 
       return {
         name: title,

@@ -3,6 +3,7 @@ const express = require("express");
 const EventSource = require("eventsource");
 const fetch = require("node-fetch");
 const clfdate = require("helper/clfdate");
+const debug = require("debug")("blot:clients:webhooks");
 const querystring = require("querystring");
 const bodyParser = require("body-parser");
 
@@ -43,11 +44,11 @@ server.get("/connect", function (req, res) {
   const clientId = Date.now() + Math.random();
   subscribers.set(clientId, res);
 
-  console.log(clfdate(), `Client connected: ${clientId}. Total subscribers: ${subscribers.size}`);
+  debug(clfdate(), `Client connected: ${clientId}. Total subscribers: ${subscribers.size}`);
 
   req.on("close", function () {
     subscribers.delete(clientId);
-    console.log(clfdate(), `Client disconnected: ${clientId}. Total subscribers: ${subscribers.size}`);
+    debug(clfdate(), `Client disconnected: ${clientId}. Total subscribers: ${subscribers.size}`);
   });
 });
 
@@ -105,14 +106,11 @@ server.use(
 
     const metadata = JSON.stringify(message);
 
-    console.log(clfdate(), "Webhooks publishing metadata", metadata);
-
     // Broadcast metadata first
     for (const [clientId, subscriber] of subscribers.entries()) {
       try {
         subscriber.write("\n");
         subscriber.write("data: " + metadata + "\n\n");
-        console.log(clfdate(), "Delivered metadata to client", clientId);
       } catch (err) {
         console.error(clfdate(), `Error delivering metadata to client ${clientId}:`, err);
         subscribers.delete(clientId);
@@ -137,7 +135,6 @@ server.use(
           try {
             subscriber.write("\n");
             subscriber.write("data: " + chunkMessage + "\n\n");
-            console.log(clfdate(), `Delivered chunk ${i + 1}/${totalChunks} to client`, clientId);
           } catch (err) {
             console.error(clfdate(), `Error delivering chunk to client ${clientId}:`, err);
             subscribers.delete(clientId);
@@ -178,14 +175,8 @@ function listen({ host }) {
 
   const stream = new EventSource(url, options);
 
-  console.log(clfdate(), "Webhooks subscribing to", url);
-
-  stream.onopen = function () {
-    console.log(clfdate(), "Webhooks subscribed to", url);
-  };
-
   stream.onerror = function (err) {
-    console.log(clfdate(), "Webhooks error with remote server:", err);
+    console.error(clfdate(), "Webhooks error with remote server:", err);
   };
 
   stream.onmessage = async function ({ data }) {
@@ -209,16 +200,9 @@ function listen({ host }) {
       // Store the chunk in the correct index
       requestState.bodyChunks[parsed.chunkIndex] = parsed.chunk;
 
-      console.log(
-        clfdate(),
-        `Webhooks received chunk ${parsed.chunkIndex + 1}/${parsed.totalChunks} for requestId: ${requestId}`
-      );
-
       // Check if all chunks have been received
       if (requestState.bodyChunks.filter(Boolean).length === parsed.totalChunks) {
         const completeBody = requestState.bodyChunks.join("");
-
-        console.log(clfdate(), `Webhooks received complete body for requestId: ${requestId}`);
 
         // Remove the request from the map after completion
         pendingRequests.delete(requestId);
@@ -239,8 +223,6 @@ function listen({ host }) {
         console.error(clfdate(), "Received metadata without a requestId:", parsed);
         return;
       }
-
-      console.log(clfdate(), `Webhooks received metadata for requestId: ${requestId}`);
 
       if (parsed.bodySize === 0) {
         // If there's no body, forward immediately
@@ -272,11 +254,9 @@ function listen({ host }) {
 
       const localURL = "http://" + config.host + ":" + config.port + path;
 
-      console.log(clfdate(), "Webhooks forwarding to", localURL);
-
       await fetch(localURL, options);
     } catch (e) {
-      console.log(clfdate(), "Webhooks error forwarding request", e);
+      console.error(clfdate(), "Webhooks error forwarding request", e);
     }
   }
 }

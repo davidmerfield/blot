@@ -4,6 +4,7 @@ var ensure = require("helper/ensure");
 var TYPE = require("./scheme").TYPE;
 var validate = require("./validate");
 var get = require("./get");
+var debug = require("debug")("blot:blog:set");
 var serial = require("./serial");
 var client = require("models/client");
 var config = require("config");
@@ -79,7 +80,7 @@ module.exports = function (blogID, blog, callback) {
           }
         } catch (forkError) {
           // for now, do nothing
-          console.log('Blog.set', blogID, 'Error forking template', forkError);
+          debug("Error forking template", blogID, forkError);
         }
       }
 
@@ -197,7 +198,7 @@ module.exports = function (blogID, blog, callback) {
             await updateCdnManifestAsync(template);
           } catch (updateError) {
             // for now, do nothing
-            console.log('Blog.set', blogID, 'Error updating template CDN manifest', updateError);
+            debug("Error updating template CDN manifest", blogID, updateError);
           }
         }
 

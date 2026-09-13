@@ -21,12 +21,12 @@ module.exports = async function (blogID) {
       await sync(blogID, folder.status, folder.update);
       await fix(blog);
     } catch (err) {
-      console.log(clfdate(), "Google Drive Sync:", "Sync failed", err);
+      console.error(clfdate(), "Google Drive Sync:", "Sync failed", err);
     } finally {
       // It's important to always release the lock
       await done();
     }
   } catch (err) {
-    console.log(clfdate(), "Google Drive Sync:", "Sync init failed", err);
+    console.error(clfdate(), "Google Drive Sync:", "Sync init failed", err);
   }
 };

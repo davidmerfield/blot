@@ -48,20 +48,16 @@ module.exports = async function () {
 
   let oneAccountHasPlentyOfSpace = false;
 
-  // Log all accounts and their free space
+  // Check whether at least one account has a comfortable amount of free space.
   validServiceAccounts.forEach((account) => {
     const freeSpace = account.storageQuota.limit - account.storageQuota.usage;
     if (freeSpace >= WARN_FREE_SPACE_BYTES) {
       oneAccountHasPlentyOfSpace = true;
     }
-    console.log(
-      prefix(),
-      `Service account ${account.serviceAccountId} has ${freeSpace} bytes of free space.`
-    );
   });
 
   if (!oneAccountHasPlentyOfSpace) {
-    console.log(prefix(), "No service accounts with plenty of free space found.");
+    console.warn(prefix(), "No service accounts with plenty of free space found.");
     email.GOOGLE_DRIVE_SERVICE_ACCOUNT_LOW();
   }
 
@@ -96,13 +92,6 @@ module.exports = async function () {
 
   // Select the service account with the fewest blogs
   const selectedAccount = validServiceAccountsWithFreeSpace[0];
-
-  const selectedFreeSpace =
-    selectedAccount.storageQuota.limit - selectedAccount.storageQuota.usage;
-  console.log(
-    prefix(),
-    `Selected service account: ${selectedAccount.blogs} blogs, ${selectedAccount.serviceAccountId} with ${selectedFreeSpace} bytes of free space.`
-  );
 
   // Check to see if we need to warn about low free space
 

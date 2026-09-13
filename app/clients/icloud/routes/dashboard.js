@@ -112,9 +112,6 @@ dashboard
           existing.setupStartedAt &&
           Date.now() - existing.setupStartedAt < 1000 * 90
         ) {
-          console.log(
-            `Setup already in progress for blogID: ${blogID}, ignoring duplicate request`
-          );
           return res.redirect(req.baseUrl);
         }
 
@@ -141,7 +138,6 @@ dashboard
       // has been accepted (202) – it does NOT wait for the folder to be
       // created, so the timeout here only needs to cover the acknowledgement.
       // The outcome arrives later via POST /status.
-      console.log(`Sending setup request to Macserver for blogID: ${blogID}`);
       try {
         await fetch(`${MACSERVER_URL}/setup`, {
           method: "POST",
@@ -174,8 +170,6 @@ dashboard
         }
         return next(new Error(message));
       }
-
-      console.log(`Macserver accepted setup request for blogID: ${blogID}`);
 
       // Redirect back to the dashboard – the status line takes it from here.
       res.redirect(req.baseUrl);

@@ -80,8 +80,7 @@ const middleware = async (req, res, next) => {
     res.locals.days = updatedDays;
     return next();
   } catch (e) {
-    console.log("News page: error fetching git commits");
-    console.log(e);
+    console.error("News page: error fetching git commits", e);
     res.locals.recent_commits = [];
     res.locals.days = [];
     return next();

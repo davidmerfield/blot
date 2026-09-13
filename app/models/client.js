@@ -10,10 +10,7 @@
 const client = require("./redis")();
 
 client.connect().catch((err) => {
-  console.log("Redis connect error:");
-  console.log(err);
-  if (err.trace) console.log(err.trace);
-  if (err.stack) console.log(err.stack);
+  console.error("Redis connect error:", err);
 });
 
 module.exports = client;

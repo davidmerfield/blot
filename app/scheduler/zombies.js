@@ -14,8 +14,6 @@ if (require.main === module) {
 function main(callback) {
   const prefix = () => clfdate() + " Zombies:";
 
-  console.log(prefix(), "checking");
-
   // We determine zombies processes as commands invoked with node
   // on something within Blot's directory, e.g. node app whose
   // process parent ID is the OS (i.e. ppid = 1). This usually
@@ -29,22 +27,19 @@ function main(callback) {
       const zombie_pids = stdout.split("\n").filter((i) => !!i);
 
       if (zombie_pids.length) {
-        console.log(prefix(), `${zombie_pids.length} zombies found`);
+        console.warn(prefix(), `${zombie_pids.length} zombies found`);
         email.ZOMBIE_PROCESS();
-      } else {
-        console.log(prefix(), `none found`);
       }
 
       async.eachSeries(
         zombie_pids,
         (pid, next) => {
-          console.log(prefix(), "killing pid =", pid);
+          console.warn(prefix(), "killing pid =", pid);
           exec(`kill ${pid}`, function (err, stdout) {
             if (err) {
-              console.log(prefix(), "error killing pid =", pid, err);
+              console.error(prefix(), "error killing pid =", pid, err);
               next(err);
             } else {
-              console.log(prefix(), "killed pid =", pid, "stdout =", stdout);
               next();
             }
           });

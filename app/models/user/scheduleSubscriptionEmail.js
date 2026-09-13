@@ -145,12 +145,6 @@ module.exports = function (uid, callback) {
 
     // Let the callee know the email is schedule
     debug(user.uid, user.email, "scheduled warning email....");
-    console.log(
-      "Scheduled subscription email on",
-      notificationDate,
-      "for",
-      user.email
-    );
     callback();
   });
 };

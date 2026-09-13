@@ -55,12 +55,10 @@ module.exports = async () => {
       async.eachSeries(
         blogIDs,
         function (blogID, next) {
-          console.log(prefix(), "Blog:", blogID, "Setting up");
           Blog.get({ id: blogID }, function (err, blog) {
             if (err) return next(err);
             if (!blog || blog.client !== "local") return next();
 
-            console.log(prefix(), "Synchronizing", blogID);
             setup(blogID, function (err) {
               if (err) return next(err);
               next();
@@ -68,7 +66,7 @@ module.exports = async () => {
           });
         },
         function (err) {
-          console.log(prefix(), "Checked all blogs");
+          if (err) console.error(prefix(), "Unable to initialize local blogs", err);
         }
       );
     });

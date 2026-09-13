@@ -14,8 +14,6 @@ module.exports = async function watchChanges(serviceAccountId, drive) {
 
   const now = Date.now();
 
-  console.log(prefix(), `Service account client_id=${serviceAccountId} Ensuring service account is watching for changes`);
-
   // Step 1: Check for existing valid channels
   const existingChannels = await database.channel.listByServiceAccount(serviceAccountId);
   if (existingChannels && existingChannels.length > 0) {
@@ -28,18 +26,10 @@ module.exports = async function watchChanges(serviceAccountId, drive) {
         channelData.expiration &&
         Number(channelData.expiration) - now > 20 * 60 * 1000
       ) {
-        console.log(
-          prefix(),
-          `Service account client_id=${serviceAccountId} Existing channel ${channelId} is valid and will expire in ${
-            (Number(channelData.expiration) - now) / 1000 / 60
-          } minutes`
-        );
         return;
       }
     }
   }
-
-  console.log(prefix(), `Service account client_id=${serviceAccountId} Setting up new changes.watch channel`);
 
   // Step 2: Set up a new channel
   const channelId = guid();
@@ -78,11 +68,6 @@ module.exports = async function watchChanges(serviceAccountId, drive) {
   } catch (err) {
     throw new Error(`Failed to set up changes.watch channel: ${err.message}`);
   }
-
-  console.log(
-    prefix(),
-    `Service account client_id=${serviceAccountId} New changes.watch channel created: channelId=${response.data.id}, expiration=${response.data.expiration}`
-  );
 
   const newChannel = {
     type: "changes.watch",

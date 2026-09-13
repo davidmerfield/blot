@@ -18,10 +18,6 @@ const setupLimiter = new Bottleneck({
  * @param {string} sharingLink - The iCloud sharing link for the folder
  */
 const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
-  console.log(clfdate(), 
-    `Waiting for a new folder to set up blogID: ${blogID} using sharingLink: ${sharingLink}`
-  );
-
   const checkInterval = 100; // Interval (in ms) to check for new directories
   const timeout = 1000 * 15; // Timeout (in ms) to wait for a new directory: 15 seconds 
   const start = Date.now();
@@ -34,13 +30,6 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
     .filter((dir) => dir.isDirectory())
     .map((dir) => dir.name);
 
-  console.log(clfdate(), 
-    `Initial state of iCloud Drive: ${
-      initialDirNames.join(", ") || "No directories"
-    }`
-  );
-
-  console.log(clfdate(), "running the acceptSharingLink script");
   await acceptSharingLink(sharingLink);
 
   while (true && Date.now() - start < timeout) {
@@ -59,7 +48,6 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
 
     if (newDirs.length > 0) {
       const newDirName = newDirs[0]; // Handle the first new directory found
-      console.log(clfdate(), `Found new folder: ${newDirName}`);
 
       const oldPath = join(iCloudDriveDirectory, newDirName);
       const newPath = join(iCloudDriveDirectory, blogID);
@@ -69,7 +57,6 @@ const setupBlog = setupLimiter.wrap(async (blogID, sharingLink) => {
 
       // Rename the folder
       await fs.rename(oldPath, newPath);
-      console.log(clfdate(), `Renamed folder from ${newDirName} to ${blogID}`);
       return; // Setup is complete, exit the loop
     }
 
@@ -148,7 +135,6 @@ end try
 `;
 
 async function acceptSharingLink(sharingLink) {
-  console.log(clfdate(), `Running AppleScript to accept sharing link: ${sharingLink}`);
   const escapedSharingLink = escapeAppleScriptString(sharingLink);
 
   let stdout;
@@ -179,7 +165,6 @@ async function acceptSharingLink(sharingLink) {
   // We don't know if the script succeeded or failed because it's hard to 
   // write to stdout or stderr from AppleScript. We check if it worked
   // by determining if the folder was created
-  console.log(clfdate(), `AppleScript finished`);
 }
 
 export default async (req, res) => {
@@ -198,10 +183,6 @@ export default async (req, res) => {
     });
     return res.status(400).send("Missing sharingLink header");
   }
-
-  console.log(clfdate(),
-    `Received setup request for blogID: ${blogID}, sharingLink: ${sharingLink}`
-  );
 
   // Setting up a folder involves driving the Finder UI via AppleScript and then
   // waiting for iCloud to materialise the shared folder, which can take tens of
@@ -222,7 +203,6 @@ export default async (req, res) => {
 
   setupBlog(blogID, sharingLink)
     .then(() => {
-      console.log(clfdate(), `Setup complete for blogID: ${blogID}`);
       return reportStatus({ acceptedSharingLink: true, error: null });
     })
     .catch((error) => {

@@ -27,8 +27,6 @@ export default async (...args) => {
     throw new Error("Invalid number of arguments: expected 2");
   }
 
-  console.log(clfdate(), `Sending status for blogID: ${blogID}`, status);
-
   try {
     await fetch(`${remoteServer}/status`, {
       method: "POST",
@@ -48,5 +46,4 @@ export default async (...args) => {
     throw error;
   }
 
-  console.log(clfdate(), `Status sent for blogID: ${blogID}`);
 };

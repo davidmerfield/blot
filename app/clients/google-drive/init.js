@@ -13,7 +13,7 @@ const main = async (initial = false) => {
   const serviceAccounts = config.google_drive.service_accounts;
 
   if (!serviceAccounts || serviceAccounts.length === 0) {
-    console.log(prefix(), "No service accounts found in the configuration.");
+    console.warn(prefix(), "No service accounts found in the configuration.");
     return;
   }
 
@@ -31,20 +31,17 @@ const main = async (initial = false) => {
       const drive = await createDriveClient(serviceAccountId);
       const driveactivity = await createDriveActivityClient(serviceAccountId);
 
-      console.log(prefix(), "Fetching storage usage of service account");
       await fetchStorageInfo(serviceAccountId, drive);
 
       await watchChanges(serviceAccountId, drive);
 
       // We only want to set up polling once, when the service account is first initialized
       if (initial) {
-        console.log(prefix(), "Set up polling for drive activity");
         pollDriveActivity(serviceAccountId, driveactivity);
       }
 
       // Todo: also sync all sites that are using this service account
 
-      console.log(prefix(), "Service account is running successfully");
     } catch (e) {
       console.error(
         "Google Drive client: error with configuration of serviceAccount"

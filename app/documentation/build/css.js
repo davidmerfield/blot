@@ -3,8 +3,6 @@ const CleanCSS = require("clean-css");
 const { join } = require("path");
 const fs = require("fs-extra");
 const recursiveReadDir = require("helper/recursiveReadDirSync");
-const prettySize = require("helper/prettySize");
-const clfdate = require("helper/clfdate");
 
 const buildFinderCSS = require("../tools/finder/build.js");
 const { DOCUMENTATION_BUNDLE_EXCLUDES } = require("./pageSpecificAssets");
@@ -30,21 +28,11 @@ module.exports = ({ source, destination }) => async () => {
     join(destination, "documentation.min.css"),
     fullDocumentationCSS
   );
-  console.log(
-    clfdate(),
-    "documentation.min.css built: ",
-    prettySize(Buffer.byteLength(fullDocumentationCSS, "utf8") / 1024)
-  );
 
   const dashboardCSS = await mergeCSSFiles(dashboardFiles);
   await fs.writeFile(
     join(destination, "dashboard.min.css"),
     dashboardCSS.styles
-  );
-  console.log(
-    clfdate(),
-    "dashboard.min.css built: ",
-    prettySize(dashboardCSS.stats.minifiedSize / 1024)
   );
 };
 

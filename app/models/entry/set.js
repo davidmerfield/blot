@@ -3,7 +3,6 @@ var ensure = require("helper/ensure");
 var model = require("./model");
 var redis = require("models/client");
 var guid = require("helper/guid");
-var clfdate = require("helper/clfdate");
 var debug = require("debug")("blot:entry:set");
 var get = require("./get");
 var key = require("./key");
@@ -200,42 +199,18 @@ module.exports = function set (blogID, path, updates, callback) {
                 function (err, changes) {
                   if (err) return callback(err);
 
-                  if (changes.length)
-                    console.log(
-                      clfdate(),
-                      blogID.slice(0, 12),
-                      "updating backlinks:",
-                      path
-                    );
                   async.eachOf(
                     changes,
                     function (backlinks, linkedEntryPath, next) {
-                      console.log(
-                        clfdate(),
-                        blogID.slice(0, 12),
-                        "    - linked entry:",
-                        linkedEntryPath
-                      );
                       set(blogID, linkedEntryPath, { backlinks }, function (err) {
                         if (err) {
-                          console.log(
-                            clfdate(),
-                            blogID.slice(0, 12),
-                            "    - error updating linked entry:",
-                            linkedEntryPath
-                          );
-                          console.log(err);
+                          debug("Error updating linked entry", linkedEntryPath, err);
                         }
                         next();
                       });
                     },
                     function (err) {
                       if (err) return callback(err);
-                      if (entry.deleted) {
-                        console.log(clfdate(), blogID.slice(0, 12), "delete", path);
-                      } else {
-                        console.log(clfdate(), blogID.slice(0, 12), "update", path);
-                      }
                       callback();
                     }
                   );

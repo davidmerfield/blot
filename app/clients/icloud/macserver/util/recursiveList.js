@@ -41,10 +41,6 @@ async function recursiveList(dirPath, depth = 0) {
 
 function startRun(dirPath, entry) {
   try {
-    console.log(
-      clfdate(),
-      `Starting recursive list: ${dirPath} (timeout: ${Math.round(RECURSIVE_LIST_TIMEOUT_MS / 1000)}s)`
-    );
     const startTime = Date.now();
 
     entry.inFlight = (async () => {
@@ -53,13 +49,6 @@ function startRun(dirPath, entry) {
       try {
         progressInterval = setInterval(() => {
           const elapsedMs = Date.now() - startTime;
-          console.log(
-            clfdate(),
-            `Progress: ${Math.round(elapsedMs / 1000)}s elapsed (timeout: ${Math.round(
-              RECURSIVE_LIST_TIMEOUT_MS / 1000
-            )}s), processing: ${dirPath}`
-          );
-
           if (elapsedMs >= RECURSIVE_LIST_TIMEOUT_MS) {
             console.warn(
               clfdate(),
@@ -75,14 +64,6 @@ function startRun(dirPath, entry) {
         if (progressInterval) {
           clearInterval(progressInterval);
         }
-
-        const elapsedMs = Date.now() - startTime;
-        console.log(
-          clfdate(),
-          `Completed recursive list: ${dirPath} (${Math.round(
-            elapsedMs / 1000
-          )}s elapsed, timeout: ${Math.round(RECURSIVE_LIST_TIMEOUT_MS / 1000)}s)`
-        );
 
         if (entry.rerunRequested) {
           entry.rerunRequested = false;

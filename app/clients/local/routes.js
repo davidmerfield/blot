@@ -12,7 +12,7 @@ var Dashboard = Express.Router();
 Dashboard.get("/", function (req, res, next) {
   function render() {
     setup(req.blog.id, function (err) {
-      if (err) console.log("Error setting up", err);
+      if (err) console.error("Error setting up", err);
     });
 
     res.render(__dirname + "/views/index.html");

@@ -37,6 +37,5 @@ export default async (req, res) => {
     console.error(clfdate(), `Error getting number of blogs connected: ${error}`);
   }
 
-  console.log(clfdate(), "Sending stats:", result);
   res.json(result);
 };

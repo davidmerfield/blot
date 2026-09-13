@@ -2,7 +2,6 @@ var Entries = require("models/entries");
 var async = require("async");
 var Entry = require("models/entry");
 var Blog = require("models/blog");
-var clfdate = require("helper/clfdate");
 var DateStamp = require("build/prepare/dateStamp");
 
 const { isDraft } = require("sync/update/drafts");
@@ -118,20 +117,6 @@ module.exports = function (blogID, callback) {
                   if (recomputed !== undefined) updates.dateStamp = recomputed;
                 }
               }
-
-              console.log(
-                clfdate(),
-                blogID.slice(0, 12),
-                "rename",
-                deletedEntry.path
-              );
-
-              console.log(
-                clfdate(),
-                blogID.slice(0, 12),
-                "----->",
-                createdEntry.path
-              );
 
               // we need to remove the guid of the deleted entry
               // so it is only renamed once

@@ -112,7 +112,6 @@ module.exports = async function resolveCaseConflicts(blogID, publish, update) {
       ? await collectTreePaths(blogID, fromRel)
       : null;
     await fs.move(localPath(blogID, fromRel), localPath(blogID, toRel));
-    console.log(prefix(), "Renamed conflict", fromRel, "->", toRel);
     publish("Renamed conflict", fromRel, "->", toRel);
     await updatePathAndParents(update, fromRel);
     await updatePathAndParents(update, toRel);

@@ -101,7 +101,7 @@ Acquires a filesystem lock on the blog's folder using `proper-lockfile`, then ca
   - `folder.path` — absolute path to the blog's local folder (trailing slash stripped).
   - `folder.update(path, callback)` — processes a single path. See `update/index.js`.
   - `folder.status(message)` — broadcasts a status message via Redis pub/sub.
-  - `folder.log(...args)` — writes a prefixed log line to stdout.
+  - `folder.log(...args)` — writes a prefixed debug log line.
   - `done(syncError, callback)` — releases the lock. Must be called exactly once. Internally runs `renames`, `buildFromFolder` (templates), and bumps `blog.cacheID` when at least one `folder.update` was called.
 
 **Lock configuration:**
@@ -184,7 +184,7 @@ Draft detection rules:
 Called once per sync with the `blog` object. Returns `{ log, status, syncID }`.
 
 - `syncID` — a UUID prefix of the form `sync_XXXXXXX`, unique per sync session.
-- `log(...args)` — prefixes each line with timestamp, truncated blog ID, syncID, and client name, then writes to stdout.
+- `log(...args)` — prefixes each line with truncated blog ID, syncID, and client name, then sends it to the debug logger.
 - `status(message)` — calls `Blog.setStatus`, calls `log`, and publishes to the Redis channel `sync:status:{blogID}`.
 
 ### `lock-diagnostics-state.js`

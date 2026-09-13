@@ -2,7 +2,7 @@ const fs = require("fs-extra");
 const { promisify } = require("util");
 // const upload = promisify(require("clients/dropbox/util/upload"));
 const join = require("path").join;
-const clfdate = require("helper/clfdate");
+const debug = require("debug")("blot:clients:dropbox:resetFromBlot");
 const localPath = require("helper/localPath");
 const hashFile = promisify((path, cb) => {
   require("helper/hashFile")(path, (err, result) => {
@@ -28,7 +28,7 @@ function abortIfRequested(signal) {
 
 function log() {
   const args = Array.prototype.slice.call(arguments);
-  console.log(clfdate() + " Dropbox:", args.join(" "));
+  debug("Dropbox:", args.join(" "));
 }
 
 // Counts every local file and subdirectory (not the root) so folder

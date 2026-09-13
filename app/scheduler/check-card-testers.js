@@ -1,6 +1,6 @@
 // Iterate over Stripe customers and check if they have created a blog or nor
-// If there are users without a blog, log their information to the console
-// so we can investigate further as to why they haven't created a blog yet
+// Return Stripe customers without a corresponding Blot user so the scheduler
+// can notify the administrator for investigation.
 const User = require('models/user');
 const config = require("config");
 const stripe = require("stripe")(config.stripe.secret);
@@ -17,8 +17,6 @@ module.exports = async function (startingAfter = null) {
     
     const suspectedUsers = [];
 
-    console.log('listing 100 customers starting after', startingAfter || 'beginning');
-
     const parameters = startingAfter ? { limit: 100, starting_after: startingAfter } : { limit: 100 };
     const response = await stripe.customers.list(parameters);
 
@@ -31,22 +29,17 @@ module.exports = async function (startingAfter = null) {
         const days = diff / (1000 * 60 * 60 * 24);
 
         if (days > 7) {
-            console.log('Checked the last 7 days of customers, finishing script');
             return suspectedUsers
         }
 
         const user = await getByCustomerId(customer.id);
     
         if (!user) {
-            console.log(`No user found for customer ${customer.id}`);
             suspectedUsers.push(customer);
-         } else {
-            console.log(`User found for customer ${customer.id}`);
          }
     }
 
     if (!response.has_more) {
-        console.log("No more customers to fetch");
         return suspectedUsers;
     }
 
@@ -56,9 +49,9 @@ module.exports = async function (startingAfter = null) {
 if (require.main === module) {
     module.exports().then((suspectedUsers) => {
         suspectedUsers.forEach((user) => {
-            console.log(`No user found for customer ${customer.id} with email ${customer.email}`);
-            console.log(`https://dashboard.stripe.com/customers/${customer.id}`);         
-            console.log('node scripts/user/refund-and-delete.js', customer.id);   
+            console.log(`No user found for customer ${user.id} with email ${user.email}`);
+            console.log(`https://dashboard.stripe.com/customers/${user.id}`);
+            console.log('node scripts/user/refund-and-delete.js', user.id);
         });
     });
 }

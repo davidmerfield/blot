@@ -1,7 +1,6 @@
 const fs = require("fs-extra");
 const { join } = require("path");
 const localPath = require("helper/localPath");
-const clfdate = require("helper/clfdate");
 const download = require("./util/download");
 const CheckWeCanContinue = require("./util/checkWeCanContinue");
 const localReaddir = require("./util/localReaddir");
@@ -18,10 +17,7 @@ const config = require("config");
 const maxFileSize = config.icloud.maxFileSize; // Maximum file size for iCloud uploads in bytes
 
 module.exports = async (blogID, publish, update) => {
-  if (!publish)
-    publish = (...args) => {
-      console.log(clfdate() + " iCloud:", args.join(" "));
-    };
+  if (!publish) publish = () => {};
 
   if (!update) update = () => {};
 
@@ -50,7 +46,6 @@ module.exports = async (blogID, publish, update) => {
   }
 
   const walk = async (dir) => {
-    console.log(clfdate(), `Syncing folder: ${dir}`);
     const [remoteContents, localContents] = await Promise.all([
       remoteReaddir(blogID, dir),
       localReaddir(localPath(blogID, dir)),

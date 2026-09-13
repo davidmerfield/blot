@@ -59,9 +59,6 @@ async function purgeUrlWithRetries(urlToPurge) {
       });
 
       if (res.status === 200) {
-        console.log(
-          `Purged Bunny CDN: ${urlToPurge} (attempt ${attempt}/${totalAttempts})`
-        );
         return;
       }
 

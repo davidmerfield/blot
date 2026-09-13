@@ -40,11 +40,6 @@ module.exports = async function (req, res) {
     if (existingEntry) {
       const isCooldown = existingEntry.cooldownUntil > now;
       if (existingEntry.inFlight || isCooldown) {
-        console.log("Resync request deduplicated", {
-          blogID,
-          inFlight: existingEntry.inFlight,
-          cooldownUntil: existingEntry.cooldownUntil,
-        });
         return res.send("ok");
       }
       resyncDedupRegistry.delete(blogID);
@@ -67,7 +62,6 @@ module.exports = async function (req, res) {
 
       try {
         folder.status("Resync requested");
-        console.log("Resync requested from iCloud", { blogID });
         email.ICLOUD_RESYNC_REQUESTED(null, { blogID });
 
         // Since we treat the iCloud folder as the source of truth,
@@ -133,7 +127,6 @@ module.exports = async function (req, res) {
 
       try {
         folder.status("Error: " + status.error);
-        console.log("Setup failed", { blogID, error: status.error });
       } finally {
         await done();
       }
@@ -159,7 +152,6 @@ module.exports = async function (req, res) {
 
       try {
         folder.status("Sync update from iCloud");
-        console.log("Sync update from iCloud", status);
         folder.status("Sync complete");  
       } finally {
         await done();

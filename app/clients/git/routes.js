@@ -56,8 +56,6 @@ dashboard.get("/create", function (req, res) {
 dashboard.post("/create", function (req, res, next) {
   
   if (req.body.cancel) {
-    console.log(clfdate() + " Git: User cancelled creation of repo");
-
     if (!req.blog.client) {
       return res.redirect(res.locals.dashboardBase + "/client");
     }
@@ -72,7 +70,7 @@ dashboard.post("/create", function (req, res, next) {
 
     create(req.blog, function (err) {
       if (err) {
-        console.log(clfdate() + " Git: Error creating repo", err);
+        console.error(clfdate() + " Git: Error creating repo", err);
       }
     });
   });

@@ -2,6 +2,7 @@
 // airlock proxy so an internal address can't be reached. See helper/airlock.
 const fetch = require("helper/airlock").fetch;
 const Bottleneck = require("bottleneck");
+const debug = require("debug")("blot:documentation:featured:verify-site");
 
 // Create a single global limiter
 const limiter = new Bottleneck({
@@ -12,7 +13,7 @@ const limiter = new Bottleneck({
 const check = async host => {
   try {
 
-    console.log("Checking if " + host + " is online...");
+    debug("Checking if " + host + " is online...");
 
     const res = await fetch("https://" + host + "/verify/domain-setup", {
       timeout: 5000 // 5 seconds

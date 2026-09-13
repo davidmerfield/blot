@@ -16,7 +16,6 @@ tocbot.init({
 }
 
   function refreshToc() {
-    console.log('refreshing toc');
  
   tocbot.refresh();
 
@@ -30,4 +29,3 @@ tocbot.init({
   }
 
   
-

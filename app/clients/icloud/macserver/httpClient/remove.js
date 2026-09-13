@@ -27,7 +27,6 @@ export default async (...args) => {
     throw new Error("Invalid number of arguments: expected 2");
   }
 
-  console.log(clfdate(), `Issuing external delete for blogID: ${blogID}, path: ${path}`);
   const pathBase64 = Buffer.from(path).toString("base64");
 
   try {
@@ -48,5 +47,4 @@ export default async (...args) => {
     throw error;
   }
 
-  console.log(clfdate(), `Delete successful`);
 };

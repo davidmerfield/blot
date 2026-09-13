@@ -15,7 +15,6 @@ var parseTemplate = require("./parseTemplate");
 var ERROR = require("../../blog/render/error");
 var updateCdnManifest = require("./util/updateCdnManifest");
 var serializeRedisHashValues = require("models/redisHashSerializer");
-var clfdate = require("helper/clfdate");
 var applyUserRetrieveOptions = require("./util/applyUserRetrieveOptions");
 const MAX_VIEW_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
@@ -24,7 +23,6 @@ module.exports = function setView(templateID, updates, callback) {
 
         if (updates.partials !== undefined && type(updates.partials) !== "object") {
 		updates.partials = {};
-		console.log(templateID, updates, "Partials are wrong type");
 	}
 
 	var name = updates.name;
@@ -201,29 +199,8 @@ module.exports = function setView(templateID, updates, callback) {
 					retrieveUnchanged
 				) {
 					// Nothing has changed, skip all expensive operations
-					console.log(
-						clfdate(),
-						templateID.slice(0, 12),
-						"setView: short-circuit",
-						name,
-					);
-					return callback();
-				} else {
-					console.log(
-						clfdate(),
-						templateID.slice(0, 12),
-						"setView: proceeding",
-						name,
-						"contentUnchanged=" + contentUnchanged,
-						"urlUnchanged=" + urlUnchanged,
-						"urlPatternsUnchanged=" + urlPatternsUnchanged,
-						"localsUnchanged=" + localsUnchanged,
-						"partialsUnchanged=" + partialsUnchanged,
-						"retrieveUnchanged=" + retrieveUnchanged,
-					);
-				}
-
-				console.log(clfdate(), templateID.slice(0, 12), "setView:", name);
+                    return callback();
+                }
 
 				var existingRetrieve = view.retrieve || {};
 
@@ -323,12 +300,10 @@ module.exports = function setView(templateID, updates, callback) {
 						multi.hSet(viewKey, view);
 
 						if (shouldRemoveUrl) {
-							console.log("removing hdel", viewKey, "url");
-							multi.hDel(viewKey, "url");
+                            multi.hDel(viewKey, "url");
 						}
 						if (shouldRemoveUrlPatterns) {
-							console.log("removing hdel", viewKey, "urlPatterns");
-							multi.hDel(viewKey, "urlPatterns");
+                            multi.hDel(viewKey, "urlPatterns");
 						}
 
 						// node-redis v5 multi.exec() returns a thenable; normalize to Promise so .then/.catch chain reliably

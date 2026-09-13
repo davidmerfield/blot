@@ -6,7 +6,6 @@ const chokidar = require("chokidar");
 const html = require("./html");
 const favicon = require("./favicon");
 const recursiveReadDir = require("../../helper/recursiveReadDirSync");
-const clfdate = require("helper/clfdate");
 
 const SOURCE_DIRECTORY = join(__dirname, "../../views");
 const DESTINATION_DIRECTORY = config.views_directory;
@@ -72,9 +71,7 @@ async function computeViewsHash() {
 
 async function restoreFromCache(cacheDir) {
   if (fs.pathExistsSync(cacheDir)) {
-    console.log(clfdate(), "Restoring documentation from cache");
     fs.copySync(cacheDir, DESTINATION_DIRECTORY);
-    console.log(clfdate(), "Cache restored");
     return true;
   }
   return false;
@@ -83,7 +80,6 @@ async function restoreFromCache(cacheDir) {
 async function saveToCache(cacheDir) {
   await fs.ensureDir(cacheDir);
   await fs.copy(DESTINATION_DIRECTORY, cacheDir);
-  console.log(clfdate(), "Documentation cache saved");
 }
 
 async function cleanOldCaches(cacheRoot, currentHash) {
@@ -93,7 +89,6 @@ async function cleanOldCaches(cacheRoot, currentHash) {
       if (entry !== currentHash) {
         const oldCachePath = join(cacheRoot, entry);
         await fs.remove(oldCachePath);
-        console.log(clfdate(), "Removed old cache:", entry);
       }
     }
   } catch (e) {
@@ -111,14 +106,12 @@ const handle =
 
       if (path.includes("tools/")) {
         if (initial) return;
-        console.log("Rebuilding tools");
         await tools();
         return;
       }
 
       if (path.startsWith("templates/")) {
         if (initial) return;
-        console.log("Rebuilding templates pages");
         await templates();
         return;
       }
@@ -180,8 +173,6 @@ const handle =
   };
 
 module.exports = async ({ watch = false, skipZip = false } = {}) => {
-  const now = Date.now();
-
   let cacheDir = null;
   let cacheRestored = false;
 
@@ -229,15 +220,7 @@ module.exports = async ({ watch = false, skipZip = false } = {}) => {
     await buildJS();
 
     try {
-      console.log(
-        clfdate(),
-        "Generating list of recent activity for the news page"
-      );
       await gitCommits();
-      console.log(
-        clfdate(),
-        "Generated list of recent activity for the news page"
-      );
     } catch (e) {
       console.error(
         "Failed to generate list of recent activity for the news page"
@@ -252,13 +235,6 @@ module.exports = async ({ watch = false, skipZip = false } = {}) => {
       await cleanOldCaches(cacheRoot, hash);
     }
   }
-
-  console.log(
-    clfdate(),
-    "Build completed in",
-    (Date.now() - now) / 1000,
-    "seconds"
-  );
 
   if (watch) {
     const handler = handle(false, cacheDir);

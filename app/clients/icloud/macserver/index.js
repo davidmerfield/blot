@@ -27,8 +27,6 @@ const startServer = async () => {
   const app = express();
 
   app.use((req, res, next) => {
-    console.log(clfdate(), `Request: ${req.method} ${req.url}`);
-
     const authorization = req.header("Authorization"); // New header for the Authorization secret
 
     if (authorization !== Authorization) {

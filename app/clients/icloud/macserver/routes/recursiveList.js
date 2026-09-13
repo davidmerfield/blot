@@ -31,10 +31,6 @@ export default async (req, res) => {
       .send("Invalid path: attempted to access parent directory");
   }
 
-  console.log(clfdate(), 
-    `Received recursiveList request for blogID: ${blogID}, path: ${path}`
-  );
-
   try {
     await recursiveList(dirPath);
     res.status(200).json({ success: true });

@@ -10,13 +10,13 @@ module.exports = function (req, res, next) {
 
   Entries.getListIDs(blogID, "scheduled", options, function (err, ids) {
     if (err) {
-      console.log(err);
+      console.error(err);
       return next();
     }
 
     Entry.get(blogID, ids, function (entries) {
       if (err) {
-        console.log(err);
+        console.error(err);
         return next();
       }
 

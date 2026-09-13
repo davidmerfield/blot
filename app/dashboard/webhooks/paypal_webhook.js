@@ -5,6 +5,7 @@ const User = require("models/user");
 const config = require("config");
 const clfdate = require("helper/clfdate");
 const subscriptionLifecycle = require("models/user/subscriptionLifecycle");
+const debug = require("debug")("blot:dashboard:webhooks:paypal");
 
 const SUBSCRIPTION_EVENTS = [
   "BILLING.SUBSCRIPTION.CANCELLED",
@@ -75,11 +76,11 @@ paypal.post("/", parser.json(), async (req, res) => {
   try {
     const verified = await verifyPayPalWebhook(req);
     if (!verified) {
-      console.log(prefix(), "signature verification failed");
+      console.warn(prefix(), "signature verification failed");
       return res.status(400).send("Invalid signature");
     }
   } catch (err) {
-    console.log(prefix(), "signature verification error", err);
+    console.error(prefix(), "signature verification error", err);
     return res.sendStatus(503);
   }
 
@@ -92,21 +93,18 @@ paypal.post("/", parser.json(), async (req, res) => {
   // if the webhook is for a subscription-related event, update the subscription
   if (SUBSCRIPTION_EVENTS.includes(eventType)) {
     if (typeof subscriptionID !== "string" || !subscriptionID) {
-      console.log(prefix(), "missing resource.id for", eventType);
+      console.warn(prefix(), "missing resource.id for", eventType);
       return res.sendStatus(400);
     }
 
-    console.log(prefix(), eventType, subscriptionID);
-
     try {
       await updateSubscription(subscriptionID);
-      console.log(prefix(), "Updated subscription successfully");
     } catch (err) {
-      console.log(prefix(), err);
+      console.error(prefix(), err);
       return res.sendStatus(503);
     }
   } else {
-    console.log(prefix(), "Unhandled event", req.body);
+    debug("Unhandled event", eventType);
   }
 
   res.status(200).send("OK");

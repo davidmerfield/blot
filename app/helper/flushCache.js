@@ -1,6 +1,3 @@
-const clfdate = require("./clfdate");
-const prefix = () => `${clfdate()} flushCache:`;
-
 module.exports = ({
   reverse_proxies,
   requestsPerSecond = 3,
@@ -26,7 +23,6 @@ module.exports = ({
     isProcessing = true;
 
     while (queue.size > 0) {
-      console.log(prefix(), "processing", queue.size, "hosts");
       const now = Date.now();
       const timeSinceLastRequest = now - lastRequestTime;
       const minimumGap = 1000 / requestsPerSecond;
@@ -60,7 +56,6 @@ module.exports = ({
       lastRequestTime = Date.now();
     }
 
-    console.log(prefix(), "done processing, queue is empty");
     isProcessing = false;
   }
 
@@ -71,7 +66,6 @@ module.exports = ({
           .map((host) => `host=${encodeURIComponent(host)}`)
           .join("&")}`;
 
-        console.log(prefix(), "fetching", url);
         const res = await fetch(url);
 
         if (!res.ok) {
@@ -80,11 +74,9 @@ module.exports = ({
           );
         }
 
-        const text = await res.text();
-        console.log(prefix(), text.trim().split("\n").join(" "));
+        await res.text();
       } catch (error) {
-        console.log(prefix(), "failed to flush", reverse_proxy_url);
-        console.log(prefix(), error);
+        console.error("Failed to flush cache", reverse_proxy_url, error);
         throw error;
       }
     }

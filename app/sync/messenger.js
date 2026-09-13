@@ -1,5 +1,5 @@
 const client = require("models/client");
-const clfdate = require("helper/clfdate");
+const debug = require("debug")("blot:sync:messenger");
 const uuid = require("uuid/v4");
 const Blog = require("models/blog");
 
@@ -8,13 +8,12 @@ const Blog = require("models/blog");
 module.exports = (blog) => {
   const syncID = "sync_" + uuid().slice(0, 7);
   const log = function () {
-    console.log.apply(null, [
-      clfdate(),
+    debug(
       blog.id.slice(0, 12),
       syncID,
       "client=" + (blog.client || "none"),
       ...arguments,
-    ]);
+    );
   };
   const status = function () {
     const message = [...arguments].join(" ").trim();
@@ -23,7 +22,9 @@ module.exports = (blog) => {
     log(message);
     client
       .publish("sync:status:" + blog.id, message)
-      .catch((err) => log("failed to publish sync status", err.message));
+      .catch((err) =>
+        console.error("Failed to publish sync status", blog.id, err)
+      );
   };
   return {
     log,

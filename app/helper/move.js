@@ -14,9 +14,7 @@ const move = async (base, from, to, suffix = "", name = "", extension = "") => {
       const { suffix, destination, name, extension } = suffixer(to);
       return move(base, from, destination, suffix, name, extension);
     } else {
-      console.log("Error: Move:", e);
-      console.log("  from:", from);
-      console.log("  to:", to);
+      console.error("Error: Move:", e, "from:", from, "to:", to);
       throw e;
     }
   }

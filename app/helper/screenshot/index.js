@@ -145,14 +145,10 @@ async function acquireAirlockLock() {
 
 async function launch() {
   if (REMOTE_BROWSER_URL) {
-    console.log(prefix(), "Connecting to airlock browser");
-
     const instance = await puppeteer.connect({ browserURL: REMOTE_BROWSER_URL });
 
     return { instance, launchedAt: Date.now(), generation, remote: true };
   }
-
-  console.log(prefix(), "Launching browser");
 
   const instance = await puppeteer.launch({
     headless: "new",
@@ -170,12 +166,6 @@ async function launch() {
 }
 
 async function close(browser, reason) {
-  console.log(
-    prefix(),
-    browser.remote ? "Disconnecting from airlock browser:" : "Closing browser:",
-    reason
-  );
-
   try {
     if (browser.remote) {
       // The airlock's Chromium is shared infrastructure, not ours to kill -
@@ -383,13 +373,11 @@ async function takeScreenshotLocked(site, path, options) {
 
     await fs.ensureDir(dirname(path));
 
-    console.log(prefix(), "Navigating browser to", site);
     await page.goto(site, {
       waitUntil: "networkidle0",
       timeout: PAGE_TIMEOUT,
     });
 
-    console.log(prefix(), "Taking screenshot of", site, "to", path);
     await screenshotWithTimeout(page, path);
   } catch (error) {
     console.error(prefix(), "Error during screenshot:", error);
@@ -397,7 +385,6 @@ async function takeScreenshotLocked(site, path, options) {
     throw error;
   } finally {
     if (page) {
-      console.log(prefix(), "closing page");
       if (await closePageWithTimeout(page)) unresponsive = true;
     }
     if (context) {

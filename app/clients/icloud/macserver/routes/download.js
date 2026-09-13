@@ -18,8 +18,6 @@ export default async (req, res) => {
     return res.status(400).send("Missing blogID or path header");
   }
 
-  console.log(clfdate(), `Received download request for blogID: ${blogID}, path: ${path}`);
-
   try {
     const basePath = resolve(join(iCloudDriveDirectory, blogID));
     const filePath = resolve(join(basePath, normalizedPath));

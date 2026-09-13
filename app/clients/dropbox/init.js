@@ -2,6 +2,7 @@ const scheduler = require("node-schedule");
 const { promisify } = require("util");
 const Blog = require("models/blog");
 const clfdate = require("helper/clfdate");
+const debug = require("debug")("blot:clients:dropbox:init");
 const email = require("helper/email");
 const resetToBlot = require("./sync/reset-to-blot");
 const { get: getAccount } = require("./database");
@@ -28,7 +29,7 @@ const hasRecentSync = (account) => {
 };
 
 const runValidation = async () => {
-  console.log(clfdate(), "Dropbox: Running hourly sync validation");
+  debug(clfdate(), "Dropbox: Running hourly sync validation");
 
   let blogIDs = [];
 
@@ -52,9 +53,7 @@ const runValidation = async () => {
 
       checkedBlogs += 1;
 
-      const publish = (...args) => {
-        console.log(clfdate(), "Dropbox:", blogID, ...args);
-      };
+      const publish = () => {};
 
       const summary = await resetToBlot(blogID, publish);
       const changeCount = countChanges(summary);
@@ -92,7 +91,7 @@ const runValidation = async () => {
     }
   }
 
-  console.log(
+  debug(
     clfdate(),
     "Dropbox: Sync validation complete",
     `checked=${checkedBlogs}`,
@@ -105,13 +104,13 @@ const runValidation = async () => {
     if (err) {
       console.error(clfdate(), "Dropbox: Failed to send issue email", err);
     } else {
-      console.log(clfdate(), "Dropbox: Sent sync issue report email");
+      debug(clfdate(), "Dropbox: Sent sync issue report email");
     }
   });
 };
 
 const resyncRecentSyncsOnStartup = async () => {
-  console.log(clfdate(), "Dropbox: Checking for recent syncs on startup");
+  debug(clfdate(), "Dropbox: Checking for recent syncs on startup");
 
   let blogIDs = [];
 
@@ -148,15 +147,11 @@ const resyncRecentSyncsOnStartup = async () => {
   if (!blogsToResync.length) return;
 
   setImmediate(async () => {
-    for (const { blog, blogID } of blogsToResync) {
-      const publish = (...args) => {
-        console.log(clfdate(), "Dropbox:", blogID, ...args);
-      };
+    for (const { blogID } of blogsToResync) {
+      const publish = () => {};
 
       try {
-        console.log(clfdate(), "Dropbox: Resyncing recent blog", blogID);
         await resetToBlot(blogID, publish);
-        console.log(clfdate(), "Dropbox: Resync complete for blog", blogID);
       } catch (err) {
         console.error(
           clfdate(),
@@ -170,7 +165,7 @@ const resyncRecentSyncsOnStartup = async () => {
 };
 
 module.exports = async function init() {
-  console.log(clfdate(), "Dropbox: Scheduling hourly sync validation");
+  debug(clfdate(), "Dropbox: Scheduling hourly sync validation");
   scheduler.scheduleJob("0 * * * *", runValidation);
   resyncRecentSyncsOnStartup().catch(function (err) {
     console.error(clfdate(), "Dropbox: Startup resync failed", err);

@@ -20,8 +20,6 @@ export default async (req, res) => {
     return res.status(400).send("Invalid blogID");
   }
 
-  console.log(clfdate(), `Received disconnect request for blogID: ${blogID}`);
-
   // remove the blogid folder and the limiter
   removeLimiterForBlogID(blogID);
 
@@ -32,8 +30,6 @@ export default async (req, res) => {
     console.error(clfdate(), `Failed to disconnect blogID ${blogID}:`, error);
     return res.status(500).send(error.message);
   }
-
-  console.log(clfdate(), `Disconnected blogID: ${blogID}`);
 
   res.sendStatus(200);
 };

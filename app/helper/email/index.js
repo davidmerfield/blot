@@ -7,6 +7,7 @@ const tempDir = require("helper/tempDir")();
 const Mustache = require("mustache");
 const { marked } = require("marked");
 const clfdate = require("helper/clfdate");
+const debug = require("debug")("blot:helper:email");
 
 const mailgunClient = (() => {
   if (config && config.mailgun && config.mailgun.key && config.mailgun.domain) {
@@ -188,37 +189,25 @@ function send (locals, messageFile, to, callback) {
     if (config.environment === "development" && process.env.EMAIL !== "true") {
       var previewPath = tempDir + Date.now() + ".html";
       fs.outputFileSync(previewPath, email.html, "utf-8");
-      console.log(clfdate(), "Email: unsent in development environment:", {
-        ...email,
-        preview: previewPath
-      });
+      debug("Email preview written to", previewPath);
       return callback();
     }
 
     if (!hasMailgunClient) {
-      console.log(
+      console.warn(
         clfdate(),
-        "Email: Mailgun client unavailable, skipping send for",
-        email.to,
-        '"' + email.subject + '"'
+        "Email: Mailgun client unavailable, skipping send"
       );
       return callback();
     }
 
     mailgunClient.messages
       .create(config.mailgun.domain, email)
-      .then(function (body) {
-        console.log(
-          clfdate(),
-          "Email: sent to",
-          email.to,
-          '"' + email.subject + '"',
-          "(" + (body && body.id) + ")"
-        );
+      .then(function () {
         callback();
       })
       .catch(function (err) {
-        console.log(
+        console.error(
           clfdate(),
           "Email: error: Mailgun failed to send transactional email:",
           err

@@ -39,7 +39,7 @@ module.exports = function ({ channel }) {
         res.flushHeaders();
       },
       onError: function (err) {
-        console.log("Redis Error: " + err);
+        console.error("Redis Error: " + err);
       },
     });
 

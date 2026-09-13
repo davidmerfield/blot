@@ -51,7 +51,7 @@ module.exports = async function augment(req, res, entry) {
     // augment has already been called on this
     // entry there is a bug in eachEntry
     if (!type(tag, "string")) {
-      console.log(
+      debug(
         "Error BAD TAG:",
         req.blog.id,
         req.originalHost,
@@ -59,7 +59,6 @@ module.exports = async function augment(req, res, entry) {
         "has format date?",
         type(entry.formatDate, "function")
       );
-      console.log(tag);
       continue;
     }
 

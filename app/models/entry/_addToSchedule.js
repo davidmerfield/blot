@@ -12,12 +12,14 @@ module.exports = function (blogID, entry, callback) {
   // Refresh will perform a re-save of the entry
   var refresh = set.bind(this, blogID, entry.path, {}, function () {
     require("models/blog").set(blogID, { cacheID: Date.now() }, function (err) {
-      console.log(
-        "Blog:",
-        blogID + ":",
-        "Published entry as scheduled!",
-        entry.path
-      );
+      if (err) {
+        console.error(
+          "Failed to update blog cache after scheduled publication",
+          blogID,
+          entry.path,
+          err
+        );
+      }
     });
   });
 

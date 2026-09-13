@@ -6,6 +6,7 @@ var fs = require("fs-extra");
 var assetDirectory = require("./asset_directory");
 var boundedDownload = require("./download");
 var lifecycle = require("../lifecycle");
+var debug = require("debug")("blot:dashboard:site:import:download-pdfs");
 
 function download(url, callback) {
   boundedDownload(url, { airlockLabel: "import/download_pdfs" })
@@ -50,11 +51,9 @@ module.exports = function download_pdfs(post, callback) {
 
       if (require("path").extname(href) !== ".pdf") return next();
 
-      console.log("Attempting to download", href);
-
       download(href, function (err, data) {
         if (err) {
-          console.log("PDF error:", href, err.name, err.statusCode);
+          debug("PDF download failed:", href, err.name, err.statusCode);
           return next(lifecycle.current() && lifecycle.current().signal.aborted ? err : null);
         }
 

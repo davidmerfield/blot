@@ -35,7 +35,7 @@ module.exports = asRetriever(function (req, res) {
         xml = $.html();
         xml = removeXMLInvalidChars(xml);
       } catch (e) {
-        console.log(e);
+        console.error("Error encoding XML", e);
       }
 
       return xml || text;

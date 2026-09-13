@@ -25,8 +25,6 @@ export default async (req, res) => {
       .send("Missing required headers: blogID or path");
   }
 
-  console.log(clfdate(), `Received evict request for blogID: ${blogID}, path: ${path}`);
-
   const basePath = resolve(join(iCloudDriveDirectory, blogID));
   const filePath = resolve(basePath, normalizedPath);
 
@@ -51,7 +49,6 @@ export default async (req, res) => {
   try {
     await brctl.evict(filePath);
 
-    console.log(clfdate(), `Handled file eviction: ${filePath}`);
   } catch (error) {
     console.error(clfdate(), `Failed to evict file (${filePath}):`, error);
     return res.status(500).send("Failed to evict file");

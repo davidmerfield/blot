@@ -3,6 +3,7 @@ var User = require("models/user");
 var eachUser = require("../../scripts/each/user");
 var email = require("helper/email");
 var subscriptionLifecycle = require("models/user/subscriptionLifecycle");
+var debug = require("debug")("blot:scheduler:subscription-lifecycle");
 
 function deleteUserAccount(user, callback) {
   void user;
@@ -52,7 +53,7 @@ module.exports = function processSubscriptionLifecycle(callback) {
           : "unknown";
 
         if (overdue.phase === "grace_active") {
-          console.log(
+          debug(
             clfdate(),
             "Subscription lifecycle overdue phase=grace_active",
             user.email,
@@ -76,7 +77,7 @@ module.exports = function processSubscriptionLifecycle(callback) {
         }
 
         if (overdue.phase === "disabled_grace") {
-          console.log(
+          debug(
             clfdate(),
             "Subscription lifecycle overdue phase=disabled_grace",
             user.email,
@@ -99,7 +100,7 @@ module.exports = function processSubscriptionLifecycle(callback) {
           });
         }
 
-        console.log(
+        debug(
           clfdate(),
           "Subscription lifecycle overdue phase=deletion_flow",
           user.email,
@@ -135,7 +136,7 @@ module.exports = function processSubscriptionLifecycle(callback) {
     },
     function (err) {
       if (err) {
-        console.log(clfdate(), "Subscription lifecycle job failed", err);
+        console.error(clfdate(), "Subscription lifecycle job failed", err);
         return callback(err);
       }
 
@@ -160,7 +161,7 @@ module.exports = function processSubscriptionLifecycle(callback) {
           // Log and swallow: the lifecycle work already succeeded by this
           // point, so a transient email failure shouldn't fail the job.
           if (emailErr) {
-            console.log(
+            console.error(
               clfdate(),
               "Subscription lifecycle job failed to send cancelled deletion summary",
               emailErr

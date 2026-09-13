@@ -1,7 +1,6 @@
 const fs = require("fs-extra");
 const { join } = require("path");
 const localPath = require("helper/localPath");
-const clfdate = require("helper/clfdate");
 const database = require("../database");
 const createDriveClient = require("../serviceAccount/createDriveClient");
 const CheckWeCanContinue = require("../util/checkWeCanContinue");
@@ -12,10 +11,7 @@ const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 const truncateToSecond = require("./util/truncateToSecond");
 
 module.exports = async (blogID, publish, options = {}) => {
-  if (!publish)
-    publish = (...args) => {
-      console.log(clfdate() + " Google Drive:", args.join(" "));
-    };
+  if (!publish) publish = () => {};
 
   const account = await database.blog.get(blogID);
   const { folderId, serviceAccountId } = account;

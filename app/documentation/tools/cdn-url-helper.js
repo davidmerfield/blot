@@ -22,7 +22,7 @@ module.exports = ({ cacheID, viewDirectory }) => {
         // Cache the result for future use
         cache[cacheKey] = identifier;
       } catch (e) {
-        console.log("failed to hash", path, e);
+        console.error("Failed to hash documentation asset", path, e);
         // if the file doesn't exist, we'll use the cacheID
         identifier = cacheID;
       }

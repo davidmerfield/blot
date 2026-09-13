@@ -32,7 +32,7 @@ const fetchIcon = async (link, name, icon) => {
   const response = await fetch(link);
 
   if (!response.ok) {
-    console.log("Failed to fetch", link);
+    console.warn("Failed to fetch tool page", link);
     return null;
   }
 
@@ -68,7 +68,7 @@ const fetchIcon = async (link, name, icon) => {
   const iconResponse = await fetch(icon);
 
   if (!iconResponse.ok) {
-    console.log("Failed to fetch icon", icon);
+    console.warn("Failed to fetch tool icon", icon);
     return null;
   }
 

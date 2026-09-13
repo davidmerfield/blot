@@ -34,12 +34,9 @@ export default async (req, res) => {
       .send("Invalid path: attempted to access parent directory");
   }
 
-  console.log(clfdate(), `Received mkdir request for blogID: ${blogID}, path: ${path}`);
-
   const stat = await fs.stat(dirPath).catch(() => null);
 
   if (stat && stat.isDirectory()) {
-    console.log(clfdate(), `Directory already exists: ${dirPath}`);
     return res.sendStatus(200);
   } else if (stat) {
     try {
@@ -49,8 +46,6 @@ export default async (req, res) => {
       return res.status(500).send("Failed to remove existing path");
     }
   }
-
-  console.log(clfdate(), `Received mkdir request for blogID: ${blogID}, path: ${path}`);
 
   // first unwatch the blogID to prevent further events from being triggered
   try {
@@ -64,7 +59,6 @@ export default async (req, res) => {
   for (let i = 0; i < 5; i++) {
     try {
       await fs.ensureDir(dirPath);
-      console.log(clfdate(), `Created directory: ${dirPath}`);
       success = true;
       break;
     } catch (error) {

@@ -20,8 +20,6 @@ export default async (req, res) => {
     return res.status(400).send("Missing blogID, path, or modifiedTime header");
   }
 
-  console.log(clfdate(), `Received upload request for blogID: ${blogID}, path: ${path}`);
-
   const basePath = resolve(join(iCloudDriveDirectory, blogID));
   const filePath = resolve(join(basePath, normalizedPath));
 
@@ -51,10 +49,8 @@ export default async (req, res) => {
       try {
         await fs.outputFile(filePath, req.body);
         success = true;
-        console.log(clfdate(), `Wrote file: ${filePath}`);
         const modifiedTimeDate = new Date(parseInt(modifiedTime, 10));
         await fs.utimes(filePath, modifiedTimeDate, modifiedTimeDate);
-        console.log(clfdate(), `Set modified time for file: ${filePath}`);
         break;
       } catch (error) {
         success = false;
@@ -67,7 +63,6 @@ export default async (req, res) => {
       return res.status(500).send("Failed to write file after retries");
     }
 
-    console.log(clfdate(), `Recieved upload of file: ${filePath}`);
     return res.sendStatus(200);
   } finally {
     // re-watch the blogID

@@ -6,6 +6,7 @@ var fs = require("fs-extra");
 var assetDirectory = require("./asset_directory");
 var download = require("./download");
 var lifecycle = require("../lifecycle");
+var debug = require("debug")("blot:dashboard:site:import:download-audio");
 
 module.exports = function download_audio(post, callback) {
   var $ = cheerio.load(post.html, { decodeEntities: false });
@@ -45,7 +46,7 @@ module.exports = function download_audio(post, callback) {
           });
         })
         .catch(function (err) {
-          console.log("Audio error:", href, err && err.message);
+          debug("Audio download failed:", href, err && err.message);
           next(lifecycle.current() && lifecycle.current().signal.aborted ? err : null);
         });
     },

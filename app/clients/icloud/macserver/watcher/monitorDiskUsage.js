@@ -14,7 +14,6 @@ const blogUpdateTimes = new Map();
 const getDiskUsage = () => {
   return new Promise((resolve, reject) => {
     // Run du -sk <dir> with stderr redirected to /dev/null
-    console.log(clfdate(), "Getting disk usage for iCloud Drive...");
     execFile(
       "du",
       ["-sk", iCloudDriveDirectory],
@@ -25,10 +24,8 @@ const getDiskUsage = () => {
         }
 
         try {
-          console.log(clfdate(), `Disk usage output: ${stdout}`);
           // Parse output
           const bytes = parseInt(stdout.split("\t")[0]) * 1024;
-          console.log(clfdate(), `Disk usage: ${bytes} bytes`);
           resolve(bytes);
         } catch (parseError) {
           reject(new Error(`Error parsing du output: ${parseError.message}`));
@@ -52,51 +49,26 @@ const sortBlogsByUpdateTime = () => {
 };
 
 const check = async (evictBlogDirectory) => {
-  console.log(clfdate(), "Checking free disk space...");
-
   let diskUsage = await getDiskUsage();
 
   if (diskUsage < MAX_DISK_USAGE_BYTES) {
-    console.log(
-      clfdate(),
-      `Disk usage is below threshold: ${diskUsage} bytes of ${MAX_DISK_USAGE_BYTES} bytes`
-    );
     return;
   }
 
   const bytesToEvict = diskUsage - MAX_DISK_USAGE_BYTES;
 
-  console.log(
+  console.warn(
     clfdate(),
     `Disk usage is above threshold: ${diskUsage} bytes, need to evict ${bytesToEvict} bytes`
   );
 
   const sortedBlogs = sortBlogsByUpdateTime();
-  console.log(
-    clfdate(),
-    `Oldest-first eviction order: ${sortedBlogs.map(([blogID]) => blogID).join(", ") || "(none)"}`
-  );
-
-  for (const [blogID, updatedAt] of sortedBlogs) {
-    const lastUpdatedSecondsAgo = (Date.now() - updatedAt) / 1000;
-    console.log(
-      clfdate(),
-      `Eviction candidate blogID ${blogID} (target ./${blogID}), last updated ${lastUpdatedSecondsAgo.toFixed(1)}s ago`
-    );
-
+  for (const [blogID] of sortedBlogs) {
     await evictBlogDirectory(blogID);
 
     diskUsage = await getDiskUsage();
-    console.log(
-      clfdate(),
-      `Disk usage after attempting blog ${blogID}: ${diskUsage} bytes of ${MAX_DISK_USAGE_BYTES} bytes`
-    );
 
     if (diskUsage < MAX_DISK_USAGE_BYTES) {
-      console.log(
-        clfdate(),
-        `Exiting eviction loop: usage is below quota (${diskUsage} < ${MAX_DISK_USAGE_BYTES})`
-      );
       return;
     }
   }
@@ -105,7 +77,6 @@ const check = async (evictBlogDirectory) => {
 };
 
 const checkDiskSpace = (evictBlogDirectory) => {
-  console.log(clfdate(), "Starting disk space monitoring...");
   setInterval(() => {
     check(evictBlogDirectory).catch((error) => {
       console.error(clfdate(), `Disk space check failed: ${error}`);

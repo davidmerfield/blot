@@ -130,11 +130,6 @@ module.exports = async function sync(blogID, publish, update) {
       if (!remoteContents.find((item) => item.name === name)) {
         await checkWeCanContinue();
         progress.publish("Removing", path, false, removedCount);
-        console.log(
-          "Removing",
-          join(dir, name),
-          "which does not exist remotely"
-        );
         await fs.remove(localPath(blogID, path));
         await update(path);
         await remove(await getByPath(path));
@@ -211,16 +206,6 @@ module.exports = async function sync(blogID, publish, update) {
             Boolean(existsLocally && existsLocally.isDirectory)
           );
 
-          if (existsLocally) {
-            console.log("Updating out-of-sync:", path);
-            console.log(
-              "identical=false localSize=" + existsLocally.size,
-              "remoteSize=" + size
-            );
-          } else {
-            console.log("Downloading missing:", path);
-          }
-
           try {
             const result = await download(
               blogID,
@@ -261,7 +246,6 @@ module.exports = async function sync(blogID, publish, update) {
         if (existsLocally && !existsLocally.isDirectory) {
           await checkWeCanContinue();
           progress.publish("Removing file", path);
-          console.log("Removing file", path, "which is a directory remotely");
           await fs.remove(localPath(blogID, path));
           publish("Creating directory", path);
           await fs.ensureDir(localPath(blogID, path));
@@ -269,7 +253,6 @@ module.exports = async function sync(blogID, publish, update) {
         } else if (!existsLocally) {
           await checkWeCanContinue();
           publish("Creating directory", path);
-          console.log("Creating directory locally", path);
           await fs.ensureDir(localPath(blogID, path));
           await update(path);
         }

@@ -657,7 +657,7 @@ function removeOldVersionFromTestBlogs(templateID, callback) {
 
             if (!TemplateToRemove) return next();
 
-            console.log(
+            debug(
               "Removing old version of development template",
               TemplateToRemove.id
             );
@@ -670,7 +670,7 @@ function removeOldVersionFromTestBlogs(templateID, callback) {
                   { template: TemplateToRemove.cloneFrom },
                   function (err) {
                     if (err) return next(err);
-                    console.log("Removed template from", blogID);
+                    debug("Removed template from", blogID);
                     next();
                   }
                 );

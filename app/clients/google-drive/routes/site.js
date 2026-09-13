@@ -1,5 +1,4 @@
 const config = require("config");
-const clfdate = require("helper/clfdate");
 const express = require("express");
 const site = new express.Router();
 
@@ -9,12 +8,6 @@ const database = require("clients/google-drive/database");
 site
   .route("/webhook/changes.watch/:serviceAccountId")
   .post(async function (req, res) {
-    console.log(
-      `${clfdate()} Google Drive client: Received changes.watch webhook for service account ${
-        req.params.serviceAccountId
-      }`
-    );
-
     const blogIDs = [];
 
     await database.blog.iterateByServiceAccountId(
@@ -25,11 +18,6 @@ site
     );
 
     if (!blogIDs.length) {
-      console.log(
-        `${clfdate()} Google Drive client: No blogs found for service account ${
-          req.params.serviceAccountId
-        }`
-      );
       return res.sendStatus(200);
     }
 
@@ -37,9 +25,6 @@ site
     await Promise.all(
       blogIDs.map(async (blogID) => {
         try {
-          console.log(
-            `${clfdate()} Google Drive client: Syncing blog ${blogID}`
-          );
           await sync(blogID);
         } catch (e) {
           console.error("Google Drive client:", e.message);

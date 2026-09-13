@@ -77,7 +77,7 @@ async function build(callback) {
 
   // remove the avatars without a corresponding site
   for (let avatar of missingAvatars) {
-    console.log("Removing avatar without corresponding site", avatar);
+    console.warn("Removing avatar without corresponding site", avatar);
     await fs.remove(join(avatarDirectory, avatar));
   }
 

@@ -18,7 +18,6 @@ function setup(blogID, callback) {
       if (config.environment === "development") {
         watch(blogID);
       }
-      console.log(prefix(), "Setup complete", blogID);
       callback();
     });
   });

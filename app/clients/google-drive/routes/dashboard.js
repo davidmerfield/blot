@@ -141,14 +141,13 @@ dashboard
       );
     }
 
-    console.log(clfdate(), "Google Drive Client", "Setting up folder");
     res.redirect(req.baseUrl);
 
     // This can happen in the background
     try {
       await finishSetup(blog, drive, email, serviceAccountId);
     } catch (e) {
-      console.log(clfdate(), "Google Drive Client: finishSetup", e);
+      console.error(clfdate(), "Google Drive Client: finishSetup", e);
     }
   });
 

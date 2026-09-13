@@ -18,8 +18,6 @@ export default async (req, res) => {
     return res.status(400).send("Missing blogID or path header");
   }
 
-  console.log(clfdate(), `Received readdir request for blogID: ${blogID}, path: ${path}`);
-
   const basePath = resolve(join(iCloudDriveDirectory, blogID));
   const dirPath = resolve(join(basePath, path));
 
@@ -129,8 +127,6 @@ export default async (req, res) => {
       }
     }
 
-    console.log(clfdate(), `Readdir complete for blogID: ${blogID}, path: ${path}`);
-    console.log(clfdate(), result);
     res.json(result);
   } catch (error) {
     console.error(clfdate(), "Failed to process directory contents", {

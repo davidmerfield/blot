@@ -8,10 +8,6 @@ const caseSensitivePath = require("util").promisify(
 );
 const fs = require("fs-extra");
 const Path = require("path");
-const clfdate = require("helper/clfdate");
-
-const prefix = () => clfdate() + ' Dropbox: Delta: ';
-
 function normalizeRelativePath(path) {
   return (path || "").replace(/^\/+/, "");
 }
@@ -72,16 +68,12 @@ function listDropboxFolderEntries(client, path) {
 
 async function injectCaseOnlyDeletes(entries, blogID, client) {
 
-  console.log(prefix(), "Checking for case-only renames in", entries.length, "entries" );
-
   const normalizeRelativePathForComparison = function (relativePath) {
     return (relativePath || "").replace(/^\/+/, "").toLowerCase();
   };
 
   for (let index = 0; index < entries.length; index++) {
     const entry = entries[index];
-
-    console.log(prefix(), "Examining entry", index + 1, "of", entries.length, ":", entry);
 
     if (!entry || (entry[".tag"] !== "file" && entry[".tag"] !== "folder")) {
       continue;
@@ -113,15 +105,14 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
       // use case-sensitive path to find the parent directory.
       if (err.code === "ENOENT") {
         try {
-          console.log("Parent directory does not exist, trying case-sensitive path");
           const resolvedPath = await caseSensitivePath(localPath(blogID, '/'), Path.dirname(entry.relative_path));
           localEntries = await fs.readdir(resolvedPath);
         } catch (err2) {
-          console.log(prefix(), "Error reading local directory with case-sensitive path:", err2);
+          debug("Error reading local directory with case-sensitive path", err2);
           continue;
         }
       } else {
-        console.log(prefix(), "Error reading local directory:", err);
+        debug("Error reading local directory", err);
         continue;
       }
     }
@@ -131,7 +122,6 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
     });
 
     if (!existingName) {
-      console.log(prefix(), "No case-only rename detected for entry");
       continue;
     }
 
@@ -158,12 +148,10 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
     });
 
     if (!newEntry || oldEntry) {
-      console.log(prefix(), "Could not find new or old entry in Dropbox folder");
       continue;
     }
 
     if (newEntry[".tag"] !== entry[".tag"]) {
-      console.log(prefix(), "New entry type does not match original entry type");
       continue;
     }
 
@@ -191,7 +179,6 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
     };
 
     if (deleteExists(oldRelativePath)) {
-      console.log(prefix(), "Delete entry for case-only rename already exists");
       continue;
     }
 
@@ -199,12 +186,6 @@ async function injectCaseOnlyDeletes(entries, blogID, client) {
       ? Path.posix.join(dropboxParent, existingName)
       : "/" + existingName;
 
-    console.log(prefix(), 
-      "Injecting case-only delete for",
-      oldRelativePath,
-      "alongside",
-      entry.relative_path
-    );
     entries.splice(index, 0, {
       ".tag": "deleted",
       path_display: oldPathDisplay,

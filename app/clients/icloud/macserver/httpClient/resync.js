@@ -15,8 +15,6 @@ const requestResyncOnce = async (blogID) => {
     throw new Error("Invalid blogID");
   }
 
-  console.log(clfdate(), `Requesting resync for blogID: ${blogID}`);
-
   try {
     const response = await fetch(`${remoteServer}/status`, {
       method: "POST",
@@ -42,7 +40,6 @@ const requestResyncOnce = async (blogID) => {
     throw error;
   }
 
-  console.log(clfdate(), `Resync requested for blogID: ${blogID}`);
 };
 
 export default async (blogID, reason) => {
@@ -51,36 +48,18 @@ export default async (blogID, reason) => {
 
   if (existingEntry) {
     if (existingEntry.promise) {
-      console.log(
-        clfdate(),
-        `Deduplicating resync request for blogID: ${blogID} (in-flight)`
-      );
       return existingEntry.promise;
     }
     if (existingEntry.cooldownUntil && existingEntry.cooldownUntil > now) {
-      console.log(
-        clfdate(),
-        `Deduplicating resync request for blogID: ${blogID} (cooldown)`
-      );
       return;
     }
     resyncDebounceRegistry.delete(blogID);
   }
 
-  console.log(
-    clfdate(),
-    `Requesting resync for blogID: ${blogID}`,
-    reason ? `(${reason})` : ""
-  );
-
   const resyncPromise = (async () => {
     for (let attempt = 1; attempt <= RESYNC_MAX_ATTEMPTS; attempt += 1) {
       try {
         await requestResyncOnce(blogID);
-        console.log(
-          clfdate(),
-          `Resync acknowledged for blogID: ${blogID} after ${attempt} attempt(s)`
-        );
         return;
       } catch (error) {
         const delayMs = Math.min(

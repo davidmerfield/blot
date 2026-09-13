@@ -7,6 +7,7 @@
  */
 const Bottleneck = require("bottleneck");
 const clfdate = require("helper/clfdate");
+const debug = require("debug")("blot:clients:google-drive:hotDocPoller");
 const createDriveClient = require("./createDriveClient");
 const createDocsClient = require("./createDocsClient");
 const establishSyncLock = require("sync/establishSyncLock");
@@ -145,7 +146,7 @@ class HotDocPoller {
       return;
     }
 
-    console.log(prefix(), payload);
+    debug(payload);
   }
 
   async getDrive(serviceAccountId) {

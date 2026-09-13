@@ -1,6 +1,7 @@
 var ensure = require("./ensure");
 var type = require("./type");
 var arrayify = require("./arrayify");
+var debug = require("debug")("blot:helper:formJSON");
 
 // how to implement some rudimentary type coercion?
 // would be nice to coerce strings -> numbs
@@ -21,7 +22,6 @@ function formJSON(fields, model) {
     // for one field. Collapse them to one.
     if (type(fields[i]) === "array") {
       fields[i] = fields[i].pop();
-      console.log("FormJSON: Multiple inputs with same name", i, fields[i]);
     }
 
     var terms = i.split("."),
@@ -72,14 +72,7 @@ function formJSON(fields, model) {
             if (modelDef === "object" || modelDef === "array")
               val = JSON.parse(val);
           } catch (e) {
-            console.log(
-              "Could not coerce val to desired " +
-                modelDef +
-                " it is currently: "
-            );
-            console.log(val);
-            console.log();
-            console.log(e);
+            debug("Could not coerce value to desired %s: %s", modelDef, e.message);
           }
         }
 

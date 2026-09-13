@@ -111,7 +111,6 @@ const handleFileEvent = async (event, blogID, filePath) => {
     const pathInBlogDirectory = extractPathInBlogDirectory(filePath);
 
     if (shouldIgnore(pathInBlogDirectory)) {
-      console.log(clfdate(), `Ignoring file event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory} because it matches the shouldIgnore filter`);
       return;
     }
 
@@ -144,10 +143,6 @@ const handleFileEvent = async (event, blogID, filePath) => {
       return;
     }
 
-    console.log(clfdate(), 
-      `Chokidar Event: ${event}, blogID: ${blogID}, path: ${pathInBlogDirectory}`
-    );
-
     // because this runs on macos and the disk is 
     // case insensitive, we need to verify that the
     // pathInBlogDirectory is the exact same as the path
@@ -157,7 +152,6 @@ const handleFileEvent = async (event, blogID, filePath) => {
         const fullPath = buildBlogPath(blogID, pathInBlogDirectory);
         const exactCase = await exactCaseViaRealpath(fullPath);
         if (!exactCase) {
-          console.log(clfdate(), `Chokidar Event: Changing event from add/change to remove for path: ${pathInBlogDirectory} because of case mismatch`);
           event = "unlink";
         }
       } catch (error) {
@@ -181,24 +175,20 @@ const handleFileEvent = async (event, blogID, filePath) => {
 
 const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
   if (!isActive(blogID)) {
-    console.log(clfdate(), `Dropping fs.watch event for inactive blogID: ${blogID}`);
     return;
   }
 
   // This will skip blog directory deletions
   // but that's OK!
   if (!pathInBlogDirectory) {
-    console.log(clfdate(), `Ignoring FS Watch Event: blogID: ${blogID}, path: ${pathInBlogDirectory} because it is falsy`);
     return;
   }
 
   if (shouldIgnore(pathInBlogDirectory)) {
-    console.log(clfdate(), `Ignoring FS Watch Event: blogID: ${blogID}, path: ${pathInBlogDirectory} because it matches the shouldIgnore filter`);
     return;
   }
 
   if (isEvictionSuppressed(blogID, pathInBlogDirectory)) {
-    console.log(clfdate(), `Ignoring FS Watch Event: blogID: ${blogID}, path: ${pathInBlogDirectory} because it is in eviction suppression`);
     return;
   }
 
@@ -236,11 +226,9 @@ const reconcileFsWatchEvent = async (blogID, pathInBlogDirectory) => {
   }
 
   if (hasRecentChokidarEvent(blogID, pathInBlogDirectory, action)) {
-    console.log(clfdate(), `FS Watch Event: duplicate, action: ${action}, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
     return;
   }
 
-  console.log(clfdate(), `FS Watch Event: ${action}, blogID: ${blogID}, path: ${pathInBlogDirectory}`);
   await performAction(blogID, pathInBlogDirectory, action);
 };
 
@@ -309,7 +297,6 @@ const watch = async (blogID) => {
   const blogPath = join(iCloudDriveDirectory, blogID);
   let initialScanComplete = false;
 
-  console.log(clfdate(), `Starting watcher for blog folder: ${blogID}`);
   // Monitor the CPU usage on the macserver before and after
   // making any changes to the polling intervals
   const watcher = chokidar
@@ -359,7 +346,6 @@ const watch = async (blogID) => {
       }
     })
     .on("ready", () => {
-      console.log(clfdate(), `Initial scan complete for blog folder: ${blogID}`);
       initialScanComplete = true; // Mark the initial scan as complete
       markActive(blogID);
     })
@@ -378,7 +364,6 @@ const unwatch = async (blogID) => {
     return;
   }
 
-  console.log(clfdate(), `Stopping watcher for blog folder: ${blogID}`);
   await watcher.close();
   blogWatchers.delete(blogID);
   markInactive(blogID);

@@ -23,10 +23,7 @@ function createRedisClient() {
   clientSideCaches.set(client, clientSideCache);
 
   client.on("error", function (err) {
-    console.log("Redis Error:");
-    console.log(err);
-    if (err.trace) console.log(err.trace);
-    if (err.stack) console.log(err.stack);
+    console.error("Redis Error:", err);
   });
 
   return client;

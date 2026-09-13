@@ -151,7 +151,7 @@ module.exports = function sync (blogID, gitHandle, callback) {
                           folder.update(path, function (err) {
                             // We don't want the error to stop
                             // processing other files in the sync
-                            if (err) console.log("Git client:", err);
+                            if (err) console.error("Git client:", err);
                             next();
                           });
                         },

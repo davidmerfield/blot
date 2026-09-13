@@ -132,7 +132,7 @@ function Candidates(blog, entry) {
     try {
       url = decodeURI(url);
     } catch (e) {
-      console.log("Error: Could not decodeURIComponent for:", url, e.message);
+      console.error("Error: Could not decodeURIComponent for:", url, e.message);
     }
 
     return url;
@@ -210,7 +210,7 @@ function setUrl(blogID, entry, callback) {
   }
 
   if (entry.metadata === undefined) {
-    console.log(
+    debug(
       "Error: Blog:",
       blogID,
       "Entry.setURL: Entry metadata is unexpectedly undefined",

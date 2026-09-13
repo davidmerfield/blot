@@ -4,7 +4,6 @@ const getFile = require("./file");
 const getFolder = require("./folder");
 const getFolderPost = require("./folderPost");
 const Stat = require("./stat");
-const clfdate = require("helper/clfdate");
 
 async function middleware(req, res, next) {
   try {
@@ -56,7 +55,7 @@ async function middleware(req, res, next) {
       res.locals.folder = {directory: true, contents: []};
       res.render("dashboard/folder");
     } else {
-      console.log("HERE", err);
+      console.error("Error loading folder", err);
       next(err);
     }
 
@@ -132,10 +131,7 @@ const loadFolder = async (blog, dir, options = {}) => {
   const synced = blog.status.message.toLowerCase() === 'synced';
   
   if (synced && folderCache[cacheKey]) {
-    // console.log(clfdate(), 'folder cache HIT', cacheKey);
     return folderCache[cacheKey];
-  } else {
-    // console.log(clfdate(), 'folder cache MISS', cacheKey);
   }
 
   if (Object.keys(folderCache).length >= 100) {
@@ -181,8 +177,6 @@ const loadFolder = async (blog, dir, options = {}) => {
   if (dir === '/') {
     folderCache[cacheKey] = folder;
   }
-
-  // console.log('folder cache is', JSON.stringify(folderCache, null, 2));
 
   return folder;
 }

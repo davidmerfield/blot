@@ -2,6 +2,7 @@ const scheduler = require("node-schedule");
 const { promisify } = require("util");
 const Blog = require("models/blog");
 const clfdate = require("helper/clfdate");
+const debug = require("debug")("blot:clients:icloud:init");
 const email = require("helper/email");
 const monitorMacServerStats = require("./util/monitorMacServerStats");
 const establishSyncLock = require("sync/establishSyncLock");
@@ -45,7 +46,7 @@ const resyncRecentlySynced = async (options = {}) => {
   const notify = options.notify !== undefined ? options.notify : false;
   const resyncContext = notify ? "hourly validation" : "startup resync";
 
-  console.log(
+  debug(
     clfdate(),
     "Resyncing recently synced blogs",
     `(${resyncContext})`
@@ -53,28 +54,18 @@ const resyncRecentlySynced = async (options = {}) => {
 
   await database.iterate(async (blogID, account) => {
     if (!account.setupComplete) {
-      console.log(
-        clfdate(),
-        "Account setup not complete, skipping resync: ",
-        blogID
-      );
       return;
     }
 
     const lastSync = await getLastSyncDateStamp(blogID);
 
     if (!lastSync) {
-      console.log(clfdate(), "No last sync date found for blogID: ", blogID);
       return;
     }
-
-    const minutesAgo = Math.floor((Date.now() - lastSync) / 1000 / 60);
 
     // if the blog last synced within the last 10 minutes, we want to resync
     // because we might have missed some events
     if (Date.now() - lastSync < windowMs) {
-      console.log(clfdate(), "Resyncing blog: ", blogID);
-
       // Ensure the hourly sync check is always gated by the sync
       // lock to prevent files from being removed from Blot 
       // during an initial setup. This prevents data loss.
@@ -98,23 +89,15 @@ const resyncRecentlySynced = async (options = {}) => {
         // prefer to destroy those rather than re-upload files
         // which were deleted on iCloud.
         await syncFromiCloud(blogID, folder.status, folder.update);
-        console.log(clfdate(), "Finished resyncing blog: ", blogID);
       } catch (error) {
         console.error(clfdate(), "Error resyncing blog: ", blogID, error);
       } finally {
         await done();
       }
-    } else {
-      console.log(
-        clfdate(),
-        "Skipping resync of blog which last synced",
-        minutesAgo,
-        "minutes ago"
-      );
     }
   });
 
-  console.log(
+  debug(
     clfdate(),
     "Finished resyncing recently synced blogs",
     `(${resyncContext})`
@@ -128,7 +111,7 @@ const hasRecentSync = async (blogID) => {
 };
 
 const runValidation = async ({ notify = true } = {}) => {
-  console.log(clfdate(), "iCloud: Running hourly sync validation");
+  debug(clfdate(), "iCloud: Running hourly sync validation");
 
   const blogsWithChanges = [];
   let checkedBlogs = 0;
@@ -143,10 +126,6 @@ const runValidation = async ({ notify = true } = {}) => {
 
         checkedBlogs += 1;
 
-        const publish = (...args) => {
-          console.log(clfdate(), "iCloud:", blogID, ...args);
-        };
-
         // Ensure the hourly sync check is always gated by the sync
         // lock to prevent files from being removed from Blot 
         // during an initial setup. This prevents data loss.
@@ -154,7 +133,7 @@ const runValidation = async ({ notify = true } = {}) => {
         let summary;
 
         try {
-          summary = await syncFromiCloud(blogID, publish, folder.update);
+          summary = await syncFromiCloud(blogID, () => {}, folder.update);
         } finally {
           await done();
         }
@@ -201,7 +180,7 @@ const runValidation = async ({ notify = true } = {}) => {
     return;
   }
 
-  console.log(
+  debug(
     clfdate(),
     "iCloud: Sync validation complete",
     `checked=${checkedBlogs}`,
@@ -214,13 +193,13 @@ const runValidation = async ({ notify = true } = {}) => {
     if (err) {
       console.error(clfdate(), "iCloud: Failed to send issue email", err);
     } else {
-      console.log(clfdate(), "iCloud: Sent sync issue report email");
+      debug(clfdate(), "iCloud: Sent sync issue report email");
     }
   });
 };
 
 const resyncAllConnected = async ({ notify = true } = {}) => {
-  console.log(clfdate(), "iCloud: Running daily resync for connected accounts");
+  debug(clfdate(), "iCloud: Running daily resync for connected accounts");
 
   const blogsWithChanges = [];
   let checkedBlogs = 0;
@@ -228,21 +207,10 @@ const resyncAllConnected = async ({ notify = true } = {}) => {
   try {
     await database.iterate(async (blogID, account) => {
       if (!account.setupComplete) {
-        console.log(
-          clfdate(),
-          "iCloud: Daily resync skipped (setup incomplete)",
-          blogID
-        );
         return;
       }
 
       if (account.error) {
-        console.log(
-          clfdate(),
-          "iCloud: Daily resync skipped (account error)",
-          blogID,
-          account.error
-        );
         return;
       }
 
@@ -251,10 +219,6 @@ const resyncAllConnected = async ({ notify = true } = {}) => {
         if (!blog || blog.client !== "icloud") return;
 
         checkedBlogs += 1;
-
-        const publish = (...args) => {
-          console.log(clfdate(), "iCloud: Daily resync", blogID, ...args);
-        };
 
         let folder;
         let done;
@@ -315,7 +279,7 @@ const resyncAllConnected = async ({ notify = true } = {}) => {
     return;
   }
 
-  console.log(
+  debug(
     clfdate(),
     "iCloud: Daily resync complete",
     `checked=${checkedBlogs}`,
@@ -332,7 +296,7 @@ const resyncAllConnected = async ({ notify = true } = {}) => {
         err
       );
     } else {
-      console.log(clfdate(), "iCloud: Sent daily resync issue report email");
+      debug(clfdate(), "iCloud: Sent daily resync issue report email");
     }
   });
 };
@@ -345,17 +309,14 @@ const init = async () => {
     }
 
     try {
-      console.log("Resuming initial transfer for", blogID);
       await initialTransfer(blogID);
     } catch (error) {
       console.error("Error resuming initial transfer for", blogID, error);
     }
   });
 
-  console.log(clfdate(), "iCloud: Scheduling hourly sync validation");
   // scheduler.scheduleJob("0 * * * *", () => runValidation({ notify: true }));
 
-  console.log(clfdate(), "iCloud: Scheduling daily resync");
   // scheduler.scheduleJob("0 3 * * *", () => resyncAllConnected({ notify: true }));
 
   // resyncRecentlySynced({ notify: false });

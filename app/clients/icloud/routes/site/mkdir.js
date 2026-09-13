@@ -20,13 +20,10 @@ module.exports = async function (req, res) {
       return res.sendStatus(204);
     }
 
-    console.log(`Creating directory for blogID: ${blogID}, path: ${dirPath}`);
-
     const pathOnDisk = localPath(blogID, dirPath);
     const directoryExists = await fs.pathExists(pathOnDisk);
 
     if (directoryExists) {
-      console.log(`Directory already exists at: ${pathOnDisk}`);
       return res.status(200).send("Directory already exists");
     }
 
@@ -35,8 +32,6 @@ module.exports = async function (req, res) {
 
     try {
       const directoryExistsInLock = await fs.pathExists(pathOnDisk);
-
-      console.log(`Creating directory at: ${pathOnDisk}`);
 
       if (!directoryExistsInLock) {
         // Ensure the directory exists
@@ -49,7 +44,6 @@ module.exports = async function (req, res) {
         folder.status("Created " + dirPath);
       }
 
-      console.log(`Directory successfully created: ${pathOnDisk}`);
       res
         .status(200)
         .send(`Directory successfully created for blogID: ${blogID}`);

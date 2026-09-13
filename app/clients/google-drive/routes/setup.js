@@ -45,12 +45,6 @@ async function finishSetup(blog, drive, email, serviceAccountId) {
     // Phase A: wait for an eligible shared folder without the sync lock
     do {
       await checkWeCanContinue();
-      console.log(
-        clfdate(),
-        "Google Drive Client",
-        "Checking for empty shared folder..."
-      );
-
       const res = await findEmptySharedFolder(
         blog.id,
         drive,
@@ -105,7 +99,7 @@ async function finishSetup(blog, drive, email, serviceAccountId) {
     await database.blog.store(blog.id, { preparing: false });
     status("All files transferred");
   } catch (e) {
-    console.log(clfdate(), "Google Drive Client", e);
+    console.error(clfdate(), "Google Drive Client", e);
 
     let error = "Failed to set up account";
 
@@ -209,14 +203,10 @@ async function getAvailableFolders(drive, email, existingIDs) {
     pageToken = res.data.nextPageToken || null;
   } while (pageToken);
 
-  console.log(clfdate(), 'Google Drive Client', 'getAvailableFolders:', allFiles.length);
-
   // filter out folders whose sharingUser is not the same as the email, or whose owners do not include the email
   const filteredFolders = allFiles.filter(
     (file) => file.sharingUser?.emailAddress === email || file.owners && file.owners.some(owner => owner.emailAddress === email)
   );
-
-  console.log(clfdate(), 'Google Drive Client', 'filteredFolders:', filteredFolders.length);
 
   // filter out folders already in use
   // and folders with a defined (non-undefined) parents array
@@ -225,8 +215,6 @@ async function getAvailableFolders(drive, email, existingIDs) {
   const filteredFoldersNotInUse = filteredFolders.filter(
     (file) => !existingIDs.includes(file.id) && !file.parents
   );
-
-  console.log(clfdate(), 'Google Drive Client', 'filteredFoldersNotInUse:', filteredFoldersNotInUse.length);
 
   return filteredFoldersNotInUse;
 }
@@ -329,8 +317,6 @@ const { promisify } = require("util");
 const getBlog = promisify(require("models/blog").get);
 
 async function restartSetupProcesses() {
-  console.log(clfdate(), "Google Drive Client", "Restarting setup processes");
-
   const blogsToRestart = [];
 
   try {
@@ -347,7 +333,7 @@ async function restartSetupProcesses() {
       }
     });
   } catch (e) {
-    console.log(
+    console.error(
       clfdate(),
       "Google Drive Client",
       "restartSetupProcesses: Failed to load blogs",
@@ -357,18 +343,11 @@ async function restartSetupProcesses() {
   }
 
   for (const { blogID, account } of blogsToRestart) {
-    console.log(
-      clfdate(),
-      "Google Drive Client",
-      "Restarting setup for blog",
-      blogID
-    );
-
     const serviceAccountId = account.serviceAccountId;
     const email = account.email;
 
     if (!serviceAccountId || !email) {
-      console.log(
+      console.error(
         clfdate(),
         "Google Drive Client",
         "Missing serviceAccountId or email",
@@ -386,7 +365,7 @@ async function restartSetupProcesses() {
         throw new Error("Blog no longer exists");
       }
     } catch (e) {
-      console.log(
+      console.error(
         clfdate(),
         "Google Drive Client",
         "Failed to load blog or account details",
@@ -400,7 +379,7 @@ async function restartSetupProcesses() {
     try {
       drive = await createDriveClient(serviceAccountId);
     } catch (e) {
-      console.log(
+      console.error(
         clfdate(),
         "Google Drive Client",
         "Failed to create drive client"

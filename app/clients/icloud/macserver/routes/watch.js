@@ -17,6 +17,5 @@ export default async (req, res) => {
     return res.status(500).send("Failed to watch blog folder");
   }
 
-  console.log(clfdate(), `Recieved watch request for: ${blogID}`);
   res.sendStatus(200);
 };

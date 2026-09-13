@@ -233,8 +233,6 @@ function longList(len) {
 function massiveParallelList(cb) {
   var list = longList(100000);
 
-  console.log("Processing massive list in parallel...");
-
   forEach.parallel(
     list,
     function (number, next) {
@@ -243,8 +241,6 @@ function massiveParallelList(cb) {
       next();
     },
     function () {
-      console.log("All done!");
-      console.log("Checking valid process...");
       assert.deepEqual(
         list,
         longList(100000).map(function (n) {
@@ -259,8 +255,6 @@ function massiveParallelList(cb) {
 function massiveSeriesList(cb) {
   var list = longList(100000);
 
-  console.log("Processing massive list in series...");
-
   forEach(
     list,
     function (number, next) {
@@ -269,8 +263,6 @@ function massiveSeriesList(cb) {
       next();
     },
     function () {
-      console.log("All done!");
-      console.log("Checking valid process...");
       assert.deepEqual(
         list,
         longList(100000).map(function (n) {
@@ -283,83 +275,62 @@ function massiveSeriesList(cb) {
 }
 
 function delayedSeriesList(cb) {
-  console.log("Processing delayed list in series...");
-
   var list = ["a", "b", "c", "d", "e"];
 
   forEach(
     list,
     function (num, next) {
-      console.log(num + " is processing...");
       setTimeout(function () {
-        console.log(num + " is completed...");
         next();
         next();
       }, 120);
     },
     function () {
-      console.log("All done!");
       cb();
     }
   );
 }
 
 function delayedParallelList(cb) {
-  console.log("Processing delayed list in parallel...");
-
   var list = ["a", "b", "c", "d", "e"];
 
   forEach.parallel(
     list,
     function (letter, next) {
-      console.log(letter + " is processing...");
       setTimeout(function () {
-        console.log(letter + " is completed...");
         next();
         next();
       }, 120);
     },
     function () {
-      console.log("All done!");
       cb();
     }
   );
 }
 
 function multiList(cb) {
-  console.log("Processing list in multi mode...");
-
   var list = ["a", "b", "c", "d", "e"];
 
   forEach.multi(2)(
     list,
     function (letter, next) {
-      console.log(letter + " is processing...");
       setTimeout(function () {
-        console.log(letter + " is completed...");
         next();
         next();
       }, 120);
     },
     function () {
-      console.log("All done!");
       cb();
     }
   );
 }
 
 function listTests(cb) {
-  console.log("");
   massiveParallelList(function () {
-    console.log("");
     massiveSeriesList(function () {
-      console.log("");
       delayedSeriesList(function () {
-        console.log("");
         delayedParallelList(function () {
-          console.log("");
           multiList(function () {
-            console.log("List tests complete!");
             cb();
           });
         });
@@ -374,8 +345,6 @@ function seriesMassiveObject(cb) {
   var obj = bigObj(1000);
   var _obj = _.cloneDeep(obj);
 
-  console.log("Processing massive object in series...");
-
   forEach(
     obj,
     function (key, value, next) {
@@ -387,7 +356,6 @@ function seriesMassiveObject(cb) {
       next();
     },
     function () {
-      console.log("All done!");
       assert.deepEqual(obj, _obj);
       cb();
     }
@@ -407,8 +375,6 @@ function parallelMassiveObject(cb) {
   var obj = bigObj(1000);
   var _obj = _.cloneDeep(obj);
 
-  console.log("Processing massive object in parallel...");
-
   forEach.parallel(
     obj,
     function (key, value, next) {
@@ -420,7 +386,6 @@ function parallelMassiveObject(cb) {
       next();
     },
     function () {
-      console.log("All done!");
       assert.deepEqual(obj, _obj);
       cb();
     }
@@ -428,83 +393,62 @@ function parallelMassiveObject(cb) {
 }
 
 function delayedSeriesObject(cb) {
-  console.log("Processing delayed object in series...");
-
   var obj = { a: "1", b: "2", c: "3", d: "4", e: "5" };
 
   forEach(
     obj,
     function (letter, number, next) {
-      console.log(letter + " " + number + " is processing...");
       setTimeout(function () {
-        console.log(letter + " " + number + " is completed");
         next();
         next();
       }, 120);
     },
     function () {
-      console.log("All done!");
       cb();
     }
   );
 }
 
 function delayedParallelObject(cb) {
-  console.log("Processing delayed object in parallel...");
-
   var obj = { a: "1", b: "2", c: "3", d: "4", e: "5" };
 
   forEach.parallel(
     obj,
     function (letter, number, next) {
-      console.log(letter + " " + number + " is processing...");
       setTimeout(function () {
-        console.log(letter + " " + number + " is completed");
         next();
         next();
       }, 120);
     },
     function () {
-      console.log("All done!");
       cb();
     }
   );
 }
 
 function multiObject(cb) {
-  console.log("Processing object in multi mode...");
-
   var obj = { a: "1", b: "2", c: "3", d: "4", e: "5" };
 
   forEach.multi(2)(
     obj,
     function (letter, number, next) {
-      console.log(letter + " " + number + " is processing...");
       setTimeout(function () {
-        console.log(letter + " " + number + " is completed");
         next();
         next();
       }, 120);
     },
     function () {
-      console.log("All done!");
       cb();
     }
   );
 }
 
 function objectTests(cb) {
-  console.log("");
   seriesMassiveObject(function () {
-    console.log("");
     parallelMassiveObject(function () {
-      console.log("");
       delayedSeriesObject(function () {
-        console.log("");
         delayedParallelObject(function () {
-          console.log("");
           multiObject(function () {
-            console.log("Object tests complete!");
             cb();
           });
         });

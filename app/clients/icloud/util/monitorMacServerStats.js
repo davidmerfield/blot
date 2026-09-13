@@ -21,7 +21,6 @@ const notificationsSent = {};
 
 module.exports = () => {
   setInterval(async () => {
-    console.log(clfdate(), "Checking Mac server stats");
     try {
       // fetching stats
       const res = await fetch(MAC_SERVER_ADDRESS + "/stats", {
@@ -45,8 +44,6 @@ module.exports = () => {
         stats.icloud_bytes_available / 1000
       );
 
-      console.log(clfdate(), "Mac server stats: ", stats);
-
       // Check if server recovered from being down
       if (notificationsSent.icloud_server_down) {
         if (!notificationsSent.icloud_server_recovered) {
@@ -57,36 +54,36 @@ module.exports = () => {
       }
 
       if (stats.disk_bytes_available < DISK_SPACE_LIMIT) {
-        console.log(clfdate(), "Disk space is low");
         if (!notificationsSent.disk_space_low) {
+          console.warn(clfdate(), "Disk space is low");
           email.ICLOUD_DISK_LIMIT(null, stats);
           notificationsSent.disk_space_low = true;
         }
       } else if (stats.disk_bytes_available < DISK_SPACE_WARNING_THRESHOLD) {
-        console.log(clfdate(), "Disk space is running out");
         if (!notificationsSent.disk_space_warning) {
+          console.warn(clfdate(), "Disk space is running out");
           email.ICLOUD_APPROACHING_DISK_LIMIT(null, stats);
           notificationsSent.disk_space_warning = true;
         }
       }
 
       if (stats.icloud_bytes_available < ICLOUD_SPACE_LIMIT) {
-        console.log(clfdate(), "iCloud drive space is low");
         if (!notificationsSent.icloud_space_low) {
+          console.warn(clfdate(), "iCloud drive space is low");
           email.ICLOUD_QUOTA_LIMIT(null, stats);
           notificationsSent.icloud_space_low = true;
         }
       } else if (
         stats.icloud_bytes_available < ICLOUD_SPACE_WARNING_THRESHOLD
       ) {
-        console.log(clfdate(), "iCloud drive space is running out");
         if (!notificationsSent.icloud_space_warning) {
+          console.warn(clfdate(), "iCloud drive space is running out");
           email.ICLOUD_APPROACHING_QUOTA_LIMIT(null, stats);
           notificationsSent.icloud_space_warning = true;
         }
       }
     } catch (error) {
-      console.log(clfdate(), "Error connecting to mac server: ", error);
+      console.error(clfdate(), "Error connecting to mac server: ", error);
       if (!notificationsSent.icloud_server_down) {
         email.ICLOUD_SERVER_DOWN();
         notificationsSent.icloud_server_down = true;

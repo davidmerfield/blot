@@ -35,7 +35,7 @@ module.exports = function setMetadata(id, updates, callback) {
     try {
       injectLocals(metadata.locals);
     } catch (e) {
-      console.log("error injecting locals:", e);
+      console.error("error injecting locals:", e);
     }
 
     var isPublic = metadata.isPublic === true || metadata.isPublic === "true";

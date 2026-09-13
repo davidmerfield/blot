@@ -50,10 +50,6 @@ module.exports = async function (req, res) {
       return contentsMatch && modifiedTimeMatches;
     };
 
-    console.log(
-      `Uploading binary file for blogID: ${blogID}, path: ${filePath}`
-    );
-
     if (await isFileAlreadyCurrent()) {
       return res
         .status(200)
@@ -116,7 +112,6 @@ module.exports = async function (req, res) {
       // Set the folder status to reflect the upload action
       folder.status("Updated " + filePath);
 
-      console.log(`File successfully written to: ${pathOnDisk}`);
       res.status(200).send(`File successfully uploaded for blogID: ${blogID}`);
     } finally {
       // Release the sync lock

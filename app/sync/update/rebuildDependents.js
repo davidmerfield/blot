@@ -4,7 +4,7 @@ var client = require("models/client");
 var Blog = require("models/blog");
 var build = require("build");
 var dependentsKey = Entry.key.dependents;
-const clfdate = require("helper/clfdate");
+const debug = require("debug")("blot:sync:update:rebuildDependents");
 var Preview = require("./preview");
 var isHidden = require("build/prepare/isHidden");
 var isUnsafeFolderPostPreview = require("./isUnsafeFolderPostPreview");
@@ -26,13 +26,7 @@ var NO_LONGER_VALID_ERRORS = [
 
 module.exports = function (blogID, path, callback) {
   const log = function () {
-    console.log.apply(null, [
-      clfdate(),
-      blogID.slice(0, 12),
-      "rebuildDependents:",
-      path,
-      ...arguments,
-    ]);
+    debug(blogID.slice(0, 12), "rebuildDependents:", path, ...arguments);
   };
   Blog.get({ id: blogID }, function (err, blog) {
     if (err || !blog) return callback(err || new Error("No blog"));

@@ -189,7 +189,7 @@ function folder(folderId, blogID) {
     const from = await this.get(id);
 
     if (!from) {
-      console.log("Warning: No file or folder found for ID: ", id);
+      console.warn("Warning: No file or folder found for ID: ", id);
       return [];
     }
 

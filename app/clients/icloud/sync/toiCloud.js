@@ -1,6 +1,5 @@
 const { join } = require("path");
 const localPath = require("helper/localPath");
-const clfdate = require("helper/clfdate");
 const CheckWeCanContinue = require("./util/checkWeCanContinue");
 const remoteUpload = require("./util/remoteUpload");
 const remoteMkdir = require("./util/remoteMkdir");
@@ -11,8 +10,6 @@ const remoteReaddir = require("./util/remoteReaddir");
 const config = require("config");
 const maxFileSize = config.icloud.maxFileSize; // Maximum file size for iCloud uploads in bytes
 
-const prefix = () => `${clfdate()} iCloud Sync to iCloud:`;
-
 // Retry failed operations with exponential backoff
 async function retry(fn, ...args) {
   for (let i = 0; i < 3; i++) {
@@ -21,7 +18,6 @@ async function retry(fn, ...args) {
     } catch (e) {
       if (i === 2) throw e;
       const delay = Math.min(1000 * Math.pow(2, i), 10000);
-      console.log("Attempt", i ,"failed, retrying in", delay, "ms", e);
       await new Promise((r) => setTimeout(r, delay));
     }
   }
@@ -53,7 +49,6 @@ module.exports = async (blogID, publish, update, { skipDeletions = false, abortO
           await retry(remoteDelete, blogID, path);
         } catch (e) {
           publish("Failed to remove", path);
-          console.log(prefix(), "Failed to remove", path, e);
           if (abortOnError) throw e;
         }
       }
@@ -73,7 +68,6 @@ module.exports = async (blogID, publish, update, { skipDeletions = false, abortO
             await retry(remoteMkdir, blogID, path);
           } catch (e) {
             publish("Failed to create directory", path);
-            console.log(prefix(), "Failed to create directory", path, e);
             if (abortOnError) throw e;
             continue;
           }
@@ -87,7 +81,6 @@ module.exports = async (blogID, publish, update, { skipDeletions = false, abortO
           await checkWeCanContinue();
           if (size > maxFileSize) {
             publish("Skipping file which is too large", path);
-            console.log(prefix(), "Skipping file size=" + size, path);
             // it's important to throw an error here to prevent data loss
             // down the line, if the assumpation after this process runs
             // is that the folders are in sync between Blot and iCloud.
@@ -99,7 +92,6 @@ module.exports = async (blogID, publish, update, { skipDeletions = false, abortO
             await retry(remoteUpload, blogID, path);
           } catch (e) {
             publish("Failed to upload", path, e);
-            console.log(prefix(), "Failed to upload", path, e);
             if (abortOnError) throw e;
           }
         }
@@ -112,7 +104,6 @@ module.exports = async (blogID, publish, update, { skipDeletions = false, abortO
     publish("Sync complete");
   } catch (e) {
     publish("Sync failed");
-    console.log(prefix(), "Sync failed", e);
     if (abortOnError) throw e;
   }
 };

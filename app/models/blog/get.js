@@ -22,7 +22,6 @@ module.exports = function get(by, callback) {
         ensure(by.handle, "string");
         blogID = await client.get(key.handle(by.handle));
       } else {
-        console.log(by);
         throw "Please specify a by property";
       }
 

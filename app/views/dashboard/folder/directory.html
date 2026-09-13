@@ -207,7 +207,6 @@
           }
 
           if (folderBox && folderFileActionMenu) {
-            console.log('HERE', folderFileActionMenu);
             window.__folderFileActionMenuConfig = {
               container: folderBox,
               menuElement: folderFileActionMenu,
@@ -215,7 +214,6 @@
               triggerSelector: '.row-action-menu__trigger',
               linkMap: {
                 download: function (dataset) {
-                  console.log('HERE download', dataset);
                   var downloadLink = folderFileActionMenu && folderFileActionMenu.querySelector('[data-menu-link="download"]');
                   if (downloadLink) {
                     downloadLink.dataset.url = (dataset && dataset.url) || '';
@@ -244,7 +242,6 @@
                   }
 
                   if (!dataset || dataset.directory === 'true' || !dataset.url) {
-                    console.log('HERE remove null', dataset);
                     return null;
                   }
 

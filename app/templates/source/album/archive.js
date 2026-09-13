@@ -39,8 +39,6 @@ const list = HyperList.create(container, {
     fragment.forEach((node)=> {
       if (!node.innerHTML.trim()) return;
       
-      console.log(node.innerHTML)
-
       if (element.querySelector('#' + node.id)) {
       
       } else {
@@ -70,4 +68,3 @@ const list = HyperList.create(container, {
     return el;
   },
 });
-

@@ -1,6 +1,5 @@
 var Email = require("helper/email");
 var async = require("async");
-var clfdate = require("helper/clfdate");
 var callOnce = require("helper/callOnce");
 
 function main (callback) {
@@ -8,25 +7,24 @@ function main (callback) {
 
   view.date = require("moment")().format("LL");
 
-  function log (msg) {
+  function step () {
     return function (cb) {
-      console.log(clfdate(), "Daily update:", msg);
       cb(null, {});
     };
   }
 
   async.mapSeries(
     [
-      log("Starting daily update"),
-      log("Checking number of users"),
+      step(),
+      step(),
       require("./revenue"),
-      log("Checking for blogs with new posts"),
+      step(),
       require("./new-posts"),
-      log("Checking number of newsletter subscribers"),
+      step(),
       require("./newsletter-subscribers"),
-      log("Checking for new customers"),
+      step(),
       require("./new-customers"),
-      log("Finished daily update")
+      step()
     ],
     function (fn, next) {
       fn(

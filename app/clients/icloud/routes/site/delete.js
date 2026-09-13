@@ -24,8 +24,6 @@ module.exports = async function (req, res) {
       return res.sendStatus(204);
     }
 
-    console.log(`Deleting file for blogID: ${blogID}, path: ${filePath}`);
-
     // Establish sync lock to allow safe file operations
     const { done, folder } = await establishSyncLock(blogID);
 
@@ -34,8 +32,6 @@ module.exports = async function (req, res) {
         console.warn(`File not found (locked): ${filePath}`);
         return res.sendStatus(204);
       }
-
-      console.log(`Deleting file at: ${pathOnDisk}`);
 
       const pathsToUpdate = [filePath];
       const stat = await fs.lstat(pathOnDisk);
@@ -67,9 +63,6 @@ module.exports = async function (req, res) {
           pathsToUpdate.push(relativeChildPath);
         }
 
-        console.log(
-          `Folder delete will update ${pathsToUpdate.length} paths for ${filePath}`
-        );
       }
 
       // Remove the file (if it exists)
@@ -82,7 +75,6 @@ module.exports = async function (req, res) {
         folder.status("Removed " + pathToUpdate);
       }
 
-      console.log(`Successfully deleted: ${pathOnDisk}`);
       return res.status(200).send(`Successfully deleted for blogID: ${blogID}`);
     } finally {
       // Release the sync lock

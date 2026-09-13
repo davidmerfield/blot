@@ -23,11 +23,8 @@ module.exports = async (serviceAccountId, driveactivity) => {
         `${clfdate()} Google Drive client: serviceAccountId=${serviceAccountId} pollDriveActivity: ${blogID}`;
 
       if (!blogID || !folderId) {
-        console.log(prefix(), "missing blogID or folderId");
         return;
       }
-
-      // console.log(prefix(), "fetching");
 
       const res = await driveactivity.activity.query({
         requestBody: {
@@ -41,25 +38,20 @@ module.exports = async (serviceAccountId, driveactivity) => {
       const timestamp = activity?.timestamp;
 
       if (!activity) {
-        // console.log(prefix(), "Warning: no activity found");
         return;
       }
 
       if (timestamp !== latestDriveActivityTimestamp) {
         if (latestDriveActivityTimestamp) {
-          console.log(prefix(), "starting sync");
           try {
             await sync(blogID);
           } catch (e) {
             console.error(prefix(), "sync failed", e.message);
           }
         }
-        console.log(prefix(), "storing timestamp", timestamp);
         await database.blog.store(blogID, {
           latestDriveActivityTimestamp: timestamp,
         });
-      } else {
-        // console.log(prefix(), "no new activity");
       }
     }
   );

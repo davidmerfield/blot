@@ -1,4 +1,5 @@
 const clfdate = require("helper/clfdate");
+const debug = require("debug")("blot:scheduler:redis-cache-stats");
 const redisClient = require("models/client");
 const getClientSideCacheStats =
   require("models/redis").getClientSideCacheStats;
@@ -16,8 +17,7 @@ module.exports = function () {
         "redis_cache_stats_error=cache_unavailable"
       );
     } else {
-      console.log(
-        clfdate(),
+      debug(
         "[STATS]",
         "redis_cache_hitCount=" + cacheStats.hitCount,
         "redis_cache_missCount=" + cacheStats.missCount,

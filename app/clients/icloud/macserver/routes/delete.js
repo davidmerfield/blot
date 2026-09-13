@@ -20,8 +20,6 @@ export default async (req, res) => {
     return res.status(400).send("Missing required headers: blogID or path");
   }
 
-  console.log(clfdate(), `Received delete request for blogID: ${blogID}, path: ${path}`);
-
   const basePath = resolve(join(iCloudDriveDirectory, blogID));
   const filePath = resolve(join(basePath, normalizedPath));
 
@@ -51,7 +49,6 @@ export default async (req, res) => {
       try {
         await fs.remove(filePath);
         success = true;
-        console.log(clfdate(), `Deleted file: ${filePath}`);
         break;
       } catch (error) {
         success = false;
@@ -59,8 +56,6 @@ export default async (req, res) => {
         await new Promise((resolve) => setTimeout(resolve, 1000 * i)); // Exponential backoff
       }
     }
-
-    console.log(clfdate(), `Handled file deletion: ${filePath}`);
 
     if (!success) {
       return res.status(500).send("Failed to delete file after retries");

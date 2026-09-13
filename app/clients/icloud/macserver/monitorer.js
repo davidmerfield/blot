@@ -34,23 +34,13 @@ export default () => {
       // a date and time for the subsequent line or 
       // refer to files outside a specific blog directory
       if (match) {
-        console.log(clfdate(), `brctl monitor event: ${line}`);
-
         const blogId = match[0];
 
         if (isEvictionSuppressed(blogId)) {
-          console.log(
-            clfdate(),
-            `Ignoring brctl monitor event during eviction suppression: ${blogId}`
-          );
           return;
         }
 
         if (!isActive(blogId)) {
-          console.log(
-            clfdate(),
-            `Dropping brctl monitor event for inactive blogID: ${blogId}`
-          );
           return;
         }
 

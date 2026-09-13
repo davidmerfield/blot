@@ -2,7 +2,6 @@ const async = require("async");
 const fs = require("fs-extra");
 const archiver = require("archiver");
 const config = require("config");
-const clfdate = require("helper/clfdate");
 const VIEW_DIRECTORY = config.views_directory + "/folders";
 const FOLDER_DIRECTORY = __dirname;
 const MANIFEST_PATH = VIEW_DIRECTORY + "/manifest.json";
@@ -91,11 +90,6 @@ const main = () => {
 
         if (config.environment === "development") {
           if (fs.existsSync(tmpPath)) {
-            console.log(
-              clfdate(),
-              folder,
-              "Copying cached ZIP since we are in development environment"
-            );
             return fs.copy(
               tmpPath,
               VIEW_DIRECTORY + "/" + folder + ".zip",
@@ -115,7 +109,6 @@ const main = () => {
         });
 
         output.on("close", function () {
-          console.log(archive.pointer() + " total bytes for", folder);
           cache[folder] = tmpPath;
           const outputPath = VIEW_DIRECTORY + "/" + folder + ".zip";
           fs.removeSync(outputPath);
@@ -124,7 +117,7 @@ const main = () => {
 
         // good practice to catch warnings (ie stat failures and other non-blocking errors)
         archive.on("warning", function (err) {
-          console.log(err);
+          console.warn("Warning while creating folder ZIP", folder, err);
 
           if (err.code === "ENOENT") {
             // log warning
@@ -136,7 +129,7 @@ const main = () => {
 
         // good practice to catch this error explicitly
         archive.on("error", function (err) {
-          console.log(err);
+          console.error("Error creating folder ZIP", folder, err);
           reject(err);
         });
 

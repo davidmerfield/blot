@@ -76,7 +76,7 @@ module.exports = async function retrieve(req, res, needed) {
         const value = await dictionary[localName](req, res);
         if (value !== undefined) locals[localName] = value;
       } catch (err) {
-        console.log(err);
+        console.error("Error retrieving local", localName, err);
       }
 
       req.log("Retrieved local", localName);

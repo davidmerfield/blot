@@ -200,7 +200,7 @@ dashboard.get("/authenticate", function (req, res, next) {
     if (err) return next(err);
 
     setup(account, req.session, function (err) {
-      console.log("err setting up", err);
+      if (err) console.error("Dropbox setup failed", err);
     });
 
     res.redirect(req.baseUrl);

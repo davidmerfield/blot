@@ -5,11 +5,8 @@ var email = require("helper/email");
 var clfdate = require("helper/clfdate");
 const scheduler = require("node-schedule");
 var checkFeaturedSites = require("../documentation/featured/check");
-var config = require("config");
 var publishScheduledEntries = require("./publish-scheduled-entries");
 const freeDiskSpace = require("./free-disk-space");
-const os = require("os");
-const fs = require("fs-extra");
 const exec = require("child_process").exec;
 const zombies = require("./zombies");
 const checkCardTesters = require("./check-card-testers");
@@ -24,7 +21,7 @@ const DATA_DISK_MINIMUM_DISK_SPACE_IN_K = 10 * 1024 * 1024;
 let NOTIFIED_LOW_DISK_SPACE = false;
 
 module.exports = function () {
-  // Log useful system information, once per minute
+  // Check for zombie processes and low disk space once per minute.
   scheduler.scheduleJob("* * * * *", function () {
     // Detect any zombie processes
     zombies(function (err) {
@@ -38,13 +35,6 @@ module.exports = function () {
         console.error(clfdate(), "Error checking disk space", err);
         return;
       }
-
-      console.log(
-        clfdate(),
-        "[STATS]",
-        "Available disk space",
-        disks.map(disk => disk.label + "=" + disk.available_human).join(", ")
-      );
 
       if (disks.some(disk => disk.available_k < MINIMUM_DISK_SPACE_IN_K)) {
         shouldNotify = true;
@@ -61,57 +51,11 @@ module.exports = function () {
       if (shouldNotify && !NOTIFIED_LOW_DISK_SPACE) {
         NOTIFIED_LOW_DISK_SPACE = true;
         email.WARNING_LOW_DISK_SPACE(null, { disks }, function (err) {
-          if (err) console.log(clfdate(), err);
+          if (err) console.error(clfdate(), err);
         });
       }
     });
 
-    // Print most memory-intensive processes
-    exec(
-      "ps -eo pmem,pcpu,comm,args | sort -k 1 -nr | head -10",
-      function (err, stdout) {
-        if (err || !stdout) return;
-
-        if (config.environment === "development") {
-          // this is annoying in development
-        } else {
-          console.log(clfdate(), "[STATS]", "top");
-          console.log(stdout);
-        }
-      }
-    );
-
-    // Print cpu and memory information
-    fs.readFile("/proc/meminfo", "utf-8", function (err, contents) {
-      // This won't work on MacOS
-      if (err || !contents) return;
-
-      let stats = {};
-
-      contents
-        .trim()
-        .split("\n")
-        .forEach(line => {
-          stats[line.split(":")[0].trim()] = parseInt(
-            line.split(":")[1].trim()
-          );
-        });
-
-      let loadavg = os.loadavg()[0];
-      let totalCPUs = os.cpus().length;
-      let totalmem = stats.MemTotal;
-      let freemem = stats.MemAvailable;
-      let pretty = num => (100 * num).toFixed(3) + "%";
-
-      console.log(
-        clfdate(),
-        "[STATS]",
-        "cpuuse=" + pretty(loadavg / totalCPUs),
-        "totalmem=" + stats.MemTotal,
-        "totalcpus=" + totalCPUs,
-        "memuse=" + pretty((totalmem - freemem) / totalmem)
-      );
-    });
   });
 
   // Bash the cache for scheduled posts
@@ -155,8 +99,6 @@ module.exports = function () {
 
   console.log(clfdate(), "Scheduled daily check of storage disk usage");
   scheduler.scheduleJob({ hour: 10, minute: 0 }, function () {
-    console.log(clfdate(), "Scheduler: Checking available disk space");
-
     exec("df -h", function (err, stdout) {
       if (err) throw err;
 
@@ -164,24 +106,15 @@ module.exports = function () {
       var usage = disk[4];
       var available = disk[3];
 
-      if (parseInt(usage) < 90) {
-        console.log(
+      if (parseInt(usage) >= 90) {
+        console.warn(
           clfdate(),
-          "Scheduler: Disk usage check passed! Usage:",
+          "Scheduler: Disk usage is high. Usage:",
           usage,
           "Space available:",
           available
         );
-        return;
       }
-
-      console.log(
-        clfdate(),
-        "Scheduler: Disk usage check failed! Usage:",
-        usage,
-        "Space available:",
-        available
-      );
     });
   });
 
@@ -207,7 +140,7 @@ module.exports = function () {
   scheduler.scheduleJob({ hour: 9, minute: 0 }, function () {
     console.log(clfdate(), "Processing subscription lifecycle changes");
     subscriptionLifecycleJob(function (err) {
-      if (err) console.log(clfdate(), "Error processing subscription lifecycle", err);
+      if (err) console.error(clfdate(), "Error processing subscription lifecycle", err);
     });
   });
 
@@ -220,7 +153,7 @@ module.exports = function () {
     try {
       customers = await checkCardTesters();
     } catch (err) {
-      console.log(clfdate(), "Error: Checking suspected fraudulent users", err);
+      console.error(clfdate(), "Error: Checking suspected fraudulent users", err);
     }
 
     if (!customers || customers.length === 0) {
@@ -235,7 +168,7 @@ module.exports = function () {
     console.log(clfdate(), "Checking featured sites");
     checkFeaturedSites(function (err) {
       if (err) {
-        console.log(clfdate(), "Error: Checking featured sites", err);
+        console.error(clfdate(), "Error: Checking featured sites", err);
       } else {
         console.log(clfdate(), "Checked featured sites");
       }

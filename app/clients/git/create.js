@@ -5,6 +5,7 @@ const database = require("./database");
 const localPath = require("helper/localPath");
 const dataDir = require("./dataDir");
 const clfdate = require("helper/clfdate");
+const debug = require("debug")("blot:clients:git:create");
 const sync = require("sync");
 const shouldIgnoreFile = require("clients/util/shouldIgnoreFile");
 const path = require("path");
@@ -44,13 +45,7 @@ async function createEmptyCommit(repo, message) {
   await repo.commit(message, { "--allow-empty": true });
 }
 
-async function pushMaster(repo, message) {
-  console.log(
-    clfdate() +
-      " Git: create: " +
-      (message || "Pushing commits to repository")
-  );
-
+async function pushMaster(repo) {
   await repo.push(["-u", "origin", "master"]);
 }
 
@@ -70,7 +65,7 @@ async function unsetTemporaryGitGc(repo) {
   results.forEach((result, index) => {
     if (result.status === "rejected") {
       const [key] = TEMPORARY_GIT_GC_CONFIG[index];
-      console.log(
+      debug(
         clfdate() +
           " Git: create: failed to unset temporary Git config " +
           key +
@@ -86,19 +81,7 @@ async function unsetTemporaryGitGc(repo) {
 async function commitBatchWithRetries(repo, label, message) {
   for (let attempt = 0; ; attempt++) {
     try {
-      console.log(
-        clfdate() + " Git: create: Committing " + label + " to repository"
-      );
       await repo.raw(["commit", "--allow-empty", "-m", message]);
-      if (attempt > 0) {
-        console.log(
-          clfdate() +
-            " Git: create: commit succeeded on attempt " +
-            (attempt + 1) +
-            " " +
-            label
-        );
-      }
       return;
     } catch (err) {
       const delayMs = COMMIT_RETRY_DELAYS_MS[attempt];
@@ -107,7 +90,7 @@ async function commitBatchWithRetries(repo, label, message) {
         throw err;
       }
 
-      console.log(
+      console.warn(
         clfdate() +
           " Git: create: commit retry " +
           (attempt + 1) +
@@ -152,10 +135,10 @@ async function createRepository(blog, folder) {
   const bareRepo = Git(bareDirectory, { maxConcurrentProcesses: 1 });
   const liveRepo = Git(liveDirectory, { maxConcurrentProcesses: 1 });
 
-  report(folder, "Creating bare repository", "initing bareRepo");
+  report(folder, "Creating bare repository");
   await bareRepo.init(true);
 
-  report(folder, "Creating live repository", "initing liveRepo");
+  report(folder, "Creating live repository");
   await liveRepo.init();
 
   try {
@@ -163,11 +146,7 @@ async function createRepository(blog, folder) {
     await configureTemporaryGitGc(bareRepo);
     await configureTemporaryGitGc(liveRepo);
 
-    report(
-      folder,
-      "Adding remote to live repository",
-      "adding remote to liveRepo"
-    );
+    report(folder, "Adding remote to live repository");
     await liveRepo.addRemote("origin", bareDirectory);
 
     const progress = {
@@ -186,7 +165,6 @@ async function createRepository(blog, folder) {
 
   await setStatus(blog.owner, "createComplete");
 
-  console.log(clfdate() + " Git: create: done");
   // The delay ensures the page reloads – for empty folders this function returns
   // immediately and the page which displays the status message doesn't reload in
   // time.
@@ -230,8 +208,7 @@ async function cleanupFailedRepository(blog, liveDirectory, bareDirectory) {
   ]);
 }
 
-function report(folder, message, logMessage = message) {
-  console.log(`${clfdate()} Git: create: ${logMessage}`);
+function report(folder, message) {
   folder.status(message);
 }
 
@@ -290,10 +267,6 @@ async function addFolder(folder, liveRepo, bareRepo, progress) {
   try {
     report(folder, "Counting files...");
     progress.total = await countFiles(folder.path);
-    console.log(
-      clfdate() + " Git: create: counted " + progress.total + " files to add"
-    );
-
     await walk(folder.path);
     await commitPendingFiles(liveRepo, progress);
 
@@ -301,10 +274,6 @@ async function addFolder(folder, liveRepo, bareRepo, progress) {
     // because every file in it is gitignored: fall back to an initial commit
     // so the repository ends up with a HEAD instead of being left with none.
     if (progress.filesAdded === 0) {
-      console.log(
-        clfdate() +
-          " Git: addFolder: no files added, creating initial commit"
-      );
       return handleEmptyFolder(folder, liveRepo);
     }
 
@@ -321,7 +290,7 @@ async function handleEmptyFolder(folder, liveRepo) {
 
   await createEmptyCommit(liveRepo, "Initial commit");
   folder.status("Pushing initial commit to repository");
-  await pushMaster(liveRepo, "Pushing initial commit to repository");
+  await pushMaster(liveRepo);
 
   folder.status("Created initial commit in empty repository");
 }
@@ -329,19 +298,6 @@ async function handleEmptyFolder(folder, liveRepo) {
 async function stageFile(folder, liveRepo, bareRepo, progress, filePath) {
   const relativePath = path.relative(folder.path, filePath);
   const current = progress.filesAdded + 1;
-  const untilGc =
-    GC_INTERVAL - (progress.filesAdded % GC_INTERVAL || GC_INTERVAL);
-
-  console.log(
-    clfdate() +
-      " Git: create: starting file #" +
-      current +
-      "/" +
-      progress.total +
-      " (" +
-      untilGc +
-      " successful files until gc)"
-  );
 
   folder.status("(" + current + "/" + progress.total + ") Adding " + relativePath);
 
@@ -349,16 +305,12 @@ async function stageFile(folder, liveRepo, bareRepo, progress, filePath) {
     await liveRepo.add(filePath);
   } catch (err) {
     if (isGitIgnoreAddError(err)) {
-      console.log(
-        clfdate() +
-          " Git: create: skipping gitignored file " +
-          relativePath
-      );
+      debug(clfdate() + " Git: create: skipping gitignored file " + relativePath);
       progress.total = Math.max(0, progress.total - 1);
       return;
     }
 
-    console.log(
+    console.error(
       "Failed to add file " + relativePath + " to repository: " + err.message
     );
     throw err;
@@ -381,7 +333,7 @@ async function commitPendingFiles(liveRepo, progress) {
   try {
     await commitBatchWithRetries(liveRepo, label, message);
   } catch (err) {
-    console.log("Failed to commit " + label + " to repository: " + err.message);
+    console.error("Failed to commit " + label + " to repository: " + err.message);
     throw err;
   }
 
@@ -402,9 +354,9 @@ async function pushPendingCommits(liveRepo, progress) {
       : progress.unpushedCommits + " commits";
 
   try {
-    await pushMaster(liveRepo, "Pushing " + label + " to repository");
+    await pushMaster(liveRepo);
   } catch (err) {
-    console.log("Failed to push commits to repository: " + err.message);
+    console.error("Failed to push " + label + " to repository: " + err.message);
     throw err;
   }
 
@@ -413,29 +365,7 @@ async function pushPendingCommits(liveRepo, progress) {
 
 async function gcIfNeeded(liveRepo, bareRepo, progress) {
   if (progress.filesAdded % GC_INTERVAL === 0) {
-    console.log(
-      clfdate() +
-        " Git: create: git gc before (file #" +
-        progress.filesAdded +
-        ")"
-    );
     await liveRepo.raw(["gc"]);
     await bareRepo.raw(["gc"]);
-    console.log(
-      clfdate() +
-        " Git: create: git gc after (file #" +
-        progress.filesAdded +
-        ")"
-    );
-  } else {
-    const remaining = GC_INTERVAL - (progress.filesAdded % GC_INTERVAL);
-    console.log(
-      clfdate() +
-        " Git: create: " +
-        progress.filesAdded +
-        " files done, " +
-        remaining +
-        " until gc"
-    );
   }
 }

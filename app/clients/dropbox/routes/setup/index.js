@@ -23,12 +23,11 @@ function setup(account, session, callback) {
     const cleanup = async () => {
       if (cleaned) return;
       cleaned = true;
-      console.log("Cleaning up Dropbox setup");
       try {
         delete session.dropbox;
         session.save();
       } catch (e) {
-        console.log("Error cleaning up:", e);
+        console.error("Error cleaning up:", e);
       }
 
       try {
@@ -36,7 +35,7 @@ function setup(account, session, callback) {
           await client.unsubscribe(abortChannel);
         }
       } catch (e) {
-        console.log("Error unsubscribing:", e);
+        console.error("Error unsubscribing:", e);
       }
 
       try {
@@ -44,7 +43,7 @@ function setup(account, session, callback) {
           await client.quit();
         }
       } catch (e) {
-        console.log("Error cleaning up:", e);
+        console.error("Error cleaning up:", e);
       }
     };
 

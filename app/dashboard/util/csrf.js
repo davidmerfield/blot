@@ -25,7 +25,7 @@ module.exports = (req, res, next) => {
     const bodyToken = req.body?._csrf;
 
     if (!cookieToken || !bodyToken || cookieToken !== bodyToken) {
-        console.log(clfdate(), `CSRF error: cookie=${cookieToken} body=${bodyToken}`);
+        console.warn(clfdate(), "CSRF validation failed");
         return res.status(403).send('Invalid CSRF token');
     }
 

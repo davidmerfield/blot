@@ -179,7 +179,7 @@ function sync(blogID, callback) {
         if (err) {
           folder.status("Error checking file renames");
           log("Error checking file renames");
-          console.log(err);
+          console.error(err);
         }
 
         log("Building templates from folder");
@@ -187,7 +187,7 @@ function sync(blogID, callback) {
           if (err) {
             folder.status("Error building templates from folder");
             log("Error building templates in folder");
-            console.log(err);
+            console.error(err);
           }
 
           // We could do these next two things in parallel

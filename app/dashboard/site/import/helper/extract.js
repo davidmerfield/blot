@@ -14,9 +14,7 @@ module.exports = function Extract($, el) {
       if (html.indexOf("<![CDATA[") === 0) {
         html = html.slice("<![CDATA[".length, -3);
       } else {
-        console.log("BEFORE UNESCAPING!", html);
         html = unescapeHTML(html);
-        console.log("AFTER", html);
       }
 
       result.push(html);

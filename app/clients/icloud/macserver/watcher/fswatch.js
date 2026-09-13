@@ -49,7 +49,6 @@ const startFsWatch = (reconcileFsWatchEvent) => {
     console.error(clfdate(), "fs.watch error:", error);
   });
 
-  console.log(clfdate(), "Started fs.watch on iCloud Drive directory.");
 };
 
 const stopFsWatch = () => {
@@ -59,7 +58,6 @@ const stopFsWatch = () => {
 
   fsWatcher.close();
   fsWatcher = null;
-  console.log(clfdate(), "Stopped fs.watch on iCloud Drive directory.");
 };
 
 export { startFsWatch, stopFsWatch };

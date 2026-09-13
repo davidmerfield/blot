@@ -10,8 +10,6 @@ export default async (...args) => {
     throw new Error("Invalid number of arguments: expected 0");
   }
   
-  console.log(clfdate(), `Notifying server that the client has started`);
-
   try {
     await fetch(remoteServer + "/started", {
       headers: {
@@ -27,5 +25,4 @@ export default async (...args) => {
     throw error;
   }
 
-  console.log(clfdate(), `Server notified that the client has started`);
 };

@@ -209,7 +209,7 @@ passwordForm.post(function (req, res, next) {
         });
 
         User.scheduleWelcomeEmail(user.uid, function (err) {
-          if (err) console.log(err);
+          if (err) console.error(err);
         });
 
         req.session.uid = user.uid;        

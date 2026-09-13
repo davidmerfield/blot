@@ -46,7 +46,6 @@ export default async (dirPath) => {
 
     // Handle deadlock by downloading
     try {
-      console.log(clfdate(), `Directory not downloaded, downloading: ${dirPath}`);
       const pathInDrive = dirPath.replace(iCloudDriveDirectory, "").slice(1);
       await exec("brctl", ["download", pathInDrive], {
         cwd: iCloudDriveDirectory,

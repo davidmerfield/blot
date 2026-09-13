@@ -43,8 +43,6 @@ export default async (blogID, path) => {
   const filePath = join(iCloudDriveDirectory, blogID, path);
   const pathBase64 = Buffer.from(path).toString("base64");
 
-  console.log(clfdate(), `Preparing to upload file: ${filePath}`);
-
   const notifyOversizedFile = async (size, modifiedTime) => {
     console.error(
       clfdate(),
@@ -139,8 +137,6 @@ export default async (blogID, path) => {
   const modifiedTime = stat.mtime.toISOString();
 
   // Read entire file into memory
-  console.log(clfdate(), `Reading file into memory: ${filePath}`);
-
   // Beware: if you try and rewrite this to use streams you also have to
   // update rateLimitedFetchWithRetriesAndTimeout to re-create the stream
   // correctly for subsequent retries otherwise the stream will be in a
@@ -152,8 +148,6 @@ export default async (blogID, path) => {
     console.error(clfdate(), `Failed to read file for upload: ${filePath}`, error);
     throw new Error(`Failed to read file: ${error.message}`);
   }
-
-  console.log(clfdate(), `Issuing HTTP /upload request to remote server: ${path}`);
 
   let response;
   try {
@@ -191,5 +185,4 @@ export default async (blogID, path) => {
     throw new Error(`Upload failed with status ${response.status}`);
   }
 
-  console.log(clfdate(), "Upload successful:", text);
 };

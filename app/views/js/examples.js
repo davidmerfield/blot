@@ -20,22 +20,16 @@ const renderFeatured = () => {
 
   let maxFilterable = topOfListCandidates.length - topOfListLength;
 
-  console.log("totalSites", sitesArray.length);
-  console.log("maxFilterable", maxFilterable);
-  console.log("previousHrefs", previousHrefs);
-
   if (maxFilterable > 0) {
     // remove any sites that were in the previous top of list until we have enough
     topOfListCandidates = topOfListCandidates.filter(function (site) {
       const wouldLikeToKeep = !previousHrefs.includes(site.querySelector("a").href);
 
       if (wouldLikeToKeep) {
-        console.log("Keeping", site);
         return true;
       }
 
       if (!wouldLikeToKeep) {
-        console.log("Would like to remove", site);
         maxFilterable--;
       }
 

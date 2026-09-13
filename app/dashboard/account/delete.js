@@ -108,11 +108,6 @@ async function deleteSubscription(req, res, next) {
           throw await paypalError(response, "PayPal API error");
         }
 
-        console.log("PayPal subscription canceled");
-      } else {
-        console.log(
-          `Skipping PayPal cancellation: subscription is already non-cancellable (status: ${paypalStatus || "MISSING"})`
-        );
       }
     } else if (req.user.subscription?.customer) {
       const client = getStripeClient();
@@ -146,7 +141,6 @@ async function deleteSubscription(req, res, next) {
         throw new Error("Stripe customer not deleted");
       }
 
-      console.log("Stripe customer deleted");
     }
 
     if (typeof next === 'function') {

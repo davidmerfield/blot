@@ -76,7 +76,7 @@ module.exports = function register(blog) {
 
     if (err.status && type(err.status, "number")) status = err.status;
 
-    console.log(
+    console.error(
       clfdate(),
       req.headers["x-request-id"] && req.headers["x-request-id"],
       "Template error:",

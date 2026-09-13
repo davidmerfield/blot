@@ -1,7 +1,6 @@
 const fs = require("fs-extra");
 const { promisify } = require("util");
 const { join } = require("path");
-const clfdate = require("helper/clfdate");
 const localPath = require("helper/localPath");
 const hashFile = promisify((path, cb) => {
   require("helper/hashFile")(path, (err, result) => {
@@ -29,10 +28,7 @@ const createClient = promisify((blogID, cb) =>
 // const get = promisify(require("../database").get);
 
 async function resetToBlot(blogID, publish) {
-  if (!publish)
-    publish = (...args) => {
-      console.log(clfdate() + " Dropbox:", args.join(" "));
-    };
+  if (!publish) publish = () => {};
 
   publish("Syncing folder from Dropbox to Blot");
 
