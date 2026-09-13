@@ -110,7 +110,12 @@ async function archives(req, res) {
   // grouping above is unaffected).
   projectEntryFields(flattenEntries(years), req.retrieve, ALIASES);
 
-  if (!bypassCache) {
+  // Don't cache an empty result: getAllCached already declines to persist a
+  // [] catalog (which Entries.getAll also returns on a transient Redis
+  // failure, not just for a genuinely empty blog), but a non-empty catalog
+  // could still group into zero years if every entry lacked a dateStamp -
+  // guard here too so archivesCache can't end up caching that either.
+  if (!bypassCache && years.length > 0) {
     archivesCache.set(key, deepFreeze(cloneYears(years)));
   }
 

@@ -256,4 +256,26 @@ describe("all_entries cache", function () {
       });
     });
   });
+
+  it("does not cache an empty result, so a transient Redis failure isn't mistaken for an empty blog", function (done) {
+    const allEntries = loadAllEntries();
+
+    // Entries.getAll resolves to [] on a failed zRange/mGet rather than
+    // rejecting (see models/entries/index.js getRange's .catch), so an
+    // empty array from it is ambiguous between "no posts" and "Redis
+    // hiccup." Caching it either way risks hiding every post until the
+    // cacheID changes; refetching on every miss is the safe default.
+    spyOn(Entries, "getAll").and.callFake(function (blogID, callback) {
+      callback([]);
+    });
+
+    const req = makeReq({ id: "blog-1", cacheID: 100 });
+
+    allEntries(req, { locals: {} }, function () {
+      allEntries(req, { locals: {} }, function () {
+        expect(Entries.getAll).toHaveBeenCalledTimes(2);
+        done();
+      });
+    });
+  });
 });

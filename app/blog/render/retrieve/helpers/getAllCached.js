@@ -51,7 +51,16 @@ async function getAllCached(blog, options) {
 
   const promise = getAll(blog && blog.id).then((entries) => {
     const immutableCopy = deepFreeze(cloneEntries(entries));
-    if (!bypassCache) entriesCache.set(key, immutableCopy);
+    // Entries.getAll swallows transient Redis failures (a failed zRange or
+    // mGet) by resolving to [] rather than rejecting - see
+    // models/entries/index.js's getRange. Caching that [] would look
+    // identical to a genuinely empty blog and silently hide every post
+    // until the cacheID changes or the LRU entry is evicted. Only cache
+    // non-empty results; an empty catalog always re-hits Redis, which is
+    // cheap.
+    if (!bypassCache && immutableCopy.length > 0) {
+      entriesCache.set(key, immutableCopy);
+    }
     return immutableCopy;
   });
 

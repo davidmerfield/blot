@@ -51,7 +51,11 @@ async function allEntries(req, res) {
 
   projectEntryFields(allEntriesList, req.retrieve, ALIASES);
 
-  if (!bypassCache) {
+  // Don't cache an empty result: getAllCached already declines to persist a
+  // [] catalog, since Entries.getAll also returns [] on a transient Redis
+  // failure rather than rejecting - caching that here would look identical
+  // to a genuinely empty blog and hide every post until cacheID changes.
+  if (!bypassCache && allEntriesList.length > 0) {
     allEntriesCache.set(key, deepFreeze(cloneEntries(allEntriesList)));
   }
 
