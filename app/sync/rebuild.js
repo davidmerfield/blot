@@ -131,9 +131,8 @@ module.exports = function main(blogID, options, callback) {
           // blogID + cacheID, so without this an unchanged cacheID means a
           // rebuild's fresh entries never invalidate that cache - see
           // https://github.com/davidmerfield/blot/issues/1844
-          Blog.set(blogID, { cacheID: Date.now() }, () => {
-            // todo: don't swallow error here
-            callback();
+          Blog.set(blogID, { cacheID: Date.now() }, (err) => {
+            callback(err);
           });
         }
       );

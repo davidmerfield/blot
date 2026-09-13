@@ -57,6 +57,27 @@ describe("posts", function () {
     expect(entriesModel.getPage).toHaveBeenCalledTimes(1);
   });
 
+  it("respects a page_size set on the entries.html view itself, not just the template", async function () {
+    await this.write({ path: "/a.txt", content: "Hello, A!" });
+    await this.write({ path: "/b.txt", content: "Hello, B!" });
+    await this.write({ path: "/c.txt", content: "Hello, C!" });
+
+    // routes/entries.js resolves page_size before render/middleware.js has
+    // merged the view's own locals into res.locals - it must look those up
+    // itself, or it primes retrieve/posts.js's cache under the same key a
+    // correctly-resolved {{#posts}} fetch would use, but with the wrong
+    // (default) page size. See
+    // https://github.com/davidmerfield/blot/issues/1844
+    await this.template(
+      { "entries.html": "{{#posts}}{{{name}}} {{/posts}}" },
+      { views: { "entries.html": { locals: { page_size: 2 } } } }
+    );
+
+    const body = await this.text("/");
+
+    expect(body.trim().split(" ").length).toEqual(2);
+  });
+
   it("filters posts by query tag", async function () {
     await this.write({
       path: "/a.txt",

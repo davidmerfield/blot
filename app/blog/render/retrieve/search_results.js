@@ -7,8 +7,13 @@ const { cloneDeep } = require("../../lib/clone");
 async function searchResults(req, res) {
   const blogID = req.blog.id;
 
+  // routes/search.js joins a repeated ?q= into a single string before
+  // scanning; match that here so the comparison below (and the fallback
+  // search) see the same query it did, not the raw array.
+  const query = Array.isArray(req.query.q) ? req.query.q.join(" ") : req.query.q;
+
   // We couldn't find a search query
-  if (!req.query.q) {
+  if (!query) {
     return [];
   }
 
@@ -26,14 +31,14 @@ async function searchResults(req, res) {
   const scan = req._searchScan;
   const reusable =
     scan &&
-    scan.query === req.query.q &&
+    scan.query === query &&
     JSON.stringify(scan.sortOptions) === JSON.stringify(sortOptions);
 
   const results = reusable
     ? cloneDeep(scan.entries, { preserveEntryInstances: true })
     : // Entry.search collects a wide candidate pool, then sorts and caps by
       // the selection (a missing selection normalises to newest-first date).
-      await searchEntries(blogID, req.query.q, sortOptions);
+      await searchEntries(blogID, query, sortOptions);
 
   // The HTML was only needed to match against the query; drop the heavy
   // fields the search view does not render.
