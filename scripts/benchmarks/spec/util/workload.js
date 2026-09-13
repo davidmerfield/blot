@@ -1,5 +1,5 @@
 const path = require("path");
-const { getFixtures, listMediaFiles } = require("./fixtures");
+const { getFixtures } = require("./fixtures");
 
 // Modelled on a real customer blog that suffered severe request-queueing
 // slowdowns: several hundred entries, each carrying a handful of tags out of
@@ -115,10 +115,15 @@ function allocateByWeight(total, weights, min = 0) {
   return counts;
 }
 
-function buildWorkload(config, blogs, rng) {
+// `mediaFiles` is the (already-generated, see lib/generate-media.js)
+// absolute-path list of the shared media pool - passed in rather than
+// resolved here since generating it is async and this function is not, and
+// because its location depends on config.blog_folder_dir which is only
+// known to the caller (build-render.spec.js).
+function buildWorkload(config, blogs, rng, mediaFiles = []) {
   const distribution = config.distribution === "skewed" ? "skewed" : "flat";
   const mediaFraction = Math.min(1, Math.max(0, config.mediaFraction || 0));
-  const mediaFiles = mediaFraction > 0 ? listMediaFiles() : [];
+  mediaFiles = mediaFraction > 0 ? mediaFiles : [];
 
   const siteWeights =
     distribution === "skewed"

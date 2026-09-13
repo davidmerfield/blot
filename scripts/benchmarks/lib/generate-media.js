@@ -1,25 +1,20 @@
-#!/usr/bin/env node
 "use strict";
 
 /**
- * One-time generator for the small, fixed media pool used by the workload
- * generator's symlink trick (scripts/benchmarks/spec/util/workload.js).
+ * Generates a small, fixed-size (~20-30 file) pool of genuinely small,
+ * genuinely valid media files - JPEG/PNG photos, short animated GIFs, and a
+ * couple of SVGs - entirely dynamically with `sharp` (already a Blot
+ * dependency) plus ImageMagick's `convert` for assembling GIF frames, if
+ * available.
  *
- * Produces a deterministic (fixed seed) set of genuinely small, genuinely
- * valid image files under scripts/benchmarks/fixtures/media/ so they can be
- * regenerated or audited later:
+ * Nothing here is committed to git: the pool is regenerated fresh into a
+ * working directory every time a benchmark run needs media (see
+ * ensureMediaPool below), deterministically (fixed seed) so its contents are
+ * reproducible run to run without needing to check anything in.
  *
- *   - several JPEG/PNG photos of varying dimensions, synthesized with sharp
- *     (gradients / noise / simple shapes - nothing copyrighted)
- *   - a handful of small animated GIFs, assembled from sharp-rendered frames
- *     via ImageMagick's `convert` (already used elsewhere in this dev
- *     environment; falls back to a static single-frame GIF if `convert`
- *     isn't on PATH)
- *   - a couple of hand-written trivial SVGs
- *
- * Run with: node scripts/benchmarks/fixtures/generate-media.js
+ * The workload generator (spec/util/workload.js) hard-links posts to files
+ * in this pool - see build-render.spec.js for why hard link and not symlink.
  */
-
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -27,21 +22,6 @@ const { execFileSync } = require("child_process");
 const sharp = require("sharp");
 const seedrandom = require("seedrandom");
 
-const SEED = "blot-benchmark-media-seed";
-const OUT_DIR = path.join(__dirname, "media");
-
-const rng = seedrandom(SEED);
-
-function randInt(min, max) {
-  return Math.floor(rng() * (max - min + 1)) + min;
-}
-
-function randChoice(arr) {
-  return arr[Math.floor(rng() * arr.length)];
-}
-
-// A small, fixed palette so generated images look intentional rather than
-// like raw noise.
 const PALETTES = [
   [
     { r: 235, g: 87, b: 87 },
@@ -60,11 +40,10 @@ const PALETTES = [
   ],
 ];
 
-/**
- * Build one raw RGB buffer of width x height with a simple diagonal gradient
- * between two palette colors plus a bit of per-pixel noise, so every
- * generated photo looks distinct without needing any external asset.
- */
+function randChoice(rng, arr) {
+  return arr[Math.floor(rng() * arr.length)];
+}
+
 function gradientBuffer(width, height, colorA, colorB, noiseSeed) {
   const buffer = Buffer.alloc(width * height * 3);
   const localRng = seedrandom(String(noiseSeed));
@@ -88,7 +67,7 @@ function clamp(value) {
   return Math.max(0, Math.min(255, Math.round(value)));
 }
 
-async function generatePhotos() {
+async function generatePhotos(outDir, rng) {
   const sizes = [
     [400, 300],
     [800, 600],
@@ -109,26 +88,20 @@ async function generatePhotos() {
     [1024, 1024],
     [768, 1024],
   ];
-  // Keep every file genuinely small: JPEGs get standard lossy compression,
-  // PNGs are palette-quantized (few flat gradient bands compress very well
-  // this way) so a 1600x1200 synthetic gradient still lands in the tens of
-  // KB rather than megabytes.
 
-  let count = 0;
+  const written = [];
 
   for (let i = 0; i < sizes.length; i++) {
     const [width, height] = sizes[i];
-    const palette = randChoice(PALETTES);
-    const [colorA, colorB] = [randChoice(palette), randChoice(palette)];
+    const palette = randChoice(rng, PALETTES);
+    const colorA = randChoice(rng, palette);
+    const colorB = randChoice(rng, palette);
     const raw = gradientBuffer(width, height, colorA, colorB, `photo-${i}`);
 
-    const image = sharp(raw, {
-      raw: { width, height, channels: 3 },
-    });
-
+    const image = sharp(raw, { raw: { width, height, channels: 3 } });
     const isJpeg = i % 2 === 0;
     const ext = isJpeg ? "jpg" : "png";
-    const outPath = path.join(OUT_DIR, `photo-${i}-${width}x${height}.${ext}`);
+    const outPath = path.join(outDir, `photo-${i}-${width}x${height}.${ext}`);
 
     if (isJpeg) {
       await image.jpeg({ quality: 65, mozjpeg: true }).toFile(outPath);
@@ -138,13 +111,13 @@ async function generatePhotos() {
         .toFile(outPath);
     }
 
-    count++;
+    written.push(outPath);
   }
 
-  return count;
+  return written;
 }
 
-async function generateGifs() {
+async function generateGifs(outDir, rng) {
   const gifSpecs = [
     { name: "anim-0-loader", width: 160, height: 120, frames: 6 },
     { name: "anim-1-banner", width: 320, height: 180, frames: 4 },
@@ -153,7 +126,7 @@ async function generateGifs() {
   ];
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "blot-bench-gif-"));
-  let count = 0;
+  const written = [];
 
   let hasConvert = true;
   try {
@@ -164,30 +137,29 @@ async function generateGifs() {
 
   for (const spec of gifSpecs) {
     const framePaths = [];
-    const palette = randChoice(PALETTES);
+    const palette = randChoice(rng, PALETTES);
 
     for (let f = 0; f < spec.frames; f++) {
-      const t = f / spec.frames;
-      const colorA = randChoice(palette);
-      const colorB = randChoice(palette);
-      // Shift the gradient a bit per frame so the animation is visibly
-      // different frame to frame.
+      const colorA = randChoice(rng, palette);
+      const colorB = randChoice(rng, palette);
       const raw = gradientBuffer(
         spec.width,
         spec.height,
         colorA,
         colorB,
-        `${spec.name}-frame-${f}-${t}`
+        `${spec.name}-frame-${f}`
       );
 
       const framePath = path.join(tmpDir, `${spec.name}-frame-${f}.png`);
-      await sharp(raw, { raw: { width: spec.width, height: spec.height, channels: 3 } })
+      await sharp(raw, {
+        raw: { width: spec.width, height: spec.height, channels: 3 },
+      })
         .png()
         .toFile(framePath);
       framePaths.push(framePath);
     }
 
-    const outPath = path.join(OUT_DIR, `${spec.name}.gif`);
+    const outPath = path.join(outDir, `${spec.name}.gif`);
 
     if (hasConvert) {
       execFileSync("convert", [
@@ -203,20 +175,20 @@ async function generateGifs() {
         outPath,
       ]);
     } else {
-      // Fallback: a valid (if static) GIF using sharp's own GIF encoder so
-      // the pool still has a .gif entry when ImageMagick isn't available.
+      // Fallback: a valid (if static) GIF via sharp's own encoder, so the
+      // pool still has a .gif entry when ImageMagick isn't available.
       await sharp(framePaths[0]).gif().toFile(outPath);
     }
 
-    count++;
+    written.push(outPath);
   }
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
 
-  return count;
+  return written;
 }
 
-function generateSvgs() {
+function generateSvgs(outDir) {
   const svgs = [
     {
       name: "icon-star.svg",
@@ -237,32 +209,76 @@ function generateSvgs() {
     },
   ];
 
+  const written = [];
+
   for (const svg of svgs) {
-    fs.writeFileSync(path.join(OUT_DIR, svg.name), svg.content);
+    const outPath = path.join(outDir, svg.name);
+    fs.writeFileSync(outPath, svg.content);
+    written.push(outPath);
   }
 
-  return svgs.length;
+  return written;
 }
 
-async function main() {
-  fs.mkdirSync(OUT_DIR, { recursive: true });
+/**
+ * Generates the pool into `outDir` (created if needed), deterministically
+ * from `seed`. Returns the list of absolute file paths written.
+ */
+async function generateMediaPool(outDir, seed) {
+  fs.mkdirSync(outDir, { recursive: true });
 
-  // Clean out any previous run so regenerating is idempotent.
-  for (const file of fs.readdirSync(OUT_DIR)) {
-    fs.unlinkSync(path.join(OUT_DIR, file));
+  // Clean out any stale previous pool so regenerating is idempotent.
+  for (const file of fs.readdirSync(outDir)) {
+    fs.rmSync(path.join(outDir, file), { force: true });
   }
 
-  const photoCount = await generatePhotos();
-  const gifCount = await generateGifs();
-  const svgCount = generateSvgs();
+  const rng = seedrandom(String(seed || "blot-benchmark-media-seed"));
 
-  console.log(
-    `Generated ${photoCount} photos, ${gifCount} gifs, ${svgCount} svgs ` +
-      `into ${OUT_DIR}`
-  );
+  const photos = await generatePhotos(outDir, rng);
+  const gifs = await generateGifs(outDir, rng);
+  const svgs = generateSvgs(outDir);
+
+  return [...photos, ...gifs, ...svgs];
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+/**
+ * Returns the pool's file list, generating it first if `outDir` doesn't
+ * already have one (e.g. this is the first post in this benchmark run that
+ * needs media). Safe to call repeatedly/concurrently for the same outDir -
+ * only (re)generates when empty.
+ */
+async function ensureMediaPool(outDir, seed) {
+  if (fs.existsSync(outDir)) {
+    const existing = fs
+      .readdirSync(outDir)
+      .filter((name) => !name.startsWith("."))
+      .sort()
+      .map((name) => path.join(outDir, name));
+
+    if (existing.length) return existing;
+  }
+
+  const written = await generateMediaPool(outDir, seed);
+  return written.sort();
+}
+
+module.exports = { generateMediaPool, ensureMediaPool };
+
+if (require.main === module) {
+  const arg = (name, fallback) => {
+    const i = process.argv.indexOf(name);
+    return i !== -1 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
+  };
+
+  const outDir = path.resolve(arg("--out-dir", ".benchmarks/media-pool"));
+  const seed = arg("--seed", "blot-benchmark-media-seed");
+
+  generateMediaPool(outDir, seed)
+    .then((files) => {
+      console.log(`Generated ${files.length} media files into ${outDir}`);
+    })
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+}

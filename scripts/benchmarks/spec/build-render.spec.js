@@ -3,6 +3,8 @@ const fs = require("fs-extra");
 const seedrandom = require("seedrandom");
 const { performance } = require("perf_hooks");
 const localPath = require("helper/localPath");
+const config = require("config");
+const { ensureMediaPool } = require("../lib/generate-media");
 const { PhaseMonitor, summarizeDurations } = require("./util/metrics");
 const { buildWorkload } = require("./util/workload");
 const { expandSitemapUrls } = require("./util/sitemap");
@@ -64,13 +66,32 @@ describe("blog benchmarks", function () {
 
     const rng = seedrandom(benchmarkConfig.seed);
 
+    // The shared media pool (see lib/generate-media.js) is generated fresh
+    // into data/blogs/_benchmark-media-pool - a fixed directory *inside*
+    // config.blog_folder_dir, sibling to the per-blog folders, deliberately
+    // NOT checked into git. Living inside data/blogs means it's swept up
+    // for free by whatever already tars/restores data/blogs (see
+    // build-corpus.js and benchmarks-render.yml), so a restored corpus's
+    // hard links (see the write step below for why hard link, not symlink)
+    // keep resolving without tracking a fourth artifact. Generated once and
+    // reused for every post that wants a media file in this run.
+    let mediaFiles = [];
+
+    if (!isCorpusRender && benchmarkConfig.mediaFraction > 0) {
+      const mediaPoolDir = path.join(
+        config.blog_folder_dir,
+        "_benchmark-media-pool"
+      );
+      mediaFiles = await ensureMediaPool(mediaPoolDir, benchmarkConfig.seed);
+    }
+
     // corpusMode "render" skips workload generation entirely and instead
     // reconstructs an equivalent workload summary from the manifest written
     // by build-corpus.js when the corpus was built (see corpusSetup.js),
     // since the actual files already exist on disk/Redis from that build.
     const workload = isCorpusRender
       ? workloadFromManifest(this.corpusManifest)
-      : buildWorkload(benchmarkConfig, blogs, rng);
+      : buildWorkload(benchmarkConfig, blogs, rng, mediaFiles);
 
     const buildPhaseMonitor = new PhaseMonitor({
       sampleIntervalMs: benchmarkConfig.cpuSampleIntervalMs,
