@@ -74,10 +74,11 @@ const BENCHMARK_DEFAULTS = Object.freeze({
   // the existing flat mode rather than a change to its shape, so it does not
   // require a historySchemaVersion bump.
   distribution: "flat",
-  // Fraction of generated entries that get a symlink to a file from the
-  // shared media pool (scripts/benchmarks/fixtures/media) instead of plain
-  // text content. 0 in flat/default mode; the big-corpus mode below turns
-  // this on.
+  // Fraction of generated entries that get a hard link to a file from the
+  // shared media pool (generated on the fly by lib/generate-media.js into
+  // data/blogs/_benchmark-media-pool - see build-render.spec.js) instead of
+  // plain text content. 0 in flat/default mode; the big-corpus mode below
+  // turns this on.
   mediaFraction: 0,
   // Defaults for the opt-in big-corpus mode (--distribution skewed),
   // production-shaped: ~1000 sites, ~160k posts total, ~20% of posts
