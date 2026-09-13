@@ -155,4 +155,19 @@ describe("latest_entry cache", function () {
       });
     });
   });
+
+  it("does not cache an empty result, so a failed hydration isn't mistaken for an empty blog", function (done) {
+    spyOn(entriesModel, "getPage").and.callFake(function (blogID, options, callback) {
+      callback(null, [], { page: 1, pages: 1, totalEntries: 1 });
+    });
+
+    const req = makeReq({ id: "blog-1", cacheID: 100 });
+
+    latestEntry(req, {}, function () {
+      latestEntry(req, {}, function () {
+        expect(entriesModel.getPage).toHaveBeenCalledTimes(2);
+        done();
+      });
+    });
+  });
 });

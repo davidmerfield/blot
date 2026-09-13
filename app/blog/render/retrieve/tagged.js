@@ -33,7 +33,10 @@ function cloneTagged(value) {
 }
 
 function normalizeTagsKey(tags) {
-  if (Array.isArray(tags)) return tags.map((tag) => String(tag)).sort();
+  // Preserve array order: fetchTaggedEntries builds tag/slugs/prettyTags
+  // from the original sequence, so ?tag=foo&tag=bar and ?tag=bar&tag=foo
+  // must not share a cache entry.
+  if (Array.isArray(tags)) return tags.map((tag) => String(tag));
   return tags === undefined ? undefined : String(tags);
 }
 
@@ -137,7 +140,13 @@ async function tagged(req, res) {
     };
 
     req._taggedFetch = { key, payload };
-    taggedCache.set(key, deepFreeze(cloneTagged(payload)));
+    // Entry.get swallows Redis MGET failures as [] (models/entry/get.js).
+    // If we received IDs but no hydrated entries, that is indistinguishable
+    // from a total hydration miss - do not persist it, or later requests
+    // would serve an empty tagged page until cacheID changes.
+    if (!(entryIDs.length > 0 && (payload.entries || []).length === 0)) {
+      taggedCache.set(key, deepFreeze(cloneTagged(payload)));
+    }
   }
 
   res.locals.pagination = res.locals.pagination || payload.pagination || {};

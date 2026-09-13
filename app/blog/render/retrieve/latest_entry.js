@@ -46,9 +46,13 @@ async function latestEntry(req, res) {
   log("Loaded latest entry");
   const latest = entries && entries.length ? entries[0] : {};
 
-  // getPage rejects on Redis failure, so an empty {} here is a genuinely
-  // empty blog and is safe to cache until cacheID changes.
-  latestEntryCache.set(key, deepFreeze(cloneEntry(latest)));
+  // getPage can resolve to [] both for a genuinely empty blog and when
+  // Entry.get swallows a failed MGET after a successful zRange - see
+  // models/entry/get.js and entries handlePaginationAndCallback. Don't
+  // cache an empty result; refetching a page of size 1 is cheap.
+  if (entries && entries.length) {
+    latestEntryCache.set(key, deepFreeze(cloneEntry(latest)));
+  }
 
   return projectEntryFields(cloneEntry(latest), req.retrieve, ALIASES);
 }

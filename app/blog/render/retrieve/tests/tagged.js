@@ -803,4 +803,101 @@ describe("tagged cache", function () {
       }
     );
   });
+
+  it("does not cache a hydration miss when IDs came back but Entry.get returned none", function (done) {
+    const taggedSpy = jasmine
+      .createSpy("fetchTaggedEntries")
+      .and.callFake(async function () {
+        return {
+          entryIDs: ["1", "2"],
+          pagination: { page: 1, pages: 1 },
+          tag: "foo",
+          tagged: { foo: true },
+          slugs: ["foo"],
+          prettyTags: ["foo"],
+          total: 2,
+        };
+      });
+
+    const tagged = loadTaggedWithStub(taggedSpy);
+    tagged._clear();
+
+    spyOn(Entry, "get").and.callFake(function (blogID, entryIDs, callback) {
+      callback([]);
+    });
+
+    tagged(makeReq(), { locals: {} }, function () {
+      tagged(makeReq(), { locals: {} }, function () {
+        expect(taggedSpy).toHaveBeenCalledTimes(2);
+        expect(Entry.get).toHaveBeenCalledTimes(2);
+        done();
+      });
+    });
+  });
+
+  it("still caches a genuinely empty tag (no matching entry IDs)", function (done) {
+    const taggedSpy = jasmine
+      .createSpy("fetchTaggedEntries")
+      .and.callFake(async function () {
+        return {
+          entryIDs: [],
+          pagination: { page: 1, pages: 1 },
+          tag: "foo",
+          tagged: { foo: true },
+          slugs: ["foo"],
+          prettyTags: ["foo"],
+          total: 0,
+        };
+      });
+
+    const tagged = loadTaggedWithStub(taggedSpy);
+    tagged._clear();
+
+    spyOn(Entry, "get").and.callFake(function (blogID, entryIDs, callback) {
+      callback([]);
+    });
+
+    tagged(makeReq(), { locals: {} }, function () {
+      tagged(makeReq(), { locals: {} }, function () {
+        expect(taggedSpy).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+  });
+
+  it("does not reuse a cached multi-tag payload when the tag order differs", function (done) {
+    const taggedSpy = jasmine
+      .createSpy("fetchTaggedEntries")
+      .and.callFake(async function (blogID, tags) {
+        const list = Array.isArray(tags) ? tags : [tags];
+        return {
+          entryIDs: ["1"],
+          pagination: {},
+          tag: list.join(" + "),
+          tagged: { [list.join(" + ")]: true },
+          slugs: list,
+          prettyTags: list,
+          total: 1,
+        };
+      });
+
+    const tagged = loadTaggedWithStub(taggedSpy);
+    tagged._clear();
+
+    spyOn(Entry, "get").and.callFake(function (blogID, entryIDs, callback) {
+      callback([{ id: "1", title: "Shared" }]);
+    });
+
+    tagged(makeReq({ query: { tag: ["foo", "bar"] } }), { locals: {} }, function (err, first) {
+      expect(first.tag).toBe("foo + bar");
+      expect(first.prettyTags).toEqual(["foo", "bar"]);
+
+      tagged(makeReq({ query: { tag: ["bar", "foo"] } }), { locals: {} }, function (secondErr, second) {
+        expect(second.tag).toBe("bar + foo");
+        expect(second.prettyTags).toEqual(["bar", "foo"]);
+        expect(taggedSpy).toHaveBeenCalledTimes(2);
+        done();
+      });
+    });
+  });
 });
