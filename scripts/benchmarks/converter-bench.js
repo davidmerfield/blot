@@ -142,27 +142,59 @@ async function benchmarkConverter(name, n) {
   });
 
   const durationsMs = [];
+  let errorCount = 0;
+  let lastErrorMessage = null;
   let peakRssMb = 0;
 
   for (let i = 0; i < n; i++) {
     const blogPath = fixtureTasks[i % fixtureTasks.length];
 
     const startedAt = performance.now();
-    await new Promise((resolve, reject) => {
+    const err = await new Promise((resolve) => {
       converterModule.read(blog, blogPath, (err) => {
-        // Conversion errors on a deliberately-tiny fixture set are still
-        // useful timing data (e.g. a fixture designed to test an error
-        // path) - only reject on a thrown/unexpected error type.
-        resolve();
+        resolve(err || null);
       });
     });
-    durationsMs.push(performance.now() - startedAt);
+    const elapsedMs = performance.now() - startedAt;
 
+    // A callback error (missing tool, malformed fixture) is not a fast
+    // successful conversion - blending its elapsed time into the timing
+    // array would make a broken converter look like a speedup and poison
+    // the rolling baseline. Bucket errors into their own count/message
+    // instead of the timing numbers.
+    if (err) {
+      errorCount++;
+      lastErrorMessage = err.message || String(err);
+    } else {
+      durationsMs.push(elapsedMs);
+    }
+
+    // KNOWN LIMITATION: this is the absolute RSS of the current (shared)
+    // process, not memory attributable to this converter alone. When
+    // benchmarkConverter() is called more than once in the same run (a
+    // shared-dependency change triggers several converters, or a manual run
+    // selects several - see main() below), a later converter's "peak RSS"
+    // includes memory retained by earlier converters' modules/allocations,
+    // which can falsely attribute a memory regression to the wrong
+    // converter. Deliberately not fixed here (would mean forking a child
+    // process per converter via child_process.fork/execFileSync and reading
+    // *its* RSS) - not worth the added complexity for a benchmark whose
+    // primary signal is timing, not memory; see also the README's
+    // "Per-converter benchmarks" section.
     const rssMb = process.memoryUsage().rss / 1024 / 1024;
     if (rssMb > peakRssMb) peakRssMb = rssMb;
   }
 
   fs.rmSync(blogDir, { recursive: true, force: true });
+
+  if (!durationsMs.length) {
+    return {
+      name,
+      skipped: true,
+      reason: `all ${n} conversion(s) errored - last error: ${lastErrorMessage}`,
+      error_count: errorCount,
+    };
+  }
 
   const sorted = [...durationsMs].sort((a, b) => a - b);
   const sum = durationsMs.reduce((a, b) => a + b, 0);
@@ -172,6 +204,7 @@ async function benchmarkConverter(name, n) {
     skipped: false,
     fixture_count: fixtures.length,
     conversions: n,
+    error_count: errorCount,
     timing_ms: {
       p50: percentile(sorted, 50),
       p95: percentile(sorted, 95),
