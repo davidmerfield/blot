@@ -26,6 +26,37 @@ describe("tagged block", function () {
     expect(body.trim()).toEqual("<ul><li>Second</li><li>First</li></ul>");
   });
 
+  it("fetches tagged entries once when a view binds both {{#entries}} and {{#tagged}}", async function () {
+    const Entry = require("models/entry");
+    spyOn(Entry, "get").and.callThrough();
+
+    await this.write({
+      path: "/first.txt",
+      content: "Title: First\nTags: foo\n\nFirst body",
+    });
+    await this.write({
+      path: "/second.txt",
+      content: "Title: Second\nTags: foo\n\nSecond body",
+    });
+
+    // routes/tagged.js always fetches the {{#entries}} page; a view that
+    // also references {{#tagged}} must not trigger a second
+    // fetchTaggedEntries/Entry.get pass. See
+    // https://github.com/davidmerfield/blot/issues/1844
+    await this.template({
+      "tagged.html":
+        "{{#entries}}{{title}}-e {{/entries}}{{#tagged}}{{#entries}}{{title}}-t {{/entries}}{{/tagged}}",
+    });
+
+    const res = await this.get("/tagged/foo");
+    const body = await res.text();
+
+    expect(res.status).toEqual(200);
+    expect(body).toContain("Second-e");
+    expect(body).toContain("Second-t");
+    expect(Entry.get).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps existing tagged behavior when path_prefix is not set", async function () {
     await this.write({
       path: "/blog/one.txt",

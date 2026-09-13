@@ -1,5 +1,6 @@
 const { getPage } = require("../lib/models");
 const getTemplateSortOptions = require("blog/sortOptions");
+const { primeUntaggedCache } = require("../render/retrieve/posts");
 
 module.exports = async function entries(req, res, next) {
   try {
@@ -21,6 +22,13 @@ module.exports = async function entries(req, res, next) {
 
     res.locals.entries = entries;
     res.locals.pagination = pagination;
+
+    // Older/custom templates bind {{#entries}} directly; official templates
+    // bind {{#posts}} instead. Seed retrieve/posts.js's cache with this
+    // fetch so a view that also references {{#posts}} reuses it instead of
+    // calling Entries.getPage again. See
+    // https://github.com/davidmerfield/blot/issues/1844
+    primeUntaggedCache(req, res, entries, pagination);
 
     res.renderView("entries.html", next);
   } catch (err) {

@@ -34,6 +34,29 @@ describe("posts", function () {
     expect(text2.trim()).toEqual("b.txt a.txt");
   });
 
+  it("getPages once when a view binds both {{#entries}} and {{#posts}}", async function () {
+    const entriesModel = require("models/entries");
+    spyOn(entriesModel, "getPage").and.callThrough();
+
+    await this.write({ path: "/a.txt", content: "Hello, A!" });
+    await this.write({ path: "/b.txt", content: "Hello, B!" });
+
+    // Official templates bind {{#posts}}; older/custom ones still bind
+    // {{#entries}}. routes/entries.js always fetches the {{#entries}} page,
+    // so a view referencing both must not cause a second Entries.getPage
+    // call. See https://github.com/davidmerfield/blot/issues/1844
+    await this.template({
+      "entries.html":
+        "{{#entries}}{{{name}}}-e {{/entries}}{{#posts}}{{{name}}}-p {{/posts}}",
+    });
+
+    const body = await this.text("/");
+
+    expect(body).toContain("b.txt-e");
+    expect(body).toContain("b.txt-p");
+    expect(entriesModel.getPage).toHaveBeenCalledTimes(1);
+  });
+
   it("filters posts by query tag", async function () {
     await this.write({
       path: "/a.txt",

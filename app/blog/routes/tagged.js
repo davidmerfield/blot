@@ -12,6 +12,10 @@ module.exports = function register(blog) {
         res.locals.entries = (result && result.entries) || [];
         res.locals.total = (result && result.total) || 0;
         res.locals.pagination = (result && result.pagination) || {};
+        // Views that also bind {{#tagged}} would otherwise trigger a
+        // second fetchTaggedEntries/Entry.get pass in retrieve/index.js.
+        // Seed the local with the result we already have.
+        res.locals.tagged = result;
 
         res.renderView("tagged.html", next);
       } catch (err) {
