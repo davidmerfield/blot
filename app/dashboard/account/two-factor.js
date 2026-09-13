@@ -98,7 +98,16 @@ function getPendingSetupSecret(req) {
     return null;
   }
 
-  return User.decryptTotpSecret(pending.secret);
+  // A corrupt session value, or a secret that no longer decrypts because
+  // the encryption key changed underneath a pending setup, must not crash
+  // the request -- treat it the same as an expired/missing setup and send
+  // the user back to start over.
+  try {
+    return User.decryptTotpSecret(pending.secret);
+  } catch (err) {
+    delete req.session.pendingTotpSetup;
+    return null;
+  }
 }
 
 function beginSetup(req, res, next) {
@@ -138,21 +147,32 @@ function confirmSetup(req, res, next) {
 
   if (!secret) return res.redirect(req.baseUrl + "/enable");
 
-  if (!User.verifyTotpToken(secret, req.body.code)) {
+  // Canonicalize the same way the log-in check does, so the code recorded
+  // as used below matches what a login attempt with the same input would
+  // compute (see models/user/checkTotp.js).
+  var canonicalCode = String(req.body.code || "").replace(/\s+/g, "");
+
+  if (!User.verifyTotpToken(secret, canonicalCode)) {
     return next(new Error("That code was not correct. Please try again."));
   }
 
-  User.enableTotp(req.user.uid, secret, function (err, backupCodes) {
-    if (err) return next(err);
+  // Record the confirmation code as used before enabling 2FA, so the same
+  // code can't also be replayed to log in for the rest of its validity
+  // window -- otherwise this code, unlike every other TOTP code, would
+  // never pass through the replay guard in consumeTotpToken.
+  User.consumeTotpToken(req.user.uid, canonicalCode, function () {
+    User.enableTotp(req.user.uid, secret, function (err, backupCodes) {
+      if (err) return next(err);
 
-    delete req.session.pendingTotpSetup;
+      delete req.session.pendingTotpSetup;
 
-    res.set("Cache-Control", "no-store");
+      res.set("Cache-Control", "no-store");
 
-    res.render("dashboard/account/two-factor-backup-codes", {
-      title: "Your backup codes",
-      codes: backupCodes,
-      justEnabled: true,
+      res.render("dashboard/account/two-factor-backup-codes", {
+        title: "Your backup codes",
+        codes: backupCodes,
+        justEnabled: true,
+      });
     });
   });
 }

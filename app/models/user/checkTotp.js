@@ -17,6 +17,8 @@ module.exports = function checkTotp(uid, code, callback) {
   // comparing against the secret, so "123456" and " 123 456" verify as the
   // same code. The replay guard must track that same canonical form, or a
   // whitespace-padded resubmission would slip past it as if it were new.
+  // Backup codes (hashed as typed) also need this: a pasted code with a
+  // trailing space or newline should still match its bcrypt hash.
   var canonicalCode = code.replace(/\s+/g, "");
 
   getById(uid, function (err, user) {
@@ -42,7 +44,7 @@ module.exports = function checkTotp(uid, code, callback) {
       });
     }
 
-    verifyBackupCode(user.totpBackupCodes, code, function (err, index) {
+    verifyBackupCode(user.totpBackupCodes, canonicalCode, function (err, index) {
       if (err) return callback(err);
       if (index === -1) return callback(null, false);
 

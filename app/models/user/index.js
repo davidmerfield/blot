@@ -2,6 +2,7 @@ module.exports = {
   checkAccessToken: require("./checkAccessToken"),
   checkPassword: require("./checkPassword"),
   checkTotp: require("./checkTotp"),
+  consumeTotpToken: require("./consumeTotpToken"),
   create: require("./create"),
   decryptTotpSecret: require("./totp/decrypt"),
   disableTotp: require("./disableTotp"),

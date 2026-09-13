@@ -122,10 +122,9 @@ Account.use(function (err, req, res, next) {
     // fix blog.set...
     if (err.message) {
       message = err.message;
-    }
-
-    if (type(err, "object"))
+    } else if (type(err, "object")) {
       for (var i in err) if (type(err[i], "string")) message = err[i];
+    }
 
     res.message(redirect, new Error(message));
   } else {

@@ -151,6 +151,11 @@ describe("two-factor authentication route", function () {
     spyOn(User, "enableTotp").and.callFake(function (uid, secret, callback) {
       callback(null, ["code-1", "code-2"]);
     });
+    spyOn(User, "consumeTotpToken").and.callFake(function (uid, code, callback) {
+      callback(null, true);
+    });
+
+    var code = otplib.authenticator.generate(secret);
 
     var result = await request({
       method: "POST",
@@ -161,9 +166,16 @@ describe("two-factor authentication route", function () {
           createdAt: Date.now(),
         },
       },
-      body: { code: otplib.authenticator.generate(secret) },
+      body: { code: code },
     });
 
+    // The confirmation code is recorded as used (closing the replay
+    // window) before two-factor is enabled with it.
+    expect(User.consumeTotpToken).toHaveBeenCalledWith(
+      "two-factor-route-user",
+      code,
+      jasmine.any(Function)
+    );
     expect(User.enableTotp).toHaveBeenCalledWith(
       "two-factor-route-user",
       secret,
