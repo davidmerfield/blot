@@ -137,13 +137,14 @@ describe("projectEntryFields", function () {
     );
 
     // Entry content is data, not a template, so tags in `html` do not keep
-    // other heavy fields around for a second render pass.
+    // other heavy fields around for a second render pass. `html` itself stays
+    // because the view references it.
     expect(entries[0].html).toBe("{{#allEntries}}{{{summary}}}{{/allEntries}}");
     expect(entries[0].summary).toBeUndefined();
     expect(entries[0].body).toBeUndefined();
     expect(entries[1].summary).toBeUndefined();
     expect(entries[1].body).toBeUndefined();
-    expect(entries[1].html).toBeUndefined();
+    expect(entries[1].html).toBe("<p>one</p>");
   });
 
   it("still projects when a retained light field contains Mustache tags", function () {
