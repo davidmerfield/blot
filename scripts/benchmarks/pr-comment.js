@@ -92,8 +92,8 @@ function extractSha(body) {
 
 // The fenced results block: the table plus its provenance footer. `sha` is the
 // commit these numbers were produced from; `prevSha` the one before it.
-function resultsBlock({ result, baseline, sha, prevSha }) {
-  const rows = compareToBaseline(result, baseline);
+function resultsBlock({ result, baseline, sha, prevSha, excludePhases }) {
+  const rows = compareToBaseline(result, baseline, { excludePhases });
   const cfg = result.config || {};
   const url = runUrl();
 
@@ -122,8 +122,8 @@ function resultsBlock({ result, baseline, sha, prevSha }) {
   );
 }
 
-function callout({ result, baseline }) {
-  const rows = compareToBaseline(result, baseline);
+function callout({ result, baseline, excludePhases }) {
+  const rows = compareToBaseline(result, baseline, { excludePhases });
   if (!baseline || !baseline.sample_count) {
     return (
       "> No master baseline yet — showing this run's raw numbers. " +
@@ -145,13 +145,13 @@ function callout({ result, baseline }) {
   return "> No metric moved outside the noise band.";
 }
 
-function doneBody({ arch, result, baseline, sha, prevSha, marker, title }) {
+function doneBody({ arch, result, baseline, sha, prevSha, marker, title, excludePhases }) {
   return [
     `### ${title || "Benchmark"} — \`${arch}\``,
     "",
-    callout({ result, baseline }),
+    callout({ result, baseline, excludePhases }),
     "",
-    resultsBlock({ result, baseline, sha, prevSha }),
+    resultsBlock({ result, baseline, sha, prevSha, excludePhases }),
     "",
     `<!-- bench:sha:${short(sha) || "none"} -->`,
     marker,
@@ -256,6 +256,14 @@ function main() {
   // from the default small-scale benchmark comment.
   const title = arg("--title");
   const message = arg("--message");
+  // Comma-separated phases ("build", "render") to drop from the table and
+  // baseline/regression comparison entirely - used by benchmarks-render.yml,
+  // whose --corpus-mode render skips real build work, so its build_* metrics
+  // are meaningless near-zero process-startup noise (see build-render.spec.js).
+  const excludePhaseArg = arg("--exclude-phase");
+  const excludePhases = excludePhaseArg
+    ? excludePhaseArg.split(",").map((s) => s.trim()).filter(Boolean)
+    : [];
   const repo = process.env.GITHUB_REPOSITORY;
 
   if (!pr || !repo) {
@@ -300,7 +308,7 @@ function main() {
       let baseline = readJson(baselineFile);
       if (!baseline && historyDir) {
         const history = loadHistory(historyDir, arch);
-        baseline = history.length ? computeBaseline(history) : null;
+        baseline = history.length ? computeBaseline(history, { excludePhases }) : null;
       }
       body = doneBody({
         arch,
@@ -310,6 +318,7 @@ function main() {
         prevSha,
         marker,
         title,
+        excludePhases,
       });
     }
 
