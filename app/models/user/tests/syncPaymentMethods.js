@@ -177,6 +177,92 @@ describe("user syncPaymentMethods", function () {
       });
     });
 
+    it("honors a subscription-level legacy default_source over the customer's default", function (done) {
+      var stripeClient = baseStripeClient({
+        customers: {
+          retrieve: jasmine
+            .createSpy("retrieve")
+            .and.callFake(function (customerId, cb) {
+              cb(null, {
+                id: customerId,
+                invoice_settings: {},
+                default_source: "card_customer_default"
+              });
+            }),
+          retrieveSubscription: jasmine
+            .createSpy("retrieveSubscription")
+            .and.callFake(function (customerId, subscriptionId, cb) {
+              cb(null, {
+                id: subscriptionId,
+                default_payment_method: null,
+                default_source: "card_subscription_default"
+              });
+            }),
+          listCards: jasmine
+            .createSpy("listCards")
+            .and.callFake(function (customerId, params, cb) {
+              cb(null, {
+                data: [
+                  { id: "card_customer_default", brand: "Visa", last4: "1111", exp_month: 1, exp_year: 2030 },
+                  { id: "card_subscription_default", brand: "Visa", last4: "2222", exp_month: 1, exp_year: 2030 }
+                ]
+              });
+            })
+        }
+      });
+
+      syncPaymentMethods._setStripeClient(stripeClient);
+
+      syncPaymentMethods(this.user, function (err, paymentMethods) {
+        if (err) return done.fail(err);
+
+        expect(
+          paymentMethods.find(function (pm) { return pm.id === "card_subscription_default"; }).isDefault
+        ).toBe(true);
+        expect(
+          paymentMethods.find(function (pm) { return pm.id === "card_customer_default"; }).isDefault
+        ).toBe(false);
+        done();
+      });
+    });
+
+    it("follows has_more to fetch every page of legacy cards", function (done) {
+      var pageOne = {
+        data: [{ id: "card_1", brand: "Visa", last4: "1111", exp_month: 1, exp_year: 2030 }],
+        has_more: true
+      };
+      var pageTwo = {
+        data: [{ id: "card_2", brand: "Visa", last4: "2222", exp_month: 1, exp_year: 2030 }],
+        has_more: false
+      };
+
+      var stripeClient = baseStripeClient({
+        customers: {
+          retrieve: jasmine
+            .createSpy("retrieve")
+            .and.callFake(function (customerId, cb) {
+              cb(null, { id: customerId, invoice_settings: {}, default_source: null });
+            }),
+          listCards: jasmine
+            .createSpy("listCards")
+            .and.callFake(function (customerId, params, cb) {
+              if (params.starting_after === "card_1") return cb(null, pageTwo);
+              cb(null, pageOne);
+            })
+        }
+      });
+
+      syncPaymentMethods._setStripeClient(stripeClient);
+
+      syncPaymentMethods(this.user, function (err, paymentMethods) {
+        if (err) return done.fail(err);
+
+        expect(paymentMethods.length).toBe(2);
+        expect(paymentMethods.map(function (pm) { return pm.id; })).toEqual(["card_1", "card_2"]);
+        done();
+      });
+    });
+
     it("follows has_more to fetch every page of payment methods", function (done) {
       var pageOne = {
         data: [{ id: "pm_1", card: { brand: "visa", last4: "1111", exp_month: 1, exp_year: 2030 } }],

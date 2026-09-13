@@ -100,6 +100,12 @@ PaymentMethod.route("/")
       function (err, paymentMethod) {
         if (err) return next(err);
 
+        // Record this before attaching: if attach fails because the
+        // customer no longer exists, the recovery middleware below still
+        // needs it (the PaymentMethod itself was created fine - only
+        // attaching it to a customer failed).
+        req.newPaymentMethodId = paymentMethod.id;
+
         stripe.paymentMethods.attach(
           paymentMethod.id,
           { customer: req.user.subscription.customer },
@@ -109,7 +115,6 @@ PaymentMethod.route("/")
               return next(err);
             }
 
-            req.newPaymentMethodId = paymentMethod.id;
             next();
           }
         );
@@ -283,13 +288,33 @@ function findOwnedPaymentMethod(user, id, callback) {
 }
 
 function makeDefault(stripe, user, paymentMethod, callback) {
-  // A legacy Card can only ever be the customer's default_source, not a
-  // PaymentMethod - it has no invoice_settings/subscription equivalent.
+  // A legacy Card is set as the default via default_source, not
+  // invoice_settings.default_payment_method. But default_payment_method
+  // outranks default_source at both the subscription and customer level
+  // (see syncPaymentMethods' precedence), so simply setting default_source
+  // isn't enough if a default_payment_method is already set somewhere -
+  // that would keep winning and Stripe would keep charging it instead.
+  // Clear it (an empty string unsets a Stripe field) at both levels while
+  // setting the legacy card as the default_source at both levels.
   if (paymentMethod.isLegacy) {
     return stripe.customers.update(
       user.subscription.customer,
-      { default_source: paymentMethod.id },
-      callback
+      {
+        default_source: paymentMethod.id,
+        invoice_settings: { default_payment_method: "" }
+      },
+      function (err) {
+        if (err) return callback(err);
+
+        if (!user.subscription.id) return callback();
+
+        stripe.customers.updateSubscription(
+          user.subscription.customer,
+          user.subscription.id,
+          { default_source: paymentMethod.id, default_payment_method: "" },
+          callback
+        );
+      }
     );
   }
 

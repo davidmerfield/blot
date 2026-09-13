@@ -49,17 +49,15 @@ function buildPaymentMethod(pm, defaultId) {
   };
 }
 
-// stripe.paymentMethods.list is paginated (100 per page by default); fetch
-// every page rather than only the first, otherwise a customer with more
-// than a page of cards silently loses access to the rest of them.
-function listAllPaymentMethods(stripe, customerId, callback) {
+// Generic "follow has_more with starting_after" pager shared by both the
+// modern PaymentMethods list and the legacy Cards list - both are paginated
+// the same way, so a customer with more than one page of either would
+// otherwise silently lose access to everything past the first page.
+function listAll(list, callback) {
   var all = [];
 
   function fetchPage(startingAfter) {
-    var params = { customer: customerId, type: "card", limit: 100 };
-    if (startingAfter) params.starting_after = startingAfter;
-
-    stripe.paymentMethods.list(params, function (err, page) {
+    list(startingAfter, function (err, page) {
       if (err) return callback(err);
 
       var data = page.data || [];
@@ -75,6 +73,14 @@ function listAllPaymentMethods(stripe, customerId, callback) {
   fetchPage();
 }
 
+function listAllPaymentMethods(stripe, customerId, callback) {
+  listAll(function (startingAfter, cb) {
+    var params = { customer: customerId, type: "card", limit: 100 };
+    if (startingAfter) params.starting_after = startingAfter;
+    stripe.paymentMethods.list(params, cb);
+  }, callback);
+}
+
 // Cards added before this feature existed were stored as legacy Card
 // objects (attached via customer.sources) rather than modern PaymentMethods,
 // and Stripe does not surface those in paymentMethods.list. We fetch all of
@@ -82,14 +88,15 @@ function listAllPaymentMethods(stripe, customerId, callback) {
 // here; any card added or set as default from now on becomes a real
 // PaymentMethod instead.
 function fetchLegacyCards(stripe, customerId, defaultSourceId, callback) {
-  stripe.customers.listCards(customerId, { limit: 100 }, function (
-    err,
-    cards
-  ) {
+  listAll(function (startingAfter, cb) {
+    var params = { limit: 100 };
+    if (startingAfter) params.starting_after = startingAfter;
+    stripe.customers.listCards(customerId, params, cb);
+  }, function (err, cards) {
     if (err && err.code === "resource_missing") return callback(null, []);
     if (err) return callback(err);
 
-    var legacyCards = (cards.data || []).map(function (card) {
+    var legacyCards = cards.map(function (card) {
       return {
         id: card.id,
         brand: normalizeBrand(card.brand),
@@ -105,10 +112,11 @@ function fetchLegacyCards(stripe, customerId, defaultSourceId, callback) {
   });
 }
 
-// A subscription can pin its own default_payment_method, which takes
-// priority over the customer-level invoice_settings default when Stripe
-// decides what to charge. We need the live subscription (not our cached
-// copy, which may be stale) to know that.
+// A subscription can pin its own default_payment_method or (for accounts
+// still on the legacy update-payment-method flow) its own default_source,
+// either of which takes priority over the customer-level defaults when
+// Stripe decides what to charge for that subscription. We need the live
+// subscription (not our cached copy, which may be stale) to know that.
 function fetchSubscriptionDefault(stripe, customerId, subscriptionId, callback) {
   if (!subscriptionId) return callback(null, null);
 
@@ -120,7 +128,10 @@ function fetchSubscriptionDefault(stripe, customerId, subscriptionId, callback) 
     // customer-level default rather than failing the whole sync.
     if (err || !subscription) return callback(null, null);
 
-    callback(null, subscription.default_payment_method || null);
+    callback(
+      null,
+      subscription.default_payment_method || subscription.default_source || null
+    );
   });
 }
 
@@ -142,20 +153,23 @@ module.exports = function syncPaymentMethods(user, callback) {
   stripe.customers.retrieve(customerId, function (err, customer) {
     if (err) return callback(err);
 
-    var defaultSourceId = customer.default_source || null;
-
     fetchSubscriptionDefault(
       stripe,
       customerId,
       user.subscription.id,
       function (_, subscriptionDefaultId) {
-        // A subscription-level default_payment_method, if set, is what
-        // actually gets charged for this subscription and takes priority
-        // over the customer's general invoice_settings default.
+        // Stripe's real precedence for what a subscription actually
+        // charges: its own default_payment_method, then its own
+        // default_source, then the customer's invoice_settings default,
+        // then the customer's default_source. subscriptionDefaultId above
+        // already folds the first two together; this folds in the rest.
+        // The result is a single id we can match against either a modern
+        // PaymentMethod or a legacy Card, whichever it turns out to be.
         var defaultId =
           subscriptionDefaultId ||
           (customer.invoice_settings &&
             customer.invoice_settings.default_payment_method) ||
+          customer.default_source ||
           null;
 
         listAllPaymentMethods(stripe, customerId, function (err, methods) {
@@ -169,27 +183,20 @@ module.exports = function syncPaymentMethods(user, callback) {
               return buildPaymentMethod(pm, defaultId);
             });
 
-          // A legacy card is only "the default" when nothing set a modern
-          // PaymentMethod as the default - Stripe prefers
-          // default_payment_method over default_source when both exist.
-          fetchLegacyCards(
-            stripe,
-            customerId,
-            defaultId ? null : defaultSourceId,
-            function (err, legacyCards) {
+          fetchLegacyCards(stripe, customerId, defaultId, function (
+            err,
+            legacyCards
+          ) {
+            if (err) return callback(err);
+
+            paymentMethods = legacyCards.concat(paymentMethods);
+
+            set(user.uid, { paymentMethods: paymentMethods }, function (err) {
               if (err) return callback(err);
 
-              paymentMethods = legacyCards.concat(paymentMethods);
-
-              set(user.uid, { paymentMethods: paymentMethods }, function (
-                err
-              ) {
-                if (err) return callback(err);
-
-                callback(null, paymentMethods);
-              });
-            }
-          );
+              callback(null, paymentMethods);
+            });
+          });
         });
       }
     );

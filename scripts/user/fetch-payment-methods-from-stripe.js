@@ -19,6 +19,24 @@ function main(user, callback) {
   }
 
   syncPaymentMethods(user, function (err, paymentMethods) {
+    // Same anomaly fetch-subscription-from-stripe.js guards against: the
+    // Blot account still points at a Stripe customer that no longer
+    // exists. Log and move on rather than aborting the whole backfill -
+    // async.eachSeries in scripts/each/user stops at the first error, so
+    // one deleted customer would otherwise silently strand every account
+    // after it until someone re-ran the script by hand.
+    if (err && err.code === "resource_missing") {
+      console.log(
+        colors.red(
+          "User:",
+          user.uid,
+          user.email,
+          "has a Stripe customer id that no longer exists on Stripe"
+        )
+      );
+      return callback();
+    }
+
     if (err) {
       console.log(
         colors.red("User:", user.uid, user.email, "failed to sync:", err.message)

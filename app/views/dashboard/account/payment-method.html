@@ -17,10 +17,7 @@
 {{/paypal}}
 
 {{^paypal}}
-<a href="" class="mess error" style="display: none">
-  {{text}}
-  <span class="link">Dismiss</span>
-</a>
+{{> message}}
 
 <div class="payment-methods-list">
   {{#paymentMethods}}
