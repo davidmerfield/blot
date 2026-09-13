@@ -308,4 +308,60 @@ describe("user extend", function () {
     var result = extend(user);
     expect(result).toBe(user);
   });
+
+  describe("payment methods", function () {
+    function monthsFromNow(months) {
+      var date = new Date();
+      date.setMonth(date.getMonth() + months);
+      return { exp_month: date.getMonth() + 1, exp_year: date.getFullYear() };
+    }
+
+    it("flags an expired card and sets hasExpiredPaymentMethod", function () {
+      var user = createUser({
+        paymentMethods: [
+          Object.assign(
+            { id: "pm_1", brand: "visa", last4: "4242", isDefault: true },
+            monthsFromNow(-1)
+          )
+        ]
+      });
+      extend(user);
+      expect(user.paymentMethods[0].isExpired).toBe(true);
+      expect(user.paymentMethods[0].isExpiringSoon).toBe(false);
+      expect(user.hasExpiredPaymentMethod).toBe(true);
+      expect(user.hasExpiringSoonPaymentMethod).toBeUndefined();
+    });
+
+    it("flags a card expiring soon and sets hasExpiringSoonPaymentMethod", function () {
+      var user = createUser({
+        paymentMethods: [
+          Object.assign(
+            { id: "pm_1", brand: "visa", last4: "4242", isDefault: true },
+            monthsFromNow(1)
+          )
+        ]
+      });
+      extend(user);
+      expect(user.paymentMethods[0].isExpired).toBe(false);
+      expect(user.paymentMethods[0].isExpiringSoon).toBe(true);
+      expect(user.hasExpiringSoonPaymentMethod).toBe(true);
+      expect(user.hasExpiredPaymentMethod).toBeUndefined();
+    });
+
+    it("does not flag a card with plenty of time left", function () {
+      var user = createUser({
+        paymentMethods: [
+          Object.assign(
+            { id: "pm_1", brand: "visa", last4: "4242", isDefault: true },
+            monthsFromNow(12)
+          )
+        ]
+      });
+      extend(user);
+      expect(user.paymentMethods[0].isExpired).toBe(false);
+      expect(user.paymentMethods[0].isExpiringSoon).toBe(false);
+      expect(user.hasExpiredPaymentMethod).toBeUndefined();
+      expect(user.hasExpiringSoonPaymentMethod).toBeUndefined();
+    });
+  });
 });

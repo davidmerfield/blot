@@ -46,6 +46,7 @@ var config = require("config");
 var email = require("helper/email");
 var User = require("models/user");
 var subscriptionLifecycle = require("models/user/subscriptionLifecycle");
+var syncPaymentMethods = require("models/user/syncPaymentMethods");
 var createStripe = require("stripe");
 
 var webhooks = Express.Router();
@@ -53,6 +54,13 @@ var webhooks = Express.Router();
 // Stripe event codes
 var UPDATED_SUBSCRIPTION = "customer.subscription.updated";
 var DELETED_SUBSCRIPTION = "customer.subscription.deleted";
+var PAYMENT_METHOD_EVENTS = [
+  "payment_method.attached",
+  "payment_method.detached",
+  "payment_method.updated",
+  "payment_method.automatically_updated",
+  "customer.updated"
+];
 
 // Error messages
 var NO_SUBSCRIPTION = "No subscription retrieved from Stripe";
@@ -184,6 +192,42 @@ webhooks.post("/", parser.raw({ type: "application/json" }), function (req, res)
         );
       }
     );
+  }
+
+  // A customer's payment methods changed, either through this app or
+  // directly on Stripe (e.g. Radar auto-updating an expiring card, or a
+  // change made from the Stripe dashboard) - refresh our cached list.
+  if (PAYMENT_METHOD_EVENTS.indexOf(event.type) !== -1) {
+    // customer.updated events are the customer object itself; the others
+    // carry the customer id in event_data.customer. A detached payment
+    // method's event no longer has a customer on it at all, so there's
+    // nothing to refresh in that case - the route that performed the
+    // detach has already refreshed its own cache.
+    var customerId =
+      event.type === "customer.updated"
+        ? event_data && event_data.id
+        : event_data && event_data.customer;
+
+    if (!customerId) return res.sendStatus(200);
+
+    return User.getByCustomerId(customerId, function (err, user) {
+      if (err) {
+        console.error("Failed to look up user by customer id", err);
+        return res.sendStatus(503);
+      }
+
+      // Not a Blot customer (or Radar touched a card on some other
+      // Stripe object entirely) - nothing for us to do.
+      if (!user) return res.sendStatus(200);
+
+      syncPaymentMethods(user, function (err) {
+        if (err) {
+          console.error("Failed to sync payment methods", err);
+          return res.sendStatus(503);
+        }
+        return res.sendStatus(200);
+      });
+    });
   }
 
   return res.sendStatus(200);

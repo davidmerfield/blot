@@ -3,6 +3,7 @@ var prettyDate = require("helper/prettyDate");
 var prettyPrice = require("helper/prettyPrice");
 var config = require("config");
 var subscriptionLifecycle = require("./subscriptionLifecycle");
+var markPaymentMethodExpiry = require("./paymentMethodExpiry");
 
 module.exports = function extend (user) {
   // True if the user has set a password, false otherwise
@@ -97,6 +98,15 @@ module.exports = function extend (user) {
         );
 
     user.pretty.price = prettyPrice(amount * quantity);
+  }
+
+  if (user.paymentMethods && user.paymentMethods.length) {
+    markPaymentMethodExpiry(user.paymentMethods);
+
+    user.paymentMethods.forEach(function (paymentMethod) {
+      if (paymentMethod.isExpired) user.hasExpiredPaymentMethod = true;
+      if (paymentMethod.isExpiringSoon) user.hasExpiringSoonPaymentMethod = true;
+    });
   }
 
   if (user.blogs.length !== 1) {
