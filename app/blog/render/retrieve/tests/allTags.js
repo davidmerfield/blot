@@ -153,6 +153,37 @@ describe("all_tags cache", function () {
     });
   });
 
+  it("does not confuse a numeric path_prefix (no filter) with the equivalent string (a real filter)", function (done) {
+    const allTags = loadAllTags();
+
+    // models/tags/list.js's normalizePathPrefix treats a non-string as "no
+    // filter" but normalizes the string "1" into "/1" - a naive String()
+    // cache key would turn both into the same "1" and let one view's tags
+    // leak into the other.
+    spyOn(Tags, "list").and.callFake(function (blogID, options, callback) {
+      callback(null, [{ name: "abc", slug: "abc", entries: ["1"] }]);
+    });
+
+    const blog = { id: "blog-1", cacheID: 100 };
+
+    allTags(
+      { ...makeReq(blog), template: { locals: { path_prefix: 1 } } },
+      { locals: {} },
+      function () {
+        allTags(
+          { ...makeReq(blog), template: { locals: { path_prefix: "1" } } },
+          { locals: {} },
+          function () {
+            expect(Tags.list).toHaveBeenCalledTimes(2);
+            expect(Tags.list.calls.argsFor(0)[1].path_prefix).toBe(1);
+            expect(Tags.list.calls.argsFor(1)[1].path_prefix).toBe("1");
+            done();
+          }
+        );
+      }
+    );
+  });
+
   it("returns isolated copies so caller mutations do not taint cache", function (done) {
     const allTags = loadAllTags();
 

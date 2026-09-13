@@ -1,4 +1,5 @@
 const { listTags } = require("../../lib/models");
+const { normalizePathPrefix } = require("helper/pathPrefix");
 const { cloneDeep, deepFreeze } = require("../../lib/clone");
 const LRUCache = require("lru-cache").LRUCache;
 const asRetriever = require("../../lib/asRetriever");
@@ -16,7 +17,12 @@ function createCacheKey(blog, pathPrefix) {
   return JSON.stringify({
     blogID: String(blog && blog.id),
     cacheID: String(blog && blog.cacheID),
-    pathPrefix: String(pathPrefix),
+    // Key on the same normalized value models/tags/list.js actually filters
+    // by, not the raw pathPrefix - Tags.list treats a non-string as "no
+    // filter" and normalizePathPrefix("1") into "/1", so a naive String()
+    // key would collide "1" (a real prefix) with 1 (ignored) and serve one
+    // view's tag set to the other.
+    pathPrefix: normalizePathPrefix(pathPrefix),
   });
 }
 
