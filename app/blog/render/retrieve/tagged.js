@@ -51,7 +51,12 @@ async function tagged(req, res) {
     tags: normalizeTagsKey(tags),
     page,
     limit,
-    pathPrefix: String(pathPrefix),
+    // String(undefined) === "undefined", which would collide with an
+    // actual path_prefix of the literal string "undefined" and reuse an
+    // unfiltered payload where filterEntryIDsByPathPrefix should have
+    // applied a "/undefined" filter. Leave it undefined (JSON.stringify
+    // omits the property) instead of collapsing both to the same key.
+    pathPrefix: pathPrefix === undefined ? undefined : String(pathPrefix),
     sortBy: String(sortOptions.sortBy),
     order: String(sortOptions.order),
   });

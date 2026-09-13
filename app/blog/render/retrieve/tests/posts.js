@@ -603,4 +603,58 @@ describe("posts cache", function () {
 
     expect(tagged).not.toBe(untagged);
   });
+
+  it("does not collide an unset page_size with an explicit default-sized one", function () {
+    const posts = loadPostsWithTaggedStub(function () {});
+
+    const makeKey = (pageSize) =>
+      posts._createCacheKey(
+        { blog: { id: "blog-1", cacheID: "v1" }, query: {}, params: {}, template: { locals: {} } },
+        { locals: {} },
+        {
+          branch: "untagged",
+          tags: undefined,
+          sortBy: "date",
+          order: "desc",
+          pathPrefix: undefined,
+          pageNumber: 1,
+          // The untagged branch keys on the RAW page size (posts() passes
+          // `tags ? pageSize : options.pageSize` here) - an unset value
+          // must not collide with an explicit page_size equal to
+          // normalizePageSize's own default (100), or two different
+          // requests (e.g. a template with no page_size configured and a
+          // second one explicitly set to 100) would share a cache entry
+          // fetched with models/entries' unrelated default of 5. See
+          // https://github.com/davidmerfield/blot/issues/1844
+          pageSize,
+          limit: 100,
+          offset: 0,
+        }
+      );
+
+    expect(makeKey(undefined)).not.toBe(makeKey(100));
+  });
+
+  it("does not collide an unset path_prefix with the literal string \"undefined\"", function () {
+    const posts = loadPostsWithTaggedStub(function () {});
+
+    const makeKey = (pathPrefix) =>
+      posts._createCacheKey(
+        { blog: { id: "blog-1", cacheID: "v1" }, query: {}, params: {}, template: { locals: {} } },
+        { locals: {} },
+        {
+          branch: "untagged",
+          tags: undefined,
+          sortBy: "date",
+          order: "desc",
+          pathPrefix,
+          pageNumber: 1,
+          pageSize: 100,
+          limit: 100,
+          offset: 0,
+        }
+      );
+
+    expect(makeKey(undefined)).not.toBe(makeKey("undefined"));
+  });
 });
