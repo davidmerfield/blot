@@ -51,18 +51,32 @@ function resolvePath (blogID, path, callback) {
 // The purpose of this script was to resolve an issue with entries having
 // path properties that were not equal to the location of the file on disk
 // if the file system is case sensitive.
+// Entries.each reads one full entry (content included) at a time, but for
+// a blog with very large posts the string of already-processed entries can
+// pile up in memory faster than V8 gets a chance to reclaim it. Yielding to
+// the event loop every YIELD_EVERY entries gives it that chance, bounding
+// peak memory instead of letting it climb for the length of the walk.
+var YIELD_EVERY = 50;
+
 function main (blog, callback) {
   var missing = [];
   var edit = [];
   var report = [];
+  var count = 0;
+
+  function done (next) {
+    count++;
+    if (count % YIELD_EVERY === 0) return setImmediate(next);
+    next();
+  }
 
   Entries.each(
     blog.id,
     function (_entry, next) {
 
-      if (!_entry) return next();
+      if (!_entry) return done(next);
 
-      if (_entry.deleted) return next();
+      if (_entry.deleted) return done(next);
 
       // Folder posts have no file at their own path; they are ghosts only if
       // the "+" folder they were built from is gone - or has been replaced by
@@ -73,7 +87,7 @@ function main (blog, callback) {
           if (err || !stat.isDirectory()) {
             missing.push({ entry: _entry, path: _entry.path });
           }
-          next();
+          done(next);
         });
       }
 
@@ -83,7 +97,7 @@ function main (blog, callback) {
         } else if (err) {
           missing.push({ entry: _entry, path: _entry.path });
         }
-        next();
+        done(next);
       });
     },
     function (err) {
