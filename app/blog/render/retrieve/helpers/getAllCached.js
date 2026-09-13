@@ -4,8 +4,8 @@
 // that needs both locals only pays for one Redis round trip per cacheID, and
 // repeat renders hit the LRU instead of Redis at all.
 const LRUCache = require("lru-cache").LRUCache;
-const { getAll } = require("../../lib/models");
-const { cloneDeep, deepFreeze } = require("../../lib/clone");
+const { getAll } = require("../../../lib/models");
+const { cloneDeep, deepFreeze } = require("../../../lib/clone");
 
 const entriesCache = new LRUCache({
   max: 200,
