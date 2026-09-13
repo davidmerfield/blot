@@ -82,3 +82,114 @@ describe("all tags", function () {
   });
 
 });
+
+describe("all_tags cache", function () {
+  const Tags = require("models/tags");
+  const allTagsPath = require.resolve("../all_tags");
+
+  function loadAllTags() {
+    delete require.cache[allTagsPath];
+    return require("../all_tags");
+  }
+
+  afterEach(function () {
+    delete require.cache[allTagsPath];
+  });
+
+  function makeReq(blog) {
+    return {
+      blog,
+      template: { locals: {} },
+      log: function () {},
+    };
+  }
+
+  it("reuses cached tags for identical cacheIDs and path_prefix", function (done) {
+    const allTags = loadAllTags();
+
+    spyOn(Tags, "list").and.callFake(function (blogID, options, callback) {
+      callback(null, [{ name: "abc", slug: "abc", entries: ["1"] }]);
+    });
+
+    const req = makeReq({ id: "blog-1", cacheID: 100 });
+
+    allTags(req, { locals: {} }, function () {
+      allTags(req, { locals: {} }, function () {
+        expect(Tags.list).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+  });
+
+  it("refetches when cacheID changes", function (done) {
+    const allTags = loadAllTags();
+
+    spyOn(Tags, "list").and.callFake(function (blogID, options, callback) {
+      callback(null, [{ name: "abc", slug: "abc", entries: ["1"] }]);
+    });
+
+    allTags(makeReq({ id: "blog-1", cacheID: 100 }), { locals: {} }, function () {
+      allTags(makeReq({ id: "blog-1", cacheID: 101 }), { locals: {} }, function () {
+        expect(Tags.list).toHaveBeenCalledTimes(2);
+        done();
+      });
+    });
+  });
+
+  it("keys the cache on path_prefix as well as cacheID", function (done) {
+    const allTags = loadAllTags();
+
+    spyOn(Tags, "list").and.callFake(function (blogID, options, callback) {
+      callback(null, [{ name: "abc", slug: "abc", entries: ["1"] }]);
+    });
+
+    const blog = { id: "blog-1", cacheID: 100 };
+
+    allTags({ ...makeReq(blog), template: { locals: { path_prefix: "/a/" } } }, { locals: {} }, function () {
+      allTags({ ...makeReq(blog), template: { locals: { path_prefix: "/b/" } } }, { locals: {} }, function () {
+        expect(Tags.list).toHaveBeenCalledTimes(2);
+        done();
+      });
+    });
+  });
+
+  it("returns isolated copies so caller mutations do not taint cache", function (done) {
+    const allTags = loadAllTags();
+
+    spyOn(Tags, "list").and.callFake(function (blogID, options, callback) {
+      callback(null, [{ name: "abc", slug: "abc", entries: ["1"] }]);
+    });
+
+    const req = makeReq({ id: "blog-1", cacheID: 100 });
+
+    allTags(req, { locals: {} }, function (err, firstTags) {
+      firstTags[0].tag = "mutated";
+
+      allTags(req, { locals: {} }, function (err, secondTags) {
+        expect(secondTags[0].tag).toBe("abc");
+        done();
+      });
+    });
+  });
+
+  it("restores all_tags_total_posts from the cache on a hit", function (done) {
+    const allTags = loadAllTags();
+
+    spyOn(Tags, "list").and.callFake(function (blogID, options, callback) {
+      callback(null, [
+        { name: "abc", slug: "abc", entries: ["1", "2"] },
+        { name: "def", slug: "def", entries: ["2"] },
+      ]);
+    });
+
+    const req = makeReq({ id: "blog-1", cacheID: 100 });
+
+    allTags(req, { locals: {} }, function () {
+      const secondRes = { locals: {} };
+      allTags(req, secondRes, function () {
+        expect(secondRes.locals.all_tags_total_posts).toBe(2);
+        done();
+      });
+    });
+  });
+});

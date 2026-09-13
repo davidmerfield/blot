@@ -1,10 +1,38 @@
 const { listTags } = require("../../lib/models");
+const { cloneDeep, deepFreeze } = require("../../lib/clone");
+const LRUCache = require("lru-cache").LRUCache;
 const asRetriever = require("../../lib/asRetriever");
+
+// Tag entries are IDs (or nulls for the no-path-prefix count-only branch),
+// never full entry bodies, so there's no heavy-field concern here - the
+// whole payload is safe to cache as-is.
+const allTagsCache = new LRUCache({
+  max: 1000,
+  maxSize: 50 * 1024 * 1024,
+  sizeCalculation: (value) => JSON.stringify(value).length,
+});
+
+function createCacheKey(blog, pathPrefix) {
+  return JSON.stringify({
+    blogID: String(blog && blog.id),
+    cacheID: String(blog && blog.cacheID),
+    pathPrefix: String(pathPrefix),
+  });
+}
 
 async function allTags(req, res) {
   const path_prefix =
     res.locals.path_prefix ??
     (req.template && req.template.locals && req.template.locals.path_prefix);
+
+  const key = createCacheKey(req.blog, path_prefix);
+
+  if (allTagsCache.has(key)) {
+    req.log("Retrieved all tags from cache");
+    const cached = cloneDeep(allTagsCache.get(key));
+    res.locals.all_tags_total_posts = cached.totalPosts;
+    return cached.tags;
+  }
 
   req.log("Listing all tags");
   let tags = await listTags(req.blog.id, { path_prefix });
@@ -34,11 +62,20 @@ async function allTags(req, res) {
     return tag;
   });
 
+  const totalPosts = Object.keys(set).length;
+
+  const immutableCopy = deepFreeze(cloneDeep({ tags, totalPosts }));
+  allTagsCache.set(key, immutableCopy);
+
   // toDO maybe rename this? it's ugly
-  res.locals.all_tags_total_posts = Object.keys(set).length;
+  res.locals.all_tags_total_posts = totalPosts;
 
   req.log("Listed all tags");
-  return tags;
+  return cloneDeep(immutableCopy).tags;
 };
 
 module.exports = asRetriever(allTags);
+module.exports._createCacheKey = createCacheKey;
+module.exports._clear = function () {
+  allTagsCache.clear();
+};
