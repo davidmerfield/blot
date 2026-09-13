@@ -2,6 +2,8 @@ var redis = require("models/client");
 var async = require("async");
 var ensure = require("helper/ensure");
 var Entry = require("../entry");
+var entryKey = require("../entry/key").entry;
+var pathNormalizer = require("helper/pathNormalizer");
 var DateStamp = require("../../build/prepare/dateStamp");
 var Blog = require("../blog");
 var pathIndex = require("./pathIndex");
@@ -28,7 +30,12 @@ module.exports = (function () {
       each(
         blogID,
         function (entry, nextEntry) {
-          var dateStamp = DateStamp(blog, entry.path, entry.metadata);
+          var dateStamp = DateStamp(
+            blog,
+            entry.path,
+            entry.metadata,
+            typeof entry.created === "number" ? entry.created : undefined
+          );
           var changes = {};
 
           // This is fine!
@@ -207,51 +214,128 @@ module.exports = (function () {
       });
   }
 
+  // Entries are read in full (content included) - a single Entry.get call
+  // with the whole list's ids does one MGET that parses every entry in the
+  // list at once, which for a blog with many large entries can exhaust the
+  // heap before pruneMissing ever gets to zRem the stale ones. Batching the
+  // reads keeps only PRUNE_BATCH_SIZE full entries in memory at a time.
+  //
+  // The same id is usually a member of several of the lists above (eg. an
+  // entry sits in "all", "created", "entries" and "entries:lex" at once), so
+  // checking each list independently used to re-fetch and re-parse that same
+  // full entry once per list it belonged to - up to 8x for one entry. For a
+  // blog with many multi-MB entries those redundant fetches, run back to
+  // back with no time for V8 to reclaim the previous list's entries, is what
+  // exhausts the heap - not any single list's own size. Collecting every
+  // list's ids first and fetching each unique id once fixes that.
+  var PRUNE_BATCH_SIZE = 100;
+
   function pruneMissing(blogID, callback) {
     if (!callback) callback = function () {};
 
     ensure(blogID, "string").and(callback, "function");
 
-    async.eachSeries(
-      lists,
-      function (listName, nextList) {
-        var key = listKey(blogID, listName);
+    var idsByList = {};
+    var uniqueIds = new Set();
 
-        redis
-          .zRange(key, 0, -1)
-          .then(function (ids) {
-            if (!ids || !ids.length) return nextList();
-
-            Entry.get(blogID, ids, function (entries) {
-              entries = entries || [];
-
-              var existing = {};
-
-              entries.forEach(function (entry) {
-                if (entry && entry.id) existing[entry.id] = true;
-              });
-
-              var missing = ids.filter(function (id) {
-                return !existing[id];
-              });
-
-              if (!missing.length) return nextList();
+    async.series(
+      [
+        function collectListIds(next) {
+          async.eachSeries(
+            lists,
+            function (listName, nextList) {
+              var key = listKey(blogID, listName);
 
               redis
-                .zRem(key, missing)
-                .then(function () {
+                .zRange(key, 0, -1)
+                .then(function (ids) {
+                  idsByList[listName] = ids || [];
+                  (ids || []).forEach(function (id) {
+                    uniqueIds.add(id);
+                  });
                   nextList();
                 })
-                .catch(function (err) {
-                  nextList(err);
-                });
+                .catch(nextList);
+            },
+            next
+          );
+        },
+        function fetchEachIdOnce(next) {
+          var allIds = Array.from(uniqueIds);
+          var existing = {};
+          var batches = [];
+
+          for (var i = 0; i < allIds.length; i += PRUNE_BATCH_SIZE) {
+            batches.push(allIds.slice(i, i + PRUNE_BATCH_SIZE));
+          }
+
+          // Read the raw keys directly (rather than via Entry.get) so
+          // existence is tracked against the id we actually requested, not
+          // an id parsed back out of the entry's JSON - a corrupted entry's
+          // stored id can differ from its Redis key. It also lets a failed
+          // batch abort the whole prune instead of being treated as proof
+          // that every id in it is missing.
+          async.eachSeries(
+            batches,
+            function (batch, nextBatch) {
+              var keys = batch.map(function (id) {
+                return entryKey(blogID, id);
+              });
+
+              redis
+                .mGet(keys)
+                .then(function (values) {
+                  (values || []).forEach(function (value, i) {
+                    var id = batch[i];
+
+                    // entryKey normalizes the path, so a noncanonical id
+                    // (eg. a trailing slash) maps to the same Redis key as
+                    // its canonical form - a hit there proves the canonical
+                    // entry exists, not that this exact list member does.
+                    // Only trust the lookup for ids that are already
+                    // canonical; anything else is a stale/duplicate member
+                    // that should be pruned regardless.
+                    if (value && id === pathNormalizer(id)) {
+                      existing[id] = true;
+                    }
+                  });
+
+                  setImmediate(nextBatch);
+                })
+                .catch(nextBatch);
+            },
+            function (err) {
+              if (err) return next(err);
+              next(null, existing);
+            }
+          );
+        },
+      ],
+      function (err, results) {
+        if (err) return callback(err);
+
+        var existing = results[1];
+
+        async.eachSeries(
+          lists,
+          function (listName, nextList) {
+            var key = listKey(blogID, listName);
+            var missing = idsByList[listName].filter(function (id) {
+              return !existing[id];
             });
-          })
-          .catch(function (err) {
-            nextList(err);
-          });
-      },
-      callback
+
+            if (!missing.length) return nextList();
+
+            redis
+              .zRem(key, missing)
+              .then(function () {
+                nextList();
+              })
+              .catch(nextList);
+          },
+          callback
+        );
+      }
     );
   }
 
