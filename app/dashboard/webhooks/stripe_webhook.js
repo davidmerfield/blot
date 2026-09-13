@@ -200,9 +200,15 @@ webhooks.post("/", parser.raw({ type: "application/json" }), function (req, res)
   if (PAYMENT_METHOD_EVENTS.indexOf(event.type) !== -1) {
     // customer.updated events are the customer object itself; the others
     // carry the customer id in event_data.customer. A detached payment
-    // method's event no longer has a customer on it at all, so there's
-    // nothing to refresh in that case - the route that performed the
-    // detach has already refreshed its own cache.
+    // method's event no longer has a customer on it at all (Stripe clears
+    // it before sending the event), so a detach performed directly on the
+    // Stripe dashboard - as opposed to through this app, which always
+    // refreshes its own cache right after detaching - has no reliable way
+    // to be resolved back to a Blot user from this event alone. Properly
+    // closing that gap would need a paymentMethodId -> uid index maintained
+    // alongside the customer/paypal ones in models/user; until then, a
+    // dashboard-side removal can leave a stale entry (and any expiry
+    // warning) in user.paymentMethods until the next sync.
     var customerId =
       event.type === "customer.updated"
         ? event_data && event_data.id

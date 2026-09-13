@@ -72,7 +72,7 @@
     </a>
     {{/user.paypal.status}}
 
-    {{#user.subscription.status}}
+    {{#user.showPaymentMethodsLink}}
     <a class="line" href="/dashboard/account/subscription/payment-method"
       ><span class="label">Payment methods</span
       ><span class="center"
@@ -82,7 +82,7 @@
         </span
       ></a
     >
-    {{/user.subscription.status}}
+    {{/user.showPaymentMethodsLink}}
 
     {{^user.paypal.status}}
     <a class="line" href="/dashboard/account/subscription/cancel"

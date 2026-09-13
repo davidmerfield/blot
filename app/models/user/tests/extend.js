@@ -309,6 +309,45 @@ describe("user extend", function () {
     expect(result).toBe(user);
   });
 
+  describe("showPaymentMethodsLink", function () {
+    it("is false with no Stripe or PayPal subscription", function () {
+      var user = createUser({ subscription: {}, paypal: {} });
+      extend(user);
+      expect(user.showPaymentMethodsLink).toBe(false);
+    });
+
+    it("is true for a Stripe subscription with a status", function () {
+      var user = createUser({
+        subscription: { status: "active", customer: "cus_123" },
+        paypal: {}
+      });
+      extend(user);
+      expect(user.showPaymentMethodsLink).toBe(true);
+    });
+
+    it("is true for an active PayPal subscription, even though subscription.status is unset", function () {
+      var config = require("config");
+      var originalPlans = config.paypal.plans;
+      config.paypal.plans = { yearly_44: "P-TEST-YEARLY-44" };
+
+      var user = createUser({
+        subscription: {},
+        paypal: {
+          status: "ACTIVE",
+          plan_id: "P-TEST-YEARLY-44",
+          quantity: "1",
+          billing_info: {
+            next_billing_time: new Date(Date.now() + 86400000).toISOString()
+          }
+        }
+      });
+      extend(user);
+      expect(user.showPaymentMethodsLink).toBe(true);
+
+      config.paypal.plans = originalPlans;
+    });
+  });
+
   describe("payment methods", function () {
     function monthsFromNow(months) {
       var date = new Date();

@@ -100,6 +100,14 @@ module.exports = function extend (user) {
     user.pretty.price = prettyPrice(amount * quantity);
   }
 
+  // Whether to show a "manage payment methods" link at all: true for any
+  // Stripe subscriber (the page manages their cards) and any PayPal
+  // subscriber (the page instead points them at PayPal), since
+  // subscription.status is only ever set for Stripe.
+  user.showPaymentMethodsLink = Boolean(
+    (subscription && subscription.status) || (user.paypal && user.paypal.status)
+  );
+
   if (user.paymentMethods && user.paymentMethods.length) {
     markPaymentMethodExpiry(user.paymentMethods);
 

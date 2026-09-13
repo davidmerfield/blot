@@ -33,6 +33,14 @@ function presentPaymentMethods(req, paymentMethods) {
 // mocked) Stripe client.
 var getStripeClient = syncPaymentMethods.getClient;
 
+// This router is mounted at "/payment-method" under the subscription
+// router; req.baseUrl inside it is therefore this page's own URL, not the
+// subscription overview above it. Strip the mount segment to get back to
+// the parent page.
+function subscriptionUrl(req) {
+  return req.baseUrl.replace(/\/payment-method$/, "") || "/";
+}
+
 // This page lets Stripe subscribers view, add, remove, and choose the
 // default payment method Stripe uses to charge their subscription. PayPal
 // subscribers are directed to manage their payment method on PayPal, since
@@ -45,10 +53,11 @@ PaymentMethod.use(function (req, res, next) {
     return next(new Error("Manage your payment method on PayPal"));
   }
 
-  // User has never had a Stripe subscription, so there's
-  // nothing here for them to manage.
+  // User has never had a Stripe subscription, so there's nothing here for
+  // them to manage - send them back to the subscription overview rather
+  // than back to this same page (which would just redirect forever).
   if (!req.user.subscription || !req.user.subscription.customer)
-    return res.redirect(req.baseUrl);
+    return res.redirect(subscriptionUrl(req));
 
   next();
 });
@@ -109,17 +118,21 @@ PaymentMethod.route("/")
   })
 
   // Somehow the Stripe customer this Blot account points at no longer
-  // exists. Recreate a customer and subscription for the card they just
-  // entered, without charging them right now, mirroring the recovery the
-  // old card-update flow performed.
+  // exists. Recreate a customer and subscription, without charging them
+  // right now, mirroring the recovery the old card-update flow performed.
+  // The Stripe token was already consumed by paymentMethods.create above
+  // (tokens are single-use), but the PaymentMethod object it produced is
+  // still valid and unattached, so we reuse that rather than the token.
   .post(function (err, req, res, next) {
     if (err.code !== "resource_missing") return next(err);
+    if (!req.newPaymentMethodId) return next(err);
 
     var stripe = getStripeClient();
 
     stripe.customers.create(
       {
-        card: req.body.stripeToken,
+        payment_method: req.newPaymentMethodId,
+        invoice_settings: { default_payment_method: req.newPaymentMethodId },
         email: req.user.email,
         plan: req.user.subscription.plan && req.user.subscription.plan.id,
         quantity: 0,
@@ -131,7 +144,11 @@ PaymentMethod.route("/")
         stripe.customers.updateSubscription(
           customer.subscription.customer,
           customer.subscription.id,
-          { quantity: req.user.blogs.length || 1, prorate: false },
+          {
+            quantity: req.user.blogs.length || 1,
+            prorate: false,
+            default_payment_method: req.newPaymentMethodId
+          },
           function (err, subscription) {
             if (err) return next(err);
 
@@ -164,7 +181,7 @@ PaymentMethod.route("/")
         return res.message(req.baseUrl, "Your payment method was added");
       }
 
-      makeDefault(stripe, req.user, req.newPaymentMethodId, function (err) {
+      makeDefault(stripe, req.user, { id: req.newPaymentMethodId }, function (err) {
         if (err) return next(err);
 
         syncPaymentMethods(req.user, function (err) {
@@ -188,7 +205,7 @@ PaymentMethod.route("/:id/default").post(function (req, res, next) {
     if (paymentMethod.isDefault)
       return res.message(req.baseUrl, "That's already your default payment method");
 
-    makeDefault(stripe, req.user, paymentMethod.id, function (err) {
+    makeDefault(stripe, req.user, paymentMethod, function (err) {
       if (err) return next(err);
 
       syncPaymentMethods(req.user, function (err) {
@@ -265,10 +282,20 @@ function findOwnedPaymentMethod(user, id, callback) {
   });
 }
 
-function makeDefault(stripe, user, paymentMethodId, callback) {
+function makeDefault(stripe, user, paymentMethod, callback) {
+  // A legacy Card can only ever be the customer's default_source, not a
+  // PaymentMethod - it has no invoice_settings/subscription equivalent.
+  if (paymentMethod.isLegacy) {
+    return stripe.customers.update(
+      user.subscription.customer,
+      { default_source: paymentMethod.id },
+      callback
+    );
+  }
+
   stripe.customers.update(
     user.subscription.customer,
-    { invoice_settings: { default_payment_method: paymentMethodId } },
+    { invoice_settings: { default_payment_method: paymentMethod.id } },
     function (err) {
       if (err) return callback(err);
 
@@ -277,7 +304,7 @@ function makeDefault(stripe, user, paymentMethodId, callback) {
       stripe.customers.updateSubscription(
         user.subscription.customer,
         user.subscription.id,
-        { default_payment_method: paymentMethodId },
+        { default_payment_method: paymentMethod.id },
         callback
       );
     }
