@@ -177,6 +177,72 @@ describe("user syncPaymentMethods", function () {
       });
     });
 
+    it("treats a missing subscription as having no override, falling back to the customer default", function (done) {
+      var stripeClient = baseStripeClient({
+        customers: {
+          retrieve: jasmine
+            .createSpy("retrieve")
+            .and.callFake(function (customerId, cb) {
+              cb(null, {
+                id: customerId,
+                invoice_settings: { default_payment_method: "pm_1" },
+                default_source: null
+              });
+            }),
+          retrieveSubscription: jasmine
+            .createSpy("retrieveSubscription")
+            .and.callFake(function (customerId, subscriptionId, cb) {
+              var notFound = new Error("No such subscription");
+              notFound.code = "resource_missing";
+              cb(notFound);
+            })
+        },
+        paymentMethods: {
+          list: jasmine
+            .createSpy("list")
+            .and.callFake(function (params, cb) {
+              cb(null, {
+                data: [{ id: "pm_1", card: { brand: "visa", last4: "1111", exp_month: 1, exp_year: 2030 } }],
+                has_more: false
+              });
+            })
+        }
+      });
+
+      syncPaymentMethods._setStripeClient(stripeClient);
+
+      syncPaymentMethods(this.user, function (err, paymentMethods) {
+        if (err) return done.fail(err);
+        expect(paymentMethods[0].isDefault).toBe(true);
+        done();
+      });
+    });
+
+    it("propagates a non-resource_missing error from the subscription fetch instead of silently falling back", function (done) {
+      var stripeClient = baseStripeClient({
+        customers: {
+          retrieve: jasmine
+            .createSpy("retrieve")
+            .and.callFake(function (customerId, cb) {
+              cb(null, { id: customerId, invoice_settings: {}, default_source: null });
+            }),
+          retrieveSubscription: jasmine
+            .createSpy("retrieveSubscription")
+            .and.callFake(function (customerId, subscriptionId, cb) {
+              cb(new Error("Stripe is temporarily unavailable"));
+            })
+        }
+      });
+
+      syncPaymentMethods._setStripeClient(stripeClient);
+
+      syncPaymentMethods(this.user, function (err, paymentMethods) {
+        expect(err).toBeTruthy();
+        expect(paymentMethods).toBeUndefined();
+        done();
+      });
+    });
+
     it("honors a subscription-level legacy default_source over the customer's default", function (done) {
       var stripeClient = baseStripeClient({
         customers: {

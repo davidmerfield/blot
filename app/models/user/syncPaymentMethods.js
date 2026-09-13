@@ -124,13 +124,20 @@ function fetchSubscriptionDefault(stripe, customerId, subscriptionId, callback) 
     err,
     subscription
   ) {
-    // Best-effort: if we can't read the subscription, fall back to the
-    // customer-level default rather than failing the whole sync.
-    if (err || !subscription) return callback(null, null);
+    // A missing subscription (cancelled/replaced since we last cached it)
+    // genuinely has no subscription-level override left - safe to fall
+    // back to the customer-level default. Any other error (network, auth,
+    // rate limit) must not be treated the same way: silently falling back
+    // could misidentify which card Stripe will actually charge and let it
+    // be removed instead of whatever the real override was.
+    if (err && err.code === "resource_missing") return callback(null, null);
+    if (err) return callback(err);
 
     callback(
       null,
-      subscription.default_payment_method || subscription.default_source || null
+      (subscription &&
+        (subscription.default_payment_method || subscription.default_source)) ||
+        null
     );
   });
 }
@@ -157,7 +164,9 @@ module.exports = function syncPaymentMethods(user, callback) {
       stripe,
       customerId,
       user.subscription.id,
-      function (_, subscriptionDefaultId) {
+      function (err, subscriptionDefaultId) {
+        if (err) return callback(err);
+
         // Stripe's real precedence for what a subscription actually
         // charges: its own default_payment_method, then its own
         // default_source, then the customer's invoice_settings default,

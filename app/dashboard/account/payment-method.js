@@ -110,10 +110,7 @@ PaymentMethod.route("/")
           paymentMethod.id,
           { customer: req.user.subscription.customer },
           function (err) {
-            if (err) {
-              err.code = err.code || "resource_missing";
-              return next(err);
-            }
+            if (err) return next(err);
 
             next();
           }
@@ -128,8 +125,13 @@ PaymentMethod.route("/")
   // The Stripe token was already consumed by paymentMethods.create above
   // (tokens are single-use), but the PaymentMethod object it produced is
   // still valid and unattached, so we reuse that rather than the token.
+  // Only enter this path for a confirmed missing *customer* - any other
+  // error (a transient network blip, say) must not be reinterpreted as
+  // "recreate the customer", or we'd risk creating a second, duplicate
+  // subscription while the original one is still perfectly billable.
   .post(function (err, req, res, next) {
-    if (err.code !== "resource_missing") return next(err);
+    if (err.code !== "resource_missing" || err.param !== "customer")
+      return next(err);
     if (!req.newPaymentMethodId) return next(err);
 
     var stripe = getStripeClient();
@@ -139,30 +141,45 @@ PaymentMethod.route("/")
         payment_method: req.newPaymentMethodId,
         invoice_settings: { default_payment_method: req.newPaymentMethodId },
         email: req.user.email,
-        plan: req.user.subscription.plan && req.user.subscription.plan.id,
-        quantity: 0,
         description: "Blot subscription"
       },
       function (err, customer) {
         if (err) return next(err);
 
-        stripe.customers.updateSubscription(
-          customer.subscription.customer,
-          customer.subscription.id,
+        // Create the subscription as its own step rather than relying on
+        // customer.subscription from the create response above: this
+        // client is pinned to a modern Stripe API version (see
+        // syncPaymentMethods.js) where customers.create no longer embeds a
+        // single subscription object on the response.
+        stripe.customers.createSubscription(
+          customer.id,
           {
-            quantity: req.user.blogs.length || 1,
-            prorate: false,
+            plan: req.user.subscription.plan && req.user.subscription.plan.id,
+            quantity: 0,
             default_payment_method: req.newPaymentMethodId
           },
           function (err, subscription) {
             if (err) return next(err);
 
-            User.set(req.user.uid, { subscription: subscription }, function (err) {
-              if (err) return next(err);
+            stripe.customers.updateSubscription(
+              customer.id,
+              subscription.id,
+              { quantity: req.user.blogs.length || 1, prorate: false },
+              function (err, updatedSubscription) {
+                if (err) return next(err);
 
-              email.UPDATE_BILLING(req.user.uid);
-              res.message(req.baseUrl, "Your payment method was added");
-            });
+                User.set(
+                  req.user.uid,
+                  { subscription: updatedSubscription },
+                  function (err) {
+                    if (err) return next(err);
+
+                    email.UPDATE_BILLING(req.user.uid);
+                    res.message(req.baseUrl, "Your payment method was added");
+                  }
+                );
+              }
+            );
           }
         );
       }
