@@ -456,10 +456,18 @@ jobs:
         if: steps.merge-coverage.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report-${{ github.sha }}
+          # Deliberately NOT prefixed "coverage-" - the "Download coverage
+          # from every shard" step above matches that prefix, and on a rerun
+          # within the same workflow run (e.g. re-running just one flaky test
+          # job) a prior successful attempt's merged report would otherwise
+          # get swept back in as if it were a raw per-shard coverage file,
+          # which crashes nyc ("Invalid file coverage object, missing keys")
+          # since a coverage-summary.json isn't shaped like raw nyc output.
+          name: merged-coverage-report-${{ github.sha }}
           path: coverage
           if-no-files-found: warn
           retention-days: 30
+          overwrite: true
 
       # master: record this run's line coverage % as the new baseline for
       # future PRs to diff against.
