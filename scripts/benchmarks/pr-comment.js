@@ -145,9 +145,9 @@ function callout({ result, baseline }) {
   return "> No metric moved outside the noise band.";
 }
 
-function doneBody({ arch, result, baseline, sha, prevSha, marker }) {
+function doneBody({ arch, result, baseline, sha, prevSha, marker, title }) {
   return [
-    `### Benchmark — \`${arch}\``,
+    `### ${title || "Benchmark"} — \`${arch}\``,
     "",
     callout({ result, baseline }),
     "",
@@ -160,8 +160,8 @@ function doneBody({ arch, result, baseline, sha, prevSha, marker }) {
 
 // `sha` is the commit now being benchmarked; `prevBlock`/`prevSha` are the
 // preserved results (if any) from the last completed run.
-function runningBody({ arch, sha, prevBlock, prevSha, marker }) {
-  const lines = [`### Benchmark — \`${arch}\` ${LOADING}`, ""];
+function runningBody({ arch, sha, prevBlock, prevSha, marker, title }) {
+  const lines = [`### ${title || "Benchmark"} — \`${arch}\` ${LOADING}`, ""];
 
   if (prevBlock) {
     lines.push(
@@ -184,9 +184,9 @@ function runningBody({ arch, sha, prevBlock, prevSha, marker }) {
   return lines.join("\n");
 }
 
-function failedBody({ arch, sha, prevBlock, prevSha, marker }) {
+function failedBody({ arch, sha, prevBlock, prevSha, marker, title }) {
   const url = runUrl();
-  const lines = [`### Benchmark — \`${arch}\` — run failed`, ""];
+  const lines = [`### ${title || "Benchmark"} — \`${arch}\` — run failed`, ""];
 
   lines.push(
     `> The benchmark run for ${commitRef(sha) || "the latest commit"} failed` +
@@ -233,6 +233,10 @@ function main() {
   const resultFile = arg("--result");
   const baselineFile = arg("--baseline");
   const historyDir = arg("--history-dir");
+  const commentTag = arg("--comment-tag"); // e.g. "render" - keeps a second
+  // sticky comment (different workload, not comparable metrics) separate
+  // from the default small-scale benchmark comment.
+  const title = arg("--title");
   const repo = process.env.GITHUB_REPOSITORY;
 
   if (!pr || !repo) {
@@ -240,7 +244,9 @@ function main() {
     return;
   }
 
-  const marker = `<!-- blot-benchmark-comment:${arch} -->`;
+  const marker = commentTag
+    ? `<!-- blot-benchmark-comment:${commentTag}:${arch} -->`
+    : `<!-- blot-benchmark-comment:${arch} -->`;
 
   try {
     // We need the current comment body up front to preserve the last results
@@ -261,9 +267,9 @@ function main() {
     let body;
 
     if (status === "running") {
-      body = runningBody({ arch, sha, prevBlock, prevSha, marker });
+      body = runningBody({ arch, sha, prevBlock, prevSha, marker, title });
     } else if (status === "failed") {
-      body = failedBody({ arch, sha, prevBlock, prevSha, marker });
+      body = failedBody({ arch, sha, prevBlock, prevSha, marker, title });
     } else {
       const result = readJson(resultFile);
       if (!result) {
@@ -282,6 +288,7 @@ function main() {
         sha: sha || result.git_sha,
         prevSha,
         marker,
+        title,
       });
     }
 

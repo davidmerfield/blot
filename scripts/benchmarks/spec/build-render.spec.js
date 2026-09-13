@@ -16,6 +16,27 @@ const { runSitemapBurst } = require("./util/sitemapBurst");
 const { runBacklinksBurst } = require("./util/backlinksBurst");
 const { runNotFoundBurst } = require("./util/notFoundBurst");
 
+// Reconstructs the subset of buildWorkload()'s return shape the render +
+// burst phases and buildBenchmarkResult() actually read, from the manifest
+// build-corpus.js wrote when it originally built these sites (corpusMode
+// "build"). No files are (re)written in corpusMode "render" - they already
+// exist from that build - so there's no per-file list to rebuild here.
+function workloadFromManifest(manifest) {
+  const sites = manifest.sites || [];
+  const filesPerSite = sites.map((site) => site.filesWritten || 0);
+  const totalFiles = filesPerSite.reduce((sum, n) => sum + n, 0);
+
+  return {
+    files: { length: totalFiles },
+    filesPerSite,
+    fixtureCount: manifest.fixtureCount || 0,
+    distribution: manifest.config ? manifest.config.distribution : "skewed",
+    tagsBySite: sites.map((site) => site.tags || []),
+    searchKeywordsBySite: sites.map((site) => site.searchKeywords || []),
+    hubPathBySite: sites.map((site) => site.hubPath || null),
+  };
+}
+
 describe("blog benchmarks", function () {
   require("./util/setup")();
 
@@ -32,84 +53,117 @@ describe("blog benchmarks", function () {
       ? [this.blog]
       : [];
 
-    if (blogs.length !== benchmarkConfig.sites) {
+    const isCorpusRender = benchmarkConfig.corpusMode === "render";
+    const isCorpusBuild = benchmarkConfig.corpusMode === "build";
+
+    if (!isCorpusRender && blogs.length !== benchmarkConfig.sites) {
       throw new Error(
         `Expected ${benchmarkConfig.sites} benchmark sites but got ${blogs.length}`
       );
     }
 
     const rng = seedrandom(benchmarkConfig.seed);
-    const workload = buildWorkload(benchmarkConfig, blogs, rng);
+
+    // corpusMode "render" skips workload generation entirely and instead
+    // reconstructs an equivalent workload summary from the manifest written
+    // by build-corpus.js when the corpus was built (see corpusSetup.js),
+    // since the actual files already exist on disk/Redis from that build.
+    const workload = isCorpusRender
+      ? workloadFromManifest(this.corpusManifest)
+      : buildWorkload(benchmarkConfig, blogs, rng);
 
     const buildPhaseMonitor = new PhaseMonitor({
       sampleIntervalMs: benchmarkConfig.cpuSampleIntervalMs,
     });
 
-    const writeTasks = workload.files.map((file) => ({
-      ...file,
-      blog: blogs[file.blogIndex],
-    }));
+    const buildSiteDurations = blogs.map(() => 0);
 
-    const buildSiteDurations = [];
+    if (!isCorpusRender) {
+      const writeTasks = workload.files.map((file) => ({
+        ...file,
+        blog: blogs[file.blogIndex],
+      }));
 
-    buildPhaseMonitor.start();
+      buildPhaseMonitor.start();
 
-    await runWithConcurrency(writeTasks, benchmarkConfig.writeConcurrency, async (task) => {
-      if (task.mediaPath != null) {
-        // Hard-link into the shared media pool (scripts/benchmarks/fixtures/
-        // media) instead of copying unique bytes per post, so even a
-        // 160k-post corpus stays cheap to write/tar.
-        //
-        // NOTE: this is deliberately a *hard* link, not a symlink.
-        // app/helper/assertNoSymlinks.js is called on every path inside a
-        // blog folder during sync (see app/sync/update/index.js and
-        // app/blog/routes/assets.js) and unconditionally rejects any
-        // symlink - including the final path component itself - with
-        // ELOOP. A hard link is indistinguishable from an ordinary file to
-        // lstat(), so it passes that check, and because every post that
-        // references the same pool file shares one inode, `tar` still only
-        // stores that file's bytes once per archive (subsequent hard-linked
-        // paths are recorded as link references), so data/blogs/ stays
-        // small exactly like the symlink approach would have, without
-        // tripping the no-symlinks guard.
-        let blogDir = localPath(task.blog.id, "/");
-        if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
-        const destPath = blogDir + task.path;
-        await fs.ensureDir(path.dirname(destPath));
-        await fs.remove(destPath);
-        try {
-          await fs.link(task.mediaPath, destPath);
-        } catch (err) {
-          // EXDEV: media pool and data/blogs live on different filesystems/
-          // mounts (e.g. some local dev setups). Fall back to a plain copy -
-          // more disk, but still correct.
-          if (err.code === "EXDEV") {
-            await fs.copy(task.mediaPath, destPath);
-          } else {
-            throw err;
+      await runWithConcurrency(writeTasks, benchmarkConfig.writeConcurrency, async (task) => {
+        if (task.mediaPath != null) {
+          // Hard-link into the shared media pool (scripts/benchmarks/fixtures/
+          // media) instead of copying unique bytes per post, so even a
+          // 160k-post corpus stays cheap to write/tar.
+          //
+          // NOTE: this is deliberately a *hard* link, not a symlink.
+          // app/helper/assertNoSymlinks.js is called on every path inside a
+          // blog folder during sync (see app/sync/update/index.js and
+          // app/blog/routes/assets.js) and unconditionally rejects any
+          // symlink - including the final path component itself - with
+          // ELOOP. A hard link is indistinguishable from an ordinary file to
+          // lstat(), so it passes that check, and because every post that
+          // references the same pool file shares one inode, `tar` still only
+          // stores that file's bytes once per archive (subsequent hard-linked
+          // paths are recorded as link references), so data/blogs/ stays
+          // small exactly like the symlink approach would have, without
+          // tripping the no-symlinks guard.
+          let blogDir = localPath(task.blog.id, "/");
+          if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
+          const destPath = blogDir + task.path;
+          await fs.ensureDir(path.dirname(destPath));
+          await fs.remove(destPath);
+          try {
+            await fs.link(task.mediaPath, destPath);
+          } catch (err) {
+            // EXDEV: media pool and data/blogs live on different filesystems/
+            // mounts (e.g. some local dev setups). Fall back to a plain copy -
+            // more disk, but still correct.
+            if (err.code === "EXDEV") {
+              await fs.copy(task.mediaPath, destPath);
+            } else {
+              throw err;
+            }
           }
+        } else if (task.sourcePath != null) {
+          let blogDir = localPath(task.blog.id, "/");
+          if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
+          const destPath = blogDir + task.path;
+          await fs.ensureDir(path.dirname(destPath));
+          await fs.copy(task.sourcePath, destPath);
+        } else {
+          await task.blog.write({ path: task.path, content: task.content });
         }
-      } else if (task.sourcePath != null) {
-        let blogDir = localPath(task.blog.id, "/");
-        if (blogDir.endsWith("/")) blogDir = blogDir.slice(0, -1);
-        const destPath = blogDir + task.path;
-        await fs.ensureDir(path.dirname(destPath));
-        await fs.copy(task.sourcePath, destPath);
-      } else {
-        await task.blog.write({ path: task.path, content: task.content });
-      }
-    });
+      });
 
-    await Promise.all(
-      blogs.map(async (blog, index) => {
-        const startedAt = performance.now();
-        await blog.rebuild();
-        buildSiteDurations[index] = performance.now() - startedAt;
-      })
-    );
+      await Promise.all(
+        blogs.map(async (blog, index) => {
+          const startedAt = performance.now();
+          await blog.rebuild();
+          buildSiteDurations[index] = performance.now() - startedAt;
+        })
+      );
+    } else {
+      // Nothing to build - blogs already exist, fully built, from the
+      // restored corpus. Start/stop immediately so the result JSON still has
+      // a (all-zero) build section rather than needing special-casing
+      // downstream; benchmarks-render.yml's history/regression tracking only
+      // looks at render/burst metrics anyway.
+      buildPhaseMonitor.start();
+    }
 
     const buildPhaseMetrics = buildPhaseMonitor.stop();
     const buildDurations = summarizeDurations(buildSiteDurations);
+
+    if (isCorpusBuild) {
+      // build-corpus.js only needs the sites built and their manifest info
+      // (workload.tagsBySite/searchKeywordsBySite/hubPathBySite/
+      // filesPerSite) - it snapshots Redis + data/blogs + data/static
+      // itself, so stop here rather than also rendering every page.
+      global.__BLOT_BENCHMARK_RESULT = { corpus_build: true };
+      global.__BLOT_CORPUS_WORKLOAD = workload;
+      global.__BLOT_CORPUS_BLOGS = blogs.map((blog) => ({
+        blogID: blog.id,
+        handle: blog.handle,
+      }));
+      return;
+    }
 
     const renderPhaseMonitor = new PhaseMonitor({
       sampleIntervalMs: benchmarkConfig.cpuSampleIntervalMs,
@@ -310,9 +364,11 @@ describe("blog benchmarks", function () {
 
     global.__BLOT_BENCHMARK_RESULT = result;
 
-    expect(workload.files.length).toEqual(
-      benchmarkConfig.files + workload.fixtureCount * blogs.length
-    );
+    if (!isCorpusRender) {
+      expect(workload.files.length).toEqual(
+        benchmarkConfig.files + workload.fixtureCount * blogs.length
+      );
+    }
     expect(renderTasks.length).toBeGreaterThan(0);
     expect(renderFailures.length).toEqual(0);
 

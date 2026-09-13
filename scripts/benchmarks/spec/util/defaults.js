@@ -85,6 +85,21 @@ const BENCHMARK_DEFAULTS = Object.freeze({
   corpusSites: 1000,
   corpusFiles: 160000,
   corpusMediaFraction: 0.2,
+  // "off" (default, existing behavior): generate a workload, rebuild every
+  // site, then render + run every burst phase, all in one spec run - what
+  // benchmarks.yml (the small smoke-scale benchmark) still does.
+  // "build": generate the workload (using whatever sites/files/distribution
+  // is configured, typically the big skewed corpus) and rebuild every site,
+  // then stop - used by build-corpus.js, which takes over from there to
+  // snapshot Redis + data/blogs + data/static.
+  // "render": skip workload generation and blog.rebuild() entirely and just
+  // run the render + burst phases against blogs that already exist (loaded
+  // from a corpus manifest) - used by benchmarks-render.yml against a
+  // restored corpus.
+  corpusMode: "off",
+  // Where build-corpus.js writes (and benchmarks-render.yml reads) the
+  // manifest describing which blog IDs make up a built corpus.
+  corpusManifestPath: ".benchmarks/corpus/manifest.json",
   // Bump whenever the *shape* of the corpus produced by build-corpus.js
   // changes (site/post/tag/media distribution, symlink layout, etc) - this
   // invalidates the cached Redis dump + data/blogs + data/static tarballs
