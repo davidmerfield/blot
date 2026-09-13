@@ -1,9 +1,25 @@
 const normalize = require("models/tags").normalize;
 const type = require("helper/type");
-const { getEntryByUrl } = require("../../lib/models");
+const getCachedEntryByUrl = require("./getCachedEntryByUrl");
 const moment = require("moment");
 const debug = require("debug")("blog:render:augment");
 require("moment-timezone");
+
+// Must stay in sync with projectedEntryLocals in models/template/parseTemplate.js.
+// These are the retrieve locals that carry a `fields` map of referenced entry
+// properties. A list that records fields.backlinks is the only list we hydrate.
+const PROJECTED_ENTRY_LOCALS = [
+  "allEntries",
+  "all_entries",
+  "recentEntries",
+  "recent_entries",
+  "latestEntry",
+  "latest_entry",
+  "posts",
+  "search_results",
+  "tagged",
+  "archives",
+];
 
 module.exports = async function augment(req, res, entry) {
   const blog = req.blog;
@@ -103,6 +119,11 @@ module.exports = async function augment(req, res, entry) {
 
   entry.backlinks = entry.backlinks || [];
 
+  if (!shouldHydrateBacklinks(req, res, entry)) {
+    debug(entry.path, "skipping backlink hydration");
+    return;
+  }
+
   debug(entry.path, "fetching backlinks", entry.backlinks);
 
   const resolved = await Promise.all(
@@ -111,7 +132,7 @@ module.exports = async function augment(req, res, entry) {
       if (typeof linkUrl !== "string") {
         return null;
       }
-      const linked = await getEntryByUrl(req.blog.id, linkUrl);
+      const linked = await getCachedEntryByUrl(req.blog, linkUrl);
       if (linked) {
         debug("Found", linked.path, "for", linkUrl);
       } else {
@@ -141,6 +162,71 @@ module.exports = async function augment(req, res, entry) {
 
   debug(entry.path, "final backlinks", entry.backlinks);
 };
+
+// eachEntry walks every Entry in the view - the page's `entry` (plus its
+// next/previous) AND every list local (archives, allEntries, posts, ...).
+// Hydrating backlinks on list rows is a per-request heap multiplier
+// (every post × every backlink) and fights the byte-capped list caches.
+// Entry pages still hydrate; list locals only hydrate when parseTemplate
+// recorded fields.backlinks (or a boolean retrieve local we can't project).
+function shouldHydrateBacklinks(req, res, entry) {
+  const primary = res.locals && res.locals.entry;
+  if (
+    primary &&
+    (entry === primary ||
+      entry === primary.next ||
+      entry === primary.previous)
+  ) {
+    return true;
+  }
+
+  return listLocalNeedsBacklinks(req.retrieve);
+}
+
+function listLocalNeedsBacklinks(retrieve) {
+  if (!retrieve || typeof retrieve !== "object") return false;
+
+  for (let i = 0; i < PROJECTED_ENTRY_LOCALS.length; i++) {
+    const value = retrieve[PROJECTED_ENTRY_LOCALS[i]];
+    if (value === undefined) continue;
+
+    // Boolean `true` is stale/unprojected metadata - we can't tell which
+    // fields the view reads, so hydrate to be safe.
+    if (value === true) return true;
+
+    if (
+      value &&
+      typeof value === "object" &&
+      value.fields &&
+      typeof value.fields === "object" &&
+      value.fields.backlinks
+    ) {
+      return true;
+    }
+  }
+
+  // Older/custom templates bind {{#entries}} (set by the route, not a
+  // retrieve module). parseTemplate then records {{#backlinks}} as a
+  // top-level retrieve.backlinks rather than a fields map on `posts`.
+  // Only honor that when the view actually iterates `entries` - an
+  // entry page's {{#entry}}{{#backlinks}} sets retrieve.backlinks too
+  // and must not fan out across sidebar lists.
+  if (retrieve.entries && retrieveMentionsBacklinks(retrieve)) return true;
+
+  return false;
+}
+
+function retrieveMentionsBacklinks(retrieve) {
+  if (!retrieve || typeof retrieve !== "object") return false;
+
+  return Object.keys(retrieve).some((key) => {
+    return (
+      key === "backlinks" ||
+      key.endsWith(".backlinks") ||
+      key.endsWith(".backlinks.length")
+    );
+  });
+}
 
 function createRenderMetadata(sourceMetadata) {
   if (!sourceMetadata || !type(sourceMetadata, "object")) {
