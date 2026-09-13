@@ -151,6 +151,7 @@ jobs:
             --status skipped \
             --sha "$HEAD_SHA" \
             --comment-tag render \
+            --title "Render benchmark (large corpus)" \
             --message "No cached corpus is available yet - run benchmarks-corpus.yml (workflow_dispatch) once to populate it."
 
       # --- load the corpus into this job's Redis + data dirs ---------------
@@ -183,7 +184,8 @@ jobs:
             --arch amd64 \
             --status running \
             --sha "$HEAD_SHA" \
-            --comment-tag render
+            --comment-tag render \
+            --title "Render benchmark (large corpus)"
 
       - name: Restore render benchmark history
         if: steps.corpus-check.outputs.available == 'true'
@@ -259,7 +261,8 @@ jobs:
             --arch amd64 \
             --status failed \
             --sha "$HEAD_SHA" \
-            --comment-tag render
+            --comment-tag render \
+            --title "Render benchmark (large corpus)"
 
       - name: Update rolling history
         if: steps.corpus-check.outputs.available == 'true' && github.event_name == 'push'
