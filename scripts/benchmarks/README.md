@@ -278,7 +278,11 @@ working `data/` under `--out-dir` for exactly this reason.
 NODE_PATH=app node scripts/benchmarks/converter-bench.js --converter markdown --converter img --n 50
 ```
 
-No Docker or Redis needed - see "Per-converter benchmarks" below.
+No Docker needed for most converters - see "Per-converter benchmarks" below.
+The `img` converter is the exception: its AVIF/WebP/HEIC fixtures go through
+`app/helper/transformer`, which needs a Redis server reachable at
+`config.redis` (`127.0.0.1:6379` by default, or `BLOT_REDIS_HOST`) - have one
+running locally before benchmarking `img`.
 
 ## CI behaviour
 
@@ -348,13 +352,17 @@ artifact, no comment, no issue.
 ### `benchmarks-converters.yml` (per-converter conversion timing)
 
 - triggers on PR/push touching `app/build/converters/**` (or shared
-  `app/build/*.js` / `app/build/metadata/**`, treated as affecting every
-  converter), plus `workflow_dispatch`
+  `app/build/*.js` / `app/build/metadata/**` / `app/build/math/
+  normalizeLiteralDollars.js` / `app/build/prepare/titlify.js`, treated as
+  affecting every converter), plus `workflow_dispatch`
 - a `git diff` step figures out which converter(s) actually changed and only
   benchmarks those, via [`converter-bench.js`](converter-bench.js)
 - runs directly on the standard runner (pandoc + libreoffice installed via
-  `apt`) - no Docker, no Redis, since a converter's `read()` only touches the
-  filesystem
+  `apt`, deps installed via `npm install` - no committed lockfile, so `npm ci`
+  isn't an option) - no Docker, since a converter's `read()` only touches the
+  filesystem, but a `redis:6` service container is still needed: the `img`
+  converter's AVIF/WebP/HEIC fixtures go through `app/helper/transformer`,
+  which is backed by the process-wide Redis client in `app/models/client`
 - posts its own sticky PR comment and keeps a per-converter rolling history
   (`converter-benchmarks-history-*` cache) via
   [`converter-pr-comment.js`](converter-pr-comment.js) - see "Per-converter
@@ -362,7 +370,7 @@ artifact, no comment, no issue.
 
 ## Per-converter benchmarks
 
-Unlike the render/build benchmark, this doesn't need a blog, Redis, or a
+Unlike the render/build benchmark, this doesn't need a full Blog model or a
 rebuilt static site - just a converter's own `read(blog, path, callback)`
 function and its existing `app/build/converters/<name>/tests/**` fixtures.
 [`converter-bench.js`](converter-bench.js) copies those fixtures into a
@@ -370,13 +378,29 @@ throwaway blog folder (a fake `{ id, imageExif, plugins }` object is enough -
 every converter was grepped for direct `blog.*` field access to confirm nothing
 else is read), times `--n` (default 300) conversions round-robin across them,
 and reports p50/p95 wall time plus peak RSS - useful for memory-heavy
-converters like image/docx.
+converters like image/docx. Most converters genuinely need nothing else, but
+`img`'s AVIF/WebP/HEIC fixtures still go through the real
+`app/helper/transformer` (backed by the shared Redis client), so
+`benchmarks-converters.yml` runs a `redis:6` service container for every
+converter, not just when `img` is in the changed set.
 
 This intentionally has its own small metrics shape and its own simplified
 regression check (latest vs. median-of-last-20, single threshold) rather than
 reusing `lib/metrics.js`/`detect-regression.js`'s full apparatus, which is
 sized for a dozen-metric render benchmark, not one timing number per
 converter.
+
+**Known limitation - peak RSS is per-process, not per-converter.** When
+several converters run in the same `converter-bench.js` invocation (a
+shared-dependency change triggers more than one, or a manual run selects
+several), they run sequentially in one Node process and `peak_rss_mb` is the
+absolute process RSS at that point - so a later converter's number includes
+memory retained by earlier converters' modules/allocations, which can
+misattribute a memory regression to the wrong converter. Not fixed (would
+mean forking a child process per converter and reading its own RSS) since
+this benchmark's primary signal is conversion timing, not memory; treat a
+`peak_rss_mb` regression as "something in this job's process grew," not
+necessarily "this specific converter grew."
 
 ## How results are stored
 
