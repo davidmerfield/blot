@@ -27,9 +27,6 @@ describe("tagged block", function () {
   });
 
   it("fetches tagged entries once when a view binds both {{#entries}} and {{#tagged}}", async function () {
-    const Entry = require("models/entry");
-    spyOn(Entry, "get").and.callThrough();
-
     await this.write({
       path: "/first.txt",
       content: "Title: First\nTags: foo\n\nFirst body",
@@ -47,6 +44,11 @@ describe("tagged block", function () {
       "tagged.html":
         "{{#entries}}{{title}}-e {{/entries}}{{#tagged}}{{#entries}}{{title}}-t {{/entries}}{{/tagged}}",
     });
+
+    // Publishing/indexing the entries above also calls Entry.get - only spy
+    // once that's done, so the count below reflects just the request.
+    const Entry = require("models/entry");
+    spyOn(Entry, "get").and.callThrough();
 
     const res = await this.get("/tagged/foo");
     const body = await res.text();
