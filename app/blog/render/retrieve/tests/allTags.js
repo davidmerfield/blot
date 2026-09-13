@@ -172,6 +172,24 @@ describe("all_tags cache", function () {
     });
   });
 
+  it("bypasses the cache for preview requests", function (done) {
+    const allTags = loadAllTags();
+
+    spyOn(Tags, "list").and.callFake(function (blogID, options, callback) {
+      callback(null, [{ name: "abc", slug: "abc", entries: ["1"] }]);
+    });
+
+    const req = makeReq({ id: "blog-1", cacheID: 100 });
+    req.preview = true;
+
+    allTags(req, { locals: {} }, function () {
+      allTags(req, { locals: {} }, function () {
+        expect(Tags.list).toHaveBeenCalledTimes(2);
+        done();
+      });
+    });
+  });
+
   it("restores all_tags_total_posts from the cache on a hit", function (done) {
     const allTags = loadAllTags();
 

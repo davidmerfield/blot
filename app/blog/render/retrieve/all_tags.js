@@ -25,9 +25,12 @@ async function allTags(req, res) {
     res.locals.path_prefix ??
     (req.template && req.template.locals && req.template.locals.path_prefix);
 
+  // Preview renders change on every save and are rarely repeated, so caching
+  // them would only thrash the LRU with entries no other request will read.
+  const bypassCache = !!req.preview;
   const key = createCacheKey(req.blog, path_prefix);
 
-  if (allTagsCache.has(key)) {
+  if (!bypassCache && allTagsCache.has(key)) {
     req.log("Retrieved all tags from cache");
     const cached = cloneDeep(allTagsCache.get(key));
     res.locals.all_tags_total_posts = cached.totalPosts;
@@ -64,14 +67,15 @@ async function allTags(req, res) {
 
   const totalPosts = Object.keys(set).length;
 
-  const immutableCopy = deepFreeze(cloneDeep({ tags, totalPosts }));
-  allTagsCache.set(key, immutableCopy);
+  if (!bypassCache) {
+    allTagsCache.set(key, deepFreeze(cloneDeep({ tags, totalPosts })));
+  }
 
   // toDO maybe rename this? it's ugly
   res.locals.all_tags_total_posts = totalPosts;
 
   req.log("Listed all tags");
-  return cloneDeep(immutableCopy).tags;
+  return tags;
 };
 
 module.exports = asRetriever(allTags);

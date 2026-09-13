@@ -211,4 +211,49 @@ describe("all_entries cache", function () {
     expect(Entries.getAll).toHaveBeenCalledTimes(1);
     resolveGetAll();
   });
+
+  it("stores separate entries per referenced field set so a stripped cache entry can't leak into a view that needs more", function (done) {
+    const allEntries = loadAllEntries();
+
+    spyOn(Entries, "getAll").and.callFake(function (blogID, callback) {
+      callback([{ id: "1", title: "A", html: "<p>A body</p>" }]);
+    });
+
+    const blog = { id: "blog-1", cacheID: 100 };
+
+    const titleOnlyReq = makeReq(blog, {
+      allEntries: { fields: { title: true } },
+    });
+    const withHtmlReq = makeReq(blog, {
+      allEntries: { fields: { title: true, html: true } },
+    });
+
+    allEntries(titleOnlyReq, { locals: {} }, function (err, entries) {
+      expect(entries[0].html).toBeUndefined();
+
+      allEntries(withHtmlReq, { locals: {} }, function (err, entries2) {
+        expect(entries2[0].html).toBe("<p>A body</p>");
+        expect(Entries.getAll).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+  });
+
+  it("bypasses the cache for preview requests", function (done) {
+    const allEntries = loadAllEntries();
+
+    spyOn(Entries, "getAll").and.callFake(function (blogID, callback) {
+      callback([{ id: "1", title: "A" }]);
+    });
+
+    const req = makeReq({ id: "blog-1", cacheID: 100 });
+    req.preview = true;
+
+    allEntries(req, { locals: {} }, function () {
+      allEntries(req, { locals: {} }, function () {
+        expect(Entries.getAll).toHaveBeenCalledTimes(2);
+        done();
+      });
+    });
+  });
 });

@@ -7,26 +7,38 @@ const asRetriever = require("../../lib/asRetriever");
 const LRUCache = require("lru-cache").LRUCache;
 const { cloneDeep, deepFreeze } = require("../../lib/clone");
 
-// Caches the year/month grouping itself (not just the raw entry list) so
-// repeat renders skip the grouping work too. Keyed on timeZone in addition
-// to blogID/cacheID since the year/month buckets are computed from
-// entry.dateStamp converted into the blog's timezone.
+const ALIASES = ["archives"];
+
+// Caches the year/month grouping itself (already trimmed to only the fields
+// this template's archives view references), not just the raw entry list -
+// so repeat renders skip both the Redis fetch and the grouping work, and
+// don't pay to store entry bodies a sitemap/archive view never reads.
 const archivesCache = new LRUCache({
   max: 200,
   maxSize: 100 * 1024 * 1024,
   sizeCalculation: (value) => JSON.stringify(value).length,
 });
 
-function createCacheKey(blog) {
+function cloneYears(value) {
+  return cloneDeep(value, { preserveEntryInstances: true });
+}
+
+// null means "no projection metadata" - see all_entries.js for why that has
+// to be part of the cache key rather than just skipping projection.
+function fieldsSignature(retrieve) {
+  const fields = projectEntryFields.resolveFields(retrieve, ALIASES);
+  return fields ? Object.keys(fields).sort().join(",") : null;
+}
+
+function createCacheKey(blog, retrieve) {
   return JSON.stringify({
     blogID: String(blog && blog.id),
     cacheID: String(blog && blog.cacheID),
+    // The year/month buckets are computed from entry.dateStamp converted
+    // into the blog's timezone, so a timezone change must bust the cache too.
     timeZone: String(blog && blog.timeZone),
+    fields: fieldsSignature(retrieve),
   });
-}
-
-function cloneYears(value) {
-  return cloneDeep(value, { preserveEntryInstances: true });
 }
 
 function buildYears(allEntries, timeZone) {
@@ -81,21 +93,26 @@ function flattenEntries(years) {
 }
 
 async function archives(req, res) {
-  const key = createCacheKey(req.blog);
+  // Preview renders change on every save and are rarely repeated, so caching
+  // them would only thrash the LRU with entries no other request will read.
+  const bypassCache = !!req.preview;
+  const key = createCacheKey(req.blog, req.retrieve);
 
-  let years;
-
-  if (archivesCache.has(key)) {
-    years = cloneYears(archivesCache.get(key));
-  } else {
-    const allEntries = await getAllCached(req.blog);
-    years = buildYears(allEntries, req.blog.timeZone);
-    archivesCache.set(key, deepFreeze(cloneYears(years)));
+  if (!bypassCache && archivesCache.has(key)) {
+    return cloneYears(archivesCache.get(key));
   }
 
-  // dateStamp is always kept, so the year/month grouping above is unaffected
-  // by which entries came from the cache vs. a fresh grouping.
-  projectEntryFields(flattenEntries(years), req.retrieve, ["archives"]);
+  const allEntries = await getAllCached(req.blog, { bypassCache });
+  const years = buildYears(allEntries, req.blog.timeZone);
+
+  // Strip heavy fields the current template doesn't reference before the
+  // grouped result is returned (dateStamp is always kept, so the year/month
+  // grouping above is unaffected).
+  projectEntryFields(flattenEntries(years), req.retrieve, ALIASES);
+
+  if (!bypassCache) {
+    archivesCache.set(key, deepFreeze(cloneYears(years)));
+  }
 
   return years;
 };

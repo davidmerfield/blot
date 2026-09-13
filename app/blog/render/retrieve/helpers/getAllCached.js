@@ -16,7 +16,9 @@ const entriesCache = new LRUCache({
 });
 
 // Dedupes concurrent misses for the same key (e.g. archives and all_entries
-// both missing on the same request) so only one Entries.getAll is in flight.
+// both missing on the same request) so only one Entries.getAll is in flight -
+// even for preview requests, which skip persisting to entriesCache below but
+// still benefit from not double-fetching within the same request.
 const inflight = new Map();
 
 function createCacheKey(blog) {
@@ -30,10 +32,16 @@ function cloneEntries(value) {
   return cloneDeep(value, { preserveEntryInstances: true });
 }
 
-async function getAllCached(blog) {
+// options.bypassCache: skip reading/writing entriesCache entirely. Used for
+// preview renders (req.preview) - a template being edited in preview changes
+// on every keystroke/save, so caching its output would either serve stale
+// entries or thrash the LRU with one-shot entries no other request will ever
+// read again. Concurrent calls still share one in-flight fetch.
+async function getAllCached(blog, options) {
+  const bypassCache = !!(options && options.bypassCache);
   const key = createCacheKey(blog);
 
-  if (entriesCache.has(key)) {
+  if (!bypassCache && entriesCache.has(key)) {
     return cloneEntries(entriesCache.get(key));
   }
 
@@ -43,7 +51,7 @@ async function getAllCached(blog) {
 
   const promise = getAll(blog && blog.id).then((entries) => {
     const immutableCopy = deepFreeze(cloneEntries(entries));
-    entriesCache.set(key, immutableCopy);
+    if (!bypassCache) entriesCache.set(key, immutableCopy);
     return immutableCopy;
   });
 

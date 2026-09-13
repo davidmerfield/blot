@@ -150,4 +150,56 @@ describe("archives cache", function () {
       });
     });
   });
+
+  it("stores separate entries per referenced field set so a stripped cache entry can't leak into a view that needs more", function (done) {
+    const { archives } = loadArchives();
+
+    spyOn(Entries, "getAll").and.callFake(function (blogID, callback) {
+      callback([
+        {
+          id: "1",
+          title: "A",
+          html: "<p>A body</p>",
+          dateStamp: Date.parse("2020-01-02"),
+        },
+      ]);
+    });
+
+    const blog = { id: "blog-1", cacheID: 100, timeZone: "UTC" };
+
+    const titleOnlyReq = makeReq(blog, {
+      archives: { fields: { title: true } },
+    });
+    const withHtmlReq = makeReq(blog, {
+      archives: { fields: { title: true, html: true } },
+    });
+
+    archives(titleOnlyReq, { locals: {} }, function (err, years) {
+      expect(years[0].months[0].entries[0].html).toBeUndefined();
+
+      archives(withHtmlReq, { locals: {} }, function (err, years2) {
+        expect(years2[0].months[0].entries[0].html).toBe("<p>A body</p>");
+        expect(Entries.getAll).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+  });
+
+  it("bypasses the cache for preview requests", function (done) {
+    const { archives } = loadArchives();
+
+    spyOn(Entries, "getAll").and.callFake(function (blogID, callback) {
+      callback([{ id: "1", title: "A", dateStamp: Date.parse("2020-01-02") }]);
+    });
+
+    const req = makeReq({ id: "blog-1", cacheID: 100, timeZone: "UTC" });
+    req.preview = true;
+
+    archives(req, { locals: {} }, function () {
+      archives(req, { locals: {} }, function () {
+        expect(Entries.getAll).toHaveBeenCalledTimes(2);
+        done();
+      });
+    });
+  });
 });
