@@ -60,10 +60,13 @@ async function getCachedEntryByUrl(blog, url) {
   }
 
   const promise = getEntryByUrl(blog && blog.id, url).then((entry) => {
-    // Cache misses too: a backlink URL that doesn't resolve should not
-    // re-hit Redis on every render until cacheID changes. getByUrl
-    // already treats a Redis error as a miss (callback with no entry).
-    const stored = entry ? deepFreeze(cloneEntry(entry)) : null;
+    // getByUrl collapses both a genuine missing URL and a Redis GET/MGET
+    // failure to "no entry". Caching that would hide a real backlink after
+    // Redis recovers, until cacheID changes or the LRU evicts - same
+    // sticky-empty trap getAllCached avoids. Only persist resolved entries;
+    // a miss (or blip) re-hits Redis, which is one GET.
+    if (!entry) return null;
+    const stored = deepFreeze(cloneEntry(entry));
     entryByUrlCache.set(key, stored);
     return stored;
   });

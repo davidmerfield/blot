@@ -230,6 +230,19 @@ describe("parseTemplate", function () {
     });
   });
 
+  it("records backlinks under an ordinary entry predicate", function () {
+    var template = `{{#posts}}{{#first}}{{#backlinks}}{{title}}{{/backlinks}}{{/first}}{{/posts}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.posts.fields.backlinks).toBe(true);
+    expect(result.retrieve.posts.fields.first).toBe(true);
+  });
+
+  it("records backlinks nested under show_backlinks like the hypertext entries view", function () {
+    var template = `{{#posts}}{{#first}}{{#show_backlinks}}{{#backlinks}}{{title}}{{/backlinks}}{{/show_backlinks}}{{/first}}{{/posts}}`;
+    var result = parseTemplate(template);
+    expect(result.retrieve.posts.fields.backlinks).toBe(true);
+  });
+
   it("records a heavy field under a nested predicate but not a light one", function () {
     var template = `{{#allEntries}}{{#thumbnail}}{{large}}{{{teaser}}}{{/thumbnail}}{{/allEntries}}`;
     var result = parseTemplate(template);

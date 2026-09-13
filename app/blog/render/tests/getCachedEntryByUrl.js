@@ -61,22 +61,23 @@ describe("getCachedEntryByUrl", function () {
     expect(b.title).toBe("blog-b");
   });
 
-  it("caches a miss so a missing URL is not re-fetched", async function () {
+  it("does not cache a miss, so a transient Redis failure is not sticky", async function () {
     const getCachedEntryByUrl = loadCache();
+    let calls = 0;
 
     stubGetByUrl(function (blogID, url, callback) {
-      callback();
+      calls++;
+      if (calls === 1) return callback();
+      callback({ path: "/linker.txt", title: "Linker", url: url });
     });
 
-    const first = await getCachedEntryByUrl({ id: "blog-1", cacheID: 100 }, "/missing");
-    const second = await getCachedEntryByUrl(
-      { id: "blog-1", cacheID: 100 },
-      "/missing"
-    );
+    const blog = { id: "blog-1", cacheID: 100 };
+    const first = await getCachedEntryByUrl(blog, "/linker");
+    const second = await getCachedEntryByUrl(blog, "/linker");
 
-    expect(Entry.getByUrl).toHaveBeenCalledTimes(1);
+    expect(Entry.getByUrl).toHaveBeenCalledTimes(2);
     expect(first).toBeNull();
-    expect(second).toBeNull();
+    expect(second.title).toBe("Linker");
   });
 
   it("treats encoded and decoded URLs as the same cache key", async function () {

@@ -3,14 +3,16 @@ var mustache = require("mustache");
 var type = require("helper/type");
 var projectableEntryFields = require("./util/projectableEntryFields");
 
-// Heavy entry fields keyed for O(1) lookup. Referenced anywhere inside an
-// entry-list context - including through ordinary predicate sections like
-// {{#first}} where Mustache still resolves them from the parent entry - they
-// must be recorded so retrieve-time projection never drops them.
-var heavyEntryFieldSet = {};
+// Fields that Mustache resolves from the parent entry even when nested
+// under ordinary predicate sections like {{#first}}. Heavy render fields
+// must be recorded so retrieve-time projection never drops them. `backlinks`
+// is not heavy (the URL strings are small) but still resolves from the
+// parent, so it is recorded on the entry-list fields map for hydrate-skip.
+var recordThroughPredicateFields = {};
 projectableEntryFields.forEach(function (name) {
-  heavyEntryFieldSet[name] = true;
+  recordThroughPredicateFields[name] = true;
 });
+recordThroughPredicateFields.backlinks = true;
 
 // My goal is to look at a template
 // retrieve a list of variables and partials inside the template
@@ -353,15 +355,16 @@ function parseTemplate(template) {
           );
         }
 
-        // A heavy field referenced under an ordinary predicate section (e.g.
-        // {{#posts}}{{#first}}{{{html}}}{{/first}}{{/posts}}) still resolves
-        // from the parent entry at render time. Attribute it to that entry so
-        // projection keeps it, even though `first` is not a real sub-object.
+        // A heavy field (or backlinks) referenced under an ordinary predicate
+        // section (e.g. {{#posts}}{{#first}}{{{html}}}{{/first}}{{/posts}})
+        // still resolves from the parent entry at render time. Attribute it
+        // to that entry so projection / backlink hydration keep it, even
+        // though `first` is not a real sub-object.
         var heavyFieldName = variableRoot || variable;
         if (
           !projectedFieldContext &&
           inProjectedFieldContext &&
-          heavyEntryFieldSet[heavyFieldName]
+          recordThroughPredicateFields[heavyFieldName]
         ) {
           var heavyFieldRoot = nearestEntryFieldRoot(contextPath);
           if (heavyFieldRoot) {
@@ -451,7 +454,7 @@ function parseTemplate(template) {
         if (
           inProjectedFieldContext &&
           (isLowercaseProjectedEntryField(variable) ||
-            heavyEntryFieldSet[heavyFieldName])
+            recordThroughPredicateFields[heavyFieldName])
         ) {
           suppressAsProjectedFieldReference = true;
         }

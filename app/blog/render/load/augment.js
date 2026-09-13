@@ -21,7 +21,22 @@ const PROJECTED_ENTRY_LOCALS = [
   "archives",
 ];
 
-module.exports = async function augment(req, res, entry) {
+const LOCAL_ALIASES = {
+  allEntries: ["allEntries", "all_entries"],
+  all_entries: ["allEntries", "all_entries"],
+  recentEntries: ["recentEntries", "recent_entries"],
+  recent_entries: ["recentEntries", "recent_entries"],
+  latestEntry: ["latestEntry", "latest_entry"],
+  latest_entry: ["latestEntry", "latest_entry"],
+};
+
+PROJECTED_ENTRY_LOCALS.forEach((name) => {
+  if (!LOCAL_ALIASES[name]) LOCAL_ALIASES[name] = [name];
+});
+LOCAL_ALIASES.entries = ["entries"];
+LOCAL_ALIASES.entry = ["entry"];
+
+module.exports = async function augment(req, res, entry, owningLocal) {
   const blog = req.blog;
 
   entry.metadata = createRenderMetadata(entry.metadata);
@@ -119,7 +134,7 @@ module.exports = async function augment(req, res, entry) {
 
   entry.backlinks = entry.backlinks || [];
 
-  if (!shouldHydrateBacklinks(req, res, entry)) {
+  if (!shouldHydrateBacklinks(req, res, entry, owningLocal)) {
     debug(entry.path, "skipping backlink hydration");
     return;
   }
@@ -167,9 +182,9 @@ module.exports = async function augment(req, res, entry) {
 // next/previous) AND every list local (archives, allEntries, posts, ...).
 // Hydrating backlinks on list rows is a per-request heap multiplier
 // (every post × every backlink) and fights the byte-capped list caches.
-// Entry pages still hydrate; list locals only hydrate when parseTemplate
-// recorded fields.backlinks (or a boolean retrieve local we can't project).
-function shouldHydrateBacklinks(req, res, entry) {
+// Entry pages still hydrate; a list local hydrates only when *that*
+// local's retrieve metadata references backlinks.
+function shouldHydrateBacklinks(req, res, entry, owningLocal) {
   const primary = res.locals && res.locals.entry;
   if (
     primary &&
@@ -180,18 +195,20 @@ function shouldHydrateBacklinks(req, res, entry) {
     return true;
   }
 
-  return listLocalNeedsBacklinks(req.retrieve);
+  return localNeedsBacklinks(req.retrieve, owningLocal);
 }
 
-function listLocalNeedsBacklinks(retrieve) {
-  if (!retrieve || typeof retrieve !== "object") return false;
+function localNeedsBacklinks(retrieve, owningLocal) {
+  if (!retrieve || typeof retrieve !== "object" || !owningLocal) return false;
 
-  for (let i = 0; i < PROJECTED_ENTRY_LOCALS.length; i++) {
-    const value = retrieve[PROJECTED_ENTRY_LOCALS[i]];
+  const aliases = LOCAL_ALIASES[owningLocal] || [owningLocal];
+
+  for (let i = 0; i < aliases.length; i++) {
+    const value = retrieve[aliases[i]];
     if (value === undefined) continue;
 
     // Boolean `true` is stale/unprojected metadata - we can't tell which
-    // fields the view reads, so hydrate to be safe.
+    // fields the view reads, so hydrate this local to be safe.
     if (value === true) return true;
 
     if (
@@ -208,10 +225,9 @@ function listLocalNeedsBacklinks(retrieve) {
   // Older/custom templates bind {{#entries}} (set by the route, not a
   // retrieve module). parseTemplate then records {{#backlinks}} as a
   // top-level retrieve.backlinks rather than a fields map on `posts`.
-  // Only honor that when the view actually iterates `entries` - an
-  // entry page's {{#entry}}{{#backlinks}} sets retrieve.backlinks too
-  // and must not fan out across sidebar lists.
-  if (retrieve.entries && retrieveMentionsBacklinks(retrieve)) return true;
+  if (owningLocal === "entries" && retrieveMentionsBacklinks(retrieve)) {
+    return true;
+  }
 
   return false;
 }

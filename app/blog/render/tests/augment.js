@@ -145,6 +145,25 @@ describe("augment", function () {
         expect(linker).toBeDefined();
     });
 
+    it("hydrates backlinks wrapped in predicate sections on a posts list", async function () {
+        await this.write({ path: "/target.txt", content: "Title: Target\n\nTarget body" });
+        await this.write({
+            path: "/linker.txt",
+            content: "Title: Linker\n\n[see](/target)",
+        });
+
+        await this.template({
+            "entries.html":
+                "{{#posts}}{{#first}}{{#backlinks}}{{title}}{{/backlinks}}{{/first}}{{/posts}}",
+        });
+
+        const locals = await (await this.get("/?json=1")).json();
+        const target = (locals.posts || []).find((entry) => entry.title === "Target");
+        expect(target.backlinks).toEqual([
+            jasmine.objectContaining({ title: "Linker" }),
+        ]);
+    });
+
     it("hydrates backlinks when a list local renders them", async function () {
         await this.write({ path: "/target.txt", content: "Title: Target\n\nTarget body" });
         await this.write({
@@ -301,7 +320,7 @@ describe("augment backlink hydration", function () {
         const req = makeReq({ allEntries: { fields: { title: true } } });
         const res = { locals: {} };
 
-        await augment(req, res, entry);
+        await augment(req, res, entry, "allEntries");
 
         expect(Entry.getByUrl).not.toHaveBeenCalled();
         expect(entry.backlinks).toEqual(["/linker"]);
@@ -317,7 +336,7 @@ describe("augment backlink hydration", function () {
         });
         const res = { locals: {} };
 
-        await augment(req, res, entry);
+        await augment(req, res, entry, "allEntries");
 
         expect(Entry.getByUrl).toHaveBeenCalledTimes(1);
         expect(entry.backlinks[0].title).toEqual("Linker");
@@ -331,9 +350,26 @@ describe("augment backlink hydration", function () {
         const req = makeReq({ entries: true, backlinks: true });
         const res = { locals: {} };
 
-        await augment(req, res, entry);
+        await augment(req, res, entry, "entries");
 
         expect(Entry.getByUrl).toHaveBeenCalledTimes(1);
         expect(entry.backlinks[0].title).toEqual("Linker");
+    });
+
+    it("does not hydrate a catalog list when only another local requested backlinks", async function () {
+        const augment = loadAugment();
+        stubLinkedEntry();
+
+        const entry = makeEntry();
+        const req = makeReq({
+            latestEntry: { fields: { backlinks: true } },
+            allEntries: { fields: { title: true } },
+        });
+        const res = { locals: {} };
+
+        await augment(req, res, entry, "allEntries");
+
+        expect(Entry.getByUrl).not.toHaveBeenCalled();
+        expect(entry.backlinks).toEqual(["/linker"]);
     });
 });
