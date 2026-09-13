@@ -2,6 +2,7 @@ var redis = require("models/client");
 var async = require("async");
 var ensure = require("helper/ensure");
 var Entry = require("../entry");
+var entryKey = require("../entry/key").entry;
 var DateStamp = require("../../build/prepare/dateStamp");
 var Blog = require("../blog");
 var pathIndex = require("./pathIndex");
@@ -267,16 +268,29 @@ module.exports = (function () {
             batches.push(allIds.slice(i, i + PRUNE_BATCH_SIZE));
           }
 
+          // Read the raw keys directly (rather than via Entry.get) so
+          // existence is tracked against the id we actually requested, not
+          // an id parsed back out of the entry's JSON - a corrupted entry's
+          // stored id can differ from its Redis key. It also lets a failed
+          // batch abort the whole prune instead of being treated as proof
+          // that every id in it is missing.
           async.eachSeries(
             batches,
             function (batch, nextBatch) {
-              Entry.get(blogID, batch, function (entries) {
-                (entries || []).forEach(function (entry) {
-                  if (entry && entry.id) existing[entry.id] = true;
-                });
-
-                setImmediate(nextBatch);
+              var keys = batch.map(function (id) {
+                return entryKey(blogID, id);
               });
+
+              redis
+                .mGet(keys)
+                .then(function (values) {
+                  (values || []).forEach(function (value, i) {
+                    if (value) existing[batch[i]] = true;
+                  });
+
+                  setImmediate(nextBatch);
+                })
+                .catch(nextBatch);
             },
             function (err) {
               if (err) return next(err);
