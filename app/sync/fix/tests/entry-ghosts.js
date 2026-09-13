@@ -76,7 +76,7 @@ describe("sync/fix/entry-ghosts", function () {
     spyOn(Entry, "drop");
 
     fixEntryGhosts({ id: "blog-id" }, function (err, report) {
-      expect(err).toBeUndefined();
+      expect(err).toBeNull();
       expect(Entry.set).toHaveBeenCalled();
       expect(Entry.drop).not.toHaveBeenCalled();
       expect(report).toEqual(
@@ -107,7 +107,7 @@ describe("sync/fix/entry-ghosts", function () {
     });
 
     fixEntryGhosts({ id: "blog-id" }, function (err, report) {
-      expect(err).toBeUndefined();
+      expect(err).toBeNull();
       expect(Entry.set).not.toHaveBeenCalled();
       expect(Entry.drop).toHaveBeenCalled();
       expect(report).toEqual(
@@ -138,7 +138,7 @@ describe("sync/fix/entry-ghosts", function () {
     });
 
     fixEntryGhosts({ id: "blog-id" }, function (err) {
-      expect(err).toBeUndefined();
+      expect(err).toBeNull();
       expect(Entry.drop).toHaveBeenCalled();
       done();
     });
@@ -197,7 +197,7 @@ describe("sync/fix/entry-ghosts", function () {
     });
 
     fixEntryGhosts({ id: "blog-id" }, function (err, report) {
-      expect(err).toBeUndefined();
+      expect(err).toBeNull();
       expect(Entry.drop).toHaveBeenCalled();
       expect(report).toEqual(
         jasmine.arrayContaining([

@@ -92,7 +92,7 @@ describe("sync/fix", function () {
     spyOn(Blog, "set");
 
     fix({ id: "blog-id" }, function (err, report) {
-      expect(err).toBeUndefined();
+      expect(err).toBeNull();
       expect(report).toEqual({});
       expect(Blog.set).not.toHaveBeenCalled();
       done();
@@ -122,7 +122,7 @@ describe("sync/fix", function () {
     });
 
     fix({ id: "blog-id" }, function (err, report) {
-      expect(err).toBeUndefined();
+      expect(err).toBeNull();
       expect(report).toEqual({ "entry-ghosts": ["fixed something"] });
       expect(Blog.set).toHaveBeenCalled();
       done();
@@ -148,7 +148,7 @@ describe("sync/fix", function () {
       { id: "blog-id" },
       { status: function (message) { statuses.push(message); } },
       function (err) {
-        expect(err).toBeUndefined();
+        expect(err).toBeNull();
         expect(statuses).toEqual([
           "(1/5) Checking entry-ghosts",
           "(2/5) Checking tag-ghosts",
