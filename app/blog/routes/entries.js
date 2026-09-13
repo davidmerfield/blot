@@ -1,34 +1,21 @@
-const { getPage } = require("../lib/models");
-const getTemplateSortOptions = require("blog/sortOptions");
-const { primeUntaggedCache } = require("../render/retrieve/posts");
+// Older/custom templates bind {{#entries}} directly; official templates
+// bind {{#posts}}. Both need the same page of entries, so route through the
+// posts retriever - its per-request/process LRU cache means a view that
+// also binds {{#posts}} reuses this fetch instead of calling
+// Entries.getPage a second time. This does mean a plain {{#entries}} view
+// now inherits posts()'s ?tag=/:tag filtering, which the old raw getPage
+// call here ignored - accepted as part of standardizing on posts() as the
+// single fetch path. See https://github.com/davidmerfield/blot/issues/1844
+const retrievePosts = require("../render/retrieve/posts");
 
 module.exports = async function entries(req, res, next) {
   try {
-    const blogID = req?.blog?.id;
-
-    const sortOptions = getTemplateSortOptions(req?.template?.locals);
-
-    const options = {
-      sortBy: sortOptions.sortBy,
-      order: sortOptions.order,
-      pageNumber: req?.params?.page ?? req?.query?.page,
-      pageSize: req?.template?.locals?.page_size,
-      pathPrefix: req?.template?.locals?.path_prefix,
-    };
-
     req.log("Loading entries");
-    const { entries, pagination } = await getPage(blogID, options);
+    // retrievePosts sets res.locals.pagination as a side effect.
+    const entries = await retrievePosts(req, res);
     req.log("Loaded entries");
 
     res.locals.entries = entries;
-    res.locals.pagination = pagination;
-
-    // Older/custom templates bind {{#entries}} directly; official templates
-    // bind {{#posts}} instead. Seed retrieve/posts.js's cache with this
-    // fetch so a view that also references {{#posts}} reuses it instead of
-    // calling Entries.getPage again. See
-    // https://github.com/davidmerfield/blot/issues/1844
-    primeUntaggedCache(req, res, entries, pagination);
 
     res.renderView("entries.html", next);
   } catch (err) {

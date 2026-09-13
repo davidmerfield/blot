@@ -49,10 +49,10 @@ function createCacheKey(req, res, normalizedOptions) {
   });
 }
 
-// Shared by posts() and primeUntaggedCache() so a route that fetches a page
-// of entries with the same inputs posts() would use produces the same cache
-// key.
-function resolveOptions(req, res) {
+async function posts(req, res) {
+  const blogID = req?.blog?.id;
+  const log = typeof req?.log === "function" ? req.log.bind(req) : () => {};
+
   const sortOptions = getTemplateSortOptions(req?.template?.locals);
 
   const options = {
@@ -79,24 +79,7 @@ function resolveOptions(req, res) {
     offset,
   };
 
-  return {
-    options,
-    tags,
-    pageNumber,
-    pageSize,
-    offset,
-    key: createCacheKey(req, res, normalizedOptions),
-  };
-}
-
-async function posts(req, res) {
-  const blogID = req?.blog?.id;
-  const log = typeof req?.log === "function" ? req.log.bind(req) : () => {};
-
-  const { options, tags, pageNumber, pageSize, offset, key } = resolveOptions(
-    req,
-    res
-  );
+  const key = createCacheKey(req, res, normalizedOptions);
 
   if (postsCache.has(key)) {
     const cachedPayload = clonePosts(postsCache.get(key));
@@ -144,25 +127,8 @@ async function posts(req, res) {
   return projectEntryFields(responsePayload.entries, req.retrieve, ["posts"]);
 };
 
-// Lets a route that has already fetched the untagged page of entries (e.g.
-// routes/entries.js, which forwards the same raw getPage options as the
-// untagged branch above) seed this cache. A view that also binds {{#posts}}
-// then hits the cache instead of re-running getPage in the same request.
-// Only safe for the untagged branch - a route that fetched without
-// filtering by the ?tag=/:tag query can't stand in for a tag-filtered
-// posts() call, so requests with a tag are left alone.
-function primeUntaggedCache(req, res, entries, pagination) {
-  const { tags, key } = resolveOptions(req, res);
-
-  if (tags) return;
-
-  const immutableCopy = deepFreeze(clonePosts({ entries, pagination }));
-  postsCache.set(key, immutableCopy);
-}
-
 module.exports = asRetriever(posts);
 module.exports._createCacheKey = createCacheKey;
 module.exports._clear = function () {
   postsCache.clear();
 };
-module.exports.primeUntaggedCache = primeUntaggedCache;

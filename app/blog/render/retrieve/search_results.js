@@ -2,6 +2,7 @@ const getTemplateSortOptions = require("blog/sortOptions");
 const { searchEntries } = require("../../lib/models");
 const projectEntryFields = require("./helpers/projectEntryFields");
 const asRetriever = require("../../lib/asRetriever");
+const { cloneDeep } = require("../../lib/clone");
 
 async function searchResults(req, res) {
   const blogID = req.blog.id;
@@ -15,8 +16,13 @@ async function searchResults(req, res) {
 
   // routes/search.js already scanned for this exact query + sort selection
   // earlier in this request - reuse it instead of running Entry.search
-  // again. Clone before projecting: the reused array is shared with
-  // res.locals.entries, and projection below deletes fields in place.
+  // again (a second full scan over entry.html is the heap concern this
+  // guards against - see
+  // https://github.com/davidmerfield/blot/issues/1844). Clone before
+  // projecting: the reused array is shared with res.locals.entries and
+  // projection below deletes fields in place. Preserve Entry prototypes so
+  // render-time augmentation (date/formatDate/absoluteURL/tags helpers)
+  // still applies - see render/load/eachEntry.js.
   const scan = req._searchScan;
   const reusable =
     scan &&
@@ -24,9 +30,7 @@ async function searchResults(req, res) {
     JSON.stringify(scan.sortOptions) === JSON.stringify(sortOptions);
 
   const results = reusable
-    ? scan.entries.map((entry) =>
-        entry && typeof entry === "object" ? { ...entry } : entry
-      )
+    ? cloneDeep(scan.entries, { preserveEntryInstances: true })
     : // Entry.search collects a wide candidate pool, then sorts and caps by
       // the selection (a missing selection normalises to newest-first date).
       await searchEntries(blogID, req.query.q, sortOptions);
