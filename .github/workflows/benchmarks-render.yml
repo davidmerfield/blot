@@ -117,7 +117,10 @@ jobs:
             benchmark-corpus-v${{ env.CORPUS_SCHEMA_VERSION }}-
 
       - name: Seed corpus from artifact if cache missed
-        run: node scripts/benchmarks/seed-corpus.js --out-dir "$CORPUS_DIR"
+        run: |
+          node scripts/benchmarks/seed-corpus.js \
+            --out-dir "$CORPUS_DIR" \
+            --corpus-schema-version "$CORPUS_SCHEMA_VERSION"
 
       # No corpus yet (first run ever, or the corpus cache + backing
       # artifact have both aged out past retention): skip the rest of the
@@ -191,6 +194,20 @@ jobs:
           restore-keys: |
             render-benchmarks-history-amd64-
 
+      # Mirrors benchmarks.yml's cache-miss fallback: a render-benchmark-
+      # history-amd64 artifact is uploaded on every push run (see "Upload
+      # render benchmark history" below), so if the Actions cache was ever
+      # evicted, restore from that instead of silently starting sustained-
+      # regression detection over from zero.
+      - name: Seed render benchmark history from artifact if cache missed
+        if: steps.corpus-check.outputs.available == 'true'
+        run: |
+          node scripts/benchmarks/seed-history.js \
+            --arch amd64 \
+            --history-dir "$HISTORY_DIR" \
+            --workflow benchmarks-render.yml \
+            --artifact-name render-benchmark-history-amd64
+
       - name: Run render benchmark against the cached corpus
         if: steps.corpus-check.outputs.available == 'true'
         run: |
@@ -231,7 +248,8 @@ jobs:
             --result "$RESULT_FILE" \
             --history-dir "$HISTORY_DIR" \
             --comment-tag render \
-            --title "Render benchmark (large corpus)"
+            --title "Render benchmark (large corpus)" \
+            --exclude-phase build
 
       - name: Mark PR benchmark comment as failed
         if: steps.corpus-check.outputs.available == 'true' && github.event_name == 'pull_request' && failure()
@@ -247,7 +265,8 @@ jobs:
         if: steps.corpus-check.outputs.available == 'true' && github.event_name == 'push'
         run: |
           node scripts/benchmarks/update-history.js \
-            --result "$RESULT_FILE" --arch amd64 --history-dir "$HISTORY_DIR"
+            --result "$RESULT_FILE" --arch amd64 --history-dir "$HISTORY_DIR" \
+            --exclude-phase build
 
       - name: Detect sustained regression
         if: steps.corpus-check.outputs.available == 'true' && github.event_name == 'push'
@@ -255,7 +274,8 @@ jobs:
           node scripts/benchmarks/detect-regression.js \
             --history-dir "$HISTORY_DIR" --arch amd64 --alert \
             --issue-label render-benchmark-regression \
-            --workflow-name benchmarks-render.yml
+            --workflow-name benchmarks-render.yml \
+            --exclude-phase build
 
       - name: Save render benchmark history
         if: steps.corpus-check.outputs.available == 'true' && github.event_name == 'push'
