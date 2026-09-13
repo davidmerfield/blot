@@ -3,6 +3,7 @@ var async = require("async");
 var ensure = require("helper/ensure");
 var Entry = require("../entry");
 var entryKey = require("../entry/key").entry;
+var pathNormalizer = require("helper/pathNormalizer");
 var DateStamp = require("../../build/prepare/dateStamp");
 var Blog = require("../blog");
 var pathIndex = require("./pathIndex");
@@ -285,7 +286,18 @@ module.exports = (function () {
                 .mGet(keys)
                 .then(function (values) {
                   (values || []).forEach(function (value, i) {
-                    if (value) existing[batch[i]] = true;
+                    var id = batch[i];
+
+                    // entryKey normalizes the path, so a noncanonical id
+                    // (eg. a trailing slash) maps to the same Redis key as
+                    // its canonical form - a hit there proves the canonical
+                    // entry exists, not that this exact list member does.
+                    // Only trust the lookup for ids that are already
+                    // canonical; anything else is a stale/duplicate member
+                    // that should be pruned regardless.
+                    if (value && id === pathNormalizer(id)) {
+                      existing[id] = true;
+                    }
                   });
 
                   setImmediate(nextBatch);
