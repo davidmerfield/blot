@@ -26,12 +26,19 @@ on:
       - "app/build/converters/**"
       - "app/build/*.js"
       - "app/build/metadata/**"
+      # Shared helpers required directly by more than one converter (grepped
+      # each converter's requires for anything outside its own directory) -
+      # a regression here wouldn't otherwise trigger this workflow at all.
+      - "app/build/math/normalizeLiteralDollars.js"
+      - "app/build/prepare/titlify.js"
   push:
     branches: ["master"]
     paths:
       - "app/build/converters/**"
       - "app/build/*.js"
       - "app/build/metadata/**"
+      - "app/build/math/normalizeLiteralDollars.js"
+      - "app/build/prepare/titlify.js"
   workflow_dispatch:
     inputs:
       converters:
@@ -75,9 +82,12 @@ jobs:
 
             # A change to a converter's own directory affects just that
             # converter; a change to a *shared* app/build/*.js file (or
-            # app/build/metadata/**, used by several converters) is treated
-            # conservatively as affecting every converter.
-            if echo "$CHANGED" | grep -qE '^app/build/[^/]+\.js$|^app/build/metadata/'; then
+            # app/build/metadata/**, or one of the shared helpers below -
+            # normalizeLiteralDollars.js is required directly by html/gdoc,
+            # titlify.js by img/webloc - grepped from each converter's own
+            # requires) is treated conservatively as affecting every
+            # converter.
+            if echo "$CHANGED" | grep -qE '^app/build/[^/]+\.js$|^app/build/metadata/|^app/build/math/normalizeLiteralDollars\.js$|^app/build/prepare/titlify\.js$'; then
               CONVERTERS=$(ls app/build/converters | grep -vE '\.js$|^tests$|^readme\.txt$' | tr '\n' ' ')
             else
               CONVERTERS=$(echo "$CHANGED" | grep -oE '^app/build/converters/[^/]+' | sed 's#app/build/converters/##' | sort -u | grep -vE '\.js$|^tests$' | tr '\n' ' ')
@@ -98,6 +108,16 @@ jobs:
     if: needs.detect-changed-converters.outputs.any == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    services:
+      # The img converter's fixtures (AVIF/WebP/HEIC/etc.) go through
+      # app/helper/transformer, which is backed by the process-wide Redis
+      # client in app/models/client - without this, that path either hangs
+      # in a reconnect loop or fails outright. Same image as the other
+      # benchmark workflows' redis service.
+      redis:
+        image: redis:6
+        ports:
+          - 6379:6379
     env:
       NODE_PATH: app
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -114,8 +134,11 @@ jobs:
         with:
           node-version: 22
 
+      # The repo has no committed package-lock.json/npm-shrinkwrap.json, so
+      # `npm ci` fails immediately - match the rest of the repo's CI (e.g.
+      # deploy.yml, screenshots.yml) and use `npm install`.
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       # docx/odt/rtf/org/markdown all shell out to pandoc; odt/docx-adjacent
       # paths may also touch soffice. Installing both keeps this workflow
