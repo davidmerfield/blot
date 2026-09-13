@@ -1,7 +1,3 @@
-Rewrite the benchmarks: more blogs, more posts, larger sites, and persist to Redis with a cache across action runs
-
----
-
 Investigate the most effective Mustache template cache size now that it's bounded (#1859).
 
 Fix performance bugs on nashp and anchor and re-enable sites
