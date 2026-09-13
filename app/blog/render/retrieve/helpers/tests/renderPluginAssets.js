@@ -1,4 +1,4 @@
-const renderPluginAssets = require("../helpers/renderPluginAssets");
+const renderPluginAssets = require("../renderPluginAssets");
 
 describe("renderPluginAssets", function () {
   const googleAnalytics = [
