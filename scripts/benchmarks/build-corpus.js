@@ -165,7 +165,12 @@ function main() {
     "--network",
     network,
     "--rm",
-    "redis:alpine",
+    // Pinned to the exact image used everywhere else (benchmarks.yml,
+    // benchmarks-render.yml's services.redis.image) - the RDB dump this
+    // produces gets loaded into a redis:6 container downstream via
+    // `DEBUG RELOAD`, so a floating tag resolving to an incompatible major
+    // would break that restore.
+    "redis:6",
     "sh",
     "-c",
     "rm -f /data/dump.rdb && redis-server",
@@ -202,6 +207,12 @@ function main() {
     "BLOT_HOST=localhost",
     "-e",
     "BLOT_PROTOCOL=https",
+    // Docker does not inherit arbitrary host env vars into the container -
+    // forward GITHUB_SHA explicitly so index.js's manifest writer (which
+    // reads process.env.GITHUB_SHA for provenance) doesn't always see null
+    // in CI.
+    "-e",
+    `GITHUB_SHA=${process.env.GITHUB_SHA || ""}`,
     "-v",
     `${path.join(ROOT_DIR, "app")}:/usr/src/app/app`,
     "-v",
