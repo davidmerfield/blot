@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-// Runs the benchmark spec (app/blog/benchmarks/benchmarks.js) once and writes a
+// Runs the benchmark spec (scripts/benchmarks/spec/build-render.spec.js) once and writes a
 // single benchmark-result JSON. It does NOT compare against a baseline or gate
 // anything - that is done afterwards, outside the container, by:
 //
@@ -18,7 +18,7 @@ var path = require("path");
 var seedrandom = require("seedrandom");
 var clfdate = require("helper/clfdate");
 
-var { BENCHMARK_DEFAULTS } = require("blog/benchmarks/util/defaults");
+var { BENCHMARK_DEFAULTS } = require("./spec/util/defaults");
 
 var args = parseArgs(process.argv.slice(2));
 var client = require("models/client");
@@ -28,7 +28,10 @@ var jasmine = new Jasmine();
 
 var jasmineConfig = {
   spec_dir: "",
-  spec_files: ["**/benchmarks/benchmarks.js", "!**/node_modules/**"],
+  spec_files: [
+    "**/benchmarks/spec/build-render.spec.js",
+    "!**/node_modules/**",
+  ],
   helpers: [],
   stopSpecOnExpectationFailure: true,
   random: false,

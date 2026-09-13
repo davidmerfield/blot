@@ -5,7 +5,7 @@ const path = require("path");
 
 const { median, mad } = require("./stats");
 const { METRICS, extractMetrics } = require("./metrics");
-const { BENCHMARK_DEFAULTS } = require("../../../app/blog/benchmarks/util/defaults");
+const { BENCHMARK_DEFAULTS } = require("../spec/util/defaults");
 
 // History is one append-only NDJSON file per architecture:
 //   <dir>/history-<arch>.ndjson

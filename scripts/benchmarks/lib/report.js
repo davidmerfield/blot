@@ -2,7 +2,7 @@
 
 const { METRICS, extractMetrics, formatValue } = require("./metrics");
 const { classify } = require("./stats");
-const { BENCHMARK_DEFAULTS } = require("../../../app/blog/benchmarks/util/defaults");
+const { BENCHMARK_DEFAULTS } = require("../spec/util/defaults");
 
 const STATUS_LABEL = {
   regression: "regressed",

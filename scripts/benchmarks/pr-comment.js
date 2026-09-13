@@ -24,7 +24,7 @@ const { spawnSync } = require("child_process");
 
 const { compareToBaseline, markdownTable, hasRegression } = require("./lib/report");
 const { loadHistory, computeBaseline } = require("./lib/history");
-const { BENCHMARK_DEFAULTS } = require("../../app/blog/benchmarks/util/defaults");
+const { BENCHMARK_DEFAULTS } = require("./spec/util/defaults");
 
 const RESULTS_START = "<!-- bench:results:start -->";
 const RESULTS_END = "<!-- bench:results:end -->";

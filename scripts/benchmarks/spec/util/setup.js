@@ -1,4 +1,4 @@
-const sharedSetup = require("../../tests/util/sharedSetup");
+const sharedSetup = require("../../../../app/blog/tests/util/sharedSetup");
 
 module.exports = function setupBenchmark(options = {}) {
   const benchmarkConfig = global.__BLOT_BENCHMARK_CONFIG || {};

@@ -20,7 +20,7 @@ const { loadHistory, computeBaseline } = require("./lib/history");
 const { METRIC_BY_KEY, formatValue } = require("./lib/metrics");
 const { classify } = require("./lib/stats");
 const { fmtDelta } = require("./lib/report");
-const { BENCHMARK_DEFAULTS } = require("../../app/blog/benchmarks/util/defaults");
+const { BENCHMARK_DEFAULTS } = require("./spec/util/defaults");
 
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(name);

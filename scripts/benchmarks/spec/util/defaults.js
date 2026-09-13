@@ -4,8 +4,8 @@
  * Single source of truth for benchmark knobs.
  *
  * Both the runner (scripts/benchmarks/index.js, runs on the host) and the spec
- * (app/blog/benchmarks/benchmarks.js, runs inside the container) read their
- * defaults from here so the two can never drift apart.
+ * (scripts/benchmarks/spec/build-render.spec.js, runs inside the container)
+ * read their defaults from here so the two can never drift apart.
  */
 const BENCHMARK_DEFAULTS = Object.freeze({
   // Number of blogs created for the run.
