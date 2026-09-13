@@ -126,7 +126,16 @@ describe("augment", function () {
 
         const locals = await (await this.get("/list?json=1")).json();
 
-        expect(Entry.getByUrl).not.toHaveBeenCalled();
+        // routes/entry.js looks up the request path before falling through
+        // to the view; the assertion is that augment did not fan out to
+        // each row's backlink URLs.
+        const backlinkFetches = Entry.getByUrl.calls
+            .allArgs()
+            .filter((args) => {
+                const url = String(args[1]);
+                return url.indexOf("linker") !== -1 || url.indexOf("target") !== -1;
+            });
+        expect(backlinkFetches).toEqual([]);
         expect(locals.allEntries.length).toEqual(2);
 
         const linker = locals.allEntries.find((entry) => entry.title === "Linker");
