@@ -158,9 +158,7 @@ describe("purgeCdnUrls", function () {
 
     expect(fetchSpy.calls.count()).toBe(2);
     expect(scheduleSpy).toHaveBeenCalledTimes(1);
-    expect(console.log).toHaveBeenCalledWith(
-      "Purged Bunny CDN: https://example.com/test (attempt 2/4)"
-    );
+    expect(console.log).not.toHaveBeenCalled();
     expect(console.error).not.toHaveBeenCalled();
   });
 
