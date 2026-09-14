@@ -198,7 +198,12 @@ module.exports = function (blogID, blog, callback) {
             await updateCdnManifestAsync(template);
           } catch (updateError) {
             // for now, do nothing
-            debug("Error updating template CDN manifest", blogID, updateError);
+            console.error(
+              "Blog.set",
+              blogID,
+              "Error updating template CDN manifest",
+              updateError
+            );
           }
         }
 
