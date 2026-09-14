@@ -330,9 +330,6 @@ Improvements to dashboard:
   - cache sync validity and display checkmark on dashboard
   - surface errors for clients on dashboard index
 - Resolve inconsistency: 'Create site' vs New template vs Create file
-- Clamp length of password and email address in log in and sign up and reset forms
-  - ensure the forms have tight max-bodies
-  - return an error if these are too long
 - When a folder has lots of elements, trim the list of files on the dashboard, at least on the index page
 
 Improvements to template editor:

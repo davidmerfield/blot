@@ -1,10 +1,12 @@
 var User = require("models/user");
 var LogInError = require("./logInError");
+var { emailIsTooLong } = require("dashboard/util/auth-limits");
 
 module.exports = function checkEmail(req, res, next) {
   var email = req.body && req.body.email;
 
   if (!email) return next(new LogInError("NOEMAIL"));
+  if (emailIsTooLong(email)) return next(new LogInError("EMAILTOOLONG"));
 
   res.locals.email = email;
 

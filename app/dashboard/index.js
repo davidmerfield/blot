@@ -13,8 +13,16 @@ dashboard.use(trace("loaded session information"));
 
 dashboard.use(require("dashboard/util/multipart")());
 
-dashboard.use(require("dashboard/util/parse"));
 dashboard.use(cookieParser());
+
+// Authentication forms contain only short text fields. Parse them with a
+// small body limit before falling back to the larger dashboard parser, which
+// is needed for uploads and template editing.
+dashboard.use(
+  ["/sign-up", "/log-in", "/account/password"],
+  require("dashboard/util/parse-auth")
+);
+dashboard.use(require("dashboard/util/parse"));
 dashboard.use(require("dashboard/util/csrf"));
 
 // These need to be accessible to unauthenticated users
