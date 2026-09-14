@@ -66,7 +66,7 @@ CreateBlog.route("/inform-paypal")
   })
 
   .post(requirePaidPayPalSeat, saveBlog, (req, res) => {
-    res.message('/sites/' + req.blog.handle, 'Created site');
+    res.message('/sites/' + req.blog.handle, createdSiteMessage(req));
   });
 
 CreateBlog.route("/")
@@ -135,9 +135,17 @@ CreateBlog.route("/")
     if (req.user.blogs.length === 0) {
       res.redirect('/sites/' + req.blog.handle + '/client');
     } else {
-      res.message('/sites/' + req.blog.handle, 'Created site');
+      res.message('/sites/' + req.blog.handle, createdSiteMessage(req));
     }
   });
+
+function createdSiteMessage (req) {
+  if (req.user.blogs.length === 1) {
+    return 'Created site. Your subscription will increase at your next billing cycle to cover your second site.';
+  }
+
+  return 'Created site';
+}
 
 function calculateFee (req, res, next) {
   // We dont need to do this for free users
