@@ -204,6 +204,13 @@ module.exports = {
     secret: process.env.BLOT_SESSION_SECRET,
   },
 
+  security: {
+    // Used to encrypt two-factor authentication secrets at rest. Falls
+    // back to the session secret (see models/user/totp/encryptionKey.js)
+    // so self-hosted installs don't need a second secret configured.
+    totp_secret: process.env.BLOT_TOTP_ENCRYPTION_SECRET,
+  },
+
   youtube: {
     secret: process.env.BLOT_YOUTUBE_SECRET,
   },

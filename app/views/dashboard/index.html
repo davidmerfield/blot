@@ -56,6 +56,27 @@
 		</a>
 		{{/user.hasPassword}}
 
+		{{#user.hasPassword}}
+		{{#user.totpEnabled}}
+		<a class="line" href="/sites/account/two-factor">
+			<span class="label">Two-factor authentication</span>
+			<span class="center"><span class="link">Enabled</span></span>
+		</a>
+		{{/user.totpEnabled}}
+		{{^user.totpEnabled}}
+		<a class="line" href="/sites/account/two-factor">
+			<span class="label">Two-factor authentication</span>
+			<span class="center"><span class="link">Set up</span></span>
+		</a>
+		{{/user.totpEnabled}}
+		{{/user.hasPassword}}
+		{{^user.hasPassword}}
+		<span class="line">
+			<span class="label">Two-factor authentication</span>
+			<span class="center">Set a password first</span>
+		</span>
+		{{/user.hasPassword}}
+
 		<a class="line" href="/sites/account/subscription" style="border-bottom: none;">
 			<span class="label">Subscription</span>
 			<span class="center"><span class="link">Manage subscription</span></span>

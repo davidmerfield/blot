@@ -1,0 +1,16 @@
+<form class="account" method="POST">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}">
+
+  {{> message}}
+
+  <p>Turning off two-factor authentication means you'll only need your password to log in.</p>
+
+  <label>Enter your password to confirm:
+    <input autofocus type="password" name="password" />
+  </label>
+
+  <div class="buttons">
+    <button type="submit" class="red">Turn off two-factor authentication</button>
+    <a href="/sites/account/two-factor">Cancel</a>
+  </div>
+</form>

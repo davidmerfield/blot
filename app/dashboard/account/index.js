@@ -9,6 +9,7 @@ const Email = require("helper/email");
 
 const BREADCRUMBS = {
   "pay-subscription": "Subscription overdue",
+  "two-factor": "Two-factor authentication",
 };
 
 Account.use(function (req, res, next) {
@@ -79,6 +80,7 @@ Account.use("/:section/:subsection", function (req, res, next) {
 });
 
 Account.use("/password", require("./password"));
+Account.use("/two-factor", require("./two-factor"));
 Account.use("/email", require("./email"));
 Account.use("/create-site", require("./create-site"));
 Account.use("/subscription", require("./subscription"));
@@ -120,10 +122,9 @@ Account.use(function (err, req, res, next) {
     // fix blog.set...
     if (err.message) {
       message = err.message;
-    }
-
-    if (type(err, "object"))
+    } else if (type(err, "object")) {
       for (var i in err) if (type(err[i], "string")) message = err[i];
+    }
 
     res.message(redirect, new Error(message));
   } else {

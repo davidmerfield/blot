@@ -1,0 +1,16 @@
+<form class="account" method="POST">
+  <input type="hidden" name="_csrf" value="{{csrftoken}}">
+
+  {{> message}}
+
+  <p>Regenerating your backup codes will invalidate any codes you have not used yet.</p>
+
+  <label>Enter your password to confirm:
+    <input autofocus type="password" name="password" />
+  </label>
+
+  <div class="buttons">
+    <button type="submit">Regenerate backup codes</button>
+    <a href="/sites/account/two-factor">Cancel</a>
+  </div>
+</form>
