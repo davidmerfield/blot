@@ -1,4 +1,6 @@
 const { renderToString, sendView } = require("../pipeline");
+const Blog = require("models/blog");
+const blogDefaults = require("models/blog/defaults");
 const { getBlog, getMetadata } = require("../../lib/models");
 
 describe("render pipeline", function () {
@@ -9,7 +11,8 @@ describe("render pipeline", function () {
       "entries.html": "<html><body>Hello</body></html>",
     });
 
-    const blog = await getBlog({ id: this.blog.id });
+    const blogData = await getBlog({ id: this.blog.id });
+    const blog = Blog.extend(Object.assign({}, blogDefaults, blogData));
     const metadata = await getMetadata(blog.template);
 
     const req = {
