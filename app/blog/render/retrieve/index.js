@@ -76,6 +76,9 @@ module.exports = async function retrieve(req, res, needed) {
         const value = await dictionary[localName](req, res);
         if (value !== undefined) locals[localName] = value;
       } catch (err) {
+        // getPage rejects invalid :page with statusCode 400. Listing views
+        // retrieve posts inside renderView, so that error must surface.
+        if (err && err.statusCode) throw err;
         console.log(err);
       }
 
