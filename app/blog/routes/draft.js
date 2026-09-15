@@ -1,5 +1,6 @@
 const { getEntry } = require("../lib/models");
 const attachAdjacent = require("../lib/attachAdjacent");
+const { renderToString } = require("../render/pipeline");
 const drafts = require("sync/update/drafts");
 const redisSubscriber = require("helper/redisSubscriber");
 
@@ -36,41 +37,34 @@ async function renderDraft(req, res, next, filePath, callback) {
   await attachAdjacent(blogID, entry);
   res.locals.entry = entry;
 
-  await new Promise(function (resolve) {
-    let settled = false;
-    function settle() {
-      if (settled) return;
-      settled = true;
-      resolve();
-    }
-
-    function renderNext(err) {
+  try {
+    const result = await renderToString(req, res, "entry.html");
+    if (result.noTemplate) {
       if (res.headersSent) {
         endResponse(res);
       } else {
-        next(err);
+        next();
       }
-      settle();
+      return;
     }
 
-    try {
-      res.renderView("entry.html", renderNext, function (_err, output) {
+    await new Promise(function (resolve, reject) {
+      drafts.injectScript(result.output, filePath, function (html, bodyHTML) {
         try {
-          drafts.injectScript(output, filePath, function (html, bodyHTML) {
-            try {
-              callback(html, bodyHTML);
-            } finally {
-              settle();
-            }
-          });
+          callback(html, bodyHTML);
+          resolve();
         } catch (err) {
-          renderNext(err);
+          reject(err);
         }
       });
-    } catch (err) {
-      renderNext(err);
+    });
+  } catch (err) {
+    if (res.headersSent) {
+      endResponse(res);
+    } else {
+      next(err);
     }
-  });
+  }
 }
 
 function createRenderQueue({ render, isClosed }) {

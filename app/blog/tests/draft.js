@@ -12,6 +12,10 @@ describe("drafts", function () {
 
         expect(res.status).toEqual(200);
         expect(body.trim()).toContain('Hello, world!');
+        expect(body).toContain('doNotTrack');
+        expect(body).toContain('/draft/stream/');
+        expect(body).not.toContain('/__blot/preview/reload');
+        expect(body).not.toContain('window.top.postMessage');
 
         // update the draft
         await this.write({path: '/Drafts/index.txt', content: 'Hello, world! Updated!'});

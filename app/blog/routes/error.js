@@ -4,6 +4,7 @@ const config = require("config");
 const path = require("path");
 const clfdate = require("helper/clfdate");
 const { checkRedirect } = require("../lib/models");
+const { renderToString } = require("../render/pipeline");
 
 const VIEW_DIR = path.resolve(__dirname + "/../../views");
 
@@ -45,7 +46,7 @@ module.exports = function register(blog) {
   });
 
   // Errors
-  blog.use(function (err, req, res, next) {
+  blog.use(async function (err, req, res, next) {
     // This reponse was partially finished
     // end it now and get over it...
     if (res.headersSent) return res.end();
@@ -89,12 +90,14 @@ module.exports = function register(blog) {
       status: err.status,
     };
 
-    res.renderView("error.html", next, function (err, output) {
-      if (err) return next(err);
-
+    try {
+      const result = await renderToString(req, res, "error.html");
+      if (result.noTemplate) return next();
       res.status(status || 400);
-      res.send(output);
-    });
+      res.send(result.output);
+    } catch (renderErr) {
+      return next(renderErr);
+    }
   });
 
   // There was an issue with renderView

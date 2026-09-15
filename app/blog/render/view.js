@@ -1,6 +1,6 @@
 const Blog = require("models/blog");
 const blogDefaults = require("models/blog/defaults");
-const renderMiddleware = require("./middleware");
+const { renderToString } = require("./pipeline");
 const { getMetadata, getBlog } = require("../lib/models");
 
 /**
@@ -35,9 +35,6 @@ async function renderView(templateID, viewName) {
 
     const blog = Blog.extend(Object.assign({}, blogDefaults, blogData));
 
-    let renderedOutput = null;
-    let renderError = null;
-
     const req = {
       blog: blog,
       preview: false,
@@ -55,59 +52,21 @@ async function renderView(templateID, viewName) {
 
     const res = {
       locals: { partials: {} },
-      header: () => {},
-      set: () => {},
-      send: (output) => {
-        renderedOutput = output;
-      },
-      renderView: null, // Set by render middleware
     };
 
-    await new Promise((resolve) => {
-      renderMiddleware(req, res, (err) => {
-        if (err) {
-          renderError = err;
-          return resolve();
-        }
-        resolve();
-      });
-    });
+    let renderedOutput;
 
-    if (renderError) {
-      console.error(`Error rendering view ${viewName} for CDN:`, renderError);
-      return null;
-    }
-
-    await new Promise((resolve) => {
-      res.renderView(
-        viewName,
-        (err) => {
-          // next callback - called on errors
-          if (err) {
-            if (err.code === "NO_VIEW") {
-              // Missing view - skip in manifest (not an error)
-              renderError = null;
-            } else {
-              renderError = err;
-              console.error(`Error rendering view ${viewName} for CDN:`, err);
-            }
-          }
-          resolve();
-        },
-        (err, output) => {
-          // callback pattern - captures output directly
-          if (err) {
-            renderError = err;
-            console.error(`Error rendering view ${viewName} for CDN:`, err);
-          } else {
-            renderedOutput = output;
-          }
-          resolve();
-        }
-      );
-    });
-
-    if (renderError) {
+    try {
+      const result = await renderToString(req, res, viewName);
+      if (result.noTemplate) {
+        return null;
+      }
+      renderedOutput = result.output;
+    } catch (err) {
+      if (err && err.code === "NO_VIEW") {
+        return null; // Missing view - skip in manifest (not an error)
+      }
+      console.error(`Error rendering view ${viewName} for CDN:`, err);
       return null;
     }
 

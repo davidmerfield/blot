@@ -7,13 +7,13 @@ describe("full view cache", function () {
   });
 
   it("reuses cached full view responses for identical inputs", async function () {
-    const response = [
-      { title: "Hello" },
-      { head: "" },
-      [],
-      "text/html",
-      "{{title}}",
-    ];
+    const response = {
+      locals: { title: "Hello" },
+      partials: { head: "" },
+      retrieve: [],
+      type: "text/html",
+      content: "{{title}}",
+    };
 
     spyOn(Template, "getFullView").and.callFake(function (
       blogID,
@@ -48,13 +48,13 @@ describe("full view cache", function () {
       viewName,
       callback
     ) {
-      callback(null, [
-        { title: "Original" },
-        { head: "" },
-        [{ id: "asset-1" }],
-        "text/html",
-        "{{title}}",
-      ]);
+      callback(null, {
+        locals: { title: "Original" },
+        partials: { head: "" },
+        retrieve: [{ id: "asset-1" }],
+        type: "text/html",
+        content: "{{title}}",
+      });
     });
 
     const options = {
@@ -64,12 +64,12 @@ describe("full view cache", function () {
     };
 
     const firstResult = await getCachedFullView(options);
-    firstResult[0].title = "Mutated";
-    firstResult[2][0].id = "asset-2";
+    firstResult.locals.title = "Mutated";
+    firstResult.retrieve[0].id = "asset-2";
 
     const secondResult = await getCachedFullView(options);
-    expect(secondResult[0].title).toBe("Original");
-    expect(secondResult[2][0].id).toBe("asset-1");
+    expect(secondResult.locals.title).toBe("Original");
+    expect(secondResult.retrieve[0].id).toBe("asset-1");
     expect(Template.getFullView).toHaveBeenCalledTimes(1);
   });
 
@@ -80,13 +80,13 @@ describe("full view cache", function () {
       viewName,
       callback
     ) {
-      callback(null, [
-        { blogID: blogID, templateID: templateID, viewName: viewName },
-        {},
-        [],
-        "text/html",
-        "",
-      ]);
+      callback(null, {
+        locals: { blogID: blogID, templateID: templateID, viewName: viewName },
+        partials: {},
+        retrieve: [],
+        type: "text/html",
+        content: "",
+      });
     });
 
     await getCachedFullView({
@@ -143,7 +143,13 @@ describe("full view cache", function () {
       viewName,
       callback
     ) {
-      callback(null, [{ cacheID: Date.now() }, {}, [], "text/html", ""]);
+      callback(null, {
+        locals: { cacheID: Date.now() },
+        partials: {},
+        retrieve: [],
+        type: "text/html",
+        content: "",
+      });
     });
 
     await getCachedFullView({

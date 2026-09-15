@@ -43,13 +43,13 @@ module.exports = function getFullView(blogID, templateID, viewName, callback) {
         // referenced anywhere in the assembled view + partials bundle.
         hardenProjectedRetrieve(view.retrieve, view.content, allPartials);
 
-        var response = [
-          view.locals,
-          allPartials,
-          view.retrieve,
-          view.type || mime.lookup(view.name) || "text/html",
-          view.content,
-        ];
+        var response = {
+          locals: view.locals,
+          partials: allPartials,
+          retrieve: view.retrieve,
+          type: view.type || mime.lookup(view.name) || "text/html",
+          content: view.content,
+        };
 
         return callback(null, response);
       },

@@ -30,16 +30,17 @@ describe("template", function () {
       ) {
         if (err) return done.fail(err);
 
-        expect(fullView).toEqual(jasmine.any(Array));
+        expect(fullView).toEqual(jasmine.any(Object));
+        expect(Array.isArray(fullView)).toBe(false);
 
         var allPartials = {};
         allPartials[header.name] = header.content;
 
-        expect(fullView[0]).toEqual(view.locals); // view.locals
-        expect(fullView[1]).toEqual(allPartials); // allPartials
-        expect(fullView[2]).toEqual({}); // view.retrieve
-        expect(fullView[3]).toEqual("text/html"); // view.type
-        expect(fullView[4]).toEqual(view.content);
+        expect(fullView.locals).toEqual(view.locals);
+        expect(fullView.partials).toEqual(allPartials);
+        expect(fullView.retrieve).toEqual({});
+        expect(fullView.type).toEqual("text/html");
+        expect(fullView.content).toEqual(view.content);
 
         done();
       });
@@ -66,7 +67,7 @@ describe("template", function () {
       getFullView(test.blog.id, test.template.id, view.name, function (err, fullView) {
         if (err) return done.fail(err);
 
-        expect(fullView[2]).toEqual({
+        expect(fullView.retrieve).toEqual({
           allEntries: { fields: { title: true, url: true } },
         });
 
@@ -95,7 +96,7 @@ describe("template", function () {
       getFullView(test.blog.id, test.template.id, view.name, function (err, fullView) {
         if (err) return done.fail(err);
 
-        expect(fullView[2]).toEqual({
+        expect(fullView.retrieve).toEqual({
           allEntries: { fields: { html: true } },
         });
 
@@ -130,7 +131,7 @@ describe("template", function () {
         // {{{html}}} inside {{#thumbnail}} has no `thumbnail.html`, so Mustache
         // resolves it from the parent entry - projection must keep `html`.
         // `thumbnail` is still recorded, and nothing leaks to the top level.
-        expect(fullView[2]).toEqual({
+        expect(fullView.retrieve).toEqual({
           allEntries: { fields: { thumbnail: true, html: true } },
         });
 
@@ -159,7 +160,7 @@ describe("template", function () {
       getFullView(test.blog.id, test.template.id, view.name, function (err, fullView) {
         if (err) return done.fail(err);
 
-        expect(fullView[2]).toEqual({
+        expect(fullView.retrieve).toEqual({
           tagged: { fields: { title: true } },
         });
 
@@ -200,8 +201,8 @@ describe("template", function () {
         ) {
           if (err) return done.fail(err);
 
-          expect(fullView[2].allEntries.fields.html).toBe(true);
-          expect(fullView[2].allEntries.fields.title).toBe(true);
+          expect(fullView.retrieve.allEntries.fields.html).toBe(true);
+          expect(fullView.retrieve.allEntries.fields.title).toBe(true);
 
           done();
         });
@@ -227,8 +228,8 @@ describe("template", function () {
       ) {
         if (err) return done.fail(err);
 
-        expect(fullView[2].allEntries.fields.html).toBeUndefined();
-        expect(fullView[2].allEntries.fields.title).toBe(true);
+        expect(fullView.retrieve.allEntries.fields.html).toBeUndefined();
+        expect(fullView.retrieve.allEntries.fields.title).toBe(true);
 
         done();
       });
