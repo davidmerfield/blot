@@ -15,10 +15,11 @@ describe("blog model adapter caches", function () {
     models._clear();
   });
 
-  it("reuses a blog after cheap cacheID revalidation", async function () {
+  it("reuses a blog when the redis hash is unchanged", async function () {
     const blog = { id: "blog-1", cacheID: 100, handle: "alice" };
+    const raw = { id: "blog-1", cacheID: "100", handle: "alice" };
     spyOn(client, "get").and.returnValue(Promise.resolve("blog-1"));
-    spyOn(client, "hGet").and.returnValue(Promise.resolve("100"));
+    spyOn(client, "hGetAll").and.returnValue(Promise.resolve(raw));
     spyOn(Blog, "get").and.callFake((by, cb) => {
       cb(null, Object.assign({}, blog));
     });
@@ -27,26 +28,41 @@ describe("blog model adapter caches", function () {
     const second = await models.getBlog({ handle: "alice" });
 
     expect(Blog.get.calls.count()).toEqual(1);
-    expect(client.hGet.calls.count()).toEqual(1);
+    expect(client.hGetAll.calls.count()).toEqual(2);
     expect(first.handle).toEqual("alice");
     expect(second.handle).toEqual("alice");
     first.handle = "mutated";
     expect(second.handle).toEqual("alice");
   });
 
-  it("refetches the blog when cacheID changes", async function () {
+  it("refetches the blog when a hash field changes", async function () {
     spyOn(client, "get").and.returnValue(Promise.resolve("blog-1"));
-    spyOn(client, "hGet").and.returnValue(Promise.resolve("101"));
+    spyOn(client, "hGetAll").and.callFake(() => {
+      if (client.hGetAll.calls.count() === 1) {
+        return Promise.resolve({
+          id: "blog-1",
+          cacheID: "100",
+          handle: "alice",
+          domain: "",
+        });
+      }
+      return Promise.resolve({
+        id: "blog-1",
+        cacheID: "100",
+        handle: "alice",
+        domain: "example.com",
+      });
+    });
     spyOn(Blog, "get").and.callFake((by, cb) => {
-      const cacheID = Blog.get.calls.count() === 1 ? 100 : 101;
-      cb(null, { id: "blog-1", cacheID, handle: "alice" });
+      const domain = Blog.get.calls.count() === 1 ? "" : "example.com";
+      cb(null, { id: "blog-1", cacheID: 100, handle: "alice", domain });
     });
 
     const first = await models.getBlog({ handle: "alice" });
     const second = await models.getBlog({ handle: "alice" });
 
-    expect(first.cacheID).toEqual(100);
-    expect(second.cacheID).toEqual(101);
+    expect(first.domain).toEqual("");
+    expect(second.domain).toEqual("example.com");
     expect(Blog.get.calls.count()).toEqual(2);
   });
 

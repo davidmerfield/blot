@@ -53,9 +53,15 @@ describe("page cache helpers", function () {
     const third = pageCache._createCacheKey(
       Object.assign({}, base, { protocol: "http" })
     );
+    const fourth = pageCache._createCacheKey(
+      Object.assign({}, base, {
+        blog: { id: "blog-1", cacheID: 1, domain: "example.com" },
+      })
+    );
 
     expect(first).not.toEqual(second);
     expect(first).not.toEqual(third);
+    expect(first).not.toEqual(fourth);
   });
 });
 
@@ -76,6 +82,9 @@ describe("replaceFolderLinks early-out", function () {
     ).toBe(false);
     expect(
       replaceFolderLinks._mightContainFolderFiles('<img src="/images/test.jpg">')
+    ).toBe(true);
+    expect(
+      replaceFolderLinks._mightContainFolderFiles('<img src="/100% luck.jpg">')
     ).toBe(true);
   });
 });

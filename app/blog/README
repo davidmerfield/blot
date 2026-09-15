@@ -61,7 +61,7 @@ nothing required them; use `middleware/` and `routes/` paths instead.
 
 Requests pass through the following middleware in order, as assembled in `index.js`:
 
-1. **`middleware/vhosts.js`** — Extracts a blog handle from a Blot subdomain or a custom domain from the `Host` header. Awaits `Blog.get()` to load the blog record, through a process LRU revalidated with a cheap Redis `HGET` of `cacheID`. Applies redirects for `www` canonicalization, handle changes, subdomain-to-custom-domain redirects, and HTTP-to-HTTPS enforcement. Sets `req.blog`. Detects preview subdomains (e.g. `preview-of-diary-on-news.blot.im`) and sets `req.preview = true` and a preview `blog.template` when appropriate.
+1. **`middleware/vhosts.js`** — Extracts a blog handle from a Blot subdomain or a custom domain from the `Host` header. Awaits `Blog.get()` to load the blog record, through a process LRU revalidated against a fingerprint of the Redis blog hash (not only `cacheID`, which does not change for domain/handle/title/disabled). Applies redirects for `www` canonicalization, handle changes, subdomain-to-custom-domain redirects, and HTTP-to-HTTPS enforcement. Sets `req.blog`. Detects preview subdomains (e.g. `preview-of-diary-on-news.blot.im`) and sets `req.preview = true` and a preview `blog.template` when appropriate.
 
 2. **`render/middleware.js`** — Attaches async `res.renderView(viewName, next, callback)` to the response object. This function encapsulates the entire rendering pipeline (view fetch, local retrieval, Mustache rendering, CDN link rewriting). All subsequent route handlers call `res.renderView()` to produce output.
 

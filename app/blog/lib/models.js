@@ -88,9 +88,17 @@ async function withInflight(map, key, loader) {
   }
 }
 
-function storeBlog(blog) {
+function storeBlog(blog, fingerprint) {
   if (!blog || !blog.id) return;
-  blogByIdCache.set(blog.id, prepareCacheValue(blog));
+  const prepared = prepareCacheValue(blog);
+  blogByIdCache.set(
+    blog.id,
+    Object.freeze({
+      payload: prepared.payload,
+      size: prepared.size,
+      fingerprint: fingerprint || "",
+    })
+  );
 }
 
 function fetchBlog(identifier) {
@@ -102,8 +110,17 @@ function fetchBlog(identifier) {
   });
 }
 
-async function liveCacheID(blogID) {
-  return client.hGet(blogKey.info(blogID), "cacheID");
+// cacheID only changes for template/plugins/menu. Domain, handle, title,
+// isDisabled, forceSSL, and other identity fields do not bump it, so a
+// cacheID HGET is not enough to decide the deserialized blog is still live.
+function fingerprintHash(raw) {
+  const keys = Object.keys(raw).sort();
+  let out = "";
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    out += key + "=" + raw[key] + "\n";
+  }
+  return out;
 }
 
 async function resolveBlogID(identifier) {
@@ -118,26 +135,28 @@ async function resolveBlogID(identifier) {
 }
 
 async function loadBlogById(blogID) {
+  let raw;
+  try {
+    raw = await client.hGetAll(blogKey.info(blogID));
+  } catch (e) {
+    raw = null;
+  }
+
+  const fingerprint =
+    raw && Object.keys(raw).length ? fingerprintHash(raw) : "";
   const cached = blogByIdCache.get(blogID);
-  if (cached) {
-    try {
-      const current = await liveCacheID(blogID);
-      if (current == null) {
-        blogByIdCache.delete(blogID);
-      } else if (String(cached.payload.cacheID) === String(current)) {
-        return cached.payload;
-      }
-    } catch (e) {
-      // Redis failed the cheap revalidation - fall through to a full fetch.
-    }
+  if (cached && fingerprint && cached.fingerprint === fingerprint) {
+    return cached.payload;
   }
 
   const blog = await fetchBlog({ id: blogID });
   if (blog) {
-    storeBlog(blog);
+    storeBlog(blog, fingerprint);
     const stored = blogByIdCache.get(blog.id);
     return stored ? stored.payload : blog;
   }
+
+  blogByIdCache.delete(blogID);
   return blog;
 }
 

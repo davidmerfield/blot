@@ -14,10 +14,20 @@ const pageCache = new LRUCache({
 const pageInflight = new Map();
 
 function pageCacheKey(req) {
+  const blog = req.blog || {};
   return JSON.stringify({
-    blogID: String(req.blog && req.blog.id),
-    cacheID: String(req.blog && req.blog.cacheID),
+    blogID: String(blog.id),
+    cacheID: String(blog.cacheID),
     templateID: String(req.template && req.template.id),
+    // cacheID does not change for domain/handle/title/SSL settings, and
+    // those fields change the response (robots.txt, {{title}}, redirects).
+    domain: String(blog.domain || ""),
+    handle: String(blog.handle || ""),
+    title: String(blog.title || ""),
+    forceSSL: blog.forceSSL ? 1 : 0,
+    redirectSubdomain: blog.redirectSubdomain ? 1 : 0,
+    timeZone: String(blog.timeZone || ""),
+    dateFormat: String(blog.dateFormat || ""),
     url: String(req.url),
     host: String(req.originalHost || req.get("host") || ""),
     protocol: String(req.protocol),

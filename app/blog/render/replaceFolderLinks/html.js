@@ -21,7 +21,7 @@ const rewrittenHtmlInflight = new Map();
 // would skip needed CDN rewrites. Require an href/src/poster/srcset whose
 // value looks like a non-html file path.
 const FOLDER_FILE_ATTR =
-  /(?:href|src|poster|srcset)\s*=\s*(["']?)[^"'>\s]*\.(?!html(?:["'#?\s>]|$))[a-zA-Z0-9]+/i;
+  /(?:href|src|poster|srcset)\s*=\s*(["']?)[^"'>]*\.(?!html(?:["'#?\s>]|$))[a-zA-Z0-9]+/i;
 
 function mightContainFolderFiles(html) {
   if (!html) return false;
