@@ -439,7 +439,7 @@ Improve performance rendering sitemaps by using sitemap indexes, and sharding th
 - requires using the url / param feature, e.g. [sitemap.xml, sitemap.posts.:page.xml, sitemap.pages.:page.xml]
 
 Speed up 404s
-- Analyze req trace
+- Repeat origin 404s now reuse entry/view/asset misses and the rendered page LRU. Remaining:
 - Remove case insensitive lookup and add path resolution to plugins
 
 Improvements to template engine:
