@@ -9,6 +9,7 @@ module.exports = function redisSubscriber({
   const client = createRedisClient();
   const messageHandler = typeof onMessage === "function" ? onMessage : function () {};
   let cleanedUp = false;
+  let cleanupPromise;
 
   function logRedisError(err) {
     if (typeof onError === "function") {
@@ -20,28 +21,29 @@ module.exports = function redisSubscriber({
 
   client.on("error", logRedisError);
 
+  async function disconnect() {
+    try {
+      if (client.isOpen) await client.unsubscribe(channel);
+    } catch (err) {
+      logRedisError(err);
+    }
+
+    try {
+      if (client.isOpen) await client.quit();
+    } catch (err) {
+      logRedisError(err);
+    }
+
+    client.removeListener("error", logRedisError);
+  }
+
   const setupPromise = Promise.resolve()
     .then(async function () {
       await client.connect();
-
-      if (cleanedUp) {
-        try {
-          if (client.isOpen) {
-            await client.quit();
-          }
-        } catch (err) {
-          logRedisError(err);
-        }
-
-        return;
-      }
-
-      // Guard setup completion path so cleanup() cannot leave a late subscription active.
-      if (cleanedUp) {
-        return;
-      }
+      if (cleanedUp) return;
 
       await client.subscribe(channel, function (message, subscribedChannel) {
+        if (cleanedUp) return;
         try {
           messageHandler(message, subscribedChannel || channel);
         } catch (err) {
@@ -51,28 +53,17 @@ module.exports = function redisSubscriber({
     })
     .catch(async function (err) {
       logRedisError(err);
-      await cleanup();
+      cleanedUp = true;
+      await disconnect();
     });
 
-  async function cleanup() {
-    if (cleanedUp) return;
+  function cleanup() {
+    if (cleanupPromise) return cleanupPromise;
     cleanedUp = true;
-
-    try {
-      if (client.isOpen) {
-        await client.unsubscribe(channel);
-      }
-    } catch (err) {
-      logRedisError(err);
-    }
-
-    try {
-      if (client.isOpen) {
-        await client.quit();
-      }
-    } catch (err) {
-      logRedisError(err);
-    }
+    // Waiting for setup closes both race windows: a connect which finishes after
+    // cleanup, and a subscribe already in flight when cleanup is requested.
+    cleanupPromise = setupPromise.then(disconnect, disconnect);
+    return cleanupPromise;
   }
 
   return {

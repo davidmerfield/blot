@@ -43,4 +43,36 @@ describe("drafts", function () {
         });        
     });
 
+    it("serializes and coalesces a burst of draft renders", async function () {
+        const createRenderQueue = require("../routes/draft").createRenderQueue;
+        const resolvers = [];
+        let active = 0;
+        let maximumActive = 0;
+        let renders = 0;
+        const queue = createRenderQueue({
+            isClosed: function () { return false; },
+            render: function () {
+                renders++;
+                active++;
+                maximumActive = Math.max(maximumActive, active);
+                return new Promise(function (resolve) {
+                    resolvers.push(function () { active--; resolve(); });
+                });
+            }
+        });
+
+        queue.notify();
+        queue.notify();
+        queue.notify();
+        expect(renders).toBe(1);
+        resolvers.shift()();
+        await new Promise(setImmediate);
+        expect(renders).toBe(2);
+        resolvers.shift()();
+        await new Promise(setImmediate);
+
+        expect(maximumActive).toBe(1);
+        expect(renders).toBe(2);
+    });
+
 });

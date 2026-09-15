@@ -1,7 +1,7 @@
 const { getEntry } = require("../lib/models");
 const attachAdjacent = require("../lib/attachAdjacent");
 const drafts = require("sync/update/drafts");
-const createRedisClient = require("models/redis");
+const redisSubscriber = require("helper/redisSubscriber");
 
 // (node:73631) TimeoutOverflowWarning: 1.7976931348623157e+308 does not fit into a 32-bit signed integer.
 // Timer duration was truncated to 2147483647.
@@ -17,34 +17,55 @@ async function renderDraft(req, res, next, filePath, callback) {
   await attachAdjacent(blogID, entry);
   res.locals.entry = entry;
 
-  res.renderView("entry.html", next, function (err, output) {
-    drafts.injectScript(output, filePath, callback);
+  await new Promise(function (resolve) {
+    function renderNext(err) {
+      next(err);
+      resolve();
+    }
+
+    res.renderView("entry.html", renderNext, function (_err, output) {
+      drafts.injectScript(output, filePath, function (html, bodyHTML) {
+        callback(html, bodyHTML);
+        resolve();
+      });
+    });
   });
+}
+
+function createRenderQueue({ render, isClosed }) {
+  let rendering = false;
+  let renderPending = false;
+
+  async function drain() {
+    if (rendering || isClosed()) return;
+    rendering = true;
+    do {
+      renderPending = false;
+      if (isClosed()) break;
+      try {
+        await render();
+      } catch (err) {}
+    } while (renderPending && !isClosed());
+    rendering = false;
+  }
+
+  return {
+    notify: function () {
+      if (isClosed()) return;
+      renderPending = true;
+      void drain();
+    },
+    clear: function () {
+      renderPending = false;
+    },
+  };
 }
 
 module.exports = function register(blog) {
   blog.get(drafts.streamRoute, async function (req, res, next) {
     const blogID = req.blog.id;
-    const client = createRedisClient();
     const filePath = drafts.getPath(req.url, drafts.streamRoute);
-    let cleanedUp = false;
-
-    const cleanup = async function () {
-      if (cleanedUp) return;
-      cleanedUp = true;
-
-      try {
-        if (client.isOpen) {
-          await client.unsubscribe(channel);
-        }
-      } catch (e) {}
-
-      try {
-        if (client.isOpen) {
-          await client.quit();
-        }
-      } catch (e) {}
-    };
+    let closed = false;
 
     req.socket.setTimeout(MAX_TIMEOUT);
 
@@ -64,25 +85,46 @@ module.exports = function register(blog) {
 
     const channel = "blog:" + blogID + ":draft:" + filePath;
 
-    try {
-      await client.connect();
-      await client.subscribe(channel, function (_message, _channel) {
-        renderDraft(req, res, next, filePath, function (html, bodyHTML) {
+    function responseIsClosed() {
+      return closed || res.destroyed || res.writableEnded;
+    }
+
+    const renderQueue = createRenderQueue({
+      isClosed: responseIsClosed,
+      render: async function () {
+        if (responseIsClosed()) return;
+        await renderDraft(req, res, next, filePath, function (_html, bodyHTML) {
+          if (responseIsClosed()) return;
           try {
             res.write("\n");
             res.write("data: " + JSON.stringify(bodyHTML.trim()) + "\n\n");
             res.flushHeaders();
           } catch (e) {}
-        }).catch(() => {});
-      });
-    } catch (err) {
-      await cleanup();
-      return next(err);
+        }).catch(function () {});
+      },
+    });
+
+    const subscription = redisSubscriber({
+      channel,
+      onMessage: function () {
+        renderQueue.notify();
+      },
+      onError: next,
+    });
+
+    function cleanup() {
+      if (closed) return;
+      closed = true;
+      renderQueue.clear();
+      req.removeListener("close", cleanup);
+      req.removeListener("aborted", cleanup);
+      res.removeListener("close", cleanup);
+      void subscription.cleanup();
     }
 
-    req.on("close", async function () {
-      await cleanup();
-    });
+    req.on("close", cleanup);
+    req.on("aborted", cleanup);
+    res.on("close", cleanup);
   });
 
   blog.get(drafts.viewRoute, async function (req, res, next) {
@@ -108,3 +150,5 @@ module.exports = function register(blog) {
     }
   });
 };
+
+module.exports.createRenderQueue = createRenderQueue;
