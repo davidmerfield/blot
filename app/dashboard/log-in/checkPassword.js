@@ -15,6 +15,9 @@ module.exports = function checkPassword(req, res, next) {
     return res.render("dashboard/log-in/password");
   }
 
+  // Do not reject overlong passwords here. bcrypt only hashes the first 72
+  // bytes, so accounts created before the signup limit may still log in with
+  // their original password and then change it.
   User.checkPassword(user.uid, password, function (err, match) {
     if (err) return next(err);
 

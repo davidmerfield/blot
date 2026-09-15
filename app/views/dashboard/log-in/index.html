@@ -35,15 +35,19 @@
   <p class="error">That was not your password.</p>
   {{/BADPASSWORD}}
 
+  {{#EMAILTOOLONG}}
+  <p class="error">Your email address is too long.</p>
+  {{/EMAILTOOLONG}}
+
     <input type="hidden" name="_csrf" value="{{csrftoken}}" />
 
     <p>
       <label for="email">Your email address</label>
       {{#validemail}}
-      <input name="email" required="" type="text" value="{{email}}" />
+      <input name="email" required="" type="text" maxlength="{{maxEmailLength}}" value="{{email}}" />
       {{/validemail}}
       {{^validemail}}
-      <input name="email" required="" type="text" value="{{email}}" autofocus />
+      <input name="email" required="" type="text" maxlength="{{maxEmailLength}}" value="{{email}}" autofocus />
       {{/validemail}}
     </p>
     <p>
@@ -59,4 +63,3 @@
     <p>Do you not have an account? <a href="/sites/sign-up">Sign up</a></p>
   </form>
 </section>
-
