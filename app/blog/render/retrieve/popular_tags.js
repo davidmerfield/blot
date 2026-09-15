@@ -1,23 +1,8 @@
 const { popularTags: getPopularTags } = require("../../lib/models");
 const { cloneDeep, prepareCacheValue } = require("../../lib/clone");
+const { compactTags, expandTags } = require("./helpers/compactTags");
 const LRUCache = require("lru-cache").LRUCache;
 const asRetriever = require("../../lib/asRetriever");
-
-function compactTags(tags) {
-  return tags.map(({ entries, ...tag }) =>
-    Array.isArray(entries) && entries.every((id) => id === null)
-      ? { ...tag, entryCount: entries.length }
-      : { ...tag, entries },
-  );
-}
-
-function expandTags(tags) {
-  return tags.map(({ entryCount, ...tag }) =>
-    entryCount === undefined
-      ? tag
-      : { ...tag, entries: new Array(entryCount).fill(null) },
-  );
-}
 
 // Safe cache key includes blog/cache identity and query pagination options.
 const popularTagsCache = new LRUCache({

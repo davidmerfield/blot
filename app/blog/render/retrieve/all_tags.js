@@ -1,26 +1,9 @@
 const { listTags } = require("../../lib/models");
 const { normalizePathPrefix } = require("helper/pathPrefix");
 const { cloneDeep, prepareCacheValue } = require("../../lib/clone");
+const { compactTags, expandTags } = require("./helpers/compactTags");
 const LRUCache = require("lru-cache").LRUCache;
 const asRetriever = require("../../lib/asRetriever");
-
-function compactTags(tags) {
-  return tags.map((tag) => {
-    if (Array.isArray(tag.entries) && tag.entries.every((id) => id === null)) {
-      const { entries, ...rest } = tag;
-      return { ...rest, entryCount: entries.length };
-    }
-    return tag;
-  });
-}
-
-function expandTags(tags) {
-  return tags.map((tag) => {
-    if (!Object.prototype.hasOwnProperty.call(tag, "entryCount")) return tag;
-    const { entryCount, ...rest } = tag;
-    return { ...rest, entries: new Array(entryCount).fill(null) };
-  });
-}
 
 // Tag entries are IDs (or nulls for the no-path-prefix count-only branch),
 // never full entry bodies, so there's no heavy-field concern here - the
