@@ -41,17 +41,16 @@ const fetchIcon = async (link, name, icon) => {
 
   const { hostname, protocol } = new URL(link);
 
-  icon = icon ||
+  icon =
+    icon ||
     $("link[rel='apple-touch-icon']").attr("href") ||
     $("link[rel='shortcut icon']").attr("href") ||
     $("link[rel='SHORTCUT ICON']").attr("href") ||
     $("link[rel='icon']").attr("href") ||
     protocol + "//" + hostname + "/favicon.ico";
 
-  // download the icon, convert it to a PNG if it's an ICO
-  if (icon.startsWith("//")) icon = "https:" + icon;
-
-  if (icon.startsWith("/")) icon = protocol + "//" + hostname + icon;
+  // Resolve relative icon URLs against the page URL before downloading.
+  if (!icon.startsWith("data:")) icon = new URL(icon, link).href;
 
   // we already have a data URL
   if (icon.startsWith("data:")) {
@@ -65,6 +64,7 @@ const fetchIcon = async (link, name, icon) => {
     return "/icons/" + name + "." + iconExtension;
   }
 
+  try {
   const iconResponse = await fetch(icon);
 
   if (!iconResponse.ok) {
@@ -79,6 +79,10 @@ const fetchIcon = async (link, name, icon) => {
   await fs.outputFile(iconPath, iconBuffer);
 
   return "/icons/" + name + "." + iconExtension;
+  } catch (e) {
+    console.log("Failed to fetch icon", icon);
+    return null;
+  }
 };
 
 const load = async relativePath => {
@@ -89,7 +93,6 @@ const load = async relativePath => {
 };
 
 const main = async () => {
-
 
   const categories = (await fs.readdir(toolsDirectory)).filter(
     f => f.indexOf(".") === -1 && f !== "icons" && f !== "README"
@@ -226,7 +229,7 @@ const loadTool = async (category, tool) => {
         outputDirectory + result.icon
       );
     } else {
-      throw new Error("Failed to fetch icon for " + result.link);
+      throw new Error("Failed to fetch icon for " + title);
     }
   }
 
