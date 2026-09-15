@@ -28,7 +28,6 @@ var loaded = loadPlugins({
   disqus: require("./disqus"),
   externalLinks: require("./externalLinks"),
   flickr: require("./flickr"),
-  folderAssets: require("./folderAssets"),
   image: require("./image"),
   imageCaption: require("./imageCaption"),
   injectTitle: require("./injectTitle"),
@@ -42,7 +41,9 @@ var loaded = loadPlugins({
   typeset: require("./typeset"),
   videoEmbeds: require("./videoEmbeds"),
   wikilinks: require("./wikilinks"),
-  zoom: require("./zoom")
+  zoom: require("./zoom"),
+  // After image cache so optimized img src is not overwritten.
+  folderAssets: require("./folderAssets")
 });
 
 var list = loaded.list;

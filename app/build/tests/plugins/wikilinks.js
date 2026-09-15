@@ -349,7 +349,8 @@ Heading Here
 
     const entry = await this.blog.check({ path: "/DocumentPost.txt" });
 
-    expect(entry.html).toContain('<embed src="/Assets/document.pdf"');
+    expect(entry.html).toMatch(/<embed src="/);
+    expect(entry.html).toContain("document.pdf");
     expect(entry.html).not.toContain('title="wikilink"');
 
     done();

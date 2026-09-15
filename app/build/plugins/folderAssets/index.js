@@ -42,10 +42,20 @@ function hostPatternsFor(options) {
   return hosts.map((host) => new RegExp(`^(?:https?:)?//${host}`));
 }
 
+const IMAGE_EXT =
+  /\.(?:gif|jpe?g|png|webp|svg|avif|heic|heif|bmp|tiff?)$/i;
+
 function shouldLookup(value, hostPatterns) {
   if (typeof value !== "string" || !value) return false;
-  if (value.startsWith("data:")) return false;
+  if (value.startsWith("#") || value.startsWith("data:")) return false;
   if (config.cdn && config.cdn.origin && value.indexOf(config.cdn.origin) === 0) {
+    return false;
+  }
+  if (
+    value.startsWith("/_image_cache/") ||
+    value.startsWith("/_assets/") ||
+    value.startsWith("/_thumbnails/")
+  ) {
     return false;
   }
 
@@ -53,10 +63,12 @@ function shouldLookup(value, hostPatterns) {
   const matchesHost = hostPatterns.some((pattern) => pattern.test(value));
   if (!isRelative && !matchesHost) return false;
 
-  let path = value;
-  hostPatterns.forEach((pattern) => {
-    path = path.replace(pattern, "");
-  });
+  let path = lookupPath(value, hostPatterns);
+  path = path.split("#")[0].split("?")[0];
+  if (!path || path === "/") return false;
+  // Images go through the image-cache plugin; this plugin handles other
+  // folder files (pdf, video, fonts) so stored HTML still matches that split.
+  if (IMAGE_EXT.test(path)) return false;
 
   return !htmlExtRegex.test(path) && fileExtRegex.test(path);
 }
@@ -69,7 +81,7 @@ function lookupPath(value, hostPatterns) {
   return path;
 }
 
-async function rewriteValue(value, options, hostPatterns, dependencies) {
+async function rewriteValue(value, options, hostPatterns) {
   if (!shouldLookup(value, hostPatterns)) return value;
 
   const path = lookupPath(value, hostPatterns);
@@ -80,11 +92,6 @@ async function rewriteValue(value, options, hostPatterns, dependencies) {
   );
 
   if (result === "ENOENT") return value;
-
-  const dep = path.split("?")[0].split("#")[0];
-  if (dep && dependencies.indexOf(dep) === -1) {
-    dependencies.push(dep.startsWith("/") ? dep : "/" + dep);
-  }
   return result;
 }
 
@@ -92,7 +99,6 @@ function render($, callback, options) {
   if (!options || !options.blogID) return callback();
 
   const hostPatterns = hostPatternsFor(options);
-  const dependencies = [];
   const nodes = $("[href], [src], [poster], [srcset]").toArray();
 
   (async () => {
@@ -102,12 +108,7 @@ function render($, callback, options) {
       for (const attr of ["href", "src", "poster"]) {
         const current = $el.attr(attr);
         if (current === undefined) continue;
-        const next = await rewriteValue(
-          current,
-          options,
-          hostPatterns,
-          dependencies
-        );
+        const next = await rewriteValue(current, options, hostPatterns);
         if (next !== current) $el.attr(attr, next);
       }
 
@@ -119,12 +120,7 @@ function render($, callback, options) {
 
       const rebuilt = [];
       for (const candidate of candidates) {
-        const next = await rewriteValue(
-          candidate.url,
-          options,
-          hostPatterns,
-          dependencies
-        );
+        const next = await rewriteValue(candidate.url, options, hostPatterns);
         rebuilt.push(
           candidate.descriptor ? `${next} ${candidate.descriptor}` : next
         );
@@ -132,7 +128,7 @@ function render($, callback, options) {
       $el.attr("srcset", rebuilt.join(", "));
     }
 
-    callback(null, { newDependencies: dependencies });
+    callback();
   })().catch(() => callback());
 }
 

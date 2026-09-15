@@ -49,7 +49,7 @@ describe("dependencies", function () {
       if (err) return done.fail(err);
 
       expect(entry.dependencies).toEqual(["/Docs/report.pdf"]);
-      expect(entry.html).toContain('href="/Docs/report.pdf"');
+      expect(entry.html).toMatch(/\/folder\/v-[a-f0-9]{8}\/[^"]+\/Docs\/report\.pdf/);
       done();
     });
   });
