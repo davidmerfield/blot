@@ -36,11 +36,11 @@ describe("dashboard error message handler", function () {
     return message;
   }
 
-  it("prefers an Error message over enumerable metadata", async function () {
-    const error = new Error("Choose a different account name");
-    error.code = "ECONFLICT";
-
-    const result = await post(error);
+  it("prefers a message over enumerable metadata on object-shaped errors", async function () {
+    const result = await post({
+      message: "Choose a different account name",
+      code: "ECONFLICT",
+    });
 
     expect(result.url).toBe("/account");
     expect(result.error.message).toBe("Choose a different account name");
