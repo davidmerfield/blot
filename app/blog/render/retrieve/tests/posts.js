@@ -657,4 +657,29 @@ describe("posts cache", function () {
 
     expect(makeKey(undefined)).not.toBe(makeKey("undefined"));
   });
+  it("separates stable projected field sets from the full cache variant", function () {
+    const posts = loadPostsWithTaggedStub(function () {});
+    const normalized = {
+      branch: "untagged", sortBy: "date", order: "desc", pageNumber: 1,
+      pageSize: 5, limit: 5, offset: 0,
+    };
+    const request = (retrieve) => ({
+      blog: { id: "blog-1", cacheID: "v1" }, retrieve,
+    });
+    const first = posts._createCacheKey(
+      request({ posts: { fields: { title: true, html: true } } }),
+      { locals: {} }, normalized
+    );
+    const reordered = posts._createCacheKey(
+      request({ posts: { fields: { html: true, title: true } } }),
+      { locals: {} }, normalized
+    );
+    const full = posts._createCacheKey(
+      request({ posts: {} }), { locals: {} }, normalized
+    );
+
+    expect(first).toBe(reordered);
+    expect(first).not.toBe(full);
+  });
+
 });

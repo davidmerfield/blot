@@ -1,8 +1,26 @@
 const { listTags } = require("../../lib/models");
 const { normalizePathPrefix } = require("helper/pathPrefix");
-const { cloneDeep, deepFreeze } = require("../../lib/clone");
+const { cloneDeep, prepareCacheValue } = require("../../lib/clone");
 const LRUCache = require("lru-cache").LRUCache;
 const asRetriever = require("../../lib/asRetriever");
+
+function compactTags(tags) {
+  return tags.map((tag) => {
+    if (Array.isArray(tag.entries) && tag.entries.every((id) => id === null)) {
+      const { entries, ...rest } = tag;
+      return { ...rest, entryCount: entries.length };
+    }
+    return tag;
+  });
+}
+
+function expandTags(tags) {
+  return tags.map((tag) => {
+    if (!Object.prototype.hasOwnProperty.call(tag, "entryCount")) return tag;
+    const { entryCount, ...rest } = tag;
+    return { ...rest, entries: new Array(entryCount).fill(null) };
+  });
+}
 
 // Tag entries are IDs (or nulls for the no-path-prefix count-only branch),
 // never full entry bodies, so there's no heavy-field concern here - the
@@ -10,7 +28,7 @@ const asRetriever = require("../../lib/asRetriever");
 const allTagsCache = new LRUCache({
   max: 1000,
   maxSize: 50 * 1024 * 1024,
-  sizeCalculation: (value) => JSON.stringify(value).length,
+  sizeCalculation: (value) => value.size,
 });
 
 function createCacheKey(blog, pathPrefix) {
@@ -38,9 +56,9 @@ async function allTags(req, res) {
 
   if (!bypassCache && allTagsCache.has(key)) {
     req.log("Retrieved all tags from cache");
-    const cached = cloneDeep(allTagsCache.get(key));
+    const cached = cloneDeep(allTagsCache.get(key).payload);
     res.locals.all_tags_total_posts = cached.totalPosts;
-    return cached.tags;
+    return expandTags(cached.tags);
   }
 
   req.log("Listing all tags");
@@ -74,7 +92,10 @@ async function allTags(req, res) {
   const totalPosts = Object.keys(set).length;
 
   if (!bypassCache) {
-    allTagsCache.set(key, deepFreeze(cloneDeep({ tags, totalPosts })));
+    allTagsCache.set(
+      key,
+      prepareCacheValue({ tags: compactTags(tags), totalPosts }),
+    );
   }
 
   // toDO maybe rename this? it's ugly
@@ -82,7 +103,7 @@ async function allTags(req, res) {
 
   req.log("Listed all tags");
   return tags;
-};
+}
 
 module.exports = asRetriever(allTags);
 module.exports._createCacheKey = createCacheKey;

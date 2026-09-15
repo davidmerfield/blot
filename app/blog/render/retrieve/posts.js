@@ -3,7 +3,7 @@ const LRUCache = require("lru-cache").LRUCache;
 const fetchTaggedEntries = require("./helpers/fetchTaggedEntries");
 const projectEntryFields = require("./helpers/projectEntryFields");
 const getTemplateSortOptions = require("blog/sortOptions");
-const { cloneDeep, deepFreeze } = require("../../lib/clone");
+const { cloneDeep, prepareCacheValue } = require("../../lib/clone");
 const asRetriever = require("../../lib/asRetriever");
 const {
   normalizePageNumber,
@@ -18,7 +18,7 @@ const postsCache = new LRUCache({
   // large payloads (up to 500 full entries each) and starve every other
   // blog sharing this process's memory.
   maxSize: 100 * 1024 * 1024,
-  sizeCalculation: (value) => JSON.stringify(value).length,
+  sizeCalculation: (value) => value.size,
 });
 
 function clonePosts(value) {
@@ -31,6 +31,11 @@ function normalizeTagKey(tags) {
   }
 
   return tags === undefined ? undefined : String(tags);
+}
+
+function fieldsSignature(retrieve) {
+  const fields = projectEntryFields.resolveFields(retrieve, ["posts"]);
+  return fields ? Object.keys(fields).sort().join(",") : null;
 }
 
 function createCacheKey(req, res, normalizedOptions) {
@@ -53,6 +58,7 @@ function createCacheKey(req, res, normalizedOptions) {
     pageSize: Number(normalizedOptions.pageSize),
     limit: Number(normalizedOptions.limit),
     offset: Number(normalizedOptions.offset),
+    fields: fieldsSignature(req && req.retrieve),
   });
 }
 
@@ -98,10 +104,10 @@ async function posts(req, res) {
   const key = createCacheKey(req, res, normalizedOptions);
 
   if (postsCache.has(key)) {
-    const cachedPayload = clonePosts(postsCache.get(key));
+    const cachedPayload = clonePosts(postsCache.get(key).payload);
     log("Retrieved posts from cache");
     res.locals.pagination = cachedPayload.pagination;
-    return projectEntryFields(cachedPayload.entries, req.retrieve, ["posts"]);
+    return cachedPayload.entries;
   }
 
   let payload;
@@ -135,13 +141,16 @@ async function posts(req, res) {
     };
   }
 
-  const immutableCopy = deepFreeze(clonePosts(payload));
-  postsCache.set(key, immutableCopy);
-  const responsePayload = clonePosts(immutableCopy);
+  // Resolve/project before insertion so large unrequested bodies never enter
+  // the LRU. A null field signature deliberately preserves the full variant.
+  projectEntryFields(payload.entries, req.retrieve, ["posts"]);
+  const prepared = prepareCacheValue(payload, { preserveEntryInstances: true });
+  postsCache.set(key, prepared);
+  const responsePayload = clonePosts(prepared.payload);
 
   res.locals.pagination = responsePayload.pagination;
-  return projectEntryFields(responsePayload.entries, req.retrieve, ["posts"]);
-};
+  return responsePayload.entries;
+}
 
 module.exports = asRetriever(posts);
 module.exports._createCacheKey = createCacheKey;

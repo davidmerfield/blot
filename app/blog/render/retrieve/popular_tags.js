@@ -1,16 +1,30 @@
 const { popularTags: getPopularTags } = require("../../lib/models");
-const { cloneDeep, deepFreeze } = require("../../lib/clone");
+const { cloneDeep, prepareCacheValue } = require("../../lib/clone");
 const LRUCache = require("lru-cache").LRUCache;
 const asRetriever = require("../../lib/asRetriever");
+
+function compactTags(tags) {
+  return tags.map(({ entries, ...tag }) =>
+    Array.isArray(entries) && entries.every((id) => id === null)
+      ? { ...tag, entryCount: entries.length }
+      : { ...tag, entries },
+  );
+}
+
+function expandTags(tags) {
+  return tags.map(({ entryCount, ...tag }) =>
+    entryCount === undefined
+      ? tag
+      : { ...tag, entries: new Array(entryCount).fill(null) },
+  );
+}
 
 // Safe cache key includes blog/cache identity and query pagination options.
 const popularTagsCache = new LRUCache({
   max: 1000,
   // Bound by bytes too, for consistency with the other render-path caches.
   maxSize: 5 * 1024 * 1024,
-  sizeCalculation: function (value) {
-    return JSON.stringify(value).length;
-  },
+  sizeCalculation: (value) => value.size,
 });
 
 function createCacheKey(blog, options) {
@@ -36,7 +50,7 @@ async function popularTags(req, res) {
 
   if (popularTagsCache.has(key)) {
     req.log("Retrieved popular tags from cache");
-    return cloneDeep(popularTagsCache.get(key));
+    return expandTags(cloneDeep(popularTagsCache.get(key).payload));
   }
 
   let tags = await getPopularTags(req.blog.id, options);
@@ -51,12 +65,12 @@ async function popularTags(req, res) {
     slug: encodeURIComponent(tag.slug),
   }));
 
-  const immutableCopy = deepFreeze(cloneDeep(tags));
-  popularTagsCache.set(key, immutableCopy);
+  const prepared = prepareCacheValue(compactTags(tags));
+  popularTagsCache.set(key, prepared);
 
   req.log("Listed popular tags");
-  return cloneDeep(immutableCopy);
-};
+  return expandTags(cloneDeep(prepared.payload));
+}
 
 module.exports = asRetriever(popularTags);
 module.exports._createCacheKey = createCacheKey;
