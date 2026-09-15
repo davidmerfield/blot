@@ -46,7 +46,7 @@ module.exports = function register(blog) {
   });
 
   // Errors
-  blog.use(async function (err, req, res, next) {
+  blog.use(function (err, req, res, next) {
     // This reponse was partially finished
     // end it now and get over it...
     if (res.headersSent) return res.end();
@@ -90,14 +90,19 @@ module.exports = function register(blog) {
       status: err.status,
     };
 
-    try {
-      const result = await renderToString(req, res, "error.html");
-      if (result.noTemplate) return next();
-      res.status(status || 400);
-      res.send(result.output);
-    } catch (renderErr) {
-      return next(renderErr);
-    }
+    // Keep this middleware synchronous so Express 4 still catches throws on
+    // the ENOENT path. Render is async; run it without making the handler
+    // itself an async function.
+    void (async function () {
+      try {
+        const result = await renderToString(req, res, "error.html");
+        if (result.noTemplate) return next();
+        res.status(status || 400);
+        res.send(result.output);
+      } catch (renderErr) {
+        return next(renderErr);
+      }
+    })().catch(next);
   });
 
   // There was an issue with renderView
