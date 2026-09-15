@@ -141,8 +141,18 @@ describe("authentication form limits", function () {
       __dirname,
       "../../../../config/openresty/conf/blot-site.conf"
     );
-    expect(fs.readFileSync(file, "utf8")).toMatch(
-      /location ~\* \^\/sites\/\(log-in\|sign-up\|account\/password\)\(\/\|\$\)/
-    );
+    const contents = fs.readFileSync(file, "utf8");
+    const signup = contents.match(
+      /location ~\* \^\/sites\/sign-up\(\/\|\$\) \{[\s\S]*?\n\}/
+    )[0];
+    const login = contents.match(
+      /location ~\* \^\/sites\/\(log-in\|account\/password\)\(\/\|\$\) \{[\s\S]*?\n\}/
+    )[0];
+
+    expect(signup).toMatch(/reverse-proxy-huge\.conf/);
+    expect(signup).toMatch(/client_max_body_size 4k;/);
+    expect(login).toMatch(/reverse-proxy\.conf/);
+    expect(login).toMatch(/client_max_body_size 4k;/);
+    expect(login).not.toMatch(/reverse-proxy-huge\.conf/);
   });
 });
