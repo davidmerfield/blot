@@ -16,7 +16,22 @@ var BRAND_NAMES = {
   unionpay: "UnionPay"
 };
 
+// Stripe surfaces the same legacy Card through both paymentMethods.list
+// and customers.listCards, using the same card_ id. The sync concatenates
+// those lists, so collapse to one row per id before rendering.
+function dedupePaymentMethods(paymentMethods) {
+  var seen = {};
+
+  return (paymentMethods || []).filter(function (paymentMethod) {
+    if (!paymentMethod || !paymentMethod.id || seen[paymentMethod.id])
+      return false;
+    seen[paymentMethod.id] = true;
+    return true;
+  });
+}
+
 function presentPaymentMethods(req, paymentMethods) {
+  paymentMethods = dedupePaymentMethods(paymentMethods);
   markPaymentMethodExpiry(paymentMethods);
 
   return paymentMethods.map(function (paymentMethod) {
@@ -76,12 +91,14 @@ PaymentMethod.route("/")
     syncPaymentMethods(req.user, function (err, paymentMethods) {
       if (err) return next(err);
 
+      var presented = presentPaymentMethods(req, paymentMethods);
+
       res.render("dashboard/account/payment-method", {
         stripe_key: config.stripe.key,
         breadcrumb: "Payment methods",
         title: "Payment methods",
-        paymentMethods: presentPaymentMethods(req, paymentMethods),
-        hasPaymentMethods: paymentMethods.length > 0
+        paymentMethods: presented,
+        hasPaymentMethods: presented.length > 0
       });
     });
   })
