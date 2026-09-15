@@ -141,6 +141,24 @@ describe("user validate email", function () {
     expect(result).toEqual("new@example.com");
   });
 
+  it("rejects an email over the RFC length limit", async function () {
+    var { MAX_EMAIL_LENGTH } = require("../auth-limits");
+    var tooLong = "a".repeat(MAX_EMAIL_LENGTH - "@example.com".length + 1) + "@example.com";
+    var error = await validate(validUser, tooLong).then(
+      function () { return null; },
+      function (err) { return err; }
+    );
+    expect(error).not.toBeNull();
+    expect(error.message).toEqual("Email address is too long");
+  });
+
+  it("accepts an email at the RFC length limit", async function () {
+    var { MAX_EMAIL_LENGTH } = require("../auth-limits");
+    var atLimit = "a".repeat(MAX_EMAIL_LENGTH - "@example.com".length) + "@example.com";
+    var result = await validate(validUser, atLimit);
+    expect(result).toEqual(atLimit);
+  });
+
   it("accepts valid email formats", async function () {
     var validEmails = [
       "user@domain.com",

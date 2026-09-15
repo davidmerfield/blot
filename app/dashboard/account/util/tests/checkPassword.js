@@ -1,6 +1,6 @@
 var User = require("models/user");
 var checkPassword = require("../checkPassword");
-var { MAX_PASSWORD_LENGTH } = require("dashboard/util/auth-limits");
+var { MAX_PASSWORD_LENGTH } = require("models/user/auth-limits");
 
 describe("account password verification", function () {
   it("still verifies a legacy password longer than the new hash limit", function (done) {

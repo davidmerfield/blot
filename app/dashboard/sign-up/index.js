@@ -13,7 +13,7 @@ var User = require("models/user");
 var {
   emailIsTooLong,
   passwordIsTooLong,
-} = require("dashboard/util/auth-limits");
+} = require("models/user/auth-limits");
 var signup = Express.Router();
 
 signup.use(function (req, res, next) {
@@ -69,7 +69,7 @@ function validateEmail (req, res, next) {
     return next(new Error(NO_EMAIL));
   }
 
-  if (emailIsTooLong(email)) {
+  if (emailIsTooLong(email.trim())) {
     return next(new Error("Email address is too long"));
   }
 
@@ -172,11 +172,13 @@ passwordForm.post(function (req, res, next) {
   var email = req.body && req.body.email;
   var password = req.body && req.body.password;
 
-  if (!email) return next(new Error("Please choose an email address"));
+  if (typeof email !== "string" || !email.trim()) {
+    return next(new Error("Please choose an email address"));
+  }
 
   if (!password) return next(new Error("Please choose a password"));
 
-  if (emailIsTooLong(email)) {
+  if (emailIsTooLong(email.trim())) {
     return next(new Error("Email address is too long"));
   }
 

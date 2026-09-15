@@ -2,7 +2,7 @@ var Express = require("express");
 var Password = new Express.Router();
 var User = require("models/user");
 var checkPassword = require("./util/checkPassword");
-var { passwordIsTooLong } = require("dashboard/util/auth-limits");
+var { passwordIsTooLong } = require("models/user/auth-limits");
 
 Password.route("/")
 

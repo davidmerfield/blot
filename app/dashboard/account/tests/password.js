@@ -73,7 +73,7 @@ describe("password setting authorization", function () {
   });
 
   it("rejects a new password that exceeds the bcrypt byte limit", async function () {
-    var { MAX_PASSWORD_LENGTH } = require("dashboard/util/auth-limits");
+    var { MAX_PASSWORD_LENGTH } = require("models/user/auth-limits");
     var tooLong = "a".repeat(MAX_PASSWORD_LENGTH + 1);
     var req = {
       method: "POST",

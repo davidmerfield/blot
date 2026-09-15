@@ -6,7 +6,7 @@ const config = require("config");
 const {
   MAX_EMAIL_LENGTH,
   MAX_PASSWORD_LENGTH,
-} = require("dashboard/util/auth-limits");
+} = require("models/user/auth-limits");
 
 const VIEW_DIRECTORY = config.views_directory;
 

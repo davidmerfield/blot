@@ -5,7 +5,7 @@ const {
   MAX_PASSWORD_LENGTH,
   emailIsTooLong,
   passwordIsTooLong,
-} = require("../auth-limits");
+} = require("models/user/auth-limits");
 const express = require("express");
 const http = require("http");
 const parseAuth = require("../parse-auth");
@@ -151,8 +151,14 @@ describe("authentication form limits", function () {
 
     expect(signup).toMatch(/reverse-proxy-huge\.conf/);
     expect(signup).toMatch(/client_max_body_size 4k;/);
+    expect(signup.indexOf("reverse-proxy-huge.conf")).toBeLessThan(
+      signup.indexOf("client_max_body_size 4k;")
+    );
     expect(login).toMatch(/reverse-proxy\.conf/);
     expect(login).toMatch(/client_max_body_size 4k;/);
+    expect(login.indexOf("reverse-proxy.conf")).toBeLessThan(
+      login.indexOf("client_max_body_size 4k;")
+    );
     expect(login).not.toMatch(/reverse-proxy-huge\.conf/);
   });
 });

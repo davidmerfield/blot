@@ -25,6 +25,9 @@ describe("proxy authentication body limits", function () {
     expect(signup).toMatch(/client_max_body_size 4k;/);
     expect(signup).toMatch(/proxy_read_timeout 3m;/);
     expect(login).toMatch(/client_max_body_size 4k;/);
+    expect(login.indexOf("reverse-proxy.conf")).toBeLessThan(
+      login.indexOf("client_max_body_size 4k;")
+    );
     expect(login).not.toMatch(/proxy_read_timeout 3m;/);
   });
 });
