@@ -10,52 +10,64 @@ module.exports = function redisSubscriber({
   const messageHandler = typeof onMessage === "function" ? onMessage : function () {};
   let cleanedUp = false;
   let cleanupPromise;
+  let disconnectPromise;
 
   function logRedisError(err) {
-    if (typeof onError === "function") {
-      return onError(err);
-    }
+    try {
+      if (typeof onError === "function") {
+        onError(err);
+        return;
+      }
 
-    logger.log("Redis Error:", err);
+      logger.log("Redis Error:", err);
+    } catch (e) {
+      try {
+        logger.log("Redis Error:", err);
+      } catch (ignored) {}
+    }
   }
 
   client.on("error", logRedisError);
 
-  async function disconnect() {
-    try {
-      if (client.isOpen) await client.unsubscribe(channel);
-    } catch (err) {
-      logRedisError(err);
-    }
+  function disconnect() {
+    if (disconnectPromise) return disconnectPromise;
 
-    try {
-      if (client.isOpen) await client.quit();
-    } catch (err) {
-      logRedisError(err);
-    }
-
-    client.removeListener("error", logRedisError);
-  }
-
-  const setupPromise = Promise.resolve()
-    .then(async function () {
-      await client.connect();
-      if (cleanedUp) return;
-
-      await client.subscribe(channel, function (message, subscribedChannel) {
-        if (cleanedUp) return;
+    disconnectPromise = (async function () {
+      try {
         try {
-          messageHandler(message, subscribedChannel || channel);
+          if (client.isOpen) await client.unsubscribe(channel);
         } catch (err) {
           logRedisError(err);
         }
-      });
-    })
-    .catch(async function (err) {
-      logRedisError(err);
-      cleanedUp = true;
-      await disconnect();
+
+        try {
+          if (client.isOpen) await client.quit();
+        } catch (err) {
+          logRedisError(err);
+        }
+      } finally {
+        client.removeListener("error", logRedisError);
+      }
+    })();
+
+    return disconnectPromise;
+  }
+
+  // Rejects on connect/subscribe failure. cleanup() waits on this promise
+  // (not a catching wrapper) so a setup error cannot deadlock teardown.
+  const setupPromise = Promise.resolve().then(async function () {
+    await client.connect();
+    if (cleanedUp) return;
+
+    await client.subscribe(channel, function (message, subscribedChannel) {
+      if (cleanedUp) return;
+      try {
+        messageHandler(message, subscribedChannel || channel);
+      } catch (err) {
+        logRedisError(err);
+      }
     });
+  });
 
   function cleanup() {
     if (cleanupPromise) return cleanupPromise;
@@ -65,6 +77,12 @@ module.exports = function redisSubscriber({
     cleanupPromise = setupPromise.then(disconnect, disconnect);
     return cleanupPromise;
   }
+
+  // Always tear the client down if setup fails, even if nobody called cleanup().
+  setupPromise.catch(function (err) {
+    logRedisError(err);
+    return cleanup();
+  });
 
   return {
     client,

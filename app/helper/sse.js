@@ -7,6 +7,12 @@ const redisSubscriber = require("helper/redisSubscriber");
 // (otherwise recurring) reconnect gap.
 const HEARTBEAT_INTERVAL_MS = 10 * 1000;
 
+function endResponse(res) {
+  try {
+    if (!res.destroyed && !res.writableEnded) res.end();
+  } catch (e) {}
+}
+
 module.exports = function ({ channel }) {
   return function (req, res) {
     let closed = false;
@@ -56,8 +62,15 @@ module.exports = function ({ channel }) {
       req.removeListener("close", cleanup);
       req.removeListener("aborted", cleanup);
       res.removeListener("close", cleanup);
-      void subscription.cleanup();
+      void Promise.resolve(subscription.cleanup()).catch(function (err) {
+        console.log("Redis Error: " + err);
+      });
     }
+
+    void subscription.setupPromise.catch(function () {
+      cleanup();
+      endResponse(res);
+    });
 
     req.on("close", cleanup);
     req.on("aborted", cleanup);

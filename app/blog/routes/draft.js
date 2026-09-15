@@ -7,28 +7,64 @@ const redisSubscriber = require("helper/redisSubscriber");
 // Timer duration was truncated to 2147483647.
 const MAX_TIMEOUT = 2147483647;
 
+function endResponse(res) {
+  try {
+    if (!res.destroyed && !res.writableEnded) res.end();
+  } catch (e) {}
+}
+
 async function renderDraft(req, res, next, filePath, callback) {
   const blog = req.blog;
   const blogID = blog.id;
 
   const entry = await getEntry(blogID, filePath);
-  if (!entry || !entry.draft || entry.deleted) return next();
+  if (!entry || !entry.draft || entry.deleted) {
+    // The stream route has already sent SSE headers; don't hand a 404
+    // to Express error middleware on a live event-stream.
+    if (res.headersSent) {
+      endResponse(res);
+      return;
+    }
+    return next();
+  }
 
   await attachAdjacent(blogID, entry);
   res.locals.entry = entry;
 
   await new Promise(function (resolve) {
-    function renderNext(err) {
-      next(err);
+    let settled = false;
+    function settle() {
+      if (settled) return;
+      settled = true;
       resolve();
     }
 
-    res.renderView("entry.html", renderNext, function (_err, output) {
-      drafts.injectScript(output, filePath, function (html, bodyHTML) {
-        callback(html, bodyHTML);
-        resolve();
+    function renderNext(err) {
+      if (res.headersSent) {
+        endResponse(res);
+      } else {
+        next(err);
+      }
+      settle();
+    }
+
+    try {
+      res.renderView("entry.html", renderNext, function (_err, output) {
+        try {
+          drafts.injectScript(output, filePath, function (html, bodyHTML) {
+            try {
+              callback(html, bodyHTML);
+            } finally {
+              settle();
+            }
+          });
+        } catch (err) {
+          renderNext(err);
+        }
       });
-    });
+    } catch (err) {
+      renderNext(err);
+    }
   });
 }
 
@@ -39,14 +75,18 @@ function createRenderQueue({ render, isClosed }) {
   async function drain() {
     if (rendering || isClosed()) return;
     rendering = true;
-    do {
-      renderPending = false;
-      if (isClosed()) break;
-      try {
+    try {
+      do {
+        renderPending = false;
+        if (isClosed()) break;
         await render();
-      } catch (err) {}
-    } while (renderPending && !isClosed());
-    rendering = false;
+      } while (renderPending && !isClosed());
+    } catch (err) {
+      // Keep draining if a render failed after a later notify().
+    } finally {
+      rendering = false;
+      if (renderPending && !isClosed()) void drain();
+    }
   }
 
   return {
@@ -100,7 +140,7 @@ module.exports = function register(blog) {
             res.write("data: " + JSON.stringify(bodyHTML.trim()) + "\n\n");
             res.flushHeaders();
           } catch (e) {}
-        }).catch(function () {});
+        });
       },
     });
 
@@ -109,7 +149,9 @@ module.exports = function register(blog) {
       onMessage: function () {
         renderQueue.notify();
       },
-      onError: next,
+      onError: function (err) {
+        console.log("Redis Error: " + err);
+      },
     });
 
     function cleanup() {
@@ -119,8 +161,15 @@ module.exports = function register(blog) {
       req.removeListener("close", cleanup);
       req.removeListener("aborted", cleanup);
       res.removeListener("close", cleanup);
-      void subscription.cleanup();
+      void Promise.resolve(subscription.cleanup()).catch(function (err) {
+        console.log("Redis Error: " + err);
+      });
     }
+
+    void subscription.setupPromise.catch(function () {
+      cleanup();
+      endResponse(res);
+    });
 
     req.on("close", cleanup);
     req.on("aborted", cleanup);
