@@ -12,6 +12,8 @@ const fullViewCache = new LRUCache({
   sizeCalculation: (value) => value.size,
 });
 
+const inflight = new Map();
+
 function createCacheKey(blog, template, viewName) {
   const blogID = blog && blog.id;
   const cacheID = blog && blog.cacheID;
@@ -36,16 +38,28 @@ async function getCachedFullView(options) {
     return cloneDeep(fullViewCache.get(key).payload);
   }
 
-  const response = await getFullView(blog.id, template.id, viewName);
+  if (inflight.has(key)) {
+    return cloneDeep(await inflight.get(key));
+  }
 
-  const prepared = prepareCacheValue(response);
-  fullViewCache.set(key, prepared);
+  const promise = getFullView(blog.id, template.id, viewName).then((response) => {
+    const prepared = prepareCacheValue(response);
+    fullViewCache.set(key, prepared);
+    return prepared.payload;
+  });
 
-  return cloneDeep(prepared.payload);
+  inflight.set(key, promise);
+
+  try {
+    return cloneDeep(await promise);
+  } finally {
+    inflight.delete(key);
+  }
 }
 
 module.exports = getCachedFullView;
 module.exports._createCacheKey = createCacheKey;
 module.exports._clear = function () {
   fullViewCache.clear();
+  inflight.clear();
 };

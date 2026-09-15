@@ -10,6 +10,7 @@ const {
   GLOBAL_STATIC_DIR,
   GLOBAL_STATIC_SUBDIRECTORIES,
 } = require("../lib/staticPaths");
+const LRUCache = require("lru-cache").LRUCache;
 
 // Constants
 const LARGEST_POSSIBLE_MAXAGE = 86400000;
@@ -29,6 +30,21 @@ const BLOG_STATIC_PATHS = [
   "/_image_cache",
   "/_thumbnails",
 ];
+
+const assetPathCache = new LRUCache({
+  max: 20000,
+  maxSize: 5 * 1024 * 1024,
+  sizeCalculation: (value) =>
+    typeof value === "string" ? Math.max(1, value.length) : 16,
+});
+
+function assetPathKey(blog, decodedPath) {
+  return JSON.stringify({
+    blogID: String(blog && blog.id),
+    cacheID: String(blog && blog.cacheID),
+    path: String(decodedPath),
+  });
+}
 
 // Router setup
 const assets = express.Router();
@@ -98,14 +114,31 @@ assets.use(BLOG_STATIC_PATHS, async (req, res, next) => {
 assets.use(async (req, res, next) => {
   const blogFolder = config.blog_folder_dir + "/" + req.blog.id;
   const decodedPath = decodeURIComponent(req.path);
+  const cacheKey = assetPathKey(req.blog, decodedPath);
+  const cached = assetPathCache.get(cacheKey);
+
+  if (cached === "ENOENT") {
+    return next();
+  }
+
+  if (cached) {
+    try {
+      await sendFile(cached, { req, res });
+      return;
+    } catch (e) {
+      assetPathCache.delete(cacheKey);
+    }
+  }
 
   try {
     await sendFile(join(blogFolder, decodedPath), { req, res });
+    assetPathCache.set(cacheKey, join(blogFolder, decodedPath));
     return;
   } catch (e) {}
 
   try {
     await sendFile(join(blogFolder, decodedPath.toLowerCase()), { req, res });
+    assetPathCache.set(cacheKey, join(blogFolder, decodedPath.toLowerCase()));
     return;
   } catch (e) {}
 
@@ -120,40 +153,51 @@ assets.use(async (req, res, next) => {
     if (!stat.isFile()) throw new Error("Not a file");
 
     await sendFile(pathWithCorrectCase, { req, res });
+    assetPathCache.set(cacheKey, pathWithCorrectCase);
     return;
   } catch (e) {}
 
   try {
-    await sendFile(
-      join(blogFolder, withoutTrailingSlash(decodedPath) + "/index.html"),
-      { req, res }
+    const candidate = join(
+      blogFolder,
+      withoutTrailingSlash(decodedPath) + "/index.html"
     );
+    await sendFile(candidate, { req, res });
+    assetPathCache.set(cacheKey, candidate);
     return;
   } catch (e) {}
 
   try {
-    await sendFile(
-      join(blogFolder, withoutTrailingSlash(decodedPath) + "/_index.html"),
-      { req, res }
+    const candidate = join(
+      blogFolder,
+      withoutTrailingSlash(decodedPath) + "/_index.html"
     );
+    await sendFile(candidate, { req, res });
+    assetPathCache.set(cacheKey, candidate);
     return;
   } catch (e) {}
 
   try {
-    await sendFile(
-      join(blogFolder, withoutTrailingSlash(decodedPath) + ".html"),
-      { req, res }
+    const candidate = join(
+      blogFolder,
+      withoutTrailingSlash(decodedPath) + ".html"
     );
+    await sendFile(candidate, { req, res });
+    assetPathCache.set(cacheKey, candidate);
     return;
   } catch (e) {}
 
   try {
-    await sendFile(
-      join(blogFolder, addLeadingUnderscore(decodedPath) + ".html"),
-      { req, res }
+    const candidate = join(
+      blogFolder,
+      addLeadingUnderscore(decodedPath) + ".html"
     );
+    await sendFile(candidate, { req, res });
+    assetPathCache.set(cacheKey, candidate);
     return;
   } catch (e) {}
+
+  assetPathCache.set(cacheKey, "ENOENT");
 
   // If we get here, none of the candidates worked
   if (!res.headersSent) {
@@ -219,3 +263,6 @@ async function sendFile(path, { req, res, maxAge = 0, immutable = false } = {}) 
 }
 
 module.exports = assets;
+module.exports._clear = function () {
+  assetPathCache.clear();
+};

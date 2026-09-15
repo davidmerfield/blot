@@ -3,6 +3,10 @@ const folder = require("../folder");
 describe("folder", function () {
   require("blog/tests/util/setup")();
 
+  beforeEach(function () {
+    folder._clear();
+  });
+
   function run(context, query) {
     return new Promise((resolve, reject) => {
       folder({ blog: context.blog, query: query || {} }, {}, (err, result) => {

@@ -17,6 +17,7 @@ const CACHE_CONTROL = "Cache-Control";
 
 const replaceFolderLinks = require("./replaceFolderLinks/html");
 const replaceFolderLinksCSS = require("./replaceFolderLinks/css");
+const yieldToEventLoop = require("../lib/yieldToEventLoop");
 
 const cacheDuration = "public, max-age=31536000";
 const JS = "text/javascript";
@@ -110,6 +111,11 @@ module.exports = function attachRenderView(req, res, _next) {
       let output;
 
       try {
+        // Mustache.render is synchronous. Yield first so a large template
+        // cannot monopolize the event loop behind other queued requests.
+        if (typeof view === "string" && view.length > 16384) {
+          await yieldToEventLoop();
+        }
         output = finalRender(view, locals, partials);
       } catch (e) {
         return next(ERROR.BAD_LOCALS());

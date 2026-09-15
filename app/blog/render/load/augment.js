@@ -103,6 +103,11 @@ module.exports = async function augment(req, res, entry) {
 
   entry.backlinks = entry.backlinks || [];
 
+  if (!entry.backlinks.length) {
+    debug(entry.path, "no backlinks");
+    return;
+  }
+
   debug(entry.path, "fetching backlinks", entry.backlinks);
 
   const resolved = await Promise.all(
@@ -111,7 +116,11 @@ module.exports = async function augment(req, res, entry) {
       if (typeof linkUrl !== "string") {
         return null;
       }
-      const linked = await getEntryByUrl(req.blog.id, linkUrl);
+      const linked = await getEntryByUrl(
+        req.blog.id,
+        linkUrl,
+        req.preview ? undefined : req.blog.cacheID
+      );
       if (linked) {
         debug("Found", linked.path, "for", linkUrl);
       } else {

@@ -19,18 +19,20 @@ app/blog/
 ├── index.js              Entry point. Assembles the Express router in route order.
 ├── sortOptions.js        Shared sort helpers (also imported by models/entry/search).
 ├── lib/                  Shared adapters and helpers for the async pipeline.
-│   ├── models.js         Promise adapters for Blog/Entry/Entries/Template/Tags APIs
+│   ├── models.js         Promise adapters with process LRU caches for blog/template/entry lookups
 │   ├── asRetriever.js    Dual callback/promise wrapper for retrieve modules
 │   ├── attachAdjacent.js Shared next/previous wiring for entry + draft
 │   ├── blogHosts.js      Host list for CDN link rewriting
 │   ├── loadPlugin.js     Promise wrapper around build/plugins.load
 │   ├── fromCloudflare.js Shared Cloudflare request sniff
 │   ├── clone.js          Shared deep clone / freeze for LRU caches
+│   ├── yieldToEventLoop.js setImmediate helper around large sync work
 │   ├── pagination.js     Shared page/limit normalization for tagged listings
 │   └── staticPaths.js    Shared global static directory constants
 ├── middleware/           Request-identity middleware
 │   ├── vhosts.js         Identifies and loads the blog from the request host or domain.
-│   └── loadTemplate.js   Loads template metadata and attaches it to req.template.
+│   ├── loadTemplate.js   Loads template metadata and attaches it to req.template.
+│   └── pageCache.js      Process LRU of rendered GET responses keyed by cacheID
 ├── routes/               Route handlers (async/await)
 │   ├── entry.js          Serves a single published entry by URL.
 │   ├── entries.js        Serves paginated entry listings (/ and /page/:page).
@@ -59,13 +61,15 @@ nothing required them; use `middleware/` and `routes/` paths instead.
 
 Requests pass through the following middleware in order, as assembled in `index.js`:
 
-1. **`middleware/vhosts.js`** — Extracts a blog handle from a Blot subdomain or a custom domain from the `Host` header. Awaits `Blog.get()` to load the blog record. Applies redirects for `www` canonicalization, handle changes, subdomain-to-custom-domain redirects, and HTTP-to-HTTPS enforcement. Sets `req.blog`. Detects preview subdomains (e.g. `preview-of-diary-on-news.blot.im`) and sets `req.preview = true` and a preview `blog.template` when appropriate.
+1. **`middleware/vhosts.js`** — Extracts a blog handle from a Blot subdomain or a custom domain from the `Host` header. Awaits `Blog.get()` to load the blog record, through a process LRU revalidated with a cheap Redis `HGET` of `cacheID`. Applies redirects for `www` canonicalization, handle changes, subdomain-to-custom-domain redirects, and HTTP-to-HTTPS enforcement. Sets `req.blog`. Detects preview subdomains (e.g. `preview-of-diary-on-news.blot.im`) and sets `req.preview = true` and a preview `blog.template` when appropriate.
 
 2. **`render/middleware.js`** — Attaches async `res.renderView(viewName, next, callback)` to the response object. This function encapsulates the entire rendering pipeline (view fetch, local retrieval, Mustache rendering, CDN link rewriting). All subsequent route handlers call `res.renderView()` to produce output.
 
-3. **`middleware/loadTemplate.js`** — Awaits `Template.getMetadata()` for `req.blog.template`. Attaches `req.template` with the template's `locals`, `id`, and `cdn` manifest. In preview mode, renders a template-error page if the template has parse errors.
+3. **`middleware/loadTemplate.js`** — Awaits `Template.getMetadata()` for `req.blog.template`, through a process LRU keyed by template ID and `blog.cacheID`. Attaches `req.template` with the template's `locals`, `id`, and `cdn` manifest. In preview mode, renders a template-error page if the template has parse errors.
 
-4. **Route handlers** (in priority order, under `routes/`):
+4. **`middleware/pageCache.js`** — For public GET requests, serves a process-local copy of a previously rendered response (HTML, 404s, and 301/302 from `res.redirect`) for the same `blogID`/`cacheID`/`url`/`host`/`protocol`. Skip preview, random, drafts, and `?debug`/`?json` inspection. On a hit, later routes (entry lookup, Mustache, parse5) never run. Repeat 404s are not re-recorded in the dashboard 404 log until the cache entry expires.
+
+5. **Route handlers** (in priority order, under `routes/`):
    - `draft.js` — `GET /_draft/*` (view) and `GET /_stream/*` (SSE live-reload).
    - `tagged.js` — `GET /tagged/:tag` and `GET /tagged/:tag/page/:page`.
    - `search.js` — `GET /search?q=...`.
@@ -77,7 +81,7 @@ Requests pass through the following middleware in order, as assembled in `index.
    - `assets.js` — Falls through on all URLs; serves files from blog folder and global static directories.
    - `random.js` — `GET /random`.
 
-5. **`routes/error.js`** — Catches all remaining requests. Checks `Redirects.check()` first; if a redirect exists, issues a 301. Otherwise renders a 404 via `res.renderView("error.html")` and records the URL via `models/404`. Handles template rendering errors and ENOENT errors (no blog found) with static HTML fallback pages.
+6. **`routes/error.js`** — Catches all remaining requests. Checks `Redirects.check()` first; if a redirect exists, issues a 301. Otherwise renders a 404 via `res.renderView("error.html")` and records the URL via `models/404`. Handles template rendering errors and ENOENT errors (no blog found) with static HTML fallback pages.
 
 ## Rendering Pipeline (`render/`)
 
@@ -160,7 +164,7 @@ After Mustache rendering, asset URLs in HTML and CSS output that point to files 
 
 - `html.js` — Uses `parse5` to parse the HTML DOM and processes `href`, `src`, `poster`, and `srcset` attributes. Skips data URLs, `.html` files, and external URLs not matching the blog's hosts.
 - `css.js` — Uses a regex to find `url(...)` expressions in CSS and rewrites matching paths.
-- `lookupFile.js` — Resolves a path relative to the blog's folder. Returns a CDN URL of the form `cdn.origin/folder/v-{hash}/{blogID}/{path}` where the version hash is derived from the file's `mtime`, `ctime`, and `size`. Results are cached in a 5,000-entry LRU-style map keyed by a hash of `blogID:cacheID:path`. Also handles paths under global static directories (`/fonts`, `/icons`, `/katex`, `/plugins`, `/syntax-highlighter`).
+- `lookupFile.js` — Resolves a path relative to the blog's folder. Returns a CDN URL of the form `cdn.origin/folder/v-{hash}/{blogID}/{path}` where the version hash is derived from the file's `mtime`, `ctime`, and `size`. Results are cached in an LRU keyed by `blogID:cacheID:path`. Also handles paths under global static directories (`/fonts`, `/icons`, `/katex`, `/plugins`, `/syntax-highlighter`).
 
 ## Route Handlers
 
@@ -286,9 +290,9 @@ The `static/` directory contains global assets served to all blogs under paths s
 | `express` | Router and static file serving |
 | `mustache` | Template rendering |
 | `parse5` | HTML parsing for CDN link rewriting |
-| `cheerio` | HTML manipulation in `absolute_urls.js` and `encode_xml.js` |
+| `cheerio` | HTML manipulation in `encode_xml.js` |
 | `moment` / `moment-timezone` | Date formatting in augment and retrieve functions |
-| `lru-cache` | In-process LRU caches for full view and popular tags |
+| `lru-cache` | In-process LRU caches for rendered pages, blog/template/entry lookups, full views, retrieve locals, Mustache tokens, and folder-link rewrites |
 | *(none — blog no longer depends on the `async` npm package)* | Native `async`/`await` and `Promise.all` |
 | `mime-types` | Content-Type detection in `assets.js` |
 | `fs-extra` | File system access in `assets.js` and `lookupFile.js` |

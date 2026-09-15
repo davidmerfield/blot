@@ -18,6 +18,7 @@ blog.use(require("./middleware/vhosts"));
 blog.use(renderView);
 
 blog.use(require("./middleware/loadTemplate"));
+blog.use(require("./middleware/pageCache"));
 
 // The order of these routes is important
 require("./routes/draft")(blog);

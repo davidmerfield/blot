@@ -32,7 +32,7 @@ module.exports = async function entry(req, res, next) {
     // handle URI decoding so all URL-decoding behavior is centralized there.
     url = url.toLowerCase();
 
-    const entry = await getEntryByUrl(blog.id, url);
+    const entry = await getEntryByUrl(blog.id, url, blog.cacheID);
     if (!entry || entry.deleted || entry.draft) return next();
 
     // If comments are enabled in settings, they are shown on all blog posts and pages
@@ -84,7 +84,7 @@ module.exports = async function entry(req, res, next) {
     )
       return next();
 
-    await attachAdjacent(blog.id, entry);
+    await attachAdjacent(blog.id, entry, blog.cacheID);
 
     // Ensure the user is always viewing
     // the entry at its latest and greatest URL

@@ -4,36 +4,18 @@ const hash = require("helper/hash");
 const { resolve, join } = require("path");
 const { promisify } = require("util");
 const caseSensitivePath = promisify(require("helper/caseSensitivePath"));
+const LRUCache = require("lru-cache").LRUCache;
 const {
   GLOBAL_STATIC_DIR,
   GLOBAL_STATIC_SUBDIRECTORIES,
 } = require("../../lib/staticPaths");
 
-class Cache {
-  constructor() {
-    this.cache = new Map();
-    this.maxEntries = 5000;
-  }
-
-  set(key, value) {
-    if (this.cache.size >= this.maxEntries) {
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
-    }
-    this.cache.set(key, value);
-  }
-
-  get(key) {
-    const value = this.cache.get(key);
-    if (value) {
-      this.cache.delete(key);
-      this.cache.set(key, value);
-    }
-    return value;
-  }
-}
-
-const pathCache = new Cache();
+const pathCache = new LRUCache({
+  max: 5000,
+  maxSize: 2 * 1024 * 1024,
+  sizeCalculation: (value) =>
+    typeof value === "string" ? Math.max(1, value.length) : 16,
+});
 
 // create a set for global static files
 const globalStaticFiles = new Set();
@@ -75,7 +57,7 @@ async function lookupFile(blogID, cacheID, value) {
     } catch (err) {}
   }
 
-  const key = hash(`${blogID}:${cacheID}:${pathFromValue}`);
+  const key = `${blogID}:${cacheID}:${pathFromValue}`;
 
   let result = pathCache.get(key);
 
@@ -129,3 +111,6 @@ async function getStat(blogFolder, path) {
 }
 
 module.exports = lookupFile;
+module.exports._clear = function () {
+  pathCache.clear();
+};

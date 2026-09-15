@@ -4,8 +4,27 @@ const localPath = require("helper/localPath");
 const alphanum = require("helper/alphanum");
 const { getEntry } = require("../../lib/models");
 const asRetriever = require("../../lib/asRetriever");
+const LRUCache = require("lru-cache").LRUCache;
+const { cloneDeep } = require("../../lib/clone");
 
 const CONCURRENCY = 5;
+
+const folderCache = new LRUCache({
+  max: 200,
+  maxSize: 10 * 1024 * 1024,
+  sizeCalculation: (value) => {
+    const contents = value && value.contents;
+    return Array.isArray(contents) ? Math.max(1, contents.length * 256) : 64;
+  },
+});
+
+function createCacheKey(blog, path) {
+  return JSON.stringify({
+    blogID: String(blog && blog.id),
+    cacheID: String(blog && blog.cacheID),
+    path: String(path),
+  });
+}
 
 async function mapLimit(items, limit, iterator) {
   const results = new Array(items.length);
@@ -36,6 +55,13 @@ async function folder(req, res) {
 
   if (path !== "/") {
     parent = Path.dirname(path);
+  }
+
+  const bypassCache = !!req.preview;
+  const key = createCacheKey(req.blog, path);
+
+  if (!bypassCache && folderCache.has(key)) {
+    return cloneDeep(folderCache.get(key), { preserveEntryInstances: true });
   }
 
   let contents;
@@ -75,11 +101,23 @@ async function folder(req, res) {
     return [];
   }
 
-  return {
+  const result = {
     contents,
     parent,
     parentURI: encodeURIComponent(parent),
   };
-};
 
-module.exports = asRetriever(folder);
+  if (!bypassCache && contents.length > 0) {
+    folderCache.set(key, cloneDeep(result, { preserveEntryInstances: true }));
+  }
+
+  return result;
+}
+
+const retriever = asRetriever(folder);
+retriever._clear = function () {
+  folderCache.clear();
+};
+retriever._createCacheKey = createCacheKey;
+
+module.exports = retriever;

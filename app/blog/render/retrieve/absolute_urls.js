@@ -20,6 +20,14 @@ const cheerio = require("cheerio");
 const debug = require("debug")("blot:render:absolute_urls");
 const asRetriever = require("../../lib/asRetriever");
 
+function rewriteRelativeUrls(base, html) {
+  return String(html).replace(
+    /(\s)(href|src)=(["'])(\/[^"']*)\3/gi,
+    (match, space, attr, quote, path) =>
+      `${space}${attr}=${quote}${base}${path}${quote}`
+  );
+}
+
 function absolute_urls(base, $) {
   try {
     $("[href], [src]").each(function () {
@@ -48,15 +56,8 @@ module.exports = asRetriever(function (req, res) {
   return function () {
     return function (text, render) {
       const base = req.protocol + "://" + req.get("host");
-
       text = render(text);
-
-      let $ = cheerio.load(text, null, false);
-
-      text = absolute_urls(base, $);
-      text = $.html();
-
-      return text;
+      return rewriteRelativeUrls(base, text);
     };
   };
 });

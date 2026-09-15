@@ -1,10 +1,44 @@
 const parse5 = require("parse5");
+const LRUCache = require("lru-cache").LRUCache;
+const hash = require("helper/hash");
 
 const htmlExtRegex = /\.html$/;
 const fileExtRegex = /[^/]*\.[^/]*$/;
 
 const lookupFile = require("./lookupFile");
 const blogHosts = require("../../lib/blogHosts");
+const yieldToEventLoop = require("../../lib/yieldToEventLoop");
+
+const rewrittenHtmlCache = new LRUCache({
+  max: 500,
+  maxSize: 50 * 1024 * 1024,
+  sizeCalculation: (value) =>
+    typeof value === "string" ? Math.max(1, value.length) : 1,
+});
+const rewrittenHtmlInflight = new Map();
+
+// Conservative: false positives still parse; missing a rewrite candidate
+// would skip needed CDN rewrites. Require an href/src/poster/srcset whose
+// value looks like a non-html file path.
+const FOLDER_FILE_ATTR =
+  /(?:href|src|poster|srcset)\s*=\s*(["']?)[^"'>\s]*\.(?!html(?:["'#?\s>]|$))[a-zA-Z0-9]+/i;
+
+function mightContainFolderFiles(html) {
+  if (!html) return false;
+  if (
+    html.indexOf("href") === -1 &&
+    html.indexOf("src") === -1 &&
+    html.indexOf("poster") === -1 &&
+    html.indexOf("srcset") === -1
+  ) {
+    return false;
+  }
+  return FOLDER_FILE_ATTR.test(html);
+}
+
+function rewriteCacheKey(blogID, cacheID, html) {
+  return `${blogID}:${cacheID}:${hash(html)}`;
+}
 
 const parseSrcset = (value) => {
   if (typeof value !== "string") {
@@ -35,7 +69,7 @@ const parseSrcset = (value) => {
   return parsed;
 };
 
-module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
+async function rewriteFolderLinks(blog, html, log) {
   try {
     const blogID = blog.id;
     const cacheID = blog.cacheID;
@@ -45,6 +79,10 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
     const hostPatterns = hosts.map(
       (host) => new RegExp(`^(?:https?:)?//${host}`)
     );
+
+    if (typeof html === "string" && html.length > 16384) {
+      await yieldToEventLoop();
+    }
 
     const document = parse5.parse(html);
     const elements = [];
@@ -214,4 +252,38 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
     console.warn("Parse5 parsing failed:", err);
     return html;
   }
+}
+
+module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
+  if (!blog || typeof html !== "string") return html;
+  if (!mightContainFolderFiles(html)) return html;
+
+  const key = rewriteCacheKey(blog.id, blog.cacheID, html);
+  if (rewrittenHtmlCache.has(key)) {
+    log("Reused rewritten HTML");
+    return rewrittenHtmlCache.get(key);
+  }
+
+  if (rewrittenHtmlInflight.has(key)) {
+    return rewrittenHtmlInflight.get(key);
+  }
+
+  const pending = rewriteFolderLinks(blog, html, log).then((output) => {
+    rewrittenHtmlCache.set(key, output);
+    return output;
+  });
+
+  rewrittenHtmlInflight.set(key, pending);
+  try {
+    return await pending;
+  } finally {
+    rewrittenHtmlInflight.delete(key);
+  }
 };
+
+module.exports._clear = function () {
+  rewrittenHtmlCache.clear();
+  rewrittenHtmlInflight.clear();
+};
+
+module.exports._mightContainFolderFiles = mightContainFolderFiles;

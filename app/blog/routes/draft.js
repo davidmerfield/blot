@@ -33,7 +33,7 @@ async function renderDraft(req, res, next, filePath, callback) {
     return next();
   }
 
-  await attachAdjacent(blogID, entry);
+  await attachAdjacent(blogID, entry, blog.cacheID);
   res.locals.entry = entry;
 
   await new Promise(function (resolve) {

@@ -55,4 +55,35 @@ describe("render middleware", function() {
     expect(body.cacheID).toEqual(jasmine.any(Number));
   });
 
+  it("replays a cached 301 redirect", async function () {
+    const { set } = require("models/redirects");
+    const { promisify } = require("util");
+    await promisify(set)(this.blog.id, [{ from: "/go", to: "/somewhere" }]);
+
+    const first = await this.get("/go", { redirect: "manual" });
+    expect(first.status).toEqual(301);
+    expect(first.headers.get("location")).toEqual("/somewhere");
+
+    const second = await this.get("/go", { redirect: "manual" });
+    expect(second.status).toEqual(301);
+    expect(second.headers.get("location")).toEqual("/somewhere");
+  });
+
+  it("reuses a rendered page for the same cacheID without rendering twice", async function () {
+    const Mustache = require("mustache");
+    await this.template({
+      "entries.html": "<p>Cached page</p>",
+    });
+
+    spyOn(Mustache, "render").and.callThrough();
+
+    const first = await this.text("/");
+    const rendersAfterFirst = Mustache.render.calls.count();
+    const second = await this.text("/");
+
+    expect(first).toContain("Cached page");
+    expect(second).toEqual(first);
+    expect(Mustache.render.calls.count()).toEqual(rendersAfterFirst);
+  });
+
 });

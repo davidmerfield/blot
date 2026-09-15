@@ -1,7 +1,12 @@
-const Template = require("models/template");
 const Mustache = require("mustache");
 const fs = require("fs-extra");
+const path = require("path");
 const { getMetadata } = require("../lib/models");
+
+const TEMPLATE_ERROR_HTML = fs.readFileSync(
+  path.join(__dirname, "../views/template-error.html"),
+  "utf8"
+);
 
 module.exports = async function loadTemplate(req, res, next) {
   // We care about template metadata for template
@@ -14,7 +19,10 @@ module.exports = async function loadTemplate(req, res, next) {
   let metadata;
 
   try {
-    metadata = await getMetadata(req.blog.template);
+    metadata = await getMetadata(
+      req.blog.template,
+      req.preview ? undefined : req.blog.cacheID
+    );
   } catch (err) {
     const error = new Error("This template does not exist.");
     error.code = "NO_TEMPLATE";
@@ -23,16 +31,11 @@ module.exports = async function loadTemplate(req, res, next) {
 
   // If we're in preview mode and there are errors then let's show them
   if (req.preview && metadata.errors && Object.keys(metadata.errors).length > 0) {
-    const template = await fs.readFile(
-      __dirname + "/../views/template-error.html",
-      "utf-8"
-    );
-
     const errors = Object.keys(metadata.errors).map((view) => {
       return { view, error: metadata.errors[view] };
     });
 
-    const html = Mustache.render(template, {
+    const html = Mustache.render(TEMPLATE_ERROR_HTML, {
       errors,
       name: metadata.name,
       path: metadata.localEditing ? "Templates/" + metadata.slug + "/" : "",

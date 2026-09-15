@@ -1,8 +1,12 @@
 const EntryInstance = require("models/entry/instance");
 
-function cloneDeep(value, { preserveEntryInstances = false } = {}) {
+function cloneDeepManual(value, { preserveEntryInstances = false } = {}) {
   if (Array.isArray(value)) {
-    return value.map((item) => cloneDeep(item, { preserveEntryInstances }));
+    const clone = new Array(value.length);
+    for (let i = 0; i < value.length; i++) {
+      clone[i] = cloneDeepManual(value[i], { preserveEntryInstances });
+    }
+    return clone;
   }
 
   if (value && typeof value === "object") {
@@ -10,15 +14,61 @@ function cloneDeep(value, { preserveEntryInstances = false } = {}) {
       preserveEntryInstances && value instanceof EntryInstance
         ? new EntryInstance()
         : {};
-
-    Object.keys(value).forEach((key) => {
-      clone[key] = cloneDeep(value[key], { preserveEntryInstances });
-    });
-
+    const keys = Object.keys(value);
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      clone[key] = cloneDeepManual(value[key], { preserveEntryInstances });
+    }
     return clone;
   }
 
   return value;
+}
+
+function restoreEntryInstances(cloned, original) {
+  if (!cloned || typeof cloned !== "object" || !original || typeof original !== "object") {
+    return cloned;
+  }
+
+  if (original instanceof EntryInstance) {
+    Object.setPrototypeOf(cloned, EntryInstance.prototype);
+  }
+
+  if (Array.isArray(cloned) && Array.isArray(original)) {
+    const len = Math.min(cloned.length, original.length);
+    for (let i = 0; i < len; i++) {
+      restoreEntryInstances(cloned[i], original[i]);
+    }
+    return cloned;
+  }
+
+  const keys = Object.keys(cloned);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    restoreEntryInstances(cloned[key], original[key]);
+  }
+  return cloned;
+}
+
+// structuredClone is native and much faster than a recursive property walk
+// for the JSON-like trees we store in LRUs. It strips prototypes, so Entry
+// instances are restored from the original tree when requested. Functions
+// (e.g. Mustache date lambdas) are not structured-cloneable; fall back to
+// the recursive copy in that case so callers still get a usable object.
+function cloneDeep(value, options = {}) {
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+
+  try {
+    const cloned = structuredClone(value);
+    if (options.preserveEntryInstances) {
+      restoreEntryInstances(cloned, value);
+    }
+    return cloned;
+  } catch (e) {
+    return cloneDeepManual(value, options);
+  }
 }
 
 function deepFreeze(value) {
@@ -26,9 +76,10 @@ function deepFreeze(value) {
     return value;
   }
 
-  Object.keys(value).forEach((key) => {
-    deepFreeze(value[key]);
-  });
+  const keys = Object.keys(value);
+  for (let i = 0; i < keys.length; i++) {
+    deepFreeze(value[keys[i]]);
+  }
 
   return Object.freeze(value);
 }

@@ -16,7 +16,11 @@ module.exports = async function view(req, res, next) {
       url = req.url;
     }
 
-    const { viewName, params } = await getViewByURL(template, url);
+    const { viewName, params } = await getViewByURL(
+      template,
+      url,
+      req.preview ? undefined : req.blog.cacheID
+    );
 
     if (!viewName) return next();
 
