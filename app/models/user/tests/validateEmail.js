@@ -159,6 +159,19 @@ describe("user validate email", function () {
     expect(result).toEqual(atLimit);
   });
 
+  it("rejects a multi-byte email over the RFC octet limit", async function () {
+    var { MAX_EMAIL_LENGTH } = require("../auth-limits");
+    var local = "é".repeat(MAX_EMAIL_LENGTH / 2 - 5);
+    var tooLong = local + "@example.com";
+    expect(Buffer.byteLength(tooLong, "utf8")).toBeGreaterThan(MAX_EMAIL_LENGTH);
+    var error = await validate(validUser, tooLong).then(
+      function () { return null; },
+      function (err) { return err; }
+    );
+    expect(error).not.toBeNull();
+    expect(error.message).toEqual("Email address is too long");
+  });
+
   it("accepts valid email formats", async function () {
     var validEmails = [
       "user@domain.com",

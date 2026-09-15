@@ -6,7 +6,10 @@ const MAX_EMAIL_LENGTH = 254;
 const MAX_PASSWORD_LENGTH = 72;
 
 function emailIsTooLong(email) {
-  return typeof email === "string" && email.length > MAX_EMAIL_LENGTH;
+  return (
+    typeof email === "string" &&
+    Buffer.byteLength(email, "utf8") > MAX_EMAIL_LENGTH
+  );
 }
 
 function passwordIsTooLong(password) {
