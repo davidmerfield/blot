@@ -28,6 +28,7 @@ var loaded = loadPlugins({
   disqus: require("./disqus"),
   externalLinks: require("./externalLinks"),
   flickr: require("./flickr"),
+  folderAssets: require("./folderAssets"),
   image: require("./image"),
   imageCaption: require("./imageCaption"),
   injectTitle: require("./injectTitle"),
@@ -66,6 +67,8 @@ function convert (blog, path, contents, callback) {
   var globalOptions = {
     isHTML: isHTML(path),
     domain: blog.domain,
+    handle: blog.handle,
+    cacheID: blog.cacheID,
     blogID: blog.id,
     path: path,
     baseURL: "https://" + blog.handle + "." + config.host
