@@ -102,12 +102,24 @@ async function posts(req, res) {
   };
 
   const key = createCacheKey(req, res, normalizedOptions);
+  let cached = postsCache.get(key);
 
-  if (postsCache.has(key)) {
-    const cachedPayload = clonePosts(postsCache.get(key).payload);
+  // routes/entries.js prefetches before retrieve metadata exists, so it
+  // stores the full (unprojected) variant. A later {{#posts}} retrieve
+  // with a fields signature must reuse that payload instead of calling
+  // Entries.getPage a second time. See
+  // https://github.com/davidmerfield/blot/issues/1844
+  if (!cached && fieldsSignature(req && req.retrieve) !== null) {
+    cached = postsCache.get(
+      createCacheKey({ blog: req && req.blog }, res, normalizedOptions)
+    );
+  }
+
+  if (cached) {
+    const cachedPayload = clonePosts(cached.payload);
     log("Retrieved posts from cache");
     res.locals.pagination = cachedPayload.pagination;
-    return cachedPayload.entries;
+    return projectEntryFields(cachedPayload.entries, req.retrieve, ["posts"]);
   }
 
   let payload;

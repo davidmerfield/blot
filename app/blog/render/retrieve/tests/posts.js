@@ -406,6 +406,45 @@ describe("posts cache", function () {
     });
   });
 
+  it("reuses the unprojected prefetch cache for a later projected retrieve", function (done) {
+    const posts = loadPostsWithTaggedStub(function () {});
+    posts._clear();
+
+    spyOn(entriesModel, "getPage").and.callFake(function (blogID, options, callback) {
+      callback(
+        null,
+        [{ id: "1", title: "A", html: "<p>A</p>" }],
+        { page: 1, pages: 1 }
+      );
+    });
+
+    const baseReq = {
+      blog: { id: "blog-1", cacheID: 100 },
+      query: {},
+      params: {},
+      template: { locals: { page_size: 5 } },
+      log: function () {},
+    };
+
+    // routes/entries.js prefetches before retrieve metadata exists.
+    posts(baseReq, { locals: {} }, function (err, first) {
+      expect(err).toBeNull();
+      expect(first[0].html).toBe("<p>A</p>");
+
+      const retrieveReq = Object.assign({}, baseReq, {
+        retrieve: { posts: { fields: { title: true } } },
+      });
+
+      posts(retrieveReq, { locals: {} }, function (secondErr, second) {
+        expect(secondErr).toBeNull();
+        expect(entriesModel.getPage).toHaveBeenCalledTimes(1);
+        expect(second[0].title).toBe("A");
+        expect(second[0].html).toBeUndefined();
+        done();
+      });
+    });
+  });
+
   it("reuses cached tagged responses for identical inputs", function (done) {
     const taggedSpy = jasmine
       .createSpy("fetchTaggedEntries")
