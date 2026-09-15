@@ -51,6 +51,7 @@ module.exports = function (blogID, mappings, callback) {
       });
 
       await multi.exec();
+      await client.set(key.redirectsRev(blogID), Date.now().toString());
 
       return callback();
     } catch (err) {

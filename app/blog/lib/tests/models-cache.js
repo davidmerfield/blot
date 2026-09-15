@@ -66,7 +66,18 @@ describe("blog model adapter caches", function () {
     expect(Blog.get.calls.count()).toEqual(2);
   });
 
-  it("reuses template metadata for the same cacheID", async function () {
+  it("reuses template metadata until the template redis hash changes", async function () {
+    const hashes = [
+      { locals: "{}", owner: "SITE" },
+      { locals: "{}", owner: "SITE" },
+      { locals: "{}", owner: "SITE", name: "renamed" },
+    ];
+    let hashCalls = 0;
+    spyOn(client, "hGetAll").and.callFake(() => {
+      const raw = hashes[Math.min(hashCalls, hashes.length - 1)];
+      hashCalls++;
+      return Promise.resolve(raw);
+    });
     spyOn(Template, "getMetadata").and.callFake((id, cb) => {
       cb(null, { locals: { page_size: 5 }, owner: "SITE", cdn: {} });
     });
@@ -77,7 +88,7 @@ describe("blog model adapter caches", function () {
     first.locals.page_size = 9;
     expect(second.locals.page_size).toEqual(5);
 
-    await models.getMetadata("SITE:diary", 112);
+    await models.getMetadata("SITE:diary", 111);
     expect(Template.getMetadata.calls.count()).toEqual(2);
   });
 
@@ -91,7 +102,18 @@ describe("blog model adapter caches", function () {
     expect(Template.getMetadata.calls.count()).toEqual(2);
   });
 
-  it("reuses view-by-url matches for the same cacheID", async function () {
+  it("reuses view-by-url matches until the template URL map changes", async function () {
+    const hashes = [
+      { "entries.html": "/page/:page" },
+      { "entries.html": "/page/:page" },
+      { "entries.html": "/archive/:page" },
+    ];
+    let hashCalls = 0;
+    spyOn(client, "hGetAll").and.callFake(() => {
+      const raw = hashes[Math.min(hashCalls, hashes.length - 1)];
+      hashCalls++;
+      return Promise.resolve(raw);
+    });
     spyOn(Template, "getViewByURL").and.callFake((template, url, cb) => {
       cb(null, "archives.html", { page: "1" });
     });
@@ -101,6 +123,10 @@ describe("blog model adapter caches", function () {
     expect(Template.getViewByURL.calls.count()).toEqual(1);
     expect(second.viewName).toEqual("archives.html");
     expect(second.params.page).toEqual("1");
+
+    await models.getViewByURL("SITE:diary", "/archives", 111);
+    expect(Template.getViewByURL.calls.count()).toEqual(2);
+    expect(first.viewName).toEqual("archives.html");
   });
 
   it("reuses entry-by-url hits and isolates clones", async function () {

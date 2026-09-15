@@ -46,6 +46,29 @@ function assetPathKey(blog, decodedPath) {
   });
 }
 
+function isTransferAbort(err) {
+  const code = err && err.code;
+  return (
+    code === "ECONNABORTED" ||
+    code === "EPIPE" ||
+    code === "ERR_STREAM_PREMATURE_CLOSE" ||
+    code === "ECANCELED"
+  );
+}
+
+function isMissingCandidate(err) {
+  if (!err || isTransferAbort(err)) return false;
+  return (
+    err.code === "ENOENT" ||
+    err.code === "ENOTDIR" ||
+    err.code === "EISDIR" ||
+    err.status === 404 ||
+    err.statusCode === 404 ||
+    (typeof err.message === "string" &&
+      (err.message === "Not a file" || err.message === "Not Found"))
+  );
+}
+
 // Router setup
 const assets = express.Router();
 
@@ -126,78 +149,69 @@ assets.use(async (req, res, next) => {
       await sendFile(cached, { req, res });
       return;
     } catch (e) {
+      if (isTransferAbort(e)) return;
       assetPathCache.delete(cacheKey);
     }
   }
 
-  try {
-    await sendFile(join(blogFolder, decodedPath), { req, res });
-    assetPathCache.set(cacheKey, join(blogFolder, decodedPath));
-    return;
-  } catch (e) {}
+  async function trySend(candidate) {
+    try {
+      await sendFile(candidate, { req, res });
+      assetPathCache.set(cacheKey, candidate);
+      return "sent";
+    } catch (err) {
+      if (isTransferAbort(err)) return "abort";
+      if (isMissingCandidate(err)) return "missing";
+      return "error";
+    }
+  }
 
-  try {
-    await sendFile(join(blogFolder, decodedPath.toLowerCase()), { req, res });
-    assetPathCache.set(cacheKey, join(blogFolder, decodedPath.toLowerCase()));
-    return;
-  } catch (e) {}
+  let sawOnlyMissing = true;
 
-  try {
-    const pathWithCorrectCase = await caseSensitivePath(
-      blogFolder,
-      decodedPath
-    );
+  const first = await trySend(join(blogFolder, decodedPath));
+  if (first === "sent" || first === "abort") return;
+  if (first === "error") sawOnlyMissing = false;
 
-    const stat = await fs.stat(pathWithCorrectCase);
+  if (sawOnlyMissing) {
+    const lowered = await trySend(join(blogFolder, decodedPath.toLowerCase()));
+    if (lowered === "sent" || lowered === "abort") return;
+    if (lowered === "error") sawOnlyMissing = false;
+  }
 
-    if (!stat.isFile()) throw new Error("Not a file");
+  if (sawOnlyMissing) {
+    try {
+      const pathWithCorrectCase = await caseSensitivePath(
+        blogFolder,
+        decodedPath
+      );
+      const stat = await fs.stat(pathWithCorrectCase);
+      if (!stat.isFile()) throw new Error("Not a file");
+      const matched = await trySend(pathWithCorrectCase);
+      if (matched === "sent" || matched === "abort") return;
+      if (matched === "error") sawOnlyMissing = false;
+    } catch (e) {
+      if (isTransferAbort(e)) return;
+      if (!isMissingCandidate(e)) sawOnlyMissing = false;
+    }
+  }
 
-    await sendFile(pathWithCorrectCase, { req, res });
-    assetPathCache.set(cacheKey, pathWithCorrectCase);
-    return;
-  } catch (e) {}
+  const extras = [
+    join(blogFolder, withoutTrailingSlash(decodedPath) + "/index.html"),
+    join(blogFolder, withoutTrailingSlash(decodedPath) + "/_index.html"),
+    join(blogFolder, withoutTrailingSlash(decodedPath) + ".html"),
+    join(blogFolder, addLeadingUnderscore(decodedPath) + ".html"),
+  ];
 
-  try {
-    const candidate = join(
-      blogFolder,
-      withoutTrailingSlash(decodedPath) + "/index.html"
-    );
-    await sendFile(candidate, { req, res });
-    assetPathCache.set(cacheKey, candidate);
-    return;
-  } catch (e) {}
+  for (const candidate of extras) {
+    if (!sawOnlyMissing) break;
+    const result = await trySend(candidate);
+    if (result === "sent" || result === "abort") return;
+    if (result === "error") sawOnlyMissing = false;
+  }
 
-  try {
-    const candidate = join(
-      blogFolder,
-      withoutTrailingSlash(decodedPath) + "/_index.html"
-    );
-    await sendFile(candidate, { req, res });
-    assetPathCache.set(cacheKey, candidate);
-    return;
-  } catch (e) {}
-
-  try {
-    const candidate = join(
-      blogFolder,
-      withoutTrailingSlash(decodedPath) + ".html"
-    );
-    await sendFile(candidate, { req, res });
-    assetPathCache.set(cacheKey, candidate);
-    return;
-  } catch (e) {}
-
-  try {
-    const candidate = join(
-      blogFolder,
-      addLeadingUnderscore(decodedPath) + ".html"
-    );
-    await sendFile(candidate, { req, res });
-    assetPathCache.set(cacheKey, candidate);
-    return;
-  } catch (e) {}
-
-  assetPathCache.set(cacheKey, "ENOENT");
+  if (sawOnlyMissing) {
+    assetPathCache.set(cacheKey, "ENOENT");
+  }
 
   // If we get here, none of the candidates worked
   if (!res.headersSent) {
@@ -266,3 +280,5 @@ module.exports = assets;
 module.exports._clear = function () {
   assetPathCache.clear();
 };
+module.exports._isTransferAbort = isTransferAbort;
+module.exports._isMissingCandidate = isMissingCandidate;

@@ -25,19 +25,12 @@ const FOLDER_FILE_ATTR =
 
 function mightContainFolderFiles(html) {
   if (!html) return false;
-  if (
-    html.indexOf("href") === -1 &&
-    html.indexOf("src") === -1 &&
-    html.indexOf("poster") === -1 &&
-    html.indexOf("srcset") === -1
-  ) {
-    return false;
-  }
   return FOLDER_FILE_ATTR.test(html);
 }
 
-function rewriteCacheKey(blogID, cacheID, html) {
-  return `${blogID}:${cacheID}:${hash(html)}`;
+function rewriteCacheKey(blog, html) {
+  const hosts = blogHosts(blog).join(",");
+  return `${blog.id}:${blog.cacheID}:${hosts}:${hash(html)}`;
 }
 
 const parseSrcset = (value) => {
@@ -258,7 +251,7 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
   if (!blog || typeof html !== "string") return html;
   if (!mightContainFolderFiles(html)) return html;
 
-  const key = rewriteCacheKey(blog.id, blog.cacheID, html);
+  const key = rewriteCacheKey(blog, html);
   if (rewrittenHtmlCache.has(key)) {
     log("Reused rewritten HTML");
     return rewrittenHtmlCache.get(key);
@@ -287,3 +280,4 @@ module.exports._clear = function () {
 };
 
 module.exports._mightContainFolderFiles = mightContainFolderFiles;
+module.exports._rewriteCacheKey = rewriteCacheKey;

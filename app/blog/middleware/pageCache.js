@@ -1,5 +1,9 @@
 const LRUCache = require("lru-cache").LRUCache;
 const fromCloudflare = require("../lib/fromCloudflare");
+const client = require("models/client");
+const redirectsKey = require("models/redirects/key");
+const hash = require("helper/hash");
+const { fingerprintValue } = require("../lib/fingerprint");
 
 // Process-local cache of fully rendered (or redirected) GET responses.
 // Keyed by blog/template identity plus the request URL, so a popular
@@ -13,26 +17,47 @@ const pageCache = new LRUCache({
 
 const pageInflight = new Map();
 
-function pageCacheKey(req) {
+function isCacheableStatus(status) {
+  const code = Number(status) || 200;
+  if (code === 200 || code === 404) return true;
+  if (code >= 300 && code < 400) return true;
+  return false;
+}
+
+function pageCacheKey(req, redirectsRev) {
   const blog = req.blog || {};
+  const template = req.template || {};
   return JSON.stringify({
     blogID: String(blog.id),
-    cacheID: String(blog.cacheID),
-    templateID: String(req.template && req.template.id),
-    // cacheID does not change for domain/handle/title/SSL settings, and
-    // those fields change the response (robots.txt, {{title}}, redirects).
-    domain: String(blog.domain || ""),
-    handle: String(blog.handle || ""),
-    title: String(blog.title || ""),
-    forceSSL: blog.forceSSL ? 1 : 0,
-    redirectSubdomain: blog.redirectSubdomain ? 1 : 0,
-    timeZone: String(blog.timeZone || ""),
-    dateFormat: String(blog.dateFormat || ""),
+    // cacheID does not move for avatar, permalink, title, domain, etc.
+    // Fingerprint the whole blog record and the loaded template locals
+    // so those dashboard edits miss this cache without waiting for eviction.
+    blogState: hash(fingerprintValue(blog)),
+    templateID: String(template.id),
+    templateState: hash(
+      fingerprintValue({
+        locals: template.locals || {},
+        cdn: template.cdn || {},
+      })
+    ),
+    redirectsRev: String(redirectsRev || ""),
     url: String(req.url),
     host: String(req.originalHost || req.get("host") || ""),
     protocol: String(req.protocol),
     cloudflare: fromCloudflare(req) ? 1 : 0,
   });
+}
+
+async function resolvePageCacheKey(req) {
+  let redirectsRev = "";
+  try {
+    if (req.blog && req.blog.id) {
+      redirectsRev = (await client.get(redirectsKey.redirectsRev(req.blog.id))) || "";
+    }
+  } catch (e) {
+    redirectsRev = "";
+  }
+  return pageCacheKey(req, redirectsRev);
 }
 
 function shouldCachePage(req) {
@@ -44,7 +69,7 @@ function shouldCachePage(req) {
 
   const path = req.path || "";
   if (path === "/random" || path.startsWith("/random/")) return false;
-  if (path.startsWith("/_stream/") || path.startsWith("/_draft/")) return false;
+  if (path === "/draft" || path.startsWith("/draft/")) return false;
   if (path.startsWith("/__blot/")) return false;
   return true;
 }
@@ -80,10 +105,16 @@ function sendCached(res, cached) {
   return res.send(cached.body);
 }
 
-module.exports = function pageCacheMiddleware(req, res, next) {
+module.exports = async function pageCacheMiddleware(req, res, next) {
   if (!shouldCachePage(req) || !req.blog || !req.template) return next();
 
-  const key = pageCacheKey(req);
+  let key;
+  try {
+    key = await resolvePageCacheKey(req);
+  } catch (err) {
+    return next();
+  }
+
   const cached = pageCache.get(key);
   if (
     cached &&
@@ -128,7 +159,7 @@ module.exports = function pageCacheMiddleware(req, res, next) {
   }
 
   res.send = function (body) {
-    if (typeof body === "string" && res.statusCode < 500) {
+    if (typeof body === "string" && isCacheableStatus(res.statusCode)) {
       const entry = {
         body,
         status: res.statusCode,
@@ -157,7 +188,7 @@ module.exports = function pageCacheMiddleware(req, res, next) {
       }
     }
 
-    if (status < 500 && typeof location === "string") {
+    if (isCacheableStatus(status) && typeof location === "string") {
       const entry = {
         body: "",
         status,
@@ -179,6 +210,7 @@ module.exports = function pageCacheMiddleware(req, res, next) {
 
 module.exports._createCacheKey = pageCacheKey;
 module.exports._shouldCachePage = shouldCachePage;
+module.exports._isCacheableStatus = isCacheableStatus;
 module.exports._clear = function () {
   pageCache.clear();
   pageInflight.clear();

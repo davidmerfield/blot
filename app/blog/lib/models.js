@@ -7,8 +7,11 @@ const Redirects = require("models/redirects");
 const User = require("models/user");
 const client = require("models/client");
 const blogKey = require("models/blog/key");
+const templateKey = require("models/template/key");
 const LRUCache = require("lru-cache").LRUCache;
+const urlNormalizer = require("helper/urlNormalizer");
 const { cloneDeep, prepareCacheValue } = require("./clone");
+const { fingerprintHash } = require("./fingerprint");
 
 // All adapters look up the model method at call time so Jasmine spies
 // (and other runtime replacements) still take effect.
@@ -110,19 +113,6 @@ function fetchBlog(identifier) {
   });
 }
 
-// cacheID only changes for template/plugins/menu. Domain, handle, title,
-// isDisabled, forceSSL, and other identity fields do not bump it, so a
-// cacheID HGET is not enough to decide the deserialized blog is still live.
-function fingerprintHash(raw) {
-  const keys = Object.keys(raw).sort();
-  let out = "";
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    out += key + "=" + raw[key] + "\n";
-  }
-  return out;
-}
-
 async function resolveBlogID(identifier) {
   if (identifier && identifier.id) return identifier.id;
   if (identifier && identifier.handle) {
@@ -134,6 +124,9 @@ async function resolveBlogID(identifier) {
   return undefined;
 }
 
+// cacheID only changes for template/plugins/menu. Domain, handle, title,
+// isDisabled, forceSSL, and other identity fields do not bump it, so a
+// cacheID HGET is not enough to decide the deserialized blog is still live.
 async function loadBlogById(blogID) {
   let raw;
   try {
@@ -178,14 +171,25 @@ function fetchMetadata(templateID) {
   });
 }
 
+async function templateMetadataFingerprint(templateID) {
+  let raw;
+  try {
+    raw = await client.hGetAll(templateKey.metadata(templateID));
+  } catch (e) {
+    raw = null;
+  }
+  return raw && Object.keys(raw).length ? fingerprintHash(raw) : "";
+}
+
 async function getMetadata(templateID, cacheID) {
   if (cacheID === undefined || cacheID === null || cacheID === "") {
     return fetchMetadata(templateID);
   }
 
+  const fingerprint = await templateMetadataFingerprint(templateID);
   const key = JSON.stringify({
     templateID: String(templateID),
-    cacheID: String(cacheID),
+    fingerprint,
   });
 
   const metadata = await withInflight(metadataInflight, key, async () => {
@@ -212,14 +216,34 @@ function fetchViewByURL(template, url) {
   });
 }
 
+async function viewMappingFingerprint(templateID, url) {
+  let patterns;
+  let exact;
+  try {
+    [patterns, exact] = await Promise.all([
+      client.hGetAll(templateKey.urlPatterns(templateID)),
+      client.get(templateKey.url(templateID, urlNormalizer(url))),
+    ]);
+  } catch (e) {
+    patterns = null;
+    exact = "";
+  }
+  return (
+    (patterns && Object.keys(patterns).length ? fingerprintHash(patterns) : "") +
+    "\nexact=" +
+    String(exact || "")
+  );
+}
+
 async function getViewByURL(template, url, cacheID) {
   if (cacheID === undefined || cacheID === null || cacheID === "") {
     return fetchViewByURL(template, url);
   }
 
+  const fingerprint = await viewMappingFingerprint(template, url);
   const key = JSON.stringify({
     templateID: String(template),
-    cacheID: String(cacheID),
+    fingerprint,
     url: String(url),
   });
 

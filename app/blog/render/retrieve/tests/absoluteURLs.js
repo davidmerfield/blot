@@ -52,4 +52,18 @@ describe("absolute_urls", function () {
       done();
     });
   });
+
+  it("rewrites unquoted attributes and spaces around equals", function (done) {
+    var html =
+      '<a href = "/post">Post</a><img src=/image.png>';
+    var template = "{{#absolute_urls}}" + html + "{{/absolute_urls}}";
+
+    absolute_urls(this.request, {}, function (err, lambda) {
+      var result = mustache.render(template, { absolute_urls: lambda });
+      expect(result).toEqual(
+        '<a href="http://example.com/post">Post</a><img src=http://example.com/image.png>'
+      );
+      done();
+    });
+  });
 });

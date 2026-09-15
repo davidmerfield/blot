@@ -31,12 +31,33 @@ describe("page cache helpers", function () {
     expect(
       pageCache._shouldCachePage(Object.assign({}, req, { query: { json: "true" } }))
     ).toBe(false);
+    expect(
+      pageCache._shouldCachePage(
+        Object.assign({}, req, { path: "/draft/view/Drafts/index.txt" })
+      )
+    ).toBe(false);
+    expect(
+      pageCache._shouldCachePage(
+        Object.assign({}, req, { path: "/draft/stream/Drafts/index.txt" })
+      )
+    ).toBe(false);
+    expect(
+      pageCache._shouldCachePage(Object.assign({}, req, { path: "/_draft/view" }))
+    ).toBe(true);
   });
 
-  it("varies cache keys by host, protocol, and cacheID", function () {
+  it("does not persist transient 400 responses", function () {
+    expect(pageCache._isCacheableStatus(200)).toBe(true);
+    expect(pageCache._isCacheableStatus(301)).toBe(true);
+    expect(pageCache._isCacheableStatus(404)).toBe(true);
+    expect(pageCache._isCacheableStatus(400)).toBe(false);
+    expect(pageCache._isCacheableStatus(500)).toBe(false);
+  });
+
+  it("varies cache keys by host, protocol, cacheID, and renderable blog state", function () {
     const base = {
       blog: { id: "blog-1", cacheID: 1 },
-      template: { id: "SITE:diary" },
+      template: { id: "SITE:diary", locals: {}, cdn: {} },
       url: "/",
       originalHost: "example.com",
       protocol: "https",
@@ -58,10 +79,18 @@ describe("page cache helpers", function () {
         blog: { id: "blog-1", cacheID: 1, domain: "example.com" },
       })
     );
+    const fifth = pageCache._createCacheKey(
+      Object.assign({}, base, {
+        blog: { id: "blog-1", cacheID: 1, avatar: "/_avatars/new.jpg" },
+      })
+    );
+    const sixth = pageCache._createCacheKey(base, "redirects-2");
 
     expect(first).not.toEqual(second);
     expect(first).not.toEqual(third);
     expect(first).not.toEqual(fourth);
+    expect(first).not.toEqual(fifth);
+    expect(first).not.toEqual(sixth);
   });
 });
 
@@ -86,6 +115,25 @@ describe("replaceFolderLinks early-out", function () {
     expect(
       replaceFolderLinks._mightContainFolderFiles('<img src="/100% luck.jpg">')
     ).toBe(true);
+    expect(
+      replaceFolderLinks._mightContainFolderFiles('<IMG SRC="/photo.jpg">')
+    ).toBe(true);
+    expect(
+      replaceFolderLinks._mightContainFolderFiles('<A HREF="/document.pdf">')
+    ).toBe(true);
+  });
+
+  it("varies rewritten HTML cache keys by the blog host set", function () {
+    const html = '<a href="/files/notes.pdf">notes</a>';
+    const first = replaceFolderLinks._rewriteCacheKey(
+      { id: "blog-1", cacheID: 1, handle: "alice" },
+      html
+    );
+    const second = replaceFolderLinks._rewriteCacheKey(
+      { id: "blog-1", cacheID: 1, handle: "alice", domain: "example.com" },
+      html
+    );
+    expect(first).not.toEqual(second);
   });
 });
 

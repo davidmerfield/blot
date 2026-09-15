@@ -22,9 +22,12 @@ const asRetriever = require("../../lib/asRetriever");
 
 function rewriteRelativeUrls(base, html) {
   return String(html).replace(
-    /(\s)(href|src)=(["'])(\/[^"']*)\3/gi,
-    (match, space, attr, quote, path) =>
-      `${space}${attr}=${quote}${base}${path}${quote}`
+    /(\s)(href|src)\s*=\s*(?:(["'])(\/[^"']*)\3|(\/[^\s>]*))/gi,
+    (match, space, attr, quote, quotedPath, unquotedPath) => {
+      const path = quotedPath || unquotedPath;
+      if (quote) return `${space}${attr}=${quote}${base}${path}${quote}`;
+      return `${space}${attr}=${base}${path}`;
+    }
   );
 }
 
@@ -66,3 +69,4 @@ module.exports = asRetriever(function (req, res) {
 // so we export it without the callback wrapper.
 module.exports.absolute_urls = absolute_urls;
 module.exports.absoluteURLs = absolute_urls;
+module.exports.rewriteRelativeUrls = rewriteRelativeUrls;

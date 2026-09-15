@@ -12,6 +12,7 @@ module.exports = function (blogID, from, callback) {
     try {
       await client.zRem(redirects, from);
       await client.del(fromKey);
+      await client.set(key.redirectsRev(blogID), Date.now().toString());
 
       callback();
     } catch (err) {

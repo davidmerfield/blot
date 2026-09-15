@@ -426,3 +426,17 @@ describe("asset middleware", function () {
     expect(res.status).toEqual(400);
   });
 });
+
+describe("asset cache error classification", function () {
+  const assets = require("../routes/assets");
+
+  it("does not treat client disconnects as filesystem misses", function () {
+    expect(assets._isTransferAbort({ code: "ECONNABORTED" })).toBe(true);
+    expect(assets._isTransferAbort({ code: "ENOENT" })).toBe(false);
+    expect(assets._isMissingCandidate({ code: "ECONNABORTED" })).toBe(false);
+    expect(assets._isMissingCandidate({ code: "ENOENT" })).toBe(true);
+    expect(assets._isMissingCandidate({ status: 404 })).toBe(true);
+    expect(assets._isMissingCandidate({ message: "Not a file" })).toBe(true);
+    expect(assets._isMissingCandidate({ code: "EACCES" })).toBe(false);
+  });
+});

@@ -130,4 +130,23 @@ function prepareCacheValue(value, { preserveEntryInstances = false } = {}) {
   return Object.freeze(prepared);
 }
 
-module.exports = { cloneDeep, deepFreeze, prepareCacheValue };
+// Size-only walk for LRU maxSize when the payload cannot go through
+// prepareCacheValue (Date fields become {}). Same accounting as visit().
+function estimateCacheSize(value, seen) {
+  if (typeof value === "string") return Buffer.byteLength(value) || 1;
+  if (!value || typeof value !== "object") return 8;
+  if (value instanceof Date) return 8;
+  seen = seen || new Set();
+  if (seen.has(value)) return 0;
+  seen.add(value);
+  let size = Array.isArray(value) ? 16 : 24;
+  const keys = Object.keys(value);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    size += Array.isArray(value) ? 8 : 16 + Buffer.byteLength(key);
+    size += estimateCacheSize(value[key], seen);
+  }
+  return Math.max(1, size);
+}
+
+module.exports = { cloneDeep, deepFreeze, prepareCacheValue, estimateCacheSize };

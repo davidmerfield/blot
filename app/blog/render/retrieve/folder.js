@@ -5,17 +5,14 @@ const alphanum = require("helper/alphanum");
 const { getEntry } = require("../../lib/models");
 const asRetriever = require("../../lib/asRetriever");
 const LRUCache = require("lru-cache").LRUCache;
-const { cloneDeep } = require("../../lib/clone");
+const { cloneDeep, estimateCacheSize } = require("../../lib/clone");
 
 const CONCURRENCY = 5;
 
 const folderCache = new LRUCache({
   max: 200,
   maxSize: 10 * 1024 * 1024,
-  sizeCalculation: (value) => {
-    const contents = value && value.contents;
-    return Array.isArray(contents) ? Math.max(1, contents.length * 256) : 64;
-  },
+  sizeCalculation: (value) => estimateCacheSize(value),
 });
 
 function createCacheKey(blog, path) {
