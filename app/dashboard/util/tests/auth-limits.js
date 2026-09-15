@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const {
   MAX_EMAIL_LENGTH,
   MAX_PASSWORD_LENGTH,
@@ -69,5 +71,78 @@ describe("authentication form limits", function () {
         server.close(resolve);
       });
     }
+  });
+
+  it("treats mixed-case authentication paths as auth forms", function () {
+    expect(parseAuth.isAuthFormPath("/SIGN-UP")).toBe(true);
+    expect(parseAuth.isAuthFormPath("/Log-In/reset")).toBe(true);
+    expect(parseAuth.isAuthFormPath("/account/password/set")).toBe(true);
+    expect(parseAuth.isAuthFormPath("/account/delete")).toBe(false);
+  });
+
+  it("does not parse multipart bodies on authentication form paths", async function () {
+    const parseMultipart = require("../multipart")();
+    const app = express();
+    let sawFiles;
+
+    app.use(parseAuth.AUTH_FORM_PATHS, parseAuth);
+    app.use(function (req, res, next) {
+      if (parseAuth.isAuthFormPath(req.path)) return next();
+      return parseMultipart(req, res, next);
+    });
+    app.post("/sign-up", function (req, res) {
+      sawFiles = req.files;
+      res.sendStatus(200);
+    });
+
+    const server = await new Promise(function (resolve) {
+      const server = app.listen(0, function () {
+        resolve(server);
+      });
+    });
+
+    try {
+      const response = await new Promise(function (resolve, reject) {
+        const boundary = "blot-test-boundary";
+        const body =
+          `--${boundary}\r\n` +
+          `Content-Disposition: form-data; name="upload"; filename="test.txt"\r\n` +
+          `Content-Type: text/plain\r\n\r\n` +
+          `should-not-be-parsed\r\n` +
+          `--${boundary}--\r\n`;
+        const request = http.request(
+          {
+            method: "POST",
+            port: server.address().port,
+            path: "/SIGN-UP",
+            headers: {
+              "Content-Type": `multipart/form-data; boundary=${boundary}`,
+              "Content-Length": Buffer.byteLength(body),
+            },
+          },
+          resolve
+        );
+        request.on("error", reject);
+        request.end(body);
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(sawFiles).toBeUndefined();
+      response.resume();
+    } finally {
+      await new Promise(function (resolve) {
+        server.close(resolve);
+      });
+    }
+  });
+
+  it("matches authentication locations case-insensitively in nginx", function () {
+    const file = path.join(
+      __dirname,
+      "../../../../config/openresty/conf/blot-site.conf"
+    );
+    expect(fs.readFileSync(file, "utf8")).toMatch(
+      /location ~\* \^\/sites\/\(log-in\|sign-up\|account\/password\)\(\/\|\$\)/
+    );
   });
 });

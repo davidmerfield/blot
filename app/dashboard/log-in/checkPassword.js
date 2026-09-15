@@ -1,7 +1,6 @@
 var User = require("models/user");
 var LogInError = require("./logInError");
 var authenticate = require("./authenticate");
-var { passwordIsTooLong } = require("dashboard/util/auth-limits");
 
 module.exports = function checkPassword(req, res, next) {
   var user = req.user;
@@ -16,10 +15,9 @@ module.exports = function checkPassword(req, res, next) {
     return res.render("dashboard/log-in/password");
   }
 
-  if (passwordIsTooLong(password)) {
-    return next(new LogInError("PASSWORDTOOLONG"));
-  }
-
+  // Do not reject overlong passwords here. bcrypt only hashes the first 72
+  // bytes, so accounts created before the signup limit may still log in with
+  // their original password and then change it.
   User.checkPassword(user.uid, password, function (err, match) {
     if (err) return next(err);
 

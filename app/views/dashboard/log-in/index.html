@@ -39,10 +39,6 @@
   <p class="error">Your email address is too long.</p>
   {{/EMAILTOOLONG}}
 
-  {{#PASSWORDTOOLONG}}
-  <p class="error">Your password is too long.</p>
-  {{/PASSWORDTOOLONG}}
-
     <input type="hidden" name="_csrf" value="{{csrftoken}}" />
 
     <p>
@@ -57,10 +53,10 @@
     <p>
       <label for="password">Password <a style="float:right;" id="reset" href="/log-in/reset{{#email}}?email={{email}}{{/email}}">Reset your password</a></label>
       {{#validemail}} 
-      <input name="password" required="" type="password" maxlength="{{maxPasswordLength}}" autofocus />
+      <input name="password" required="" type="password" autofocus />
       {{/validemail}}
       {{^validemail}} 
-      <input name="password" required="" type="password" maxlength="{{maxPasswordLength}}" />
+      <input name="password" required="" type="password" />
       {{/validemail}}
     </p>
     <input type="submit" value="Log in" style="margin-bottom: 8px" />

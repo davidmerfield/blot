@@ -6,22 +6,23 @@ const cookieParser = require('cookie-parser');
 
 const dashboard = express.Router();
 const logout = require("dashboard/account/util/logout");
+const parseAuth = require("dashboard/util/parse-auth");
+const parseMultipart = require("dashboard/util/multipart")();
 
 dashboard.use(trace("loading session information"));
 dashboard.use(require("dashboard/util/session"));
 dashboard.use(trace("loaded session information"));
 
-dashboard.use(require("dashboard/util/multipart")());
-
 dashboard.use(cookieParser());
 
 // Authentication forms contain only short text fields. Parse them with a
-// small body limit before falling back to the larger dashboard parser, which
-// is needed for uploads and template editing.
-dashboard.use(
-  ["/sign-up", "/log-in", "/account/password"],
-  require("dashboard/util/parse-auth")
-);
+// small body limit, and skip the 30 MB multipart parser so a missed nginx
+// location cannot turn these unauthenticated routes into upload endpoints.
+dashboard.use(parseAuth.AUTH_FORM_PATHS, parseAuth);
+dashboard.use(function skipAuthFormUploads(req, res, next) {
+  if (parseAuth.isAuthFormPath(req.path)) return next();
+  return parseMultipart(req, res, next);
+});
 dashboard.use(require("dashboard/util/parse"));
 dashboard.use(require("dashboard/util/csrf"));
 
