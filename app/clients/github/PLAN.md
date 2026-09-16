@@ -1,12 +1,14 @@
 # GitHub client — planning document
 
-This document describes how Blot could add a **GitHub** sync client: a user signs in with GitHub, picks a repository as their site folder, optionally copies existing files into that repository, and Blot keeps the site in sync when they push.
+This is the plan for adding **GitHub** as a folder client: the user signs in with GitHub (OAuth), picks a repository as their site folder, optionally copies existing files into that repository, and Blot keeps the site in sync when they push.
 
 It is a plan only. No client code has been written.
 
-This is distinct from the existing **Git** client in `app/clients/git`, which hosts a Git remote on Blot (`https://blot.im/clients/git/end/<handle>.git`) and asks the user to clone and push. Today, connecting a GitHub repository means adding GitHub as a second remote to that Blot-hosted repo (documented in `app/views/how/sync/git.html`). A GitHub client would make GitHub the source of truth, the same way Dropbox or Google Drive is.
+The dashboard name would be **GitHub**, registered as `github` in `app/clients/index.js`. That matches Dropbox / Google Drive / iCloud: GitHub holds the folder; Blot follows it.
 
-The root `TODO` already records customer demand for this: *“Make it possible to connect github repo via their API.”*
+Blot already has an unrelated blot.im-hosted Git remote (`app/clients/git`, documented as “Git”). People who want GitHub today add it as a second remote to that endpoint. This plan replaces that workaround with a real GitHub App client. The blot-hosted remote can stay for non-GitHub Git; it is not what this work implements.
+
+The root `TODO` already records this as *“Make it possible to connect github repo via their API.”*
 
 ---
 
@@ -25,8 +27,6 @@ GitHub Apps still use OAuth so a user can sign in. They also add:
 GitHub’s own docs prefer GitHub Apps for this shape of product. A separate OAuth App is not needed.
 
 Register **two** GitHub Apps: one public production app (`Blot`), one private development app (`Blot Dev`). Dropbox already splits credentials this way (`config.dropbox.app` vs `config.dropbox.full`). A GitHub App has a single webhook URL, so production and local development cannot share one app the way a Dropbox webhook can be relayed after the fact — at least not without putting the production webhook URL behind `webhooks.blot.im` for every delivery. Two apps is simpler and is what GitHub recommends.
-
-Keep the existing Git client. It remains the right choice for GitLab, self-hosted Git, Working Copy, and anyone who does not want GitHub involved. The GitHub client is an additional client named `github` in `app/clients/index.js`.
 
 ---
 
@@ -486,8 +486,7 @@ Installation tokens are **not** stored; mint from the private key when needed (`
 ## Dashboard, docs, and switching clients
 
 - Icon: `app/views/images/sync/github.svg` (the picker uses `/images/sync/{{name}}.svg`).
-- Brochure page: `app/views/how/sync/github.html`, linked from `app/views/how/sync/index.html`.
-- Existing Git docs should keep the “add GitHub as a second remote” section for people on the Git client, and mention the GitHub client as the simpler path.
+- Brochure page: `app/views/how/sync/github.html`, linked from `app/views/how/sync/index.html`. The current Git page (`app/views/how/sync/git.html`) documents the blot.im-hosted remote and the “add GitHub as a second remote” workaround; once this client ships, that workaround section should point people at GitHub instead.
 - Switching away: `disconnect` as above; the folder on disk stays, the next client uploads or downloads it. Same contract as `app/clients/README` (“Switching between clients should be seamless”).
 
 ---
