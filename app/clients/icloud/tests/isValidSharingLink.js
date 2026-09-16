@@ -4,7 +4,7 @@ describe("isValidSharingLink", function () {
   it("accepts a sharing link without a hash fragment", function () {
     expect(
       isValidSharingLink(
-        "https://www.icloud.com/iclouddrive/0aco4snpFDJ0vvYrs319IjEXg"
+        "https://www.icloud.com/iclouddrive/0aco4snpFDJ8vvYrs319KjEXg"
       )
     ).toBe(true);
   });
@@ -12,7 +12,7 @@ describe("isValidSharingLink", function () {
   it("accepts a sharing link with a hash fragment", function () {
     expect(
       isValidSharingLink(
-        "https://www.icloud.com/iclouddrive/0aco4snpFDJ0vvYrs319IjXg#ABC"
+        "https://www.icloud.com/iclouddrive/0aco4snpFDJ8vvYrs319KjXg#XYZ"
       )
     ).toBe(true);
   });
