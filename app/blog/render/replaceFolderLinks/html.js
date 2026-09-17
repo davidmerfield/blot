@@ -1,5 +1,4 @@
 const parse5 = require("parse5");
-const he = require("he");
 
 const htmlExtRegex = /\.html$/;
 const fileExtRegex = /[^/]*\.[^/]*$/;
@@ -38,85 +37,23 @@ const parseSrcset = (value) => {
 
 // Cheap pre-scan of the raw output string, run before the expensive
 // parse5.parse + tree-walk below. Most rendered pages have no folder-file
-// links at all (or only ones we'd never touch, e.g. plain .html links or
-// fully external URLs), so this lets us skip the parse entirely in the
-// common case.
+// links at all, so this lets us skip the parse entirely in the common case.
 //
-// This mirrors the qualification rules applied later during the real
-// per-node walk (relative-or-host-matching, not a data: URL, has a
-// non-.html file extension) but reads attribute values straight out of the
-// unparsed string via regex instead of DOM nodes. Matches too broadly is
-// fine - it just means we fall through to the real parse for a page that
-// turns out to need no changes. Matching too narrowly (missing a real
-// candidate) is not, so this errs on the side of over-matching:
-// - attribute values are matched whether quoted, single-quoted or bare
-// - a lookbehind keeps "data-src" etc. from being mistaken for "src"
-// - an unquoted value is only terminated by whitespace or ">", matching
-//   the HTML tokenizer's actual unquoted-attribute-value state: quotes,
-//   "=", "<" and "`" are all valid (if ill-advised) mid-value characters
-//   that parse5 keeps rather than treating as delimiters
-const candidateAttrRegex =
-  /(?<![\w-])(href|src|poster|srcset)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
+// This deliberately does NOT try to inspect or validate attribute *values*
+// (host-matching, file extension, data: URLs, etc) the way the real
+// per-node walk below does - only whether one of these attribute names
+// appears in the raw text at all. Pairing quotes to extract a value out of
+// unparsed HTML text is not reliable: earlier text (a <script> body, a
+// comment, anything) can contain a stray quote character that pairs with a
+// later *real* attribute's quote, silently consuming it and hiding it from
+// this scan. A pure name-presence check can't have that failure mode - the
+// worst case is falling through to the real parse for a page that turns
+// out to need no changes, matching the same coarse presence-only style
+// replaceFolderLinks/css.js already uses for its `url(...)` pre-check.
+const candidateAttrRegex = /(?<![\w-])(?:href|src|poster|srcset)\s*=/i;
 
-function isCandidateFolderUrl(url, hostPatterns) {
-  if (!url || url.startsWith("data:")) return false;
-
-  const isRelative = url.indexOf("://") === -1;
-  const matchesHost = hostPatterns.some((pattern) => pattern.test(url));
-
-  if (!isRelative && !matchesHost) return false;
-
-  let stripped = url;
-  hostPatterns.forEach((pattern) => {
-    stripped = stripped.replace(pattern, "");
-  });
-
-  return !htmlExtRegex.test(stripped) && fileExtRegex.test(stripped);
-}
-
-function mayNeedFolderLinkReplacement(html, hostPatterns) {
-  candidateAttrRegex.lastIndex = 0;
-  let match;
-
-  while ((match = candidateAttrRegex.exec(html))) {
-    const name = match[1].toLowerCase();
-    const raw = match[2] !== undefined
-      ? match[2]
-      : match[3] !== undefined
-      ? match[3]
-      : match[4];
-
-    // Check the undecoded value first: cheap, and avoids running entity
-    // decoding over a multi-megabyte base64 data: URI for no reason.
-    if (!raw || raw.startsWith("data:")) continue;
-
-    // parse5 decodes character references in attribute values before the
-    // real per-node walk below ever sees them (e.g. "test&#46;jpg" becomes
-    // "test.jpg", changing whether it looks like it has a file extension),
-    // so decode here too rather than testing the raw source text.
-    let value;
-    try {
-      value = he.decode(raw);
-    } catch (e) {
-      return true;
-    }
-
-    if (name === "srcset") {
-      const candidates = parseSrcset(value);
-      if (
-        candidates &&
-        candidates.some((candidate) =>
-          isCandidateFolderUrl(candidate.url, hostPatterns)
-        )
-      ) {
-        return true;
-      }
-    } else if (isCandidateFolderUrl(value, hostPatterns)) {
-      return true;
-    }
-  }
-
-  return false;
+function mayNeedFolderLinkReplacement(html) {
+  return candidateAttrRegex.test(html);
 }
 
 module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
@@ -132,7 +69,7 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
 
     // Skip the expensive parse5 parse + tree-walk entirely when nothing in
     // the output could possibly need rewriting.
-    if (!mayNeedFolderLinkReplacement(html, hostPatterns)) {
+    if (!mayNeedFolderLinkReplacement(html)) {
       return html;
     }
 
