@@ -34,6 +34,21 @@ describe("posts", function () {
     expect(text2.trim()).toEqual("b.txt a.txt");
   });
 
+  it("lists the page when entries.html binds only {{#entries}}", async function () {
+    await this.write({ path: "/a.txt", content: "Hello, A!" });
+    await this.write({ path: "/b.txt", content: "Hello, B!" });
+
+    await this.template({
+      "entries.html": "{{#entries}}{{{name}}} {{/entries}}",
+    });
+
+    const body = await this.text("/");
+
+    expect(body).toContain("b.txt");
+    expect(body).toContain("a.txt");
+    expect(body).not.toContain("{{#posts}}");
+  });
+
   it("getPages once when a view binds both {{#entries}} and {{#posts}}", async function () {
     const entriesModel = require("models/entries");
     spyOn(entriesModel, "getPage").and.callThrough();
@@ -42,9 +57,8 @@ describe("posts", function () {
     await this.write({ path: "/b.txt", content: "Hello, B!" });
 
     // Official templates bind {{#posts}}; older/custom ones still bind
-    // {{#entries}}. routes/entries.js always fetches the {{#entries}} page,
-    // so a view referencing both must not cause a second Entries.getPage
-    // call. See https://github.com/davidmerfield/blot/issues/1844
+    // {{#entries}}. Both names alias the same posts retrieve, so a view
+    // referencing both must not cause a second Entries.getPage call.
     await this.template({
       "entries.html":
         "{{#entries}}{{{name}}}-e {{/entries}}{{#posts}}{{{name}}}-p {{/posts}}",
@@ -57,17 +71,41 @@ describe("posts", function () {
     expect(entriesModel.getPage).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps html on {{#entries}} when {{#posts}} only binds title", async function () {
+    await this.write({ path: "/a.txt", content: "Hello, A!" });
+
+    await this.template({
+      "entries.html":
+        "{{#entries}}{{{html}}}{{/entries}}{{#posts}}{{title}}{{/posts}}",
+    });
+
+    const locals = await (await this.get("/?json=1")).json();
+
+    expect(locals.entries[0].html).toContain("Hello, A!");
+    expect(locals.posts[0].html).toContain("Hello, A!");
+  });
+
+  it("still projects posts on entries.html when the view does not bind {{#entries}}", async function () {
+    await this.write({ path: "/a.txt", content: "Hello, A!" });
+
+    await this.template({
+      "entries.html": "{{#posts}}{{title}}{{/posts}}",
+    });
+
+    const locals = await (await this.get("/?json=1")).json();
+
+    expect(locals.posts[0].title).toBeDefined();
+    expect(locals.posts[0].html).toBeUndefined();
+    expect(locals.entries[0].html).toBeUndefined();
+  });
+
   it("respects a page_size set on the entries.html view itself, not just the template", async function () {
     await this.write({ path: "/a.txt", content: "Hello, A!" });
     await this.write({ path: "/b.txt", content: "Hello, B!" });
     await this.write({ path: "/c.txt", content: "Hello, C!" });
 
-    // routes/entries.js resolves page_size before render/middleware.js has
-    // merged the view's own locals into res.locals - it must look those up
-    // itself, or it primes retrieve/posts.js's cache under the same key a
-    // correctly-resolved {{#posts}} fetch would use, but with the wrong
-    // (default) page size. See
-    // https://github.com/davidmerfield/blot/issues/1844
+    // retrieve/posts runs after view locals are merged, so a per-view
+    // page_size on entries.html wins over the template default.
     await this.template(
       { "entries.html": "{{#posts}}{{{name}}} {{/posts}}" },
       { views: { "entries.html": { locals: { page_size: 2 } } } }
@@ -657,4 +695,38 @@ describe("posts cache", function () {
 
     expect(makeKey(undefined)).not.toBe(makeKey("undefined"));
   });
+  it("separates stable projected field sets from the full cache variant", function () {
+    const posts = loadPostsWithTaggedStub(function () {});
+    const normalized = {
+      branch: "untagged", sortBy: "date", order: "desc", pageNumber: 1,
+      pageSize: 5, limit: 5, offset: 0,
+    };
+    const request = (retrieve) => ({
+      blog: { id: "blog-1", cacheID: "v1" }, retrieve,
+    });
+    const first = posts._createCacheKey(
+      request({ posts: { fields: { title: true, html: true } } }),
+      { locals: {} }, normalized
+    );
+    const reordered = posts._createCacheKey(
+      request({ posts: { fields: { html: true, title: true } } }),
+      { locals: {} }, normalized
+    );
+    const full = posts._createCacheKey(
+      request({ posts: {} }), { locals: {} }, normalized
+    );
+    const withEntries = posts._createCacheKey(
+      request({
+        posts: { fields: { title: true } },
+        entries: true,
+      }),
+      { locals: {} },
+      normalized
+    );
+
+    expect(first).toBe(reordered);
+    expect(first).not.toBe(full);
+    expect(withEntries).toBe(full);
+  });
+
 });

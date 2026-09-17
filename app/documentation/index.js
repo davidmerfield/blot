@@ -1,6 +1,7 @@
 const config = require("config");
 const Express = require("express");
 const redirector = require("./redirector");
+const loadTemplates = require("./build/templates").loadTemplates;
 const { join } = require("path");
 
 const documentation = Express.Router();
@@ -70,12 +71,17 @@ documentation.get(
 
 documentation.use(require("./selected"));
 
-documentation.get("/", function (req, res, next) {
-  res.locals.title = "Blot";
-  res.locals.description = "Turns a folder into a website";
-  // otherwise the <title> of the page is 'Blot - Blot'
-  res.locals.hide_title_suffix = true;
-  next();
+documentation.get("/", require("./featured"), async function (req, res, next) {
+  try {
+    res.locals.title = "Blot";
+    res.locals.description = "Turns a folder into a website";
+    res.locals.allTemplates = await loadTemplates();
+    // otherwise the <title> of the page is 'Blot - Blot'
+    res.locals.hide_title_suffix = true;
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 documentation.get("/examples", require("./featured"));

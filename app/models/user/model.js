@@ -13,7 +13,8 @@ var MODEL = {
   totpSecret: "string",
   totpBackupCodes: "array",
   totpLastUsedCode: "string",
-  totpLastUsedAt: "number"
+  totpLastUsedAt: "number",
+  paymentMethods: "array"
 };
 
 module.exports = MODEL;

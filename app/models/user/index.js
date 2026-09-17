@@ -29,6 +29,7 @@ module.exports = {
   disable: require("./disable"),
   enable: require("./enable"),
   subscriptionTenure: require("./subscriptionTenure"),
+  syncPaymentMethods: require("./syncPaymentMethods"),
   validate: require("./validate"),
   verifyTotpToken: require("./verifyTotpToken")
 };

@@ -1,0 +1,22 @@
+<header class="header dashboard-header">
+  <div class="header-inner">
+    <div class="dashboard-header-context">
+      <a class="site-brand {{selected.dashboard}}" href="/sites">
+        <img class="site-brand-logo" src="/images/header-logo.svg" alt="">
+        <span>Blot</span>
+      </a>
+
+      {{> dashboard-breadcrumbs}}
+    </div>
+
+    <input type="checkbox" id="navbar-toggle" aria-label="Toggle navigation">
+    <label class="navigation-toggle" for="navbar-toggle" aria-controls="site-navigation">
+      <span class="icon-menu" aria-hidden="true"></span>
+      <span class="visually-hidden">Toggle navigation</span>
+    </label>
+
+    <nav class="site-navigation dashboard-navigation" id="site-navigation" aria-label="Main navigation">
+      {{> dashboard-navigation}}
+    </nav>
+  </div>
+</header>

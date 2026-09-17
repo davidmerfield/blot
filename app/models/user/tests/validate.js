@@ -32,7 +32,8 @@ describe("user validate", function () {
       totpSecret: "",
       totpBackupCodes: [],
       totpLastUsedCode: "",
-      totpLastUsedAt: 0
+      totpLastUsedAt: 0,
+      paymentMethods: []
     }, overrides);
   }
 
@@ -158,7 +159,8 @@ describe("user validate", function () {
       lastSession: "",
       passwordHash: "hash123",
       subscription: {},
-      paypal: {}
+      paypal: {},
+      paymentMethods: []
     };
     await client.set(key.user(otherUid), JSON.stringify(otherUser));
     await client.set(key.email(otherEmail), otherUid);

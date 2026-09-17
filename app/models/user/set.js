@@ -64,6 +64,7 @@ module.exports = function save(uid, updates, callback) {
       if (typeof user.totpLastUsedCode === "undefined")
         user.totpLastUsedCode = "";
       if (typeof user.totpLastUsedAt === "undefined") user.totpLastUsedAt = 0;
+      if (typeof user.paymentMethods === "undefined") user.paymentMethods = [];
 
       var result = await new Promise(function (resolve, reject) {
         validate(user, updates, function (err, validated, changes) {

@@ -1,17 +1,143 @@
-<section class="home-hero">
-    <section class="intro">
-        <p style="margin-top:0">Blot is:</p>
-        <ul>
-            <li>A tool that turns a folder into a website.</li>
-            <li>A simple way to publish to the internet— just drag and drop your files.</li>
-            <li>Designed to work with the tools you already use, like your favorite text editor.</li>
-        </ul>
-        <p>For over a decade, people have used Blot to share their ideas and projects online.</p>
-        <div class="home-actions">
-            <p><a href="/watch"><span class="icon-play icon-inline"></span>Watch the video</a></p>
-            <a class="button-with-icon" href="/sites/sign-up">
-                Create a site
-            </a>
-        </div>
+<section class="home-hero" aria-label="About Blot">
+    <section class="home-intro home-panel">
+        <h1>Blot turns a folder into a website</h1>
+
+        <p class="home-video-link">
+            <a href="/watch" data-watch-trigger><span class="icon-play icon-inline" aria-hidden="true"></span>Watch the video</a>
+        </p>
+
+        <p>Write with the tools you already use. Add files to a folder and Blot publishes them to your site.</p>
+
+        <nav class="home-links" aria-label="Blot links">
+            <a href="/how">How to use Blot{{> chevron}}</a>
+            <a href="/templates">Templates{{> chevron}}</a>
+            <a href="/about">About{{> chevron}}</a>
+        </nav>
     </section>
+
+    {{#featured}}
+    <section class="home-featured" aria-label="People who use Blot">
+        <ul id="home-featured-grid" class="home-featured-grid">
+            {{#sites}}
+            <li class="home-featured-item">
+                <a class="home-avatar" target="_blank" rel="noopener" href="{{{link}}}">
+                    <img
+                        src="{{#cdn}}{{{image}}}{{/cdn}}"
+                        alt="{{name}}"
+                        width="{{featured.image_size}}"
+                        height="{{featured.image_size}}"
+                    />
+                    <span class="home-avatar-card">
+                        <span class="home-avatar-name">{{name}}</span>
+                        <span class="home-avatar-meta">{{bio}}{{#tenure_label}} <span class="home-avatar-tenure"><span aria-hidden="true">·</span> Joined Blot {{tenure_label}}</span>{{/tenure_label}}</span>
+                    </span>
+                </a>
+            </li>
+            {{/sites}}
+            <li class="home-featured-action">
+                <a class="brochure-create-button" href="/sites/sign-up">Create site</a>
+            </li>
+        </ul>
+    </section>
+    {{/featured}}
+</section>
+
+<section class="watch-screen" data-watch-screen aria-label="Blot video" aria-hidden="true">
+    {{> video}}
+    <button class="watch-close" data-watch-close type="button" aria-label="Close video">
+        <span class="watch-close-icon" aria-hidden="true"></span>
+    </button>
+</section>
+
+<section class="templates-hero" aria-labelledby="templates-hero-title">
+    <div class="templates-hero-grid">
+        <div class="templates-hero-copy">
+            <h1 id="templates-hero-title">Templates</h1>
+            <p>Explore the kinds of sites you can build with Blot. Start with a folder, choose a template, and make it a website.</p>
+            <a class="templates-hero-button home-tools-cta" href="/templates">View templates</a>
+        </div>
+
+        {{#allTemplates}}
+        <a href="/templates/{{slug}}" class="templates-hero-image" data-screenshot-variant="desktop" aria-label="View {{name}} template">
+            <img
+                src="{{#cdn}}/images/examples/{{slug}}/0.png{{/cdn}}"
+                width="2120" height="1560"
+                alt=""
+                loading="lazy"
+                decoding="async" />
+            <span class="home-avatar-card" aria-hidden="true">
+                <span class="home-avatar-name">{{name}}</span>
+                <span class="home-avatar-meta">Template</span>
+            </span>
+        </a>
+        {{/allTemplates}}
+
+        {{#allTemplates}}
+        <a href="/templates/{{slug}}" class="templates-hero-image" data-screenshot-variant="mobile" aria-label="View {{name}} template">
+            <img
+                src="{{#cdn}}/images/examples/{{slug}}/0.mobile.png{{/cdn}}"
+                width="800" height="1300"
+                alt=""
+                loading="lazy"
+                decoding="async" />
+            <span class="home-avatar-card" aria-hidden="true">
+                <span class="home-avatar-name">{{name}}</span>
+                <span class="home-avatar-meta">Template</span>
+            </span>
+        </a>
+        {{/allTemplates}}
+    </div>
+</section>
+
+<section class="home-tools" aria-labelledby="home-tools-title">
+    <h2 id="home-tools-title">Works with the tools you already use</h2>
+
+    <p class="home-tools-intro">
+        There's no publishing interface, just files and folders. This means that Blot works with your favorite text editor.
+    </p>
+
+    <nav class="home-tools-list" aria-label="Tools that work with Blot">
+        <a class="home-tool-button" href="/how/files/google-docs">
+            <img src="{{#cdn}}/how/tools/icons/google-docs.png{{/cdn}}" alt="" aria-hidden="true" />
+            <span>Google Docs</span>
+        </a>
+        <a class="home-tool-button" href="/how/tools/obsidian">
+            <img src="{{#cdn}}/how/tools/icons/obsidian.png{{/cdn}}" alt="" aria-hidden="true" />
+            <span>Obsidian</span>
+        </a>
+        <a class="home-tool-button" href="/how/sync/icloud">
+            <img src="{{#cdn}}/images/sync/icloud.svg{{/cdn}}" alt="" aria-hidden="true" />
+            <span>iCloud</span>
+        </a>
+        <a class="home-tool-button" href="/how/tools/word">
+            <img src="{{#cdn}}/how/tools/icons/word.png{{/cdn}}" alt="" aria-hidden="true" />
+            <span>Word</span>
+        </a>
+        <a class="home-tool-button" href="/how/tools/ia-writer">
+            <img src="{{#cdn}}/how/tools/icons/ia-writer.png{{/cdn}}" alt="" aria-hidden="true" />
+            <span>iA Writer</span>
+        </a>
+        <a class="home-tool-button" href="/how/sync/dropbox">
+            <img src="{{#cdn}}/images/sync/dropbox.svg{{/cdn}}" alt="" aria-hidden="true" />
+            <span>Dropbox</span>
+        </a>
+        <a class="home-tool-button" href="/how/sync/google-drive">
+            <img src="{{#cdn}}/images/sync/google-drive.svg{{/cdn}}" alt="" aria-hidden="true" />
+            <span>Google Drive</span>
+        </a>
+        <a class="home-tool-button" href="/how/sync/git">
+            <img src="{{#cdn}}/images/sync/git.svg{{/cdn}}" alt="" aria-hidden="true" />
+            <span>Git</span>
+        </a>
+        <a class="home-tool-button" href="/how/tools/ulysses">
+            <img src="{{#cdn}}/how/tools/icons/ulysses.png{{/cdn}}" alt="" aria-hidden="true" />
+            <span>Ulysses</span>
+        </a>
+        <a class="home-tool-button" href="/how/tools/bear">
+            <img src="{{#cdn}}/how/tools/icons/bear.png{{/cdn}}" alt="" aria-hidden="true" />
+            <span>Bear</span>
+        </a>
+    </nav>
+
+    <a class="home-tools-cta" href="/how/tools">Browse all tools</a>
 </section>
