@@ -1,24 +1,51 @@
 var crypto = require("crypto");
 var config = require("config");
 
-// Two-factor secrets must be reversible (we need the plaintext to check
-// codes against them) so, unlike passwords, they can't just be hashed.
-// Encrypt them at rest instead, deriving the key from a dedicated secret
-// with a session-secret fallback so self-hosted installs don't need a
-// second env var configured. Mirrors the ephemeral-secret fallback in
-// dashboard/util/session.js, with the same restart caveat: without a
-// configured secret, previously-encrypted totpSecrets become unreadable
-// (and 2FA login breaks) whenever this process restarts.
-var base = config.security.totp_secret || config.session.secret;
+// Bump this whenever the key derivation changes, and add a branch below to
+// derive the matching key for ciphertext tagged with an older version (see
+// decrypt.js, which reads this version back off each ciphertext). Without
+// this, rotating the key would make every existing totpSecret permanently
+// unrecoverable instead of migratable.
+var CURRENT_VERSION = 1;
+
+var base = config.security.totp_secret;
 
 if (!base) {
-  base = crypto.randomBytes(32).toString("hex");
-  console.warn(
-    "BLOT_TOTP_ENCRYPTION_SECRET and BLOT_SESSION_SECRET are both unset; " +
-      "using a process-local ephemeral key to encrypt two-factor secrets. " +
-      "Existing two-factor secrets will become unreadable when this " +
-      "process restarts."
-  );
+  // Unlike BLOT_SESSION_SECRET (where an ephemeral per-process fallback
+  // just costs everyone their dashboard session on restart), silently
+  // deriving this key risks two failure modes that are much worse and go
+  // unnoticed until a user is already locked out:
+  //   - rotating BLOT_SESSION_SECRET (an unrelated, legitimate ops action)
+  //     would make every existing totpSecret permanently undecryptable.
+  //   - running more than one process without either secret set means
+  //     each process picks its own random key, so which process handles a
+  //     login determines whether it succeeds.
+  // In production, fail loudly at boot instead of degrading silently at
+  // decrypt time (see checkTotp.js's catch, which falls through to backup
+  // codes with no way for the user to tell why the authenticator stopped
+  // working).
+  if (config.environment === "production") {
+    throw new Error(
+      "BLOT_TOTP_ENCRYPTION_SECRET must be set in production. It encrypts " +
+        "two-factor secrets at rest and must stay stable and identical " +
+        "across every process; see app/models/user/totp/encryptionKey.js."
+    );
+  }
+
+  base = config.session.secret;
+
+  if (!base) {
+    base = crypto.randomBytes(32).toString("hex");
+    console.warn(
+      "BLOT_TOTP_ENCRYPTION_SECRET and BLOT_SESSION_SECRET are both unset; " +
+        "using a process-local ephemeral key to encrypt two-factor secrets. " +
+        "Existing two-factor secrets will become unreadable when this " +
+        "process restarts."
+    );
+  }
 }
 
-module.exports = crypto.scryptSync(base, "blot-totp-secret-encryption", 32);
+module.exports = {
+  version: CURRENT_VERSION,
+  key: crypto.scryptSync(base, "blot-totp-secret-encryption", 32)
+};

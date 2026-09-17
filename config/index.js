@@ -205,9 +205,12 @@ module.exports = {
   },
 
   security: {
-    // Used to encrypt two-factor authentication secrets at rest. Falls
-    // back to the session secret (see models/user/totp/encryptionKey.js)
-    // so self-hosted installs don't need a second secret configured.
+    // Used to encrypt two-factor authentication secrets at rest. Required
+    // in production -- app/models/user/totp/encryptionKey.js throws at
+    // boot if this is unset there, rather than falling back to the
+    // session secret (or a random per-process key), either of which can
+    // silently lock users out of 2FA. In development it falls back to the
+    // session secret for convenience.
     totp_secret: process.env.BLOT_TOTP_ENCRYPTION_SECRET,
   },
 

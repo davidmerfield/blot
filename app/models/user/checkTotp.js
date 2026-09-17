@@ -32,6 +32,14 @@ module.exports = function checkTotp(uid, code, callback) {
     try {
       secret = decrypt(user.totpSecret);
     } catch (err) {
+      // This should never happen once BLOT_TOTP_ENCRYPTION_SECRET is set
+      // (see app/models/user/totp/encryptionKey.js). If it does, the user's
+      // authenticator app will silently stop working with no error surfaced
+      // anywhere except here -- log it so an operator can notice and fix
+      // the key before backup codes run out and they're locked out for good.
+      console.error(
+        "Failed to decrypt totpSecret for user " + uid + ": " + err.message
+      );
       secret = null;
     }
 

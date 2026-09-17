@@ -54,6 +54,12 @@ export PUPPETEER_EXECUTABLE_PATH=
 # If omitted, Blot warns and generates a secure process-local fallback; because
 # that fallback changes at each restart, all existing dashboard sessions expire.
 export BLOT_SESSION_SECRET=
+# Encrypts two-factor secrets at rest, same generation method as above.
+# Required in production: unlike BLOT_SESSION_SECRET, Blot refuses to boot
+# in production without this set, rather than deriving a key that could
+# silently vary across processes or break on an unrelated session-secret
+# rotation.
+export BLOT_TOTP_ENCRYPTION_SECRET=
 export BLOT_BACKUP_SECRET=
 export BLOT_WEBHOOKS_SECRET=
 
