@@ -1,4 +1,5 @@
 const parse5 = require("parse5");
+const he = require("he");
 
 const htmlExtRegex = /\.html$/;
 const fileExtRegex = /[^/]*\.[^/]*$/;
@@ -50,8 +51,12 @@ const parseSrcset = (value) => {
 // candidate) is not, so this errs on the side of over-matching:
 // - attribute values are matched whether quoted, single-quoted or bare
 // - a lookbehind keeps "data-src" etc. from being mistaken for "src"
+// - an unquoted value is only terminated by whitespace or ">", matching
+//   the HTML tokenizer's actual unquoted-attribute-value state: quotes,
+//   "=", "<" and "`" are all valid (if ill-advised) mid-value characters
+//   that parse5 keeps rather than treating as delimiters
 const candidateAttrRegex =
-  /(?<![\w-])(href|src|poster|srcset)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi;
+  /(?<![\w-])(href|src|poster|srcset)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
 
 function isCandidateFolderUrl(url, hostPatterns) {
   if (!url || url.startsWith("data:")) return false;
@@ -75,13 +80,26 @@ function mayNeedFolderLinkReplacement(html, hostPatterns) {
 
   while ((match = candidateAttrRegex.exec(html))) {
     const name = match[1].toLowerCase();
-    const value = match[2] !== undefined
+    const raw = match[2] !== undefined
       ? match[2]
       : match[3] !== undefined
       ? match[3]
       : match[4];
 
-    if (!value) continue;
+    // Check the undecoded value first: cheap, and avoids running entity
+    // decoding over a multi-megabyte base64 data: URI for no reason.
+    if (!raw || raw.startsWith("data:")) continue;
+
+    // parse5 decodes character references in attribute values before the
+    // real per-node walk below ever sees them (e.g. "test&#46;jpg" becomes
+    // "test.jpg", changing whether it looks like it has a file extension),
+    // so decode here too rather than testing the raw source text.
+    let value;
+    try {
+      value = he.decode(raw);
+    } catch (e) {
+      return true;
+    }
 
     if (name === "srcset") {
       const candidates = parseSrcset(value);
