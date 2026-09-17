@@ -3,23 +3,16 @@ var checkPassword = require("../checkPassword");
 var { MAX_PASSWORD_LENGTH } = require("models/user/auth-limits");
 
 describe("account password verification", function () {
-  it("still verifies a legacy password longer than the new hash limit", function (done) {
+  it("rejects a password that exceeds the bcrypt byte limit before checking it", function (done) {
+    spyOn(User, "checkPassword");
     var password = "a".repeat(MAX_PASSWORD_LENGTH + 1);
 
-    spyOn(User, "checkPassword").and.callFake(function (uid, supplied, callback) {
-      callback(null, true);
-    });
-
     checkPassword(
-      { body: { password }, user: { uid: "legacy-password" } },
+      { body: { password }, user: { uid: "too-long-password" } },
       {},
       function (err) {
-        expect(err).toBeUndefined();
-        expect(User.checkPassword).toHaveBeenCalledWith(
-          "legacy-password",
-          password,
-          jasmine.any(Function)
-        );
+        expect(err.message).toEqual("Your password is too long.");
+        expect(User.checkPassword).not.toHaveBeenCalled();
         done();
       }
     );

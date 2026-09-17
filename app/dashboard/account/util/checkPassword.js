@@ -1,12 +1,15 @@
 var User = require("models/user");
+var { passwordIsTooLong } = require("models/user/auth-limits");
 
 module.exports = function checkPassword(req, res, next) {
   if (!req.body.password) {
     return next(new Error("Please enter your password"));
   }
 
-  // Verify the supplied password even if it exceeds the new 72-byte limit so
-  // users with legacy bcrypt hashes can still confirm their identity.
+  if (passwordIsTooLong(req.body.password)) {
+    return next(new Error("Your password is too long."));
+  }
+
   User.checkPassword(req.user.uid, req.body.password, function (err, match) {
     if (err) return next(err);
 

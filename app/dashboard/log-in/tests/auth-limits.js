@@ -18,34 +18,19 @@ describe("log in authentication limits", function () {
     );
   });
 
-  it("still verifies a legacy password longer than the new hash limit", function (done) {
-    const password = "a".repeat(MAX_PASSWORD_LENGTH + 1);
-
-    spyOn(User, "checkPassword").and.callFake(function (uid, supplied, callback) {
-      callback(null, true);
-    });
+  it("rejects a password that is too long before checking it", function (done) {
+    spyOn(User, "checkPassword");
 
     const req = {
-      body: { password },
+      body: { password: "a".repeat(MAX_PASSWORD_LENGTH + 1) },
       query: {},
       user: { uid: "too-long-password" },
-      session: {},
-    };
-    const res = {
-      cookie: function () {},
-      redirect: function (url) {
-        expect(url).toEqual("/sites");
-        expect(User.checkPassword).toHaveBeenCalledWith(
-          "too-long-password",
-          password,
-          jasmine.any(Function)
-        );
-        done();
-      },
     };
 
-    checkPassword(req, res, function (err) {
-      done.fail(err || new Error("legacy overlong passwords must still be verified"));
+    checkPassword(req, {}, function (err) {
+      expect(err.code).toEqual("PASSWORDTOOLONG");
+      expect(User.checkPassword).not.toHaveBeenCalled();
+      done();
     });
   });
 });
