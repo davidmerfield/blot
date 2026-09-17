@@ -114,7 +114,7 @@ jobs:
         run: docker build -f proxy/Dockerfile -t blot-proxy:e2e proxy/
 
       - name: Pull Blot app image
-        run: docker pull ghcr.io/davidmerfield/blot:test-latest
+        run: docker pull ghcr.io/blotcms/blot:test-latest
 
       - name: Start the stack
         run: docker compose -f proxy/e2e/docker-compose.yml up -d --wait --wait-timeout 420
