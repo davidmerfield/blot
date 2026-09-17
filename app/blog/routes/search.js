@@ -1,5 +1,9 @@
 const searchQueryString = require("../lib/searchQuery");
 
+// A search_results fetch error (other than the statusCode case
+// retrieve/index.js re-throws) no longer reaches next(err)/error.html - it's
+// swallowed and the page renders with no results. See the note in
+// render/retrieve/index.js.
 module.exports = function (req, res, next) {
   const query = searchQueryString(req.query.q || "");
 
