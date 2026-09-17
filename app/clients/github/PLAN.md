@@ -477,7 +477,7 @@ Indexes:
 - `clients:github:installation:{installation_id}` → set of blog IDs (webhook fan-out is usually 1:1 but a future subfolder feature might change that).
 - `clients:github:user:{github_user_id}` → set of blog IDs (token refresh / revocation).
 
-Tokens at rest should be treated like Dropbox tokens (Redis, not logged). Encryption-at-rest is a broader secrets project, not GitHub-specific.
+Tokens at rest should be treated like Dropbox tokens: plain in Redis, never logged. Blot has no existing helper for encrypting stored credentials — Dropbox and Google Drive tokens are not encrypted at rest either — so this plan does not invent one either; encryption-at-rest is a broader secrets project, not GitHub-specific.
 
 Installation tokens are **not** stored; mint from the private key when needed (`iss` = App ID, `iat`/`exp`, RS256) then `POST /app/installations/{id}/access_tokens`.
 
@@ -528,7 +528,7 @@ None of this is code; it is a sequence so the work can be split.
 
 ## Open questions
 
-1. **Create-repo in the picker?** Convenient for people with no existing repo. Needs `administration:write` or the `public_repo`/`repo` user permission via the user token (`POST /user/repos` works with a user token if the app has the right permission — actually creating a repo requires the `Administration` permission on GitHub Apps, or a user token with that capability). That permission is broader than Contents. Safer v1: only attach an existing repo; the user creates it on GitHub in 10 seconds.
+1. **Create-repo in the picker?** Convenient for people with no existing repo, but `POST /user/repos` needs the `Administration` repository permission on the GitHub App (or a user token with `repo`/`public_repo` scope) — broader than the `Contents`/`Metadata` permissions this plan otherwise grants. Safer v1: only attach an existing repo; the user creates it on GitHub in 10 seconds.
 2. **Subfolder of a repo** (e.g. `/blog` in a monorepo). Not requested. Add later as an optional path prefix on the same GitHub APIs.
 3. **GitHub Enterprise Server.** Out of scope; would need a configurable API origin.
 4. **GitLab / Bitbucket.** Separate clients. This plan is GitHub-only.
