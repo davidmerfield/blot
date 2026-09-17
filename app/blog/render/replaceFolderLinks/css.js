@@ -1,5 +1,6 @@
 const lookupFile = require("./lookupFile");
 const blogHosts = require("../../lib/blogHosts");
+const BLOT_CDN_TOKEN = require("./cdnToken");
 
 const htmlExtRegex = /\.html$/;
 const fileExtRegex = /[^/]*\.[^/]*$/;
@@ -32,8 +33,8 @@ module.exports = async function replaceCssUrls(blog, css, log = () => {}) {
         // Use the unquoted or quoted URL, whichever is present
         let url = match[1] || match[2];
 
-        // Skip data URLs
-        if (url.startsWith("data:")) {
+        // Skip data URLs and URLs already baked with the CDN token
+        if (url.startsWith("data:") || url.indexOf(BLOT_CDN_TOKEN) === 0) {
           return;
         }
 

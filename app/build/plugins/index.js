@@ -41,7 +41,11 @@ var loaded = loadPlugins({
   typeset: require("./typeset"),
   videoEmbeds: require("./videoEmbeds"),
   wikilinks: require("./wikilinks"),
-  zoom: require("./zoom")
+  zoom: require("./zoom"),
+  // Must run last: it bakes any remaining folder-relative href/src/poster/
+  // srcset into a versioned CDN URL, so it needs to run after every plugin
+  // that could itself introduce a new folder-relative link (e.g. autoImage).
+  folderAssets: require("./folderAssets")
 });
 
 var list = loaded.list;

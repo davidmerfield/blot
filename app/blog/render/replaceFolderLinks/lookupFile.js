@@ -8,6 +8,7 @@ const {
   GLOBAL_STATIC_DIR,
   GLOBAL_STATIC_SUBDIRECTORIES,
 } = require("../../lib/staticPaths");
+const BLOT_CDN_TOKEN = require("./cdnToken");
 
 class Cache {
   constructor() {
@@ -65,13 +66,13 @@ async function lookupFile(blogID, cacheID, value) {
     try {
       // check  if the file exists in the global static files set
       if (globalStaticFiles.has(pathFromValue)) {
-        return `${config.cdn.origin}${value}${hash_}`;
+        return `${BLOT_CDN_TOKEN}${value}${hash_}`;
       }
       await fs.stat(filePath);
       // store the pathFromValue in set of valid static files
       // so we can use it later
       globalStaticFiles.add(pathFromValue);
-      return `${config.cdn.origin}${value}${hash_}`;
+      return `${BLOT_CDN_TOKEN}${value}${hash_}`;
     } catch (err) {}
   }
 
@@ -105,7 +106,7 @@ async function lookupFile(blogID, cacheID, value) {
     }
   }
 
-  return `${config.cdn.origin}/folder/${result}${query}${hash_}`;
+  return `${BLOT_CDN_TOKEN}/folder/${result}${query}${hash_}`;
 }
 
 async function getStat(blogFolder, path) {

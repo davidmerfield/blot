@@ -5,6 +5,7 @@ const fileExtRegex = /[^/]*\.[^/]*$/;
 
 const lookupFile = require("./lookupFile");
 const blogHosts = require("../../lib/blogHosts");
+const BLOT_CDN_TOKEN = require("./cdnToken");
 
 const parseSrcset = (value) => {
   if (typeof value !== "string") {
@@ -71,6 +72,13 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
               continue;
             }
 
+            // Already baked at build time (app/build/plugins/folderAssets)
+            // or served from the template-output-cache - no need to look
+            // it up again, middleware.js resolves the token unconditionally.
+            if (attr.value.indexOf(BLOT_CDN_TOKEN) === 0) {
+              continue;
+            }
+
             // Check if URL is relative or matches any of the host patterns
             const isRelative = attr.value.indexOf("://") === -1;
             const matchesHost = hostPatterns.some(pattern => pattern.test(attr.value));
@@ -88,7 +96,11 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
             }
 
             const hasRelative = candidates.some((candidate) => {
-              if (!candidate.url || candidate.url.startsWith("data:")) {
+              if (
+                !candidate.url ||
+                candidate.url.startsWith("data:") ||
+                candidate.url.indexOf(BLOT_CDN_TOKEN) === 0
+              ) {
                 return false;
               }
               const isRelative = candidate.url.indexOf("://") === -1;
@@ -113,8 +125,12 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
     for (const node of elements) {
       for (const attr of node.attrs) {
         if (attr.name === "href" || attr.name === "src" || attr.name === "poster") {
+          if (attr.value.indexOf(BLOT_CDN_TOKEN) === 0) {
+            continue;
+          }
+
           let value = attr.value;
-            
+
           // Remove host if it matches any of the patterns
           hostPatterns.forEach(pattern => {
             value = value.replace(pattern, '');
@@ -152,7 +168,11 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
               for (const candidate of candidates) {
                 const originalUrl = candidate.url;
 
-                if (!originalUrl || originalUrl.startsWith("data:")) {
+                if (
+                  !originalUrl ||
+                  originalUrl.startsWith("data:") ||
+                  originalUrl.indexOf(BLOT_CDN_TOKEN) === 0
+                ) {
                   rebuilt.push(
                     candidate.descriptor
                       ? `${originalUrl} ${candidate.descriptor}`
