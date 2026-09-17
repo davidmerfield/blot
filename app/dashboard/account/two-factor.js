@@ -159,8 +159,22 @@ function confirmSetup(req, res, next) {
   // Record the confirmation code as used before enabling 2FA, so the same
   // code can't also be replayed to log in for the rest of its validity
   // window -- otherwise this code, unlike every other TOTP code, would
-  // never pass through the replay guard in consumeTotpToken.
-  User.consumeTotpToken(req.user.uid, canonicalCode, function () {
+  // never pass through the replay guard in consumeTotpToken. Both
+  // arguments matter here: an error (e.g. Redis unreachable) or accepted
+  // === false (lost a compare-and-swap race against a concurrent request,
+  // most likely a double submission of this same form) must stop the
+  // setup from completing with an unrecorded, still-replayable code.
+  User.consumeTotpToken(req.user.uid, canonicalCode, function (err, accepted) {
+    if (err) return next(err);
+
+    if (!accepted) {
+      return next(
+        new Error(
+          "Something changed on your account while confirming two-factor authentication; please try again."
+        )
+      );
+    }
+
     User.enableTotp(req.user.uid, secret, function (err, backupCodes) {
       if (err) return next(err);
 

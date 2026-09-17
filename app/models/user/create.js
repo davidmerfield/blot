@@ -37,8 +37,7 @@ module.exports = function create (
         totpEnabled: false,
         totpSecret: "",
         totpBackupCodes: [],
-        totpLastUsedCode: "",
-        totpLastUsedAt: 0
+        totpUsedCodes: []
       };
 
       user = await new Promise(function (resolve, reject) {

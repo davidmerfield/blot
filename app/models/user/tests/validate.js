@@ -31,8 +31,7 @@ describe("user validate", function () {
       totpEnabled: false,
       totpSecret: "",
       totpBackupCodes: [],
-      totpLastUsedCode: "",
-      totpLastUsedAt: 0,
+      totpUsedCodes: [],
       paymentMethods: []
     }, overrides);
   }

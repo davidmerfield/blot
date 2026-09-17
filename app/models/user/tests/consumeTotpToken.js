@@ -53,7 +53,7 @@ describe("user consumeTotpToken", function () {
 
       User.set(
         test.user.uid,
-        { totpLastUsedAt: Date.now() - 91 * 1000 },
+        { totpUsedCodes: [{ code: "123456", at: Date.now() - 91 * 1000 }] },
         function (err) {
           if (err) return done.fail(err);
 
@@ -64,6 +64,29 @@ describe("user consumeTotpToken", function () {
           });
         }
       );
+    });
+  });
+
+  it("rejects an earlier code replayed after a different code was accepted in between", function (done) {
+    var test = this;
+
+    // Regression test: with only the single most-recently-accepted code
+    // tracked, accepting "654321" would forget that "123456" is still
+    // within its own replay window, letting a captured "123456" through.
+    consumeTotpToken(test.user.uid, "123456", function (err, first) {
+      if (err) return done.fail(err);
+      expect(first).toBe(true);
+
+      consumeTotpToken(test.user.uid, "654321", function (err, second) {
+        if (err) return done.fail(err);
+        expect(second).toBe(true);
+
+        consumeTotpToken(test.user.uid, "123456", function (err, third) {
+          if (err) return done.fail(err);
+          expect(third).toBe(false);
+          done();
+        });
+      });
     });
   });
 });

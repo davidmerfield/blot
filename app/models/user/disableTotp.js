@@ -10,8 +10,7 @@ module.exports = function disableTotp(uid, callback) {
       totpEnabled: false,
       totpSecret: "",
       totpBackupCodes: [],
-      totpLastUsedCode: "",
-      totpLastUsedAt: 0
+      totpUsedCodes: []
     },
     callback
   );

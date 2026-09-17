@@ -12,8 +12,7 @@ var MODEL = {
   totpEnabled: "boolean",
   totpSecret: "string",
   totpBackupCodes: "array",
-  totpLastUsedCode: "string",
-  totpLastUsedAt: "number",
+  totpUsedCodes: "array",
   paymentMethods: "array"
 };
 

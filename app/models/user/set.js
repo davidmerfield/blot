@@ -61,9 +61,7 @@ module.exports = function save(uid, updates, callback) {
       if (typeof user.totpSecret === "undefined") user.totpSecret = "";
       if (typeof user.totpBackupCodes === "undefined")
         user.totpBackupCodes = [];
-      if (typeof user.totpLastUsedCode === "undefined")
-        user.totpLastUsedCode = "";
-      if (typeof user.totpLastUsedAt === "undefined") user.totpLastUsedAt = 0;
+      if (typeof user.totpUsedCodes === "undefined") user.totpUsedCodes = [];
       if (typeof user.paymentMethods === "undefined") user.paymentMethods = [];
 
       var result = await new Promise(function (resolve, reject) {

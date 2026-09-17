@@ -186,6 +186,34 @@ describe("two-factor authentication route", function () {
     expect(result.session.pendingTotpSetup).toBeUndefined();
   });
 
+  it("does not enable two-factor when the confirmation code isn't recorded as used", async function () {
+    var otplib = require("otplib");
+    var secret = "AAAAAAAAAAAAAAAA";
+
+    spyOn(User, "enableTotp");
+    // Lost a compare-and-swap race against a concurrent request.
+    spyOn(User, "consumeTotpToken").and.callFake(function (uid, code, callback) {
+      callback(null, false);
+    });
+
+    var code = otplib.authenticator.generate(secret);
+
+    var result = await request({
+      method: "POST",
+      url: "/enable/confirm",
+      session: {
+        pendingTotpSetup: {
+          secret: User.encryptTotpSecret(secret),
+          createdAt: Date.now(),
+        },
+      },
+      body: { code: code },
+    });
+
+    expect(result.error).toBeDefined();
+    expect(User.enableTotp).not.toHaveBeenCalled();
+  });
+
   it("requires a password to disable two-factor authentication", async function () {
     spyOn(User, "disableTotp").and.callFake(function (uid, callback) {
       callback(null);
