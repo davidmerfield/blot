@@ -35,6 +35,72 @@ const parseSrcset = (value) => {
   return parsed;
 };
 
+// Cheap pre-scan of the raw output string, run before the expensive
+// parse5.parse + tree-walk below. Most rendered pages have no folder-file
+// links at all (or only ones we'd never touch, e.g. plain .html links or
+// fully external URLs), so this lets us skip the parse entirely in the
+// common case.
+//
+// This mirrors the qualification rules applied later during the real
+// per-node walk (relative-or-host-matching, not a data: URL, has a
+// non-.html file extension) but reads attribute values straight out of the
+// unparsed string via regex instead of DOM nodes. Matches too broadly is
+// fine - it just means we fall through to the real parse for a page that
+// turns out to need no changes. Matching too narrowly (missing a real
+// candidate) is not, so this errs on the side of over-matching:
+// - attribute values are matched whether quoted, single-quoted or bare
+// - a lookbehind keeps "data-src" etc. from being mistaken for "src"
+const candidateAttrRegex =
+  /(?<![\w-])(href|src|poster|srcset)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi;
+
+function isCandidateFolderUrl(url, hostPatterns) {
+  if (!url || url.startsWith("data:")) return false;
+
+  const isRelative = url.indexOf("://") === -1;
+  const matchesHost = hostPatterns.some((pattern) => pattern.test(url));
+
+  if (!isRelative && !matchesHost) return false;
+
+  let stripped = url;
+  hostPatterns.forEach((pattern) => {
+    stripped = stripped.replace(pattern, "");
+  });
+
+  return !htmlExtRegex.test(stripped) && fileExtRegex.test(stripped);
+}
+
+function mayNeedFolderLinkReplacement(html, hostPatterns) {
+  candidateAttrRegex.lastIndex = 0;
+  let match;
+
+  while ((match = candidateAttrRegex.exec(html))) {
+    const name = match[1].toLowerCase();
+    const value = match[2] !== undefined
+      ? match[2]
+      : match[3] !== undefined
+      ? match[3]
+      : match[4];
+
+    if (!value) continue;
+
+    if (name === "srcset") {
+      const candidates = parseSrcset(value);
+      if (
+        candidates &&
+        candidates.some((candidate) =>
+          isCandidateFolderUrl(candidate.url, hostPatterns)
+        )
+      ) {
+        return true;
+      }
+    } else if (isCandidateFolderUrl(value, hostPatterns)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
   try {
     const blogID = blog.id;
@@ -45,6 +111,12 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
     const hostPatterns = hosts.map(
       (host) => new RegExp(`^(?:https?:)?//${host}`)
     );
+
+    // Skip the expensive parse5 parse + tree-walk entirely when nothing in
+    // the output could possibly need rewriting.
+    if (!mayNeedFolderLinkReplacement(html, hostPatterns)) {
+      return html;
+    }
 
     const document = parse5.parse(html);
     const elements = [];
