@@ -8,7 +8,7 @@
 
   <p>Or enter this key manually: <code>{{secret}}</code></p>
 
-  <form method="POST" action="/sites/account/two-factor/enable/confirm">
+  <form class="dashboard-form" method="POST" action="/sites/account/two-factor/enable/confirm">
     <input type="hidden" name="_csrf" value="{{csrftoken}}">
 
     <label>Enter the 6-digit code from the app to confirm:

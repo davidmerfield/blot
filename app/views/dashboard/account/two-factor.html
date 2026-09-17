@@ -8,8 +8,8 @@
   <p>You have {{user.totpBackupCodesRemaining}} unused backup code{{^user.totpBackupCodesRemaining}}s{{/user.totpBackupCodesRemaining}}{{#user.totpBackupCodesRemaining}} left{{/user.totpBackupCodesRemaining}}.</p>
 
   <div class="buttons">
-    <a href="/sites/account/two-factor/backup-codes"><button type="button">Regenerate backup codes</button></a>
-    <a href="/sites/account/two-factor/disable"><button type="button" class="red">Turn off</button></a>
+    <a href="/sites/account/two-factor/backup-codes">Regenerate backup codes</a>
+    <a href="/sites/account/two-factor/disable" class="red">Turn off</a>
   </div>
   {{/user.totpEnabled}}
 
@@ -18,7 +18,7 @@
 
   {{#user.hasPassword}}
   <div class="buttons">
-    <a href="/sites/account/two-factor/enable"><button type="button">Set up two-factor authentication</button></a>
+    <a href="/sites/account/two-factor/enable">Set up two-factor authentication</a>
   </div>
   {{/user.hasPassword}}
   {{^user.hasPassword}}
