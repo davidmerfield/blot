@@ -1,5 +1,6 @@
 const config = require("config");
 const fs = require("fs-extra");
+const crypto = require("crypto");
 const { join, resolve } = require("path");
 const { promisify } = require("util");
 const hash = require("helper/hash");
@@ -14,6 +15,13 @@ const hashFileAsync = promisify(HashFile);
 // triggered by an unrelated dependency change doesn't force reading a
 // huge video/audio file just to version its URL.
 const MAX_CONTENT_HASH_SIZE = 5 * 1024 * 1024;
+
+// Below this, read the whole file into memory and hash it synchronously
+// instead of going through helper/transformer/hash's readable-stream
+// pipeline. Most folder-relative links point at small images/fonts, and
+// a stream's setup/event overhead measurably dominates the hash itself at
+// this size - a single buffered read+digest is faster in practice.
+const SMALL_FILE_HASH_SIZE = 256 * 1024;
 
 const ATTRS = ["href", "src", "poster"];
 const htmlExtRegex = /\.html$/i;
@@ -185,6 +193,11 @@ async function computeVersion(filePath, stat) {
   }
 
   try {
+    if (stat.size <= SMALL_FILE_HASH_SIZE) {
+      const buffer = await fs.readFile(filePath);
+      return crypto.createHash("sha1").update(buffer).digest("hex").slice(0, 8);
+    }
+
     const contentHash = await hashFileAsync(filePath);
     return contentHash.slice(0, 8);
   } catch (err) {
