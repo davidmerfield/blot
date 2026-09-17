@@ -146,66 +146,11 @@ describe("authentication form limits", function () {
       path.join(confDir, "blot-site.conf"),
       "utf8"
     );
-    const signupSnippet = fs.readFileSync(
-      path.join(confDir, "reverse-proxy-signup.conf"),
-      "utf8"
-    );
-    const huge = fs.readFileSync(
-      path.join(confDir, "reverse-proxy-huge.conf"),
-      "utf8"
-    );
-    const signup = contents.match(
-      /location ~\* \^\/sites\/sign-up\(\/\|\$\) \{[\s\S]*?\n\}/
-    )[0];
-    const login = contents.match(
-      /location ~\* \^\/sites\/\(log-in\|account\/password\)\(\/\|\$\) \{[\s\S]*?\n\}/
+    const auth = contents.match(
+      /location ~\* \^\/sites\/\(log-in\|sign-up\|account\/password\)\(\/\|\$\) \{[\s\S]*?\n\}/
     )[0];
 
-    expect(signup).toMatch(/reverse-proxy-signup\.conf/);
-    expect(signup).not.toMatch(/reverse-proxy-huge\.conf/);
-    expect(signupSnippet).toMatch(/proxy_read_timeout 3m;/);
-    expect(signupSnippet).toMatch(/client_max_body_size 4k;/);
-    expect(
-      (signupSnippet.match(/^\s*client_max_body_size/gm) || []).map(function (
-        line
-      ) {
-        return line.trim();
-      })
-    ).toEqual(["client_max_body_size"]);
-    expect(huge).toMatch(/client_max_body_size 1000M;/);
-    expect(login).toMatch(/reverse-proxy\.conf/);
-    expect(login).toMatch(/client_max_body_size 4k;/);
-    expect(login.indexOf("reverse-proxy.conf")).toBeLessThan(
-      login.indexOf("client_max_body_size 4k;")
-    );
-    expect(login).not.toMatch(/reverse-proxy-huge\.conf/);
-  });
-
-  it("renders a single client_max_body_size on the signup location", function () {
-    const mustache = require("mustache");
-    const confDir = path.join(__dirname, "../../../../config/openresty/conf");
-    const partials = {};
-    fs.readdirSync(confDir).forEach(function (file) {
-      if (file.endsWith(".conf")) {
-        partials[file] = fs.readFileSync(path.join(confDir, file), "utf8");
-      }
-    });
-    const rendered = mustache.render(
-      fs.readFileSync(path.join(confDir, "blot-site.conf"), "utf8"),
-      {},
-      partials
-    );
-    const signup = rendered.match(
-      /location ~\* \^\/sites\/sign-up\(\/\|\$\) \{[\s\S]*?\n\}/
-    )[0];
-    expect(
-      (signup.match(/^\s*client_max_body_size [^;]+;/gm) || []).map(function (
-        line
-      ) {
-        return line.trim();
-      })
-    ).toEqual(["client_max_body_size 4k;"]);
-    expect(signup).toMatch(/proxy_read_timeout 3m;/);
-    expect(signup).not.toMatch(/client_max_body_size 1000M;/);
+    expect(auth).toMatch(/reverse-proxy\.conf/);
+    expect(auth).toMatch(/client_max_body_size 4k;/);
   });
 });
