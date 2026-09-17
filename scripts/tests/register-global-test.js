@@ -77,13 +77,17 @@ module.exports = function registerGlobalTest() {
         // completion callback ignored its `err` and pushed `undefined`
         // anyway), which surfaced many calls later as a confusing
         // "Cannot read properties of undefined" once benchmark corpus runs
-        // started creating hundreds of blogs per user. A modest concurrency
-        // cap keeps contention on that shared user record low enough that
-        // the CAS retries reliably succeed, and any failure that does slip
-        // through now fails setup loudly instead of silently.
+        // started creating hundreds of blogs per user. createBlog.js now
+        // retries on that error with a fresh read, so contention just costs
+        // a few retries rather than a crash - a concurrency cap of 10 fully
+        // avoided the crash but was slow enough (with the corpus benchmark's
+        // 1000 blogs) to blow the spec's own 20-minute timeout; 40 keeps
+        // throughput up while createBlog.js's retries absorb the CAS
+        // contention that shows up at this concurrency. Any failure that
+        // does slip through still fails setup loudly instead of silently.
         async.timesLimit(
           total,
-          10,
+          40,
           function (index, next) {
             var result = { user: context.user };
             require("./util/createBlog").call(result, function (err) {
