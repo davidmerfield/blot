@@ -15,8 +15,13 @@ module.exports = function (done) {
     blog
   ) {
     if (err) {
-      console.log('HERE',err);
-      return done(new Error(err.handle));
+      // validate() (see app/models/blog/validate.js) fails with a plain
+      // {field: message} errors object rather than an Error instance; any
+      // other failure (e.g. Blog.create's User.set() call) is already a
+      // proper Error and should be passed through as-is so its real message
+      // (and stack) survives instead of being replaced with a blank
+      // "Error: undefined".
+      return done(err instanceof Error ? err : new Error(err.handle));
     }
 
     context.blogDirectory = localPath(blog.id, "/");
