@@ -291,4 +291,106 @@ describe("subscriptionLifecycle", function () {
       expect(details.overdue).toBe(false);
     });
   });
+
+  describe("removalDetails", function () {
+    it("marks overdue deletion_flow as due", function () {
+      var periodEnd = now - (ONE_MONTH_MS * 2) - 86400000;
+      var user = {
+        subscription: { status: "unpaid", current_period_end: Math.floor(periodEnd / 1000) }
+      };
+      var details = subscriptionLifecycle.removalDetails(user, now);
+      expect(details.due).toBe(true);
+      expect(details.reason).toEqual("overdue");
+      expect(details.skipReason).toBeNull();
+    });
+
+    it("marks cancelled accounts past grace as due", function () {
+      var periodEnd = now - (ONE_MONTH_MS * 2);
+      var user = {
+        subscription: { status: "canceled", current_period_end: Math.floor(periodEnd / 1000) }
+      };
+      var details = subscriptionLifecycle.removalDetails(user, now);
+      expect(details.due).toBe(true);
+      expect(details.reason).toEqual("cancelled");
+    });
+
+    it("skips overdue accounts still in grace_active", function () {
+      var periodEnd = now - 86400000;
+      var user = {
+        isDisabled: true,
+        subscription: { status: "past_due", current_period_end: Math.floor(periodEnd / 1000) }
+      };
+      var details = subscriptionLifecycle.removalDetails(user, now);
+      expect(details.due).toBe(false);
+      expect(details.skipReason).toEqual("overdue_grace_active");
+    });
+
+    it("skips overdue accounts in disabled_grace", function () {
+      var periodEnd = now - ONE_MONTH_MS - 86400000;
+      var user = {
+        isDisabled: true,
+        subscription: { status: "unpaid", current_period_end: Math.floor(periodEnd / 1000) }
+      };
+      var details = subscriptionLifecycle.removalDetails(user, now);
+      expect(details.due).toBe(false);
+      expect(details.skipReason).toEqual("overdue_disabled_grace");
+    });
+
+    it("skips cancelled accounts still in grace", function () {
+      var periodEnd = now - (ONE_MONTH_MS / 2);
+      var user = {
+        isDisabled: true,
+        subscription: { status: "canceled", current_period_end: Math.floor(periodEnd / 1000) }
+      };
+      var details = subscriptionLifecycle.removalDetails(user, now);
+      expect(details.due).toBe(false);
+      expect(details.skipReason).toEqual("cancelled_in_grace");
+    });
+
+    it("skips cancelled accounts whose period has not ended", function () {
+      var periodEnd = now + 86400000;
+      var user = {
+        isDisabled: true,
+        subscription: { status: "canceled", current_period_end: Math.floor(periodEnd / 1000) }
+      };
+      var details = subscriptionLifecycle.removalDetails(user, now);
+      expect(details.due).toBe(false);
+      expect(details.skipReason).toEqual("cancelled_period_not_ended");
+    });
+
+    it("skips unpaid accounts whose period end is still in the future", function () {
+      var periodEnd = now + 86400000;
+      var user = {
+        isDisabled: true,
+        subscription: { status: "unpaid", current_period_end: Math.floor(periodEnd / 1000) }
+      };
+      var details = subscriptionLifecycle.removalDetails(user, now);
+      expect(details.due).toBe(false);
+      expect(details.skipReason).toEqual("unpaid_or_past_due_period_not_ended");
+    });
+
+    it("skips disabled accounts that are not cancelled or overdue", function () {
+      var user = {
+        isDisabled: true,
+        subscription: { status: "active", current_period_end: Math.floor((now - 86400000) / 1000) }
+      };
+      var details = subscriptionLifecycle.removalDetails(user, now);
+      expect(details.due).toBe(false);
+      expect(details.skipReason).toEqual("disabled_without_lifecycle_match");
+    });
+
+    it("prefers overdue handling when cancel_at_period_end is also set", function () {
+      var periodEnd = now - 86400000;
+      var user = {
+        subscription: {
+          status: "past_due",
+          cancel_at_period_end: true,
+          current_period_end: Math.floor(periodEnd / 1000)
+        }
+      };
+      var details = subscriptionLifecycle.removalDetails(user, now);
+      expect(details.due).toBe(false);
+      expect(details.skipReason).toEqual("overdue_grace_active");
+    });
+  });
 });

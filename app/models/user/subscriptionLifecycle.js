@@ -229,12 +229,99 @@ function overdueDetails(user, now) {
   };
 }
 
+function removalDetails(user, now) {
+  now = now || Date.now();
+
+  var overdue = overdueDetails(user, now);
+  var cancellation = cancellationDetails(user, now);
+  var status = user && user.subscription && user.subscription.status;
+
+  if (overdue.overdue) {
+    if (overdue.phase === "deletion_flow") {
+      return {
+        due: true,
+        reason: "overdue",
+        skipReason: null,
+        overdue: overdue,
+        cancellation: cancellation,
+      };
+    }
+
+    return {
+      due: false,
+      reason: null,
+      skipReason: "overdue_" + overdue.phase,
+      overdue: overdue,
+      cancellation: cancellation,
+    };
+  }
+
+  if (cancellation.cancelled) {
+    if (!cancellation.periodEndedAt || !cancellation.periodEnded) {
+      return {
+        due: false,
+        reason: null,
+        skipReason: "cancelled_period_not_ended",
+        overdue: overdue,
+        cancellation: cancellation,
+      };
+    }
+
+    if (!deletionDue(user, now)) {
+      return {
+        due: false,
+        reason: null,
+        skipReason: "cancelled_in_grace",
+        overdue: overdue,
+        cancellation: cancellation,
+      };
+    }
+
+    return {
+      due: true,
+      reason: "cancelled",
+      skipReason: null,
+      overdue: overdue,
+      cancellation: cancellation,
+    };
+  }
+
+  if (status === "unpaid" || status === "past_due") {
+    return {
+      due: false,
+      reason: null,
+      skipReason: "unpaid_or_past_due_period_not_ended",
+      overdue: overdue,
+      cancellation: cancellation,
+    };
+  }
+
+  if (user && user.isDisabled) {
+    return {
+      due: false,
+      reason: null,
+      skipReason: "disabled_without_lifecycle_match",
+      overdue: overdue,
+      cancellation: cancellation,
+    };
+  }
+
+  return {
+    due: false,
+    reason: null,
+    skipReason: "not_a_removal_candidate",
+    overdue: overdue,
+    cancellation: cancellation,
+  };
+}
+
 module.exports = {
   ONE_MONTH_MS: ONE_MONTH_MS,
   cancellationDetails: cancellationDetails,
   deletionDue: deletionDue,
   overdueDetails: overdueDetails,
   paypalPeriodEndAtMs: paypalPeriodEndAtMs,
+  removalDetails: removalDetails,
   shouldDisableFromPaypalSubscription: shouldDisableFromPaypalSubscription,
   shouldDisableFromStripeSubscription: shouldDisableFromStripeSubscription,
   stripePeriodEndAtMs: stripePeriodEndAtMs,

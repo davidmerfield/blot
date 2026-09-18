@@ -18,6 +18,12 @@ function printUsage() {
   console.log("Finds cancelled and overdue accounts that have passed their");
   console.log("grace period and are due for removal.");
   console.log("");
+  console.log("This is not the same set as scripts/user/identify-overdue-users.js,");
+  console.log("which lists every disabled or Stripe unpaid account. This script");
+  console.log("only deletes accounts the subscription lifecycle considers due:");
+  console.log("  - cancelled, period ended, then 1 month of grace");
+  console.log("  - Stripe past_due/unpaid, period ended, then 2 months of grace");
+  console.log("");
   console.log("Options:");
   console.log("  -fast, --fast  list all candidates first and confirm once before deleting");
   console.log("  -h, --help     show this help output");
@@ -28,39 +34,34 @@ if (HELP_FLAG) {
   process.exit(0);
 }
 
-function candidateFromCancellation(user) {
-  var details = subscriptionLifecycle.cancellationDetails(user);
+function candidateFromUser(user) {
+  var removal = subscriptionLifecycle.removalDetails(user);
 
-  if (!details.cancelled || !details.periodEnded) return null;
-  if (!subscriptionLifecycle.deletionDue(user)) return null;
+  if (!removal.due) return null;
+
+  if (removal.reason === "overdue") {
+    return {
+      user: user,
+      reason: "overdue",
+      description:
+        "overdue since " +
+        moment(removal.overdue.startedAt).fromNow() +
+        " (" +
+        new Date(removal.overdue.startedAt).toISOString() +
+        ")",
+    };
+  }
 
   return {
     user: user,
     reason: "cancelled",
     description:
       "cancelled, subscription period ended " +
-      moment(details.periodEndedAt).fromNow() +
+      moment(removal.cancellation.periodEndedAt).fromNow() +
       " (" +
-      new Date(details.periodEndedAt).toISOString() +
+      new Date(removal.cancellation.periodEndedAt).toISOString() +
       "), provider=" +
-      details.provider,
-  };
-}
-
-function candidateFromOverdue(user) {
-  var overdue = subscriptionLifecycle.overdueDetails(user);
-
-  if (!overdue.overdue || overdue.phase !== "deletion_flow") return null;
-
-  return {
-    user: user,
-    reason: "overdue",
-    description:
-      "overdue since " +
-      moment(overdue.startedAt).fromNow() +
-      " (" +
-      new Date(overdue.startedAt).toISOString() +
-      ")",
+      removal.cancellation.provider,
   };
 }
 
@@ -120,8 +121,7 @@ function collectCandidates(done) {
 
   eachUser(
     function (user, next) {
-      var candidate =
-        candidateFromCancellation(user) || candidateFromOverdue(user);
+      var candidate = candidateFromUser(user);
 
       if (!candidate) return next();
 
