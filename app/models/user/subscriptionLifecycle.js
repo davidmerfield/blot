@@ -199,7 +199,10 @@ function overdueDetails(user, now) {
     };
   }
 
-  var startedAt = stripePeriodEndAtMs(stripe);
+  // Stripe keeps rolling current_period_end forward on unpaid subscriptions,
+  // so prefer the moment we recorded (or backfilled) the subscription going
+  // overdue, and fall back to the period end for users without one.
+  var startedAt = toMs(user.subscriptionOverdueSince) || stripePeriodEndAtMs(stripe);
   if (!startedAt) {
     return {
       overdue: false,
@@ -229,11 +232,30 @@ function overdueDetails(user, now) {
   };
 }
 
+// Returns the user updates needed to keep subscriptionOverdueSince in step with
+// a freshly retrieved Stripe subscription. 0 means "not overdue".
+function overdueSinceUpdates(user, subscription, now) {
+  now = now || Date.now();
+
+  var overdue =
+    subscription &&
+    (subscription.status === "past_due" || subscription.status === "unpaid");
+
+  if (overdue) {
+    return toMs(user.subscriptionOverdueSince)
+      ? {}
+      : { subscriptionOverdueSince: now };
+  }
+
+  return user.subscriptionOverdueSince ? { subscriptionOverdueSince: 0 } : {};
+}
+
 module.exports = {
   ONE_MONTH_MS: ONE_MONTH_MS,
   cancellationDetails: cancellationDetails,
   deletionDue: deletionDue,
   overdueDetails: overdueDetails,
+  overdueSinceUpdates: overdueSinceUpdates,
   paypalPeriodEndAtMs: paypalPeriodEndAtMs,
   shouldDisableFromPaypalSubscription: shouldDisableFromPaypalSubscription,
   shouldDisableFromStripeSubscription: shouldDisableFromStripeSubscription,

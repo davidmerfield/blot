@@ -4,6 +4,7 @@ var stripe = require("stripe")(config.stripe.secret);
 var User = require("models/user");
 var prettyPrice = require("helper/prettyPrice");
 var email = require("helper/email");
+var subscriptionLifecycle = require("models/user/subscriptionLifecycle");
 var Express = require("express");
 var PaySubscription = new Express.Router();
 
@@ -206,7 +207,12 @@ function updateSubscription(req, res, next) {
       var previousSubscription = req.user.subscription || {};
       var previousStatus = previousSubscription.status;
 
-      User.set(req.user.uid, { subscription: subscription }, function (err) {
+      var updates = Object.assign(
+        { subscription: subscription },
+        subscriptionLifecycle.overdueSinceUpdates(req.user, subscription)
+      );
+
+      User.set(req.user.uid, updates, function (err) {
         if (err) return next(err);
 
         // Send recovery email if subscription was recovered
