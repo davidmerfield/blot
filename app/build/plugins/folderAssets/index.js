@@ -1,6 +1,7 @@
 const config = require("config");
 const fs = require("fs-extra");
 const crypto = require("crypto");
+const async = require("async");
 const { join, resolve } = require("path");
 const { promisify } = require("util");
 const hash = require("helper/hash");
@@ -32,6 +33,10 @@ const SMALL_FILE_HASH_SIZE = 256 * 1024;
 
 const ATTRS = ["href", "src", "poster"];
 
+// Bounds concurrent file reads/hashes for one entry (a gallery post can
+// reference dozens of files).
+const HASH_CONCURRENCY = 8;
+
 // An entry belongs to exactly one blog forever, so - unlike template CSS/JS,
 // which can be rendered by many different blogs - a relative link inside an
 // entry's content can be resolved to a versioned CDN URL once, at build
@@ -53,6 +58,10 @@ const ATTRS = ["href", "src", "poster"];
 // srcset (and links spliced in from another entry's already-baked HTML by
 // the wikilinks plugin) would otherwise never invalidate.
 //
+// Note that baked links can exist before this plugin runs: wikilinks is
+// first, and splices other entries' stored (already baked) HTML into the
+// post, so every plugin in between can see %%BLOT_CDN%% URLs.
+//
 // Links that are already baked for this blog are unwrapped and re-baked
 // rather than skipped, so a copy of another entry's HTML (wikilink embeds)
 // gets a fresh version instead of the embedded entry's stale one.
@@ -60,8 +69,10 @@ function render($, callback, options) {
   const blogID = options.blogID;
   const blogFolder = join(config.blog_folder_dir, blogID);
   const dependencies = new Set();
-  const ctx = { blogID, blogFolder, dependencies };
-  const promises = [];
+  // Resolved path -> Promise<{ path, version }>, so a file referenced
+  // several times in one entry (src and srcset) is only read and hashed once.
+  const ctx = { blogID, blogFolder, dependencies, files: new Map() };
+  const tasks = [];
 
   $("[href], [src], [poster], [srcset]").each(function () {
     const $el = $(this);
@@ -71,7 +82,7 @@ function render($, callback, options) {
 
       if (!value || typeof value !== "string") return;
 
-      promises.push(
+      tasks.push(() =>
         bakeValue(ctx, value).then((result) => {
           if (result !== null) $el.attr(attr, result);
         })
@@ -81,7 +92,7 @@ function render($, callback, options) {
     const srcset = $el.attr("srcset");
 
     if (srcset) {
-      promises.push(
+      tasks.push(() =>
         rewriteSrcset(ctx, srcset).then((rebuilt) => {
           if (rebuilt !== null) $el.attr("srcset", rebuilt);
         })
@@ -89,9 +100,15 @@ function render($, callback, options) {
     }
   });
 
-  Promise.all(promises)
-    .then(() => callback(null, { newDependencies: Array.from(dependencies) }))
-    .catch((err) => callback(err));
+  async.eachLimit(
+    tasks,
+    HASH_CONCURRENCY,
+    (task, next) => task().then(() => next(), next),
+    (err) => {
+      if (err) return callback(err);
+      callback(null, { newDependencies: Array.from(dependencies) });
+    }
+  );
 }
 
 function pathPartOf(value) {
@@ -128,7 +145,7 @@ async function bakeValue(ctx, value) {
 
   if (!isEligible(raw)) return null;
 
-  const result = await resolveBuildFile(ctx.blogID, ctx.blogFolder, raw, wasBaked);
+  const result = await resolveBuildFile(ctx, raw, wasBaked);
 
   if (result) {
     ctx.dependencies.add(result.path);
@@ -174,7 +191,8 @@ async function rewriteSrcset(ctx, value) {
 // app/blog/render/replaceFolderLinks/lookupFile.js's "leave untouched"
 // behavior. alreadyDecoded is set for paths recovered from an
 // already-baked link, which hold the real (unencoded) file path.
-async function resolveBuildFile(blogID, blogFolder, value, alreadyDecoded) {
+async function resolveBuildFile(ctx, value, alreadyDecoded) {
+  const { blogID, blogFolder } = ctx;
   const hashIndex = value.indexOf("#");
   const hash_ = hashIndex > -1 ? value.slice(hashIndex) : "";
   value = hashIndex > -1 ? value.slice(0, hashIndex) : value;
@@ -193,22 +211,38 @@ async function resolveBuildFile(blogID, blogFolder, value, alreadyDecoded) {
   // Same check as isEligible, but after percent-decoding (e.g. /f%6Fnts).
   if (isReservedStaticPath(pathFromValue)) return null;
 
-  let stat, resolvedPath;
+  const cacheKey = resolve("/", pathFromValue);
 
-  try {
-    ({ stat, path: resolvedPath } = await getStat(
-      blogFolder,
-      resolve("/", pathFromValue)
-    ));
-  } catch (err) {
-    return null;
+  if (!ctx.files.has(cacheKey)) {
+    ctx.files.set(cacheKey, hashFolderFile(blogFolder, cacheKey));
   }
 
-  const version = await computeVersion(join(blogFolder, resolvedPath), stat);
+  const file = await ctx.files.get(cacheKey);
+
+  if (!file) return null;
+
+  const { path: resolvedPath, version } = file;
 
   return {
     url: `${BLOT_CDN_TOKEN}/folder/v-${version}/${blogID}${resolvedPath}${query}${hash_}`,
     path: resolvedPath,
+  };
+}
+
+// Returns { path, version } for a file in the blog folder, or null if it
+// doesn't exist. path is the case-corrected path.
+async function hashFolderFile(blogFolder, path) {
+  let stat, resolvedPath;
+
+  try {
+    ({ stat, path: resolvedPath } = await getStat(blogFolder, path));
+  } catch (err) {
+    return null;
+  }
+
+  return {
+    path: resolvedPath,
+    version: await computeVersion(join(blogFolder, resolvedPath), stat),
   };
 }
 

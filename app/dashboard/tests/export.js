@@ -15,6 +15,8 @@ describe("wordpress export", function () {
     const xml = await this.text(`/sites/${this.blog.handle}/export/wordpress`);
 
     expect(xml).not.toContain(BLOT_CDN_TOKEN);
-    expect(xml).toContain(`${config.cdn.origin}/folder/v-`);
+    // Whether the image plugin optimized the image (_image_cache) or
+    // folderAssets baked it, the export must hold a resolved CDN URL.
+    expect(xml).toContain(config.cdn.origin);
   });
 });

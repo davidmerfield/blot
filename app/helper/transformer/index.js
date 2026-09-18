@@ -45,7 +45,13 @@ function resolveCDNPath(src) {
 // contains the real CDN origin (middleware.js substitutes that per request).
 function resolveFolderCDNPath(src, blogID) {
   var unwrapped = unwrapFolderLink(src, blogID);
-  return unwrapped === null ? src : unwrapped;
+
+  if (unwrapped === null) return src;
+
+  // unwrapFolderLink keeps any ?query/#hash, which aren't part of the
+  // file's path on disk.
+  var cutIndex = unwrapped.search(/[?#]/);
+  return cutIndex === -1 ? unwrapped : unwrapped.slice(0, cutIndex);
 }
 
 function Transformer(blogID, name) {

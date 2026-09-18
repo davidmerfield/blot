@@ -123,6 +123,26 @@ describe("thumbnail", function () {
     });
   });
 
+  it("ignores a query string or fragment on a baked %%BLOT_CDN%% URL", function (done) {
+    var thumbnail = require("../index");
+    var BLOT_CDN_TOKEN = require("blog/render/replaceFolderLinks/cdnToken");
+    var imagePath = "/portrait.jpg";
+    var html = `<img src="${BLOT_CDN_TOKEN}/folder/v-deadbeef/${this.blog.id}${imagePath}?static=1#x">`;
+
+    fs.copyFileSync(
+      __dirname + "/images/" + imagePath,
+      localPath(this.blog.id, imagePath)
+    );
+
+    thumbnail(this.blog, "/post.txt", {}, html, function (err, result) {
+      expect(err).toBe(null);
+      expect(result).toEqual(jasmine.any(Object));
+      expect(result.small).toEqual(jasmine.any(Object));
+
+      done();
+    });
+  });
+
   it("does not create thumbnails if there are none", function (done) {
     var thumbnail = require("../index");
     var metadata = {};

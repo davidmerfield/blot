@@ -53,13 +53,47 @@ describe("build-time baked folder links", function () {
     expect(before).toContain('class="embedded-markdown"');
     expect(versionBefore).toBeTruthy();
 
+    // No blog.rebuild() here: A must be rebuilt by rebuildDependents,
+    // which only happens if the plugin recorded /photo.jpg as A's dependency.
+    const json = await (await this.get("/pages/a?json=true")).json();
+
+    expect(json.entry.dependencies).toContain("/photo.jpg");
+
     await this.write({ path: "/photo.jpg", content: "photo two" });
-    await this.blog.rebuild();
 
     const after = await this.text("/pages/a");
 
     expect(versionOf(after, "photo\\.jpg")).toBeTruthy();
     expect(versionOf(after, "photo\\.jpg")).not.toEqual(versionBefore);
+  });
+
+  it("falls back to the plain path when a baked file is deleted", async function () {
+    await this.template({ "entry.html": "{{{entry.html}}}" });
+    await this.write({ path: "/photo.jpg", content: "photo one" });
+    await this.write({
+      path: "/Snippets/B.md",
+      content: "Link: snippets/b\n\n![](/photo.jpg)",
+    });
+    await this.blog.rebuild();
+    await this.write({
+      path: "/Pages/A.md",
+      content: "Link: pages/a\n\n![[Snippets/B]]",
+    });
+    await this.blog.rebuild();
+
+    expect(versionOf(await this.text("/pages/a"), "photo\\.jpg")).toBeTruthy();
+
+    await this.remove("/photo.jpg");
+
+    const after = await this.text("/pages/a");
+
+    expect(after).not.toContain("/folder/v-");
+    expect(after).not.toContain(BLOT_CDN_TOKEN);
+    expect(after).toContain('src="/photo.jpg"');
+
+    const json = await (await this.get("/pages/a?json=true")).json();
+
+    expect(json.entry.dependencies).toContain("/photo.jpg");
   });
 
   it("resolves baked links in RSS feeds instead of leaking the token", async function () {
