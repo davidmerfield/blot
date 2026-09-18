@@ -38,39 +38,39 @@ function resolveCDNPath(src) {
 
 // Maps a folder-asset link app/build/plugins/folderAssets bakes into an
 // entry's HTML at build time - %%BLOT_CDN%%/folder/v-<hash>/<blogID><path>
-// - or its resolved, request-time equivalent
-// (https://cdn.blot.im/folder/v-<hash>/<blogID><path>) back to /<path>. A
-// build-time consumer of an <img src> that runs after folderAssets in the
-// pipeline (e.g. app/build/thumbnail, called from app/build/index.js on
-// the same post-plugin html) would otherwise see the CDN token/URL
-// instead of a real local path and fail to resolve the file at all.
+// - back to /<path>. A build-time consumer of an <img src> that runs after
+// folderAssets in the pipeline (e.g. app/build/thumbnail, called from
+// app/build/index.js on the same post-plugin html) would otherwise see the
+// CDN token instead of a real local path and fail to resolve the file at
+// all.
+//
+// This only needs to handle the %%BLOT_CDN%% token, not its resolved,
+// real-origin equivalent: every current caller of Transformer.lookup()
+// (thumbnail, image plugin, gdoc/img converters, sync/rebuild.js) only
+// ever sees build-time HTML, which never contains the real CDN origin -
+// that substitution happens later, per-request, in
+// app/blog/render/middleware.js, which doesn't call this module.
 function resolveFolderCDNPath(src, blogID) {
-  var origins = [BLOT_CDN_TOKEN, config.cdn.origin];
+  var prefix = BLOT_CDN_TOKEN + "/folder/";
 
-  for (var i = 0; i < origins.length; i++) {
-    var prefix = origins[i] + "/folder/";
+  if (src.indexOf(prefix) !== 0) return src;
 
-    if (src.indexOf(prefix) !== 0) continue;
+  try {
+    // rest = "v-<hash>/<blogID><path>"
+    var rest = src.slice(prefix.length);
+    var slashIndex = rest.indexOf("/");
 
-    try {
-      // rest = "v-<hash>/<blogID><path>"
-      var rest = src.slice(prefix.length);
-      var slashIndex = rest.indexOf("/");
+    if (slashIndex === -1) return src;
 
-      if (slashIndex === -1) continue;
+    // afterVersion = "<blogID><path>"
+    var afterVersion = rest.slice(slashIndex + 1);
 
-      // afterVersion = "<blogID><path>"
-      var afterVersion = rest.slice(slashIndex + 1);
+    if (afterVersion.indexOf(blogID) !== 0) return src;
 
-      if (afterVersion.indexOf(blogID) !== 0) continue;
-
-      return afterVersion.slice(blogID.length) || "/";
-    } catch (e) {
-      continue;
-    }
+    return afterVersion.slice(blogID.length) || "/";
+  } catch (e) {
+    return src;
   }
-
-  return src;
 }
 
 function Transformer(blogID, name) {
