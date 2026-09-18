@@ -62,4 +62,28 @@ describe("loosenDisplayMath", function () {
 
     expect(loosenDisplayMath(once)).toBe(once);
   });
+
+  it("does not touch dollars inside org src/example blocks", function () {
+    const input = "text\n#+begin_src\n$$\nx = y\n$$\n#+end_src\nmore text";
+
+    expect(loosenDisplayMath(input)).toBe(input);
+    expect(
+      loosenDisplayMath(
+        "text\n#+BEGIN_EXAMPLE\n$$\nx = y\n$$\n#+END_EXAMPLE\nmore text"
+      )
+    ).toBe("text\n#+BEGIN_EXAMPLE\n$$\nx = y\n$$\n#+END_EXAMPLE\nmore text");
+  });
+
+  it("uses Org's double-backslash hard break when asked", function () {
+    const input =
+      "the hamilton equations:\n$$\nx = y\n$$\nwhich determine the time evolution.";
+
+    expect(loosenDisplayMath(input, { hardBreak: "\\\\" })).toBe(
+      "the hamilton equations:" +
+        SENTINEL +
+        "\\\\\n$$\nx = y\n$$\\\\\n" +
+        SENTINEL +
+        "which determine the time evolution."
+    );
+  });
 });
