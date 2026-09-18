@@ -16,7 +16,7 @@ var resolve = require("path").resolve;
 var async = require("async");
 var caseSensitivePath = require("../caseSensitivePath");
 var he = require("he");
-var BLOT_CDN_TOKEN = require("blog/render/replaceFolderLinks/cdnToken");
+var unwrapFolderLink = require("blog/render/replaceFolderLinks/unwrapFolderLink");
 
 // Maps https://cdn.blot.im/blog_xyz/_image_cache/abc.jpg to
 // /_image_cache/abc.jpg to enable us to look up the file quickly
@@ -36,41 +36,16 @@ function resolveCDNPath(src) {
   }
 }
 
-// Maps a folder-asset link app/build/plugins/folderAssets bakes into an
-// entry's HTML at build time - %%BLOT_CDN%%/folder/v-<hash>/<blogID><path>
-// - back to /<path>. A build-time consumer of an <img src> that runs after
-// folderAssets in the pipeline (e.g. app/build/thumbnail, called from
-// app/build/index.js on the same post-plugin html) would otherwise see the
-// CDN token instead of a real local path and fail to resolve the file at
-// all.
-//
-// This only needs to handle the %%BLOT_CDN%% token, not its resolved,
-// real-origin equivalent: every current caller of Transformer.lookup()
-// (thumbnail, image plugin, gdoc/img converters, sync/rebuild.js) only
-// ever sees build-time HTML, which never contains the real CDN origin -
-// that substitution happens later, per-request, in
-// app/blog/render/middleware.js, which doesn't call this module.
+// A build-time consumer of an <img src> that runs after
+// app/build/plugins/folderAssets in the pipeline (e.g. app/build/thumbnail,
+// called from app/build/index.js on the same post-plugin html) sees the
+// baked %%BLOT_CDN%%/folder/v-<hash>/<blogID><path> link instead of a
+// local path. Map it back to <path>. Only the token form matters: every
+// caller of Transformer.lookup() sees build-time HTML, which never
+// contains the real CDN origin (middleware.js substitutes that per request).
 function resolveFolderCDNPath(src, blogID) {
-  var prefix = BLOT_CDN_TOKEN + "/folder/";
-
-  if (src.indexOf(prefix) !== 0) return src;
-
-  try {
-    // rest = "v-<hash>/<blogID><path>"
-    var rest = src.slice(prefix.length);
-    var slashIndex = rest.indexOf("/");
-
-    if (slashIndex === -1) return src;
-
-    // afterVersion = "<blogID><path>"
-    var afterVersion = rest.slice(slashIndex + 1);
-
-    if (afterVersion.indexOf(blogID) !== 0) return src;
-
-    return afterVersion.slice(blogID.length) || "/";
-  } catch (e) {
-    return src;
-  }
+  var unwrapped = unwrapFolderLink(src, blogID);
+  return unwrapped === null ? src : unwrapped;
 }
 
 function Transformer(blogID, name) {

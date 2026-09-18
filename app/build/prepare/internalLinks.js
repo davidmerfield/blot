@@ -1,5 +1,5 @@
 var debug = require("debug")("blot:build:prepare:internalLinks");
-var BLOT_CDN_TOKEN = require("../../blog/render/replaceFolderLinks/cdnToken");
+var unwrapFolderLink = require("../../blog/render/replaceFolderLinks/unwrapFolderLink");
 
 // The purpose of this module is to take the HTML for
 // a given blog post and work out if any of the links
@@ -17,9 +17,6 @@ var BLOT_CDN_TOKEN = require("../../blog/render/replaceFolderLinks/cdnToken");
 // dependencies/index.js for more.
 function internalLinks($, blogID) {
 	var result = [];
-	var bakedPrefix = blogID
-		? BLOT_CDN_TOKEN + "/folder/v-"
-		: null;
 
 	$("[href]").each(function () {
 		let value = $(this).attr("href");
@@ -32,13 +29,10 @@ function internalLinks($, blogID) {
 		// permalink (the known edge case above) is still detected as a
 		// backlink candidate, exactly as it would be if it hadn't been
 		// baked.
-		if (bakedPrefix && value.indexOf(bakedPrefix) === 0) {
-			var marker = "/" + blogID;
-			var markerIndex = value.indexOf(marker, bakedPrefix.length);
+		var unwrapped = unwrapFolderLink(value, blogID);
 
-			if (markerIndex === -1) return;
-
-			normalizedValue = value.slice(markerIndex + marker.length);
+		if (unwrapped !== null) {
+			normalizedValue = unwrapped;
 		} else if (value.indexOf("/") !== 0) {
 			return;
 		}

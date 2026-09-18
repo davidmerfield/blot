@@ -1,9 +1,9 @@
-// Sentinel baked into CDN URLs in place of the real origin, wherever a URL
-// might be produced once (at entry build time) or cached across requests
-// (template CSS/JS output caching) rather than resolved fresh on every
-// request. A single unconditional string-replace in middleware.js swaps
-// this for the real, protocol-adjusted CDN origin immediately before the
-// response is sent - so every baked/cached path converges on one place,
-// and future CDN routing changes (white-labeling, same-host serving) only
-// need to change that one resolution step.
+// Sentinel baked into CDN URLs in place of the real origin when a URL is
+// produced once, at entry build time (app/build/plugins/folderAssets), or
+// by lookupFile.js at request time. A single unconditional string-replace
+// in middleware.js swaps it for the real, protocol-adjusted CDN origin
+// immediately before the response is sent, so future CDN routing changes
+// (white-labeling, same-host serving) only need to change that one step.
+// Anything that reads stored entry HTML and doesn't go through
+// middleware.js (e.g. dashboard/site/export.js) must resolve it itself.
 module.exports = "%%BLOT_CDN%%";

@@ -105,4 +105,28 @@ describe("folderAssets plugin", function () {
       });
     }.bind(this));
   });
+
+  it("leaves reserved global-static prefixes unbaked even if the blog folder has a same-named file", function (done) {
+    var path = "/Hello.txt";
+    var contents = "![Font icon](fonts/icon.png) ![Katex](/katex/x.png)";
+
+    fs.outputFileSync(this.blogDirectory + path, contents);
+    fs.outputFileSync(this.blogDirectory + "/fonts/icon.png", "blog file");
+    fs.outputFileSync(this.blogDirectory + "/katex/x.png", "blog file");
+
+    build(this.blog, path, function (err, entry) {
+      if (err) return done.fail(err);
+
+      expect(entry.html).toContain('src="/fonts/icon.png"');
+      expect(entry.html).toContain('src="/katex/x.png"');
+      expect(entry.html).not.toContain(BLOT_CDN_TOKEN);
+      done();
+    });
+  });
+
+  it("is not optional, so it runs for blogs without a stored folderAssets plugin entry", function () {
+    var plugins = require("../../index");
+
+    expect(plugins.list.folderAssets.optional).toBe(false);
+  });
 });

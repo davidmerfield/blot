@@ -7,6 +7,9 @@ const hash = require("helper/hash");
 const HashFile = require("helper/transformer/hash");
 const caseSensitivePath = promisify(require("helper/caseSensitivePath"));
 const BLOT_CDN_TOKEN = require("blog/render/replaceFolderLinks/cdnToken");
+const {
+  GLOBAL_STATIC_SUBDIRECTORIES,
+} = require("blog/lib/staticPaths");
 
 const hashFileAsync = promisify(HashFile);
 
@@ -86,6 +89,10 @@ function pathPartOf(value) {
   return cutIndex === -1 ? value : value.slice(0, cutIndex);
 }
 
+function isReservedStaticPath(pathPart) {
+  return GLOBAL_STATIC_SUBDIRECTORIES.some((dir) => pathPart.startsWith(dir));
+}
+
 function isEligible(value) {
   if (!value || typeof value !== "string") return false;
   if (value.indexOf("://") > -1) return false;
@@ -94,6 +101,12 @@ function isEligible(value) {
   if (value.charAt(0) !== "/") return false;
 
   const pathPart = pathPartOf(value);
+
+  // Reserved prefixes are served from Blot's global static directory, not
+  // the blog folder (see lookupFile.js and helper/transformer/ownHost.js).
+  // Leave them unbaked so request-time resolution still binds to the
+  // global static file instead of a same-named file in the blog folder.
+  if (isReservedStaticPath(pathPart)) return false;
 
   if (htmlExtRegex.test(pathPart)) return false;
   if (!fileExtRegex.test(pathPart)) return false;
@@ -171,6 +184,9 @@ async function resolveBuildFile(blogID, blogFolder, value) {
   const [pathFromValue, ...rest] = value.split("?");
   const query = rest.length ? `?${rest.join("?")}` : "";
 
+  // Same check as isEligible, but after percent-decoding (e.g. /f%6Fnts).
+  if (isReservedStaticPath(pathFromValue)) return null;
+
   let stat, resolvedPath;
 
   try {
@@ -221,6 +237,9 @@ async function getStat(blogFolder, path) {
 
 module.exports = {
   render,
+  // Internal build optimization, not a user setting: always runs, and is
+  // hidden from the plugins page (see dashboard/site/load/plugins.js).
+  optional: false,
   category: "assets",
   title: "Folder assets",
   description:
