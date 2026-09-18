@@ -8,6 +8,8 @@ function applyUserDefaults(user) {
   if (typeof user.welcomeEmailSent === "undefined")
     user.welcomeEmailSent = true;
   if (typeof user.paymentMethods === "undefined") user.paymentMethods = [];
+  if (typeof user.subscriptionOverdueSince === "undefined")
+    user.subscriptionOverdueSince = 0;
 
   return user;
 }
