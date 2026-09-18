@@ -18,7 +18,6 @@ module.exports = function processSubscriptionLifecycle(callback) {
 
   var disabled = 0;
   var deleted = 0;
-  var enabled = 0;
   var usersToRemove = [];
 
   // Records the user as due for removal if they've passed their grace period.
@@ -56,20 +55,9 @@ module.exports = function processSubscriptionLifecycle(callback) {
           "startedAt=" + overdueStartedAtISO
         );
 
-        if (!user.isDisabled) return next();
-
-        return User.enable(user, function (enableErr) {
-          if (enableErr) return next(enableErr);
-
-          enabled += 1;
-
-          email.OVERDUE_SUBSCRIPTION_GRACE_ACTIVE("", {
-            email: user.email,
-            subscriptionOverdueOn: overdueStartedAtISO,
-          });
-
-          next();
-        });
+        // Nothing to do. This job never re-enables accounts: it can't tell
+        // an account disabled for being overdue from one disabled by hand.
+        return next();
       }
 
       if (overdue.phase === "disabled_grace") {
@@ -102,6 +90,14 @@ module.exports = function processSubscriptionLifecycle(callback) {
         user.email,
         "startedAt=" + overdueStartedAtISO
       );
+
+      if (!user.isDisabled) {
+        return User.disable(user, function (disableErr) {
+          if (disableErr) return next(disableErr);
+          disabled += 1;
+          queueRemoval(user, overdue, next);
+        });
+      }
 
       return queueRemoval(user, overdue, next);
     }
@@ -148,7 +144,6 @@ module.exports = function processSubscriptionLifecycle(callback) {
       console.log(
         clfdate(),
         "Subscription lifecycle job complete",
-        "enabled=" + enabled,
         "disabled=" + disabled,
         "deleted=" + deleted
       );
