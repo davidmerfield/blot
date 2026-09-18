@@ -124,7 +124,17 @@ module.exports = function processSubscriptionLifecycle(callback) {
   eachUser(
     function (user, next) {
       removal.overdueFor(user, function (err, overdue) {
-        if (err) return next(err);
+        // A Stripe hiccup for one unpaid user shouldn't stop the whole job
+        // (or the removal email); they'll be picked up on the next run.
+        if (err) {
+          console.log(
+            clfdate(),
+            "Subscription lifecycle could not check overdue status",
+            user.email,
+            err
+          );
+          return next();
+        }
 
         processUser(user, overdue, next);
       });
