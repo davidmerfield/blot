@@ -129,4 +129,47 @@ describe("folderAssets plugin", function () {
 
     expect(plugins.list.folderAssets.optional).toBe(false);
   });
+
+  it("bakes poster and srcset candidates and records them as dependencies", function (done) {
+    var path = "/Hello.txt";
+    var contents =
+      '<video poster="/poster.jpg"></video>\n\n' +
+      '<img src="/a.jpg" srcset="/a.jpg 1x, /a2.jpg 2x">';
+
+    fs.outputFileSync(this.blogDirectory + path, contents);
+    ["/poster.jpg", "/a.jpg", "/a2.jpg"].forEach((file) =>
+      fs.outputFileSync(this.blogDirectory + file, "data " + file)
+    );
+
+    build(this.blog, path, function (err, entry) {
+      if (err) return done.fail(err);
+
+      expect(entry.html).toMatch(
+        new RegExp(`poster="${BLOT_CDN_TOKEN}/folder/v-[a-f0-9]{8}/[^"]*/poster\\.jpg"`)
+      );
+      expect(entry.html).toMatch(
+        new RegExp(`srcset="[^"]*/a\\.jpg [^"]*1x, [^"]*/a2\\.jpg 2x"`)
+      );
+      expect(entry.dependencies).toContain("/poster.jpg");
+      expect(entry.dependencies).toContain("/a2.jpg");
+      expect(entry.dependencies.length).toEqual(
+        new Set(entry.dependencies).size
+      );
+      done();
+    });
+  });
+
+  it("only treats whole path segments as reserved (/fontsFoo is a normal folder)", function (done) {
+    var path = "/Hello.txt";
+
+    fs.outputFileSync(this.blogDirectory + path, "![Pic](/fontsFoo/pic.png)");
+    fs.outputFileSync(this.blogDirectory + "/fontsFoo/pic.png", "blog file");
+
+    build(this.blog, path, function (err, entry) {
+      if (err) return done.fail(err);
+
+      expect(entry.html).toMatch(tokenRegex("/fontsFoo/pic\\.png"));
+      done();
+    });
+  });
 });

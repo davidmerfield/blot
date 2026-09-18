@@ -2,8 +2,7 @@ const lookupFile = require("./lookupFile");
 const blogHosts = require("../../lib/blogHosts");
 const BLOT_CDN_TOKEN = require("./cdnToken");
 
-const htmlExtRegex = /\.html$/;
-const fileExtRegex = /[^/]*\.[^/]*$/;
+const { htmlExtRegex, fileExtRegex } = require("./shared");
 // Strict regex that requires matching quotes and parentheses
 const urlRegex = /url\((?:([^'"()]+)|['"]([^'"]+)['"]) *\)/gi;
 

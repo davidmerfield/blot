@@ -7,9 +7,13 @@ const hash = require("helper/hash");
 const HashFile = require("helper/transformer/hash");
 const caseSensitivePath = promisify(require("helper/caseSensitivePath"));
 const BLOT_CDN_TOKEN = require("blog/render/replaceFolderLinks/cdnToken");
+const unwrapFolderLink = require("blog/render/replaceFolderLinks/unwrapFolderLink");
+const { isReservedStaticPath } = require("blog/lib/staticPaths");
 const {
-  GLOBAL_STATIC_SUBDIRECTORIES,
-} = require("blog/lib/staticPaths");
+  htmlExtRegex,
+  fileExtRegex,
+  parseSrcset,
+} = require("blog/render/replaceFolderLinks/shared");
 
 const hashFileAsync = promisify(HashFile);
 
@@ -27,8 +31,6 @@ const MAX_CONTENT_HASH_SIZE = 5 * 1024 * 1024;
 const SMALL_FILE_HASH_SIZE = 256 * 1024;
 
 const ATTRS = ["href", "src", "poster"];
-const htmlExtRegex = /\.html$/i;
-const fileExtRegex = /[^/]*\.[^/]*$/;
 
 // An entry belongs to exactly one blog forever, so - unlike template CSS/JS,
 // which can be rendered by many different blogs - a relative link inside an
@@ -42,15 +44,23 @@ const fileExtRegex = /[^/]*\.[^/]*$/;
 // token (see cdnToken.js) rather than the real CDN origin, which
 // middleware.js resolves unconditionally on every response.
 //
-// This is safe without any new invalidation plumbing: entry.dependencies
-// (recorded by app/build/dependencies/index.js) is diffed into a Redis
+// The baked version is frozen into entry.html, so every file baked here is
+// returned as a new dependency: entry.dependencies is diffed into a Redis
 // reverse index by app/models/entry/_rebuildDependencyGraph.js, and
-// app/sync/update/rebuildDependents.js already rebuilds (and so re-bakes)
-// any entry that depends on a file whenever that file changes, is renamed,
-// or is deleted.
+// app/sync/update/rebuildDependents.js rebuilds (and so re-bakes) any entry
+// that depends on a file whenever it changes, is renamed, or is deleted.
+// app/build/dependencies/index.js only records href/src, so poster and
+// srcset (and links spliced in from another entry's already-baked HTML by
+// the wikilinks plugin) would otherwise never invalidate.
+//
+// Links that are already baked for this blog are unwrapped and re-baked
+// rather than skipped, so a copy of another entry's HTML (wikilink embeds)
+// gets a fresh version instead of the embedded entry's stale one.
 function render($, callback, options) {
   const blogID = options.blogID;
   const blogFolder = join(config.blog_folder_dir, blogID);
+  const dependencies = new Set();
+  const ctx = { blogID, blogFolder, dependencies };
   const promises = [];
 
   $("[href], [src], [poster], [srcset]").each(function () {
@@ -59,11 +69,11 @@ function render($, callback, options) {
     ATTRS.forEach((attr) => {
       const value = $el.attr(attr);
 
-      if (!isEligible(value)) return;
+      if (!value || typeof value !== "string") return;
 
       promises.push(
-        resolveBuildFile(blogID, blogFolder, value).then((result) => {
-          if (result) $el.attr(attr, result);
+        bakeValue(ctx, value).then((result) => {
+          if (result !== null) $el.attr(attr, result);
         })
       );
     });
@@ -72,7 +82,7 @@ function render($, callback, options) {
 
     if (srcset) {
       promises.push(
-        rewriteSrcset(blogID, blogFolder, srcset).then((rebuilt) => {
+        rewriteSrcset(ctx, srcset).then((rebuilt) => {
           if (rebuilt !== null) $el.attr("srcset", rebuilt);
         })
       );
@@ -80,7 +90,7 @@ function render($, callback, options) {
   });
 
   Promise.all(promises)
-    .then(() => callback())
+    .then(() => callback(null, { newDependencies: Array.from(dependencies) }))
     .catch((err) => callback(err));
 }
 
@@ -89,15 +99,11 @@ function pathPartOf(value) {
   return cutIndex === -1 ? value : value.slice(0, cutIndex);
 }
 
-function isReservedStaticPath(pathPart) {
-  return GLOBAL_STATIC_SUBDIRECTORIES.some((dir) => pathPart.startsWith(dir));
-}
-
 function isEligible(value) {
   if (!value || typeof value !== "string") return false;
   if (value.indexOf("://") > -1) return false;
   if (value.startsWith("data:")) return false;
-  if (value.indexOf(BLOT_CDN_TOKEN) === 0) return false;
+  if (value.indexOf(BLOT_CDN_TOKEN) > -1) return false;
   if (value.charAt(0) !== "/") return false;
 
   const pathPart = pathPartOf(value);
@@ -114,25 +120,33 @@ function isEligible(value) {
   return true;
 }
 
-function parseSrcset(value) {
-  const candidates = value.split(",");
-  const parsed = [];
+// Returns the new attribute value, or null to leave it untouched.
+async function bakeValue(ctx, value) {
+  const unwrapped = unwrapFolderLink(value, ctx.blogID);
+  const wasBaked = unwrapped !== null;
+  const raw = wasBaked ? unwrapped : value;
 
-  for (const candidate of candidates) {
-    const trimmed = candidate.trim();
-    if (!trimmed) return null;
+  if (!isEligible(raw)) return null;
 
-    const parts = trimmed.split(/\s+/);
-    const url = parts.shift();
-    if (!url) return null;
+  const result = await resolveBuildFile(ctx.blogID, ctx.blogFolder, raw, wasBaked);
 
-    parsed.push({ url, descriptor: parts.length ? parts.join(" ") : "" });
+  if (result) {
+    ctx.dependencies.add(result.path);
+    return result.url;
   }
 
-  return parsed;
+  // The file behind an already-baked link is gone: drop back to the plain
+  // path so request-time resolution decides, instead of keeping a URL that
+  // points at a now-missing versioned file.
+  if (wasBaked) {
+    ctx.dependencies.add(pathPartOf(raw));
+    return raw;
+  }
+
+  return null;
 }
 
-async function rewriteSrcset(blogID, blogFolder, value) {
+async function rewriteSrcset(ctx, value) {
   const candidates = parseSrcset(value);
   if (!candidates) return null;
 
@@ -140,23 +154,12 @@ async function rewriteSrcset(blogID, blogFolder, value) {
 
   const rebuilt = await Promise.all(
     candidates.map(async (candidate) => {
-      if (!isEligible(candidate.url)) {
-        return candidate.descriptor
-          ? `${candidate.url} ${candidate.descriptor}`
-          : candidate.url;
-      }
+      const result = await bakeValue(ctx, candidate.url);
+      const url = result === null ? candidate.url : result;
 
-      const result = await resolveBuildFile(blogID, blogFolder, candidate.url);
+      if (result !== null) changed = true;
 
-      if (!result) {
-        return candidate.descriptor
-          ? `${candidate.url} ${candidate.descriptor}`
-          : candidate.url;
-      }
-
-      changed = true;
-
-      return candidate.descriptor ? `${result} ${candidate.descriptor}` : result;
+      return candidate.descriptor ? `${url} ${candidate.descriptor}` : url;
     })
   );
 
@@ -165,15 +168,18 @@ async function rewriteSrcset(blogID, blogFolder, value) {
 
 // Resolves a folder-relative attribute value (already an absolute path
 // inside the blog's folder, per app/build/dependencies/index.js) into a
-// %%BLOT_CDN%%-prefixed, versioned URL. Returns null (ENOENT) if there's
-// no matching file - mirroring app/blog/render/replaceFolderLinks/lookupFile.js's
-// "leave untouched" behavior.
-async function resolveBuildFile(blogID, blogFolder, value) {
+// %%BLOT_CDN%%-prefixed, versioned URL. Returns { url, path } (path being
+// the case-corrected file path, for recording as a dependency), or null
+// (ENOENT) if there's no matching file - mirroring
+// app/blog/render/replaceFolderLinks/lookupFile.js's "leave untouched"
+// behavior. alreadyDecoded is set for paths recovered from an
+// already-baked link, which hold the real (unencoded) file path.
+async function resolveBuildFile(blogID, blogFolder, value, alreadyDecoded) {
   const hashIndex = value.indexOf("#");
   const hash_ = hashIndex > -1 ? value.slice(hashIndex) : "";
   value = hashIndex > -1 ? value.slice(0, hashIndex) : value;
 
-  if (value.includes("%")) {
+  if (!alreadyDecoded && value.includes("%")) {
     try {
       value = decodeURIComponent(value);
     } catch (err) {
@@ -200,7 +206,10 @@ async function resolveBuildFile(blogID, blogFolder, value) {
 
   const version = await computeVersion(join(blogFolder, resolvedPath), stat);
 
-  return `${BLOT_CDN_TOKEN}/folder/v-${version}/${blogID}${resolvedPath}${query}${hash_}`;
+  return {
+    url: `${BLOT_CDN_TOKEN}/folder/v-${version}/${blogID}${resolvedPath}${query}${hash_}`,
+    path: resolvedPath,
+  };
 }
 
 async function computeVersion(filePath, stat) {

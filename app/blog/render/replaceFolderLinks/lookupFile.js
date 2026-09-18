@@ -6,7 +6,7 @@ const { promisify } = require("util");
 const caseSensitivePath = promisify(require("helper/caseSensitivePath"));
 const {
   GLOBAL_STATIC_DIR,
-  GLOBAL_STATIC_SUBDIRECTORIES,
+  isReservedStaticPath,
 } = require("../../lib/staticPaths");
 const BLOT_CDN_TOKEN = require("./cdnToken");
 
@@ -61,7 +61,7 @@ async function lookupFile(blogID, cacheID, value) {
   const query = rest.length ? `?${rest.join("?")}` : "";
 
   // if the value is a static file, we need to resolve it
-  if (GLOBAL_STATIC_SUBDIRECTORIES.some((dir) => value.startsWith(dir))) {
+  if (isReservedStaticPath(pathFromValue)) {
     const filePath = join(GLOBAL_STATIC_DIR, pathFromValue);
     try {
       // check  if the file exists in the global static files set

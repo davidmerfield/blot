@@ -127,15 +127,14 @@ module.exports = function attachRenderView(req, res, _next) {
         // finalRender - this branch returns before that point. Resolve
         // the token here too, the same way, so this endpoint never leaks
         // the raw placeholder instead of a working CDN URL.
-        const debugLocals = JSON.parse(
-          JSON.stringify(res.locals)
-            .split(BLOT_CDN_TOKEN)
-            .join(resolveCdnOrigin())
-        );
+        const debugJSON = JSON.stringify(res.locals)
+          .split(BLOT_CDN_TOKEN)
+          .join(resolveCdnOrigin());
 
-        if (callback) return callback(null, debugLocals);
+        if (callback) return callback(null, JSON.parse(debugJSON));
         res.set("Cache-Control", "no-cache");
-        return res.json(debugLocals);
+        res.type("json");
+        return res.send(debugJSON);
       }
 
       let output;

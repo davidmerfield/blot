@@ -1,40 +1,13 @@
 const parse5 = require("parse5");
 
-const htmlExtRegex = /\.html$/;
-const fileExtRegex = /[^/]*\.[^/]*$/;
-
+const {
+  htmlExtRegex,
+  fileExtRegex,
+  parseSrcset,
+} = require("./shared");
 const lookupFile = require("./lookupFile");
 const blogHosts = require("../../lib/blogHosts");
 const BLOT_CDN_TOKEN = require("./cdnToken");
-
-const parseSrcset = (value) => {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const candidates = value.split(",");
-  const parsed = [];
-
-  for (const candidate of candidates) {
-    const trimmed = candidate.trim();
-    if (!trimmed) {
-      return null;
-    }
-
-    const parts = trimmed.split(/\s+/);
-    const url = parts.shift();
-    if (!url) {
-      return null;
-    }
-
-    parsed.push({
-      url,
-      descriptor: parts.length ? parts.join(" ") : "",
-    });
-  }
-
-  return parsed;
-};
 
 // Cheap pre-scan of the raw output string, run before the expensive
 // parse5.parse + tree-walk below. Most rendered pages have no folder-file
