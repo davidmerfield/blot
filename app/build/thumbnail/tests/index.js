@@ -96,6 +96,33 @@ describe("thumbnail", function () {
     });
   });
 
+  it("creates thumbnails from an <img src> already baked into a %%BLOT_CDN%% URL (app/build/plugins/folderAssets)", function (done) {
+    var thumbnail = require("../index");
+    var BLOT_CDN_TOKEN = require("blog/render/replaceFolderLinks/cdnToken");
+    var metadata = {};
+    var imagePath = "/portrait.jpg";
+    // This mirrors the shape app/build/plugins/folderAssets bakes into
+    // entry.html at build time, before Thumbnail() is called on that same
+    // html in app/build/index.js - the src is no longer the plain local
+    // path, it's a %%BLOT_CDN%%-prefixed, versioned CDN URL.
+    var bakedSrc = `${BLOT_CDN_TOKEN}/folder/v-deadbeef/${this.blog.id}${imagePath}`;
+    var html = `<img src="${bakedSrc}">`;
+    var path = "/post.txt";
+
+    fs.copyFileSync(
+      __dirname + "/images/" + imagePath,
+      localPath(this.blog.id, imagePath)
+    );
+
+    thumbnail(this.blog, path, metadata, html, function (err, result) {
+      expect(err).toBe(null);
+      expect(result).toEqual(jasmine.any(Object));
+      expect(result.small).toEqual(jasmine.any(Object));
+
+      done();
+    });
+  });
+
   it("does not create thumbnails if there are none", function (done) {
     var thumbnail = require("../index");
     var metadata = {};

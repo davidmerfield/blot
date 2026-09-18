@@ -36,6 +36,19 @@ module.exports = function attachRenderView(req, res, _next) {
     const templateID = req.template.id;
     const cloudflare = fromCloudflare(req);
 
+    // The real CDN origin, downgraded to http when the request itself was
+    // served over http and isn't behind Cloudflare - mirrors the existing
+    // protocol-downgrade trick for the {{cdn}}/{{public}} helper case below.
+    function resolveCdnOrigin() {
+      let cdnOrigin = config.cdn.origin;
+
+      if (req.protocol === "http" && cloudflare === false) {
+        cdnOrigin = cdnOrigin.split("https://").join("http://");
+      }
+
+      return cdnOrigin;
+    }
+
     if (callback) callback = callOnce(callback);
 
     try {
@@ -103,9 +116,22 @@ module.exports = function attachRenderView(req, res, _next) {
       // Keep this response no-cache and public (not preview-only) unless
       // Blot's public-template policy changes.
       if (req.query && (req.query.debug || req.query.json)) {
-        if (callback) return callback(null, res.locals);
+        // res.locals.entry.html (and any other locals derived from entry
+        // HTML) can contain build-time-baked %%BLOT_CDN%% tokens (see
+        // app/build/plugins/folderAssets) that are normally only resolved
+        // by the unconditional replace below, which runs after
+        // finalRender - this branch returns before that point. Resolve
+        // the token here too, the same way, so this endpoint never leaks
+        // the raw placeholder instead of a working CDN URL.
+        const debugLocals = JSON.parse(
+          JSON.stringify(res.locals)
+            .split(BLOT_CDN_TOKEN)
+            .join(resolveCdnOrigin())
+        );
+
+        if (callback) return callback(null, debugLocals);
         res.set("Cache-Control", "no-cache");
-        return res.json(res.locals);
+        return res.json(debugLocals);
       }
 
       let output;
@@ -148,13 +174,7 @@ module.exports = function attachRenderView(req, res, _next) {
       // natural future hook for CDN white-labeling / same-host routing:
       // only this resolution step would need to change.
       if (output.indexOf(BLOT_CDN_TOKEN) > -1) {
-        let cdnOrigin = config.cdn.origin;
-
-        if (req.protocol === "http" && cloudflare === false) {
-          cdnOrigin = cdnOrigin.split("https://").join("http://");
-        }
-
-        output = output.split(BLOT_CDN_TOKEN).join(cdnOrigin);
+        output = output.split(BLOT_CDN_TOKEN).join(resolveCdnOrigin());
       }
 
       if (callback) {
