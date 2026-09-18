@@ -1,6 +1,7 @@
 var Mustache = require("mustache");
 var LRUCache = require("lru-cache").LRUCache;
 var ensure = require("helper/ensure");
+var cacheStats = require("../lib/cacheStats");
 
 var ERROR = require("./error");
 var OVERFLOW = "Maximum call stack size exceeded";
@@ -10,7 +11,7 @@ var OVERFLOW = "Maximum call stack size exceeded";
 // get/set/clear interface Mustache expects) so repeated renders of view
 // templates still hit the cache, but one-off strings eventually fall out
 // instead of growing without bound for the lifetime of the process.
-// See https://github.com/davidmerfield/blot/issues/1851
+// See https://github.com/blotcms/blot/issues/1851
 Mustache.templateCache = new LRUCache({
   max: 500,
   maxSize: 5 * 1024 * 1024,
@@ -40,3 +41,5 @@ module.exports = function render(content, locals, partials) {
 
   return output;
 };
+
+module.exports._stats = cacheStats("template", Mustache.templateCache);
