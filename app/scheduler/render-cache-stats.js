@@ -1,7 +1,7 @@
 const clfdate = require("helper/clfdate");
 
 // Each of these render-path LRU caches exports a _stats() accessor
-// (see blog/render/lib/cacheStats.js) returning current size/calculatedSize
+// (see blog/lib/cacheStats.js) returning current size/calculatedSize
 // against the cache's configured max/maxSize.
 const caches = [
   require("blog/render/main")._stats,

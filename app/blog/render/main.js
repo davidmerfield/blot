@@ -1,7 +1,7 @@
 var Mustache = require("mustache");
 var LRUCache = require("lru-cache").LRUCache;
 var ensure = require("helper/ensure");
-var cacheStats = require("./lib/cacheStats");
+var cacheStats = require("../lib/cacheStats");
 
 var ERROR = require("./error");
 var OVERFLOW = "Maximum call stack size exceeded";
