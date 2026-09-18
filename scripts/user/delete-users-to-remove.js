@@ -1,12 +1,10 @@
 var async = require("async");
 var colors = require("colors/safe");
-var moment = require("moment");
 var eachUser = require("../each/user");
 var getConfirmation = require("../util/getConfirmation");
-var subscriptionLifecycle = require("models/user/subscriptionLifecycle");
 var Delete = require("dashboard/account/delete");
 var Blog = require("models/blog");
-var overdueSince = require("models/user/overdueSince");
+var removal = require("models/user/removal");
 
 var argv = process.argv.slice(2);
 var FAST_MODE = argv.indexOf("-fast") !== -1 || argv.indexOf("--fast") !== -1;
@@ -27,46 +25,6 @@ function printUsage() {
 if (HELP_FLAG) {
   printUsage();
   process.exit(0);
-}
-
-function candidateFromCancellation(user) {
-  var details = subscriptionLifecycle.cancellationDetails(user);
-
-  if (!details.cancelled || !details.periodEnded) return null;
-  if (!subscriptionLifecycle.deletionDue(user)) return null;
-
-  return {
-    user: user,
-    reason: "cancelled",
-    description:
-      "cancelled, subscription period ended " +
-      moment(details.periodEndedAt).fromNow() +
-      " (" +
-      new Date(details.periodEndedAt).toISOString() +
-      "), provider=" +
-      details.provider,
-  };
-}
-
-function candidateFromOverdue(user, overdueStartedAt) {
-  var overdue = subscriptionLifecycle.overdueDetails(
-    user,
-    Date.now(),
-    overdueStartedAt
-  );
-
-  if (!overdue.overdue || overdue.phase !== "deletion_flow") return null;
-
-  return {
-    user: user,
-    reason: "overdue",
-    description:
-      "overdue since " +
-      moment(overdue.startedAt).fromNow() +
-      " (" +
-      new Date(overdue.startedAt).toISOString() +
-      ")",
-  };
 }
 
 function describeUser(candidate, blogs) {
@@ -125,16 +83,10 @@ function collectCandidates(done) {
 
   eachUser(
     function (user, next) {
-      var candidate = candidateFromCancellation(user);
-
-      if (candidate) return withBlogs(user, candidate, next);
-
-      // Only unpaid users need a Stripe lookup; for everyone else this
-      // calls back immediately with null.
-      overdueSince(user, function (err, startedAt) {
+      removal.overdueFor(user, function (err, overdue) {
         if (err) return next(err);
 
-        candidate = candidateFromOverdue(user, startedAt);
+        var candidate = removal.removalCandidate(user, overdue);
 
         if (!candidate) return next();
 
