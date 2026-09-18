@@ -3,7 +3,6 @@ const loadView = require("./load");
 const finalRender = require("./main");
 const retrieve = require("./retrieve");
 const getCachedFullView = require("./full-view-cache");
-const getTemplateOutputCache = require("./template-output-cache");
 
 const ensure = require("helper/ensure");
 const extend = require("helper/extend");
@@ -109,54 +108,17 @@ module.exports = function attachRenderView(req, res, _next) {
         return res.json(res.locals);
       }
 
-      // Renders the view and, for HTML, resolves its folder links. For CSS/
-      // JS this is the thunk passed to the template-output-cache: on a
-      // cache hit, none of this runs at all.
-      const computeOutput = async () => {
-        let computed;
-
-        try {
-          computed = finalRender(view, locals, partials);
-        } catch (e) {
-          throw ERROR.BAD_LOCALS();
-        }
-
-        if (viewType === "text/html" && !req.preview) {
-          req.log("Replacing folder links with CDN links");
-          computed = await replaceFolderLinks(blog, computed, req.log);
-          req.log("Replaced folder links with CDN links");
-        } else if (viewType === STYLE && !req.preview) {
-          req.log("Replacing folder links with CDN links");
-          computed = await replaceFolderLinksCSS(blog, computed, req.log);
-          req.log("Replaced folder links with CDN links");
-        }
-
-        return computed;
-      };
-
       let output;
 
-      // CSS/JS output is fully determined by {blogID, cacheID, templateID,
-      // viewName} - the same key full-view-cache.js already uses - so it's
-      // safe to skip both the Mustache render and (for CSS) the folder-link
-      // resolution on a cache hit. HTML keeps its per-request path: per-
-      // request locals/query/pagination make it unsafe to cache this way.
-      if ((viewType === STYLE || viewType === JS) && !req.preview) {
-        output = await getTemplateOutputCache({
-          blog,
-          template: req.template,
-          viewName: name,
-          compute: computeOutput,
-        });
-      } else {
-        output = await computeOutput();
+      try {
+        output = finalRender(view, locals, partials);
+      } catch (e) {
+        return next(ERROR.BAD_LOCALS());
       }
 
       // Replace protocol of CDN links for requests served over HTTP. This
       // is the separate, pre-existing {{cdn}}/{{public}} template-helper
-      // case, which hardcodes config.cdn.origin directly - it must stay
-      // outside the cached compute() above since it depends on the
-      // requesting protocol, not on {blogID, cacheID, templateID, viewName}.
+      // case, which hardcodes config.cdn.origin directly.
       if (
         viewType.indexOf("text/") > -1 &&
         req.protocol === "http" &&
@@ -168,15 +130,23 @@ module.exports = function attachRenderView(req, res, _next) {
           .join(config.cdn.origin.split("https://").join("http://"));
       }
 
+      if (viewType === "text/html" && !req.preview) {
+        req.log("Replacing folder links with CDN links");
+        output = await replaceFolderLinks(blog, output, req.log);
+        req.log("Replaced folder links with CDN links");
+      } else if (viewType === STYLE && !req.preview) {
+        req.log("Replacing folder links with CDN links");
+        output = await replaceFolderLinksCSS(blog, output, req.log);
+        req.log("Replaced folder links with CDN links");
+      }
+
       // Resolve the %%BLOT_CDN%% token baked into build-time-baked entry
-      // HTML (app/build/plugins/folderAssets) and render-time-cached
-      // template CSS/JS (getTemplateOutputCache above) into the real CDN
-      // origin. This must run unconditionally - after the cache lookup,
-      // hit or miss, and for both the callback path (e.g. CDN manifest
-      // generation) and the normal response path below - since it's the
-      // one place every path converges. This is also the natural future
-      // hook for CDN white-labeling / same-host routing: only this
-      // resolution step would need to change.
+      // HTML (see app/build/plugins/folderAssets) into the real CDN
+      // origin. This must run unconditionally - for both the callback path
+      // (e.g. CDN manifest generation) and the normal response path below
+      // - since it's the one place every path converges. This is also the
+      // natural future hook for CDN white-labeling / same-host routing:
+      // only this resolution step would need to change.
       if (output.indexOf(BLOT_CDN_TOKEN) > -1) {
         let cdnOrigin = config.cdn.origin;
 

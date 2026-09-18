@@ -72,9 +72,9 @@ module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
               continue;
             }
 
-            // Already baked at build time (app/build/plugins/folderAssets)
-            // or served from the template-output-cache - no need to look
-            // it up again, middleware.js resolves the token unconditionally.
+            // Already baked at build time (app/build/plugins/folderAssets) -
+            // no need to look it up again, middleware.js resolves the
+            // token unconditionally.
             if (attr.value.indexOf(BLOT_CDN_TOKEN) === 0) {
               continue;
             }
