@@ -16,6 +16,7 @@ var resolve = require("path").resolve;
 var async = require("async");
 var caseSensitivePath = require("../caseSensitivePath");
 var he = require("he");
+var BLOT_CDN_TOKEN = require("blog/render/replaceFolderLinks/cdnToken");
 
 // Maps https://cdn.blot.im/blog_xyz/_image_cache/abc.jpg to
 // /_image_cache/abc.jpg to enable us to look up the file quickly
@@ -33,6 +34,43 @@ function resolveCDNPath(src) {
   } catch (e) {
     return src;
   }
+}
+
+// Maps a folder-asset link app/build/plugins/folderAssets bakes into an
+// entry's HTML at build time - %%BLOT_CDN%%/folder/v-<hash>/<blogID><path>
+// - or its resolved, request-time equivalent
+// (https://cdn.blot.im/folder/v-<hash>/<blogID><path>) back to /<path>. A
+// build-time consumer of an <img src> that runs after folderAssets in the
+// pipeline (e.g. app/build/thumbnail, called from app/build/index.js on
+// the same post-plugin html) would otherwise see the CDN token/URL
+// instead of a real local path and fail to resolve the file at all.
+function resolveFolderCDNPath(src, blogID) {
+  var origins = [BLOT_CDN_TOKEN, config.cdn.origin];
+
+  for (var i = 0; i < origins.length; i++) {
+    var prefix = origins[i] + "/folder/";
+
+    if (src.indexOf(prefix) !== 0) continue;
+
+    try {
+      // rest = "v-<hash>/<blogID><path>"
+      var rest = src.slice(prefix.length);
+      var slashIndex = rest.indexOf("/");
+
+      if (slashIndex === -1) continue;
+
+      // afterVersion = "<blogID><path>"
+      var afterVersion = rest.slice(slashIndex + 1);
+
+      if (afterVersion.indexOf(blogID) !== 0) continue;
+
+      return afterVersion.slice(blogID.length) || "/";
+    } catch (e) {
+      continue;
+    }
+  }
+
+  return src;
 }
 
 function Transformer(blogID, name) {
@@ -78,6 +116,7 @@ function Transformer(blogID, name) {
     }
 
     src = resolveCDNPath(src);
+    src = resolveFolderCDNPath(src, blogID);
 
     var url = isURL(src);
     var path = src;
