@@ -8,7 +8,6 @@ var MODEL = {
   welcomeEmailSent: "boolean",
   passwordHash: "string",
   subscription: "object",
-  subscriptionOverdueSince: "number",
   paypal: "object",
   paymentMethods: "array"
 };

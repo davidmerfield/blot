@@ -177,7 +177,10 @@ function deletionDue(user, now, graceMs) {
   return details.periodEndedAt + graceMs <= now;
 }
 
-function overdueDetails(user, now) {
+// startedAtMs optionally overrides when the subscription went overdue. Stripe
+// rolls current_period_end forward on unpaid subscriptions, so for those the
+// caller should pass the date from models/user/overdueSince instead.
+function overdueDetails(user, now, startedAtMs) {
   now = now || Date.now();
 
   var stripe = user && user.subscription;
@@ -199,10 +202,7 @@ function overdueDetails(user, now) {
     };
   }
 
-  // Stripe keeps rolling current_period_end forward on unpaid subscriptions,
-  // so prefer the moment we recorded (or backfilled) the subscription going
-  // overdue, and fall back to the period end for users without one.
-  var startedAt = toMs(user.subscriptionOverdueSince) || stripePeriodEndAtMs(stripe);
+  var startedAt = startedAtMs || stripePeriodEndAtMs(stripe);
   if (!startedAt) {
     return {
       overdue: false,
@@ -232,30 +232,11 @@ function overdueDetails(user, now) {
   };
 }
 
-// Returns the user updates needed to keep subscriptionOverdueSince in step with
-// a freshly retrieved Stripe subscription. 0 means "not overdue".
-function overdueSinceUpdates(user, subscription, now) {
-  now = now || Date.now();
-
-  var overdue =
-    subscription &&
-    (subscription.status === "past_due" || subscription.status === "unpaid");
-
-  if (overdue) {
-    return toMs(user.subscriptionOverdueSince)
-      ? {}
-      : { subscriptionOverdueSince: now };
-  }
-
-  return user.subscriptionOverdueSince ? { subscriptionOverdueSince: 0 } : {};
-}
-
 module.exports = {
   ONE_MONTH_MS: ONE_MONTH_MS,
   cancellationDetails: cancellationDetails,
   deletionDue: deletionDue,
   overdueDetails: overdueDetails,
-  overdueSinceUpdates: overdueSinceUpdates,
   paypalPeriodEndAtMs: paypalPeriodEndAtMs,
   shouldDisableFromPaypalSubscription: shouldDisableFromPaypalSubscription,
   shouldDisableFromStripeSubscription: shouldDisableFromStripeSubscription,

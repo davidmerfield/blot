@@ -6,6 +6,7 @@ var getConfirmation = require("../util/getConfirmation");
 var subscriptionLifecycle = require("models/user/subscriptionLifecycle");
 var Delete = require("dashboard/account/delete");
 var Blog = require("models/blog");
+var overdueSince = require("models/user/overdueSince");
 
 var argv = process.argv.slice(2);
 var FAST_MODE = argv.indexOf("-fast") !== -1 || argv.indexOf("--fast") !== -1;
@@ -47,8 +48,12 @@ function candidateFromCancellation(user) {
   };
 }
 
-function candidateFromOverdue(user) {
-  var overdue = subscriptionLifecycle.overdueDetails(user);
+function candidateFromOverdue(user, overdueStartedAt) {
+  var overdue = subscriptionLifecycle.overdueDetails(
+    user,
+    Date.now(),
+    overdueStartedAt
+  );
 
   if (!overdue.overdue || overdue.phase !== "deletion_flow") return null;
 
@@ -120,30 +125,43 @@ function collectCandidates(done) {
 
   eachUser(
     function (user, next) {
-      var candidate =
-        candidateFromCancellation(user) || candidateFromOverdue(user);
+      var candidate = candidateFromCancellation(user);
 
-      if (!candidate) return next();
+      if (candidate) return withBlogs(user, candidate, next);
 
-      async.map(
-        user.blogs || [],
-        function (blogID, blogDone) {
-          Blog.get({ id: blogID }, blogDone);
-        },
-        function (err, blogs) {
-          if (err) return next(err);
+      // Only unpaid users need a Stripe lookup; for everyone else this
+      // calls back immediately with null.
+      overdueSince(user, function (err, startedAt) {
+        if (err) return next(err);
 
-          candidate.blogs = blogs.filter(Boolean);
-          candidates.push(candidate);
+        candidate = candidateFromOverdue(user, startedAt);
 
-          next();
-        }
-      );
+        if (!candidate) return next();
+
+        withBlogs(user, candidate, next);
+      });
     },
     function (err) {
       done(err, candidates);
     }
   );
+
+  function withBlogs(user, candidate, next) {
+    async.map(
+      user.blogs || [],
+      function (blogID, blogDone) {
+        Blog.get({ id: blogID }, blogDone);
+      },
+      function (err, blogs) {
+        if (err) return next(err);
+
+        candidate.blogs = blogs.filter(Boolean);
+        candidates.push(candidate);
+
+        next();
+      }
+    );
+  }
 }
 
 function runFastMode(candidates, done) {

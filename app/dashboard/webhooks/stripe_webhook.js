@@ -273,10 +273,7 @@ function update_subscription(customer_id, subscription, callback) {
     )
       email.OVERDUE_CLOSURE(user.uid);
 
-    var updates = Object.assign(
-      { subscription: subscription },
-      subscriptionLifecycle.overdueSinceUpdates(user, subscription)
-    );
+    var updates = { subscription: subscription };
     var handler = function (next) {
       User.set(user.uid, updates, next);
     };

@@ -290,36 +290,15 @@ describe("subscriptionLifecycle", function () {
       var details = subscriptionLifecycle.overdueDetails(user, now);
       expect(details.overdue).toBe(false);
     });
-
-    it("measures from subscriptionOverdueSince when Stripe rolled the period end into the future", function () {
+    it("uses startedAtMs instead of a period end Stripe rolled into the future", function () {
       var user = {
-        subscriptionOverdueSince: now - ONE_MONTH_MS * 2 - 86400000,
         subscription: { status: "unpaid", current_period_end: Math.floor((now + 86400000 * 20) / 1000) }
       };
-      var details = subscriptionLifecycle.overdueDetails(user, now);
+      var startedAt = now - ONE_MONTH_MS * 2 - 86400000;
+      var details = subscriptionLifecycle.overdueDetails(user, now, startedAt);
       expect(details.overdue).toBe(true);
+      expect(details.startedAt).toEqual(startedAt);
       expect(details.phase).toEqual("deletion_flow");
-    });
-  });
-
-  describe("overdueSinceUpdates", function () {
-    it("records the time when a subscription becomes overdue", function () {
-      var updates = subscriptionLifecycle.overdueSinceUpdates({}, { status: "past_due" }, now);
-      expect(updates).toEqual({ subscriptionOverdueSince: now });
-    });
-
-    it("keeps the original time when already recorded", function () {
-      var user = { subscriptionOverdueSince: now - 1000 };
-      expect(subscriptionLifecycle.overdueSinceUpdates(user, { status: "unpaid" }, now)).toEqual({});
-    });
-
-    it("clears the time once the subscription recovers", function () {
-      var user = { subscriptionOverdueSince: now - 1000 };
-      expect(subscriptionLifecycle.overdueSinceUpdates(user, { status: "active" }, now)).toEqual({ subscriptionOverdueSince: 0 });
-    });
-
-    it("does nothing for healthy subscriptions", function () {
-      expect(subscriptionLifecycle.overdueSinceUpdates({}, { status: "active" }, now)).toEqual({});
     });
   });
 });
