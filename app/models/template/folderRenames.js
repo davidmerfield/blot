@@ -1,19 +1,23 @@
 // A local template is identified by its folder name, so renaming the folder
-// looks like one template disappearing and another appearing. Depending on
-// the client the two halves can arrive in the same sync or in separate ones,
-// so we persist just enough between syncs to pair them up again:
+// of the *installed* template looks like it disappearing and another template
+// appearing, leaving the blog pointing at a template that no longer exists.
+// Depending on the client the two halves can arrive in the same sync or in
+// separate ones, so we persist just enough between syncs to pair them up:
 //
-//   pending: local templates whose folder went missing, with a fingerprint of
-//            their views. They're kept (not dropped) for RENAME_WINDOW.
+//   pending: the installed template whose folder went missing, with the time
+//            we noticed and its views. It's kept (not dropped) for
+//            RENAME_WINDOW, during which the site keeps working.
 //   fresh:   templates first created from a folder, with the time we saw them.
 //
-// A pending template and a fresh one with identical views are a rename.
+// Templates which aren't installed are simply dropped and re-created: nothing
+// depends on them and everything they contain is in the folder.
 
 var crypto = require("crypto");
 var client = require("models/client");
 var getAllViews = require("./getAllViews");
 
-var RENAME_WINDOW = 2 * 60 * 1000; // 2 minutes
+var RENAME_WINDOW = 10 * 60 * 1000; // 10 minutes
+var MIN_SIMILARITY = 0.5;
 
 function pendingKey(blogID) {
   return "template:folder_pending_removal:" + blogID;
@@ -23,25 +27,39 @@ function freshKey(blogID) {
   return "template:folder_fresh:" + blogID;
 }
 
-function fingerprint(templateID) {
+// Maps each view name to a hash of its content
+function viewHashes(templateID) {
   return new Promise(function (resolve, reject) {
     getAllViews(templateID, function (err, views) {
       if (err) return reject(err);
 
-      var names = Object.keys(views || {}).sort();
+      var hashes = {};
 
-      // Nothing to compare an empty template on
-      if (!names.length) return resolve(null);
-
-      var hash = crypto.createHash("sha1");
-
-      names.forEach(function (name) {
-        hash.update(name + "\0" + (views[name].content || "") + "\0");
+      Object.keys(views || {}).forEach(function (name) {
+        hashes[name] = crypto
+          .createHash("sha1")
+          .update(views[name].content || "")
+          .digest("hex");
       });
 
-      resolve(hash.digest("hex"));
+      resolve(hashes);
     });
   });
+}
+
+// How alike two templates are, from 0 to 1: the share of view names they have
+// in common, so a renamed folder whose files were also edited still matches.
+function similarity(a, b) {
+  var names = Object.keys(a);
+  var union = new Set(names.concat(Object.keys(b)));
+
+  if (!union.size) return 0;
+
+  var common = names.filter(function (name) {
+    return Object.prototype.hasOwnProperty.call(b, name);
+  });
+
+  return common.length / union.size;
 }
 
 async function readAll(key) {
@@ -61,9 +79,11 @@ async function readAll(key) {
 
 module.exports = {
   RENAME_WINDOW: RENAME_WINDOW,
+  MIN_SIMILARITY: MIN_SIMILARITY,
   pendingKey: pendingKey,
   freshKey: freshKey,
-  fingerprint: fingerprint,
+  viewHashes: viewHashes,
+  similarity: similarity,
 
   markFresh: async function (blogID, templateID) {
     await client.hSet(freshKey(blogID), templateID, JSON.stringify(Date.now()));

@@ -10,6 +10,11 @@ var folderRenames = require("./folderRenames");
 var renameLocalTemplate = require("./renameLocalTemplate");
 var makeID = require("./util/makeID");
 var getMetadata = require("./getMetadata");
+var Blog = require("models/blog");
+var defaults = require("models/blog/defaults");
+
+var getBlog = promisify(Blog.get);
+var setBlog = promisify(Blog.set);
 
 var dropTemplate = promisify(drop);
 var getTemplateList_ = promisify(getTemplateList);
@@ -82,76 +87,86 @@ module.exports = function (blogID, callback) {
   );
 };
 
-// A local template whose folder has gone missing might have been renamed
-// rather than deleted. We hold off dropping it for RENAME_WINDOW and, if a
-// newly created template with identical views appears in that time, migrate
-// the old template's settings to it instead.
+// Removes local templates whose folder has gone missing. The installed one
+// might have been renamed rather than deleted, so we hold off for
+// RENAME_WINDOW and, if a newly created template that resembles it appears in
+// that time, migrate to that instead. If none does we install the default
+// template so the site and template editor keep working.
 async function removeMissing(blogID, templatesInFolder) {
   const log = (...args) => console.log(clfdate(), blogID.slice(0, 12), "buildFromFolder:", ...args);
   const templates = (await getTemplateList_(blogID)) || [];
+  const blog = await getBlog({ id: blogID });
   const now = Date.now();
 
   const local = templates.filter(
     template => template.localEditing === true && template.owner === blogID
   );
   const orphans = local.filter(template => !templatesInFolder.includes(template.slug));
-  const orphanIDs = orphans.map(template => template.id);
 
-  // Forget pending templates which have reappeared or been removed elsewhere
-  const pending = await folderRenames.readPending(blogID);
-  for (const id of Object.keys(pending)) {
-    if (!orphanIDs.includes(id)) {
-      await folderRenames.clear(blogID, id);
-      delete pending[id];
-    }
-  }
-
-  for (const orphan of orphans) {
-    if (!pending[orphan.id]) {
-      pending[orphan.id] = {
-        since: now,
-        fingerprint: await folderRenames.fingerprint(orphan.id),
-      };
-      await folderRenames.setPending(blogID, orphan.id, pending[orphan.id]);
-    }
-  }
-
-  const fresh = await folderRenames.readFresh(blogID);
-  const candidates = [];
-  for (const template of local) {
-    if (orphanIDs.includes(template.id)) continue;
-    if (!templatesInFolder.includes(template.slug)) continue;
-    if (!(now - fresh[template.id] < folderRenames.RENAME_WINDOW)) continue;
-    candidates.push({ id: template.id, fingerprint: await folderRenames.fingerprint(template.id) });
-  }
-
-  const count = (list, fingerprint) =>
-    list.filter(item => item.fingerprint === fingerprint).length;
-  const orphanRecords = orphans.map(o => ({ id: o.id, slug: o.slug, fingerprint: pending[o.id].fingerprint, since: pending[o.id].since }));
-
-  for (const orphan of orphanRecords) {
-    // Only migrate when the pairing is unambiguous
-    const match =
-      orphan.fingerprint &&
-      count(orphanRecords, orphan.fingerprint) === 1 &&
-      count(candidates, orphan.fingerprint) === 1 &&
-      candidates.find(candidate => candidate.fingerprint === orphan.fingerprint);
-
+  // Templates which aren't installed can be dropped straight away
+  for (const orphan of orphans.filter(template => template.id !== blog.template)) {
     try {
-      if (match) {
-        log("template folder renamed", orphan.id, "->", match.id);
-        await renameLocalTemplate(blogID, orphan.id, match.id);
-        await folderRenames.clear(blogID, orphan.id);
-        await folderRenames.clear(blogID, match.id);
-      } else if (now - orphan.since >= folderRenames.RENAME_WINDOW) {
-        log("removing template", orphan.slug);
-        await dropTemplate(blogID, orphan.slug);
-        await folderRenames.clear(blogID, orphan.id);
-      } else {
-        log("template folder missing, waiting to see if it was renamed", orphan.slug);
-      }
+      log("removing template", orphan.slug);
+      await dropTemplate(blogID, orphan.slug);
     } catch (err) {
       console.error(clfdate(), blogID.slice(0, 12), "buildFromFolder: failed to remove template", orphan.slug, err);
     }
+  }
+
+  const installed = orphans.find(template => template.id === blog.template);
+
+  // Forget any pending record which no longer applies
+  const pending = await folderRenames.readPending(blogID);
+  for (const id of Object.keys(pending)) {
+    if (!installed || id !== installed.id) await folderRenames.clear(blogID, id);
+  }
+
+  if (!installed) return;
+
+  try {
+    let record = pending[installed.id];
+
+    if (!record) {
+      record = { since: now, views: await folderRenames.viewHashes(installed.id) };
+      await folderRenames.setPending(blogID, installed.id, record);
+    }
+
+    const fresh = await folderRenames.readFresh(blogID);
+    let best, bestScore = 0, tied = false;
+
+    for (const template of local) {
+      if (template.id === installed.id) continue;
+      if (!templatesInFolder.includes(template.slug)) continue;
+      if (!(now - fresh[template.id] < folderRenames.RENAME_WINDOW)) continue;
+
+      const score = folderRenames.similarity(
+        record.views,
+        await folderRenames.viewHashes(template.id)
+      );
+
+      if (score > bestScore) {
+        best = template;
+        bestScore = score;
+        tied = false;
+      } else if (score === bestScore) {
+        tied = true;
+      }
+    }
+
+    if (best && bestScore >= folderRenames.MIN_SIMILARITY && !tied) {
+      log("installed template folder renamed", installed.id, "->", best.id);
+      await renameLocalTemplate(blogID, installed.id, best.id);
+      await folderRenames.clear(blogID, installed.id);
+      await folderRenames.clear(blogID, best.id);
+    } else if (now - record.since >= folderRenames.RENAME_WINDOW) {
+      log("installed template folder missing, installing default", installed.id);
+      await setBlog(blogID, { template: defaults.template });
+      await dropTemplate(blogID, installed.slug);
+      await folderRenames.clear(blogID, installed.id);
+    } else {
+      log("installed template folder missing, waiting to see if it was renamed", installed.slug);
+    }
+  } catch (err) {
+    console.error(clfdate(), blogID.slice(0, 12), "buildFromFolder: failed to handle missing installed template", installed.slug, err);
   }
 }
