@@ -98,7 +98,11 @@ jobs:
             sleep $interval; elapsed=$((elapsed+interval))
           done
 
-          app_id=$(docker run -d --network test_network -e BLOT_REDIS_HOST=test_redis -p 8080:8080 "$IMAGE")
+          # BLOT_TOTP_ENCRYPTION_SECRET is required in production (see
+          # app/models/user/totp/encryptionKey.js) - this image boots with
+          # NODE_ENV=production, so it needs a value here too, same as a
+          # real deploy would set.
+          app_id=$(docker run -d --network test_network -e BLOT_REDIS_HOST=test_redis -e BLOT_TOTP_ENCRYPTION_SECRET=ci-test-totp-encryption-secret -p 8080:8080 "$IMAGE")
 
           timeout=60; interval=5; elapsed=0
           until [ "$(docker inspect --format='{{json .State.Health.Status}}' "$app_id")" = '"healthy"' ]; do

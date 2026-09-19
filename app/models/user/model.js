@@ -9,6 +9,10 @@ var MODEL = {
   passwordHash: "string",
   subscription: "object",
   paypal: "object",
+  totpEnabled: "boolean",
+  totpSecret: "string",
+  totpBackupCodes: "array",
+  totpUsedCodes: "array",
   paymentMethods: "array"
 };
 

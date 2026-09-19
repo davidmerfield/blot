@@ -28,6 +28,10 @@ describe("user validate", function () {
       welcomeEmailSent: true,
       subscription: {},
       paypal: {},
+      totpEnabled: false,
+      totpSecret: "",
+      totpBackupCodes: [],
+      totpUsedCodes: [],
       paymentMethods: []
     }, overrides);
   }
