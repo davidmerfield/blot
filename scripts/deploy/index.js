@@ -158,7 +158,12 @@ async function getCurrentImageHash(containerName) {
   }
 }
 
-async function deployContainer(container, platform, imageHash) {
+async function deployContainer(
+  container,
+  platform,
+  imageHash,
+  { verify = true } = {}
+) {
   const dockerCreateCommand = await generateDockerCommand(
     container,
     platform,
@@ -209,6 +214,17 @@ async function deployContainer(container, platform, imageHash) {
   await sshCommand(`docker start ${container.name}`);
   console.log("Checking health of new container...");
   await checkHealth(container.name, container.port);
+
+  if (verify && container.verify) {
+    console.log("Verifying new container...");
+    // Runs inside the container so it checks the redis connection, data
+    // mount, binaries and airlock the app itself sees. On failure sshCommand
+    // throws with the report, which main() handles like a failed health check.
+    const report = await sshCommand(
+      `docker exec ${container.name} node /usr/src/app/scripts/deploy/verify-container/index.js ${imageHash}`
+    );
+    console.log(report);
+  }
 }
 
 // --- airlock (config/airlock) --------------------------------------------
@@ -503,7 +519,11 @@ async function main() {
 
         console.error("Rolling back...");
         try {
-          await deployContainer(container, platform, rollbackHash);
+          // Skip verification on rollback: the priority is to get
+          // something serving again, not to gate it.
+          await deployContainer(container, platform, rollbackHash, {
+            verify: false,
+          });
           console.error("Rollback succeeded.");
         } catch (rollbackError) {
           console.error("Rollback failed:", rollbackError);
