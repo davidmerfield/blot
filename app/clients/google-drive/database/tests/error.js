@@ -117,5 +117,10 @@ describe("google drive database.error", function () {
     expect(isTransientDriveError(rateLimit)).toBe(true);
     expect(isLostFolderError(rateLimit)).toBe(false);
     expect(isLostFolderError({ code: 500 })).toBe(false);
+    // a bare or policy 403 is ambiguous, so it must not drop the folder
+    expect(isLostFolderError({ code: 403 })).toBe(false);
+    expect(
+      isLostFolderError({ code: 403, errors: [{ reason: "dailyLimitExceeded" }] })
+    ).toBe(false);
   });
 });

@@ -15,6 +15,7 @@ const TRANSIENT_REASONS = {
   userRateLimitExceeded: true,
   rateLimitExceeded: true,
   sharingRateLimitExceeded: true,
+  dailyLimitExceeded: true,
   backendError: true,
 };
 
@@ -77,16 +78,15 @@ function isTransientDriveError(err) {
 
 // The folder used to sync this site is gone or the service account can
 // no longer see it. Google often returns 404 for both "deleted" and
-// "unshared"; 403 covers an explicit permission loss.
+// "unshared". A 403 only counts with a permission reason: it is also how
+// Drive reports limits and policy errors, and losing the folder is not
+// something we want to persist on an ambiguous response.
 function isLostFolderError(err) {
   if (isTransientDriveError(err) || isQuotaError(err)) return false;
 
   const status = driveStatus(err);
   if (status === 404) return true;
-  if (hasReason(err, LOST_FOLDER_REASONS)) return true;
-  if (status === 403) return true;
-
-  return false;
+  return hasReason(err, LOST_FOLDER_REASONS);
 }
 
 function isSetupError(error) {

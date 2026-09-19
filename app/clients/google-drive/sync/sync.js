@@ -58,6 +58,12 @@ module.exports = async function sync(blogID, publish, update) {
     publish
   );
 
+  const markSourceMissing = async (message) => {
+    publish("Error syncing with Google Drive");
+    await database.blog.store(blogID, sourceMissingFields(account, message));
+    return false;
+  };
+
   // fetch the latest folderName, in case it has changed
   // and also whether or not the folder is in the trash
   try {
@@ -71,22 +77,10 @@ module.exports = async function sync(blogID, publish, update) {
       await database.blog.store(blogID, { folderName: folder.data.name });
     }
 
-    if (folder.data.trashed) {
-      publish("Error syncing with Google Drive");
-      await database.blog.store(
-        blogID,
-        sourceMissingFields(account, MESSAGES.TRASHED)
-      );
-      return false;
-    }
+    if (folder.data.trashed) return markSourceMissing(MESSAGES.TRASHED);
   } catch (err) {
     if (isLostFolderError(err)) {
-      publish("Error syncing with Google Drive");
-      await database.blog.store(
-        blogID,
-        sourceMissingFields(account, lostFolderMessage(err))
-      );
-      return false;
+      return markSourceMissing(lostFolderMessage(err));
     }
 
     // Transient / unknown Drive errors are retried on the next webhook or
