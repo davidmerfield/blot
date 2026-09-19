@@ -50,6 +50,22 @@ describe("redisUnavailable", function () {
       }
     });
 
+    it("ignores lookup failures for other hostnames, even with a DNS redis host", function () {
+      const original = config.redis.host;
+      config.redis.host = "redis";
+      try {
+        const err = new Error("getaddrinfo ENOTFOUND api.stripe.com");
+        err.code = "ENOTFOUND";
+        err.hostname = "api.stripe.com";
+        expect(isRedisUnavailableError(err)).toBe(false);
+
+        err.hostname = "redis";
+        expect(isRedisUnavailableError(err)).toBe(true);
+      } finally {
+        config.redis.host = original;
+      }
+    });
+
     it("ignores the redis host on another port", function () {
       const err = new Error("connect ECONNREFUSED");
       err.code = "ECONNREFUSED";

@@ -50,6 +50,22 @@ describe("models/redis", function () {
     expect(outcome).toBe("hung");
   });
 
+  it("rejects commands already queued when failFast is switched on", async function () {
+    const client = unreachableClient();
+    const queued = client.get("x").then(
+      () => "resolved",
+      (e) => e
+    );
+    createRedisClient.failFast(client);
+    const outcome = await Promise.race([
+      queued,
+      new Promise((resolve) => setTimeout(() => resolve("still queued"), 3000)),
+    ]);
+    await client.destroy();
+    expect(outcome).not.toBe("still queued");
+    expect(outcome).not.toBe("resolved");
+  });
+
   it("commands reject immediately with failFast while redis is unreachable", async function () {
     const client = unreachableClient();
     createRedisClient.failFast(client);

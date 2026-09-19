@@ -17,6 +17,11 @@ const sessionClient = redis.createClient({
     socketTimeout: createRedisClient.SOCKET_TIMEOUT_MS,
   },
 });
+// Socket errors (a dropped or stalled connection) are emitted here as well as
+// rejecting commands, and an EventEmitter error with no listener kills the process
+sessionClient.on("error", function (err) {
+  console.error("Session Redis error:", err.message);
+});
 createRedisClient.failFastOnceReady(sessionClient);
 sessionClient.connect().catch((err) => {
   console.error("Session Redis connect error:", err);

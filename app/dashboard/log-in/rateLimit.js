@@ -16,6 +16,11 @@ const client = redis.createClient({
     socketTimeout: createRedisClient.SOCKET_TIMEOUT_MS,
   },
 });
+// Socket errors (a dropped or stalled connection) are emitted here as well as
+// rejecting commands, and an EventEmitter error with no listener kills the process
+client.on("error", function (err) {
+  console.error("Rate limit Redis error:", err.message);
+});
 createRedisClient.failFastOnceReady(client);
 client.connect().catch((err) => {
   console.error("Rate limit Redis connect error:", err);

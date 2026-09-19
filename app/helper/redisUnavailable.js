@@ -39,21 +39,16 @@ function isRedisUnavailableError(err, depth = 0) {
     const redis = config.redis || {};
     // Node reports the target as port + address (connect) or hostname (lookup)
     const target = err.address !== undefined ? err.address : err.hostname;
-    const portMatches =
-      err.port === undefined || Number(err.port) === Number(redis.port);
-    // Node reports the resolved IP, so a DNS name like "redis" can only be
-    // matched on the port
-    const hostMatches =
-      target === undefined ||
-      target === redis.host ||
-      net.isIP(String(redis.host)) === 0;
+    const hostIsName = net.isIP(String(redis.host)) === 0;
 
-    // Require at least one identifying field so a bare ECONNRESET is not ours
-    if (
-      (err.port !== undefined || target !== undefined) &&
-      portMatches &&
-      hostMatches
-    ) {
+    if (err.port !== undefined) {
+      // Node reports the resolved IP, so when the configured host is a DNS
+      // name (dev, test) only the port can be compared
+      const hostMatches =
+        target === undefined || target === redis.host || hostIsName;
+      if (Number(err.port) === Number(redis.port) && hostMatches) return true;
+    } else if (target !== undefined && target === redis.host) {
+      // Lookup failures carry no port, so the name itself must be Redis's
       return true;
     }
   }

@@ -30,6 +30,21 @@ describe("when redis is unavailable", function () {
     expect(await res.text()).toContain("Temporarily unavailable");
   });
 
+  it("responds 503, not an incomplete cacheable page, when redis fails while retrieving entries", async function () {
+    await this.write({ path: "/a.txt", content: "Hello, A!" });
+    await this.template({ "entries.html": "{{#entries}}{{{html}}}{{/entries}}" });
+
+    const Entries = require("models/entries");
+    spyOn(Entries, "getPage").and.callFake(function () {
+      arguments[arguments.length - 1](new ClientOfflineError());
+    });
+
+    const res = await this.get("/");
+
+    expect(res.status).toBe(503);
+    expect(await res.text()).toContain("Temporarily unavailable");
+  });
+
   it("still 404s a missing blog normally", async function () {
     const res = await this.fetch("http://no-such-blog.invalid/");
     expect(res.status).toBe(404);
