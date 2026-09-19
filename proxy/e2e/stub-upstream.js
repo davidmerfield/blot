@@ -20,12 +20,6 @@ const handler = (req, res) => {
     res.end("boom");
     return;
   }
-  if (url.pathname === "/redis-down") {
-    // What Blot answers when it cannot reach Redis
-    res.writeHead(503, { "Retry-After": "60", "Cache-Control": "no-store" });
-    res.end("Temporarily unavailable");
-    return;
-  }
   if (url.pathname.endsWith(".png")) {
     res.writeHead(200, { "Content-Type": "image/png" });
     res.end(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64"));
