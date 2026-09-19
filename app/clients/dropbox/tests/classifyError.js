@@ -181,10 +181,10 @@ describe("dropbox classifyError", function () {
         error_source: SOURCES.AUTH,
         error_since: 5,
       });
-      expect(backfillPatch({ error_code: 409 })).toEqual({
-        error_source: SOURCES.DELTA,
-        error_since: jasmine.any(Number),
-      });
+      const missingFolder = backfillPatch({ error_code: 409 });
+      expect(missingFolder.error_source).toBe(SOURCES.DELTA);
+      expect(typeof missingFolder.error_since).toBe("number");
+      expect(missingFolder.error_since).toBeGreaterThan(0);
     });
 
     it("clears stale transient error_codes", function () {
