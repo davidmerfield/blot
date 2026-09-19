@@ -58,4 +58,58 @@ describe("models/redis", function () {
     expect(client.options.disableOfflineQueue).toBe(true);
     await client.quit();
   });
+
+  it("uses a socket timeout and ping interval to detect a stalled connection", function () {
+    const client = createRedisClient();
+    expect(client.options.pingInterval).toBe(createRedisClient.PING_INTERVAL_MS);
+    expect(client.options.socket.socketTimeout).toBe(
+      createRedisClient.SOCKET_TIMEOUT_MS
+    );
+    expect(createRedisClient.SOCKET_TIMEOUT_MS).toBeGreaterThan(
+      createRedisClient.PING_INTERVAL_MS
+    );
+  });
+
+  it("rejects commands when a connected server stops replying", async function () {
+    const net = require("net");
+    const redis = require("redis");
+    let silent = false;
+
+    // Answers everything with +OK until told to go quiet, without closing
+    const server = net.createServer(function (socket) {
+      socket.on("error", function () {});
+      socket.on("data", function (data) {
+        if (silent) return;
+        const commands = (data.toString().match(/\*\d+\r\n/g) || []).length || 1;
+        socket.write("+OK\r\n".repeat(commands));
+      });
+    });
+    await new Promise((resolve) => server.listen(0, resolve));
+
+    const client = redis.createClient({
+      url: "redis://127.0.0.1:" + server.address().port,
+      RESP: 2,
+      disableClientInfo: true,
+      commandOptions: { timeout: undefined },
+      pingInterval: 200,
+      socket: { socketTimeout: 800, reconnectStrategy: () => 100 },
+    });
+    client.on("error", function () {});
+    await client.connect();
+    createRedisClient.failFast(client);
+    expect(await client.ping()).toBe("OK");
+
+    silent = true;
+    let error;
+    try {
+      await client.get("x");
+    } catch (e) {
+      error = e;
+    }
+
+    await client.destroy();
+    await new Promise((resolve) => server.close(resolve));
+
+    expect(error && error.constructor.name).toBe("SocketTimeoutError");
+  });
 });

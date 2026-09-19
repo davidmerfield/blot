@@ -11,7 +11,11 @@ const sessionClient = redis.createClient({
   url: `redis://${config.redis.host}:${config.redis.port}`,
   RESP: 2,
   commandOptions: { timeout: undefined },
-  socket: { keepAliveInitialDelay: 5000 },
+  pingInterval: createRedisClient.PING_INTERVAL_MS,
+  socket: {
+    keepAliveInitialDelay: 5000,
+    socketTimeout: createRedisClient.SOCKET_TIMEOUT_MS,
+  },
 });
 createRedisClient.failFastOnceReady(sessionClient);
 sessionClient.connect().catch((err) => {

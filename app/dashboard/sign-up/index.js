@@ -7,6 +7,7 @@ var DECLINED = "Your card was declined, please try again.";
 var NO_CUSTOMER = "No Customer";
 
 var Express = require("express");
+var { isRedisUnavailableError } = require("helper/redisUnavailable");
 var config = require("config");
 var stripe = require("stripe")(config.stripe.secret);
 var User = require("models/user");
@@ -50,6 +51,9 @@ alreadyPaid.get(function (req, res) {
 alreadyPaid.post(validateEmail, function (req, res, next) {
   // First we make sure that the access token passed is valid.
   User.checkAccessToken(req.params.token, function (err) {
+    // An outage is not an invalid link, let it reach the 503 handler
+    if (isRedisUnavailableError(err)) return next(err);
+
     if (err) {
       return next(
         new Error("Your sign up link is not valid. Please ask for another.")

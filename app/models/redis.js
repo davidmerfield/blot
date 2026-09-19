@@ -4,6 +4,14 @@ const redis = require("redis");
 const url = `redis://${config.redis.host}:${config.redis.port}`;
 const clientSideCaches = new WeakMap();
 
+// A partition where the TCP connection stays up but Redis stops replying
+// leaves the client "ready", so commands would wait forever. Pinging keeps
+// traffic flowing on a healthy connection; if nothing at all arrives within
+// socketTimeout the socket is torn down, pending commands reject with
+// SocketTimeoutError and (once connected) new ones reject immediately.
+const PING_INTERVAL_MS = 2000;
+const SOCKET_TIMEOUT_MS = 6000;
+
 function createRedisClient() {
   const clientSideCache = new redis.BasicClientSideCache({
     ttl: 0,
@@ -16,7 +24,11 @@ function createRedisClient() {
     RESP: 3,
     maintNotifications: "disabled",
     commandOptions: { timeout: undefined },
-    socket: { keepAliveInitialDelay: 5000 },
+    pingInterval: PING_INTERVAL_MS,
+    socket: {
+      keepAliveInitialDelay: 5000,
+      socketTimeout: SOCKET_TIMEOUT_MS,
+    },
     clientSideCache,
   });
 
@@ -48,6 +60,9 @@ createRedisClient.failFastOnceReady = function (client) {
     createRedisClient.failFast(client);
   });
 };
+
+createRedisClient.PING_INTERVAL_MS = PING_INTERVAL_MS;
+createRedisClient.SOCKET_TIMEOUT_MS = SOCKET_TIMEOUT_MS;
 
 // Only expose an immutable stats snapshot, rather than the controllable cache.
 // This keeps cache mutation limited to node-redis itself.
