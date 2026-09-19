@@ -87,6 +87,23 @@ describe("redisUnavailable", function () {
       expect(isRedisUnavailableError(err)).toBe(false);
     });
 
+    it("recognises a server that is still loading its dataset", function () {
+      const { ErrorReply } = require("redis");
+      expect(
+        isRedisUnavailableError(
+          new ErrorReply("LOADING Redis is loading the dataset in memory")
+        )
+      ).toBe(true);
+      expect(isRedisUnavailableError(new ErrorReply("MASTERDOWN Link down"))).toBe(true);
+    });
+
+    it("ignores other error replies", function () {
+      const { ErrorReply } = require("redis");
+      expect(
+        isRedisUnavailableError(new ErrorReply("WRONGTYPE Operation against a key"))
+      ).toBe(false);
+    });
+
     it("finds the error inside a wrapper", function () {
       const err = new Error("wrapped", { cause: new ClientOfflineError() });
       expect(isRedisUnavailableError(err)).toBe(true);

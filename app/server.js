@@ -45,12 +45,21 @@ server.get("/redis-health", async function (req, res) {
   try {
     if (!client.isReady) throw new Error("Redis client is not ready");
 
-    await Promise.race([
-      client.ping(),
-      new Promise((resolve, reject) =>
-        setTimeout(() => reject(new Error("Redis ping timed out")), 2000)
-      ),
-    ]);
+    let timer;
+
+    try {
+      await Promise.race([
+        client.ping(),
+        new Promise((resolve, reject) => {
+          timer = setTimeout(
+            () => reject(new Error("Redis ping timed out")),
+            2000
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
 
     res.send("OK");
   } catch (err) {

@@ -15,6 +15,11 @@ const CLIENT_ERROR_NAMES = new Set([
   "ReconnectStrategyError",
 ]);
 
+// Redis is reachable but not serving: replying -LOADING while it reads its
+// dataset after a restart, or -MASTERDOWN when a replica has lost its master.
+// This is the tail end of a real outage, so treat it the same way.
+const NOT_SERVING_REPLY = /^(LOADING|MASTERDOWN|CLUSTERDOWN|TRYAGAIN)\b/;
+
 // Network errors are only ours if they were aimed at the Redis server,
 // otherwise an unreachable third party (Dropbox, Stripe) looks like an outage
 const SOCKET_ERROR_CODES = new Set([
@@ -32,6 +37,14 @@ function isRedisUnavailableError(err, depth = 0) {
   if (!err || typeof err !== "object" || depth > 2) return false;
 
   if (CLIENT_ERROR_NAMES.has(err.constructor && err.constructor.name)) {
+    return true;
+  }
+
+  if (
+    err.constructor &&
+    err.constructor.name === "ErrorReply" &&
+    NOT_SERVING_REPLY.test(String(err.message))
+  ) {
     return true;
   }
 
