@@ -18,17 +18,14 @@ describe("when redis is unavailable", function () {
     expect(body).toContain("Temporarily unavailable");
   });
 
-  it("responds 503 when redis fails while rendering a page", async function () {
-    await this.write({ path: "/a.txt", content: "Hello, A!" });
-    await this.template({ "entries.html": "{{#entries}}{{{html}}}{{/entries}}" });
-
-    const Entries = require("models/entries");
-    spyOn(Entries, "getPage").and.callFake(function () {
-      const callback = arguments[arguments.length - 1];
+  it("responds 503 when redis fails partway through a request", async function () {
+    const Redirects = require("models/redirects");
+    spyOn(Redirects, "check").and.callFake(function (blogID, url, callback) {
       callback(new ClientOfflineError());
     });
 
-    const res = await this.get("/");
+    const res = await this.get("/no-such-page");
+
     expect(res.status).toBe(503);
     expect(await res.text()).toContain("Temporarily unavailable");
   });
