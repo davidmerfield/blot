@@ -16,7 +16,7 @@ var crypto = require("crypto");
 var client = require("models/client");
 var getAllViews = require("./getAllViews");
 
-var RENAME_WINDOW = 10 * 60 * 1000; // 10 minutes
+var RENAME_WINDOW = 2 * 60 * 1000; // 2 minutes
 var MIN_SIMILARITY = 0.5;
 
 function pendingKey(blogID) {

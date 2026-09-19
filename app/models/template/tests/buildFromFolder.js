@@ -157,6 +157,29 @@ describe("template", function () {
     expect(await exists(this.template.id)).toEqual(false);
   });
 
+  it("drops the missing template as soon as another template is installed", async function () {
+    await installLocalTemplate(this);
+    await buildFromFolder(this.blog.id);
+
+    await fs.remove(templatesDir(this) + "/" + this.template.slug);
+    await buildFromFolder(this.blog.id);
+    expect(await exists(this.template.id)).toEqual(true);
+
+    await setBlog(this.blog.id, { template: "SITE:blog" });
+    await buildFromFolder(this.blog.id);
+
+    const blog = await getBlog({ id: this.blog.id });
+
+    expect(await exists(this.template.id)).toEqual(false);
+    expect(blog.template).not.toEqual(this.template.id);
+    expect(await client.hGetAll(folderRenames.pendingKey(this.blog.id))).toEqual({});
+
+    // Nothing further happens once the window has passed
+    await expireWindow(this.blog.id);
+    await buildFromFolder(this.blog.id);
+    expect((await getBlog({ id: this.blog.id })).template).toEqual(blog.template);
+  });
+
   it("does not adopt an unrelated new template as the rename", async function () {
     await installLocalTemplate(this);
     await buildFromFolder(this.blog.id);
