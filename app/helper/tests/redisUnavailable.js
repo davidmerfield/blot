@@ -36,6 +36,20 @@ describe("redisUnavailable", function () {
       expect(isRedisUnavailableError(err)).toBe(true);
     });
 
+    it("matches on port alone when the redis host is a DNS name", function () {
+      const original = config.redis.host;
+      config.redis.host = "redis";
+      try {
+        const err = new Error("connect ECONNREFUSED");
+        err.code = "ECONNREFUSED";
+        err.address = "172.18.0.2";
+        err.port = config.redis.port;
+        expect(isRedisUnavailableError(err)).toBe(true);
+      } finally {
+        config.redis.host = original;
+      }
+    });
+
     it("ignores the redis host on another port", function () {
       const err = new Error("connect ECONNREFUSED");
       err.code = "ECONNREFUSED";

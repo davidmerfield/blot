@@ -8,9 +8,10 @@ const server = require("./server");
 
 const DEPLOYMENT_MARKER_EXPIRATION_SECONDS = 90 * 24 * 60 * 60;
 
-// Requests that hit Redis while it is down reject with a connection error.
-// Where a route did not catch it, log rather than crash the process; any
-// other unhandled rejection keeps Node's default behaviour.
+// Background work that hits Redis while it is down rejects with a connection
+// error. Log those rather than crash the process. Installing a listener
+// disables Node's default handling, so anything else is rethrown, which
+// surfaces as an uncaught exception and still exits the process.
 process.on("unhandledRejection", function (err) {
   if (!isRedisUnavailableError(err)) throw err;
   console.error(clfdate(), "Unhandled rejection (Redis unavailable):", err.message);

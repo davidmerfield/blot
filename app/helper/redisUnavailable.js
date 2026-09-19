@@ -1,5 +1,6 @@
 const config = require("config");
 const path = require("path");
+const net = require("net");
 const clfdate = require("helper/clfdate");
 
 const PAGE = path.resolve(__dirname + "/../views/error-redis-unavailable.html");
@@ -40,7 +41,12 @@ function isRedisUnavailableError(err, depth = 0) {
     const target = err.address !== undefined ? err.address : err.hostname;
     const portMatches =
       err.port === undefined || Number(err.port) === Number(redis.port);
-    const hostMatches = target === undefined || target === redis.host;
+    // Node reports the resolved IP, so a DNS name like "redis" can only be
+    // matched on the port
+    const hostMatches =
+      target === undefined ||
+      target === redis.host ||
+      net.isIP(String(redis.host)) === 0;
 
     // Require at least one identifying field so a bare ECONNRESET is not ours
     if (

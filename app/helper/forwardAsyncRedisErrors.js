@@ -6,7 +6,11 @@ const { isRedisUnavailableError } = require("helper/redisUnavailable");
 // would leave the request open until the proxy times out. Forward Redis
 // connectivity failures so they reach redisUnavailableHandler and become a
 // 503. Any other rejection is rethrown so it behaves exactly as before.
-if (!Layer.prototype.handle_request.forwardsRedisErrors) {
+// Express 5 forwards rejected promises itself, so this can be deleted once we
+// upgrade; until then skip it if a newer Express is somehow installed.
+const expressMajor = Number(require("express/package.json").version.split(".")[0]);
+
+if (expressMajor < 5 && !Layer.prototype.handle_request.forwardsRedisErrors) {
   const original = Layer.prototype.handle_request;
 
   const handle_request = function (req, res, next) {
