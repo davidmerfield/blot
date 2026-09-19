@@ -208,4 +208,28 @@ describe("folderAssets plugin", function () {
       done();
     });
   });
+
+  it("resolves entry-relative poster and srcset paths before baking", function (done) {
+    var path = "/posts/Hello.txt";
+    var contents =
+      '<video poster="movie.jpg"></video><img src="/posts/a.jpg" srcset="small.jpg 1x, ../big.jpg 2x">';
+
+    fs.outputFileSync(this.blogDirectory + path, contents);
+    fs.outputFileSync(this.blogDirectory + "/posts/movie.jpg", "m");
+    fs.outputFileSync(this.blogDirectory + "/posts/small.jpg", "s");
+    fs.outputFileSync(this.blogDirectory + "/big.jpg", "b");
+    fs.outputFileSync(this.blogDirectory + "/posts/a.jpg", "a");
+
+    build(this.blog, path, function (err, entry) {
+      if (err) return done.fail(err);
+
+      expect(entry.html).toMatch(new RegExp('poster="' + tokenRegex("/posts/movie\\.jpg").source));
+      expect(entry.html).toMatch(tokenRegex("/posts/small\\.jpg 1x"));
+      expect(entry.html).toMatch(tokenRegex("/big\\.jpg 2x"));
+      expect(entry.dependencies).toContain("/posts/movie.jpg");
+      expect(entry.dependencies).toContain("/posts/small.jpg");
+      expect(entry.dependencies).toContain("/big.jpg");
+      done();
+    });
+  });
 });

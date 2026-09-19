@@ -2,7 +2,7 @@ const config = require("config");
 const fs = require("fs-extra");
 const crypto = require("crypto");
 const async = require("async");
-const { join, resolve } = require("path");
+const { join, resolve, posix } = require("path");
 const { promisify } = require("util");
 const hash = require("helper/hash");
 const HashFile = require("helper/transformer/hash");
@@ -97,7 +97,7 @@ function render($, callback, options) {
       if (!value || typeof value !== "string") return;
 
       tasks.push(() =>
-        bakeValue(ctx, value).then((result) => {
+        bakeValue(ctx, value, attr === "poster").then((result) => {
           if (result !== null) $el.attr(attr, result);
         })
       );
@@ -141,6 +141,21 @@ function stripOwnHost(ctx, value) {
   return value;
 }
 
+function resolveAgainstEntry(ctx, value) {
+  if (!ctx.entryPath || !value) return value;
+  // absolute paths, URLs (any scheme or //host), fragments and queries
+  if (/^([a-z][a-z0-9+.-]*:|\/|#|\?)/i.test(value)) return value;
+  if (value.indexOf(BLOT_CDN_TOKEN) > -1) return value;
+
+  const cutIndex = value.search(/[#?]/);
+  const pathPart = cutIndex === -1 ? value : value.slice(0, cutIndex);
+  const suffix = cutIndex === -1 ? "" : value.slice(cutIndex);
+
+  if (!pathPart) return value;
+
+  return posix.resolve(posix.dirname(ctx.entryPath), pathPart) + suffix;
+}
+
 function pathPartOf(value) {
   const cutIndex = value.search(/[#?]/);
   return cutIndex === -1 ? value : value.slice(0, cutIndex);
@@ -168,7 +183,14 @@ function isEligible(value) {
 }
 
 // Returns the new attribute value, or null to leave it untouched.
-async function bakeValue(ctx, value) {
+//
+// poster and srcset aren't normalized by app/build/dependencies/index.js
+// (it only walks href/src), so with resolveRelative set, a value that is
+// relative to the entry (poster="movie.jpg") is first resolved against the
+// entry's own path.
+async function bakeValue(ctx, value, resolveRelative) {
+  if (resolveRelative) value = resolveAgainstEntry(ctx, value);
+
   const unwrapped = unwrapFolderLink(value, ctx.blogID);
   const wasBaked = unwrapped !== null;
   const raw = wasBaked ? unwrapped : stripOwnHost(ctx, value);
@@ -211,16 +233,18 @@ async function rewriteSrcset(ctx, value) {
 
   let changed = false;
 
-  const rebuilt = await Promise.all(
-    candidates.map(async (candidate) => {
-      const result = await bakeValue(ctx, candidate.url);
-      const url = result === null ? candidate.url : result;
+  // Sequential, so one srcset holds at most one file open and the outer
+  // HASH_CONCURRENCY bound on attribute tasks is a real bound.
+  const rebuilt = [];
 
-      if (result !== null) changed = true;
+  for (const candidate of candidates) {
+    const result = await bakeValue(ctx, candidate.url, true);
+    const url = result === null ? candidate.url : result;
 
-      return candidate.descriptor ? `${url} ${candidate.descriptor}` : url;
-    })
-  );
+    if (result !== null) changed = true;
+
+    rebuilt.push(candidate.descriptor ? `${url} ${candidate.descriptor}` : url);
+  }
 
   return changed ? rebuilt.join(", ") : null;
 }
