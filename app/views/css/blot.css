@@ -1443,6 +1443,22 @@ ul.pill-navigation {
   display: inline-block;
 }
 
+.sync-status[data-health] .sync-status-icon .status-health {
+  display: inline-block;
+}
+
+.sync-status .status-health .icon-small-alert {
+  color: var(--error-text-color);
+  font-size: 12px;
+  margin-right: 4px;
+  position: relative;
+  top: -2px;
+}
+
+.sync-status[data-health] .sync-status-text {
+  color: var(--error-text-color);
+}
+
 /* HTML: <div class="loader"></div> */
 .sync-status .loading {
   content: "";
@@ -1876,7 +1892,6 @@ body.watch-page footer {
 .home-featured {
   width: 368px;
   height: 304px;
-  overflow: hidden;
   margin-top: 0;
 }
 
