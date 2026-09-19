@@ -1,4 +1,5 @@
 const Express = require("express");
+const { isRedisUnavailableError } = require("helper/redisUnavailable");
 const Email = require("helper/email");
 const cookieParser = require('cookie-parser');
 
@@ -26,7 +27,7 @@ Questions.use(
   require("dashboard/util/csrf")
 );
 
-Questions.get("/search", async (req, res) => {
+Questions.get("/search", async (req, res, next) => {
   try {
     const query = req.query.query;
 
@@ -37,6 +38,8 @@ Questions.get("/search", async (req, res) => {
       res.locals.questions = [];
     }
   } catch (e) {
+    // A cached empty result would outlive the outage, so surface it as a 503
+    if (isRedisUnavailableError(e)) return next(e);
     res.locals.questions = [];
   }
 
@@ -46,9 +49,13 @@ Questions.get("/search", async (req, res) => {
 });
 
 Questions.use(async (req, res, next) => {
-  const result = await tags();
-  res.locals.popular_tags = result.tags;
-  next();
+  try {
+    const result = await tags();
+    res.locals.popular_tags = result.tags;
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 
 Questions.use(function (req, res, next) {

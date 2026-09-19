@@ -36,10 +36,17 @@ function isRedisUnavailableError(err, depth = 0) {
 
   if (SOCKET_ERROR_CODES.has(err.code)) {
     const redis = config.redis || {};
+    // Node reports the target as port + address (connect) or hostname (lookup)
+    const target = err.address !== undefined ? err.address : err.hostname;
+    const portMatches =
+      err.port === undefined || Number(err.port) === Number(redis.port);
+    const hostMatches = target === undefined || target === redis.host;
+
+    // Require at least one identifying field so a bare ECONNRESET is not ours
     if (
-      (err.port !== undefined && Number(err.port) === Number(redis.port)) ||
-      (err.address !== undefined && err.address === redis.host) ||
-      (err.hostname !== undefined && err.hostname === redis.host)
+      (err.port !== undefined || target !== undefined) &&
+      portMatches &&
+      hostMatches
     ) {
       return true;
     }
@@ -64,7 +71,7 @@ function redisUnavailableHandler(err, req, res, next) {
   if (res.headersSent) return res.end();
 
   res.status(503);
-  res.set({ "Retry-After": "10", "Cache-Control": "no-store" });
+  res.set({ "Retry-After": "60", "Cache-Control": "no-store" });
   res.sendFile(PAGE, function (sendErr) {
     if (sendErr && !res.headersSent) res.type("text").send("Service unavailable");
   });

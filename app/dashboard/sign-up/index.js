@@ -239,6 +239,9 @@ passwordForm.post(function (req, res, next) {
   });
 });
 
+// Redis unreachable: 503 rather than echoing the error in the form
+signup.use(require("helper/redisUnavailable").redisUnavailableHandler);
+
 // This is error handling middleware
 // specific to the sign up page
 signup.use(function (err, req, res, next) {

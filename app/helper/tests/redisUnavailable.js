@@ -28,6 +28,28 @@ describe("redisUnavailable", function () {
       expect(isRedisUnavailableError(err)).toBe(true);
     });
 
+    it("recognises a refused connection by address and port", function () {
+      const err = new Error("connect ECONNREFUSED");
+      err.code = "ECONNREFUSED";
+      err.address = config.redis.host;
+      err.port = config.redis.port;
+      expect(isRedisUnavailableError(err)).toBe(true);
+    });
+
+    it("ignores the redis host on another port", function () {
+      const err = new Error("connect ECONNREFUSED");
+      err.code = "ECONNREFUSED";
+      err.address = config.redis.host;
+      err.port = Number(config.redis.port) + 1;
+      expect(isRedisUnavailableError(err)).toBe(false);
+    });
+
+    it("ignores socket errors that do not say where they were headed", function () {
+      const err = new Error("read ECONNRESET");
+      err.code = "ECONNRESET";
+      expect(isRedisUnavailableError(err)).toBe(false);
+    });
+
     it("ignores socket errors aimed at other servers", function () {
       const err = new Error("connect ECONNREFUSED");
       err.code = "ECONNREFUSED";
@@ -74,7 +96,7 @@ describe("redisUnavailable", function () {
       const res = await fetch(origin + "/redis");
       const body = await res.text();
       expect(res.status).toBe(503);
-      expect(res.headers.get("retry-after")).toBeTruthy();
+      expect(res.headers.get("retry-after")).toBe("60");
       expect(res.headers.get("cache-control")).toBe("no-store");
       expect(res.headers.get("content-type")).toContain("text/html");
       expect(body).toContain("Temporarily unavailable");

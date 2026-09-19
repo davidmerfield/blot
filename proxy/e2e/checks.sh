@@ -51,4 +51,13 @@ echo "upstream failure surfaces an error, not a hang"
 expect "500 from upstream is passed through or replaced" \
   "$([ "$(code -H 'Host: someblog.example' "$HTTP/boom")" != "000" ] && echo ok || echo timeout)" ok
 
+echo "upstream 503 (redis unavailable) is replaced by the unavailable page and never cached"
+body="$(curl -sk -m 10 -H 'Host: someblog.example' "$HTTP/redis-down")"
+expect       "blog: status stays 503"          "$(code -H 'Host: someblog.example' "$HTTP/redis-down")" 503
+expect_match "blog: unavailable page body"     "$body" "Temporarily unavailable"
+expect_match "blog: Retry-After sent"          "$(hdr -H 'Host: someblog.example' "$HTTP/redis-down")" "Retry-After: 60"
+expect_match "blog: Cache-Control no-store"    "$(hdr -H 'Host: someblog.example' "$HTTP/redis-down")" "no-store"
+expect       "site: status stays 503"          "$(code -H 'Host: localhost' "$HTTPS/redis-down")" 503
+expect_match "site: unavailable page body"     "$(curl -sk -m 10 -H 'Host: localhost' "$HTTPS/redis-down")" "Temporarily unavailable"
+
 exit $fail
