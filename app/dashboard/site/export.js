@@ -14,6 +14,9 @@ Export.get("/", function (req, res) {
 
 Export.get("/download", async function (req, res, next) {
   try {
+      // Read from Redis before any header is set or byte is piped, so an
+      // outage can still become a 503 rather than a truncated zip
+      const templates = await getAllTemplates(req.blog.id);
 
       // create a zip file of the template on the fly and send it to the user
       // then in a streaming fashion, append the files to the zip file
@@ -66,7 +69,6 @@ Export.get("/download", async function (req, res, next) {
           }
       }
 
-      const templates = await getAllTemplates(req.blog.id);
 
       for (const template of templates) {
           await addTemplate(template.id, archive);
@@ -145,7 +147,7 @@ require("moment-timezone");
 
 const loadEntries = (blogID) => {
     return new Promise((resolve, reject) => {
-        Entries.getAll(blogID, function (allEntries) {
+        Entries.getAll(blogID, { onError: reject }, function (allEntries) {
             resolve(allEntries);
         });
     });

@@ -23,6 +23,7 @@ describe("recent_entries", function () {
 
     expect(Entries.getRecent).toHaveBeenCalledWith(
       "blog-1",
+      jasmine.any(Object),
       jasmine.any(Function)
     );
     expect(result).toEqual([{ id: "/a.txt", title: "A", html: "<p>A</p>" }]);
