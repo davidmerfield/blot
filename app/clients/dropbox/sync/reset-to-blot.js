@@ -21,6 +21,8 @@ const {
 } = require("clients/util/resyncProgress");
 
 const set = promisify(require("../database").set);
+const persistError = promisify(require("../util/persistError"));
+const { SOURCES } = require("../util/classifyError");
 const createClient = promisify((blogID, cb) =>
   require("../util/createClient")(blogID, (err, ...results) => cb(err, results))
 );
@@ -36,13 +38,23 @@ async function resetToBlot(blogID, publish) {
 
   publish("Syncing folder from Dropbox to Blot");
 
-  // if (signal.aborted) return;
-  // // this could become verify.fromBlot
-  // await uploadAllFiles(account, folder, signal);
+  let client, account;
+  try {
+    [client, account] = await createClient(blogID);
+  } catch (err) {
+    await persistError(blogID, err, SOURCES.AUTH);
+    throw err;
+  }
 
-  // if (signal.aborted) return;
-  // const account = await get(blogID);
-  const [client, account] = await createClient(blogID);
+  try {
+    return await resetToBlotWithClient(blogID, publish, client, account);
+  } catch (err) {
+    await persistError(blogID, err, SOURCES.DELTA);
+    throw err;
+  }
+}
+
+async function resetToBlotWithClient(blogID, publish, client, account) {
 
   let dropboxRoot = "/";
 

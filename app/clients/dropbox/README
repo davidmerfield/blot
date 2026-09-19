@@ -23,7 +23,8 @@ The Dropbox client operates using a webhook-based event notification system comb
 
 ### Top-Level Files
 
-- **`index.js`**: Main export file. Defines the public interface of the Dropbox client, exporting `init`, `disconnect`, `resync`, `remove`, `write`, and route handlers.
+- **`index.js`**: Main export file. Defines the public interface of the Dropbox client, exporting `init`, `disconnect`, `resync`, `remove`, `write`, `getHealth`, and route handlers.
+- **`getHealth.js`**: Implements the shared client health method. Reads the account row and maps a durable `error_code` / `error_source` to `{state, issues}`.
 - **`init.js`**: Initialization logic run at server startup. Schedules hourly sync validation for all Dropbox-connected blogs and triggers resyncs for recently synced blogs on restart.
 - **`database.js`**: Manages Redis-backed persistence of Dropbox account information (tokens, folder paths, sync cursors, etc.). Uses the model defined within this file to enforce type safety.
 - **`delta.js`**: Constructs a delta (change set) by querying Dropbox's `filesListFolder` and `filesListFolderContinue` APIs. Computes relative paths for each change and handles case-only renames (e.g., `foo.txt` → `FOO.txt`).
@@ -75,6 +76,8 @@ The Dropbox client operates using a webhook-based event notification system comb
 - **`util/upload.js`**: Uploads a file from disk to Dropbox, preserving modification time metadata.
 - **`util/setMtime.js`**: Sets the modification time on a file in Dropbox (used during uploads to preserve mtimes).
 - **`util/retry.js`**: Wraps a function to retry on transient errors.
+- **`util/classifyError.js`**: Classifies Dropbox SDK errors and stored account rows into the shared health codes. Used by sync, retry, getHealth, and the dashboard flags.
+- **`util/persistError.js`**: Writes a classified error onto the account row, leaving transients and previous durable errors untouched.
 - **`util/waitForErrorTimeout.js`**: Handles HTTP 429 (rate limit) responses by parsing the `Retry-After` header and delaying the retry.
 - **`util/titleToFolder.js`**: (Utility for converting blog titles to Dropbox folder names.)
 
@@ -103,6 +106,8 @@ HTML templates rendered by dashboard routes:
 - **`tests/delta.js`**: Tests for delta calculation.
 - **`tests/paths.js`**: Tests for path handling.
 - **`tests/database.js`**: Tests for database operations.
+- **`tests/classifyError.js`**: Tests for health classification of Dropbox errors and stored rows.
+- **`tests/getHealth.js`**: Tests for the client's `getHealth` method.
 - **`tests/waitForErrorTimeout.js`**: Tests for rate limit handling.
 - **`tests/files/will_flag_restricted_content.png`**: Test file for restricted content detection.
 
@@ -122,7 +127,8 @@ The Dropbox client is instantiated and managed by the client system. Its public 
   remove: require("./remove"),
   write: require("./write"),
   site_routes: require("./routes").site,
-  dashboard_routes: require("./routes").dashboard
+  dashboard_routes: require("./routes").dashboard,
+  getHealth: require("./getHealth")
 }
 ```
 
@@ -159,6 +165,17 @@ Removes a file from Dropbox and the local blog folder.
   - Deletes from Dropbox first, then removes locally.
   - If removal from Dropbox fails (except for 409/not found), the local file is not removed.
   - Wrapped with `retry()` to handle transient errors.
+
+### `getHealth(blogID)`
+
+Returns a Promise of the client's current health for the dashboard (`{state, issues}` from `app/clients/health.js`).
+
+- **Parameters**:
+  - `blogID`: String identifier for the blog.
+- **Behavior**:
+  - Reads the Dropbox account row.
+  - Maps a durable `error_code` / `error_source` to `REAUTH_REQUIRED`, `SOURCE_MISSING`, or `QUOTA_EXCEEDED`.
+  - Returns `{state: "ok", issues: []}` when there is no account, no error, or only a stale transient `error_code`.
 
 ### `disconnect(blogID, callback)`
 
@@ -282,7 +299,9 @@ Account data is stored in Redis as a hash (`blog:{blogID}:dropbox:account`) with
   email: "string",            // User's Dropbox email (for display)
   access_token: "string",     // OAuth access token (4-hour expiry)
   refresh_token: "string",    // OAuth refresh token (long-lived, for new access tokens)
-  error_code: "number",       // Last error HTTP status code (0 if no error)
+  error_code: "number",       // Last durable error HTTP status (0 if healthy)
+  error_source: "string",     // "auth" | "delta" | "apply" | "" when healthy
+  error_since: "number",      // ms epoch when the current error first appeared
   last_sync: "number",        // Timestamp of last successful sync
   full_access: "boolean",     // true if full access, false if app folder only
   folder: "string",           // Display path to blog folder in Dropbox (e.g., "/MyBlog")
@@ -295,17 +314,19 @@ A second Redis set (`clients:dropbox:{account_id}`) tracks which blogs are linke
 
 ## Error Handling
 
-The client gracefully handles various Dropbox API errors:
+Sync records only failures the user must act on, tagged with `error_source` so `getHealth` can tell a missing folder from a per-file 409:
 
-- **HTTP 0, 500, 504** (network errors): Logged, user notified, sync retried.
-- **HTTP 429, 503** (rate limits): Logged, user notified, sync retried with backoff.
-- **HTTP 507** (quota exceeded): User notified; sync not retried.
-- **HTTP 400, 403** (bad requests): Logged as configuration/code error.
-- **HTTP 401** (revoked/expired token): User notified; token refresh attempted; if still invalid, user must re-authenticate.
-- **HTTP 409** (folder missing/moved): User notified; cursor is reset to trigger full resync.
+- **HTTP 0, 500, 504** (network errors): Logged, retried, not persisted.
+- **HTTP 429, 503** (rate limits): Logged, retried with backoff, not persisted.
+- **HTTP 507** (quota exceeded): Persisted as `QUOTA_EXCEEDED`; not retried.
+- **HTTP 400 `invalid_grant` / HTTP 401**: Persisted as `REAUTH_REQUIRED` from any step; not retried. Other 400s from delta/apply are treated as transient.
+- **HTTP 409 from delta** (`filesListFolder` / `filesGetMetadata` on the blog folder): Persisted as `SOURCE_MISSING`. A `reset` tag is recovered by clearing the cursor and listing from scratch — that is a rename/move, not a missing folder, and does not set `error_code`.
+- **HTTP 409 from apply / write / remove**: Per-file conflict or restricted content. Not persisted, not retried, not reported as a missing folder.
 - **Unsupported files** (`.paper`): Placeholder files created; download skipped.
 - **Oversized files** (>100 MB): Placeholder files created; download skipped.
 - **Case-only renames** (e.g., `foo` → `FOO`): Detected and injected as delete + create to maintain consistency on case-sensitive file systems.
+
+`getHealth` reads these fields and returns the shared `{state, issues}` shape. A successful sync, setup, or reset clears `error_code`, `error_source`, and `error_since`. Disconnect drops the account row. Legacy rows without `error_source` still map 401 → reauth and 409 → folder missing, because apply never persisted errors historically.
 
 ## Important Limitations and Constraints
 

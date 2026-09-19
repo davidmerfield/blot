@@ -12,6 +12,8 @@ const hashFile = promisify((path, cb) => {
 const upload = promisify(require("../util/upload"));
 const { isDotfileOrDotfolder } = require("../util/constants");
 const set = promisify(require("../database").set);
+const persistError = promisify(require("../util/persistError"));
+const { SOURCES } = require("../util/classifyError");
 const createClient = promisify((blogID, cb) =>
   require("../util/createClient")(blogID, (err, ...results) => cb(err, results))
 );
@@ -84,8 +86,37 @@ async function resetFromBlot(blogID, publish, signal) {
   // const account = await get(blogID);
   abortIfRequested(signal);
 
-  const [client, account] = await createClient(blogID);
+  let client, account;
+  try {
+    [client, account] = await createClient(blogID);
+  } catch (err) {
+    await persistError(blogID, err, SOURCES.AUTH);
+    throw err;
+  }
 
+  try {
+    await resetFromBlotWithClient(
+      blogID,
+      publish,
+      signal,
+      client,
+      account
+    );
+  } catch (err) {
+    if (!err || err.name !== "AbortError") {
+      await persistError(blogID, err, SOURCES.DELTA);
+    }
+    throw err;
+  }
+}
+
+async function resetFromBlotWithClient(
+  blogID,
+  publish,
+  signal,
+  client,
+  account
+) {
   abortIfRequested(signal);
 
   let dropboxRoot = "/";

@@ -11,8 +11,20 @@ async function getAccount(blogID) {
 
   // Restore the types of the properties
   // of the account object before returning.
+  // Missing keys (e.g. fields added after the row was written) get
+  // a typed default so a later set() still satisfies the model.
   for (var i in Model) {
-    if (Model[i] === "number") account[i] = parseInt(account[i]);
+    if (account[i] === undefined || account[i] === null) {
+      if (Model[i] === "number") account[i] = 0;
+      else if (Model[i] === "boolean") account[i] = false;
+      else account[i] = "";
+      continue;
+    }
+
+    if (Model[i] === "number") {
+      var n = parseInt(account[i], 10);
+      account[i] = isFinite(n) ? n : 0;
+    }
 
     if (Model[i] === "boolean") account[i] = account[i] === "true";
   }
@@ -98,6 +110,21 @@ async function setAccount(blogID, changes) {
   // Overwrite existing properties with any changes
   for (var i in changes) account[i] = changes[i];
 
+  // A successful sync writes error_code: 0; drop the source/since that
+  // belonged to a previous failure so they cannot linger on the row.
+  if (account.error_code === 0) {
+    account.error_source = "";
+    account.error_since = 0;
+  }
+
+  for (var field in Model) {
+    if (account[field] === undefined || account[field] === null) {
+      if (Model[field] === "number") account[field] = 0;
+      else if (Model[field] === "boolean") account[field] = false;
+      else account[field] = "";
+    }
+  }
+
   // Verify that the type of new account state
   // matches the expected types declared in Model below.
   ensure(account, Model, true);
@@ -154,6 +181,35 @@ function drop(blogID, callback) {
     });
 }
 
+// Persist a classified Dropbox error. Repeating the same status+source
+// keeps the original error_since so getHealth can report when the issue
+// first appeared rather than the last time we noticed it.
+function setError(blogID, classification, callback) {
+  if (!classification || !classification.persist) {
+    return callback(null);
+  }
+
+  get(blogID, function (err, account) {
+    if (err) return callback(err);
+    if (!account) return callback(null);
+
+    var same =
+      account.error_code === classification.status &&
+      account.error_source === classification.source;
+
+    set(
+      blogID,
+      {
+        error_code: classification.status || 0,
+        error_source: classification.source || "",
+        error_since:
+          same && account.error_since ? account.error_since : Date.now(),
+      },
+      callback
+    );
+  });
+}
+
 // Redis Hash which stores the Dropbox account info
 function accountKey(blogID) {
   return "blog:" + blogID + ":dropbox:account";
@@ -181,8 +237,19 @@ Model = {
   refresh_token: "string",
 
   // HTTP status code of an error from the
-  // Dropbox API. Will be 0 if sync succeeded
+  // Dropbox API. Will be 0 if sync succeeded.
+  // Only user-actionable failures are stored
+  // (401, delta 409, 507); transients stay 0.
   error_code: "number",
+
+  // Which sync step produced error_code: "auth",
+  // "delta", or "apply". Empty when healthy. A 409
+  // is SOURCE_MISSING only when this is "delta".
+  error_source: "string",
+
+  // ms epoch when the current error_code first
+  // appeared. 0 when healthy.
+  error_since: "number",
 
   // Date stamp of the last successful sync
   last_sync: "number",
@@ -215,6 +282,7 @@ Model = {
 
 module.exports = {
   set,
+  setError,
   drop,
   get,
   listBlogs,
