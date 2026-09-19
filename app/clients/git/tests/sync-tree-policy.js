@@ -28,6 +28,7 @@ describe("Git sync tree policy", function () {
         setIssue: function (id, issue, cb) { cb(null); },
         clearIssue: function (id, cb) { cb(null); },
       },
+      "./error": require("../error"),
     };
     const module = {exports:{}};
     vm.runInNewContext(fs.readFileSync(require.resolve("../sync"), "utf8"), {

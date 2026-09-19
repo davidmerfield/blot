@@ -11,7 +11,8 @@ const MESSAGES = {
 function errorMessage(err) {
   if (!err) return "";
   if (typeof err === "string") return err;
-  return String(err.message || err);
+  if (typeof err.message === "string") return err.message;
+  return String(err);
 }
 
 function isMissingRepoError(err) {
