@@ -182,14 +182,13 @@ describe("template", function () {
     expect((await getBlog({ id: this.blog.id })).template).toEqual(blog.template);
   });
 
-  it("still handles a missing template after the pending record has expired from Redis", async function () {
+  it("installs the default once the window has passed and the pending record is read back from Redis", async function () {
     await installLocalTemplate(this);
     await buildFromFolder(this.blog.id);
 
     await fs.remove(templatesDir(this) + "/" + this.template.slug);
     await buildFromFolder(this.blog.id);
 
-    // Simulate the record outliving the window, as it does on a quiet site
     const pending = await folderRenames.readPending(this.blog.id);
     expect(Object.keys(pending)).toEqual([this.template.id]);
     await expireWindow(this.blog.id);
