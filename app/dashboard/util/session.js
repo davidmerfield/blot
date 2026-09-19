@@ -2,30 +2,11 @@ const config = require("config");
 const crypto = require("crypto");
 const session = require("express-session");
 const { RedisStore } = require("connect-redis");
-const redis = require("redis");
 const createRedisClient = require("models/redis");
 
 // connect-redis 9 uses the promise API (get/set/del with options), so use
 // a native redis client, not the shared application singleton from models/client.
-const sessionClient = redis.createClient({
-  url: `redis://${config.redis.host}:${config.redis.port}`,
-  RESP: 2,
-  commandOptions: { timeout: undefined },
-  pingInterval: createRedisClient.PING_INTERVAL_MS,
-  socket: {
-    keepAliveInitialDelay: 5000,
-    socketTimeout: createRedisClient.SOCKET_TIMEOUT_MS,
-  },
-});
-// Socket errors (a dropped or stalled connection) are emitted here as well as
-// rejecting commands, and an EventEmitter error with no listener kills the process
-sessionClient.on("error", function (err) {
-  console.error("Session Redis error:", err.message);
-});
-createRedisClient.failFastOnceReady(sessionClient);
-sessionClient.connect().catch((err) => {
-  console.error("Session Redis connect error:", err);
-});
+const sessionClient = createRedisClient.createLibraryClient("Session");
 
 // Hosted production sets BLOT_SESSION_SECRET. Self-hosted and development
 // installs may omit it, so keep those installs usable with a process-local,

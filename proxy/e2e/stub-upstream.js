@@ -22,8 +22,8 @@ const handler = (req, res) => {
   }
   if (url.pathname === "/redis-down") {
     // What Blot answers when it cannot reach Redis
-    res.writeHead(503, { "Retry-After": "60" });
-    res.end("upstream 503 body");
+    res.writeHead(503, { "Retry-After": "60", "Cache-Control": "no-store" });
+    res.end("Temporarily unavailable");
     return;
   }
   if (url.pathname.endsWith(".png")) {

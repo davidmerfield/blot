@@ -10,7 +10,6 @@ Finish cross platform folder renderer
 
 Redis outage follow-ups
 - Dropbox webhook drops syncs (listBlogs fails after the 200 ack) and git auth maps Redis errors to a 401 while Redis is unreachable
-- Proxy replaces every upstream 503 with one generic page, including maintenance mode; consider an X-Blot-Error header to branch on
 
 Fix performance bugs on various sites:
 - anchor and re-enable site

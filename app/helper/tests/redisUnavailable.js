@@ -127,10 +127,6 @@ describe("redisUnavailable", function () {
         err.status = 418;
         next(err);
       });
-      require("helper/forwardAsyncRedisErrors");
-      app.get("/async-redis", async () => {
-        throw new ClientOfflineError();
-      });
       app.use(redisUnavailableHandler);
       app.use((err, req, res, next) => res.status(err.status).send("passed on"));
       server = app.listen(0, () => {
@@ -151,12 +147,6 @@ describe("redisUnavailable", function () {
       expect(res.headers.get("cache-control")).toBe("no-store");
       expect(res.headers.get("content-type")).toContain("text/html");
       expect(body).toContain("Temporarily unavailable");
-    });
-
-    it("forwards a Redis failure from an async route without its own catch", async function () {
-      const res = await fetch(origin + "/async-redis");
-      expect(res.status).toBe(503);
-      expect(await res.text()).toContain("Temporarily unavailable");
     });
 
     it("passes other errors on untouched", async function () {

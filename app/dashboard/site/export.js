@@ -143,40 +143,44 @@ const loadEntries = (blogID) => {
 
 
 
-Export.get('/wordpress', async function (req, res) {
+Export.get('/wordpress', async function (req, res, next) {
+  try {
 
-    const allEntries = await loadEntries(req.blog.id);
+      const allEntries = await loadEntries(req.blog.id);
 
-    allEntries.forEach((entry, index) => {
-        entry.absoluteURL =
-        req.blog.pretty.url +
-        entry.url.split("/").map(encodeURIComponent).join("/");
+      allEntries.forEach((entry, index) => {
+          entry.absoluteURL =
+          req.blog.pretty.url +
+          entry.url.split("/").map(encodeURIComponent).join("/");
 
-        entry.xmlDate = moment.utc(entry.dateStamp).tz(req.blog.timeZone).format('ddd, DD MMM YYYY HH:mm:ss ZZ');
-        // Stored HTML has build-time-baked %%BLOT_CDN%% links (see
-        // app/build/plugins/folderAssets); this path bypasses
-        // blog/render/middleware.js, which normally resolves them.
-        entry.xmlBody = entry.body.split(BLOT_CDN_TOKEN).join(config.cdn.origin);
+          entry.xmlDate = moment.utc(entry.dateStamp).tz(req.blog.timeZone).format('ddd, DD MMM YYYY HH:mm:ss ZZ');
+          // Stored HTML has build-time-baked %%BLOT_CDN%% links (see
+          // app/build/plugins/folderAssets); this path bypasses
+          // blog/render/middleware.js, which normally resolves them.
+          entry.xmlBody = entry.body.split(BLOT_CDN_TOKEN).join(config.cdn.origin);
 
-        entry.tags = entry.tags.map(tag => {
-            return { tag };
-        });
-    });
+          entry.tags = entry.tags.map(tag => {
+              return { tag };
+          });
+      });
 
-    const locals = {
-        blog: req.blog,
-        blogURL: req.blog.pretty.url,
-        handle: req.blog.handle,
-        allEntries,
-        updatedXmlDate: allEntries.length ? allEntries[0].xmlDate : moment().format('ddd, DD MMM YYYY HH:mm:ss ZZ')
-    };  
+      const locals = {
+          blog: req.blog,
+          blogURL: req.blog.pretty.url,
+          handle: req.blog.handle,
+          allEntries,
+          updatedXmlDate: allEntries.length ? allEntries[0].xmlDate : moment().format('ddd, DD MMM YYYY HH:mm:ss ZZ')
+      };  
 
-    const result = mustache.render(XML, locals);
+      const result = mustache.render(XML, locals);
 
-    // the response should initiate a download of the XML file
-    res.setHeader('Content-Disposition', `attachment; filename=${req.blog.handle}-export.xml`);
-    res.setHeader('Content-Type', 'application/xml');
-    res.send(result);
+      // the response should initiate a download of the XML file
+      res.setHeader('Content-Disposition', `attachment; filename=${req.blog.handle}-export.xml`);
+      res.setHeader('Content-Type', 'application/xml');
+      res.send(result);
+  } catch (err) {
+    next(err);
+  }
 });
 
 

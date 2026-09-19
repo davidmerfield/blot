@@ -61,6 +61,34 @@ createRedisClient.failFastOnceReady = function (client) {
   });
 };
 
+// A client for libraries that use the promise API (connect-redis,
+// rate-limit-redis) and so cannot share the application client. It gets the
+// same failure detection as the clients above. It logs errors under the given
+// label, because an EventEmitter error with no listener kills the process, and
+// socket errors are emitted here as well as rejecting commands.
+createRedisClient.createLibraryClient = function (label) {
+  const client = redis.createClient({
+    url,
+    RESP: 2,
+    commandOptions: { timeout: undefined },
+    pingInterval: PING_INTERVAL_MS,
+    socket: {
+      keepAliveInitialDelay: 5000,
+      socketTimeout: SOCKET_TIMEOUT_MS,
+    },
+  });
+
+  client.on("error", function (err) {
+    console.error(label + " Redis error:", err.message);
+  });
+  createRedisClient.failFastOnceReady(client);
+  client.connect().catch(function (err) {
+    console.error(label + " Redis connect error:", err);
+  });
+
+  return client;
+};
+
 createRedisClient.PING_INTERVAL_MS = PING_INTERVAL_MS;
 createRedisClient.SOCKET_TIMEOUT_MS = SOCKET_TIMEOUT_MS;
 

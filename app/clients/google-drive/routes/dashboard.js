@@ -14,15 +14,19 @@ const finishSetup = require("./setup");
 const VIEWS = require("path").resolve(__dirname + "/../views") + "/";
 
 dashboard.use(async function (req, res, next) {
-  res.locals.account = await database.blog.get(req.blog.id);
+  try {
+    res.locals.account = await database.blog.get(req.blog.id);
 
-  if (res.locals.account && res.locals.account.serviceAccountId) {
-    res.locals.serviceAccount = await database.serviceAccount.get(
-      res.locals.account.serviceAccountId
-    );
+    if (res.locals.account && res.locals.account.serviceAccountId) {
+      res.locals.serviceAccount = await database.serviceAccount.get(
+        res.locals.account.serviceAccountId
+      );
+    }
+
+    next();
+  } catch (err) {
+    next(err);
   }
-
-  next();
 });
 
 dashboard.get("/", function (req, res) {
@@ -46,28 +50,32 @@ dashboard.route("/connect").get(function (req, res) {
   res.render(VIEWS + "connect");
 });
 
-dashboard.route("/setup").get(async function (req, res) {
-  if (res.locals.account && res.locals.account.email) {
-    res.locals.suggestedEmail = res.locals.account.email;
-  } else {
-    let suggestedEmail = req.user.email;
+dashboard.route("/setup").get(async function (req, res, next) {
+  try {
+    if (res.locals.account && res.locals.account.email) {
+      res.locals.suggestedEmail = res.locals.account.email;
+    } else {
+      let suggestedEmail = req.user.email;
 
-    const otherBlogIDs = req.user.blogs.filter((id) => id !== req.blog.id);
-    const otherDriveAccounts = await Promise.all(
-      otherBlogIDs.map((id) => database.blog.get(id))
-    );
+      const otherBlogIDs = req.user.blogs.filter((id) => id !== req.blog.id);
+      const otherDriveAccounts = await Promise.all(
+        otherBlogIDs.map((id) => database.blog.get(id))
+      );
 
-    otherDriveAccounts.forEach((account) => {
-      if (account && account.email) {
-        suggestedEmail = account.email;
-        return;
-      }
-    });
+      otherDriveAccounts.forEach((account) => {
+        if (account && account.email) {
+          suggestedEmail = account.email;
+          return;
+        }
+      });
 
-    res.locals.suggestedEmail = suggestedEmail;
+      res.locals.suggestedEmail = suggestedEmail;
+    }
+
+    res.render(VIEWS + "setup");
+  } catch (err) {
+    next(err);
   }
-
-  res.render(VIEWS + "setup");
 });
 
 dashboard
