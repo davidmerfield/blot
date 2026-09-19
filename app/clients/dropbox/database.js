@@ -121,11 +121,13 @@ async function setAccount(blogID, changes) {
     account.error_since = 0;
   }
 
-  for (var field in Model) {
+  // Rows written before these fields existed, or a first save from
+  // setup, do not carry them. Every other field stays required.
+  ["error_source", "error_since"].forEach(function (field) {
     if (account[field] === undefined || account[field] === null) {
       account[field] = defaultFor(Model[field]);
     }
-  }
+  });
 
   // Verify that the type of new account state
   // matches the expected types declared in Model below.

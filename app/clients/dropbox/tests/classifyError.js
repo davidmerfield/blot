@@ -70,6 +70,17 @@ describe("dropbox classifyError", function () {
       expect(classified.healthCode).toBe(null);
     });
 
+    it("maps a nested insufficient_space on a 409 to QUOTA_EXCEEDED with status 507", function () {
+      const err = {
+        status: 409,
+        error: { error_summary: "path/insufficient_space/..." },
+      };
+      const classified = classify(err, SOURCES.APPLY);
+
+      expect(classified.healthCode).toBe(health.CODES.QUOTA_EXCEEDED);
+      expect(classified.status).toBe(507);
+    });
+
     it("maps 507 / insufficient_space to QUOTA_EXCEEDED", function () {
       const classified = classify(
         apiError(507, "insufficient_space"),

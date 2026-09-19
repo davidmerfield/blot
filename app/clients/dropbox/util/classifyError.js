@@ -94,10 +94,12 @@ function classify(err, source) {
     return result;
   }
 
-  if (status === 507 || QUOTA_TAGS[tag] || QUOTA_TAGS[tag.split("/")[0]]) {
+  if (status === 507 || tag.split("/").some((part) => QUOTA_TAGS[part])) {
     result.persist = true;
     result.healthCode = health.CODES.QUOTA_EXCEEDED;
-    result.status = status || 507;
+    // Store the canonical status: issueFromAccount maps 507, and
+    // Dropbox reports this condition as 409 on uploads.
+    result.status = 507;
     result.source = source || result.source;
     return result;
   }

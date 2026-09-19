@@ -13,7 +13,7 @@ const upload = promisify(require("../util/upload"));
 const { isDotfileOrDotfolder } = require("../util/constants");
 const set = promisify(require("../database").set);
 const persistError = promisify(require("../util/persistError"));
-const { SOURCES } = require("../util/classifyError");
+const { SOURCES, classify } = require("../util/classifyError");
 const tagSource = require("../util/tagSource");
 const createClient = promisify((blogID, cb) =>
   require("../util/createClient")(blogID, (err, ...results) => cb(err, results))
@@ -109,6 +109,13 @@ async function resetFromBlot(blogID, publish, signal) {
     }
     throw err;
   }
+}
+
+// A failed upload is logged and skipped, unless retrying can never
+// help (revoked access, full storage): that must fail the resync.
+function rethrowIfDurable(err) {
+  if (err && err.name === "AbortError") throw err;
+  if (classify(err, SOURCES.APPLY).persist) throw err;
 }
 
 async function resetFromBlotWithClient(
@@ -258,6 +265,7 @@ async function resetFromBlotWithClient(
             );
             abortIfRequested(signal);
           } catch (e) {
+            rethrowIfDurable(e);
             log("Failed to transfer", path);
           }
         } else if (!remoteCounterpart) {
@@ -270,6 +278,7 @@ async function resetFromBlotWithClient(
             );
             abortIfRequested(signal);
           } catch (e) {
+            rethrowIfDurable(e);
             log("Failed to transfer", path);
           }
         }
