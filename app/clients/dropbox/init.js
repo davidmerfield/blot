@@ -6,6 +6,9 @@ const email = require("helper/email");
 const resetToBlot = require("./sync/reset-to-blot");
 const { get: getAccount } = require("./database");
 const Fix = require("sync/fix");
+const establishSyncLock = require("sync/establishSyncLock");
+const sync = promisify(require("./sync"));
+const countChanges = require("./sync/count-changes");
 
 const getAllIDs = promisify(Blog.getAllIDs);
 const getBlog = promisify(Blog.get);
@@ -14,12 +17,33 @@ const getDropboxAccount = promisify(getAccount);
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000;
 
-const countChanges = (summary = {}) => {
-  return (
-    (summary.downloaded || 0) +
-    (summary.removed || 0) +
-    (summary.createdDirs || 0)
-  );
+// Runs resetToBlot while holding the blog's folder lock, so it can't race a
+// webhook sync, then updates the database for every path it changed on disk.
+// resetToBlot alone only writes files, and it advances the Dropbox cursor,
+// so without this a later sync would never notice those files changed.
+const resetToBlotWithLock = async (blogID, publish) => {
+  const { folder, done } = await establishSyncLock(blogID);
+
+  let summary;
+
+  try {
+    summary = await resetToBlot(blogID, publish);
+
+    for (const path of summary.changedPaths) {
+      try {
+        await folder.update(path);
+      } catch (err) {
+        console.error(clfdate(), "Dropbox: Error updating", blogID, path, err);
+      }
+    }
+  } catch (err) {
+    await done(err);
+    throw err;
+  }
+
+  await done(null);
+
+  return summary;
 };
 
 const hasRecentSync = (account) => {
@@ -56,7 +80,21 @@ const runValidation = async () => {
         console.log(clfdate(), "Dropbox:", blogID, ...args);
       };
 
-      const summary = await resetToBlot(blogID, publish);
+      let summary;
+
+      try {
+        summary = await resetToBlotWithLock(blogID, publish);
+      } catch (err) {
+        // A sync is already running for this blog, and that sync will pick
+        // up whatever changed. Check it again next hour.
+        if (err.message === "Failed to acquire folder lock") {
+          console.log(clfdate(), "Dropbox: Skipping busy blog", blogID);
+          checkedBlogs -= 1;
+          continue;
+        }
+        throw err;
+      }
+
       const changeCount = countChanges(summary);
 
       if (changeCount > 0) {
@@ -81,6 +119,12 @@ const runValidation = async () => {
           }
           resolve();
         });
+      });
+
+      // Webhook syncs that arrived while we held the lock gave up waiting
+      // for it and were dropped. Catch up on anything they would have found.
+      await sync(blog).catch((err) => {
+        console.error(clfdate(), "Dropbox: Catch-up sync error", blogID, err);
       });
     } catch (err) {
       console.error(
@@ -155,7 +199,7 @@ const resyncRecentSyncsOnStartup = async () => {
 
       try {
         console.log(clfdate(), "Dropbox: Resyncing recent blog", blogID);
-        await resetToBlot(blogID, publish);
+        await resetToBlotWithLock(blogID, publish);
         console.log(clfdate(), "Dropbox: Resync complete for blog", blogID);
       } catch (err) {
         console.error(
