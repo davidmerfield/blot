@@ -34,7 +34,7 @@ function dropboxTag(err) {
   const body = err.error;
   if (!body) {
     if (typeof err.error_summary === "string") {
-      return err.error_summary.split("/")[0];
+      return err.error_summary;
     }
     return "";
   }
@@ -44,7 +44,7 @@ function dropboxTag(err) {
   if (typeof body.error === "string") return body.error;
 
   if (typeof body.error_summary === "string") {
-    return body.error_summary.split("/")[0];
+    return body.error_summary;
   }
 
   const tagged = body.error && body.error[".tag"] ? body.error : body;
