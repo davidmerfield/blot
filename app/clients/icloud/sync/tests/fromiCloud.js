@@ -53,6 +53,10 @@ describe("icloud fromiCloud sync", function () {
   beforeEach(async () => {
     blogID = `icloud-test-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     await fs.ensureDir(localPath(blogID, "/"));
+    // Other icloud specs (e.g. getHealth) require the client module, which
+    // caches fromiCloud with its real dependencies. Drop that so each test
+    // can inject mocks before loading fromiCloud.
+    delete require.cache[fromiCloudPath];
   });
 
   afterEach(async () => {
