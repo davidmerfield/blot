@@ -12,6 +12,14 @@ const clientSideCaches = new WeakMap();
 const PING_INTERVAL_MS = 2000;
 const SOCKET_TIMEOUT_MS = 6000;
 
+// node-redis' default strategy gives up for good after a SocketTimeoutError,
+// which would leave a client closed after a stall until the process restarts.
+// Same exponential backoff as the default, but it always retries.
+function reconnectStrategy(retries) {
+  const jitter = Math.floor(Math.random() * 200);
+  return Math.min(Math.pow(2, retries) * 50, 2000) + jitter;
+}
+
 function createRedisClient() {
   const clientSideCache = new redis.BasicClientSideCache({
     ttl: 0,
@@ -28,6 +36,7 @@ function createRedisClient() {
     socket: {
       keepAliveInitialDelay: 5000,
       socketTimeout: SOCKET_TIMEOUT_MS,
+      reconnectStrategy,
     },
     clientSideCache,
   });
@@ -75,6 +84,7 @@ createRedisClient.createLibraryClient = function (label) {
     socket: {
       keepAliveInitialDelay: 5000,
       socketTimeout: SOCKET_TIMEOUT_MS,
+      reconnectStrategy,
     },
   });
 
@@ -89,6 +99,7 @@ createRedisClient.createLibraryClient = function (label) {
   return client;
 };
 
+createRedisClient.reconnectStrategy = reconnectStrategy;
 createRedisClient.PING_INTERVAL_MS = PING_INTERVAL_MS;
 createRedisClient.SOCKET_TIMEOUT_MS = SOCKET_TIMEOUT_MS;
 

@@ -81,6 +81,7 @@ describe("models/redis", function () {
     expect(client.options.socket.socketTimeout).toBe(
       createRedisClient.SOCKET_TIMEOUT_MS
     );
+    expect(typeof client.options.socket.reconnectStrategy).toBe("function");
     expect(createRedisClient.SOCKET_TIMEOUT_MS).toBeGreaterThan(
       createRedisClient.PING_INTERVAL_MS
     );
@@ -108,7 +109,10 @@ describe("models/redis", function () {
       disableClientInfo: true,
       commandOptions: { timeout: undefined },
       pingInterval: 200,
-      socket: { socketTimeout: 800, reconnectStrategy: () => 100 },
+      socket: {
+        socketTimeout: 800,
+        reconnectStrategy: createRedisClient.reconnectStrategy,
+      },
     });
     client.on("error", function () {});
     await client.connect();
@@ -123,9 +127,21 @@ describe("models/redis", function () {
       error = e;
     }
 
+    // The default strategy gives up after a socket timeout, leaving the client
+    // closed for good. Ours must reconnect once the server replies again.
+    silent = false;
+    let recovered;
+    for (let i = 0; i < 40 && recovered !== "OK"; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      try {
+        recovered = await client.ping();
+      } catch (e) {}
+    }
+
     await client.destroy();
     await new Promise((resolve) => server.close(resolve));
 
     expect(error && error.constructor.name).toBe("SocketTimeoutError");
+    expect(recovered).toBe("OK");
   });
 });

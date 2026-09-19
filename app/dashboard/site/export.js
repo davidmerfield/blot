@@ -12,67 +12,77 @@ Export.get("/", function (req, res) {
     res.render("dashboard/site/export");
 });
 
-Export.get("/download", async function (req, res) {
+Export.get("/download", async function (req, res, next) {
+  try {
 
-    // create a zip file of the template on the fly and send it to the user
-    // then in a streaming fashion, append the files to the zip file
-    // then send the zip file to the user
-    res.setHeader('Content-Disposition', `attachment; filename=${req.blog.handle}-export.zip`);
-    res.setHeader('Content-Type', 'application/zip');
+      // create a zip file of the template on the fly and send it to the user
+      // then in a streaming fashion, append the files to the zip file
+      // then send the zip file to the user
+      res.setHeader('Content-Disposition', `attachment; filename=${req.blog.handle}-export.zip`);
+      res.setHeader('Content-Type', 'application/zip');
 
-    const archive = archiver('zip', {
-      zlib: { level: 9 } // Sets the compression level.
-    });
+      const archive = archiver('zip', {
+        zlib: { level: 9 } // Sets the compression level.
+      });
 
-    // Handle errors
-    archive.on('error', function(err) {
-        if (res.headersSent) {
-            console.log('Error while sending zip file to the user', err);
-        } else {
-            res.status(400).send({error: err.message});
-        }
-    });
+      // Handle errors
+      archive.on('error', function(err) {
+          if (res.headersSent) {
+              console.log('Error while sending zip file to the user', err);
+          } else {
+              res.status(400).send({error: err.message});
+          }
+      });
 
-    // Pipe the archive data to the response.
-    archive.pipe(res);
+      // Pipe the archive data to the response.
+      archive.pipe(res);
 
-    // walk the static folder and add all the files to the archive
-    // inside a subfolder called 'static' in a recursive, async way
-    const staticFolder = path.join(config.blog_static_files_dir, req.blog.id);
+      // walk the static folder and add all the files to the archive
+      // inside a subfolder called 'static' in a recursive, async way
+      const staticFolder = path.join(config.blog_static_files_dir, req.blog.id);
 
-    // walk the blog folder and add all the files to the archive
-    // inside a subfolder called 'folder' in a recursive, async way
-    const blogFolder = path.join(config.blog_folder_dir, req.blog.id);
+      // walk the blog folder and add all the files to the archive
+      // inside a subfolder called 'folder' in a recursive, async way
+      const blogFolder = path.join(config.blog_folder_dir, req.blog.id);
 
-    // use chokidar to recursively identify all the files in the blog folder
-    // and then add them to the archive and stop the watcher
+      // use chokidar to recursively identify all the files in the blog folder
+      // and then add them to the archive and stop the watcher
 
-    // create a json file with path 'blog.json' to the archive which contains req.blog  
-    const blogJSON = JSON.stringify(req.blog, null, 2);
-    archive.append(blogJSON, { name: 'blog.json' });
+      // create a json file with path 'blog.json' to the archive which contains req.blog  
+      const blogJSON = JSON.stringify(req.blog, null, 2);
+      archive.append(blogJSON, { name: 'blog.json' });
 
-    // iterate over all of the blog's templates and add them to the archive in a file called 'templates.json'
-    
-    try {
-        await recursiveZip(blogFolder, archive, 'folder');
-        await recursiveZip(staticFolder, archive, 'static');
-    } catch (err) {
-        console.log('error', err);
-        if (res.headersSent) {
-            console.log('Error while sending zip file to the user', err);
-        } else {
-            res.status(400).send({error: err.message});
-        }
+      // iterate over all of the blog's templates and add them to the archive in a file called 'templates.json'
+      
+      try {
+          await recursiveZip(blogFolder, archive, 'folder');
+          await recursiveZip(staticFolder, archive, 'static');
+      } catch (err) {
+          console.log('error', err);
+          if (res.headersSent) {
+              console.log('Error while sending zip file to the user', err);
+          } else {
+              res.status(400).send({error: err.message});
+          }
+      }
+
+      const templates = await getAllTemplates(req.blog.id);
+
+      for (const template of templates) {
+          await addTemplate(template.id, archive);
+      }
+
+      // Finalize the archive
+      archive.finalize();
+  } catch (err) {
+    // The zip headers were set before Redis was touched; drop them so the
+    // error page is not offered as a download
+    if (!res.headersSent) {
+      res.removeHeader("Content-Disposition");
+      res.removeHeader("Content-Type");
     }
-
-    const templates = await getAllTemplates(req.blog.id);
-
-    for (const template of templates) {
-        await addTemplate(template.id, archive);
-    }
-
-    // Finalize the archive
-    archive.finalize();
+    next(err);
+  }
 });
 
 const getAllTemplates = async (blogID) => {
