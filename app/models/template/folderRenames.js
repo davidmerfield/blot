@@ -15,16 +15,25 @@
 var crypto = require("crypto");
 var client = require("models/client");
 var getAllViews = require("./getAllViews");
+var key = require("./key");
 
 var RENAME_WINDOW = 2 * 60 * 1000; // 2 minutes
 var MIN_SIMILARITY = 0.5;
 
+// Fresh records only matter within the window, but a pending record has to
+// survive until the next sync after the window, which on a quiet site could be
+// weeks away (clients sync when files change, not on a timer). If it expired
+// first, the still-missing template would look like a new orphan and its
+// window would start over. RENAME_WINDOW is enforced by the timestamps.
+var FRESH_TTL = Math.ceil((RENAME_WINDOW * 2) / 1000);
+var PENDING_TTL = 60 * 60 * 24 * 90; // 90 days
+
 function pendingKey(blogID) {
-  return "template:folder_pending_removal:" + blogID;
+  return key.folderPendingRemoval(blogID);
 }
 
 function freshKey(blogID) {
-  return "template:folder_fresh:" + blogID;
+  return key.folderFresh(blogID);
 }
 
 // Maps each view name to a hash of its content
@@ -62,8 +71,8 @@ function similarity(a, b) {
   return common.length / union.size;
 }
 
-async function readAll(key) {
-  var raw = (await client.hGetAll(key)) || {};
+async function readAll(hashKey) {
+  var raw = (await client.hGetAll(hashKey)) || {};
   var result = {};
 
   Object.keys(raw).forEach(function (field) {
@@ -87,7 +96,7 @@ module.exports = {
 
   markFresh: async function (blogID, templateID) {
     await client.hSet(freshKey(blogID), templateID, JSON.stringify(Date.now()));
-    await client.expire(freshKey(blogID), Math.ceil((RENAME_WINDOW * 2) / 1000));
+    await client.expire(freshKey(blogID), FRESH_TTL);
   },
 
   readFresh: function (blogID) {
@@ -100,7 +109,7 @@ module.exports = {
 
   setPending: async function (blogID, templateID, record) {
     await client.hSet(pendingKey(blogID), templateID, JSON.stringify(record));
-    await client.expire(pendingKey(blogID), Math.ceil((RENAME_WINDOW * 2) / 1000));
+    await client.expire(pendingKey(blogID), PENDING_TTL);
   },
 
   clear: async function (blogID, templateID) {

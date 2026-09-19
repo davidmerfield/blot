@@ -29,6 +29,13 @@ module.exports = async function renameLocalTemplate(blogID, fromID, toID) {
   // Switch first so the site never points at a template that's gone
   if (blog.template === fromID) await setBlog(blogID, { template: toID });
 
+  // The new template may already have been shared; its link is replaced by
+  // the old template's, so don't leave it pointing here
+  if (to.shareID && to.shareID !== from.shareID) {
+    await client.del(key.share(to.shareID));
+    changes.shareID = "";
+  }
+
   await setMetadata(toID, changes);
 
   // Dropping removes the share link, so we re-point it afterwards

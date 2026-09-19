@@ -22,6 +22,8 @@ describe("template", function () {
   const setView = promisify(setViewCb);
   const getBlog = promisify(Blog.get);
   const setBlog = promisify(Blog.set);
+  const createShareID = promisify(require("../index").createShareID);
+  const getByShareID = promisify(require("../index").getByShareID);
 
   require("./setup")({ createTemplate: true });
 
@@ -178,6 +180,69 @@ describe("template", function () {
     await expireWindow(this.blog.id);
     await buildFromFolder(this.blog.id);
     expect((await getBlog({ id: this.blog.id })).template).toEqual(blog.template);
+  });
+
+  it("still handles a missing template after the pending record has expired from Redis", async function () {
+    await installLocalTemplate(this);
+    await buildFromFolder(this.blog.id);
+
+    await fs.remove(templatesDir(this) + "/" + this.template.slug);
+    await buildFromFolder(this.blog.id);
+
+    // Simulate the record outliving the window, as it does on a quiet site
+    const pending = await folderRenames.readPending(this.blog.id);
+    expect(Object.keys(pending)).toEqual([this.template.id]);
+    await expireWindow(this.blog.id);
+    await buildFromFolder(this.blog.id);
+
+    expect(await exists(this.template.id)).toEqual(false);
+    expect((await getBlog({ id: this.blog.id })).template).not.toEqual(this.template.id);
+  });
+
+  it("keeps the pending record for longer than the rename window", async function () {
+    await installLocalTemplate(this);
+    await buildFromFolder(this.blog.id);
+
+    await fs.remove(templatesDir(this) + "/" + this.template.slug);
+    await buildFromFolder(this.blog.id);
+
+    const ttl = await client.ttl(folderRenames.pendingKey(this.blog.id));
+
+    expect(ttl * 1000).toBeGreaterThan(folderRenames.RENAME_WINDOW * 2);
+  });
+
+  it("does not migrate when several new templates resemble the old one equally", async function () {
+    await installLocalTemplate(this);
+    await buildFromFolder(this.blog.id);
+
+    await fs.move(
+      templatesDir(this) + "/" + this.template.slug,
+      templatesDir(this) + "/copy-a"
+    );
+    await fs.copy(templatesDir(this) + "/copy-a", templatesDir(this) + "/copy-b");
+    await buildFromFolder(this.blog.id);
+
+    const blog = await getBlog({ id: this.blog.id });
+
+    expect(blog.template).toEqual(this.template.id);
+    expect(await exists(this.template.id)).toEqual(true);
+  });
+
+  it("keeps the share link working after a rename", async function () {
+    await installLocalTemplate(this);
+    const shareID = await createShareID(this.template.id);
+    await buildFromFolder(this.blog.id);
+
+    await fs.move(
+      templatesDir(this) + "/" + this.template.slug,
+      templatesDir(this) + "/renamed"
+    );
+    await buildFromFolder(this.blog.id);
+
+    const shared = await getByShareID(shareID);
+
+    expect(shared.id).toEqual(makeID(this.blog.id, "renamed"));
+    expect(shared.shareID).toEqual(shareID);
   });
 
   it("does not adopt an unrelated new template as the rename", async function () {

@@ -61,7 +61,13 @@ module.exports = function (blogID, callback) {
 
                 if (!isNew || err) return next();
 
-                folderRenames.markFresh(blogID, id).then(function () { next(); }, function () { next(); });
+                folderRenames.markFresh(blogID, id).then(
+                  function () { next(); },
+                  function (err) {
+                    console.error(clfdate(), blogID.slice(0, 12), "buildFromFolder: failed to record new template", id, err);
+                    next();
+                  }
+                );
               });
             });
           },
