@@ -22,7 +22,6 @@ describe("template", function () {
   const setView = promisify(setViewCb);
   const getBlog = promisify(Blog.get);
   const setBlog = promisify(Blog.set);
-  const create = promisify(require("../index").create);
   const getAllViews = promisify(require("../index").getAllViews);
   const createShareID = promisify(require("../index").createShareID);
   const getByShareID = promisify(require("../index").getByShareID);
@@ -249,11 +248,13 @@ describe("template", function () {
   });
 
   it("installs a fresh default when the installed template is a local edit of the default theme", async function () {
-    // The default template forks to {blogID}:blog, the same id as this one
-    const template = await create(this.blog.id, "Blog", { localEditing: true });
-    await setView(template.id, { name: "index.html", content: "<h1>Blog</h1>" });
-    await setBlog(this.blog.id, { template: template.id });
-    await writeToFolder(this.blog.id, template.id);
+    // Installing the default template forks it to {blogID}:blog, which the test
+    // blog already has: make that fork itself the locally edited template
+    const id = makeID(this.blog.id, "Blog");
+    await setMetadata(id, { localEditing: true });
+    const template = await getMetadata(id);
+    await setBlog(this.blog.id, { template: id });
+    await writeToFolder(this.blog.id, id);
     await buildFromFolder(this.blog.id);
 
     await fs.remove(templatesDir(this) + "/" + template.slug);
