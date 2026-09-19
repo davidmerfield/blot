@@ -9,7 +9,6 @@ const clientSideCaches = new WeakMap();
 // traffic flowing on a healthy connection; if nothing at all arrives within
 // socketTimeout the socket is torn down, pending commands reject with
 // SocketTimeoutError and (once connected) new ones reject immediately.
-const STARTUP_GRACE_MS = 10000;
 const PING_INTERVAL_MS = 2000;
 const SOCKET_TIMEOUT_MS = 6000;
 
@@ -50,31 +49,18 @@ function createRedisClient() {
 // retries forever, so every request that touches Redis hangs and the queue
 // grows without bound. Once the client has connected successfully we switch
 // the queue off so commands reject immediately with ClientOfflineError.
-// Before the first connection we keep the queue so commands issued during
-// startup wait for the connection rather than failing, but only for
-// STARTUP_GRACE_MS so a start during an outage still ends up failing fast.
+// Before the first connection we keep the queue, because code that runs at
+// require time issues commands before connect() has resolved.
 createRedisClient.failFast = function (client) {
   client.options.disableOfflineQueue = true;
 };
 
 createRedisClient.failFastOnceReady = function (client) {
-  let timer;
-
-  const enable = function () {
-    clearTimeout(timer);
+  client.once("ready", function () {
     createRedisClient.failFast(client);
-  };
-
-  client.once("ready", enable);
-
-  // If Redis is down when the process starts the client never becomes ready,
-  // and without this the queue would hold every request until the proxy gives
-  // up. After the grace period give up on it too.
-  timer = setTimeout(enable, STARTUP_GRACE_MS);
-  if (timer.unref) timer.unref();
+  });
 };
 
-createRedisClient.STARTUP_GRACE_MS = STARTUP_GRACE_MS;
 createRedisClient.PING_INTERVAL_MS = PING_INTERVAL_MS;
 createRedisClient.SOCKET_TIMEOUT_MS = SOCKET_TIMEOUT_MS;
 
