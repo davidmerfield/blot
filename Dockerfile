@@ -95,13 +95,18 @@ RUN apk add --no-cache --upgrade $ALPINE_EDGE build-base python3 pkgconfig vips-
 
 # Build sharp against the system libvips rather than its bundled prebuilt, so
 # HEIC/HEVC decode (car.heic in app/build) works - the prebuilt libvips omits
-# the HEVC codec. Matches how the pre-multi-stage image resolved sharp.
+# the HEVC codec. sharp 0.35 dropped its install-time build: `npm run build` in
+# the package compiles src/build/Release, which sharp loads ahead of the
+# prebuilt @img/* binaries. The bundled libvips reports an `aom` version and the
+# system one doesn't, hence the check (comparing vips versions alone can match
+# by coincidence).
 ENV SHARP_FORCE_GLOBAL_LIBVIPS=1
 
 # NODE_ENV=production (inherited) keeps this to runtime dependencies only.
 RUN npm install --no-package-lock --omit=dev \
- && npm rebuild sharp --build-from-source --foreground-scripts \
- && node -e "const v=require('sharp').versions.vips; if (v!==require('child_process').execSync('pkg-config --modversion vips-cpp').toString().trim()) { console.error('sharp not linked against system libvips, got '+v); process.exit(1) }" \
+ && npm install --no-save --no-package-lock node-addon-api node-gyp \
+ && (cd node_modules/sharp && npm run build) \
+ && node -e "const s=require('sharp'); const v=s.versions.vips; if ('aom' in s.versions || v!==require('child_process').execSync('pkg-config --modversion vips-cpp').toString().trim()) { console.error('sharp not linked against system libvips, got '+v); process.exit(1) }" \
  && npm cache clean --force
 
 ## Stage 3 (dev-deps) - THROWAWAY
@@ -114,8 +119,9 @@ ENV NODE_ENV=development
 # The re-resolve can swap sharp back to its prebuilt libvips; force it back onto
 # the system libvips and confirm before this stage is copied forward.
 RUN npm install --no-package-lock \
- && npm rebuild sharp --build-from-source --foreground-scripts \
- && node -e "const v=require('sharp').versions.vips; if (v!==require('child_process').execSync('pkg-config --modversion vips-cpp').toString().trim()) { console.error('sharp not linked against system libvips, got '+v); process.exit(1) }" \
+ && npm install --no-save --no-package-lock node-addon-api node-gyp \
+ && (cd node_modules/sharp && npm run build) \
+ && node -e "const s=require('sharp'); const v=s.versions.vips; if ('aom' in s.versions || v!==require('child_process').execSync('pkg-config --modversion vips-cpp').toString().trim()) { console.error('sharp not linked against system libvips, got '+v); process.exit(1) }" \
  && npm cache clean --force
 
 ## Stage 4 (development)
