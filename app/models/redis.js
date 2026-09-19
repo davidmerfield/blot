@@ -21,6 +21,7 @@ function createRedisClient() {
   });
 
   clientSideCaches.set(client, clientSideCache);
+  createRedisClient.failFastOnceReady(client);
 
   client.on("error", function (err) {
     console.log("Redis Error:");
@@ -31,6 +32,22 @@ function createRedisClient() {
 
   return client;
 }
+
+// By default node-redis queues commands while the server is unreachable and
+// retries forever, so every request that touches Redis hangs and the queue
+// grows without bound. Once the client has connected successfully we switch
+// the queue off so commands reject immediately with ClientOfflineError.
+// Before the first connection we keep the queue so commands issued during
+// startup wait for the connection rather than failing.
+createRedisClient.failFast = function (client) {
+  client.options.disableOfflineQueue = true;
+};
+
+createRedisClient.failFastOnceReady = function (client) {
+  client.once("ready", function () {
+    createRedisClient.failFast(client);
+  });
+};
 
 // Only expose an immutable stats snapshot, rather than the controllable cache.
 // This keeps cache mutation limited to node-redis itself.

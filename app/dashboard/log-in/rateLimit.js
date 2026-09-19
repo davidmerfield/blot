@@ -1,6 +1,7 @@
 const { rateLimit}  = require("express-rate-limit");
 const { RedisStore } = require('rate-limit-redis')
 const redis = require("redis");
+const createRedisClient = require("models/redis");
 const config = require("config");
 
 // rate-limit-redis uses the promise API (get/set/del with options), so use
@@ -11,6 +12,7 @@ const client = redis.createClient({
   commandOptions: { timeout: undefined },
   socket: { keepAliveInitialDelay: 5000 },
 });
+createRedisClient.failFastOnceReady(client);
 client.connect().catch((err) => {
   console.error("Rate limit Redis connect error:", err);
 });

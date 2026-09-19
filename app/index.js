@@ -2,10 +2,19 @@ const config = require("config");
 const clfdate = require("helper/clfdate");
 const email = require("helper/email");
 const redis = require("models/client");
+const { isRedisUnavailableError } = require("helper/redisUnavailable");
 const setup = require("./setup");
 const server = require("./server");
 
 const DEPLOYMENT_MARKER_EXPIRATION_SECONDS = 90 * 24 * 60 * 60;
+
+// Requests that hit Redis while it is down reject with a connection error.
+// Where a route did not catch it, log rather than crash the process; any
+// other unhandled rejection keeps Node's default behaviour.
+process.on("unhandledRejection", function (err) {
+  if (!isRedisUnavailableError(err)) throw err;
+  console.error(clfdate(), "Unhandled rejection (Redis unavailable):", err.message);
+});
 
 function releaseId() {
   return process.env.BLOT_RELEASE_ID || process.env.GIT_SHA;

@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const session = require("express-session");
 const { RedisStore } = require("connect-redis");
 const redis = require("redis");
+const createRedisClient = require("models/redis");
 
 // connect-redis 9 uses the promise API (get/set/del with options), so use
 // a native redis client, not the shared application singleton from models/client.
@@ -12,6 +13,7 @@ const sessionClient = redis.createClient({
   commandOptions: { timeout: undefined },
   socket: { keepAliveInitialDelay: 5000 },
 });
+createRedisClient.failFastOnceReady(sessionClient);
 sessionClient.connect().catch((err) => {
   console.error("Session Redis connect error:", err);
 });

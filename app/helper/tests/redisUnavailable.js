@@ -1,0 +1,89 @@
+describe("redisUnavailable", function () {
+  const Express = require("express");
+  const fetch = require("node-fetch");
+  const config = require("config");
+  const {
+    ClientOfflineError,
+    ClientClosedError,
+    ConnectionTimeoutError,
+    SocketClosedUnexpectedlyError,
+  } = require("redis");
+  const {
+    isRedisUnavailableError,
+    redisUnavailableHandler,
+  } = require("helper/redisUnavailable");
+
+  describe("isRedisUnavailableError", function () {
+    it("recognises node-redis connectivity errors", function () {
+      expect(isRedisUnavailableError(new ClientOfflineError())).toBe(true);
+      expect(isRedisUnavailableError(new ClientClosedError())).toBe(true);
+      expect(isRedisUnavailableError(new ConnectionTimeoutError())).toBe(true);
+      expect(isRedisUnavailableError(new SocketClosedUnexpectedlyError())).toBe(true);
+    });
+
+    it("recognises socket errors aimed at the redis server", function () {
+      const err = new Error("connect ECONNREFUSED");
+      err.code = "ECONNREFUSED";
+      err.port = config.redis.port;
+      expect(isRedisUnavailableError(err)).toBe(true);
+    });
+
+    it("ignores socket errors aimed at other servers", function () {
+      const err = new Error("connect ECONNREFUSED");
+      err.code = "ECONNREFUSED";
+      err.port = 1;
+      expect(isRedisUnavailableError(err)).toBe(false);
+    });
+
+    it("finds the error inside a wrapper", function () {
+      const err = new Error("wrapped", { cause: new ClientOfflineError() });
+      expect(isRedisUnavailableError(err)).toBe(true);
+    });
+
+    it("ignores unrelated errors", function () {
+      expect(isRedisUnavailableError(new Error("nope"))).toBe(false);
+      expect(isRedisUnavailableError(null)).toBe(false);
+      expect(isRedisUnavailableError("ClientOfflineError")).toBe(false);
+    });
+  });
+
+  describe("redisUnavailableHandler", function () {
+    let server, origin;
+
+    beforeEach(function (done) {
+      const app = Express();
+      app.get("/redis", (req, res, next) => next(new ClientOfflineError()));
+      app.get("/other", (req, res, next) => {
+        const err = new Error("boom");
+        err.status = 418;
+        next(err);
+      });
+      app.use(redisUnavailableHandler);
+      app.use((err, req, res, next) => res.status(err.status).send("passed on"));
+      server = app.listen(0, () => {
+        origin = "http://127.0.0.1:" + server.address().port;
+        done();
+      });
+    });
+
+    afterEach(function (done) {
+      server.close(done);
+    });
+
+    it("responds 503 with a generic page that must not be cached", async function () {
+      const res = await fetch(origin + "/redis");
+      const body = await res.text();
+      expect(res.status).toBe(503);
+      expect(res.headers.get("retry-after")).toBeTruthy();
+      expect(res.headers.get("cache-control")).toBe("no-store");
+      expect(res.headers.get("content-type")).toContain("text/html");
+      expect(body).toContain("Temporarily unavailable");
+    });
+
+    it("passes other errors on untouched", async function () {
+      const res = await fetch(origin + "/other");
+      expect(res.status).toBe(418);
+      expect(await res.text()).toBe("passed on");
+    });
+  });
+});
