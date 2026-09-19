@@ -8,7 +8,7 @@ const classify = require("./classifyError");
 module.exports = function persistError(blogID, err, source, callback) {
   if (err && err.name === "AbortError") return callback(null);
 
-  const classified = classify(err, source);
+  const classified = classify(err, (err && err.dropboxSource) || source);
   if (!classified.persist) return callback(null);
 
   database.setError(blogID, classified, callback);

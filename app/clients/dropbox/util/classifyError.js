@@ -1,7 +1,7 @@
 // Turns a Dropbox SDK / OAuth error plus the step it came from into a
 // health decision. Only conditions the user must act on are persisted:
 //
-//   401 / invalid grant from any step → REAUTH_REQUIRED
+//   401 / invalid_grant from any step → REAUTH_REQUIRED
 //   409 from the delta (folder listing) step → SOURCE_MISSING
 //   507 / insufficient_space → QUOTA_EXCEEDED
 //
@@ -26,15 +26,6 @@ const AUTH_TAGS = {
 
 const QUOTA_TAGS = {
   insufficient_space: true,
-};
-
-const TRANSIENT_NETWORK_CODES = {
-  ECONNRESET: true,
-  ENOTFOUND: true,
-  ETIMEDOUT: true,
-  EAI_AGAIN: true,
-  ECONNREFUSED: true,
-  EHOSTUNREACH: true,
 };
 
 function dropboxTag(err) {
@@ -78,14 +69,6 @@ function statusOf(err) {
   return 0;
 }
 
-function isTransient(err, status) {
-  if (err && err.code && TRANSIENT_NETWORK_CODES[err.code]) return true;
-  if (!status) return true;
-  if (status === 429) return true;
-  if (status >= 500 && status < 600) return true;
-  return false;
-}
-
 function classify(err, source) {
   source = source || "";
   const status = statusOf(err);
@@ -103,7 +86,7 @@ function classify(err, source) {
   const authFailure =
     status === 401 || AUTH_TAGS[tag] || AUTH_TAGS[tag.split("/")[0]];
 
-  if (authFailure || (source === SOURCES.AUTH && !isTransient(err, status))) {
+  if (authFailure) {
     result.persist = true;
     result.healthCode = health.CODES.REAUTH_REQUIRED;
     result.status = status || 401;

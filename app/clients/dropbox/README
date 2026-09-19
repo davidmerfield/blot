@@ -319,7 +319,7 @@ Sync records only failures the user must act on, tagged with `error_source` so `
 - **HTTP 0, 500, 504** (network errors): Logged, retried, not persisted.
 - **HTTP 429, 503** (rate limits): Logged, retried with backoff, not persisted.
 - **HTTP 507** (quota exceeded): Persisted as `QUOTA_EXCEEDED`; not retried.
-- **HTTP 400 `invalid_grant` / HTTP 401**: Persisted as `REAUTH_REQUIRED` from any step; not retried. Other 400s from delta/apply are treated as transient.
+- **HTTP 400 `invalid_grant` / HTTP 401**: Persisted as `REAUTH_REQUIRED` from any step; not retried. Other 400s are treated as transient. Resyncs (reset to/from Blot) persist errors the same way: only the folder lookup counts as the delta step, so a per-file 409 during a resync is not reported as a missing folder.
 - **HTTP 409 from delta** (`filesListFolder` / `filesGetMetadata` on the blog folder): Persisted as `SOURCE_MISSING`. A `reset` tag is recovered by clearing the cursor and listing from scratch — that is a rename/move, not a missing folder, and does not set `error_code`.
 - **HTTP 409 from apply / write / remove**: Per-file conflict or restricted content. Not persisted, not retried, not reported as a missing folder.
 - **Unsupported files** (`.paper`): Placeholder files created; download skipped.

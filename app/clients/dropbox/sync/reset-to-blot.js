@@ -23,6 +23,7 @@ const {
 const set = promisify(require("../database").set);
 const persistError = promisify(require("../util/persistError"));
 const { SOURCES } = require("../util/classifyError");
+const tagSource = require("../util/tagSource");
 const createClient = promisify((blogID, cb) =>
   require("../util/createClient")(blogID, (err, ...results) => cb(err, results))
 );
@@ -49,20 +50,20 @@ async function resetToBlot(blogID, publish) {
   try {
     return await resetToBlotWithClient(blogID, publish, client, account);
   } catch (err) {
-    await persistError(blogID, err, SOURCES.DELTA);
+    await persistError(blogID, err, SOURCES.APPLY);
     throw err;
   }
 }
 
 async function resetToBlotWithClient(blogID, publish, client, account) {
-
   let dropboxRoot = "/";
 
   // Load the path to the blog folder root position in Dropbox
   if (account.folder_id) {
-    const { result } = await client.filesGetMetadata({
-      path: account.folder_id,
-    });
+    const { result } = await tagSource(
+      SOURCES.DELTA,
+      client.filesGetMetadata({ path: account.folder_id })
+    );
     const { path_display } = result;
     if (path_display) {
       dropboxRoot = path_display;
@@ -82,11 +83,14 @@ async function resetToBlotWithClient(blogID, publish, client, account) {
 
   const {
     result: { cursor },
-  } = await client.filesListFolderGetLatestCursor({
-    path: account.folder_id || "",
-    include_deleted: true,
-    recursive: true,
-  });
+  } = await tagSource(
+    SOURCES.DELTA,
+    client.filesListFolderGetLatestCursor({
+      path: account.folder_id || "",
+      include_deleted: true,
+      recursive: true,
+    })
+  );
 
   // This means that future syncs will be fast
   await set(blogID, { cursor });

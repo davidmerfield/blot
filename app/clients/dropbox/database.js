@@ -4,6 +4,12 @@ var Blog = require("models/blog");
 var ensure = require("helper/ensure");
 var Model;
 
+function defaultFor(type) {
+  if (type === "number") return 0;
+  if (type === "boolean") return false;
+  return "";
+}
+
 async function getAccount(blogID) {
   var account = await redis.hGetAll(accountKey(blogID));
 
@@ -15,9 +21,7 @@ async function getAccount(blogID) {
   // a typed default so a later set() still satisfies the model.
   for (var i in Model) {
     if (account[i] === undefined || account[i] === null) {
-      if (Model[i] === "number") account[i] = 0;
-      else if (Model[i] === "boolean") account[i] = false;
-      else account[i] = "";
+      account[i] = defaultFor(Model[i]);
       continue;
     }
 
@@ -119,9 +123,7 @@ async function setAccount(blogID, changes) {
 
   for (var field in Model) {
     if (account[field] === undefined || account[field] === null) {
-      if (Model[field] === "number") account[field] = 0;
-      else if (Model[field] === "boolean") account[field] = false;
-      else account[field] = "";
+      account[field] = defaultFor(Model[field]);
     }
   }
 

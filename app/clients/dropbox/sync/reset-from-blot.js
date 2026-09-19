@@ -14,6 +14,7 @@ const { isDotfileOrDotfolder } = require("../util/constants");
 const set = promisify(require("../database").set);
 const persistError = promisify(require("../util/persistError"));
 const { SOURCES } = require("../util/classifyError");
+const tagSource = require("../util/tagSource");
 const createClient = promisify((blogID, cb) =>
   require("../util/createClient")(blogID, (err, ...results) => cb(err, results))
 );
@@ -104,7 +105,7 @@ async function resetFromBlot(blogID, publish, signal) {
     );
   } catch (err) {
     if (!err || err.name !== "AbortError") {
-      await persistError(blogID, err, SOURCES.DELTA);
+      await persistError(blogID, err, SOURCES.APPLY);
     }
     throw err;
   }
@@ -126,9 +127,10 @@ async function resetFromBlotWithClient(
   if (account.folder_id) {
     abortIfRequested(signal);
 
-    const { result } = await client.filesGetMetadata({
-      path: account.folder_id,
-    });
+    const { result } = await tagSource(
+      SOURCES.DELTA,
+      client.filesGetMetadata({ path: account.folder_id })
+    );
 
     abortIfRequested(signal);
     const { path_display } = result;
@@ -153,11 +155,14 @@ async function resetFromBlotWithClient(
 
   const {
     result: { cursor },
-  } = await client.filesListFolderGetLatestCursor({
-    path: account.folder_id || "",
-    include_deleted: true,
-    recursive: true,
-  });
+  } = await tagSource(
+    SOURCES.DELTA,
+    client.filesListFolderGetLatestCursor({
+      path: account.folder_id || "",
+      include_deleted: true,
+      recursive: true,
+    })
+  );
 
   abortIfRequested(signal);
 

@@ -8,6 +8,7 @@ const {
   flagsFromAccount,
   backfillPatch,
 } = require("../util/classifyError");
+const tagSource = require("../util/tagSource");
 
 function apiError(status, tag, extra) {
   const err = Object.assign({ status: status }, extra || {});
@@ -39,11 +40,8 @@ describe("dropbox classifyError", function () {
       expect(dropboxTag(err)).toBe("invalid_grant");
     });
 
-    it("maps a non-transient auth-step failure without a tag to REAUTH_REQUIRED", function () {
-      const classified = classify({ status: 400 }, SOURCES.AUTH);
-
-      expect(classified.persist).toBe(true);
-      expect(classified.healthCode).toBe(health.CODES.REAUTH_REQUIRED);
+    it("does not treat an untagged 400 from the auth step as a revoked grant", function () {
+      expect(classify({ status: 400 }, SOURCES.AUTH).persist).toBe(false);
     });
 
     it("does not persist a transient auth-step failure", function () {
@@ -228,6 +226,30 @@ describe("dropbox classifyError", function () {
           error_since: 1,
         })
       ).toBe(null);
+    });
+  });
+
+  describe("tagSource", function () {
+    it("tags a rejection with the step and rethrows it", async function () {
+      const err = { status: 409 };
+
+      await tagSource(SOURCES.DELTA, Promise.reject(err)).then(
+        function () {
+          throw new Error("expected rejection");
+        },
+        function (thrown) {
+          expect(thrown).toBe(err);
+          expect(thrown.dropboxSource).toBe(SOURCES.DELTA);
+        }
+      );
+    });
+
+    it("keeps the first tag", async function () {
+      const err = { status: 409, dropboxSource: SOURCES.DELTA };
+
+      await tagSource(SOURCES.APPLY, Promise.reject(err)).catch(function () {});
+
+      expect(err.dropboxSource).toBe(SOURCES.DELTA);
     });
   });
 });
