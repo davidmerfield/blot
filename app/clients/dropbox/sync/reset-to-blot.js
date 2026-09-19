@@ -34,6 +34,10 @@ async function resetToBlot(blogID, publish) {
       console.log(clfdate() + " Dropbox:", args.join(" "));
     };
 
+  // Files Dropbox modified after this moment may just be edits that
+  // landed mid-walk (before their webhook), not changes we failed to sync.
+  const startedAt = Date.now();
+
   publish("Syncing folder from Dropbox to Blot");
 
   // if (signal.aborted) return;
@@ -84,6 +88,12 @@ async function resetToBlot(blogID, publish) {
     removed: 0,
     createdDirs: 0,
     skipped: 0,
+    // Blot paths we changed on disk, so callers holding the folder lock can
+    // update the database. This function only writes to the folder.
+    changedPaths: [],
+    // Subset of downloaded: files Dropbox modified after we started.
+    modifiedDuringWalk: 0,
+    startedAt,
   };
 
   const localRoot = localPath(blogID, "/");
@@ -99,6 +109,11 @@ async function resetToBlot(blogID, publish) {
 
   return summary;
 }
+
+const modifiedSince = (remoteItem, timestamp) => {
+  const modified = Date.parse(remoteItem.server_modified);
+  return !isNaN(modified) && modified >= timestamp;
+};
 
 const walk = async (
   blogID,
@@ -130,6 +145,7 @@ const walk = async (
       try {
         await fs.remove(pathOnDisk);
         summary.removed += 1;
+        summary.changedPaths.push(pathOnBlot);
       } catch (e) {
         publish("Failed to remove ignored", path_display, e.message);
       }
@@ -145,6 +161,7 @@ const walk = async (
       try {
         await fs.remove(pathOnDisk);
         summary.removed += 1;
+        summary.changedPaths.push(pathOnBlot);
       } catch (e) {
         publish("Failed to remove", path_display, e.message);
       }
@@ -183,6 +200,7 @@ const walk = async (
         progress.publish("Removing", pathOnBlot);
         await fs.remove(pathOnDisk);
         summary.removed += 1;
+        summary.changedPaths.push(pathOnBlot);
         publish("Creating directory", pathOnDisk);
         try {
           await fs.mkdir(pathOnDisk);
@@ -197,6 +215,7 @@ const walk = async (
         try {
           await fs.mkdir(pathOnDisk);
           summary.createdDirs += 1;
+          summary.changedPaths.push(pathOnBlot);
         } catch (e) {
           if (e.code !== "ENAMETOOLONG") throw e;
           summary.skipped += 1;
@@ -266,6 +285,9 @@ const walk = async (
         try {
           await download(client, pathOnDropbox, pathOnDisk);
           summary.downloaded += 1;
+          summary.changedPaths.push(pathOnBlot);
+          if (modifiedSince(remoteItem, summary.startedAt))
+            summary.modifiedDuringWalk += 1;
         } catch (e) {
           // A file can end up with a destination path longer than the
           // filesystem allows – seen in production when a Dropbox account
@@ -284,6 +306,9 @@ const walk = async (
         try {
           await download(client, pathOnDropbox, pathOnDisk);
           summary.downloaded += 1;
+          summary.changedPaths.push(pathOnBlot);
+          if (modifiedSince(remoteItem, summary.startedAt))
+            summary.modifiedDuringWalk += 1;
         } catch (e) {
           if (e.code === "ENAMETOOLONG") summary.skipped += 1;
           continue;
