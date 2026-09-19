@@ -30,6 +30,20 @@ function mayNeedFolderLinkReplacement(html) {
   return candidateAttrRegex.test(html);
 }
 
+// DEPRECATION NOTE: this whole request-time pass exists only for content that
+// was NOT baked at build time (app/build/plugins/folderAssets). Once every
+// entry has been rebuilt it should only be needed for TEMPLATE output, which
+// can't be baked (a template renders for many blogs). What it handles that
+// the build-time plugin also handles, and so can be dropped for entries:
+//   - relative folder links (href/src/poster/srcset)
+//   - absolute same-host links (https://<blog host>/photo.jpg) - the host is
+//     stripped below via blogHosts(); folderAssets does the same at build time
+// What ONLY happens here and must be kept or replaced when removing this:
+//   - template-authored links (partials, CSS/JS references in layouts)
+//   - links in entries built before folderAssets existed (until rebuilt)
+//   - files that didn't exist at build time but do now (folderAssets records
+//     a dependency so a rebuild bakes them, but until then this resolves them)
+//   - hosts added after an entry was built (e.g. a custom domain set later)
 module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
   try {
     const blogID = blog.id;

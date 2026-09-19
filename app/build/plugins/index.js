@@ -70,6 +70,7 @@ function convert (blog, path, contents, callback) {
   var globalOptions = {
     isHTML: isHTML(path),
     domain: blog.domain,
+    handle: blog.handle,
     blogID: blog.id,
     path: path,
     baseURL: "https://" + blog.handle + "." + config.host

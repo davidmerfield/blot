@@ -10,6 +10,7 @@ const caseSensitivePath = promisify(require("helper/caseSensitivePath"));
 const BLOT_CDN_TOKEN = require("blog/render/replaceFolderLinks/cdnToken");
 const unwrapFolderLink = require("blog/render/replaceFolderLinks/unwrapFolderLink");
 const { isReservedStaticPath } = require("blog/lib/staticPaths");
+const blogHosts = require("blog/lib/blogHosts");
 const {
   htmlExtRegex,
   fileExtRegex,
@@ -69,9 +70,22 @@ function render($, callback, options) {
   const blogID = options.blogID;
   const blogFolder = join(config.blog_folder_dir, blogID);
   const dependencies = new Set();
+  // Absolute URLs on one of the blog's own hosts (https://blog.example.com/
+  // photo.jpg) are baked like relative links; see stripOwnHost.
+  const hostPatterns = blogHosts({
+    handle: options.handle,
+    domain: options.domain,
+  }).map((host) => new RegExp(`^(?:https?:)?//${escapeRegex(host)}(?=[/?#]|$)`, "i"));
   // Resolved path -> Promise<{ path, version }>, so a file referenced
   // several times in one entry (src and srcset) is only read and hashed once.
-  const ctx = { blogID, blogFolder, dependencies, files: new Map() };
+  const ctx = {
+    blogID,
+    blogFolder,
+    dependencies,
+    hostPatterns,
+    entryPath: options.path,
+    files: new Map(),
+  };
   const tasks = [];
 
   $("[href], [src], [poster], [srcset]").each(function () {
@@ -111,6 +125,22 @@ function render($, callback, options) {
   );
 }
 
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Same-host absolute URLs are baked at build time too, so nothing about them
+// is left for request-time replaceFolderLinks (html.js/css.js) to do. The
+// host is stripped exactly as html.js does at request time, leaving a path
+// that is then treated like any other folder-relative link. Returns the
+// value unchanged if it isn't on one of the blog's hosts.
+function stripOwnHost(ctx, value) {
+  for (const pattern of ctx.hostPatterns) {
+    if (pattern.test(value)) return value.replace(pattern, "") || "/";
+  }
+  return value;
+}
+
 function pathPartOf(value) {
   const cutIndex = value.search(/[#?]/);
   return cutIndex === -1 ? value : value.slice(0, cutIndex);
@@ -141,14 +171,14 @@ function isEligible(value) {
 async function bakeValue(ctx, value) {
   const unwrapped = unwrapFolderLink(value, ctx.blogID);
   const wasBaked = unwrapped !== null;
-  const raw = wasBaked ? unwrapped : value;
+  const raw = wasBaked ? unwrapped : stripOwnHost(ctx, value);
 
   if (!isEligible(raw)) return null;
 
   const result = await resolveBuildFile(ctx, raw, wasBaked);
 
   if (result) {
-    ctx.dependencies.add(result.path);
+    addDependency(ctx, result.path);
     return result.url;
   }
 
@@ -158,9 +188,21 @@ async function bakeValue(ctx, value) {
   // we embedded had already dropped back to the plain path. Where the link
   // was baked, drop back to the plain path so request-time resolution
   // decides instead of keeping a URL for a now-missing versioned file.
-  ctx.dependencies.add(pathPartOf(raw));
+  addDependency(ctx, pathPartOf(raw));
 
   return wasBaked ? raw : null;
+}
+
+// An entry is always rebuilt when its own file changes, and (like
+// app/build/dependencies/index.js) shouldn't be recorded as a dependent of
+// itself - e.g. an image-as-entry pointing at its own file. The URL is still
+// baked; only the graph edge is skipped.
+function addDependency(ctx, path) {
+  if (ctx.entryPath && path.toLowerCase() === ctx.entryPath.toLowerCase()) {
+    return;
+  }
+
+  ctx.dependencies.add(path);
 }
 
 async function rewriteSrcset(ctx, value) {

@@ -172,4 +172,40 @@ describe("folderAssets plugin", function () {
       done();
     });
   });
+
+  it("bakes absolute URLs on the blog's own host, and leaves other hosts alone", function (done) {
+    var config = require("config");
+    var path = "/Hello.txt";
+    var own = `https://${this.blog.handle}.${config.host}`;
+    var contents = `![Own](${own}/photo.jpg) ![Other](https://example.org/photo.jpg)`;
+
+    fs.outputFileSync(this.blogDirectory + path, contents);
+    fs.outputFileSync(this.blogDirectory + "/photo.jpg", "fake image data");
+
+    build(this.blog, path, function (err, entry) {
+      if (err) return done.fail(err);
+
+      expect(entry.html).toMatch(tokenRegex("/photo\\.jpg"));
+      expect(entry.html).not.toContain(own);
+      expect(entry.html).toContain('src="https://example.org/photo.jpg"');
+      expect(entry.dependencies).toContain("/photo.jpg");
+      done();
+    });
+  });
+
+  it("bakes a link to the entry's own file but doesn't record it as a dependency", function (done) {
+    var path = "/Hello.txt";
+
+    fs.outputFileSync(this.blogDirectory + path, "[Source](Hello.txt) [Other](other.pdf)");
+    fs.outputFileSync(this.blogDirectory + "/other.pdf", "pdf");
+
+    build(this.blog, path, function (err, entry) {
+      if (err) return done.fail(err);
+
+      expect(entry.html).toMatch(tokenRegex("/Hello\\.txt"));
+      expect(entry.dependencies).not.toContain("/Hello.txt");
+      expect(entry.dependencies).toContain("/other.pdf");
+      done();
+    });
+  });
 });

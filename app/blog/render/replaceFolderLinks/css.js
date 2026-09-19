@@ -6,6 +6,9 @@ const { htmlExtRegex, fileExtRegex } = require("./shared");
 // Strict regex that requires matching quotes and parentheses
 const urlRegex = /url\((?:([^'"()]+)|['"]([^'"]+)['"]) *\)/gi;
 
+// DEPRECATION NOTE: request-time only; template CSS can't be baked at build
+// time (see html.js for the full list of what this pass covers that
+// app/build/plugins/folderAssets also does for entries).
 module.exports = async function replaceCssUrls(blog, css, log = () => {}) {
   try {
     const blogID = blog.id;
