@@ -1,4 +1,5 @@
 var config = require("config");
+require("helper/forwardAsyncRedisErrors");
 var Express = require("express");
 var vhost = require("vhost");
 var blog = require("blog");
