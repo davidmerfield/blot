@@ -8,6 +8,7 @@ function load(account) {
   vm.runInNewContext(fs.readFileSync(require.resolve("../getHealth"), "utf8"), {
     module,
     exports: module.exports,
+    isFinite: isFinite,
     require: function (name) {
       if (name === "./database") {
         return {
@@ -18,6 +19,8 @@ function load(account) {
           },
         };
       }
+      if (name === "./database/error") return require("../database/error");
+      if (name === "clients/health") return require("clients/health");
       return require(name);
     },
   });
