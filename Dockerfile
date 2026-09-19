@@ -8,6 +8,10 @@
 FROM node:22-alpine AS base
 
 ARG PANDOC_VERSION=3.6.1
+# sharp 0.35 needs libvips >= 8.18.6 but the Alpine release this base image is
+# built on ships 8.18.2, so the vips packages (and whatever they pull in) come
+# from Alpine edge. Drop these once the stable release catches up.
+ARG ALPINE_EDGE="--repository=https://dl-cdn.alpinelinux.org/alpine/edge/main --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community"
 ARG TARGETPLATFORM
 
 EXPOSE 8080
@@ -60,7 +64,7 @@ RUN ARCH=$(echo ${TARGETPLATFORM} | sed -nE 's/^linux\/(amd64|arm64)$/\1/p') \
 #    prebuilt libvips ships without HEVC.
 #  - exiftool pulls in the perl runtime it needs; used for image/file metadata.
 # One layer, no apk cache left behind.
-RUN apk add --no-cache \
+RUN apk add --no-cache --upgrade $ALPINE_EDGE \
     vips \
     vips-cpp \
     vips-heif \
@@ -85,8 +89,9 @@ COPY package.json ./
 # `COPY --from`. None of g++/make/python3/pkgconfig/vips-dev ends up in any
 # published image, so the ~250MB they weigh is no longer pulled by every CI job.
 FROM base AS deps
+ARG ALPINE_EDGE
 
-RUN apk add --no-cache build-base python3 pkgconfig vips-dev
+RUN apk add --no-cache --upgrade $ALPINE_EDGE build-base python3 pkgconfig vips-dev
 
 # Build sharp against the system libvips rather than its bundled prebuilt, so
 # HEIC/HEVC decode (car.heic in app/build) works - the prebuilt libvips omits
