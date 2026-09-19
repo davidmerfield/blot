@@ -5,6 +5,7 @@ const setup = require("./setup");
 const config = require("config");
 const fetch = require("node-fetch");
 const Database = require("clients/dropbox/database");
+const { flagsFromAccount } = require("clients/dropbox/util/classifyError");
 const join = require("path").join;
 const moment = require("moment");
 const { Dropbox } = require("dropbox");
@@ -19,7 +20,7 @@ dashboard.use(function loadDropboxAccount (req, res, next) {
     if (!account) return next();
 
     var last_sync = account.last_sync;
-    var error_code = account.error_code;
+    var flags = flagsFromAccount(account);
 
     res.locals.account = req.account = account;
 
@@ -27,10 +28,9 @@ dashboard.use(function loadDropboxAccount (req, res, next) {
       res.locals.account.last_sync = moment.utc(last_sync).fromNow();
     }
 
-    if (error_code) {
-      res.locals.account.folder_missing = error_code === 409;
-      res.locals.account.revoked = error_code === 401;
-    }
+    res.locals.account.folder_missing = flags.folder_missing;
+    res.locals.account.revoked = flags.revoked;
+    res.locals.account.quota_exceeded = flags.quota_exceeded;
 
     return next();
   });

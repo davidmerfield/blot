@@ -12,6 +12,9 @@ const hashFile = promisify((path, cb) => {
 const upload = promisify(require("../util/upload"));
 const { isDotfileOrDotfolder } = require("../util/constants");
 const set = promisify(require("../database").set);
+const persistError = promisify(require("../util/persistError"));
+const { SOURCES, classify } = require("../util/classifyError");
+const tagSource = require("../util/tagSource");
 const createClient = promisify((blogID, cb) =>
   require("../util/createClient")(blogID, (err, ...results) => cb(err, results))
 );
@@ -84,8 +87,44 @@ async function resetFromBlot(blogID, publish, signal) {
   // const account = await get(blogID);
   abortIfRequested(signal);
 
-  const [client, account] = await createClient(blogID);
+  let client, account;
+  try {
+    [client, account] = await createClient(blogID);
+  } catch (err) {
+    await persistError(blogID, err, SOURCES.AUTH);
+    throw err;
+  }
 
+  try {
+    await resetFromBlotWithClient(
+      blogID,
+      publish,
+      signal,
+      client,
+      account
+    );
+  } catch (err) {
+    if (!err || err.name !== "AbortError") {
+      await persistError(blogID, err, SOURCES.APPLY);
+    }
+    throw err;
+  }
+}
+
+// A failed upload is logged and skipped, unless retrying can never
+// help (revoked access, full storage): that must fail the resync.
+function rethrowIfDurable(err) {
+  if (err && err.name === "AbortError") throw err;
+  if (classify(err, SOURCES.APPLY).persist) throw err;
+}
+
+async function resetFromBlotWithClient(
+  blogID,
+  publish,
+  signal,
+  client,
+  account
+) {
   abortIfRequested(signal);
 
   let dropboxRoot = "/";
@@ -95,9 +134,10 @@ async function resetFromBlot(blogID, publish, signal) {
   if (account.folder_id) {
     abortIfRequested(signal);
 
-    const { result } = await client.filesGetMetadata({
-      path: account.folder_id,
-    });
+    const { result } = await tagSource(
+      SOURCES.DELTA,
+      client.filesGetMetadata({ path: account.folder_id })
+    );
 
     abortIfRequested(signal);
     const { path_display } = result;
@@ -122,11 +162,14 @@ async function resetFromBlot(blogID, publish, signal) {
 
   const {
     result: { cursor },
-  } = await client.filesListFolderGetLatestCursor({
-    path: account.folder_id || "",
-    include_deleted: true,
-    recursive: true,
-  });
+  } = await tagSource(
+    SOURCES.DELTA,
+    client.filesListFolderGetLatestCursor({
+      path: account.folder_id || "",
+      include_deleted: true,
+      recursive: true,
+    })
+  );
 
   abortIfRequested(signal);
 
@@ -222,6 +265,7 @@ async function resetFromBlot(blogID, publish, signal) {
             );
             abortIfRequested(signal);
           } catch (e) {
+            rethrowIfDurable(e);
             log("Failed to transfer", path);
           }
         } else if (!remoteCounterpart) {
@@ -234,6 +278,7 @@ async function resetFromBlot(blogID, publish, signal) {
             );
             abortIfRequested(signal);
           } catch (e) {
+            rethrowIfDurable(e);
             log("Failed to transfer", path);
           }
         }
