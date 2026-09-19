@@ -152,15 +152,15 @@ async function bakeValue(ctx, value) {
     return result.url;
   }
 
-  // The file behind an already-baked link is gone: drop back to the plain
-  // path so request-time resolution decides, instead of keeping a URL that
-  // points at a now-missing versioned file.
-  if (wasBaked) {
-    ctx.dependencies.add(pathPartOf(raw));
-    return raw;
-  }
+  // No file behind the link (or the file behind an already-baked link is
+  // gone). Still record the dependency so the entry is rebuilt, and baked,
+  // if the file (re)appears - regardless of whether another entry's HTML
+  // we embedded had already dropped back to the plain path. Where the link
+  // was baked, drop back to the plain path so request-time resolution
+  // decides instead of keeping a URL for a now-missing versioned file.
+  ctx.dependencies.add(pathPartOf(raw));
 
-  return null;
+  return wasBaked ? raw : null;
 }
 
 async function rewriteSrcset(ctx, value) {
