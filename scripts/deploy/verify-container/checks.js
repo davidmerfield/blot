@@ -13,12 +13,14 @@ const { promisify } = require("util");
 const execFileAsync = promisify(execFile);
 
 // A blog folder on disk is data/blogs/{blogID}. Deleted blogs and blogs that
-// never synced mean the two won't match exactly, so tolerate a small gap;
-// a wrong or empty mount misses ~everything.
-const MIN_BLOGS_WITH_FOLDER = 0.95;
+// never synced mean the two won't match exactly, so this is a loose floor:
+// a wrong, stale or empty mount misses most blogs, not a few. The real ratio
+// is always in the report - tighten this once we've seen it in prod.
+const MIN_BLOGS_WITH_FOLDER = 0.5;
 
-const MIN_FREE_BYTES = 1024 ** 3; // 1GiB
-const MIN_FREE_RATIO = 0.05;
+// An absolute floor only: the data disk is meant to fill up with blogs, so
+// how full it is belongs in monitoring, not a deploy gate.
+const MIN_FREE_BYTES = 2 * 1024 ** 3; // 2GiB
 
 // The status page (https://status.blot.im) checks this same blog. Rendering
 // it exercises redis, the blogs mount, the templates and the blog server in
@@ -108,7 +110,7 @@ async function diskSpace({ config }) {
   const free = stats.bavail * stats.bsize;
   const ratio = free / (stats.blocks * stats.bsize);
   const summary = `${(free / 1024 ** 3).toFixed(1)}GiB free (${(ratio * 100).toFixed(0)}%)`;
-  if (free < MIN_FREE_BYTES || ratio < MIN_FREE_RATIO) {
+  if (free < MIN_FREE_BYTES) {
     throw new Error(`${summary} on the data mount`);
   }
   return summary;
@@ -189,8 +191,8 @@ async function canaryBlog({ config }) {
   const host = `preview-of-${CANARY_TEMPLATE}-on-${CANARY_HANDLE}.${config.host}`;
   const res = await request({ url: `http://127.0.0.1:${config.port}/`, host });
   if (res.status !== 200) throw new Error(`${host} returned ${res.status}`);
-  if (!/<html/i.test(res.body) || res.body.length < 500) {
-    throw new Error(`${host} returned a ${res.body.length} byte body without <html>`);
+  if (!/<html/i.test(res.body) || !/<\/html>/i.test(res.body) || res.body.length < 500) {
+    throw new Error(`${host} returned a ${res.body.length} byte body that isn't a complete HTML page`);
   }
   return `${host} rendered (${res.body.length} bytes)`;
 }

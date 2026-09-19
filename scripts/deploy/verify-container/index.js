@@ -10,9 +10,12 @@
 //
 // usage: node verify-container/index.js <expected BLOT_RELEASE_ID>
 
-// The deploy script's ssh wrapper gives up after 60s, so keep each check well
-// under that; a healthy check takes well under a second.
+// The deploy script's ssh wrapper gives up after 60s and, when it does, loses
+// this script's output - so the whole run has its own deadline comfortably
+// under that, after which unfinished checks are reported and we exit with the
+// partial report. A healthy check takes well under a second.
 const CHECK_TIMEOUT = 10 * 1000;
+const DEADLINE = 45 * 1000;
 
 function withTimeout(promise, ms, name) {
   let timer;
@@ -24,15 +27,26 @@ function withTimeout(promise, ms, name) {
 
 // Runs every check (a failure doesn't stop the rest, so one run shows
 // everything that's wrong) and returns { ok, report }.
-async function runChecks(checks, context, timeout = CHECK_TIMEOUT) {
+async function runChecks(
+  checks,
+  context,
+  timeout = CHECK_TIMEOUT,
+  deadline = Date.now() + DEADLINE
+) {
   const lines = [];
   let ok = true;
 
   for (const check of checks) {
+    if (Date.now() >= deadline) {
+      ok = false;
+      lines.push(`  FAIL  ${check.name}: not run, ran out of time`);
+      continue;
+    }
+
     try {
       const detail = await withTimeout(
         Promise.resolve().then(() => check.run(context)),
-        timeout,
+        Math.min(timeout, Math.max(deadline - Date.now(), 1)),
         check.name
       );
       lines.push(`  PASS  ${check.name}: ${detail}`);
@@ -64,7 +78,10 @@ async function main() {
     // Without redis most checks can't say anything useful; report just this.
     result = { ok: false, report: `  FAIL  redis connect: ${err.message}` };
   } finally {
-    if (redis.isOpen) await redis.quit().catch(() => {});
+    // Bounded: a hung QUIT must not stop a passing run from exiting.
+    if (redis.isOpen) {
+      await withTimeout(redis.quit(), 3000, "redis quit").catch(() => {});
+    }
   }
 
   // Failures go to stderr so they end up in the deploy script's error message.
