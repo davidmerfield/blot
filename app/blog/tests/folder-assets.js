@@ -67,6 +67,37 @@ describe("build-time baked folder links", function () {
     expect(versionOf(after, "photo\\.jpg")).not.toEqual(versionBefore);
   });
 
+  it("bakes a link to a file that didn't exist at build time once it appears", async function () {
+    await this.template({ "entry.html": "{{{entry.html}}}" });
+    await this.write({
+      path: "/late.txt",
+      content: "Link: /late\n\n[Report](/report.pdf)",
+    });
+
+    const before = await this.text("/late");
+
+    expect(before).toContain('href="/report.pdf"');
+    expect(before).not.toContain("/folder/v-");
+
+    // the missing file is still a dependency, so creating it rebuilds the entry
+    const json = await (await this.get("/late?json=true")).json();
+
+    expect(json.entry.dependencies).toContain("/report.pdf");
+
+    await this.write({ path: "/report.pdf", content: "pdf one" });
+
+    const after = await this.text("/late");
+    const version = versionOf(after, "report\\.pdf");
+
+    expect(version).toBeTruthy();
+    expect(after).not.toContain(BLOT_CDN_TOKEN);
+
+    const stored = await (await this.get("/late?json=true")).json();
+
+    // baked into the stored entry, not just resolved at request time
+    expect(stored.entry.html).toContain(`/folder/${version}/`);
+  });
+
   it("falls back to the plain path when a baked file is deleted", async function () {
     await this.template({ "entry.html": "{{{entry.html}}}" });
     await this.write({ path: "/photo.jpg", content: "photo one" });

@@ -41,8 +41,10 @@ function mayNeedFolderLinkReplacement(html) {
 // What ONLY happens here and must be kept or replaced when removing this:
 //   - template-authored links (partials, CSS/JS references in layouts)
 //   - links in entries built before folderAssets existed (until rebuilt)
-//   - files that didn't exist at build time but do now (folderAssets records
-//     a dependency so a rebuild bakes them, but until then this resolves them)
+//   - (transiently) files that didn't exist at build time: folderAssets
+//     records a dependency on them, so creating the file rebuilds and bakes
+//     the entry (sync/update/set.js -> rebuildDependents); this pass only
+//     covers the short window before that rebuild finishes
 //   - hosts added after an entry was built (e.g. a custom domain set later)
 module.exports = async function replaceFolderLinks(blog, html, log = () => {}) {
   try {
