@@ -326,6 +326,33 @@ describe("template", function () {
 
     expect(await exists(this.template.id)).toEqual(true);
     expect((await getBlog({ id: this.blog.id })).template).toEqual(this.template.id);
+    expect((await getMetadata(this.template.id)).slug).toEqual(this.template.slug.toUpperCase());
+  });
+
+  it("migrates when the renamed folder's package.json enables itself", async function () {
+    await installLocalTemplate(this);
+    await buildFromFolder(this.blog.id);
+
+    await fs.move(
+      templatesDir(this) + "/" + this.template.slug,
+      templatesDir(this) + "/renamed"
+    );
+    await fs.outputJson(templatesDir(this) + "/renamed/package.json", { enabled: true });
+    await buildFromFolder(this.blog.id);
+
+    await expectRenamed(this, "renamed");
+  });
+
+  it("does not accept a rename on matching view names alone", async function () {
+    await installLocalTemplate(this);
+    await buildFromFolder(this.blog.id);
+
+    await fs.remove(templatesDir(this) + "/" + this.template.slug);
+    await fs.outputFile(templatesDir(this) + "/other/index.html", "<h1>Different</h1>");
+    await buildFromFolder(this.blog.id);
+
+    // Still waiting: the unrelated template was not adopted
+    expect((await getBlog({ id: this.blog.id })).template).toEqual(this.template.id);
   });
 
   it("does not adopt an unrelated new template as the rename", async function () {
