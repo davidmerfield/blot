@@ -215,16 +215,20 @@ async function deployContainer(
   console.log("Checking health of new container...");
   await checkHealth(container.name, container.port);
 
-  if (verify && container.verify) {
-    console.log("Verifying new container...");
-    // Runs inside the container so it checks the redis connection, data
-    // mount, binaries and airlock the app itself sees. On failure sshCommand
-    // throws with the report, which main() handles like a failed health check.
-    const report = await sshCommand(
-      `docker exec ${container.name} node /usr/src/app/scripts/deploy/verify-container/index.js ${imageHash}`
-    );
-    console.log(report);
-  }
+  if (verify) await verifyContainer(container, imageHash);
+}
+
+// Runs inside the container so it checks the redis connection, data mount,
+// binaries and airlock the app itself sees. On failure sshCommand throws with
+// the report, which main() handles like a failed health check.
+async function verifyContainer(container, imageHash) {
+  if (!container.verify) return;
+
+  console.log(`Verifying ${container.name}...`);
+  const report = await sshCommand(
+    `docker exec ${container.name} node /usr/src/app/scripts/deploy/verify-container/index.js ${imageHash}`
+  );
+  console.log(report);
 }
 
 // --- airlock (config/airlock) --------------------------------------------
@@ -488,6 +492,9 @@ async function main() {
         // already-running container; a normal deploy attaches it between
         // `docker create` and `docker start` (see deployContainer).
         await connectToAirlockNetwork(container.name);
+        // A previous run may have been cut off after this container started
+        // but before it passed verification, so don't trust "already deployed".
+        await verifyContainer(container, imageHash);
         continue;
       }
 

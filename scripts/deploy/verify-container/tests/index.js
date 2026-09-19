@@ -90,7 +90,7 @@ describe("deploy verify-container", function () {
     const os = require("os");
     const path = require("path");
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-"));
-    const redis = { sMembers: async () => ["BLOG_1", "BLOG_2"] };
+    const redis = { sMembers: async () => ["BLOG_1", "BLOG_2", "BLOG_3"] };
 
     try {
       const run = () =>

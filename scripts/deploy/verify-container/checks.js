@@ -128,17 +128,18 @@ async function binary(command, args) {
 const pandoc = () => binary("pandoc", ["--version"]);
 const git = () => binary("git", ["--version"]);
 
+// Decodes a real HEIC (the same photo the img converter's spec uses; app
+// tests aren't in the production image, so it's copied here). Advertised
+// format support isn't enough: a missing or broken HEVC decoder still lists
+// heif as an input.
 async function sharpWorks() {
   const sharp = require("sharp");
-  await sharp({
-    create: { width: 2, height: 2, channels: 3, background: "#fff" },
-  })
-    .jpeg()
-    .toBuffer();
-  if (!(sharp.format.heif && sharp.format.heif.input.buffer)) {
-    throw new Error("sharp has no HEIC support (libvips built without libheif?)");
-  }
-  return "sharp loads and can decode HEIC";
+  const fixture = path.join(__dirname, "fixtures", "car.heic");
+  const { width, height } = await sharp(fixture).jpeg().toBuffer().then((buffer) =>
+    sharp(buffer).metadata()
+  );
+  if (!width || !height) throw new Error("decoded HEIC has no dimensions");
+  return `sharp decoded a HEIC to a ${width}x${height} JPEG`;
 }
 
 async function requiredEnv() {
