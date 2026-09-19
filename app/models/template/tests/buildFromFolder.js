@@ -22,6 +22,8 @@ describe("template", function () {
   const setView = promisify(setViewCb);
   const getBlog = promisify(Blog.get);
   const setBlog = promisify(Blog.set);
+  const create = promisify(require("../index").create);
+  const getAllViews = promisify(require("../index").getAllViews);
   const createShareID = promisify(require("../index").createShareID);
   const getByShareID = promisify(require("../index").getByShareID);
 
@@ -36,6 +38,7 @@ describe("template", function () {
     await setMetadata(test.template.id, {
       localEditing: true,
       description: "Custom description",
+      cloneFrom: "SITE:blog",
     });
     if (install) await setBlog(test.blog.id, { template: test.template.id });
     await writeToFolder(test.blog.id, test.template.id);
@@ -68,6 +71,7 @@ describe("template", function () {
     expect(blog.template).toEqual(newID);
     expect(metadata.localEditing).toEqual(true);
     expect(metadata.description).toEqual("Custom description");
+    expect(metadata.cloneFrom).toEqual("SITE:blog");
     expect(await exists(test.template.id)).toEqual(false);
   }
 
@@ -242,6 +246,85 @@ describe("template", function () {
 
     expect(shared.id).toEqual(makeID(this.blog.id, "renamed"));
     expect(shared.shareID).toEqual(shareID);
+  });
+
+  it("installs a fresh default when the installed template is a local edit of the default theme", async function () {
+    // The default template forks to {blogID}:blog, the same id as this one
+    const template = await create(this.blog.id, "Blog", { localEditing: true });
+    await setView(template.id, { name: "index.html", content: "<h1>Blog</h1>" });
+    await setBlog(this.blog.id, { template: template.id });
+    await writeToFolder(this.blog.id, template.id);
+    await buildFromFolder(this.blog.id);
+
+    await fs.remove(templatesDir(this) + "/" + template.slug);
+    await buildFromFolder(this.blog.id);
+    await expireWindow(this.blog.id);
+    await buildFromFolder(this.blog.id);
+
+    const blog = await getBlog({ id: this.blog.id });
+    const installed = await getMetadata(blog.template);
+    const views = await getAllViews(blog.template);
+
+    expect(installed.localEditing).toEqual(false);
+    expect(Object.keys(views).length).toBeGreaterThan(0);
+  });
+
+  it("does not pair a template created long after the folder went missing", async function () {
+    await installLocalTemplate(this);
+    await buildFromFolder(this.blog.id);
+
+    const saved = this.blogDirectory + "/.saved";
+    await fs.copy(templatesDir(this) + "/" + this.template.slug, saved);
+    await fs.remove(templatesDir(this) + "/" + this.template.slug);
+    await buildFromFolder(this.blog.id);
+    await expireWindow(this.blog.id);
+
+    await fs.copy(saved, templatesDir(this) + "/late");
+    await buildFromFolder(this.blog.id);
+
+    const blog = await getBlog({ id: this.blog.id });
+
+    expect(blog.template).not.toEqual(makeID(this.blog.id, "late"));
+    expect(blog.template).not.toEqual(this.template.id);
+    expect(await exists(this.template.id)).toEqual(false);
+  });
+
+  it("does not adopt a template that only shares view names", async function () {
+    await installLocalTemplate(this);
+    await setView(this.template.id, { name: "entry.html", content: "<p>Entry</p>" });
+    await writeToFolder(this.blog.id, this.template.id);
+    await buildFromFolder(this.blog.id);
+
+    await fs.remove(templatesDir(this) + "/" + this.template.slug);
+    await fs.outputFile(templatesDir(this) + "/other/index.html", "<h1>Different</h1>");
+    await fs.outputFile(templatesDir(this) + "/other/entry.html", "<p>Different</p>");
+    await fs.outputFile(templatesDir(this) + "/other/extra.html", "<p>Extra</p>");
+    await buildFromFolder(this.blog.id);
+
+    expect((await getBlog({ id: this.blog.id })).template).toEqual(this.template.id);
+
+    await expireWindow(this.blog.id);
+    await buildFromFolder(this.blog.id);
+
+    const blog = await getBlog({ id: this.blog.id });
+
+    expect(blog.template).not.toEqual(makeID(this.blog.id, "other"));
+    expect(await exists(this.template.id)).toEqual(false);
+  });
+
+  it("keeps the template when its folder is renamed only in case", async function () {
+    await installLocalTemplate(this);
+    await buildFromFolder(this.blog.id);
+
+    const dir = templatesDir(this) + "/" + this.template.slug;
+    await fs.move(dir, dir + "-tmp");
+    await fs.move(dir + "-tmp", templatesDir(this) + "/" + this.template.slug.toUpperCase());
+    await buildFromFolder(this.blog.id);
+    await expireWindow(this.blog.id);
+    await buildFromFolder(this.blog.id);
+
+    expect(await exists(this.template.id)).toEqual(true);
+    expect((await getBlog({ id: this.blog.id })).template).toEqual(this.template.id);
   });
 
   it("does not adopt an unrelated new template as the rename", async function () {

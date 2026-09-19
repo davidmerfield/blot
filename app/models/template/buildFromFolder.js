@@ -107,7 +107,11 @@ async function removeMissing(blogID, templatesInFolder) {
   const local = templates.filter(
     template => template.localEditing === true && template.owner === blogID
   );
-  const orphans = local.filter(template => !templatesInFolder.includes(template.slug));
+
+  // Folders and templates are matched by id, not slug: makeID lowercases, so a
+  // folder renamed only in case is still the same template
+  const idsInFolder = templatesInFolder.map(name => makeID(blogID, name));
+  const orphans = local.filter(template => !idsInFolder.includes(template.id));
 
   // Templates which aren't installed can be dropped straight away
   for (const orphan of orphans.filter(template => template.id !== blog.template)) {
@@ -142,8 +146,11 @@ async function removeMissing(blogID, templatesInFolder) {
 
     for (const template of local) {
       if (template.id === installed.id) continue;
-      if (!templatesInFolder.includes(template.slug)) continue;
-      if (!(now - fresh[template.id] < folderRenames.RENAME_WINDOW)) continue;
+      if (!idsInFolder.includes(template.id)) continue;
+
+      // Only a template created around the time the folder went missing
+      // (before or after) can be its rename
+      if (!(Math.abs(fresh[template.id] - record.since) < folderRenames.RENAME_WINDOW)) continue;
 
       const score = folderRenames.similarity(
         record.views,
@@ -166,8 +173,13 @@ async function removeMissing(blogID, templatesInFolder) {
       await folderRenames.clear(blogID, best.id);
     } else if (now - record.since >= folderRenames.RENAME_WINDOW) {
       log("installed template folder missing, installing default", installed.id);
-      await setBlog(blogID, { template: defaults.template });
+
+      // Drop first: installing the default forks it as a blog-owned template
+      // named after it, and if that's the id of the template being removed
+      // (a local edit of the default theme) the fork would reuse and then
+      // delete it, leaving the blog pointing at nothing.
       await dropTemplate(blogID, installed.slug);
+      await setBlog(blogID, { template: defaults.template });
       await folderRenames.clear(blogID, installed.id);
     } else {
       log("installed template folder missing, waiting to see if it was renamed", installed.slug);

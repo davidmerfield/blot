@@ -56,19 +56,25 @@ function viewHashes(templateID) {
   });
 }
 
-// How alike two templates are, from 0 to 1: the share of view names they have
-// in common, so a renamed folder whose files were also edited still matches.
+// How alike two templates are, from 0 to 1. A view with the same name and
+// content counts fully, one with the same name but edited content counts half,
+// out of every view name in either template. A renamed folder whose files were
+// also edited still scores high, while an unrelated theme that merely shares
+// common view names (entries.html, style.css...) scores low.
 function similarity(a, b) {
   var names = Object.keys(a);
   var union = new Set(names.concat(Object.keys(b)));
 
   if (!union.size) return 0;
 
-  var common = names.filter(function (name) {
-    return Object.prototype.hasOwnProperty.call(b, name);
+  var score = 0;
+
+  names.forEach(function (name) {
+    if (!Object.prototype.hasOwnProperty.call(b, name)) return;
+    score += a[name] === b[name] ? 1 : 0.5;
   });
 
-  return common.length / union.size;
+  return score / union.size;
 }
 
 async function readAll(hashKey) {
